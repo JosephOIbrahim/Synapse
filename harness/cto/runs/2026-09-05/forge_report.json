@@ -1,0 +1,437 @@
+{
+ "date": "2026-09-05",
+ "base": "792fb06c",
+ "ready": [
+  "B2",
+  "B3",
+  "B5",
+  "B6",
+  "B7",
+  "B8",
+  "B10"
+ ],
+ "results": [
+  {
+   "id": "B2",
+   "forge": {
+    "id": "B2",
+    "worktree": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-1",
+    "branch": "cto/b2-phantom-authority",
+    "commits": [
+     "e11e9319 cto(B2): walk SWIG namespaces into the h22 symbol table; bind recipes/transaction to hou.undos; name the interim rulebook authority"
+    ],
+    "files_touched": [
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-1\\host\\introspect_runtime.py",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-1\\python\\synapse\\cognitive\\tools\\data\\h22_symbol_table.json",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-1\\python\\synapse\\recipes\\transaction.py",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-1\\CLAUDE.md",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-1\\rulebook\\RULEBOOK.md",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-1\\tests\\test_scout_introspect.py",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-1\\tests\\test_recipe_transaction.py"
+    ],
+    "predicate_result": "python -c \"import json;s=set(json.load(open('python/synapse/cognitive/tools/data/h22_symbol_table.json'))['symbols']);print(all(q in s for q in ['hou.undos.group','hou.hipFile.save','hou.hda.definitionsInFile']))\" -> prints True, exit 0. rg -n 'hou.undos.group' python/synapse/recipes/transaction.py -> match at line 130 (comment inside HoudiniUndoDriver.undo_group), exit 0.",
+    "tests": "Failing-before proof: after appending the new tests and BEFORE any code/table change, `python -W ignore -m pytest tests/test_scout_introspect.py tests/test_recipe_transaction.py -q` -> 5 failed / 18 passed (test_walk_recurses_into_namespace_instances, test_committed_h22_table_carries_namespace_members, and the 3 HoudiniUndoDriverTests: ImportError HoudiniUndoDriver). After changes: `python -W ignore -m pytest tests/test_scout_introspect.py tests/test_recipe_transaction.py tests/test_phantom_guardrail.py tests/test_scout.py -q -p no:cacheprovider` -> 92 passed in 1.07s. Phantom lint (harness/verify/checks.py::_hou_phantoms_in_source against the new table + _GUI_HOU_ABSENT_HEADLESS) on transaction.py and introspect_runtime.py -> []. rulebook/phantoms.json has no undos entry. Live hython 22.0.400 (QT_QPA_PLATFORM=offscreen) probes: type(hou.undos).__module__=='hou'; hasattr group/areEnabled/undoLabels/performUndo True; hou.hipFile.save / hou.hda.definitionsInFile True; 24 module-level instances, 22 hou-typed; undoLabels() most-recent-first, headless areEnabled() True, performUndo() pops latest. Scout REPRO: HOUDINI_VERSION=22.0.400 -> table 22.0.400, stale False, 'hou.undos.group' in s True; HOUDINI_VERSION=22.0.429 -> symbols None, reason 'table stamp 22.0.400 != expected 22.0.429'.",
+    "done": [
+     "host/introspect_runtime.py: _walk also recurses into SWIG namespace instances that are direct children of the root module and whose type is defined in that root (hou.undos, hou.hipFile, hou.hda, playbar, lop, ik, clone, logging... 22 on 22.0.400); foreign-typed instances (hou.cvar, hou.lopTraversalDemands) and nested hou.EnumValue values stay leaves. Header docstring updated with the per-major run line and the headless GUI-submodule caveat pointing at the existing checks.py allowlist (not regressed: no hou.ui/qt/audio/desktop/viewportVisualizers leaked into the table).",
+     "Regenerated python/synapse/cognitive/tools/data/h22_symbol_table.json on hython 22.0.400 headless: 35,908 -> 36,472 symbols (+564, 0 removed = strict superset of the committed table), truncated=False, blake2b e408ca0b3e41, stamped 22.0.400.",
+     "Pinned by tests/test_scout_introspect.py::test_committed_h22_table_carries_namespace_members (hou.undos.group/areEnabled/undoLabels/performUndo, hou.hipFile.save, hou.hda.definitionsInFile, truncated False, checksum binds) and ::test_walk_recurses_into_namespace_instances (synthetic root-typed instance recursed; foreign-typed and nested enum instances not).",
+     "python/synapse/recipes/transaction.py: refusal docstring removed; new HoudiniUndoDriver binds the four TransactionBackend undo methods to hou.undos.group/areEnabled/undoLabels/performUndo (guarded import, injectable undos/resolve). Evidence policy preserved: absent hou.undos -> undo_enabled/undo_labels return None and BuildTransaction refuses before any write; undo_group/perform_undo raise. 3 new tests in tests/test_recipe_transaction.py.",
+     "Scout exists_in_runtime=None (not False) on a stamp/running-build mismatch: verified already implemented in scout._load_symbol_table (returns symbols=None -> _ground_symbols emits None + unverified_reason) and already pinned by tests/test_scout.py (test_version_mismatch_reads_stale, missing/corrupt-table tests, 23.0.000 case). Re-verified live via the REPRO with HOUDINI_VERSION=22.0.429. No code change needed.",
+     "CLAUDE.md 'Rulebook discipline' + rulebook/RULEBOOK.md (surfaces row line 30, 'before touching hou.*' line 38) amended to state surfaces/ is .gitkeep-only and scripts/rulebook_harvest.py does not exist, and to name the interim authority: h22_symbol_table.json (symbol existence, regenerated via hython host/introspect_runtime.py, GUI allowlist noted) + rag/catalog/h22.0.400/ (node types, scripts/build_node_catalog.py); phantoms.json stays the quarantine list. No fake harvest script written. All existing warning callouts in CLAUDE.md untouched."
+    ],
+    "not_done": [
+     "No scripts/rulebook_harvest.py and no rulebook/surfaces/<build>/ content (per the item: do NOT write a fake harvest script).",
+     "h21_symbol_table.json NOT regenerated: it still carries the old bare-namespace shape (no hou.undos.group). H21.0.671 is uninstalled on this host so it cannot be regenerated honestly.",
+     "No production TransactionBackend host implementation was added; HoudiniUndoDriver is the undo slice only, to be composed into the host backend (the graph methods preflight/snapshot/apply/verify remain unbound, as before)."
+    ],
+    "caveats": [
+     "Stock python with no HOUDINI_VERSION env and no host injection still serves the H21 table (scout._pkg_symbol_table_path falls back to h21 when no major is known; ruled R-M5b-1 warn-not-refuse 2026-08-07, pinned in tests/test_scout.py). In that process hou.undos.group still reads exists_in_runtime=False because the H21 table predates the namespace walk. Fixing that means either changing the no-major default to the newest committed per-major table or regenerating h21 on an H21 install; both are outside this item and one reverses a ruling, so it is left as the remaining hollow. The mismatch path (running build known, stamp differs) correctly returns None.",
+     "The namespace rule is deliberately depth==0 only. A first cut recursing every root-typed instance produced +3,855 symbols, 3,420 of them hou.EnumValue per-value .name/.this/.thisown noise (e.g. hou.nodeTypeFilter.Chop.this); the shipped rule adds only the 22 namespaces' members (+564, incl. 129 nested-class members such as hou.clone.Connection.*, hou.ik.Joint.*, hou.logging.LogEntry.* - all real).",
+     "Table regenerated on 22.0.400; the host also has 22.0.429 installed. Any process running 22.0.429 will (correctly) see the gate DOWN (None) until the table is regenerated on that build - that is the existing R-M5-4 behaviour, not a regression.",
+     "Scratch probe files (_probe_ns.py, _old_table.json, _commit_msg.txt) were created in the worktree root for the live probes and the commit message and deleted before commit; git status is clean.",
+     "Full pytest suite NOT run (per rules); only the 4 targeted files (92 passed)."
+    ]
+   },
+   "verdict": {
+    "id": "B2",
+    "verdict": "SOUND-WITH-NITS",
+    "predicate_rerun": "PASS. In C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-1 (branch cto/b2-phantom-authority, HEAD e11e9319): python -c \"...all(q in s for q in ['hou.undos.group','hou.hipFile.save','hou.hda.definitionsInFile'])\" -> True, exit 0. rg -n 'hou.undos.group' python/synapse/recipes/transaction.py -> line 130 (a comment inside HoudiniUndoDriver.undo_group; the actual call is ns.group(label) on the resolved hou.undos namespace). Independent table audit: HEAD~1 -> HEAD is 35,908 -> 36,472 symbols, +564 added / 0 removed (strict superset), all additions under 22 hou.* SWIG namespaces (undos, hipFile, hda, playbar, lop, ik, clone, logging, ...), 0 non-hou additions, 0 GUI leakage (hou.ui/qt/audio/desktop/viewportVisualizers absent), truncated=False, blake2b recomputed = e408ca0b3e41762282a911d6a8ac2f62 matches. Live hython 22.0.400 (QT_QPA_PLATFORM=offscreen): type(hou.undos).__module__=='hou', callable(hou.undos)=False, hasattr group/areEnabled/undoLabels/performUndo all True, hou.hipFile.save + hou.hda.definitionsInFile True, areEnabled() True headless, undoLabels() after groups A then B = ('probe B','probe A') (most-recent-first), performUndo() removed /obj/pb and left ('probe A',). Scout REPRO with PYTHONPATH pinned to the worktree: HOUDINI_VERSION=22.0.400 -> h22 table loaded, stale False, 'hou.undos.group' in table True; HOUDINI_VERSION=22.0.429 -> symbols None, reason 'table stamp 22.0.400 != expected 22.0.429'; unset -> h21 table (33,255 syms), hou.undos.group False (the forge's named caveat, pre-existing ruling R-M5b-1).",
+    "tests_rerun": "python -W ignore -m pytest tests/test_scout_introspect.py tests/test_recipe_transaction.py tests/test_phantom_guardrail.py tests/test_scout.py -q -p no:cacheprovider -> 92 passed in 1.06s. Binding verified: a throwaway test printed synapse.recipes.transaction.__file__ = the worktree path (pyproject pythonpath=['python'] wins over the editable .pth that points stock python at C:\\Users\\User\\Synapse); temp test deleted, git status clean. Failing-before proof reproduced independently: git archive HEAD into scratchpad, overwrote host/introspect_runtime.py, python/synapse/recipes/transaction.py and the h22 table with HEAD~1 content, ran the two new test files -> 5 failed / 18 passed (test_walk_recurses_into_namespace_instances, test_committed_h22_table_carries_namespace_members, and the 3 HoudiniUndoDriverTests) - exactly the forge's numbers. Master tree check: git -C C:/Users/User/SYNAPSE status --porcelain has no hits on any of the 7 touched files (master HEAD 007d30df, untouched).",
+    "must_fix": [],
+    "nits": [
+     "The rg half of the closure predicate is satisfied by a comment (transaction.py:130), not by a literal call site: the driver reaches hou.undos.group via getattr(hou,'undos').group(label). The binding is real and pinned by test_driver_maps_every_backend_undo_method_onto_hou_undos, so this is a predicate-wording weakness, not a code one; a future predicate should assert the driver test rather than a string match.",
+     "The namespace walk carries SWIG plumbing into the table: hou.<ns>.this and hou.<ns>.thisown for each of the 22 namespaces (44 entries). Harmless for a membership authority (nobody will emit them) but they are not API; a one-line skip of {'this','thisown'} in _walk would keep the table honest-by-construction.",
+     "HoudiniUndoDriver.undo_enabled/undo_labels swallow every Exception into None. That is the safe direction (None refuses the transaction before any write) but it also hides a real hou.undos failure from the log; consider a logger.debug in the except so the refusal reason is traceable.",
+     "Branch was cut from a4d86ce4, one commit behind the brief's stated base 792fb06c (the B4 panel-gate merge). git diff --name-only a4d86ce4 792fb06c intersects none of the 7 touched files, so the conductor's merge should be clean; noting it for the merge train.",
+     "HoudiniUndoDriver is not composed into any production TransactionBackend (the forge says so in not_done). The docstring refusal is gone and the undo slice is now bindable, but no live path constructs it yet; the item's closure is about authority + bindability, so this is a known limitation rather than a gap in the item."
+    ],
+    "scope_creep": [],
+    "fake_green_risk": "LOW. Both new table/walk tests bind to the tree (one reads the committed JSON by path and recomputes the blake2b; one drives _walk on a synthetic root loaded by file path from host/), all three driver tests import from the worktree (binding proven by __file__), and all five fail on pre-change code in an isolated scratch copy. The predicate's string-match half is the only soft spot (comment-satisfied), mitigated by the driver test. Residual hollow, honestly named by the forge and out of this item: a stock-python process with no HOUDINI_VERSION and no host injection still grounds on the H21 table (R-M5b-1 warn-not-refuse), where hou.undos.group reads exists_in_runtime=False because h21_symbol_table.json predates the namespace walk and H21.0.671 is uninstalled so it cannot be regenerated honestly. The mismatch path (22.0.429) correctly returns None, not False. Docs claims verified against the tree: rulebook/surfaces/ is .gitkeep-only, scripts/rulebook_harvest.py absent, scripts/build_node_catalog.py + rag/catalog/h22.0.400/_manifest.json present, checks.py:493 _GUI_HOU_ABSENT_HEADLESS present, CLAUDE.md warning-callout count 7 -> 7 unchanged, 13 files under python/synapse/server call hou.undos.group as claimed, rulebook/phantoms.json has no undos entry.",
+    "merge_ready": true
+   },
+   "repaired": false
+  },
+  {
+   "id": "B3",
+   "forge": {
+    "id": "B3",
+    "worktree": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-2",
+    "branch": "cto/b3-verify-anon-layers",
+    "commits": [
+     "d7f20226141e5eff4bc790cb62f668c1c0c4d38a cto(B3): P4 CompositionVerifier ignores anon: layer identifiers; hython 22.0.400 receipt"
+    ],
+    "files_touched": [
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-2\\python\\synapse\\recipes\\verify.py",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-2\\tests\\test_recipe_verify.py",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-2\\docs\\solaris_v3\\REPORT_VERIFY.md"
+    ],
+    "predicate_result": "Run from the worktree root with PYTHONPATH='python;.' and QT_QPA_PLATFORM=offscreen: \"C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe\" -m pytest tests/test_recipe_verify_hython.py -q -p no:cacheprovider -> exit 0, \"4 passed, 5 warnings in 0.44s\" (re-run after the mutant was reverted; hou.applicationVersionString() == 22.0.400). The 5 warnings are pre-existing (OpenSSL legacy provider + hou.expandString deprecation at solaris_compose_tools.py:611).",
+    "tests": "FAILING-BEFORE PROOF (base a4d86ce4 / master 792fb06c, same hython command): \"1 failed, 3 passed\" - test_hython_real_stage_material_surface_and_composition, CheckResult(check=P4_COMPOSITION, status=FAIL, reason='missing assets'), exit 1. AFTER FIX: 4 passed, exit 0. PURE: python -m pytest tests/test_recipe_verify.py -q -p no:cacheprovider -> 77 passed (76 prior + new test_p4_missing_assets_ignore_anonymous_layer_identifiers). MUTATION PROOF: one-line mutant making _missing_file_assets return every unresolved entry -> hython file 1 failed / 3 passed (same P4 failure), pure control 1 failed / 76 deselected; mutant reverted and predicate re-run green. Live probe (hython 22.0.400): a pythonscript LOP stage has 14 used layers, all layer.anonymous=True, realPath=''; ComputeAllDependencies reports 4 anon: sublayers unresolved on the rootlayer and 8 on the session layer; a deliberately missing AddReference('C:/definitely/missing/asset_b3.usd') still surfaces as the only non-anon unresolved entry (plus a composition error), so real missing files are not dropped.",
+    "done": [
+     "Root cause confirmed live: every LOP stage is composed of anon: layers whose sublayers ComputeAllDependencies reports as unresolved -> P4 FAIL 'missing assets' on every live stage.",
+     "verify.py: added _is_anonymous_layer_identifier (Sdf.Layer.IsAnonymousLayerIdentifier when pxr present, 'anon:' prefix fallback) and _missing_file_assets(unresolved); composition branch filters per unresolved entry (not per layer, so a missing file referenced from an anon LOP layer still fails P4) and records dropped ids under new additive evidence key ignored_anonymous_dependencies.",
+     "Symbols pxr.Sdf.Layer.IsAnonymousLayerIdentifier and pxr.Sdf.Layer.anonymous verified in h22_symbol_table.json and exercised live in the probe.",
+     "New pure control test in tests/test_recipe_verify.py, shown to bite via a one-line mutant (reverted).",
+     "docs/solaris_v3/REPORT_VERIFY.md: hython row updated and a dated 'P4 receipt - hython 22.0.400, 2026-09-05' section appended with before/after/mutant results, the exact command, and how to run the hython tier through scripts/solaris_v3_accept.py --tier hython.",
+     "Closure predicate green: 4 passed, exit 0."
+    ],
+    "not_done": [
+     "No change to scripts/solaris_v3_accept.py: --tier hython already exists (argparse line 598, pinned-host discovery + SYNAPSE_HYTHON override), so the 'add it if small' branch of the action did not apply; documented the run path instead.",
+     "harness/solaris_v3/GATES.json promotion_rule.bindings left empty: binding the four hython test node IDs to rows G1/G4/T1-T3/T7-T10 is a reviewed-gate change outside this item, so `--tier hython` still reports NOT_RUN: no reviewed hython test bindings until that lands."
+    ],
+    "caveats": [
+     "Action text said 'skip layers whose identifier starts with anon:'; I deliberately filtered per unresolved entry instead of skipping anon layers wholesale, because the live probe showed a missing file referenced from an anon LOP layer is reported by that anon layer - skipping the layer would have hidden real missing assets. The 'dependency-check only file-backed layers' alternative in the action would have the same blind spot.",
+     "Evidence dict gains one additive key (ignored_anonymous_dependencies); CompositionVerifier's required-key set is unchanged, so no consumer contract moves.",
+     "The pure test exercises the Sdf-backed path when pxr is importable (it is on this host) and the 'anon:' prefix fallback otherwise; both are correct by USD's anonymous-identifier convention but only one branch runs per environment.",
+     "Only tests/test_recipe_verify_hython.py (hython) and tests/test_recipe_verify.py (system python) were run; no full suite per rules.",
+     "Merge/push/tag/VERSION untouched; conductor owns the merge."
+    ]
+   },
+   "verdict": {
+    "id": "B3",
+    "verdict": "SOUND-WITH-NITS",
+    "predicate_rerun": "Re-run by CRUCIBLE from C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-2 with PYTHONPATH='python;.' QT_QPA_PLATFORM=offscreen hython 22.0.400 -m pytest tests/test_recipe_verify_hython.py -q -p no:cacheprovider -> \"4 passed, 5 warnings in 0.47s\", exit 0. Tests RAN (not skipped): the pytestmark skipif only fires when real hou is not resident, and the fixture's version pin is 22.0.400 which matches this hython. Module provenance proven with a throwaway test (removed, worktree clean afterward): under BOTH hython and system python, synapse.recipes.verify resolves to the worktree's python/synapse/recipes/verify.py (HAS_HELPER=True, PXR=True) - important because a bare `python -c import` from the worktree resolves to C:\\Users\\User\\Synapse\\... via the editable .pth; pyproject pythonpath=[\"python\"] wins under pytest.",
+    "tests_rerun": "(1) Pure file: python -m pytest tests/test_recipe_verify.py -q -p no:cacheprovider -> 77 passed, exit 0. (2) FAILS-BEFORE, independently reproduced: `git archive HEAD~1 -- python tests pyproject.toml scripts` extracted to scratchpad/pre (verify.py has 0 occurrences of _missing_file_assets) and the hython predicate run there -> \"1 failed, 3 passed\", exit 1, AssertionError: CheckResult(check=P4_COMPOSITION, status=FAIL, reason='missing assets'). (3) MUTANT: scratch copy of HEAD with `_missing_file_assets` changed to `return [str(path) for path in unresolved]` -> test_p4_missing_assets_ignore_anonymous_layer_identifiers FAILS at tests/test_recipe_verify.py:234 (assert ['anon:000000...','missing.tx'] == ['C:/definite...','missing.tx']), 1 failed / 76 deselected. Scratch copies live only under the scratchpad; the worktree was never mutated. (4) Symbol law: pxr.Sdf.Layer.IsAnonymousLayerIdentifier, pxr.Sdf.Layer.anonymous, pxr.UsdUtils.ComputeAllDependencies, pxr.Ar.ResolverContextBinder all present in python/synapse/cognitive/tools/data/h22_symbol_table.json; Sdf.Layer.IsAnonymousLayerIdentifier live-returns True for 'anon:1:LOP' and False for 'C:/x.usd' under hython 22.0.400. (5) Master tree: `git -C C:/Users/User/SYNAPSE status --porcelain | rg 'recipes/verify.py|test_recipe_verify|REPORT_VERIFY'` -> no matches; no write to master's checkout. (6) Merge dry-run: `git merge-tree --write-tree master HEAD` exit 0, clean tree, no conflicts; no commit on master since the branch base (a4d86ce4..007d30df: B1, B4, B9) touches any B3 file.",
+    "must_fix": [],
+    "nits": [
+     "docs/solaris_v3/REPORT_VERIFY.md says 'Base master 792fb06c' and the 'Before fix (base 792fb06c)' table row, but the branch forks from a4d86ce4; 792fb06c is a DESCENDANT (the B4 merge) and master is now 007d30df. Harmless (no commit in that range touches verify.py or its tests; merge-tree is clean) but the receipt names a base it was not literally run on.",
+     "tests/test_recipe_verify.py::test_p4_missing_assets_ignore_anonymous_layer_identifiers only exercises the Sdf-backed branch of _is_anonymous_layer_identifier on hosts where pxr imports (this host, CI with pxr); the 'anon:' prefix fallback is dead in that run. One-line hardening for a follow-up: monkeypatch v.Sdf = None inside the test to cover both branches in one environment. Forge disclosed this in caveats.",
+     "verify.py:735-736 computes ignored_anonymous via `str(path) not in file_backed` (list membership, O(n*m)). Trivial for the 4-8 entries per layer seen live; a set would be the idiomatic form. Cosmetic.",
+     "The 97-line REPORT_VERIFY.md appendix is in scope (the item asked for a receipt) but heavy; the pre-fix/post-fix/mutant table plus command is the load-bearing part, the rest restates the commit message."
+    ],
+    "scope_creep": [],
+    "fake_green_risk": "LOW. The predicate's four tests are gated by a skipif that fires only when real hou is not resident and a fixture skip pinned to SUPPORTED_BUILD; under hython 22.0.400 they executed (warnings carry the test node IDs, 4 passed / 0 skipped). The green is not an artifact of module shadowing: both runners were proven to load the worktree's verify.py, not the .pth-shadowed master copy. The fix cannot pass vacuously: the filter is per unresolved entry (not per layer), the forge's live probe showed a missing file referenced from an anon LOP layer still surfaces by its file path, and my scratch mutant that returns every entry re-breaks both the hython P4 test and the pure control. The new evidence key is additive; CompositionVerifier's required-key set is unchanged (4 passed confirms the consumer contract holds). Residual risk: the pure control asserts helper output, not the composition branch end-to-end - end-to-end coverage lives only in the hython tier, which is exactly what the predicate runs.",
+    "merge_ready": true
+   },
+   "repaired": false
+  },
+  {
+   "id": "B5",
+   "forge": {
+    "id": "B5",
+    "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-3",
+    "branch": "cto/b5-backfill-source-intact",
+    "commits": [
+     "14849b4a5d8b8f60a65d1d80ae48ad9dae098147 cto(B5): backfill no longer dual-writes into its own source; CI exercises SYNAPSE_MEMORY_BACKEND=moneta"
+    ],
+    "files_touched": [
+     "C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-3/python/synapse/memory/backfill.py",
+     "C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-3/tests/test_backfill.py",
+     "C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-3/.github/workflows/ci.yml"
+    ],
+    "predicate_result": "(1) `SYNAPSE_MEMORY_BACKEND=moneta python -m pytest tests/test_backfill.py -q -p no:cacheprovider` -> \"7 passed, 2 warnings in 0.58s\", exit 0. (2) `rg -n 'SYNAPSE_MEMORY_BACKEND' .github/workflows/ci.yml` -> 3 matches (lines 111, 112, 135), exit 0.",
+    "tests": "FAILING-BEFORE PROOF: with backfill.py reverted to pre-change (git checkout of that one file), `SYNAPSE_MEMORY_BACKEND=moneta pytest tests/test_backfill.py` -> 2 failed / 5 passed: test_backup_is_taken_and_source_intact (read_bytes mismatch, the reported bug) and new test_source_intact_under_production_backend_env (\"source memory.jsonl grew 7 -> 14 lines: the destination store dual-wrote back into the source\"). Same pre-change code with the env UNSET -> new env-forcing test still FAILS (1 failed / 6 passed), so its verdict does not depend on the shell. MUTATION PROOF for the second new test: one-line change in moneta_store.py from_storage_dir (`if False and not mr.moneta_available():`) -> test_backfill_without_moneta_degrades_loudly FAILED; reverted, tree clean. AFTER: tests/test_backfill.py under env=moneta -> 7 passed; under env empty -> 7 passed. Exact CI step command run locally: `SYNAPSE_MEMORY_BACKEND=moneta python -m pytest tests/test_backfill.py tests/test_moneta_store.py tests/test_store_backend_health.py tests/test_m3_env_conformance.py -m \"not needs_houdini\"` -> 41 passed. ci.yml parsed with yaml.safe_load (9 steps, last step env = {SYNAPSE_MEMORY_BACKEND: moneta}). Local interpreter Python 3.14.2 with Moneta importable (moneta_available()=True), matching the CI-with-key leg.",
+    "done": [
+     "backfill.py: destination MonetaBackedStore opened with dual_write_jsonl=False (load-bearing comment explains the source re-append: from_storage_dir defaults dual-write to env=='moneta' and opens a MemoryStore on the SAME storage_dir, _dual_write_jsonl re-appends every add to memory.jsonl).",
+     "backfill.py docstring lines 8-10: 'source is only READ' now states the condition that makes it true (dual_write_jsonl=False) and names the production env that otherwise doubles the file.",
+     "tests/test_backfill.py: module-wide skipif -> per-test `needs_moneta` marker; new test_source_intact_under_production_backend_env (monkeypatch.setenv moneta, asserts line count and bytes unchanged and backup == source); new test_backfill_without_moneta_degrades_loudly (runs on every seat, simulates Moneta absence at the seam from_storage_dir consults, asserts RuntimeError 'not importable', source intact, no .moneta/snapshot.json).",
+     ".github/workflows/ci.yml: new scoped step 'Exercise the production memory env (SYNAPSE_MEMORY_BACKEND=moneta)' running the 4 backend-gated memory test files with the production value, unconditional on MONETA_DEPLOY_KEY, -v -rs so absent-Moneta skips are printed with their reason; comment records why it is scoped rather than job-wide.",
+     "Checked what happens when Moneta is not importable in CI: SynapseMemory._make_store (store.py:1106) logs a WARNING + _record_backend_fallback and serves jsonl (loud, doctor-visible); MonetaBackedStore.from_storage_dir raises RuntimeError (backfill cannot silently succeed). The no-key CI leg now runs test_backfill_without_moneta_degrades_loudly instead of skipping the whole module."
+    ],
+    "not_done": [
+     "SYNAPSE_MEMORY_BACKEND=moneta was NOT set job-wide in ci.yml (see caveats) - it is set on a dedicated step covering the memory-backend test files.",
+     "re_embed() in backfill.py still opens from_storage_dir with the default dual_write_jsonl; it deposits via store._handle.deposit (never store.add), so the JSONL safety net is only initialised (read) and never appended to. Left untouched to stay inside the item's scope."
+    ],
+    "caveats": [
+     "Honest subset on the ci.yml action: the item says 'set SYNAPSE_MEMORY_BACKEND=moneta in ci.yml'. A job-wide `env:` would change the default for every test in the run - SynapseMemory._make_store records a process-global fallback flag (store.py _record_backend_fallback) when moneta is requested but not importable, doctor.py:417 moneta_substrate flips from 'skipped' to 'fail' on it, write_plane.py:356 reports 'selected but jsonl serving', and 9 test files construct SynapseMemory (some without setenv, e.g. test_metrics_invariants, test_session_summary_dedup). Validating that blast radius needs the full suite, which the hard rules forbid me from running, so I scoped the env to a dedicated step over 4 memory-backend files (all 41 green locally under the env). If the conductor wants it job-wide, that is a follow-up that needs a full CI run to judge.",
+     "The no-key CI leg cannot run the Moneta-backed backfill tests (they skip, reason printed by -rs); what it does run is the new loud-degrade test. The store's fallback when moneta is absent is a WARNING + recorded fallback + jsonl (already loud and doctor-visible per store.py:1106-1113), not a hard error - I did not change that posture.",
+     "Local interpreter is Python 3.14.2 (vendored-SDK ABI warning is pre-existing noise, unrelated); Moneta was importable via pip site-packages with MONETA_SRC unset, so the local runs correspond to the CI-with-key leg. The 3.11 leg was not exercised locally.",
+     "Git emitted CRLF->LF normalisation warnings on the three files (pre-existing autocrlf setup); diff stat shows only the intended lines changed (106 insertions / 3 deletions), no whole-file rewrite."
+    ]
+   },
+   "verdict": {
+    "id": "B5",
+    "verdict": "SOUND-WITH-NITS",
+    "predicate_rerun": "PASS. In C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-3 (branch cto/b5-backfill-source-intact, HEAD 14849b4a): `SYNAPSE_MEMORY_BACKEND=moneta python -m pytest tests/test_backfill.py -q -p no:cacheprovider` -> 7 passed, exit 0; `env -u SYNAPSE_MEMORY_BACKEND ...` -> 7 passed, exit 0. `rg -n 'SYNAPSE_MEMORY_BACKEND' .github/workflows/ci.yml` -> lines 111, 112, 135 (exit 0). ci.yml yaml.safe_load OK: 9 steps, last step env={SYNAPSE_MEMORY_BACKEND: moneta}, no `if:` (runs on every matrix leg). Binding verified: editable .pth points `synapse` at master's tree (C:\\Users\\User\\Synapse\\python) and my shell already had SYNAPSE_MEMORY_BACKEND=moneta, but tests/test_backfill.py's sys.path.insert binds the worktree; backfill.__file__ resolved under the worktree and contains dual_write_jsonl=False.",
+    "tests_rerun": "FAILING-BEFORE reproduced in a scratch tree (git archive HEAD -> scratchpad, pre-change backfill.py from HEAD~1 swapped in; scratch baseline with fixed file = 7 passed): env=moneta -> 2 failed (test_backup_is_taken_and_source_intact, test_source_intact_under_production_backend_env), 5 passed; env unset -> 1 failed (test_source_intact_under_production_backend_env), 6 passed. MUTATION reproduced: `if False and not mr.moneta_available():` at scratch moneta_store.py:250 -> test_backfill_without_moneta_degrades_loudly FAILED; restored -> passed. NO-KEY CI LEG simulated (shadow `moneta` package raising ImportError on PYTHONPATH; moneta_available()=False) with the exact CI step command under env=moneta -> 14 passed / 27 skipped / exit 0, every skip printed with reason, degrades_loudly ran. Exact CI step with Moneta present -> 41 passed; `-m \"not needs_houdini\"` deselects 0/41. Forge worktree `git status --porcelain` empty after all runs; `git -C C:/Users/User/SYNAPSE status --porcelain` shows none of the 3 touched files.",
+    "must_fix": [],
+    "nits": [
+     "tests/test_backfill.py:142 hardcodes `[\"would_deposit\"] == 7` instead of using _seed_jsonl's return value; the expectation is copied from the helper's defaults (n_notes=5 + n_decisions=2) and drifts silently if the seed changes. Cosmetic: the sibling tests use `total`.",
+     "Branch base is a4d86ce4, not the stated base 792fb06c (`git merge-base --is-ancestor 792fb06c HEAD` exit 1); master (main tree) is now 007d30df, 5 commits ahead. `git diff --stat HEAD~1 007d30df -- backfill.py test_backfill.py ci.yml moneta_store.py` is empty, so the merge should be clean, but the conductor should re-run the predicate post-merge.",
+     "Forge report caveat cites write_plane.py:356 for 'selected but jsonl serving'; the actual lines are python/synapse/server/write_plane.py:366 and :459 (report text only, nothing in the commit).",
+     "The new CI step re-runs 4 files already covered by the full-suite step (under no env); ~1.5s duplicate, acceptable, but the step comment could say so explicitly."
+    ],
+    "scope_creep": [],
+    "fake_green_risk": "LOW. The new env-forcing test sets SYNAPSE_MEMORY_BACKEND itself (monkeypatch) and was shown red on pre-change code in BOTH shell states; the degrades_loudly test was shown red under a one-line gate mutation; skips are per-test markers with printed reasons (-rs), none module-wide; the no-key CI leg was simulated and neither errors nor hides the loud-degrade test. Residual: the editable .pth shadows the worktree for any test that does NOT sys.path.insert its own tree \u2014 test_backfill.py does, so not a risk here. Out-of-scope known limitation: re_embed() (backfill.py:124) still opens from_storage_dir with the default dual-write; it deposits via store._handle.deposit not store.add, so _dual_write_jsonl never fires, and close() only flush()es an empty buffer -- I did not test this path; forge flagged it in not_done.",
+    "merge_ready": true
+   },
+   "repaired": false
+  },
+  {
+   "id": "B6",
+   "forge": {
+    "id": "B6",
+    "worktree": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-4",
+    "branch": "cto/b6-recipe-phantom-types",
+    "commits": [
+     "7a948028 cto(B6): recipes emit usdrender_rop not the deprecated karma LOP; phantom grade -> hsv; catalog audit on emitted node types"
+    ],
+    "files_touched": [
+     "python/synapse/routing/recipes/render_recipes.py",
+     "python/synapse/routing/recipes/pipeline_recipes.py",
+     "python/synapse/routing/planner.py",
+     "python/synapse/routing/recipes/scene_recipes.py",
+     "python/synapse/server/rbac.py",
+     "scripts/extract_emitted_node_types.py",
+     "python/synapse/cognitive/tools/data/emitted_node_types.json",
+     "tests/test_emitted_node_types.py",
+     "tests/test_rbac.py",
+     "tests/test_routing.py"
+    ],
+    "predicate_result": "`rg -c \"createNode\\(['\\\"]karma['\\\"]\" python/synapse/routing` -> no output, exit 1 (0 matches). `rg -n \"'grade'\" python/synapse/routing/recipes/scene_recipes.py` -> no output, exit 1 (none). Also `rg -n '\"grade\"'` on the same file -> none. `python scripts/extract_emitted_node_types.py --check` -> \"CHECK: entries match (123 scanned vs 123 committed)\" + \"AUDIT: 0 phantom/deprecated emitted node type(s)\", exit 0.",
+    "tests": "Failing-before (pre-change tree, new tests + new extractor only): `python -m pytest tests/test_emitted_node_types.py tests/test_rbac.py -q` -> 4 failed / 85 passed: test_recipe_payload_types_land_in_committed_artifact, test_live_tree_emits_no_phantom_or_deprecated_node_types (grade phantom + karma deprecated via stage.createNode), test_committed_artifact_emits_no_phantom_or_deprecated_node_types (karma + stale karmarenderproperties), TestRunRecipePermission[Role.LEAD-True] (assert False is True). Pre-change `--check` printed AUDIT PHANTOM grade / AUDIT DEPRECATED karma via stage.createNode, exit 1. After fix: `python -m pytest tests/test_emitted_node_types.py tests/test_rbac.py tests/test_routing.py tests/test_v5_features.py -q -p no:cacheprovider` -> 438 passed, 2 warnings. test_audit_flags_phantom_and_deprecated_verdicts exercises the auditor with a synthetic index (phantom / LOP-deprecated / all-deprecated / mixed-not-flagged / allowlist-never-exempts-deprecated).",
+    "done": [
+     "Replaced stage.createNode('karma', ...) with 'usdrender_rop' at render_recipes.py:596/728/904, pipeline_recipes.py:1003, planner.py:703; node parms moved to catalog-real names: camera -> override_camera, picture -> outputimage (both in Lop.json types['usdrender_rop'].parms; scene_template.py:292 already emits outputimage on that type). Comments renamed '# --- USD Render ROP (Karma) ---'.",
+     "scene_recipes.py color_correction_setup: phantom 'grade' -> 'hsv' (present in Cop.json AND Cop2.json, deprecated=false); node name hsv1; connect target updated; the saturation set_parm moved to hsv.satscale=1.0 because 'colorcorrect' has no 'saturation' parm in either Cop or Cop2 (was a phantom parm on a real node). Description updated. tests/test_routing.py::test_color_correction_steps updated to the new 4-step order.",
+     "scripts/extract_emitted_node_types.py extended: scan_recipe_payload_types() (AST harvest of dict literals shaped type+name+(parent|parms) under python/synapse/routing -> category 'recipe_payload'; excludes the TOPs wedge 'type': 'float' data-type dict), scan_lop_createnode_literals() (stage.createNode receiver subset), load_catalog_index() (per-category deprecated flags over rag/catalog/h22.0.400), catalog_audit() (phantom = no category; deprecated = deprecated in every category OR LOP-receiver emit deprecated in Lop.json; mixed-category types like 'duplicate' deliberately not flagged), audit_tree(); --check and regeneration now exit 1 on violations; KNOWN_PHANTOMS allowlist with one entry.",
+     "Regenerated emitted_node_types.json (106 -> 123 entries). The committed artifact was stale (generated_from_commit ab4ac7a2) and still listed karmarenderproperties for planner.py/render_recipes.py, which no longer emit it.",
+     "tests/test_emitted_node_types.py: +7 tests (payload harvest, artifact carries recipe_payload category, live-tree audit clean, committed-artifact audit clean, LOP subset of raw scan, allowlist entries still absent from catalog, synthetic auditor verdicts).",
+     "rbac.py: 'run_recipe' added to _LEAD_COMMANDS via the existing tiered allow-set pattern (artist deny falls out of the allow sets/wildcards, no ROLE_DENIALS row needed; lead + admin allow). tests/test_rbac.py::TestRunRecipePermission pins viewer/artist False, lead/admin True."
+    ],
+    "not_done": [
+     "No route_chat / command_fn wiring for run_recipe; no proposal-only declaration (Joe's ruling). 'run_recipe' is still not a dispatched command string anywhere in python/synapse/server (only handlers_recipe.py::_handle_run_recipe exists) -- the RBAC row is pre-registered ahead of wiring.",
+     "Adjacent phantom parms in the SAME recipe strings left untouched (scope): karmarendersettings 'resolutionx'/'resolutiony'/'specularlimit' and engine token 'XPU' are not in Lop.json types['karmarendersettings'] (real: 'resolution' 2-component + 'res_mode', 'reflectionlimit', engine menu tokens 'cpu'/'xpu'). rs.parm('resolutionx').set(...) will raise on None at runtime, so turntable_render / destruction / turntable_cam / shot_comp recipes remain non-runnable until that is fixed. core/render_presets.py:88 also claims 'resolutionx'/'resolutiony' for karma.",
+     "The Arnold-style karma.parm('ar_aov_name_N') loops in render_recipes.py are phantoms on any Karma/USD Render node; they are try/except-guarded so they silently no-op. Not touched.",
+     "usdrender_rop 'renderer' left at its catalog default ('default_delegate'); I did not emit a delegate token I could not verify (bridge down, no live probe)."
+    ],
+    "caveats": [
+     "Category-awareness of the audit is receiver-heuristic: only stage.createNode(...) literals get the Lop.json verdict. 'stage' is bound as hou.node('/stage') or hou.node('/obj') in some recipes, so a type that resolves in Lop as deprecated but is actually created under the /obj fallback would be flagged -- acceptable (that emit would fail anyway). Types deprecated in one category but live in another with no receiver evidence (duplicate: Sop deprecated/Lop live; cop2net: Chop deprecated) are NOT flagged, by design, to avoid false phantoms.",
+     "KNOWN_PHANTOMS allowlists 'componentbuilder' (python/synapse/mcp/tool_impls/solaris/component_builder.py:269) -- a pre-existing catalog-absent emit gated behind _has_native_componentbuilder(); outside B6 scope to fix. test_known_phantom_allowlist_is_still_absent_from_catalog fails loud if a later dump adds it.",
+     "The 'grade' closure predicate greps the single-quoted form; the recipe used double quotes (\"grade\"), so the predicate passed before the fix too. Verified both quote forms are now absent; my explanatory comment was reworded to avoid the literal 'grade' token.",
+     "No hython probe was run: every parm/type name introduced (usdrender_rop, override_camera, outputimage, hsv, satscale) was verified against rag/catalog/h22.0.400/{Lop,Cop,Cop2}.json only. hou.* symbols were not added.",
+     "emitted_node_types.json was written with CRLF on Windows (git autocrlf normalizes to LF on commit; diff is 189 lines, not a whole-file rewrite). The extractor's determinism test compares in-memory render() output, unaffected.",
+     "The item's 'rbac.py:122-150 allow-list' pointer refers to ROLE_PERMISSIONS/ROLE_DENIALS; the clear pattern used is the tiered _LEAD_COMMANDS set feeding those. _LEAD_COMMANDS is documented as 'user management commands' -- the comment on the new row explains why run_recipe sits there."
+    ]
+   },
+   "verdict": {
+    "id": "B6",
+    "verdict": "SOUND-WITH-NITS",
+    "predicate_rerun": "PASS. In C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-4 @ 7a948028: `rg -c \"createNode\\(['\\\"]karma['\\\"]\" python/synapse/routing` -> no output, exit 1 (0 matches; a wider rg over python/ and scripts/ finds only a comment in scripts/extract_emitted_node_types.py:68). `rg -n \"'grade'\" python/synapse/routing/recipes/scene_recipes.py` -> none; double-quoted form also none (the forge correctly noted the original bug used double quotes, so the single-quote predicate was green before the fix too). Catalog claims independently re-derived from rag/catalog/h22.0.400: Lop karma deprecated=True, usdrender_rop deprecated=False with override_camera+outputimage (no camera/picture); hsv live in Cop+Cop2 with satscale; colorcorrect has no saturation parm; grade in no category. `python scripts/extract_emitted_node_types.py --check` -> CHECK entries match 123/123, AUDIT 0, exit 0. `git -C C:/Users/User/SYNAPSE status --porcelain` shows no touched files: no write to master's tree.",
+    "tests_rerun": "Worktree: `python -m pytest tests/test_emitted_node_types.py tests/test_rbac.py tests/test_routing.py tests/test_v5_features.py -q -p no:cacheprovider` -> 438 passed, 2 warnings. Failability proven in a scratch tree (git archive HEAD python tests scripts rag/catalog pyproject.toml; HEAD~1 versions of render_recipes.py, pipeline_recipes.py, planner.py, scene_recipes.py, rbac.py swapped in; pytest rootdir confirmed = scratch so pythonpath=[\"python\"] bound the scratch tree, not the editable master install at C:\\Users\\User\\Synapse\\python\\synapse): 5 failed / 85 passed -- test_recipe_payload_types_land_in_committed_artifact ('grade' missing), test_live_tree_emits_no_phantom_or_deprecated_node_types, test_committed_artifact_emits_no_phantom_or_deprecated_node_types (both list karma), TestRunRecipePermission[Role.LEAD-True] (False is True), TestRecipeRegistry::test_color_correction_steps ('set_parm' == 'create_node'). Scratch `--check` -> DRIFTED 124 vs 123, AUDIT PHANTOM grade, AUDIT DEPRECATED karma via stage.createNode, exit 1. No skip/xfail/importorskip in tests/test_emitted_node_types.py; the catalog-index helper asserts non-empty rather than skipping. Caveat on method: my first scratch attempt silently ran against the worktree (tar symlink errors in harness/solaris_v3/runs broke the && chain before cd) -- the path-limited rerun above is the valid one.",
+    "must_fix": [],
+    "nits": [
+     "Same phantom class survives outside the predicate's file: python/synapse/routing/parser.py:121 accepts `grade` as a COP filter verb and _build_apply_cop_filter (parser.py:342-356) emits create_node with payload type=filter_type verbatim, so 'grade /img/x' still produces \"type\": \"grade\" at runtime. Invisible to both the predicate and the new AST audit because the type is a regex alternative, not a literal. Sibling verbs: denoise is Cop2-only (phantom under a Copernicus /img), glow is Cop-only. Recommend a follow-up item: map verbs to catalog types (grade->colorcorrect or hsv) and extend the audit to regex-alternative verbs or pin them with a test.",
+     "hsv.satscale=1.0 is the parm's default, so the 'saturation trim' step is a no-op (the pre-change saturation=1.0 was equally inert). Cosmetic; the recipe's description ('hsv saturation trim') slightly oversells it.",
+     "planner.py:703 keeps variable and node name 'karma' on a usdrender_rop; render_recipes comments now say 'USD Render ROP (Karma)'. Cosmetic naming residue, no behaviour impact.",
+     "Disclosed-but-unfixed phantom parms in the same recipe strings (karmarendersettings resolutionx/resolutiony/specularlimit, engine token 'XPU'; core/render_presets.py:88 repeats resolutionx) mean turntable_render/destruction/shot_comp are still non-runnable on H22.0.400 -- the forge said so honestly. Log as known limitation; needs its own item.",
+     "KNOWN_PHANTOMS allowlist is guarded against staleness (entry appearing in the catalog fails loud) but not against growth; a later author can silence a real phantom by adding a row. Consider a test pinning the allowlist's exact contents."
+    ],
+    "scope_creep": [],
+    "fake_green_risk": "LOW. The new tests read real catalog dumps and the real tree (bound via Path(__file__), not the editable install), assert on concrete verdict lists, and were shown failing on pre-change product code with the item's exact violations named. The auditor's allowlist cannot exempt a deprecated verdict (pinned by test_audit_flags_phantom_and_deprecated_verdicts). Residual blind spots are structural and documented by the forge: the AST harvest only sees dict literals shaped type+name+(parent|parms), so computed types (parser.py verb passthrough) escape; the LOP-receiver rule is a text heuristic on the `stage` handle; mixed-category types are deliberately unflagged. RBAC row is pre-registered for a command string nothing dispatches yet, so its test pins a table entry, not live behaviour.",
+    "merge_ready": true
+   },
+   "repaired": false
+  },
+  {
+   "id": "B7",
+   "forge": {
+    "id": "B7",
+    "worktree": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-5",
+    "branch": "cto/b7-rsi-registry-liveness",
+    "commits": [
+     "e301eeb2 cto(B7): RSI registry re-read from the tree - P10 cited-path liveness, A3 tombstone, C fingerprinted receipt, board counts"
+    ],
+    "files_touched": [
+     "harness/rsi/verify.py",
+     "harness/rsi/REGISTRY.json",
+     "harness/rsi/CHAMPION.md",
+     "harness/rsi/RELAY.md",
+     "harness/rsi/SPEC.md",
+     "harness/rsi/LOG.md",
+     "harness/rsi/log_receipt.py (new)",
+     "harness/rsi/briefs/C-L2-log-receipt-2026-09-05.json (new)",
+     "tests/rsi/test_verify_paths.py (new)"
+    ],
+    "predicate_result": "`python harness/rsi/verify.py --json` -> exit 0; {'P1'..'P10': all 'PASS'}, FAIL count 0 (10 PASS / 0 FAIL / 0 PENDING; P10 reason: \"all 102 cited path(s) live -- 93 at HEAD, 9 pinned to a commit and verified via git\"; P5 reason: \"no log-based L2 claim lacks a test-exclusion\"). `python -c \"import json;r=json.load(open('harness/rsi/REGISTRY.json'));print([l['status'] for l in r['loops'] if l['id']=='A3'])\"` -> ['RETIRED'].",
+    "tests": "Failing-before proof: with verify.py P10 added but REGISTRY.json unchanged, `python -m pytest tests/rsi/test_verify_paths.py -q` -> 1 failed (test_real_registry_cites_only_live_paths: P10 FAIL, 6 dead citations) / 9 passed. Pre-change bar: `python harness/rsi/verify.py` -> 8 PASS / 1 FAIL (P5 \"unfingerprinted log evidence: C\"), and P10's first run on the old registry listed A2 surfaces x2 (python/synapse/agent/ deleted in 758f5b7), A3 evolution.py x2, F executor.py:286 (unpinned, deleted) and F tool_filter.py:245 (file is 83 lines). After the registry fix: `python -m pytest tests/rsi/test_verify_paths.py tests/test_router_internals.py -q` -> 40 passed. Synthetic cases in the new test prove P10 can fail (dead path, dead surface, line past EOF, pin to a commit where the path is absent) and that shorthand citations are not checked; git-pinned cases skip only if git is unusable.",
+    "done": [
+     "P10 'cited-path liveness' added to harness/rsi/verify.py: every repo path cited in surfaces/evidence must exist at HEAD with line numbers inside the file; '(at <sha>)' citations are checked at that commit via git cat-file; shorthand with no repo-root segment is not checked; git unusable -> PENDING never PASS.",
+     "A3 tombstoned as RETIRED-2026-09-05 (status RETIRED, rungs_proven [], blocked_at L0, disposition, historical evidence pinned '(at a3439f89)', retirement evidence at HEAD incl. evolution.py.deprecated docstring, 7f7bbc39 rename, tree-wide grep, test_moneta_crucible pin); reversal/danger/blocker rewritten; the stale ':810' citation corrected to ':901 (at a3439f89)'.",
+     "Loop C: L2/L4 raw '59 lines' log grep replaced by a fingerprinted receipt harness/rsi/briefs/C-L2-log-receipt-2026-09-05.json produced by harness/rsi/log_receipt.py -- 78 production 'Memory backend: moneta' inits attributed by the following 'Initialized for project:' path, 30 pytest-authored records excluded (negative control non-empty), 0 unattributed, 2026-08-02..2026-09-04; C stays at L4 (human_ratified true already in the registry); the stale 'Awaiting human ratification' blocker sentence updated.",
+     "A2 dead surfaces moved to _deleted_surfaces; F's two historical citations pinned (at 38aba50)/(at eca11ef); `status` LIVE|RETIRED added to all nine loops with a _status_note and _p10_note at top level.",
+     "CHAMPION.md: 9 PASS/0 FAIL -> 10 PASS/0 FAIL; '0 of 8 live / 0 reach L3' -> '0 of 6 live beneficial, 1 of 6 (C) at L4'; '9 registered, 7 live' -> '6 live'; scoreboard re-read from the registry (A3 RETIRED, R L1, O L0, S L0, C L4 -- these rows had been '\u2014'); 'highest rung anywhere' A3 -> C; A3 tombstone section added.",
+     "RELAY.md:17 orchestrator line corrected (it is registered; .claude/agents/rsi-closure-orchestrator.md exists) + known-limits note that P10 is a post-relay addendum; SPEC.md gained P10 rows marked post-ratification addendum; LOG.md one dated row.",
+     "tests/rsi/test_verify_paths.py added and shown red on the pre-fix registry, green after."
+    ],
+    "not_done": [
+     "No full-suite run (per rules). harness/progress.py was not re-run; its --json contract (list of predicates) is unchanged and it does not hardcode a predicate count.",
+     "CHAMPION.md's dated narrative lines inside the A2/E sections that say 'still 0 of 8 live' (lines ~135, ~214-215) were left as historical record of 2026-08-01; only the header block, scoreboard and 'highest rung' line were corrected.",
+     "C's own registry text still describes SYNAPSE_MEMORY_BACKEND defaulting to jsonl in code (store.py:846/1086 at HEAD agree) while moneta is live via the package env; not touched -- outside B7."
+    ],
+    "caveats": [
+     "Scope widened slightly beyond the literal item, all in the same staleness class and needed for P10 to go green: P10 scans `surfaces` as well as `evidence` (A3's dead evolution.py was in surfaces), A2's surfaces and F's historical citations had to be fixed/pinned, and a `status` key was added to every loop because the closure predicate reads l['status'] and no loop had that key.",
+     "The receipt embeds machine-local paths (C:\\Users\\User\\AppData\\...\\houdini_temp\\untitled, D:\\HOUDINI_PROJECTS_2026\\...\\SYNAPSE_test_v0019.hiplc) as the production fingerprint; the repo already carries such paths (e.g. the registry's corpus snapshot path) and origin is public -- flagging for the conductor.",
+     "The receipt window is 2026-08-02..2026-09-04 because the rotated logs no longer reach 2026-07-27; the old '59 lines since 2026-07-27' figure is retracted in the registry, not re-derived.",
+     "SPEC.md is a ratified doc; the P10 rows are clearly marked as a 2026-09-05 post-ratification addendum (CTO B7, pre-approved) rather than silently folded in.",
+     "P10 uses local `git cat-file` for pinned citations (9 today); verify.py's 'headless' contract now means no hou/bridge/network, plus local git history. If git is unusable it returns PENDING, never a silent PASS.",
+     "Docs were written via Python write_text on Windows and then normalized back to LF (git would have normalized on commit anyway); the closure `python -c` reads REGISTRY.json (ensure_ascii=False, non-ASCII content) with default encoding and worked on this Python 3.14 -- on a cp1252-locale Python without UTF-8 mode it could raise UnicodeDecodeError."
+    ]
+   },
+   "verdict": {
+    "id": "B7",
+    "verdict": "SOUND-WITH-NITS",
+    "predicate_rerun": "PASS. `python harness/rsi/verify.py --json` -> P1..P10 all PASS, exit 0, 0 FAIL / 0 PENDING (P10: \"all 102 cited path(s) live -- 93 at HEAD, 9 pinned\"; P5: \"no log-based L2 claim lacks a test-exclusion\"). `python -c \"...print([l['status'] for l in r['loops'] if l['id']=='A3'])\"` -> ['RETIRED']. `harness/progress.py --json` still runs. Worktree C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-5 @ e301eeb2 on cto/b7-rsi-registry-liveness; `git -C C:/Users/User/SYNAPSE status --porcelain | rg 'harness/rsi|tests/rsi'` -> no hits (no write to master's tree). No hou/pxr/pdg symbols in any touched file.",
+    "tests_rerun": "`python -m pytest tests/rsi/test_verify_paths.py tests/test_router_internals.py -q -rs` -> 40 passed, 0 skipped. Failing-before proof reproduced without stash: loaded the new verify.py module and ran p10() on `git show HEAD~1:harness/rsi/REGISTRY.json` -> FAIL \"6 dead citation(s): A2:surfaces python/synapse/agent/executor.py absent at HEAD; A2:surfaces .../__init__.py; A3:surfaces python/synapse/memory/evolution.py; A3:L0 evolution.py:217 ...\"; old-registry p5() -> FAIL \"unfingerprinted log evidence: C\"; in-memory mutation of C.L0 to store.py:99999 -> FAIL \"cites line 99999 but the file has 1788\". test_real_registry_cites_only_live_paths asserts PASS, so PENDING (git down) fails rather than skips; only the two pin tests skip, with an explicit reason. Receipt re-derived via `log_receipt.py --stdout` -> identical counts 78/30/0 and identical production_projects map; the 75 houdini_temp/untitled inits are one-per-minute and preceded by [synapse.hwebserver]/[synapse.panel.claude_worker] records (GUI sessions, not hython test bursts). Pinned citations verified by content: a3439f89:evolution.py:217 = `def evolve_to_charmeleon`, store.py:165/525/901 at that sha are exactly the cited lines; 7f7bbc39 stat shows `evolution.py => evolution.py.deprecated` and `store.py | 25 -`; a3439f89 is an ancestor; 175732b/758f5b7/eca11ef/38aba50 resolve; test_moneta_crucible.py:301 and scene_memory.py:1308 match.",
+    "must_fix": [],
+    "nits": [
+     "FAKE-GREEN SURFACE (bounded, by P10's design, but B7 just made C the headline rung): C's unpinned CODE citations are line-drifted at HEAD while P10 passes because the lines merely exist. store.py:932 (cited as 'MonetaBackedStore.from_storage_dir ... called by _make_store()') is a docstring line at HEAD -- the call is at :1118, _make_store at :1075; moneta_store.py:183-243 (from_storage_dir) is now :226, :326-328 (count) is :768, :364-372 (save) is :865, :228 (hydrate) ~:245, :241-242 (atexit) :377-378; C.L0 store.py:810 is `return \"moneta\"`. C carries verification:'verified-at-head' on stale lines. Recommend a follow-up item: refresh C's line numbers or pin them '(at <sha>)'; and record in SPEC/_p10_note that P10 is liveness-not-content.",
+     "P5 flipped FAIL->PASS on its pre-existing keyword regex (fingerprint|exclu|pytest|control) matching the new prose; it never opens harness/rsi/briefs/C-L2-log-receipt-2026-09-05.json. The receipt is real and reproducible today, but the prose counts (78/30/0) and the file can drift apart silently. Cheap hardening: P5 or a test loads the receipt and asserts counts match the registry string.",
+     "Registry A3 retirement text says the grep 'check_evolution|evolve_to_charmeleon|...' over python/synapse/ 'returns nothing' -- true only word-bounded. Unbounded it hits python/synapse/panel/shot_login.py:65/203/207 (_check_evolution_triggers, a panel-local recommend-only detector) and panel/session_integrity.py:34 (imports shared.evolution.check_evolution_triggers, registered under loop O's surfaces). Neither is A3's mechanism, but the sentence should say 'word-bounded' and name the panel detector so the next reader does not re-open A3.",
+     "P10 blind spots worth a line in _p10_note: citations in blocker / reversal.rollback / danger_if_closed_now / benefit are not scanned (A3.blocker cites the receipt path unchecked); a mis-rooted path (e.g. 'synapse/memory/store.py:810' missing 'python/') is silently treated as shorthand and never checked.",
+     "Receipt embeds machine-local paths (C:\\Users\\User\\AppData\\...\\houdini_temp\\untitled, D:\\HOUDINI_PROJECTS_2026\\...\\SYNAPSE_test_v0019.hiplc) and origin is public; the repo already carries such paths, but the conductor should decide knowingly.",
+     "Closure `python -c` opens REGISTRY.json with default encoding; passes here (cp1252 decodes the UTF-8 em-dash bytes as mojibake, status strings are ASCII) -- add encoding='utf-8' if the predicate text is ever re-used in CI."
+    ],
+    "scope_creep": [
+     "harness/rsi/RELAY.md:17 orchestrator-registration line + known-limits bullet (correct -- .claude/agents/rsi-closure-orchestrator.md exists -- but unrelated to registry liveness).",
+     "harness/rsi/SPEC.md: two P10 rows added to a ratified spec (clearly marked post-ratification addendum; forge flagged it).",
+     "`status` key added to all nine loops + _status_note/_p10_note (required: the closure predicate reads l['status'] and no loop had it -- justified, not product behaviour).",
+     "CHAMPION.md scoreboard rows for R/O/S re-read from the registry (were '--'); doc-only, matches registry."
+    ],
+    "fake_green_risk": "MEDIUM-LOW for this item, MEDIUM for what it now headlines. The item's own claims are all evidence-backed and reproduced (predicate, failing-before, receipt re-derivation, pinned-citation content). The residual risk is structural: P10 proves a cited file/line EXISTS, not that the line still says what the evidence claims, and P5 proves the L2 prose CONTAINS fingerprint words, not that the receipt file agrees with them. Loop C -- now 'highest rung anywhere: L4' on the board -- has every unpinned code citation line-drifted at HEAD under a 'verified-at-head' flag, so a reader trusting 10/10 green would trust stale line evidence. No test in this commit can go red on that drift.",
+    "merge_ready": true
+   },
+   "repaired": false
+  },
+  {
+   "id": "B8",
+   "forge": {
+    "id": "B8",
+    "worktree": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6",
+    "branch": "cto/b8-release-truth-drift",
+    "commits": [
+     "c533a2a1 cto(B8): release truth - 09-04 predicates carried, README to v5.63.0, receipt hashes real, 22.0.400 in CLAUDE.md"
+    ],
+    "files_touched": [
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6\\README.md",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6\\CLAUDE.md",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6\\harness\\notes\\CAPSULE_2026-09-05_BP5.md",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6\\harness\\notes\\RELEASE_v5.63.0.md",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6\\harness\\solaris_v3\\runs\\acceptance-validation\\receipt.json",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6\\tests\\test_phase0c_doc1_toolcount.py",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6\\harness\\solaris_v3\\runs\\20260905T125351.258091Z-04606c37\\ledger.json",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6\\harness\\solaris_v3\\runs\\20260905T125351.258091Z-04606c37\\pure-context.json",
+     "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6\\harness\\solaris_v3\\runs\\20260905T125351.258091Z-04606c37\\pure-observations.json"
+    ],
+    "predicate_result": "On committed HEAD c533a2a1: (1) `rg -c 'v5.60.0 is|115 tools|5,551 passed' README.md` -> no output, exit 1 (zero matches). (2) `python -c \"import json,os;r=json.load(open('harness/solaris_v3/runs/acceptance-validation/receipt.json'));print([k for k in r['artifact_hashes'] if not os.path.exists(k)])\"` -> `[]`. (3) `rg -c 'SPATIAL|splat|FONT_FLOOR' harness/notes/RELEASE_v5.63.0.md harness/notes/CAPSULE_2026-09-05_BP5.md` -> RELEASE:3, CAPSULE:4, exit 0. (4) `rg -c '22\\.0\\.368' CLAUDE.md` -> no output, exit 1 (zero matches). Also `git diff a4d86ce4 HEAD -- CLAUDE.md | rg -c '^[-+].*\u26a0'` -> 0 (no \u26a0 callout line changed; the CLAUDE.md diff is exactly the dirtyAllTasks line and rule 15).",
+    "tests": "Failing-before proof: after appending the two new tests to tests/test_phase0c_doc1_toolcount.py and BEFORE editing README, `python -m pytest tests/test_phase0c_doc1_toolcount.py -q -p no:cacheprovider` -> 2 failed, 3 passed with \"README.md says '115 tools, two paths' but synapse.mcp._tool_registry.TOOL_DEFS has 128 entries (DOC-1 / B8)\" and \"README.md says 'v5.60.0 is Latest' but VERSION is 5.63.0 (B8 release-truth drift)\". After the README edit: `python -m pytest tests/test_phase0c_doc1_toolcount.py tests/test_phase0c_doc1_version_conformance.py tests/test_router_internals.py tests/test_solaris_v3_acceptance_runner.py -q -p no:cacheprovider` -> 75 passed, 2 warnings (6.48s); toolcount file alone -> 5 passed. Acceptance re-run on HEAD a4d86ce4 (clean tree, stock Python 3.14, no hou): `python -X utf8 scripts/solaris_v3_accept.py --tier pure --timeout 400` -> exit 0, pure tier PASS, 467 collected / 461 passed / 6 skipped / 0 failed across 19 test files (test_recipe_*, test_solaris_v3_acceptance_*, test_worker_policy_demo), all G0-G6 / T1-T12 rows NOT_RUN (binding map still empty; hython/gui tiers not selected). Ledger committed at harness/solaris_v3/runs/20260905T125351.258091Z-04606c37/ledger.json (+ pure-context.json, pure-observations.json). Live hython 22.0.400 probe (QT_QPA_PLATFORM=offscreen): hou.TopNode.dirtyAllTasks signature `(self, remove_outputs: 'bool') -> 'void'`, docstring \"deprecated in favor of hou.TopNode.dirtyAllWorkItems\", hasattr dirtyAllWorkItems True \u2014 this backs the 22.0.368->22.0.400 rewrite of the CLAUDE.md dirtyAllTasks line.",
+    "done": [
+     "CAPSULE_2026-09-05_BP5.md: added the block 'What the 09-04 plan defined as closed, and its status' \u2014 a 4-column table (item / 09-04 predicate / status / evidence on master a4d86ce4) for SPATIAL lane, PANEL typography (FONT_FLOOR_PX), SPLAT colour; all three OPEN \u2014 carried, each with file:line evidence (spatial/__init__.py:21 flag gate, DEPLOYMENT.md:158 ratified:false, tokens.py:339-346 provenance UNKNOWN, no B-8 render probe / no \u00a714 / no bp5_splat_colour dir).",
+     "RELEASE_v5.63.0.md: VERIFY bullet amended \u2014 explicit RenderSettings resolution credited to the wave, GetCameraRel marked pre-existing (server/solaris_compose_tools.py:522, in tree since f6934e19 2026-05-30, confirmed by git log -S); Tests section states 3.13 = Houdini runtime (hython) / 3.14 = stock gate, hython tier not re-run; 'Not in this release' now names the three unshipped 09-04 predicates with a pointer to the capsule block.",
+     "README.md: banner 'tags: v5.60.0 is Latest' -> v5.63.0; Python line split into '3.13 = the Houdini runtime (hython) \u00b7 3.14 = the stock test gate'; 'Right now' rewritten to 5 September 2026 (v5.63.0 live: Solaris v3 dormant / run_recipe unregistered, CENSUS merged, four panel legs held BROKEN; 09-04 predicates open; BP4 seven merges on 2026-09-03); release-notes link -> v5.63.0; '115 tools' -> '128 tools' in both the <summary> and the body with the registry as producer and the +10 stdio-local tools named; gate row -> 7,431 passed \u00b7 1 failed \u00b7 198 skipped (2026-09-05, master b246b78e, harness/notes/h22/pytest_v5630_master.txt) with the one carried failure named; hython row marked '(2026-08-02; not re-run for v5.63.0)'.",
+     "tests/test_phase0c_doc1_toolcount.py: +test_readme_tool_count_matches_registry (README '**N tools, two paths.**' == len(TOOL_DEFS)) and +test_readme_latest_tag_matches_version_file (README 'tags: vX.Y.Z is Latest' == VERSION); both demonstrated failing on the pre-change README.",
+     "receipt.json: the 8 artifact_hashes entries whose paths never reached the repo (hython-probe-0.log, pure.log, full-suite.log, git-commit.log, mutation-median.log, mutation-skip.log, runner.log, targeted.log \u2014 all *.log, gitignored at .gitignore:87) stripped from artifact_hashes AND artifacts; the 4 committed artifacts keep their original digests; added 'artifact_hashes_stripped_2026-09-05' (reason + the 8 paths) and 'rerun_on_head_2026-09-05' (command, HEAD, interpreter, ledger path, 467/461/6/0, rows all NOT_RUN, exit 0).",
+     "scripts/solaris_v3_accept.py --tier pure re-run on HEAD; ledger + context + observations committed under harness/solaris_v3/runs/20260905T125351.258091Z-04606c37/ (same pattern as the three prior committed runs; pure.log gitignored, runner tmp dir removed).",
+     "CLAUDE.md: both '22.0.368' occurrences -> '22.0.400' (dirtyAllTasks line, backed by the live hython 22.0.400 probe and annotated as re-probed 2026-09-05; rule 15 scout text). Every \u26a0 callout byte-identical."
+    ],
+    "not_done": [
+     "Did not close any of the three 09-04 predicates (out of scope \u2014 the item asks for status, and all three are genuinely OPEN).",
+     "Did not re-run the hython3.13 'Shipping' suite row in README; it is now explicitly dated 2026-08-02 and marked not re-run rather than silently stale.",
+     "Did not fix the stale `shared/bridge.py:1718` / `:1723` line references in the CLAUDE.md dirtyAllTasks sentence (the call now sits at ~:2318/:2323) \u2014 not part of the item; noted here so it is not lost.",
+     "Did not touch README lines 153/173/267 that mention 22.0.368 as historical verification facts (README was not in the '22.0.368' predicate, and rewriting those would fake a 22.0.400 verification that did not happen)."
+    ],
+    "caveats": [
+     "README tool number is 128 = the dispatch registry (len(TOOL_DEFS)); the item's evidence line says '+10 stdio' and the README body now names that relationship rather than printing 138, matching the existing test's 'stdio == registry + named locals' contract (no absolute stdio number on purpose).",
+     "The receipt's results[] numbers that the stripped logs backed (targeted 40 passed; full suite 7109 collected / 5 collection errors / exit 2) were left in place as the worker reported them and are now labelled unverifiable-by-hash in the added note; I did not delete the worker's claims, only the hashes nobody could check.",
+     "harness/notes/CTO_RULINGS_BP3.md is untracked on master (shows as ?? in the main tree, absent in this worktree), so the capsule block records the D3.1/D3.2 ratification as UNKNOWN-from-the-tree rather than citing that file.",
+     "docs/solaris_v3/REPORT_ACCEPTANCE.md:5 and :39-40 still link to targeted.log / full-suite.log by name; those files remain absent from the repo. I did not rewrite that report (not in the item) \u2014 the receipt note now says why the paths are absent.",
+     "The CLAUDE.md dirtyAllTasks sentence's 'VERIFIED-RUNTIME 2026-07-26' clause now reads 'on the previous H22 build' instead of naming 22.0.368, because the closure predicate requires zero occurrences of that string; the 2026-09-05 22.0.400 re-probe is recorded beside it.",
+     "pure-observations.json for the new run is large (~22k lines, consistent with the prior three committed runs) and contains absolute worktree paths in its identity block, as the earlier runs do.",
+     "Panel literal count in the capsule cites the CENSUS figure (135 raw hex sites, docs/PANEL_REGION_MAP.md:120) as the master-side evidence that 'zero literals' is unmet; I did not re-run the crucible's 166-literal typography grep."
+    ]
+   },
+   "verdict": {
+    "id": "B8",
+    "verdict": "SOUND-WITH-NITS",
+    "predicate_rerun": "All four legs PASS on c533a2a1 (re-run by CRUCIBLE in C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6): (1) rg -c 'v5.60.0 is|115 tools|5,551 passed' README.md -> no output, exit 1. (2) receipt missing-path list -> []. (3) rg -c 'SPATIAL|splat|FONT_FLOOR' -> CAPSULE_2026-09-05_BP5.md:4, RELEASE_v5.63.0.md:3, exit 0. (4) rg -c '22\\.0\\.368' CLAUDE.md -> no output, exit 1. Callout guard: git diff HEAD~1 HEAD -- CLAUDE.md | rg -c '^[-+].*\u26a0' -> 0; the CLAUDE.md diff is exactly the dirtyAllTasks sentence and rule 15. Master tree untouched: git -C C:/Users/User/SYNAPSE status --porcelain | rg <touched files> -> no hits. Merge-base with master = a4d86ce4 (master has since moved to 007d30df via the conductor).",
+    "tests_rerun": "python -m pytest tests/test_phase0c_doc1_toolcount.py tests/test_phase0c_doc1_version_conformance.py tests/test_router_internals.py tests/test_solaris_v3_acceptance_runner.py -q -p no:cacheprovider -> 75 passed, 2 warnings (6.55s). Failing-before proof (scratch dir, module _ROOT redirected to git show HEAD~1:README.md + VERSION): test_readme_tool_count_matches_registry FAILS ('115 tools' vs 128) and test_readme_latest_tag_matches_version_file FAILS ('v5.60.0' vs 5.63.0); one-line mutation of current README (128->129, v5.63.0->v5.62.0) also fails both with the intended messages; both PASS on HEAD README. Live hython 22.0.400 (QT_QPA_PLATFORM=offscreen) re-probe: hou.TopNode.dirtyAllTasks signature (self, remove_outputs: 'bool') -> 'void', docstring deprecated, hasattr dirtyAllWorkItems True \u2014 matches the forge's CLAUDE.md rewrite; h22_symbol_table.json is stamped houdini_version 22.0.400 and carries both symbols. New ledger harness/solaris_v3/runs/20260905T125351.258091Z-04606c37/ledger.json: commit a4d86ce4, dirty False, exit 0, 467 tests -> 461 passed / 6 skipped / 0 failed (derived from per-test reports), 19 rows NOT_RUN \u2014 matches the receipt's rerun_on_head block.",
+    "must_fix": [],
+    "nits": [
+     "Receipt digests are checkable only with a trick nobody wrote down: the four kept artifact_hashes in harness/solaris_v3/runs/acceptance-validation/receipt.json match NONE of the checked-out files nor the git blobs at HEAD / HEAD~1 / 1017c547; they match sha256 of the 0c3afa6e blobs after LF->CRLF conversion (worker hashed CRLF working copies under core.autocrlf=true; repo stores LF via eol=lf). The commit subject says 'receipt hashes real' and the note says the four 'keep their original digests' \u2014 a reader running sha256 on the checkout gets 4/4 mismatches. Add one line to the stripped-note (digests are over CRLF working copies; verify via blob.replace(b'\\n', b'\\r\\n')) or recompute over the LF blobs. Predicate never asked for digest verification, so this is bounded, not blocking.",
+     "CLAUDE.md dirtyAllTasks sentence still cites shared/bridge.py:1718 / :1723; the call is at :2318 (top_node.dirtyAllTasks(remove_files=remove_files)) and rollback_note at :2323. Forge flagged it in not_done; carry it to the next doc pass.",
+     "RELEASE_v5.63.0.md cites 'server/solaris_compose_tools.py:522' \u2014 package-relative shorthand (real path python/synapse/server/solaris_compose_tools.py:522). The claim itself is correct: GetCameraRel at :522 since f6934e19 (2026-05-30, verified git log -S), and the wave's +99-line change adds render_settings_path explicit resolution (_assess_stage:487-512), so 'new in this wave' vs 'pre-existing' is split correctly.",
+     "The committed ledger.json / pure-context.json / pure-observations.json bake absolute paths to this worktree (C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_4cb67f70-8dc-6) into checkout, log_path and artifact_hashes keys; the worktree will be deleted after merge, so those keys become dangling. Same pattern as the three prior committed runs \u2014 consistent, not new.",
+     "README.md:173 and :267 still say 22.0.368 as historical verification facts; deliberate per the forge (README was not in the predicate, and rewriting would fake a re-verification). Agreed, noting so the next reader does not mistake it for a miss."
+    ],
+    "scope_creep": [
+     "harness/solaris_v3/runs/20260905T125351.258091Z-04606c37/{ledger.json,pure-context.json,pure-observations.json} (+22k lines): a fresh acceptance re-run committed as evidence for the receipt's rerun block. Not named in the item, but evidence-only, follows the existing committed-run pattern, and touches no product behaviour."
+    ],
+    "fake_green_risk": "Low. The two new tests bind README to live authorities (len(TOOL_DEFS)=128, VERSION=5.63.0) and were shown failing both on the pre-change README and under a one-line mutation. The '22.0.368 -> 0 matches' leg is string-absence and could in principle be satisfied by rewording without re-verification, but the forge re-probed on hython 22.0.400 and CRUCIBLE reproduced the identical signature/deprecation. The acceptance re-run's exit 0 is honestly labelled (all 19 gate rows NOT_RUN, binding map empty). Residual risk is the CRLF-digest nit: the receipt reads as hash-verifiable when the obvious check fails.",
+    "merge_ready": true
+   },
+   "repaired": false
+  },
+  {
+   "id": "B10",
+   "forge": {
+    "id": "B10",
+    "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-7",
+    "branch": "cto/b10-houdini-build-pin",
+    "commits": [
+     "c0e65e67 cto(B10): pin the Houdini build - hytest prefers the symbol-table stamp, SYNAPSE_HYTHON documented, deploy skill on houdini22.0 (prior forge, kept)",
+     "582f1d97 cto(B10): repair - _candidates() yields bare paths again; witness tests catch the tuple regression (this round)"
+    ],
+    "files_touched": [
+     "C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-7/.synapse/hytest.py",
+     "C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-7/tests/test_hytest_build_pin.py",
+     "C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-7/tests/test_solaris_v3_acceptance_runner.py"
+    ],
+    "predicate_result": "(1) `rg -n 'SYNAPSE_HYTHON' docs/studio/DEPLOYMENT.md` -> rc 0, match at L115 (env table row). (2) `rg -c 'houdini21' .claude/skills/deploy/SKILL.md` -> rc 1 = zero matches. (3) `python .synapse/hytest.py --which 2>/dev/null | rg '22\\.0\\.400'` -> rc 0, prints `C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe`; stderr reason line: `hytest: ... (symbol-table stamp h22 = 22.0.400)`. Consumer repro (the BROKEN cause), SYNAPSE_HYTHON unset: `accept.hython_candidates(ROOT, {})` -> `['C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe']`, `os.path.isfile` -> True (was a stringified tuple / False before the repair).",
+    "tests": "Ran 2 files (<=4 rule): `python -m pytest -q tests/test_hytest_build_pin.py tests/test_solaris_v3_acceptance_runner.py -p no:cacheprovider` -> 34 passed, 0 skipped. Failing-before proof: with the tests added but hytest.py still on the tuple form, `-k \"plain_path or filtered_to_pinned\"` -> 2 failed: tests/test_hytest_build_pin.py::test_candidates_yield_plain_path_strings and tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_existing_shim_candidates_are_filtered_to_pinned_build, the latter with `AssertionError: candidate is not a plain path: \"('C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe', 'symbol-table stamp h22 = 22.0.400')\"` - i.e. the exact regression string. After the fix both pass. The hytest_build_pin test still stubs subprocess.run to raise, so no process launches; the acceptance test exercises the real shim on the real host.",
+    "done": [
+     "MUST FIX 1 (option a): .synapse/hytest.py::_candidates() restored to yielding bare path strings (documented consumer contract in its docstring); new _candidates_with_reason() yields the (path, reason) tuples; find_hython_with_reason() iterates the new generator. --which output, stamp preference, and pin/PATH ordering unchanged. scripts/solaris_v3_accept.py untouched.",
+     "MUST FIX 2 (harden fake-green witness): tests/test_solaris_v3_acceptance_runner.py::test_existing_shim_candidates_are_filtered_to_pinned_build now also asserts each unpinned candidate does not start with '(' and endswith /bin/hython[.exe]; tests/test_hytest_build_pin.py gained test_candidates_yield_plain_path_strings asserting every _candidates() item is a str from the fake installs and that _candidates_with_reason() carries the same ordering. Both shown failing on the tuple form before the fix.",
+     "Closure predicate re-verified on the repaired branch (all three clauses hold).",
+     "Committed as a new commit 582f1d97 on top of c0e65e67 (history not rewritten); no merge/push/tag/VERSION edits."
+    ],
+    "not_done": [],
+    "caveats": [
+     ".synapse/ is in .gitignore but .synapse/hytest.py is a tracked file (it was in the prior commit and on master), so staging needed `git add -f .synapse/hytest.py`; no new ignored files were added.",
+     "Only the two named test files were run, not the full suite (per rule); tests/test_m3_env_conformance.py (touched by the prior commit) was not re-run this round because this round did not change the SYNAPSE_HYTHON read at hytest.py:91 - the DIRECT_RE match the crucible confirmed is unchanged.",
+     "The prior commit's other deliverables (DEPLOYMENT.md env row, .env.example, bp4.rows.json wording, deploy SKILL.md houdini22.0 + fresh-machine section) were not re-audited beyond the closure predicate; the crucible did not flag them."
+    ]
+   },
+   "verdict": {
+    "id": "B10",
+    "verdict": "SOUND-WITH-NITS",
+    "predicate_rerun": "PASS 3/3, re-run by the crucible in C:/Users/User/SYNAPSE/.claude/worktrees/wf_4cb67f70-8dc-7 with SYNAPSE_HYTHON unset and no hython on PATH: (1) rg -n SYNAPSE_HYTHON docs/studio/DEPLOYMENT.md -> L115 env-table row; (2) rg -c houdini21 .claude/skills/deploy/SKILL.md -> no match (rc 1); (3) python .synapse/hytest.py --which 2>/dev/null | rg '22\\.0\\.400' -> 'C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe', stderr 'symbol-table stamp h22 = 22.0.400'. Host has 21.0.773/22.0.368/.397/.400/.413/.417/.429 installed, so the stamp rule (not newest-first) selected 22.0.400. Consumer contract re-verified: _candidates_with_reason() on the real host yields 22.0.400 first (stamp), then .429/.417/.413/21.0.773 as 'NOT the symbol-table build'; scripts/solaris_v3_accept.py:hython_candidates gets bare path strings.",
+    "tests_rerun": "python -m pytest -q tests/test_hytest_build_pin.py tests/test_solaris_v3_acceptance_runner.py tests/test_m3_env_conformance.py -p no:cacheprovider -> 40 passed, 0 skipped (3 files, under the <=4 rule; forge ran 2). Fail-proof via git archive HEAD into scratchpad with the shim swapped, no worktree edits: (a) HEAD~1 tuple-form hytest.py -> 2 failed: test_hytest_build_pin.py::test_candidates_yield_plain_path_strings and test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_existing_shim_candidates_are_filtered_to_pinned_build with the exact stringified-tuple message; (b) pre-B10 master a4d86ce4 hytest.py -> 3 failed (prefers_build_matching_committed_symbol_table, which_prints_selected_hython, candidates_yield_plain_path_strings). Live claim check: 22.0.429 hython 'import pytest, PySide6' rc=0 (py 3.13.10, pytest 9.1.1) -> the corrected bp4.rows.json/author_bp4.py wording is true. Symbol table: h22 stamped 22.0.400, h21 stamped 21.0.671 (uninstalled, so absent from the stamp map as designed). No hou/pxr/pdg symbols introduced. git -C C:/Users/User/SYNAPSE status --porcelain | rg <touched files> -> nothing: no master-tree writes.",
+    "must_fix": [],
+    "nits": [
+     "docs/studio/DEPLOYMENT.md:115 says an explicit SYNAPSE_HYTHON pin 'skips build discovery', but .synapse/hytest.py:133-141 silently falls through to PATH/stamp/newest when the pinned path is missing or fails the pytest+PySide6 probe (only the stderr reason line reveals it). scripts/solaris_v3_accept.py:hython_candidates deliberately never falls back from a pin. Either say 'a usable pin skips discovery; a bad pin falls back (see --which)' or make a bad pin exit 3 like the no-hython case.",
+     ".synapse/hytest.py:115-117 labels every non-stamped install 'newer install, NOT the symbol-table build', including 21.0.773 which is OLDER than the stamped 22.0.400 (verified on this host). Cosmetic: 'other install' or drop 'newer'.",
+     "tests/test_solaris_v3_acceptance_runner.py::test_existing_shim_candidates_are_filtered_to_pinned_build is host-dependent: on a machine with no 22.0.400 installed, candidates == [] and all([])/any([]) pass vacuously (pre-existing shape, not introduced here; the hermetic contract lives in test_hytest_build_pin.py). Consider assertTrue(candidates) guarded by os.path.isfile of the expected 22.0.400 hython, or skip with a stated reason.",
+     "install.py:89 scan order [22,21,20,19] has no witness test; tests/test_install_package.py and tests/test_design_system.py only exercise explicit pref dirs. A tmp_path test with houdini21.0 + houdini22.0 side by side asserting 22.0 wins would pin the behaviour the SKILL.md sentence at L78 now promises.",
+     "The false '22.0.429 fails the hytest usability gate' sentence was corrected in bp4.rows.json + author_bp4.py only; it survives verbatim in tracked derived artefacts harness/battleplan/missions/BP4-{B7FIX,CRUX,SPATIAL,USDKNOW}.json, harness/battleplan/prompts/BP4-USDKNOW.md and harness/notes/CAPSULE_2026-09-04_BP5_PLAN.md:16 (plus untracked bp4.live.json). Historical wave output, so leave-or-annotate; just do not cite those as environment truth."
+    ],
+    "scope_creep": [
+     "install.py:_detect_houdini_prefs scan order [21,20,19] -> [22,21,20,19] (prior commit c0e65e67). Product installer behaviour, but in service of the item: without it the new SKILL.md L78 claim 'install.py scans ~/Documents/houdini22.0 (then 21.x...)' would be false and the deploy skill would still land in a wired houdini21.0 by default. Benign (a 21-only host still resolves), $HOUDINI_USER_PREF_DIR still wins; judged in-scope, untested (see nits).",
+     ".env.example new tracked root file (prior commit). No secrets, gitignore whitelist pre-existing, every claim in its header verified against host/auth.py. In-scope as the documented pin surface; noting because it is a new repo-root artefact.",
+     "harness/battleplan/waves/bp4.rows.json + author_bp4.py HYTHON_NOTE wording (prior commit): harness prompt text for an already-run wave, edited to remove a false claim the forge disproved live. Not product behaviour; kept."
+    ],
+    "fake_green_risk": "LOW. The two witness tests were reproduced failing by the crucible against both the tuple-form shim (2 failed) and the pre-B10 master shim (3 failed) in an archived scratch copy, and 40/40 pass on the branch. test_hytest_build_pin.py is hermetic (fake installs under tmp_path, subprocess.run stubbed to raise, so any launch is a hard fail) and does not launch hython. Residual: the acceptance-runner filter test is vacuously green on a host without 22.0.400 (pre-existing shape); test_m3_env_conformance proves the SYNAPSE_HYTHON row is a DIRECT read, not a stale doc row. The closure predicate itself depends on host state (an installed 22.0.400 and a committed h22 stamp) which is the point of the item and holds here.",
+    "merge_ready": true
+   },
+   "repaired": true
+  }
+ ]
+}

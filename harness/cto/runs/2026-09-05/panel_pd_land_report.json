@@ -1,0 +1,1054 @@
+{
+ "date": "2026-09-05",
+ "branch": "pd/panel-integrate-r3",
+ "audits": [
+  {
+   "lane": "STANDARD",
+   "verdict": "DOES-NOT-MEET",
+   "summary": "Branch pd/panel-integrate (aca05ccb) vs master (8021bbc0), measured on Houdini 22.0.400 hython offscreen. The wave's reach claim is real: census 107/106/135 -> 18/2/42, camera path 0 untagged, one accent, no new family, no legacy ui/ import, exec_ guarded, WCAG + type floor + chrome-frozen-on-Aa all green on G3. But the design work does not meet the Pentagram bar on first principles. Four predicates fail on evidence the wave never reported: (P4) the 30px panel gutter (tokens.py GUTTER, 'the Design Director's call') has zero consumers on the branch - rail/ribbon/tab-row/direct-face margins measured (30,16,30,14)/(30,8,16,8)/(30,24,30,0)/(30,24,30,24) on master and (0,0,0,0) on the branch, wordmark x 62->24, input x 30->0; (P9) 'roles, not sizes' is inverted - parm_row is applied as a generic 4px-gap utility on 30 of 52 hook sites (header rail, gate root/body, chat toolbar, context bar root, recall footer) that are not parameter rows; (P10) the profile tab strip changed IA and shape - CHAT/TOKEN moved out of DsTabRow into the context ribbon, addStretch dropped, and the row role turns CURIOUS/EXPERT/ML into 116x70px bordered blocks (master: 30px pills) while CHAT/TOKEN keep pill chrome; (P11) verbs no longer match their declared chrome siblings (12px/108%/AllUppercase vs pills 11px/115%). tests/panel (the Qt tier as specified) was never run by the wave (its receipt ran tests/test_panel_*): master 1 failed/117 passed, branch 10 failed/107 passed, 9 new reds. G3 on the branch: 1 FAIL (wordmark audit, the master B4 fix, not counted) + 1 WARN (3 targets <26px, identical on master). The 62-site/47-untagged residual and 15 docking widths are already CRUX for_ruling and are counted once here. Two items need Joe, not a fix: whether the gutter goes to zero, and which 'label' doctrine is ratified (tokens.py TYPE_ROLES sans vs rhythm.py/battleplan \u00a74 mono-upper-tracked).",
+   "findings": [
+    {
+     "id": "STD-01",
+     "title": "P4 gutter: the panel-edge GUTTER token has zero consumers on the branch; every camera region is flush to the pane edge",
+     "severity": "major",
+     "evidence": "tokens.py:625 `GUTTER = 30  # panel edge gutter ... Value is the Design Director's call` \u2014 grep GUTTER in branch python/synapse/panel/synapse_panel.py returns only the docstring at :1101 ('The face carries the comp's GUTTER/24 content padding'), no call site. Cause: rhythm.py:24-29 `_MARGINS` has no 'group' entry so group role -> (0,0,0,0); docs/PANEL_RHYTHM_SPEC.md:104 pins `group ... (0,0,0,0)`; the group role was put on the edge containers (synapse_panel.py:479 `_section`, :485 root, :1103 direct face, :994 DsTabRow) and the rail got parm_row (:766, also (0,0,0,0)). No QSS padding compensates (qss.py:33 DsSection, :37-40 DsHeader, :117-120 DsTabRow carry background/border only). Offscreen probe, 380px: master rail (30,16,30,14) sp 8 / ribbon (30,8,16,8) / tab row (30,24,30,0) / direct face (30,24,30,24) / wordmark x=62 / input x=30 w=260; branch rail (0,0,0,0) sp 4 / ribbon (0,0,0,0) / tab row (0,0,0,0) / direct face (0,0,0,0) sp 16 / wordmark x=24 / input x=0 w=312. Neither INTEGRATION.md nor CRUX_VERDICT.md names this change.",
+     "repro": "set QT_QPA_PLATFORM=offscreen SYN_ROOT=<tree> SYNAPSE_PANEL_SETTINGS=<scratch>; \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" <scratch>/probe.py  (probe: strip editable finders, sys.path.insert(0, SYN_ROOT/python), build SynapsePanel(), resize(380,700), print layout().contentsMargins()/spacing() for _build_rail/_build_context_ribbon/_build_mode_bar and _wordmark.mapTo(panel).x()). Static: grep -n GUTTER <branch>/python/synapse/panel/synapse_panel.py",
+     "recommendation": "Escalate to Joe: the gutter is his dial by the token's own comment. Either (a) add a 'shell' margin path so edge containers keep (GUTTER, \u00b7, GUTTER, \u00b7) \u2014 e.g. rhythm._MARGINS['group'] stays 0 but the root/face builders re-apply t.GUTTER via a role-aware fixed margin the census treats as designsystem-owned \u2014 or (b) ratify gutter=0 in PANEL_RHYTHM_SPEC.md with a before/after PNG pair. Do not merge with the change unnamed."
+    },
+    {
+     "id": "STD-02",
+     "title": "P9 roles-as-sizes: parm_row is used as a generic 4px-gap utility on 30 of 52 hook sites that are not parameter rows",
+     "severity": "major",
+     "evidence": "Battleplan \u00a74 defines parm_row as 'columns label 128 \u00b7 value 64 \u00b7 control fills; row 24'; REDESIGN.md \u00a73 'Type \u2014 roles, not sizes'. rhythm.py:21 `\"parm_row\": tokens.SPACE_GRID[0]` (4px) is the only sub-8px gap available, and the wave reached raw-zero by relabelling: synapse_panel.py:766 (the header rail DsHeader), gate_widget.py:161,377,392,410 (proposal card, GateWidget root/body/integrity row), chat_panel.py:386,609,708 (input container, connection frame, mode toolbar), context_bar.py:390,437, command_palette.py:425, quick_actions.py:119,135, tool_palette.py:170, working_indicator.py:231, face_review.py:236,258,280,293, hda_views.py:31,241, recall_card.py:129 (card footer). Only face_token.py:408-443 is a real key/value table. Side effect: qss.py:420-423 gives every such container `min-height: 24px; padding:0; margin:0` and its (1,1,0) specificity beats `QWidget#DsHeader {margin-bottom}` at qss.py:307-309, killing the header's BP2 density rule (spec line 57 says those rules remain 'for unmigrated widgets' \u2014 the header is migrated).",
+     "repro": "grep -rn 'rhythm_role\", \"parm_row\"' <branch>/python/synapse/panel --include=*.py | grep -v designsystem | wc -l   (30) ; grep -rn 'rhythm_role' <branch>/python/synapse/panel --include=*.py | grep -v designsystem | wc -l  (52)",
+     "recommendation": "Add the missing semantic role instead of overloading parm_row: a 'shell'/'stack' role (gap SPACE_XS, margins 0, no min-height, no font rule) for opaque containers, and move the 26 non-table sites onto it. Keep parm_row for face_token and any real label/value grid. Then drop or re-scope qss.py:420 min-height so container roles never set a height."
+    },
+    {
+     "id": "STD-03",
+     "title": "P10 profile tab strip: CHAT/TOKEN moved into the context ribbon, stretch dropped, profile pills become 70px bordered blocks; one strip, two pill treatments",
+     "severity": "major",
+     "evidence": "Branch synapse_panel.py:998 `navigation = self._build_context_ribbon().layout()` then :1004 / :1017 `navigation.addWidget(pill)` (CHAT, TOKEN); master :1009-1017 added both to `lay` (DsTabRow) and :1021 `lay.addStretch(1)` \u2014 the branch has no addStretch in _build_mode_bar (grep addStretch: none between :985-1037). Branch :1030 `p.setProperty(\"rhythm_role\", \"row\")` on CURIOUS/EXPERT/ML only; qss.py:374-379 row = min-height ROW_MIN_H 44, radius 8, 1px BORDER, background PANEL, font-size body; specificity (1,1,0) beats `QPushButton#DsPill` (1,0,1) at qss.py:121. Probe, 380px: master face pills parent DsTabRow at (30,24,33,30)/(91,24,41,30), profile pills (171,24,57,30)/(256,24,49,30)/(333,24,17,30), 11px; branch face pills parent DsSection (the ribbon) at (290,11,33,30)/(339,11,41,30), profile pills (0,0,116,70)/(132,0,116,71)/(264,0,116,70) minHint (91,70), 12px, tab row height 54->71, ribbon 32->53. REDESIGN.md \u00a75 specifies the context ribbon as 'quiet, mono, one line'; battleplan \u00a71-4 'No new folds, no new profile knobs'; COHERE_REFERENCE anti-pattern 'Re-styling widgets so their look changes beyond gap / label / tag treatment. BROKEN'.",
+     "repro": "git -C C:/Users/User/SYNAPSE show HEAD:python/synapse/panel/synapse_panel.py | sed -n 1004,1040p ; sed -n 985,1037p <branch>/python/synapse/panel/synapse_panel.py ; probe (STD-01) prints 'face pill ... parent' and 'profile pill ... minHint'",
+     "recommendation": "Return CHAT/TOKEN to DsTabRow with the stretch, and give the profile pills a tag-class treatment (or no rhythm role \u2014 they already carry LABEL tracked_font) rather than row; row's 44px min-height and hairline box is a list-item vocabulary, not a tab. If the ribbon placement is a deliberate IA move, it needs Joe's word and its own PNG pair \u2014 it is outside the wave's gap/label/tag remit."
+    },
+    {
+     "id": "STD-04",
+     "title": "P11 verbs no longer read as chrome siblings of the tab pills: two type appliers on one widget, second one wins",
+     "severity": "major",
+     "evidence": "synapse_panel.py:1794 `btn.setProperty(\"rhythm_role\", \"label\")` then :1796-1798 comment 'L5-17: verbs carry the tab pills' tracking (same LABEL role, mono) so they read as chrome siblings of CHAT/TOKEN' + `fontload.tracked_font(\"LABEL\", t.SIZE_SMALL, mono=True)` (11px, +0.15em). rhythm.py:41-55 `_apply_type` then re-sets the QFont: AllUppercase, PercentageSpacing 100+SEND(0.08)*100 = 108%, and qss.py:367-370 `[rhythm_role=\"label\"] font-size: role_size(0.72)` = 12px (see STD-07) with margin-top 24 / margin-bottom 12 overriding `QPushButton#DsVerb {margin 8/8}` at qss.py:302. Probe: master verbs 11px Space Mono ls 115% MixedCase, height 36; branch verbs 12px Space Mono ls 108% AllUppercase, height 53; branch CHAT/TOKEN pills still 11px / 115%. Also ctx label: master Space Grotesk 12 / 0.5px abs (TYPE_ROLES label) -> branch Space Mono 12 uppercase 108%.",
+     "repro": "probe (STD-01) prints 'verb ...' and 'face pill ...' font tuples on both trees; static: sed -n 41,55p <branch>/python/synapse/panel/designsystem/rhythm.py ; sed -n 1788,1800p <branch>/python/synapse/panel/synapse_panel.py",
+     "recommendation": "One owner per widget: either the verb builder stops calling tracked_font and the label role owns the type (then the label role must use the LABEL 0.15em token, not SEND), or verbs do not take rhythm_role=label and keep tracked_font. Add a Qt-tier pin that CHAT/TOKEN pills and DsVerb share pixelSize + letterSpacing."
+    },
+    {
+     "id": "STD-05",
+     "title": "P12 two 'label' doctrines inside designsystem/: TYPE_ROLES says sans, rhythm.py says mono-upper-tracked",
+     "severity": "major",
+     "evidence": "tokens.py:357-363 (BP4-PANELFONT, ratified): 'setting them in a typewriter face made the panel read like a terminal emulator rather than a tool. So `title` and `label` move to sans' \u2014 TYPE_ROLES['label'] = (FONT_SANS_CSS, SIZE_UI, WEIGHT_MEDIUM, 0.5). rhythm.py:41-55 `_apply_type`: role 'label' -> fontload.apply_family(mono=True), AllUppercase, tracked \u2014 per docs/PANEL_BATTLEPLAN_PD.md \u00a74 'mono \u00b7 upper \u00b7 +0.08 em'. Both run on the same widgets: recall_card.py:116 `c.label(..., role=\"label\")` then :118 `rhythm_role=\"label\"`; synapse_panel.py:937-939 same for _ctx_label. Probe: ctx label Space Grotesk -> Space Mono uppercase; recall header 'what I remember' -> Space Mono AllUppercase 108%. Same word, opposite ratified treatment; the wave did not amend TYPE_ROLES or its comment.",
+     "repro": "sed -n 355,375p <branch>/python/synapse/panel/designsystem/tokens.py ; sed -n 41,55p <branch>/python/synapse/panel/designsystem/rhythm.py ; probe prints 'ctx label' family/capitalization on both trees",
+     "recommendation": "Taste decision \u2014 escalate as for_ruling #3. If Joe ratifies the Cohere mono-label, update TYPE_ROLES['label'] and its BP4 comment in the same commit and rename nothing; if BP4 stands, the rhythm 'label' role becomes 'eyebrow' (mono/upper/tracked, EYEBROW 0.22em already exists at tokens.py:389) and section text stays sans. Either way one doctrine, one name."
+    },
+    {
+     "id": "STD-06",
+     "title": "Qt tier tests/panel never run by the wave: 9 new reds vs master (8 gate fidelity-dot pins + 1 chrome-frozen pin)",
+     "severity": "major",
+     "evidence": "Wave receipt harness/panel_pd/runs/2026-09-04/qt_INTEGRATE_post_repair.txt ran tests/test_panel_*.py (265 tests: 243/22). The specified Qt tier `hython -m pytest tests/panel -q -p no:cacheprovider`: master 1 failed / 117 passed (test_failure_trail.py::test_dead_verb_hidden, pre-existing); branch 10 failed / 107 passed. New: tests/panel/test_gate_fidelity_unknown.py x8 (helper :89-91 reads `_fidelity_dot.styleSheet()` -> '' because gate_widget.py:599 now uses `qss.sweep_a_style(self._fidelity_dot, \"gate_fidelity_dot\", _fidelity_color(fidelity))`; qss.py:694-699 prebuilds rules for SIGNAL/GROW/ERROR/WARN/FIRE/SLATE/... so the status grammar survives \u2014 the pin reads the old seam) and tests/panel/test_font_scale.py::test_aa_scales_content_only_chrome_frozen (:107 regex on `p._input.styleSheet()` -> None; G3 on the same tree shows 'content scales on Aa: prompt 12->19px [ok]', so behaviour holds, seam moved). Reds are reds at the full-suite merge gate regardless.",
+     "repro": "cd <tree> ; set QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 SYNAPSE_PANEL_SETTINGS=<scratch> PYTHONDONTWRITEBYTECODE=1 ; \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest tests/panel -q -p no:cacheprovider",
+     "recommendation": "Not a gate to weaken: move the two oracles to the new seam in the test (read `property('sweep_a_color')` for the dot; read the QSS-derived font via QFontInfo(p._input.font()) or the sheet the root installs) as the wave did for the four chat CSS pins (R2-02). Re-run tests/panel plus the full `pytest tests/` under hython before any merge word."
+    },
+    {
+     "id": "STD-07",
+     "title": "P1/P2 type scale ratios are dead code and the label/tag tracking borrows other roles' tokens",
+     "severity": "minor",
+     "evidence": "qss.py:364 `role_size = lambda ratio: max(s(t.SIZE_BODY), s(t.SIZE_BODY * ratio))` \u2014 max() with body makes 0.72x/0.68x (\u00a74 'label 0.72\u00d7 body', 'tag 0.68\u00d7 body') always resolve to body (12px); docstring :360-362 says this is intended so ratios cannot push below the host floor, which makes the \u00a74 ratios unachievable by the spec's own rule. rhythm.py:52-53 `em = TRACKING_EM[\"SEND\"] if role == \"label\" else TRACKING_EM[\"DATA\"] * 2` \u2014 label tracking is the SEND button's token, tag tracking is DATA doubled; no LABEL-role token is named. Numerically 0.08/0.06 match \u00a74, semantically the tokens lie.",
+     "repro": "sed -n 355,372p <branch>/python/synapse/panel/designsystem/qss.py ; sed -n 48,55p <branch>/python/synapse/panel/designsystem/rhythm.py",
+     "recommendation": "Either drop the ratios from \u00a74/spec and say 'label/tag = body size, contrast by case+tracking only', or floor at FONT_FLOOR_PX (10) instead of body so 0.72x12 -> 10 is real. Name the tracking: TRACKING_EM['RHYTHM_LABEL']=0.08, ['RHYTHM_TAG']=0.06 (tokens.py:389 map) \u2014 no new values, just honest names."
+    },
+    {
+     "id": "STD-08",
+     "title": "P5 residual: 62 sites / 47 untagged vs plan 'at most 20, all tagged' \u2014 counted once (CRUX for_ruling #1), with the exact untagged non-hex sites",
+     "severity": "major",
+     "evidence": "Census (harness/notes/panel_rhythm_census.py --panel-dir <branch>/python/synapse/panel): 18 spacing / 0 grid / 2 sheets / 42 hex (20 distinct) / 15 exempt tags. Untagged non-hex: health_strip.py:412-413 (row margins/spacing), integrity_readout.py:81-82, health_strip.py:418-421 (`lbl.setStyleSheet('font-size:%dpx; font-family:%s; background:transparent;' % (t.SIZE_SMALL, t.FONT_MONO_CSS))`). Untagged hex 42 in 11 files; the retired cyan accent is still painted at render_preflight.py:927 `<p style='color: #00D4FF; ...'>` (the other three #00D4FF hits are comments). Camera path: recall_card.py:114-115 tagged, synapse_panel.py:333 tagged -> 0 untagged on camera. Note REDESIGN.md \u00a73 still names SIGNAL as cyan #00D4FF while tokens.py:29 is #8FB3D9 \u2014 doc drift, the known 3-source gremlin; do not unify without the full suite green.",
+     "repro": "python C:/Users/User/SYNAPSE/harness/notes/panel_rhythm_census.py --panel-dir <tree>/python/synapse/panel --json <scratch>/c.json ; grep -n '#00[dD]4[fF][fF]' <branch>/python/synapse/panel/render_preflight.py",
+     "recommendation": "Joe rules on the 20-site target; independent of that, health_strip/integrity_readout/render_preflight need an owner leg (they are the named UNASSIGNED files) and render_preflight.py:927 should map to t.SIGNAL/TEXT_ACCENT like the other 104 mapped sites."
+    },
+    {
+     "id": "STD-09",
+     "title": "G3 on the branch: 1 FAIL is the master B4 wordmark audit (expected, not counted); 1 WARN is inherited; the other master-fixed row is green",
+     "severity": "info",
+     "evidence": "Branch audit_panel.py --strict under hython 22.0.400 offscreen: 'wordmark is brand: 14px @ tracking 116.0% [FAIL]' (master pins the audit to WORDMARK 0.16em = 116%; the branch predates that fix), 'interactive targets: 27 found, 3 under 26px [WARN]', 'input not clipped: send bottom 410px / panel 420px [ok]', G3 RESULT: 1 FAIL \u00b7 1 WARN, exit 1. Master same command: pass \u00b7 1 WARN (same 3 under 26px), exit 0. WCAG matrix all ok, seeded sweep ok, chrome floor >=11 ok, chrome FROZEN on Aa ok, content scales 12->19 ok, bundled fonts Space Grotesk/Space Mono only.",
+     "repro": "cd <tree> ; set QT_QPA_PLATFORM=offscreen SYNAPSE_PANEL_SETTINGS=<scratch> ; timeout 120 \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" audit_panel.py --strict",
+     "recommendation": "Nothing to fix on the branch for G3; the wordmark row closes on rebase onto master. The 26px WARN is reportable inherited debt (3 targets), not this wave's."
+    },
+    {
+     "id": "STD-10",
+     "title": "P14 docking 380: both trees fail; branch narrows the miss by 60px but the strict accept is still unmet",
+     "severity": "minor",
+     "evidence": "Probe panel.minimumSizeHint(): master (526,371), branch (466,357); PANEL_MIN_WIDTH 280 on both; .synapse/contracts/docking-minimums.yaml. Wave receipt: 15 test_panel_rhythm_docking reds (composed 433, QuickActionPills 587-602, ResultView 382-388, HealthStrip 708, SynapseChatPanel 502-514 vs 380). CRUX R2-04.",
+     "repro": "probe (STD-01) prints 'panel minimumSizeHint'; hython -m pytest tests/test_panel_rhythm_docking.py -q in the branch tree",
+     "recommendation": "Inherited; keep as CRUX R2-04. Do not waive silently \u2014 the gutter question (STD-01) interacts with it: restoring 2x30px at the edge moves the branch hint back toward 526."
+    },
+    {
+     "id": "STD-11",
+     "title": "Camera regions resolve to roles via the compositor hook; recall card self-applies; late-built regions are not re-walked",
+     "severity": "info",
+     "evidence": "compositor.py:41 `from synapse.panel.designsystem import rhythm`, :271 `rhythm.apply(panel, resolved[\"density\"])` after `_repolish_tree(panel)`. Region -> roles: tab strip (container group via :479; profile pills row :1030; CHAT/TOKEN none), header/ribbon (rail parm_row :766, controls label :769, ctx label :939), chat transcript (chat_display.py:121 group; direct face group), verb rail (act group; verbs label :1794), recall card (header label :118, footer parm_row :129, status tag :137, bands exempt :114-115, `rhythm.apply(self)` :140), TOKEN face (face_token.py:325,339 group; :401 label; :408-443 parm_row). All five resolve; two resolve to the wrong role (STD-02/03). A region built after compose keeps Qt defaults: first probe of a fresh `_build_direct_face()` measured (11,11,11,11)/6 \u2014 only compose/recompose walk the tree.",
+     "repro": "grep -n 'rhythm' <branch>/python/synapse/panel/compositor.py ; grep -rn rhythm_role <branch>/python/synapse/panel --include=*.py | grep -v designsystem",
+     "recommendation": "No action beyond STD-02/03; note in the spec that any builder called outside compose must call rhythm.apply on its subtree (recall_card does)."
+    },
+    {
+     "id": "STD-12",
+     "title": "Legacy ui/ and deprecated exec_ checks pass",
+     "severity": "info",
+     "evidence": "grep for synapse.ui / from synapse import ui in <branch>/python/synapse/panel: only a comment at panel/__init__.py:5. exec_ sites: synapse_panel.py:1514 guarded `dlg.exec() if hasattr(dlg, \"exec\") else dlg.exec_()`; the known chat_panel.py:499 menu site is gone from the branch (SWEEP_A rewrote the file).",
+     "repro": "grep -rn 'synapse\\.ui\\b\\|from synapse import ui' <branch>/python/synapse/panel --include=*.py ; grep -rn '\\.exec_()' <branch>/python/synapse/panel --include=*.py",
+     "recommendation": "None."
+    }
+   ],
+   "measurements": {
+    "trees": {
+     "master": "C:/Users/User/SYNAPSE @ 8021bbc0",
+     "branch": "C:/Users/User/SYNAPSE/.claude/worktrees/pd-panel-integrate @ aca05ccb (pd/panel-integrate)",
+     "merge_base": "a5b975c1"
+    },
+    "census_delta": {
+     "producer": "harness/notes/panel_rhythm_census.py --panel-dir <tree>/python/synapse/panel",
+     "files": {
+      "master": 85,
+      "branch": 85
+     },
+     "spacing_sites": {
+      "master": 107,
+      "branch": 18
+     },
+     "grid_spacing_sites": {
+      "master": 4,
+      "branch": 0
+     },
+     "inline_stylesheet_sites": {
+      "master": 106,
+      "branch": 2
+     },
+     "hex_raw_sites": {
+      "master": 135,
+      "branch": 42
+     },
+     "hex_distinct": {
+      "master": 75,
+      "branch": 20
+     },
+     "ds_object_name_sites": {
+      "master": 34,
+      "branch": 76
+     },
+     "ds_distinct_names": {
+      "master": 18,
+      "branch": 49
+     },
+     "exempt_tags": {
+      "master": 0,
+      "branch": 15
+     },
+     "branch_untagged": {
+      "spacing": [
+       "health_strip.py:412",
+       "health_strip.py:413",
+       "integrity_readout.py:81",
+       "integrity_readout.py:82"
+      ],
+      "sheets": [
+       "health_strip.py:418"
+      ],
+      "hex": 42,
+      "total": 47
+     },
+     "branch_camera_path_untagged": 0
+    },
+    "qt_tier_tests_panel": {
+     "command": "hython -m pytest tests/panel -q -p no:cacheprovider (Houdini 22.0.400, QT_QPA_PLATFORM=offscreen)",
+     "master": {
+      "failed": 1,
+      "passed": 117,
+      "fails": [
+       "test_failure_trail.py::test_dead_verb_hidden (pre-existing)"
+      ]
+     },
+     "branch": {
+      "failed": 10,
+      "passed": 107,
+      "new_vs_master": 9,
+      "fails": [
+       "test_failure_trail.py::test_dead_verb_hidden",
+       "test_font_scale.py::test_aa_scales_content_only_chrome_frozen",
+       "test_gate_fidelity_unknown.py x8"
+      ]
+     },
+     "wave_receipt_scope": "tests/test_panel_*.py only (265: 243 passed / 22 failed) \u2014 tests/panel not run by the wave"
+    },
+    "g3_audit": {
+     "command": "hython audit_panel.py --strict (offscreen, SYNAPSE_PANEL_SETTINGS=scratch)",
+     "master": "pass \u00b7 1 WARN (3 interactive targets < 26px), exit 0",
+     "branch": "1 FAIL (wordmark is brand 14px @ 116% \u2014 master B4 audit pin, not counted) \u00b7 1 WARN (same 3 targets), exit 1",
+     "branch_rows": {
+      "wcag_matrix": "all ok (PRIMARY 8.3/9.5/7.0, SECONDARY 5.5/6.3/4.6, TERTIARY 3.9/4.5/3.3, ACCENT 6.6/7.5/5.5)",
+      "seeded_sweep": "body realistic 5.3:1, any-grey 3.9:1 ok",
+      "type_floor": "chrome >=11 ok; body 12 = host 12",
+      "chrome_frozen_on_Aa": "ok",
+      "content_scales": "prompt 12->19px, chat 1.0->1.6 ok",
+      "input_not_clipped": "410/420 ok",
+      "bundled_fonts": [
+       "Space Grotesk",
+       "Space Mono"
+      ]
+     }
+    },
+    "offscreen_probe_380px": {
+     "rail_margins_spacing": {
+      "master": "(30,16,30,14) sp8 h125",
+      "branch": "(0,0,0,0) sp4 h73 role=parm_row"
+     },
+     "ribbon_margins_spacing": {
+      "master": "(30,8,16,8) sp6 h32",
+      "branch": "(0,0,0,0) sp16 h53 role=group"
+     },
+     "tab_row_margins_spacing": {
+      "master": "(30,24,30,0) sp28 h54",
+      "branch": "(0,0,0,0) sp16 h71 role=group"
+     },
+     "direct_face_margins_spacing": {
+      "master": "(30,24,30,24) sp0",
+      "branch": "(0,0,0,0) sp16"
+     },
+     "act_rail_margins_spacing": {
+      "master": "(0,16,0,8) sp24 h60",
+      "branch": "(0,0,0,0) sp16 h53"
+     },
+     "wordmark_x": {
+      "master": 62,
+      "branch": 24
+     },
+     "input_x_width": {
+      "master": "x30 w260",
+      "branch": "x0 w312"
+     },
+     "face_pills_CHAT_TOKEN": {
+      "master": "parent DsTabRow, 11px Space Mono 115% MixedCase, 30px tall",
+      "branch": "parent DsSection (context ribbon), 11px 115%, 30px tall, no rhythm_role"
+     },
+     "profile_pills": {
+      "master": "11px, (57x30)(49x30)(17x30)",
+      "branch": "role=row, 12px, (116x70)(116x71)(116x70), minHint (91,70)"
+     },
+     "verbs": {
+      "master": "11px Space Mono 115% MixedCase h36",
+      "branch": "12px Space Mono 108% AllUppercase h53 role=label"
+     },
+     "ctx_label": {
+      "master": "Space Grotesk 12 abs 0.5 MixedCase",
+      "branch": "Space Mono 12 108% AllUppercase role=label"
+     },
+     "recall_header": {
+      "branch": "'what I remember' Space Mono 12 108% AllUppercase; footer role=parm_row"
+     },
+     "panel_minimumSizeHint": {
+      "master": "(526,371)",
+      "branch": "(466,357)"
+     }
+    },
+    "rhythm_role_hook_sites_branch": {
+     "total_outside_designsystem": 52,
+     "parm_row": 30,
+     "group": 13,
+     "label": 6,
+     "row": 1,
+     "tag": 2,
+     "card": 1
+    },
+    "predicates": {
+     "P1_single_family_scale": "PASS (ratios dead, STD-07)",
+     "P2_tracking_tokens": "PARTIAL (borrowed tokens; two appliers, STD-04/07)",
+     "P3_one_accent": "PASS on camera; residual cyan at render_preflight.py:927",
+     "P4_gutter_structural_whitespace": "FAIL (STD-01)",
+     "P5_raw_zero_residual": "FAIL panel-wide, PASS camera (STD-08, for_ruling #1)",
+     "P6_hierarchy_at_11px_floor": "PASS (G3)",
+     "P7_chrome_frozen_on_Aa": "PASS (G3); test pin on old seam red (STD-06)",
+     "P8_density_consistent": "PASS structurally; DsHeader/DsVerb BP2 density rules overridden (STD-02/04)",
+     "P9_roles_not_sizes": "FAIL (STD-02)",
+     "P10_tab_strip_IA_and_shape": "FAIL (STD-03)",
+     "P11_verb_pill_sibling_parity": "FAIL (STD-04)",
+     "P12_one_label_doctrine": "FAIL - escalate (STD-05)",
+     "P13_no_legacy_ui_exec_": "PASS",
+     "P14_docking_380": "FAIL both trees, inherited (STD-10)"
+    }
+   },
+   "gui_gate": [
+    "Gutter: the panel with all edge margins at 0 (wordmark x=24, input flush at x=0) in CURIOUS/EXPERT/ML on H22.0.400 \u2014 Joe decides whether zero gutter is the intent (STD-01).",
+    "Profile tab strip: CURIOUS/EXPERT/ML as 116x70px bordered blocks next to a 30px CHAT/TOKEN pill pair that now lives in the context ribbon (STD-03).",
+    "Verb rail at 53px tall with 12px uppercase 108% verbs beside 11px 115% CHAT/TOKEN pills; header rail at 73px vs 125px (STD-04).",
+    "Context ribbon label and recall-card header in mono uppercase vs the BP4 sans label doctrine \u2014 which reads as the tool, which as the terminal (STD-05).",
+    "HDA Result surface/button parity (dark surfaces + filled SIGNAL action) \u2014 CRUX R2-06, unchanged here.",
+    "The 15 docking widths at 380px in three densities \u2014 CRUX R2-04; headless hint 466px on the branch.",
+    "Three-profile before/after PNG pairs under design/rhythm_pd: confirm 'three visibly different rhythms with Expert structurally unchanged' by eye; headless only proves the numbers."
+   ]
+  },
+  {
+   "lane": "LANE RULINGS (SIDEFX-CTO lens) - PD wave CRUX for_ruling #1 RESIDUAL + #2 DOCKING/HDA PARITY",
+   "verdict": "RESIDUAL: OWN-NOW the four named modules (two are dead HTML producers -> delete, one is a 20-minute role migration, one is an honest 1px tag); ratchet the cap to the measured number (62 -> 39) and re-seed the guard from the CURRENT residual census, not the pre-wave inventory. Waive-with-cap is NOT recommended. DOCKING: the 15 reds are PROVISIONAL-headless artifacts - the receipt runner (python313/python.exe) has an EMPTY Qt font database and hython cannot execute the docking worker at all (-I isolated mode dies on encodings). No width number on file is a Houdini number. Ruling: bound = tokens.PANEL_MIN_WIDTH (280) is the contract, 380 stays as a written interim in docking-minimums.yaml; fix the measurement first (pin the bundled font, refuse an empty font DB), then FIX 3 widgets (HealthStrip cells, QuickActionPills -> the brief's 3-pill+more row, ResultView re-measure only) and WAIVE 1 (SynapseChatPanel = legacy alt entry slated for collapse). HDA PARITY: KEEP with a written exemption - the 'white table + native buttons' before-state is an offscreen-Fusion render of widgets that no sheet reached; the legacy styles.py rule set (ce04dcb0) already specified a dark CARBON/SILVER table and a SIGNAL-filled HdaGenerateBtn. SWEEP_B re-expressed the designed state in designsystem tokens. GUI-gate remains Joe's eyes on .400.",
+   "summary": "Reused: INTEGRATION.md, CRUX_VERDICT.md, crux.json (for_ruling, census_current), REPORT_CAMERA/SWEEP_B, PANEL_REGION_MAP.md, PANEL_RHYTHM_SPEC.md, PANEL_BATTLEPLAN_PD.md, SYNAPSE_PANEL_REDESIGN.md, COHERE_REFERENCE.md, designsystem/{tokens,rhythm,qss}.py, tests/test_panel_rhythm_owner.py, tests/test_panel_rhythm_docking.py, tests/panel/test_docking.py, .synapse/contracts/docking-minimums.yaml, harness/panel_pd/RESIDUAL.json, the post-repair Qt receipt, the before/after ResultView PNGs. Probed (read-only, scratchpad scripts, both Houdini 22.0.400 runners, QT_QPA_PLATFORM=offscreen): census CLI on the branch tree (62 sites / 20 files / 15 tagged, reproduces CRUX), per-child minimumSizeHint widths for the five failing regions, font-database + DPI provenance per runner, and the docking selection under hython (54 errors: worker cannot start). WebFetch: SideFX hou.qt index confirms hou.qt.styleSheet() ('Return the Houdini style sheet'). Nothing written under the repo (brief forbids it); flywheel candidate text is embedded in each finding's recommendation with ratified:false, for a human to file. RULING #1 (RESIDUAL) - per-file raw sites on pd/panel-integrate: agent_health 14 hex (0 tagged) / render_preflight 6 hex / bookmarks 4 / chat_panel 4 spacing (4 tagged) / dependency_map 4 / apex_recipes 3 / health_strip 3 (2 spacing + 1 sheet) / save_shot 3 / session_integrity 3 / context_bar 2 (tagged) / face_review 2 (tagged) / face_work 2 (tagged) / gate_widget 2 (tagged) / integrity_readout 2 spacing / recall_card 2 (tagged) / recipe_book 2 / error_translator 1 / session_journal 1 / styles 1 / synapse_panel 1 (tagged). Owners: health_strip -> CAMERA lane (it is composed into the rail at synapse_panel.py:784-787, CAMERA's only file); integrity_readout -> SWEEP_A lane (only importer is face_work.py:37); agent_health.format_agent_health_html (L161-231, all 14 sites) and render_preflight.format_preflight_html + _STATUS_ICONS (L865-927, all 6 sites) have NO production caller (synapse_panel.py:1783 and health_infographic.py use poll_agent_health only; face_review.py:37/84 uses run_preflight only) -> owner = INTEGRATOR, action = delete the dead producers (or, if kept for a future Trust drawer, migrate by the SWEEP_B mapping-table method: every value has an exact or role token - GROW/WARN/ERROR exact, #AAAAAA->TEXT_TERTIARY, #CCCCCC->BONE, #888->TEXT_DISABLED, #4CAF50->GROW, #F44336->ERROR, #FF9800->WARN, #00D4FF->SIGNAL). Cost: health_strip ~20 min (rhythm_role='group' reproduces its SPACE_MD=16 spacing and 0 margins exactly at standard; the L418 inline sheet becomes one '#health_strip QLabel' rule appended in qss.py); integrity_readout ~5 min (tag L81-82 '# rhythm-exempt: 1px hairline stack between claim rows; no role expresses 1px' - same class as recall_card's band seam that CRUX accepted); agent_health/render_preflight ~10 min each as deletions, ~45 min mechanical if migrated. Result: 62 -> 39 sites, 17 tagged, 22 untagged hex in nine side modules whose reachability from the shipped panel is UNVERIFIED (battleplan \u00a77 names ~18 dead/alt-entry modules; the census has no reachability column - NOW-probe). The plan's '<=20 all tagged' becomes a dated SWEEP_C (mechanical tier, same mapping-table method) rather than a waiver. Guard seed fix for R2-01 (VERIFIED reading of tests/test_panel_rhythm_owner.py:79-103,110-127): _seed() builds the allowed identity set from the 2026-09-04 PRE-WAVE census (348 identities), so any migrated site can return, and allowed_residual=226 vs measured 62 leaves 164 of slack. Fix: RESIDUAL.json 'census' points at a fresh census of the CURRENT tree committed with every migration; _seed reads that (allowed = current residual, so a removed owner is simply absent); test_panel_rhythm_owner_ratchet asserts limits['allowed_residual'] == sum(current census totals) (exact, not <=); the git-history test fails loudly when git log returns zero revisions (closes R2-08). ~12 lines, no production code touched. RULING #2 (DOCKING) - Houdini facts: the contract YAML has NO width clause; 380 is a literal at tests/test_panel_rhythm_docking.py:46; the declared contract is tokens.PANEL_MIN_WIDTH=280 (tokens.py:622, enforced at synapse_panel.py:302 setMinimumWidth), PANEL_PREF_WIDTH=340, and the brief (\u00a73 'reflow at PANEL_MIN_WIDTH = 280') and the H22 lens (\u00a72.3 '280 is correctly narrow') both name 280. Houdini honours an explicit setMinimumWidth on a pane's python-panel widget and lets the artist's layout drag the column to it (Law 3) - so 280 is what the panel promises the host, and 380 is a courtesy bound LEVER invented. Measurement validity (VERIFIED): the receipt ran under python313/python.exe (receipt header line 1) where QFontDatabase.families() == 0 and QFontInfo(app.font()).family() == '' (pt -0.75); under hython the same probe resolves 'Courier' with 33 families; same logical DPI 96, same 9 pt; 'Fix Error' advances 108 px vs 63 px. Consequences: QuickActionPills 592 vs 432, HealthStrip 708 vs 488, ResultView 384 vs 260 (passes under hython), chat 506 vs 506, composed 454 vs 466 (REPORT_CAMERA.md:20 also says 466; the receipt says 433 - three numbers for one tree). And the docking test cannot run under hython: _run() spawns sys.executable -I and hython -I dies 'Fatal Python error: Failed to import encodings module' (54 errors in 0.92 s), so the suite is structurally bound to the empty-font runner. Neither runner carries Houdini's UI font (the GUI applies its app-level style sheet; hou.qt.styleSheet() is documented) - INFERENCE, GUI-gate. Per widget (drivers from the per-child probe): composed panel + HealthStrip = the same widget - four rich-text QLabels of 101-165 px in one QHBoxLayout with spacing 16 (health_strip.py:409-423), placed in the rail (synapse_panel.py:784-787) -> FIX (CAMERA): QSizePolicy.Ignored horizontally on the cells (tooltip already carries the full text via cell_tooltip at :387) or elide with the existing _truncate at :369; ~4 lines. QuickActionPills = five full-label pills + chevron in one row (quick_actions.py:117-135, 'docking-exempt' tag at :133) -> FIX (SWEEP_A): collapse to the brief's own \u00a75 ACT row '[Explain] [Fix] [Optimize] [more...]' - three pills + the existing chevron menu (CONTEXT_MENU_EXTRAS mechanism at :65) takes the other two; ~30 min, no new widget. HDA ResultView -> FIX-BY-MEASUREMENT only: passes at 260 under hython; its 'Create Another HDA' (175 px) and the 3-button row (238 px) fit 380 at any real font. SynapseChatPanel = the LEGACY alternate entry (synapse_chat.pypanel, brief \u00a72 decision 1 collapses it; battleplan \u00a77 'not on the path'); driver is connection_frame (484 px: dot + 'Disconnected' + HALT + Connect min-width 100 px at qss.py:585 + a button showing the full ws:// URL, chat_panel.py:606-650) -> WAIVE with exemption text and remove from ALTERNATE_REGIONS with a dated pointer; the brief's voice rules ('hide raw ws:// URLs', 'HALT -> Stop') already schedule its demise. HDA PARITY: pre-wave ResultView (ce04dcb0 hda_views.py:299-350) set no sheet on param_table or the buttons; the legacy styles.py (ce04dcb0:109-124) specified QTableWidget#ParamTable bg CARBON / fg SILVER and (:53-70) QPushButton#HdaGenerateBtn bg SIGNAL / fg VOID - and ResultView's 'Create Another HDA' carried that objectName. The before PNG (design/rhythm_pd/before/hda_result.png) is therefore an unstyled Fusion render, not a design; SWEEP_B's DsHda rules (qss.py:797-855) plus ensure_sweep_b_view (qss.py:929-946) restore the designed state in tokens and repair the missing-sheet bug for the legacy host. KEEP. Exemption text supplied. Two GUI-gate checks remain (double-styling against Houdini's dark palette; the SIGNAL fill as the single accent point on that view).",
+   "findings": [
+    {
+     "id": "CTO-DOCK-01",
+     "title": "All 15 docking widths were measured with an EMPTY Qt font database; hython cannot run the docking worker at all",
+     "severity": "blocker",
+     "evidence": "VERIFIED. Receipt header harness/panel_pd/runs/2026-09-04/qt_INTEGRATE_post_repair.txt:1 names runner 'python313/python.exe'. Font probe under that runner: QFontDatabase.families()==0, QFontInfo(app.font()).family()=='' pt -0.75; under bin/hython.exe: 'Courier', 33 families; both logicalDPI 96, 9 pt; 'Fix Error' advance 108 px vs 63 px. Widths python.exe vs hython: QuickActionPills 592/432, HealthStrip 708/488, ResultView 384/260, SynapseChatPanel 506/506, composed 454/466 (receipt: 433; docs/panel_pd/REPORT_CAMERA.md:20: 466). tests/test_panel_rhythm_docking.py:63 spawns [sys.executable, '-I', ...]; under 'hython -m pytest ... -k \"alternate or composed or recall\"' every case errors 'Fatal Python error: Failed to import encodings module' (54 errors in 0.92 s). Neither runner loads Houdini's UI font; fontload.load_application_fonts() (called only at synapse_panel.py:305) is not called by the docking worker, so even the bundled Space Grotesk is absent from every measurement.",
+     "repro": "S=<scratch>; for exe in bin/hython.exe python313/python.exe; do QT_QPA_PLATFORM=offscreen \"C:/Program Files/Side Effects Software/Houdini 22.0.400/$exe\" $S/family_probe.py; done  # family_probe prints QFontInfo(app.font()).family(), len(QFontDatabase.families()), and QFontMetrics advance of 'Fix Error'.  Then: cd <pd-panel-integrate>; QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider -k \"alternate or composed\"  -> 54 errors, 'Failed to import encodings module'.",
+     "recommendation": "Lane NOW-probe (blocks R2-04). Before any width is signed: (1) the docking worker calls fontload.load_application_fonts() after QApplication and exits 77 ('NOT_RUN: empty font database') when QFontDatabase.families() is empty; (2) _run() spawns without -I when sys.executable is hython (or uses '-I' + explicit PYTHONHOME), so the real Houdini interpreter can measure; (3) the receipt records QFontInfo family + families count next to the widths. Re-measure the 15 cases; expect ResultView x3 to pass outright (260 < 380 under hython). Flywheel candidate (ratified:false): 'docking-measurement-provenance: a docking width is evidence only when the worker prints the resolved font family, the font-DB size and the runner path; an empty font DB is NOT_RUN.'"
+    },
+    {
+     "id": "CTO-DOCK-02",
+     "title": "The 380 px bound is a test literal, not a contract; the panel's declared promise to Houdini is PANEL_MIN_WIDTH = 280",
+     "severity": "major",
+     "evidence": "VERIFIED. tests/test_panel_rhythm_docking.py:46 'return 380, int(heights[0]), int(children[0])' - width hardcoded; .synapse/contracts/docking-minimums.yaml has no width feature (only 400 px tall / 200 px child); tokens.py:622 PANEL_MIN_WIDTH = 280, :623 PANEL_PREF_WIDTH = 340; synapse_panel.py:302 self.setMinimumWidth(t.PANEL_MIN_WIDTH); docs/design/SYNAPSE_PANEL_REDESIGN.md \u00a73 'reflow at PANEL_MIN_WIDTH = 280'; docs/SYNAPSE_PANEL_DESIGN_REVIEW_H22_LENS.md:63 'PANEL_MIN_WIDTH = 280 is correctly narrow'; docs/PANEL_RHYTHM_SPEC.md:77 introduces 380 without a source. test_docking_bounds_read_the_contract_not_panel_height_token (:49-56) already asserts tokens.PANEL_MIN_WIDTH <= width, i.e. it knows 280 is the floor. INFERENCE (hou.ui absent headless): Houdini honours the explicit setMinimumWidth on the pane's python-panel widget and lets the artist drag the splitter down to it; a child whose minimumSizeHint exceeds it clips rather than forcing the column. Probe: in the GUI, drag the pane splitter inward and read panel.width() vs panel.minimumSizeHint().width().",
+     "repro": "grep -n \"380\\|PANEL_MIN_WIDTH\" tests/test_panel_rhythm_docking.py .synapse/contracts/docking-minimums.yaml python/synapse/panel/designsystem/tokens.py python/synapse/panel/synapse_panel.py",
+     "recommendation": "Lane WAVE-COUPLED. Ruling text: 'The docking width contract is tokens.PANEL_MIN_WIDTH (280). The PD wave's 380 px accept is an interim bound and must be written into docking-minimums.yaml as a feature (\"every region's minimumSizeHint().width() <= 380 at airy/standard/tight, measured with the bundled font\"); the test reads it from the YAML like it reads the heights, never a literal. Regions that fit 380 but not 280 carry a dated follow-up, not an exemption.' No new token (the plan forbids one); the YAML is the single source."
+    },
+    {
+     "id": "CTO-DOCK-03",
+     "title": "Per-widget causes and dispositions for the five failing regions (fix 3, re-measure 1, waive 1)",
+     "severity": "major",
+     "evidence": "VERIFIED by per-child minimumSizeHint probe (hython / python.exe). (a) Composed panel 466/454 and HealthStrip 488/708 are the SAME widget: four rich-text QLabels (hs_project, hs_connection 108/165 px; hs_memory, hs_job 101/154 px) in one QHBoxLayout, spacing t.SPACE_MD=16 + addStretch (health_strip.py:409-423), composed into the rail at synapse_panel.py:784-787; REPORT_CAMERA.md:171 already names it. (b) QuickActionPills 432/592: five full-label QPushButtons (Explain 68, Fix Error 80, VEX Help/Optimize/Make HDA 74 each, hython) + 20 px chevron in one row, spacing 4 (quick_actions.py:117-135; 'docking-exempt' tag at :133 says wrapping changes the hierarchy). The brief's own \u00a75 layout draws the ACT row as '[Explain] [Fix] [Optimize] [more...]' - three pills + overflow. (c) SynapseChatPanel 506: driver is connection_frame 484 px (chat_panel.py:606-650: dot + 'Disconnected' + stretch + HALT + Connect with min-width 100 px at qss.py:585 + a button whose text is the full ws://host:port/path URL). This is the legacy alternate entry (synapse_chat.pypanel) the brief \u00a72 decision 1 collapses and battleplan \u00a77 lists as not on the path; brief \u00a73 Voice already rules 'hide raw ws:// URLs behind a status affordance' and 'HALT -> Stop'. (d) HDA ResultView 260 (hython, PASS) / 384 (python.exe): 'Create Another HDA' 175 px and the Inspect/Parameters/Save HDA row 238 px; no structural cause.",
+     "repro": "QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" <scratch>/width_probe.py  # builds each ALTERNATE_REGIONS widget exactly as _alternate() does and prints children sorted by minimumSizeHint().width()",
+     "recommendation": "Lane WAVE-COUPLED (R2-04 follow-up leg). Rulings: HealthStrip/composed -> FIX, owner CAMERA: cells get QSizePolicy(Ignored, Preferred) horizontally (full text already lives in the tooltip via cell_tooltip, health_strip.py:387) or elide via the existing _truncate (:369) with a per-cell cap; plus rhythm_role='group' which reproduces spacing 16 / margins 0 exactly at standard (ROLE_GAPS group = SPACE_GRID[3]); ~4 lines, closes 6 of the 15 (composed x3 + HealthStrip x3). QuickActionPills -> FIX, owner SWEEP_A: collapse to the brief's three pills + the existing chevron menu (CONTEXT_MENU_EXTRAS at quick_actions.py:65 already routes extras); drop the :133 docking-exempt tag; ~30 min, no new widget, closes 3. ResultView -> FIX-BY-MEASUREMENT: no source change; re-run under a valid font DB (CTO-DOCK-01); closes 3 if it holds at the bundled font. SynapseChatPanel -> WAIVE, exemption text: 'SynapseChatPanel (chat_panel.py) is the legacy alternate entry retained only until the single-panel collapse (SYNAPSE_PANEL_REDESIGN.md \u00a72.1); its connection_frame is scheduled for the voice-rule rewrite (hide ws:// URL, HALT->Stop). It is removed from ALTERNATE_REGIONS in tests/test_panel_rhythm_docking.py with this pointer and is not a PD docking accept.' Closes 3. Net after the leg: 0 docking reds expected, 1 written exemption."
+    },
+    {
+     "id": "CTO-HDA-01",
+     "title": "HDA Result parity: the 'white table + native buttons' before-state was an unstyled offscreen render, not a design; the legacy rule set already specified dark table + SIGNAL-filled generate",
+     "severity": "major",
+     "evidence": "VERIFIED. ce04dcb0:python/synapse/panel/hda_views.py:299-315 param_table gets objectName 'ParamTable' and no stylesheet; :335-350 action buttons 'HdaActionBtn' / 'HdaGenerateBtn' with no inline sheet. ce04dcb0:python/synapse/panel/styles.py:109-124 'QTableWidget#ParamTable { background CARBON; color SILVER; border GRAPHITE; gridline GRAPHITE }', :53-70 'QPushButton#HdaGenerateBtn { background SIGNAL; color VOID; border none; radius 4; padding 10 24; weight 700 }', :165-177 HdaActionBtn rules. That legacy sheet is installed only by the legacy chat host (get_*_stylesheet), never in the SynapsePanel host, so the before PNG (design/rhythm_pd/before/hda_result.png, 368x420) shows Fusion-default white table and grey buttons - the absence of any sheet. Branch qss.py:797-855 DsHda rules: table SURFACE/BORDER, header RAISED, DsHdaGenerate SIGNAL fill with TEXT_ON_ACCENT, DsHdaAction SURFACE + BORDER hairline - the same intent in designsystem tokens; qss.py:929-946 ensure_sweep_b_view installs the central sheet when no DsRoot ancestor exists (hda_views.py:96/195/320 showEvent hooks) - a repair of the missing-sheet bug for the legacy host. Label copy changed ('Inspect in Network' -> 'Inspect' etc.) with full text kept in accessible names (hda_views.py:300). SIGNAL is #8FB3D9 (tokens.py:29), which is the blue in the after PNG. INFERENCE: in the Houdini GUI an unstyled QTableWidget inherits Houdini's dark application palette/style sheet (hou.qt.styleSheet() is documented as 'Return the Houdini style sheet'), so the white table never existed for an artist either; probe = open the HDA result view on .400 with SWEEP_B's ensure_sweep_b_view stubbed out and screenshot.",
+     "repro": "git -C <pd-panel-integrate> show ce04dcb0:python/synapse/panel/styles.py | sed -n 53,72p; git -C <pd-panel-integrate> show ce04dcb0:python/synapse/panel/styles.py | sed -n 109,124p; sed -n 797,855p python/synapse/panel/designsystem/qss.py; open design/rhythm_pd/before/hda_result.png and design/rhythm_pd/after_integrate/hda_result.png",
+     "recommendation": "Lane WAVE-COUPLED (R2-06). Ruling: KEEP. Exemption text for docs/panel_pd (or harness/notes/panel_nits_pd.md): 'HDA views parity exemption - the parity target for hda_views.py is the legacy styles.py rule set at ce04dcb0 (dark ParamTable, SIGNAL-filled HdaGenerateBtn, hairline HdaActionBtn), not the un-sheeted offscreen render in design/rhythm_pd/before. SWEEP_B's DsHda rules re-express that rule set in designsystem tokens and ensure_sweep_b_view closes the missing-sheet gap in the legacy host. \"Beyond gap/label/tag\" is accepted for hda_views.py only, on this evidence. Copy shortening (Inspect / Parameters / Save HDA) is accepted because the full verbs remain as accessible names and tooltips.' Two GUI-gate items (below) stay red until Joe looks: double-styling against Houdini's own dark palette, and whether the SIGNAL fill on 'Create Another HDA' reads as the view's single accent point (COHERE_REFERENCE lesson 5). If Joe wants one accent per view, the one-line revert is hda_views.py:312 objectName DsHdaGenerate -> DsHdaAction on ResultView only; DescribeView's generate button (hda_views.py:88) keeps the fill as the hero."
+    },
+    {
+     "id": "CTO-RES-01",
+     "title": "Residual: 20 of the 47 untagged sites sit in two HTML producers with no production caller; the four named modules cost under two hours to own",
+     "severity": "major",
+     "evidence": "VERIFIED. Census on the branch tree (harness/notes/panel_rhythm_census.py --panel-dir python/synapse/panel): 62 sites / 20 files / 15 tagged, matching crux.json census_current. agent_health.py: 14 hex, all inside format_agent_health_html (L177,180,188,197,202,206,223,228,231); render_preflight.py: 6 hex, all in _STATUS_ICONS + format_preflight_html (L865-867,889,895,927). grep of python/, houdini/, tests/ for format_agent_health_html / format_preflight_html finds only the definitions and render_preflight.py:8-10 (its own docstring example); synapse_panel.py:1783 and health_infographic.py:7 consume poll_agent_health() only; face_review.py:37/84-86 consumes run_preflight() only. health_strip.py: L412-413 spacing (row margins 0, spacing t.SPACE_MD) + L418 inline sheet, live in the rail (synapse_panel.py:784-787), REGION_MAP.md:80 'UNASSIGNED'. integrity_readout.py: L81-82 (margins 0, spacing 1), live via face_work.py:37, REGION_MAP.md:81 'UNASSIGNED'. rhythm.py ROLE_GAPS: 'group' = SPACE_GRID[3] = 16 with default margins (0,0,0,0) - identical to HealthStrip's current values at standard density. Remaining untagged hex after those four: 22 sites in bookmarks 4, dependency_map 4, apex_recipes 3, save_shot 3, session_integrity 3, recipe_book 2, error_translator 1, session_journal 1, styles.py 1 - reachability from the shipped panel UNVERIFIED (the census carries no importer-graph column; battleplan \u00a77 names ~18 dead/alt-entry modules).",
+     "repro": "cd <pd-panel-integrate>; python harness/notes/panel_rhythm_census.py --panel-dir python/synapse/panel --json <scratch>/census.json; python -c \"import json;d=json.load(open('<scratch>/census.json'));[print(f['path'],len(f['spacing']),len(f['inline_styles']),len(f['hex_sites'])) for f in d['files'] if f['spacing'] or f['inline_styles'] or f['hex_sites']]\"; grep -rn \"format_agent_health_html\\|format_preflight_html\" python/ houdini/ tests/ | grep -v 'def format_'",
+     "recommendation": "Lane WAVE-COUPLED (R2-01 follow-up leg). Ruling: OWN-NOW, not waive. Owners and costs: health_strip.py -> CAMERA lane (rail): setProperty('rhythm_role','group') on HealthStrip replaces both spacing calls with zero visual change at standard; the L418 sheet becomes one appended '#health_strip QLabel { font-size; font-family mono; background: transparent }' rule in qss.py; ~20 min. integrity_readout.py -> SWEEP_A lane (face_work importer): tag L81-82 '# rhythm-exempt: 1px hairline stack between claim rows; no role expresses 1px' (same class as recall_card's accepted band seam); ~5 min. agent_health.py + render_preflight.py -> INTEGRATOR: delete the two dead producers (no caller, no test) ~10 min each; if Joe wants them kept for the Trust drawer's Health tab, migrate with the SWEEP_B mapping-table method (~45 min mechanical; every value has an existing token: GROW/WARN/ERROR exact, #AAAAAA->TEXT_TERTIARY, #CCCCCC->BONE, #888->TEXT_DISABLED, #4CAF50->GROW, #F44336->ERROR, #FF9800->WARN, #00D4FF->SIGNAL). Result 62 -> 39 sites, 17 tagged. The plan's '<=20 all tagged' is re-dated as SWEEP_C for the 22 side-module hex sites after a NOW-probe adds an importer-graph 'reachable' column to the census (dead modules are deleted or tagged '# rhythm-exempt: alt-entry module, not on the shipped panel path', which is an honest reason, not a deferral)."
+    },
+    {
+     "id": "CTO-RES-02",
+     "title": "Guard seed fix (R2-01): re-seed from the CURRENT residual census and pin the cap to the measured count",
+     "severity": "major",
+     "evidence": "VERIFIED reading of tests/test_panel_rhythm_owner.py. _seed() (:79-88) builds the allowed identity Counter from RESIDUAL.json['census'] = harness/panel_pd/runs/2026-09-04/rhythm_census.json, the PRE-WAVE inventory (seed_counts 107/106/135 = 348 identities), so every original identity stays permitted forever - CRUX's WorkingIndicator 'self._dot.setStyleSheet(sheet)' resurrection passed the global ratchet. _check() (:91-98) rejects only identities absent from that set; allowed_residual = 226 vs 62 measured (RESIDUAL.json) leaves 164 of count slack; _check_ceiling (:101-104) only enforces <= previous. test_residual_cannot_increase_against_git_history (:126-137) iterates zero times when git log returns nothing (CRUX R2-08).",
+     "repro": "sed -n 79,137p tests/test_panel_rhythm_owner.py; cat harness/panel_pd/RESIDUAL.json",
+     "recommendation": "Lane WAVE-COUPLED (LEVER + integrator, tests only). (1) Every migration commit re-runs the census and commits it as harness/panel_pd/runs/<date>/rhythm_census_residual.json; RESIDUAL.json 'census' points at that file, so _seed's allowed set IS the current residual and a deleted owner is simply absent (no resurrection possible). (2) In test_panel_rhythm_owner_ratchet replace the '<= seed_total' ceiling check with an exact pin: assert limits['allowed_residual'] == residual_measured and limits['allowed_grid_residual'] == grid_measured (the number can only move by committing a new census, which the history test then checks monotonic). (3) test_residual_cannot_increase_against_git_history asserts len(revisions) >= 1 or pytest.fail('RESIDUAL.json has no git history in this checkout: NOT_RUN'), never a silent green. ~12 lines; keep test_new_owner_cannot_spend_a_deleted_site as is - it already models the intended semantics. Flywheel candidate (ratified:false): 'rhythm-guard-seed: the allowed-owner set is always the last committed residual census; the cap equals its count; slack is zero by construction.'"
+    },
+    {
+     "id": "CTO-RES-03",
+     "title": "Residual arithmetic the plan should stop citing: the census counts three hex tokens on one source line as three sites",
+     "severity": "minor",
+     "evidence": "VERIFIED. agent_health.py L177 and L202 each contribute 3 sites (one ternary with three colours); L228 contributes 2. Six 'sites' are two expressions. The census docstring says so deliberately ('counts are source sites'), and CRUX repeats that not every site is a distinct colour. The 62/47 framing therefore overstates the migration surface by roughly 10 percent on this branch.",
+     "repro": "python -c \"import json;d=json.load(open('<scratch>/census.json'));f=[x for x in d['files'] if x['path'].endswith('agent_health.py')][0];print([s['line'] for s in f['hex_sites']])\"",
+     "recommendation": "Lane DEFER. When SWEEP_C's target is written, phrase it in distinct (file, line) owners as well as sites, so the cap and the human-readable target agree."
+    }
+   ],
+   "measurements": {
+    "census_branch_tree": {
+     "files": 85,
+     "spacing_sites": 18,
+     "inline_stylesheet_sites": 2,
+     "hex_raw_sites": 42,
+     "grid_spacing_sites": 0,
+     "total_sites": 62,
+     "tagged": 15,
+     "untagged": 47,
+     "hex_distinct_values": 20
+    },
+    "per_file_sites": {
+     "agent_health.py": 14,
+     "render_preflight.py": 6,
+     "bookmarks.py": 4,
+     "chat_panel.py": "4 (all tagged)",
+     "dependency_map.py": 4,
+     "apex_recipes.py": 3,
+     "health_strip.py": 3,
+     "save_shot.py": 3,
+     "session_integrity.py": 3,
+     "context_bar.py": "2 (tagged)",
+     "face_review.py": "2 (tagged)",
+     "face_work.py": "2 (tagged)",
+     "gate_widget.py": "2 (tagged)",
+     "integrity_readout.py": 2,
+     "recall_card.py": "2 (tagged)",
+     "recipe_book.py": 2,
+     "error_translator.py": 1,
+     "session_journal.py": 1,
+     "styles.py": 1,
+     "synapse_panel.py": "1 (tagged)"
+    },
+    "residual_after_ruling_1": {
+     "sites": 39,
+     "tagged": 17,
+     "untagged_hex_in_side_modules": 22,
+     "cap_recommended": "== measured (39), re-seeded from current census"
+    },
+    "guard": {
+     "allowed_residual": 226,
+     "measured": 62,
+     "slack": 164,
+     "seed_source": "pre-wave census 348 identities"
+    },
+    "docking_bound": {
+     "test_literal": 380,
+     "contract_yaml_width_clause": "absent",
+     "PANEL_MIN_WIDTH": 280,
+     "PANEL_PREF_WIDTH": 340
+    },
+    "font_provenance": {
+     "python313_python_exe": {
+      "families": 0,
+      "resolved_family": "",
+      "pt": -0.75,
+      "fix_error_advance_px": 108
+     },
+     "hython_exe": {
+      "families": 33,
+      "resolved_family": "Courier",
+      "pt": 9,
+      "fix_error_advance_px": 63
+     },
+     "logical_dpi_both": 96,
+     "hython_docking_worker": "54 errors / 0.92 s: Fatal Python error: Failed to import encodings module (sys.executable -I)"
+    },
+    "widths_px": {
+     "QuickActionPills": {
+      "receipt_python_exe": [
+       602,
+       592,
+       587
+      ],
+      "probe_python_exe_standard": 592,
+      "probe_hython_standard": 432
+     },
+     "HDA_ResultView": {
+      "receipt_python_exe": [
+       388,
+       384,
+       382
+      ],
+      "probe_python_exe_standard": 384,
+      "probe_hython_standard": 260
+     },
+     "HealthStrip": {
+      "receipt_python_exe": [
+       708,
+       708,
+       708
+      ],
+      "probe_python_exe_standard": 708,
+      "probe_hython_standard": 488
+     },
+     "SynapseChatPanel": {
+      "receipt_python_exe": [
+       514,
+       506,
+       502
+      ],
+      "probe_python_exe_standard": 506,
+      "probe_hython_standard": 506,
+      "driver": "connection_frame 484"
+     },
+     "composed_panel": {
+      "receipt_python_exe": 433,
+      "probe_python_exe_expert": 454,
+      "probe_hython_expert": 466,
+      "REPORT_CAMERA": 466,
+      "driver": "_build_rail 454/466 = HealthStrip"
+     }
+    },
+    "hda_parity": {
+     "legacy_ParamTable_rule": "ce04dcb0 styles.py:109-124 bg CARBON fg SILVER",
+     "legacy_HdaGenerateBtn_rule": "ce04dcb0 styles.py:53-70 bg SIGNAL fg VOID",
+     "before_png": "design/rhythm_pd/before/hda_result.png 368x420 (unstyled Fusion)",
+     "after_png": "design/rhythm_pd/after_integrate/hda_result.png 340x420",
+     "SIGNAL": "#8FB3D9"
+    },
+    "expected_docking_reds_after_leg": 0,
+    "written_exemptions": 1
+   },
+   "gui_gate": [
+    "Joe on H22.0.400: HDA ResultView with SWEEP_B's DsHda rules - does the SURFACE table + RAISED header double-style against Houdini's own dark palette (gridline/border contrast), and does the filled SIGNAL 'Create Another HDA' read as the view's single accent point next to the GROW status label? (one-line revert available: hda_views.py:312 DsHdaGenerate -> DsHdaAction)",
+    "Joe on H22.0.400: drag the pane splitter inward on the composed panel in all three profiles - at what width does the rail's health strip clip or overlap, and does the panel stop at 280 (its setMinimumWidth) or earlier? This is the only measurement that carries Houdini's real UI font (HOUDINI_UISCALE / Global UI Size); every headless width on file is provisional.",
+    "Joe on H22.0.400: with the re-run docking receipt (bundled font pinned, family printed), confirm the three-pill + more ACT row (if CTO-DOCK-03 fix is taken) still reads as the brief's \u00a75 layout in the Expert profile (Expert structural pin must stay green).",
+    "Joe: confirm agent_health.format_agent_health_html and render_preflight.format_preflight_html are not wanted for the Trust drawer's Health tab before they are deleted (if wanted, they migrate by the mapping-table method instead)."
+   ]
+  },
+  {
+   "lane": "LANDING",
+   "verdict": "GIT-CLEAN, NOT LANDABLE YET. `git merge-tree --write-tree master pd/panel-integrate-r3` = tree 9b0c641b, exit 0, zero conflicts (overlap files .gitignore and synapse_panel.py auto-merge). But the merged tree tested (archived to scratch, hython 22.0.400 offscreen) shows three collision classes the branch never saw: (1) B4's composer cap is defeated by the wave's vertical rhythm (Send 444px > 420px pane; master 410 ok; branch alone 549), (2) two CAMERA freeze pins go red because B4 legitimately edited showEvent and _GrowingInput.__init__, (3) nine wave-caused Qt reds in tests/panel/ plus two G3 FAILs that the wave's own receipt never ran. All are code-fixable except two scope rulings (alternate-entry docking, HDA parity) that Joe must give.",
+   "summary": "Landing map for pd/panel-integrate-r3 (aca05ccb) <- master (8021bbc0), merge-base a5b975c1. Method: `git archive 9b0c641b` (the forecast merge tree) + branch + master into scratch; Qt tier and G3 under \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" QT_QPA_PLATFORM=offscreen SYNAPSE_PANEL_SETTINGS=<scratch>; pure-Python tests under stock python with a scratch git that borrows objects via .git/objects/info/alternates (so `git show ce04dcb0:` works; `git log`/`git diff` in scratch are artifacts, verified against the real repo). No worktree was written.\n\n(a) MERGE FORECAST. B4 hunks on master: python/synapse/panel/synapse_panel.py:133-160 (_GrowingInput._cap, _autosize clamp, cap_height) and :1415-1460 (_fit_composer_to_pane, showEvent/resizeEvent calls); settings.py:80-86 (SYNAPSE_PANEL_SETTINGS) + :189-206 (composer ceiling); audit_panel.py:159-167 (scratch settings) + :387-393 (WORDMARK tracking); tests/panel/test_docking.py:113-140 (B4 test). Wave hunks in synapse_panel.py sit at :330, :476-490, :597-602, :608-770, :930-945, :991-1030, :1099-1112, :1121-1170, :1591-1600, :1695-1710, :1790-1850, :2002-2100 -- disjoint from B4, so git keeps both with no hunk resolution. The collisions are semantic, found only by running the merged tree: F-A2 (B4 cap vs rhythm gaps), F-A3 (CAMERA pins vs B4 edits), F-C1/F-C2 (audit and test oracles read `styleSheet()` the wave replaced with properties/QFont).\n\n(b) SEAMS. R2-01: tests/test_panel_rhythm_owner.py:79-88 `_seed` grandfathers every identity in harness/panel_pd/runs/2026-09-04/rhythm_census.json forever; :90-98 `_check`; harness/panel_pd/RESIDUAL.json:3 allowed_residual 226 (:2 grid 2). Current census (branch == merged): 18 spacing / 2 sheets / 42 hex / 0 grid = 62, 15 tagged, 47 untagged, itemised in F-B1. R2-02: tests/test_chat_panel.py:1048/1065/1073/1082 want the legacy `get_*_stylesheet()` calls; real seams chat_panel.py:147 chat_root, :383 chat_input_container, :607 chat_connection, :706 chat_toolbar -> designsystem/qss.py:518/545/566/594 (`_sweep_a_rule`, :464-485). R2-03: test_panel_sweep_a.py:121 (tail must END SWEEP_A; it ends END SWEEP_B, offsets A 452-... B ...-946), test_panel_sweep_b_widgets.py:64-65 (tail must START SWEEP_B; SWEEP_A is first), test_panel_sweep_b_hex.py:105-110 (whole-file freeze of synapse_panel.py/face_token.py vs ce04dcb0). R2-04: widths in F-B4 with both runners. R2-05: test_panel_sweep_b_widgets.py:176-181 iterates `findChildren(QLayout)` and trips on Qt-internal `qt_scrollarea_*` QBoxLayouts (spacing 0); owned nested layouts already carry the role gap. R2-06: hda_views.py:317-319 showEvent -> qss.ensure_sweep_b_view (qss.py:929-946) + rules qss.py:829-857; PNG pair confirms white native table/buttons -> dark SURFACE table, dark DsHdaAction, filled SIGNAL \"Create Another HDA\", labels shortened at hda_views.py:293-296. hda_views is imported only by chat_panel.py; the shipped houdini/python_panels/synapse_panel.pypanel builds synapse.panel.synapse_panel, which never instantiates hda_views.\n\n(c) The 22 branch Qt reds: 15 widths = 6 code (composed panel + HealthStrip, driver health_strip.py:412-419) + 3 code (ResultView btn_row, runner-dependent: passes under hython) + 6 RULING (QuickActionPills + SynapseChatPanel: alternate entry not registered by any .pypanel); 4 SWEEP_B probes = code; 3 pins = code. New on the merged tree: 2 CAMERA pins (code, rebase BASE to merge-base), 8 test_gate_fidelity_unknown + 1 test_font_scale (code, oracle migration), B4 clip (code, vertical-budget fix), G3 bundled-font (code, 33 font-family declarations in the SWEEP_A tail), G3 content-scales (code, audit_panel.py:370). Pre-existing on master and not the wave's: tests/panel/test_failure_trail.py::test_dead_verb_hidden.\n\n(d) Order and gates are in F-D (steps 0-9, each with its own command). Must be green before merge word: hython `tests/panel` (floor: only the pre-existing dead-verb red), python313/python.exe `tests/test_panel_rhythm_docking.py` (0 reds, or 6 with a written alternate-entry exemption), stock `tests/test_panel_rhythm_owner.py tests/test_panel_sweep_a.py tests/test_panel_sweep_b_hex.py tests/test_panel_sweep_b_widgets.py tests/test_panel_camera_rhythm.py tests/test_chat_panel.py tests/test_panel_rhythm_census.py tests/test_rope_density.py tests/test_design_system.py tests/test_panel_typography.py tests/test_hda_panel.py tests/test_panel_settings.py`, full `pytest -q` (v5.63.0 gate floor 7431 passed / 1 pre-existing), `hython audit_panel.py --strict` exit 0 (master baseline: pass, 1 WARN), census camera path 0/0/0 with the 3 tagged seams and panel-wide <= 20 all tagged.",
+   "findings": [
+    {
+     "id": "F-A1",
+     "title": "Git-level merge of master into pd/panel-integrate-r3 is conflict-free; no hunk resolution needed",
+     "severity": "info",
+     "evidence": "`git -C C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 merge-tree --write-tree master pd/panel-integrate-r3` -> 9b0c641b066f17c3c44f998192c148b8b34ce054, exit 0, no conflicted paths. Overlap files (diff --name-only a5b975c1..master \u2229 a5b975c1..branch): .gitignore (master +:228-232 `_temp_*.json`/`harness/**/*.err`/board html; branch +:113 `!design/rhythm_pd/**/*.png`) and python/synapse/panel/synapse_panel.py (master B4 hunks @133-160 and @1415-1460; wave hunks @330..2100, none touching those ranges). Master-only files that matter to the panel: settings.py:80-86 (SYNAPSE_PANEL_SETTINGS), settings.py:189-206 (composer ceiling), audit_panel.py:159-167 and :387-393, tests/panel/test_docking.py:113-140, python/synapse/panel/recipe_card.py (new, census-clean: 0/0/0).",
+     "repro": "git -C C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 merge-tree --write-tree master pd/panel-integrate-r3; echo exit=$?   # expect a bare tree OID and exit 0\ngit -C C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 diff a5b975c1 master -- python/synapse/panel/synapse_panel.py   # the two B4 hunks",
+     "recommendation": "Step 0 for the forge: `git -C C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 merge --no-edit master` and confirm `git rev-parse HEAD^{tree}` == 9b0c641b. Keep both sides verbatim; every real collision is semantic and listed below."
+    },
+    {
+     "id": "F-A2",
+     "title": "B4 composer cap is defeated by the wave's vertical rhythm: Send clips 24px (standard) / 43px (airy) below a 420px pane on the merged tree",
+     "severity": "blocker",
+     "evidence": "Merged tree, hython offscreen: tests/panel/test_docking.py::test_send_never_clips_below_the_pane_at_min_height FAILS 'Send bottom 444px is below the 420px pane'; G3 'input not clipped: send bottom 444px / panel 420px [FAIL]'. Master: 410/420 ok. Branch alone (no B4): 549/420. Probe on the merged tree (scratch probe_b4.py): cap engaged and already at floor (input h=64, _cap=64, _user_h=514 preserved) yet input bottom 454; root layout spacing 16 (wave synapse_panel.py:485 `self.setProperty(\"rhythm_role\", \"group\")` replaced `root.setSpacing(0)`/`setContentsMargins(0,0,0,0)`), direct-face column spacing 16 with a new DsDivider row (synapse_panel.py:1099-1112, divider at :1111) -> 3 root gaps + 3 face gaps = 96px of new chrome at standard, 144px at airy; ribbon 53px (master 32), tab row 71px (master 54). Per profile: expert/standard overflow +24, curious/airy +43, ml/tight -10 (fits). Master's B4 code: synapse_panel.py:136 `_cap`, :148 cap_height, :1433 _fit_composer_to_pane, :1452/:1457 show/resizeEvent.",
+     "repro": "SCR=<scratch>; mkdir -p $SCR/merged; git -C C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 archive 9b0c641b | tar -x -C $SCR/merged 2>/dev/null; cd $SCR/merged && QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 SYNAPSE_PANEL_SETTINGS=$SCR/s.json \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest tests/panel/test_docking.py -q -p no:cacheprovider\ncd $SCR/merged && QT_QPA_PLATFORM=offscreen SYNAPSE_PANEL_SETTINGS=$SCR/g3.json \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" audit_panel.py --strict | grep 'input not clipped'",
+     "recommendation": "Keep both B4 and the roles by removing the gap that has no design meaning, not by weakening the cap. (1) The root stack (rail/ribbon/tab row/faces) is chrome bands separated by their own hairlines (DsHeader/DsTabRow rules), not a 'group' collection: restore `root.setSpacing(0)` + `root.setContentsMargins(0,0,0,0)` at synapse_panel.py:485 with `# rhythm-exempt: chrome bands own their hairlines; no collection gap` (recovers 48px std / 72 airy). (2) In `_build_direct_face` (:1099-1112) do not pay a group gap on both sides of the 1px divider: drop the divider or move act+divider+input into one `DsSection` with role `parm_row`/no role (recovers 16-32px). Budget needed: >=24 std, >=43 airy. Then update the CAMERA local ceiling tests/test_panel_camera_rhythm.py:151 expected `\"synapse_panel.py\": (0, 1)` -> (2, 1) and tag both sites. Gate: the two commands above go green (B4 test + G3 line), and tests/panel/test_docking.py::test_usable_at_min_height stays green. Do this BEFORE re-baselining RESIDUAL.json (F-B1) so the cap is set after the two tagged sites exist."
+    },
+    {
+     "id": "F-A3",
+     "title": "Two CAMERA freeze pins turn red on the merged tree because B4 legitimately edited showEvent and _GrowingInput.__init__",
+     "severity": "major",
+     "evidence": "Merged tree, stock python: tests/test_panel_camera_rhythm.py::test_lifecycle_and_token_completion_methods_byte_identical[showEvent] and ::test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation FAIL; both green on the branch. The pins (test_panel_camera_rhythm.py:15 `BASE = \"ce04dcb0\"`, :107-109, :111-119) compare synapse_panel.py methods to LEVER's commit; master's B4 added `self._fit_composer_to_pane()` to showEvent (synapse_panel.py:1452-1455) and `self._cap = None` to _GrowingInput.__init__ (:136). Same class as CRUX R2-03 pin 3 (tests/test_panel_sweep_b_hex.py:105-110 freezes all of synapse_panel.py + face_token.py against ce04dcb0). Note: ::test_token_readout_worker_fontload_and_shelf_unchanged also failed in my scratch but that is a scratch artifact (untracked files read as deletions by `git diff`); the real repo confirms `git diff --stat ce04dcb0 master -- token_readout.py claude_worker.py fontload.py tokens.py synapse_shelf.py` is empty.",
+     "repro": "cd <scratch>/merged && git init -q . && echo C:/Users/User/SYNAPSE/.git/objects > .git/objects/info/alternates && PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_panel_camera_rhythm.py tests/test_panel_sweep_b_hex.py -q -p no:cacheprovider",
+     "recommendation": "Pin against the master the wave sits on, not a fixed leg SHA: for synapse_panel.py protected methods use `git merge-base master HEAD` as BASE (after the merge that is 8021bbc0, which already carries B4), keep face_token.py/token_readout/claude_worker/fontload/tokens/shelf at ce04dcb0 (master did not touch them). For test_panel_sweep_b_hex.py:105-110: keep fontload.py and synapse_shelf.py frozen vs merge-base; replace the synapse_panel.py/face_token.py freeze with SWEEP_B's own-diff check (`git diff ae046513~1 ae046513 -- python/synapse/panel/synapse_panel.py python/synapse/panel/face_token.py` == empty), which is CRUX's own prescription ('test each leg's own diff against its parent'). Gate: the repro above green on the merged tree."
+    },
+    {
+     "id": "F-B1",
+     "title": "R2-01 residual guard: seed resurrects removed owners and the 226 cap has 164 sites of slack; the 47 untagged sites are enumerable and closable in code",
+     "severity": "major",
+     "evidence": "tests/test_panel_rhythm_owner.py:79-88 `_seed` builds `allowed` from every identity in the 2026-09-04 census (348 seed sites) so an exact deleted owner (e.g. working_indicator `self._dot.setStyleSheet(sheet)`) returns green; :90-98 `_check` only compares untagged-novel identities and `residual <= ceiling`; harness/panel_pd/RESIDUAL.json:3 allowed_residual 226, :2 allowed_grid_residual 2, :4 census pointer, :7-11 seed_counts 135/106/107. Fresh census on the branch and on the merged tree (harness/notes/panel_rhythm_census.py --panel-dir): spacing 18, sheets 2, hex 42, grid 0, exempt_tags 15 -> 62 sites, 47 untagged: agent_health.py 14 hex (:177 x3, :180, :188, :197, :202 x3, :206, :223, :228 x2, :231 HTML colour strings), render_preflight.py 6 (:865-867, :889, :895, :927), bookmarks.py 4 (:209, :210, :238 x2), dependency_map.py 4 (:420-423), save_shot.py 3 (:378, :473, :474), session_integrity.py 3 (:203, :214, :220), apex_recipes.py 3 (:25 x2 comment, :720), recipe_book.py 2 (:27 comment, :761), session_journal.py 1 (:268), error_translator.py 1 (:19 comment), styles.py 1 (:9 comment), health_strip.py 3 (:412 margins, :413 spacing, :418 sheet), integrity_readout.py 2 (:81, :82). Tagged 15: chat_panel 4, context_bar 2, face_review 2, face_work 2, gate_widget 2, recall_card.py:114-115, synapse_panel.py:333.",
+     "repro": "python C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3/harness/notes/panel_rhythm_census.py --panel-dir C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3/python/synapse/panel --json <scratch>/census.json --md <scratch>/census.md; python -c \"import json;d=json.load(open('<scratch>/census.json'));print(d['totals']['spacing_sites'],d['totals']['inline_stylesheet_sites'],d['totals']['hex_raw_sites'],d['totals']['exempt_tags'])\"   # 18 2 42 15\nMutation that must go red after the fix: restore `self._dot.setStyleSheet(sheet)` in python/synapse/panel/working_indicator.py::_apply, run `python -m pytest tests/test_panel_rhythm_owner.py -q` (today: green = the hole).",
+     "recommendation": "Code, no ruling needed if the forge takes the sweep: (1) re-baseline the seed -- write harness/panel_pd/runs/2026-09-05/rhythm_census.json from the landing tree, point RESIDUAL.json:4 at it, set seed_counts to the new totals (RESIDUAL.json:7-11 must equal census totals per :107-110 of the test), allowed_residual -> the new count, allowed_grid_residual -> 0; `_check_ceiling` (:100-104) and the git-history test (:117-127) accept a decrease. Removed identities then cannot return: the working_indicator mutation goes red. (2) Close the 47: the 5 comment hits (apex_recipes:25 x2, error_translator:19, recipe_book:27, styles.py:9) are rewordings; the 37 HTML colour strings map to existing tokens by role exactly as SWEEP_B did (rows appended to docs/panel_pd/HEX_MAPPING_SWEEP_B.md and the file added to tests/test_panel_sweep_b_hex.py:13-17 MIGRATED so the audit stays exact); health_strip.py:412-419 -> `rhythm_role` on the strip + objectName `DsHealthCell` rule in qss.py (owner CAMERA, it lives in `_build_rail` synapse_panel.py:776-789); integrity_readout.py:81-82 -> tag `# rhythm-exempt: 1px hairline seam`. End state ~19-21 sites, all tagged, meeting the plan's <=20 or within one site of it -- if the forge stops short, that residual is the thing to put in front of Joe, not the whole 62. Order: after F-A2's two tagged sites exist."
+    },
+    {
+     "id": "F-B2",
+     "title": "R2-02 plus two undeclared siblings: six test oracles and one audit probe still read legacy `get_*_stylesheet()` calls or `styleSheet()` text that the wave replaced with properties/QFont",
+     "severity": "major",
+     "evidence": "Declared by CRUX: tests/test_chat_panel.py:1048 (createInterface must contain 'get_root_widget_stylesheet()' and not 'font-family:'), :1065 (_build_input_area 'get_section_container_stylesheet()'), :1073 (_build_connection_bar 'get_connection_frame_stylesheet()', no 'border-top:'), :1082 (_build_mode_toolbar 'get_mode_toolbar_stylesheet()', no 'border-bottom:'). Real seams: chat_panel.py:147 `qss.sweep_a_style(self._root, \"chat_root\")`, :383 chat_input_container, :607 chat_connection, :706 chat_toolbar, :247 `qss.install_sweep_a_root`; rules qss.py:518, :545, :566, :594 built by `_sweep_a_rule` (qss.py:464-485, scoped `[sweep_a_style=\"...\"]`). NOT in CRUX's list because the branch receipt never ran tests/panel/: tests/panel/test_gate_fidelity_unknown.py:89-91 `_dot_color` returns `widget._fidelity_dot.styleSheet()` -> '' (8 FAILs, branch and merged; master green); seam gate_widget.py:599 `qss.sweep_a_style(self._fidelity_dot, \"gate_fidelity_dot\", _fidelity_color(fidelity))`, rule qss.py:697. tests/panel/test_font_scale.py:107 and audit_panel.py:370 regex `font-size:\\s*(\\d+)px` over `panel._input.styleSheet()` -> None (test FAIL 'TypeError: NoneType > NoneType'; G3 'content scales on Aa : prompt None->Nonepx [FAIL]'); seam synapse_panel.py:2092 `_set_prompt_font` (document default font + char format), called from :1837 and :2087.",
+     "repro": "cd <scratch>/branch && QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest tests/panel -q -p no:cacheprovider   # 10 failed on the branch tree (8 gate_fidelity + font_scale + pre-existing dead verb); master tree: 1 failed (dead verb only)\ncd <scratch>/merged && python -m pytest tests/test_chat_panel.py -q -k TestCSSConsolidation   # 4 failed",
+     "recommendation": "Move each oracle to the seam with a negative control, per CRUX (no dead calls, no deletions): chat root -> assert `sweep_a_style(self._root, \"chat_root\")` in createInterface source AND `'[sweep_a_style=\"chat_root\"]' in qss.stylesheet()` AND that rule carries `background:`; negative: `setStyleSheet(` absent from the method. Input area -> chat_input_container likewise. Connection bar -> the chat_connection rule text contains `border-top:` (the assertion moves from 'not in method' to 'in the scoped rule'); toolbar -> chat_toolbar rule contains `border-bottom:`. Gate fidelity: `_dot_color` -> `widget._fidelity_dot.property(\"sweep_a_color\")` (the same value `_fidelity_color` returns), keep every existing case. Font scale: tests/panel/test_font_scale.py:107 and audit_panel.py:370 -> `panel._input.document().defaultFont().pixelSize()` (audit_panel.py is master-owned but forge-editable in pd-r3; B4 already touched it). Gate: hython `tests/panel/test_gate_fidelity_unknown.py tests/panel/test_font_scale.py` green, stock `tests/test_chat_panel.py` green, G3 line reads `prompt 12->19px`."
+    },
+    {
+     "id": "F-B3",
+     "title": "R2-03 three isolated-green pins: exact assertions and fence-scoped replacements",
+     "severity": "major",
+     "evidence": "tests/test_panel_sweep_a.py:113-127: :118 `source.startswith(original)` holds (LEVER prefix byte-exact, 449 lines), :120 tail starts with `# --- SWEEP_A (chat_panel.py)` holds (qss.py:452), :121 `added.rstrip().endswith(\"# --- END SWEEP_A\")` is the failing line -- the tail ends `# --- END SWEEP_B` (qss.py:946; SWEEP_A block spans qss.py:452-782, SWEEP_B :785-946). tests/test_panel_sweep_b_widgets.py:64-65 `tail.lstrip().startswith(\"# --- SWEEP_B (\")` fails because SWEEP_A comes first; the rest of that test (:66-72: no hex, no `font-family:`, only existing `t.` tokens, block markers in the sheet) is sound and must be kept but applied to the SWEEP_B block only. tests/test_panel_sweep_b_hex.py:105-110 whole-file freeze of synapse_panel.py + face_token.py vs ce04dcb0 forbids CAMERA's permitted work and now also B4's (F-A3).",
+     "repro": "cd C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 && python - <<'EOF'\nimport subprocess,pathlib\no=subprocess.check_output(['git','show','ce04dcb0:python/synapse/panel/designsystem/qss.py']).decode(); s=pathlib.Path('python/synapse/panel/designsystem/qss.py').read_text(encoding='utf-8'); a=s[len(o):]\nprint(a.strip().startswith('# --- SWEEP_A (chat_panel.py)'), a.rstrip().endswith('# --- END SWEEP_A'), a.rstrip().endswith('# --- END SWEEP_B'))  # True False True\nEOF",
+     "recommendation": "Fence-scope both block pins: block_a = added[added.index('# --- SWEEP_A (chat_panel.py)'):added.index('# --- END SWEEP_A')+len(...)], assert it starts at offset 0 of the tail (contract: SWEEP_A first), run the hex check on block_a; block_b = the `# --- SWEEP_B (` .. `# --- END SWEEP_B` slice, assert it is the LAST block (tail.rstrip() ends with END SWEEP_B) and run the hex/font-family/token checks on block_b. Keep `sheet.startswith(qss._sweep_a_base_stylesheet())` and the key-in-sheet loops as they are. For the hex freeze see F-A3. Gate: `python -m pytest tests/test_panel_sweep_a.py tests/test_panel_sweep_b_widgets.py tests/test_panel_sweep_b_hex.py -q` in pd-r3 after the master merge."
+    },
+    {
+     "id": "F-B4",
+     "title": "R2-04 the fifteen widths: drivers located, and the numbers depend on the runner (python313/python.exe vs hython); 9 of 15 belong to the unshipped alternate entry",
+     "severity": "major",
+     "evidence": "Receipt runner (Houdini 22.0.400 python313/python.exe, what tests/test_panel_rhythm_docking.py:60 spawns via `[sys.executable, \"-I\", ...]`), merged tree identical to branch: composed panel 433 (airy/standard/tight), QuickActionPills 602/592/587, hda_views.ResultView 388/384/382, HealthStrip 708, SynapseChatPanel 514/506/502 -> 15 FAILED / 73 passed. Under hython (host fonts) the same worker cannot start: `hython -I` drops the stdlib ('No module named encodings'), every case ERRORs -- the test is python.exe-only today. Same widgets measured in-process under hython on the merged tree (scratch probe_widths.py): composed 466 at all three densities, driver `_build_rail` -> HealthStrip#health_strip 466 = hs_connection 108 + hs_project 108 + hs_memory 101 + ... with `row.setSpacing(t.SPACE_MD)` (health_strip.py:412-413; cell HTML :385-386; per-label sheet :418; owner UNASSIGNED per docs/PANEL_REGION_MAP.md:80; the strip is built in synapse_panel.py:776-789 `_build_rail`); QuickActionPills 410 (pills container 386, `parm_row`, five 74-80px pills, quick_actions.py:134 docking-exempt); HealthStrip 466; SynapseChatPanel 484 (connection_frame 484: ws_path_button 180 + connect_button 126 + status_label 96, chat_panel.py:588-651, :651 docking-exempt; ModeStack 410 via QuickActionPills); ResultView 238 -> PASSES under hython (the 382-388 python.exe figure is btn_row's three DsHdaAction 88/75/75 + DsHdaGenerate 175, hda_views.py:291-316). Reachability: houdini/python_panels/synapse_panel.pypanel:8/:45 builds synapse.panel.synapse_panel only; `hda_views` is imported solely by chat_panel.py; chat_panel/QuickActionPills are referenced by no .pypanel (synapse_shelf.py:25 is a comment).",
+     "repro": "cd <scratch>/merged && QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 \"C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe\" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider   # 15 failed / 73 passed\ncd <scratch>/merged && QT_QPA_PLATFORM=offscreen \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest \"tests/test_panel_rhythm_docking.py::test_component_pattern_at_docking_width[standard-label]\" -q   # ERROR: worker 'No module named encodings'",
+     "recommendation": "Code (9 tests): HealthStrip cells get `QSizePolicy.Ignored` horizontal + elided text, the same move the wave made for the rail labels at synapse_panel.py:770-772, and the strip takes a role so :412-413 disappear (this also pays 3 of F-B1's untagged sites) -> composed panel and HealthStrip x3 densities pass; ResultView: wrap btn_row into a 2x2 QGridLayout or Ignored policy on DsHdaAction (hda_views.py:291-308) so it passes under both runners. Runner: make the worker explicit -- spawn Houdini's python313/python.exe (or honour SYNAPSE_HYTHON without `-I`) and print the runner + binding in the receipt, because host-like fonts change the verdict (708 vs 466, 388 vs 238). RULING (6 tests): QuickActionPills + SynapseChatPanel are the alternate Chat/HDA entry, not shipped by any .pypanel; either Joe scopes the 380px accept to shipped surfaces (drop the two from ALTERNATE_REGIONS at test_panel_rhythm_docking.py:26-33 with a written exemption naming this evidence) or the forge restructures pills/connection bar into wrapping rows, which SWEEP_A's own crucible ('nothing changes structurally') forbids without a word."
+    },
+    {
+     "id": "F-B5",
+     "title": "R2-05 SWEEP_B sequence probes fail on Qt-internal scroll-area layouts, not on owned layouts; split is mechanical",
+     "severity": "major",
+     "evidence": "tests/test_panel_sweep_b_widgets.py:176-181 asserts spacing == gap for every layout in `child.findChildren(widgets.QLayout)` (command_palette variant :177-178). Inventory on the merged tree under hython (scratch probe): ResultView -- owned: top QVBoxLayout 4 and btn_row QHBoxLayout 4 (both == parm_row standard gap); internal: 6 QBoxLayouts under `qt_scrollarea_vcontainer`/`qt_scrollarea_hcontainer` (QTableWidget scrollbars) spacing 0 = the failing assertion in the receipt ('hda_views.ResultView', 'QBoxLayout', 0). DescribeView -- owned: top 4, options_row QGridLayout 4; internal: 4 scroll-area + 1 unnamed QFrame (combo popup) at 0. ToolPalette -- owned: top 4, two chip-row QGridLayouts 4; internal 2 at 0. CommandPaletteWidget -- root QVBoxLayout 16 (group), PaletteContainer QVBoxLayout 4 (parm_row); internal 2 scroll-area at 0 trip the `dict(airy=6, standard=4, tight=3)` check. The geometry() and second-action branches (:150-160, :182-200) never execute today.",
+     "repro": "cd <scratch>/merged && QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 \"C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe\" -m pytest tests/test_panel_sweep_b_widgets.py -q -k sequence -p no:cacheprovider   # 4 failed at :176/:179",
+     "recommendation": "Replace the loop's population with the owned set: `owned = [l for l in child.findChildren(QLayout) if l.parentWidget() is child or l.parentWidget().property(\"rhythm_role\")]`; assert the role gap on owned layouts and add the honest negative control the report claims but never proved -- Qt-internal layouts (parentWidget objectName startswith 'qt_' or class module startswith 'PySide') keep their spacing byte-equal before/after `rhythm.apply`. Then geometry() and the DescribeView/BuildingView/ResultView/ToolPalette/CommandPalette second-action sequences run for real. Gate: the repro above green under python313/python.exe; report the runner."
+    },
+    {
+     "id": "F-B6",
+     "title": "R2-06 HDA Result parity is genuinely beyond gap/label/tag, and the surface is unreachable from the shipped panel -- a scope ruling, not a fix",
+     "severity": "major",
+     "evidence": "design/rhythm_pd/before/hda_result.png (368x420): native white QTableWidget with grey header, native grey buttons 'Inspect in Network / Edit Parameters / Save as HDA File', native 'Create Another HDA'. design/rhythm_pd/after_integrate/hda_result.png (340x420): dark SURFACE table with RAISED header, dark bordered DsHdaAction buttons labelled 'Inspect / Parameters / Save HDA', filled SIGNAL 'Create Another HDA'. Seams: hda_views.py:317-319 showEvent -> `qss.ensure_sweep_b_view` (qss.py:929-946: installs the DsRoot sheet when hosted by the legacy entry); rules qss.py:829-836 DsHdaGenerate (SIGNAL fill), :837-845 DsHdaAction/DsHdaCancel, :848-857 DsHdaParameters; labels shortened hda_views.py:293-296 (full text kept in tooltip/accessible name). The same fallback serves DescribeView (:109-111) and BuildingView (:193-195). Reachability: only chat_panel.py imports hda_views (chat_panel.py:195-200); synapse_panel.py never references hda_views/ResultView; the shipped synapse_panel.pypanel:45 builds synapse.panel.synapse_panel.",
+     "repro": "grep -rlE \"hda_views\" C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3/python C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3/houdini   # chat_panel.py only\ngrep -n \"hda_views\\|ResultView\" C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3/python/synapse/panel/synapse_panel.py   # empty",
+     "recommendation": "Put two options in front of Joe: (A) written parity exemption -- the white native table inside a dark panel was never a designed state, the dark surfaces are the design system's existing tokens (no new hex/font, verified by CRUX), and the surface is not on the shipped panel; keep the code, record the waiver in docs/panel_pd/INTEGRATION.md and harness/notes/panel_nits_pd.md. (B) strict SWEEP-A crucible -- strip background/border/fill from qss.py:829-857 leaving colour-of-text and gaps, restore the long labels at hda_views.py:293-296, regenerate the PNG pair. Either way the DescribeView/BuildingView siblings ride the same decision. GUI-GATE: whichever is chosen, Joe's eyes on .400 remain the accept for the HDA page of the shipped panel (synapse_panel.py:1695-1720 `_hda_prompt`, a different widget set)."
+    },
+    {
+     "id": "F-C1",
+     "title": "G3 design gate fails on the branch and on the merged tree for two wave-caused reasons the receipt never ran: 33 `font-family:` declarations in the SWEEP_A tail, and the prompt font probe",
+     "severity": "blocker",
+     "evidence": "`hython audit_panel.py --strict`: master exit 0 (pass, 1 WARN '3 under 26px'); branch exit 1 with 4 FAIL (no bundled font in QSS ['space grotesk','space mono']; input not clipped 549/420; wordmark is brand; content scales prompt None->None); merged exit 1 with 3 FAIL (bundled font; input not clipped 444/420; content scales) -- the wordmark FAIL is cured by master's audit_panel.py:387-393 WORDMARK pin. Bundled-font probe audit_panel.py:211-215 scans `qss.stylesheet(1.0) + get_chat_display_stylesheet(1.0)` for the bundled family names (fonts must travel by QFont, never QSS). LEVER prefix (qss.py:1-449) has 1 `font-family` and master passes; the SWEEP_A tail (qss.py:452-782) has 33 at lines 519, 523, 525, 526, 530, 533, 534, 537, 538, 540, 542, 549, 553, 577, 580, 585, 590, 623, 626, 638, 641, 646, 669, 672, 682, 688, 693, 722, 727, 732, 738, 743, 775 -- `{t.FONT_SANS_CSS}`/`{t.FONT_MONO_CSS}` copied verbatim from styles.py sheets; SWEEP_B tail has 0 (its test forbids it at test_panel_sweep_b_widgets.py:67; SWEEP_A's test has no such guard). `python -c` on the branch: stylesheet contains 'space grotesk' True, 'space mono' True; LEVER base False.",
+     "repro": "cd <scratch>/branch && QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 SYNAPSE_PANEL_SETTINGS=<scratch>/g3b.json \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" audit_panel.py --strict | grep -E 'FAIL|G3 RESULT'\ncd C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 && sed -n 452,782p python/synapse/panel/designsystem/qss.py | grep -c font-family   # 33",
+     "recommendation": "Strip every `font-family:` declaration from the SWEEP_A rules (families come from fontload/QFont; `rhythm._apply_type` already sets mono for label/tag, designsystem/rhythm.py:41-54) and add SWEEP_B's guard to tests/test_panel_sweep_a.py (`assert \"font-family:\" not in block_a`). Fix the prompt probe per F-B2. Note the branch's SYNAPSE_PANEL_SETTINGS is honoured only after the master merge (settings.py:80-86), so run G3 on the merged tree, not the branch. Gate: `hython audit_panel.py --strict` exit 0 with the master baseline's single WARN."
+    },
+    {
+     "id": "F-C2",
+     "title": "tests/panel/test_failure_trail.py::test_dead_verb_hidden is pre-existing on master and not the wave's",
+     "severity": "info",
+     "evidence": "Master archive (8021bbc0), hython tests/panel: 1 failed / 117 passed, the one being test_dead_verb_hidden (face_review.py:212 'open in render view' verb shown without a render bridge; the test's own docstring :154-159 says it FAILS today). Same single red on branch and merged. This is the '1 pre-existing fail' in the v5.63.0 gate note (harness/notes/h22/pytest_v5630_master.txt).",
+     "repro": "cd <scratch>/master && QT_QPA_PLATFORM=offscreen SYNAPSE_PANEL_SETTINGS=<scratch>/m.json \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest tests/panel -q -p no:cacheprovider | tail -3",
+     "recommendation": "Carry it as the known floor (tests/panel: 117 passed / 1 failed) in the landing receipt; do not spend the forge on it."
+    },
+    {
+     "id": "F-D",
+     "title": "Landing order -- nine steps, each independently gated",
+     "severity": "info",
+     "evidence": "Derived from the merged-tree runs: Qt tier merged 11 failed / 107 passed (master 1/117, branch 10/107); pure-Python panel set merged 9 real reds (7 branch-known + 2 B4 collisions) of 313; docking python313 15 failed / 73 passed; G3 merged 3 FAIL; census 62 sites / 15 tagged. Full-suite floor from harness/notes/h22/pytest_v5630_master.txt: 7431 passed / 1 pre-existing fail / 198 skipped.",
+     "repro": "Each step's gate command is listed in its finding; run them in the pd-r3 worktree after step 0 with PYTHONDONTWRITEBYTECODE=1 -p no:cacheprovider and SYNAPSE_PANEL_SETTINGS pointed at a scratch file.",
+     "recommendation": "0 merge master (F-A1; verify tree 9b0c641b). 1 rebase freeze pins to merge-base + fence-scope block pins (F-A3, F-B3) -> stock pytest on the four sweep/camera files. 2 oracle migrations (F-B2) -> stock test_chat_panel + hython test_gate_fidelity_unknown/test_font_scale + G3 'content scales'. 3 SWEEP_A font-family purge + guard (F-C1) -> G3 'no bundled font: clean' + test_panel_sweep_a. 4 vertical budget for B4 (F-A2) -> hython tests/panel/test_docking.py + G3 'input not clipped' + test_panel_camera_rhythm::test_camera_residual_cannot_regrow. 5 probe split (F-B5) -> python313 test_panel_sweep_b_widgets -k sequence. 6 width code fixes HealthStrip/ResultView + explicit runner (F-B4) -> python313 test_panel_rhythm_docking (expect 6 residual reds pending ruling). 7 residual sweep + seed re-baseline (F-B1) -> test_panel_rhythm_owner + the working_indicator mutation red. 8 Joe's two rulings (F-B4 alternate-entry scope, F-B6 parity) recorded in docs/panel_pd/INTEGRATION.md; CRUX round 3 on the landing tree. 9 full gates: hython tests/panel (floor 117/1), python313 docking (0 or exempted 6), stock full pytest -q (>= 7431 / 1), census (camera 0/0/0 with the 3 tagged seams; panel-wide <= 20 all tagged), `hython audit_panel.py --strict` exit 0. Then GUI gate, then merge word."
+    }
+   ],
+   "measurements": {
+    "merge": {
+     "base": "a5b975c1",
+     "master": "8021bbc0",
+     "branch_r3": "aca05ccb",
+     "merge_tree": "9b0c641b066f17c3c44f998192c148b8b34ce054",
+     "conflicts": 0,
+     "overlap_files": [
+      ".gitignore",
+      "python/synapse/panel/synapse_panel.py"
+     ],
+     "b4_hunks_synapse_panel": [
+      "133-160",
+      "1415-1460"
+     ]
+    },
+    "qt_tier_tests_panel_hython": {
+     "master": "1 failed / 117 passed (dead verb, pre-existing)",
+     "branch": "10 failed / 107 passed",
+     "merged": "11 failed / 107 passed (branch 10 + B4 clip)"
+    },
+    "pure_python_panel_set_merged": {
+     "real_reds": 9,
+     "scratch_artifacts": 2,
+     "passed": 302,
+     "skipped": 54
+    },
+    "docking_python313_merged": "15 failed / 73 passed (identical set to the branch receipt)",
+    "docking_hython_merged": "all ERROR: worker spawned with -I loses stdlib",
+    "g3_audit_strict": {
+     "master": "exit 0, pass, 1 WARN",
+     "branch": "exit 1, 4 FAIL",
+     "merged": "exit 1, 3 FAIL (bundled font, input not clipped 444/420, content scales)"
+    },
+    "b4_overflow_px_merged": {
+     "expert_standard": 24,
+     "curious_airy": 43,
+     "ml_tight": -10
+    },
+    "widths_px": {
+     "python313_runner": {
+      "composed": 433,
+      "QuickActionPills": "602/592/587",
+      "ResultView": "388/384/382",
+      "HealthStrip": 708,
+      "SynapseChatPanel": "514/506/502"
+     },
+     "hython_inprocess": {
+      "composed": 466,
+      "QuickActionPills": 410,
+      "ResultView": 238,
+      "HealthStrip": 466,
+      "SynapseChatPanel": 484,
+      "DescribeView": 271,
+      "ToolPalette": 190,
+      "CommandPaletteWidget": 38
+     }
+    },
+    "census_branch_and_merged": {
+     "spacing": 18,
+     "sheets": 2,
+     "hex": 42,
+     "grid": 0,
+     "total": 62,
+     "tagged": 15,
+     "untagged": 47,
+     "residual_cap": 226,
+     "grid_cap": 2
+    },
+    "sweep_a_font_family_declarations": 33,
+    "full_suite_floor_v5630": "7431 passed / 1 pre-existing fail / 198 skipped"
+   },
+   "gui_gate": [
+    "Five camera regions x three profiles on H22.0.400 (profile tab strip, header/ribbon one-row merge, chat transcript, verb rail, recall card, TOKEN face) -- headless numbers only; Joe's eyes are the accept.",
+    "After the F-A2 vertical-budget fix: does the rail/ribbon/tab-row stack with zero root gap and the act/divider/input band still read as one rhythm, or does the divider now touch the verbs?",
+    "HealthStrip cells elided/Ignored at 380px: is the connection/project/memory strip still legible when it truncates?",
+    "HDA Result/Describe/Building parity (F-B6): dark SURFACE table + filled SIGNAL action vs the native white table -- only relevant if the alternate Chat/HDA entry is ever opened; the shipped panel's HDA page is a different widget set.",
+    "Alternate Chat/HDA entry (chat_panel.py) after the SWEEP_A font-family purge: fonts fall back to QFont/fontload instead of QSS -- if that entry is ever meant to ship, its type needs an eye.",
+    "The 'space grotesk / space mono' families resolving on Joe's rig (fontload) rather than through QSS -- G3 WARN '3 interactive targets under 26px' is a master baseline, not the wave's."
+   ]
+  }
+ ],
+ "brief": {
+  "standard_verdict": "DOES-NOT-MEET on pd/panel-integrate (aca05ccb) as it stands; LANDABLE on pd/panel-integrate-r3 after the nine forge steps below, with two written waivers and one GUI gate. The reach claim is real (census 107/106/135 -> 18/2/42, camera path 0 untagged, one accent, no new family, G3 WCAG/type-floor/chrome-frozen green). The Pentagram bar fails on evidence the wave never reported and I verified against master: (1) the 30px GUTTER token has zero consumers on the branch while master consumes it at synapse_panel.py:637/:950/:1009/:1119 - CAMERA's own diff (REPORT_CAMERA.md:320-428) deleted them to reach raw-zero, which is the census being gamed, not a design; (2) parm_row is used as a 4px utility on 30 of 52 hook sites that are not parameter rows, so the 'roles, not sizes' principle is inverted; (3) the profile pills carry `row` (min-h 44, hairline box) and render as 116x70 blocks - battleplan T1 said 'row pills' but \u00a74 puts pills under `tag`, and the stretch that right-aligned them was dropped; (4) verbs and header controls take two type appliers (tracked_font then rhythm label) and no longer match their CHAT/TOKEN siblings; (5) tokens.py TYPE_ROLES['label'] (sans, BP4 ratified) and rhythm.py 'label' (mono/upper/tracked, battleplan \u00a74 ratified) run on the same widgets. Every one of these is a cheap code fix inside designsystem/ plus a role reassignment; none needs Joe's word before landing, because in each case the ratified doc already says what the design is and the wave departed from it. The two CRUX for_ruling items are signed below: RESIDUAL = own-now to <=20 all tagged inside this forge (no cap waiver); DOCKING = the contract is PANEL_MIN_WIDTH 280 with 380 written into the YAML as an interim width feature, the measurement is invalid until the worker loads the bundled fonts and refuses an empty font database, HealthStrip is fixed, ResultView is re-measured, the two chat_panel-only widgets are removed from the docking list under a reachability-pinned exemption; HDA PARITY = KEEP with written exemption (the 'before' PNG is an un-sheeted Fusion render; the ce04dcb0 styles.py rule set already specified the dark table and SIGNAL fill). Merge word waits on Joe's eyes for the five camera regions in three profiles on H22.0.400.",
+  "rulings": [
+   {
+    "id": "RULING-1 RESIDUAL",
+    "ruling": "OWN-NOW, no cap waiver. The plan's Done ('panel-wide residual <= 20 tagged sites, guarded') is met inside this forge, not re-dated. (a) Delete the two dead HTML producers: agent_health.py format_agent_health_html (L161-231, 14 hex sites) and render_preflight.py format_preflight_html + _STATUS_ICONS (L865-927, 6 hex sites, including the retired cyan at :927). (b) health_strip.py:412-413 -> rhythm_role='group' on the strip (gap SPACE_GRID[3]=16 / margins 0 reproduces today's values exactly at standard); :418 per-label sheet -> one '#health_strip QLabel' rule appended in qss.py. (c) integrity_readout.py:81-82 -> '# rhythm-exempt: 1px hairline stack between claim rows; no role expresses 1px' (same class CRUX accepted for recall_card's band seam). (d) The remaining 22 side-module hex sites (bookmarks 4, dependency_map 4, apex_recipes 3, save_shot 3, session_integrity 3, recipe_book 2, error_translator 1, session_journal 1, styles 1) migrate by the SWEEP_B mapping-table method - the 5 comment hits are rewordings, the 17 colour strings map to existing tokens (GROW/WARN/ERROR exact; #AAAAAA->TEXT_TERTIARY, #CCCCCC->BONE, #888->TEXT_DISABLED, #4CAF50->GROW, #F44336->ERROR, #FF9800->WARN, #00D4FF->SIGNAL) with rows appended to docs/panel_pd/HEX_MAPPING_SWEEP_B.md and each file added to tests/test_panel_sweep_b_hex.py MIGRATED. (e) Guard re-seed: commit a fresh census of the landing tree at harness/panel_pd/runs/2026-09-05/rhythm_census.json; RESIDUAL.json 'census' points at it, seed_counts = its totals, allowed_residual == measured residual (exact, asserted ==, not <=), allowed_grid_residual = 0; test_residual_cannot_increase_against_git_history fails loud when git log returns zero revisions. End state: <= 20 sites, 0 untagged, cap == count, zero slack, a deleted owner cannot return.",
+    "rationale": "Waive-with-cap keeps 164 sites of slack and a seed that resurrects removed owners (CRUX proved it with WorkingIndicator's setStyleSheet). The four named unowned modules cost under two hours: two are dead code (no caller, no test - deleting is cheaper than tagging), one is a one-line role that reproduces its current pixels, one is an honest 1px tag. The 22 side-module sites are mechanical by a method already proven on 104 sites. A target the forge can hit in a morning is not a thing to waive.",
+    "evidence": "Live census on aca05ccb (harness/notes/panel_rhythm_census.py --panel-dir python/synapse/panel): spacing 18 / sheets 2 / hex 42 / grid 0 / tagged 15, measurement_complete true, errors []. Callers: grep -rn 'format_agent_health_html\\|format_preflight_html' python/ houdini/ tests/ | grep -v 'def format_' -> only render_preflight.py:8-10 (its own docstring). health_strip.py:409-423 row.setContentsMargins(0,0,0,0)/setSpacing(t.SPACE_MD)/lbl.setStyleSheet(...); rhythm.py ROLE_GAPS['group']=SPACE_GRID[3], _MARGINS has no 'group' entry -> (0,0,0,0). Guard: tests/test_panel_rhythm_owner.py:82-98 _seed builds allowed from the 2026-09-04 pre-wave census (RESIDUAL.json census pointer, seed_counts 107/106/135); _check only rejects novel identities and residual <= 226; :126-137 loops zero times on empty git log.",
+    "reversible": true
+   },
+   {
+    "id": "RULING-2A DOCKING CONTRACT + MEASUREMENT",
+    "ruling": "The docking width contract is tokens.PANEL_MIN_WIDTH = 280 (what synapse_panel.py:302 promises the host). The PD wave's 380px is an interim bound and is written into .synapse/contracts/docking-minimums.yaml as a feature: 'every region in ALTERNATE_REGIONS and the composed panel has minimumSizeHint().width() <= 380 at airy/standard/tight, measured with the bundled fonts loaded, runner and resolved family printed'; tests/test_panel_rhythm_docking.py:46 reads that number from the YAML like it reads the heights, never a literal. No width on file is signed until the measurement is valid: the docking worker calls fontload.load_application_fonts() after QApplication, exits non-zero with 'NOT_RUN: empty font database' (mapped to pytest.fail, never skip) when QFontDatabase.families() is empty, and prints runner path + QFontInfo family + families count into the PD_QT line; _run() passes '-I' only when sys.executable is not hython so the Houdini interpreter can run the worker. Regions that fit 380 but not 280 carry a dated follow-up in the spec, not an exemption.",
+    "rationale": "The YAML has no width clause; 380 exists only as a test literal and a spec line without a source. Every width in the receipt was produced by python313/python.exe with QFontDatabase.families()==0 (family '' at -0.75pt), and hython cannot run the worker at all ('-I' drops the stdlib). Widths measured with no font are not measurements. Loading the bundled Space Grotesk/Space Mono makes the number the design's own number; the GUI (Houdini's UI font, HOUDINI_UISCALE) remains Joe's.",
+    "evidence": ".synapse/contracts/docking-minimums.yaml (read in full: features are 400px tall, 200px child, suite green; no width). tests/test_panel_rhythm_docking.py:46 'return 380, ...'; :49-56 already asserts tokens.PANEL_MIN_WIDTH <= width. tokens.py:622-623 PANEL_MIN_WIDTH 280 / PANEL_PREF_WIDTH 340. docs/design/SYNAPSE_PANEL_REDESIGN.md:47 'reflow at PANEL_MIN_WIDTH = 280'. tests/test_panel_rhythm_docking.py:58-66 spawns [sys.executable, '-I', ...]. CTO-lane font probe: python313 families 0 / family '' / 'Fix Error' 108px vs hython 33 / 'Courier' / 63px; QuickActionPills 592 vs 432, HealthStrip 708 vs 488, ResultView 384 vs 260; hython -m pytest test_panel_rhythm_docking.py -> 54 errors 'Failed to import encodings module'.",
+    "reversible": true
+   },
+   {
+    "id": "RULING-2B DOCKING DISPOSITIONS (15 reds)",
+    "ruling": "FIX 1: HealthStrip (= the composed panel's driver, 6 of 15 reds) - cells get QSizePolicy(Ignored, Preferred) horizontally (full text already lives in the tooltip via cell_tooltip, health_strip.py:389) and the strip takes rhythm_role='group' (RULING-1b). RE-MEASURE 1: hda_views.ResultView (3 reds) under the valid font DB; if still > 380 wrap btn_row (hda_views.py:291-308) into a 2x2 QGridLayout - otherwise no source change. WAIVE 2 with a reachability pin: quick_actions.QuickActionPills and chat_panel.SynapseChatPanel (6 reds) are removed from ALTERNATE_REGIONS (test_panel_rhythm_docking.py:26-33) under the exemption text in `waivers`, and a new stock test asserts the exemption's premise - no .pypanel under houdini/python_panels and no module imported by synapse.panel.synapse_panel imports chat_panel or quick_actions; if that pin goes red the two regions return to the list automatically (the test reads the exemption list). Expected after the leg: 0 docking reds under both runners.",
+    "rationale": "Keep the panel usable at its declared floor where an artist can reach it. HealthStrip is in the shipped rail (synapse_panel.py:776-789) - four rich-text labels at 101-165px with a 16px gap will never fit 380 without eliding, and the tooltip already carries the truth. QuickActionPills and SynapseChatPanel exist only behind chat_panel.py, which nothing ships; restructuring them (three pills + more, hidden ws:// URL) is the single-panel collapse's work (REDESIGN \u00a72 decision 1), and SWEEP_A's own crucible forbids structural change without a word. A waiver whose premise is pinned by a test is honest; a waiver by prose is not.",
+    "evidence": "health_strip.py:409-423 (four QLabels, spacing t.SPACE_MD, addStretch), cell_tooltip :389, _truncate :369; composed via synapse_panel.py:776-789 `_build_rail`. Reachability: houdini/python_panels/ contains only synapse_panel.pypanel, :45 'from synapse.panel.synapse_panel import onCreateInterface'; grep for quick_actions/chat_panel/hda_views in synapse_panel.py -> none; the only importer of quick_actions and hda_views is chat_panel.py; synapse_shelf.py:25 mentions chat_panel in a comment only. CTO-lane per-child probe: SynapseChatPanel driver connection_frame 484px (ws_path_button 180 + connect 126 + status 96, chat_panel.py:588-651); QuickActionPills 432 under hython (five 68-80px pills + 20px chevron, quick_actions.py:117-135); ResultView 238-260 under hython.",
+    "reversible": true
+   },
+   {
+    "id": "RULING-2C HDA PARITY",
+    "ruling": "KEEP SWEEP_B's DsHda rules (qss.py:797-855) and ensure_sweep_b_view (qss.py:929-946) with the written exemption in `waivers`. The parity target for hda_views.py is the legacy rule set at ce04dcb0 styles.py (QTableWidget#ParamTable bg CARBON / fg SILVER, QPushButton#HdaGenerateBtn bg SIGNAL / fg VOID, HdaActionBtn hairline), not the un-sheeted offscreen render in design/rhythm_pd/before/hda_result.png. Copy shortening (Inspect / Parameters / Save HDA) is accepted because the full verbs remain as tooltip and accessible name (hda_views.py:293-301). One GUI-gate item stays open: whether the SIGNAL fill on ResultView's 'Create Another HDA' is the view's single accent point next to the GROW status label; the one-line revert if Joe wants one accent is hda_views.py:312 objectName DsHdaGenerate -> DsHdaAction (DescribeView's generate keeps the fill as the hero).",
+    "rationale": "'Beyond gap/label/tag' is the right rule for a re-style; this was a repair. The legacy sheet was installed only by the legacy chat host, so the white table was the absence of any sheet, not a designed state. SWEEP_B re-expressed the ce04dcb0 design in tokens (no new hex, no new family - CRUX verified) and closed the missing-sheet bug. The surface is not on the shipped panel, so the residual risk is one accent decision Joe can flip in one line.",
+    "evidence": "hda_views.py:286-320 (DsHdaAction x3 with setAccessibleName(description), DsHdaGenerate 'Create Another HDA', showEvent -> qss.ensure_sweep_b_view). CTO-lane: git show ce04dcb0:python/synapse/panel/styles.py :53-70 HdaGenerateBtn SIGNAL/VOID, :109-124 ParamTable CARBON/SILVER; before PNG 368x420 unstyled Fusion; SIGNAL = #8FB3D9 (tokens.py:29). COHERE_REFERENCE.md lesson 5 'one accent does the pointing'.",
+    "reversible": true
+   },
+   {
+    "id": "RULING-3 GUTTER (STD-01)",
+    "ruling": "The 30px gutter is restored; it is not re-opened for Joe. The wave's remit was gap/label/tag; deleting the four t.GUTTER consumers was raw-zero by subtraction, and neither INTEGRATION.md nor CRUX named it. Mechanism, so the census stays honest: a new `shell` role in designsystem/rhythm.py - ROLE_GAPS['shell'] = SPACE_GRID[3], _MARGINS['shell'] = (tokens.GUTTER, tokens.SPACE_SM, tokens.GUTTER, tokens.SPACE_SM) - applied to the four edge containers (rail synapse_panel.py:766 region, context ribbon :934, tab row :994, direct face :1103; branch line numbers). Vertical air is fixed at SPACE_SM and the root stack takes a `band` role (gap 0, margins 0: chrome bands own their hairlines via DsHeader/DsTabRow rules) so the B4 composer cap holds. If Joe wants the gutter narrower or zero, that is a one-token change to tokens.py:625 with his word - the dial already says 'Design Director's call'.",
+    "rationale": "One point of view: the edge inset is the panel's structural whitespace (REDESIGN \u00a73 'Space - load-bearing'). A token with zero consumers is a lie in the design system. Putting the gutter in a role keeps 'one owner of rhythm' (battleplan \u00a71-1) instead of re-adding imperative margins the census would count. The band role costs the vertical budget nothing and recovers 48px std / 72px airy that F-A2 measured as the cause of the B4 clip.",
+    "evidence": "tokens.py:625 GUTTER = 30 '... Value is the Design Director's call; 26-36 is safe on a 280px-min panel'. Master consumers: git show master:python/synapse/panel/synapse_panel.py :637 (GUTTER,16,GUTTER,14), :950 (GUTTER,SPACE_SM,SPACE_MD,SPACE_SM), :1009 (GUTTER,24,GUTTER,0), :1119 (GUTTER,24,GUTTER,24), :473-476 root setContentsMargins(0,0,0,0)/setSpacing(0). Branch: grep GUTTER synapse_panel.py -> docstring :1101 only; rhythm.py:24-29 _MARGINS has row/tag only. Offscreen probe (STANDARD lane): wordmark x 62 -> 24, input x 30 -> 0. LANDING lane merged-tree probe: root spacing 16 x3 + face 16 x3 = 96px std / 144 airy of new chrome; Send 444 > 420.",
+    "reversible": true
+   },
+   {
+    "id": "RULING-4 ROLES AND THE LABEL DOCTRINE (STD-02/03/04/05/07)",
+    "ruling": "(a) New `stack` role: ROLE_GAPS['stack'] = SPACE_GRID[0], no margins, no QSS rule, no type; the 26 non-table parm_row sites (header rail, gate root/body/proposal card, chat input/connection/toolbar, context bar root, command palette, quick actions, tool palette, working indicator, face_review x4, hda_views x2, recall footer) move to it. parm_row stays on face_token.py:408-443 and any real label/value grid; qss.py:420-423 keeps its min-height only for parm_row. (b) Profile pills (synapse_panel.py:1030) take `tag`, not `row` - \u00a74 lists pills under tag; the DsTabRow gets its addStretch(1) back before the profile pills (right-aligned: 'profile is chrome'). CHAT/TOKEN stay in the ribbon row: battleplan T6 ordered the one-row merge; Joe's eyes remain the accept. (c) One type applier per widget: verbs (:1794) and header controls (:769) drop rhythm_role='label' and keep tracked_font('LABEL', SIZE_SMALL, mono) so they match CHAT/TOKEN byte-for-byte; the context label (:939) drops rhythm_role='label' and keeps c.label(role='label') (sans, BP4); the recall header (recall_card.py:116-118) and TOKEN section heads keep rhythm_role='label' and drop c.label's role='label'. (d) Doctrine, written into PANEL_RHYTHM_SPEC.md \u00a74 in one line: `rhythm_role=\"label\"` is the section eyebrow (mono, upper, tracked - Cohere lesson 1, battleplan \u00a74); `TYPE_ROLES['label']` is UI label text (sans, BP4). Different things, never both on one widget; a stock test pins that no source line pair applies both. (e) The dead ratios go: qss.py:364 role_size -> s(t.SIZE_BODY); spec/\u00a74 '0.72x / 0.68x' lines become 'body size; contrast by case, tracking, colour' (the type-floor gate makes the ratios unreachable by the spec's own rule). Tracking stays numerically as is; rhythm.py:52-53 gets a comment naming the \u00a74 values (+0.08 / +0.06) so the borrowed token names are explained; tokens.py is not touched (CAMERA freeze).",
+    "rationale": "Roles, not sizes: a role named for a parameter grid applied to a toolbar is a size in disguise, and its QSS min-height then defeats the header's BP2 density rule. Tabs are tags in this system's own table; row is list-item vocabulary. Two appliers on one widget means the second one wins and nobody designed the result (12px/108%/uppercase verbs beside 11px/115% pills). Both label docs are ratified because they describe two different things; the fix is to say so and keep them off the same widget, not to rename six sites mid-landing. The rename to `eyebrow` is the right long-term name and waits for tokens.py to next open under a ratified change.",
+    "evidence": "grep -rn 'rhythm_role\", \"parm_row\"' python/synapse/panel --include=*.py | grep -v designsystem | wc -l -> 30 of 52 sites. docs/PANEL_BATTLEPLAN_PD.md:127-129 T1 'rhythm_role=\"row\" pills' vs :179 '`tag` / pill | 16 from label | 6 / 10 | mono \u00b7 upper \u00b7 +0.06 em'; :141 T6 'Header/ribbon -> one row, label style'. qss.py:374-379 row = min-height ROW_MIN_H, radius, 1px BORDER (specificity beats QPushButton#DsPill); STANDARD probe: profile pills (116x70), tab row 54->71, ribbon 32->53; verbs 12px 108% AllUppercase h53 vs pills 11px 115%. tokens.py:357-363 BP4 'title and label move to sans'; rhythm.py:41-55 _apply_type mono/AllUppercase/SEND tracking on 'label'; recall_card.py:116-118 and synapse_panel.py:937-939 apply both. qss.py:364 role_size = max(s(SIZE_BODY), s(SIZE_BODY*ratio)) -> ratios always resolve to body. tests/test_panel_camera_rhythm.py:131-136 freezes tokens.py vs ce04dcb0.",
+    "reversible": true
+   }
+  ],
+  "landing_steps": [
+   {
+    "step": 0,
+    "title": "Merge current master into pd/panel-integrate-r3 and baseline the reds",
+    "files": [
+     "C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3/.gitignore",
+     "C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3/python/synapse/panel/synapse_panel.py"
+    ],
+    "how": "git -C C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 merge --no-edit master (master is e8913f83 now, one commit past the brief's 8021bbc0: docs/studio/DEPLOYMENT.md + tests/test_f3_emergency_net.py, no panel overlap). Keep both sides verbatim - git auto-merges .gitignore and the two disjoint B4 hunks in synapse_panel.py (:133-160 _cap/cap_height, :1415-1460 _fit_composer_to_pane + show/resizeEvent). Note that branch line numbers cited in later steps shift by the B4 hunks after this merge; re-grep, do not trust offsets. Then run the stock panel set and the hython Qt tier once to record the starting reds (expect: 2 CAMERA pins, 3 isolated-green pins, 4 chat CSS pins, 8 gate-fidelity + 1 font-scale + 1 B4 clip + dead-verb).",
+    "test": "git -C C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 rev-parse HEAD^{tree}  # == 99079e486ac7729d9f4c42f5547bdaa372e2d4e1 (merge-tree --write-tree master pd/panel-integrate-r3, exit 0, verified this session); git -C .../pd-r3 status --short == empty"
+   },
+   {
+    "step": 1,
+    "title": "Re-anchor the three isolated-green pins and the two CAMERA freeze pins (R2-03, F-A3)",
+    "files": [
+     "tests/test_panel_camera_rhythm.py",
+     "tests/test_panel_sweep_b_hex.py",
+     "tests/test_panel_sweep_a.py",
+     "tests/test_panel_sweep_b_widgets.py"
+    ],
+    "how": "test_panel_camera_rhythm.py:15 BASE: for synapse_panel.py protected methods compare against `git merge-base master HEAD` (carries B4's showEvent/_GrowingInput.__init__ edits) while face_token/token_readout/claude_worker/fontload/tokens/shelf stay at ce04dcb0 (master did not touch them - verified `git diff --stat ce04dcb0 master -- <those>` empty). test_panel_sweep_b_hex.py:105-110: keep fontload.py + synapse_shelf.py frozen vs merge-base; replace the synapse_panel.py/face_token.py whole-file freeze with SWEEP_B's own-diff check (`git diff ae046513~1 ae046513 -- python/synapse/panel/synapse_panel.py python/synapse/panel/face_token.py` == empty). test_panel_sweep_a.py:113-127: slice block_a = tail['# --- SWEEP_A (chat_panel.py)' .. '# --- END SWEEP_A'], assert it starts the tail, run the hex check on block_a, add `assert 'font-family:' not in block_a` (lands with step 3). test_panel_sweep_b_widgets.py:64-65: slice block_b = '# --- SWEEP_B (' .. '# --- END SWEEP_B', assert tail.rstrip() ends with END SWEEP_B, run the hex/font-family/token checks on block_b; keep the startswith(base) and key-in-sheet loops. No production code.",
+    "test": "cd C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3 && PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_panel_camera_rhythm.py tests/test_panel_sweep_a.py tests/test_panel_sweep_b_hex.py -q -p no:cacheprovider  # 0 failed (sweep_a's font-family guard goes green at step 3; sweep_b_widgets' sequence probes at step 6)"
+   },
+   {
+    "step": 2,
+    "title": "Move the six test oracles and the one audit probe to the seams the wave created (R2-02, STD-06)",
+    "files": [
+     "tests/test_chat_panel.py",
+     "tests/panel/test_gate_fidelity_unknown.py",
+     "tests/panel/test_font_scale.py",
+     "audit_panel.py"
+    ],
+    "how": "tests/test_chat_panel.py:1048/1065/1073/1082: each pin asserts the sweep_a_style call in the method source (chat_panel.py:147 chat_root, :383 chat_input_container, :607 chat_connection, :706 chat_toolbar) AND that '[sweep_a_style=\"<key>\"]' is in qss.stylesheet() with the declaration the old pin looked for (background: / border-top: / border-bottom:) inside that scoped rule; negative control: 'setStyleSheet(' absent from the method. tests/panel/test_gate_fidelity_unknown.py:89-91 _dot_color -> widget._fidelity_dot.property('sweep_a_color') (the value gate_widget.py:599 passes; rule qss.py:697); keep all eight cases. tests/panel/test_font_scale.py:107 and audit_panel.py:370 _input_px -> panel._input.document().defaultFont().pixelSize() (seam: synapse_panel.py _set_prompt_font). audit_panel.py is master-owned but B4 already edits it; keep the B4 hunks byte-identical.",
+    "test": "cd .../pd-r3 && QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 SYNAPSE_PANEL_SETTINGS=<scratch>/s.json \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest tests/panel/test_gate_fidelity_unknown.py tests/panel/test_font_scale.py -q -p no:cacheprovider  # 0 failed;  python -m pytest tests/test_chat_panel.py -q -k TestCSSConsolidation  # 0 failed;  hython audit_panel.py --strict | grep 'content scales'  # 'prompt 12->19px [ok]'"
+   },
+   {
+    "step": 3,
+    "title": "Purge the 33 font-family declarations from the SWEEP_A QSS tail (F-C1)",
+    "files": [
+     "python/synapse/panel/designsystem/qss.py",
+     "tests/test_panel_sweep_a.py"
+    ],
+    "how": "Delete every `font-family: {t.FONT_SANS_CSS}` / `{t.FONT_MONO_CSS}` declaration in qss.py:452-782 (lines 519, 523, 525, 526, 530, 533, 534, 537, 538, 540, 542, 549, 553, 577, 580, 585, 590, 623, 626, 638, 641, 646, 669, 672, 682, 688, 693, 722, 727, 732, 738, 743, 775 on the branch). Families travel by QFont via fontload / rhythm._apply_type, never QSS (audit_panel.py:211-215 is the gate). The SWEEP_B tail already has 0 and its test forbids it (test_panel_sweep_b_widgets.py:67); the step-1 guard in test_panel_sweep_a.py makes SWEEP_A symmetric. Leave the LEVER prefix (qss.py:1-449, one font-family, master passes) untouched.",
+    "test": "sed -n 452,782p python/synapse/panel/designsystem/qss.py | grep -c 'font-family'  # 0;  hython audit_panel.py --strict | grep 'no bundled font'  # 'clean [ok]';  python -m pytest tests/test_panel_sweep_a.py -q  # 0 failed"
+   },
+   {
+    "step": 4,
+    "title": "Roles: shell / stack / band, gutter restored, pills to tag, one type applier per widget (RULING-3, RULING-4, F-A2)",
+    "files": [
+     "python/synapse/panel/designsystem/rhythm.py",
+     "python/synapse/panel/designsystem/qss.py",
+     "python/synapse/panel/synapse_panel.py",
+     "python/synapse/panel/recall_card.py",
+     "python/synapse/panel/gate_widget.py",
+     "python/synapse/panel/chat_panel.py",
+     "python/synapse/panel/context_bar.py",
+     "python/synapse/panel/command_palette.py",
+     "python/synapse/panel/quick_actions.py",
+     "python/synapse/panel/tool_palette.py",
+     "python/synapse/panel/working_indicator.py",
+     "python/synapse/panel/face_review.py",
+     "python/synapse/panel/hda_views.py",
+     "docs/PANEL_RHYTHM_SPEC.md",
+     "tests/test_panel_rhythm_docking.py",
+     "tests/test_panel_camera_rhythm_qt.py",
+     "tests/test_panel_camera_rhythm.py"
+    ],
+    "how": "rhythm.py: ROLE_GAPS += {'shell': SPACE_GRID[3], 'stack': SPACE_GRID[0], 'band': 0}; _MARGINS['shell'] = (tokens.GUTTER, tokens.SPACE_SM, tokens.GUTTER, tokens.SPACE_SM). (Note tokens.gap(0, level) must return 0 - verify, else special-case band.) synapse_panel.py: _build_ui root -> rhythm_role='band' (replaces the wave's 'group' on the panel root); rail region (:766 area), context ribbon (:934), tab row (:994) and direct face (:1103) -> 'shell'; in _build_direct_face put act + divider + input into one _section with role 'band' so the hairline is not paid a group gap on both sides; _build_mode_bar: lay.addStretch(1) before the profile pills, profile pills setProperty('rhythm_role','tag') instead of 'row'; _verb (:1794) and the rail controls loop (:769) delete the setProperty('rhythm_role','label') line, keep tracked_font; _ctx_label (:939) delete rhythm_role='label', keep c.label(role='label'). recall_card.py:116 c.label('what I remember') without role='label' (keep :118 rhythm_role='label'). The 26 non-table parm_row sites (list in RULING-4a; grep `rhythm_role\", \"parm_row\"` outside designsystem/ and face_token.py) -> 'stack'. qss.py:364 role_size -> s(t.SIZE_BODY); leave qss.py:420-423 parm_row min-height (now only real grids). PANEL_RHYTHM_SPEC.md \u00a74 table: add shell/stack/band rows with fixed margins, drop the 0.72x/0.68x ratio sentence, add the one-line label doctrine (RULING-4d). tests/test_panel_rhythm_docking.py EXPECTED += 'shell': (24,16,12), 'stack': (6,4,3), 'band': (0,0,0). New Qt pins in tests/test_panel_camera_rhythm_qt.py: (i) contentsMargins of the four shell regions == (30,8,30,8) and root layout spacing == 0; (ii) CHAT pill, TOKEN pill and every DsVerb share QFontInfo pixelSize and letterSpacing; (iii) profile pills height <= CHAT pill height + 2; (iv) _ctx_label family == the sans family, recall header family == mono. Stock pin: no widget receives both c.label(role='label') and rhythm_role='label' (source scan of the same variable within 3 lines). The camera census stays synapse_panel.py (0,1) - no new raw sites because every gap is a role.",
+    "test": "hython -m pytest tests/panel/test_docking.py tests/test_panel_camera_rhythm_qt.py -q -p no:cacheprovider  # 0 failed incl. test_send_never_clips_below_the_pane_at_min_height;  hython audit_panel.py --strict | grep 'input not clipped'  # '<= 420px [ok]';  python -m pytest tests/test_panel_camera_rhythm.py::test_camera_residual_cannot_regrow tests/test_panel_rhythm_docking.py::test_docking_bounds_read_the_contract_not_panel_height_token -q  # green"
+   },
+   {
+    "step": 5,
+    "title": "Docking: valid measurement, YAML width feature, HealthStrip fix, ResultView re-measure, reachability-pinned exemption (RULING-2A/2B)",
+    "files": [
+     "tests/test_panel_rhythm_docking.py",
+     ".synapse/contracts/docking-minimums.yaml",
+     "python/synapse/panel/health_strip.py",
+     "python/synapse/panel/designsystem/qss.py",
+     "python/synapse/panel/hda_views.py",
+     "tests/test_panel_alt_entry_unshipped.py",
+     "docs/PANEL_RHYTHM_SPEC.md"
+    ],
+    "how": "docking-minimums.yaml: add feature 'Every docking region minimumSizeHint().width() <= 380 at airy/standard/tight with bundled fonts loaded (interim PD bound; contract floor is PANEL_MIN_WIDTH 280)' with verify pointing at the docking test; test _bounds() parses that 380 from the YAML (regex like the heights) - delete the literal at :46. Worker (the __main__ branch of test_panel_rhythm_docking.py): after QApplication, fontload.load_application_fonts(); if QFontDatabase.families() is empty print 'NOT_RUN: empty font database' and exit 78; _run maps 78 -> pytest.fail (77 stays skip for no-PySide); every PD_QT line carries runner=sys.executable, family=QFontInfo(app.font()).family(), families=len(...). _run: flags = [] if 'hython' in Path(sys.executable).name.lower() else ['-I']. health_strip.py: setProperty('rhythm_role','group') on HealthStrip, delete :412-413, each cell lbl.setSizePolicy(Ignored, Preferred), delete the :418 sheet and append one '#health_strip QLabel { font-size: {s(t.SIZE_SMALL)}px; background: transparent; }' rule in qss.py (family via fontload.apply_family(mono=True) on the label font, not QSS). hda_views.ResultView: no change unless the re-measure is red; then btn_row -> 2x2 QGridLayout. ALTERNATE_REGIONS: remove 'quick_actions.QuickActionPills' and 'chat_panel.SynapseChatPanel' into a DOCKING_EXEMPT_UNSHIPPED tuple with the exemption text; new tests/test_panel_alt_entry_unshipped.py asserts (a) houdini/python_panels/*.pypanel reference only synapse.panel.synapse_panel, (b) the transitive import graph of synapse.panel.synapse_panel (ast walk of `synapse.panel.*` imports) contains neither chat_panel nor quick_actions, (c) every DOCKING_EXEMPT_UNSHIPPED module is absent from that graph - failing (c) re-adds the region (the docking test unions the tuple back in when the pin file reports reachable). Spec \u00a73: replace 'Docking: 380 px width' with the YAML pointer and the 280 contract line.",
+    "test": "cd .../pd-r3 && QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 \"C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe\" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider  # 0 failed, 0 errors, receipt PD_QT lines show families>0 and family='Space Grotesk';  same with bin/hython.exe  # 0 errors (worker starts);  python -m pytest tests/test_panel_alt_entry_unshipped.py -q  # green;  mutation: add `from synapse.panel import chat_panel` to synapse_panel.py -> that test goes red"
+   },
+   {
+    "step": 6,
+    "title": "Split the SWEEP_B sequence probes by owned layout with a Qt-internal negative control (R2-05)",
+    "files": [
+     "tests/test_panel_sweep_b_widgets.py"
+    ],
+    "how": "At :176-181 replace the findChildren(QLayout) population with owned = [l for l in child.findChildren(QLayout) if l.parentWidget() is child or l.parentWidget().property('rhythm_role')]; assert the role gap on owned layouts only; add the negative control: layouts whose parentWidget().objectName().startswith('qt_') keep spacing byte-equal before/after rhythm.apply (snapshot before, compare after). This lets geometry() and the DescribeView/BuildingView/ResultView/ToolPalette/CommandPalette second-action branches (:150-160, :182-200) execute for the first time. Report the runner in the receipt.",
+    "test": "QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 \".../python313/python.exe\" -m pytest tests/test_panel_sweep_b_widgets.py -q -k sequence -p no:cacheprovider  # 4 passed;  full file: 0 failed"
+   },
+   {
+    "step": 7,
+    "title": "Residual sweep to <= 20 all tagged and guard re-seed with an exact cap (RULING-1, R2-01, R2-08)",
+    "files": [
+     "python/synapse/panel/agent_health.py",
+     "python/synapse/panel/render_preflight.py",
+     "python/synapse/panel/integrity_readout.py",
+     "python/synapse/panel/bookmarks.py",
+     "python/synapse/panel/dependency_map.py",
+     "python/synapse/panel/apex_recipes.py",
+     "python/synapse/panel/save_shot.py",
+     "python/synapse/panel/session_integrity.py",
+     "python/synapse/panel/recipe_book.py",
+     "python/synapse/panel/error_translator.py",
+     "python/synapse/panel/session_journal.py",
+     "python/synapse/panel/styles.py",
+     "python/synapse/panel/working_indicator.py",
+     "docs/panel_pd/HEX_MAPPING_SWEEP_B.md",
+     "tests/test_panel_sweep_b_hex.py",
+     "harness/panel_pd/runs/2026-09-05/rhythm_census.json",
+     "harness/panel_pd/RESIDUAL.json",
+     "tests/test_panel_rhythm_owner.py"
+    ],
+    "how": "Delete agent_health.format_agent_health_html (L161-231) and render_preflight.format_preflight_html + _STATUS_ICONS (L865-927) plus the docstring example at render_preflight.py:8-10 (no caller, no test - verified). integrity_readout.py:81-82 tag '# rhythm-exempt: 1px hairline stack between claim rows; no role expresses 1px'. Reword the 5 comment hits (apex_recipes:25 x2, error_translator:19, recipe_book:27, styles.py:9). Map the remaining colour strings (bookmarks :209,:210,:238x2; dependency_map :420-423; save_shot :378,:473,:474; session_integrity :203,:214,:220; apex_recipes :720; recipe_book :761; session_journal :268) to tokens with the SWEEP_B table (RULING-1d), append rows to HEX_MAPPING_SWEEP_B.md, add each module to test_panel_sweep_b_hex.py MIGRATED. Run the census on the landing tree, commit it at harness/panel_pd/runs/2026-09-05/rhythm_census.json; RESIDUAL.json: census -> that path, seed_counts = its totals, allowed_residual = measured residual (<= 20), allowed_grid_residual = 0. test_panel_rhythm_owner.py: test_panel_rhythm_owner_ratchet asserts limits['allowed_residual'] == measured residual and limits['allowed_grid_residual'] == measured grid (exact); test_residual_cannot_increase_against_git_history: `assert revisions, 'RESIDUAL.json has no git history here: NOT_RUN'` before the loop. Do this after step 4 so the census sees the final role sites.",
+    "test": "python harness/notes/panel_rhythm_census.py --panel-dir python/synapse/panel --json <scratch>/c.json && python -c \"import json;t=json.load(open('<scratch>/c.json'))['totals'];r=t['spacing_sites']+t['inline_stylesheet_sites']+t['hex_raw_sites'];print(r, t['exempt_tags']);assert r<=20 and t['exempt_tags']==r and t['grid_spacing_sites']==0\";  python -m pytest tests/test_panel_rhythm_owner.py tests/test_panel_sweep_b_hex.py -q  # green;  mutation: restore `self._dot.setStyleSheet(sheet)` in working_indicator.py::_apply -> test_panel_rhythm_owner goes red (today it stays green)"
+   },
+   {
+    "step": 8,
+    "title": "Record rulings, exemptions and doctrine; CRUX round 3 on the landing tree",
+    "files": [
+     "docs/panel_pd/INTEGRATION.md",
+     "harness/notes/panel_nits_pd.md",
+     "docs/PANEL_RHYTHM_SPEC.md",
+     "docs/PANEL_BATTLEPLAN_PD.md",
+     "harness/panel_pd/runs/2026-09-05/"
+    ],
+    "how": "INTEGRATION.md: append 'Landing r3 - CTO rulings 2026-09-05' with RULING-1..4 verbatim, the two waiver texts, the shell/stack/band roles, the census before/after, and the receipts list. panel_nits_pd.md: the two exemptions plus the deferred items (rhythm 'label' -> 'eyebrow' rename when tokens.py next opens; REDESIGN \u00a73 still names SIGNAL as #00D4FF vs tokens.py #8FB3D9 - doc drift, not unified here per the 3-source gremlin). Battleplan \u00a74 row for `label`/`tag`: remove the ratio column values. Then dispatch CRUX round 3 read-only against pd/panel-integrate-r3 with the acceptance list below as its accepts; its verdict lands in harness/panel_pd/runs/2026-09-05/crux_r3.json.",
+    "test": "grep -c 'RULING-' docs/panel_pd/INTEGRATION.md  # >= 4;  CRUX round 3 verdict file exists and names chain_broken_at null for every leg or lists only GUI-gate items"
+   },
+   {
+    "step": 9,
+    "title": "Full gates and receipts; hand to Joe's eyes",
+    "files": [
+     "harness/panel_pd/runs/2026-09-05/qt_R3.txt",
+     "harness/panel_pd/runs/2026-09-05/docking_R3.txt",
+     "harness/panel_pd/runs/2026-09-05/g3_R3.txt",
+     "harness/panel_pd/runs/2026-09-05/fullsuite_R3.txt",
+     "design/rhythm_pd/after_r3/"
+    ],
+    "how": "Run every command in `acceptance` from inside the pd-r3 tree with SYNAPSE_PANEL_SETTINGS at a scratch file, capture stdout to the receipt files with the runner path on line 1, regenerate the three-profile PNG pairs with panel_shot.py under hython into design/rhythm_pd/after_r3/ (the gutter, tab strip, verb rail and ribbon all changed since after_integrate/). Commit receipts. Do not merge, push, tag or touch VERSION; the merge word is Joe's after the GUI gate.",
+    "test": "Every command in `acceptance` exits as stated; receipts committed; `git -C .../pd-r3 status --short` empty"
+   }
+  ],
+  "acceptance": [
+   "ENV (every command below): R=C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3; HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; PY313=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe\"; SCR=<scratchpad>; export QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 PYTHONDONTWRITEBYTECODE=1 SYNAPSE_PANEL_SETTINGS=$SCR/panel_settings.json; cd $R",
+   "git -C $R rev-parse HEAD^{tree} after step 0 == 99079e486ac7729d9f4c42f5547bdaa372e2d4e1; git -C $R log --oneline master..HEAD shows the r3 commits on top of e8913f83; git -C $R status --short == empty",
+   "python $R/harness/notes/panel_rhythm_census.py --panel-dir $R/python/synapse/panel --json $SCR/c.json --md $SCR/c.md && python -c \"import json;d=json.load(open('$SCR/c.json'));t=d['totals'];r=t['spacing_sites']+t['inline_stylesheet_sites']+t['hex_raw_sites'];assert d['measurement_complete'] and not d['errors'];assert t['grid_spacing_sites']==0;assert r<=20, r;assert t['exempt_tags']==r, (t['exempt_tags'], r);print('census', r, 'all tagged')\"  # panel-wide <= 20, 0 untagged, 0 grid",
+   "python -c \"import json;d=json.load(open('$SCR/c.json'));cam={'synapse_panel.py','face_token.py','token_readout.py','chat_display.py','recall_card.py'};f=[x for x in d['files'] if x['path'].rsplit('/',1)[-1] in cam];assert all(not x['hex_sites'] and not x['grid_spacing'] for x in f);print({x['path'].rsplit('/',1)[-1]:(len(x['spacing']),len(x['inline_styles'])) for x in f})\"  # camera path: synapse_panel.py (0,1), recall_card.py (2,0), others (0,0) - the 3 tagged seams only",
+   "python -c \"import json;l=json.load(open('$R/harness/panel_pd/RESIDUAL.json'));c=json.load(open('$R/'+l['census']));t=c['totals'];assert l['census'].startswith('harness/panel_pd/runs/2026-09-05/');assert l['allowed_residual']==t['spacing_sites']+t['inline_stylesheet_sites']+t['hex_raw_sites'] and l['allowed_grid_residual']==0;print('cap==measured', l['allowed_residual'])\"",
+   "timeout 120 \"$HY\" $R/audit_panel.py --strict; echo exit=$?  # exit 0; rows: 'no bundled font in QSS: clean [ok]', 'input not clipped ... [ok]', 'content scales on Aa: prompt 12->19px [ok]', 'wordmark is brand [ok]', 'chrome FROZEN on Aa [ok]'; only WARN permitted: 'interactive targets: 3 under 26px' (master baseline)",
+   "\"$HY\" -m pytest tests/panel -q -p no:cacheprovider 2>&1 | tail -3  # exactly 1 failed = tests/panel/test_failure_trail.py::test_dead_verb_hidden (pre-existing on master); passed >= 117 (118 master total + new pins); zero errors",
+   "\"$HY\" -m pytest tests/panel/test_docking.py::test_send_never_clips_below_the_pane_at_min_height tests/panel/test_docking.py::test_usable_at_min_height tests/panel/test_gate_fidelity_unknown.py tests/panel/test_font_scale.py tests/test_panel_camera_rhythm_qt.py -q -p no:cacheprovider  # 0 failed",
+   "\"$PY313\" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider 2>&1 | tail -3  # 0 failed, 0 errors, 0 skipped-for-fonts; and grep PD_QT $SCR/docking_R3.txt | head -1 shows families>0 and family='Space Grotesk'",
+   "\"$HY\" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider -k \"composed or alternate\" 2>&1 | tail -2  # 0 errors (worker starts under hython; no 'Failed to import encodings')",
+   "\"$PY313\" -m pytest tests/test_panel_sweep_b_widgets.py -q -p no:cacheprovider  # 0 failed (the four sequence probes reach geometry() and the second-action branches)",
+   "python -m pytest tests/test_panel_rhythm_owner.py tests/test_panel_sweep_a.py tests/test_panel_sweep_b_hex.py tests/test_panel_sweep_b_widgets.py tests/test_panel_camera_rhythm.py tests/test_chat_panel.py tests/test_panel_rhythm_census.py tests/test_rope_density.py tests/test_design_system.py tests/test_panel_typography.py tests/test_hda_panel.py tests/test_panel_settings.py tests/test_panel_alt_entry_unshipped.py -q -p no:cacheprovider  # 0 failed under stock python (Qt-bound cases skip explicitly)",
+   "sed -n '/# --- SWEEP_A (chat_panel.py)/,/# --- END SWEEP_B/p' $R/python/synapse/panel/designsystem/qss.py | grep -c 'font-family'  # 0",
+   "grep -rn 'rhythm_role\", \"parm_row\"' $R/python/synapse/panel --include=*.py | grep -v designsystem | grep -v face_token.py | wc -l  # 0 (parm_row only on real label/value grids)",
+   "grep -c 'GUTTER' $R/python/synapse/panel/designsystem/rhythm.py  # >= 1 (the shell role consumes the token); grep -n \"rhythm_role\\\", \\\"shell\\\"\" $R/python/synapse/panel/synapse_panel.py | wc -l  # 4",
+   "python -m pytest tests/ -q -p no:cacheprovider 2>&1 | tail -2  # 1 failed (tests/test_backfill.py::test_backup_is_taken_and_source_intact, pre-existing per harness/notes/h22/pytest_v5630_master.txt), passed >= 7431, skipped ~198",
+   "MUTATION 1 (must go red, then revert): restore `self._dot.setStyleSheet(sheet)` in python/synapse/panel/working_indicator.py::_apply; python -m pytest tests/test_panel_rhythm_owner.py -q  # FAILS 'new untagged rhythm owners'",
+   "MUTATION 2 (must go red, then revert): add `from synapse.panel import chat_panel` to synapse_panel.py; python -m pytest tests/test_panel_alt_entry_unshipped.py -q  # FAILS (exemption premise broken)",
+   "ls $R/design/rhythm_pd/after_r3/curious $R/design/rhythm_pd/after_r3/expert $R/design/rhythm_pd/after_r3/ml  # three-profile PNG sets regenerated under hython after step 4; manifest.json hashes match the files"
+  ],
+  "gui_gate": [
+   "Joe on H22.0.400, all three profiles: the composed panel after step 4 - 30px gutter back at the edge (wordmark x~62, input inset), root bands with zero gap and their own hairlines, act/divider/input as one band. Does the rail -> ribbon -> tab row stack read as one rhythm, and does the divider now sit right on the verbs?",
+   "Joe: the one-row header/ribbon merge (battleplan T6 as CAMERA built it) - CHAT/TOKEN pills in the context ribbon beside the context label, profile pills right-aligned as tags in the tab row. REPORT_CAMERA.md:176 itself says this needs eyes; the ordered IA is on record, its look is not.",
+   "Joe: verb rail after RULING-4c - verbs at the LABEL tracked font matching CHAT/TOKEN (11px / 115%), hairline under the group; header rail at its new height vs master's 125px. Which reads as the tool.",
+   "Joe: recall card header 'what I remember' (mono upper tracked eyebrow) beside the context label (sans, BP4) - confirm the two-things-two-treatments doctrine reads as one point of view and not as a terminal line in a tool.",
+   "Joe: drag the pane splitter inward on the composed panel in each profile. With HealthStrip cells eliding (Ignored policy, full text in tooltip): at what width does the strip become unreadable, and does the panel stop at 280 (setMinimumWidth) or earlier? This is the only measurement that carries Houdini's real UI font (HOUDINI_UISCALE); every headless width, even with bundled fonts, is provisional.",
+   "Joe: HDA ResultView (only reachable via the legacy chat entry) - does the SURFACE table + RAISED header double-style against Houdini's dark palette, and is the filled SIGNAL 'Create Another HDA' the view's single accent next to the GROW status label? One-line revert on file: hda_views.py:312 DsHdaGenerate -> DsHdaAction.",
+   "Joe: three-profile before/after PNG pairs under design/rhythm_pd/{before,after_r3}: 'three visibly different rhythms with Expert structurally unchanged' by eye. Headless proves only the numbers.",
+   "Joe: the G3 WARN '3 interactive targets under 26px' is master's baseline, not the wave's - decide whether it gets its own leg or stays reportable debt."
+  ],
+  "waivers": [
+   "DOCKING EXEMPTION - unshipped alternate entry (written into tests/test_panel_rhythm_docking.py DOCKING_EXEMPT_UNSHIPPED and docs/panel_pd/INTEGRATION.md): 'quick_actions.QuickActionPills and chat_panel.SynapseChatPanel are the legacy Chat/HDA alternate entry. No .pypanel under houdini/python_panels builds them (synapse_panel.pypanel:45 builds synapse.panel.synapse_panel only) and synapse.panel.synapse_panel does not import chat_panel or quick_actions; tests/test_panel_alt_entry_unshipped.py pins that premise and returns both regions to the docking list the day it fails. Their width drivers (five full-label pills in one row; a connection frame showing the raw ws:// URL, HALT and a 100px Connect) are scheduled for the single-panel collapse and the voice rules (SYNAPSE_PANEL_REDESIGN.md \u00a72 decision 1, \u00a73 Voice: hide raw ws:// URLs, HALT -> Stop). This is not a PD docking accept for those widgets; it is a statement that no artist can dock them. Dated 2026-09-05, CTO.'",
+   "HDA PARITY EXEMPTION (written into docs/panel_pd/INTEGRATION.md and harness/notes/panel_nits_pd.md): 'The parity target for hda_views.py is the legacy styles.py rule set at ce04dcb0 (QTableWidget#ParamTable bg CARBON / fg SILVER / GRAPHITE borders; QPushButton#HdaGenerateBtn bg SIGNAL / fg VOID; HdaActionBtn hairline), not the un-sheeted offscreen render in design/rhythm_pd/before/hda_result.png - that PNG shows the absence of any sheet in the legacy host, which SWEEP_B's ensure_sweep_b_view (qss.py:929-946) repairs. SWEEP_B's DsHda rules (qss.py:797-855) re-express the ce04dcb0 design in existing designsystem tokens (no new hex, no new family - CRUX verified). \"Beyond gap/label/tag\" is accepted for hda_views.py DescribeView/BuildingView/ResultView only, on this evidence. Copy shortening (Inspect / Parameters / Save HDA) is accepted because the full verbs remain as tooltip and accessible name (hda_views.py:293-301). Open GUI item: single-accent-per-view on ResultView; revert is hda_views.py:312 DsHdaGenerate -> DsHdaAction. Dated 2026-09-05, CTO.'",
+   "NOT WAIVED, stated for the record: the residual cap (RULING-1: owned to <= 20 in this forge, cap == measured), the gutter (RULING-3: restored via the shell role; zero was never proposed to Joe), the 380px width for shipped regions (RULING-2A/2B: fixed or re-measured, YAML-sourced), the nine wave-caused Qt reds (fixed at their seams, no oracle weakened), the pre-existing tests/panel dead-verb red and tests/test_backfill red (master baseline, carried as the known floor, not this wave's), the G3 '3 targets under 26px' WARN (master baseline, GUI-gate item 8).",
+   "DEFERRED with a dated pointer in harness/notes/panel_nits_pd.md, not waived: rename rhythm role 'label' -> 'eyebrow' when tokens.py next opens under a ratified change (CAMERA freezes tokens.py vs ce04dcb0; the doctrine line in PANEL_RHYTHM_SPEC.md \u00a74 and the no-double-applier pin carry the design until then); REDESIGN.md \u00a73 SIGNAL named as #00D4FF vs tokens.py #8FB3D9 (doc drift, the known 3-source gremlin - fix in its own commit with the full suite green, never inside this landing); a census 'reachable-from-shipped-panel' column (nice to have; RULING-1 made it unnecessary for this wave by migrating or deleting every side-module site)."
+  ]
+ },
+ "forge": {
+  "branch": "pd/panel-integrate-r3 (worktree C:/Users/User/SYNAPSE/.claude/worktrees/pd-r3), HEAD c9b1216c on top of the landing's 090f39f7; merge-base with master e8913f83; not pushed (no remote ref for the branch)",
+  "commits": [
+   "adcc9a94 pd(r3): repair - settings-path pin isolates the SYNAPSE_PANEL_SETTINGS override; sibling pins the override",
+   "4078ce7d pd(r3): repair - camera lifecycle pins anchored to the literal merge-base e8913f83 (R2-03 class)",
+   "e12c9db1 pd(r3): repair - gate widget families travel by QFont (F-C1 regression); hython pin on the composed gate",
+   "92179c51 pd(r3): repair - WORK and REVIEW faces are shells (one point of view across faces); shell-inset pin extended",
+   "ff678887 pd(r3): repair - the wordmark never elides (hard minimum from its own hint); pin at PANEL_PREF_WIDTH",
+   "a196b555 pd(r3): repair - docking width contract carries one figure per density; the composed AIRY 393 stays Joe's word (R3-01)",
+   "c9b1216c pd(r3): repair round receipts - four must-fix items closed at their seams, the AIRY 393 recorded as the one open word"
+  ],
+  "steps_done": [
+   "MUST-FIX 2 (settings pin): tests/test_panel_settings.py::test_settings_path_is_repo_dot_synapse takes monkeypatch and delenv's SYNAPSE_PANEL_SETTINGS; sibling test_settings_path_honours_the_override pins the override and the blank fallback. Red first: SYNAPSE_PANEL_SETTINGS=<scr> python -m pytest ...::test_settings_path_is_repo_dot_synapse -> 1 failed; after -> 9 passed with and without the env.",
+   "MUST-FIX 3 (camera base): tests/test_panel_camera_rhythm.py:21 _PANEL_BASE = 'e8913f83' literal, _panel_base() returns it, comment says why. Non-vacuity: git diff --stat e8913f83 HEAD -- synapse_panel.py = 132+/70-; mutation (line added to _on_done) -> 1 failed / 13 passed, reverted; 14 passed clean.",
+   "MUST-FIX 4 (gate families, F-C1): python/synapse/panel/gate_widget.py applies fontload.apply_family(<font>, mono=True) at badge / op_label / countdown / Reject / Approve (_ProposalCard.__init__) and header / fidelity label / counts / violations (GateWidget._build_ui) - the nine elements master rendered Space Mono; agent/description/critical carried no family on master and are untouched. New tests/panel/test_gate_widget_type.py (hython tier, 3 tests: gate_badge family == bundled mono in the composed panel, all nine mono, families survive a state transition; refuses vacuity if mono == app font). Red 3 failed -> 3 passed; with test_gate_fidelity_unknown.py 11 passed. Statement for the unshipped SWEEP_A widgets (chat_panel/context_bar/quick_actions/hda_views: render in the QApplication font until wired, family by QFont at that seam) written in qss.py's SWEEP_A header (after the first marker, no 'font-family:' literal) and INTEGRATION.md. reachable_panel_modules(): gate_widget reachable, the four not.",
+   "MUST-FIX 5 (faces one point of view): face_work.py:184 / face_review.py:204 rhythm_role 'group' -> 'shell' on the column owner (stale '# comp face padding' comment gone); tests/test_panel_camera_rhythm_qt.py pins FaceWork + FaceReview at role shell with contentsMargins == (GUTTER, SPACE_SM, GUTTER, SPACE_SM). Red (AssertionError: FaceWork at every density) -> 3 passed. Both faces fit 380 with the inset at every density (python313 docking face_work/face_review 6/6). after_r3/expert/panel_work.png now shows PLAN / INTEGRITY at the 30px inset.",
+   "MUST-FIX 1/6 forge half (brand never elides): synapse_panel.py _build_rail word.setMinimumWidth(word.sizeHint().width()) after the WORDMARK font (Qt takes width from the biggest items first below a layout's minimum; a hard minimum is the floor QWidget::setGeometry enforces; the Ignored chrome labels give way). Pin at PANEL_PREF_WIDTH in test_panel_camera_rhythm_qt.py: red AssertionError (0, 69) at airy -> green; hython probe airy/340 master 42/69, r3 before 51/69, after 69/69. No minimumSizeHint change (composed still 393 at airy).",
+   "MUST-FIX 1/6 mechanism (R3-01): .synapse/contracts/docking-minimums.yaml width feature now '<= 380px wide at airy, <= 380px wide at standard, <= 380px wide at tight' with the driver + three options in a comment; tests/test_panel_rhythm_docking.py _bounds(density) parses one figure per density (asserts all three present), _measure/_pattern/_alternate/_panel thread density through; test_docking_bounds_read_the_contract... checks all three. Every density left at the ratified 380 so the word is a one-figure YAML edit.",
+   "Docs + receipts: INTEGRATION.md 'Repair round - CRUX round 3 must-fix (2026-09-05)'; panel_nits_pd.md open-word section at repair state; PANEL_RHYTHM_SPEC.md section 3 names the per-density figure; harness/panel_pd/runs/2026-09-05/{qt,docking,docking_hython,g3,stock,sweepb,targeted,shots,mutations,acceptance_greps}_R3rep.txt on tree a196b555; rhythm_census.json/.md regenerated (line drift only); design/rhythm_pd/after_r3/{curious,expert,ml} regenerated under hython 16/16 each (profile via a scratch SYNAPSE_PANEL_SETTINGS file with {\"profile\": ...}). git status --short empty."
+  ],
+  "steps_not_done": [
+   "R3-01 the word itself: test_every_composed_region_and_face_at_docking_bound[airy] stays red under both runners (DsRoot 393 > 380) by design - every closing lever is a design decision (a: airy figure 393 in the YAML; b: tighter verb-rail role vs battleplan T2; c: GUTTER 26, still 385). The forge built the one-figure mechanism and did not pick; the brief's step-8 '0 failed' on docking remains unmet until Joe's word lands (one line in .synapse/contracts/docking-minimums.yaml for option a).",
+   "Full suite (python -m pytest tests/) not re-run this round per the assignment ('Do NOT run the full suite'); fullsuite_R3.txt on cd98b5c6 is the last full receipt. The repair touched only panel source/tests, and the stock 13-file list + Qt tier + docking tiers were run on the final tree.",
+   "The two pre-existing reds are carried, not fixed: tests/panel/test_failure_trail.py::test_dead_verb_hidden (master baseline) and the G3 WARN '3 interactive targets under 26px' (GUI-gate item 8).",
+   "GUI-GATE (needs Joe's eyes on H22.0.400): the faces' new inset in three profiles, the gate widget in Space Mono, the wordmark holding at 340 while the verbs elide, and the eight items already on file in INTEGRATION.md."
+  ],
+  "acceptance_results": [
+   "git -C pd-r3 status --short -> empty; git log --oneline master..HEAD -> 7 repair commits on top of 090f39f7, all on e8913f83",
+   "census (harness/notes/panel_rhythm_census.py --panel-dir python/synapse/panel) -> 'census 17 all tagged'; camera path {'chat_display.py': (0, 0), 'face_token.py': (0, 0), 'recall_card.py': (2, 0), 'synapse_panel.py': (0, 1), 'token_readout.py': (0, 0)}; RESIDUAL 'cap==measured 17'",
+   "hython audit_panel.py --strict -> exit=0, 'G3 RESULT: pass \u00b7 1 WARN'; rows: 'no bundled font in QSS: clean [ok]', 'input not clipped: send bottom 410px / panel 420px [ok]', 'content scales on Aa: prompt 12->19px \u00b7 chat 1.0->1.6 [ok]', 'wordmark is brand: 14px @ tracking 116.0% [ok]', 'chrome FROZEN on Aa [ok]', 'interactive targets: 28 found, 3 under 26px [WARN]' (master baseline)",
+   "hython -m pytest tests/panel -q -> '1 failed, 120 passed, 6 warnings in 9.54s'; the one = tests/panel/test_failure_trail.py::test_dead_verb_hidden (pre-existing); zero errors (was 117 + 3 new gate pins)",
+   "hython -m pytest tests/panel/test_docking.py::test_send_never_clips_below_the_pane_at_min_height tests/panel/test_docking.py::test_usable_at_min_height tests/panel/test_gate_fidelity_unknown.py tests/panel/test_font_scale.py tests/panel/test_gate_widget_type.py tests/test_panel_camera_rhythm_qt.py -q -> '24 passed, 5 warnings in 14.46s'",
+   "python313 -m pytest tests/test_panel_rhythm_docking.py -q -> '1 failed, 90 passed, 1 warning in 58.68s'; FAILED test_every_composed_region_and_face_at_docking_bound[airy] AssertionError ('DsRoot', 'width', 393, 380) - the open word; 0 errors, 0 font skips",
+   "hython -m pytest tests/test_panel_rhythm_docking.py -q -k 'composed or alternate' -> '1 failed, 44 passed, 46 deselected in 117.29s'; 0 'encodings' errors (worker starts); same single airy red",
+   "python313 -m pytest tests/test_panel_sweep_b_widgets.py -q -> '18 passed, 1 warning in 3.46s'",
+   "stock python (C:/Python314) -m pytest tests/test_panel_rhythm_owner.py tests/test_panel_sweep_a.py tests/test_panel_sweep_b_hex.py tests/test_panel_sweep_b_widgets.py tests/test_panel_camera_rhythm.py tests/test_chat_panel.py tests/test_panel_rhythm_census.py tests/test_rope_density.py tests/test_design_system.py tests/test_panel_typography.py tests/test_hda_panel.py tests/test_panel_settings.py tests/test_panel_alt_entry_unshipped.py -q -> '332 passed, 54 skipped, 2 warnings in 11.90s'",
+   "sed SWEEP_A..END SWEEP_B qss.py | grep -c font-family -> 0; parm_row outside grids -> 0; grep -c GUTTER rhythm.py -> 3; shell sites synapse_panel.py -> 4 (+1 face_work.py, +1 face_review.py)",
+   "MUTATION 1 (restore self._dot.setStyleSheet in working_indicator.py::_apply) -> tests/test_panel_rhythm_owner.py '1 failed, 26 passed'; reverted. MUTATION 2 (from synapse.panel import chat_panel in synapse_panel.py) -> tests/test_panel_alt_entry_unshipped.py '2 failed, 2 passed' ('exemption premise broken: [chat_panel, quick_actions] is reachable'); reverted",
+   "design/rhythm_pd/after_r3/{curious,expert,ml}: '16/16 views rendered' each under hython; manifests committed with the PNGs",
+   "NOT RUN: python -m pytest tests/ (full suite) - excluded by the assignment"
+  ],
+  "census_after": "17 residual (spacing + inline sheets + raw hex), 17 tagged, 0 untagged, 0 grid; RESIDUAL.json cap == measured (17); camera path unchanged: synapse_panel.py (0,1), recall_card.py (2,0), face_token / token_readout / chat_display (0,0). Regenerated census committed at harness/panel_pd/runs/2026-09-05/rhythm_census.json (line-number drift only; identities are AST-normalised so the owner guard stayed green: 27 passed).",
+  "g3_after": "pass, exit 0, 1 WARN ('interactive targets: 28 found, 3 under 26px' - master baseline). Rows: no bundled font in QSS clean; bundled chrome font {'wordmark': 'Space Grotesk', 'tab': 'Space Mono', 'author': 'Space Mono', 'meter': 'Space Mono'}; input not clipped 410/420; wordmark is brand 14px @ 116.0%; chrome floor and chrome FROZEN on Aa ok; content scales prompt 12->19px. Receipt: harness/panel_pd/runs/2026-09-05/g3_R3rep.txt (tree a196b555).",
+  "qt_tier_after": "hython -m pytest tests/panel -q on a196b555: 1 failed / 120 passed / 0 errors (was 117 passed on the landing; +3 tests/panel/test_gate_widget_type.py pins). The one failure is tests/panel/test_failure_trail.py::test_dead_verb_hidden, pre-existing on master. Receipt: harness/panel_pd/runs/2026-09-05/qt_R3rep.txt.",
+  "caveats": [
+   "R3-01 is still red on purpose: 393 > 380 at airy under both docking runners. The forge did not accept 393, change the verb-rail role, or touch GUTTER - each is Joe's/CTO's word; the YAML now carries one figure per density so option (a) is a single edit ('380px wide at airy' -> 393) in .synapse/contracts/docking-minimums.yaml. Merge word is Joe's; a red acceptance cannot merge (ratchet doctrine).",
+   "The wordmark fix moves the 340/airy deficit, it does not remove it: after_r3/curious/panel_direct_chat.png shows the verbs eliding (XPLAIN / PTIMIZ / ILD H) and the header buttons overflowing where the wordmark used to shrink - recorded in panel_nits_pd.md as the visible face of R3-01.",
+   "Commit 4078ce7d was amended once before any push (the shared scratchpad held a stale msg2.txt from the earlier forge run and the first commit carried the wrong subject); the branch has no remote ref, so the amend touched nothing published.",
+   "context_bar.py (7 master font-family hits) is not reachable from the shipped panel (reachable_panel_modules), so its family loss is covered by the unshipped statement, not fixed; if it is ever wired in, it needs the gate_widget pattern (fontload.apply_family on each label).",
+   "Line endings: several written files carried CRLF in the working copy; git normalised them to LF on commit (the warnings were git's own notice), so the committed blobs are LF.",
+   "Full suite not re-run this round by instruction; the last full receipt (fullsuite_R3.txt) is on cd98b5c6, one code commit earlier than this round's five source-touching commits (gate_widget.py, face_work.py, face_review.py, synapse_panel.py, qss.py comment).",
+   "SYNAPSE_PANEL_SETTINGS pointed at a scratch file for every gate and shot run; the repo's .synapse/panel_settings.json was never read or written."
+  ]
+ },
+ "cruxes": [
+  {
+   "verdict": "BROKEN",
+   "acceptance_rerun": [
+    "[1] git -C pd-r3 rev-parse HEAD^{tree} -> 49f1ed41 (HEAD c9b1216c). The brief's 99079e48 is the tree of merge commit 1458ebb7 (start state after step 0), not the end state. log master..HEAD -> 29 commits, merge-base e8913f83 == master HEAD. status --short -> empty. PASS (start-state pin only)",
+    "[2] census: 'census 17 all tagged' (spacing 16 / sheets 1 / hex 0 / grid 0 / exempt_tags 17; measurement_complete true, errors []). PASS",
+    "[3] camera path: {'chat_display.py': (0,0), 'face_token.py': (0,0), 'recall_card.py': (2,0), 'synapse_panel.py': (0,1), 'token_readout.py': (0,0)}. PASS",
+    "[4] RESIDUAL.json: 'cap==measured 17'; census pointer harness/panel_pd/runs/2026-09-05/rhythm_census.json; committed totals == my fresh census totals (EQUAL); allowed_grid_residual 0. PASS",
+    "[5] hython audit_panel.py --strict -> exit=0; 'no bundled font in QSS: clean [ok]'; 'input not clipped: send bottom 410px / panel 420px [ok]'; 'content scales on Aa: prompt 12->19px \u00b7 chat 1.0->1.6 [ok]'; 'wordmark is brand: 14px @ tracking 116.0% [ok]'; 'chrome FROZEN on Aa [ok]'; only WARN 'interactive targets: 28 found, 3 under 26px'; 'G3 RESULT: pass \u00b7 1 WARN'. PASS",
+    "[6] hython -m pytest tests/panel -q -> '1 failed, 120 passed, 6 warnings in 8.41s'; FAILED tests/panel/test_failure_trail.py::test_dead_verb_hidden (pre-existing); 0 errors. PASS",
+    "[7] hython targeted (brief's five) -> '21 passed, 2 warnings in 11.32s'. PASS",
+    "[8] python313 -m pytest tests/test_panel_rhythm_docking.py -q -> '1 failed, 90 passed, 1 warning in 54.12s'; FAILED test_every_composed_region_and_face_at_docking_bound[airy] AssertionError ('DsRoot','width',393,380); 0 errors, 0 skipped. Worker provenance (receipt has no PD_QT line under -q; obtained by python313 -I tests/test_panel_rhythm_docking.py available standard ''): families 2, family 'Space Grotesk', runner python313. FAIL on the '0 failed' clause (forge declared it: R3-01)",
+    "[9] hython docking -k 'composed or alternate' -> '1 failed, 44 passed, 46 deselected in 120.40s'; grep -c encodings -> 0 (worker starts). Same single airy red. PASS on the '0 errors' clause",
+    "[10] python313 tests/test_panel_sweep_b_widgets.py -> '18 passed, 1 warning in 3.36s'. PASS",
+    "[11] stock python 3.14 13-file list -> '332 passed, 54 skipped, 2 warnings in 11.99s'. PASS",
+    "[12] font-family inside SWEEP_A..END SWEEP_B -> 0. PASS",
+    "[13] parm_row outside designsystem/face_token -> 0. PASS",
+    "[14] GUTTER in rhythm.py -> 3; rhythm_role \"shell\" in synapse_panel.py -> 4. PASS",
+    "[15] python -m pytest tests/ -q -> '1 failed, 7603 passed, 331 skipped, 625 warnings in 283.03s'. The one red is tests/test_f3_emergency_net.py::test_escalation_routes_ws_halt_when_no_haltable_bridge (fired.assert_called_once: called 0 times), NOT test_backfill (which passed: tests/test_backfill.py .......). Same red in the forge's own harness/panel_pd/runs/2026-09-05/fullsuite_R3.txt:14-15 (7602 passed / 328 skipped). Classification: master flake, out of scope - the file is untouched by the branch (git diff --stat e8913f83 HEAD -- tests/test_f3_emergency_net.py python/synapse/freeze_chain.py -> empty), last touched by master e8913f83 today ('anchor the F3 escalation test to state, not a 0.6s sleep'), and it flakes ALONE on a git-archive of master: 5 runs -> failed, failed, passed, passed, failed; on the branch 3 alone runs -> failed, passed, failed. Counts satisfy the brief (>= 7431). PASS on counts; expected-red identity in the brief is stale",
+    "[16] MUTATION 1 (scratch git-archive copy, worktree untouched): add sheet=...; self._dot.setStyleSheet(sheet) after the set_sweep_b_state loop in working_indicator.py::_apply -> tests/test_panel_rhythm_owner.py '1 failed, 26 passed' FAILED test_panel_rhythm_owner_ratchet; reverted. MUTATION 2: 'from synapse.panel import chat_panel' after synapse_panel.py:29 -> tests/test_panel_alt_entry_unshipped.py '2 failed, 2 passed' with 'exemption premise broken: [chat_panel, quick_actions] is reachable from the shipped panel'; reverted. REFEREE MUTATION 3: one line inserted into synapse_panel.py::_on_done (:2431) -> tests/test_panel_camera_rhythm.py '1 failed, 42 passed' FAILED test_lifecycle_and_token_completion_methods_byte_identical[_on_done]; reverted (pin is anchored to the literal e8913f83, not merge-base). REFEREE PROBE 4: owner guard with zero git history for RESIDUAL.json -> FAILED test_residual_cannot_increase_against_git_history ('NOT_RUN'), fails loud as RULING-1e requires. Post-mutation baseline 74 passed. PASS",
+    "[17] ls design/rhythm_pd/after_r3/{curious,expert,ml} -> 16 PNGs + manifest.json each; manifest schema panel_shot/v1 carries NO hash field (bytes + pixels only): 48/48 entries match file length and PNG IHDR dims, views_ok 16/16 each, python 3.13.10; PNGs re-committed in c9b1216c after the last source commit a196b555. PASS (hash clause unverifiable as written)",
+    "[extra] master's own composed panel through the same r3 worker (git archive master python/synapse + r3 test + YAML in scratch): airy 556 / standard 508 / tight 493 vs r3 393 / 361 / 345 - the airy red is inherited debt narrowed by 163px, not a regression",
+    "[extra] writes outside the worktree: git -C C:/Users/User/SYNAPSE status --porcelain (tracked) = the session-start set plus harness/cto/BACKLOG.json (mtime 11:16) and harness/cto/LEDGER.md (09:16, +1 row 'wf_4cb67f70-8dc (forge)') - CTO-lane bookkeeping in the main tree, no panel/test/source file touched there; pd-r3 worktree status empty after every run; .synapse/panel_settings.json never created in the worktree (SYNAPSE_PANEL_SETTINGS honoured)"
+   ],
+   "must_fix": [
+    "ONE BLOCKER, a design word not a code defect (BROKEN by the ratchet rule: acceptance [8] '0 failed' is red). tests/test_panel_rhythm_docking.py::test_every_composed_region_and_face_at_docking_bound[airy] -> ('DsRoot','width',393,380) under both runners. Repro: cd pd-r3; QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1 \"$PY313\" -I tests/test_panel_rhythm_docking.py panel airy ''. Arithmetic is fixed by two ratified rulings: verb rail 237 + 4 x group gap 24 (battleplan T2, rhythm.py ROLE_GAPS['group'] airy) + 2 x GUTTER 30 (RULING-3) = 393; 380 at airy is unreachable without overriding one of them, so the brief's step 8 and RULING-2B 'Expected 0 docking reds' are inconsistent with RULING-3 at airy. Master measures 556 at airy with the same worker, so 380 was never met. Options, one line each, CTO/Joe's word only: (a) .synapse/contracts/docking-minimums.yaml:41 '<= 380px wide at airy' -> 393 (the test's _bounds() reads it per density); (b) a tighter verb-rail role at airy (departs from T2); (c) tokens.py:625 GUTTER 26 (still 385 - does not close it alone). The forge correctly did not pick. Loop to SCOUTMASTER for the word, then re-run [8] and [9]; no other subtree needs to reopen."
+   ],
+   "nits": [
+    "Brief step 15 names tests/test_backfill.py::test_backup_is_taken_and_source_intact as the expected red; on this host it passes and the red is test_f3_emergency_net.py::test_escalation_routes_ws_halt_when_no_haltable_bridge - a master race (tests/test_f3_emergency_net.py:246-254 waits on chain.escalated, which flips before the watchdog thread calls emergency_halt_live, then assert_called_once races; 3/5 fail alone on a master archive). Fix belongs on master in its own commit: wait on the mock call (or an Event set after the halt), not on chain.escalated. Do not carry it as this wave's.",
+    "Brief step 8 expects 'grep PD_QT $SCR/docking_R3.txt' to show the family; under -q the receipt carries no PD_QT line (only failure details would). Either run the tier with -rA or have the worker's provenance echoed into the receipt on pass; today the font-validity claim is only checkable by invoking the worker by hand (it does show families 2 / 'Space Grotesk' / python313).",
+    "Brief step 17 says 'manifest.json hashes match the files' but design/rhythm_pd/after_r3/*/manifest.json (panel_shot/v1) has no hash field - only bytes + pixels (verified 48/48). Add sha256 per view to harness/notes/panel_shot.py so the receipt is content-addressed.",
+    "Brief step 1 pins tree 99079e48, which is merge commit 1458ebb7's tree (the start state); the end-state tree is 49f1ed41. Future briefs should pin the end-state tree the forge reports.",
+    "tests/panel/test_gate_fidelity_unknown.py:89-97 _dot_color now returns the sweep_a_color property (seam pin) instead of the painted sheet. The seam is real (qss.py:704-706 emits one [sweep_a_style=gate_fidelity_dot][sweep_a_color=X] rule per enumerated colour; gate_widget.py:616 sets it), but a colour returned by _fidelity_color outside that ten-colour list would set the property with no rule painting it. One stock pin: every _fidelity_color return value is in the enumerated set.",
+    "tests/test_panel_camera_rhythm.py:21 _PANEL_BASE = 'e8913f83' literal is the right anchor (mutation 3 proved non-vacuity); note a shallow CI clone will error on `git show e8913f83:...` (loud, not green) - acceptable, but worth a one-line comment.",
+    "Main-tree writes during the run: harness/cto/BACKLOG.json and harness/cto/LEDGER.md modified since the session snapshot (CTO-lane ledger row for this forge). Not a panel write and not the r3 branch, but the orchestrator is writing into the master checkout while an 'never write under C:/Users/User/SYNAPSE' rule is in force for everyone else; worth naming in the lane's own receipt.",
+    "The visible face of the airy red: design/rhythm_pd/after_r3/curious/panel_direct_chat.png shows the verb rail eliding (XPLAIN / PTIMIZ / ILD H) and header buttons overflowing at PANEL_PREF_WIDTH 340 now that the wordmark holds (synapse_panel.py:712 setMinimumWidth from its own hint). Correctly recorded in harness/notes/panel_nits_pd.md:49-56; the same one-figure word settles both."
+   ],
+   "design_conformance": "Held on every measurable axis except the one open word. One point of view: the 30px gutter is back as a `shell` role (rhythm.py, 4 sites in synapse_panel.py + FaceWork/FaceReview), pills are `tag`, one type applier per widget, parm_row only on real grids (0 outside face_token.py), SWEEP_A/B QSS carries no font-family, residual 17 sites all tagged with an exact cap the owner guard enforces (a deleted owner cannot return - mutation 1 proved it). G3 strict passes with only the master-baseline WARN; wordmark is brand at WORDMARK tracking; chrome frozen on Aa; composer cap holds (send 410/420). Docking under a valid font DB narrows master's 556/508/493 to 393/361/345 - the composed panel now fits 380 at standard and tight and misses by 13px at airy purely because two ratified rulings (T2 verb-rail rhythm + RULING-3 gutter) add up to 393. Ruthless restraint: the HDA parity exemption is scoped to hda_views.py only (the sole ensure_sweep_b_view caller) and the docking exemption is pinned by a reachability test that goes red the day chat_panel/quick_actions ship (mutation 2 proved it). What the Pentagram bar cannot yet certify offscreen is listed under gui_gate.",
+   "gui_gate": [
+    "Composed panel at AIRY (curious profile) in Houdini 22.0.400: is 393px the right minimum, or does Joe want the verb rail tighter / gutter narrower? (design/rhythm_pd/after_r3/curious/panel_direct_chat.png; verbs elide at 340)",
+    "Faces WORK / REVIEW at the 30px shell inset in all three profiles (after_r3/*/face_work.png, face_review.png, panel_work.png)",
+    "Gate widget in Space Mono for badge / op label / countdown / Reject / Approve / header / fidelity / counts / violations (after_r3/*/gate_widget.png)",
+    "Wordmark holding at PANEL_PREF_WIDTH 340 while the Ignored chrome labels and the verb rail give way - acceptable trade, or not?",
+    "ResultView single accent: SIGNAL fill on 'Create Another HDA' next to the GROW status label (revert is hda_views.py:312 DsHdaGenerate -> DsHdaAction)",
+    "Profile pills right-aligned as tags after the DsTabRow stretch; CHAT / TOKEN staying in the ribbon row (battleplan T6)",
+    "The 3 interactive targets under 26px (G3 WARN, master baseline, INTEGRATION.md item 8)",
+    "HealthStrip cells with QSizePolicy Ignored horizontally - the elided cell text with the tooltip carrying the full value",
+    "The eight items already on file in docs/panel_pd/INTEGRATION.md for Joe's eyes"
+   ],
+   "merge_ready": false
+  },
+  {
+   "verdict": "BROKEN",
+   "acceptance_rerun": [
+    "STEP 0-1 git: HEAD c9b1216c; HEAD^{tree} = 49f1ed41b11abf2993d6d484699adc62725e411a (the brief's 99079e486ac7729d9f4c42f5547bdaa372e2d4e1 is the tree of 1458ebb7 = the step-0 merge base, on which the 18 r3 commits + 7 repair commits stack); merge-base master..HEAD = e8913f83 = master HEAD; `git -C $R status --short` -> empty (0 lines). PASS",
+    "STEP 3 census (harness/notes/panel_rhythm_census.py --panel-dir python/synapse/panel): totals spacing 16 / inline 1 / hex 0 / grid 0 / exempt_tags 17, measurement_complete true, errors [] -> 'census 17 all tagged'. PASS",
+    "STEP 4 camera path: {'chat_display.py': (0, 0), 'face_token.py': (0, 0), 'recall_card.py': (2, 0), 'synapse_panel.py': (0, 1), 'token_readout.py': (0, 0)}. PASS",
+    "STEP 5 RESIDUAL.json: 'cap==measured 17' (census pointer harness/panel_pd/runs/2026-09-05/rhythm_census.json, allowed_grid_residual 0). PASS",
+    "STEP 6 hython audit_panel.py --strict: exit=0; 'G3 RESULT: pass \u00b7 1 WARN'; rows 'no bundled font in QSS: clean [ok]', 'input not clipped: send bottom 410px / panel 420px [ok]', 'content scales on Aa: prompt 12->19px \u00b7 chat 1.0->1.6 [ok]', 'wordmark is brand: 14px @ tracking 116.0% [ok]', 'chrome FROZEN on Aa [ok]', 'bundled chrome font {wordmark: Space Grotesk, tab/author/meter: Space Mono} [ok]'; seeded-contrast sweep rows all ok (body realistic worst 5.3:1, any-grey 3.9:1); only WARN 'interactive targets: 28 found, 3 under 26px' (master tree same run: '27 found, 3 under 26px [WARN]', exit 0). PASS (gates 1+2)",
+    "STEP 7 hython -m pytest tests/panel -q: '1 failed, 120 passed, 6 warnings in 8.75s'; FAILED tests/panel/test_failure_trail.py::test_dead_verb_hidden (master tree same file under hython: '1 failed, 1 passed' -> pre-existing); 0 errors. PASS",
+    "STEP 8 hython targeted (docking x2, gate_fidelity_unknown, font_scale, camera_rhythm_qt, + gate_widget_type): '24 passed, 5 warnings in 14.93s'. PASS",
+    "STEP 9 python313 -m pytest tests/test_panel_rhythm_docking.py -q: '1 failed, 90 passed, 1 warning in 54.12s'; FAILED test_every_composed_region_and_face_at_docking_bound[airy] AssertionError: ('DsRoot', 'width', 393, 380); 0 errors, 0 font skips; PD_QT (worker run direct, case=panel): family 'Space Grotesk', families 2, runner python313, composed minimum standard [361,337] / tight [345,333] / airy 393 (worker asserts before emitting). FAIL vs brief '0 failed' \u2014 R3-01, the forge's declared open word",
+    "STEP 10 hython docking -k 'composed or alternate': '1 failed, 44 passed, 46 deselected, 1 warning in 115.52s'; 'Failed to import encodings' hits = 0; same single [airy] red. PASS on the '0 errors' clause",
+    "STEP 11 python313 tests/test_panel_sweep_b_widgets.py: '18 passed, 1 warning in 3.50s'. PASS",
+    "STEP 12 stock python 3.14 13-file list: '332 passed, 54 skipped, 2 warnings in 12.12s'. PASS",
+    "STEP 13-15 greps: SWEEP_A..END SWEEP_B font-family count = 0; parm_row outside designsystem/face_token = 0 (the 4 remaining are face_token.py:408/435/442/443, a real label/value grid); GUTTER in rhythm.py = 3; 'rhythm_role\", \"shell\"' in synapse_panel.py = 4 (:823, :997, :1060, :1173) + face_work.py:187 + face_review.py:207. PASS",
+    "STEP 16 python -m pytest tests/ -q (stock 3.14, full): '1 failed, 7603 passed, 331 skipped, 625 warnings in 268.11s'; the red is tests/test_f3_emergency_net.py::test_escalation_routes_ws_halt_when_no_haltable_bridge (NOT the brief's test_backfill, which passed). Provenance: isolated 10x -> master tree 6/10 pass, r3 tree 7/10 pass; branch diff touches 0 non-panel python files and 0 non-panel tests -> master-owned watchdog race (fired.assert_called_once sees 0 calls after chain.escalated flips), not this wave. Skips 331 vs master receipt 198: -rs aggregation shows +90 test_panel_rhythm_docking.py, +30 test_panel_sweep_a.py, +6 test_panel_sweep_b_widgets.py = 126 branch Qt-bound tests declining explicitly under stock CPython ('NOT_RUN: PySide6/PySide2 absent'), all run green under python313/hython in steps 9-11. passed >= 7431 met. PASS-with-caveat (the brief's named red and skip figure are stale, not the branch)",
+    "STEP 17 MUTATION 1 (git-archive scratch, restore self._dot.setStyleSheet(sheet) in working_indicator.py::_apply): tests/test_panel_rhythm_owner.py -> FAILED test_panel_rhythm_owner_ratchet 'AssertionError: new untagged rhythm owners: [(working_indicator.py, inline_styles, WorkingIndicator._apply, ...), (working_indicator.py, hex_sites, ...)]'; reverted -> green (scratch baseline carries 1 expected red: test_residual_cannot_increase_against_git_history fails loud on a non-git tree, RULING-1e as designed). PASS",
+    "STEP 18 MUTATION 2 (add `from synapse.panel import chat_panel` to synapse_panel.py): tests/test_panel_alt_entry_unshipped.py -> '2 failed, 2 passed', 'AssertionError: exemption premise broken: [chat_panel, quick_actions] is reachable from the shipped panel, so the docking test must measure it again'; reverted -> '4 passed'. PASS",
+    "STEP 19 design/rhythm_pd/after_r3/{curious,expert,ml}: 16 PNG + manifest.json each; manifest schema panel_shot/v1, python 3.13.10, views_ok 16/16 each; manifest carries NO hash field (only bytes/pixels) so 'hashes match' cannot be run as written \u2014 byte counts: 16/16 match in every profile; committed in c9b1216c. PASS (byte-exact), see nit",
+    "TRAP CHECKS: branch diff adds 0 `exec_(` call sites, 0 imports from the legacy ui/ tree, 0 files under python/synapse/ui/, 0 six-digit hex literals in added panel/ lines; synapse_ping not run (bridge down per brief) and no output above claims a connection"
+   ],
+   "must_fix": [
+    "R3-01 (the only acceptance red, and it is a design word, not a forge defect): the composed panel at airy needs 393px, the ratified bound is 380 (tests/test_panel_rhythm_docking.py::test_every_composed_region_and_face_at_docking_bound[airy], red under both runners; .synapse/contracts/docking-minimums.yaml now carries one figure per density). Repro: `cd $R && \"$PY313\" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider` -> AssertionError ('DsRoot','width',393,380). Joe/CTO must pick one: (a) '<= 393px wide at airy' in the YAML (accept that airy \u00d71.5 gaps + 2\u00d7GUTTER 30 cost 13px over the interim bound; the 280 contract already carries dated follow-ups); (b) a tighter verb-rail role at airy (departs battleplan T2); (c) GUTTER 26 (still 385, does not close it). Design read: the 393 is structural whitespace doing its job at \u00d71.5 \u2014 option (a) is the one that keeps one point of view across densities; (b) makes airy a different design than standard. After the word lands the forge re-runs steps 9-10 and regenerates after_r3/curious (its panel_direct_chat.png currently shows XPLAIN / PTIMIZ / ILD H and the CURIOUS pill clipped to 'URIOUS' at 340 \u2014 the visible face of this same root)."
+   ],
+   "nits": [
+    "Brief step 19 says 'manifest.json hashes match the files' but panel_shot/v1 manifests carry only {view, png, size, status, bytes, pixels} \u2014 no sha256. Either the shot tool grows a sha256 per result or the acceptance line is reworded to 'bytes match'; today the receipt is byte-exact 48/48 but not hash-pinned.",
+    "docs/design/SYNAPSE_PANEL_REDESIGN.md:45 still names SIGNAL as cyan #00D4FF while tokens.py:29 is #8FB3D9 (muted light blue) \u2014 the known 3-source gremlin, correctly DEFERRED in the waivers; keep it out of this landing, fix in its own commit with the full suite green (it breaks test_hda_panel if unified naively).",
+    "INTEGRATION.md 'Repair round' cites fullsuite_R3.txt on cd98b5c6 as the last full receipt without naming its red; that receipt's red is test_f3_emergency_net.py::test_escalation_routes_ws_halt_when_no_haltable_bridge (7602 passed / 328 skipped), not the brief's test_backfill. Add one line naming it as master's watchdog race (6/10 on master in isolation) so the next reviewer does not chase it as wave damage; the brief's expected-red figure itself is stale and should be re-anchored to master HEAD e8913f83.",
+    "The +133 skips vs the master receipt are honest (126 = branch Qt-bound tests declining explicitly under stock CPython, all green under python313/hython) but the brief's '~198 skipped' will keep tripping reviewers; state the expected stock-python skip count for this branch (~331) in INTEGRATION.md's suite counts.",
+    "rhythm.py:52-53 borrows TRACKING_EM['SEND'] (0.08) and DATA*2 (0.06) for the label/tag tracking with a comment naming the \u00a74 values \u2014 acceptable under the CAMERA tokens.py freeze, but the 'eyebrow' rename + named tracking tokens should land together the next time tokens.py opens (already DEFERRED with a dated pointer in panel_nits_pd.md).",
+    "G3 WARN 'interactive targets: 28 found, 3 under 26px' is master baseline (27/3 on master); the audit prints only the count \u2014 printing the three objectNames would make GUI-gate item 8 actionable without a GUI."
+   ],
+   "design_conformance": "Predicates derived from the Pentagram bar (REDESIGN \u00a73: monochrome restraint + one intelligent accent; space load-bearing from the token scale; type as roles not sizes; COHERE lessons 1/3/5/6/7) and judged on the r3 tree: (1) TOKENS ONLY \u2014 PASS: census hex_raw_sites 0 panel-wide (was 42 at aca05ccb), zero six-digit literals in the branch's added panel/ lines, SWEEP_A..SWEEP_B QSS block carries 0 font-family declarations, G3 'no bundled font in QSS: clean'; the two dead HTML producers are gone and the 17 residual sites are all imperative spacing on owner-less nested QLayouts (chat_panel/context_bar/face_*/gate_widget), the 1px hairline stack (integrity_readout.py:81-82), the DsCard band seam (recall_card.py:114-115) and the sole root sheet install (synapse_panel.py:348) \u2014 each tagged with a reason that names why no role can express it. (2) RHYTHM GRID \u2014 PASS: grid_spacing_sites 0; ROLE_GAPS stays inside SPACE_GRID (shell/group/tag/card = 16, label/row = 12, parm_row/stack = 4, band = 0); the new shell role (rhythm.py:41) is the one consumer of tokens.GUTTER so the token stopped being a lie (RULING-3), and it is applied to the four edge containers plus both faces (synapse_panel.py:823/:997/:1060/:1173, face_work.py:187, face_review.py:207) \u2014 the expert panel_work.png shows PLAN / INTEGRITY sitting on the 30px inset. The owner guard is now exact (cap 17 == measured, MUTATION 1 proves a deleted owner cannot return). (3) ONE ACCENT \u2014 PASS: SIGNAL #8FB3D9 is the only accent on the shipped path (active tab underline, SEND via SIGNAL_DEEP, running-phase glyph face_work.py:47, inform-level gate gate_widget.py:28); the status grammar GROW/WARN/ERROR/FIRE stays semantic, HOT_SOFT is reserved to BLOCKED/hot verbs (qss.py:104/:168/:399), WARM is the human note (BouncingToy, components.py:271 \u2014 present on master's before PNG, not wave drift); zero new colour points in the diff. Doc drift on the cyan value is deferred, correctly. (4) HIERARCHY AT THE FLOOR \u2014 PASS: G3 type scale 5 distinct steps, chrome floor >= 11px and FROZEN on Aa, body 12px == host, wordmark BRAND 14px @ 116%; the label doctrine is written (PANEL_RHYTHM_SPEC.md \u00a74 'Different things, never both on one widget') and pinned (tests/test_panel_camera_rhythm.py::test_no_widget_takes_both_label_type_appliers); the dead 0.72x/0.68x ratios are retired at qss.py:361 and spec:67; parm_row is back to the one real label/value grid (face_token.py:408-443), profile pills are tags and right-aligned as chrome (synapse_panel.py:1093-1098); gate widget families travel by QFont again (9 mono elements, hython-pinned). (5) DENSITY PROFILES \u2014 PASS with the one open word: DENSITY_GAP_SCALE airy 1.5 / standard 1.0 / tight 0.75 drives gaps only (paddings and GUTTER fixed), three-profile PNG sets regenerate 16/16 under hython, composed minimum 345 / 361 / 393 measured with Space Grotesk loaded; airy alone exceeds the interim 380 bound, and that is a Design Director decision (must_fix 1), not drift. Net: the wave holds one point of view across faces and densities, every remaining pixel of imperative spacing carries a stated reason, and nothing was added to the tree that the design system does not already own.",
+   "gui_gate": [
+    "R3-01 the airy word itself, seen live at PANEL_PREF_WIDTH 340 on H22.0.400 with HOUDINI_UISCALE: whether the \u00d71.5 airy air at 393 is worth 13px over the interim bound, or the verb rail should tighten at airy (after_r3/curious/panel_direct_chat.png: EXPLAIN / OPTIMIZE / BUILD HDA elide, CURIOUS pill clips to 'URIOUS', header buttons overflow past the pane while the wordmark now holds 'SYNAPSE' whole).",
+    "The faces' 30px shell inset in all three profiles (after_r3/{curious,expert,ml}/panel_work.png, face_review.png) \u2014 offscreen shows PLAN / INTEGRITY on the inset; only Joe's eye judges the gutter value (tokens.py:625 GUTTER = 30, '26-36 is safe').",
+    "The gate widget in Space Mono on the composed panel (badge, operation, countdown, Reject, Approve, header, fidelity, counts, violations) after F-C1's repair; offscreen renders the family, the host font metrics are Joe's.",
+    "Profile pills as `tag` right-aligned in the tab row with CHAT / TOKEN in the ribbon row (RULING-4b, battleplan T6) \u2014 the one-row merge is CTO-ordered, the accept is Joe's.",
+    "ResultView single accent: DsHdaGenerate 'Create Another HDA' carries the SIGNAL fill beside the GROW status label; one-line revert is hda_views.py:312 DsHdaGenerate -> DsHdaAction if Joe wants one accent per view (RULING-2C).",
+    "G3 WARN 'interactive targets: 28 found, 3 under 26px' \u2014 master baseline (27/3), the three targets need a live hit-test at Houdini's UI scale.",
+    "BouncingToy WARM lozenge beside 'Standing by' on the WORK face at idle (components.py:271; also on master's before/panel_work.png) \u2014 the system's 'warm note for the human' per COHERE lesson 5, but whether an idle state should carry any warm colour is a taste call for the Design Director household, not a wave defect.",
+    "Bridge truth: the bridge was down for this review, synapse_ping was not run, and no screenshot or gate output above asserts 'connected'; any live sign-off must ping first before trusting the rail's status token."
+   ],
+   "merge_ready": false
+  }
+ ],
+ "repaired": true,
+ "merge_ready": false
+}

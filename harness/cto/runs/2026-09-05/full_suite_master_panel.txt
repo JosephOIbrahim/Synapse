@@ -1,0 +1,13 @@
+tests\test_worker_policy_demo.py ....................................... [ 97%]
+........................................................................ [ 97%]
+............................                                             [ 98%]
+tests\test_worker_tool_policy.py ........................                [ 98%]
+tests\test_working_indicator.py ...........ss....                        [ 98%]
+tests\test_worktree_guard.py .......                                     [ 98%]
+tests\test_wp5_evaluator_truth.py ......                                 [ 99%]
+tests\test_write_plane_health.py ..........................              [ 99%]
+tests\test_write_report.py ..........                                    [ 99%]
+tests\test_xref_help.py ..........................................       [100%]
+
+================ 7604 passed, 331 skipped in 247.11s (0:04:07) ================
+exit=0

@@ -1,0 +1,11 @@
+# Dead branch set deleted 2026-09-05 (Joe's word). Recover with: git branch <name> <sha>
+mem/m1-handle-law c3b9d1fc 2026-08-21
+bp2/integration 083c8bd6 2026-09-01
+bp4/rulings a62267f9 2026-09-03
+archive/retina-m2-orphan f3be38c3 2026-07-17
+g1b-health-write-plane-DO-NOT-MERGE 1ad699cc 2026-08-02
+wave5/lcrux-scratch fddc6660 2026-08-16
+wave5/wxa 2ccdd0aa 2026-08-17
+wave5/wxb 619651f1 2026-08-17
+wave5/wxc 3fe5bf94 2026-08-17
+worktree-wf_3b183969-cdc-3 f3be38c3 2026-07-17

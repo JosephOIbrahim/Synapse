@@ -11,9 +11,11 @@
    "repro": "gh run list --branch master --limit 3 && sed -n '243,244p' tests/test_solaris_compose_tools.py",
    "gate": "crux",
    "closure_predicate": "gh run list --branch master --limit 1 --json conclusion -q '.[0].conclusion' prints success AND rg -n 'importorskip\\(\"pxr\"\\)' tests/test_solaris_compose_tools.py matches at or above line 244",
-   "status": "open",
+   "status": "closed",
    "opened_run": "2026-09-05",
-   "note": "merged to master 5b9ecd33 (Joe word 2026-09-05); predicate needs a push to observe CI"
+   "note": "merged 5b9ecd33; predicate observes GitHub CI, needs a push (Joe word)",
+   "closed_run": "2026-09-05",
+   "closure_evidence": "gh run on e8913f83: completed success (first green master run since 2026-07-29)"
   },
   {
    "id": "B2",
@@ -25,8 +27,11 @@
    "repro": "python -W ignore -c \"import sys;sys.path.insert(0,'python');from synapse.cognitive.tools import scout;s,m=scout._load_symbol_table();print(m['houdini_version'],'hou.undos.group' in s)\"; sed -n 66p host/introspect_runtime.py; ls rulebook/surfaces scripts/rulebook_harvest.py",
    "gate": "crux",
    "closure_predicate": "python -c \"import json;s=set(json.load(open('python/synapse/cognitive/tools/data/h22_symbol_table.json'))['symbols']);print(all(q in s for q in ['hou.undos.group','hou.hipFile.save','hou.hda.definitionsInFile']))\" prints True AND rg -n 'hou.undos.group' python/synapse/recipes/transaction.py matches",
-   "status": "open",
-   "opened_run": "2026-09-05"
+   "status": "closed",
+   "opened_run": "2026-09-05",
+   "closed_run": "2026-09-05",
+   "merge": "aaa34697",
+   "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
   {
    "id": "B3",
@@ -38,8 +43,11 @@
    "repro": "PYTHONPATH='python;.' QT_QPA_PLATFORM=offscreen \"/c/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest tests/test_recipe_verify_hython.py -q -p no:cacheprovider",
    "gate": "crux",
    "closure_predicate": "QT_QPA_PLATFORM=offscreen \"/c/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest tests/test_recipe_verify_hython.py -q -p no:cacheprovider exits 0 with 4 passed",
-   "status": "open",
-   "opened_run": "2026-09-05"
+   "status": "closed",
+   "opened_run": "2026-09-05",
+   "closed_run": "2026-09-05",
+   "merge": "6b018952",
+   "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
   {
    "id": "B4",
@@ -51,10 +59,13 @@
    "repro": "QT_QPA_PLATFORM=offscreen \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" audit_panel.py --strict | tail -3; rg -n '_want_pct' audit_panel.py; rg -n 'PySide|hython' .github/workflows pyproject.toml",
    "gate": "crux",
    "closure_predicate": "QT_QPA_PLATFORM=offscreen \"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" audit_panel.py --strict exits 0 and its output contains 'G3 RESULT: pass' AND rg -n 'G3 RESULT' harness/notes/RELEASE_v5.6*.md matches in the newest release note",
-   "status": "open",
+   "status": "closed",
    "opened_run": "2026-09-05",
    "branch": "cto/b4-panel-gate",
-   "note": "rulings made under CTO delegation 2026-09-05: (a) composer capped to pane, artist height preserved; (b) audit pinned to WORDMARK per 7780f649. hython G3 pass on branch; merge is Joe word"
+   "note": "rulings made under CTO delegation 2026-09-05: (a) composer capped to pane, artist height preserved; (b) audit pinned to WORDMARK per 7780f649. hython G3 pass on branch; merge is Joe word",
+   "closed_run": "2026-09-05",
+   "merge": "792fb06c",
+   "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
   {
    "id": "B5",
@@ -66,8 +77,11 @@
    "repro": "SYNAPSE_MEMORY_BACKEND=moneta python -m pytest tests/test_backfill.py -q -p no:cacheprovider --tb=line",
    "gate": "crux",
    "closure_predicate": "SYNAPSE_MEMORY_BACKEND=moneta python -m pytest tests/test_backfill.py -q -p no:cacheprovider exits 0 AND rg -n 'SYNAPSE_MEMORY_BACKEND' .github/workflows/ci.yml matches",
-   "status": "open",
-   "opened_run": "2026-09-05"
+   "status": "closed",
+   "opened_run": "2026-09-05",
+   "closed_run": "2026-09-05",
+   "merge": "b435cc26",
+   "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
   {
    "id": "B6",
@@ -79,8 +93,12 @@
    "repro": "rg -n 'TieredRouter\\(' python/synapse -g '!**/__pycache__/**'; rg -n 'route_chat' python/synapse/panel/synapse_panel.py; rg -n \"createNode\\(['\\\"]karma['\\\"]\" python/synapse/routing; python -c \"import json,glob;print(any('grade' in (json.load(open(p,encoding='utf-8')).get('types') or {}) for p in glob.glob('rag/catalog/h22.0.400/*.json')))\"",
    "gate": "joe",
    "closure_predicate": "rg -c \"createNode\\(['\\\"]karma['\\\"]\" python/synapse/routing returns 0 matches AND rg -n \"'grade'\" python/synapse/routing/recipes/scene_recipes.py returns none AND (rg -n 'proposal-only' python/synapse/routing/recipes/base.py matches OR rg -n 'command_fn=' python/synapse/server/handlers.py matches)",
-   "status": "open",
-   "opened_run": "2026-09-05"
+   "status": "closed",
+   "opened_run": "2026-09-05",
+   "closed_run": "2026-09-05",
+   "merge": "6659b7dc",
+   "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)",
+   "note": "crux slice landed (karma->usdrender_rop x5, grade phantom, extractor gate); vocabulary + route_chat ruling still Joe"
   },
   {
    "id": "B7",
@@ -92,8 +110,11 @@
    "repro": "python harness/rsi/verify.py --json | rg -B2 -A3 'unfingerprinted'; ls python/synapse/memory/evolution.py*; rg -n check_evolution python/synapse -g '!**/*.deprecated'",
    "gate": "auto",
    "closure_predicate": "python harness/rsi/verify.py --json reports P5 PASS and P10 PASS with 0 FAIL, and python -c \"import json;r=json.load(open('harness/rsi/REGISTRY.json'));print([l['status'] for l in r['loops'] if l['id']=='A3'])\" prints ['RETIRED']",
-   "status": "open",
-   "opened_run": "2026-09-05"
+   "status": "closed",
+   "opened_run": "2026-09-05",
+   "closed_run": "2026-09-05",
+   "merge": "5e14d253",
+   "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
   {
    "id": "B8",
@@ -105,8 +126,11 @@
    "repro": "git show 6e3dd963:harness/notes/CAPSULE_2026-09-04_BP5_PLAN.md | sed -n '/## 5/,$p'; rg -n 'v5.60.0 is|115 tools|5,551' README.md; python -c \"import json,os;r=json.load(open('harness/solaris_v3/runs/acceptance-validation/receipt.json'));print([k for k in r['artifact_hashes'] if not os.path.exists(k)])\"; rg -n '22\\.0\\.368' CLAUDE.md",
    "gate": "auto",
    "closure_predicate": "rg -c 'v5.60.0 is|115 tools|5,551 passed' README.md returns 0 AND python -c \"import json,os;r=json.load(open('harness/solaris_v3/runs/acceptance-validation/receipt.json'));print([k for k in r['artifact_hashes'] if not os.path.exists(k)])\" prints [] AND rg -n 'SPATIAL|splat|FONT_FLOOR' harness/notes/RELEASE_v5.63.0.md harness/notes/CAPSULE_2026-09-05_BP5.md matches AND rg -c '22\\.0\\.368' CLAUDE.md returns 0",
-   "status": "open",
-   "opened_run": "2026-09-05"
+   "status": "closed",
+   "opened_run": "2026-09-05",
+   "closed_run": "2026-09-05",
+   "merge": "3fe131b5",
+   "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
   {
    "id": "B9",
@@ -119,7 +143,8 @@
    "gate": "auto",
    "closure_predicate": "git worktree list | wc -l prints <= 15 AND git status --porcelain | rg -c '_temp_|\\.err$' prints 0 AND git branch -r | rg -c 'pd/panel-(integrate|camera|lever|sweep_a|sweep_b)' prints 5",
    "status": "open",
-   "opened_run": "2026-09-05"
+   "opened_run": "2026-09-05",
+   "note": "partial: 23 merged worktrees removed (45->15 incl. forge cleanup, 8.2G->3.7G), gitignore patterns landed 007d30df; remaining: push pd/* backup refs (Joe), delete dead branch set, 7 empty locked dirs, transcript policy"
   },
   {
    "id": "B10",
@@ -131,6 +156,22 @@
    "repro": "sed -n 51p .synapse/hytest.py; \"/c/Program Files/Side Effects Software/Houdini 22.0.429/bin/hython.exe\" -c \"import pytest, PySide6; print('USABLE')\"; rg -n 'SYNAPSE_HYTHON' docs/studio/DEPLOYMENT.md; rg -n 'houdini21' .claude/skills/deploy/SKILL.md",
    "gate": "crux",
    "closure_predicate": "rg -n 'SYNAPSE_HYTHON' docs/studio/DEPLOYMENT.md matches AND rg -c 'houdini21' .claude/skills/deploy/SKILL.md returns 0 AND python .synapse/hytest.py --which 2>/dev/null | rg '22\\.0\\.400' matches (or the shim prints the build it selected and it is 22.0.400)",
+   "status": "closed",
+   "opened_run": "2026-09-05",
+   "closed_run": "2026-09-05",
+   "merge": "8021bbc0",
+   "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
+  },
+  {
+   "id": "B11",
+   "title": "Verb rail collapses to icons below ~360px so the panel meets the PANEL_MIN_WIDTH 280 contract (R3-01 interim airy 400)",
+   "lane": "DESIGN",
+   "severity": "medium",
+   "action": "Next design wave: rail overflow/collapse role; retire the per-density interim widths in .synapse/contracts/docking-minimums.yaml",
+   "evidence": "harness/cto/runs/2026-09-05/RULING_R3-01_docking_airy.md; DsRoot airy 393 / standard 361 / tight 345 vs 280",
+   "repro": "\"C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe\" -m pytest tests/test_panel_rhythm_docking.py -q -k airy",
+   "gate": "joe",
+   "closure_predicate": "rg -c '<= 280px wide at airy' .synapse/contracts/docking-minimums.yaml returns 1",
    "status": "open",
    "opened_run": "2026-09-05"
   }

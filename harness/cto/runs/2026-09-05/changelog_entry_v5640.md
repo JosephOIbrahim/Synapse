@@ -1,0 +1,4 @@
+## v5.64.0 — the panel landed, and the loop learned to check itself
+
+*2026-09-05 (evening): the Panel PD design wave that v5.63.0 held back is on master (`74dc0219`, 202 files) after a Pentagram-bar audit, a second forge pass and a CRUX round 3 that both referees closed; one owner of rhythm and colour, 107 → 17 spacing sites (all tagged), raw hex 135 → 0. A closure-first CTO review loop (`harness/cto/`) landed nine of its eleven findings the same day: GitHub CI green for the first time since July, the phantom checker walks Houdini namespaces, the Solaris v3 verifier no longer fails on every live stage, backfill dual-write fixed, four recipes off the deprecated `karma` LOP. Full gate **7604 passed / 0 failed / 331 skipped**. GUI sign-off in three profiles is still Joe's eyes. Full notes with receipts: `harness/notes/RELEASE_v5.64.0.md`.*
+

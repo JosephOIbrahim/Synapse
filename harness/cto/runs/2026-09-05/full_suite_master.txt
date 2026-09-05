@@ -1,0 +1,16 @@
+C:\Python314\Lib\unittest\mock.py:964: in assert_called_once
+    raise AssertionError(msg)
+E   AssertionError: Expected 'mock' to have been called once. Called 0 times.
+------------------------------ Captured log call ------------------------------
+WARNING  synapse.resilience:resilience.py:618 FREEZE DETECTED! No heartbeat for 0.1s\nWARNING  synapse.freeze_chain:freeze_chain.py:145 Main thread frozen for 0.1s \u2014 escalation in 0s unless it recovers\nERROR    synapse.freeze_chain:freeze_chain.py:184 SUSTAINED FREEZE: main thread unresponsive \u22650s \u2014 opening the circuit breaker and triggering the emergency halt (if a bridge is active)
+__________________ test_every_source_env_read_is_documented ___________________
+tests\test_m3_env_conformance.py:149: in test_every_source_env_read_is_documented
+    assert not missing, (
+E   AssertionError: Env vars read by production code but missing from the '### Environment Variables' table in docs/studio/DEPLOYMENT.md (add a backticked row for each):
+E       SYNAPSE_PANEL_SETTINGS: python/synapse/panel/settings.py:84
+E   assert not {'SYNAPSE_PANEL_SETTINGS': ['python/synapse/panel/settings.py:84']}
+=========================== short test summary info ===========================
+FAILED tests/test_f3_emergency_net.py::test_escalation_routes_ws_halt_when_no_haltable_bridge
+FAILED tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented
+=========== 2 failed, 7469 passed, 199 skipped in 228.28s (0:03:48) ===========
+exit=0

@@ -1,0 +1,160 @@
+<title>SYNAPSE CTO Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f2ee; --surface:#ffffff; --ink:#15161a; --ink-2:#4a4c54; --ink-3:#8a8d97; --line:#d9d8d2; --line-2:#e9e8e3;
+  --signal:#d9741f; --signal-ink:#7a3c05; --good:#2f8f5b; --warn:#c48a12; --crit:#c9362f; --run:#2c6fb3;
+  --good-bg:#e4f3ea; --warn-bg:#fbf0d5; --crit-bg:#fae3e1; --run-bg:#e2edf8; --chip:#ecebe6;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#141518; --surface:#1c1d22; --ink:#ececea; --ink-2:#b9bbc2; --ink-3:#7f828c; --line:#33353c; --line-2:#26282e;
+  --signal:#f0913a; --signal-ink:#f7c08a; --good:#5fc48a; --warn:#e0b04a; --crit:#f07068; --run:#6aa5e6;
+  --good-bg:#1d3327; --warn-bg:#3a3018; --crit-bg:#3d2220; --run-bg:#1e2d40; --chip:#272930;
+}}
+:root[data-theme="dark"]{
+  --bg:#141518; --surface:#1c1d22; --ink:#ececea; --ink-2:#b9bbc2; --ink-3:#7f828c; --line:#33353c; --line-2:#26282e;
+  --signal:#f0913a; --signal-ink:#f7c08a; --good:#5fc48a; --warn:#e0b04a; --crit:#f07068; --run:#6aa5e6;
+  --good-bg:#1d3327; --warn-bg:#3a3018; --crit-bg:#3d2220; --run-bg:#1e2d40; --chip:#272930;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,Segoe UI,sans-serif;font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 24px 64px}
+h1,h2,h3{font-family:"Space Grotesk","IBM Plex Sans",sans-serif;text-wrap:balance;margin:0}
+h1{font-size:26px;font-weight:700;letter-spacing:-0.01em}
+h2{font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-3)}
+.mono{font-family:"Space Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--signal-ink)}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;padding-bottom:18px;border-bottom:2px solid var(--ink)}
+header .meta{display:flex;flex-wrap:wrap;gap:18px;color:var(--ink-2);font-size:13px}
+header .meta b{color:var(--ink);font-weight:600}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:22px 0 30px}
+.tile{background:var(--surface);border:1px solid var(--line);padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-height:96px}
+.tile .k{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-3)}
+.tile .v{font-family:"Space Grotesk",sans-serif;font-size:24px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile .s{font-size:12px;color:var(--ink-2)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:0.04em;line-height:1.6;white-space:nowrap}
+.good{background:var(--good-bg);color:var(--good)} .warn{background:var(--warn-bg);color:var(--warn)} .crit{background:var(--crit-bg);color:var(--crit)} .run{background:var(--run-bg);color:var(--run)} .neutral{background:var(--chip);color:var(--ink-2)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px;margin-bottom:34px}
+section.block{display:flex;flex-direction:column;gap:12px}
+.block h2{padding-bottom:8px;border-bottom:1px solid var(--line)}
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line-2);align-items:start}
+.item:last-child{border-bottom:0}
+.item .word{font-family:"Space Mono",monospace;font-size:12px;color:var(--signal-ink);white-space:nowrap;padding-top:2px}
+.item .t{font-weight:500}
+.item .d{color:var(--ink-2);font-size:13px}
+.item .why{color:var(--ink-3);font-size:12px}
+.tbl{overflow-x:auto;border:1px solid var(--line);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--line-2);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.id{font-family:"Space Mono",monospace;font-size:12px;white-space:nowrap}
+td.sha{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-2);white-space:nowrap}
+.sev{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.sev.critical{background:var(--crit)} .sev.high{background:var(--signal)} .sev.medium{background:var(--warn)}
+.stage{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:6px 0 4px}
+.stage div{padding:8px 6px;font-family:"Space Mono",monospace;font-size:11px;text-align:center;border:1px solid var(--line);color:var(--ink-3);background:var(--surface)}
+.stage div.done{border-color:var(--good);color:var(--good)}
+.stage div.live{border-color:var(--run);color:var(--run);background:var(--run-bg)}
+.note{font-size:12px;color:var(--ink-3)}
+.foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink-3);font-size:12px;display:flex;flex-wrap:wrap;gap:18px}
+@media (max-width:640px){ .stage{grid-template-columns:repeat(3,1fr)} h1{font-size:22px} }
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <div class="eyebrow">SYNAPSE · CTO board · 2026-09-05</div>
+    <h1>Panel rework landed, v5.64.0 in the oven</h1>
+  </div>
+  <div class="meta">
+    <span>master <b class="mono">74dc0219</b></span>
+    <span>pushed <b>to e8913f83</b>, 2 commits pending</span>
+    <span>Houdini <b>22.0.400</b></span>
+    <span>bridge <b>down</b> (headless only)</span>
+  </div>
+</header>
+
+<div class="strip">
+  <div class="tile"><div class="k">GitHub CI</div><div class="v"><span class="pill good">green</span></div><div class="s">on e8913f83, first green master run since July 29. The panel merge (74dc0219) is not pushed yet, so CI has not seen it.</div></div>
+  <div class="tile"><div class="k">Full suite, local</div><div class="v mono">7604 / 0 / 331</div><div class="s">passed / failed / skipped at 74dc0219, the first zero-failure full run on record. Skips rose from 199 because the panel wave's PySide tests skip under stock Python and run under hython (211 pass there). v5.63.0 gate was 7431 / 1 / 198.</div></div>
+  <div class="tile"><div class="k">Review backlog</div><div class="v mono">9 of 11 closed</div><div class="s">Closed by re-running each item's predicate on master, not by receipt. B9 is partial; B11 (verb rail collapse) opened by the R3-01 ruling.</div></div>
+  <div class="tile"><div class="k">Panel rework</div><div class="v"><span class="pill good">merged</span></div><div class="s">74dc0219: 202 files, +37.5k lines. CRUX round 3 closed all six referee items; the last, airy width, ruled R3-01. Your eyes next.</div></div>
+  <div class="tile"><div class="k">Repo hygiene</div><div class="v mono">11 worktrees</div><div class="s">from 45. 10 dead branches deleted, SHAs on file. Worktree disk 8.2 GB to about 2 GB.</div></div>
+</div>
+
+<div class="cols">
+  <section class="block">
+    <h2>Stops at Joe</h2>
+    <div class="list">
+      <div class="item"><span class="word">"push"</span><div><div class="t">Push the panel rework to GitHub</div><div class="d">Two commits on master are local only, including the 37.5k-line panel merge. Once pushed, the five pd/* branches are safe to delete; their content is on master.</div></div></div>
+      <div class="item"><span class="word">"rule: recipes"</span><div><div class="t">Which "recipe" the panel teaches</div><div class="d">62 routing recipes, Solaris v3, or the 7 in recipe_book. And whether route_chat gets a real command channel or is proposal-only.</div><div class="why">Until ruled, no recipe executes for an artist. Deprecated-node fixes already landed.</div></div></div>
+      <div class="item"><span class="word">"rule: point release"</span><div><div class="t">Verifier pin: exact 22.0.400 or major.minor plus catalog digest</div><div class="d">Left untouched in contracts.py.</div></div></div>
+      <div class="item"><span class="word">golden HIP</span><div><div class="t">Solaris v3 golden scene</div><div class="d">The one non-delegable blocker. Nothing in v3 runs end to end without it.</div></div></div>
+      <div class="item"><span class="word">"carry" / "drop"</span><div><div class="t">The three 09-04 plan predicates</div><div class="d">spatial default-on, panel font floor, splat colour in EXR. Now recorded OPEN in the capsule.</div></div></div>
+      <div class="item"><span class="word">your eyes</span><div><div class="t">GUI sign-off after the panel merge, before the v5.64.0 tag</div><div class="d">Five camera regions in curious, expert, ml on 22.0.400: profile tab strip, header and ribbon, chat transcript, verb rail, recall card, TOKEN face.</div></div></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Panel support team · done</h2>
+    <div class="stage">
+      <div class="done">AUDIT</div><div class="done">BRIEF</div><div class="done">FORGE</div><div class="done">CRUX 3</div><div class="done">MERGE</div><div class="live">YOUR EYES</div>
+    </div>
+    <div class="list">
+      <div class="item"><span class="word">audit</span><div><div class="t">Pentagram bar: does not meet as it sat, landable after nine fixes</div><div class="d">Reach was real (spacing sites 107 to 18, raw hex 135 to 42) but the gutter token was deleted rather than applied, two type appliers ran on the same widgets, profile pills became 116 by 70 blocks, and the census was gamed to hit raw-zero.</div></div></div>
+      <div class="item"><span class="word">ruling 1</span><div><div class="t">Residual colour sites: own now, no waiver</div><div class="d">Target at most 20, all tagged. Forge is at 17; guard re-seeded with an exact cap.</div></div></div>
+      <div class="item"><span class="word">ruling 2</span><div><div class="t">Docking: fix the measurement first</div><div class="d">The 15 "too wide" widgets were measured with an empty font database. Contract is PANEL_MIN_WIDTH 280; 380 stays as a written interim. HealthStrip fixed, ResultView re-measured, two chat-panel-only widgets exempted with a reachability pin.</div></div></div>
+      <div class="item"><span class="word">ruling 3</span><div><div class="t">HDA Result stays dark</div><div class="d">The "before" image was an unstyled Fusion render; the ratified style sheet already specified the dark table and SIGNAL fill.</div></div></div>
+      <div class="item"><span class="word">crux 3</span><div><div class="t">Both referees said broken, then the repairs closed them</div><div class="d">Gate widget had fallen to Courier after a font purge; WORK and REVIEW faces lost their 26px inset; two test-hygiene pins. All fixed and pinned. The last item, airy width 393 against 380, was ruled: airy 400 as an interim, wordmark never elides, verb-rail collapse queued as B11.</div></div></div><div class="item"><span class="word">gates</span><div><div class="t">On the merged tree, Houdini 22.0.400 offscreen</div><div class="d">Docking 91 passed under python313. Docking plus tests/panel under hython: 211 passed, 1 pre-existing dead-verb red. G3 strict: pass, 1 pre-existing warn. Census: 17 sites, all tagged, 0 raw hex.</div></div></div>
+    </div>
+    <p class="note">Now running: the Bierut design review, five lenses on a shared bus, output as a design canvas.</p>
+  </section>
+</div>
+
+<section class="block" style="margin-bottom:34px">
+  <h2>Landed on master today</h2>
+  <div class="tbl"><table>
+    <tr><th>Item</th><th>What changed</th><th>Proof</th><th>Merge</th></tr>
+    <tr><td class="id"><span class="sev critical"></span>B1</td><td>Guarded the function-level pxr import that turned GitHub CI red on both release commits.</td><td>CI simulation with pxr hidden: 10 passed, 16 skipped. Live CI pending.</td><td class="sha">5b9ecd33</td></tr>
+    <tr><td class="id"><span class="sev high"></span>B4</td><td>Panel design gate green: composer capped to its pane (your saved height preserved), wordmark audit pinned to your July call, audit isolated from artist settings.</td><td>hython G3 strict: 2 FAIL to pass. Send bottom 861 px to 410 px at a 420 px pane.</td><td class="sha">792fb06c</td></tr>
+    <tr><td class="id"><span class="sev high"></span>B2</td><td>Phantom checker now walks Houdini namespaces (hou.undos and 21 more). Symbol table regenerated on 22.0.400, plus 564 real symbols. Recipe transactions bound to hou.undos.</td><td>92 targeted tests; new tests shown failing before the change.</td><td class="sha">aaa34697</td></tr>
+    <tr><td class="id"><span class="sev high"></span>B3</td><td>Solaris v3 verifier ignores Houdini's in-memory anon: sublayers; it had failed on every live LOP stage.</td><td>hython: 4 passed, was 1 failed. First host run on record.</td><td class="sha">6b018952</td></tr>
+    <tr><td class="id"><span class="sev high"></span>B5</td><td>Backfill no longer doubles the source memory file through Moneta dual-write. CI now exercises the moneta backend.</td><td>test_backfill green under SYNAPSE_MEMORY_BACKEND=moneta.</td><td class="sha">b435cc26</td></tr>
+    <tr><td class="id"><span class="sev high"></span>B6</td><td>Four render recipes build usdrender_rop instead of the deprecated karma LOP; phantom grade node fixed; emitted-type gate extended.</td><td>Zero karma createNode sites remain in routing.</td><td class="sha">6659b7dc</td></tr>
+    <tr><td class="id"><span class="sev high"></span>B7</td><td>RSI registry honest again: cited-path liveness check, A3 retired, loop C evidence corrected, champion counts fixed.</td><td>verify.py 0 FAIL including the new P10.</td><td class="sha">5e14d253</td></tr>
+    <tr><td class="id"><span class="sev high"></span>B8</td><td>README, release note, capsule and CLAUDE.md brought to v5.63.0 truth; the three 09-04 predicates recorded OPEN; acceptance receipt no longer hashes missing files.</td><td>Predicate green; a fresh pure-tier acceptance run committed.</td><td class="sha">3fe131b5</td></tr>
+    <tr><td class="id"><span class="sev medium"></span>B10</td><td>Houdini build pin: hytest prefers the build matching the symbol table and prints its choice; SYNAPSE_HYTHON documented; deploy skill on houdini22.0.</td><td>hytest --which prints 22.0.400.</td><td class="sha">8021bbc0</td></tr>
+    <tr><td class="id">panel</td><td>Panel PD wave landed: one owner of rhythm and colour, five camera regions on roles, recall card, 18 modules migrated, docking measured with real fonts, gate widget in Space Mono, faces on the shell inset, wordmark non-shrinking.</td><td>Census 107/106/135 to 17/0/0 all tagged. hython panel tier 211 pass / 1 pre-existing.</td><td class="sha">74dc0219</td></tr>
+    <tr><td class="id">ratchet</td><td>SYNAPSE_PANEL_SETTINGS documented; F3 escalation test anchored to state instead of a 0.6 s sleep.</td><td>Both suite reds cleared.</td><td class="sha">e8913f83</td></tr>
+    <tr><td class="id">loop</td><td>CTO review loop scaffolded: harness/cto with predicates the next crank re-runs; cto-review workflow; cto-orchestrator agent.</td><td>Operator's card at harness/cto/OPERATOR_CARD.md.</td><td class="sha">007d30df</td></tr>
+  </table></div>
+</section>
+
+<div class="cols">
+  <section class="block">
+    <h2>Still open</h2>
+    <div class="list">
+      <div class="item"><span class="word">B1</span><div><div class="t">CI green on GitHub</div><div class="d">Fix merged and pushed; closes when the run on e8913f83 finishes.</div></div></div>
+      <div class="item"><span class="word">B9</span><div><div class="t">Hygiene, partial</div><div class="d">Done: 23 merged worktrees removed, 10 dead branches deleted, gitignore for run artefacts. Left: push, delete the merged pd/* branches, eight empty folders locked by an open window, transcript policy.</div></div></div>
+      <div class="item"><span class="word">D1</span><div><div class="t">Render-view dead verb</div><div class="d">One pre-existing hython panel failure, unchanged today. Needs the hou.ui render-view chain.</div></div></div>
+    </div>
+  </section>
+  <section class="block">
+    <h2>Verdicts from the review</h2>
+    <div class="list">
+      <div class="item"><span class="word">panel</span><div><div class="t">Stagnant, not stale-loading</div><div class="d">Houdini loads this checkout. The design gate had stopped measuring and the 22k-line rework never merged.</div></div></div>
+      <div class="item"><span class="word">codex wave</span><div><div class="t">Fix, do not revert</div><div class="d">Frozen seam held, no phantom symbols; three real defects rode in and are now fixed. Merged dormant behind the missing golden HIP.</div></div></div>
+      <div class="item"><span class="word">recipes</span><div><div class="t">A menu with no kitchen</div><div class="d">Five vocabularies, nothing executes for an artist. Your vocabulary ruling unlocks it.</div></div></div>
+      <div class="item"><span class="word">refuters</span><div><div class="t">61 confirmed, 0 refuted</div><div class="d">Zero refuted is itself a calibration flag; severities are a ceiling until the next crank.</div></div></div>
+    </div>
+  </section>
+</div>
+
+<div class="foot">
+  <span>Agents today: 15 review + 16 forge + 10 panel + design review running</span>
+  <span>Subagent tokens: 1.62M + 2.14M + 2.38M + running</span>
+  <span>Next crank: run the cto-orchestrator agent</span>
+</div>
+</div>

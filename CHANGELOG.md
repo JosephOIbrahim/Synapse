@@ -2,6 +2,10 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.64.0 — the panel landed, and the loop learned to check itself
+
+*2026-09-05 (evening): the Panel PD design wave that v5.63.0 held back is on master (`74dc0219`, 202 files) after a Pentagram-bar audit, a second forge pass and a CRUX round 3 that both referees closed; one owner of rhythm and colour, 107 → 17 spacing sites (all tagged), raw hex 135 → 0. A closure-first CTO review loop (`harness/cto/`) landed nine of its eleven findings the same day: GitHub CI green for the first time since July, the phantom checker walks Houdini namespaces, the Solaris v3 verifier no longer fails on every live stage, backfill dual-write fixed, four recipes off the deprecated `karma` LOP. Full gate **7604 passed / 0 failed / 331 skipped**. GUI sign-off in three profiles is still Joe's eyes. Full notes with receipts: `harness/notes/RELEASE_v5.64.0.md`.*
+
 ## v5.63.0 — the swarm shipped the seam, and the referee held the door
 
 *2026-09-05: two Codex swarms on gpt-6-astra, orchestrated from Claude Code. The Solaris Recipes v3 wave (six streams over one frozen seam) merged in full and ships dormant — `run_recipe` exists but is not registered. Of the Panel PD wave only CENSUS merged; LEVER, CAMERA, SWEEP_A and SWEEP_B are carried on `pd/panel-integrate` under the referee's BROKEN verdict. One behaviour change: an explicit unknown `SYNAPSE_WORKER_TOOL_MODE` now fails closed to `strict` (Joe DECIDE 2026-09-04). Full notes with receipts: `harness/notes/RELEASE_v5.63.0.md`. Entries for v5.58.0–v5.62.0 live in `harness/notes/RELEASE_v5.*.md`; this file resumes here.*
