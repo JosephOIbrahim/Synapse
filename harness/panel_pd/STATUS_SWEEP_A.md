@@ -1,0 +1,11 @@
+# PD-SWEEP_A status
+
+- 2026-09-04: Claimed six-module migration on pd/panel-sweep_a at ce04dcb0. Read contract, plan, reference, v2 spec, region map and prior receipts. One matching worktree; no prior SWEEP_A status. PID inventory available but precise process attribution unavailable. Qt/PNG checks deferred per dispatch.
+- 2026-09-04: chat_panel.py migrated: role-owned widget layouts and scoped QSS; four nested-layout exemptions. Connection/HDA docking constraints documented; runtime NOT_RUN. Milestone commit blocked by index.lock Permission denied.
+- 2026-09-04: face_review.py migrated: six layout owners, credit-grid spacing included, four inline sheets centralized; nested flags/provenance exemptions retained. Runtime geometry/PNG NOT_RUN; commit staging still denied.
+- 2026-09-04: gate_widget.py migrated: proposal/body/integrity roles, scoped state QSS, late proposal rhythm inherited from parent. Two nested-row exemptions; gate decisions/timers preserved. Runtime NOT_RUN; milestone staging/commit denied.
+- 2026-09-04: context_bar.py migrated: context/actions/wrapper roles, dynamic memory/health QSS retained; two nested-row exemptions. Four historical hex comment sites removed. Runtime NOT_RUN; milestone commit denied.
+- 2026-09-04: face_work.py migrated: group rhythm and state-selected status/plan QSS; activity and plan nested-layout exemptions retained. Runtime NOT_RUN; milestone commit denied.
+- 2026-09-04: quick_actions.py migrated: both existing containers role-owned, pill/chevron QSS centralized. Five-label single-row docking exemption recorded; no controls removed, renamed, or reparented. Runtime NOT_RUN; milestone commit denied.
+- 2026-09-04: Source migration complete; raw six-file census 12/0/0 (all 12 spacing sites tagged), ceiling 348->236, grid 4->2. Final targeted 66 passed/117 Qt skips. Three synthetic controls red/restored; per-scope control caught and repaired missing GateWidget root role. Full suite running; Git delivery remains denied.
+- 2026-09-04: Full suite once: 6947 passed/17 failed/341 skipped (baseline 6941/1/192). Eleven failure identities inherited; two new QSS issues repaired, four legacy-helper source-pin conflicts remain outside write set. Final targeted 87 passed/117 Qt skips; REPORT complete. Git staging/commit remains blocked by index.lock denial.

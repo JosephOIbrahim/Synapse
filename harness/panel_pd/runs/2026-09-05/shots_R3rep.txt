@@ -1,0 +1,17 @@
+runner: C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+tree: a196b55514c039b845e8d69fac5223db456455ec pd/panel-integrate-r3  date: 2026-09-05
+== curious (SYNAPSE_PANEL_SETTINGS=C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE/9a97a171-51d8-4f46-af5a-14cea870b2a7/scratchpad/shot_settings_curious.json) ==
+  hda_result             ok
+  chat_recipe_book       ok
+  chat_apex_recipes      ok
+16/16 views rendered
+== expert (SYNAPSE_PANEL_SETTINGS=C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE/9a97a171-51d8-4f46-af5a-14cea870b2a7/scratchpad/shot_settings_expert.json) ==
+  hda_result             ok
+  chat_recipe_book       ok
+  chat_apex_recipes      ok
+16/16 views rendered
+== ml (SYNAPSE_PANEL_SETTINGS=C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE/9a97a171-51d8-4f46-af5a-14cea870b2a7/scratchpad/shot_settings_ml.json) ==
+  hda_result             ok
+  chat_recipe_book       ok
+  chat_apex_recipes      ok
+16/16 views rendered

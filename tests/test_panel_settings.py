@@ -69,9 +69,22 @@ def test_merged_model_picks_drops_unknown_pids():
     assert merged == {"claude": "claude-opus-4-8", "ollama": "glm-5:cloud"}
 
 
-def test_settings_path_is_repo_dot_synapse():
+def test_settings_path_is_repo_dot_synapse(monkeypatch):
+    # The live SYNAPSE_PANEL_SETTINGS override (B4) is exactly what the gate
+    # commands set; this pin is about the default, so isolate it from the
+    # runner's environment instead of reading whatever the shell exported.
+    monkeypatch.delenv("SYNAPSE_PANEL_SETTINGS", raising=False)
     p = pset.settings_path()
     assert p.name == "panel_settings.json"
     assert p.parent.name == ".synapse"
     # repo root sanity: the resolved root holds this test's own directory
     assert (p.parent.parent / "tests").is_dir()
+
+
+def test_settings_path_honours_the_override(monkeypatch, tmp_path):
+    target = tmp_path / "scratch" / "s.json"
+    monkeypatch.setenv("SYNAPSE_PANEL_SETTINGS", str(target))
+    assert pset.settings_path() == target
+    # blank is "no override", never Path("")
+    monkeypatch.setenv("SYNAPSE_PANEL_SETTINGS", "   ")
+    assert pset.settings_path().parent.name == ".synapse"

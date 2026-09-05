@@ -406,19 +406,26 @@ if _QT_AVAILABLE:
         def __init__(self, cells: List[StripCell], parent=None, on_click=None):
             super().__init__(parent)
             self.setObjectName("health_strip")
+            # Landing r3 (RULING-1b / RULING-2B): the group role owns the strip's
+            # rhythm (gap SPACE_GRID[3] = 16, margins 0 - today's values at
+            # standard); the cell sheet moved to the designsystem sheet
+            # (#health_strip QLabel) and the family travels by QFont.
+            self.setProperty("rhythm_role", "group")
             self._on_click = on_click
             self._labels: dict = {}
             row = QtWidgets.QHBoxLayout(self)
-            row.setContentsMargins(0, 0, 0, 0)
-            row.setSpacing(t.SPACE_MD)
+            from synapse.panel.designsystem import fontload
             for cell in cells:
                 lbl = QtWidgets.QLabel()
                 lbl.setObjectName("hs_%s" % cell.key)
                 lbl.setTextFormat(QtCore.Qt.TextFormat.RichText)
-                lbl.setStyleSheet(
-                    "font-size:%dpx; font-family:%s; background:transparent;"
-                    % (t.SIZE_SMALL, t.FONT_MONO_CSS)
-                )
+                lbl.setFont(fontload.apply_family(lbl.font(), mono=True))
+                # Ignored horizontally: four rich-text cells at 101-165px with
+                # a 16px gap never fit the 380 bound, and the full text already
+                # lives in the tooltip (cell_tooltip). The strip elides; the
+                # panel keeps its declared floor.
+                lbl.setSizePolicy(QtWidgets.QSizePolicy.Ignored,
+                                  QtWidgets.QSizePolicy.Preferred)
                 self._labels[cell.key] = lbl
                 row.addWidget(lbl)
             row.addStretch(1)

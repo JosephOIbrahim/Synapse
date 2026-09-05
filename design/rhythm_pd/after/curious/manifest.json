@@ -1,0 +1,40 @@
+{
+  "schema": "panel_shot/v1",
+  "out": "design/rhythm_pd/after/curious",
+  "platform": "offscreen",
+  "python": "3.13.10",
+  "reduced_motion": "1",
+  "views_total": 2,
+  "views_ok": 2,
+  "views_failed": 0,
+  "results": [
+    {
+      "view": "panel_direct",
+      "png": "panel_direct.png",
+      "size": [
+        380,
+        760
+      ],
+      "status": "ok",
+      "bytes": 20561,
+      "pixels": [
+        380,
+        760
+      ]
+    },
+    {
+      "view": "panel_token",
+      "png": "panel_token.png",
+      "size": [
+        380,
+        760
+      ],
+      "status": "ok",
+      "bytes": 28397,
+      "pixels": [
+        380,
+        760
+      ]
+    }
+  ]
+}

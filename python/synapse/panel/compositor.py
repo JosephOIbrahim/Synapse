@@ -38,6 +38,7 @@ descendant rules keyed on it.
 import logging
 
 from synapse.panel.manifests import ManifestError, validate_manifest
+from synapse.panel.designsystem import rhythm
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +246,6 @@ def compose(panel, root, manifest):
         # on paper and never repaint unless every child is repolished too.
         # That bug made all three profiles render identically. Repolish the
         # whole subtree, root first.
-        _repolish_tree(panel)
     except Exception:
         logger.warning("compositor: could not apply density %r to the panel "
                        "root", resolved["density"], exc_info=True)
@@ -265,4 +265,8 @@ def compose(panel, root, manifest):
             _apply_spec(target, spec, what)
             if spec["stretch"]:
                 _apply_widget_stretch(target, spec["stretch"], what)
+    # Both initial compose and cached-widget recompose arrive here. New
+    # descendants must exist before either applier walks the tree.
+    _repolish_tree(panel)
+    rhythm.apply(panel, resolved["density"])
     return resolved

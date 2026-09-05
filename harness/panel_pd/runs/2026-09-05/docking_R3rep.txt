@@ -1,0 +1,41 @@
+runner: C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe
+tree: a196b55514c039b845e8d69fac5223db456455ec pd/panel-integrate-r3  date: 2026-09-05
+command: python313 -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider
+============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\User\SYNAPSE\.claude\worktrees\pd-r3
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 91 items
+
+tests\test_panel_rhythm_docking.py ..................................... [ 40%]
+......F...............................................                   [100%]
+
+================================== FAILURES ===================================
+_________ test_every_composed_region_and_face_at_docking_bound[airy] __________
+tests\test_panel_rhythm_docking.py:149: in test_every_composed_region_and_face_at_docking_bound
+    measured = _run("panel", density)
+               ^^^^^^^^^^^^^^^^^^^^^^
+tests\test_panel_rhythm_docking.py:122: in _run
+    assert result.returncode == 0, result.stdout + result.stderr
+E     Traceback (most recent call last):
+E       File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-r3\tests\test_panel_rhythm_docking.py", line 419, in <module>
+E         result = _panel(widgets, density, recall=case == "recall")
+E       File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-r3\tests\test_panel_rhythm_docking.py", line 331, in _panel
+E         measurements.append(_measure(panel, widgets, density))
+E                             ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+E       File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-r3\tests\test_panel_rhythm_docking.py", line 241, in _measure
+E         assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+E                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E     AssertionError: ('DsRoot', 'width', 393, 380)
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 393, 380)\n').returncode
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_panel_rhythm_docking.py::test_every_composed_region_and_face_at_docking_bound[airy]
+================== 1 failed, 90 passed, 1 warning in 58.68s ===================

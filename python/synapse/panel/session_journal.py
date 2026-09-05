@@ -14,6 +14,8 @@ import sys
 import tempfile
 import threading
 import time
+
+from synapse.panel.designsystem import tokens as _ds
 from html import escape as html_escape
 from typing import Any, Dict, List, Optional
 
@@ -246,7 +248,7 @@ def format_journal_html(entries: List[str], query: str = "") -> str:
         header = f"Found {len(entries)} entries matching '<b>{html_escape(query)}</b>'"
     else:
         header = f"Last {len(entries)} entries"
-    parts.append(f"<p style='color: #aaa;'>{header}</p>")
+    parts.append(f"<p style='color: {_ds.TEXT_SECONDARY};'>{header}</p>")
 
     # Entries
     for entry in entries:
@@ -265,7 +267,7 @@ def format_journal_html(entries: List[str], query: str = "") -> str:
                 highlighted.append(safe[idx:pos])
                 matched_text = safe[pos : pos + len(query)]
                 highlighted.append(
-                    f"<b style='color: #f0a030;'>{matched_text}</b>"
+                    f"<b style='color: {_ds.WARN};'>{matched_text}</b>"
                 )
                 idx = pos + len(query)
             safe = "".join(highlighted)

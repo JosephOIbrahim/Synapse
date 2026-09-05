@@ -1,0 +1,47 @@
+tree: cd98b5c6b60a67e3852e7d2f66c0bed9584372aa pd/panel-integrate-r3  date: 2026-09-05  (stock python: Python 3.14.2)
+== font-family in the SWEEP_A..SWEEP_B blocks (expect 0)
+0
+== parm_row outside designsystem + face_token (expect 0)
+0
+== GUTTER in rhythm.py (expect >=1)
+3
+== shell sites in synapse_panel.py (expect 4)
+4
+== census (committed) totals + cap
+census 17 all tagged
+{'chat_display.py': (0, 0), 'face_token.py': (0, 0), 'recall_card.py': (2, 0), 'synapse_panel.py': (0, 1), 'token_readout.py': (0, 0)}
+cap==measured 17
+== live census re-run on this tree (must equal the committed one)
+live 17 tagged 17 grid 0
+== git
+cd98b5c6 pd(r3): docking follow-up - inline the Stop regate in _recompose (rope switcher fakes)
+3dfba227 pd(r3): record rulings, exemptions and doctrine; CRUX round 3 on the landing tree
+365f8c39 pd(r3): residual sweep to 17 sites, all tagged, guard re-seeded with an exact cap (RULING-1, R2-01, R2-08)
+3eafb034 pd(r3): split the SWEEP_B sequence probes by owned layout with a negative control (R2-05)
+de3117e7 pd(r3): docking - valid measurement, YAML width feature, HealthStrip fix, ResultView re-measure, reachability-pinned exemption (RULING-2A/2B)
+9110bacd pd(r3): roles shell / stack / band, gutter restored, pills to tag, one type applier per widget (RULING-3, RULING-4, F-A2)
+d26d2703 pd(r3): purge the 33 font-family declarations from the SWEEP_A QSS block (F-C1)
+99d7e867 pd(r3): move the six test oracles and the one audit probe to the seams the wave created (R2-02, STD-06)
+a47e319f pd(r3): re-anchor the three isolated-green pins and the two CAMERA freeze pins (R2-03, F-A3)
+1458ebb7 Merge branch 'master' into pd/panel-integrate-r3
+aca05ccb pd(integrate): INTEGRATION.md - wave result, CRUX verdicts, suite counts, rulings for Joe
+c9429bdd pd(integrate): post-repair Qt-tier receipt on 20094e1b (CRUX nit R2-07: state-colour cases executed under real PySide6)
+20094e1b pd(crux): round-2 verdict + crux.json + STATUS (written by the referee; scratch tree removed before commit)
+38cd9b46 pd(integrate): fix the SWEEP_B block inserted inside sweep_a_style (CRUX round 1 chain_broken_at 0998cc9e); capture CRUX round-1 verdict verbatim
+c5c086cb pd(integrate): full-suite receipt on the merged tree - 8 failed / 7069 passed / 318 skipped vs base 1 / 6941 / 192
+ca0d29e3 pd(integrate): Qt-tier receipt on the merged tree (240 pass / 25 fail: 15 docking debt, 10 integration-only classified for CRUX), before/after screenshot sets, gitignore exemption for design/rhythm_pd PNGs
+0998cc9e pd(integrate): merge pd/panel-sweep_b (qss.py: SWEEP_A then SWEEP_B blocks chained; RESIDUAL.json: min of both ratchets)
+000ac509 pd(integrate): merge pd/panel-sweep_a
+9f8c8019 pd(integrate): merge pd/panel-camera
+ae046513 pd(sweep_b): twelve modules migrated (hda_views, palettes, working_indicator + the eight hex modules) to rhythm roles and role tokens; HEX_MAPPING_SWEEP_B.md; SWEEP_B QSS block; legacy tokens/styles disposition
+da5aac31 pd(camera): five camera regions on rhythm roles (tab strip, verb rail, chat transcript, TOKEN parm rows, header/ribbon) + recall card widget; before screenshots
+6567a723 pd(sweep_a): orchestrator Qt-tier receipt
+ed41ce61 pd(sweep_a): six modules migrated to rhythm roles (chat_panel, face_review, gate_widget, context_bar, face_work, quick_actions), inline sheets centralized into the SWEEP_A QSS block; census 0/0/0 for the six files
+ce04dcb0 pd(lever): orchestrator Qt-tier receipt (110 pass / 24 inherited docking reds, baseline-controlled) + before screenshots
+7b17c0c3 pd(lever): rhythm.py role applier + QSS role rules + compositor hook, PANEL_RHYTHM_SPEC v2, guard + docking tests, RESIDUAL.json
+ M harness/notes/panel_nits_pd.md
+ M harness/panel_pd/runs/2026-09-05/rhythm_census.md
+== PNG sets
+curious: 16 png
+expert: 16 png
+ml: 16 png

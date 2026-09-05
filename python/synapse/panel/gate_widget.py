@@ -19,14 +19,7 @@ except ImportError:
     from PySide2.QtCore import Signal, Slot, QTimer
 
 from synapse.panel.designsystem import tokens as t
-from synapse.panel.styles import (
-    get_gate_widget_stylesheet,
-    get_gate_card_stylesheet,
-    get_gate_badge_stylesheet,
-    get_gate_approve_btn_stylesheet,
-    get_gate_reject_btn_stylesheet,
-    get_integrity_bar_stylesheet,
-)
+from synapse.panel.designsystem import fontload, qss
 
 logger = logging.getLogger(__name__)
 
@@ -165,34 +158,30 @@ class _ProposalCard(QtWidgets.QWidget):
         self._apply_card_style(level_color)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(4)
+        self.setProperty("rhythm_role", "stack")
+
 
         # Top row: badge + operation name + agent
         top_row = QtWidgets.QHBoxLayout()
-        top_row.setSpacing(8)
+        top_row.setSpacing(8)  # rhythm-exempt: nested badge-operation row has no widget owner; wrapping changes the hierarchy
 
         badge = QtWidgets.QLabel(self._level.upper())
-        badge.setStyleSheet(get_gate_badge_stylesheet(level_color))
+        # Landing r3 repair (F-C1): families travel by QFont, never by QSS -
+        # the badge / operation / countdown / Reject / Approve are the mono
+        # labels-tags-ids of battleplan section 4, as master rendered them.
+        badge.setFont(fontload.apply_family(badge.font(), mono=True))
+        qss.sweep_a_style(badge, "gate_badge", level_color)
         top_row.addWidget(badge)
 
         op_label = QtWidgets.QLabel(proposal_data.get("operation", "unknown"))
-        op_label.setStyleSheet(
-            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
-            "font-size: {sz}px; font-weight: 700; border: none;".format(
-                fg=t.BONE, mono=t.FONT_MONO, sz=t.SIZE_LABEL,
-            )
-        )
+        op_label.setFont(fontload.apply_family(op_label.font(), mono=True))
+        qss.sweep_a_style(op_label, "gate_operation")
         top_row.addWidget(op_label, stretch=1)
 
         agent_id = proposal_data.get("agent_id", "")
         if agent_id:
             agent_label = QtWidgets.QLabel(agent_id)
-            agent_label.setStyleSheet(
-                "color: {fg}; font-size: {sz}px; border: none;".format(
-                    fg=t.SLATE, sz=t.SIZE_LABEL,
-                )
-            )
+            qss.sweep_a_style(agent_label, "gate_agent")
             top_row.addWidget(agent_label)
 
         layout.addLayout(top_row)
@@ -202,43 +191,33 @@ class _ProposalCard(QtWidgets.QWidget):
         if desc:
             desc_label = QtWidgets.QLabel(desc)
             desc_label.setWordWrap(True)
-            desc_label.setStyleSheet(
-                "color: {fg}; font-size: {sz}px; border: none;".format(
-                    fg=t.SILVER, sz=t.SIZE_LABEL,
-                )
-            )
+            qss.sweep_a_style(desc_label, "gate_description")
             layout.addWidget(desc_label)
 
         # CRITICAL header
         if self._level == "critical":
             crit_label = QtWidgets.QLabel("CRITICAL -- Arbitrary code execution")
-            crit_label.setStyleSheet(
-                "color: {c}; font-size: {sz}px; font-weight: 700; "
-                "border: none;".format(c=t.ERROR, sz=t.SIZE_LABEL)
-            )
+            qss.sweep_a_style(crit_label, "gate_critical")
             layout.addWidget(crit_label)
 
         # Action buttons for APPROVE / CRITICAL
         if self._level in ("approve", "critical"):
             btn_row = QtWidgets.QHBoxLayout()
-            btn_row.setSpacing(8)
+            btn_row.setSpacing(8)  # rhythm-exempt: nested decision row has no widget owner; wrapping changes the hierarchy
 
             # Countdown label
             self._countdown_label = QtWidgets.QLabel("")
-            self._countdown_label.setStyleSheet(
-                "color: {fg}; font-size: {sz}px; "
-                "font-family: '{mono}', 'Consolas', monospace; "
-                "border: none;".format(
-                    fg=t.SLATE, sz=t.SIZE_LABEL, mono=t.FONT_MONO,
-                )
-            )
+            self._countdown_label.setFont(
+                fontload.apply_family(self._countdown_label.font(), mono=True))
+            qss.sweep_a_style(self._countdown_label, "gate_countdown")
             btn_row.addWidget(self._countdown_label)
 
             btn_row.addStretch()
 
             # Store as instance vars to prevent GC before layout takes ownership
             self._reject_btn = QtWidgets.QPushButton("Reject")
-            self._reject_btn.setStyleSheet(get_gate_reject_btn_stylesheet())
+            self._reject_btn.setFont(fontload.apply_family(self._reject_btn.font(), mono=True))
+            qss.sweep_a_style(self._reject_btn, "gate_reject")
             self._reject_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
             self._reject_btn.clicked.connect(
                 partial(self._emit_reject, self._proposal_id)
@@ -246,7 +225,8 @@ class _ProposalCard(QtWidgets.QWidget):
             btn_row.addWidget(self._reject_btn)
 
             self._approve_btn = QtWidgets.QPushButton("Approve")
-            self._approve_btn.setStyleSheet(get_gate_approve_btn_stylesheet())
+            self._approve_btn.setFont(fontload.apply_family(self._approve_btn.font(), mono=True))
+            qss.sweep_a_style(self._approve_btn, "gate_approve")
             self._approve_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
             self._approve_btn.clicked.connect(self._on_approve_clicked)
             btn_row.addWidget(self._approve_btn)
@@ -273,12 +253,7 @@ class _ProposalCard(QtWidgets.QWidget):
         """Apply card stylesheet. Uses property-only (no type selector) to
         avoid cascading to child widgets like QPushButtons."""
         from synapse.panel.designsystem import tokens as t
-        self.setStyleSheet(
-            "background: {bg}; border: none; border-left: 3px solid {lc}; "
-            "border-radius: 4px; margin: 2px 0;".format(
-                bg=t.SURFACE, lc=level_color,
-            )
-        )
+        qss.sweep_a_style(self, "gate_card", level_color)
 
     def _emit_reject(self, proposal_id, checked=False):
         """Slot for reject button. Accepts checked arg from clicked(bool)."""
@@ -331,15 +306,10 @@ class _ProposalCard(QtWidgets.QWidget):
         if hasattr(self, "_pulse_timer"):
             self._pulse_timer.stop()
 
-        self.setStyleSheet(
-            "background: {bg}30; border: none; border-left: 4px solid {c}; "
-            "border-radius: 4px; margin: 2px 0;".format(bg=t.WARN, c=t.WARN)
-        )
+        qss.sweep_a_style(self, "gate_unreachable")
         if hasattr(self, "_countdown_label"):
             self._countdown_label.setText("NOT RECORDED - GATE UNREACHABLE")
-            self._countdown_label.setStyleSheet(
-                "color: {c}; font-weight: bold;".format(c=t.WARN)
-            )
+            qss.sweep_a_style(self._countdown_label, "gate_unreachable_countdown")
 
     def mark_decided(self, decision):
         """Visually mark the card as decided with triple feedback:
@@ -358,22 +328,12 @@ class _ProposalCard(QtWidgets.QWidget):
         label = "APPROVED" if is_approved else "REJECTED"
 
         # 1. Flash: bright background pulse
-        flash_bg = "{c}30".format(c=color)
-        self.setStyleSheet(
-            "background: {fb}; border: none; border-left: 4px solid {c}; "
-            "border-radius: 4px; margin: 2px 0;".format(fb=flash_bg, c=color)
-        )
+        qss.sweep_a_style(self, "gate_flash", color)
 
         # 2. Status text replacing countdown
         if hasattr(self, "_countdown_label"):
             self._countdown_label.setText(label)
-            self._countdown_label.setStyleSheet(
-                "color: {c}; font-size: {sz}px; font-weight: 700; "
-                "font-family: '{mono}', 'Consolas', monospace; "
-                "border: none;".format(
-                    c=color, sz=t.SIZE_LABEL, mono=t.FONT_MONO,
-                )
-            )
+            qss.sweep_a_style(self._countdown_label, "gate_decision_countdown", color)
 
         # Hide buttons
         if self._approve_btn:
@@ -423,22 +383,16 @@ class GateWidget(QtWidgets.QWidget):
     def _build_ui(self):
         """Build the collapsible container with proposals list + integrity row."""
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        self.setProperty("rhythm_role", "stack")
 
         # -- Chevron toggle header --
         self._header = QtWidgets.QPushButton(self)
         self._header.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self._header.setStyleSheet(
-            "QPushButton {{ background: transparent; color: {fg}; "
-            "border: none; text-align: left; padding: 4px 8px; "
-            "font-family: '{mono}', 'Consolas', monospace; "
-            "font-size: {sz}px; }}"
-            "QPushButton:hover {{ color: {accent}; }}".format(
-                fg=t.SLATE, mono=t.FONT_MONO, sz=t.SIZE_LABEL,
-                accent=t.SIGNAL,
-            )
-        )
+        # Landing r3 repair (F-C1): the mono family rides the QFont (the QSS
+        # family declarations were purged); header, fidelity, counts and
+        # violations are the ids master rendered in Space Mono.
+        self._header.setFont(fontload.apply_family(self._header.font(), mono=True))
+        qss.sweep_a_style(self._header, "gate_header")
         self._update_header_text()
         self._header.clicked.connect(self._toggle)
         layout.addWidget(self._header)
@@ -446,28 +400,28 @@ class GateWidget(QtWidgets.QWidget):
         # -- Collapsible body --
         self._body = QtWidgets.QWidget(self)
         self._body.setVisible(False)
-        self._body.setStyleSheet(get_gate_widget_stylesheet())
+        qss.sweep_a_style(self._body, "gate_body")
         body_layout = QtWidgets.QVBoxLayout(self._body)
-        body_layout.setContentsMargins(8, 4, 8, 4)
-        body_layout.setSpacing(4)
+        self._body.setProperty("rhythm_role", "stack")
+
 
         # Proposals container (direct layout — no QScrollArea, which eats
         # mouse events on Windows 11 / PySide6 and blocks button clicks)
         self._proposals_container = QtWidgets.QWidget(self._body)
         self._proposals_container.setMaximumHeight(200)
         self._proposals_layout = QtWidgets.QVBoxLayout(self._proposals_container)
-        self._proposals_layout.setContentsMargins(0, 0, 0, 0)
-        self._proposals_layout.setSpacing(4)
+        self._proposals_container.setProperty("rhythm_role", "card")
+
         self._proposals_layout.addStretch()
 
         body_layout.addWidget(self._proposals_container)
 
         # -- Integrity status row --
         self._integrity_row = QtWidgets.QWidget(self._body)
-        self._integrity_row.setStyleSheet(get_integrity_bar_stylesheet())
+        qss.sweep_a_style(self._integrity_row, "gate_integrity")
         integrity_layout = QtWidgets.QHBoxLayout(self._integrity_row)
-        integrity_layout.setContentsMargins(8, 4, 8, 4)
-        integrity_layout.setSpacing(8)
+        self._integrity_row.setProperty("rhythm_role", "stack")
+
 
         # Neither the dot's color nor the label's text is named here. Both come
         # from _render_fidelity below, seeded with None \u2014 so the row is born
@@ -476,45 +430,30 @@ class GateWidget(QtWidgets.QWidget):
         integrity_layout.addWidget(self._fidelity_dot)
 
         self._fidelity_label = QtWidgets.QLabel()
-        self._fidelity_label.setStyleSheet(
-            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
-            "font-size: {sz}px; border: none;".format(
-                fg=t.SILVER, mono=t.FONT_MONO, sz=t.SIZE_LABEL,
-            )
-        )
+        self._fidelity_label.setFont(fontload.apply_family(self._fidelity_label.font(), mono=True))
+        qss.sweep_a_style(self._fidelity_label, "gate_fidelity_label")
         integrity_layout.addWidget(self._fidelity_label)
 
         # Honest resting state: unmeasured until an observation arrives.
         self._render_fidelity(None)
 
         sep1 = QtWidgets.QLabel("|")
-        sep1.setStyleSheet(
-            "color: {c}; border: none;".format(c=t.GRAPHITE)
-        )
+        qss.sweep_a_style(sep1, "gate_separator")
         integrity_layout.addWidget(sep1)
 
         self._ops_label = QtWidgets.QLabel("0 ops")
-        self._ops_label.setStyleSheet(
-            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
-            "font-size: {sz}px; border: none;".format(
-                fg=t.SLATE, mono=t.FONT_MONO, sz=t.SIZE_LABEL,
-            )
-        )
+        self._ops_label.setFont(fontload.apply_family(self._ops_label.font(), mono=True))
+        qss.sweep_a_style(self._ops_label, "gate_counts")
         integrity_layout.addWidget(self._ops_label)
 
         sep2 = QtWidgets.QLabel("|")
-        sep2.setStyleSheet(
-            "color: {c}; border: none;".format(c=t.GRAPHITE)
-        )
+        qss.sweep_a_style(sep2, "gate_separator")
         integrity_layout.addWidget(sep2)
 
         self._violations_label = QtWidgets.QLabel("0 violations")
-        self._violations_label.setStyleSheet(
-            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
-            "font-size: {sz}px; border: none;".format(
-                fg=t.SLATE, mono=t.FONT_MONO, sz=t.SIZE_LABEL,
-            )
-        )
+        self._violations_label.setFont(
+            fontload.apply_family(self._violations_label.font(), mono=True))
+        qss.sweep_a_style(self._violations_label, "gate_violations", t.SLATE)
         integrity_layout.addWidget(self._violations_label)
 
         integrity_layout.addStretch()
@@ -591,6 +530,7 @@ class GateWidget(QtWidgets.QWidget):
         count = self._proposals_layout.count()
         self._proposals_layout.insertWidget(max(0, count - 1), card)
         self._cards[proposal_id] = card
+        qss.sweep_a_refresh_rhythm(card)
 
         # Auto-expand when a proposal arrives
         if not self._expanded:
@@ -673,11 +613,7 @@ class GateWidget(QtWidgets.QWidget):
         reached without passing that guard, the same containment
         ``IntegrityReadout.set_integrity`` uses.
         """
-        self._fidelity_dot.setStyleSheet(
-            "color: {c}; font-size: 14px; border: none;".format(
-                c=_fidelity_color(fidelity)
-            )
-        )
+        qss.sweep_a_style(self._fidelity_dot, "gate_fidelity_dot", _fidelity_color(fidelity))
         self._fidelity_label.setText(_fidelity_text(fidelity))
 
     def update_integrity(self, report):
@@ -702,12 +638,7 @@ class GateWidget(QtWidgets.QWidget):
         self._ops_label.setText("{n} ops".format(n=ops))
 
         v_color = t.ERROR if violations > 0 else t.SLATE
-        self._violations_label.setStyleSheet(
-            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
-            "font-size: {sz}px; border: none;".format(
-                fg=v_color, mono=t.FONT_MONO, sz=t.SIZE_LABEL,
-            )
-        )
+        qss.sweep_a_style(self._violations_label, "gate_violations", v_color)
         self._violations_label.setText("{n} violations".format(n=violations))
 
     def handle_ws_proposal(self, data):

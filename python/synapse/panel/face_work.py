@@ -23,7 +23,7 @@ except ImportError:  # pragma: no cover - Houdini ships PySide6
 
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import components as c
-from synapse.panel.designsystem import fontload
+from synapse.panel.designsystem import fontload, qss
 
 try:
     from synapse.panel.designsystem.loader import BouncingToy
@@ -181,17 +181,20 @@ class FaceWork(QtWidgets.QWidget):
         self._steps = []   # ordered [name, phase] — the live plan-with-progress
 
         col = QtWidgets.QVBoxLayout(self)
-        col.setContentsMargins(26, 20, 26, 20)   # comp face padding
-        col.setSpacing(t.SPACE_SM)
+        # shell: the face is an edge container like the direct face - the
+        # GUTTER inset and SPACE_SM air come from the role (one point of
+        # view across faces; RULING-3 mechanism, landing r3 repair).
+        self.setProperty("rhythm_role", "shell")
+
 
         # — activity + current tool status —
         head = QtWidgets.QHBoxLayout()
-        head.setSpacing(t.SPACE_SM)
+        head.setSpacing(t.SPACE_SM)  # rhythm-exempt: nested activity row has no widget owner; wrapping changes the hierarchy
         self._toy = BouncingToy() if BouncingToy is not None else None
         if self._toy is not None:
             head.addWidget(self._toy)
         self._status = c.label("Standing by", role="caption")
-        self._status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)
+        qss.sweep_a_style(self._status, "work_status")
         head.addWidget(self._status)
         head.addStretch(1)
         col.addLayout(head)
@@ -211,16 +214,16 @@ class FaceWork(QtWidgets.QWidget):
         # — cookline (comp): 10px mono DATA, e.g. "cooked 30/30 · 41s · karma_xpu"
         self._cook_lbl = c.label("waiting for work", role="caption")
         self._cook_lbl.setFont(fontload.tracked_font("DATA", 10, mono=True))
-        self._cook_lbl.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        qss.sweep_a_style(self._cook_lbl, "work_note")
         col.addWidget(self._cook_lbl)
 
         # — plan-with-progress (driven by the live tool stream + routing_log) —
         self._plan_title = c.label("PLAN", role="label")
         self._plan_title.setFont(fontload.tracked_font("EYEBROW", 10, mono=True))
-        self._plan_title.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        qss.sweep_a_style(self._plan_title, "work_note")
         col.addWidget(self._plan_title)
         self._plan_box = QtWidgets.QVBoxLayout()
-        self._plan_box.setSpacing(2)
+        self._plan_box.setSpacing(2)  # rhythm-exempt: nested plan layout has no widget owner; wrapping changes the hierarchy
         col.addLayout(self._plan_box)
         self._render_plan()
 
@@ -328,11 +331,11 @@ class FaceWork(QtWidgets.QWidget):
             self._plan_title.setText("PLAN")
         if not self._steps:
             row = c.label("no steps yet", role="caption")
-            row.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+            qss.sweep_a_style(row, "work_note")
             self._plan_box.addWidget(row)
             return
         for name, phase in self._steps:
             glyph, color = _PHASE.get(phase, ("·", t.TEXT_SECONDARY))
             row = c.label("%s  %s" % (glyph, name), role="caption")
-            row.setStyleSheet("color:%s;" % color)
+            qss.sweep_a_style(row, "work_step", color)
             self._plan_box.addWidget(row)

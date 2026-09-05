@@ -1,0 +1,6 @@
+tree: a196b55514c039b845e8d69fac5223db456455ec pd/panel-integrate-r3  date: 2026-09-05
+census 17 all tagged; camera path {'chat_display.py': (0, 0), 'face_token.py': (0, 0), 'recall_card.py': (2, 0), 'synapse_panel.py': (0, 1), 'token_readout.py': (0, 0)}; cap==measured 17
+font-family in SWEEP_A..SWEEP_B blocks: 0
+parm_row outside grids: 0
+GUTTER in rhythm.py: 3
+shell sites in synapse_panel.py: 4; face_work.py: 1; face_review.py: 1

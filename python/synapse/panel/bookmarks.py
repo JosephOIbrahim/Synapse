@@ -14,6 +14,8 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import Optional
 
+from synapse.panel.designsystem import tokens as _ds
+
 # Houdini import guard
 _HOU_AVAILABLE = False
 try:
@@ -161,7 +163,7 @@ def format_bookmarks_html(bookmarks: list[Bookmark], query: str = "") -> str:
     """Format bookmarks for display in the panel's QTextEdit."""
     if not bookmarks:
         return (
-            '<div style="color:#888; padding:12px; text-align:center;">'
+            f'<div style="color:{_ds.TEXT_TERTIARY}; padding:12px; text-align:center;">'
             "No bookmarks yet. Use /bookmark to save a moment."
             "</div>"
         )
@@ -172,7 +174,7 @@ def format_bookmarks_html(bookmarks: list[Bookmark], query: str = "") -> str:
     else:
         header = f"{count} bookmark{'s' if count != 1 else ''}"
 
-    parts = [f'<div style="padding:4px 0; color:#aaa; font-size:13px;">{header}</div>']
+    parts = [f'<div style="padding:4px 0; color:{_ds.TEXT_SECONDARY}; font-size:13px;">{header}</div>']
 
     for b in bookmarks:
         label_html = _escape_html(b.label)
@@ -193,7 +195,7 @@ def format_bookmarks_html(bookmarks: list[Bookmark], query: str = "") -> str:
                 if query:
                     tag_text = _highlight(tag_text, _escape_html(query))
                 badges.append(
-                    f'<span style="background:#444; color:#ccc; padding:1px 6px; '
+                    f'<span style="background:{_ds.SURFACE}; color:{_ds.TEXT_PRIMARY}; padding:1px 6px; '
                     f'border-radius:3px; font-size:11px; margin-right:4px;">{tag_text}</span>'
                 )
             tags_html = f'<div style="margin-top:2px;">{"".join(badges)}</div>'
@@ -206,11 +208,11 @@ def format_bookmarks_html(bookmarks: list[Bookmark], query: str = "") -> str:
             ts_display = b.timestamp
 
         parts.append(
-            f'<div style="padding:6px 0; border-bottom:1px solid #3C3C3C;">'
-            f'<div style="font-weight:bold; color:#E0E0E0;">'
+            f'<div style="padding:6px 0; border-bottom:1px solid {_ds.BORDER};">'
+            f'<div style="font-weight:bold; color:{_ds.TEXT_BRIGHT};">'
             f"\U0001F516 {label_html}</div>"
-            f'<div style="color:#777; font-size:11px;">{ts_display}</div>'
-            f'<div style="color:#999; font-style:italic; font-size:12px; '
+            f'<div style="color:{_ds.TEXT_TERTIARY}; font-size:11px;">{ts_display}</div>'
+            f'<div style="color:{_ds.TEXT_SECONDARY}; font-style:italic; font-size:12px; '
             f'margin-top:2px;">{preview_html}</div>'
             f"{tags_html}"
             f"</div>"
@@ -235,7 +237,7 @@ def _highlight(text: str, term: str) -> str:
             break
         result.append(text[idx:pos])
         matched = text[pos : pos + len(term)]
-        result.append(f'<span style="background:#665500; color:#FFD700;">{matched}</span>')
+        result.append(f'<span style="background:{_ds.SIGNAL_TINT}; color:{_ds.SIGNAL};">{matched}</span>')
         idx = pos + len(term)
     return "".join(result)
 

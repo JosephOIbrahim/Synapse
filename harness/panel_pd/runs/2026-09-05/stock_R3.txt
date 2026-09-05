@@ -1,0 +1,6 @@
+runner: C:\Python314\python.exe (stock, no PySide: Qt-bound cases skip explicitly)
+tree: cd98b5c6b60a67e3852e7d2f66c0bed9584372aa
+cmd: python -m pytest <acceptance stock set> -q -p no:cacheprovider
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 331 passed, 54 skipped, 2 warnings in 10.97s =================

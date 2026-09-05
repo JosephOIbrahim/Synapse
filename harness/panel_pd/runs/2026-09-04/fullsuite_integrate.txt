@@ -1,0 +1,23 @@
+
+tests/test_vendored_deps.py::TestVendorPathActivation::test_prepend_is_idempotent
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_backfill.py::test_backup_is_taken_and_source_intact - Asser...
+FAILED tests/test_chat_panel.py::TestCSSConsolidation::test_no_inline_css_in_chat_panel_root
+FAILED tests/test_chat_panel.py::TestCSSConsolidation::test_no_inline_css_in_build_input_area
+FAILED tests/test_chat_panel.py::TestCSSConsolidation::test_no_inline_css_in_connection_bar
+FAILED tests/test_chat_panel.py::TestCSSConsolidation::test_no_inline_css_in_mode_toolbar
+FAILED tests/test_panel_sweep_a.py::test_qss_is_append_only_and_every_style_key_has_rules
+FAILED tests/test_panel_sweep_b_hex.py::test_protected_source_is_unchanged - ...
+FAILED tests/test_panel_sweep_b_widgets.py::test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens
+==== 8 failed, 7069 passed, 318 skipped, 625 warnings in 233.45s (0:03:53) ====
+exit 0
+
+--- orchestrator receipt, 2026-09-04 22:03, integrated tree ca0d29e3 (Python 3.14.2, no hou) ---
+8 failed / 7069 passed / 318 skipped  vs base 1 / 6941 / 192  (+128 passing).
+  test_backfill::test_backup_is_taken_and_source_intact          pre-existing at base
+  test_chat_panel::TestCSSConsolidation (4)                       chat_panel.py migration (SWEEP_A) vs the legacy inline-CSS consolidation pins; SWEEP_A reported these as source-pin conflicts outside its write set
+  test_panel_sweep_a::test_qss_is_append_only_...                 integration-only test pin (classified in qt_INTEGRATE.txt)
+  test_panel_sweep_b_hex::test_protected_source_is_unchanged      integration-only test pin (CAMERA edited synapse_panel.py legitimately)
+  test_panel_sweep_b_widgets::test_qss_preserves_inherited_bytes  integration-only test pin

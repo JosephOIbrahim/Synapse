@@ -1,0 +1,51 @@
+runner: C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+tree: a196b55514c039b845e8d69fac5223db456455ec pd/panel-integrate-r3  date: 2026-09-05
+command: hython -m pytest tests/panel -q -p no:cacheprovider
+============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\User\SYNAPSE\.claude\worktrees\pd-r3
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 121 items
+
+tests\panel\test_apex_catalog_membership.py ....                         [  3%]
+tests\panel\test_chat_gate_off_bridge.py ..                              [  4%]
+tests\panel\test_chat_leading.py .....                                   [  9%]
+tests\panel\test_docking.py ..                                           [ 10%]
+tests\panel\test_failure_trail.py .F                                     [ 12%]
+tests\panel\test_flowfix_j4.py .....                                     [ 16%]
+tests\panel\test_font_floor.py ........                                  [ 23%]
+tests\panel\test_font_scale.py ........                                  [ 29%]
+tests\panel\test_gate_consent_honesty.py ...                             [ 32%]
+tests\panel\test_gate_fidelity_unknown.py ........                       [ 38%]
+tests\panel\test_gate_widget_type.py ...                                 [ 41%]
+tests\panel\test_health_strip.py ...............                         [ 53%]
+tests\panel\test_seeded_contrast.py ...                                  [ 56%]
+tests\panel\test_session_scope.py .......                                [ 61%]
+tests\panel\test_theme_source.py ........                                [ 68%]
+tests\panel\test_token_authority.py .................................    [ 95%]
+tests\panel\test_token_seeding.py ..                                     [ 97%]
+tests\panel\test_type_scale_native.py ...                                [100%]
+
+================================== FAILURES ===================================
+____________________________ test_dead_verb_hidden ____________________________
+tests\panel\test_failure_trail.py:175: in test_dead_verb_hidden
+    assert not shown, (
+E   AssertionError: the 'open in render view' verb is present and shown while the render bridge is absent — a visible no-op (Design §2.5). Hide it (or omit it) until the confirmed hou.ui render-view chain is wired.
+E   assert not [<PySide6.QtWidgets.QPushButton(0x4a124b80, name="DsVerb") at 0x0000000176FC2200>]
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+
+tests/panel/test_docking.py::test_usable_at_min_height
+tests/panel/test_docking.py::test_send_never_clips_below_the_pane_at_min_height
+tests/panel/test_gate_widget_type.py::test_gate_badge_in_the_composed_panel_is_the_bundled_mono
+tests/panel/test_gate_widget_type.py::test_every_master_mono_gate_element_is_still_mono
+tests/panel/test_gate_widget_type.py::test_gate_families_survive_a_state_transition
+  C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py:1014: RuntimeWarning: process-wide FreezeChain left ARMED by this test and shut down by the conftest net (R310a zombie class) -- add shutdown_freeze_chain() to the test's teardown
+    next(it)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/panel/test_failure_trail.py::test_dead_verb_hidden - AssertionEr...
+================== 1 failed, 120 passed, 6 warnings in 9.54s ==================

@@ -13,6 +13,8 @@ minimal dicts immediately.
 
 from __future__ import annotations
 
+from synapse.panel.designsystem import tokens as _ds
+
 import re
 from typing import Any, Dict, List, Optional
 
@@ -803,7 +805,7 @@ def format_concept_html(concept_key: str) -> str:
     concept = APEX_CONCEPTS.get(concept_key)
     if concept is None:
         return (
-            f'<div style="color:#cc6666;padding:8px;">'
+            f'<div style="color:{_ds.ERROR};padding:8px;">'
             f'Unknown APEX concept: <b>{concept_key}</b>. '
             f'Available: {", ".join(sorted(APEX_CONCEPTS.keys()))}'
             f'</div>'
@@ -816,32 +818,32 @@ def format_concept_html(concept_key: str) -> str:
     related = concept.get("related", [])
 
     related_links = ", ".join(
-        f'<span style="color:#7799cc;">{APEX_CONCEPTS.get(r, {}).get("title", r)}</span>'
+        f'<span style="color:{_ds.SIGNAL};">{APEX_CONCEPTS.get(r, {}).get("title", r)}</span>'
         for r in related
     )
 
     return (
         f'<div style="font-family:sans-serif;padding:12px;'
-        f'background:#2a2a2a;border-radius:6px;margin:6px 0;">'
-        f'<div style="font-size:18px;font-weight:bold;color:#dddddd;'
+        f'background:{_ds.SURFACE};border-radius:6px;margin:6px 0;">'
+        f'<div style="font-size:18px;font-weight:bold;color:{_ds.TEXT_BRIGHT};'
         f'margin-bottom:8px;">{title}</div>'
         f'<div style="margin-bottom:10px;">'
-        f'<div style="color:#aa8855;font-size:13px;margin-bottom:2px;">'
+        f'<div style="color:{_ds.TEXT_TERTIARY};font-size:13px;margin-bottom:2px;">'
         f'What artists think:</div>'
-        f'<div style="color:#ccaa77;font-style:italic;margin-bottom:6px;">'
+        f'<div style="color:{_ds.TEXT_SECONDARY};font-style:italic;margin-bottom:6px;">'
         f'"{think}"</div>'
-        f'<div style="color:#88aa66;font-size:13px;margin-bottom:2px;">'
+        f'<div style="color:{_ds.TEXT_TERTIARY};font-size:13px;margin-bottom:2px;">'
         f'What it actually is:</div>'
-        f'<div style="color:#cccccc;margin-bottom:6px;">{actual}</div>'
+        f'<div style="color:{_ds.TEXT_PRIMARY};margin-bottom:6px;">{actual}</div>'
         f'</div>'
-        f'<div style="border-top:1px solid #444;padding-top:8px;'
+        f'<div style="border-top:1px solid {_ds.BORDER};padding-top:8px;'
         f'margin-top:4px;">'
-        f'<div style="color:#8888bb;font-size:13px;margin-bottom:2px;">'
+        f'<div style="color:{_ds.TEXT_TERTIARY};font-size:13px;margin-bottom:2px;">'
         f'Mental model:</div>'
-        f'<div style="color:#bbbbbb;font-style:italic;">{model}</div>'
+        f'<div style="color:{_ds.TEXT_SECONDARY};font-style:italic;">{model}</div>'
         f'</div>'
         + (
-            f'<div style="margin-top:8px;font-size:12px;color:#666;">'
+            f'<div style="margin-top:8px;font-size:12px;color:{_ds.TEXT_TERTIARY};">'
             f'Related: {related_links}</div>'
             if related else ""
         )

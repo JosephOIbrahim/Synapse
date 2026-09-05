@@ -1036,17 +1036,39 @@ class TestTypingIndicator:
 # ===========================================================================
 
 
+def _sweep_a_rule_body(key):
+    """The scoped rule body SWEEP_A generates for `key` (the styling seam)."""
+    import re
+    from synapse.panel.designsystem import qss
+
+    sheet = qss.stylesheet()
+    marker = '[sweep_a_style="%s"]' % key
+    assert marker in sheet, key
+    bodies = re.findall(re.escape(marker) + r"[^{]*\{([^}]*)\}", sheet)
+    assert bodies, key
+    return "\n".join(bodies)
+
+
 class TestCSSConsolidation:
-    """Verify all inline CSS has been moved to styles.py."""
+    """Verify all inline CSS has been moved out of the widget builders.
+
+    Landing r3 (CTO 2026-09-05, R2-02): SWEEP_A replaced the styles.py
+    getters with `qss.sweep_a_style(widget, key)` + a scoped rule in the
+    designsystem sheet. Each pin now asserts the seam: the builder selects the
+    key, the sheet carries the declaration the old pin looked for, and no
+    `setStyleSheet(` survives in the builder.
+    """
 
     def test_no_inline_css_in_chat_panel_root(self):
-        """Root widget should use get_root_widget_stylesheet()."""
+        """Root widget selects the chat_root rule; the sheet paints its background."""
         import inspect
         from synapse.panel.chat_panel import SynapseChatPanel
 
         src = inspect.getsource(SynapseChatPanel.createInterface)
-        assert "get_root_widget_stylesheet()" in src
+        assert 'qss.sweep_a_style(self._root, "chat_root")' in src
+        assert "setStyleSheet(" not in src
         assert "font-family:" not in src
+        assert "background:" in _sweep_a_rule_body("chat_root")
 
     def test_quick_actions_uses_pill_widget(self):
         """Quick actions should use QuickActionPills widget (not inline buttons)."""
@@ -1062,7 +1084,9 @@ class TestCSSConsolidation:
         from synapse.panel.chat_panel import SynapseChatPanel
 
         src = inspect.getsource(SynapseChatPanel._build_input_area)
-        assert "get_section_container_stylesheet()" in src
+        assert 'qss.sweep_a_style(container, "chat_input_container")' in src
+        assert "setStyleSheet(" not in src
+        assert "background:" in _sweep_a_rule_body("chat_input_container")
 
     def test_no_inline_css_in_connection_bar(self):
         """Connection bar should use get_connection_frame_stylesheet()."""
@@ -1070,8 +1094,10 @@ class TestCSSConsolidation:
         from synapse.panel.chat_panel import SynapseChatPanel
 
         src = inspect.getsource(SynapseChatPanel._build_connection_bar)
-        assert "get_connection_frame_stylesheet()" in src
+        assert 'qss.sweep_a_style(frame, "chat_connection")' in src
+        assert "setStyleSheet(" not in src
         assert "border-top:" not in src
+        assert "border-top:" in _sweep_a_rule_body("chat_connection")
 
     def test_no_inline_css_in_mode_toolbar(self):
         """Mode toolbar should use get_mode_toolbar_stylesheet()."""
@@ -1079,8 +1105,10 @@ class TestCSSConsolidation:
         from synapse.panel.chat_panel import SynapseChatPanel
 
         src = inspect.getsource(SynapseChatPanel._build_mode_toolbar)
-        assert "get_mode_toolbar_stylesheet()" in src
+        assert 'qss.sweep_a_style(toolbar, "chat_toolbar")' in src
+        assert "setStyleSheet(" not in src
         assert "border-bottom:" not in src
+        assert "border-bottom:" in _sweep_a_rule_body("chat_toolbar")
 
 
 # ===========================================================================

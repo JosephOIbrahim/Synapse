@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
+from synapse.panel.designsystem import tokens as _ds
+
 # -- Houdini import guard ---------------------------------------------------
 _HOU_AVAILABLE = False
 try:
@@ -417,10 +419,10 @@ def scan_dependencies(scope: str = "all") -> DependencyReport:
 # ====================================================================
 
 _STATUS_ICONS = {
-    "ok": '<span style="color:#4CAF50;">&#10004;</span>',       # green check
-    "missing": '<span style="color:#F44336;">&#10008;</span>',   # red X
-    "modified": '<span style="color:#FFC107;">&#9888;</span>',   # yellow warning
-    "outdated": '<span style="color:#FFC107;">&#9888;</span>',   # yellow warning
+    "ok": f'<span style="color:{_ds.GROW};">&#10004;</span>',       # verified check
+    "missing": f'<span style="color:{_ds.ERROR};">&#10008;</span>',   # error X
+    "modified": f'<span style="color:{_ds.WARN};">&#9888;</span>',   # warning
+    "outdated": f'<span style="color:{_ds.WARN};">&#9888;</span>',   # warning
 }
 
 _STATUS_TEXT = {
@@ -437,7 +439,7 @@ def format_deps_html(report: DependencyReport) -> str:
     Groups dependencies by type with status icons.
     """
     if not report.dependencies:
-        return "<p style='color:#999;'>No external dependencies found.</p>"
+        return f"<p style='color:{_ds.TEXT_SECONDARY};'>No external dependencies found.</p>"
 
     parts: List[str] = []
     parts.append("<div style='font-family:monospace; font-size:13px;'>")
@@ -463,7 +465,7 @@ def format_deps_html(report: DependencyReport) -> str:
         label = type_labels.get(dtype, dtype)
         total_size = sum(d.file_size for d in deps_list)
         parts.append(
-            f"<h3 style='margin:8px 0 4px 0; color:#DDD;'>"
+            f"<h3 style='margin:8px 0 4px 0; color:{_ds.TEXT_BRIGHT};'>"
             f"{label} ({len(deps_list)}) &mdash; {_human_size(total_size)}</h3>"
         )
         parts.append("<table style='width:100%; border-collapse:collapse;'>")
@@ -476,11 +478,11 @@ def format_deps_html(report: DependencyReport) -> str:
             )
             detail_str = f" &mdash; {dep.detail}" if dep.detail else ""
             parts.append(
-                f"<tr style='border-bottom:1px solid #444;'>"
+                f"<tr style='border-bottom:1px solid {_ds.BORDER};'>"
                 f"<td style='padding:2px 6px;'>{icon}</td>"
-                f"<td style='padding:2px 6px; color:#CCC;'>{basename}</td>"
-                f"<td style='padding:2px 6px; color:#999;'>{size_str}</td>"
-                f"<td style='padding:2px 6px; color:#888;'>{node_display}"
+                f"<td style='padding:2px 6px; color:{_ds.TEXT_PRIMARY};'>{basename}</td>"
+                f"<td style='padding:2px 6px; color:{_ds.TEXT_SECONDARY};'>{size_str}</td>"
+                f"<td style='padding:2px 6px; color:{_ds.TEXT_TERTIARY};'>{node_display}"
                 f"{detail_str}</td>"
                 f"</tr>"
             )
@@ -488,7 +490,7 @@ def format_deps_html(report: DependencyReport) -> str:
 
     # Summary footer
     parts.append(
-        f"<p style='margin-top:10px; color:#AAA; border-top:1px solid #555; "
+        f"<p style='margin-top:10px; color:{_ds.TEXT_SECONDARY}; border-top:1px solid {_ds.BORDER_STRONG}; "
         f"padding-top:6px;'>{report.summary}</p>"
     )
     parts.append("</div>")

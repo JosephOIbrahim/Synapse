@@ -78,8 +78,8 @@ class IntegrityReadout(QtWidgets.QWidget):
         self.setObjectName("DsSection")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._box = QtWidgets.QVBoxLayout(self)
-        self._box.setContentsMargins(0, 0, 0, 0)
-        self._box.setSpacing(1)
+        self._box.setContentsMargins(0, 0, 0, 0)  # rhythm-exempt: 1px hairline stack between claim rows; no role expresses 1px
+        self._box.setSpacing(1)  # rhythm-exempt: 1px hairline stack between claim rows; no role expresses 1px
         self.set_integrity(None)   # honest empty state at rest — never green
 
     def set_integrity(self, summary):

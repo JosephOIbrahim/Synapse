@@ -16,6 +16,8 @@ import tempfile
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+
+from synapse.panel.designsystem import tokens as _ds
 from html import escape as html_escape
 from typing import Any, Dict, List, Optional
 
@@ -375,23 +377,23 @@ def format_save_html(snapshot: ShotSnapshot) -> str:
     action_count = len(snapshot.tool_actions)
 
     return (
-        '<div style="padding:8px; border-left:3px solid #4a9; background:#2a2a2a;">'
-        '<div style="font-weight:bold; color:#4a9; margin-bottom:6px;">'
+        f'<div style="padding:8px; border-left:3px solid {_ds.GROW}; background:{_ds.SURFACE};">'
+        f'<div style="font-weight:bold; color:{_ds.GROW}; margin-bottom:6px;">'
         "Session Snapshot Saved</div>"
-        f'<div style="color:#ccc; margin:2px 0;"><b>Note:</b> {note_html}</div>'
-        f'<div style="color:#aaa; margin:2px 0;">'
+        f'<div style="color:{_ds.TEXT_PRIMARY}; margin:2px 0;"><b>Note:</b> {note_html}</div>'
+        f'<div style="color:{_ds.TEXT_SECONDARY}; margin:2px 0;">'
         f"Duration: {snapshot.session_duration_min}min | "
         f"Tools: {snapshot.tool_count} | "
         f"Commands: {snapshot.command_count} | "
         f"Nodes: {snapshot.node_count}"
         "</div>"
-        f'<div style="color:#aaa; margin:2px 0;">'
+        f'<div style="color:{_ds.TEXT_SECONDARY}; margin:2px 0;">'
         f"Highlights: {highlight_count} | "
         f"Actions: {action_count} | "
         f"Memory: {snapshot.memory_stage}"
         "</div>"
-        f'<div style="color:#888; margin:2px 0;">Scene: {scene_html}</div>'
-        f'<div style="color:#666; font-size:11px; margin-top:4px;">'
+        f'<div style="color:{_ds.TEXT_TERTIARY}; margin:2px 0;">Scene: {scene_html}</div>'
+        f'<div style="color:{_ds.TEXT_TERTIARY}; font-size:11px; margin-top:4px;">'
         f"Saved to: {path_html}</div>"
         "</div>"
     )
@@ -453,14 +455,14 @@ def format_snapshots_html(snapshots: List[Dict[str, str]]) -> str:
     """HTML listing of saved snapshots for /shots command."""
     if not snapshots:
         return (
-            '<div style="color:#888; padding:12px; text-align:center;">'
+            f'<div style="color:{_ds.TEXT_TERTIARY}; padding:12px; text-align:center;">'
             "No snapshots saved yet. Use /save-shot to capture a session."
             "</div>"
         )
 
     count = len(snapshots)
     parts: List[str] = [
-        f'<div style="padding:4px 0; color:#aaa; font-size:13px;">'
+        f'<div style="padding:4px 0; color:{_ds.TEXT_SECONDARY}; font-size:13px;">'
         f'{count} snapshot{"s" if count != 1 else ""}</div>'
     ]
 
@@ -470,10 +472,10 @@ def format_snapshots_html(snapshots: List[Dict[str, str]]) -> str:
         note_html = html_escape(snap.get("note_preview", "(no note)"))
 
         parts.append(
-            f'<div style="padding:6px 0; border-bottom:1px solid #3C3C3C;">'
-            f'<div style="font-weight:bold; color:#E0E0E0;">{filename_html}</div>'
-            f'<div style="color:#777; font-size:11px;">{ts_html}</div>'
-            f'<div style="color:#999; font-style:italic; font-size:12px; '
+            f'<div style="padding:6px 0; border-bottom:1px solid {_ds.BORDER};">'
+            f'<div style="font-weight:bold; color:{_ds.TEXT_BRIGHT};">{filename_html}</div>'
+            f'<div style="color:{_ds.TEXT_TERTIARY}; font-size:11px;">{ts_html}</div>'
+            f'<div style="color:{_ds.TEXT_SECONDARY}; font-style:italic; font-size:12px; '
             f'margin-top:2px;">{note_html}</div>'
             f"</div>"
         )

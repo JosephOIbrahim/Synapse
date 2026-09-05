@@ -24,7 +24,6 @@ from synapse.panel.message_formatter import (
 # so importing it never pulls Qt and the ordering/off-main proof is unit-testable
 # headless (see async_format.py's module docstring).
 from synapse.panel.async_format import OrderedAsyncFormatter, FormatJob
-from synapse.panel.styles import get_chat_display_stylesheet
 # FRZ attribution: times the formatter + insertHtml re-layout that this widget does
 # on Houdini's main thread. Measurement only; degrades to a no-op context manager.
 try:
@@ -35,6 +34,7 @@ except Exception:  # pragma: no cover
     def _timed_phase(*_a, **_k):
         return _nullctx()
 from synapse.panel.designsystem import tokens as t
+from synapse.panel.designsystem import rhythm, fontload
 
 # W5-PANEL item 5: the absolute-leading enum, resolved once across PySide6/2.
 # LineDistanceHeight ADDS a fixed distance to each line (Qt: effective height =
@@ -66,7 +66,7 @@ _GROUP_WINDOW_S = 60
 
 # Chat-local layout (was tokens.CHAT_BUBBLE_MARGIN_Y; inlined so chat_display
 # sources nothing from the ~/.synapse/design bridge — see designsystem.tokens).
-_BUBBLE_MARGIN_Y = 2  # px between grouped messages
+_BUBBLE_MARGIN_Y = t.SPACE_XS // 2  # grouped messages share a turn
 
 
 def _format_time(epoch):
@@ -117,7 +117,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setOpenExternalLinks(False)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setStyleSheet(get_chat_display_stylesheet(self._font_scale))
+        self.setObjectName("DsChatTranscript")
+        self.setProperty("rhythm_role", "group")
+        self._document_density = None
+        self._set_document_font(self._font_scale)
 
         # Connect anchor clicks
         self.anchorClicked.connect(self._on_anchor_clicked)
@@ -148,13 +151,65 @@ class ChatDisplay(QtWidgets.QTextBrowser):
     @font_scale.setter
     def font_scale(self, value):
         self._font_scale = value
-        # Re-apply the base stylesheet so the QTextBrowser document default (and
-        # thus streamed plain-text tokens) tracks the new scale. Already-rendered
-        # messages keep their baked inline sizes — new messages use the new scale.
-        try:
-            self.setStyleSheet(get_chat_display_stylesheet(value))
-        except Exception:
-            pass
+        self._set_document_font(value)
+
+    def _set_document_font(self, scale):
+        """Scale the document independently of the root chrome stylesheet."""
+        font = QtGui.QFont(self.font())
+        fontload.apply_family(font)
+        font.setPixelSize(max(t.FONT_FLOOR_PX, t.scaled(t.SIZE_BODY, scale)))
+        self.document().setDefaultFont(font)
+        self.setCurrentFont(font)
+
+    def _rhythm_density(self):
+        parent = self
+        while parent is not None:
+            density = parent.property("density")
+            if density in t.DENSITY_GAP_SCALE:
+                return density
+            parent = parent.parentWidget()
+        return "standard"
+
+    def _apply_turn_rhythm(self, start_pos=None, grouped=False, speaker=None):
+        density = self._rhythm_density()
+        doc = self.document()
+        block = doc.begin() if start_pos is None else doc.findBlock(start_pos)
+        first = start_pos is not None
+        while block.isValid():
+            cursor = QtGui.QTextCursor(block)
+            bf = block.blockFormat()
+            if first and block.text():
+                bf.setProperty(QtGui.QTextFormat.UserProperty, "row" if grouped else "group")
+                # Metadata comes from the caller, never from body text that
+                # happens to start with YOU or SYNAPSE.
+                bf.setProperty(QtGui.QTextFormat.UserProperty + 1,
+                               speaker if not grouped else None)
+                first = False
+            role = bf.property(QtGui.QTextFormat.UserProperty)
+            if role in ("group", "row"):
+                bf.setTopMargin(t.gap(rhythm.ROLE_GAPS[role], density))
+                cursor.setBlockFormat(bf)
+            # The formatter already produces speaker labels. Only their block
+            # receives label typography; off-main rendering stays Qt-free.
+            if bf.property(QtGui.QTextFormat.UserProperty + 1) in ("SYNAPSE", "YOU"):
+                cursor.select(QtGui.QTextCursor.BlockUnderCursor)
+                font = fontload.tracked_font("LABEL", t.SIZE_BODY,
+                                             scale=self._font_scale, mono=True,
+                                             weight=t.WEIGHT_MEDIUM)
+                fmt = QtGui.QTextCharFormat()
+                fmt.setFont(font)
+                fmt.setForeground(QtGui.QColor(t.TEXT_SECONDARY))
+                cursor.mergeCharFormat(fmt)
+            block = block.next()
+        self._document_density = density
+
+    def event(self, event):
+        result = super().event(event)
+        # Only a density change revisits history; ordinary inserts stay local.
+        if event.type() == QtCore.QEvent.StyleChange and hasattr(self, "_document_density"):
+            if self._document_density != self._rhythm_density():
+                self._apply_turn_rhythm()
+        return result
 
     # -- Grouping helpers ----------------------------------------------------
 
@@ -235,7 +290,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             from synapse.panel.message_formatter import _BODY_PX, _scale
             px = _scale(_BODY_PX, getattr(self, "_font_scale", 1.0))
         except Exception:
-            px = 12
+            px = t.SIZE_BODY
         adv = 0.0
         try:
             from PySide6.QtGui import QFont, QFontMetricsF
@@ -304,7 +359,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         )
         cursor.insertBlock()
         self.setTextCursor(cursor)
-        self._apply_leading(start)
+        self._apply_leading(start, grouped=grouped, speaker="YOU")
         self._update_sender("user")
         self._scroll_to_bottom()
 
@@ -360,7 +415,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
                                   payload_chars=len(html_str))
                 except Exception:
                     pass
-                self._do_insert(html_str)
+                self._do_insert(html_str, grouped=grouped)
             return
 
         # OFF-MAIN: advance grouping state now (on main) so a rapid follow-up groups
@@ -368,7 +423,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self._update_sender("synapse")
         job = FormatJob(
             render=lambda: self._render_offmain(content, grouped, ts, signed, fs),
-            apply=lambda j: self._insert_prerendered(j.html),
+            apply=lambda j: self._insert_prerendered(j.html, grouped=grouped),
         )
         self._fmt.submit(job)
 
@@ -398,7 +453,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
                 pass
         return html_str
 
-    def _apply_leading(self, start_pos):
+    def _apply_leading(self, start_pos, grouped=False, speaker=None):
         """Add ``CHAT_LEADING_PT`` of absolute leading to every block just inserted
         (from ``start_pos`` to End) — W5-PANEL item 5, the chat read "tight".
 
@@ -417,10 +472,11 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             bf = QtGui.QTextBlockFormat()
             bf.setLineHeight(lead, _LINE_DISTANCE_HEIGHT_INT)
             cur.mergeBlockFormat(bf)
+            self._apply_turn_rhythm(start_pos, grouped=grouped, speaker=speaker)
         except Exception:
             pass
 
-    def _do_insert(self, html_str):
+    def _do_insert(self, html_str, grouped=False):
         """Raw cursor insert at End (no telemetry). The only Qt work in the result path —
         ``insertHtml``'s O(document) re-layout — and it only ever runs on the Qt main
         thread (the sync path is on main; the async path routes here via ``_drain_fmt``)."""
@@ -430,10 +486,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         cursor.insertHtml(html_str or "")
         cursor.insertBlock()
         self.setTextCursor(cursor)
-        self._apply_leading(start)
+        self._apply_leading(start, grouped=grouped, speaker="SYNAPSE")
         self._scroll_to_bottom()
 
-    def _insert_prerendered(self, html_str):
+    def _insert_prerendered(self, html_str, grouped=False):
         """Insert a PRERENDERED HTML string on the Qt main thread, timed as an on-main
         ``append`` sample. Ordering across a burst is guaranteed upstream by the
         pipeline's single-consumer FIFO, so this simply appends at End in drain order.
@@ -445,7 +501,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
                               payload_chars=len(html_str or ""))
             except Exception:
                 pass
-            self._do_insert(html_str)
+            self._do_insert(html_str, grouped=grouped)
 
     def _on_fmt_ready(self):
         """Called FROM the formatter's worker thread when a job finishes. Marshal the
@@ -563,6 +619,11 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.hide_typing_indicator()
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
+        fmt = QtGui.QTextCharFormat()
+        fmt.setFont(self.document().defaultFont())
+        fmt.setForeground(QtGui.QColor(t.TEXT_PRIMARY))
+        cursor.setCharFormat(fmt)
+        self.setTextCursor(cursor)
         self._stream_anchor = cursor.position()
         self._streaming = True
 
@@ -572,7 +633,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             return
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
-        cursor.insertText(text)
+        fmt = QtGui.QTextCharFormat()
+        fmt.setFont(self.document().defaultFont())
+        fmt.setForeground(QtGui.QColor(t.TEXT_PRIMARY))
+        cursor.insertText(text, fmt)
         self.setTextCursor(cursor)
         self._scroll_to_bottom()
 
@@ -625,9 +689,9 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         """Insert or replace typing indicator HTML."""
         dots = "." * (self._typing_phase + 1)
         html_str = (
-            '<div style="margin:{my}px 0; padding:6px 10px;">'
-            '<span style="color:{sig}; font-family:monospace; '
-            'font-size:{sz}px; letter-spacing:1px; font-weight:700;">'
+            '<div style="margin:{my}px 0; padding:{py}px {px}px;">'
+            '<span style="color:{sig}; font-family:{mono}; '
+            'font-size:{sz}px; letter-spacing:1px; font-weight:{weight};">'
             'SYNAPSE</span> '
             '<span style="color:{dim}; font-style:italic; '
             'font-size:{sz}px;">is thinking'
@@ -639,6 +703,8 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             sz=int(t.SIZE_SMALL * self._font_scale),
             dots=dots,
             my=_BUBBLE_MARGIN_Y,
+            py=t.SPACE_12 // 2, px=t.SPACE_SM + t.SPACE_XS // 2,
+            mono=t.FONT_MONO_CSS, weight=t.WEIGHT_SEMIBOLD,
         )
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)

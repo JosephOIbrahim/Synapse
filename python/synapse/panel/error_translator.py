@@ -16,7 +16,7 @@ from typing import Optional
 
 # -- Design tokens (for HTML formatting) ------------------------------------
 # Palette from the design system, panel-specific text aliases from the bridge.
-# The former `except ImportError` arm carried a private palette (#00D4FF cyan,
+# The former `except ImportError` arm carried a private palette (a cyan,
 # JetBrains Mono, 26px body) and was REACHABLE by a by-path load -- a live
 # third authority, removed rather than corrected.
 from synapse.panel.designsystem import tokens as _ds

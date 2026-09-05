@@ -1,0 +1,70 @@
+runner: /c/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+tree: cd98b5c6b60a67e3852e7d2f66c0bed9584372aa pd/panel-integrate-r3  date: 2026-09-05
+cmd: hython audit_panel.py --strict
+======================================================================
+  SYNAPSE PANEL  ·  G3 READABILITY + USABILITY AUDIT
+======================================================================
+
+-- READABILITY · text on surface (WCAG contrast) -------------------
+                             PANEL          GROUND         SURFACE
+  PRIMARY  (body)    8.3:1 [ ok ]   9.5:1 [ ok ]   7.0:1 [ ok ]
+  SECONDARY(meta)    5.5:1 [ ok ]   6.3:1 [ ok ]   4.6:1 [ ok ]
+  TERTIARY (hint)    3.9:1 [ ok ]   4.5:1 [ ok ]   3.3:1 [ ok ]
+  BRIGHT   (head)   10.7:1 [ ok ]  12.3:1 [ ok ]   9.0:1 [ ok ]
+  ACCENT   (link)    6.6:1 [ ok ]   7.5:1 [ ok ]   5.5:1 [ ok ]
+  floors:  body >= 4.5:1   head/link >= 3.0:1   any essential >= 3.0:1
+
+-- READABILITY · type scale (px @ scale 1.0) ----------------------
+   HERO    19px
+   TITLE   15px
+   UI      12px
+   SMALL   11px
+   MICRO   10px
+   BODY    12px  [ ok ]  chat body — floor 12px
+   hierarchy: 5 distinct steps  [ ok ]
+
+-- READABILITY · seeded-contrast sweep (DENSE, full grey range) -----
+   body  realistic worst:  5.3:1 @ (95, 'surface')  [ ok ]
+   body  any-grey  worst:  3.9:1 @ (117, 'surface')  [ ok ]
+   2ndary any-grey worst:  3.9:1 @ (117, 'surface')  [ ok ]
+   floors:  realistic body >= 4.5:1   any-grey body >= 3.5:1   any-grey 2ndary >= 3.0:1
+
+-- USABILITY · live offscreen build -------------------------------
+   settings under audit : C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE/9a97a171-51d8-4f46-af5a-14cea870b2a7/scratchpad/panel_settings.json
+   interactive targets :  28 found, 3 under 26px  [WARN]
+   home label (CHAT)   : ['CHAT'] · WORK gone=True  [ ok ]
+   review fold (gate)  : True  [ ok ]
+   bundled fonts       : ['Space Grotesk', 'Space Mono']  [ ok ]
+   labels rendered     :  60
+   no bundled font in QSS: clean  [ ok ]
+   engine reachable    : author token 'Sonnet 4.6'  [ ok ]
+   engine menu covers  : ['claude', 'gemini', 'nemotron', 'ollama', 'custom']  [ ok ]
+   active engine mark  : [('claude', 'claude-sonnet-4-6')] (want ('claude', 'claude-sonnet-4-6'))  [ ok ]
+   model readout token : 'Sonnet 4.6'  [ ok ]
+   model picker        : 6 models, active=['claude-sonnet-4-6']  [ ok ]
+   meter tokens-only   : ''  [ ok ]
+   bundled chrome font : {'wordmark': 'Space Grotesk', 'tab': 'Space Mono', 'author': 'Space Mono', 'meter': 'Space Mono'}  [ ok ]
+   input not clipped   : send bottom 410px / panel 420px  [ ok ]
+   body matches host   : body 12px vs host 12px  [ ok ]
+   token short-label   : 'Sonnet 4.6'  [ ok ]
+   ⌘K folded into input: placeholder='Ask SYNAPSE…    ·    / for commands'  [ ok ]
+   host-scale = host px : 20px host -> 1.67  [ ok ]
+   wordmark is brand    : 14px @ tracking 116.0%  [ ok ]
+   chrome floor (>=11)  : {'_wordmark': 14, '_header_status': 11, '_palette_hint': 11, '_author_lbl': 11, '_foot_label': 11, '_ctx_label': 12, '_meter_lbl': 11}  [ ok ]
+   chrome FROZEN on Aa  : {'_wordmark': 14, '_header_status': 11, '_palette_hint': 11, '_author_lbl': 11, '_foot_label': 11, '_ctx_label': 12, '_meter_lbl': 11}  [ ok ]
+   content scales on Aa : prompt 12->19px · chat 1.0->1.6  [ ok ]
+   token short (nemotron): 'Nemotron Super 120B'  [ ok ]
+   token short (ollama)  : 'GLM 5'  [ ok ]
+
+-- v9 INVARIANTS · same-pane law + state-as-status -----------------
+   no pane spawn (scan) : clean  [ ok ]
+   consent auto-surfaces: quiet=True gate->work=True  [ ok ]
+   mark-as-status       : work=working done=done  [ ok ]
+   state persistence    : work_substate=done  [ ok ]
+   reduced-motion       : timers quiet=True  [ ok ]
+   cook->done sweep     : content-only x20  [ ok ]
+
+======================================================================
+  G3 RESULT:  pass  ·  1 WARN
+======================================================================
+exit=0

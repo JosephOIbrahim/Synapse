@@ -1,0 +1,14 @@
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-hda_views.ResultView]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-tool_palette.ToolPalette]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-command_palette.CommandPaletteWidget]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-health_strip.HealthStrip]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-chat_panel.SynapseChatPanel]
+============ 24 failed, 110 passed, 3 skipped, 1 warning in 39.12s ============
+
+--- orchestrator receipt, 2026-09-04 21:15 ---
+Runner: Houdini 22.0.400 bundled python313/python.exe (PySide6 6.8.3) with QT_QPA_PLATFORM=offscreen SYNAPSE_REDUCED_MOTION=1.
+(hython -I cannot spawn the docking probe child: "Could not find platform independent libraries"; the bundled python.exe needed a .pth exposing lib/site-packages-forced, the Qt DLL dir, and the repo .hython_deps for pytest in the -I child.)
+Result: 110 passed, 24 failed, 3 skipped.
+All 24 failures are docking width violations, density-independent: 7 alternate census widgets (chat_panel.SynapseChatPanel 720, command_palette.CommandPaletteWidget 708, hda_views.DescribeView/ResultView, tool_palette.ToolPalette, quick_actions.QuickActionPills, health_strip.HealthStrip; min widths 462..720 px vs the 380 px bound) at airy/standard/tight, plus test_every_composed_region_and_face_at_docking_bound at all three densities.
+Baseline control: the same probes on the pre-LEVER pd/panel-census tree (git archive scratch, same runner) fail with IDENTICAL widths (462, 508, 542, 616, 623, 682, 708, 720). The debt pre-dates LEVER; LEVER's gap scaling did not move any minimum.
+Disposition: LEVER accept "docking test green" is NOT met at the current tree but the red is inherited. LEVER = SOUND-WITH-DEBT. The debt is assigned: chat_panel + quick_actions -> SWEEP_A; tool_palette + command_palette + hda_views -> SWEEP_B; health_strip -> unassigned residual (CENSUS finding), for Joe/CRUX; composed panel at 380 px -> CAMERA.

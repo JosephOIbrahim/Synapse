@@ -1,0 +1,385 @@
+"""SWEEP_B source guards and isolated real-Qt sequence probes.
+
+Real geometry is never inferred from a stub. The subprocess exits 77 when
+neither PySide binding is installed; the orchestrator runs that tier in hython.
+"""
+
+import ast
+import importlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+PANEL = ROOT / "python/synapse/panel"
+MODULES = ("hda_views", "tool_palette", "command_palette", "working_indicator")
+REGIONS = (
+    "hda_views.DescribeView", "hda_views.BuildingView", "hda_views.ResultView",
+    "tool_palette.ToolPalette", "command_palette.CommandPaletteWidget",
+    "working_indicator.WorkingIndicator",
+)
+# landing r3 (RULING-4a): the flush utility stacks are stack, not parm_row.
+OWNER_ROLES = dict(zip(REGIONS, ("stack", "group", "stack", "stack", "group", "stack")))
+
+
+def _base(path):
+    return subprocess.check_output(
+        ["git", "show", "ce04dcb0:" + path], cwd=ROOT, text=True, encoding="utf-8")
+
+
+@pytest.mark.parametrize("name", MODULES)
+def test_migrated_widget_has_zero_imperative_rhythm_owners(name):
+    source = (PANEL / (name + ".py")).read_text(encoding="utf-8")
+    forbidden = {"setStyleSheet", "setSpacing", "setContentsMargins",
+                 "setHorizontalSpacing", "setVerticalSpacing"}
+    assert not [node.lineno for node in ast.walk(ast.parse(source))
+                if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                and node.func.attr in forbidden]
+
+
+@pytest.mark.parametrize("region,role", OWNER_ROLES.items())
+def test_each_real_constructor_declares_its_layout_role(region, role):
+    module, name = region.split(".")
+    tree = ast.parse((PANEL / (module + ".py")).read_text(encoding="utf-8"))
+    constructors = [node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)
+                    and node.name == name and node.bases]
+    # CommandPalette's unavailable fallback has no QWidget base and is excluded.
+    assert len(constructors) == 1
+    assert any(isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+               and ast.unparse(node.func) == "self.setProperty"
+               and [ast.literal_eval(arg) for arg in node.args] == ["rhythm_role", role]
+               for node in ast.walk(constructors[0])
+               if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+               and ast.unparse(node.func) == "self.setProperty"
+               and all(isinstance(arg, ast.Constant) for arg in node.args))
+
+
+
+
+def _outside_rhythm_block(text):
+    """The QSS module text with the LEVER role block (_rhythm_stylesheet) blanked.
+
+    Landing r3 (CTO 2026-09-05, RULING-4e): that one function is the upstream
+    region the landing edits under a written ruling (the dead 0.72x / 0.68x
+    ratios). Everything else before the first sweep marker stays byte-identical
+    to ce04dcb0, which is what "append-only" protects.
+    """
+    tree = ast.parse(text)
+    node = next(n for n in ast.walk(tree)
+                if isinstance(n, ast.FunctionDef) and n.name == "_rhythm_stylesheet")
+    lines = text.splitlines()
+    return "\n".join(lines[:node.lineno - 1] + lines[node.end_lineno:]).rstrip()
+
+
+def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
+    from synapse.panel.designsystem import qss, tokens
+    path = "python/synapse/panel/designsystem/qss.py"
+    source = (ROOT / path).read_text(encoding="utf-8")
+    first = "# --- SWEEP_A (chat_panel.py)"
+    prefix, tail = source[:source.index(first)], source[source.index(first):]
+    assert _outside_rhythm_block(prefix) == _outside_rhythm_block(_base(path)), (
+        "QSS edit outside append-only block")
+    # Landing r3 (CTO 2026-09-05, R2-03): the tail carries SWEEP_A's block
+    # first; SWEEP_B's guarantees are fence-scoped to its own marked block.
+    start, end = "# --- SWEEP_B (", "# --- END SWEEP_B"
+    assert start in tail and end in tail
+    assert tail.rstrip().endswith(end)
+    block_b = tail[tail.index(start):tail.index(end) + len(end)]
+    assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", block_b)
+    assert "font-family:" not in block_b
+    for node in ast.walk(ast.parse(block_b)):
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "t":
+            assert hasattr(tokens, node.attr), node.attr
+    sheet = qss.stylesheet()
+    assert "SWEEP_B: HDA views" in sheet and "SWEEP_B: working_indicator" in sheet
+
+
+def test_no_widget_constructors_added():
+    from collections import Counter
+    def constructors(source):
+        result = Counter()
+        for node in ast.walk(ast.parse(source)):
+            if not isinstance(node, ast.Call):
+                continue
+            name = (node.func.attr if isinstance(node.func, ast.Attribute)
+                    else node.func.id if isinstance(node.func, ast.Name) else "")
+            if name.startswith("Q") and not name.endswith("Layout"):
+                result[name] += 1
+        return result
+    for name in MODULES:
+        path = "python/synapse/panel/" + name + ".py"
+        assert not (constructors((ROOT / path).read_text(encoding="utf-8")) - constructors(_base(path)))
+
+
+def _run(region):
+    env = dict(os.environ, QT_QPA_PLATFORM="offscreen", SYNAPSE_REDUCED_MOTION="1",
+               PYTHONDONTWRITEBYTECODE="1")
+    process = subprocess.run(
+        [sys.executable, "-I", str(Path(__file__).resolve()), region],
+        cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
+    if process.returncode == 77:
+        pytest.skip(process.stdout.strip())
+    if process.returncode == 78:
+        pytest.fail(process.stdout.strip() or "NOT_RUN: empty font database")
+    assert process.returncode == 0, process.stdout + process.stderr
+    lines = [line for line in process.stdout.splitlines() if line.startswith("SWEEP_B_QT=")]
+    assert len(lines) == 1, process.stdout
+    return json.loads(lines[0].split("=", 1)[1])
+
+
+@pytest.mark.parametrize("region", REGIONS)
+def test_real_spacing_docking_and_second_action_sequence(region):
+    measured = _run(region)
+    assert measured["densities"] == ["airy", "tight", "standard", "airy"]
+    assert measured["states_checked"] and measured["role_removal_preserves_spacing"]
+
+
+def _qt():
+    for name in ("PySide6", "PySide2"):
+        try:
+            widgets = importlib.import_module(name + ".QtWidgets")
+            gui = importlib.import_module(name + ".QtGui")
+        except ImportError:
+            continue
+        assert isinstance(widgets.QApplication, type) and "PySide" in widgets.QApplication.__module__
+        return widgets, gui
+    sys.stdout.write("NOT_RUN: bound Python has no PySide6/PySide2; real SWEEP_B layout/state measurement unavailable\n")
+    raise SystemExit(77)
+
+
+def owned_layouts(child, widget_type):
+    """(owner, layout) pairs the module marks: the child itself and every
+    descendant widget carrying a rhythm_role.
+
+    Walked top-down over the widget tree, never via findChildren(QLayout):
+    that also returns the sub-layouts of Qt-internal widgets (a combo box's
+    popup container, scroll-area internals) which Qt rebuilds on polish, so
+    their wrappers die between two calls and used to abort the probe before
+    geometry() ran (CRUX R2-05). Those internals are not the sweep's owners;
+    the host's unmarked probe layout is the negative control instead.
+    """
+    pairs, stack = [], [child]
+    while stack:
+        widget = stack.pop()
+        if widget is child or widget.property("rhythm_role"):
+            if widget.layout() is not None:
+                pairs.append((widget, widget.layout()))
+        stack.extend(c for c in widget.children() if isinstance(c, widget_type))
+    return pairs
+
+
+def _worker(region, widgets, gui):
+    from synapse.panel import compositor
+    from synapse.panel.designsystem import qss, rhythm, tokens
+    module, name = region.split(".")
+    source = importlib.import_module("synapse.panel." + module)
+    parent = widgets.QWidget()
+    parent.setObjectName("DsRoot")
+    parent.setStyleSheet(qss.stylesheet())
+    parent.resize(380, 400)
+    box = widgets.QVBoxLayout(parent)
+    child = getattr(source, name)(parent)
+    box.addWidget(child)
+    # Negative control: an UNMARKED sibling in the host with its own layout
+    # values; rhythm.apply must never touch it.
+    probe = widgets.QWidget()
+    probe_box = widgets.QVBoxLayout(probe)
+    probe_box.setSpacing(7)
+    probe_box.setContentsMargins(1, 2, 3, 4)
+    box.addWidget(probe)
+    # Fractions worked independently: group 16*(3/2,3/4,1,3/2),
+    # parameter row / stack 4*(3/2,3/4,1,3/2); no values copied from ROLE_GAPS.
+    independent_bases = {"group": 16, "stack": 4, "parm_row": 4, "card": 16,
+                         "tag": 16, "row": 12, "label": 12}
+    expected = (24, 12, 16, 24) if OWNER_ROLES[region] == "group" else (6, 3, 4, 6)
+    owned_layouts_seen = 0
+    popup_minimums = []
+    levels = ("airy", "tight", "standard", "airy")
+    measurements = []
+
+    def color(label):
+        label.ensurePolished()
+        return label.palette().color(gui.QPalette.WindowText).name().lower()
+
+    def geometry():
+        parent.ensurePolished()
+        parent.resize(380, 400)
+        parent.show()
+        box.activate()
+        widgets.QApplication.processEvents()
+        for widget in (parent, child):
+            minimum = widget.minimumSizeHint().expandedTo(widget.minimumSize())
+            assert 0 < minimum.width() <= 380, (region, "minimum width", minimum.width())
+            assert 0 < minimum.height() <= 400, (region, "minimum height", minimum.height())
+        assert parent.width() <= 380 and parent.height() <= 400
+        # The 200px rule is about DOCKED children forcing the dock column open
+        # (docking-minimums.yaml). A popup WINDOW (ToolPalette / CommandPalette
+        # carry window flags) gets Qt's SetDefaultConstraint on show(): its own
+        # layout minimum becomes its hard minimum - that is the window sizing
+        # itself, not a docked child, and its fit against the opener's dock is
+        # the (parent, child) bound asserted above. Windows are reported, not
+        # counted against the docked-child rule.
+        for widget in parent.findChildren(widgets.QWidget):
+            if widget.isWindow():
+                popup_minimums.append([widget.objectName() or type(widget).__name__,
+                                       widget.minimumWidth(), widget.minimumHeight()])
+                continue
+            assert widget.minimumHeight() <= 200, (region, widget.objectName(), widget.minimumHeight())
+
+    try:
+        for density, gap in zip(levels, expected):
+            parent.setProperty("density", density)
+            compositor._repolish_tree(parent)
+            rhythm.apply(parent, density)
+            if module in ("tool_palette", "command_palette"):
+                child.hide()
+                child.show()  # real showEvent re-reads the changed parent profile
+                assert child.property("density") == density
+            assert child.layout().spacing() == gap
+            # Landing r3 (CRUX R2-05): the role gap is asserted on layouts an
+            # owning widget MARKS - the child itself, or a descendant carrying
+            # its own rhythm_role (its gap is its own role's, worked from the
+            # same independent fractions). Qt-internal layouts (objectName
+            # 'qt_*') and the host's unmarked probe layout are the negative
+            # control: rhythm.apply must leave them byte-equal.
+            fraction = dict(airy=1.5, standard=1.0, tight=0.75)[density]
+            owned = owned_layouts(child, widgets.QWidget)
+            assert owned
+            owned_layouts_seen = max(owned_layouts_seen, len(owned))
+            for owner, layout in owned:
+                role = owner.property("rhythm_role")
+                assert layout.spacing() == round(independent_bases[role] * fraction), (
+                    region, type(layout).__name__, role, layout.spacing())
+            probe_before = (probe_box.spacing(), probe_box.contentsMargins())
+            rhythm.apply(parent, density)
+            assert (probe_box.spacing(), probe_box.contentsMargins()) == probe_before
+            geometry()
+            before = child.layout().contentsMargins()
+            assert (before.left(), before.top(), before.right(), before.bottom()) == (0, 0, 0, 0)
+            rhythm.apply(parent, density)
+            assert child.layout().spacing() == gap
+            assert child.layout().contentsMargins() == before
+            measurements.append(gap)
+
+        if name == "DescribeView":
+            calls = []
+            child.generate_requested.connect(lambda *args: calls.append(args))
+            child.prompt_input.setPlainText("Build a scatter")
+            child.context_combo.setCurrentText("LOP")
+            child.chk_toolbar.setChecked(True)
+            child.generate_btn.click()
+            assert calls[-1] == ("Build a scatter", "LOP", {"include_help": True, "add_to_toolbar": True})
+            child.reset()
+            child.generate_btn.click()
+            assert len(calls) == 1
+        elif name == "BuildingView":
+            child.update_stage("building_nodes", 50, "Building internal nodes")
+            assert color(child.dot_labels[0]) == tokens.GROW.lower()
+            assert color(child.dot_labels[3]) == tokens.FIRE.lower()
+            child.reset()
+            assert all(color(dot) == tokens.TEXT_DISABLED.lower() for dot in child.dot_labels)
+            child.update_stage("validating", 95)
+            assert color(child.dot_labels[-1]) == tokens.FIRE.lower()
+        elif name == "ResultView":
+            for success in (True, False, True):
+                child.populate({"success": success, "node_path": "/obj/" + "asset_" * 40,
+                                "error": "Failure " * 12, "parameters": [{"name": "scale", "type": "float", "default": 1}]})
+                assert color(child.status_label) == (tokens.GROW if success else tokens.ERROR).lower()
+                assert color(child.path_label) == (tokens.GROW if success else tokens.ERROR).lower()
+                geometry()
+            actions = []
+            child.action_requested.connect(actions.append)
+            for button in child.findChildren(widgets.QPushButton, "DsHdaAction"):
+                button.click()
+            assert actions == ["inspect", "edit", "save"]
+        elif name == "WorkingIndicator":
+            source.read_stall_state = lambda: {"stalled": False}
+            source.read_inline_budget = lambda: 30
+            child.set_busy(True)
+            assert color(child._text) == tokens.STATUS["working"][0].lower()
+            child.refresh(stall={"stalled": True}, budget_s=30)
+            assert color(child._text) == tokens.STATUS["warning"][0].lower()
+            geometry()
+            child.set_busy(False)
+            assert child.isHidden() and child._text.text() == ""
+            child.set_busy(True)
+            assert color(child._text) == tokens.STATUS["working"][0].lower()
+        elif name == "ToolPalette":
+            child._set_axis("verb", "render")
+            assert all(row["verb"] == "render" for row in child._visible())
+            child._set_axis("verb", "render")
+            assert child._verb is None and child._visible() == child._rows
+            child._refilter("no such command 987654321")
+            assert child._list.count() == 0
+            child._refilter("")
+            assert child._list.count() > 0
+        else:
+            child.show_palette()
+            child._on_search("no such command 987654321")
+            assert child._list.count() == 0
+            child._on_search("")
+            calls = []
+            child.command_selected.connect(calls.append)
+            item = child._list.item(0)
+            assert item is not None
+            child._on_select(item)
+            assert calls and child.isHidden()
+
+        if module == "hda_views":
+            # The retained alternate entry has no DsRoot and only old HDA ids.
+            # Reparent a fresh real view there, then verify central paint lands.
+            legacy_parent = widgets.QWidget()
+            legacy_box = widgets.QVBoxLayout(legacy_parent)
+            legacy_view = getattr(source, name)()
+            legacy_box.addWidget(legacy_view)
+            try:
+                legacy_parent.show()
+                widgets.QApplication.processEvents()
+                assert legacy_view.objectName() == "DsRoot"
+                assert "SWEEP_B: HDA views" in legacy_view.styleSheet()
+                if name == "BuildingView":
+                    legacy_view.update_stage("building_nodes", 50)
+                    assert color(legacy_view.dot_labels[3]) == tokens.FIRE.lower()
+                elif name == "ResultView":
+                    legacy_view.populate({"success": False, "error": "Failure"})
+                    assert color(legacy_view.status_label) == tokens.ERROR.lower()
+            finally:
+                legacy_view.close()
+                legacy_parent.close()
+
+        saved = child.layout().spacing()
+        child.setProperty("rhythm_role", None)
+        rhythm.apply(parent, "tight")
+        assert child.layout().spacing() == saved
+        return {"densities": levels, "spacing": measurements,
+                "states_checked": True, "role_removal_preserves_spacing": True,
+                "runner": sys.executable, "owned_layouts": owned_layouts_seen,
+                "popup_minimums": popup_minimums}
+    finally:
+        child.close()
+        parent.close()
+
+
+if __name__ == "__main__":
+    assert os.environ["QT_QPA_PLATFORM"] == "offscreen"
+    assert os.environ["SYNAPSE_REDUCED_MOTION"] == "1"
+    sys.path.insert(0, str(ROOT / "python"))
+    widgets, gui = _qt()
+    app = widgets.QApplication.instance() or widgets.QApplication([])
+    # RULING-2A: geometry counts only with the design's own fonts loaded; an
+    # empty font database is a runner failure (78 -> pytest.fail), never a skip.
+    from synapse.panel.designsystem import fontload
+    fontload.load_application_fonts()
+    families = list(gui.QFontDatabase.families())
+    if not families:
+        sys.stdout.write("NOT_RUN: empty font database (runner %s); widths without a "
+                         "font are not measurements\n" % sys.executable)
+        raise SystemExit(78)
+    result = _worker(sys.argv[1], widgets, gui)
+    result.update({"family": gui.QFontInfo(app.font()).family(), "families": len(families)})
+    sys.stdout.write("SWEEP_B_QT=" + json.dumps(result, sort_keys=True) + "\n")

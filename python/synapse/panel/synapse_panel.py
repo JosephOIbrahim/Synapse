@@ -345,7 +345,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # only it) is what the Aa button scales. Both start at the host UI size.
         self._chrome_scale = self._host_font_scale()
         self._font_scale = self._chrome_scale      # content scale (Aa-driven)
-        self.setStyleSheet(qss.stylesheet(self._chrome_scale))
+        self.setStyleSheet(qss.stylesheet(self._chrome_scale))  # rhythm-exempt: installs the sole designsystem sheet at the root; no local style
 
         # Session survival (R.2): restore this scene's prior conversation from
         # the process- and reopen-durable store so a reopen continues the SAME
@@ -491,13 +491,16 @@ class SynapsePanel(QtWidgets.QWidget):
         compositor from ghosting (the old global transparent rule was the bug)."""
         w = QtWidgets.QWidget()
         w.setObjectName("DsSection")
+        w.setProperty("rhythm_role", "group")
         w.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         return w
 
     def _build_ui(self):
         root = QtWidgets.QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
+        # band: the regions are chrome bands that own their own hairlines
+        # (#DsHeader / #DsTabRow rules), so the root stack pays no gap and no
+        # inset (RULING-3; the B4 composer cap holds).
+        self.setProperty("rhythm_role", "band")
 
         # Persistent rail (Mile 1) → context ribbon → switcher → the two faces.
         # v9: the ENGINE pill bar left the chrome — the rail author token is the
@@ -515,6 +518,7 @@ class SynapsePanel(QtWidgets.QWidget):
             try:
                 compose(self, root, get_manifest(profile))
                 built = True
+                self._regate_stop()
             except ManifestError:
                 logger.exception(
                     "layout manifest %r invalid — using the v5.42.0 wiring",
@@ -612,6 +616,19 @@ class SynapsePanel(QtWidgets.QWidget):
                 except RuntimeError:  # pragma: no cover
                     pass
             return
+        # QTextDocument spans are outside the QWidget role walker. Reapply
+        # their group gaps after the same cached-widget recomposition.
+        chat = getattr(self, "_chat", None)
+        if chat is not None and hasattr(chat, "_apply_turn_rhythm"):
+            chat._apply_turn_rhythm()
+        # Stop is state-gated to working only; the compositor just applied the
+        # manifest's visible=True to it. Re-assert the runtime gate inline
+        # (the same rule as _regate_stop; written with getattr because this
+        # method is also executed against duck-typed panels by the rope and
+        # rhythm tests).
+        stop = getattr(self, "_stop_btn", None)
+        if stop is not None:
+            stop.setVisible(bool(getattr(self, "_was_busy", False)))
         managed = {root.itemAt(i).widget() for i in range(root.count())}
         hidden = set()
         for _item, wdg, _stretch in prev:
@@ -620,12 +637,26 @@ class SynapsePanel(QtWidgets.QWidget):
                 hidden.add(wdg)
         self._recompose_hidden = hidden
 
+    def _regate_stop(self):
+        """Re-assert the Stop state gate after a compose.
+
+        Stop is state-gated to working only (``_set_busy``). The manifests list
+        it as PRESENT in the rail and the compositor applies ``visible=True`` to
+        every listed widget, which un-hid the disabled Stop at rest after every
+        compose - pinned red by tests/test_panel_faces.py::
+        test_stop_gated_to_working_state, and the 64px that pushed the header
+        row past the docking bound (landing r3, RULING-2B). Presence in a
+        profile and runtime state are two different things.
+        """
+        stop = getattr(self, "_stop_btn", None)
+        if stop is not None:
+            stop.setVisible(bool(getattr(self, "_was_busy", False)))
+
     def _build_rail(self):
         """The persistent rail (Pentagram pass, Mile 1).
 
-        One strip replacing the old header AND footer: the mark-as-status +
-        wordmark + state phrase on top; connection, an activity meter, and Stop
-        beneath. Termination and live state never scroll away.
+        One row of existing identity/actions, with the persistent health strip
+        beneath it. Termination and live state never scroll away.
         """
         cached = self._region_cache.get("_build_rail")
         if cached is not None:                     # L5-4: recompose reuse
@@ -633,14 +664,16 @@ class SynapsePanel(QtWidgets.QWidget):
         w = self._section()
         w.setObjectName("DsHeader")          # flat PANEL + 1px HAIR bottom rule
         col = QtWidgets.QVBoxLayout(w)
-        # Comp row-1 padding: 16 / GUTTER / 14 (the confident header air).
-        col.setContentsMargins(t.GUTTER, 16, t.GUTTER, 14)
-        col.setSpacing(t.SPACE_SM)
-
-        # line 1 — identity + selection + state (comp order):
+        # The owning widget's role supplies margins and inherited row gaps.
         # [mark]·12·[SYNAPSE] ··· [state] [author▾] [meter] [⌘K] [⋯] [Stop*]
-        top = QtWidgets.QHBoxLayout()
-        top.setSpacing(t.SPACE_SM)
+        # The header row is a toolbar: a `stack` owner of its own (gap 4/6/3,
+        # RULING-4a lists the header rail among the stack sites) inside the
+        # `shell` rail. Twelve chrome items - five of them zero-width Ignored
+        # labels - each pay one gap, so the row's gap is what decides whether
+        # the rail fits the docking bound with the gutter back.
+        row = self._section()
+        row.setProperty("rhythm_role", "stack")
+        top = QtWidgets.QHBoxLayout(row)
         self._mark = c.MarkDot("idle", diameter=16)
         # brand word — 14px/TEXT_BRIGHT (comp .word); tracking lives on the
         # QFont (Qt QSS has no letter-spacing), colour in the sheet.
@@ -667,12 +700,19 @@ class SynapsePanel(QtWidgets.QWidget):
         # Size holds at 14px. Position still carries hierarchy; weight now
         # carries presence.
         word = c.label("SYNAPSE", role="body")
-        word.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
+        word.setProperty("role", "title")
         word.setFont(fontload.tracked_font("WORDMARK", 14, scale=self._chrome_scale,
                                            weight=600))
+        # The brand never elides (landing r3 repair). Below the layout's
+        # minimum Qt takes width from the biggest items first, and the tracked
+        # wordmark was the biggest: at PANEL_PREF_WIDTH under airy it drew as
+        # 'SYNAPS'. A hard minimum is the one floor Qt's engine cannot cross;
+        # the Ignored chrome labels (status / meter / khint / author) give
+        # way instead. Chrome is FROZEN on Aa, so the hint is set once here.
+        word.setMinimumWidth(word.sizeHint().width())
         self._wordmark = word
         self._header_status = c.label("Standing by", role="caption", scale=self._chrome_scale)
-        self._header_status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)
+        self._header_status.setProperty("role", "label")
         # author token — THE engine+model click target (v9): a flat button whose
         # text is _author_token(); click opens the engine menu. Discoverability =
         # pointing-hand + hover underline + tooltip (comp shows no ▾).
@@ -715,7 +755,6 @@ class SynapsePanel(QtWidgets.QWidget):
         self._stop_btn.setEnabled(False)
         self._stop_btn.setVisible(False)   # state-gated: shown only while working
         top.addWidget(self._mark)
-        top.addSpacing(t.SPACE_XS)        # a beat between the mark and the wordmark
         top.addWidget(word)
         top.addStretch(1)
         top.addWidget(self._header_status)
@@ -723,15 +762,12 @@ class SynapsePanel(QtWidgets.QWidget):
         top.addWidget(self._palette_hint)
         top.addWidget(overflow)
         top.addWidget(self._stop_btn)     # termination never scrolls away
-        col.addLayout(top)
 
-        # line 2 — connection · corpus · activity strip (kept-for-now: not in
-        # the comp, not ratified out — retiring it is a future owner call).
-        bot = QtWidgets.QHBoxLayout()
-        bot.setSpacing(t.SPACE_SM)
+        # Existing connection/corpus controls join the same header row.
+        bot = top  # one header row; the persistent health strip remains below
         self._foot_dot = c.StatusDot("disconnected")
         self._foot_label = c.label("Not connected", role="caption", scale=self._chrome_scale)
-        self._foot_label.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        self._foot_label.setProperty("role", "caption")
         # Force-connect the bridge server (the hwebserver serving /synapse for
         # external MCP clients + the /mcp endpoint the tool executor uses). The
         # panel's chat runs in-process, but tools + external tools need this up,
@@ -739,7 +775,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # it without dropping into Houdini's Python Shell.
         # Houdini-help convention: the doc is a control, not a path to go
         # find. Ghost so it reads as chrome; opens in the OS browser.
-        self._help_btn = c.Button("Help", variant="primary")
+        self._help_btn = c.Button("?", variant="ghost")
+        self._help_btn.setAccessibleName("Open documentation")
         self._help_btn.setToolTip("Open docs/studio/UPGRADE.md")
         self._help_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._help_btn.clicked.connect(self._on_help)
@@ -768,7 +805,6 @@ class SynapsePanel(QtWidgets.QWidget):
         c.repolish(self._observe)
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
-        bot.addSpacing(t.SPACE_MD)
         # Order is task order: connect, then ground the corpus, then read up.
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._corpus_btn)
@@ -783,7 +819,21 @@ class SynapsePanel(QtWidgets.QWidget):
         # Model picker rides the action row, right edge -- same line as
         # Connect/Corpus/Help, opposite side (Joe): actions left, choice right.
         bot.addWidget(self._author_lbl)
-        col.addLayout(bot)
+        # shell: the rail is an edge container - GUTTER inset, SPACE_SM air.
+        w.setProperty("rhythm_role", "shell")
+        # One type applier per widget (RULING-4c): the header controls are
+        # verbs and take the LABEL tracked font (mono) - the same applier as
+        # _verb and the CHAT / TOKEN pills - so the chrome siblings match
+        # byte-for-byte; no rhythm_role="label" on top of it.
+        for control in (self._connect_btn, self._corpus_btn, self._help_btn, overflow):
+            control.setObjectName("DsVerb")
+            control.setFont(fontload.tracked_font(
+                "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        overflow.setFixedWidth(t.SPACE_LG)
+        for label in (self._header_status, self._foot_label, self._meter_lbl,
+                      self._palette_hint, self._author_lbl):
+            label.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
+        col.addWidget(row)   # the stack-owned header row
 
         # line 3 — persistent health strip (P0.3 / readiness §4.1): connection ·
         # memory backend · project · active job. Every cell is FACT-sourced or
@@ -944,13 +994,15 @@ class SynapsePanel(QtWidgets.QWidget):
         if cached is not None:                     # L5-4: recompose reuse
             return cached
         w = self._section()
+        w.setProperty("rhythm_role", "shell")   # edge container: GUTTER inset
         lay = QtWidgets.QHBoxLayout(w)
-        # L5-17: left inset = t.GUTTER, the same token the tab row applies, so
-        # the .hip filename's first glyph sits on the same vertical as CHAT.
-        lay.setContentsMargins(t.GUTTER, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        # The shell role owns the ribbon's spacing. The context label is UI
+        # label text (TYPE_ROLES['label'], sans, BP4) - not a section eyebrow,
+        # so it carries no rhythm_role="label" (RULING-4c/4d).
         self._ctx_label = c.label("no scene context", role="label", scale=self._chrome_scale)
-        lay.addWidget(self._ctx_label)
-        lay.addStretch(1)
+        self._ctx_label.setObjectName("DsContextLabel")
+        self._ctx_label.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
+        lay.addWidget(self._ctx_label, 1)
         self._region_cache["_build_context_ribbon"] = w
         return w
 
@@ -1005,16 +1057,16 @@ class SynapsePanel(QtWidgets.QWidget):
             return cached
         w = self._section()
         w.setObjectName("DsTabRow")
+        w.setProperty("rhythm_role", "shell")   # edge container: GUTTER inset
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.GUTTER, 24, t.GUTTER, 0)
-        lay.setSpacing(28)
+        navigation = self._build_context_ribbon().layout()
         self._face_pills = {}
         pill = c.Pill("CHAT")
         pill.setFont(fontload.tracked_font(
             "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         pill.clicked.connect(lambda _=False: self._set_face("direct"))
         self._face_pills["direct"] = pill      # the idle default marks it active
-        lay.addWidget(pill)
+        navigation.addWidget(pill)
 
         # TOKEN — the economist read-out (R167).
         #
@@ -1027,9 +1079,7 @@ class SynapsePanel(QtWidgets.QWidget):
             "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         tok.clicked.connect(lambda _=False: self._show_token_face())
         self._face_pills["token"] = tok
-        lay.addWidget(tok)
-
-        lay.addStretch(1)
+        navigation.addWidget(tok)
 
         # L5-4: the profile tab strip — CURIOUS · EXPERT · ML select the layout
         # manifest (L5-2). A click writes through settings (SwitcherState) and
@@ -1040,8 +1090,12 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:  # pragma: no cover - settings ships with the panel
             _profiles = ("curious", "expert", "ml")
         self._profile_pills = {}
+        lay.addStretch(1)   # right-aligned: profile is chrome, the faces are the surface
         for pid in _profiles:
             p = c.Pill(pid.upper())
+            # Pills are tags in this system's own table (battleplan section 4);
+            # row is list-item vocabulary and its 44px box was never the design.
+            p.setProperty("rhythm_role", "tag")
             p.setFont(fontload.tracked_font(
                 "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
             p.clicked.connect(lambda _=False, pid=pid: self._select_profile(pid))
@@ -1112,15 +1166,24 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _build_direct_face(self):
         """Direct — converse + quick actions + input. The artist's surface.
-        The face carries the comp's GUTTER/24 content padding; inner rows are
-        flush (their old horizontal margins would double it)."""
+        The face is a shell (GUTTER inset via the role, never an imperative
+        margin); act + divider + input sit in one band so the hairline is not
+        paid a group gap on both sides."""
         page = self._section()
+        page.setProperty("rhythm_role", "shell")
         col = QtWidgets.QVBoxLayout(page)
-        col.setContentsMargins(t.GUTTER, 24, t.GUTTER, 24)
-        col.setSpacing(0)
         col.addWidget(self._build_converse(), 1)   # chat | Build-HDA inner stack
-        col.addWidget(self._build_act())
-        col.addWidget(self._build_input())
+        from synapse.panel.recall_card import RecallCard
+        self._recall_card = RecallCard()
+        self._recall_card.hide()
+        col.addWidget(self._recall_card)
+        band = self._section()
+        band.setProperty("rhythm_role", "band")
+        stack = QtWidgets.QVBoxLayout(band)
+        stack.addWidget(self._build_act())
+        stack.addWidget(c.divider())
+        stack.addWidget(self._build_input())
+        col.addWidget(band)
         return page
 
     def _build_work_face(self):
@@ -1136,8 +1199,6 @@ class SynapsePanel(QtWidgets.QWidget):
         no longer a top-level tab — it folded here."""
         page = self._section()
         col = QtWidgets.QVBoxLayout(page)
-        col.setContentsMargins(0, 0, 0, 0)
-        col.setSpacing(0)
         self._work_stack = QtWidgets.QStackedWidget()
 
         # sub-state 0 · COOKING — FaceWork owns the glance
@@ -1148,7 +1209,6 @@ class SynapsePanel(QtWidgets.QWidget):
             self._work_face = None
             cook = self._section()
             _l = QtWidgets.QVBoxLayout(cook)
-            _l.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
             _l.addWidget(c.label("Work face unavailable in this build", role="caption"))
             _l.addStretch(1)
         self._work_stack.addWidget(cook)
@@ -1180,7 +1240,6 @@ class SynapsePanel(QtWidgets.QWidget):
         self._review_face = None
         page = self._section()
         col = QtWidgets.QVBoxLayout(page)
-        col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
         if GateWidget is not None:
             self._gate = GateWidget(parent=page)
             col.addWidget(self._gate)
@@ -1627,6 +1686,10 @@ class SynapsePanel(QtWidgets.QWidget):
         P2: also credits what the turn DID — the five setters that had no
         product caller until now.
         """
+        from synapse.panel.recall_card import latest_recall_result
+        result = latest_recall_result(getattr(self, "_messages", ()))
+        if result is not None:
+            self._display_recall_result(result)
         rf = getattr(self, "_review_face", None)
         if rf is None:
             return
@@ -1731,8 +1794,6 @@ class SynapsePanel(QtWidgets.QWidget):
         agent's houdini_hda_package tool, so it reuses the proven runtime)."""
         page = self._section()
         lay = QtWidgets.QVBoxLayout(page)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_MD, t.SPACE_MD, t.SPACE_MD)
-        lay.setSpacing(t.SPACE_SM)
         lay.addWidget(c.label("Describe the HDA you want", role="title"))
         self._hda_prompt = QtWidgets.QTextEdit()
         self._hda_prompt.setObjectName("DsInput")
@@ -1744,7 +1805,6 @@ class SynapsePanel(QtWidgets.QWidget):
         self._hda_prompt.setMinimumHeight(110)
         lay.addWidget(self._hda_prompt)
         row = QtWidgets.QHBoxLayout()
-        row.setSpacing(t.SPACE_SM)
         row.addWidget(c.label("Context", role="caption"))
         self._hda_ctx = QtWidgets.QComboBox()
         self._hda_ctx.addItems(["SOP", "LOP", "DOP", "COP", "TOP"])
@@ -1826,6 +1886,7 @@ class SynapsePanel(QtWidgets.QWidget):
         {None, 'ok', 'hot', 'accent'} selects the semantic color via property."""
         btn = QtWidgets.QPushButton(text)
         btn.setObjectName("DsVerb")
+        # One type applier per widget (RULING-4c): no rhythm_role="label" here.
         # L5-17: verbs carry the tab pills' tracking (same LABEL role, mono)
         # so they read as chrome siblings of CHAT/TOKEN, not body text.
         btn.setFont(fontload.tracked_font(
@@ -1840,13 +1901,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_act(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        # face carries GUTTER/24; L5-17: top steps SPACE_SM→SPACE_MD (next rung
-        # on the tokens scale) — air between the verbs and the rule above them.
-        lay.setContentsMargins(0, t.SPACE_MD, 0, t.SPACE_SM)
-        # L5-21: inter-verb gap steps SPACE_MD→SPACE_LG (one rung = the ladder's
-        # double) so EXPLAIN / FIX / OPTIMIZE / BUILD HDA read as four controls,
-        # not one phrase.
-        lay.setSpacing(t.SPACE_LG)
+        # The group role owns inter-verb gaps; DsVerb remains the text action.
         for label_text, prompt in _QUICK_ACTIONS:
             lay.addWidget(self._verb(
                 label_text.upper(), lambda _=False, p=prompt: self._send(p)))
@@ -1865,22 +1920,16 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_input(self):
         w = self._section()
         col = QtWidgets.QVBoxLayout(w)
-        col.setContentsMargins(0, 0, 0, 0)   # the Direct face carries the GUTTER/24
-        col.setSpacing(t.SPACE_XS)
         self._input = _GrowingInput()
-        # The prompt scales with the Aa content scale via a widget-level sheet
-        # (overrides the root QSS font-size for this widget only); chrome stays put.
-        self._input.setStyleSheet("QTextEdit#DsInput { font-size: %dpx; }"
-                                  % t.scaled(t.SIZE_UI, self._font_scale))
+        # Aa scales document text; the inherited root sheet owns the chrome.
+        self._set_prompt_font(self._input, self._font_scale)
         self._input.submitted.connect(self._on_submit)
         self._input.slash.connect(self._open_palette)   # "/" → command palette
         # L5-22: a released grip-drag is the artist's answer — remember it
         self._input.height_committed.connect(self._persist_composer_height)
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
         row = QtWidgets.QHBoxLayout()
-        row.setSpacing(t.SPACE_SM)
-        # Image-attach: a drawn image glyph, NOT an emoji (the bundled mono font
-        # has no pictographs → a paperclip codepoint renders as an unreadable tofu box).
+        # Image attachment uses the existing drawn glyph.
         attach = c.Button("", variant="ghost")
         attach.setIcon(_image_icon())
         attach.setIconSize(QtCore.QSize(36, 36))
@@ -2048,7 +2097,15 @@ class SynapsePanel(QtWidgets.QWidget):
         self._direct_call = call
         call.start()
 
+    def _display_recall_result(self, result):
+        card = getattr(self, "_recall_card", None)
+        if card is not None:
+            card.set_result(result)
+            card.show()
+
     def _on_direct_tool_done(self, tool_name, result, done_key=None):
+        if tool_name == "synapse_recall":
+            self._display_recall_result(result)
         # Law 3 — report the server's own status verbatim rather than assuming
         # the click did anything. `noop`, `unmappable` and `ambiguous` are all
         # honest outcomes and none of them is a success.
@@ -2110,9 +2167,8 @@ class SynapsePanel(QtWidgets.QWidget):
     def _apply_content_scale(self):
         """Push the content font-scale to the two surfaces the artist reads and
         writes: the chat document default (dialogue + streamed tokens) and the
-        prompt input. The prompt uses a widget-level stylesheet — a widget's own
-        sheet overrides the inherited root QSS font-size for that widget only, so
-        the chrome around it stays put. Defensive: safe before either is built."""
+        prompt input. Document fonts keep content scaling independent of the
+        root chrome stylesheet. Defensive: safe before either is built."""
         sc = self._font_scale
         chat = getattr(self, "_chat", None)
         if chat is not None and hasattr(chat, "font_scale"):
@@ -2123,10 +2179,23 @@ class SynapsePanel(QtWidgets.QWidget):
         inp = getattr(self, "_input", None)
         if inp is not None:
             try:
-                inp.setStyleSheet("QTextEdit#DsInput { font-size: %dpx; }"
-                                  % t.scaled(t.SIZE_UI, sc))
+                self._set_prompt_font(inp, sc)
             except Exception:
                 pass
+
+    @staticmethod
+    def _set_prompt_font(inp, scale):
+        font = QtGui.QFont(inp.font())
+        font.setPixelSize(max(t.FONT_FLOOR_PX, t.scaled(t.SIZE_UI, scale)))
+        inp.document().setDefaultFont(font)
+        selection = inp.textCursor()
+        content = QtGui.QTextCursor(inp.document())
+        content.select(QtGui.QTextCursor.Document)
+        fmt = QtGui.QTextCharFormat()
+        fmt.setFont(font)
+        content.mergeCharFormat(fmt)
+        inp.setTextCursor(selection)
+        inp.setCurrentFont(font)
 
     def _cycle_font_scale(self):
         """The 'Aa' button — step through the font-scale presets live."""

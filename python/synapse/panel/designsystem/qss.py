@@ -273,47 +273,8 @@ QLabel[role="accent"]  {{ color: {t.TEXT_ACCENT}; }}
 QLabel[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
 QLabel[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 
-/* ---- density (set by the profile compositor) -- L5-18 -------- */
-/* The second profile axis: ONE panel-wide rhythm, keyed on the root's
-   `density` dynamic property and driving descendants -- never a
-   per-widget spacing spec. Two rules ONLY (airy / tight). Standard has
-   NO rule ON PURPOSE: the unstyled sheet IS the standard rhythm, so
-   expert == v5.42.0 exactly (L5-5) -- an unconditional spacing rule
-   here would move that pin. Every value is a rung of the existing
-   tokens.py scale (SPACE_XS 4 / SPACE_SM 8 / SPACE_MD 16 / SPACE_LG
-   24): airy steps a surface ONE rung up from its rest value, tight ONE
-   rung down. Surfaces resting at zero (the chat viewport, the rail and
-   tab-row shells) have no rung below them, so tight omits them rather
-   than invent a negative; off-scale literals (DsSend 9/15, DsPill 12)
-   do not step -- stepping them would mean inventing a number. Spacing
-   only: no colour, size, weight, font, radius or border may ever
-   appear in this block. */
-/* airy — Curious: one rung more air. The chat surface answers Joe's
-   seat call directly: replies get more vertical room to breathe. */
-#DsRoot[density="airy"] QTextBrowser {{
-    padding-top: {t.SPACE_XS}px; padding-bottom: {t.SPACE_XS}px;
-}}
-#DsRoot[density="airy"] QWidget#DsHeader {{
-    padding-top: {t.SPACE_XS}px; padding-bottom: {t.SPACE_XS}px;
-}}
-#DsRoot[density="airy"] QWidget#DsTabRow {{
-    padding-top: {t.SPACE_XS}px; padding-bottom: {t.SPACE_XS}px;
-}}
-#DsRoot[density="airy"] QPushButton#DsButton {{
-    padding: {t.SPACE_MD}px {t.SPACE_LG}px;
-}}
-#DsRoot[density="airy"] QTextEdit#DsInput,
-#DsRoot[density="airy"] QLineEdit#DsField {{
-    padding-top: {t.SPACE_LG}px; padding-bottom: {t.SPACE_LG}px;
-}}
-/* tight — ML: one rung less. Only surfaces with a rung below rest. */
-#DsRoot[density="tight"] QPushButton#DsButton {{
-    padding: {t.SPACE_XS}px {t.SPACE_SM}px;
-}}
-#DsRoot[density="tight"] QTextEdit#DsInput,
-#DsRoot[density="tight"] QLineEdit#DsField {{
-    padding-top: {t.SPACE_SM}px; padding-bottom: {t.SPACE_SM}px;
-}}
+/* PD-LEVER: inherited density-padding rules removed. Padding is fixed;
+   only outer margins below and role layout gaps respond to density. */
 
 /* ---- sec.7 five-camera-region rhythm (BP2-PANELDESIGN) -------- */
 /* The spacing pass — docs/PANEL_RHYTHM_SPEC.md. Extends the density lever to
@@ -388,4 +349,609 @@ QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
 QMenu {{ background: {t.SURFACE}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.BORDER}; padding: {t.SPACE_SM}px; }}
 QMenu::item {{ padding: {t.SPACE_SM}px {t.SPACE_MD}px; border-radius: {t.RADIUS_SM}px; }}
 QMenu::item:selected {{ background: {t.HOVER_BG}; color: {t.TEXT_ACCENT}; }}
+""" + _rhythm_stylesheet(scale)
+
+
+def _rhythm_stylesheet(scale):
+    """Generic opt-in patterns. QFont owns mono/case/tracking in rhythm.py.
+
+    Layout-bearing row/tag containers get padding from rhythm's fixed margins;
+    leaf labels/buttons get QSS padding. Never apply both to one component.
+    Label and tag type is BODY size: the type-floor gate (body is the floor)
+    made the old 0.72x / 0.68x ratios unreachable, so they were a lie in the
+    sheet (landing r3, RULING-4e). Contrast comes from case, tracking, colour.
+    """
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
+    base = f"""
+/* ---- PD generic rhythm patterns ------------------------------ */
+#DsRoot [rhythm_role="label"] {{
+    color: {t.TEXT_SECONDARY}; border: none;
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_MEDIUM};
+    padding: 0;
+    margin-top: {t.SPACE_LG}px; margin-bottom: {t.SPACE_12}px;
+}}
+#DsRoot [rhythm_role="label"]#DsParmSection {{ margin-top: {t.SPACE_32}px; }}
+#DsRoot [rhythm_role="row"] {{
+    color: {t.TEXT_PRIMARY}; background: {t.PANEL};
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_REGULAR};
+    min-height: {t.ROW_MIN_H}px; border-radius: {t.RADIUS_MD}px;
+    border: 1px solid {t.BORDER}; padding: 0;
+}}
+#DsRoot QLabel[rhythm_role="row"], #DsRoot QPushButton[rhythm_role="row"] {{
+    padding: {t.SPACE_12}px {t.SPACE_MD}px;
+}}
+#DsRoot [rhythm_role="row"] > #DsRowGlyph {{
+    min-width: {t.ROW_MIN_H - 1}px; max-width: {t.ROW_MIN_H - 1}px;
+    min-height: {t.ROW_MIN_H}px; max-height: {t.ROW_MIN_H}px;
+    border: none; border-right: 1px solid {t.BORDER}; padding: 0; margin: 0;
+}}
+#DsRoot [rhythm_role="tag"], #DsRoot QLabel#DsBadge[rhythm_role="tag"] {{
+    color: {t.TEXT_SECONDARY}; background: {t.SURFACE};
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_MEDIUM};
+    border: none; border-radius: {t.RADIUS_ROUND}px; padding: 0;
+    margin-left: {t.SPACE_MD}px;
+}}
+#DsRoot QLabel[rhythm_role="tag"], #DsRoot QPushButton[rhythm_role="tag"],
+#DsRoot QLabel#DsBadge[rhythm_role="tag"] {{
+    padding: {t.SPACE_12 // 2}px {t.SPACE_SM + t.SPACE_XS // 2}px;
+}}
+#DsRoot [rhythm_role="tag"][status="BLOCKED"],
+#DsRoot QLabel#DsBadge[rhythm_role="tag"][status="BLOCKED"] {{ color: {t.HOT_SOFT}; }}
+
+/* The collection role owns inter-card gaps. Individual cards keep their
+   fixed-band interior separate from that collection layout. */
+QWidget#DsCard {{
+    border-radius: {t.RADIUS_CARD}px;
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_REGULAR};
+}}
+#DsCard > #DsCardHeader {{
+    min-height: {t.SPACE_XL - 1}px; max-height: {t.SPACE_XL - 1}px;
+    padding: 0 {t.SPACE_MD}px; margin: 0;
+    border: none; border-bottom: 1px solid {t.BORDER};
+}}
+#DsCard > #DsCardBody {{
+    padding: {t.SPACE_MD}px; margin: 0;
+    border: none; border-bottom: 1px solid {t.BORDER};
+}}
+#DsCard > #DsCardFooter {{
+    min-height: {t.SPACE_XL}px; max-height: {t.SPACE_XL}px;
+    padding: 0 {t.SPACE_MD}px; margin: 0; border: none;
+}}
+#DsRoot [rhythm_role="parm_row"] {{
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_REGULAR};
+    min-height: {t.SPACE_LG}px; padding: 0; margin: 0;
+}}
+#DsRoot [rhythm_role="parm_row"] > #DsParmLabel {{
+    min-width: {t.SPACE_32 * 4}px; max-width: {t.SPACE_32 * 4}px;
+    color: {t.TEXT_SECONDARY}; padding: 0; margin: 0;
+}}
+#DsRoot [rhythm_role="parm_row"] > #DsParmValue {{
+    min-width: {t.SPACE_32 * 2}px; max-width: {t.SPACE_32 * 2}px;
+    color: {t.TEXT_PRIMARY}; padding: 0; margin: 0;
+}}
+#DsRoot [rhythm_role="parm_row"] > #DsParmControl {{ padding: 0; margin: 0; }}
 """
+    # Only margins in these blocks; standard is the unconditional base above.
+    for density in ("airy", "tight"):
+        base += f"""
+#DsRoot[density="{density}"] [rhythm_role="label"] {{
+    margin-top: {t.gap(t.SPACE_LG, density)}px;
+    margin-bottom: {t.gap(t.SPACE_12, density)}px;
+}}
+#DsRoot[density="{density}"] [rhythm_role="label"]#DsParmSection {{
+    margin-top: {t.gap(t.SPACE_32, density)}px;
+}}
+#DsRoot[density="{density}"] [rhythm_role="tag"],
+#DsRoot[density="{density}"] QLabel#DsBadge[rhythm_role="tag"] {{
+    margin-left: {t.gap(t.SPACE_MD, density)}px;
+}}
+"""
+    return base
+
+
+# --- SWEEP_A (chat_panel.py)
+# The existing generator above is immutable for this leg. Compose the sweep's
+# scoped rules at this seam so downstream sweep blocks can compose in turn.
+#
+# Type (landing r3 repair, F-C1): no rule below names a family. Families ride
+# the QFont - fontload.apply_family / tracked_font / rhythm._apply_type - and
+# gate_widget.py (shipped) applies the mono family that way. The SWEEP_A
+# widgets nothing ships (chat_panel, context_bar, quick_actions, hda_views)
+# render in the QApplication font (Houdini's UI face) until they are wired
+# into the shipped panel; at that seam they take the family by QFont too.
+_sweep_a_base_stylesheet = stylesheet
+_sweep_a_builders = []
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _sweep_a_base_stylesheet(scale) + "\n" + "\n".join(
+        builder() for builder in _sweep_a_builders)
+
+
+def _sweep_a_rule(name, css, color=None, descendants=False):
+    """Qualify migrated declarations so they cannot spill onto other regions."""
+    import re
+
+    target = '[sweep_a_style="%s"]' % name
+    if color is not None:
+        target += '[sweep_a_color="%s"]' % color
+    if "{" not in css:
+        css = "* {" + css + "}"
+    rules = []
+    for selectors, declarations in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        scoped = []
+        for selector in selectors.split(","):
+            selector = selector.strip()
+            head, sep, pseudo = selector.partition(":")
+            direct = head + target + (sep + pseudo if sep else "")
+            scoped.extend((direct, "#DsRoot " + direct))
+            if descendants:
+                scoped.extend(("*" + target + " " + selector,
+                               "#DsRoot " + "*" + target + " " + selector))
+        rules.append(", ".join(scoped) + " {" + declarations + "}")
+    return "\n".join(rules)
+
+
+def _sweep_a_legacy_argb(color, suffix):
+    """Preserve Qt's ARGB interpretation of the old token-plus-suffix colors.
+
+    Qt parses eight hex digits as alpha/red/green/blue, not RGBA. Express that
+    existing paint with integer rgba() channels through the token helper; do
+    not silently correct the legacy channel order during a rhythm migration.
+    """
+    return t.rgba("#" + color[3:] + suffix, int(color[1:3], 16))
+
+
+def sweep_a_style(widget, name, color=None):
+    """State transitions select prebuilt QSS rules, then repolish this widget."""
+    widget.setProperty("sweep_a_style", name)
+    widget.setProperty("sweep_a_color", color)
+    style = widget.style()
+    style.unpolish(widget)
+    style.polish(widget)
+    widget.update()
+
+
+def install_sweep_a_root(root):
+    """The alternate chat entry has no compositor; install the same authority."""
+    from . import rhythm
+
+    root.setStyleSheet(stylesheet())
+    rhythm.apply(root, root.property("density") or "standard")
+
+# --- SWEEP_A (chat_panel.py)
+def _sweep_a_chat_panel_stylesheet():
+    rules = []
+    rules.append(_sweep_a_rule("chat_root", f"""
+QWidget {{  background: {t.NEAR_BLACK};  color: {t.BONE}; }}
+""", descendants=True))
+    rules.append(_sweep_a_rule("chat_hda", f"""
+QWidget#HdaModeWidget {{  background: {t.VOID};}}
+QTextEdit#HdaPromptInput {{  background: {t.FIELD_INSET};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 12px; font-size: {t.SIZE_BODY}px;  selection-background-color: {_sweep_a_legacy_argb(t.SIGNAL, "40")} ;}}
+QTextEdit#HdaPromptInput:focus {{  border-color: {t.SIGNAL};}}
+QComboBox#HdaContextSelector {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 6px 12px; font-size: {t.SIZE_LABEL}px;}}
+QPushButton#HdaGenerateBtn {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 4px;  padding: 10px 24px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  letter-spacing: 1px;}}
+QPushButton#HdaGenerateBtn:hover {{  background: {_sweep_a_legacy_argb(t.SIGNAL, "CC")} ;}}
+QPushButton#HdaGenerateBtn:pressed {{  background: {_sweep_a_legacy_argb(t.SIGNAL, "99")} ;}}
+QWidget#BuildingView {{  background: {t.CARBON};}}
+QLabel#StageLabel {{  font-size: {t.SIZE_LABEL}px;  letter-spacing: 0.5px;}}
+QProgressBar#HdaProgressBar {{  background: {t.GRAPHITE};  border: none;  border-radius: 3px;  height: 6px;}}
+QProgressBar#HdaProgressBar::chunk {{  background: {t.FIRE};  border-radius: 3px;}}
+QLabel#NodePathLabel {{  font-size: {t.SIZE_BODY}px;  color: {t.GROW};  padding: 8px 12px;  background: {_sweep_a_legacy_argb(t.GROW, "10")} ;  border-radius: 4px;}}
+QTableWidget#ParamTable {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  gridline-color: {t.GRAPHITE}; font-size: {t.SIZE_LABEL}px;}}
+QTableWidget#ParamTable::item {{{{  padding: 4px 8px;}}}}
+QHeaderView::section {{  background: {t.GRAPHITE};  color: {t.BONE};  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  padding: 4px 8px;  border: none;}}
+QPushButton#ModeToggleActive {{  background: {_sweep_a_legacy_argb(t.SIGNAL, "26")} ;  border: 1px solid {_sweep_a_legacy_argb(t.SIGNAL, "66")} ;  color: {t.SIGNAL};  border-radius: 4px;  padding: 4px 12px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};}}
+QPushButton#ModeToggleInactive {{  background: transparent;  border: 1px solid {t.GRAPHITE};  color: {t.SLATE};  border-radius: 4px;  padding: 4px 12px; font-size: {t.SIZE_LABEL}px;}}
+QPushButton#ModeToggleInactive:hover {{  border-color: {t.SILVER};  color: {t.SILVER};}}
+QPushButton#HdaActionBtn {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {t.SIZE_LABEL}px;}}
+QPushButton#HdaActionBtn:hover {{  border-color: {_sweep_a_legacy_argb(t.SIGNAL, "66")} ;  color: {t.BONE};}}
+QPushButton#CancelBtn {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {t.SIZE_LABEL}px;}}
+QPushButton#CancelBtn:hover {{  color: {t.ERROR};  border-color: {_sweep_a_legacy_argb(t.ERROR, "66")} ;}}
+""", descendants=True))
+    rules.append(_sweep_a_rule("chat_input_container", f"""
+background: transparent; border-top: 1px solid {t.GRAPHITE};
+"""))
+    rules.append(_sweep_a_rule("chat_input", f"""
+QTextEdit {{  background: {t.VOID};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 6px;  padding: 8px 12px; font-size: {t.SIZE_UI}px;}}
+QTextEdit:focus {{  border: 1px solid {t.SIGNAL};}}
+"""))
+    rules.append(_sweep_a_rule("chat_send", f"""
+QPushButton {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 6px;  padding: 8px 20px; font-size: {t.SIZE_UI}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  letter-spacing: 1px;}}
+QPushButton:hover {{  background: {t.SIGNAL_HOVER};}}
+QPushButton:pressed {{  background: {t.SIGNAL_PRESS};}}
+"""))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("chat_font", f"""
+QPushButton{{border:none;background:transparent;padding:0;color:{color};}}
+""", color=color))
+    rules.append(_sweep_a_rule("chat_menu", f"""
+QMenu {{  background: {t.CARBON}; color: {t.BONE}; border: 1px solid {t.GRAPHITE}; }}
+QMenu::item:selected {{  background: {t.HOVER_BG}; }}
+"""))
+    rules.append(_sweep_a_rule("chat_connection", f"""
+QWidget#connection_frame {{  background: {t.CARBON};  border-top: 1px solid {t.GRAPHITE};  min-height: 52px;  max-height: 52px;}}
+"""))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("chat_dot", f"""
+color: {color}; font-size: {t.SIZE_UI * 3 // 2}px; border: none;
+""", color=color))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("chat_status", f"""
+color: {color};  font-size: {t.SIZE_SMALL}px; letter-spacing: 1px; border: none;
+""", color=color))
+    rules.append(_sweep_a_rule("chat_halt", f"""
+QPushButton {{  background: transparent;  color: {t.FIRE};  border: 1px solid {t.FIRE};  border-radius: 3px;  padding: 4px 10px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  letter-spacing: 1px;}}
+QPushButton:hover {{  background: {_sweep_a_legacy_argb(t.FIRE, "20")} ;}}
+QPushButton:pressed {{  background: {_sweep_a_legacy_argb(t.FIRE, "40")} ;}}
+"""))
+    rules.append(_sweep_a_rule("chat_connect", f"""
+QPushButton#connect_button {{  background: transparent;  color: {t.SIGNAL};  border: 1px solid {t.SIGNAL};  border-radius: 3px; font-size: {t.SIZE_SMALL}px;  padding: 4px 12px;  min-width: 100px;}}
+QPushButton#connect_button:hover {{  background: rgba(143, 179, 217, 0.1);}}
+QPushButton#connect_button:pressed {{  background: rgba(143, 179, 217, 0.2);}}
+"""))
+    rules.append(_sweep_a_rule("chat_url", f"""
+QPushButton#ws_path_button {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 3px; font-size: {t.SIZE_LABEL}px;  padding: 4px 8px;}}
+QPushButton#ws_path_button:hover {{  color: {t.SIGNAL};  border-color: {t.SIGNAL};  background: rgba(143, 179, 217, 0.1);}}
+QPushButton#ws_path_button:pressed {{  background: rgba(143, 179, 217, 0.2);}}
+"""))
+    rules.append(_sweep_a_rule("chat_toolbar", f"""
+background: {t.CARBON}; border-bottom: 1px solid {t.GRAPHITE};
+"""))
+    return "\n".join(rules)
+
+_sweep_a_builders.append(_sweep_a_chat_panel_stylesheet)
+
+# --- SWEEP_A (face_review.py)
+def _sweep_a_face_review_stylesheet():
+    rules = []
+    rules.append(_sweep_a_rule("review_verdict", f"""
+color:{t.TEXT_BRIGHT};
+"""))
+    rules.append(_sweep_a_rule("review_meta", f"""
+color:{t.TEXT_TERTIARY}; font-size: {t.SIZE_LABEL}px;
+"""))
+    rules.append(_sweep_a_rule("review_key", f"""
+color:{t.TEXT_TERTIARY};
+"""))
+    return "\n".join(rules)
+
+_sweep_a_builders.append(_sweep_a_face_review_stylesheet)
+
+# --- SWEEP_A (gate_widget.py)
+def _sweep_a_gate_widget_stylesheet():
+    rules = []
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("gate_badge", f"""
+background: {_sweep_a_legacy_argb(color, "20")} ; color: {color}; border: 1px solid {_sweep_a_legacy_argb(color, "40")} ; border-radius: 3px; padding: 1px 6px;  font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};
+""", color=color))
+    rules.append(_sweep_a_rule("gate_operation", f"""
+color: {t.BONE};  font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR}; border: none;
+"""))
+    rules.append(_sweep_a_rule("gate_agent", f"""
+color: {t.SLATE}; font-size: {t.SIZE_LABEL}px; border: none;
+"""))
+    rules.append(_sweep_a_rule("gate_description", f"""
+color: {t.SILVER}; font-size: {t.SIZE_LABEL}px; border: none;
+"""))
+    rules.append(_sweep_a_rule("gate_critical", f"""
+color: {t.ERROR}; font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR}; border: none;
+"""))
+    rules.append(_sweep_a_rule("gate_countdown", f"""
+color: {t.SLATE}; font-size: {t.SIZE_LABEL}px;  border: none;
+"""))
+    rules.append(_sweep_a_rule("gate_reject", f"""
+QPushButton {{  background: transparent;  color: {t.ERROR};  border: 1px solid {t.ERROR};  border-radius: 3px;  padding: 3px 12px; font-size: {t.SIZE_LABEL}px;}}
+QPushButton:hover {{  background: {_sweep_a_legacy_argb(t.ERROR, "20")} ;}}
+QPushButton:pressed {{  background: {_sweep_a_legacy_argb(t.ERROR, "40")} ;}}
+"""))
+    rules.append(_sweep_a_rule("gate_approve", f"""
+QPushButton {{  background: transparent;  color: {t.GROW};  border: 1px solid {t.GROW};  border-radius: 3px;  padding: 3px 12px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};}}
+QPushButton:hover {{  background: {_sweep_a_legacy_argb(t.GROW, "20")} ;}}
+QPushButton:pressed {{  background: {_sweep_a_legacy_argb(t.GROW, "40")} ;}}
+"""))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("gate_card", f"""
+background: {t.SURFACE}; border: none; border-left: 3px solid {color}; border-radius: 4px; margin: 2px 0;
+""", color=color))
+    rules.append(_sweep_a_rule("gate_unreachable", f"""
+background: {_sweep_a_legacy_argb(t.WARN, "30")} ; border: none; border-left: 4px solid {t.WARN}; border-radius: 4px; margin: 2px 0;
+"""))
+    rules.append(_sweep_a_rule("gate_unreachable_countdown", f"""
+color: {t.WARN}; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};
+"""))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("gate_flash", f"""
+background: {_sweep_a_legacy_argb(color, "30")} ; border: none; border-left: 4px solid {color}; border-radius: 4px; margin: 2px 0;
+""", color=color))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("gate_decision_countdown", f"""
+color: {color}; font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  border: none;
+""", color=color))
+    rules.append(_sweep_a_rule("gate_header", f"""
+QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; padding: 4px 8px;  font-size: {t.SIZE_LABEL}px; }}
+QPushButton:hover {{  color: {t.SIGNAL}; }}
+"""))
+    rules.append(_sweep_a_rule("gate_body", f"""
+background: {t.GROUND}; border: 1px solid {t.GRAPHITE}; border-radius: 4px;
+"""))
+    rules.append(_sweep_a_rule("gate_integrity", f"""
+background: {t.GROUND}; border-top: 1px solid {t.GRAPHITE};
+"""))
+    rules.append(_sweep_a_rule("gate_fidelity_label", f"""
+color: {t.SILVER};  font-size: {t.SIZE_LABEL}px; border: none;
+"""))
+    rules.append(_sweep_a_rule("gate_separator", f"""
+color: {t.GRAPHITE}; border: none;
+"""))
+    rules.append(_sweep_a_rule("gate_counts", f"""
+color: {t.SLATE};  font-size: {t.SIZE_LABEL}px; border: none;
+"""))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("gate_violations", f"""
+color: {color};  font-size: {t.SIZE_LABEL}px; border: none;
+""", color=color))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("gate_fidelity_dot", f"""
+color: {color}; font-size: {t.SIZE_UI * 7 // 6}px; border: none;
+""", color=color))
+    return "\n".join(rules)
+
+_sweep_a_builders.append(_sweep_a_gate_widget_stylesheet)
+
+def sweep_a_refresh_rhythm(widget):
+    """New proposal layouts inherit the enclosing composed density."""
+    from . import rhythm
+
+    ancestor = widget
+    density = None
+    while ancestor is not None and not density:
+        density = ancestor.property("density")
+        ancestor = ancestor.parentWidget()
+    rhythm.apply(widget, density or "standard")
+
+# --- SWEEP_A (context_bar.py)
+def _sweep_a_context_bar_stylesheet():
+    rules = []
+    rules.append(_sweep_a_rule("context_root", f"""
+QWidget#context_bar_v2 {{  background: transparent;}}
+"""))
+    rules.append(_sweep_a_rule("context_breadcrumb", f"""
+color: {t.SIGNAL}; font-size: {t.SIZE_LABEL}pt;  background: transparent;
+"""))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("context_memory", f"""
+color: {color}; font-size: {t.SIZE_UI * 3 / 4}pt;  background: transparent; padding: 0 4px;
+""", color=color))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("context_health", f"""
+color: {color}; font-size: {t.SIZE_UI * 3 / 4}pt;  background: transparent;
+""", color=color))
+    rules.append(_sweep_a_rule("context_actions", f"""
+background: transparent;
+"""))
+    rules.append(_sweep_a_rule("context_action", f"""
+QPushButton {{  background: {t.NEAR_BLACK}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.CARBON};  border-radius: 4px; padding: 2px 8px;  font-size: {t.SIZE_UI * 3 / 4}pt; }}
+QPushButton:hover {{  background: {t.HOVER_BG}; border-color: {t.FIRE};}}
+QPushButton:pressed {{  background: {t.GRAPHITE};}}
+"""))
+    rules.append(_sweep_a_rule("context_frame", f"""
+color: {t.TEXT_SECONDARY}; font-size: {t.SIZE_UI * 3 / 4}pt;  background: transparent;
+"""))
+    return "\n".join(rules)
+
+_sweep_a_builders.append(_sweep_a_context_bar_stylesheet)
+
+# --- SWEEP_A (face_work.py)
+def _sweep_a_face_work_stylesheet():
+    rules = []
+    rules.append(_sweep_a_rule("work_status", f"""
+color:{t.TEXT_SECONDARY};
+"""))
+    rules.append(_sweep_a_rule("work_note", f"""
+color:{t.TEXT_TERTIARY};
+"""))
+    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
+                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
+        rules.append(_sweep_a_rule("work_step", f"""
+color:{color};
+""", color=color))
+    return "\n".join(rules)
+
+_sweep_a_builders.append(_sweep_a_face_work_stylesheet)
+
+# --- SWEEP_A (quick_actions.py)
+def _sweep_a_quick_actions_stylesheet():
+    rules = []
+    rules.append(_sweep_a_rule("quick_chevron", f"""
+QPushButton {{  background: transparent; border: none; color: {t.TEXT_SECONDARY}; font-size: {t.SIZE_UI * 7 // 6}px; }}
+QPushButton:hover {{  color: {t.SIGNAL}; }}
+"""))
+    rules.append(_sweep_a_rule("quick_pill", f"""
+QPushButton {{  background: {t.CARBON};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 14px;  padding: 7px 12px; font-size: {t.SIZE_LABEL}px;}}
+QPushButton:hover {{  background: {t.HOVER_BG};  border-color: {t.SIGNAL};  color: {t.WHITE};}}
+QPushButton:pressed {{  background: rgba(0, 212, 255, 0.15);  border-color: {t.SIGNAL};  color: {t.SIGNAL};}}
+"""))
+    return "\n".join(rules)
+
+_sweep_a_builders.append(_sweep_a_quick_actions_stylesheet)
+# --- END SWEEP_A
+
+
+# --- SWEEP_B (hda_views, tool_palette, command_palette, working_indicator)
+# Append-only: preserve LEVER's generator and chain any earlier sweep blocks.
+_sweep_b_base_stylesheet = stylesheet
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _sweep_b_base_stylesheet(scale) + _sweep_b_stylesheet(scale)
+
+
+def _sweep_b_stylesheet(scale):
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
+    return f"""
+/* ---- SWEEP_B: HDA views ------------------------------------- */
+QLabel#DsHdaContextLabel, QLabel#DsHdaDetail, QLabel#DsHdaValidation {{
+    color: {t.TEXT_TERTIARY}; font-size: {s(t.SIZE_SMALL)}px;
+}}
+QCheckBox#DsHdaOption {{ color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_BODY)}px; }}
+QLabel#DsHdaStage, QLabel#DsHdaStatus {{
+    color: {t.TEXT_PRIMARY}; font-size: {s(t.SIZE_TITLE)}px;
+    font-weight: {t.WEIGHT_SEMIBOLD};
+}}
+QLabel#DsHdaStatus[status="success"] {{ color: {t.GROW}; }}
+QLabel#DsHdaStatus[status="error"] {{ color: {t.ERROR}; }}
+QLabel#DsHdaStageDot {{ color: {t.TEXT_DISABLED}; font-size: {s(t.SIZE_LABEL)}px; }}
+QLabel#DsHdaStageDot[stage="complete"] {{ color: {t.GROW}; }}
+QLabel#DsHdaStageDot[stage="active"] {{ color: {t.FIRE}; font-size: {s(t.SIZE_SMALL)}px; }}
+QLabel#DsHdaPath {{
+    color: {t.TEXT_PRIMARY}; font-size: {s(t.SIZE_BODY)}px;
+    padding: {t.SPACE_SM}px {t.SPACE_12}px; border-radius: {t.RADIUS_SM}px;
+}}
+QLabel#DsHdaPath[status="success"] {{ color: {t.GROW}; background: {t.rgba(t.GROW, 0.06)}; }}
+QLabel#DsHdaPath[status="error"] {{ color: {t.ERROR}; background: {t.rgba(t.ERROR, 0.06)}; }}
+QTextEdit#DsHdaPrompt {{
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_12}px; font-size: {s(t.SIZE_BODY)}px;
+    selection-background-color: {t.SIGNAL_TINT};
+}}
+QTextEdit#DsHdaPrompt:focus {{ border-color: {t.SIGNAL}; }}
+QComboBox#DsHdaContext {{
+    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_XS}px {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
+}}
+QPushButton#DsHdaGenerate {{
+    background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT};
+    border: none; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_SM}px {t.SPACE_LG}px;
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_SEMIBOLD};
+}}
+QPushButton#DsHdaGenerate:hover {{ background: {t.SIGNAL_HOVER}; }}
+QPushButton#DsHdaGenerate:pressed {{ background: {t.SIGNAL_PRESS}; }}
+QPushButton#DsHdaAction, QPushButton#DsHdaCancel {{
+    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
+}}
+QPushButton#DsHdaCancel {{ background: transparent; color: {t.TEXT_TERTIARY}; }}
+QPushButton#DsHdaAction:hover, QPushButton#DsHdaCancel:hover {{
+    border-color: {t.SIGNAL}; color: {t.TEXT_PRIMARY};
+}}
+QProgressBar#DsHdaProgress {{ background: {t.GROUND}; border: none; border-radius: {t.RADIUS_SM}px; }}
+QProgressBar#DsHdaProgress::chunk {{ background: {t.FIRE}; border-radius: {t.RADIUS_SM}px; }}
+QTableWidget#DsHdaParameters {{
+    background: {t.SURFACE}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; gridline-color: {t.BORDER}; font-size: {s(t.SIZE_BODY)}px;
+}}
+QTableWidget#DsHdaParameters::item {{ padding: {t.SPACE_XS}px; }}
+QTableWidget#DsHdaParameters QHeaderView::section {{
+    background: {t.RAISED}; color: {t.TEXT_PRIMARY};
+    padding: {t.SPACE_XS}px; border: none; font-weight: {t.WEIGHT_SEMIBOLD};
+}}
+
+/* ---- SWEEP_B: tool_palette ---------------------------------- */
+#DsRoot[panel_popup="tool"] {{ padding: {t.SPACE_SM}px; }}
+#DsRoot[panel_popup="tool"] QLabel#DsPaletteAxis {{ color: {t.TEXT_TERTIARY}; }}
+
+/* ---- SWEEP_B: command_palette ------------------------------- */
+#DsRoot[panel_popup="command"] {{ background: transparent; }}
+QFrame#PaletteContainer {{
+    background: {t.SURFACE}; border: 1px solid {t.BORDER};
+    border-radius: {t.RADIUS_MD}px; padding: {t.SPACE_SM}px;
+}}
+QLineEdit#DsCommandSearch {{
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+    border: 1px solid transparent; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
+}}
+QLineEdit#DsCommandSearch:focus {{ border-color: {t.SIGNAL}; }}
+QFrame#DsCommandDivider {{ color: {t.BORDER}; background: {t.BORDER}; border: none; }}
+QListWidget#DsCommandResults {{
+    background: transparent; color: {t.TEXT_PRIMARY};
+    border: none; outline: none; font-size: {s(t.SIZE_BODY)}px;
+}}
+QListWidget#DsCommandResults::item {{
+    padding: {t.SPACE_XS}px {t.SPACE_SM}px; border-radius: {t.RADIUS_SM}px;
+}}
+QListWidget#DsCommandResults::item:selected {{ background: {t.SIGNAL_TINT}; }}
+QListWidget#DsCommandResults::item:hover {{ background: {t.HOVER_BG}; }}
+
+/* ---- SWEEP_B: working_indicator (the existing STATUS grammar) */
+QLabel#workingIndicatorDot[working_state="busy"],
+QLabel#workingIndicatorText[working_state="busy"] {{ color: {t.STATUS["working"][0]}; }}
+QLabel#workingIndicatorDot[working_state="stalled"],
+QLabel#workingIndicatorText[working_state="stalled"] {{ color: {t.STATUS["warning"][0]}; }}
+
+/* ---- landing r3 (RULING-1b): health_strip cells - one rule replaces the
+   per-label inline sheet; the mono family travels by QFont (fontload). */
+#health_strip QLabel {{ font-size: {s(t.SIZE_SMALL)}px; background: transparent; }}
+"""
+
+
+def set_sweep_b_state(widget, name, value):
+    """Refresh a migrated leaf's QSS selector after a real state transition."""
+    widget.setProperty(name, value)
+    style = widget.style()
+    style.unpolish(widget)
+    style.polish(widget)
+    widget.update()
+
+
+def prepare_sweep_b_popup(root, scale=t.FONT_SCALE_DEFAULT):
+    """Central sheet installation for the two separate popup windows.
+
+    Copy the opener's current density on each opening, then run both appliers.
+    No private inline sheet or hard minimum wider than the opener's dock.
+    """
+    from . import rhythm
+
+    density = root.property("density") or "standard"
+    parent = root.parentWidget()
+    ancestor = parent
+    while ancestor is not None:
+        if ancestor.property("density"):
+            density = ancestor.property("density")
+            break
+        ancestor = ancestor.parentWidget()
+    root.setProperty("density", density)
+    root.setStyleSheet(stylesheet(scale))
+    rhythm.apply(root, density)
+    screen = root.screen()
+    if screen is not None:
+        available = screen.availableGeometry()
+        width = min(root.width(), available.width())
+        height = min(root.height(), available.height())
+        if parent is not None:
+            width = min(width, parent.width())
+        root.resize(width, height)
+def ensure_sweep_b_view(root):
+    """Give an HDA view the central sheet when hosted by the legacy entry.
+
+    Check after reparenting, at show time. A modern DsRoot supplies the sheet
+    by inheritance; the old Chat/HDA entry has only legacy selectors. Its
+    existing view becomes the styling root without constructing a widget.
+    """
+    from . import rhythm
+
+    ancestor = root.parentWidget()
+    while ancestor is not None:
+        if ancestor.objectName() == "DsRoot":
+            return
+        ancestor = ancestor.parentWidget()
+    root.setObjectName("DsRoot")
+    root.setStyleSheet(stylesheet())
+    rhythm.apply(root, root.property("density") or "standard")
+# --- END SWEEP_B

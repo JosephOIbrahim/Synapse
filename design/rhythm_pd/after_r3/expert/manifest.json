@@ -1,0 +1,236 @@
+{
+  "schema": "panel_shot/v1",
+  "out": "design/rhythm_pd/after_r3/expert",
+  "platform": "offscreen",
+  "python": "3.13.10",
+  "reduced_motion": "1",
+  "views_total": 16,
+  "views_ok": 16,
+  "views_failed": 0,
+  "results": [
+    {
+      "view": "panel_direct_chat",
+      "png": "panel_direct_chat.png",
+      "size": [
+        340,
+        760
+      ],
+      "status": "ok",
+      "bytes": 17528,
+      "pixels": [
+        340,
+        760
+      ]
+    },
+    {
+      "view": "panel_direct_hda",
+      "png": "panel_direct_hda.png",
+      "size": [
+        340,
+        760
+      ],
+      "status": "ok",
+      "bytes": 27259,
+      "pixels": [
+        340,
+        760
+      ]
+    },
+    {
+      "view": "panel_work",
+      "png": "panel_work.png",
+      "size": [
+        340,
+        760
+      ],
+      "status": "ok",
+      "bytes": 15459,
+      "pixels": [
+        340,
+        760
+      ]
+    },
+    {
+      "view": "gate_widget",
+      "png": "gate_widget.png",
+      "size": [
+        340,
+        520
+      ],
+      "status": "ok",
+      "bytes": 15415,
+      "pixels": [
+        340,
+        520
+      ]
+    },
+    {
+      "view": "face_review",
+      "png": "face_review.png",
+      "size": [
+        340,
+        520
+      ],
+      "status": "ok",
+      "bytes": 10730,
+      "pixels": [
+        340,
+        520
+      ]
+    },
+    {
+      "view": "face_work",
+      "png": "face_work.png",
+      "size": [
+        340,
+        420
+      ],
+      "status": "ok",
+      "bytes": 7985,
+      "pixels": [
+        340,
+        420
+      ]
+    },
+    {
+      "view": "health_infographic",
+      "png": "health_infographic.png",
+      "size": [
+        340,
+        360
+      ],
+      "status": "ok",
+      "bytes": 1269,
+      "pixels": [
+        340,
+        28
+      ]
+    },
+    {
+      "view": "integrity_readout",
+      "png": "integrity_readout.png",
+      "size": [
+        340,
+        120
+      ],
+      "status": "ok",
+      "bytes": 2634,
+      "pixels": [
+        340,
+        120
+      ]
+    },
+    {
+      "view": "tool_palette",
+      "png": "tool_palette.png",
+      "size": [
+        340,
+        520
+      ],
+      "status": "ok",
+      "bytes": 26067,
+      "pixels": [
+        340,
+        520
+      ]
+    },
+    {
+      "view": "command_palette",
+      "png": "command_palette.png",
+      "size": [
+        340,
+        520
+      ],
+      "status": "ok",
+      "bytes": 3472,
+      "pixels": [
+        340,
+        400
+      ]
+    },
+    {
+      "view": "context_bar",
+      "png": "context_bar.png",
+      "size": [
+        340,
+        60
+      ],
+      "status": "ok",
+      "bytes": 6350,
+      "pixels": [
+        460,
+        98
+      ]
+    },
+    {
+      "view": "hda_describe",
+      "png": "hda_describe.png",
+      "size": [
+        340,
+        420
+      ],
+      "status": "ok",
+      "bytes": 15756,
+      "pixels": [
+        340,
+        420
+      ]
+    },
+    {
+      "view": "hda_building",
+      "png": "hda_building.png",
+      "size": [
+        340,
+        420
+      ],
+      "status": "ok",
+      "bytes": 4212,
+      "pixels": [
+        340,
+        420
+      ]
+    },
+    {
+      "view": "hda_result",
+      "png": "hda_result.png",
+      "size": [
+        340,
+        420
+      ],
+      "status": "ok",
+      "bytes": 9272,
+      "pixels": [
+        340,
+        420
+      ]
+    },
+    {
+      "view": "chat_recipe_book",
+      "png": "chat_recipe_book.png",
+      "size": [
+        340,
+        520
+      ],
+      "status": "ok",
+      "bytes": 24232,
+      "pixels": [
+        340,
+        520
+      ]
+    },
+    {
+      "view": "chat_apex_recipes",
+      "png": "chat_apex_recipes.png",
+      "size": [
+        340,
+        620
+      ],
+      "status": "ok",
+      "bytes": 43916,
+      "pixels": [
+        340,
+        620
+      ]
+    }
+  ]
+}

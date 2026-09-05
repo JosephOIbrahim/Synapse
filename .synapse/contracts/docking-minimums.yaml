@@ -25,4 +25,24 @@ features:
   - description: "Suite still green"
     verify: "pytest -q"
     passing: false
+  # Landing r3 (CTO RULING-2A, 2026-09-05). The width CONTRACT is
+  # tokens.PANEL_MIN_WIDTH = 280 (what synapse_panel.py promises the host).
+  # The PD wave's 380 is an INTERIM bound, written here so the docking test
+  # reads it like it reads the heights - never a literal in the test. No
+  # width counts unless the bundled fonts are loaded: the worker refuses an
+  # empty font database (NOT_RUN -> pytest.fail, never skip) and prints the
+  # runner and the resolved family into every PD_QT receipt line.
+  # One width per density (landing r3 repair, R3-01): the composed panel at
+  # AIRY measures 393 (verb rail 237 + four group gaps at 24 + the 30px
+  # gutter both sides) against this 380. That figure is Joe's word, not the
+  # forge's - option (a) is editing the airy figure below; (b) a tighter
+  # verb-rail role at airy; (c) a narrower GUTTER (26 still gives 385). The
+  # test reads each density's figure from this line, so the word is one edit.
+  # CTO RULING R3-01 (2026-09-05, under Joe's delegation; harness/cto/runs/2026-09-05/RULING_R3-01_docking_airy.md):
+  # airy is wider by design - the figure is 400, standard/tight stay 380. Interim toward the 280 contract;
+  # the real fix (a verb rail that collapses to icons below ~360px) is queued for the next design wave.
+  # The wordmark never elides (ff678887): the brand is the last thing that gives way.
+  - description: "Every docking region minimumSizeHint().width() <= 400px wide at airy, <= 380px wide at standard, <= 380px wide at tight, with bundled fonts loaded (interim PD bound; contract floor is PANEL_MIN_WIDTH 280)"
+    verify: "\"C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe\" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider"
+    passing: false
 stop_when: "all features passing OR sessions exhausted OR budget reached"

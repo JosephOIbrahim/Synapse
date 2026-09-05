@@ -174,14 +174,14 @@ hardworking assets at small scale, mono for tags and notes as contrast, one acce
 
 | Role | Base gap | Padding (fixed) | Type | Notes |
 |---|---|---|---|---|
-| `label` (section) | 24 above · 12 below | — | mono · upper · +0.08 em · 0.72× body · muted | hairline under the **group**, never on the label |
+| `label` (section) | 24 above · 12 below | — | mono · upper · +0.08 em · body size · muted | hairline under the **group**, never on the label |
 | `row` (list item) | 12 between rows | 12 / 16 | body size, normal weight | min-h 44 · radius 8 · hairline border · 44×44 glyph cell with hairline right · optional trailing `tag` |
-| `tag` / pill | 16 from label | 6 / 10 | mono · upper · +0.06 em · 0.68× body | neutral surface; colour only for BLOCKED (`HOT_SOFT`) |
+| `tag` / pill | 16 from label | 6 / 10 | mono · upper · +0.06 em · body size | neutral surface; colour only for BLOCKED (`HOT_SOFT`) |
 | `card` (three bands) | 16 between cards | header 40 · body 16 · footer 40 | body | hairlines between bands · radius 10 · footer = one text action left, one pill right |
 | `parm_row` | 4 between rows · 16 between groups · 32 section head | — | body | columns label 128 · value 64 · control fills; row 24 |
 | `group` (any region) | 16 | — | — | the gap density scales |
 
-Density: **gaps ×1.5 / ×1 / ×0.75; paddings, radii, hairlines, type fixed.** Curious airy · Expert standard · ML tight.
+Density: **gaps ×1.5 / ×1 / ×0.75; paddings, radii, hairlines, type fixed.** Label/tag type is body size (landing r3, RULING-4e: the type-floor gate made the former 0.72×/0.68× ratios unreachable; contrast by case, tracking, colour). Curious airy · Expert standard · ML tight.
 Accent: `SIGNAL` family only (active tab, SEND, hero); `WARM` for the human; `HOT_SOFT` for BLOCKED/stop. No other colour points.
 Type: families from `fontload.py` (bundled Space Grotesk; host family on fallback); sizes floor at the host default; mono = labels/tags/ids; sans = body.
 

@@ -24,7 +24,7 @@ _P_COLOR_TEMP = _enc("color_temperature")
 
 # -- Design tokens ------------------------------------------------------------
 # Palette from the design system, panel-specific text aliases from the bridge.
-# The former `except ImportError` arm held a private palette (#00D4FF) and was
+# The former `except ImportError` arm held a private palette (a cyan) and was
 # REACHABLE via a by-path load, so it was a live third authority, not dead code
 # -- and it is why the Recipe Book heading rendered cyan inside a transcript
 # whose chrome was the design system's blue. Removed, not corrected.
@@ -758,7 +758,7 @@ def search_recipes(query: str) -> list:
 _DIFFICULTY_COLORS = {
     "beginner": _SUCCESS,
     "intermediate": _WARNING,
-    "advanced": "#FF6B6B",
+    "advanced": _ds.ERROR,
 }
 
 

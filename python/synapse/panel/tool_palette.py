@@ -167,31 +167,13 @@ class ToolPalette(QtWidgets.QWidget):
         except (TypeError, ValueError):
             scale = t.FONT_SCALE_DEFAULT
         self._scale = scale
-        self.setStyleSheet(qss.stylesheet(scale))
-        # The base 440x480 box is sized for FONT_SCALE_DEFAULT; grow it by the
-        # ratio of the active scale to the default so a host-scaled palette has
-        # room for its larger rows. _min_unclamped is the size INTENT before the
-        # screen clamp — the readability invariant asserts on it, so the gate
-        # never goes false-red on a small (offscreen) virtual display where the
-        # applied minimum is pinned to the screen.
-        k = scale / t.FONT_SCALE_DEFAULT
-        self._min_unclamped = (round(440 * k), round(480 * k))
-        min_w, min_h = self._min_unclamped
-        try:
-            screen = QtWidgets.QApplication.primaryScreen()
-            if parent is not None and parent.screen() is not None:
-                screen = parent.screen()
-            avail = screen.availableGeometry()
-            min_w = min(min_w, avail.width())
-            min_h = min(min_h, avail.height())
-        except Exception:
-            pass
-        self.setMinimumSize(min_w, min_h)
+        self.setProperty("rhythm_role", "stack")
+        self.setProperty("panel_popup", "tool")
+        # Preferred size only: fixed minima made the popup wider than its dock.
+        self.resize(t.PANEL_PREF_WIDTH, t.PANEL_MIN_HEIGHT - t.SPACE_LG)
         self._rows = _load_entries()
 
         lay = QtWidgets.QVBoxLayout(self)
-        lay.setContentsMargins(t.SPACE_SM, t.SPACE_SM, t.SPACE_SM, t.SPACE_SM)
-        lay.setSpacing(t.SPACE_XS)
 
         self._search = QtWidgets.QLineEdit()
         self._search.setObjectName("DsField")
@@ -217,23 +199,24 @@ class ToolPalette(QtWidgets.QWidget):
 
         hint = c.label("↑↓ navigate · Enter run · Esc close · filter by DO × WHERE · "
                        "destructive items are gated", role="caption")
+        hint.setWordWrap(True)
         lay.addWidget(hint)
 
         self._populate(self._rows)
+        qss.prepare_sweep_b_popup(self, self._scale)
         self._search.setFocus()
 
     # ------------------------------------------------------------------
     def _build_chip_row(self, kind, tag_text):
-        """A row of toggle chips for one axis (verb or context). 'All' clears it."""
-        row = QtWidgets.QHBoxLayout()
-        row.setSpacing(t.SPACE_XS)
+        """A three-column grid of the existing chips; 'All' clears the axis."""
+        row = QtWidgets.QGridLayout()
         tag = c.label(tag_text, role="caption")
-        tag.setStyleSheet("color:%s; letter-spacing:1.5px;" % t.TEXT_TERTIARY)
-        tag.setMinimumWidth(44)
-        row.addWidget(tag)
+        tag.setObjectName("DsPaletteAxis")
+        tag.setProperty("rhythm_role", "tag")
+        row.addWidget(tag, 0, 0)
         chips = self._verb_chips if kind == "verb" else self._ctx_chips
         values = [None] + list(PALETTE_VERBS if kind == "verb" else PALETTE_CONTEXTS)
-        for v in values:
+        for index, v in enumerate(values, start=1):
             text = "All" if v is None else (v.title() if kind == "verb" else v)
             btn = QtWidgets.QPushButton(text)
             btn.setObjectName("DsChip")
@@ -241,9 +224,13 @@ class ToolPalette(QtWidgets.QWidget):
             btn.setFlat(True)
             btn.clicked.connect(lambda _=False, k=kind, val=v: self._set_axis(k, val))
             chips[v] = btn
-            row.addWidget(btn)
-        row.addStretch(1)
+            row.addWidget(btn, index // 3, index % 3)
         return row
+
+    def showEvent(self, event):
+        # Re-read the opener's profile on every opening, including cached popups.
+        qss.prepare_sweep_b_popup(self, self._scale)
+        super().showEvent(event)
 
     def _set_axis(self, kind, value):
         """Set (or toggle off) the active filter on one axis, then re-filter."""

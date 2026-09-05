@@ -14,6 +14,8 @@ import os
 import sys
 from datetime import datetime
 
+from synapse.panel.designsystem import tokens as _ds
+
 logger = logging.getLogger(__name__)
 
 # ── sys.path bridging ────────────────────────────────────────────
@@ -200,7 +202,7 @@ class SessionIntegrityTracker:
 
         if self._unobservable_deltas:
             lines.append(
-                '<span style="color: #FFAB00;">{} operation{} ran on a '
+                f'<span style="color: {_ds.WARN};">' '{} operation{} ran on a '
                 'reduced stage hash with no delta observed -- a value-only '
                 'edit would be invisible to it. Not a violation; not a '
                 'verified no-op either.</span>'.format(
@@ -211,13 +213,13 @@ class SessionIntegrityTracker:
 
         if self.should_warn():
             lines.append(
-                '<span style="color: #FF6B35;">WARNING: Multiple integrity '
+                f'<span style="color: {_ds.FIRE};">WARNING: Multiple integrity '
                 'violations detected. Check undo history.</span>'
             )
 
         if self.should_evolve():
             lines.append(
-                '<span style="color: #4ECDC4;">Memory evolution recommended '
+                f'<span style="color: {_ds.SIGNAL};">Memory evolution recommended '
                 '-- structured data accumulated.</span>'
             )
 

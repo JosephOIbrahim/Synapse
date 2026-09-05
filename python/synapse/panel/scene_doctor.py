@@ -13,6 +13,8 @@ returns an empty report immediately.
 
 from __future__ import annotations
 
+from synapse.panel.designsystem import tokens as _ds
+
 import os
 import time
 from dataclasses import dataclass, field
@@ -674,10 +676,10 @@ def apply_fixes(issues: list) -> dict:
 # ============================================================================
 
 _SEVERITY_ICONS = {
-    "critical": '<span style="color:#e74c3c; font-weight:bold;">&#10007;</span>',
-    "error": '<span style="color:#e67e22; font-weight:bold;">&#10007;</span>',
-    "warning": '<span style="color:#f1c40f;">&#9888;</span>',
-    "info": '<span style="color:#95a5a6;">&#8505;</span>',
+    "critical": f'<span style="color:{_ds.ERROR}; font-weight:bold;">&#10007;</span>',
+    "error": f'<span style="color:{_ds.ERROR}; font-weight:bold;">&#10007;</span>',
+    "warning": f'<span style="color:{_ds.WARN};">&#9888;</span>',
+    "info": f'<span style="color:{_ds.TEXT_TERTIARY};">&#8505;</span>',
 }
 
 _SEVERITY_ORDER = ("critical", "error", "warning", "info")
@@ -692,14 +694,14 @@ def format_report_html(report: DiagnosticReport) -> str:
     ]
 
     if not report.issues:
-        lines.append('<p style="color:#2ecc71;">No issues found.</p>')
+        lines.append(f'<p style="color:{_ds.TEXT_PRIMARY};">No issues found.</p>')
         lines.append("</div>")
         return "\n".join(lines)
 
     fixable_count = sum(1 for i in report.issues if i.fix_available)
     if fixable_count:
         lines.append(
-            f'<p style="color:#3498db;">'
+            f'<p style="color:{_ds.SIGNAL};">'
             f"{fixable_count} issue{'s' if fixable_count != 1 else ''} "
             f"can be auto-fixed.</p>"
         )
@@ -723,12 +725,12 @@ def format_report_html(report: DiagnosticReport) -> str:
             fix_tag = ""
             if issue.fix_available:
                 fix_tag = (
-                    ' <span style="color:#3498db; font-size:11px;">'
+                    f' <span style="color:{_ds.SIGNAL}; font-size:11px;">'
                     f"[fix: {issue.fix_description}]</span>"
                 )
             lines.append(
                 f"<li><b>{issue.node_path}</b> "
-                f"<span style='color:#888;'>[{issue.category}]</span><br/>"
+                f"<span style='color:{_ds.TEXT_TERTIARY};'>[{issue.category}]</span><br/>"
                 f"{issue.message}{fix_tag}</li>"
             )
         lines.append("</ul>")

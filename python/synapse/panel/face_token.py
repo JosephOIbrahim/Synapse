@@ -53,7 +53,7 @@ except Exception:  # pragma: no cover
     probe_all = None
 
 
-UNKNOWN = "unknown"
+UNKNOWN = "UNKNOWN"
 
 
 class TokenField(QtWidgets.QWidget):
@@ -269,7 +269,7 @@ class TokenField(QtWidgets.QWidget):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
         p.setPen(QtCore.Qt.PenStyle.NoPen)      # separation is the GAP, not a stroke
-        empty = QtGui.QColor(getattr(t, "GROUND", "#1B1B1B"))
+        empty = QtGui.QColor(t.GROUND)
 
         acc = 0.0
         for poly, area, _cx in cells:
@@ -321,21 +321,22 @@ class FaceToken(QtWidgets.QWidget):
         # content. A read-out that becomes unreadable at small sizes is not a
         # read-out, and compressing is the failure mode that produces that.
         outer = QtWidgets.QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(0)
+        self.setObjectName("DsTokenFace")
+        self.setProperty("rhythm_role", "group")
         self._scroll = QtWidgets.QScrollArea()
         self._scroll.setWidgetResizable(True)
         self._scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self._scroll.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._scroll.setStyleSheet("QScrollArea{background:transparent;}")
+        self._scroll.setObjectName("DsSection")
+        self._scroll.viewport().setObjectName("DsSection")
         outer.addWidget(self._scroll)
 
         body = QtWidgets.QWidget()
         self._scroll.setWidget(body)
         lay = QtWidgets.QVBoxLayout(body)
-        lay.setContentsMargins(t.GUTTER, 20, t.GUTTER, 20)
-        lay.setSpacing(18)
+        body.setObjectName("DsSection")
+        body.setProperty("rhythm_role", "group")
 
         lay.addWidget(self._eyebrow("THIS TURN"))
         self._field = TokenField()
@@ -351,8 +352,8 @@ class FaceToken(QtWidgets.QWidget):
         # decoration. Two entries only — the two segments that are actually
         # measurable without a live turn.
         lay.addWidget(self._legend([
-            ("system prompt", getattr(t, "SIGNAL", "#8FB3D9")),
-            ("tool surface", getattr(t, "CONIFEROUS", "#6E8F72")),
+            ("system prompt", t.SIGNAL),
+            ("tool surface", t.CONIFEROUS),
         ]))
         self._composition = self._kv_block([
             ("system prompt", UNKNOWN),
@@ -392,87 +393,60 @@ class FaceToken(QtWidgets.QWidget):
     def _px(self, token):
         """A size token in the host's terms. Every font on this face goes
         through here so none can drift out of step again."""
-        return max(9, int(round(token * self._scale)))
+        return max(t.FONT_FLOOR_PX, t.scaled(token, self._scale))
 
     def _eyebrow(self, text):
-        lbl = c.label(text, role="body") if hasattr(c, "label") else QtWidgets.QLabel(text)
-        try:
-            # SIZE_SMALL, not SIZE_LABEL. These are section markers - THIS TURN,
-            # CACHE, ENGINE - and SIZE_LABEL is 10px, which the tokens file
-            # reserves for "tiny labels / numbers". A marker you have to lean in
-            # for is not doing its job.
-            lbl.setFont(fontload.tracked_font("EYEBROW", t.SIZE_SMALL,
-                                              scale=self._scale, mono=True))
-            lbl.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
-        except Exception:
-            pass
+        lbl = c.label(text, scale=self._scale)   # eyebrow type comes from the rhythm label role alone
+        lbl.setObjectName("DsParmSection")
+        lbl.setProperty("rhythm_role", "label")
         return lbl
 
     def _legend(self, entries):
-        """A swatch row under the field. A field whose colours nobody can decode
-        is decoration; two entries keep it a key rather than a chart."""
+        """Token-painted swatches; the existing labels remain the legend."""
         w = QtWidgets.QWidget()
+        w.setObjectName("DsSection")
+        w.setProperty("rhythm_role", "parm_row")
         row = QtWidgets.QHBoxLayout(w)
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(16)
         for text, colour in entries:
             sw = QtWidgets.QLabel()
-            d = self._px(9)
+            d = self._px(t.SPACE_SM)
             sw.setFixedSize(d, d)
-            sw.setStyleSheet("background:%s; border-radius:2px;" % colour)
-            lbl = QtWidgets.QLabel(text)
-            try:
-                lbl.setStyleSheet("color:%s; font-size:%dpx;"
-                                  % (t.TEXT_TERTIARY, self._px(t.SIZE_BODY)))
-            except Exception:
-                pass
+            pixmap = QtGui.QPixmap(d, d)
+            pixmap.fill(QtGui.QColor(colour))
+            sw.setPixmap(pixmap)
+            lbl = c.label(text, role="caption", scale=self._scale)
             row.addWidget(sw)
             row.addWidget(lbl)
         row.addStretch(1)
         return w
 
     def _footnote(self, text):
-        lbl = QtWidgets.QLabel(text)
+        lbl = c.label(text, role="caption", scale=self._scale)
+        lbl.setObjectName("DsTokenNote")
         lbl.setWordWrap(True)
-        try:
-            lbl.setStyleSheet("color:%s; font-size:%dpx;"
-                              % (t.TEXT_TERTIARY, self._px(t.SIZE_BODY)))
-        except Exception:
-            pass
+        lbl.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
         return lbl
 
     def _kv_block(self, pairs):
+        # Reuse the existing grid: direct child ids give every pair the same
+        # label/value columns without introducing wrapper widgets or controls.
         w = QtWidgets.QWidget()
+        w.setObjectName("DsSection")
+        w.setProperty("rhythm_role", "parm_row")
         grid = QtWidgets.QGridLayout(w)
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(18)
-        grid.setVerticalSpacing(6)
         for i, (k, v) in enumerate(pairs):
-            key = QtWidgets.QLabel(k)
-            val = QtWidgets.QLabel(str(v))
-            try:
-                key.setStyleSheet("color:%s; font-size:%dpx;"
-                                  % (t.TEXT_TERTIARY, self._px(t.SIZE_BODY)))
-                val.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
-                # +1px on the mono, and the reason is optical rather than
-                # arbitrary.
-                #
-                # Measured, both columns at 12px: the key renders Sans Serif
-                # capHeight 7 / ascent 10, the value renders Space Mono
-                # capHeight 8 / ascent 13. They are the SAME SIZE and the mono
-                # still reads smaller, because it is lighter and narrower - a
-                # column of thin digits beside a proportional label loses the
-                # comparison even when the metrics say it should not.
-                #
-                # Mono stays: this is a numeric column and digits must align.
-                # So the size compensates for the family instead.
-                val.setFont(fontload.tracked_font("LABEL", t.SIZE_BODY + 1,
-                                                  scale=self._scale, mono=True))
-            except Exception:
-                pass
+            key = c.label(k, role="body", scale=self._scale)
+            val = c.label(str(v), role="code", scale=self._scale)
+            key.setObjectName("DsParmLabel")
+            val.setObjectName("DsParmValue")
+            key.setProperty("rhythm_role", "parm_row")
+            val.setProperty("rhythm_role", "parm_row")
+            val.setWordWrap(True)
+            val.setTextFormat(Qt.PlainText)
             grid.addWidget(key, i, 0, alignment=Qt.AlignLeft)
             grid.addWidget(val, i, 1, alignment=Qt.AlignRight)
             self._rows[k] = val
+        grid.setColumnStretch(2, 1)
         return w
 
     # -- the read-out --------------------------------------------------------
@@ -496,10 +470,10 @@ class FaceToken(QtWidgets.QWidget):
         self.set_row("scene grounding", grounding)
         self.set_row("conversation", conversation)
         self._field.set_segments([
-            ("system prompt", system, getattr(t, "SIGNAL", "#8FB3D9")),
-            ("tool surface", tools, getattr(t, "CONIFEROUS", "#6E8F72")),
-            ("scene grounding", grounding, getattr(t, "MUSHROOM", "#8A8078")),
-            ("conversation", conversation, getattr(t, "TEXT_TERTIARY", "#6A6A6A")),
+            ("system prompt", system, t.SIGNAL),
+            ("tool surface", tools, t.CONIFEROUS),
+            ("scene grounding", grounding, t.MUSHROOM),
+            ("conversation", conversation, t.TEXT_TERTIARY),
         ])
 
     def measure_static(self):
@@ -556,25 +530,8 @@ class FaceToken(QtWidgets.QWidget):
         self.set_row("cost", cost)
         self.set_row("probed", self._ago(probed))
 
-        # NATURAL vs SYNTHETIC, used semantically rather than decoratively.
-        #
-        # Cohere splits its palette in two: natural - coniferous green, mushroom
-        # grey, volcanic black - and synthetic - simulated coral, synthetic
-        # quartz, acrylic blue. The panel has a real distinction that maps onto
-        # it exactly, and R162 established the distinction is INVISIBLE in the
-        # model name: glm-5:cloud and a local tag look identical in a dropdown.
-        #
-        # So: local runs on your machine and costs nothing -> NATURAL.
-        # Metered runs on someone's meter -> SYNTHETIC.
-        #
-        # The colour is doing work here. It is the one place an artist can see
-        # that the default engine is billed without reading a URL.
-        lbl = self._rows.get("runs")
-        if lbl is not None and runs:
-            metered = "meter" in str(runs).lower()
-            lbl.setStyleSheet("color:%s;" % (
-                getattr(t, "SIGNAL", "#8FB3D9") if metered
-                else getattr(t, "CONIFEROUS", "#6E8F72")))
+        # Runs remains explicit text. Parameter values use the neutral role;
+        # no late local stylesheet can leak a prior engine's accent.
 
     def refresh_from_probe(self):
         """Best-effort pull from the probe layer, plus the two static segments,

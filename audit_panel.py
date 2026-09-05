@@ -364,11 +364,10 @@ try:
         return QFontInfo(w.font()).pixelSize() if w is not None else None
 
     def _input_px():
-        # the prompt size lives in a widget-level stylesheet (it overrides the
-        # root QSS for this widget only); parse it back — QFontInfo(font()) does
-        # not reflect a stylesheet font-size.
-        m = _re.search(r"font-size:\s*(\d+)px", panel._input.styleSheet() or "")
-        return int(m.group(1)) if m else None
+        # the prompt size lives on the composer's document default font
+        # (synapse_panel._set_prompt_font) — the one seam Aa writes; a widget
+        # sheet would be a second owner. QFontInfo(font()) is not that seam.
+        return panel._input.document().defaultFont().pixelSize()
 
     _saved_scale = panel._font_scale
     try:

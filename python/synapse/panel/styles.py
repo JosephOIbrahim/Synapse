@@ -6,7 +6,7 @@ for HDA mode views, ``animate_stack_transition()`` for smooth page switches.
 
 from . import tokens as t
 # Mile 7 de-cyan: pull the brand SIGNAL family from the vendored design system
-# (#8FB3D9) so the gate + chat surfaces render the signature blue, not the
+# (tokens.SIGNAL) so the gate + chat surfaces render the signature blue, not the
 # legacy panel.tokens cyan. Token sources stay untouched (local fix).
 from .designsystem import tokens as _ds
 
