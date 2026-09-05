@@ -110,6 +110,7 @@ backup/
 # the reviewer sees a receipt claiming shots that are not in the tree. Narrow
 # exemption: this one directory, produced by harness/notes/panel_shot.py.
 !design/repair_h4/**/*.png
+!design/rhythm_pd/**/*.png
 
 # Claude Code local settings (permissions, session-specific)
 .claude/settings.local.json

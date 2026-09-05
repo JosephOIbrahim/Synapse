@@ -1,0 +1,354 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 265 items
+
+tests\test_panel_rhythm_owner.py ........................                [  9%]
+tests\test_panel_rhythm_docking.py ..................................FFF [ 23%]
+....F..F.....F.F....F..F.....F.F....F..F.....F.F...                      [ 42%]
+tests\test_rope_expert_pin.py ..                                         [ 43%]
+tests\test_bp2_paneldesign_density.py ................                   [ 49%]
+tests\test_bp2_paneltruth_density_repolish.py .......                    [ 51%]
+tests\test_panel_camera_rhythm.py ...................................... [ 66%]
+...                                                                      [ 67%]
+tests\test_panel_camera_rhythm_qt.py ...                                 [ 68%]
+tests\test_panel_sweep_a.py ............F............................F.F [ 84%]
+.F.                                                                      [ 86%]
+tests\test_panel_sweep_b_hex.py ..................F                      [ 93%]
+tests\test_panel_sweep_b_widgets.py ..........F.F.FFF.                   [100%]
+
+================================== FAILURES ===================================
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 351, in <module>
+          result = _panel(widgets, density, recall=case == "recall")
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 275, in _panel
+          measurements.append(_measure(panel, widgets))
+                              ~~~~~~~~^^^^^^^^^^^^^^^^
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 433, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 433, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 351, in <module>
+          result = _panel(widgets, density, recall=case == "recall")
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 275, in _panel
+          measurements.append(_measure(panel, widgets))
+                              ~~~~~~~~^^^^^^^^^^^^^^^^
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 433, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 433, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 351, in <module>
+          result = _panel(widgets, density, recall=case == "recall")
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 275, in _panel
+          measurements.append(_measure(panel, widgets))
+                              ~~~~~~~~^^^^^^^^^^^^^^^^
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 433, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 433, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 602, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 602, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 388, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 388, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 708, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 708, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 514, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 514, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 592, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 592, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 384, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 384, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 708, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 708, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 506, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 506, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 587, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 587, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 382, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 382, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 708, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 708, 380)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 348, in <module>
+          result = _alternate(widgets, density, detail)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 320, in _alternate
+          measured = _measure(root, widgets)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_rhythm_docking.py", line 185, in _measure
+          assert 0 < minimum.width() <= width, (root.objectName(), "width", minimum.width(), width)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('DsRoot', 'width', 502, 380)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...minimum.width(), width)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'DsRoot\', \'width\', 502, 380)\n').returncode
+E   assert False
+     +  where False = <built-in method endswith of str object at 0x000001F61A5A89D0>('# --- END SWEEP_A')
+     +    where <built-in method endswith of str object at 0x000001F61A5A89D0> = '\n\n# --- SWEEP_A (chat_panel.py)\n# The existing generator above is immutable for this leg. Compose the sweep\'s\n# ...   root.setStyleSheet(stylesheet())\n    rhythm.apply(root, root.property("density") or "standard")\n# --- END SWEEP_B'.endswith
+     +      where '\n\n# --- SWEEP_A (chat_panel.py)\n# The existing generator above is immutable for this leg. Compose the sweep\'s\n# ...   root.setStyleSheet(stylesheet())\n    rhythm.apply(root, root.property("density") or "standard")\n# --- END SWEEP_B' = <built-in method rstrip of str object at 0x000001F61B358FF0>()
+     +        where <built-in method rstrip of str object at 0x000001F61B358FF0> = '\n\n# --- SWEEP_A (chat_panel.py)\n# The existing generator above is immutable for this leg. Compose the sweep\'s\n# ... root.setStyleSheet(stylesheet())\n    rhythm.apply(root, root.property("density") or "standard")\n# --- END SWEEP_B\n'.rstrip
+C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py:121: assert False
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py", line 333, in <module>
+          else _states(qt, host, child, controller, factory))
+               ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py", line 272, in _states
+          painted(child._fidelity_dot, expected)
+          ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py", line 266, in painted
+          assert widget.palette().color(widget.foregroundRole()).name().lower() == expected.lower()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...er()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py", line 333, in <module>
+          else _states(qt, host, child, controller, factory))
+               ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py", line 297, in _states
+          painted(child._inner.findChild(widgets.QLabel, "ctx_memory"), expected)
+          ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py", line 266, in painted
+          assert widget.palette().color(widget.foregroundRole()).name().lower() == expected.lower()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...er()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py", line 333, in <module>
+          else _states(qt, host, child, controller, factory))
+               ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py", line 309, in _states
+          painted(controller._conn_dot, expected)
+          ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_a.py", line 266, in painted
+          assert widget.palette().color(widget.foregroundRole()).name().lower() == expected.lower()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...er()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n').returncode
+E   AssertionError: python/synapse/panel/synapse_panel.py
+    assert '"""SYNAPSE p...teInterface\n' == '"""SYNAPSE p...teInterface\n'
+      
+      Skipping 14616 identical leading characters in diff, use -v to show
+      - me_scale))
+      + me_scale))  # rhythm-exempt: installs the sole designsystem sheet at the root; no local style
+        
+                # Session survival (R.2): restore this scene's prior conversation from
+                # the process- and reopen-durable store so a reopen continues the SAME...
+      
+      ...Full output truncated (2495 lines hidden), use '-vv' to show
+C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_hex.py:110: AssertionError: python/synapse/panel/synapse_panel.py
+E   assert False
+     +  where False = <built-in method startswith of str object at 0x000001F61A5A89D0>('# --- SWEEP_B (')
+     +    where <built-in method startswith of str object at 0x000001F61A5A89D0> = '# --- SWEEP_A (chat_panel.py)\n# The existing generator above is immutable for this leg. Compose the sweep\'s\n# scop... root.setStyleSheet(stylesheet())\n    rhythm.apply(root, root.property("density") or "standard")\n# --- END SWEEP_B\n'.startswith
+     +      where '# --- SWEEP_A (chat_panel.py)\n# The existing generator above is immutable for this leg. Compose the sweep\'s\n# scop... root.setStyleSheet(stylesheet())\n    rhythm.apply(root, root.property("density") or "standard")\n# --- END SWEEP_B\n' = <built-in method lstrip of str object at 0x000001F61B358FF0>()
+     +        where <built-in method lstrip of str object at 0x000001F61B358FF0> = '\n\n# --- SWEEP_A (chat_panel.py)\n# The existing generator above is immutable for this leg. Compose the sweep\'s\n# ... root.setStyleSheet(stylesheet())\n    rhythm.apply(root, root.property("density") or "standard")\n# --- END SWEEP_B\n'.lstrip
+C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_widgets.py:67: assert False
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_widgets.py", line 291, in <module>
+          result = _worker(sys.argv[1], widgets, gui)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_widgets.py", line 179, in _worker
+          assert layout.spacing() == gap, (region, type(layout).__name__, layout.spacing())
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('hda_views.DescribeView', 'QBoxLayout', 0)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...out.spacing())\n           ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'hda_views.DescribeView\', \'QBoxLayout\', 0)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_widgets.py", line 291, in <module>
+          result = _worker(sys.argv[1], widgets, gui)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_widgets.py", line 179, in _worker
+          assert layout.spacing() == gap, (region, type(layout).__name__, layout.spacing())
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('hda_views.ResultView', 'QBoxLayout', 0)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...ayout.spacing())\n           ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'hda_views.ResultView\', \'QBoxLayout\', 0)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_widgets.py", line 291, in <module>
+          result = _worker(sys.argv[1], widgets, gui)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_widgets.py", line 179, in _worker
+          assert layout.spacing() == gap, (region, type(layout).__name__, layout.spacing())
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError: ('tool_palette.ToolPalette', 'QBoxLayout', 0)
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...t.spacing())\n           ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (\'tool_palette.ToolPalette\', \'QBoxLayout\', 0)\n').returncode
+      Traceback (most recent call last):
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_widgets.py", line 291, in <module>
+          result = _worker(sys.argv[1], widgets, gui)
+        File "C:\Users\User\SYNAPSE\.claude\worktrees\pd-panel-integrate\tests\test_panel_sweep_b_widgets.py", line 176, in _worker
+          assert layout.spacing() == dict(airy=6, standard=4, tight=3)[density]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AssertionError
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe', '-I', 'C:\...ard=4, tight=3)[density]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n').returncode
+============================== warnings summary ===============================
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_panel_rhythm_docking.py::test_every_composed_region_and_face_at_docking_bound[airy]
+FAILED tests/test_panel_rhythm_docking.py::test_every_composed_region_and_face_at_docking_bound[standard]
+FAILED tests/test_panel_rhythm_docking.py::test_every_composed_region_and_face_at_docking_bound[tight]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[airy-quick_actions.QuickActionPills]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[airy-hda_views.ResultView]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[airy-health_strip.HealthStrip]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[airy-chat_panel.SynapseChatPanel]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[standard-quick_actions.QuickActionPills]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[standard-hda_views.ResultView]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[standard-health_strip.HealthStrip]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[standard-chat_panel.SynapseChatPanel]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-quick_actions.QuickActionPills]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-hda_views.ResultView]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-health_strip.HealthStrip]
+FAILED tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-chat_panel.SynapseChatPanel]
+FAILED tests/test_panel_sweep_a.py::test_qss_is_append_only_and_every_style_key_has_rules
+FAILED tests/test_panel_sweep_a.py::test_dynamic_states_still_select_paint_and_keep_controls[gate_widget.GateWidget]
+FAILED tests/test_panel_sweep_a.py::test_dynamic_states_still_select_paint_and_keep_controls[context_bar.ContextChips]
+FAILED tests/test_panel_sweep_a.py::test_dynamic_states_still_select_paint_and_keep_controls[chat_panel.SynapseChatPanel]
+FAILED tests/test_panel_sweep_b_hex.py::test_protected_source_is_unchanged - ...
+FAILED tests/test_panel_sweep_b_widgets.py::test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens
+FAILED tests/test_panel_sweep_b_widgets.py::test_real_spacing_docking_and_second_action_sequence[hda_views.DescribeView]
+FAILED tests/test_panel_sweep_b_widgets.py::test_real_spacing_docking_and_second_action_sequence[hda_views.ResultView]
+FAILED tests/test_panel_sweep_b_widgets.py::test_real_spacing_docking_and_second_action_sequence[tool_palette.ToolPalette]
+FAILED tests/test_panel_sweep_b_widgets.py::test_real_spacing_docking_and_second_action_sequence[command_palette.CommandPaletteWidget]
+============ 25 failed, 240 passed, 1 warning in 64.91s (0:01:04) =============
+
+--- orchestrator receipt, 2026-09-04 21:58, integrated tree 0998cc9e (lever + camera + sweep_a + sweep_b) ---
+Runner: Houdini 22.0.400 python313/python.exe, PySide6 6.8.3, QT_QPA_PLATFORM=offscreen, SYNAPSE_REDUCED_MOTION=1.
+Result: 240 passed, 25 failed (LEVER tree was 110/24, SWEEP_A tree 157/24).
+Docking (15 of the 25): improved from 24 reds on the LEVER tree. Still over the 380 px bound: hda_views.ResultView (4), quick_actions.QuickActionPills (3), health_strip.HealthStrip (3), chat_panel.SynapseChatPanel (3), composed panel (3), tool_palette (1), hda_views.DescribeView (1), command_palette (1). SWEEP_B cleared most of its palette/HDA widths; SWEEP_A did not move chat_panel/quick_actions; health_strip has no owner.
+Integration-only (10 of the 25), classified for CRUX, none fixed here:
+  [test-pin, isolated-green trap] test_panel_sweep_b_widgets::test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens - asserts the appended tail STARTS with the SWEEP_B block; on the merged file SWEEP_A's block sits first (append-only order A then B by contract).
+  [test-pin, isolated-green trap] test_panel_sweep_a::test_qss_is_append_only_and_every_style_key_has_rules - asserts the file ENDS with END SWEEP_A; SWEEP_B appends after it by contract.
+  [test-pin overreach] test_panel_sweep_b_hex::test_protected_source_is_unchanged - pins synapse_panel.py byte-identical; CAMERA legitimately edited it (its write set), adding a rhythm-exempt tag on the root-sheet line.
+  [POSSIBLY REAL composed regression] test_panel_sweep_a::test_dynamic_states_still_select_paint_and_keep_controls (airy/standard/tight) - state paint of _fidelity_dot / ctx_memory / _conn_dot no longer equals the expected token colour on the merged tree; suspect SWEEP_B's later QSS block or CAMERA's root sheet overriding SWEEP_A's state rules (the second-action class). CRUX must adjudicate.
+  [docking + sequence] test_panel_sweep_b_widgets::test_real_spacing_docking_and_second_action_sequence (4 cases) - includes the hda_views.ResultView width and a second-action sequence; adjudicate with the docking debt.
+Screenshots: design/rhythm_pd/before (LEVER-tree flat set, 16 + CAMERA's untouched-tree profile sets), design/rhythm_pd/after (CAMERA's profile sets), design/rhythm_pd/after_integrate (this tree, 16). PNGs were gitignored repo-wide; .gitignore now exempts design/rhythm_pd/** the same way it already exempts design/repair_h4/**.
