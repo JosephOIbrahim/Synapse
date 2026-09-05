@@ -25,7 +25,12 @@ BASE = "ce04dcb0"
 # lifecycle pins plus the constructor pin would compare the tree to itself,
 # green regardless of edits to _on_done (the isolated-green class R2-03 named);
 # a checkout without a local `master` ref would error instead of measuring.
-_PANEL_BASE = "e8913f83"
+# Re-anchored 2026-09-05 at the bc-wave landing (CTO, RULING_DIRECTION_BC.md
+# Addendum 3): _on_done / _start_worker / _on_stop / _set_busy and the composer
+# constructor changed under written rulings (busy guard, state sentence, one
+# '/' telling). The pin keeps its job for the NEXT wave: lifecycle methods are
+# byte-identical to this landing unless a ruling says otherwise.
+_PANEL_BASE = "47ffea0e"
 
 
 def _panel_base():
