@@ -1,6 +1,6 @@
 {
-  "allowed_grid_residual": 4,
-  "allowed_residual": 348,
+  "allowed_grid_residual": 2,
+  "allowed_residual": 236,
   "census": "harness/panel_pd/runs/2026-09-04/rhythm_census.json",
   "policy": "Ceilings may only decrease. New untagged site identities are forbidden even below the ceiling. Exemptions require a real same-line comment with a nonempty reason.",
   "schema_version": 1,
