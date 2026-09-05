@@ -64,11 +64,15 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     source = (ROOT / path).read_text(encoding="utf-8")
     assert source.startswith(_base(path)), "QSS edit outside append-only block"
     tail = source[len(_base(path)):]
-    assert tail.lstrip().startswith("# --- SWEEP_B (")
-    assert tail.rstrip().endswith("# --- END SWEEP_B")
-    assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", tail)
-    assert "font-family:" not in tail
-    for node in ast.walk(ast.parse(tail)):
+    # Landing r3 (CTO 2026-09-05, R2-03): the tail carries SWEEP_A's block
+    # first; SWEEP_B's guarantees are fence-scoped to its own marked block.
+    start, end = "# --- SWEEP_B (", "# --- END SWEEP_B"
+    assert start in tail and end in tail
+    assert tail.rstrip().endswith(end)
+    block_b = tail[tail.index(start):tail.index(end) + len(end)]
+    assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", block_b)
+    assert "font-family:" not in block_b
+    for node in ast.walk(ast.parse(block_b)):
         if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "t":
             assert hasattr(tokens, node.attr), node.attr
     sheet = qss.stylesheet()

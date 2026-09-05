@@ -103,8 +103,18 @@ def test_existing_message_output_remains_byte_identical():
 
 
 def test_protected_source_is_unchanged():
-    for path in (
-        PANEL + "designsystem/fontload.py", PANEL + "synapse_panel.py",
-        PANEL + "face_token.py", "houdini/scripts/python/synapse_shelf.py",
-    ):
-        assert (ROOT / path).read_text(encoding="utf-8") == _base(path), path
+    # Landing r3 (CTO 2026-09-05, R2-03): fontload.py and the shelf launcher stay
+    # frozen against the master merge-base (master never touched them). The
+    # CAMERA files synapse_panel.py / face_token.py are edited by the landing
+    # under written rulings, so the SWEEP_B guarantee is stated as what it is:
+    # SWEEP_B's own commit did not touch them.
+    merge_base = subprocess.check_output(
+        ["git", "merge-base", "master", "HEAD"], cwd=ROOT, text=True).strip()
+    for path in (PANEL + "designsystem/fontload.py", "houdini/scripts/python/synapse_shelf.py"):
+        frozen = subprocess.check_output(["git", "show", merge_base + ":" + path],
+                                         cwd=ROOT, text=True, encoding="utf-8")
+        assert (ROOT / path).read_text(encoding="utf-8") == frozen, path
+    sweep_b = "ae046513"
+    assert subprocess.check_output(
+        ["git", "diff", sweep_b + "~1", sweep_b, "--", PANEL + "synapse_panel.py",
+         PANEL + "face_token.py"], cwd=ROOT) == b"", "SWEEP_B touched a CAMERA file"

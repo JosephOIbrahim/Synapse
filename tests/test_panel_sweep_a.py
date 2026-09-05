@@ -117,9 +117,16 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
     original = _base("python/synapse/panel/designsystem/qss.py")
     assert source.startswith(original)
     added = source[len(original):]
+    # Landing r3 (CTO 2026-09-05, R2-03): SWEEP_A owns exactly its own marked
+    # block; later sweeps append their own blocks after it, so the pin is
+    # fence-scoped to SWEEP_A's block instead of the whole tail.
     assert added.strip().startswith("# --- SWEEP_A (chat_panel.py)")
-    assert added.rstrip().endswith("# --- END SWEEP_A")
-    assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", added)
+    end = "# --- END SWEEP_A"
+    assert end in added
+    block_a = added[:added.index(end) + len(end)]
+    assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", block_a)
+    # F-C1: families travel by QFont (fontload / rhythm), never by QSS.
+    assert "font-family:" not in block_a
     sheet = qss.stylesheet()
     for filename in FILES:
         for call in _calls((PANEL / filename).read_text(encoding="utf-8")):

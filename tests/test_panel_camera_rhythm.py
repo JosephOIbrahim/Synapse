@@ -13,6 +13,20 @@ from synapse.panel.recall_card import latest_recall_result, recall_view
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = "ce04dcb0"
+# Landing r3 (CTO 2026-09-05, R2-03 / F-A3): synapse_panel.py's protected
+# lifecycle methods are compared against the master merge-base, because master's
+# B4 (composer cap) edited showEvent / _GrowingInput.__init__ after ce04dcb0 and
+# the merge inherits those bytes. Every other CAMERA-frozen file stays pinned
+# to ce04dcb0: `git diff --stat ce04dcb0 master -- <them>` is empty.
+_PANEL_BASE = None
+
+
+def _panel_base():
+    global _PANEL_BASE
+    if _PANEL_BASE is None:
+        _PANEL_BASE = subprocess.check_output(
+            ["git", "merge-base", "master", "HEAD"], cwd=ROOT).decode().strip()
+    return _PANEL_BASE
 CAMERA = ("synapse_panel.py", "face_token.py", "token_readout.py",
           "chat_display.py", "recall_card.py")
 
@@ -105,7 +119,7 @@ def _method(source, name):
                                   "_on_error", "_on_stop", "_set_busy", "closeEvent",
                                   "showEvent", "_update_context", "_update_health"])
 def test_lifecycle_and_token_completion_methods_byte_identical(name):
-    assert _method(_source("synapse_panel.py"), name) == _method(_source("synapse_panel.py", BASE), name)
+    assert _method(_source("synapse_panel.py"), name) == _method(_source("synapse_panel.py", _panel_base()), name)
 
 
 def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
@@ -115,7 +129,7 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
         return [ast.get_source_segment(source, n) for n in ast.walk(ast.parse(source))
                 if isinstance(n, ast.FunctionDef) and n.name == "__init__"]
     current = constructors(_source("synapse_panel.py"))
-    original = constructors(_source("synapse_panel.py", BASE))
+    original = constructors(_source("synapse_panel.py", _panel_base()))
     assert [re.sub(r"  # rhythm-exempt:[^\n]*", "", s) for s in current] == original
 
 
