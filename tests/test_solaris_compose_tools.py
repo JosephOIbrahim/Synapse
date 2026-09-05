@@ -241,6 +241,7 @@ def test_recipe_assessor_t7_camera_valid_but_render_branch_removed(tmp_path):
 
 
 def test_recipe_assessor_second_settings_does_not_borrow_products(tmp_path):
+    pytest.importorskip("pxr")
     from pxr import UsdRender
     stage = _recipe_ready_stage(tmp_path)
     second = stage.DefinePrim("/Render/second", "RenderSettings")
