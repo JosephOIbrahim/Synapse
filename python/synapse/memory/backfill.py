@@ -7,7 +7,12 @@ many entries exist (38, 176, 0 — whatever is there).
 
 Safety (harness invariant #6 — backup-first, reversible):
   * The source JSONL is only READ. It is left intact, and a ``.backfill.bak``
-    copy is taken before a real run.
+    copy is taken before a real run. This is only true because the
+    destination store is opened with ``dual_write_jsonl=False``: under the
+    production env (``SYNAPSE_MEMORY_BACKEND=moneta``, set by
+    ``packages/synapse.json``) ``MonetaBackedStore.from_storage_dir`` would
+    otherwise mirror every deposit back into ``<storage_dir>/memory.jsonl`` --
+    the very file being read -- doubling it on each run (B5, 2026-09-05).
   * Reverting the cutover is just flipping ``SYNAPSE_MEMORY_BACKEND`` back to
     ``jsonl`` — the JSONL store is untouched and authoritative.
   * Default is ``dry_run=True``: nothing is written until you pass
@@ -72,7 +77,16 @@ def backfill_to_moneta(
 
     from .moneta_store import MonetaBackedStore
 
-    target = MonetaBackedStore.from_storage_dir(storage_dir, embedder=embedder)
+    # dual_write_jsonl=False is load-bearing, not an optimisation. The W3-STORE
+    # safety net opens a MemoryStore on the SAME storage_dir and re-appends every
+    # add() to memory.jsonl -- which here is the SOURCE. With the production env
+    # (SYNAPSE_MEMORY_BACKEND=moneta) that turned a 7-line source into 14 lines
+    # per run, and the backup taken above no longer matched the file it claimed
+    # to protect. The JSONL store already holds these memories; there is nothing
+    # to mirror.
+    target = MonetaBackedStore.from_storage_dir(
+        storage_dir, embedder=embedder, dual_write_jsonl=False,
+    )
     try:
         for memory in memories:
             target.add(memory)
