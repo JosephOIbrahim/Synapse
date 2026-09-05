@@ -1689,15 +1689,15 @@
     },
     {
       "path": "python/synapse/panel/command_palette.py",
-      "sha256": "f8a0596ddcb4648eed3b4d7b0072c44dc5bd7603565f5baf6d02a86755377639",
+      "sha256": "a2329117455edb239896e573c960f066c6ca6ce3eb3deb641caaa4fa62f4a759",
       "errors": [],
       "spacing": [],
       "grid_spacing": [],
       "inline_styles": [],
       "object_names": [
         {
-          "line": 424,
-          "end_line": 424,
+          "line": 425,
+          "end_line": 425,
           "scope": "CommandPaletteWidget.__init__",
           "method": "setObjectName",
           "receiver": "self",
@@ -1713,8 +1713,8 @@
           "name": "DsRoot"
         },
         {
-          "line": 433,
-          "end_line": 433,
+          "line": 434,
+          "end_line": 434,
           "scope": "CommandPaletteWidget.__init__",
           "method": "setObjectName",
           "receiver": "container",
@@ -1730,8 +1730,8 @@
           "name": "PaletteContainer"
         },
         {
-          "line": 444,
-          "end_line": 444,
+          "line": 445,
+          "end_line": 445,
           "scope": "CommandPaletteWidget.__init__",
           "method": "setObjectName",
           "receiver": "self._search",
@@ -1747,8 +1747,8 @@
           "name": "DsCommandSearch"
         },
         {
-          "line": 450,
-          "end_line": 450,
+          "line": 451,
+          "end_line": 451,
           "scope": "CommandPaletteWidget.__init__",
           "method": "setObjectName",
           "receiver": "sep",
@@ -1764,8 +1764,8 @@
           "name": "DsCommandDivider"
         },
         {
-          "line": 456,
-          "end_line": 456,
+          "line": 457,
+          "end_line": 457,
           "scope": "CommandPaletteWidget.__init__",
           "method": "setObjectName",
           "receiver": "self._list",
@@ -1783,14 +1783,14 @@
       ],
       "layouts": [
         {
-          "line": 436,
+          "line": 437,
           "scope": "CommandPaletteWidget.__init__",
           "constructor": "QVBoxLayout",
           "receiver": "outer",
           "owner": "self"
         },
         {
-          "line": 439,
+          "line": 440,
           "scope": "CommandPaletteWidget.__init__",
           "constructor": "QVBoxLayout",
           "receiver": "layout",
@@ -1800,98 +1800,98 @@
       "scopes": [
         {
           "scope": "PaletteEntry",
-          "line": 69,
-          "end_line": 78
+          "line": 70,
+          "end_line": 79
         },
         {
           "scope": "_trigger_to_phrase",
-          "line": 113,
-          "end_line": 158
+          "line": 114,
+          "end_line": 159
         },
         {
           "scope": "build_palette_entries",
-          "line": 161,
-          "end_line": 271
+          "line": 162,
+          "end_line": 272
         },
         {
           "scope": "fuzzy_match",
-          "line": 278,
-          "end_line": 328
+          "line": 279,
+          "end_line": 329
         },
         {
           "scope": "search_palette",
-          "line": 335,
-          "end_line": 364
+          "line": 336,
+          "end_line": 365
         },
         {
           "scope": "CommandPaletteWidget",
-          "line": 401,
-          "end_line": 613
+          "line": 402,
+          "end_line": 622
         },
         {
           "scope": "CommandPaletteWidget.__init__",
-          "line": 412,
-          "end_line": 471
+          "line": 413,
+          "end_line": 476
         },
         {
           "scope": "CommandPaletteWidget.showEvent",
-          "line": 473,
-          "end_line": 475
+          "line": 478,
+          "end_line": 480
         },
         {
           "scope": "CommandPaletteWidget.show_palette",
-          "line": 479,
-          "end_line": 502
+          "line": 484,
+          "end_line": 507
         },
         {
           "scope": "CommandPaletteWidget._all_entries",
-          "line": 506,
-          "end_line": 508
+          "line": 511,
+          "end_line": 513
         },
         {
           "scope": "CommandPaletteWidget._on_search",
-          "line": 510,
-          "end_line": 517
+          "line": 515,
+          "end_line": 522
         },
         {
           "scope": "CommandPaletteWidget._on_select",
-          "line": 519,
-          "end_line": 524
+          "line": 524,
+          "end_line": 529
         },
         {
           "scope": "CommandPaletteWidget._populate_list",
-          "line": 526,
-          "end_line": 568
+          "line": 531,
+          "end_line": 577
         },
         {
           "scope": "CommandPaletteWidget._step_row",
-          "line": 570,
-          "end_line": 582
+          "line": 579,
+          "end_line": 591
         },
         {
           "scope": "CommandPaletteWidget.keyPressEvent",
-          "line": 586,
-          "end_line": 592
+          "line": 595,
+          "end_line": 601
         },
         {
           "scope": "CommandPaletteWidget.eventFilter",
-          "line": 594,
-          "end_line": 613
+          "line": 603,
+          "end_line": 622
         },
         {
           "scope": "CommandPaletteWidget",
-          "line": 617,
-          "end_line": 624
+          "line": 626,
+          "end_line": 633
         },
         {
           "scope": "CommandPaletteWidget.__init__",
-          "line": 620,
-          "end_line": 621
+          "line": 629,
+          "end_line": 630
         },
         {
           "scope": "CommandPaletteWidget.show_palette",
-          "line": 623,
-          "end_line": 624
+          "line": 632,
+          "end_line": 633
         }
       ],
       "hex_sites": [],
@@ -8504,14 +8504,14 @@
     },
     {
       "path": "python/synapse/panel/synapse_panel.py",
-      "sha256": "c37dd3a7cf24004f8ecf70c163bac3deff1a403aba695a233bddaee99e152454",
+      "sha256": "eef4c1994be4ebba08ee4dee8ae86d283406950c9db43c54ef214620deb333ae",
       "errors": [],
       "spacing": [],
       "grid_spacing": [],
       "inline_styles": [
         {
-          "line": 371,
-          "end_line": 371,
+          "line": 377,
+          "end_line": 377,
           "scope": "SynapsePanel.__init__",
           "method": "setStyleSheet",
           "receiver": "self",
@@ -8547,8 +8547,8 @@
           "name": "DsInput"
         },
         {
-          "line": 247,
-          "end_line": 247,
+          "line": 253,
+          "end_line": 253,
           "scope": "_InputResizeGrip.__init__",
           "method": "setObjectName",
           "receiver": "self",
@@ -8564,8 +8564,8 @@
           "name": "DsGrip"
         },
         {
-          "line": 338,
-          "end_line": 338,
+          "line": 344,
+          "end_line": 344,
           "scope": "SynapsePanel.__init__",
           "method": "setObjectName",
           "receiver": "self",
@@ -8581,8 +8581,8 @@
           "name": "DsRoot"
         },
         {
-          "line": 516,
-          "end_line": 516,
+          "line": 522,
+          "end_line": 522,
           "scope": "SynapsePanel._section",
           "method": "setObjectName",
           "receiver": "w",
@@ -8598,8 +8598,8 @@
           "name": "DsSection"
         },
         {
-          "line": 748,
-          "end_line": 748,
+          "line": 754,
+          "end_line": 754,
           "scope": "SynapsePanel._build_rail",
           "method": "setObjectName",
           "receiver": "w",
@@ -8615,8 +8615,8 @@
           "name": "DsHeader"
         },
         {
-          "line": 801,
-          "end_line": 801,
+          "line": 809,
+          "end_line": 809,
           "scope": "SynapsePanel._build_rail",
           "method": "setObjectName",
           "receiver": "self._author_lbl",
@@ -8632,8 +8632,8 @@
           "name": "DsAuthor"
         },
         {
-          "line": 839,
-          "end_line": 839,
+          "line": 848,
+          "end_line": 848,
           "scope": "SynapsePanel._build_rail",
           "method": "setObjectName",
           "receiver": "self._stop_btn",
@@ -8649,8 +8649,8 @@
           "name": "DsStop"
         },
         {
-          "line": 869,
-          "end_line": 869,
+          "line": 878,
+          "end_line": 878,
           "scope": "SynapsePanel._build_rail",
           "method": "setObjectName",
           "receiver": "self._meter_lbl",
@@ -8666,8 +8666,8 @@
           "name": "DsMeter"
         },
         {
-          "line": 878,
-          "end_line": 878,
+          "line": 887,
+          "end_line": 887,
           "scope": "SynapsePanel._build_rail",
           "method": "setObjectName",
           "receiver": "self._palette_hint",
@@ -8683,8 +8683,8 @@
           "name": "DsKHint"
         },
         {
-          "line": 914,
-          "end_line": 914,
+          "line": 923,
+          "end_line": 923,
           "scope": "SynapsePanel._build_rail",
           "method": "setObjectName",
           "receiver": "control",
@@ -8700,8 +8700,8 @@
           "name": "DsVerb"
         },
         {
-          "line": 1079,
-          "end_line": 1079,
+          "line": 1088,
+          "end_line": 1088,
           "scope": "SynapsePanel._build_context_ribbon",
           "method": "setObjectName",
           "receiver": "self._ctx_label",
@@ -8717,8 +8717,8 @@
           "name": "DsContextLabel"
         },
         {
-          "line": 1701,
-          "end_line": 1701,
+          "line": 1710,
+          "end_line": 1710,
           "scope": "SynapsePanel._configure_custom",
           "method": "setObjectName",
           "receiver": "edit",
@@ -8734,8 +8734,8 @@
           "name": "DsField"
         },
         {
-          "line": 1901,
-          "end_line": 1901,
+          "line": 1910,
+          "end_line": 1910,
           "scope": "SynapsePanel._build_hda_form",
           "method": "setObjectName",
           "receiver": "self._hda_prompt",
@@ -8751,8 +8751,8 @@
           "name": "DsInput"
         },
         {
-          "line": 1915,
-          "end_line": 1915,
+          "line": 1924,
+          "end_line": 1924,
           "scope": "SynapsePanel._build_hda_form",
           "method": "setObjectName",
           "receiver": "self._hda_help",
@@ -8768,8 +8768,8 @@
           "name": "DsHdaOption"
         },
         {
-          "line": 1991,
-          "end_line": 1991,
+          "line": 2000,
+          "end_line": 2000,
           "scope": "SynapsePanel._verb",
           "method": "setObjectName",
           "receiver": "btn",
@@ -8785,8 +8785,8 @@
           "name": "DsVerb"
         },
         {
-          "line": 2029,
-          "end_line": 2029,
+          "line": 2038,
+          "end_line": 2038,
           "scope": "SynapsePanel._build_input",
           "method": "setObjectName",
           "receiver": "self._send_btn",
@@ -8804,112 +8804,112 @@
       ],
       "layouts": [
         {
-          "line": 522,
+          "line": 528,
           "scope": "SynapsePanel._build_ui",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "root",
           "owner": "self"
         },
         {
-          "line": 749,
+          "line": 755,
           "scope": "SynapsePanel._build_rail",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "col",
           "owner": "w"
         },
         {
-          "line": 755,
+          "line": 761,
           "scope": "SynapsePanel._build_rail",
           "constructor": "QtWidgets.QHBoxLayout",
           "receiver": "top",
           "owner": "ident"
         },
         {
-          "line": 818,
+          "line": 827,
           "scope": "SynapsePanel._build_rail",
           "constructor": "QtWidgets.QHBoxLayout",
           "receiver": "bot",
           "owner": "row"
         },
         {
-          "line": 1071,
+          "line": 1080,
           "scope": "SynapsePanel._build_context_ribbon",
           "constructor": "QtWidgets.QHBoxLayout",
           "receiver": "lay",
           "owner": "w"
         },
         {
-          "line": 1216,
+          "line": 1225,
           "scope": "SynapsePanel._build_direct_face",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "col",
           "owner": "page"
         },
         {
-          "line": 1226,
+          "line": 1235,
           "scope": "SynapsePanel._build_direct_face",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "slot",
           "owner": "self._consent_slot"
         },
         {
-          "line": 1245,
+          "line": 1254,
           "scope": "SynapsePanel._build_turn_receipt",
           "constructor": "QtWidgets.QHBoxLayout",
           "receiver": "row",
           "owner": "w"
         },
         {
-          "line": 1303,
+          "line": 1312,
           "scope": "SynapsePanel._build_work_face",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "col",
           "owner": "page"
         },
         {
-          "line": 1313,
+          "line": 1322,
           "scope": "SynapsePanel._build_work_face",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "_l",
           "owner": "cook"
         },
         {
-          "line": 1344,
+          "line": 1353,
           "scope": "SynapsePanel._build_done_substate",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "col",
           "owner": "page"
         },
         {
-          "line": 1693,
+          "line": 1702,
           "scope": "SynapsePanel._configure_custom",
           "constructor": "QtWidgets.QFormLayout",
           "receiver": "form",
           "owner": "dlg"
         },
         {
-          "line": 1898,
+          "line": 1907,
           "scope": "SynapsePanel._build_hda_form",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "lay",
           "owner": "page"
         },
         {
-          "line": 1909,
+          "line": 1918,
           "scope": "SynapsePanel._build_hda_form",
           "constructor": "QtWidgets.QHBoxLayout",
           "receiver": "row",
           "owner": "UNKNOWN"
         },
         {
-          "line": 2009,
+          "line": 2018,
           "scope": "SynapsePanel._build_input",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "col",
           "owner": "w"
         },
         {
-          "line": 2018,
+          "line": 2027,
           "scope": "SynapsePanel._build_input",
           "constructor": "QtWidgets.QHBoxLayout",
           "receiver": "row",
@@ -8935,678 +8935,678 @@
         {
           "scope": "_GrowingInput",
           "line": 137,
-          "end_line": 238
+          "end_line": 244
         },
         {
           "scope": "_GrowingInput.__init__",
           "line": 145,
-          "end_line": 162
+          "end_line": 168
         },
         {
           "scope": "_GrowingInput._autosize",
-          "line": 164,
-          "end_line": 169
+          "line": 170,
+          "end_line": 175
         },
         {
           "scope": "_GrowingInput.cap_height",
-          "line": 171,
-          "end_line": 180
+          "line": 177,
+          "end_line": 186
         },
         {
           "scope": "_GrowingInput.settle_height",
-          "line": 182,
-          "end_line": 191
-        },
-        {
-          "scope": "_GrowingInput.set_user_height",
-          "line": 193,
+          "line": 188,
           "end_line": 197
         },
         {
+          "scope": "_GrowingInput.set_user_height",
+          "line": 199,
+          "end_line": 203
+        },
+        {
           "scope": "_GrowingInput.attach_send",
-          "line": 200,
-          "end_line": 211
+          "line": 206,
+          "end_line": 217
         },
         {
           "scope": "_GrowingInput._place_send",
-          "line": 213,
-          "end_line": 219
+          "line": 219,
+          "end_line": 225
         },
         {
           "scope": "_GrowingInput.resizeEvent",
-          "line": 221,
-          "end_line": 223
+          "line": 227,
+          "end_line": 229
         },
         {
           "scope": "_GrowingInput.keyPressEvent",
-          "line": 225,
-          "end_line": 234
+          "line": 231,
+          "end_line": 240
         },
         {
           "scope": "_GrowingInput.focusOutEvent",
-          "line": 236,
-          "end_line": 238
+          "line": 242,
+          "end_line": 244
         },
         {
           "scope": "_InputResizeGrip",
-          "line": 241,
-          "end_line": 284
+          "line": 247,
+          "end_line": 290
         },
         {
           "scope": "_InputResizeGrip.__init__",
-          "line": 244,
-          "end_line": 251
-        },
-        {
-          "scope": "_InputResizeGrip._gy",
-          "line": 253,
+          "line": 250,
           "end_line": 257
         },
         {
-          "scope": "_InputResizeGrip.mousePressEvent",
+          "scope": "_InputResizeGrip._gy",
           "line": 259,
-          "end_line": 261
+          "end_line": 263
+        },
+        {
+          "scope": "_InputResizeGrip.mousePressEvent",
+          "line": 265,
+          "end_line": 267
         },
         {
           "scope": "_InputResizeGrip.mouseMoveEvent",
-          "line": 263,
-          "end_line": 266
+          "line": 269,
+          "end_line": 272
         },
         {
           "scope": "_InputResizeGrip.mouseReleaseEvent",
-          "line": 268,
-          "end_line": 273
+          "line": 274,
+          "end_line": 279
         },
         {
           "scope": "_InputResizeGrip.paintEvent",
-          "line": 275,
-          "end_line": 284
+          "line": 281,
+          "end_line": 290
         },
         {
           "scope": "_image_icon",
-          "line": 287,
-          "end_line": 324
+          "line": 293,
+          "end_line": 330
         },
         {
           "scope": "SynapsePanel",
-          "line": 327,
-          "end_line": 3042
+          "line": 333,
+          "end_line": 3065
         },
         {
           "scope": "SynapsePanel.__init__",
-          "line": 336,
-          "end_line": 509
+          "line": 342,
+          "end_line": 515
         },
         {
           "scope": "SynapsePanel._section",
-          "line": 512,
-          "end_line": 519
+          "line": 518,
+          "end_line": 525
         },
         {
           "scope": "SynapsePanel._build_ui",
-          "line": 521,
-          "end_line": 555
+          "line": 527,
+          "end_line": 561
         },
         {
           "scope": "SynapsePanel._build_profile_actions",
-          "line": 557,
-          "end_line": 582
+          "line": 563,
+          "end_line": 588
         },
         {
           "scope": "SynapsePanel._select_profile",
-          "line": 585,
-          "end_line": 606
+          "line": 591,
+          "end_line": 612
         },
         {
           "scope": "SynapsePanel._mark_profile_pill",
-          "line": 608,
-          "end_line": 615
+          "line": 614,
+          "end_line": 621
         },
         {
           "scope": "SynapsePanel._recompose",
-          "line": 617,
-          "end_line": 695
+          "line": 623,
+          "end_line": 701
         },
         {
           "scope": "SynapsePanel._regate_stop",
-          "line": 697,
-          "end_line": 717
+          "line": 703,
+          "end_line": 723
         },
         {
           "scope": "SynapsePanel._build_rail",
-          "line": 719,
-          "end_line": 923
+          "line": 725,
+          "end_line": 932
         },
         {
           "scope": "SynapsePanel._format_tokens",
-          "line": 925,
-          "end_line": 933
+          "line": 934,
+          "end_line": 942
         },
         {
           "scope": "SynapsePanel._note_usage",
-          "line": 935,
-          "end_line": 945
+          "line": 944,
+          "end_line": 954
         },
         {
           "scope": "SynapsePanel._on_connect",
-          "line": 947,
-          "end_line": 970
+          "line": 956,
+          "end_line": 979
         },
         {
           "scope": "SynapsePanel._announce_bridge",
-          "line": 972,
-          "end_line": 977
+          "line": 981,
+          "end_line": 986
         },
         {
           "scope": "SynapsePanel._refresh_bridge_state",
-          "line": 979,
-          "end_line": 997
+          "line": 988,
+          "end_line": 1006
         },
         {
           "scope": "SynapsePanel._on_corpus",
-          "line": 999,
-          "end_line": 1032
+          "line": 1008,
+          "end_line": 1041
         },
         {
           "scope": "SynapsePanel._refresh_corpus_state",
-          "line": 1034,
-          "end_line": 1048
+          "line": 1043,
+          "end_line": 1057
         },
         {
           "scope": "SynapsePanel._refresh_engine_selector",
-          "line": 1050,
-          "end_line": 1063
+          "line": 1059,
+          "end_line": 1072
         },
         {
           "scope": "SynapsePanel._build_context_ribbon",
-          "line": 1065,
-          "end_line": 1107
+          "line": 1074,
+          "end_line": 1116
         },
         {
           "scope": "SynapsePanel._build_converse",
-          "line": 1109,
-          "end_line": 1143
+          "line": 1118,
+          "end_line": 1152
         },
         {
           "scope": "SynapsePanel._show_token_face",
-          "line": 1148,
-          "end_line": 1160
+          "line": 1157,
+          "end_line": 1169
         },
         {
           "scope": "SynapsePanel._build_token_face",
-          "line": 1162,
-          "end_line": 1183
+          "line": 1171,
+          "end_line": 1192
         },
         {
           "scope": "SynapsePanel._build_faces",
-          "line": 1185,
-          "end_line": 1205
+          "line": 1194,
+          "end_line": 1214
         },
         {
           "scope": "SynapsePanel._build_direct_face",
-          "line": 1207,
-          "end_line": 1236
+          "line": 1216,
+          "end_line": 1245
         },
         {
           "scope": "SynapsePanel._build_turn_receipt",
-          "line": 1238,
-          "end_line": 1254
+          "line": 1247,
+          "end_line": 1263
         },
         {
           "scope": "SynapsePanel._sync_consent_slot",
-          "line": 1256,
-          "end_line": 1273
+          "line": 1265,
+          "end_line": 1282
         },
         {
           "scope": "SynapsePanel._show_turn_receipt",
-          "line": 1275,
-          "end_line": 1283
+          "line": 1284,
+          "end_line": 1292
         },
         {
           "scope": "SynapsePanel._hide_turn_receipt",
-          "line": 1285,
-          "end_line": 1289
+          "line": 1294,
+          "end_line": 1298
         },
         {
           "scope": "SynapsePanel._build_work_face",
-          "line": 1291,
-          "end_line": 1325
+          "line": 1300,
+          "end_line": 1334
         },
         {
           "scope": "SynapsePanel._build_done_substate",
-          "line": 1327,
-          "end_line": 1351
+          "line": 1336,
+          "end_line": 1360
         },
         {
           "scope": "SynapsePanel._set_work_substate",
-          "line": 1353,
-          "end_line": 1361
+          "line": 1362,
+          "end_line": 1370
         },
         {
           "scope": "SynapsePanel._host_font_scale",
-          "line": 1363,
-          "end_line": 1379
+          "line": 1372,
+          "end_line": 1388
         },
         {
           "scope": "SynapsePanel._active_model",
-          "line": 1381,
-          "end_line": 1396
+          "line": 1390,
+          "end_line": 1405
         },
         {
           "scope": "SynapsePanel._provider_model_rows",
-          "line": 1398,
-          "end_line": 1427
-        },
-        {
-          "scope": "SynapsePanel._model_menu_items",
-          "line": 1429,
+          "line": 1407,
           "end_line": 1436
         },
         {
-          "scope": "SynapsePanel._author_menu_items",
+          "scope": "SynapsePanel._model_menu_items",
           "line": 1438,
-          "end_line": 1454
+          "end_line": 1445
+        },
+        {
+          "scope": "SynapsePanel._author_menu_items",
+          "line": 1447,
+          "end_line": 1463
         },
         {
           "scope": "SynapsePanel._fill_author_submenu",
-          "line": 1456,
-          "end_line": 1472
+          "line": 1465,
+          "end_line": 1481
         },
         {
           "scope": "SynapsePanel._open_author_menu",
-          "line": 1474,
-          "end_line": 1493
+          "line": 1483,
+          "end_line": 1502
         },
         {
           "scope": "SynapsePanel._pick_engine_model",
-          "line": 1495,
-          "end_line": 1501
+          "line": 1504,
+          "end_line": 1510
         },
         {
           "scope": "SynapsePanel._open_model_menu",
-          "line": 1503,
-          "end_line": 1525
+          "line": 1512,
+          "end_line": 1534
         },
         {
           "scope": "SynapsePanel._set_model",
-          "line": 1527,
-          "end_line": 1539
+          "line": 1536,
+          "end_line": 1548
         },
         {
           "scope": "SynapsePanel._persist_picks",
-          "line": 1541,
-          "end_line": 1552
+          "line": 1550,
+          "end_line": 1561
         },
         {
           "scope": "SynapsePanel._persist_composer_height",
-          "line": 1554,
-          "end_line": 1564
+          "line": 1563,
+          "end_line": 1573
         },
         {
           "scope": "SynapsePanel._settle_composer_height",
-          "line": 1566,
-          "end_line": 1592
+          "line": 1575,
+          "end_line": 1601
         },
         {
           "scope": "SynapsePanel._fit_composer_to_pane",
-          "line": 1594,
-          "end_line": 1611
+          "line": 1603,
+          "end_line": 1620
         },
         {
           "scope": "SynapsePanel.showEvent",
-          "line": 1613,
-          "end_line": 1616
+          "line": 1622,
+          "end_line": 1625
         },
         {
           "scope": "SynapsePanel.resizeEvent",
-          "line": 1618,
-          "end_line": 1621
+          "line": 1627,
+          "end_line": 1630
         },
         {
           "scope": "SynapsePanel._author_token",
-          "line": 1623,
-          "end_line": 1650
+          "line": 1632,
+          "end_line": 1659
         },
         {
           "scope": "SynapsePanel._set_provider",
-          "line": 1652,
-          "end_line": 1669
+          "line": 1661,
+          "end_line": 1678
         },
         {
           "scope": "SynapsePanel._custom_configured",
-          "line": 1671,
-          "end_line": 1679
+          "line": 1680,
+          "end_line": 1688
         },
         {
           "scope": "SynapsePanel._configure_custom",
-          "line": 1681,
-          "end_line": 1720
+          "line": 1690,
+          "end_line": 1729
         },
         {
           "scope": "SynapsePanel._make_provider",
-          "line": 1722,
-          "end_line": 1740
+          "line": 1731,
+          "end_line": 1749
         },
         {
           "scope": "SynapsePanel._turn_evidence",
-          "line": 1745,
-          "end_line": 1781
+          "line": 1754,
+          "end_line": 1790
         },
         {
           "scope": "SynapsePanel._populate_review",
-          "line": 1783,
-          "end_line": 1819
+          "line": 1792,
+          "end_line": 1828
         },
         {
           "scope": "SynapsePanel._on_render_receipt",
-          "line": 1821,
-          "end_line": 1833
+          "line": 1830,
+          "end_line": 1842
         },
         {
           "scope": "SynapsePanel._on_integrity",
-          "line": 1835,
-          "end_line": 1847
+          "line": 1844,
+          "end_line": 1856
         },
         {
           "scope": "SynapsePanel._on_accept",
-          "line": 1849,
-          "end_line": 1854
+          "line": 1858,
+          "end_line": 1863
         },
         {
           "scope": "SynapsePanel._on_revert",
-          "line": 1856,
-          "end_line": 1864
+          "line": 1865,
+          "end_line": 1873
         },
         {
           "scope": "SynapsePanel._on_commit",
-          "line": 1866,
-          "end_line": 1876
+          "line": 1875,
+          "end_line": 1885
         },
         {
           "scope": "SynapsePanel._on_open_render",
-          "line": 1878,
-          "end_line": 1892
+          "line": 1887,
+          "end_line": 1901
         },
         {
           "scope": "SynapsePanel._build_hda_form",
-          "line": 1894,
-          "end_line": 1930
+          "line": 1903,
+          "end_line": 1939
         },
         {
           "scope": "SynapsePanel._set_direct_view",
-          "line": 1932,
-          "end_line": 1937
+          "line": 1941,
+          "end_line": 1946
         },
         {
           "scope": "SynapsePanel._set_face",
-          "line": 1940,
-          "end_line": 1952
+          "line": 1949,
+          "end_line": 1961
         },
         {
           "scope": "SynapsePanel._on_build_hda",
-          "line": 1954,
-          "end_line": 1965
+          "line": 1963,
+          "end_line": 1974
         },
         {
           "scope": "SynapsePanel._set_thinking",
-          "line": 1967,
-          "end_line": 1971
+          "line": 1976,
+          "end_line": 1980
         },
         {
           "scope": "SynapsePanel._update_health",
-          "line": 1973,
-          "end_line": 1984
+          "line": 1982,
+          "end_line": 1993
         },
         {
           "scope": "SynapsePanel._verb",
-          "line": 1986,
-          "end_line": 2002
+          "line": 1995,
+          "end_line": 2011
         },
         {
           "scope": "SynapsePanel._build_input",
-          "line": 2004,
-          "end_line": 2046
+          "line": 2013,
+          "end_line": 2055
         },
         {
           "scope": "SynapsePanel._on_attach",
-          "line": 2048,
-          "end_line": 2068
+          "line": 2057,
+          "end_line": 2077
         },
         {
           "scope": "SynapsePanel._wire_gate",
-          "line": 2071,
-          "end_line": 2099
+          "line": 2080,
+          "end_line": 2108
         },
         {
           "scope": "SynapsePanel._on_gate_raised",
-          "line": 2101,
-          "end_line": 2115
+          "line": 2110,
+          "end_line": 2124
         },
         {
           "scope": "SynapsePanel._show_overflow",
-          "line": 2117,
-          "end_line": 2119
+          "line": 2126,
+          "end_line": 2128
         },
         {
           "scope": "SynapsePanel._build_overflow_menu",
-          "line": 2121,
-          "end_line": 2214
+          "line": 2130,
+          "end_line": 2223
         },
         {
           "scope": "SynapsePanel._run_direct_tool",
-          "line": 2221,
-          "end_line": 2241
+          "line": 2230,
+          "end_line": 2250
         },
         {
           "scope": "SynapsePanel._display_recall_result",
-          "line": 2243,
-          "end_line": 2247
+          "line": 2252,
+          "end_line": 2256
         },
         {
           "scope": "SynapsePanel._on_direct_tool_done",
-          "line": 2249,
-          "end_line": 2267
+          "line": 2258,
+          "end_line": 2276
         },
         {
           "scope": "SynapsePanel._on_direct_tool_failed",
-          "line": 2269,
-          "end_line": 2275
+          "line": 2278,
+          "end_line": 2284
         },
         {
           "scope": "SynapsePanel._on_cancel_cook",
-          "line": 2277,
-          "end_line": 2294
+          "line": 2286,
+          "end_line": 2303
         },
         {
           "scope": "SynapsePanel._on_emergency_halt",
-          "line": 2296,
-          "end_line": 2300
+          "line": 2305,
+          "end_line": 2309
         },
         {
           "scope": "SynapsePanel._set_scale",
-          "line": 2302,
-          "end_line": 2308
+          "line": 2311,
+          "end_line": 2317
         },
         {
           "scope": "SynapsePanel._apply_content_scale",
-          "line": 2310,
-          "end_line": 2327
+          "line": 2319,
+          "end_line": 2336
         },
         {
           "scope": "SynapsePanel._set_prompt_font",
-          "line": 2330,
-          "end_line": 2341
+          "line": 2339,
+          "end_line": 2350
         },
         {
           "scope": "SynapsePanel._cycle_font_scale",
-          "line": 2343,
-          "end_line": 2348
+          "line": 2352,
+          "end_line": 2357
         },
         {
           "scope": "SynapsePanel._open_palette",
-          "line": 2350,
-          "end_line": 2364
+          "line": 2359,
+          "end_line": 2373
         },
         {
           "scope": "SynapsePanel._position_popup",
-          "line": 2366,
-          "end_line": 2403
+          "line": 2375,
+          "end_line": 2424
         },
         {
           "scope": "SynapsePanel._on_tool_picked",
-          "line": 2405,
-          "end_line": 2408
+          "line": 2426,
+          "end_line": 2429
         },
         {
           "scope": "SynapsePanel._on_submit",
-          "line": 2410,
-          "end_line": 2414
+          "line": 2431,
+          "end_line": 2435
         },
         {
           "scope": "SynapsePanel._send",
-          "line": 2416,
-          "end_line": 2436
+          "line": 2437,
+          "end_line": 2457
         },
         {
           "scope": "SynapsePanel._announce_parked",
-          "line": 2438,
-          "end_line": 2446
-        },
-        {
-          "scope": "SynapsePanel._restore_previous_session",
-          "line": 2448,
+          "line": 2459,
           "end_line": 2467
         },
         {
-          "scope": "SynapsePanel._build_system_prompt",
+          "scope": "SynapsePanel._restore_previous_session",
           "line": 2469,
-          "end_line": 2504
+          "end_line": 2488
+        },
+        {
+          "scope": "SynapsePanel._build_system_prompt",
+          "line": 2490,
+          "end_line": 2525
         },
         {
           "scope": "SynapsePanel._start_worker",
-          "line": 2506,
-          "end_line": 2557
+          "line": 2527,
+          "end_line": 2578
         },
         {
           "scope": "SynapsePanel._on_token",
-          "line": 2559,
-          "end_line": 2577
+          "line": 2580,
+          "end_line": 2598
         },
         {
           "scope": "SynapsePanel._on_done",
-          "line": 2579,
-          "end_line": 2633
+          "line": 2600,
+          "end_line": 2656
         },
         {
           "scope": "SynapsePanel._refresh_token_surfaces",
-          "line": 2635,
-          "end_line": 2654
+          "line": 2658,
+          "end_line": 2677
         },
         {
           "scope": "SynapsePanel._on_error",
-          "line": 2656,
-          "end_line": 2667
+          "line": 2679,
+          "end_line": 2690
         },
         {
           "scope": "SynapsePanel._on_tool_status",
-          "line": 2669,
-          "end_line": 2693
+          "line": 2692,
+          "end_line": 2716
         },
         {
           "scope": "SynapsePanel._on_stop",
-          "line": 2701,
-          "end_line": 2718
+          "line": 2724,
+          "end_line": 2741
         },
         {
           "scope": "SynapsePanel._set_busy",
-          "line": 2720,
-          "end_line": 2749
+          "line": 2743,
+          "end_line": 2772
         },
         {
           "scope": "SynapsePanel._render_state",
-          "line": 2751,
-          "end_line": 2773
+          "line": 2774,
+          "end_line": 2796
         },
         {
           "scope": "SynapsePanel._set_header",
-          "line": 2775,
-          "end_line": 2783
+          "line": 2798,
+          "end_line": 2806
         },
         {
           "scope": "SynapsePanel._update_context",
-          "line": 2785,
-          "end_line": 2818
+          "line": 2808,
+          "end_line": 2841
         },
         {
           "scope": "SynapsePanel._apply_context",
-          "line": 2820,
-          "end_line": 2876
+          "line": 2843,
+          "end_line": 2899
         },
         {
           "scope": "SynapsePanel._update_health_strip",
-          "line": 2878,
-          "end_line": 2889
+          "line": 2901,
+          "end_line": 2912
         },
         {
           "scope": "SynapsePanel._on_help",
-          "line": 2891,
-          "end_line": 2898
+          "line": 2914,
+          "end_line": 2921
         },
         {
           "scope": "SynapsePanel._open_doc",
-          "line": 2900,
-          "end_line": 2929
+          "line": 2923,
+          "end_line": 2952
         },
         {
           "scope": "SynapsePanel._register_selection_cb",
-          "line": 2931,
-          "end_line": 2945
+          "line": 2954,
+          "end_line": 2968
         },
         {
           "scope": "SynapsePanel._on_selection_changed",
-          "line": 2947,
-          "end_line": 2953
+          "line": 2970,
+          "end_line": 2976
         },
         {
           "scope": "SynapsePanel.closeEvent",
-          "line": 2955,
-          "end_line": 2988
+          "line": 2978,
+          "end_line": 3011
         },
         {
           "scope": "SynapsePanel.dragEnterEvent",
-          "line": 2991,
-          "end_line": 2997
+          "line": 3014,
+          "end_line": 3020
         },
         {
           "scope": "SynapsePanel.dragMoveEvent",
-          "line": 2999,
-          "end_line": 3000
+          "line": 3022,
+          "end_line": 3023
         },
         {
           "scope": "SynapsePanel.dropEvent",
-          "line": 3002,
-          "end_line": 3022
+          "line": 3025,
+          "end_line": 3045
         },
         {
           "scope": "SynapsePanel._on_node_clicked",
-          "line": 3024,
-          "end_line": 3031
+          "line": 3047,
+          "end_line": 3054
         },
         {
           "scope": "SynapsePanel._copy_conversation",
-          "line": 3033,
-          "end_line": 3042
+          "line": 3056,
+          "end_line": 3065
         },
         {
           "scope": "onCreateInterface",
-          "line": 3045,
-          "end_line": 3047
+          "line": 3068,
+          "end_line": 3070
         }
       ],
       "hex_sites": [],
       "exempt_tags": [
         {
-          "line": 371,
+          "line": 377,
           "reason": "installs the sole designsystem sheet at the root; no local style"
         }
       ],
@@ -10011,15 +10011,15 @@
     },
     {
       "path": "python/synapse/panel/tool_palette.py",
-      "sha256": "7bec9bb5a4433da8ee60c4b80e8ed90fbbf35a165371ace3c48b8e6a0a5e49dc",
+      "sha256": "3ffefb9f4ecb40171d96b5c51a397fa2baa635744b43224d82e98a5473b2f6e9",
       "errors": [],
       "spacing": [],
       "grid_spacing": [],
       "inline_styles": [],
       "object_names": [
         {
-          "line": 189,
-          "end_line": 189,
+          "line": 212,
+          "end_line": 212,
           "scope": "ToolPalette.__init__",
           "method": "setObjectName",
           "receiver": "self",
@@ -10035,8 +10035,8 @@
           "name": "DsRoot"
         },
         {
-          "line": 214,
-          "end_line": 214,
+          "line": 237,
+          "end_line": 237,
           "scope": "ToolPalette.__init__",
           "method": "setObjectName",
           "receiver": "self._search",
@@ -10052,8 +10052,8 @@
           "name": "DsField"
         },
         {
-          "line": 230,
-          "end_line": 230,
+          "line": 253,
+          "end_line": 253,
           "scope": "ToolPalette.__init__",
           "method": "setObjectName",
           "receiver": "self._list",
@@ -10069,8 +10069,8 @@
           "name": "DsList"
         },
         {
-          "line": 254,
-          "end_line": 254,
+          "line": 278,
+          "end_line": 278,
           "scope": "ToolPalette._build_chip_row",
           "method": "setObjectName",
           "receiver": "tag",
@@ -10086,8 +10086,8 @@
           "name": "DsPaletteAxis"
         },
         {
-          "line": 262,
-          "end_line": 262,
+          "line": 286,
+          "end_line": 286,
           "scope": "ToolPalette._build_chip_row",
           "method": "setObjectName",
           "receiver": "btn",
@@ -10105,14 +10105,14 @@
       ],
       "layouts": [
         {
-          "line": 211,
+          "line": 234,
           "scope": "ToolPalette.__init__",
           "constructor": "QtWidgets.QVBoxLayout",
           "receiver": "lay",
           "owner": "self"
         },
         {
-          "line": 252,
+          "line": 276,
           "scope": "ToolPalette._build_chip_row",
           "constructor": "QtWidgets.QGridLayout",
           "receiver": "row",
@@ -10141,84 +10141,99 @@
           "end_line": 71
         },
         {
+          "scope": "_FitRowsDelegate",
+          "line": 74,
+          "end_line": 87
+        },
+        {
+          "scope": "_FitRowsDelegate.sizeHint",
+          "line": 84,
+          "end_line": 87
+        },
+        {
+          "scope": "fit_rows",
+          "line": 90,
+          "end_line": 94
+        },
+        {
           "scope": "_domain",
-          "line": 89,
-          "end_line": 116
+          "line": 112,
+          "end_line": 139
         },
         {
           "scope": "_load_entries",
-          "line": 119,
-          "end_line": 179
+          "line": 142,
+          "end_line": 202
         },
         {
           "scope": "ToolPalette",
-          "line": 182,
-          "end_line": 397
+          "line": 205,
+          "end_line": 424
         },
         {
           "scope": "ToolPalette.__init__",
-          "line": 187,
-          "end_line": 247
-        },
-        {
-          "scope": "ToolPalette._build_chip_row",
-          "line": 250,
+          "line": 210,
           "end_line": 271
         },
         {
+          "scope": "ToolPalette._build_chip_row",
+          "line": 274,
+          "end_line": 295
+        },
+        {
           "scope": "ToolPalette.showEvent",
-          "line": 273,
-          "end_line": 277
+          "line": 297,
+          "end_line": 301
         },
         {
           "scope": "ToolPalette._fit_rungs",
-          "line": 279,
-          "end_line": 300
+          "line": 303,
+          "end_line": 324
         },
         {
           "scope": "ToolPalette._set_axis",
-          "line": 302,
-          "end_line": 309
+          "line": 326,
+          "end_line": 333
         },
         {
           "scope": "ToolPalette._style_chips",
-          "line": 311,
-          "end_line": 315
+          "line": 335,
+          "end_line": 339
         },
         {
           "scope": "ToolPalette._style_chip",
-          "line": 317,
-          "end_line": 320
+          "line": 341,
+          "end_line": 344
         },
         {
           "scope": "ToolPalette._visible",
-          "line": 323,
-          "end_line": 330
+          "line": 347,
+          "end_line": 354
         },
         {
           "scope": "ToolPalette._populate",
-          "line": 332,
-          "end_line": 355
+          "line": 356,
+          "end_line": 382
         },
         {
           "scope": "ToolPalette._refilter",
-          "line": 357,
-          "end_line": 364
+          "line": 384,
+          "end_line": 391
         },
         {
           "scope": "ToolPalette._choose",
-          "line": 366,
-          "end_line": 370
+          "line": 393,
+          "end_line": 397
         },
         {
           "scope": "ToolPalette.eventFilter",
-          "line": 372,
-          "end_line": 386
+          "line": 399,
+          "end_line": 413
         },
         {
           "scope": "ToolPalette._move",
-          "line": 388,
-          "end_line": 397
+          "line": 415,
+          "end_line": 424
         }
       ],
       "hex_sites": [],
@@ -11183,7 +11198,7 @@
     "padding_rule_blocks": 0,
     "rules": [
       {
-        "line": 308,
+        "line": 314,
         "selectors": [
           "#DsRoot[density=\"airy\"] QPushButton#DsVerb"
         ],
@@ -11194,7 +11209,7 @@
         "body_template": "margin-top: EXPRpx; margin-bottom: EXPRpx;"
       },
       {
-        "line": 309,
+        "line": 315,
         "selectors": [
           "#DsRoot[density=\"tight\"] QPushButton#DsVerb"
         ],
@@ -11205,7 +11220,7 @@
         "body_template": "margin-top: EXPRpx; margin-bottom: EXPRpx;"
       },
       {
-        "line": 313,
+        "line": 319,
         "selectors": [
           "#DsRoot[density=\"airy\"] QWidget#DsHeader"
         ],
@@ -11215,7 +11230,7 @@
         "body_template": "margin-bottom: EXPRpx;"
       },
       {
-        "line": 314,
+        "line": 320,
         "selectors": [
           "#DsRoot[density=\"tight\"] QWidget#DsHeader"
         ],
@@ -11225,7 +11240,7 @@
         "body_template": "margin-bottom: EXPRpx;"
       },
       {
-        "line": 430,
+        "line": 436,
         "selectors": [
           "#DsRoot[density=\"EXPR\"] [rhythm_role=\"label\"]"
         ],
@@ -11236,7 +11251,7 @@
         "body_template": "margin-top: EXPRpx;\n    margin-bottom: EXPRpx;"
       },
       {
-        "line": 430,
+        "line": 436,
         "selectors": [
           "#DsRoot[density=\"EXPR\"] [rhythm_role=\"label\"]#DsParmSection"
         ],
@@ -11246,7 +11261,7 @@
         "body_template": "margin-top: EXPRpx;"
       },
       {
-        "line": 430,
+        "line": 436,
         "selectors": [
           "#DsRoot[density=\"EXPR\"] [rhythm_role=\"tag\"]",
           "#DsRoot[density=\"EXPR\"] QLabel#DsBadge[rhythm_role=\"tag\"]"
@@ -11502,8 +11517,8 @@
     },
     {
       "path": "python/synapse/panel/designsystem/qss.py",
-      "line": 900,
-      "end_line": 900,
+      "line": 906,
+      "end_line": 906,
       "scope": "ensure_sweep_b_view",
       "method": "setObjectName",
       "receiver": "root",
@@ -11683,14 +11698,14 @@
         {
           "path": "python/synapse/panel/synapse_panel.py",
           "scope": "SynapsePanel._build_rail",
-          "line": 719,
+          "line": 725,
           "spacing": [],
           "grid_spacing": [],
           "inline_styles": [],
           "object_names": [
             {
-              "line": 748,
-              "end_line": 748,
+              "line": 754,
+              "end_line": 754,
               "scope": "SynapsePanel._build_rail",
               "method": "setObjectName",
               "receiver": "w",
@@ -11706,8 +11721,8 @@
               "name": "DsHeader"
             },
             {
-              "line": 801,
-              "end_line": 801,
+              "line": 809,
+              "end_line": 809,
               "scope": "SynapsePanel._build_rail",
               "method": "setObjectName",
               "receiver": "self._author_lbl",
@@ -11723,8 +11738,8 @@
               "name": "DsAuthor"
             },
             {
-              "line": 839,
-              "end_line": 839,
+              "line": 848,
+              "end_line": 848,
               "scope": "SynapsePanel._build_rail",
               "method": "setObjectName",
               "receiver": "self._stop_btn",
@@ -11740,8 +11755,8 @@
               "name": "DsStop"
             },
             {
-              "line": 869,
-              "end_line": 869,
+              "line": 878,
+              "end_line": 878,
               "scope": "SynapsePanel._build_rail",
               "method": "setObjectName",
               "receiver": "self._meter_lbl",
@@ -11757,8 +11772,8 @@
               "name": "DsMeter"
             },
             {
-              "line": 878,
-              "end_line": 878,
+              "line": 887,
+              "end_line": 887,
               "scope": "SynapsePanel._build_rail",
               "method": "setObjectName",
               "receiver": "self._palette_hint",
@@ -11774,8 +11789,8 @@
               "name": "DsKHint"
             },
             {
-              "line": 914,
-              "end_line": 914,
+              "line": 923,
+              "end_line": 923,
               "scope": "SynapsePanel._build_rail",
               "method": "setObjectName",
               "receiver": "control",
@@ -11793,21 +11808,21 @@
           ],
           "layouts": [
             {
-              "line": 749,
+              "line": 755,
               "scope": "SynapsePanel._build_rail",
               "constructor": "QtWidgets.QVBoxLayout",
               "receiver": "col",
               "owner": "w"
             },
             {
-              "line": 755,
+              "line": 761,
               "scope": "SynapsePanel._build_rail",
               "constructor": "QtWidgets.QHBoxLayout",
               "receiver": "top",
               "owner": "ident"
             },
             {
-              "line": 818,
+              "line": 827,
               "scope": "SynapsePanel._build_rail",
               "constructor": "QtWidgets.QHBoxLayout",
               "receiver": "bot",
@@ -11818,14 +11833,14 @@
         {
           "path": "python/synapse/panel/synapse_panel.py",
           "scope": "SynapsePanel._build_context_ribbon",
-          "line": 1065,
+          "line": 1074,
           "spacing": [],
           "grid_spacing": [],
           "inline_styles": [],
           "object_names": [
             {
-              "line": 1079,
-              "end_line": 1079,
+              "line": 1088,
+              "end_line": 1088,
               "scope": "SynapsePanel._build_context_ribbon",
               "method": "setObjectName",
               "receiver": "self._ctx_label",
@@ -11843,7 +11858,7 @@
           ],
           "layouts": [
             {
-              "line": 1071,
+              "line": 1080,
               "scope": "SynapsePanel._build_context_ribbon",
               "constructor": "QtWidgets.QHBoxLayout",
               "receiver": "lay",
@@ -11869,7 +11884,7 @@
         {
           "path": "python/synapse/panel/synapse_panel.py",
           "scope": "SynapsePanel._build_converse",
-          "line": 1109,
+          "line": 1118,
           "spacing": [],
           "grid_spacing": [],
           "inline_styles": [],
@@ -11879,21 +11894,21 @@
         {
           "path": "python/synapse/panel/synapse_panel.py",
           "scope": "SynapsePanel._build_direct_face",
-          "line": 1207,
+          "line": 1216,
           "spacing": [],
           "grid_spacing": [],
           "inline_styles": [],
           "object_names": [],
           "layouts": [
             {
-              "line": 1216,
+              "line": 1225,
               "scope": "SynapsePanel._build_direct_face",
               "constructor": "QtWidgets.QVBoxLayout",
               "receiver": "col",
               "owner": "page"
             },
             {
-              "line": 1226,
+              "line": 1235,
               "scope": "SynapsePanel._build_direct_face",
               "constructor": "QtWidgets.QVBoxLayout",
               "receiver": "slot",
@@ -11947,14 +11962,14 @@
         {
           "path": "python/synapse/panel/synapse_panel.py",
           "scope": "SynapsePanel._verb",
-          "line": 1986,
+          "line": 1995,
           "spacing": [],
           "grid_spacing": [],
           "inline_styles": [],
           "object_names": [
             {
-              "line": 1991,
-              "end_line": 1991,
+              "line": 2000,
+              "end_line": 2000,
               "scope": "SynapsePanel._verb",
               "method": "setObjectName",
               "receiver": "btn",
@@ -12101,7 +12116,7 @@
         {
           "path": "python/synapse/panel/synapse_panel.py",
           "scope": "SynapsePanel._build_token_face",
-          "line": 1162,
+          "line": 1171,
           "spacing": [],
           "grid_spacing": [],
           "inline_styles": [],

@@ -110,7 +110,7 @@ Outside designsystem/: 76 Ds naming sites, 47 names. Including designsystem/: 83
   "padding_rule_blocks": 0,
   "rules": [
     {
-      "line": 308,
+      "line": 314,
       "selectors": [
         "#DsRoot[density=\"airy\"] QPushButton#DsVerb"
       ],
@@ -121,7 +121,7 @@ Outside designsystem/: 76 Ds naming sites, 47 names. Including designsystem/: 83
       "body_template": "margin-top: EXPRpx; margin-bottom: EXPRpx;"
     },
     {
-      "line": 309,
+      "line": 315,
       "selectors": [
         "#DsRoot[density=\"tight\"] QPushButton#DsVerb"
       ],
@@ -132,7 +132,7 @@ Outside designsystem/: 76 Ds naming sites, 47 names. Including designsystem/: 83
       "body_template": "margin-top: EXPRpx; margin-bottom: EXPRpx;"
     },
     {
-      "line": 313,
+      "line": 319,
       "selectors": [
         "#DsRoot[density=\"airy\"] QWidget#DsHeader"
       ],
@@ -142,7 +142,7 @@ Outside designsystem/: 76 Ds naming sites, 47 names. Including designsystem/: 83
       "body_template": "margin-bottom: EXPRpx;"
     },
     {
-      "line": 314,
+      "line": 320,
       "selectors": [
         "#DsRoot[density=\"tight\"] QWidget#DsHeader"
       ],
@@ -152,7 +152,7 @@ Outside designsystem/: 76 Ds naming sites, 47 names. Including designsystem/: 83
       "body_template": "margin-bottom: EXPRpx;"
     },
     {
-      "line": 430,
+      "line": 436,
       "selectors": [
         "#DsRoot[density=\"EXPR\"] [rhythm_role=\"label\"]"
       ],
@@ -163,7 +163,7 @@ Outside designsystem/: 76 Ds naming sites, 47 names. Including designsystem/: 83
       "body_template": "margin-top: EXPRpx;\n    margin-bottom: EXPRpx;"
     },
     {
-      "line": 430,
+      "line": 436,
       "selectors": [
         "#DsRoot[density=\"EXPR\"] [rhythm_role=\"label\"]#DsParmSection"
       ],
@@ -173,7 +173,7 @@ Outside designsystem/: 76 Ds naming sites, 47 names. Including designsystem/: 83
       "body_template": "margin-top: EXPRpx;"
     },
     {
-      "line": 430,
+      "line": 436,
       "selectors": [
         "#DsRoot[density=\"EXPR\"] [rhythm_role=\"tag\"]",
         "#DsRoot[density=\"EXPR\"] QLabel#DsBadge[rhythm_role=\"tag\"]"
@@ -194,8 +194,8 @@ Flags describe direct source evidence in the listed scopes, not every child. Fac
 | Region | Status | Named | Inline styled | Layout owned | Owners |
 |---|---|---|---|---|---|
 | Profile tab strip | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | ABSENT |
-| Header/ribbon | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:719 SynapsePanel._build_rail; python/synapse/panel/synapse_panel.py:1065 SynapsePanel._build_context_ribbon |
-| Chat transcript | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1109 SynapsePanel._build_converse; python/synapse/panel/synapse_panel.py:1207 SynapsePanel._build_direct_face; python/synapse/panel/chat_display.py:80 ChatDisplay |
-| Verb rail | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | python/synapse/panel/synapse_panel.py:1986 SynapsePanel._verb |
+| Header/ribbon | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:725 SynapsePanel._build_rail; python/synapse/panel/synapse_panel.py:1074 SynapsePanel._build_context_ribbon |
+| Chat transcript | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1118 SynapsePanel._build_converse; python/synapse/panel/synapse_panel.py:1216 SynapsePanel._build_direct_face; python/synapse/panel/chat_display.py:80 ChatDisplay |
+| Verb rail | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | python/synapse/panel/synapse_panel.py:1995 SynapsePanel._verb |
 | Recall result | VERIFIED_STATIC | True | False | True | python/synapse/panel/recall_card.py:1 <module> |
-| TOKEN face | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1162 SynapsePanel._build_token_face; python/synapse/panel/face_token.py:295 FaceToken; python/synapse/panel/face_token.py:59 TokenField; python/synapse/panel/token_readout.py:1 <module> |
+| TOKEN face | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1171 SynapsePanel._build_token_face; python/synapse/panel/face_token.py:295 FaceToken; python/synapse/panel/face_token.py:59 TokenField; python/synapse/panel/token_readout.py:1 <module> |
