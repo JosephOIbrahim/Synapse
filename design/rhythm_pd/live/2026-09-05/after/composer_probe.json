@@ -1,0 +1,45 @@
+{
+ "dpr": 1.0,
+ "panel": [
+  1636,
+  1359
+ ],
+ "input": {
+  "h": 114,
+  "w": 1520,
+  "floor": 64,
+  "max_h": 600,
+  "user_h": 325,
+  "cap": 114,
+  "settled": true,
+  "viewport_h": 21,
+  "margins": [
+   0,
+   0,
+   0,
+   59
+  ],
+  "font_px": 27,
+  "font_pt": -1.0,
+  "doc_h": 42.0,
+  "placeholder": "Ask SYNAPSE\u2026 \u00b7 / commands"
+ },
+ "send": {
+  "w": 98,
+  "h": 50,
+  "hint": [
+   98,
+   50
+  ],
+  "pos_in_input": [
+   1412,
+   54
+  ],
+  "parent": "_GrowingInput"
+ },
+ "chat_h": 953,
+ "chrome_scale": 2.25,
+ "font_scale": 2.25,
+ "settings_composer_height": 514,
+ "khint": "\u21b5 send \u00b7 \u21e7\u21b5 newline"
+}

@@ -1,0 +1,123 @@
+{
+ "top_level_visible": [
+  {
+   "cls": "QWidget",
+   "name": "RE_Window",
+   "title": "untitled.hip - Houdini Indie Limited-Commercial 22.0.400 - Py3.13",
+   "size": [
+    5121,
+    3230
+   ]
+  },
+  {
+   "cls": "QWidget",
+   "name": "",
+   "title": "",
+   "size": [
+    0,
+    0
+   ]
+  },
+  {
+   "cls": "QWidget",
+   "name": "",
+   "title": "",
+   "size": [
+    0,
+    0
+   ]
+  },
+  {
+   "cls": "QWidget",
+   "name": "",
+   "title": "",
+   "size": [
+    0,
+    0
+   ]
+  },
+  {
+   "cls": "QWidget",
+   "name": "",
+   "title": "",
+   "size": [
+    0,
+    0
+   ]
+  }
+ ],
+ "all_widgets": 273,
+ "candidates": [
+  {
+   "cls": "SynapsePanel",
+   "name": "QT_Feel",
+   "visible": true,
+   "size": [
+    1636,
+    1359
+   ]
+  }
+ ],
+ "ds_names": {
+  "DsCard": 1,
+  "DsVerb": 15,
+  "DsTabRow": 1,
+  "DsParmLabel": 10,
+  "DsSection": 25,
+  "DsParmValue": 10,
+  "DsTokenFace": 1,
+  "DsButton": 3,
+  "DsParmSection": 3,
+  "DsCardHeader": 1,
+  "DsRailMeter": 1,
+  "DsPill": 5,
+  "DsInput": 2,
+  "DsBadge": 1,
+  "DsHeader": 1,
+  "DsActs": 1,
+  "DsMeter": 1,
+  "DsSend": 1,
+  "DsContextLabel": 1,
+  "DsStop": 1,
+  "DsDivider": 1,
+  "DsGrip": 1,
+  "DsCardFooter": 1,
+  "DsChatTranscript": 1,
+  "DsCardBody": 1,
+  "DsAuthor": 1,
+  "DsCookBar": 2,
+  "DsTokenNote": 1,
+  "DsKHint": 1
+ },
+ "size": [
+  1636,
+  1359
+ ],
+ "model_token": {
+  "text": "Deepseek V4 Flash",
+  "visible": true,
+  "x": 1606,
+  "y": 8,
+  "w": 0,
+  "h": 58,
+  "panel_w": 1636
+ },
+ "wordmark": {
+  "text": "SYNAPSE",
+  "x": 54,
+  "y": 8,
+  "w": 159,
+  "px": 32
+ },
+ "rail_meter": {
+  "visible": false,
+  "is_window": false,
+  "parent": "QWidget"
+ },
+ "shot": [
+  "C:\\Users\\User\\SYNAPSE\\design\\rhythm_pd\\live\\2026-09-05\\live_current.png",
+  1636,
+  1359,
+  true
+ ]
+}

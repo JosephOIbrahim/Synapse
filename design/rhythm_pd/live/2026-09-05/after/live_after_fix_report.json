@@ -1,0 +1,46 @@
+{
+ "steps": [
+  "reloaded panetab3"
+ ],
+ "fix_present": false,
+ "input": {
+  "h": 164,
+  "user_h": 600,
+  "cap": 164,
+  "viewport_h": 71,
+  "font_px": 27,
+  "floor": 64
+ },
+ "model_token": {
+  "text": "ollama/deepseek-v4-flash",
+  "w": 414,
+  "x": 1192,
+  "panel_w": 1636
+ },
+ "panel": [
+  1636,
+  1359
+ ],
+ "profile": "expert",
+ "shots": {
+  "curious": {
+   "ok": true,
+   "input_h": 164,
+   "viewport_h": 71,
+   "cap": 164
+  },
+  "expert": {
+   "ok": true,
+   "input_h": 164,
+   "viewport_h": 71,
+   "cap": 164
+  },
+  "ml": {
+   "ok": true,
+   "input_h": 164,
+   "viewport_h": 71,
+   "cap": 164
+  }
+ },
+ "visible_top_levels": 1
+}

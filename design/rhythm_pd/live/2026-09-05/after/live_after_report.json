@@ -1,0 +1,79 @@
+{
+ "steps": [
+  "setActiveInterface(synapse_panel) on tab panetab3"
+ ],
+ "interfaces_in_file": [
+  "synapse_panel"
+ ],
+ "registered": [
+  "CameraSwitcher",
+  "ColorPallet",
+  "ConstraintBrowser",
+  "CustomParmsPanel",
+  "FileManager",
+  "HB_USD2Blender",
+  "HydraSceneBrowser",
+  "JL_LightingToolPanel",
+  "LPETag",
+  "LopEditPanel",
+  "LopPaintInstancesPanel",
+  "LopSequencePanel"
+ ],
+ "target": "synapse_panel",
+ "old_panels": 1,
+ "live_panels": 1,
+ "has_bc_wave": true,
+ "has_verb_rail": false,
+ "model_token": {
+  "text": "ollama/deepseek-v4-flash",
+  "visible": true,
+  "x": 1192,
+  "y": 8,
+  "w": 414,
+  "h": 46,
+  "panel_w": 1636
+ },
+ "wordmark_px": 34,
+ "size": [
+  1636,
+  1359
+ ],
+ "profile_before": "expert",
+ "shots": {
+  "curious": {
+   "ok": true,
+   "w": 1636,
+   "h": 1359,
+   "token_w": 414,
+   "token_text": "ollama/deepseek-v4-flash",
+   "token_x": 1192
+  },
+  "expert": {
+   "ok": true,
+   "w": 1636,
+   "h": 1359,
+   "token_w": 414,
+   "token_text": "ollama/deepseek-v4-flash",
+   "token_x": 1192
+  },
+  "ml": {
+   "ok": true,
+   "w": 1636,
+   "h": 1359,
+   "token_w": 414,
+   "token_text": "ollama/deepseek-v4-flash",
+   "token_x": 1192
+  }
+ },
+ "visible_top_levels": [
+  {
+   "cls": "QWidget",
+   "name": "RE_Window",
+   "title": "untitled.hip - Houdini Indie Limited-Com",
+   "size": [
+    5121,
+    3230
+   ]
+  }
+ ]
+}
