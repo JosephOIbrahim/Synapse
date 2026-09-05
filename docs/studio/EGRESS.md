@@ -14,7 +14,10 @@ Three remote hosts exist in first-party code:
 - `api.anthropic.com:443` (TLS, `POST /v1/messages`) — the Claude lanes.
 - `generativelanguage.googleapis.com:443` (TLS, `POST …:streamGenerateContent`)
   — the **optional** Gemini panel provider, dormant unless the artist switches
-  the panel to Gemini.
+  the panel to Gemini. J2 (2026-09-05) adds one read-only metadata call on the
+  same host for the TOKEN face's context row: `GET /v1beta/models/{model}`
+  (the model's `inputTokenLimit`), once per task from the panel worker, key in
+  the header, empty body.
 - `integrate.api.nvidia.com:443` (TLS, `POST /v1/chat/completions`) — the
   **optional** NVIDIA / Nemotron panel provider, dormant unless the artist
   switches the panel to Nemotron. Endpoint-overridable via `NVIDIA_BASE_URL`
@@ -123,7 +126,9 @@ anywhere in the codebase.
 - Panel → MCP loopback `http://localhost:<port>`.
 - The Ollama panel engine talks to the local daemon at
   `http://localhost:11434` (`POST /v1/chat/completions` for chat +
-  `GET /api/tags` for the model menu) — plaintext HTTP, loopback by default.
+  `GET /api/tags` for the model menu + `POST /api/show` for the model's
+  context length — body: the model name only, once per task, J2 2026-09-05)
+  — plaintext HTTP, loopback by default.
   **Caveat:** `OLLAMA_HOST` can redirect this lane to a remote (TLS) host,
   at which point it is egress (see "Remote endpoints").
 - The WS fallback server binds localhost by default (deploy-config

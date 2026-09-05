@@ -130,12 +130,23 @@ QPushButton#DsPill[active="true"] {{
 /* ---- rail author token — THE engine+model click target (v9) ----
    Mono/DATA family+tracking live on the QFont; hover underline + pointing
    hand carry discoverability (the comp shows no ▾).
-   bc-wave repair (CRUX 2026-09-05, 'second hue at rest'): the token is
-   identity data - who is thinking - not an action and not a verdict, so it
-   speaks in the text ramp (TEXT_SECONDARY; the mono/DATA QFont already
-   carries the data voice) and never the verified/ok green. Hover brightens
-   and underlines (TEXT_BRIGHT), the same discoverability with no second hue:
-   the CHAT face at rest measures 3 hue buckets again (mark + SEND accent). */
+   joe-five J1 (Joe's word, RULING_JOE_FIVE.md 2026-09-05; supersedes the
+   bc-wave 'data, not a status light' repair / RULING_DIRECTION_BC.md
+   Addendum 3.3): the token says WHICH engine is thinking - that is state,
+   and state has colour here (the mark, the sentence). Its colour is the
+   engine's liveness, written by synapse_panel._render_token_state as the
+   dynamic property `liveness` from the same signal the mark and Connect
+   read (_apply_context -> _render_state), never a stale green:
+     live    -> CONIFEROUS    Houdini connected + the engine keyed, idle
+     working -> WARM          a turn streaming (the mark's own busy note)
+     off     -> TEXT_DISABLED not connected, or no key for the engine
+   Unset (before the first render) it rests in the text ramp
+   (TEXT_SECONDARY; the mono/DATA QFont carries the data voice). Hover keeps
+   TEXT_BRIGHT + underline and is declared LAST: attribute and pseudo-state
+   selectors share specificity in Qt QSS, so source order decides, and hover
+   must win over every liveness colour. Boot (disconnected) stays grey, so
+   the CHAT face at rest still measures 3 hue buckets; connected adds the
+   token's own (CONIFEROUS, bucket 8) -> 4. */
 QPushButton#DsAuthor {{
     background: transparent; border: none;
     /* bc-wave BC-2 (Addendum 2): the token is a click target, not a glyph -
@@ -143,6 +154,9 @@ QPushButton#DsAuthor {{
     min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_XS}px;
     color: {t.TEXT_SECONDARY};
 }}
+QPushButton#DsAuthor[liveness="live"]    {{ color: {t.CONIFEROUS}; }}
+QPushButton#DsAuthor[liveness="working"] {{ color: {t.WARM}; }}
+QPushButton#DsAuthor[liveness="off"]     {{ color: {t.TEXT_DISABLED}; }}
 QPushButton#DsAuthor:hover {{
     color: {t.TEXT_BRIGHT}; text-decoration: underline;
 }}

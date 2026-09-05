@@ -98,10 +98,21 @@ def test_html_token_substitutions_are_interpolated():
 def test_existing_message_output_remains_byte_identical():
     # This module was already tokenized. Removing dead fallbacks/documentation
     # literals must not change the speaker, grouping or escaping behavior.
+    #
+    # J3 (RULING_JOE_FIVE, 2026-09-05) then changed that behaviour ON PURPOSE:
+    # the label (dot + name) and the turn's leading rule take the speaker's
+    # colour (YOU = SIGNAL, SYNAPSE = CONIFEROUS) and the SYNAPSE turn gains
+    # the rule. So the guarantee is pinned to what SWEEP_B actually shipped -
+    # its own landing commit (ae046513, the only formatter commit since BASE)
+    # against the pre-sweep base - proven from history, immune to later design
+    # rulings. J3's live behaviour is pinned by tests/test_j3_panel_formatter.py
+    # and the format classes in tests/test_chat_panel.py.
     path = PANEL + "message_formatter.py"
+    sweep_b = subprocess.check_output(
+        ["git", "show", "ae046513:" + path], cwd=ROOT, text=True, encoding="utf-8")
     inherited, migrated = {}, {}
     exec(compile(_base(path), "inherited_message_formatter", "exec"), inherited)
-    exec(compile((ROOT / path).read_text(encoding="utf-8"), path, "exec"), migrated)
+    exec(compile(sweep_b, "sweep_b_message_formatter", "exec"), migrated)
     for name in ("format_user_message", "format_synapse_message"):
         for grouped in (False, True, False):
             args = ("<b>hello</b>\nA node: /obj/geo1",)

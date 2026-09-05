@@ -1,11 +1,14 @@
 """Convert SYNAPSE responses to styled HTML for the chat display.
 
 Mile 3 (Pentagram pass) — *speakers are told apart by type, not bubbles.*
-The human voice carries a single signal-blue hairline rule and brighter text;
-the agent voice is plain, dimmer body copy with no chrome. Node references
-render as **artifact chips** — a node mark + mono path, a thing you can click,
-not a sentence. Signal blue is the one chromatic event; it comes from the
-vendored design system (SIGNAL), not the legacy cyan.
+J3 (RULING_JOE_FIVE, 2026-09-05) — *and by one colour each.* Every turn leads
+with a 2px hairline rule and, at the head of a group, a label (dot + name) in
+its speaker's colour: USER = SIGNAL, SYNAPSE = CONIFEROUS. Body copy keeps its
+text-ramp colour on both sides; no bubbles, no chrome. Node references render
+as **artifact chips** — a node mark + mono path, a thing you can click, not a
+sentence. One accent for actions (SIGNAL, the artist's next move) and two
+speaker marks; every colour comes from the vendored design system, never the
+legacy cyan, never a new hex.
 
 Public surface is unchanged (chat_display.py depends on it):
 ``format_response``, ``format_user_message``, ``format_synapse_message``,
@@ -23,15 +26,19 @@ import re
 #    success. One authority means one, including in the degraded path.
 from synapse.panel.designsystem import tokens as _t
 
-_SIGNAL      = _t.SIGNAL          # the one chromatic event
+_SIGNAL      = _t.SIGNAL          # the accent: actions, chips, the artist
 _TEXT        = _t.TEXT_PRIMARY    # agent voice / body
 _TEXT_BRIGHT = _t.TEXT_BRIGHT     # human voice (emphasis)
-_TEXT_DIM    = _t.TEXT_TERTIARY   # system lines / captions
-# Speaker dots. Coniferous for the human, warm coral for the agent - the two
-# ends of the palette's natural/synthetic split, used here to make the speaker
-# pre-attentive rather than something the reader compares greys to work out.
-_CONIFEROUS  = _t.CONIFEROUS
-_WARM        = _t.WARM
+_TEXT_DIM    = _t.TEXT_TERTIARY   # system lines / captions / timestamps
+# J3: one colour per speaker, decided HERE and nowhere else. The label (dot +
+# name) and the turn's leading rule both take it; body text never does.
+#   YOU     -> SIGNAL      the accent already means "the artist"
+#   SYNAPSE -> CONIFEROUS  4.58:1 on GROUND (>= 4.5 AA at SIZE_BODY 12 / 500).
+#              MUSHROOM measured 4.64:1 but its chroma is exactly 24 - not
+#              > 24 - so the panel's own chromatic predicate reads it as grey,
+#              which is the complaint this fixes. WARM (the busy mark) leaves
+#              the transcript: one hue means "SYNAPSE, alive" everywhere.
+_SPEAKER = {"YOU": _t.SIGNAL, "SYNAPSE": _t.CONIFEROUS}
 _GROUND      = _t.GROUND          # chip + code-block inset
 _LINE        = _t.GRAPHITE        # hairline borders
 _ERROR       = _t.ERROR
@@ -280,58 +287,70 @@ def _speaker_label(who, timestamp, font_scale):
     The v9 design said "type and the rule tell the speaker apart"; in practice
     the reader has to infer, every message.
 
-    A COLOURED DOT now leads the label, because tone alone still asks the reader
-    to compare. Coniferous green for YOU, warm coral for SYNAPSE — the two ends
-    of the palette's natural/synthetic split, so the distinction is pre-attentive
-    rather than something you work out. Rendered as a text glyph rather than a
-    styled box: QTextDocument's HTML subset drops background-colour and
-    border-radius on inline spans, so a coloured bullet is the shape that
-    actually survives.
+    A COLOURED DOT leads the label, because tone alone still asks the reader
+    to compare. J3 (2026-09-05): the dot alone was not enough either — the
+    widget's label pass painted the whole block one grey over it and Joe read
+    "grey for both". So the NAME carries the speaker colour too (``_SPEAKER``:
+    YOU = SIGNAL, SYNAPSE = CONIFEROUS), the dot beside it, and only the
+    timestamp stays dim. The dot is a text glyph rather than a styled box:
+    QTextDocument's HTML subset drops background-colour and border-radius on
+    inline spans, so a coloured bullet is the shape that actually survives.
 
-    Rendered as chrome, not content: mono, small, letterspaced, dim — so it
-    reads as a label and never competes with what was said. Returns "" for a
+    Rendered as chrome, not content: mono, small, letterspaced — so it reads
+    as a label and never competes with what was said. Callers pass "" for a
     grouped message, which is what makes it Slack rather than a chat log.
     """
     sz = _scale(_SMALL_PX, font_scale)
     ts = ('<span style="color:{d}; font-size:{s}px;">&#160;&#160;{t}</span>'
           .format(d=_TEXT_DIM, s=max(sz - 1, 8), t=html.escape(timestamp))
           if timestamp else "")
-    dot_colour = _WARM if who.upper().startswith("SYNAPSE") else _CONIFEROUS
+    colour = _speaker_colour(who)
     dot = ('<span style="color:{c}; font-size:{s}px;">&#9679;</span>&#160;&#160;'
-           .format(c=dot_colour, s=sz))
+           .format(c=colour, s=sz))
     return ('<div style="font-family:{m}; font-size:{s}px; letter-spacing:1.2px; '
             'color:{c}; margin-bottom:3px;">{dot}{who}{ts}</div>').format(
-        m=_MONO, s=sz, c=_TEXT_DIM, dot=dot, who=html.escape(who), ts=ts)
+        m=_MONO, s=sz, c=colour, dot=dot, who=html.escape(who), ts=ts)
+
+
+def _speaker_colour(who):
+    """The one place a speaker's colour is decided (J3)."""
+    return _SPEAKER["SYNAPSE" if str(who).upper().startswith("SYNAPSE") else "YOU"]
+
+
+def _ruled_turn(body, rule, fg, body_sz, my):
+    """The turn anatomy both voices share: a 2px rule in the SPEAKER's colour ·
+    14px gap · body (the v9 comp's ``.you``, extended to SYNAPSE by J3 so each
+    turn leads with its speaker's mark). A two-cell table carries the rule:
+    QTextDocument paints table-cell backgrounds reliably where it ignores block
+    ``border-left``. ``line-height`` is best-effort — harmless if the
+    QTextDocument subset drops it."""
+    return (
+        '<table border="0" cellspacing="0" cellpadding="0" width="100%" '
+        'style="margin:{my}px 0;"><tr>'
+        '<td width="2" style="background:{rule};"></td>'
+        '<td width="14"></td>'
+        '<td style="color:{fg}; font-size:{sz}px; line-height:150%;">{body}</td>'
+        "</tr></table>"
+    ).format(my=my, rule=rule, fg=fg, sz=body_sz, body=body)
 
 
 def format_user_message(text, grouped=False, timestamp=None, font_scale=1.0):
-    """The human voice: a signal-blue hairline rule, brighter text, and a
-    speaker label at the head of a group.
-
-    A two-cell table carries the rule: QTextDocument paints table-cell
-    backgrounds reliably where it ignores block ``border-left``.
-    """
+    """The human voice: a SIGNAL hairline rule, brighter text, and a speaker
+    label at the head of a group (``_ruled_turn`` carries the anatomy)."""
     escaped = html.escape(text).replace("\n", "<br>")
     body_sz = _scale(_BODY_PX, font_scale)
     my = _MSG_MARGIN_Y if grouped else _GROUP_MARGIN_Y
     label = "" if grouped else _speaker_label("YOU", timestamp, font_scale)
-    escaped = label + escaped
-    # v9 comp .you: 2px SIGNAL rule · 14px gap · bright text at 1.5 line-height
-    # (line-height is best-effort — harmless if the QTextDocument subset drops it).
-    return (
-        '<table border="0" cellspacing="0" cellpadding="0" width="100%" '
-        'style="margin:{my}px 0;"><tr>'
-        '<td width="2" style="background:{sig};"></td>'
-        '<td width="14"></td>'
-        '<td style="color:{fg}; font-size:{sz}px; line-height:150%;">{body}</td>'
-        "</tr></table>"
-    ).format(my=my, sig=_SIGNAL, fg=_TEXT_BRIGHT, sz=body_sz, body=escaped)
+    return _ruled_turn(label + escaped, _SPEAKER["YOU"], _TEXT_BRIGHT, body_sz, my)
 
 
 def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.0,
                            signed=None):
-    """The agent voice: plain, dimmer body copy — no rule, no bubble, no label.
-    Results inside it surface as artifact chips via the rich-text pipeline.
+    """The agent voice: plain body copy behind a CONIFEROUS hairline rule, with
+    a speaker label at the head of a group — no bubble. J3 gave it the same
+    turn anatomy as the human voice (``_ruled_turn``) so the speaker reads
+    without reading. Results inside it surface as artifact chips via the
+    rich-text pipeline.
 
     ``signed`` adds a quiet, display-only authorship note (the model that
     produced the result) once at the head of a SYNAPSE group — never per
@@ -349,8 +368,8 @@ def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.
             'margin-top:2px;">signed {who}</div>'
         ).format(dim=_TEXT_DIM, sz=_scale(_SMALL_PX, font_scale),
                  who=html.escape(str(signed)))
-    return '<div style="margin:{my}px 0;">{label}{body}{note}</div>'.format(
-        my=my, label=label, body=body, note=note)
+    return _ruled_turn(label + body + note, _SPEAKER["SYNAPSE"], _TEXT,
+                       _scale(_BODY_PX, font_scale), my)
 
 
 def format_system_message(text, font_scale=1.0):

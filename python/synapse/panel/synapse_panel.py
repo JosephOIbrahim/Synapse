@@ -548,8 +548,14 @@ class SynapsePanel(QtWidgets.QWidget):
         # _build_* calls below. "expert" is the v5.42.0 wiring exactly; an
         # invalid manifest falls back to that wiring hard-coded (the panel
         # always builds).
-        profile = getattr(self, "_layout_profile", DEFAULT_PROFILE)
-        self._build_profile_actions()
+        #
+        # J4 (Joe's five, 2026-09-05): the profile switch left the UI. The
+        # persisted pick stays on disk for the day the profiles return with a
+        # real difference; the composed panel is expert. __init__'s
+        # SwitcherState read stands as is - this line overrides it, and
+        # nothing an artist can reach composes any other manifest.
+        profile = DEFAULT_PROFILE
+        self._layout_profile = DEFAULT_PROFILE
         built = False
         if compose is not None:
             try:
@@ -567,40 +573,19 @@ class SynapsePanel(QtWidgets.QWidget):
             root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
         self._set_face("direct")                    # rest on the CHAT surface
 
-    def _build_profile_actions(self):
-        """The profile choice as three exclusive checkable QActions (bc-wave
-        BC-5): CURIOUS / EXPERT / ML select the layout manifest (L5-2) from
-        the overflow's 'Profile >' submenu instead of a 47px tab strip. A
-        trigger writes through settings (SwitcherState) and recomposes LIVE
-        (_select_profile); boot checks the saved profile. The actions live
-        on the panel and are added to every overflow menu built, so the
-        checked state survives the menu. `_profile_pills` keeps its name:
-        pid -> QAction (was pid -> Pill)."""
-        try:
-            from synapse.panel.settings import PROFILES as _profiles
-        except Exception:  # pragma: no cover - settings ships with the panel
-            _profiles = ("curious", "expert", "ml")
-        _QAction = getattr(QtGui, "QAction", None) or QtWidgets.QAction
-        _QActionGroup = getattr(QtGui, "QActionGroup", None) or QtWidgets.QActionGroup
-        group = _QActionGroup(self)
-        group.setExclusive(True)
-        self._profile_pills = {}
-        for pid in _profiles:
-            act = _QAction(pid.upper() if len(pid) <= 2 else pid.title(), self)
-            act.setCheckable(True)
-            act.setData(pid)
-            act.triggered.connect(lambda _=False, pid=pid: self._select_profile(pid))
-            group.addAction(act)
-            self._profile_pills[pid] = act
-        self._mark_profile_pill(getattr(self, "_layout_profile", DEFAULT_PROFILE))
-
     # ------------------------------------------------- profile switcher (L5-4)
+    # J4 (Joe's five, 2026-09-05): the profile choice has no artist-reachable
+    # surface - no tab strip (BC-5 folded it), no overflow submenu (J4 retired
+    # it). _select_profile / _mark_profile_pill / _recompose stay as machinery
+    # (tests/test_rope_switcher_wires_profile.py drives them) so the profiles
+    # can return the day they carry a real difference.
     def _select_profile(self, profile):
-        """A profile-tab click: persist through settings, then recompose LIVE.
+        """Select a profile: persist through settings, then recompose LIVE.
 
         ``SwitcherState`` (Qt-free, tested headless) owns selection → settings
         write → restore; this method owns the Qt half. A failed save still
-        switches the session — and says so in chat, never silently.
+        switches the session — and says so in chat, never silently. No
+        artist-reachable control calls this since J4.
         """
         if profile == getattr(self, "_layout_profile", DEFAULT_PROFILE):
             return
@@ -619,8 +604,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._recompose(profile)
 
     def _mark_profile_pill(self, profile):
-        """Check the selected profile action (name kept - the switcher test
-        drives it; bc-wave BC-5 made the pills QActions)."""
+        """Check the selected profile control, if any. The composed panel
+        builds none since J4 (``_profile_pills`` is never set, so this is a
+        no-op); the name and the getattr default are kept for the switcher
+        test, whose stub defines its own ``_profile_pills``."""
         for pid, act in getattr(self, "_profile_pills", {}).items():
             try:
                 act.setChecked(pid == profile)
@@ -750,7 +737,8 @@ class SynapsePanel(QtWidgets.QWidget):
         The chrome that used to ride here - token meter, palette hint,
         connection dot / label, Corpus, Help, the health strip - is read
         through the overflow (_build_overflow_menu). Its data owners are
-        still constructed for their writers (_note_usage, the shortcut hint,
+        still constructed for their writers (_refresh_usage via token_readout,
+        the shortcut hint,
         _refresh_corpus_state) and for G3's chrome-floor walk, but they sit
         in no layout and are hidden.
         """
@@ -846,7 +834,7 @@ class SynapsePanel(QtWidgets.QWidget):
             max(fm.horizontalAdvance(phrase) for phrase in _state_phrases()))
         overflow = c.Button("\u22ef", variant="ghost")
         overflow.setAccessibleName("More")
-        overflow.setToolTip("Palette, corpus, engine, profile, health, help, text size, halt")
+        overflow.setToolTip("Palette, corpus, engine, health, help, text size, halt")
         overflow.clicked.connect(self._show_overflow)
         self._stop_btn = c.Button("Stop", variant="danger")
         # L5-20: the mark (MarkDot.set_halt_handler) and this button are two
@@ -878,9 +866,10 @@ class SynapsePanel(QtWidgets.QWidget):
 
         # -- hidden owners: constructed, written to, read by the overflow;
         #    in NO layout, never shown. ----------------------------------
-        # token meter - TOKENS ONLY, never $ (metering-deferred D4). Providers
-        # don't surface usage yet, so it stays EMPTY until real usage arrives -
-        # never estimated. _format_tokens is the one display rule.
+        # token meter - TOKENS ONLY, never $ (metering-deferred D4). It stays
+        # EMPTY until a provider reports real usage (J2: every registered
+        # provider now does, through usage_sink) - never estimated;
+        # token_readout.refresh_surfaces is the one display rule.
         self._meter_lbl = c.label("", role="caption", parent=w)
         self._meter_lbl.setObjectName("DsMeter")
         self._meter_lbl.setFont(fontload.tracked_font(
@@ -922,6 +911,10 @@ class SynapsePanel(QtWidgets.QWidget):
 
         # shell: the rail is an edge container - GUTTER inset, SPACE_SM air.
         w.setProperty("rhythm_role", "shell")
+        # J5 (Joe, 2026-09-05): the rail meets the pane's top edge, so it takes
+        # the shell role's top-edge air (rhythm._EDGE_TOP: SPACE_MD, scaled
+        # by density) - the value lives in the role table, not here.
+        w.setProperty("rhythm_edge", "top")
         # One type applier per widget (RULING-4c): the header controls are
         # verbs and take the LABEL tracked font (mono) - the same applier as
         # _verb and the CHAT / TOKEN pills - so the chrome siblings match
@@ -937,28 +930,6 @@ class SynapsePanel(QtWidgets.QWidget):
         self._regate_stop()
         self._region_cache["_build_rail"] = w
         return w
-
-    def _format_tokens(self, n):
-        """Token-count display rule for the rail meter — tokens only, no $:
-        812 · 18.0k · 1.2M. Pure formatting; the meter never estimates."""
-        n = int(n)
-        if n < 1000:
-            return "%d" % n
-        if n < 1_000_000:
-            return "%.1fk" % (n / 1000.0)
-        return "%.1fM" % (n / 1_000_000.0)
-
-    def _note_usage(self, total_tokens):
-        """Accumulate real provider-reported usage into the session meter.
-        No provider surfaces usage yet (the seam is a future providers/ slice);
-        until it lands the meter stays empty — never estimated."""
-        try:
-            self._session_tokens += int(total_tokens)
-        except Exception:
-            return
-        lbl = getattr(self, "_meter_lbl", None)
-        if lbl is not None:
-            lbl.setText(self._format_tokens(self._session_tokens))
 
     def _on_connect(self):
         """Force-start the Synapse bridge server — the hwebserver that serves the
@@ -1067,7 +1038,14 @@ class SynapsePanel(QtWidgets.QWidget):
         """Repaint the engine/model selection readout — v9: the rail author
         token IS the selector (the ENGINE pill bar left the chrome; this keeps
         its name for the 4 call sites). A MODEL switch (not just a provider
-        switch) must update it. Idempotent; safe before the rail is built."""
+        switch) must update it. Idempotent; safe before the rail is built.
+
+        joe-five J1: this is also where the engine's KEYED truth is decided —
+        the provider builds and its own ``resolve_key()`` returns a value
+        (ollama's ``'not-needed'`` counts; an unconfigured Custom engine is
+        ``None``). Env / .env reads only, never a network probe. Runs at rail
+        build and on every provider / model switch, then re-renders the
+        token's liveness colour (``_render_token_state``)."""
         lbl = getattr(self, "_author_lbl", None)
         if lbl is not None:
             try:
@@ -1077,6 +1055,12 @@ class SynapsePanel(QtWidgets.QWidget):
                 lbl.setMinimumWidth(lbl.sizeHint().width())
             except Exception:
                 pass
+        try:
+            prov = self._make_provider()
+            self._engine_keyed = prov is not None and prov.resolve_key() is not None
+        except Exception:
+            self._engine_keyed = False
+        self._render_token_state()      # getattr-guarded: no-op before the rail
 
     def _build_context_ribbon(self):
         cached = self._region_cache.get("_build_context_ribbon")
@@ -1097,8 +1081,8 @@ class SynapsePanel(QtWidgets.QWidget):
         lay.addWidget(self._ctx_label, 1)
         # bc-wave BC-5: the ribbon is [context label, stretch][CHAT][TOKEN] -
         # the two face pills ride the ribbon's right edge at the shell gap;
-        # the profile row they shared (DsTabRow) is gone, profile choice is
-        # the overflow's 'Profile >' menu. v9.1 (Option A): there is one
+        # the profile row they shared (DsTabRow) is gone, and J4 retired the
+        # profile choice from the UI altogether. v9.1 (Option A): there is one
         # surface, CHAT, and consent/review auto-surfaces when actionable;
         # clicking CHAT is the manual way back. The internal face keys stay
         # "direct"/"work" - the invariants key on those, not the label.
@@ -2187,7 +2171,9 @@ class SynapsePanel(QtWidgets.QWidget):
 
         bc-wave (direction B): the chrome that left the composed panel at rest
         lives here - Build HDA (was a verb on the retired rail), the text-size
-        pair (the 'Aa' verb duplicated them, F10), the halt controls (H3b)."""
+        pair (the 'Aa' verb duplicated them, F10), the halt controls (H3b).
+        J4 (Joe's five): no Profile submenu - the profile switch left the UI;
+        'Larger text / Default text' are the Aa font scale, not density."""
         menu = QtWidgets.QMenu(self)
         menu.addAction("Copy conversation", self._copy_conversation)
         # Build HDA: the form is unchanged; only the way in moved (BC-1).
@@ -2223,12 +2209,6 @@ class SynapsePanel(QtWidgets.QWidget):
                 act.triggered.connect(lambda _=False, p=pid: self._set_provider(p))
         except Exception:
             pass
-        # Profile (BC-5): the layout manifest choice, checkable + exclusive;
-        # the actions are the panel's own (_build_profile_actions), so the
-        # check state is the saved profile every time the menu opens.
-        prof = menu.addMenu("Profile")
-        for act in getattr(self, "_profile_pills", {}).values():
-            prof.addAction(act)
         # Health: the four strip cells (connection · memory · project · job)
         # as disabled facts, built from the same producer the strip used
         # (health_strip.build_cells over the last context facts + O(1)
@@ -2846,20 +2826,71 @@ class SynapsePanel(QtWidgets.QWidget):
         idle phrase is never shown on its own - at rest the truth IS the
         connection, so boot reads exactly STATUS['disconnected'] and nothing
         else says 'nothing yet' (F14). Every phrase is inside the sentence's
-        floor, so it never elides."""
+        floor, so it never elides.
+
+        joe-five J1: one status decision, then the two readouts that share
+        it — the mark + sentence (``_set_header``) and the model token's
+        liveness colour (``_render_token_state``). Every context tick lands
+        here, so the token can never hold a stale green."""
         if getattr(self, "_was_busy", False):
-            if getattr(self, "_stopping", False):
-                self._set_header("working", _STOPPING_PHRASE)
-            else:
-                self._set_header("working")
-            return
-        if getattr(self, "_turn_state", "idle") == "done":
-            self._set_header("done", _DONE_PHRASE)
+            status = "working"
+            phrase = _STOPPING_PHRASE if getattr(self, "_stopping", False) else None
+        elif getattr(self, "_turn_state", "idle") == "done":
+            status, phrase = "done", _DONE_PHRASE
+        else:
+            status = getattr(self, "_conn_state", "disconnected")
+            if status not in t.STATUS:
+                status = "disconnected"
+            phrase = None
+        self._set_header(status, phrase)
+        self._render_token_state()
+
+    def _render_token_state(self):
+        """The model token is a status light (Joe's word, RULING_JOE_FIVE.md
+        J1, 2026-09-05; supersedes RULING_DIRECTION_BC.md Addendum 3.3).
+
+        The token says WHICH engine is thinking; that is state, and state has
+        colour in this panel. Its colour is the engine's liveness, decided
+        from the panel's OWN state — the same signal the mark and Connect
+        read (``_apply_context`` → ``_render_state``, ``_set_busy`` →
+        ``_render_state``) — so it is never a stale green:
+
+          working  a turn is streaming            → WARM (the mark's busy note)
+          live     Houdini connected (or 'warning': reachable, gate stale)
+                   AND the engine is keyed         → CONIFEROUS
+          off      not connected, or no key for the engine → TEXT_DISABLED
+
+        'Keyed' is ``_engine_keyed`` from ``_refresh_engine_selector`` (the
+        provider's own ``resolve_key()``; env / .env only, never a network
+        probe — this is not a daemon liveness check). The state is written as
+        the dynamic property ``liveness`` (qss.py paints it); unpolish/polish
+        only when the value moves, so an idle context tick costs nothing. The
+        tooltip carries the reason when off. Display only — never authored
+        to USD. Safe before the rail exists (no-op)."""
+        lbl = getattr(self, "_author_lbl", None)
+        if lbl is None:
             return
         conn = getattr(self, "_conn_state", "disconnected")
-        if conn not in t.STATUS:
-            conn = "disconnected"
-        self._set_header(conn)
+        reachable = conn in ("connected", "warning")
+        if getattr(self, "_was_busy", False):
+            state, reason = "working", None
+        elif reachable and getattr(self, "_engine_keyed", False):
+            state, reason = "live", None
+        elif not reachable:
+            state, reason = "off", "Not connected"
+        else:
+            pid = (getattr(self, "_provider_id", "claude") or "claude").strip().lower()
+            state, reason = "off", "No key for %s" % pid
+        tip = "Engine & model - click to switch"
+        lbl.setToolTip(tip if reason is None else "%s\n%s" % (tip, reason))
+        if lbl.property("liveness") != state:
+            lbl.setProperty("liveness", state)
+            try:
+                st = lbl.style()
+                st.unpolish(lbl)
+                st.polish(lbl)
+            except Exception:
+                pass
 
     def _set_header(self, status, phrase=None):
         """Low-level writer: the mark takes ``status``; the sentence takes

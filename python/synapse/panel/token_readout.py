@@ -18,9 +18,13 @@ TWO NON-NEGOTIABLE RULES, both inherited from the Token face:
 
   2. UNKNOWN stays UNKNOWN (R162). A task that reported no token field leaves the
      meter EMPTY and the pill at its BASE label — never a fabricated zero, and
-     never a fuel-gauge bar / quota ratio (V3-F4: headroom is not obtainable, so
-     ``18.0k / 200k`` cannot be produced honestly). Only a genuinely reported
-     count is ever shown.
+     never a fuel-gauge bar / quota ratio (V3-F4: rate-limit headroom is not
+     obtainable). Only a genuinely reported count is ever shown. J2 (2026-09-05)
+     adds the face's CONTEXT row rule here — ``'11 / 4096 · 0.3%'`` — and it is
+     NOT a quota: both sides are the provider's own figures (the last prompt it
+     billed; the window it reports via /api/show, models.get or the documented
+     model_facts table), or the row stays UNKNOWN. The pill and the meter are
+     unchanged: a count, never a ratio.
 
 Pure Python: no Qt, no ``hou``. The widgets are duck-typed (``setText``), so the
 display rules test headless and the panel supplies the live labels.
@@ -48,10 +52,71 @@ def task_total(snap):
     return sum(ints) if ints else None
 
 
+def session_total(snap):
+    """The SESSION's total measured spend (J2): the sum of the snapshot's
+    ``session`` block's reported fields, or ``None`` when nothing was measured
+    across the session (or the snapshot carries no session). Same honesty
+    rules as ``task_total``."""
+    if not isinstance(snap, dict):
+        return None
+    session = snap.get("session")
+    return task_total(session) if isinstance(session, dict) else None
+
+
+def _is_count(n):
+    return isinstance(n, int) and not isinstance(n, bool)
+
+
+def compact_count(n):
+    """Context-row count rule (J2): exact below ten thousand, compact above —
+    ``11`` · ``4096`` · ``200k`` · ``150.3k`` · ``1.0M``. Deliberately not the
+    pill's ``format_tokens``: a window of 4096 must read as the number the
+    daemon reported, not as '4.1k'."""
+    n = int(n)
+    if n < 10_000:
+        return "%d" % n
+    if n < 1_000_000:
+        return ("%.1fk" % (n / 1000.0)).replace(".0k", "k")
+    return "%.1fM" % (n / 1_000_000.0)
+
+
+def context_text(last_prompt, window):
+    """The face's context row (J2): ``'<last prompt> / <window> · <share>%'``
+    — e.g. ``'11 / 4096 · 0.3%'`` — or ``None`` (UNKNOWN) unless BOTH sides are
+    genuine reported counts and the window is positive. Never a share of an
+    estimate: the prompt is the provider's receipt for the LAST call
+    (usage_sink ``last_prompt``), the window the provider's own figure
+    (usage_sink ``set_context_window``)."""
+    if not (_is_count(last_prompt) and _is_count(window)):
+        return None
+    if window <= 0 or last_prompt < 0:
+        return None
+    return "%s / %s · %.1f%%" % (compact_count(last_prompt), compact_count(window),
+                                100.0 * last_prompt / window)
+
+
+def usd_text(usd):
+    """Cost cell rule (J2): ``'$0'`` for a genuine zero (local weights),
+    ``'$0.0123'`` otherwise — four decimals, trailing zeros trimmed to two;
+    ``'<$0.0001'`` for a positive amount that would otherwise round to nothing.
+    ``None`` in ⇒ ``None`` out (UNKNOWN). A bool is never a figure."""
+    if usd is None or isinstance(usd, bool):
+        return None
+    usd = float(usd)
+    if usd == 0.0:
+        return "$0"
+    if 0.0 < usd < 0.0001:
+        return "<$0.0001"
+    text = ("%.4f" % usd).rstrip("0")
+    whole, _dot, frac = text.partition(".")
+    return "$%s.%s" % (whole, frac.ljust(2, "0"))
+
+
 def format_tokens(n):
     """Rail token-count display rule — tokens only, never a ratio and never $:
-    ``812`` · ``18.0k`` · ``1.2M``. Mirrors synapse_panel._format_tokens; lives
-    here so the rule is pure and testable."""
+    ``812`` · ``18.0k`` · ``1.2M``. The one display rule (synapse_panel's dead
+    copy, ``_format_tokens``, retired in J2); lives here so it is pure and
+    testable."""
     n = int(n)
     if n < 1000:
         return "%d" % n

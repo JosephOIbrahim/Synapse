@@ -41,6 +41,13 @@ _MARGINS = {
             tokens.SPACE_SM + tokens.SPACE_XS // 2, tokens.SPACE_12 // 2),
     "shell": (tokens.GUTTER, tokens.SPACE_SM, tokens.GUTTER, tokens.SPACE_SM),
 }
+# Edge condition (Joe's five, J5, 2026-09-05): a shell that meets the pane's
+# TOP edge (rhythm_edge="top") takes one grid step more air above than the
+# role's SPACE_SM - SPACE_MD, density-scaled through tokens.gap (24/16/12) -
+# so the identity row is not choked by the pane edge. The role's default is
+# unchanged: the ribbon and the faces (the other shell owners) keep SPACE_SM,
+# so the air UNDER the rail does not move. Sides stay GUTTER, bottom SPACE_SM.
+_EDGE_TOP = {"shell": tokens.SPACE_MD}
 _WARNED = set()
 
 
@@ -103,7 +110,12 @@ def apply(root, density="standard"):
         layout = layout_getter()
         if layout is not None:
             layout.setSpacing(tokens.gap(ROLE_GAPS[role], level))
-            layout.setContentsMargins(*_MARGINS.get(role, (0, 0, 0, 0)))
+            m = _MARGINS.get(role, (0, 0, 0, 0))
+            # J5: the top-edge condition is the owner's, not the role's; the
+            # value is the role table's, scaled like every other gap.
+            if prop("rhythm_edge") == "top" and role in _EDGE_TOP:
+                m = (m[0], tokens.gap(_EDGE_TOP[role], level), m[2], m[3])
+            layout.setContentsMargins(*m)
             applied += 1
         else:
             # bc-wave BC-3: a marked item VIEW (a QListView - no layout of

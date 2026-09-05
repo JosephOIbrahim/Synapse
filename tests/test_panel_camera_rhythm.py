@@ -143,14 +143,33 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
     assert [strip(s) for s in current] == [strip(s) for s in original]
 
 
-@pytest.mark.parametrize("name", ["refresh_from_probe", "_refresh_usage", "measure_static"])
-def test_token_measurement_paths_are_unchanged(name):
-    assert _method(_source("face_token.py"), name) == _method(_source("face_token.py", BASE), name)
+# J2 (RULING_JOE_FIVE.md, 2026-09-05): "the whole point of TOKEN is it supposed
+# to count token use" - _refresh_usage is the one pinned method J2 edits (it now
+# feeds the SPEND / SESSION blocks through _refresh_spend), so it re-anchors to
+# the J2 landing commit; refresh_from_probe and measure_static stay at ce04dcb0
+# and must be byte-identical. A LITERAL, like BASE: the integrator MERGES J2,
+# never squashes or rebases it, or the SHA stops resolving and this pin errors
+# instead of measuring.
+_J2_BASE = "c28ac3dc"
+
+
+@pytest.mark.parametrize("name,base", [("refresh_from_probe", BASE),
+                                       ("_refresh_usage", _J2_BASE),
+                                       ("measure_static", BASE)])
+def test_token_measurement_paths_are_unchanged(name, base):
+    assert _method(_source("face_token.py"), name) == _method(_source("face_token.py", base), name)
 
 
 def test_token_readout_worker_fontload_and_shelf_unchanged():
-    paths = ["python/synapse/panel/token_readout.py", "python/synapse/panel/claude_worker.py",
-             "python/synapse/panel/designsystem/fontload.py",
+    # J2 (RULING_JOE_FIVE.md, 2026-09-05): token_readout.py gained the context /
+    # session / usd display rules and claude_worker.py the provider id + context
+    # window hand-off to the sink, under the written ruling - both re-anchor to
+    # the J2 landing commit (_J2_BASE); the pill / meter rules and the worker's
+    # hou-free invariant are unchanged (tests/test_bp2_paneltruth_token_refresh.py).
+    # fontload.py and the shelf stay pinned at ce04dcb0.
+    j2_paths = ["python/synapse/panel/token_readout.py", "python/synapse/panel/claude_worker.py"]
+    assert subprocess.check_output(["git", "diff", _J2_BASE, "--", *j2_paths], cwd=ROOT) == b""
+    paths = ["python/synapse/panel/designsystem/fontload.py",
              # tokens.py left this list 2026-09-05: W7 (Joe's wordmark
              # addendum) adds a token under a written ruling.
              "houdini/scripts/python/synapse_shelf.py"]

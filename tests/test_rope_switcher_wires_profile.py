@@ -28,10 +28,12 @@ never forks it: the only fakes are the Qt widget/layout LEAVES, which carry no
 logic. Runs headless via the ``qt_stub_window`` shim (stock CPython) and under a
 real resident PySide (hython) alike — it never constructs a live QApplication.
 
-Scope note (receipts, not claims): the pill ``clicked`` -> ``_select_profile``
-SIGNAL wire and the Qt REPAINT that makes ``density`` visible cannot be exercised
-under the stub (its signals are Mocks; no compositor repaint runs). The signal
-wire is pinned statically below; the repaint is a separate seat concern.
+Scope note (receipts, not claims): the Qt REPAINT that makes ``density`` visible
+cannot be exercised under the stub (no compositor repaint runs); it is a
+separate seat concern. RULING_JOE_FIVE J4 (2026-09-05) retired the profile
+switch from the UI: there is no pill / action -> ``_select_profile`` SIGNAL wire
+any more, and the static pin below now asserts its ABSENCE while keeping the
+machinery half (``_select_profile`` -> ``_recompose``) exactly as pinned here.
 """
 
 import re
@@ -302,20 +304,23 @@ def test_reselecting_the_active_profile_is_a_noop():
 
 
 # --------------------------------------------------------------------------- #
-# Static pin: the SIGNAL wire (pill.clicked -> _select_profile) cannot regress.
-# The stub's signals are Mocks, so the connect itself is source-pinned here and
-# behaviorally covered above at the slot.
+# Static pin, retargeted by RULING_JOE_FIVE J4 (2026-09-05): the profile switch
+# left the UI. This pin used to REQUIRE the SIGNAL wire (pill.clicked / action
+# .triggered -> _select_profile); J4 inverts it - no artist-reachable control
+# may wire into _select_profile - while the machinery half (the handler still
+# drives the live recompose) is kept exactly as before, so the profiles can
+# return the day they carry a real difference. Moved with the ruling, not
+# silently weakened.
 # --------------------------------------------------------------------------- #
 
-def test_profile_pills_are_connected_to_the_select_handler():
+def test_no_artist_reachable_profile_wiring():
     src = _PANEL_SRC.read_text(encoding="utf-8")
-    # the profile loop connects each action's triggered signal (bc-wave
-    # BC-5: QActions in the overflow; was the pills' clicked) to
-    # _select_profile(pid).
-    assert re.search(
+    # J4: nothing clickable / triggerable wires into _select_profile.
+    assert not re.search(
         r"\.(clicked|triggered)\.connect\(\s*lambda[^\n]*:\s*self\._select_profile\(",
         src,
-    ), "the CURIOUS/EXPERT/ML actions must wire triggered -> _select_profile"
-    # and _select_profile must drive the live recompose (rides on the composer).
+    ), "J4: no artist-reachable control may wire into _select_profile"
+    # ... and the machinery pin stands: _select_profile still drives the live
+    # recompose (rides on the composer), so the switch is retired, not broken.
     handler = src[src.index("def _select_profile"):src.index("def _mark_profile_pill")]
     assert "self._recompose(" in handler, "_select_profile must call _recompose"

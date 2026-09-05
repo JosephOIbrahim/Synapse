@@ -83,11 +83,17 @@ def probe(density):
         direct_face = panel._recall_card.parentWidget()
         # bc-wave BC-5: no tab row - the pills ride the ribbon shell.
         assert not panel.findChildren(QtWidgets.QWidget, "DsTabRow")
+        # RULING_JOE_FIVE J5 (2026-09-05): the header meets the pane's top
+        # edge and carries the shell role's top-edge condition
+        # (rhythm_edge="top") - SPACE_MD air, density-scaled through
+        # tokens.gap - so the wordmark is not choked by the edge. The role's
+        # default is unchanged: the ribbon and the faces keep SPACE_SM.
         for shell in (header, ribbon, direct_face):
             assert shell.property("rhythm_role") == "shell", shell.objectName()
             m = shell.layout().contentsMargins()
+            top = t.gap(t.SPACE_MD, density) if shell is header else t.SPACE_SM
             assert (m.left(), m.top(), m.right(), m.bottom()) == (
-                t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM), shell.objectName()
+                t.GUTTER, top, t.GUTTER, t.SPACE_SM), shell.objectName()
         assert panel.layout().spacing() == 0
         rm = panel.layout().contentsMargins()
         assert (rm.left(), rm.top(), rm.right(), rm.bottom()) == (0, 0, 0, 0)
@@ -184,13 +190,26 @@ def probe(density):
         assert first.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["group"], density)
         label_cursor = QtGui.QTextCursor(first)
         label_cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
-        assert label_cursor.charFormat().foreground().color() == QtGui.QColor(t.TEXT_SECONDARY)
+        # J3 (RULING_JOE_FIVE, 2026-09-05): the SYNAPSE label is CONIFEROUS, not
+        # the TEXT_SECONDARY grey that flattened both speakers ("grey for both").
+        assert label_cursor.charFormat().foreground().color() == QtGui.QColor(t.CONIFEROUS)
         chat.append_synapse_message("YOUR shader stays body text.")
         chat._flush_pending_formats()
         grouped = chat.document().find("YOUR shader")
         assert not grouped.isNull()
         assert not grouped.blockFormat().property(QtGui.QTextFormat.UserProperty + 1)
         assert grouped.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["row"], density)
+        # J3 twin: the artist's label is SIGNAL (the accent already means "the
+        # artist"); searched from the end so "YOUR shader" above is never it.
+        you_start = chat.document().characterCount() - 1
+        chat.append_user_message("you speak")
+        chat._flush_pending_formats()
+        you_cursor = chat.document().find("YOU", you_start)
+        assert not you_cursor.isNull()
+        assert you_cursor.block().blockFormat().property(QtGui.QTextFormat.UserProperty + 1) == "YOU"
+        you_label = QtGui.QTextCursor(you_cursor.block())
+        you_label.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
+        assert you_label.charFormat().foreground().color() == QtGui.QColor(t.SIGNAL)
         content = chat.toPlainText()
         for target in ("tight", "airy", density):
             panel._recompose({"airy": "curious", "standard": "expert", "tight": "ml"}[target])

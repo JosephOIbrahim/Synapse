@@ -15,7 +15,7 @@
   },
   "wordmark": {
     "x": 59,
-    "y": 8,
+    "y": 16,
     "w": 75,
     "h": 32,
     "visible": true,
@@ -31,7 +31,7 @@
   },
   "mark": {
     "x": 30,
-    "y": 8,
+    "y": 16,
     "w": 20,
     "h": 32,
     "visible": true,
@@ -42,14 +42,14 @@
     "x": 0,
     "y": 0,
     "w": 340,
-    "h": 100,
+    "h": 108,
     "visible": true,
     "objectName": "DsHeader",
     "rhythm_role": "shell"
   },
   "ribbon": {
     "x": 0,
-    "y": 100,
+    "y": 108,
     "w": 340,
     "h": 46,
     "visible": true,
@@ -58,7 +58,7 @@
   },
   "consent_slot": {
     "x": 0,
-    "y": 146,
+    "y": 154,
     "w": 640,
     "h": 480,
     "visible": false,
@@ -66,19 +66,19 @@
     "rhythm_role": "card"
   },
   "author": {
-    "x": 229,
-    "y": 8,
-    "w": 81,
+    "x": 179,
+    "y": 16,
+    "w": 131,
     "h": 32,
     "visible": true,
     "objectName": "DsAuthor",
     "rhythm_role": null,
-    "text": "Sonnet 4.6",
-    "hint_w": 81
+    "text": "claude/sonnet-4.6",
+    "hint_w": 131
   },
   "state": {
     "x": 30,
-    "y": 56,
+    "y": 64,
     "w": 83,
     "h": 36,
     "visible": true,
@@ -89,36 +89,36 @@
   },
   "direct_face": {
     "x": 0,
-    "y": 146,
+    "y": 154,
     "w": 340,
-    "h": 614,
+    "h": 606,
     "visible": true,
     "objectName": "DsSection",
     "rhythm_role": "shell"
   },
   "chat": {
     "x": 30,
-    "y": 154,
+    "y": 162,
     "w": 280,
-    "h": 456,
+    "h": 340,
     "visible": true,
     "objectName": "DsChatTranscript",
     "rhythm_role": "group"
   },
   "composer": {
     "x": 30,
-    "y": 626,
+    "y": 518,
     "w": 280,
-    "h": 126,
+    "h": 234,
     "visible": true,
     "objectName": "DsSection",
     "rhythm_role": "stack"
   },
   "input": {
     "x": 30,
-    "y": 640,
+    "y": 532,
     "w": 224,
-    "h": 92,
+    "h": 200,
     "visible": true,
     "objectName": "DsInput",
     "rhythm_role": null
@@ -144,7 +144,7 @@
   "pills": {
     "direct": {
       "x": 220,
-      "y": 108,
+      "y": 116,
       "w": 33,
       "h": 30,
       "visible": true,
@@ -153,7 +153,7 @@
     },
     "token": {
       "x": 269,
-      "y": 108,
+      "y": 116,
       "w": 41,
       "h": 30,
       "visible": true,
@@ -182,9 +182,9 @@
     },
     {
       "objectName": "DsAuthor",
-      "text": "Sonnet 4.6",
-      "w": 81,
-      "hint_w": 81
+      "text": "claude/sonnet-4.6",
+      "w": 131,
+      "hint_w": 131
     },
     {
       "objectName": "DsVerb",
