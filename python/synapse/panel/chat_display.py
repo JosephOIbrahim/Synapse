@@ -191,6 +191,13 @@ class ChatDisplay(QtWidgets.QTextBrowser):
                 cursor.setBlockFormat(bf)
             # The formatter already produces speaker labels. Only their block
             # receives label typography; off-main rendering stays Qt-free.
+            # J3 (RULING_JOE_FIVE): typography ONLY. This pass used to merge a
+            # TEXT_SECONDARY foreground over the whole block, flattening the
+            # formatter's coloured dot + name to one grey ("grey for both").
+            # The formatter is the one colour owner (message_formatter._SPEAKER:
+            # YOU = SIGNAL, SYNAPSE = CONIFEROUS, timestamp TEXT_TERTIARY) and
+            # its HTML colours survive insertHtml into each fragment's
+            # charFormat, so there is nothing for this pass to paint.
             if bf.property(QtGui.QTextFormat.UserProperty + 1) in ("SYNAPSE", "YOU"):
                 cursor.select(QtGui.QTextCursor.BlockUnderCursor)
                 font = fontload.tracked_font("LABEL", t.SIZE_BODY,
@@ -198,7 +205,6 @@ class ChatDisplay(QtWidgets.QTextBrowser):
                                              weight=t.WEIGHT_MEDIUM)
                 fmt = QtGui.QTextCharFormat()
                 fmt.setFont(font)
-                fmt.setForeground(QtGui.QColor(t.TEXT_SECONDARY))
                 cursor.mergeCharFormat(fmt)
             block = block.next()
         self._document_density = density
@@ -686,19 +692,22 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setTextCursor(cursor)
 
     def _insert_typing_html(self):
-        """Insert or replace typing indicator HTML."""
+        """Insert or replace typing indicator HTML.
+
+        J3: the SYNAPSE name and its dots take CONIFEROUS - one colour per
+        speaker everywhere, the same one its label and rule carry."""
         dots = "." * (self._typing_phase + 1)
         html_str = (
             '<div style="margin:{my}px 0; padding:{py}px {px}px;">'
-            '<span style="color:{sig}; font-family:{mono}; '
+            '<span style="color:{who}; font-family:{mono}; '
             'font-size:{sz}px; letter-spacing:1px; font-weight:{weight};">'
             'SYNAPSE</span> '
             '<span style="color:{dim}; font-style:italic; '
             'font-size:{sz}px;">is thinking'
-            '<span style="color:{sig};">{dots}</span>'
+            '<span style="color:{who};">{dots}</span>'
             '</span></div>'
         ).format(
-            sig=t.SIGNAL,
+            who=t.CONIFEROUS,
             dim=t.TEXT_SECONDARY,
             sz=int(t.SIZE_SMALL * self._font_scale),
             dots=dots,

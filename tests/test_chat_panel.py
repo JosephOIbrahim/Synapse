@@ -1013,14 +1013,19 @@ class TestTypingIndicator:
         panel._on_response({"response": "done", "tier": "cache"})
         panel._chat.hide_typing_indicator.assert_called_once()
 
-    def test_typing_html_contains_signal_color(self):
-        """Typing indicator HTML should use SIGNAL cyan color."""
+    def test_typing_html_contains_synapse_speaker_colour(self):
+        """Typing indicator HTML uses the SYNAPSE speaker colour.
+
+        J3 (RULING_JOE_FIVE, 2026-09-05): one colour per speaker everywhere -
+        the 'SYNAPSE' name and its dots take CONIFEROUS, the same token its
+        label and leading rule carry. Retargeted from SIGNAL (the artist's
+        accent) with the ruling; the legacy cyan literal is gone for good."""
         import inspect
         src = inspect.getsource(
             sys.modules["synapse.panel.chat_display"]
         )
-        # The class defines _TYPING_HTML with SIGNAL color
-        assert "#00D4FF" in src or "t.SIGNAL" in src
+        assert "t.CONIFEROUS" in src
+        assert "#00D4FF" not in src
 
     def test_typing_html_contains_thinking(self):
         """Typing indicator should show 'thinking...' text."""

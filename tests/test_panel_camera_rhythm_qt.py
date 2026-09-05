@@ -184,13 +184,26 @@ def probe(density):
         assert first.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["group"], density)
         label_cursor = QtGui.QTextCursor(first)
         label_cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
-        assert label_cursor.charFormat().foreground().color() == QtGui.QColor(t.TEXT_SECONDARY)
+        # J3 (RULING_JOE_FIVE, 2026-09-05): the SYNAPSE label is CONIFEROUS, not
+        # the TEXT_SECONDARY grey that flattened both speakers ("grey for both").
+        assert label_cursor.charFormat().foreground().color() == QtGui.QColor(t.CONIFEROUS)
         chat.append_synapse_message("YOUR shader stays body text.")
         chat._flush_pending_formats()
         grouped = chat.document().find("YOUR shader")
         assert not grouped.isNull()
         assert not grouped.blockFormat().property(QtGui.QTextFormat.UserProperty + 1)
         assert grouped.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["row"], density)
+        # J3 twin: the artist's label is SIGNAL (the accent already means "the
+        # artist"); searched from the end so "YOUR shader" above is never it.
+        you_start = chat.document().characterCount() - 1
+        chat.append_user_message("you speak")
+        chat._flush_pending_formats()
+        you_cursor = chat.document().find("YOU", you_start)
+        assert not you_cursor.isNull()
+        assert you_cursor.block().blockFormat().property(QtGui.QTextFormat.UserProperty + 1) == "YOU"
+        you_label = QtGui.QTextCursor(you_cursor.block())
+        you_label.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
+        assert you_label.charFormat().foreground().color() == QtGui.QColor(t.SIGNAL)
         content = chat.toPlainText()
         for target in ("tight", "airy", density):
             panel._recompose({"airy": "curious", "standard": "expert", "tight": "ml"}[target])
