@@ -24,9 +24,12 @@ Pure Python. Zero hou/Qt imports -- safe to import headlessly.
 from __future__ import annotations
 
 import os
+from copy import deepcopy
 
 from synapse.mcp._tool_registry import TOOL_DEFS
 from synapse.panel.bridge_adapter import _TOOL_TO_OPERATION
+from synapse.recipes.contracts import RUN_RECIPE_TOOL_NAME
+from synapse.recipes.authority import RUN_RECIPE_INPUT_SCHEMA
 
 # OPERATION_GATES is the canonical op-name -> gate map. Import directly from
 # the constants module (single source) rather than re-deriving.
@@ -44,8 +47,10 @@ _ENV_VAR = "SYNAPSE_WORKER_TOOL_MODE"
 _MODE_STRICT = "strict"
 _MODE_STANDARD = "standard"
 _MODE_UNRESTRICTED = "unrestricted"
-_VALID_MODES = (_MODE_STRICT, _MODE_STANDARD, _MODE_UNRESTRICTED)
+_MODE_DEMO = "demo"
+_VALID_MODES = (_MODE_STRICT, _MODE_STANDARD, _MODE_UNRESTRICTED, _MODE_DEMO)
 _DEFAULT_MODE = _MODE_STANDARD
+_PROFILE_ENV_VAR = "SYNAPSE_WORKER_TOOL_PROFILE"
 
 # Knowledge-tool prefix: the 6 ``synapse_group_*`` tools have no TOOL_DEFS
 # entry. They are read-only knowledge lookups (a description string back to
@@ -71,16 +76,28 @@ _WORKER_BUILDER_ALLOWLIST = frozenset({
 })
 
 
-def resolve_mode() -> str:
+def resolve_mode(profile: str | None = None) -> str:
     """Resolve the active worker tool mode from the environment.
 
     Read fresh each call so tests (and live config changes) take effect
-    without reimport. Unknown values fall back to the safe default.
+    without reimport. Only an ABSENT setting uses the legacy default.
+    Explicit invalid values and conflicting profile selections fail closed.
+    ``profile`` is a trusted host constraint; an environment setting cannot
+    override it. The optional profile environment variable uses the same
+    vocabulary as the mode (there was no legacy profile selector).
     """
-    raw = os.environ.get(_ENV_VAR, "").strip().lower()
-    if raw in _VALID_MODES:
-        return raw
-    return _DEFAULT_MODE
+    selections = [value for value in (
+        profile, os.environ.get(_PROFILE_ENV_VAR), os.environ.get(_ENV_VAR)
+    ) if value is not None]
+    if not selections:
+        return _DEFAULT_MODE
+    normalized = [value.strip().lower() if isinstance(value, str) else ""
+                  for value in selections]
+    if any(value not in _VALID_MODES for value in normalized):
+        return _MODE_STRICT
+    if len(set(normalized)) != 1:
+        return _MODE_STRICT
+    return normalized[0]
 
 
 # =========================================================================
@@ -105,7 +122,17 @@ _TOOL_INDEX: dict[str, dict] = _build_index()
 # Public API
 # =========================================================================
 
-def is_tool_allowed_for_worker(tool_name: str) -> tuple[bool, str]:
+def demo_tool_definitions() -> list[dict]:
+    """Demo advertisement; transport/registry registration is an integrator hookup."""
+    reads = [{"name": entry[0], "description": entry[3], "input_schema": deepcopy(entry[4])}
+             for entry in TOOL_DEFS
+             if entry[5] and not entry[0].startswith(_GROUP_PREFIX) and entry[0] != RUN_RECIPE_TOOL_NAME]
+    return reads + [{"name": RUN_RECIPE_TOOL_NAME,
+                     "description": "Propose one declared Solaris recipe action. Render requires trusted human approval.",
+                     "input_schema": deepcopy(RUN_RECIPE_INPUT_SCHEMA)}]
+
+
+def is_tool_allowed_for_worker(tool_name: str, *, profile: str | None = None) -> tuple[bool, str]:
     """Decide whether the autonomous worker may invoke ``tool_name``.
 
     Returns ``(allowed, reason)``. ``reason`` is a one-line human-readable
@@ -113,6 +140,8 @@ def is_tool_allowed_for_worker(tool_name: str) -> tuple[bool, str]:
 
     Policy by mode (``SYNAPSE_WORKER_TOOL_MODE``):
 
+      * ``demo`` -- registered reads and the constrained recipe proposal only;
+        group composites, generic mutation and unknown tools are denied.
       * ``unrestricted`` -- allow everything (restores pre-gate behavior for
         single-user-localhost operators who accept the risk).
       * ``strict`` -- allow read-only tools (and group knowledge) only.
@@ -122,7 +151,18 @@ def is_tool_allowed_for_worker(tool_name: str) -> tuple[bool, str]:
         renders, exports, prunes, pdg cooks) and any UNKNOWN tool
         (fail-closed).
     """
-    mode = resolve_mode()
+    mode = resolve_mode(profile)
+
+    if mode == _MODE_DEMO:
+        # This check precedes BOTH the legacy group exception and builder
+        # allowlist. Advertising a tool (or bypassing that filter) grants no
+        # authority. The one proposal interface validates again at the host.
+        if tool_name == RUN_RECIPE_TOOL_NAME:
+            return True, "demo mode: constrained recipe proposal"
+        info = _TOOL_INDEX.get(tool_name)
+        if not tool_name.startswith(_GROUP_PREFIX) and info and info["read_only"]:
+            return True, "demo mode: registered read-only tool"
+        return False, "demo mode: only registered reads and recipe proposals permitted"
 
     if mode == _MODE_UNRESTRICTED:
         return True, "unrestricted mode: all tools permitted"
