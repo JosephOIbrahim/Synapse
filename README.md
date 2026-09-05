@@ -8,7 +8,7 @@
 
 <p align="center">SYNAPSE lives in Houdini's own Python interpreter and calls <code>hou.*</code> directly.<br>No external bridge, no RPC hop, no second copy of the scene.</p>
 
-<p align="center"><sub>v5.63.0 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6<br>tags: v5.60.0 is Latest · vNEXT tags only via the release ritual (g-receipts are human acts)</sub></p>
+<p align="center"><sub>v5.63.0 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 = the Houdini runtime (hython) · 3.14 = the stock test gate · USD 0.26.5 · PySide6<br>tags: v5.63.0 is Latest · vNEXT tags only via the release ritual (g-receipts are human acts)</sub></p>
 
 ---
 
@@ -19,13 +19,13 @@
 **It asks first** before anything risky, and **says UNKNOWN** instead of guessing.
 **It tells you what doesn't work** — [Known limitations](#known-limitations) is the most-read section on purpose.
 
-**Right now — 3 September 2026.** Three things to know, newest first:
+**Right now — 5 September 2026.** Three things to know, newest first:
 
-- **v5.60.0 is live** — the panel breathes and the harness pays its own bill: every agent leg's token spend is metered and settled at close, or reads UNKNOWN. v5.59.0 before it was the day the numbers replaced the guesses.
-- **A new wave is in the repo, not on `master` yet.** Wave BP3 took a first-principles blueprint — H22 Solaris depth from Rob Pieke's HIVE talk, a World Labs → Solaris bridge, a spatial-intelligence lane — and ran it as seven agent legs against the live build. Zero verdicts BROKEN. Results sit on `bp3/*` branches until the human reads the crucible and says merge, per leg. What they found: [Wave BP3, one picture](#wave-bp3-one-picture).
+- **v5.63.0 is live** — two Codex swarms, one referee. The Solaris Recipes v3 wave merged **dormant**: the constrained `run_recipe` action exists in code but is registered on neither transport. Of the Panel PD wave only the CENSUS leg merged; LEVER / CAMERA / SWEEP_A / SWEEP_B are held on `pd/panel-integrate` under a CRUX **BROKEN** verdict. Nothing moves under an artist's hands in this release. *Producer: `harness/notes/RELEASE_v5.63.0.md`.*
+- **What the 09-04 plan called "closed" is still open.** Spatial lane default-on + ratified, panel measured font floor + zero literals, splat colour in the EXR — all three predicates are OPEN / carried, stated per item in `harness/notes/CAPSULE_2026-09-05_BP5.md`. Before that, wave BP4 landed seven legs on `master` (2026-09-03) on top of BP3's rulings; what BP3 found: [Wave BP3, one picture](#wave-bp3-one-picture).
 - **Read before trusting:** [Known limitations](#known-limitations). Still the most-read section on purpose.
 
-[Release notes v5.60.0 →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.60.0)
+[Release notes v5.63.0 →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.63.0)
 
 ### The shape of it — two pictures
 
@@ -242,13 +242,13 @@ Blueprint: [`docs/intake/blueprint-h22-worldlabs-intent.md`](docs/intake/bluepri
 **Refuses to boot on a render node** — *narrowly.* `hou.isUIAvailable()` gates the daemon, the Fork Bomb guard. But it protects a component with no production callers today while other surfaces boot headless. A guard that exists, not a guarantee that holds.
 
 <details>
-<summary><strong>The full claim, unpacked</strong> — everything the one-liner compresses (115 tools, truth contract, five engines, audit trail)</summary>
+<summary><strong>The full claim, unpacked</strong> — everything the one-liner compresses (128 tools, truth contract, five engines, audit trail)</summary>
 
 ### The full claim, unpacked
 
 This is the package description in long form — everything the one-liner compresses.
 
-**115 tools, two paths.** The full safety set (undo-wrapped, reversible, provenance-recorded) rides the audited `/mcp` bridge path. The direct `/synapse` path is RBAC-gated, main-thread-marshalled execution with observe-only provenance. Scene mutations are undo-wrapped and reversible. Filesystem and network effects of executed code are not.
+**128 tools, two paths.** That is the dispatch registry (`synapse.mcp._tool_registry.TOOL_DEFS`, pinned by `tests/test_phase0c_doc1_toolcount.py`); the stdio transport adds 10 local tools (six group preambles, the Inspector, Scout, two BLOCKS fixtures) that never reach a handler. The full safety set (undo-wrapped, reversible, provenance-recorded) rides the audited `/mcp` bridge path. The direct `/synapse` path is RBAC-gated, main-thread-marshalled execution with observe-only provenance. Scene mutations are undo-wrapped and reversible. Filesystem and network effects of executed code are not.
 
 **A registry-wide truth contract.** A result may not claim an outcome the handler did not observe.
 
@@ -490,8 +490,10 @@ It does **not** roll back when something raises. On the exception path a partial
 
 | | interpreter | result |
 |---|---|---|
-| **Gate** | system Python 3.14 | 5,551 passed · 0 failed *(2026-08-02)* |
-| **Shipping** | `hython3.13` — what Houdini runs | 4,048 passed · 110 failed · 771 errors |
+| **Gate** | stock Python 3.14.2 (no `hou`) | 7,431 passed · 1 failed · 198 skipped *(2026-09-05, master `b246b78e` — `harness/notes/h22/pytest_v5630_master.txt`)* |
+| **Shipping** | `hython3.13` — the Houdini runtime | 4,048 passed · 110 failed · 771 errors *(2026-08-02; not re-run for v5.63.0)* |
+
+The one gate failure (`tests/test_backfill.py::test_backup_is_taken_and_source_intact`) predates the v5.63.0 waves and is carried unchanged.
 
 The gate runs with the vendored SDK **inactive**; shipping runs with it **active**. They share almost no dependency surface.
 

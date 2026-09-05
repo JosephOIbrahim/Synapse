@@ -1,31 +1,28 @@
 {
   "artifact_hashes": {
-    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/hython-probe-0.log": "3b1ad1976f122fafca219b8cbe8eff438fba2ec5812989919bbc161a7543b130",
     "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/ledger.json": "207d5cea218630a5244d02b3ff3f90ba1c83b96fc403d63ff16acf3a29774dd3",
     "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/pure-observations.json": "aa3a29aab5b2516a9f00f5377fe3d1b644fb4bd00f0bf856859063071dacfced",
-    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/pure.log": "652145be7b664d41c4076e981af347bb3de399458e56e4cc5d0bfe7517ea4a70",
     "harness/solaris_v3/runs/acceptance-validation/bench-default.json": "fd0369c885115cb6e4a5c46bb32fe23512e3c3e13a4f1ddffa6736618d726d41",
-    "harness/solaris_v3/runs/acceptance-validation/full-suite.log": "5ab408279edfcfb6256a7388bcb9b52c33badec682593b35a7e6be3f2c93d7f6",
-    "harness/solaris_v3/runs/acceptance-validation/git-commit.log": "70091428f0cd5ee97fde707e57603650f6f05e5043310761f0660f757f409e35",
-    "harness/solaris_v3/runs/acceptance-validation/mutation-median.log": "2d92785860611c1e12604beb2132baf5ba441687f8bb672e45648d09ba123423",
-    "harness/solaris_v3/runs/acceptance-validation/mutation-skip.log": "bf4e2941736a67b113d005fb7fe426cb63ae7634ff297f6c4ff1a94d6634ba75",
-    "harness/solaris_v3/runs/acceptance-validation/mutation_check.py": "1a684b08697c38840031323b20d585d509173903e14c6cb6a54a83c24b348a57",
-    "harness/solaris_v3/runs/acceptance-validation/runner.log": "07507f87c20a41f13d0c98a5a79321a396d6620a729ef541fbb1b9e518d168e7",
-    "harness/solaris_v3/runs/acceptance-validation/targeted.log": "dd64b0e5b8c8f21230a28ad40aede37dc54ab3f1e60655862e39e1c8670c94d4"
+    "harness/solaris_v3/runs/acceptance-validation/mutation_check.py": "1a684b08697c38840031323b20d585d509173903e14c6cb6a54a83c24b348a57"
+  },
+  "artifact_hashes_stripped_2026-09-05": {
+    "paths": [
+      "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/hython-probe-0.log",
+      "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/pure.log",
+      "harness/solaris_v3/runs/acceptance-validation/full-suite.log",
+      "harness/solaris_v3/runs/acceptance-validation/git-commit.log",
+      "harness/solaris_v3/runs/acceptance-validation/mutation-median.log",
+      "harness/solaris_v3/runs/acceptance-validation/mutation-skip.log",
+      "harness/solaris_v3/runs/acceptance-validation/runner.log",
+      "harness/solaris_v3/runs/acceptance-validation/targeted.log"
+    ],
+    "reason": "These 8 paths were hashed in the worker sandbox but never reached the repository: *.log is gitignored (.gitignore:87), so the receipt shipped hashes for files no reader could verify. Stripped by CTO B8 on 2026-09-05; the four committed artifacts (ledger.json, pure-observations.json, bench-default.json, mutation_check.py) keep their original digests. The numbers those logs backed (targeted 40 passed; full suite 7109 collected / 5 collection errors / exit 2) stay in results[] as the worker reported them, now unverifiable by hash."
   },
   "artifacts": [
-    "harness/solaris_v3/runs/acceptance-validation/targeted.log",
-    "harness/solaris_v3/runs/acceptance-validation/full-suite.log",
-    "harness/solaris_v3/runs/acceptance-validation/runner.log",
     "harness/solaris_v3/runs/acceptance-validation/bench-default.json",
     "harness/solaris_v3/runs/acceptance-validation/mutation_check.py",
-    "harness/solaris_v3/runs/acceptance-validation/mutation-skip.log",
-    "harness/solaris_v3/runs/acceptance-validation/mutation-median.log",
     "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/ledger.json",
-    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/pure.log",
-    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/pure-observations.json",
-    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/hython-probe-0.log",
-    "harness/solaris_v3/runs/acceptance-validation/git-commit.log"
+    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/pure-observations.json"
   ],
   "commands": [
     "python -m pytest tests/test_solaris_v3_acceptance_bench.py tests/test_solaris_v3_acceptance_runner.py -q -p no:cacheprovider",
@@ -47,6 +44,21 @@
   "leg": "solaris_v3:C6:acceptance",
   "needs_human": [],
   "proved_it_bites": "In an isolated replay process, changing phase_status skip handling to PASS made test_skipped_phase_never_promotes_even_with_evidence fail (3 subtest failures, exit 1); replacing statistics.median(values) with values[0] made the hand-computed distribution control fail (exit 1). Source files were not modified during the full-suite run.",
+  "rerun_on_head_2026-09-05": {
+    "collected": 467,
+    "command": "python -X utf8 scripts/solaris_v3_accept.py --tier pure --timeout 400",
+    "dirty": false,
+    "exit_code": 0,
+    "failed": 0,
+    "head": "a4d86ce43936445f66baf87d2a6d9acb3d03a8b0",
+    "interpreter": "C:/Python314/python.exe (stock 3.14, no hou)",
+    "ledger": "harness/solaris_v3/runs/20260905T125351.258091Z-04606c37/ledger.json",
+    "note": "Exit 0 means no executed check failed; it does not mean ship-ready.",
+    "passed": 461,
+    "pure_tier": "PASS",
+    "rows": "G0-G6, T1-T12 all NOT_RUN (binding map still empty; hython/gui tiers not selected)",
+    "skipped": 6
+  },
   "results": {
     "acceptance": {
       "exit_code": 0,
