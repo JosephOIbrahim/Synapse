@@ -4,6 +4,13 @@
  "branch": "rope/gate-a",
  "executor_model": "gpt-oss:20b",
  "note": "executor_model set at runtime via --model + --confirm-model. Statuses: pending|in_progress|needs_review|verified|blocked|blocked_human|blocked_seat.",
+ "log": [
+  {
+   "date": "2026-08-20",
+   "by": "SCRIBE (FLOW-U2)",
+   "note": "panel_diag evidence dir docs/harness/notes/ produced 2026-08-20 ~13:15-13:25 (17 panel_diag_* artifacts, tracked by no STATE file); probes cover DsRailMeter verb-rail (L5-17), pane tabs, widget tree, 1.5MB screenshot; suspected L5-14..L5-23 review session evidence — verdicts still Joe's to record"
+  }
+ ],
  "tasks": [
   {
    "id": "L1-1",

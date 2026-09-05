@@ -43,7 +43,7 @@ def leg_state(r):
 
 def bus_tail(n=8):
     if not BUS.exists():
-        return 0, ["(bus empty - wave not armed)"]
+        return 0, ["(bus: 0 lines yet)"]
     lines = [l for l in BUS.read_text(encoding="utf-8").splitlines() if l.strip()]
     out = []
     for l in lines[-n:]:

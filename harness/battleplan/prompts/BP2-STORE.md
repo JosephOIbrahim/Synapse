@@ -133,6 +133,14 @@ claims become invisible and two agents will edit one file.
    verbatim: answer it by naming the target you return to, not with a new idea.
    A `halt` message means rails stopped the wave: commit what is named-file
    clean, write your receipt at observed scope, stop.
+   How the drift check reads you (`harness/battleplan/drift.py`, run once per poll
+   when the wave is budgeted, zero model calls): it takes your last 5 `progress`
+   messages and computes the fraction that cite a `T<n>` target or an acceptance
+   index. Below 0.6 you have DRIFTED, and the orchestrator posts you a `refocus`
+   with your targets verbatim; two refocus with the ratio still under 0.6 (no
+   improvement) escalate to a `halt`. The defence is simple: tag every `progress`
+   with the `"target"` you are actually on — an off-target or untagged progress
+   message counts against your ratio.
    Self-cap: the turn number in your mission note is SELF-REPORTED (a rails
    turn is a leg dispatch, not one of your turns - docs/BATTLEPLAN.md sec.12
    R-3). At 80% of it post a progress message saying `wrap_up`; at 100% commit,
