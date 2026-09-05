@@ -548,8 +548,14 @@ class SynapsePanel(QtWidgets.QWidget):
         # _build_* calls below. "expert" is the v5.42.0 wiring exactly; an
         # invalid manifest falls back to that wiring hard-coded (the panel
         # always builds).
-        profile = getattr(self, "_layout_profile", DEFAULT_PROFILE)
-        self._build_profile_actions()
+        #
+        # J4 (Joe's five, 2026-09-05): the profile switch left the UI. The
+        # persisted pick stays on disk for the day the profiles return with a
+        # real difference; the composed panel is expert. __init__'s
+        # SwitcherState read stands as is - this line overrides it, and
+        # nothing an artist can reach composes any other manifest.
+        profile = DEFAULT_PROFILE
+        self._layout_profile = DEFAULT_PROFILE
         built = False
         if compose is not None:
             try:
@@ -567,40 +573,19 @@ class SynapsePanel(QtWidgets.QWidget):
             root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
         self._set_face("direct")                    # rest on the CHAT surface
 
-    def _build_profile_actions(self):
-        """The profile choice as three exclusive checkable QActions (bc-wave
-        BC-5): CURIOUS / EXPERT / ML select the layout manifest (L5-2) from
-        the overflow's 'Profile >' submenu instead of a 47px tab strip. A
-        trigger writes through settings (SwitcherState) and recomposes LIVE
-        (_select_profile); boot checks the saved profile. The actions live
-        on the panel and are added to every overflow menu built, so the
-        checked state survives the menu. `_profile_pills` keeps its name:
-        pid -> QAction (was pid -> Pill)."""
-        try:
-            from synapse.panel.settings import PROFILES as _profiles
-        except Exception:  # pragma: no cover - settings ships with the panel
-            _profiles = ("curious", "expert", "ml")
-        _QAction = getattr(QtGui, "QAction", None) or QtWidgets.QAction
-        _QActionGroup = getattr(QtGui, "QActionGroup", None) or QtWidgets.QActionGroup
-        group = _QActionGroup(self)
-        group.setExclusive(True)
-        self._profile_pills = {}
-        for pid in _profiles:
-            act = _QAction(pid.upper() if len(pid) <= 2 else pid.title(), self)
-            act.setCheckable(True)
-            act.setData(pid)
-            act.triggered.connect(lambda _=False, pid=pid: self._select_profile(pid))
-            group.addAction(act)
-            self._profile_pills[pid] = act
-        self._mark_profile_pill(getattr(self, "_layout_profile", DEFAULT_PROFILE))
-
     # ------------------------------------------------- profile switcher (L5-4)
+    # J4 (Joe's five, 2026-09-05): the profile choice has no artist-reachable
+    # surface - no tab strip (BC-5 folded it), no overflow submenu (J4 retired
+    # it). _select_profile / _mark_profile_pill / _recompose stay as machinery
+    # (tests/test_rope_switcher_wires_profile.py drives them) so the profiles
+    # can return the day they carry a real difference.
     def _select_profile(self, profile):
-        """A profile-tab click: persist through settings, then recompose LIVE.
+        """Select a profile: persist through settings, then recompose LIVE.
 
         ``SwitcherState`` (Qt-free, tested headless) owns selection → settings
         write → restore; this method owns the Qt half. A failed save still
-        switches the session — and says so in chat, never silently.
+        switches the session — and says so in chat, never silently. No
+        artist-reachable control calls this since J4.
         """
         if profile == getattr(self, "_layout_profile", DEFAULT_PROFILE):
             return
@@ -619,8 +604,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._recompose(profile)
 
     def _mark_profile_pill(self, profile):
-        """Check the selected profile action (name kept - the switcher test
-        drives it; bc-wave BC-5 made the pills QActions)."""
+        """Check the selected profile control, if any. The composed panel
+        builds none since J4 (``_profile_pills`` is never set, so this is a
+        no-op); the name and the getattr default are kept for the switcher
+        test, whose stub defines its own ``_profile_pills``."""
         for pid, act in getattr(self, "_profile_pills", {}).items():
             try:
                 act.setChecked(pid == profile)
@@ -846,7 +833,7 @@ class SynapsePanel(QtWidgets.QWidget):
             max(fm.horizontalAdvance(phrase) for phrase in _state_phrases()))
         overflow = c.Button("\u22ef", variant="ghost")
         overflow.setAccessibleName("More")
-        overflow.setToolTip("Palette, corpus, engine, profile, health, help, text size, halt")
+        overflow.setToolTip("Palette, corpus, engine, health, help, text size, halt")
         overflow.clicked.connect(self._show_overflow)
         self._stop_btn = c.Button("Stop", variant="danger")
         # L5-20: the mark (MarkDot.set_halt_handler) and this button are two
@@ -1097,8 +1084,8 @@ class SynapsePanel(QtWidgets.QWidget):
         lay.addWidget(self._ctx_label, 1)
         # bc-wave BC-5: the ribbon is [context label, stretch][CHAT][TOKEN] -
         # the two face pills ride the ribbon's right edge at the shell gap;
-        # the profile row they shared (DsTabRow) is gone, profile choice is
-        # the overflow's 'Profile >' menu. v9.1 (Option A): there is one
+        # the profile row they shared (DsTabRow) is gone, and J4 retired the
+        # profile choice from the UI altogether. v9.1 (Option A): there is one
         # surface, CHAT, and consent/review auto-surfaces when actionable;
         # clicking CHAT is the manual way back. The internal face keys stay
         # "direct"/"work" - the invariants key on those, not the label.
@@ -2187,7 +2174,9 @@ class SynapsePanel(QtWidgets.QWidget):
 
         bc-wave (direction B): the chrome that left the composed panel at rest
         lives here - Build HDA (was a verb on the retired rail), the text-size
-        pair (the 'Aa' verb duplicated them, F10), the halt controls (H3b)."""
+        pair (the 'Aa' verb duplicated them, F10), the halt controls (H3b).
+        J4 (Joe's five): no Profile submenu - the profile switch left the UI;
+        'Larger text / Default text' are the Aa font scale, not density."""
         menu = QtWidgets.QMenu(self)
         menu.addAction("Copy conversation", self._copy_conversation)
         # Build HDA: the form is unchanged; only the way in moved (BC-1).
@@ -2223,12 +2212,6 @@ class SynapsePanel(QtWidgets.QWidget):
                 act.triggered.connect(lambda _=False, p=pid: self._set_provider(p))
         except Exception:
             pass
-        # Profile (BC-5): the layout manifest choice, checkable + exclusive;
-        # the actions are the panel's own (_build_profile_actions), so the
-        # check state is the saved profile every time the menu opens.
-        prof = menu.addMenu("Profile")
-        for act in getattr(self, "_profile_pills", {}).values():
-            prof.addAction(act)
         # Health: the four strip cells (connection · memory · project · job)
         # as disabled facts, built from the same producer the strip used
         # (health_strip.build_cells over the last context facts + O(1)
