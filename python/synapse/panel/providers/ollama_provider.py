@@ -15,6 +15,11 @@ Localhost surface by default (documented in docs/studio/EGRESS.md). A remote
 — this file deliberately holds no raw TLS-connection literal, so the frozen
 egress pin (tests/test_m3_egress_docs.py) stays exact; the remote-host caveat
 lives in EGRESS.md. No Qt, no hou.
+
+J2 (2026-09-05): the inherited request asks for the final ``usage`` chunk and
+the inherited parser lands it on ``last_usage`` (verified live on 0.33.2); the
+model's context window comes from ``POST /api/show`` (``_context_facts``),
+asked once per instance on the worker thread.
 """
 from __future__ import annotations
 
@@ -25,7 +30,7 @@ import os
 import ssl
 from urllib.parse import urlsplit
 
-from .nemotron_provider import NemotronProvider
+from .nemotron_provider import NemotronProvider, _NOT_LOOKED_UP
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +56,41 @@ def _parse_tags(data):
     except AttributeError:
         return None
     return tuple((n, n) for n in names) or None
+
+
+def _parse_show_context(data):
+    """``POST /api/show`` JSON → the model's context window in tokens, or
+    ``None`` when unshaped / unreported (J2).
+
+    A modelfile ``num_ctx`` in ``parameters`` is the window the daemon really
+    runs with and wins; otherwise the first ``model_info`` key ending in
+    ``.context_length`` is the architecture's window (live 0.33.2:
+    ``nemotron.context_length`` 4096 for nemotron-mini, ``qwen35.context_length``
+    262144 for qwen3.5:4b). Honest caveat, cited on the face as the source:
+    without a modelfile num_ctx the daemon's runtime default
+    (``OLLAMA_CONTEXT_LENGTH``) can be smaller than the model's maximum.
+    Only an int-and-not-bool > 0 is a window."""
+    if not isinstance(data, dict):
+        return None
+    params = data.get("parameters")
+    if isinstance(params, str):
+        for line in params.splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and parts[0] == "num_ctx":
+                try:
+                    num_ctx = int(parts[1])
+                except ValueError:
+                    num_ctx = 0
+                if num_ctx > 0:
+                    return num_ctx
+    info = data.get("model_info")
+    if isinstance(info, dict):
+        for key, value in info.items():
+            if isinstance(key, str) and key.endswith(".context_length"):
+                if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+                    return value
+                return None
+    return None
 
 
 class OllamaProvider(NemotronProvider):
@@ -112,3 +152,43 @@ class OllamaProvider(NemotronProvider):
         except Exception as exc:
             logger.debug("Ollama /api/tags unavailable: %s", exc)
             return None
+
+    # -- J2: context window from the daemon (worker thread, once) ----------
+
+    _SHOW_TIMEOUT = 1.0
+
+    def _context_facts(self):
+        """``POST {OLLAMA_HOST}/api/show`` (body: the model name only) →
+        ``(window, "ollama /api/show")``, looked up ONCE per instance on the
+        worker thread; ``None`` when the daemon is down or the model is
+        unshaped. Same connection-class-by-scheme idiom as ``available_models``
+        — no raw TLS-connection literal in this file (the frozen egress pin);
+        the call is documented in docs/studio/EGRESS.md."""
+        if self._ctx_facts is not _NOT_LOOKED_UP:
+            return self._ctx_facts
+        self._ctx_facts = None
+        scheme, host, path = _ollama_endpoint()
+        conn_cls = (http.client.HTTPConnection if scheme == "http"
+                    else http.client.HTTPSConnection)
+        try:
+            if scheme == "http":
+                conn = conn_cls(host, timeout=self._SHOW_TIMEOUT)
+            else:
+                conn = conn_cls(host, timeout=self._SHOW_TIMEOUT,
+                                context=ssl.create_default_context())
+            try:
+                conn.request("POST", path + "/api/show",
+                             body=json.dumps({"model": self._model}).encode("utf-8"),
+                             headers={"Content-Type": "application/json"})
+                resp = conn.getresponse()
+                if resp.status != 200:
+                    return None
+                data = json.loads(resp.read().decode("utf-8", errors="replace"))
+            finally:
+                conn.close()
+            window = _parse_show_context(data)
+            if window:
+                self._ctx_facts = (window, "ollama /api/show")
+        except Exception as exc:
+            logger.debug("Ollama /api/show unavailable: %s", exc)
+        return self._ctx_facts

@@ -190,12 +190,16 @@ class ClaudeWorker(QThread):
         tool_calls_total = 0   # L9: tool calls across the whole turn-loop
         # W5-PANEL item 3: open a fresh per-task usage receipt keyed to the
         # SELECTED model, so the Token tab shows THIS task's spend, not a lifetime
-        # total. model_identity is the provider's own name for the engine.
+        # total. model_identity is the provider's own name for the engine; the
+        # provider id (J2) is what the face names in "not reported by <provider>"
+        # and what model_facts prices by. The sink's SESSION half keeps running.
         if USAGE_SINK is not None:
             try:
-                USAGE_SINK.begin_task(getattr(self._provider, "model_identity", None))
+                USAGE_SINK.begin_task(getattr(self._provider, "model_identity", None),
+                                      provider=getattr(self._provider, "id", None))
             except Exception:
                 pass
+        context_recorded = False   # J2: the window is looked up once per task
         for iteration in range(_MAX_TOOL_ITERATIONS):
             if self._abort:
                 return
@@ -217,6 +221,19 @@ class ClaudeWorker(QThread):
             if USAGE_SINK is not None:
                 try:
                     USAGE_SINK.add(getattr(self._provider, "last_usage", None))
+                    if not context_recorded:
+                        # J2: the model's context window, from the provider
+                        # (Ollama /api/show, Gemini models.get, or the
+                        # documented model_facts table) — asked ONCE per task,
+                        # here on the worker thread so the Qt thread never
+                        # waits on it. None ⇒ the face says "context window
+                        # not reported by <provider>", never a guess.
+                        context_recorded = True
+                        window = getattr(self._provider, "context_window", None)
+                        source = getattr(self._provider, "context_window_source", None)
+                        USAGE_SINK.set_context_window(
+                            window() if callable(window) else None,
+                            source() if callable(source) else None)
                 except Exception:
                     pass
 

@@ -32,6 +32,17 @@ Three constraints, all from R167 and none negotiable:
   3. Unobtainable renders as UNKNOWN, never zero and never an estimate.
      A zero is a claim (R162).
 
+J2 (RULING_JOE_FIVE.md, 2026-09-05) — the counter counts. THIS TURN · SPEND
+(prompt / completion / total / context share) and SESSION (prompt / completion
+/ total / turns / cost) come from the provider's OWN usage report, folded per
+task and per session by usage_sink; the context window from the provider where
+it reports one (Ollama /api/show, Gemini models.get, the documented table in
+providers/model_facts.py); cost = list price × reported tokens where a public
+price is on file, $0 for local weights. Where a provider reports nothing the
+note under the block says "not reported by <provider>" and the value cells
+keep UNKNOWN (constraint 3 still binds). V3-F4 stands: the context row is the
+provider's window, not rate-limit headroom, and nothing here is a quota bar.
+
 Every dependency is optional so the face always instantiates — graceful
 degradation is a contract here, same as FaceWork.
 """
@@ -363,6 +374,34 @@ class FaceToken(QtWidgets.QWidget):
         ])
         lay.addWidget(self._composition)
 
+        # J2: what the turn actually cost, from the provider's own receipt.
+        # Same _kv_block rows as every other block (DsParmValue, parm_row);
+        # the sentence a value cell cannot carry rides a note underneath.
+        lay.addWidget(self._eyebrow("THIS TURN · SPEND"))
+        self._spend = self._kv_block([
+            ("prompt", UNKNOWN),
+            ("completion", UNKNOWN),
+            ("total", UNKNOWN),
+            ("context", UNKNOWN),       # last prompt / window · share
+        ])
+        lay.addWidget(self._spend)
+        self._spend_note = self._footnote("")
+        self._spend_note.setVisible(False)
+        lay.addWidget(self._spend_note)
+
+        lay.addWidget(self._eyebrow("SESSION"))
+        self._session = self._kv_block([
+            ("prompt", UNKNOWN, "session prompt"),
+            ("completion", UNKNOWN, "session completion"),
+            ("total", UNKNOWN, "session total"),
+            ("turns", UNKNOWN, "turns"),
+            ("cost", UNKNOWN, "session cost"),
+        ])
+        lay.addWidget(self._session)
+        self._session_note = self._footnote("")
+        self._session_note.setVisible(False)
+        lay.addWidget(self._session_note)
+
         lay.addWidget(self._eyebrow("CACHE"))
         self._cache = self._kv_block([
             ("prefix", UNKNOWN),
@@ -384,9 +423,11 @@ class FaceToken(QtWidgets.QWidget):
             "The field fills only as far as the turn has been measured — an "
             "unmeasured segment claims no cells rather than reading as a small "
             "one. System prompt and tool surface are character-derived and run "
-            "~6% low against exact counts (R155). Quota headroom and per-token "
-            "price are not obtainable from any configured provider (V3-F4, "
-            "V3-F5)."))
+            "~6% low against exact counts (R155). Prompt, completion and "
+            "context come from the provider's own usage report where it makes "
+            "one; cost is list price × reported tokens where a public price is "
+            "on file, $0 for local weights, otherwise unknown — never an "
+            "estimate. Rate-limit headroom is still not obtainable (V3-F4)."))
 
     # -- construction helpers ------------------------------------------------
 
@@ -434,7 +475,12 @@ class FaceToken(QtWidgets.QWidget):
         w.setObjectName("DsSection")
         w.setProperty("rhythm_role", "parm_row")
         grid = QtWidgets.QGridLayout(w)
-        for i, (k, v) in enumerate(pairs):
+        for i, pair in enumerate(pairs):
+            k, v = pair[0], pair[1]
+            # J2: an optional third element is the _rows key, so two blocks
+            # can share a label (SPEND 'prompt' / SESSION 'prompt') without
+            # one row shadowing the other.
+            row_key = pair[2] if len(pair) > 2 else k
             key = c.label(k, role="body", scale=self._scale)
             val = c.label(str(v), role="code", scale=self._scale)
             key.setObjectName("DsParmLabel")
@@ -445,7 +491,7 @@ class FaceToken(QtWidgets.QWidget):
             val.setTextFormat(Qt.PlainText)
             grid.addWidget(key, i, 0, alignment=Qt.AlignLeft)
             grid.addWidget(val, i, 1, alignment=Qt.AlignRight)
-            self._rows[k] = val
+            self._rows[row_key] = val
         grid.setColumnStretch(2, 1)
         return w
 
@@ -562,18 +608,20 @@ class FaceToken(QtWidgets.QWidget):
         self._refresh_usage()
 
     def _refresh_usage(self):
-        """Feed the CACHE block and the ENGINE model from the LAST task's REAL
-        per-task token usage (usage_sink).
+        """Feed the CACHE block, the ENGINE model and (J2) the SPEND + SESSION
+        blocks from the LAST task's REAL per-task token usage (usage_sink).
 
-        Every number here traces to ``provider.last_usage`` — an Anthropic API
-        receipt captured by AnthropicProvider and folded across the task's tool
-        loop by claude_worker. This is the wiring that turns the dead counter live.
+        Every number here traces to ``provider.last_usage`` — the provider's own
+        API receipt (Anthropic ``usage``; the OpenAI ``usage`` chunk for Ollama /
+        Custom / Nemotron and Gemini ``usageMetadata`` since J2) folded across
+        the task's tool loop by claude_worker. This is the wiring that turns the
+        dead counter live.
 
         Honesty (R162): a field the API never reported is ``None`` and renders
-        UNKNOWN via set_row, never zero. A task that never ran, or a non-Anthropic
-        engine that reports no usage, leaves these rows UNKNOWN — the counter's
-        honest resting state, not a fabricated number. A genuinely API-reported 0
-        (a real cache miss) is a measured claim and shows as 0.
+        UNKNOWN via set_row, never zero. A task that never ran, or an engine that
+        reports no usage, leaves these rows UNKNOWN — the counter's honest
+        resting state, not a fabricated number. A genuinely API-reported 0 (a
+        real cache miss) is a measured claim and shows as 0.
 
           cache_read     -> CACHE 'prefix'    (cached prefix reused this task)
           cache_creation -> CACHE 'last turn' (cache written this task, paid 1.25x)
@@ -582,8 +630,12 @@ class FaceToken(QtWidgets.QWidget):
         The four THIS-TURN composition rows (system/tools/grounding/conversation)
         are NOT fed here: the API reports totals plus the cache split, never the
         4-way input breakdown, so inventing it would be exactly the estimate this
-        face refuses. They stay measure_static/UNKNOWN. Cost stays UNKNOWN too — no
-        provider exposes per-token price (V3-F5)."""
+        face refuses. They stay measure_static/UNKNOWN.
+
+        J2 (2026-09-05): the SPEND and SESSION blocks are fed from the same
+        snapshot by _refresh_spend — prompt / completion / total / context share
+        per turn, prompt / completion / total / turns / cost per session, and the
+        note under each block that says what the provider did not report."""
         try:
             from synapse.panel.usage_sink import USAGE_SINK
             snap = USAGE_SINK.snapshot()
@@ -596,6 +648,74 @@ class FaceToken(QtWidgets.QWidget):
         model = snap.get("model")
         if model:
             self.set_row("model", model)
+        self._refresh_spend(snap)
+
+    def _refresh_spend(self, snap):
+        """J2: THIS TURN · SPEND and SESSION from one usage_sink snapshot.
+
+        Per turn:  prompt / completion / total are the LAST task's reported
+        fields (total = the same sum the TOKEN pill shows); context is
+        ``'<last prompt> / <window> · <share>%'`` when the provider reported
+        both (token_readout.context_text), else UNKNOWN.
+        Per session:  the sums since clear(), the task count, and cost = list
+        price × reported tokens per (provider, model) part
+        (providers/model_facts.session_cost) — $0 for local weights, UNKNOWN
+        where any part has no public price.
+
+        The value cells only ever hold UNKNOWN or a reported figure (R162); the
+        sentence rides the note under the block: 'prompt/completion not
+        reported by <provider>', 'context window not reported by <provider>'
+        (or 'context window from <source>'), 'cost: $0 · local' /
+        'cost: $0.0123 · list price · 2026-09-05' / 'price unknown for
+        <model>'. Never raises: a missing display rule leaves the rows as they
+        were."""
+        try:
+            from synapse.panel import token_readout as tr
+        except Exception:
+            return
+        try:
+            from synapse.panel.providers import model_facts as mf
+        except Exception:
+            mf = None
+
+        who = snap.get("provider") or "the provider"
+        prompt, completion = snap.get("input_tokens"), snap.get("output_tokens")
+        self.set_row("prompt", prompt)
+        self.set_row("completion", completion)
+        self.set_row("total", tr.task_total(snap))
+        window = snap.get("context_window")
+        self.set_row("context", tr.context_text(snap.get("last_prompt"), window))
+        notes = []
+        if prompt is None and completion is None:
+            notes.append("prompt/completion not reported by %s" % who)
+        if window is None:
+            notes.append("context window not reported by %s" % who)
+        elif snap.get("context_source"):
+            notes.append("context window from %s" % snap["context_source"])
+        self._set_note(self._spend_note, " · ".join(notes))
+
+        session = snap.get("session") or {}
+        self.set_row("session prompt", session.get("input_tokens"))
+        self.set_row("session completion", session.get("output_tokens"))
+        self.set_row("session total", tr.session_total(snap))
+        self.set_row("turns", session.get("tasks"))
+        priced = mf.session_cost(snap) if mf is not None else None
+        if priced is None:
+            self.set_row("session cost", None)
+            names = mf.unpriced_models(snap) if mf is not None else []
+            note = ("price unknown for %s" % ", ".join(names)) if names else "price unknown"
+        else:
+            usd, why = priced
+            cell = tr.usd_text(usd)
+            self.set_row("session cost", cell)
+            note = "cost: %s · %s" % (UNKNOWN if cell is None else cell, why)
+        self._set_note(self._session_note, note)
+
+    @staticmethod
+    def _set_note(lbl, text):
+        """A block note shows only when it has something to say."""
+        lbl.setText(text or "")
+        lbl.setVisible(bool(text))
 
     @staticmethod
     def _ago(stamp):
