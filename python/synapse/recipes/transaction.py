@@ -6,9 +6,13 @@ not cross-process exclusion. The injected host backend applies an already
 prepared BLOCKS operation set; this module is not another graph reconciler.
 
 Undo evidence follows shared/bridge.py's before/after snapshots, with a
-stricter unknown policy: no evidence, no mutation. H22's committed symbol
-table omits hou.undos methods, so their live driver must be supplied after
-qualification. Merely entering a context manager is not rollback evidence.
+stricter unknown policy: no evidence, no mutation. The live driver is
+``HoudiniUndoDriver`` below, bound to ``hou.undos`` — its four members
+(``group`` / ``areEnabled`` / ``undoLabels`` / ``performUndo``) are
+live-verified on H22.0.400 (CTO B2, 2026-09-05: ``undoLabels()`` returns
+most-recent-first, headless ``areEnabled()`` is True, ``performUndo()`` pops
+the latest item) and carried by the committed h22 symbol table. Merely
+entering a context manager is not rollback evidence.
 """
 from __future__ import annotations
 
@@ -66,6 +70,76 @@ class TransactionBackend(Protocol):
     def perform_undo(self) -> None: ...
     def apply(self, operation: PreparedOperation) -> None: ...
     def verify(self, action: ActionId, instance: RecipeInstance) -> Sequence[CheckResult]: ...
+
+
+def _resolve_hou_undos():
+    """The live ``hou.undos`` namespace, or None outside Houdini. Guarded import
+    (CLAUDE.md §12): this module stays importable in stock python / CI."""
+    try:
+        import hou
+    except ImportError:
+        return None
+    return getattr(hou, "undos", None)
+
+
+class HoudiniUndoDriver:
+    """The four ``TransactionBackend`` undo methods, bound to ``hou.undos``.
+
+    A host backend composes this (``undo_enabled = driver.undo_enabled`` ...)
+    or subclasses it; the graph methods stay the backend's own. Every method
+    must run on the host main thread, like the rest of the backend.
+
+    Evidence policy is unchanged from the docstring above: when ``hou.undos``
+    cannot be resolved, ``undo_enabled`` / ``undo_labels`` answer **None**
+    (unknown, never a faked True/False) and ``BuildTransaction`` refuses before
+    any write ("UNAVAILABLE: verified undo group evidence required");
+    ``undo_group`` / ``perform_undo`` raise rather than pretend. ``undos`` is
+    injectable for tests; ``resolve`` is the lazy lookup used when it is not.
+    """
+    def __init__(self, undos: Any = None, resolve: Callable[[], Any] | None = None):
+        self._undos = undos
+        self._resolve = resolve or _resolve_hou_undos
+
+    def _namespace(self):
+        if self._undos is None:
+            self._undos = self._resolve()
+        return self._undos
+
+    def undo_enabled(self) -> bool | None:
+        ns = self._namespace()
+        if ns is None:
+            return None
+        try:
+            return bool(ns.areEnabled())
+        except Exception:
+            return None
+
+    def undo_labels(self) -> tuple[str, ...] | None:
+        # hou.undos.undoLabels() is most-recent-first (verified 22.0.400), so
+        # labels[0] is the latest undo item -- the contract _execute_on_main and
+        # _recover_on_main measure against.
+        ns = self._namespace()
+        if ns is None:
+            return None
+        try:
+            return tuple(ns.undoLabels())
+        except Exception:
+            return None
+
+    def undo_group(self, label: str) -> ContextManager:
+        # hou.undos.group(label): grouping only -- one artist Ctrl+Z reverses the
+        # whole block; it does NOT roll back when the block raises (CLAUDE.md §1).
+        # Rollback here is _recover_on_main's single measured perform_undo.
+        ns = self._namespace()
+        if ns is None:
+            raise RuntimeError("UNAVAILABLE: hou.undos is not importable in this process")
+        return ns.group(label)
+
+    def perform_undo(self) -> None:
+        ns = self._namespace()
+        if ns is None:
+            raise RuntimeError("UNAVAILABLE: hou.undos is not importable in this process")
+        ns.performUndo()
 
 
 @dataclass

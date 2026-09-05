@@ -470,8 +470,9 @@ If any §16.2 API surface changes, the corresponding test above fails. The doc/c
 
 ## Rulebook discipline
 - `rulebook/` is law. Before touching any `hou.*` surface, check `surfaces/<build>/` and `phantoms.json`.
+- **Interim authority (CTO B2, 2026-09-05):** `rulebook/surfaces/` is still empty (`.gitkeep` only) and `scripts/rulebook_harvest.py` does not exist yet. Until the harvest lands, the `hou.*`/`pdg.*`/`pxr.*` **existence** authority is the introspected symbol table `python/synapse/cognitive/tools/data/h22_symbol_table.json` (regenerate with `hython host/introspect_runtime.py` on the target build; the headless run omits `hou.ui`/`hou.qt`/`hou.audio`/`hou.desktop`/`hou.viewportVisualizers`, which `harness/verify/checks.py::_GUI_HOU_ABSENT_HEADLESS` unions back in), and the **node-type** authority is the live catalogue `rag/catalog/h22.0.400/` (`_manifest.json` + per-context files, built by `scripts/build_node_catalog.py`). `phantoms.json` remains the quarantine list either way.
 - `ratified` rules bind; `draft` advises; `rfc-gated` blocks until the named RFC lands.
-- Never hand-edit `surfaces/` — regenerate via `scripts/rulebook_harvest.py`.
+- Never hand-edit `surfaces/` — regenerate via `scripts/rulebook_harvest.py` once it exists; until then the symbol table + catalogue above are what you check.
 - Every port: golden first, contract ratified, then code. Goldens are evidence; contracts are law.
 - Never reference a quarantined symbol; the phantom lint fails CI.
 
