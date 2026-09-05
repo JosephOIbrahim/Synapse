@@ -138,3 +138,5 @@ release") is recorded as re-signing the waiver for this release only.
 Handoff: `docs/solaris_v3/INTEGRATION.md`, `docs/panel_pd/INTEGRATION.md`,
 swarm dashboard artifact (session-scoped), memory note
 `codex-plugin-swarm-traps`.
+
+**Published 2026-09-05 07:29 (Joe words: "merge, then commit then push then update git release all using CTO best practices").** Merges b246b78e (Solaris integrate + panel CENSUS), release commit e422efb6, tag v5.63.0 at e422efb6, Gate C push scoped to one command, GitHub release https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.63.0 marked Latest. Panel legs LEVER/CAMERA/SWEEP_A/SWEEP_B held on pd/panel-integrate (aca05ccb) per CRUX; unmerged branches were not pushed.
