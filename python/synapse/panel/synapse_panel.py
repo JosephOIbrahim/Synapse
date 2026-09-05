@@ -2620,14 +2620,16 @@ class SynapsePanel(QtWidgets.QWidget):
         # bc-wave BC-6a (F11): a quiet turn that CHANGED the scene leaves an
         # artist-clickable REVERT on the CHAT surface - the turn receipt,
         # counted from the same evidence the Work face credits.
+        # Best-effort like every seam in this method: a completion must never
+        # fail on the receipt (duck-typed completions carry no slot).
         try:
             credit = self._turn_evidence()[0]
+            if credit:
+                self._show_turn_receipt(len(credit))
+            else:
+                self._hide_turn_receipt()
         except Exception:
-            credit = []
-        if credit:
-            self._show_turn_receipt(len(credit))
-        else:
-            self._hide_turn_receipt()
+            pass
         # BP2-PANELTRUTH T2 / W5-PANEL item 3: the completed task's real token
         # receipt (usage_sink) now lands on the TOKEN face + the rail meter/pill
         # — event-driven from completion here, NEVER a QTimer (V3: a probe must
