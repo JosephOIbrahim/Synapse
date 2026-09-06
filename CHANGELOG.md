@@ -2,6 +2,10 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.65.2 — the loop audited itself and found a lie it had told
+
+*2026-09-06: a record-integrity release; no product code changed. The CTO review loop's second crank ran its SWEEP before the FIND lanes and audited its own backlog. It found B6 marked closed on evidence that could not have been true (the cited merge touched neither file the third clause reads), eight predicates stored clipped at exactly 500 characters and therefore unmeasurable, and all eight silencing their hython probe and reading stale JSON — four of them returning a confident FAIL about a verb rail the B+C wave had already retired. Withdrawn in place, restored whole, and made to report UNKNOWN when the instrument breaks; `harness/cto/check_backlog.py` now refuses both classes and was proven by mutation. Also: the F3 WS-halt pin anchors to the halt call rather than the latch that precedes it (macOS CI flake). Full gate **7613 passed / 0 failed / 357 skipped**. Account: `harness/cto/runs/2026-09-06/SWEEP_REPAIR.md`; notes: `harness/notes/RELEASE_v5.65.2.md`.*
+
 ## v5.65.1 — five things Joe saw in the first ten minutes
 
 *2026-09-05 (late): patch on v5.65.0 from Joe's first live look, built as a team wave (`design/joe-five`, merged `33c46028`): the model token is a status light (green live / amber working / grey off, palette colours), TOKEN counts real usage from every provider that reports it (Ollama, Gemini, Nemotron and OpenAI-style endpoints were never parsed before; Ollama verified live), USER and SYNAPSE read in two colours, the profile switch left the UI, and the wordmark has air above it. Full gate **7613 passed / 0 failed / 357 skipped**. Notes: `harness/notes/RELEASE_v5.65.1.md`.*

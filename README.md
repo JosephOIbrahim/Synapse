@@ -8,7 +8,7 @@
 
 <p align="center">SYNAPSE lives in Houdini's own Python interpreter and calls <code>hou.*</code> directly.<br>No external bridge, no RPC hop, no second copy of the scene.</p>
 
-<p align="center"><sub>v5.65.1 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 = the Houdini runtime (hython) · 3.14 = the stock test gate · USD 0.26.5 · PySide6<br>tags: v5.65.1 is Latest · vNEXT tags only via the release ritual (g-receipts are human acts)</sub></p>
+<p align="center"><sub>v5.65.2 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 = the Houdini runtime (hython) · 3.14 = the stock test gate · USD 0.26.5 · PySide6<br>tags: v5.65.2 is Latest · vNEXT tags only via the release ritual (g-receipts are human acts)</sub></p>
 
 ---
 
@@ -21,12 +21,13 @@
 
 **Right now — 5 September 2026, night.** Three things to know, newest first:
 
-- **v5.65.1 is live** — Joe's first ten minutes with the new panel, fixed the same evening: the model token is a status light (green live / amber working / grey off), TOKEN counts real usage from every provider that reports it (Ollama verified live), USER and SYNAPSE read in two colours, the profile switch left the UI, and the wordmark has air. *Producer: `harness/notes/RELEASE_v5.65.1.md`.*
+- **v5.65.2 is live** — a record-integrity release: the CTO loop's second crank audited its own backlog and found a closure it had written on evidence that could not have been true (B6), eight predicates stored clipped at 500 characters, and eight more that silenced their own probe and returned confident verdicts about a panel that no longer exists. Withdrawn, restored, and guarded by `harness/cto/check_backlog.py`. No product code changed. *Producer: `harness/notes/RELEASE_v5.65.2.md`.*
+- **v5.65.1** — Joe's first ten minutes with the new panel, fixed the same evening: the model token is a status light (green live / amber working / grey off), TOKEN counts real usage from every provider that reports it (Ollama verified live), USER and SYNAPSE read in two colours, the profile switch left the UI, and the wordmark has air. *Producer: `harness/notes/RELEASE_v5.65.1.md`.*
 - **v5.65.0** — the panel is the conversation now. The verb rail and the profile row left the header (they live in the `/` palette and the overflow); consent cards land inline in the chat; the model you are talking to reads `provider/model` in the top right, always (LIVE-measured in Joe's Houdini: 414 px wide where it was 0). Built the same afternoon Joe ruled direction B + C from the Bierut review, under referees, then reloaded live. *Producer: `harness/notes/RELEASE_v5.65.0.md`.*
 - **v5.64.0 landed the Panel PD design wave** (one owner of rhythm and colour, 107 → 17 spacing sites, raw hex 135 → 0) and the CTO review loop (`harness/cto/`) closed nine of its eleven findings the same day. *Producer: `harness/notes/RELEASE_v5.64.0.md`.*
 - **Read before trusting:** [Known limitations](#known-limitations). Still the most-read section on purpose.
 
-[Release notes v5.65.1 →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.65.1)
+[Release notes v5.65.2 →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.65.2)
 
 ### The shape of it — two pictures
 
@@ -491,7 +492,7 @@ It does **not** roll back when something raises. On the exception path a partial
 
 | | interpreter | result |
 |---|---|---|
-| **Gate** | stock Python 3.14.2 (no `hou`) | 7,613 passed · 0 failed · 357 skipped *(2026-09-05, master `33c46028` — `harness/notes/h22/pytest_v5651_master.txt`; PySide-bound panel tests skip here and run under hython)* |
+| **Gate** | stock Python 3.14.2 (no `hou`) | 7,613 passed · 0 failed · 357 skipped *(2026-09-06, master `dc0464ef` — `harness/notes/h22/pytest_v5652_master.txt`; PySide-bound panel tests skip here and run under hython)* |
 | **Shipping** | `hython3.13` — the Houdini runtime | full run 4,048 passed · 110 failed · 771 errors *(2026-08-02; not re-run for v5.64.0)*; panel tier `tests/panel` + docking on H22.0.400 offscreen: 239 passed · 1 failed (the D1 render-view dead verb, pre-existing) *(2026-09-05, `33c46028`)* |
 
 The gate has no failures for the first time on record; `test_backfill` was a real Moneta dual-write bug (CTO B5, fixed `b435cc26`), not flake.
