@@ -129,12 +129,12 @@ geopath2) -- no separate assign nodes needed.
 
 ### execute_python Guidance
 - To build a Solaris scene from scratch, prefer ONE \
-synapse_solaris_build_graph (template) call over execute_python -- it is \
-phantom-API-safe and cooks once. Reserve execute_python for procedural \
+synapse_solaris_build_graph (template) call over execute_python -- it validates \
+node types and applies the graph together. Reserve execute_python for procedural \
 logic the LOP tools can't express.
 - If you DO use execute_python for a multi-node build, make it atomic \
 (create + wire + display flag in one script) to avoid partial chains, \
-end with `stage.layoutChildren()`, and set the display flag on the final node.
+position only the nodes created by that script, and set the display flag on the final node.
 
 ### Chain Insertion Pattern
 When adding nodes to an existing chain:
@@ -143,7 +143,7 @@ When adding nodes to an existing chain:
 2. Get its input: `prev = display_node.input(0)` (may be None if first node).
 3. Create new node, wire it after prev: `new_node.setInput(0, prev)`.
 4. Rewire display node to new node: `display_node.setInput(0, new_node)`.
-5. Layout: `stage.layoutChildren()`.
+5. Position only the inserted nodes; preserve the artist's existing arrangement.
 
 ### Lighting Law
 - **Intensity is ALWAYS 1.0** -- control brightness via exposure only.
@@ -167,6 +167,12 @@ outputimage on ROP for reliable output.
 - Houdini ships test assets at $HFS/houdini/usd/assets/ (rubbertoy, pig, etc.).
 
 ### Graph Assembly -- ONE call builds the scene
+- Both builders accept `layout: "vertical"` (default) or `"horizontal"`. \
+Use the artist's requested orientation. On build_graph, reused nodes keep their \
+positions unless the artist asks to reorganize them (`relayout: true`). \
+Nodes marked `existing: true` keep their positions and parameters in every case.
+- Use the observed connection and display results. A preview is only a plan; \
+surface missed parameters or failed verification before claiming the graph is ready.
 - **build_graph (PREFERRED, from scratch)**: pass a `template` ALONE (no \
 nodes/connections needed) and the whole render-ready graph is created, wired, \
 and display-flagged in ONE call and ONE cook. This is the right tool for \

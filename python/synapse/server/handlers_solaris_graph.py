@@ -8,6 +8,7 @@ sublayer stacks, parallel streams. Complements assemble_chain (linear only).
 from collections import defaultdict, deque
 from typing import Dict, List, Any, Optional, Tuple
 import logging
+import re
 
 try:
     import hou
@@ -19,9 +20,10 @@ from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError, SynapseUserError
 from .solaris_graph_templates import expand_template, TEMPLATES
 from .handler_helpers import (
-    _layout_dag_vertical, _layout_vertical_chain, _free_origin,
+    _compute_dag_positions, _free_origin,
     _apply_section_boxes,
 )
+from .solaris_graph_plan import resolve_plan, observed_inputs, observed_display
 # Rank table is the single source of truth for both wiring order (assemble) and
 # the M10 section bands here -- imported, never duplicated. Sibling data import,
 # no cycle (assemble -> handler_helpers, graph -> handler_helpers + assemble).
@@ -224,8 +226,28 @@ def validate_graph(
     errors: List[str] = []
     warnings: List[str] = []
 
+    if not isinstance(nodes, list) or not isinstance(connections, list):
+        return False, ["nodes and connections must be lists"], warnings
     if not nodes:
-        return True, errors, warnings  # Empty graph is valid (no-op)
+        return (not connections), (["Connections require graph nodes"] if connections else []), warnings
+    names = set()
+    for spec in nodes:
+        if not isinstance(spec, dict) or not isinstance(spec.get("id"), str) or not spec["id"]:
+            errors.append("Every node needs a nonempty string id")
+            continue
+        if "existing" in spec and not isinstance(spec["existing"], bool):
+            errors.append("Node '%s': existing must be a boolean" % spec["id"])
+        if not spec.get("existing"):
+            if not isinstance(spec.get("type"), str) or not spec["type"]:
+                errors.append("Node '%s' needs a node type" % spec["id"])
+            name = spec.get("name") or spec["id"]
+            if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+                errors.append("Node '%s' needs a Houdini name using letters, numbers, and underscores" % spec["id"])
+            elif name in names:
+                errors.append("Duplicate node name: '%s'" % name)
+            names.add(name if isinstance(name, str) else spec["id"])
+    if errors:
+        return False, errors, warnings
 
     # Check duplicate IDs
     node_ids = [n["id"] for n in nodes]
@@ -247,15 +269,31 @@ def validate_graph(
             )
 
     # Check connection references
+    claimed_slots = set()
+    existing_ids = {n["id"] for n in nodes if n.get("existing")}
     for conn in connections:
+        if not isinstance(conn, dict):
+            errors.append("Each connection must be an object")
+            continue
         from_id = conn.get("from", "")
         to_id = conn.get("to", "")
+        if not isinstance(from_id, str) or not isinstance(to_id, str):
+            errors.append("Connection source and target IDs must be strings")
+            continue
         if from_id not in node_id_set:
             errors.append(f"Connection references unknown source id: '{from_id}'")
         if to_id not in node_id_set:
             errors.append(f"Connection references unknown target id: '{to_id}'")
         if from_id == to_id and from_id:
             errors.append(f"Self-loop on node '{from_id}'")
+        for field in ("input", "output"):
+            if field in conn and (type(conn[field]) is not int or conn[field] < 0):
+                errors.append("Connection %s must be a nonnegative integer" % field)
+        if type(conn.get("input", 0)) is int and ("input" in conn or to_id not in existing_ids):
+            slot = (to_id, conn.get("input", 0))
+            if slot in claimed_slots:
+                errors.append("Multiple connections claim '%s' input %d" % slot)
+            claimed_slots.add(slot)
 
     # Check display_node reference
     if display_node is not None and display_node not in node_id_set:
@@ -489,6 +527,12 @@ class SolarisGraphMixin:
         template_name = payload.get("template", None)
         template_params = payload.get("template_params", {})
         dry_run = payload.get("dry_run", False)
+        orientation = payload.get("layout", "vertical")
+        relayout = payload.get("relayout", False)
+        if orientation not in ("vertical", "horizontal"):
+            raise SynapseUserError("layout must be 'vertical' or 'horizontal'")
+        if not isinstance(relayout, bool):
+            raise SynapseUserError("relayout must be a boolean")
 
         # ── Template expansion ──
         if template_name:
@@ -564,32 +608,6 @@ class SolarisGraphMixin:
                 f"{f['current_order']} -- {f['suggested_fix']}"
             )
 
-        if dry_run:
-            return {
-                "status": "preview",
-                "nodes_created": [
-                    {"id": nid, "path": f"{parent_path}/{node_map[nid].get('name', nid)}"}
-                    for nid in sorted_ids
-                ],
-                "connections_made": [
-                    {
-                        "from": f"{parent_path}/{node_map[c['from']].get('name', c['from'])}",
-                        "to": f"{parent_path}/{node_map[c['to']].get('name', c['to'])}",
-                        "input": c.get("input", 0),
-                    }
-                    for c in raw_connections
-                ],
-                "display_node": f"{parent_path}/{node_map[display_node_id].get('name', display_node_id)}",
-                "topology": topology,
-                "merge_points": [
-                    f"{parent_path}/{node_map[mid].get('name', mid)}"
-                    for mid in merge_ids
-                ],
-                "ambiguous_merges": ambiguous_merges,
-                "warnings": warnings,
-                "dry_run": True,
-            }
-
         # ── Execute on main thread ──
         # Use _SLOW_TIMEOUT: Solaris network builds with Karma nodes
         # involve GPU context init and USD stage authoring that routinely
@@ -617,6 +635,33 @@ class SolarisGraphMixin:
             # B5: reject unknown types BEFORE opening the undo group, so a bad
             # type costs nothing instead of rolling back a whole graph.
             _validate_node_types(parent_node, node_map)
+            plan = resolve_plan(parent_node, node_map, sorted_ids, raw_connections,
+                                hou, _resolve_existing_node)
+            display_before, display_known = observed_display(parent_node)
+            planned_links = [{key: link[key] for key in ("from", "to", "input", "output")}
+                             for link in plan["connections"]]
+            if dry_run:
+                return {
+                    "status": "preview", "dry_run": True,
+                    "nodes_created": [{"id": nid, "path": plan["paths"][nid]} for nid in sorted_ids
+                                      if plan["bindings"][nid] is None],
+                    "nodes_reused": [{"id": nid, "path": plan["paths"][nid]} for nid in sorted_ids
+                                     if plan["bindings"][nid] is not None],
+                    "connections_made": planned_links, "planned_connections": planned_links,
+                    "display_node": display_before,
+                    "display_observed": display_known,
+                    "requested_display_node": plan["paths"][display_node_id],
+                    "topology": topology, "merge_points": [plan["paths"][nid] for nid in merge_ids],
+                    "ambiguous_merges": ambiguous_merges, "warnings": warnings,
+                    "layout": {"requested": orientation, "applied": False, "relayout": relayout},
+                }
+            moved = []
+            undo_enabled, labels_before = False, ()
+            try:
+                undo_enabled = bool(hou.undos.areEnabled())
+                labels_before = tuple(hou.undos.undoLabels())
+            except Exception:
+                pass
 
             try:
                 with hou.undos.group("SYNAPSE: build_graph"):
@@ -683,173 +728,80 @@ class SolarisGraphMixin:
                                     "value": repr(parm_value)[:80],
                                 })
 
-                        # 3. Wire connections
-                        #
-                        # B4 seam: reuse-by-name is safe for a true rebuild (the
-                        # reused node's inputs already match the spec, so setInput is
-                        # a no-op), but it must NOT silently clobber a DIFFERENT
-                        # existing connection. Two independent networks in one /stage
-                        # that happen to share a node name (every template has an
-                        # "OUTPUT" null) would otherwise cross-wire: building the
-                        # second silently rewired the first. Refuse on a real
-                        # conflict -- the undo group rolls this build back, leaving
-                        # the existing network intact.
-                        reused_ids = {e["id"] for e in nodes_reused}
-                        for conn in raw_connections:
-                            source = id_to_hou[conn["from"]]
-                            target = id_to_hou[conn["to"]]
-                            to_id = conn["to"]
-                            output_idx = conn.get("output", 0)
-                            explicit_input = conn.get("input")   # None if omitted
-
-                            # Wiring a NEW source into a node the artist already owns
-                            # must APPEND to the next free input, never clobber
-                            # input 0. Reuse assemble's _next_free_input. An EXPLICIT
-                            # index is honoured verbatim and guarded just below.
-                            # Live-verified on 22.0.368: merge[a,b] + asset_c at the
-                            # next free index 2 -> [a,b,c], first two untouched.
-                            if to_id in existing_nids and explicit_input is None:
-                                # IDEMPOTENT APPEND (seam fix): if this source already
-                                # feeds the target, do NOT re-append it on a rebuild.
-                                # Without this, build->look->rebuild grows the merge
-                                # unboundedly ([a,b,c] -> [a,b,c,c] -> ...), corrupting
-                                # the artist's network -- the exact loop item 2 exists
-                                # to make safe. _next_free_input always returns a fresh
-                                # index, so the guard must live here.
-                                if source in target.inputs():
-                                    connections_made.append({
-                                        "from": source.path(),
-                                        "to": target.path(),
-                                        "input": list(target.inputs()).index(source),
-                                    })
-                                    continue                 # already wired -- no-op
-                                input_idx = _next_free_input(target)
-                            else:
-                                input_idx = (explicit_input
-                                             if explicit_input is not None else 0)
-
-                            if to_id in reused_ids:
-                                cur = target.inputs()
-                                occupied = (cur[input_idx]
-                                            if input_idx < len(cur) else None)
-                                if occupied is not None and occupied != source:
-                                    raise SynapseUserError(
-                                        "'%s' already exists wired to '%s' on input "
-                                        "%d, but this build wires it to '%s' -- a "
-                                        "name collision with a different network."
-                                        % (target.name(), occupied.name(),
-                                           input_idx, source.name()),
-                                        suggestion=(
-                                            "Nothing was changed. Rename the node in "
-                                            "your graph, or build into a fresh LOP "
-                                            "network -- build_graph reuses a node of "
-                                            "the same name+type, so two networks in "
-                                            "one /stage must not share node names."),
-                                    )
-
-                            # An EXPLICIT index into an artist-owned existing node
-                            # that would overwrite a DIFFERENT source is refused
-                            # (append never trips this -- _next_free_input returns an
-                            # unoccupied index; same-source is an idempotent no-op).
-                            if to_id in existing_nids and explicit_input is not None:
-                                cur = target.inputs()
-                                occupied = (cur[input_idx]
-                                            if input_idx < len(cur) else None)
-                                if occupied is not None and occupied != source:
-                                    raise SynapseUserError(
-                                        "existing node '%s' already has '%s' on input "
-                                        "%d, but this build wires '%s' there -- "
-                                        "refusing to overwrite the artist's wiring."
-                                        % (target.name(), occupied.name(),
-                                           input_idx, source.name()),
-                                        suggestion=(
-                                            "Nothing was changed. Drop the explicit "
-                                            "'input' to append to the next free "
-                                            "input, or choose an unused index."),
-                                    )
-                            # A wire is only a CHANGE if the slot did not already
-                            # hold this exact source -- so a true rebuild (re-setting
-                            # identical connections) stays 'unchanged', while an added
-                            # or rewired input flips status to 'updated' (seam fix:
-                            # status must not report 'unchanged' after a topology
-                            # change).
-                            cur = target.inputs()
-                            prior = cur[input_idx] if input_idx < len(cur) else None
-                            # `!=`, not `is not`: two hou.Node wrappers for the SAME
-                            # node fail identity but compare equal, so an identical
-                            # rebuild (re-setting the same connection) must read as
-                            # NO change -- otherwise it falsely reports 'updated'.
-                            if prior != source:
+                        # 3. Apply the resolved plan, then read every wire back.
+                        # Unordered ports compact gaps as they are wired. Fill
+                        # lower slots first, independent of request-list order.
+                        for link in sorted(plan["connections"], key=lambda link: (link["to"], link["input"])):
+                            source = id_to_hou[link["from_id"]]
+                            target = id_to_hou[link["to_id"]]
+                            desired = (source.path(), link["output"])
+                            prior = observed_inputs(target).get(link["input"])
+                            if prior != desired:
+                                target.setInput(link["input"], source, link["output"])
                                 connections_changed = True
-                            target.setInput(input_idx, source, output_idx)
-                            connections_made.append({
-                                "from": source.path(),
-                                "to": target.path(),
-                                "input": input_idx,
-                            })
+                        for link in plan["connections"]:
+                            target = id_to_hou[link["to_id"]]
+                            actual = observed_inputs(target).get(link["input"])
+                            desired = (id_to_hou[link["from_id"]].path(), link["output"])
+                            if actual != desired:
+                                raise SynapseUserError(
+                                    "Connection readback did not match %s input %d" % (target.path(), link["input"]),
+                                    suggestion="Inspect the network; no verified connection is claimed.")
+                            connections_made.append({"from": actual[0], "to": target.path(),
+                                                     "input": link["input"], "output": actual[1]})
 
-                        # 4. Stamp provenance -- new nodes only; an existing node is
-                        # the artist's and must not be re-commented or re-flagged.
-                        for nid, node in id_to_hou.items():
-                            if nid in existing_nids:
-                                continue
+                        # Preserve the artist's comments and positions on reused nodes.
+                        created_ids = {entry["id"] for entry in nodes_created}
+                        managed = {nid: node for nid, node in id_to_hou.items() if nid not in existing_nids}
+                        for nid in created_ids:
+                            node = id_to_hou[nid]
                             node.setComment("SYNAPSE: build_graph")
                             node.setGenericFlag(hou.nodeFlag.DisplayComment, True)
 
-                        # 5. Layout BEFORE display flag — position nodes in clean
-                        # vertical columns instead of Houdini's black-box
-                        # layoutChildren(). Professional VFX artists use top-to-
-                        # bottom vertical chains. This also avoids the GPU context
-                        # init race condition that layoutChildren() can trigger
-                        # with Karma nodes (CUDA double-init → segfault).
-                        # M7: origin below existing content so a build into a
-                        # populated stage reads as its own column instead of landing
-                        # on top of what's already there. New nodes are excluded so
-                        # only pre-existing children move the origin.
-                        # Existing (artist-owned) nodes are resolved for wiring
-                        # only: never moved, and never counted as this build's
-                        # content. Everything below operates on the NEW nodes.
-                        new_id_to_hou = {nid: n for nid, n in id_to_hou.items()
-                                         if nid not in existing_nids}
-                        new_sorted_ids = [nid for nid in sorted_ids
-                                          if nid not in existing_nids]
-                        new_paths = {n.path() for n in new_id_to_hou.values()}
-                        ox, oy = _free_origin(parent_node, new_paths)
-                        if topology == "linear":
-                            # Simple vertical column for linear chains
-                            ordered_nodes = [new_id_to_hou[nid]
-                                             for nid in new_sorted_ids]
-                            _layout_vertical_chain(ordered_nodes, ox, oy)
+                        # 5. New nodes get a free area. Explicit relayout anchors to
+                        # this graph's first reused node, never to another network.
+                        movable = managed if relayout else {nid: managed[nid] for nid in created_ids}
+                        moving_ids = [nid for nid in sorted_ids if nid in movable]
+                        layout_links = [{"from": link["from_id"], "to": link["to_id"], "input": link["input"]}
+                                        for link in plan["connections"]]
+                        local_positions = _compute_dag_positions(moving_ids, layout_links,
+                                                                 orientation=orientation)
+                        anchors = [nid for nid in moving_ids if nid not in created_ids]
+                        if anchors:
+                            anchor = anchors[0]
+                            current, desired = movable[anchor].position(), local_positions[anchor]
+                            ox, oy = current[0] - desired[0], current[1] - desired[1]
                         else:
-                            # Layered vertical DAG for merge/fan-out topologies.
-                            # raw_connections may reference existing ids; the DAG
-                            # layout only positions ids present in new_id_to_hou, so
-                            # an edge into an existing node leaves that node untouched
-                            # (_compute_dag_positions filters parents not in depth).
-                            _layout_dag_vertical(
-                                new_sorted_ids, raw_connections, new_id_to_hou,
-                                start_x=ox, start_y=oy,
-                            )
+                            ox, oy = _free_origin(parent_node, {node.path() for node in movable.values()})
+                            # Horizontal roots can extend above the origin; keep
+                            # their entire bounding range below existing content.
+                            if local_positions:
+                                oy -= max(position[1] for position in local_positions.values())
+                        for nid, (x, y) in local_positions.items():
+                            node = movable[nid]
+                            before = node.position()
+                            desired = (ox + x, oy + y)
+                            if any(abs(before[i] - desired[i]) > 1e-7 for i in (0, 1)):
+                                node.setPosition(hou.Vector2(*desired))
+                                moved.append(node.path())
 
-                        # 5b. Section boxes (M10) — after layout so fitAroundContents
-                        # reads final positions; idempotent so a rebuild refreshes
-                        # rather than stacks. Cosmetic + best-effort: never fails the
-                        # build. Ranks come from the same table assemble_chain wires by.
-                        # New nodes only. node_map has no 'type' for existing specs,
-                        # so keying ranks off new_id_to_hou also avoids a KeyError,
-                        # and an existing node keeps whatever box the artist gave it.
-                        # Namespace the boxes by the build's display-node name so a
-                        # second network into the same /stage keeps its own boxes
-                        # (per-network identity; M10 fast-follow).
-                        node_ranks = {
-                            nid: _SOLARIS_NODE_ORDER.get(
-                                str(node_map[nid]["type"]).split("::")[0].lower(),
-                                _UNRANKED_RANK)
-                            for nid in new_id_to_hou
-                        }
-                        sections = _apply_section_boxes(
-                            parent_node, new_id_to_hou, node_ranks,
-                            namespace=id_to_hou[display_node_id].name())
+                        # Cosmetic sections follow the actual flow axis. A no-op
+                        # preserves existing boxes, including the artist's sizing.
+                        sections = []
+                        if created_ids or moved:
+                            node_ranks = {nid: _SOLARIS_NODE_ORDER.get(
+                                str(node_map[nid]["type"]).split("::")[0].lower(), _UNRANKED_RANK)
+                                for nid in managed}
+                            sections = _apply_section_boxes(parent_node, managed, node_ranks,
+                                namespace=id_to_hou[display_node_id].name(), orientation=orientation)
+                        elif managed:
+                            try:
+                                members = set(managed.values())
+                                sections = [box.name() for box in parent_node.networkBoxes()
+                                            if box.name().startswith("synapse_sec_")
+                                            and any(node in members for node in box.nodes())]
+                            except Exception:
+                                pass
 
                         # 6. Display flag AFTER layout — now the cook triggered
                         # by setDisplayFlag runs on a fully-laid-out, wired
@@ -872,11 +824,10 @@ class SolarisGraphMixin:
                 # resources are being deallocated. Catch and explicitly
                 # undo to prevent undo stack corruption.
                 try:
-                    hou.undos.performUndo()
+                    if undo_enabled and tuple(hou.undos.undoLabels()) != labels_before:
+                        hou.undos.performUndo()
                 except Exception as undo_exc:
-                    logger.warning(
-                        "build_graph: undo rollback also failed: %s", undo_exc
-                    )
+                    logger.warning("build_graph: undo rollback also failed: %s", undo_exc)
                 raise
 
             # B4: a rebuild that reused everything is not a "created" -- saying
@@ -887,7 +838,9 @@ class SolarisGraphMixin:
             # a parm or a wire actually moved; 'unchanged' when a rebuild was a
             # genuine no-op. A build that only references existing nodes (an
             # extend that appends nothing new) must never read 'created'.
-            _touched = parms_changed or connections_changed
+            display_after, display_after_known = observed_display(parent_node)
+            display_changed = (display_before != display_after) if display_known and display_after_known else False
+            _touched = parms_changed or connections_changed or bool(moved) or display_changed
             if nodes_created:
                 status = "updated" if nodes_reused else "created"
             elif nodes_reused or existing_nids:
@@ -917,7 +870,12 @@ class SolarisGraphMixin:
                 "sections": sections,
                 "parms_missed": parms_missed,
                 "connections_made": connections_made,
-                "display_node": display_hou.path(),
+                "display_node": display_after,
+                "display_observed": display_after_known,
+                "requested_display_node": display_hou.path(),
+                "layout": {"requested": orientation, "applied": bool(movable), "moved": moved,
+                           "preserved": [node.path() for nid, node in id_to_hou.items() if nid not in movable]},
+                "verification": {"connections": "verified", "parameters": "partial" if parms_missed else "applied"},
                 "topology": topology,
                 "merge_points": [id_to_hou[mid].path() for mid in merge_ids],
                 "ambiguous_merges": ambiguous_merges,

@@ -363,9 +363,11 @@ class TestSystemPromptWiring:
         lower = _SOLARIS_CONTEXT_GUIDANCE.lower()
         assert "canonical" in lower or "chain order" in lower
 
-    def test_contains_layoutChildren(self):
-        """Guidance mentions layoutChildren() for tidy networks."""
-        assert "layoutChildren" in _SOLARIS_CONTEXT_GUIDANCE
+    def test_layout_guidance_preserves_artist_networks(self):
+        """Layout is scoped and explicit; a global tidy would move artist work."""
+        assert "stage.layoutChildren()" not in _SOLARIS_CONTEXT_GUIDANCE
+        assert "relayout" in _SOLARIS_CONTEXT_GUIDANCE
+        assert "horizontal" in _SOLARIS_CONTEXT_GUIDANCE
 
     def test_contains_display_flag(self):
         """Guidance mentions display flag setting."""

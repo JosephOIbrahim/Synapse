@@ -41,7 +41,7 @@ _REPO = Path(__file__).resolve().parents[1]
 _DATA = _REPO / "python/synapse/cognitive/tools/data"
 PKG_21 = _DATA / "connectivity_21.json"
 PKG_22 = _DATA / "connectivity_22.json"
-HARNESS_22 = _REPO / "harness/notes/verified_connectivity_22.0.368.json"
+HARNESS_22 = _REPO / "harness/notes/verified_connectivity_22.0.400.json"
 
 
 def _fake_hou(major):
@@ -67,7 +67,7 @@ class TestMajorResolution:
         monkeypatch.setitem(sys.modules, "hou", _fake_hou(22))
         assert wiring._pkg_catalog_path() == PKG_22
         cat = load_connectivity_catalog()
-        assert cat["houdini_version"] == "22.0.368"
+        assert cat["houdini_version"] == "22.0.400"
 
     def test_missing_major_fails_loud_never_cross_major(self, monkeypatch):
         monkeypatch.setitem(sys.modules, "hou", _fake_hou(99))
@@ -112,7 +112,7 @@ class TestH22CatalogTruth:
         ).hexdigest()
         assert digest == raw["blake2b"]
         assert raw["schema"] == "verified_connectivity/v2"
-        assert raw["houdini_version"] == "22.0.368"
+        assert raw["houdini_version"] == "22.0.400"
         assert raw["probe_errors"] == []
 
     def test_w3_setdressing_types_present(self):

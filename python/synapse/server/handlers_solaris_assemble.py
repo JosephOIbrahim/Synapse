@@ -17,6 +17,7 @@ from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError
 from .handler_helpers import (
     _HOUDINI_UNAVAILABLE, _layout_vertical_chain, VERTICAL_SPACING,
+    HORIZONTAL_SPACING, _free_origin,
 )
 
 
@@ -344,6 +345,13 @@ class SolarisAssembleMixin:
         sort_nodes = payload.get("sort", True)
         dry_run = payload.get("dry_run", False)
         aov_passes = payload.get("aov_passes", None)
+        orientation = payload.get("layout", "vertical")
+        if orientation not in ("vertical", "horizontal"):
+            raise ValueError("layout must be 'vertical' or 'horizontal'")
+        if not isinstance(node_paths, list) or any(not isinstance(path, str) for path in node_paths):
+            raise ValueError("nodes must be a list of node paths")
+        if len(node_paths) != len(set(node_paths)):
+            raise ValueError("Each assembly node path must be unique")
 
         from .main_thread import run_on_main
 
@@ -451,6 +459,7 @@ class SolarisAssembleMixin:
                     "skipped": skipped,
                     "chain": [],
                     "dry_run": dry_run,
+                    "layout": {"requested": orientation, "applied": False},
                 }
 
             # -----------------------------------------------------------
@@ -516,8 +525,17 @@ class SolarisAssembleMixin:
             # Wire the chain
             # -----------------------------------------------------------
             chain_paths: List[str] = []
+            if len({node.path() for node in ordered}) != len(ordered):
+                raise ValueError("Assembly cannot contain the same resolved node twice or use a target as its own anchor")
+            if any(node.parent() != parent_node for node in ordered):
+                raise ValueError("Assembly nodes must belong to the requested parent network")
+            for source, target in zip(ordered, ordered[1:]):
+                if source.type().maxNumOutputs() < 1 or target.type().maxNumInputs() < 1:
+                    raise ValueError("Cannot wire %s to %s: the required port is absent" % (source.path(), target.path()))
+            layout_applied = False
 
             def _wire_and_layout() -> None:
+                nonlocal layout_applied
                 prev = None
                 for node in ordered:
                     if prev is not None:
@@ -595,7 +613,7 @@ class SolarisAssembleMixin:
                         chain_hou_nodes.append(n)
                 if not chain_hou_nodes:
                     return
-                start_x, start_y = 0.0, 0.0
+                start_x, start_y = _free_origin(parent_node, set(chain_paths))
                 if anchor is not None:
                     anchor_pos = anchor.position()
                     anchor_index = 0
@@ -603,9 +621,14 @@ class SolarisAssembleMixin:
                         if n == anchor:
                             anchor_index = i
                             break
-                    start_x = anchor_pos[0]
-                    start_y = anchor_pos[1] + anchor_index * VERTICAL_SPACING
-                _layout_vertical_chain(chain_hou_nodes, start_x, start_y)
+                    if orientation == "horizontal":
+                        start_x = anchor_pos[0] - anchor_index * HORIZONTAL_SPACING
+                        start_y = anchor_pos[1]
+                    else:
+                        start_x = anchor_pos[0]
+                        start_y = anchor_pos[1] + anchor_index * VERTICAL_SPACING
+                _layout_vertical_chain(chain_hou_nodes, start_x, start_y, orientation=orientation)
+                layout_applied = True
 
             # B2: assemble_chain rewires nodes the artist already owns, and did
             # it with NO undo group at all (grep -c undos -> 0). A failure
@@ -651,6 +674,7 @@ class SolarisAssembleMixin:
                 "skipped": skipped,
                 "chain": chain_paths,
                 "dry_run": dry_run,
+                "layout": {"requested": orientation, "applied": layout_applied},
             }
 
             # B1: surface every node whose position was a fallback guess rather

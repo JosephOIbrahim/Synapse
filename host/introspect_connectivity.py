@@ -146,17 +146,21 @@ class _Containers:
 def _probe_instance(hou, parent, full_name: str, errors: list) -> dict:
     """Instantiate ``full_name`` under ``parent``, read the instance-level
     wiring surface, destroy the node. Returns the instance fields."""
-    out = {"instantiated": False, "input_labels": None, "output_labels": None}
+    out = {"instantiated": False, "input_labels": None, "output_labels": None,
+           "num_ordered_inputs": None}
     if parent is None:
         out["note"] = "no container for this category"
         return out
     try:
-        node = parent.createNode(full_name)
+        node = parent.createNode(full_name, exact_type_name=True)
     except Exception as e:  # noqa: BLE001 — best-effort; recorded, not fatal
         out["note"] = f"createNode failed: {type(e).__name__}"
         return out
     try:
         out["instantiated"] = True
+        ordered = getattr(node, "numOrderedInputs", None)
+        if callable(ordered):
+            out["num_ordered_inputs"] = ordered()
         try:
             out["input_labels"] = [str(l) for l in node.inputLabels()]
         except Exception as e:  # noqa: BLE001

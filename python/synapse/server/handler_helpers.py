@@ -521,6 +521,7 @@ def _compute_dag_positions(
     start_y: float = 0.0,
     v_spacing: float = VERTICAL_SPACING,
     h_spacing: float = HORIZONTAL_SPACING,
+    orientation: str = "vertical",
 ) -> Dict[str, tuple]:
     """Pure layered-DAG placement -> {node_id: (x, y)}. No ``hou`` (testable).
 
@@ -538,6 +539,12 @@ def _compute_dag_positions(
     * M55 -- x is snapped to a fraction of the measured tile width so columns
       align cleanly instead of on raw averaged floats.
     """
+    if orientation == "horizontal":
+        vertical = _compute_dag_positions(sorted_ids, connections,
+                                          v_spacing=h_spacing, h_spacing=v_spacing)
+        return {nid: (start_x - y, start_y - x) for nid, (x, y) in vertical.items()}
+    if orientation != "vertical":
+        raise ValueError("layout must be 'vertical' or 'horizontal'")
     if not sorted_ids:
         return {}
 
@@ -628,6 +635,7 @@ def _layout_vertical_chain(
     start_x: float = 0.0,
     start_y: float = 0.0,
     spacing: float = VERTICAL_SPACING,
+    orientation: str = "vertical",
 ) -> None:
     """Position nodes in a clean vertical column, top to bottom.
 
@@ -642,8 +650,12 @@ def _layout_vertical_chain(
     """
     if not _HOU_AVAILABLE or not nodes:
         return
+    if orientation not in ("vertical", "horizontal"):
+        raise ValueError("layout must be 'vertical' or 'horizontal'")
     for i, node in enumerate(nodes):
-        node.setPosition(hou.Vector2(start_x, start_y - i * spacing))
+        x, y = ((start_x + i * HORIZONTAL_SPACING, start_y) if orientation == "horizontal"
+                else (start_x, start_y - i * spacing))
+        node.setPosition(hou.Vector2(x, y))
 
 
 def _layout_dag_vertical(
@@ -654,6 +666,7 @@ def _layout_dag_vertical(
     start_y: float = 0.0,
     v_spacing: float = VERTICAL_SPACING,
     h_spacing: float = HORIZONTAL_SPACING,
+    orientation: str = "vertical",
 ) -> None:
     """Position DAG nodes in layered vertical columns.
 
@@ -674,7 +687,7 @@ def _layout_dag_vertical(
     if not _HOU_AVAILABLE or not sorted_ids:
         return
     positions = _compute_dag_positions(
-        sorted_ids, connections, start_x, start_y, v_spacing, h_spacing)
+        sorted_ids, connections, start_x, start_y, v_spacing, h_spacing, orientation)
     for nid, (x, y) in positions.items():
         node = id_to_hou.get(nid)
         if node is not None:
@@ -782,7 +795,7 @@ def _bands_are_rank_monotonic(bands: List[Dict[str, Any]],
 
 def _apply_section_boxes(parent_node, id_to_hou: Dict[str, Any],
                          node_ranks: Dict[str, int],
-                         namespace: str = "") -> List[str]:
+                         namespace: str = "", orientation: str = "vertical") -> List[str]:
     """Idempotently draw one network box per populated section band.
 
     Destroy-then-recreate keyed on a fixed namespaced name per band: a rebuild
@@ -833,7 +846,8 @@ def _apply_section_boxes(parent_node, id_to_hou: Dict[str, Any],
             bn = box.name()
             if not bn.startswith(_SECTION_BOX_PREFIX):
                 continue                    # never touch an artist's own box
-            ns_match = any(bn == b or bn.startswith(b) for b in ns_bases)
+            ns_match = any(bn == b or (bn.startswith(b) and bn[len(b):].isdigit())
+                           for b in ns_bases)
             member_match = False
             if my_nodes:
                 try:
@@ -857,7 +871,8 @@ def _apply_section_boxes(parent_node, id_to_hou: Dict[str, Any],
         for nid in node_ranks:
             n = id_to_hou.get(nid)
             if n is not None:
-                node_y[nid] = n.position()[1]
+                pos = n.position()
+                node_y[nid] = -pos[0] if orientation == "horizontal" else pos[1]
         if not _bands_are_rank_monotonic(bands, node_y):
             return []
     except Exception:  # noqa: BLE001
