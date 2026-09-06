@@ -2134,6 +2134,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._commands_btn.setToolTip("Browse commands · / on empty input · Ctrl+K")
         self._commands_btn.clicked.connect(self._open_palette)
         footer.addWidget(self._commands_btn)
+        self._recipes_btn = c.Button("Recipes", variant="ghost")
+        self._recipes_btn.setToolTip("Save, tag and reuse local Solaris networks")
+        self._recipes_btn.clicked.connect(self._open_saved_recipes)
+        footer.addWidget(self._recipes_btn)
         col.addLayout(footer)
         self._connection_status = c.Button("Connect models", variant="ghost")
         self._connection_status.clicked.connect(self._open_connections)
@@ -2536,6 +2540,38 @@ class SynapsePanel(QtWidgets.QWidget):
         thus the gated bridge path)."""
         self._send(prompt)
 
+    def _open_saved_recipes(self):
+        from synapse.host.saved_networks import SavedNetworkService
+        from synapse.host.recipe_watch import RecipeWatch
+        from synapse.panel.saved_recipes import SavedRecipesDialog
+        watch = getattr(self, "_recipe_watch", None)
+        if watch is None:
+            self._recipe_service = SavedNetworkService()
+            import weakref
+            reference = weakref.ref(self)
+            def notify(result):
+                def deliver():
+                    panel = reference()
+                    if panel is not None:
+                        try:
+                            panel._chat.append_system_message(result["message"])
+                        except RuntimeError:
+                            pass  # QObject may have been destroyed after queuing
+                QTimer.singleShot(0, deliver)
+            watch = RecipeWatch(self._recipe_service, notify)
+            self._recipe_watch = watch
+            self.destroyed.connect(lambda *_args, owner=watch: owner.close(notify=False))
+        dialog = getattr(self, "_saved_recipes_dialog", None)
+        if dialog is None:
+            dialog = SavedRecipesDialog(self, self._recipe_service, watch,
+                                        busy=lambda: bool(_ACTIVE_PANEL_WORKERS))
+            self._saved_recipes_dialog = dialog
+        else:
+            dialog.refresh()
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+
     def _on_submit(self):
         text = self._input.toPlainText().strip()
         if text:
@@ -2543,6 +2579,9 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._input.clear()
 
     def _send(self, text):
+        if (text or "").strip().lower() == "/saved-recipes":
+            self._open_saved_recipes()
+            return True
         if _ACTIVE_PANEL_WORKERS:
             self._chat.append_system_message(
                 "A SYNAPSE panel task is still running on this workstation. Wait for it to finish before starting another.")
@@ -3228,6 +3267,11 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def closeEvent(self, event):
+        watch = getattr(self, "_recipe_watch", None)
+        if watch is not None:
+            watch.close()
+            self._recipe_watch = None
+            self._saved_recipes_dialog = None
         self._session_keys.clear()
         timer = getattr(self, "_location_timer", None)
         if timer is not None:

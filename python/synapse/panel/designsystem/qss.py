@@ -950,3 +950,46 @@ _first_session_base_stylesheet = stylesheet
 def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
     return _first_session_base_stylesheet(scale) + "\n" + _connection_stylesheet(scale)
 # --- END FIRST_SESSION
+
+
+# --- SAVED_RECIPES (local library)
+def prepare_saved_recipes_dialog(root, scale=t.FONT_SCALE_DEFAULT):
+    """Install the shared sheet for the recipe dialog's separate window."""
+    root.setStyleSheet(stylesheet(scale))
+
+
+def _recipe_stylesheet(scale=t.FONT_SCALE_DEFAULT):
+    """Scoped native recipe controls share the panel's readable type and palette."""
+    return f"""
+#DsRoot[panel_popup="recipes"] QPlainTextEdit,
+#DsRoot[panel_popup="recipes"] QListWidget {{
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_SM}px; font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+    selection-background-color: {t.SIGNAL_TINT_STRONG};
+    selection-color: {t.TEXT_PRIMARY};
+}}
+#DsRoot[panel_popup="recipes"] QListWidget::item {{ padding: {t.SPACE_SM}px; }}
+#DsRoot[panel_popup="recipes"] QCheckBox,
+#DsRoot[panel_popup="recipes"] QTabBar {{
+    color: {t.TEXT_PRIMARY}; font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+}}
+#DsRoot[panel_popup="recipes"] QTabBar::tab {{
+    background: {t.PANEL}; padding: {t.SPACE_SM}px {t.SPACE_MD}px;
+    border-bottom: 2px solid transparent;
+}}
+#DsRoot[panel_popup="recipes"] QTabBar::tab:selected {{
+    color: {t.TEXT_ACCENT}; border-bottom-color: {t.SIGNAL};
+}}
+#DsRoot[panel_popup="recipes"] QTabWidget::pane {{ border: none; }}
+#DsRoot[panel_popup="recipes"] QWidget#DsRecipePage,
+#DsRoot[panel_popup="recipes"] QScrollArea#DsRecipeScroll {{ background: {t.PANEL}; }}
+"""
+
+
+_recipe_base_stylesheet = stylesheet
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _recipe_base_stylesheet(scale) + "\n" + _recipe_stylesheet(scale)
+# --- END SAVED_RECIPES

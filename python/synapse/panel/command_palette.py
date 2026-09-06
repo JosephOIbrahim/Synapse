@@ -94,6 +94,7 @@ _SLASH_COMMANDS: list[tuple[str, str]] = [
     ("/trace", "Trace node dependencies and data flow"),
     ("/vex", "VEX code help, explain, or generate"),
     ("/recipes", "Browse and build network recipes"),
+    ("/saved-recipes", "Save, tag and reuse local Solaris networks"),
     ("/hda", "Create HDA from selection or description"),
     ("/login", "Shot login and context setup"),
     ("/apex", "APEX rigging overview"),

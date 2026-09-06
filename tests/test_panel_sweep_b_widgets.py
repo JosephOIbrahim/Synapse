@@ -99,10 +99,15 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     # new fenced extension instead of freezing the whole file's end forever.
     new_start, new_end = "# --- FIRST_SESSION (", "# --- END FIRST_SESSION"
     assert tail[:tail.index(new_start)].rstrip().endswith(end)
-    assert tail.rstrip().endswith(new_end)
+    recipe_start, recipe_end = "# --- SAVED_RECIPES (", "# --- END SAVED_RECIPES"
+    # A second approved feature appends its own fenced selectors. Both older
+    # end markers and the token-only rule remain required for every extension.
+    assert tail[:tail.index(recipe_start)].rstrip().endswith(new_end)
+    assert tail.rstrip().endswith(recipe_end)
     block_b = tail[tail.index(start):tail.index(end) + len(end)]
-    new_block = tail[tail.index(new_start):]
-    for block in (block_b, new_block):
+    new_block = tail[tail.index(new_start):tail.index(new_end) + len(new_end)]
+    recipe_block = tail[tail.index(recipe_start):]
+    for block in (block_b, new_block, recipe_block):
         assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", block)
         assert "font-family:" not in block
         for node in ast.walk(ast.parse(block)):
