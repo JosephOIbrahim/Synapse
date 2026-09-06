@@ -10,3 +10,5 @@
 | 2026-09-05 | wf_ba511072-76f (bierut) | 5 lenses x2 + scaffold + synth | 19 findings (4 blocker / 10 major / 4 minor / 1 praise) | - | - | 14 (D-*) |
 | 2026-09-05 | wf_8f783cb0-689 (B+C wave) | spec + forge + 2 crux + repair (re-crux hit session limit; CTO Addendum 3 by hand) | landed 90c9fda2 + f41c6694 | 7 rulings | - | live-verified |
 | 2026-09-05 | release v5.65.0 | tag 4becb1cf | gate 7605/0/346 | pushed + GitHub release (first attempt undone: gh created a gate-less tag) | - | - |
+| 2026-09-05 | wf_c2b751da-c1e (Joe's five, team) | spec + 5 forges + integrator + 2 crux | landed 33c46028; live-verified | 5 rulings J1-J5 | - | nits -> backlog |
+| 2026-09-05 | release v5.65.1 | tag 6d56212d (gate OPEN) | gate 7613/0/357 | pushed + GitHub release | - | - |
