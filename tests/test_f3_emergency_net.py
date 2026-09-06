@@ -247,8 +247,12 @@ def test_escalation_routes_ws_halt_when_no_haltable_bridge(monkeypatch):
         # Anchor to the real state, not a fixed sleep: under a loaded host
         # (full suite + hython probes in parallel) the watchdog thread can
         # need more than 0.6 s to fire; a wall-clock guess flaked 2026-09-05.
+        # Anchor to the LAST observable, not the first: `escalated` flips a
+        # few ms before the watchdog thread calls the halt, and a slow runner
+        # (macOS CI, 2026-09-05, run 34000206968) asserted in that gap -
+        # "Expected 'mock' to have been called once. Called 0 times."
         deadline = time.monotonic() + 5.0
-        while not chain.escalated and time.monotonic() < deadline:
+        while fired.call_count < 1 and time.monotonic() < deadline:
             time.sleep(0.05)
         assert chain.escalated is True
         fired.assert_called_once()
