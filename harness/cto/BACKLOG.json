@@ -10,12 +10,13 @@
    "evidence": "tests/test_solaris_compose_tools.py:244 `from pxr import UsdRender`; gh runs 33963512217 (a4d86ce4) + 33963470023 (e422efb6) = failure, 33821702270 (v5.62.0) = success; landed f231d415, merged 1017c547; RELEASE_v5.63.0.md:111 cites only the local gate.",
    "repro": "gh run list --branch master --limit 3 && sed -n '243,244p' tests/test_solaris_compose_tools.py",
    "gate": "crux",
-   "closure_predicate": "gh run list --branch master --limit 1 --json conclusion -q '.[0].conclusion' prints success AND rg -n 'importorskip\\(\"pxr\"\\)' tests/test_solaris_compose_tools.py matches at or above line 244",
+   "closure_predicate": "python scripts/release_ci_gate.py $(git describe --tags --abbrev=0) --check-only exits 0 AND rg -n 'importorskip\\(\"pxr\"\\)' tests/test_solaris_compose_tools.py matches",
    "status": "closed",
    "opened_run": "2026-09-05",
    "note": "merged 5b9ecd33; predicate observes GitHub CI, needs a push (Joe word)",
-   "closed_run": "2026-09-05",
-   "closure_evidence": "gh run on e8913f83: completed success (first green master run since 2026-07-29)"
+   "closed_run": "2026-09-06",
+   "closure_evidence": "Re-measured 2026-09-06 against the TAGGED commit: v5.65.2 -> 78c6f524 CI completed success; the pxr guard is present at tests/test_solaris_compose_tools.py:120 and :244. The two red release tags (v5.64.0 2865f009, v5.65.0 4becb1cf) both failed on the same freeze-chain timing flake ('Expected mock to have been called once. Called 0 times'), fixed for F3 at 1f187c5e; v5.65.1 and v5.65.2 are green. History is not rewritten - the tags stand and C2 carries the ritual change.",
+   "predicate_note": "2026-09-06 crank 3: the old predicate read `gh run list --branch master --limit 1` - the BRANCH HEAD, not the tagged commit. Master had moved on and was green, so this printed green over v5.64.0 and v5.65.0, both tagged on commits whose CI concluded failure. It now asks about the tag."
   },
   {
    "id": "B2",
@@ -29,7 +30,7 @@
    "closure_predicate": "python -c \"import json;s=set(json.load(open('python/synapse/cognitive/tools/data/h22_symbol_table.json'))['symbols']);print(all(q in s for q in ['hou.undos.group','hou.hipFile.save','hou.hda.definitionsInFile']))\" prints True AND rg -n 'hou.undos.group' python/synapse/recipes/transaction.py matches",
    "status": "closed",
    "opened_run": "2026-09-05",
-   "closed_run": "2026-09-05",
+   "closed_run": "2026-09-06",
    "merge": "aaa34697",
    "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
@@ -45,7 +46,7 @@
    "closure_predicate": "QT_QPA_PLATFORM=offscreen \"/c/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -m pytest tests/test_recipe_verify_hython.py -q -p no:cacheprovider exits 0 with 4 passed",
    "status": "closed",
    "opened_run": "2026-09-05",
-   "closed_run": "2026-09-05",
+   "closed_run": "2026-09-06",
    "merge": "6b018952",
    "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
@@ -79,7 +80,7 @@
    "closure_predicate": "SYNAPSE_MEMORY_BACKEND=moneta python -m pytest tests/test_backfill.py -q -p no:cacheprovider exits 0 AND rg -n 'SYNAPSE_MEMORY_BACKEND' .github/workflows/ci.yml matches",
    "status": "closed",
    "opened_run": "2026-09-05",
-   "closed_run": "2026-09-05",
+   "closed_run": "2026-09-06",
    "merge": "b435cc26",
    "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
@@ -110,7 +111,7 @@
    "closure_predicate": "python harness/rsi/verify.py --json reports P5 PASS and P10 PASS with 0 FAIL, and python -c \"import json;r=json.load(open('harness/rsi/REGISTRY.json'));print([l['status'] for l in r['loops'] if l['id']=='A3'])\" prints ['RETIRED']",
    "status": "closed",
    "opened_run": "2026-09-05",
-   "closed_run": "2026-09-05",
+   "closed_run": "2026-09-06",
    "merge": "5e14d253",
    "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
@@ -126,7 +127,7 @@
    "closure_predicate": "rg -c 'v5.60.0 is|115 tools|5,551 passed' README.md returns 0 AND python -c \"import json,os;r=json.load(open('harness/solaris_v3/runs/acceptance-validation/receipt.json'));print([k for k in r['artifact_hashes'] if not os.path.exists(k)])\" prints [] AND rg -n 'SPATIAL|splat|FONT_FLOOR' harness/notes/RELEASE_v5.63.0.md harness/notes/CAPSULE_2026-09-05_BP5.md matches AND rg -c '22\\.0\\.368' CLAUDE.md returns 0",
    "status": "closed",
    "opened_run": "2026-09-05",
-   "closed_run": "2026-09-05",
+   "closed_run": "2026-09-06",
    "merge": "3fe131b5",
    "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
@@ -156,7 +157,7 @@
    "closure_predicate": "rg -n 'SYNAPSE_HYTHON' docs/studio/DEPLOYMENT.md matches AND rg -c 'houdini21' .claude/skills/deploy/SKILL.md returns 0 AND python .synapse/hytest.py --which 2>/dev/null | rg '22\\.0\\.400' matches (or the shim prints the build it selected and it is 22.0.400)",
    "status": "closed",
    "opened_run": "2026-09-05",
-   "closed_run": "2026-09-05",
+   "closed_run": "2026-09-06",
    "merge": "8021bbc0",
    "closure_evidence": "predicate re-run on master after merge, exit 0 (sweep 2026-09-05)"
   },
@@ -378,6 +379,136 @@
    "closure_predicate": "python -c \"import re,glob;idle=['Standing by','waiting for work','no steps yet','Awaiting telemetry','no operations tracked yet','no scene context'];n=sum(len(re.findall(s,open(f,encoding='utf-8').read())) for f in glob.glob('python/synapse/panel/**/*.py',recursive=True) for s in idle);print('PASS' if n<=3 else 'FAIL: %d idle-string sites'%n)\"",
    "status": "open",
    "opened_run": "2026-09-05-bierut"
+  },
+  {
+   "id": "C1",
+   "title": "README publishes 'undo-wrapped and reversible' and 'the audited /mcp bridge path' - both false, in the line the B8 release-truth commit rewrote",
+   "lane": "SCOUT+REVIEW",
+   "severity": "critical",
+   "action": "Rewrite README.md:253 to 'undo-wrapped: one Ctrl+Z undoes the whole operation; not automatically rolled back when an operation raises.' Rewrite CLAUDE.md 1 as THREE surfaces: external stdio mcp_server.py -> WS -> handlers (live posture, no consent, no composition check), in-process synapse/mcp/server.py -> execute_through_bridge (audited), live /synapse WS. Add a doc-conformance pin beside tests/test_phase0c_doc1_toolcount.py that fails if README carries 'mutations are ... reversible' while it also carries 'Wrapping is not reversing'.",
+   "evidence": "README.md:253 'The full safety set (undo-wrapped, reversible, provenance-recorded) rides the audited `/mcp` bridge path ... Scene mutations are undo-wrapped and reversible.' vs README.md:481 'This used to say \"every mutation is reversible.\" That was overstated.' and CLAUDE.md 1.8 'Say \"undoable\", never \"reversed\".' .mcp.json registers stdio mcp_server.py; grep -c 'LosslessExecutionBridge|execute_through_bridge' mcp_server.py = 0; python/synapse/server/integrity_envelope.py:271-284 stamps undo_group_active=False, consent_verified=False, composition_valid=False, execution_path='live'. c533a2a1 (cto B8, in range) rewrote :253 and carried 'reversible' forward verbatim.",
+   "repro": "grep -n 'reversible' README.md && grep -c 'LosslessExecutionBridge\\|execute_through_bridge' mcp_server.py && git log -L 253,253:README.md --oneline -n 1",
+   "gate": "joe",
+   "closure_predicate": "! grep -qE 'undo-wrapped and reversible|audited .?/mcp.? bridge path' README.md && grep -q 'mcp_server.py' CLAUDE.md",
+   "status": "open",
+   "opened_run": "2026-09-06"
+  },
+  {
+   "id": "C2",
+   "title": "Two of three release tags in range point at red-CI commits; v5.65.2 was tagged mid-run; the CI closure predicate reads the branch head, not the tagged commit",
+   "lane": "INTENT+HEALTH",
+   "severity": "critical",
+   "action": "Add a pre-tag ritual step: refuse to tag while the tag commit's own CI run is red or pending, or record the red leg and its cause in the release note. Change every CI predicate from `gh run list --branch master --limit 1` to `gh run list --commit $(git rev-parse HEAD)` (short shas silently return empty - use rev-parse). Fix tests/test_f3_emergency_net.py::test_escalation_routes_ws_halt_when_no_haltable_bridge, which failed on BOTH ubuntu-3.11 and macos-3.14 and survived one fix attempt (e8913f83) before 1f187c5e.",
+   "evidence": "v5.64.0 -> 2865f009 check-runs 'test (ubuntu-latest, 3.11) failure'; v5.65.0 -> 4becb1cf failure; v5.65.2 -> 78c6f524 run 34035666687 still in_progress at publish. 8 of last 15 master runs failed. RELEASE_v5.64.0.md and _v5.65.0.md publish a local-Windows '0 failed' and never mention CI. harness/cto/BACKLOG.json B1 predicate is `gh run list --branch master --limit 1`, structurally blind to the tagged commit.",
+   "repro": "for t in v5.64.0 v5.65.0 v5.65.2; do echo -n \"$t \"; gh run list --commit \"$(git rev-parse $t)\" --json conclusion -q '.[0].conclusion'; done",
+   "gate": "joe",
+   "closure_predicate": "test \"$(gh run list --commit \"$(git rev-parse \"v$(cat VERSION)\")\" --json conclusion -q '.[0].conclusion')\" = success",
+   "status": "open",
+   "opened_run": "2026-09-06"
+  },
+  {
+   "id": "H1",
+   "title": "Recipe emitters ship 10 live-refuted parms and 4 phantom/deprecated node types under a green audit that scans the wrong root and the wrong thing",
+   "lane": "RECIPES+REVIEW",
+   "severity": "high",
+   "action": "Fix the 12 emission sites (rbdmaterialfracture numpieces, assemble create_packed, rbdconstraintproperties type/strength, oceanspectrum speed/chop, heightfield_noise height/noisefreq/octaves, karmarendersettings specularlimit -> reflectionlimit; recipe_book usdrop/uvtexture/twist, apex_recipes bonegenerator, hda_recipes mountain -> attribnoise::2.0). Then fix the gate three ways: widen _RECIPE_ROOT from python/synapse/routing to python/synapse; make the parm authority a RUNTIME PROBE, never the catalog (rag/catalog dumps parmTuples only - a catalog-literal audit false-positives at 76% on component/multiparm names); resolve unversioned literals to the highest catalog version before reading `deprecated`. Retire tests/test_apex_recipe_names.py:48 EXEMPT_UNNAMESPACED. Longer-term: route every recipe home through the already-shipping synapse_propose_graph / graph_validator.py, which validates node types AND parms against the live runtime.",
+   "evidence": "Live hython 22.0.400: all ten parms return None; usdrop/uvtexture/bonegenerator raise OperationFailed 'Invalid node type name'; twist deprecated (new_type Sop/bend, 17.0); createNode('mountain') -> mountain::2.0 deprecated (new_type attribnoise::2.0). Sites: fx_recipes.py:129,132,139,140,188,189; scene_recipes.py:401-403; render_recipes.py:589,721; recipe_book.py:130,373,407; apex_recipes.py:60,246; hda_recipes.py:71. scripts/extract_emitted_node_types.py:80 _RECIPE_ROOT = python/synapse/routing; tests/test_emitted_node_types.py = 14 passed with zero 'parm' references.",
+   "repro": "grep -rn \"parm('specularlimit')\\|parm('numpieces')\\|parm('noisefreq')\" python/synapse/routing/recipes/ && python scripts/extract_emitted_node_types.py --check; echo exit=$?",
+   "gate": "crux",
+   "closure_predicate": "! grep -rqE \"parm\\('(specularlimit|numpieces|create_packed|noisefreq|octaves|speed|chop)'\\)\" python/synapse/routing/recipes/ && ! grep -rqE \"createNode\\('(usdrop|uvtexture|bonegenerator|twist|mountain)'\" python/synapse/panel/recipe_book.py python/synapse/panel/apex_recipes.py python/synapse/routing/hda_recipes.py && python scripts/extract_emitted_node_types.py --check",
+   "status": "open",
+   "opened_run": "2026-09-06"
+  },
+  {
+   "id": "H2",
+   "title": "Headless scout resolves the H21 symbol table on an H22 product and returns exists_in_runtime=false for real H22 symbols - a gate-down condition emitted in the do-not-emit channel",
+   "lane": "HEALTH-missed",
+   "severity": "high",
+   "action": "Make _pkg_symbol_table_path() fall back to the newest committed table (h22) rather than the hardcoded h21 path, or return exists_in_runtime=null with unverified_reason='no running Houdini major' as CLAUDE.md 15 specifies for a down gate. Never return `false` from a table whose build does not match the product pin.",
+   "evidence": "scout.py:139 _PKG_SYMBOL_TABLE = .../data/h21_symbol_table.json; scout.py:651-663 falls back to it whenever no running Houdini major is obtainable - i.e. every stock-Python MCP server process; _load_symbol_table() reports stale: False. Live: synapse_scout(query='hou.CopCable') returns exists_in_runtime=False, but hou.CopCable IS in the committed h22_symbol_table.json (22.0.400, 36,472 symbols; 3,624 symbols exist in h22 and not h21). CLAUDE.md 15: 'false => phantom - do NOT emit it'. Doctor's symbol_table check reports 'stamp 21.0.671' on an H22 seat.",
+   "repro": "python -c \"import sys;sys.path.insert(0,'python');from synapse.cognitive.tools.scout import synapse_scout;print(synapse_scout(query='hou.CopCable',k=1)['symbols'])\"",
+   "gate": "crux",
+   "closure_predicate": "python -c \"import sys;sys.path.insert(0,'python');from synapse.cognitive.tools.scout import synapse_scout as s;r=s(query='hou.CopCable',k=1)['symbols'][0];sys.exit(0 if r.get('exists_in_runtime') is not False else 1)\"",
+   "status": "open",
+   "opened_run": "2026-09-06"
+  },
+  {
+   "id": "H3",
+   "title": "Consent anchor is structurally off on every shipped bridge instance - HumanGate is instantiated nowhere; third review to find it",
+   "lane": "SCOUT",
+   "severity": "high",
+   "action": "Rule it: either delete CLAUDE.md 1.2.1 tier 1 and the 1.1 Artist Consent anchor row as unimplemented and name python/synapse/panel/worker_policy.py's allowlist as the real autonomous control, or land a gate that can actually refuse. Delete the stale justification at python/synapse/panel/bridge_adapter.py:200-202 ('HumanGate still governs AUTONOMOUS / MCP operations, which use their own bridge instances') - it is contradicted 8 lines later by the same file and by shared/bridge.py:2883-2884, and it is the in-code sentence keeping the doc claim looking defensible.",
+   "evidence": "shared/bridge.py:2883-2884 get_process_bridge(): `bridge = LosslessExecutionBridge(consent_callback=lambda op: True)` then `bridge._gate = None`. rg 'HumanGate\\(' python/ shared/ finds only a docstring at doctor.py:985. Live hython 22.0.400: 'gate None consent <lambda>'. Same finding at docs/SYNAPSE_CTO_REVIEW_2026-06-05.md:361 and in the 2026-08-31 review.",
+   "repro": "\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -c \"import sys;sys.path.insert(0,'python');sys.path.insert(0,'.');from shared.bridge import get_process_bridge as g;b=g();print('gate',b._gate,'consent',b._consent_callback)\"",
+   "gate": "joe",
+   "closure_predicate": "python -c \"import sys;sys.path.insert(0,'.');from shared.bridge import get_process_bridge as g;doc=open('CLAUDE.md',encoding='utf-8').read();sys.exit(0 if (g()._gate is not None) or ('Gate system' not in doc) else 1)\"",
+   "status": "open",
+   "opened_run": "2026-09-06"
+  },
+  {
+   "id": "H4",
+   "title": "Solaris v3 demo is 7 days out with 19/19 gates NOT_RUN, the handler mixin unregistered, and demo mode advertising a tool no transport can dispatch",
+   "lane": "INTENT+RECIPES",
+   "severity": "high",
+   "action": "Pick one and say so in the capsule: (a) land HOOKUP_AUTHORITY's four steps - add RecipeHandlerMixin to the SynapseHandler bases, register run_recipe, add synapse_run_recipe to TOOL_DEFS, call ReceiptStore.append from recipes/transaction.py so the ledger gains a producer - and run the 19 gates this week; or (b) move the date and freeze python/synapse/recipes/ until golden_reference clears PENDING_HUMAN. Either way, gate demo_tool_definitions() on the tool actually resolving in TOOL_DISPATCH so demo mode cannot advertise a 404.",
+   "evidence": "docs/SOLARIS_RECIPES_H22_BLUEPRINT_V3.md:8 demo target 13 Sept 2026. harness/solaris_v3/GATES.json = Counter({'NOT_RUN': 19}). handlers.py:415 SynapseHandler bases exclude RecipeHandlerMixin (handlers_recipe.py:96); grep RecipeHandlerMixin handlers.py = 0. synapse_run_recipe absent from _tool_registry.py and handlers.py; rbac.py:81 says 'Not yet a dispatched command'. worker_policy.py:130-132 advertises it and :158-160 allows it. fixtures/solaris.spine.json:184 golden_reference PENDING_HUMAN. Range added +80 lines to recipes/transaction.py and +32 to verify.py while 5 of 127 commits touched Solaris at all.",
+   "repro": "python -c \"import json,collections;g=json.load(open('harness/solaris_v3/GATES.json'));w=lambda o:[o['status']] if isinstance(o,dict) and isinstance(o.get('status'),str) else ([x for v in (o.values() if isinstance(o,dict) else o) for x in w(v)] if isinstance(o,(dict,list)) else []);print(collections.Counter(w(g)))\"; grep -c RecipeHandlerMixin python/synapse/server/handlers.py",
+   "gate": "joe",
+   "closure_predicate": "python -c \"import json,sys;s=json.dumps(json.load(open('harness/solaris_v3/GATES.json')));sys.exit(0 if 'NOT_RUN' not in s else 1)\" && grep -q RecipeHandlerMixin python/synapse/server/handlers.py",
+   "status": "open",
+   "opened_run": "2026-09-06"
+  },
+  {
+   "id": "H5",
+   "title": "R.3 hot_reload_gated is RED on master for both .pypanel loaders, and the prescribed fix removes the panel's only reload path",
+   "lane": "DESIGN-missed",
+   "severity": "high",
+   "action": "Reconcile before fixing. The unconditional column-0 sys.modules['synapse.*'] purge is classified a production defect (duplicate bridges, stale callbacks, split singletons) AND is the sole mechanism by which panel edits reach a running Houdini - there is no watcher and no reload button. Decide: gate the purge behind SYNAPSE_DEV_HOT_RELOAD and add an explicit in-panel reload action, or accept the purge and re-scope the check. Do not apply the remedy as written.",
+   "evidence": "harness/verify/checks.py:2091-2118 check_hot_reload_gated returns ok=False on master naming both houdini/python_panels/synapse_panel.pypanel:36-38 and python/synapse/panel/synapse_chat.pypanel; remedy at :2110 is 'wrap the purge in SYNAPSE_DEV_HOT_RELOAD or delete it'. rg 'def .*reload|hot.?reload' python/synapse/panel/synapse_panel.py = 0. Tracked open in harness/tasks.json (R.3, 'hot_reload_gated=false'), pinned by tests/test_r_track.py:312-336. The check also treats synapse_chat.pypanel as a shipping loader, contradicting the DESIGN lane's 'never registered' framing - one of the two readings is law and neither is written down.",
+   "repro": "python -c \"import sys,os;sys.path.insert(0,'harness');from verify import checks;p=os.getcwd();print(checks.check_hot_reload_gated({'wt':p,'repo':p}))\"",
+   "gate": "joe",
+   "closure_predicate": "python -c \"import sys,os;sys.path.insert(0,'harness');from verify import checks;p=os.getcwd();sys.exit(0 if checks.check_hot_reload_gated({'wt':p,'repo':p})['ok'] else 1)\"",
+   "status": "open",
+   "opened_run": "2026-09-06"
+  },
+  {
+   "id": "H6",
+   "title": "Houdini-tier test truth is stale and self-contradictory: 103 needs_houdini tests vs docs' 40, last full hython run 2026-08-02 at 110 failed / 771 errors",
+   "lane": "HEALTH+INTENT",
+   "severity": "high",
+   "action": "Re-run the full hython tier on 22.0.400 with SYNAPSE_HYTHON pinned and replace BOTH numbers from one receipt; regenerate the CI_TWO_WORLDS table from that same run so the two docs cannot disagree. Split README's Shipping cell so a reader cannot inherit the 2026-09-05 panel-tier date for the 2026-08-02 full-run figure. Until it runs, mark the cell UNKNOWN-at-HEAD.",
+   "evidence": "`pytest tests/ --collect-only -q -m needs_houdini` -> '103/7966 tests collected'. docs/CI_TWO_WORLDS.md:150 still says '39 of the 40 pass under real hou' (measured 2026-08-07 on 22.0.368) and its table says 'collected 5892'. README.md:496 'full run 4,048 passed - 110 failed - 771 errors (2026-08-02; not re-run for v5.64.0)' while VERSION is 5.65.2 - the staleness marker is three tags behind. Only the panel subset has a current receipt (239 passed / 1 failed, 2026-09-05).",
+   "repro": "python -m pytest tests/ --collect-only -q -m needs_houdini 2>&1 | tail -1; grep -n '39 of the 40' docs/CI_TWO_WORLDS.md; grep -n 'not re-run for v5.64.0' README.md",
+   "gate": "joe",
+   "closure_predicate": "! grep -q 'not re-run for v5.64.0' README.md && ! grep -q '39 of the 40' docs/CI_TWO_WORLDS.md",
+   "status": "open",
+   "opened_run": "2026-09-06"
+  },
+  {
+   "id": "M1",
+   "title": "The CTO loop has no CONFIRMED->backlog rule: a confirmed finding vanished between VERIFY and BACKLOG and this run paid to re-derive it",
+   "lane": "RSI-missed",
+   "severity": "medium",
+   "action": "Add a SYNTH rule in .claude/workflows/cto-review.js: every CONFIRMED/UPGRADED/DOWNGRADED finding becomes a backlog item OR carries a written scope-out reason in the run report. Extend check_backlog.py to assert the count of surviving findings equals backlogged + scoped-out. Also make closure_evidence machine-checkable - require the predicate's stdout tail plus a 7+ hex sha, since the current guard only rejects evidence shorter than 25 chars and 8 items carry the same 64-char boilerplate.",
+   "evidence": "harness/cto/runs/2026-09-05/report.json:1367 filed the loop-O finding, :1451 recorded 'CONFIRMED'. harness/cto/BACKLOG.json has zero mentions of agent_health or RecommendationHistory (grep -c = 0). cto-review.js:66-78 (SYNTH) and :128 (PERSIST) carry no such rule. Cost measured: RSI-01 this run is a full re-derivation. harness/cto/check_backlog.py:66-67 rejects only len(ev) < 25.",
+   "repro": "python -c \"import json;d=json.load(open('harness/cto/runs/2026-09-05/report.json',encoding='utf-8'));print(d['raw'][6]['found']['findings'][2]['title'][:70])\"; grep -c 'agent_health\\|RecommendationHistory' harness/cto/BACKLOG.json",
+   "gate": "auto",
+   "closure_predicate": "grep -q 'CONFIRMED' .claude/workflows/cto-review.js && python -c \"import json,sys;d=json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'));sys.exit(0 if any('agent_health' in json.dumps(i) for i in d['items']) else 1)\"",
+   "status": "open",
+   "opened_run": "2026-09-06"
+  },
+  {
+   "id": "M2",
+   "title": "audit_panel.py --strict exits 0 when it SKIPS the live tier, and its printed remedy names a Houdini build that is not installed",
+   "lane": "DESIGN",
+   "severity": "medium",
+   "action": "Make --strict exit non-zero when the live-build tier is SKIPPED rather than run (a skipped tier is not a passed tier); keep exit 0 for non-strict. Replace the hardcoded '21.0.671' at audit_panel.py:6 and run_panel.py:123 with a discovered/SYNAPSE_HYTHON-pinned path, and have the panel gates emit the interpreter path + hou.applicationVersionString() into every receipt - six SideFX builds are installed and the shim picks newest.",
+   "evidence": "`python audit_panel.py --strict` prints '[skip] live build unavailable here: SystemExit: 1', '[skip] no panel built', then 'G3 RESULT: pass - 2 WARN' and EXIT=0. Under hython 22.0.400 offscreen the same command is genuinely green ('pass - 0 WARN'), which is what makes the stock-python zero dangerous. audit_panel.py:6 and run_panel.py:123 name 'Houdini 21.0.671'; installed builds are 21.0.773, 22.0.368, 22.0.397, 22.0.400, 22.0.417, 22.0.429. Mitigation: no automated consumer runs it today.",
+   "repro": "python audit_panel.py --strict; echo EXIT=$?; grep -n '21\\.0\\.671' audit_panel.py run_panel.py",
+   "gate": "crux",
+   "closure_predicate": "! grep -q '21\\.0\\.671' audit_panel.py run_panel.py && ! python audit_panel.py --strict",
+   "status": "open",
+   "opened_run": "2026-09-06"
   }
  ]
 }

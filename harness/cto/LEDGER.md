@@ -12,3 +12,4 @@
 | 2026-09-05 | release v5.65.0 | tag 4becb1cf | gate 7605/0/346 | pushed + GitHub release (first attempt undone: gh created a gate-less tag) | - | - |
 | 2026-09-05 | wf_c2b751da-c1e (Joe's five, team) | spec + 5 forges + integrator + 2 crux | landed 33c46028; live-verified | 5 rulings J1-J5 | - | nits -> backlog |
 | 2026-09-05 | release v5.65.1 | tag 6d56212d (gate OPEN) | gate 7613/0/357 | pushed + GitHub release | - | - |
+| 2026-09-06 | cto crank 3 | 7 | 61 | 2 | 7 | 10 |

@@ -1,0 +1,550 @@
+{
+ "date": "2026-09-06",
+ "head": "918a58b7",
+ "sweep": {
+  "backlog_count": 25,
+  "results": [
+   {
+    "id": "B1",
+    "status": "closed",
+    "note": "gh run on master HEAD 918a58b7 conclusion=success; tests/test_solaris_compose_tools.py:120 and :244 pytest.importorskip(\"pxr\"). Repro: gh run list --branch master --limit 1 --json conclusion,headSha -q '.[0]' && rg -n 'importorskip\\(\"pxr\"\\)' tests/test_solaris_compose_tools.py"
+   },
+   {
+    "id": "B2",
+    "status": "closed",
+    "note": "symbol table contains hou.undos.group/hou.hipFile.save/hou.hda.definitionsInFile (prints True); python/synapse/recipes/transaction.py:130 references hou.undos.group. Exit 0."
+   },
+   {
+    "id": "B3",
+    "status": "closed",
+    "note": "hython 22.0.400 tests/test_recipe_verify_hython.py: 4 passed, exit 0 (live, offscreen)."
+   },
+   {
+    "id": "B4",
+    "status": "regressed",
+    "note": "Clause 1 holds (hython audit_panel.py --strict exit 0, 'G3 RESULT:  pass  \u00b7  0 WARN'). Clause 2 fails literally: rg -n 'G3 RESULT' harness/notes/RELEASE_v5.6*.md = 0 matches; newest note RELEASE_v5.65.1.md:37 says 'G3 strict **pass, 0 WARN**' in prose. Predicate-string drift, not a substance regression; tighten note or predicate. Repro: rg -c 'G3 RESULT' harness/notes/RELEASE_v5.6*.md"
+   },
+   {
+    "id": "B5",
+    "status": "closed",
+    "note": "SYNAPSE_MEMORY_BACKEND=moneta pytest tests/test_backfill.py: 7 passed; .github/workflows/ci.yml:111,135 sets SYNAPSE_MEMORY_BACKEND. Exit 0."
+   },
+   {
+    "id": "B6",
+    "status": "regressed",
+    "note": "karma createNode=0 and 'grade' absent (crux slice holds), but third clause never satisfied: rg 'proposal-only' python/synapse/routing/recipes/base.py = 0 AND rg 'command_fn=' python/synapse/server/handlers.py = 0. Merge 6659b7dc touched neither file, so the 2026-09-05 'exit 0' closure_evidence could not have been true against this predicate. Joe-gated ruling (vocabulary/route_chat) still outstanding. Repro: rg -n 'proposal-only' python/synapse/routing/recipes/base.py; rg -n 'command_fn=' python/synapse/server/handlers.py"
+   },
+   {
+    "id": "B7",
+    "status": "closed",
+    "note": "harness/rsi/verify.py --json: P1-P10 all PASS (P5 + P10 present); REGISTRY A3 status ['RETIRED']. Exit 0."
+   },
+   {
+    "id": "B8",
+    "status": "closed",
+    "note": "README stale strings 0; receipt.json missing artifact paths = []; SPATIAL/splat/FONT_FLOOR present in release/capsule notes; CLAUDE.md has 0 '22.0.368'. Exit 0."
+   },
+   {
+    "id": "B9",
+    "status": "open",
+    "note": "worktrees=8 (<=15 ok); untracked _temp_/.err = 0 ok; git branch -r pd/panel-(integrate|camera|lever|sweep_a|sweep_b) = 0 of 5 required. Blocked on Joe pushing pd/* backup refs. Repro: git branch -r | rg -c 'pd/panel-(integrate|camera|lever|sweep_a|sweep_b)'"
+   },
+   {
+    "id": "B10",
+    "status": "closed",
+    "note": "docs/studio/DEPLOYMENT.md documents SYNAPSE_HYTHON; SKILL.md has 0 'houdini21'; .synapse/hytest.py --which prints Houdini 22.0.400 hython. Exit 0."
+   },
+   {
+    "id": "B11",
+    "status": "open",
+    "note": "rg -c '<= 280px wide at airy' .synapse/contracts/docking-minimums.yaml = 0 (needs 1). Joe-gated design wave."
+   },
+   {
+    "id": "D-F1",
+    "status": "unknown",
+    "note": "closure_predicate is truncated at exactly 500 chars in BACKLOG.json (ends mid-expression \"if v['w']<\"); unrunnable as stored. Full text presumably in harness/design_review/2026-09-05/REVIEW.md. Repro: python -c \"import json;print(len([i for i in json.load(open('harness/cto/BACKLOG.json'))['items'] if i['id']=='D-F1'][0]['closure_predicate']))\""
+   },
+   {
+    "id": "D-F2",
+    "status": "unknown",
+    "note": "closure_predicate truncated at 500 chars (ends \"shown=[k for k,v in rl.it\"); unrunnable as stored."
+   },
+   {
+    "id": "D-F3",
+    "status": "open",
+    "note": "FAIL: DOCK_COLLAPSE_PX=False BY_DENSITY=False regex_in_test=True (tokens lack both attrs; tests/test_panel_rhythm_docking.py still has per-density 'px wide at' regex). Exit 1."
+   },
+   {
+    "id": "D-F4",
+    "status": "unknown",
+    "note": "closure_predicate truncated at 500 chars (ends \"print('PASS' if o\"); unrunnable as stored."
+   },
+   {
+    "id": "D-F5",
+    "status": "unknown",
+    "note": "closure_predicate truncated at 500 chars (ends \"['c\"); unrunnable as stored."
+   },
+   {
+    "id": "D-F6",
+    "status": "unknown",
+    "note": "closure_predicate truncated at 500 chars (ends \"n=len\"); unrunnable as stored."
+   },
+   {
+    "id": "D-F7",
+    "status": "open",
+    "note": "FAIL: qss letter-spacing=5, TRACKING_EM has 9 keys (BODY,BRAND,DATA,DISPLAY,EYEBROW,LABEL,LABEL_SM,SEND,WORDMARK) vs <=3. Exit 1."
+   },
+   {
+    "id": "D-F8",
+    "status": "open",
+    "note": "FAIL: 14 WEIGHT_SEMIBOLD refs in python/synapse/panel/designsystem/*.py. Exit 1."
+   },
+   {
+    "id": "D-F9",
+    "status": "unknown",
+    "note": "closure_predicate truncated at 500 chars (ends \"['px_hist'];m\"); unrunnable as stored."
+   },
+   {
+    "id": "D-F10",
+    "status": "unknown",
+    "note": "closure_predicate truncated at 500 chars (ends \"if u.get('khint') el\"); unrunnable as stored."
+   },
+   {
+    "id": "D-F11",
+    "status": "unknown",
+    "note": "closure_predicate truncated at 500 chars (ends \"print('PASS' if ok else '\"); unrunnable as stored."
+   },
+   {
+    "id": "D-F12",
+    "status": "open",
+    "note": "FAIL: rhythm_role=\"row\" block still in qss.py; ROLE_GAPS values not unique (label/row=12, tag/card/group/shell=16, parm_row/stack=4). Exit 1."
+   },
+   {
+    "id": "D-F13",
+    "status": "open",
+    "note": "FAIL: python/synapse/panel/synapse_chat.pypanel still exists; qss.py has 4 HdaGenerateBtn|StageLabel rules. First clause failed so tests/test_panel_alt_entry_unshipped.py not reached. Exit 1."
+   },
+   {
+    "id": "D-F14",
+    "status": "open",
+    "note": "FAIL: 12 idle-string sites under python/synapse/panel/ (threshold <=3). Exit 1."
+   }
+  ]
+ },
+ "synth": {
+  "executive": "Crank 3 synthesis at HEAD 78c6f524 (v5.65.2; the assignment's 918a58b7 is 3 commits back \u2014 a second CTO crank committed and released during the lanes' run; recipe/panel/bridge surfaces are byte-identical across that gap, so verdicts transfer). Seven lanes filed 63 findings; refuters killed 2 and re-tiered 20. 24 refuter-'missed' items entered, several of them stronger than the lane finding they corrected.\n\nTwo things break release truth. (1) README.md:253 \u2014 the line the in-range B8 'release truth' commit rewrote \u2014 still says scene mutations are 'undo-wrapped and reversible' and that the safety set 'rides the audited /mcp bridge path', while README.md:481 says that phrasing 'was overstated' and CLAUDE.md 1.8 says 'say undoable, never reversed'; the /mcp server .mcp.json actually registers (mcp_server.py) has zero bridge references and stamps consent_verified=False. (2) v5.64.0 and v5.65.0 were tagged on commits whose CI concluded failure, v5.65.2 was tagged with its run still in_progress, and B1's closure predicate reads the branch head instead of the tagged commit, so it printed green over both.\n\nThe recurring shape across lanes is a green gate over an unmeasured surface: the emitted-node-type audit scans only python/synapse/routing and only node types, so ten live-refuted parms and four phantom node types ship under a passing test; audit_panel.py --strict exits 0 when the live tier is SKIPPED; the headless scout resolves the H21 symbol table and returns exists_in_runtime=false for real H22 symbols in the channel CLAUDE.md 15 tells the model means 'do not emit'; RSI's P1 completeness predicate cannot see forge/ or harness/; the CTO loop itself has no rule forcing a CONFIRMED finding into the backlog, and dropped one 24h ago that this run paid to re-derive.\n\nUnsettled (no open_questions field in this schema): whether gate-less bridge is ratified posture or an unclosed critical from two prior reviews; whether the 13-Sept Solaris demo date still stands; whether harness/cto should be registered as an RSI loop; whether hython-tier 110 failed/771 errors is real or stale-environment noise (nobody has re-run it since 2026-08-02); whether R.3's prescribed fix (gate the pypanel module purge) is acceptable given the purge is the panel's only reload path. Backlog below = 10 new findings + 17 still-open SWEEP ids carried at their original ids.",
+  "panel_verdict": "'The panel design is stagnant / not updating' is REFUTED on both readings and the DESIGN lane proved it: tokens/qss/rhythm all changed 2026-09-05 alongside the widgets, census went 107 spacing / 106 inline / 135 raw hex -> 12 / 1 / 0, all seven pd/* branches merged with Joe's word, G3 strict green under hython 22.0.400 offscreen, and the live probe resolves tokens to the master tree at SIGNAL #8FB3D9 with ~/.synapse/design NOT on sys.path. The lane's ratchet finding (DSN-04) was itself refuted \u2014 tests/test_panel_rhythm_owner.py:115-131 already walks the real tree with exact=True. What is actually wrong with the panel: (a) the .pypanel module purge at houdini/python_panels/synapse_panel.pypanel:36-38 is classified a production defect by the repo's own R.3 check (harness/verify/checks.py:2091-2118, ok=False on master) and is simultaneously the only path by which edits reach a running Houdini \u2014 nobody has reconciled the fix with the symptom; (b) audit_panel.py --strict returns 0 when it skips the live tier and prints a remedy naming Houdini 21.0.671, which is not installed; (c) a dead legacy chat surface (panel/synapse_chat.pypanel + chat_panel.py + python/synapse/ui/) still ships, zero importers, and is the only file re-arming the ~/.synapse/design cyan side channel; (d) fourteen design predicates remain open or UNKNOWN, all gate=joe. The J1 model token can also sit green forever after bridge loss \u2014 nothing writes 'disconnected' \u2014 while its own docstring says it 'is never a stale green'.",
+  "two_day_work_verdict": "127 commits / 477 files / 126,762 insertions in range bought: panel typography and rhythm convergence (51 files, 3,664 insertions), the CTO review harness itself, and ten B-item repairs. Product code outside the panel moved 329 lines across 11 files \u2014 0.26% of insertions, 171 of them a JSON data file. Five of 127 commits touched Solaris v3 / recipes, none advancing an acceptance gate; harness/solaris_v3/GATES.json is still 19/19 NOT_RUN with a 13-Sept demo target and RecipeHandlerMixin still absent from the SynapseHandler MRO. The review loop is genuinely working \u2014 crank 2 caught and withdrew its own false B6 closure, restored 8 truncated predicates and de-deafened 4 probes, which is the strongest self-correction evidence in the repo. But the same crank published v5.65.2 on an unfinished CI run and 8 of 9 closed B-items still carry byte-identical boilerplate closure_evidence that check_backlog.py's 25-char length test cannot see through. Net: the loop improved its own instruments and shipped nothing to the artist. RSI registry has gained zero rungs in 36 days; its SPEC pre-named that as the likely failure mode.",
+  "recipes_verdict": "FIVE recipe homes, ZERO executable. (1) python/synapse/routing/recipes/ \u2014 62 recipes, listed by synapse_list_recipes (handlers.py:1675), but the only production TieredRouter (handlers.py:1711) is built with no command_fn, so router.py:410 forces executed=False and every tier is proposal-only by construction; its sole route_chat caller is the unregistered legacy chat_panel.py. (2) panel/recipe_book.py \u2014 21 recipes, parse_recipe_command/build_recipe_messages lost every non-test caller when the pypanel monolith collapsed 2026-06-01; the palette still advertises /recipes and sends prose, not the graph. (3) panel/apex_recipes.py \u2014 8 recipes, same. (4) routing/hda_recipes.py \u2014 5, reachable only from (2)'s dead controller. (5) python/synapse/recipes/ Solaris v3 \u2014 ~4,230 LOC still growing, mixin unregistered, synapse_run_recipe absent from TOOL_DEFS, ReceiptStore.append has no non-test caller, golden_reference PENDING_HUMAN, 19/19 gates NOT_RUN. Correctness: live H22.0.400 probes refute ten parms across three routing files (rbdmaterialfracture numpieces, assemble create_packed, rbdconstraintproperties type/strength, oceanspectrum speed/chop, heightfield_noise height/noisefreq/octaves, karmarendersettings specularlimit) and four node types in the panel homes (usdrop, uvtexture, bonegenerator phantom; twist and mountain deprecated). The RBD recipe dies on its FIRST parm set. scripts/extract_emitted_node_types.py --check exits 0 through all of it: _RECIPE_ROOT is python/synapse/routing (panel/ invisible), it audits node types not parms, and it keys deprecation on the literal so 'mountain' scores clean while createNode('mountain') returns the deprecated mountain::2.0. Note the corrected fix: the catalog cannot be the parm authority (it dumps parmTuples only \u2014 a naive catalog-literal audit false-positives at 76%); a runtime probe must be, exactly as the dir() symbol table became the authority for hou.*. Meanwhile a live, dispatched, runtime-validating path already ships and no recipe home uses it: synapse_propose_graph / synapse_instantiate_graph (GraphSynthHandlerMixin IS in the MRO; graph_validator.py:102,121 checks node types and parms against the live runtime and would have rejected every phantom above).",
+  "lane_scores": [
+   {
+    "lane": "SCOUT",
+    "grade": "A-",
+    "one_line": "9/10 held plus one upgrade; correctly identified that the registered /mcp server is bridge-less, but 3 line cites drifted and its release snapshot went stale inside the hour."
+   },
+   {
+    "lane": "DESIGN",
+    "grade": "B",
+    "one_line": "Refuted the stagnation premise cleanly with live evidence, then rated the .pypanel module purge 'info / coverage is correct' while the repo's own R.3 check calls those exact lines a production defect; one finding fully refuted."
+   },
+   {
+    "lane": "REVIEW",
+    "grade": "B+",
+    "one_line": "Found the real phantom-parm class and the README contradiction, but 2 of its 3 lead phantoms were refuted by live probe and its prescribed catalog-based gate would false-positive 76%; the refuter's probe found 10 more."
+   },
+   {
+    "lane": "HEALTH",
+    "grade": "A-",
+    "one_line": "All 10 survived and 4 correctly downgraded; strongest CI and hygiene evidence, but it read doctor's code without running it and missed the H21-symbol-table fallback its own probe surfaced."
+   },
+   {
+    "lane": "INTENT",
+    "grade": "B+",
+    "one_line": "The schedule frame on Solaris and the tag-vs-branch CI blindness are the two most useful findings in the run; it then re-ran B4 on one clause of two and called it green - the same partial-predicate error it charges the sweep with."
+   },
+   {
+    "lane": "RECIPES",
+    "grade": "A",
+    "one_line": "10/10 survived, one upgraded; the only lane that live-probed every claim, and its five-home inventory is the sharpest artifact of the crank - it just missed that no command channel exists at all."
+   },
+   {
+    "lane": "RSI",
+    "grade": "B-",
+    "one_line": "Thorough registry work but severity inflated across the board (6 downgrades, 1 refuted on an in-flight run mistaken for a dormant half); the refuter found the real defect - the CTO loop drops CONFIRMED findings."
+   }
+  ],
+  "backlog": [
+   {
+    "id": "C1",
+    "title": "README publishes 'undo-wrapped and reversible' and 'the audited /mcp bridge path' - both false, in the line the B8 release-truth commit rewrote",
+    "lane": "SCOUT+REVIEW",
+    "severity": "critical",
+    "action": "Rewrite README.md:253 to 'undo-wrapped: one Ctrl+Z undoes the whole operation; not automatically rolled back when an operation raises.' Rewrite CLAUDE.md 1 as THREE surfaces: external stdio mcp_server.py -> WS -> handlers (live posture, no consent, no composition check), in-process synapse/mcp/server.py -> execute_through_bridge (audited), live /synapse WS. Add a doc-conformance pin beside tests/test_phase0c_doc1_toolcount.py that fails if README carries 'mutations are ... reversible' while it also carries 'Wrapping is not reversing'.",
+    "evidence": "README.md:253 'The full safety set (undo-wrapped, reversible, provenance-recorded) rides the audited `/mcp` bridge path ... Scene mutations are undo-wrapped and reversible.' vs README.md:481 'This used to say \"every mutation is reversible.\" That was overstated.' and CLAUDE.md 1.8 'Say \"undoable\", never \"reversed\".' .mcp.json registers stdio mcp_server.py; grep -c 'LosslessExecutionBridge|execute_through_bridge' mcp_server.py = 0; python/synapse/server/integrity_envelope.py:271-284 stamps undo_group_active=False, consent_verified=False, composition_valid=False, execution_path='live'. c533a2a1 (cto B8, in range) rewrote :253 and carried 'reversible' forward verbatim.",
+    "repro": "grep -n 'reversible' README.md && grep -c 'LosslessExecutionBridge\\|execute_through_bridge' mcp_server.py && git log -L 253,253:README.md --oneline -n 1",
+    "gate": "joe",
+    "closure_predicate": "! grep -qE 'undo-wrapped and reversible|audited .?/mcp.? bridge path' README.md && grep -q 'mcp_server.py' CLAUDE.md"
+   },
+   {
+    "id": "C2",
+    "title": "Two of three release tags in range point at red-CI commits; v5.65.2 was tagged mid-run; the CI closure predicate reads the branch head, not the tagged commit",
+    "lane": "INTENT+HEALTH",
+    "severity": "critical",
+    "action": "Add a pre-tag ritual step: refuse to tag while the tag commit's own CI run is red or pending, or record the red leg and its cause in the release note. Change every CI predicate from `gh run list --branch master --limit 1` to `gh run list --commit $(git rev-parse HEAD)` (short shas silently return empty - use rev-parse). Fix tests/test_f3_emergency_net.py::test_escalation_routes_ws_halt_when_no_haltable_bridge, which failed on BOTH ubuntu-3.11 and macos-3.14 and survived one fix attempt (e8913f83) before 1f187c5e.",
+    "evidence": "v5.64.0 -> 2865f009 check-runs 'test (ubuntu-latest, 3.11) failure'; v5.65.0 -> 4becb1cf failure; v5.65.2 -> 78c6f524 run 34035666687 still in_progress at publish. 8 of last 15 master runs failed. RELEASE_v5.64.0.md and _v5.65.0.md publish a local-Windows '0 failed' and never mention CI. harness/cto/BACKLOG.json B1 predicate is `gh run list --branch master --limit 1`, structurally blind to the tagged commit.",
+    "repro": "for t in v5.64.0 v5.65.0 v5.65.2; do echo -n \"$t \"; gh run list --commit \"$(git rev-parse $t)\" --json conclusion -q '.[0].conclusion'; done",
+    "gate": "joe",
+    "closure_predicate": "test \"$(gh run list --commit \"$(git rev-parse \"v$(cat VERSION)\")\" --json conclusion -q '.[0].conclusion')\" = success"
+   },
+   {
+    "id": "H1",
+    "title": "Recipe emitters ship 10 live-refuted parms and 4 phantom/deprecated node types under a green audit that scans the wrong root and the wrong thing",
+    "lane": "RECIPES+REVIEW",
+    "severity": "high",
+    "action": "Fix the 12 emission sites (rbdmaterialfracture numpieces, assemble create_packed, rbdconstraintproperties type/strength, oceanspectrum speed/chop, heightfield_noise height/noisefreq/octaves, karmarendersettings specularlimit -> reflectionlimit; recipe_book usdrop/uvtexture/twist, apex_recipes bonegenerator, hda_recipes mountain -> attribnoise::2.0). Then fix the gate three ways: widen _RECIPE_ROOT from python/synapse/routing to python/synapse; make the parm authority a RUNTIME PROBE, never the catalog (rag/catalog dumps parmTuples only - a catalog-literal audit false-positives at 76% on component/multiparm names); resolve unversioned literals to the highest catalog version before reading `deprecated`. Retire tests/test_apex_recipe_names.py:48 EXEMPT_UNNAMESPACED. Longer-term: route every recipe home through the already-shipping synapse_propose_graph / graph_validator.py, which validates node types AND parms against the live runtime.",
+    "evidence": "Live hython 22.0.400: all ten parms return None; usdrop/uvtexture/bonegenerator raise OperationFailed 'Invalid node type name'; twist deprecated (new_type Sop/bend, 17.0); createNode('mountain') -> mountain::2.0 deprecated (new_type attribnoise::2.0). Sites: fx_recipes.py:129,132,139,140,188,189; scene_recipes.py:401-403; render_recipes.py:589,721; recipe_book.py:130,373,407; apex_recipes.py:60,246; hda_recipes.py:71. scripts/extract_emitted_node_types.py:80 _RECIPE_ROOT = python/synapse/routing; tests/test_emitted_node_types.py = 14 passed with zero 'parm' references.",
+    "repro": "grep -rn \"parm('specularlimit')\\|parm('numpieces')\\|parm('noisefreq')\" python/synapse/routing/recipes/ && python scripts/extract_emitted_node_types.py --check; echo exit=$?",
+    "gate": "crux",
+    "closure_predicate": "! grep -rqE \"parm\\('(specularlimit|numpieces|create_packed|noisefreq|octaves|speed|chop)'\\)\" python/synapse/routing/recipes/ && ! grep -rqE \"createNode\\('(usdrop|uvtexture|bonegenerator|twist|mountain)'\" python/synapse/panel/recipe_book.py python/synapse/panel/apex_recipes.py python/synapse/routing/hda_recipes.py && python scripts/extract_emitted_node_types.py --check"
+   },
+   {
+    "id": "H2",
+    "title": "Headless scout resolves the H21 symbol table on an H22 product and returns exists_in_runtime=false for real H22 symbols - a gate-down condition emitted in the do-not-emit channel",
+    "lane": "HEALTH-missed",
+    "severity": "high",
+    "action": "Make _pkg_symbol_table_path() fall back to the newest committed table (h22) rather than the hardcoded h21 path, or return exists_in_runtime=null with unverified_reason='no running Houdini major' as CLAUDE.md 15 specifies for a down gate. Never return `false` from a table whose build does not match the product pin.",
+    "evidence": "scout.py:139 _PKG_SYMBOL_TABLE = .../data/h21_symbol_table.json; scout.py:651-663 falls back to it whenever no running Houdini major is obtainable - i.e. every stock-Python MCP server process; _load_symbol_table() reports stale: False. Live: synapse_scout(query='hou.CopCable') returns exists_in_runtime=False, but hou.CopCable IS in the committed h22_symbol_table.json (22.0.400, 36,472 symbols; 3,624 symbols exist in h22 and not h21). CLAUDE.md 15: 'false => phantom - do NOT emit it'. Doctor's symbol_table check reports 'stamp 21.0.671' on an H22 seat.",
+    "repro": "python -c \"import sys;sys.path.insert(0,'python');from synapse.cognitive.tools.scout import synapse_scout;print(synapse_scout(query='hou.CopCable',k=1)['symbols'])\"",
+    "gate": "crux",
+    "closure_predicate": "python -c \"import sys;sys.path.insert(0,'python');from synapse.cognitive.tools.scout import synapse_scout as s;r=s(query='hou.CopCable',k=1)['symbols'][0];sys.exit(0 if r.get('exists_in_runtime') is not False else 1)\""
+   },
+   {
+    "id": "H3",
+    "title": "Consent anchor is structurally off on every shipped bridge instance - HumanGate is instantiated nowhere; third review to find it",
+    "lane": "SCOUT",
+    "severity": "high",
+    "action": "Rule it: either delete CLAUDE.md 1.2.1 tier 1 and the 1.1 Artist Consent anchor row as unimplemented and name python/synapse/panel/worker_policy.py's allowlist as the real autonomous control, or land a gate that can actually refuse. Delete the stale justification at python/synapse/panel/bridge_adapter.py:200-202 ('HumanGate still governs AUTONOMOUS / MCP operations, which use their own bridge instances') - it is contradicted 8 lines later by the same file and by shared/bridge.py:2883-2884, and it is the in-code sentence keeping the doc claim looking defensible.",
+    "evidence": "shared/bridge.py:2883-2884 get_process_bridge(): `bridge = LosslessExecutionBridge(consent_callback=lambda op: True)` then `bridge._gate = None`. rg 'HumanGate\\(' python/ shared/ finds only a docstring at doctor.py:985. Live hython 22.0.400: 'gate None consent <lambda>'. Same finding at docs/SYNAPSE_CTO_REVIEW_2026-06-05.md:361 and in the 2026-08-31 review.",
+    "repro": "\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" -c \"import sys;sys.path.insert(0,'python');sys.path.insert(0,'.');from shared.bridge import get_process_bridge as g;b=g();print('gate',b._gate,'consent',b._consent_callback)\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import sys;sys.path.insert(0,'.');from shared.bridge import get_process_bridge as g;doc=open('CLAUDE.md',encoding='utf-8').read();sys.exit(0 if (g()._gate is not None) or ('Gate system' not in doc) else 1)\""
+   },
+   {
+    "id": "H4",
+    "title": "Solaris v3 demo is 7 days out with 19/19 gates NOT_RUN, the handler mixin unregistered, and demo mode advertising a tool no transport can dispatch",
+    "lane": "INTENT+RECIPES",
+    "severity": "high",
+    "action": "Pick one and say so in the capsule: (a) land HOOKUP_AUTHORITY's four steps - add RecipeHandlerMixin to the SynapseHandler bases, register run_recipe, add synapse_run_recipe to TOOL_DEFS, call ReceiptStore.append from recipes/transaction.py so the ledger gains a producer - and run the 19 gates this week; or (b) move the date and freeze python/synapse/recipes/ until golden_reference clears PENDING_HUMAN. Either way, gate demo_tool_definitions() on the tool actually resolving in TOOL_DISPATCH so demo mode cannot advertise a 404.",
+    "evidence": "docs/SOLARIS_RECIPES_H22_BLUEPRINT_V3.md:8 demo target 13 Sept 2026. harness/solaris_v3/GATES.json = Counter({'NOT_RUN': 19}). handlers.py:415 SynapseHandler bases exclude RecipeHandlerMixin (handlers_recipe.py:96); grep RecipeHandlerMixin handlers.py = 0. synapse_run_recipe absent from _tool_registry.py and handlers.py; rbac.py:81 says 'Not yet a dispatched command'. worker_policy.py:130-132 advertises it and :158-160 allows it. fixtures/solaris.spine.json:184 golden_reference PENDING_HUMAN. Range added +80 lines to recipes/transaction.py and +32 to verify.py while 5 of 127 commits touched Solaris at all.",
+    "repro": "python -c \"import json,collections;g=json.load(open('harness/solaris_v3/GATES.json'));w=lambda o:[o['status']] if isinstance(o,dict) and isinstance(o.get('status'),str) else ([x for v in (o.values() if isinstance(o,dict) else o) for x in w(v)] if isinstance(o,(dict,list)) else []);print(collections.Counter(w(g)))\"; grep -c RecipeHandlerMixin python/synapse/server/handlers.py",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,sys;s=json.dumps(json.load(open('harness/solaris_v3/GATES.json')));sys.exit(0 if 'NOT_RUN' not in s else 1)\" && grep -q RecipeHandlerMixin python/synapse/server/handlers.py"
+   },
+   {
+    "id": "H5",
+    "title": "R.3 hot_reload_gated is RED on master for both .pypanel loaders, and the prescribed fix removes the panel's only reload path",
+    "lane": "DESIGN-missed",
+    "severity": "high",
+    "action": "Reconcile before fixing. The unconditional column-0 sys.modules['synapse.*'] purge is classified a production defect (duplicate bridges, stale callbacks, split singletons) AND is the sole mechanism by which panel edits reach a running Houdini - there is no watcher and no reload button. Decide: gate the purge behind SYNAPSE_DEV_HOT_RELOAD and add an explicit in-panel reload action, or accept the purge and re-scope the check. Do not apply the remedy as written.",
+    "evidence": "harness/verify/checks.py:2091-2118 check_hot_reload_gated returns ok=False on master naming both houdini/python_panels/synapse_panel.pypanel:36-38 and python/synapse/panel/synapse_chat.pypanel; remedy at :2110 is 'wrap the purge in SYNAPSE_DEV_HOT_RELOAD or delete it'. rg 'def .*reload|hot.?reload' python/synapse/panel/synapse_panel.py = 0. Tracked open in harness/tasks.json (R.3, 'hot_reload_gated=false'), pinned by tests/test_r_track.py:312-336. The check also treats synapse_chat.pypanel as a shipping loader, contradicting the DESIGN lane's 'never registered' framing - one of the two readings is law and neither is written down.",
+    "repro": "python -c \"import sys,os;sys.path.insert(0,'harness');from verify import checks;p=os.getcwd();print(checks.check_hot_reload_gated({'wt':p,'repo':p}))\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import sys,os;sys.path.insert(0,'harness');from verify import checks;p=os.getcwd();sys.exit(0 if checks.check_hot_reload_gated({'wt':p,'repo':p})['ok'] else 1)\""
+   },
+   {
+    "id": "H6",
+    "title": "Houdini-tier test truth is stale and self-contradictory: 103 needs_houdini tests vs docs' 40, last full hython run 2026-08-02 at 110 failed / 771 errors",
+    "lane": "HEALTH+INTENT",
+    "severity": "high",
+    "action": "Re-run the full hython tier on 22.0.400 with SYNAPSE_HYTHON pinned and replace BOTH numbers from one receipt; regenerate the CI_TWO_WORLDS table from that same run so the two docs cannot disagree. Split README's Shipping cell so a reader cannot inherit the 2026-09-05 panel-tier date for the 2026-08-02 full-run figure. Until it runs, mark the cell UNKNOWN-at-HEAD.",
+    "evidence": "`pytest tests/ --collect-only -q -m needs_houdini` -> '103/7966 tests collected'. docs/CI_TWO_WORLDS.md:150 still says '39 of the 40 pass under real hou' (measured 2026-08-07 on 22.0.368) and its table says 'collected 5892'. README.md:496 'full run 4,048 passed - 110 failed - 771 errors (2026-08-02; not re-run for v5.64.0)' while VERSION is 5.65.2 - the staleness marker is three tags behind. Only the panel subset has a current receipt (239 passed / 1 failed, 2026-09-05).",
+    "repro": "python -m pytest tests/ --collect-only -q -m needs_houdini 2>&1 | tail -1; grep -n '39 of the 40' docs/CI_TWO_WORLDS.md; grep -n 'not re-run for v5.64.0' README.md",
+    "gate": "joe",
+    "closure_predicate": "! grep -q 'not re-run for v5.64.0' README.md && ! grep -q '39 of the 40' docs/CI_TWO_WORLDS.md"
+   },
+   {
+    "id": "M1",
+    "title": "The CTO loop has no CONFIRMED->backlog rule: a confirmed finding vanished between VERIFY and BACKLOG and this run paid to re-derive it",
+    "lane": "RSI-missed",
+    "severity": "medium",
+    "action": "Add a SYNTH rule in .claude/workflows/cto-review.js: every CONFIRMED/UPGRADED/DOWNGRADED finding becomes a backlog item OR carries a written scope-out reason in the run report. Extend check_backlog.py to assert the count of surviving findings equals backlogged + scoped-out. Also make closure_evidence machine-checkable - require the predicate's stdout tail plus a 7+ hex sha, since the current guard only rejects evidence shorter than 25 chars and 8 items carry the same 64-char boilerplate.",
+    "evidence": "harness/cto/runs/2026-09-05/report.json:1367 filed the loop-O finding, :1451 recorded 'CONFIRMED'. harness/cto/BACKLOG.json has zero mentions of agent_health or RecommendationHistory (grep -c = 0). cto-review.js:66-78 (SYNTH) and :128 (PERSIST) carry no such rule. Cost measured: RSI-01 this run is a full re-derivation. harness/cto/check_backlog.py:66-67 rejects only len(ev) < 25.",
+    "repro": "python -c \"import json;d=json.load(open('harness/cto/runs/2026-09-05/report.json',encoding='utf-8'));print(d['raw'][6]['found']['findings'][2]['title'][:70])\"; grep -c 'agent_health\\|RecommendationHistory' harness/cto/BACKLOG.json",
+    "gate": "auto",
+    "closure_predicate": "grep -q 'CONFIRMED' .claude/workflows/cto-review.js && python -c \"import json,sys;d=json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'));sys.exit(0 if any('agent_health' in json.dumps(i) for i in d['items']) else 1)\""
+   },
+   {
+    "id": "M2",
+    "title": "audit_panel.py --strict exits 0 when it SKIPS the live tier, and its printed remedy names a Houdini build that is not installed",
+    "lane": "DESIGN",
+    "severity": "medium",
+    "action": "Make --strict exit non-zero when the live-build tier is SKIPPED rather than run (a skipped tier is not a passed tier); keep exit 0 for non-strict. Replace the hardcoded '21.0.671' at audit_panel.py:6 and run_panel.py:123 with a discovered/SYNAPSE_HYTHON-pinned path, and have the panel gates emit the interpreter path + hou.applicationVersionString() into every receipt - six SideFX builds are installed and the shim picks newest.",
+    "evidence": "`python audit_panel.py --strict` prints '[skip] live build unavailable here: SystemExit: 1', '[skip] no panel built', then 'G3 RESULT: pass - 2 WARN' and EXIT=0. Under hython 22.0.400 offscreen the same command is genuinely green ('pass - 0 WARN'), which is what makes the stock-python zero dangerous. audit_panel.py:6 and run_panel.py:123 name 'Houdini 21.0.671'; installed builds are 21.0.773, 22.0.368, 22.0.397, 22.0.400, 22.0.417, 22.0.429. Mitigation: no automated consumer runs it today.",
+    "repro": "python audit_panel.py --strict; echo EXIT=$?; grep -n '21\\.0\\.671' audit_panel.py run_panel.py",
+    "gate": "crux",
+    "closure_predicate": "! grep -q '21\\.0\\.671' audit_panel.py run_panel.py && ! python audit_panel.py --strict"
+   },
+   {
+    "id": "B6",
+    "title": "CARRIED (open, high): recipe engine is dead code in the shipped product; 'recipe' names five things",
+    "lane": "SWEEP",
+    "severity": "high",
+    "action": "2 of 3 opening clauses are already fixed on master (karma -> usdrender_rop, grade -> hsv). Only clause 3 remains and it encodes an unruled design decision: does routing.recipes become proposal-only, or gain a command channel? Unsatisfiable in both directions until ruled. Rule it, then re-title the item - its current title misdescribes master. See H1 and H4 for the substance.",
+    "evidence": "rg \"createNode\\(['\\\"]karma['\\\"]\" python/synapse/routing = 0; scene_recipes.py:280 carries the landed grade fix. rg 'proposal-only' python/synapse/routing/recipes/base.py = 0 and rg 'command_fn=' python/synapse/server/handlers.py = 0 - clause 3 unsatisfied. router.py:410 forces executed=False because handlers.py:1711 passes no command_fn.",
+    "repro": "grep -c 'proposal-only' python/synapse/routing/recipes/base.py; grep -c 'command_fn=' python/synapse/server/handlers.py",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='B6'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "B9",
+    "title": "CARRIED (open, medium): repo hygiene - 22 worktree dirs / 1.1 GB (15 unregistered), .gitignore has no worktree rule, 5 product files untracked, 7 unmerged branches",
+    "lane": "SWEEP+SCOUT+HEALTH",
+    "severity": "medium",
+    "action": "Widen the item: (1) add `.claude/worktrees/` to the VERSIONED .gitignore - today only .git/info/exclude covers it, so no clone inherits it; (2) 15 of 22 dirs under .claude/worktrees are unregistered, so `git worktree prune` is a no-op on them - salvage the 12 dirty files in the 4 merged registered trees, then remove; (3) commit or explicitly ignore the 5 untracked product files (.claude/agents/flow-conductor.md, reach-orchestrator.md, .claude/workflows/flow-sprint.js, reach.js, docs/REACH_BLUEPRINT.md); (4) triage 7 unmerged product branches (~7,700 lines, oldest 2026-06-26; rope/beacon is 19/20 already landed by content); (5) move docs/harness (1.7 MB, 17 files) out of the published docs/ tree - but scrub first, five of those files hardcode C:\\Users\\User\\SYNAPSE and origin is a PUBLIC auto-pushing repo. Still blocked on Joe pushing the 5 pd/* backup refs.",
+    "evidence": "git check-ignore -v .claude/worktrees/bc-wave -> .git/info/exclude:11; grep -c worktree .gitignore = 0. ls .claude/worktrees = 22 entries vs git worktree list = 8 total. git branch --no-merged master = 11. git status --porcelain shows the 5 product files. rg -l 'Users.User' docs/harness = 5 files incl. panel_diag_qtwalk.py:106.",
+    "repro": "git check-ignore -v .claude/worktrees/bc-wave; grep -c worktree .gitignore; ls .claude/worktrees | wc -l; git worktree list | wc -l; git branch -r | grep -c 'pd/panel-'",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='B9'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "B11",
+    "title": "CARRIED (open, medium): verb rail collapses to icons below ~360px, violating the docking minimum",
+    "lane": "SWEEP",
+    "severity": "medium",
+    "action": "Unchanged - Joe-gated design wave. Predicate needs '<= 280px wide at airy' in .synapse/contracts/docking-minimums.yaml (currently 0 matches).",
+    "evidence": "rg -c '<= 280px wide at airy' .synapse/contracts/docking-minimums.yaml = 0 (needs 1).",
+    "repro": "grep -c '<= 280px wide at airy' .synapse/contracts/docking-minimums.yaml",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='B11'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F1",
+    "title": "CARRIED (unknown, high): verb rail cut mid-word at 340 in three of three profiles",
+    "lane": "SWEEP-design",
+    "severity": "high",
+    "action": "Predicate was de-deafened by crank 2 (dc0464ef) and now reports UNKNOWN on a broken probe, not FAIL - fix the probe before ruling. Joe-gated design decision.",
+    "evidence": "BACKLOG.json D-F1 closure_predicate restored to 613 chars; crank-2 commit dc0464ef: 'four report UNKNOWN on a broken probe, four are real FAILs'.",
+    "repro": "python -c \"import json;print([i['status'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F1'])\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F1'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F2",
+    "title": "CARRIED (unknown, high): at 340 the panel cannot say what it is doing; two truths disagree",
+    "lane": "SWEEP-design",
+    "severity": "high",
+    "action": "Same broken probe as D-F1. Fix the probe, then rule.",
+    "evidence": "BACKLOG.json D-F2 predicate restored to 944 chars; status unknown after de-deafening.",
+    "repro": "python -c \"import json;print([i['status'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F2'])\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F2'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F3",
+    "title": "CARRIED (open, high): docking is a patch - 280 promised, 393/361/345 measured, 400/380/380 written",
+    "lane": "SWEEP-design",
+    "severity": "high",
+    "action": "Real FAIL: tokens lack DOCK_COLLAPSE_PX and BY_DENSITY, and tests/test_panel_rhythm_docking.py still carries the per-density 'px wide at' regex. Joe's word already stands on the composed AIRY 393 (harness/cto/runs/2026-09-05/RULING_R3-01_docking_airy.md).",
+    "evidence": "SWEEP: DOCK_COLLAPSE_PX=False BY_DENSITY=False regex_in_test=True, exit 1.",
+    "repro": "grep -c 'DOCK_COLLAPSE_PX' python/synapse/panel/designsystem/tokens.py; grep -c 'px wide at' tests/test_panel_rhythm_docking.py",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F3'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F4",
+    "title": "CARRIED (open, high): the consent card speaks another colour grammar at REVIEW level",
+    "lane": "SWEEP-design",
+    "severity": "high",
+    "action": "Real FAIL after de-deafening. Design ruling required; note this is the consent surface, so it touches policy as well as colour.",
+    "evidence": "BACKLOG.json D-F4 status open at HEAD after crank-2 predicate restoration.",
+    "repro": "python -c \"import json;print([i['status'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F4'])\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F4'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F5",
+    "title": "CARRIED (open, medium): the profile row is a density switch wearing a persona name",
+    "lane": "SWEEP-design",
+    "severity": "medium",
+    "action": "Joe-gated naming/design decision.",
+    "evidence": "BACKLOG.json D-F5 status open at HEAD.",
+    "repro": "python -c \"import json;print([i['status'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F5'])\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F5'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F6",
+    "title": "CARRIED (open, medium): two-thirds of the voice is typewriter against the system's own doctrine",
+    "lane": "SWEEP-design",
+    "severity": "medium",
+    "action": "Joe-gated typography decision.",
+    "evidence": "BACKLOG.json D-F6 status open at HEAD.",
+    "repro": "python -c \"import json;print([i['status'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F6'])\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F6'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F7",
+    "title": "CARRIED (open, medium): ten tracking values through four mechanisms; TRACKING_EM has 9 keys vs <=3",
+    "lane": "SWEEP-design",
+    "severity": "medium",
+    "action": "Real FAIL: qss letter-spacing=5 sites, TRACKING_EM keys BODY/BRAND/DATA/DISPLAY/EYEBROW/LABEL/LABEL_SM/SEND/WORDMARK. Collapse to <=3 tokens.",
+    "evidence": "SWEEP: qss letter-spacing=5, TRACKING_EM 9 keys, exit 1.",
+    "repro": "grep -c 'letter-spacing' python/synapse/panel/designsystem/qss.py; grep -c 'TRACKING_EM' python/synapse/panel/designsystem/tokens.py",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F7'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F8",
+    "title": "CARRIED (open, medium): SEMIBOLD is a name without a face - same token draws 500 or 700",
+    "lane": "SWEEP-design",
+    "severity": "medium",
+    "action": "Real FAIL: 14 WEIGHT_SEMIBOLD refs across designsystem/*.py. Resolve to a real face or delete the token.",
+    "evidence": "SWEEP: 14 WEIGHT_SEMIBOLD refs, exit 1.",
+    "repro": "grep -rc 'WEIGHT_SEMIBOLD' python/synapse/panel/designsystem/",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F8'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F9",
+    "title": "CARRIED (open, medium): the ladder on paper is not the ladder on screen - four floors, six 10px steps",
+    "lane": "SWEEP-design",
+    "severity": "medium",
+    "action": "Joe-gated type-scale decision. Note the offscreen-Qt caveat: laid-out-geometry literals (test_panel_rhythm_docking.py:300 band.height()==40) are the only font-dependent pins and should assert grid relationships, not literals.",
+    "evidence": "BACKLOG.json D-F9 status open at HEAD.",
+    "repro": "python -c \"import json;print([i['status'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F9'])\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F9'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F10",
+    "title": "CARRIED (unknown, medium): the composer's biggest glyph is its least-used control",
+    "lane": "SWEEP-design",
+    "severity": "medium",
+    "action": "Broken probe -> UNKNOWN. Fix the probe, then rule.",
+    "evidence": "BACKLOG.json D-F10 predicate restored to 778 chars; status unknown.",
+    "repro": "python -c \"import json;print([i['status'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F10'])\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F10'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F11",
+    "title": "CARRIED (unknown, medium): undo after a quiet turn has no control on the CHAT surface",
+    "lane": "SWEEP-design",
+    "severity": "medium",
+    "action": "Broken probe -> UNKNOWN; the stored predicate itself says the probe must be extended to drive one INFORM-only turn first. This is an undo-affordance question, so it is policy as well as design.",
+    "evidence": "BACKLOG.json D-F11 predicate restored to 667 chars, ending '...extend use_probe.py to drive one INFORM-only turn first'.",
+    "repro": "python -c \"import json;print([i['status'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F11'])\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F11'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F12",
+    "title": "CARRIED (open, medium): nine rhythm roles resolve to two gap sizes; 'row' is dead",
+    "lane": "SWEEP-design",
+    "severity": "medium",
+    "action": "Real FAIL: rhythm_role=\"row\" block still in qss.py and ROLE_GAPS values are not unique (label/row=12, tag/card/group/shell=16, parm_row/stack=4). Collapse the roles.",
+    "evidence": "SWEEP: exit 1 on both clauses.",
+    "repro": "grep -c 'rhythm_role=\"row\"' python/synapse/panel/designsystem/qss.py",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F12'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F13",
+    "title": "CARRIED (open, medium): a second pypanel entry point is dead but not gone",
+    "lane": "SWEEP-design+DESIGN",
+    "severity": "medium",
+    "action": "Merge with DSN-01/03/07: python/synapse/panel/synapse_chat.pypanel, panel/chat_panel.py and python/synapse/ui/ all have zero live importers, and synapse_chat.pypanel:24 is the only shipped file re-arming the ~/.synapse/design cyan side channel (that dir exists on this host with SIGNAL '#00D4FF'). chat_panel.py:535 also carries the last unguarded menu.exec_(). One deletion sweep, or an explicit keep - but the R.3 check treats synapse_chat.pypanel as a shipping loader, so decide that first (see H5).",
+    "evidence": "SWEEP: synapse_chat.pypanel still exists, qss.py has 4 HdaGenerateBtn|StageLabel rules, exit 1. DESIGN: grep '~/.synapse/design' at synapse_chat.pypanel:24; ~/.synapse/design/tokens.py:21 SIGNAL='#00D4FF'; rg 'from synapse.ui|import synapse.ui' python/ = 0.",
+    "repro": "ls python/synapse/panel/synapse_chat.pypanel; grep -n 'exec_(' python/synapse/panel/chat_panel.py; grep -rc 'import synapse.ui' python/ | grep -v ':0' | wc -l",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F13'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   },
+   {
+    "id": "D-F14",
+    "title": "CARRIED (open, medium): the idle panel says 'nothing yet' eight ways",
+    "lane": "SWEEP-design",
+    "severity": "medium",
+    "action": "Real FAIL: 12 idle-string sites under python/synapse/panel/ against a <=3 threshold. Copy consolidation, Joe-gated.",
+    "evidence": "SWEEP: 12 idle-string sites, exit 1.",
+    "repro": "python -c \"import json;print([i['status'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F14'])\"",
+    "gate": "joe",
+    "closure_predicate": "python -c \"import json,subprocess,sys;p=[i['closure_predicate'] for i in json.load(open('harness/cto/BACKLOG.json',encoding='utf-8'))['items'] if i['id']=='D-F14'][0];sys.exit(subprocess.run(['bash','-lc',p]).returncode)\""
+   }
+  ],
+  "rsi_scaffold": [
+   {
+    "ability": "Close loop O to L2 on evidence already on disk",
+    "purpose": "The registry's only loop whose apply half is already running in production is filed at L0. Promoting it is the first rung the ladder gains since 2026-08-01, and it costs no new wiring.",
+    "signal": "Bridge operation_stats per-agent success rate (shared/bridge.py:844) - proven able to represent failure by 500 persisted records spanning 15 distinct values, 0.4545..0.8205, never 1.0.",
+    "producer": "ALREADY LIVE: python/synapse/panel/synapse_panel.py:2009 (_update_health) -> panel/agent_health.py:262 poll_agent_health -> :242-249 hist.record + hist.to_jsonl. Nothing to build.",
+    "referee": "Run harness/rsi/log_receipt.py's fingerprint method over .synapse/agent_health_history.jsonl with a pytest-path negative control - tests write only to tmp_path (test_area4_observability.py:55) or history_path_override (:64), so the exclusion must remove exactly 0 rows, and that zero IS the control.",
+    "apply_path": "ALREADY LIVE and already writing to disk; the rung claim is bookkeeping over a running mechanism, not new capability. Scope L1 honestly per input: bridge=HONEST, routing-fingerprints=UNPROVEN (0 router_promote records in 500), evolution=UNFIRED.",
+    "closure_predicate": "python harness/rsi/verify.py --json | python -c \"import json,sys;d=json.load(sys.stdin);o=[l for l in d['loops'] if l['id']=='O'][0];sys.exit(0 if 'L2' in o['rungs_proven'] else 1)\"",
+    "proof_test": "Extend tests/rsi/test_verify_paths.py to require loop O's L1 evidence to scope all three ConductorAdvisor inputs separately; the test fails if a single blanket HONEST claim is made over the two unfired inputs.",
+    "wires_existing": "agent_health.py + RecommendationHistory (running since 2026-08-17) + log_receipt.py (the C-receipt producer, already written)."
+   },
+   {
+    "ability": "Make P10 test the citation, not the line count",
+    "purpose": "The predicate added to stop the registry citing dead code cannot see the commonest drift mode - a file growing under a stable line number. Its own top loop cites handlers.py:1625 for a construction that lives at :1711, and the bar is green.",
+    "signal": "Whether the cited line still contains the thing the citation claims. Today's signal is only 'line <= file length', which cannot be false for any short number in a 2,104-line file.",
+    "producer": "harness/rsi/verify.py:393-441 (p10) - extend the citation grammar with an optional quoted token, e.g. handlers.py:1711 \"TieredRouter(config=config)\".",
+    "referee": "Re-match the quoted token at the cited line; count unquoted citations separately in the PASS reason so the weak fraction is visible rather than averaged away.",
+    "apply_path": "Correct the two handlers.py:1625 citations (REGISTRY.json:36, :58, CHAMPION.md:212) in the same change, so the first run of the strengthened predicate is green for a real reason.",
+    "closure_predicate": "python harness/rsi/verify.py --json | python -c \"import json,sys;d=json.load(sys.stdin);p=[x for x in d['predicates'] if x['id']=='P10'][0];sys.exit(0 if p['status']=='PASS' and 'quoted' in json.dumps(p) else 1)\"",
+    "proof_test": "Mutation test in tests/rsi/test_verify_paths.py: shift any quoted citation's line number by +1 and assert P10 goes red.",
+    "wires_existing": "verify.py p10 (written 2026-09-05 by CTO B7) + the registry's existing citation strings."
+   },
+   {
+    "ability": "Widen P1's sweep so completeness means completeness",
+    "purpose": "'Registry completeness' is computed over python/ and shared/ only, so it cannot see loop E's own registered home (forge/) or harness/cto - a complete five-component RSI loop running on master. It is CHAMPION.md's loop-S lesson reproduced one level up in the predicate written to enforce it.",
+    "signal": "Presence of an unregistered signal->producer->referee->apply->closure structure anywhere in the tree, not just in two directories.",
+    "producer": "harness/rsi/verify.py:74 SWEEP_ROOTS - widen to python, shared, forge, harness, scripts, host with an explicit skip list.",
+    "referee": "P1 must go RED naming harness/cto (and harness/autoresearch, harness/autorevise, which no lane's sweep can currently see) before it can go green again.",
+    "apply_path": "Either register harness/cto as a loop - it is the healthiest RSI mechanism in the repo and it already caught its own false green - or write an explicit scope-out with a reason into REGISTRY.json.",
+    "closure_predicate": "grep -q 'forge' harness/rsi/verify.py && python harness/rsi/verify.py --json | python -c \"import json,sys;d=json.load(sys.stdin);p=[x for x in d['predicates'] if x['id']=='P1'][0];sys.exit(0 if p['status']=='PASS' else 1)\"",
+    "proof_test": "Add a fixture loop under forge/ in a tmp tree and assert P1 detects it; assert the pre-change SWEEP_ROOTS would not have.",
+    "wires_existing": "verify.py P1 + REGISTRY.json's existing surfaces fields + the already-written harness/cto/SPEC.md component map."
+   },
+   {
+    "ability": "Give the CTO loop a CONFIRMED->closure record",
+    "purpose": "The review loop is the strongest RSI mechanism in the tree and it is the one loop with no rule that a surviving finding must become tracked work. A CONFIRMED finding was dropped on 2026-09-05 and re-derived at full cost on 2026-09-06.",
+    "signal": "Count of CONFIRMED/UPGRADED/DOWNGRADED findings in a run's report vs count of backlog items + written scope-outs. Today nothing compares them.",
+    "producer": ".claude/workflows/cto-review.js SYNTH phase (:66-78) - emit a disposition for every surviving finding; PERSIST (:128) already writes STATE.json + LEDGER.md and does not need building (that half is wired; crank 2 simply had not reached it when the RSI lane read STATE.json).",
+    "referee": "harness/cto/check_backlog.py - extend past its current len(ev)<25 test to (a) require a 7+ hex sha and a predicate stdout tail in every closure_evidence, and (b) assert surviving-findings == backlogged + scoped-out.",
+    "apply_path": "Add `python harness/cto/check_backlog.py` to the pre-tag ritual alongside the CI-on-tagged-commit check from C2, so a release cannot ship over a dropped finding or a boilerplate receipt.",
+    "closure_predicate": "python harness/cto/check_backlog.py && grep -q 'CONFIRMED' .claude/workflows/cto-review.js",
+    "proof_test": "Mutation: set one item's closure_evidence back to the 64-char boilerplate and assert check_backlog.py exits non-zero; delete one backlog item that a run report confirmed and assert the same.",
+    "wires_existing": "check_backlog.py (already written and mutation-proven) + cto-review.js PERSIST (already writes the ledger) + the run reports already on disk."
+   },
+   {
+    "ability": "P11: report the age of the oldest unratified flywheel cycle",
+    "purpose": "SPEC.md assigns the watch over unratified flywheel cycles to loop F. Loop F was RETIRED and deleted on 2026-08-01 and the duty was never reassigned; 26 of 52 cycles have sat unratified for 51 days with no predicate reading the file.",
+    "signal": "Age in days of the oldest cycle with ratified=false in harness/state/flywheel_queue.json - a number that can only fall when a human acts, so it cannot be gamed by the harness.",
+    "producer": "harness/rsi/verify.py - one new read-only predicate; no new loop, no new board (DEADENDS.md D3 already rules out a per-harness bar).",
+    "referee": "The predicate fails past a stated threshold and reports the age either way; it cannot flip a cycle, so the P8 human fence is untouched.",
+    "apply_path": "None by design - the apply half is Joe's ratification flip. The ability being wired is observation of an acknowledged stall, which is exactly what was lost when F was deleted.",
+    "closure_predicate": "python harness/rsi/verify.py --json | python -c \"import json,sys;d=json.load(sys.stdin);sys.exit(0 if any(x['id']=='P11' for x in d['predicates']) else 1)\"",
+    "proof_test": "Point the predicate at a fixture queue with a 400-day-old unratified cycle and assert red; flip it ratified and assert green.",
+    "wires_existing": "harness/state/flywheel_queue.json (untouched since 2026-07-17) + harness/decisions.py:64 (already references it, invoked by nothing) + verify.py's predicate framework."
+   }
+  ],
+  "human_gates": [
+   "C1 - README/CLAUDE.md rewrite of the /mcp topology and the undo-reversibility claim: doc law + public safety posture, Joe's word.",
+   "C2 - release ritual change: refuse to tag while the tagged commit's CI is red or pending. Policy.",
+   "H3 - consent posture: is gate-less get_process_bridge the ratified single-user posture (then it is a doc-only fix), or an unclosed critical from two prior reviews? Third review asking.",
+   "H4 - Solaris v3: land the four-step hookup this week, or move the 13-Sept demo date and record it. Either answer is one line; no answer is the current state.",
+   "H5 - R.3 hot-reload: gating the .pypanel module purge removes the only path by which panel edits reach a running Houdini. Fix-vs-symptom conflict, unreconciled. Also settle whether synapse_chat.pypanel is a shipping loader (R.3 says yes, DESIGN says no).",
+   "H6 - is CI advisory or law? docs/CI_TWO_WORLDS.md describes both worlds and never says which gates a release.",
+   "B6 - does routing.recipes become proposal-only, or gain a command channel? Unruled, and its closure predicate is unsatisfiable in both directions until ruled.",
+   "B9 - push the 5 pd/* backup refs, and rule on the 5 untracked product files (commit or explicitly local-only).",
+   "D-F1..D-F14 - fourteen panel design predicates: four blocked on a broken probe, ten real FAILs. All visual-design decisions.",
+   "Deleting the dead legacy chat surface (panel/synapse_chat.pypanel + chat_panel.py + python/synapse/ui/) - zero importers, but it is a delete."
+  ],
+  "refuted_count": 2,
+  "confirmed_count": 61
+ },
+ "applied": [],
+ "persisted": "PERSIST complete.\n\n**Files written (4):**\n- `C:\\Users\\User\\SYNAPSE\\harness\\cto\\runs\\2026-09-06\\report.json` \u2014 full `{date, head, range, sweep, synth, applied, lanes}` (7 lanes, 27 synth backlog entries, 25 sweep results), pretty JSON, validated by `json.load`.\n- `C:\\Users\\User\\SYNAPSE\\harness\\cto\\BACKLOG.json` \u2014 7 sweep-closed ids (B1, B2, B3, B5, B7, B8, B10) set `status=closed` + `closed_run=2026-09-06`; 10 new synth items appended as `open` + `opened_run=2026-09-06` (C1, C2, H1, H2, H3, H4, H5, H6, M1, M2). Ids stable; carried ids (B6, B9, B11, D-F1..D-F14) untouched.\n- `C:\\Users\\User\\SYNAPSE\\harness\\cto\\STATE.json` \u2014 `runs` 1 \u2192 2, `last_run_date` = 2026-09-06 (`last_run_id` left as-is per assignment scope).\n- `C:\\Users\\User\\SYNAPSE\\harness\\cto\\LEDGER.md` \u2014 appended `| 2026-09-06 | cto crank 3 | 7 | 61 | 2 | 7 | 10 |`.\n\n**Open backlog count: 23** (35 items total: 23 open, 8 closed, 4 unknown). `python harness/cto/check_backlog.py` exits 0 (\"35 items, 23 open \u2014 every predicate runnable, every closure evidenced\").\n\nNotes: B4 and B6 read `regressed` in the sweep, not `closed`, so their stored statuses were left alone (B4 still carries its earlier `closed`, B6 stays `open`). Temp chunk/build files were removed; nothing outside `harness/cto/` was touched.",
+ "lanes_completed": 7
+}

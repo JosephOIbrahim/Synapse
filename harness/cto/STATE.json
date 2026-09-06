@@ -3,9 +3,9 @@
   "spec_status": "DRAFT",
   "autonomy": "amber",
   "spawn_cap_per_run": 18,
-  "runs": 1,
-  "last_run_id": "wf_8a5d7c68-b43",
-  "last_run_date": "2026-09-05",
+  "runs": 2,
+  "last_run_id": "wf_7afc4f70-045",
+  "last_run_date": "2026-09-06",
   "lanes": [
     "SCOUT",
     "DESIGN",
