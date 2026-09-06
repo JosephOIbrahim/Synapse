@@ -183,10 +183,11 @@
    "repro": "see harness/design_review/2026-09-05/REVIEW.md F1",
    "gate": "joe",
    "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; for p in curious expert ml; do SYNAPSE_PANEL_SETTINGS=$DR/settings_$p.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/census_subtract.py $p || { echo \"UNKNOWN: the probe failed - instrument broken, no verdict\"; exit 2; }; done;  python -c \"import json,glob;bad=[(f,v['text'],v['w'],v['hint_w']) for f in glob.glob('harness/design_review/2026-09-05/census_*.json') for v in json.load(open(f,encoding='utf-8'))['verbs'] if v['w']<v['hint_w']];print('PASS' if not bad else bad)\"",
-   "status": "open",
+   "status": "unknown",
    "opened_run": "2026-09-05-bierut",
    "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression.",
-   "predicate_note": "2026-09-06 crank 2: the probe was silenced with >/dev/null 2>&1 and the verdict read from whatever JSON sat on disk. After the B+C wave the probes crash (census_subtract.py:73 AttributeError _font_btn - the verb rail it measures was retired) and this predicate reported a FAIL about a panel that no longer exists. The probe's failure now exits 2 = UNKNOWN."
+   "predicate_note": "2026-09-06 crank 2: the probe was silenced with >/dev/null 2>&1 and the verdict read from whatever JSON sat on disk. After the B+C wave the probes crash (census_subtract.py:73 AttributeError _font_btn - the verb rail it measures was retired) and this predicate reported a FAIL about a panel that no longer exists. The probe's failure now exits 2 = UNKNOWN.",
+   "sweep_note_2026_09_06": "probe census_subtract.py:73 crashes (AttributeError _font_btn - the verb rail it measures was retired by BC-1). No verdict until the probe is repaired to the post-wave panel."
   },
   {
    "id": "D-F2",
@@ -198,10 +199,11 @@
    "repro": "see harness/design_review/2026-09-05/REVIEW.md F2",
    "gate": "joe",
    "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; for p in curious expert ml; do SYNAPSE_PANEL_SETTINGS=$DR/settings_$p.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/use_probe.py $p || { echo \"UNKNOWN: the probe failed - instrument broken, no verdict\"; exit 2; }; done;  python -c \"import json;ok=True\nfor p in ('curious','expert','ml'):\n    u=json.load(open('harness/design_review/2026-09-05/use_%s.json'%p,encoding='utf-8'));rl=u['rail_labels']\n    shown=[k for k,v in rl.items() if v['geo'][2]>0];hidden=[k for k,v in rl.items() if v['geo'][2]==0 and v['hint_w']>0]\n    full=[k for k in shown if rl[k]['geo'][2]>=rl[k]['hint_w']];bt=u['boot_truth']\n    good=len(full)>=1 and not hidden and not ('Standing by' in bt['header'] and 'Not connected' in bt['foot']);ok&=good;print(p,shown,hidden,bt,'OK' if good else 'FAIL')\nprint('PASS' if ok else 'FAIL')\"",
-   "status": "open",
+   "status": "unknown",
    "opened_run": "2026-09-05-bierut",
    "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression.",
-   "predicate_note": "2026-09-06 crank 2: the probe was silenced with >/dev/null 2>&1 and the verdict read from whatever JSON sat on disk. After the B+C wave the probes crash (census_subtract.py:73 AttributeError _font_btn - the verb rail it measures was retired) and this predicate reported a FAIL about a panel that no longer exists. The probe's failure now exits 2 = UNKNOWN."
+   "predicate_note": "2026-09-06 crank 2: the probe was silenced with >/dev/null 2>&1 and the verdict read from whatever JSON sat on disk. After the B+C wave the probes crash (census_subtract.py:73 AttributeError _font_btn - the verb rail it measures was retired) and this predicate reported a FAIL about a panel that no longer exists. The probe's failure now exits 2 = UNKNOWN.",
+   "sweep_note_2026_09_06": "probe use_probe.py crashes on the post-wave panel. Before the de-deafening this returned a confident FAIL read from 2026-09-05 JSON, describing a rail that no longer exists."
   },
   {
    "id": "D-F3",
@@ -225,10 +227,12 @@
    "evidence": "design/rhythm_pd/after_r3/expert/gate_widget.png 5562 chromatic px = 3.15% across 12 hue buckets vs chat 2181/0.84%/3 and review face 646/0.37%/3 (Pillow chroma>24, 15-degree buckets). Mechanism - SYSTEM's trace wins: hues read directly from GATE_LEVELS (tokens.py:611-616) at gate_widget.py:28-31 and GROW/ERROR at :327,:353; styles.py:714-790 has 0 consumers. Buttons only for approve/critical (gate_widget.py:204); _on_gate_raised surfaces Work for any non-inform level (synapse_panel.py:2007-2021); a REVIEW card is 280x19 with buttons [] (use_review_expert.json review_card); Reject 62x23, Approve 68x23, fold toggle 280x23. face_review.py:328-335 proves consent verbs already exist in the muted set.",
    "repro": "see harness/design_review/2026-09-05/REVIEW.md F4",
    "gate": "joe",
-   "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; SYNAPSE_PANEL_SETTINGS=$DR/settings_expert.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/use_probe_review.py expert >/dev/null 2>&1; python -c \"import json;u=json.load(open('harness/design_review/2026-09-05/use_review_expert.json',encoding='utf-8'));rc=u['review_card'];ft=u['fold_toggle'];ok=len(rc.get('buttons',[]))>=1 and ft['geo'][3]>=36;print('PASS' if ok else 'FAIL: review buttons=%s fold_h=%s'%(rc.get('buttons'),ft['geo'][3]))\"; python -c \"from PIL import Image;import colorsys;im=Image.open('design/rhythm_pd/after_r3/expert/gate_widget.png').convert('RGB');b=set()\nfor r,g,bl in im.getdata():\n    if max(r,g,bl)-min(r,g,bl)>24: b.add(int(colorsys.rgb_to_hsv(r/255,g/255,bl/255)[0]*360)//15)\nprint('PASS' if len(b)<=3 else 'FAIL: %d hue buckets'%len(b))\"",
+   "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; SYNAPSE_PANEL_SETTINGS=$DR/settings_expert.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/use_probe_review.py expert || { echo \"UNKNOWN: the probe failed - instrument broken, no verdict\"; exit 2; };  python -c \"import json;u=json.load(open('harness/design_review/2026-09-05/use_review_expert.json',encoding='utf-8'));rc=u['review_card'];ft=u['fold_toggle'];ok=len(rc.get('buttons',[]))>=1 and ft['geo'][3]>=36;print('PASS' if ok else 'FAIL: review buttons=%s fold_h=%s'%(rc.get('buttons'),ft['geo'][3]))\"; python -c \"from PIL import Image;import colorsys;im=Image.open('design/rhythm_pd/after_r3/expert/gate_widget.png').convert('RGB');b=set()\nfor r,g,bl in im.getdata():\n    if max(r,g,bl)-min(r,g,bl)>24: b.add(int(colorsys.rgb_to_hsv(r/255,g/255,bl/255)[0]*360)//15)\nprint('PASS' if len(b)<=3 else 'FAIL: %d hue buckets'%len(b))\"",
    "status": "open",
    "opened_run": "2026-09-05-bierut",
-   "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression."
+   "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression.",
+   "predicate_note": "2026-09-06 crank 2: probe silencing removed (>/dev/null 2>&1 then read stale JSON). A broken instrument now exits 2 = UNKNOWN, never a verdict.",
+   "sweep_note_2026_09_06": "measured 2026-09-06: review buttons=['REVERT'] fold_h=32, 12 hue buckets on the gate card. Real FAIL, instrument ran."
   },
   {
    "id": "D-F5",
@@ -243,7 +247,8 @@
    "status": "open",
    "opened_run": "2026-09-05-bierut",
    "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression.",
-   "predicate_note": "2026-09-06 crank 2: the probe was silenced with >/dev/null 2>&1 and the verdict read from whatever JSON sat on disk. After the B+C wave the probes crash (census_subtract.py:73 AttributeError _font_btn - the verb rail it measures was retired) and this predicate reported a FAIL about a panel that no longer exists. The probe's failure now exits 2 = UNKNOWN."
+   "predicate_note": "2026-09-06 crank 2: the probe was silenced with >/dev/null 2>&1 and the verdict read from whatever JSON sat on disk. After the B+C wave the probes crash (census_subtract.py:73 AttributeError _font_btn - the verb rail it measures was retired) and this predicate reported a FAIL about a panel that no longer exists. The probe's failure now exits 2 = UNKNOWN.",
+   "sweep_note_2026_09_06": "measured 2026-09-06: chat_h=[312,340,354], RADIUS_ROUND=999. Real FAIL; note the >=380 threshold was ruled unattainable-as-written by the 2026-09-05 referees (base reads 348)."
   },
   {
    "id": "D-F6",
@@ -254,10 +259,12 @@
    "evidence": "type_census_expert_340.json summary.family_hist: Space Mono 85, Space Grotesk 34, host face 8 (61/26/8 among visible w>0). tokens.py:357-363: 'Mono is for CODE, sans is for everything else ... read like a terminal emulator'. Connect/Corpus built c.Button(variant='primary') at synapse_panel.py:783,792, re-objectNamed DsVerb + tracked_font at :828-831; Help :778 and overflow :745 likewise; RecallCard Copy recall_card.py:134-135; tokens.py:239 still says SIGNAL_DEEP = 'Connect / Corpus / SEND'.",
    "repro": "see harness/design_review/2026-09-05/REVIEW.md F6",
    "gate": "joe",
-   "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; SYNAPSE_PANEL_SETTINGS=$DR/settings_expert.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/type_census.py expert 340 >/dev/null 2>&1; python -c \"import json,re;h=json.load(open('harness/design_review/2026-09-05/type_census_expert_340.json',encoding='utf-8'))['summary']['family_hist'];s=open('python/synapse/panel/synapse_panel.py',encoding='utf-8').read();n=len(re.findall(r'setObjectName\\(\\s*[\\x27\\x22]DsVerb[\\x27\\x22]\\s*\\)',s));print('PASS' if h.get('Space Grotesk',0)>h.get('Space Mono',0) and n==0 else 'FAIL: %s rename_sites=%d'%(h,n))\"",
+   "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; SYNAPSE_PANEL_SETTINGS=$DR/settings_expert.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/type_census.py expert 340 || { echo \"UNKNOWN: the probe failed - instrument broken, no verdict\"; exit 2; };  python -c \"import json,re;h=json.load(open('harness/design_review/2026-09-05/type_census_expert_340.json',encoding='utf-8'))['summary']['family_hist'];s=open('python/synapse/panel/synapse_panel.py',encoding='utf-8').read();n=len(re.findall(r'setObjectName\\(\\s*[\\x27\\x22]DsVerb[\\x27\\x22]\\s*\\)',s));print('PASS' if h.get('Space Grotesk',0)>h.get('Space Mono',0) and n==0 else 'FAIL: %s rename_sites=%d'%(h,n))\"",
    "status": "open",
    "opened_run": "2026-09-05-bierut",
-   "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression."
+   "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression.",
+   "predicate_note": "2026-09-06 crank 2: probe silencing removed (>/dev/null 2>&1 then read stale JSON). A broken instrument now exits 2 = UNKNOWN, never a verdict.",
+   "sweep_note_2026_09_06": "measured 2026-09-06: families {Space Mono 37, Space Grotesk 32, Courier 8}, rename_sites=2. Real FAIL, instrument ran."
   },
   {
    "id": "D-F7",
@@ -294,10 +301,12 @@
    "evidence": "TYPE_ROLES 19/15/12/11 (+10) at tokens.py:311-316,365-373; rendered px_hist 11x73, 12x43, 10x6, 14x4, 15x1, no 19 anywhere; 14 and 21 are literals (synapse_panel.py:704, face_review.py:227); health_infographic.py:113 paints 11px via QPainter. scaled() min 8 (tokens.py:655-657), FONT_FLOOR_PX=10 'provenance UNKNOWN' (:337-345), READABLE_FLOOR=11 on a 7-name tuple (audit_panel.py:377), BODY_FLOOR=12. khint DATA 10px mono TERTIARY 3.94:1 (synapse_panel.py:1952-1954) outside the tuple; five more 10px widgets likewise. G3 'chrome floor >=11 [ok]' true of the tuple, false of the panel (audit_strict_TYPE.txt). Zero-consumer tokens SIZE_HERO/BRAND/BODY/LABEL_SM/DISPLAY are test-pinned (tests/panel/test_type_scale_native.py:24, tests/test_panel_faces.py:394-446).",
    "repro": "see harness/design_review/2026-09-05/REVIEW.md F9",
    "gate": "joe",
-   "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; SYNAPSE_PANEL_SETTINGS=$DR/settings_expert.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/type_census.py expert 340 >/dev/null 2>&1; python -c \"import json,sys;sys.path.insert(0,'python');from synapse.panel.designsystem import tokens as t;h=json.load(open('harness/design_review/2026-09-05/type_census_expert_340.json',encoding='utf-8'))['summary']['px_hist'];mn=min(int(k) for k in h);print('PASS' if mn>=11 and t.FONT_FLOOR_PX>=11 else 'FAIL: min_px=%d FONT_FLOOR_PX=%d'%(mn,t.FONT_FLOOR_PX))\"",
+   "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; SYNAPSE_PANEL_SETTINGS=$DR/settings_expert.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/type_census.py expert 340 || { echo \"UNKNOWN: the probe failed - instrument broken, no verdict\"; exit 2; };  python -c \"import json,sys;sys.path.insert(0,'python');from synapse.panel.designsystem import tokens as t;h=json.load(open('harness/design_review/2026-09-05/type_census_expert_340.json',encoding='utf-8'))['summary']['px_hist'];mn=min(int(k) for k in h);print('PASS' if mn>=11 and t.FONT_FLOOR_PX>=11 else 'FAIL: min_px=%d FONT_FLOOR_PX=%d'%(mn,t.FONT_FLOOR_PX))\"",
    "status": "open",
    "opened_run": "2026-09-05-bierut",
-   "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression."
+   "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression.",
+   "predicate_note": "2026-09-06 crank 2: probe silencing removed (>/dev/null 2>&1 then read stale JSON). A broken instrument now exits 2 = UNKNOWN, never a verdict.",
+   "sweep_note_2026_09_06": "measured 2026-09-06: min_px=10 vs FONT_FLOOR_PX=10. Real FAIL, instrument ran."
   },
   {
    "id": "D-F10",
@@ -308,10 +317,12 @@
    "evidence": "attach 52x54 = 2808px2 (setIconSize(36,36), setFixedWidth(52), synapse_panel.py:1931-1935, on a 24 icon grid tokens.py:544) vs SEND 60x32 = 1920px2; input 212 of 280 (use_expert.json composer). Placeholder 'Ask SYNAPSE...    \u00b7    / for commands' (:126) wraps in all three shots; khint repeats '/ commands' at 10px (:1952); Ctrl+K chip is a third telling at 0 width (:745). SEND carries 79-87% of all accent pixels.",
    "repro": "see harness/design_review/2026-09-05/REVIEW.md F10",
    "gate": "joe",
-   "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; SYNAPSE_PANEL_SETTINGS=$DR/settings_expert.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/use_probe.py expert >/dev/null 2>&1; python -c \"import json;u=json.load(open('harness/design_review/2026-09-05/use_expert.json',encoding='utf-8'))['composer'];a=u['attach'];s=u['send'];legend=u['placeholder'].count('/')+(u['khint']['text'].count('/') if u.get('khint') else 0);ok=a[2]*a[3]<s[2]*s[3] and u['attach_icon'][0]<=24 and legend<=1 and u['input'][2]>=240;print('PASS' if ok else 'FAIL: attach=%s icon=%s send=%s input=%s slash=%d'%(a,u['attach_icon'],s,u['input'],legend))\"",
-   "status": "open",
+   "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; SYNAPSE_PANEL_SETTINGS=$DR/settings_expert.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/use_probe.py expert || { echo \"UNKNOWN: the probe failed - instrument broken, no verdict\"; exit 2; };  python -c \"import json;u=json.load(open('harness/design_review/2026-09-05/use_expert.json',encoding='utf-8'))['composer'];a=u['attach'];s=u['send'];legend=u['placeholder'].count('/')+(u['khint']['text'].count('/') if u.get('khint') else 0);ok=a[2]*a[3]<s[2]*s[3] and u['attach_icon'][0]<=24 and legend<=1 and u['input'][2]>=240;print('PASS' if ok else 'FAIL: attach=%s icon=%s send=%s input=%s slash=%d'%(a,u['attach_icon'],s,u['input'],legend))\"",
+   "status": "unknown",
    "opened_run": "2026-09-05-bierut",
-   "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression."
+   "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression.",
+   "predicate_note": "2026-09-06 crank 2: probe silencing removed (>/dev/null 2>&1 then read stale JSON). A broken instrument now exits 2 = UNKNOWN, never a verdict.",
+   "sweep_note_2026_09_06": "probe use_probe.py crashes on the post-wave panel; verdict withheld."
   },
   {
    "id": "D-F11",
@@ -323,10 +334,11 @@
    "repro": "see harness/design_review/2026-09-05/REVIEW.md F11",
    "gate": "joe",
    "closure_predicate": "HY=\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\"; DR=harness/design_review/2026-09-05; export PYTHONIOENCODING=utf-8; for p in curious expert ml; do SYNAPSE_PANEL_SETTINGS=$DR/settings_$p.json QT_QPA_PLATFORM=offscreen \"$HY\" $DR/use_probe.py $p || { echo \"UNKNOWN: the probe failed - instrument broken, no verdict\"; exit 2; }; done;  python -c \"import json;ok=all(any(json.load(open('harness/design_review/2026-09-05/use_%s.json'%p,encoding='utf-8'))['revert_visible_on_chat']) for p in ('curious','expert','ml'));print('PASS' if ok else 'FAIL: no artist-clickable revert on CHAT (extend use_probe.py to drive one INFORM-only turn first)')\"",
-   "status": "open",
+   "status": "unknown",
    "opened_run": "2026-09-05-bierut",
    "repair_note": "2026-09-06 crank 2: fields restored whole from harness/design_review/2026-09-05/review_report.json; the 2026-09-05 ingest had clipped them mid-expression.",
-   "predicate_note": "2026-09-06 crank 2: the probe was silenced with >/dev/null 2>&1 and the verdict read from whatever JSON sat on disk. After the B+C wave the probes crash (census_subtract.py:73 AttributeError _font_btn - the verb rail it measures was retired) and this predicate reported a FAIL about a panel that no longer exists. The probe's failure now exits 2 = UNKNOWN."
+   "predicate_note": "2026-09-06 crank 2: the probe was silenced with >/dev/null 2>&1 and the verdict read from whatever JSON sat on disk. After the B+C wave the probes crash (census_subtract.py:73 AttributeError _font_btn - the verb rail it measures was retired) and this predicate reported a FAIL about a panel that no longer exists. The probe's failure now exits 2 = UNKNOWN.",
+   "sweep_note_2026_09_06": "probe use_probe.py crashes on the post-wave panel; verdict withheld."
   },
   {
    "id": "D-F12",

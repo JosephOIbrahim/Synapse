@@ -80,3 +80,23 @@ predicate now accepts either spelling. Substance never regressed.
 
 Proven against both defects by mutation before it was committed. Current
 record: **25 items, 17 open, every predicate runnable, every closure evidenced.**
+
+## Second pass: the eight, once they could speak
+
+With the silencing removed, all eight report honestly for the first time.
+
+| Item | Verdict | Why |
+|---|---|---|
+| D-F1, D-F2, D-F10, D-F11 | UNKNOWN | probe crashes on the post-wave panel (`_font_btn` retired by BC-1); no verdict until the probe is repaired |
+| D-F4 | FAIL | gate card still 12 hue buckets, REVERT the only review verb, fold_h 32 |
+| D-F5 | FAIL | chat_h 312/340/354; the >=380 threshold was ruled unattainable-as-written by the 2026-09-05 referees (base 348) |
+| D-F6 | FAIL | families Space Mono 37 / Space Grotesk 32 / Courier 8, 2 rename sites |
+| D-F9 | FAIL | min_px 10 against FONT_FLOOR_PX 10 |
+
+Four verdicts that were FAIL an hour ago were reading yesterday's JSON. Four
+are real. The difference is now visible, which it was not before.
+
+**Open, and not fixed here:** the design probes under
+`harness/design_review/2026-09-05/` measure the pre-B+C panel. Repairing them is
+design work; the loop reports UNKNOWN until someone does it rather than
+inventing a number.

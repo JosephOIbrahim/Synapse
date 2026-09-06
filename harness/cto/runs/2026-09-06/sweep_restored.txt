@@ -1,50 +1,26 @@
-=== D-F1
-rc=2
-Traceback (most recent call last):
-  File "C:\Users\User\SYNAPSE\harness\design_review\2026-09-05\census_subtract.py", line 73, in <module>
-    act = p._font_btn.parentWidget()
-          ^^^^^^^^^^^
-AttributeError: 'SynapsePanel' object has no attribute '_font_btn'. Did you mean: '_send_btn'?
-UNKNOWN: the probe failed - instrument broken, no verdict
-
-=== D-F2
-rc=2
-Traceback (most recent call last):
-  File "C:\Users\User\SYNAPSE\harness\design_review\2026-09-05\use_probe.py", line 38, in <module>
-    act = p._font_btn.parentWidget()
-          ^^^^^^^^^^^
-AttributeError: 'SynapsePanel' object has no attribute '_font_btn'. Did you mean: '_send_btn'?
-UNKNOWN: the probe failed - instrument broken, no verdict
-
 === D-F4
 rc=0
+ },
+ "mark_state": "disconnected"
+}
 FAIL: review buttons=['← REVERT'] fold_h=32
 <string>:2: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
 FAIL: 12 hue buckets
 
-=== D-F5
-rc=0
-<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
-{"profile": "expert", "density": "standard", "rail": {"x": 0, "y": 0, "w": 340, "h": 108, "visible": true, "objectName": "DsHeader", "rhythm_role": "shell"}, "ribbon": {"x": 0, "y": 108, "w": 340, "h": 46, "visible": true, "objectName": "DsSection", "rhythm_role": "shell"}, "chat": {"x": 30, "y": 162, "w": 280, "h": 340, "visible": true, "objectName": "DsChatTranscript", "rhythm_role": "group"}, "composer": {"x": 30, "y": 518, "w": 280, "h": 234, "visible": true, "objectName": "DsSection", "rhythm_role": "stack"}, "wordmark": {"x": 59, "y": 16, "w": 75, "h": 32, "visible": true, "objectName": "", "rhythm_role": null, "text": "SYNAPSE", "pixelSize": 15, "bold": true, "weight": 700, "family": "Space Grotesk", "letterSpacing": 116.0, "sizeHint_w": 75}}
-<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
-{"profile": "expert", "density": "tight", "rail": {"x": 0, "y": 0, "w": 340, "h": 100, "visible": true, "objectName": "DsHeader", "rhythm_role": "shell"}, "ribbon": {"x": 0, "y": 100, "w": 340, "h": 46, "visible": true, "objectName": "DsSection", "rhythm_role": "shell"}, "chat": {"x": 30, "y": 154, "w": 280, "h": 354, "visible": true, "objectName": "DsChatTranscript", "rhythm_role": "group"}, "composer": {"x": 30, "y": 520, "w": 280, "h": 232, "visible": true, "objectName": "DsSection", "rhythm_role": "stack"}, "wordmark": {"x": 58, "y": 12, "w": 75, "h": 32, "visible": true, "objectName": "", "rhythm_role": null, "text": "SYNAPSE", "pixelSize": 15, "bold": true, "weight": 700, "family": "Space Grotesk", "letterSpacing": 116.0, "sizeHint_w": 75}}
-<string>:1: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
-FAIL: chat_h=[312, 340, 354] RADIUS_ROUND=999
-
 === D-F6
 rc=0
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+{"profile": "expert", "density": "standard", "width": 340, "chrome_scale": 1.0, "host_font": {"family": "Courier", "px": 12}, "fonts": {"ok": true, "families": ["Space Grotesk", "Space Mono"], "missing": [], "loaded": ["SpaceGrotesk-Variable.ttf", "SpaceMono-Regular.ttf", "SpaceMono-Bold.ttf"], "build_mismatch": false}, "n_text_widgets": 77, "px_hist": {"11": 34, "12": 34, "15": 5, "10": 4}, "family_hist": {"Space Mono": 37, "Space Grotesk": 32, "Courier": 8}, "weight_hist": {"400": 63, "500": 7, "700": 5, "600": 2}, "spacing_hist": {"0:0.0": 39, "0:115.0": 16, "0:103.0": 8, "0:108.0": 7, "0:116.0": 4, "1:1.0": 1, "0:122.0": 1, "0:112.0": 1}, "caps_hist": {"mixed": 55, "literal_upper": 17, "QFont.AllUppercase": 5}, "italic": 0, "clipped": [{"face": "token", "cls": "QLabel", "id": "DsTokenNote", "text": "The field fills only as far ", "w": 332, "hint_w": 479, "px": 11, "spacing": 0.0}], "wordmark": {"w": 75, "hint_w": 75, "min_w": 75, "text": "SYNAPSE", "family": "Space Grotesk", "px": 15, "weight": 700, "bold": true, "italic": false, "spacing_type": 0, "spacing": 116.0, "caps": 0}, "styles_registered": {"Space Grotesk": ["Light", "Regular", "Medium", "Bold"], "Space Mono": ["Regular", "Bold"]}, "probes": {"qss_letter_spacing": {"plain_hint_w": 56, "qss_5px_hint_w": 96, "font_spacing_after_qss": 5.0}, "html_letter_spacing": {"plain_ideal_w": 64.0, "html_5px_ideal_w": 104.0, "fragment_spacing": [5.0]}, "tracking_cost_px": {"BODY": {"OPTIMIZE": 56, "BUILD HDA": 63, "CURIOUS": 49, "EXPLAIN": 49}, "DATA": {"OPTIMIZE": 58, "BUILD HDA": 65, "CURIOUS": 50, "EXPLAIN": 50}, "SEND": {"OPTIMIZE": 60, "BUILD HDA": 68, "CURIOUS": 53, "EXPLAIN": 53}, "LABEL_SM": {"OPTIMIZE": 63, "BUILD HDA": 70, "CURIOUS": 55, "EXPLAIN": 55}, "LABEL": {"OPTIMIZE": 64, "BUILD HDA": 72, "CURIOUS": 56, "EXPLAIN": 56}, "WORDMARK": {"OPTIMIZE": 65, "BUILD HDA": 73, "CURIOUS": 57, "EXPLAIN": 57}, "EYEBROW": {"OPTIMIZE": 68, "BUILD HDA": 77, "CURIOUS": 60, "EXPLAIN": 60}, "BRAND": {"OPTIMIZE": 72, "BUILD HDA": 81, "CURIOUS": 63, "EXPLAIN": 63}}, "verb_rail_demand": {"sum_verb_hints": 70, "sum_verb_widths": 89, "content_w": 280}, "weight_resolution_space_grotesk": {"600_demibold": {"requested": 600, "resolved": 600, "style": "Medium", "family": "Space Grotesk"}, "setBold": {"requested": 700, "resolved": 700, "style": "Bold", "family": "Space Grotesk"}, "500_medium": {"requested": 500, "resolved": 500, "style": "Medium", "family": "Space Grotesk"}, "400": {"requested": 400, "resolved": 400, "style": "Regular", "family": "Space Grotesk"}}}}
 FAIL: {'Space Mono': 37, 'Space Grotesk': 32, 'Courier': 8} rename_sites=2
 
 === D-F9
 rc=0
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+{"profile": "expert", "density": "standard", "width": 340, "chrome_scale": 1.0, "host_font": {"family": "Courier", "px": 12}, "fonts": {"ok": true, "families": ["Space Grotesk", "Space Mono"], "missing": [], "loaded": ["SpaceGrotesk-Variable.ttf", "SpaceMono-Regular.ttf", "SpaceMono-Bold.ttf"], "build_mismatch": false}, "n_text_widgets": 77, "px_hist": {"11": 34, "12": 34, "15": 5, "10": 4}, "family_hist": {"Space Mono": 37, "Space Grotesk": 32, "Courier": 8}, "weight_hist": {"400": 63, "500": 7, "700": 5, "600": 2}, "spacing_hist": {"0:0.0": 39, "0:115.0": 16, "0:103.0": 8, "0:108.0": 7, "0:116.0": 4, "1:1.0": 1, "0:122.0": 1, "0:112.0": 1}, "caps_hist": {"mixed": 55, "literal_upper": 17, "QFont.AllUppercase": 5}, "italic": 0, "clipped": [{"face": "token", "cls": "QLabel", "id": "DsTokenNote", "text": "The field fills only as far ", "w": 332, "hint_w": 479, "px": 11, "spacing": 0.0}], "wordmark": {"w": 75, "hint_w": 75, "min_w": 75, "text": "SYNAPSE", "family": "Space Grotesk", "px": 15, "weight": 700, "bold": true, "italic": false, "spacing_type": 0, "spacing": 116.0, "caps": 0}, "styles_registered": {"Space Grotesk": ["Light", "Regular", "Medium", "Bold"], "Space Mono": ["Regular", "Bold"]}, "probes": {"qss_letter_spacing": {"plain_hint_w": 56, "qss_5px_hint_w": 96, "font_spacing_after_qss": 5.0}, "html_letter_spacing": {"plain_ideal_w": 64.0, "html_5px_ideal_w": 104.0, "fragment_spacing": [5.0]}, "tracking_cost_px": {"BODY": {"OPTIMIZE": 56, "BUILD HDA": 63, "CURIOUS": 49, "EXPLAIN": 49}, "DATA": {"OPTIMIZE": 58, "BUILD HDA": 65, "CURIOUS": 50, "EXPLAIN": 50}, "SEND": {"OPTIMIZE": 60, "BUILD HDA": 68, "CURIOUS": 53, "EXPLAIN": 53}, "LABEL_SM": {"OPTIMIZE": 63, "BUILD HDA": 70, "CURIOUS": 55, "EXPLAIN": 55}, "LABEL": {"OPTIMIZE": 64, "BUILD HDA": 72, "CURIOUS": 56, "EXPLAIN": 56}, "WORDMARK": {"OPTIMIZE": 65, "BUILD HDA": 73, "CURIOUS": 57, "EXPLAIN": 57}, "EYEBROW": {"OPTIMIZE": 68, "BUILD HDA": 77, "CURIOUS": 60, "EXPLAIN": 60}, "BRAND": {"OPTIMIZE": 72, "BUILD HDA": 81, "CURIOUS": 63, "EXPLAIN": 63}}, "verb_rail_demand": {"sum_verb_hints": 70, "sum_verb_widths": 89, "content_w": 280}, "weight_resolution_space_grotesk": {"600_demibold": {"requested": 600, "resolved": 600, "style": "Medium", "family": "Space Grotesk"}, "setBold": {"requested": 700, "resolved": 700, "style": "Bold", "family": "Space Grotesk"}, "500_medium": {"requested": 500, "resolved": 500, "style": "Medium", "family": "Space Grotesk"}, "400": {"requested": 400, "resolved": 400, "style": "Regular", "family": "Space Grotesk"}}}}
 <string>:1: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
 FAIL: min_px=10 FONT_FLOOR_PX=10
 
 === D-F10
-rc=0
-FAIL: attach=[258, 630, 52, 54] icon=[36, 36] send=[172, 671, 60, 32] input=[30, 602, 212, 111] slash=2
-
-=== D-F11
 rc=2
 Traceback (most recent call last):
   File "C:\Users\User\SYNAPSE\harness\design_review\2026-09-05\use_probe.py", line 38, in <module>
