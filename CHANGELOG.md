@@ -2,6 +2,10 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.65.1 — five things Joe saw in the first ten minutes
+
+*2026-09-05 (late): patch on v5.65.0 from Joe's first live look, built as a team wave (`design/joe-five`, merged `33c46028`): the model token is a status light (green live / amber working / grey off, palette colours), TOKEN counts real usage from every provider that reports it (Ollama, Gemini, Nemotron and OpenAI-style endpoints were never parsed before; Ollama verified live), USER and SYNAPSE read in two colours, the profile switch left the UI, and the wordmark has air above it. Full gate **7613 passed / 0 failed / 357 skipped**. Notes: `harness/notes/RELEASE_v5.65.1.md`.*
+
 ## v5.65.0 — the panel became the conversation, and the model got its name back
 
 *2026-09-05 (night): the panel direction B + C wave (`design/bc-wave`, merged `90c9fda2`) - verb rail and profile row leave the header for the `/` palette and the overflow, consent cards inline in the chat with a REVERT verb, the `/` palette on the spacing grid at the composer's width, one state sentence that never gives way, the wordmark at 15 px, and the model token `provider/model` always visible top right (LIVE: 414 px, was 0). Two live-found fixes: the floating empty "houdini" window at launch (a parentless retired widget) and the composer clipping its placeholder on tall high-DPI panes. Full gate **7605 passed / 0 failed / 346 skipped**. GUI sign-off in three profiles is Joe's eyes. Full notes with receipts: `harness/notes/RELEASE_v5.65.0.md`.*
