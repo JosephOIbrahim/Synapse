@@ -17,6 +17,11 @@ Public surface is unchanged (chat_display.py depends on it):
 
 import html
 import re
+from urllib.parse import urlsplit
+
+
+class TrustedHtml(str):
+    """Explicit opt-in for HTML authored by application code, never model prose."""
 
 # -- Design tokens — the vendored single source of truth.
 #    The literal fallback that used to sit behind this import is gone. It held
@@ -109,7 +114,7 @@ def _format_code_block(match, font_scale=1.0):
             '<div style="color:{dim}; font-size:{sz}px; '
             'margin-bottom:4px; font-family:{mono};">{lang}</div>'
         ).format(dim=_TEXT_DIM, sz=_scale(_SMALL_PX, font_scale),
-                 mono=_MONO, lang=lang)
+                 mono=_MONO, lang=html.escape(lang))
     return (
         '<div style="background:{bg}; padding:10px; margin:6px 0;">'
         "{label}"
@@ -203,6 +208,81 @@ def _format_list_items(text):
     return "\n".join(out)
 
 
+def _inline_markdown(text, font_scale):
+    """Render text once; never run substitutions through generated HTML/code."""
+    atom = re.compile(r"(`[^`\n]+`|\[[^\]\n]+\]\([^\s)]+\)|" + _NODE_PATH_RE.pattern + r")")
+
+    def prose(value):
+        value = html.escape(value)
+        value = re.sub(r"\*\*([^*\n]+)\*\*", r"<strong>\1</strong>", value)
+        value = re.sub(r"(?<!\w)__([^_\n]+)__(?!\w)", r"<strong>\1</strong>", value)
+        value = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", value)
+        return value
+
+    out, pos = [], 0
+    for match in atom.finditer(text):
+        out.append(prose(text[pos:match.start()]))
+        value = match.group(0)
+        if value.startswith("`"):
+            out.append(_format_inline_code(_INLINE_CODE_RE.fullmatch(value), font_scale))
+        elif value.startswith("["):
+            label, url = re.fullmatch(r"\[([^\]]+)\]\(([^)]+)\)", value).groups()
+            try:
+                parsed = urlsplit(url)
+                safe = parsed.scheme in ("https", "http") and parsed.hostname and not parsed.username
+            except ValueError:
+                safe = False
+            out.append('<a href="%s">%s</a>' % (html.escape(url, quote=True), html.escape(label))
+                       if safe else html.escape(value))
+        else:
+            out.append(_format_node_path(_NODE_PATH_RE.fullmatch(value), font_scale))
+        pos = match.end()
+    out.append(prose(text[pos:]))
+    return "".join(out)
+
+
+def _markdown_blocks(raw, font_scale):
+    out, paragraph, items = [], [], []
+    list_kind = None
+
+    def flush_paragraph():
+        if paragraph:
+            out.append('<p style="margin:6px 0;">' + "<br>".join(paragraph) + "</p>")
+            paragraph.clear()
+
+    def flush_list():
+        if items:
+            out.append('<%s style="margin:4px 0;">' % list_kind +
+                       "".join("<li>%s</li>" % item for item in items) + '</%s>' % list_kind)
+            items.clear()
+
+    for line in raw.splitlines():
+        heading = re.match(r"^(#{1,6})\s+(.+)$", line)
+        item = re.match(r"^\s*(?:([-+*])|\d+[.)])\s+(.+)$", line)
+        if item:
+            flush_paragraph()
+            kind = "ul" if item.group(1) else "ol"
+            if kind != list_kind:
+                flush_list()
+                list_kind = kind
+            items.append(_inline_markdown(item.group(2), font_scale))
+        else:
+            flush_list()
+            if heading:
+                flush_paragraph()
+                n = len(heading.group(1))
+                out.append('<h{n} style="font-size:{sz}px; margin:10px 0 4px;">{text}</h{n}>'.format(
+                    n=n, sz=_scale(_BODY_PX + max(0, 4 - n), font_scale),
+                    text=_inline_markdown(heading.group(2), font_scale)))
+            elif not line.strip():
+                flush_paragraph()
+            else:
+                paragraph.append(_inline_markdown(line, font_scale))
+    flush_list()
+    flush_paragraph()
+    return "".join(out)
+
+
 def _process_rich_text(raw, font_scale=1.0, signed=None):
     """Apply code block, inline code, node-chip, and list formatting. Returns
     ``(html, signed_used)``.
@@ -224,22 +304,16 @@ def _process_rich_text(raw, font_scale=1.0, signed=None):
     the caller's standalone note always renders. Credit belongs to the message,
     not to whichever path was mentioned first.
     """
-    state = {"signed_used": False}
-
-    def _node(m):
-        return _format_node_path(m, font_scale, signed=None)
-
-    raw = _CODE_BLOCK_RE.sub(lambda m: _format_code_block(m, font_scale), raw)
-    raw = _INLINE_CODE_RE.sub(lambda m: _format_inline_code(m, font_scale), raw)
-    raw = _NODE_PATH_RE.sub(_node, raw)
-    raw = _format_list_items(raw)
-
-    # Newlines to <br> (but not inside <pre> blocks)
-    parts = re.split(r"(<pre.*?</pre>)", raw, flags=re.DOTALL)
+    if isinstance(raw, TrustedHtml):
+        return str(raw), False
+    parts = re.split(r"(```[^\n]*\n.*?```)", str(raw), flags=re.DOTALL)
     for i, part in enumerate(parts):
-        if not part.startswith("<pre"):
-            parts[i] = part.replace("\n", "<br>")
-    return "".join(parts), state["signed_used"]
+        if i % 2:
+            match = re.fullmatch(r"```([^\n]*)\n(.*?)```", part, flags=re.DOTALL)
+            parts[i] = _format_code_block(match, font_scale)
+        else:
+            parts[i] = _markdown_blocks(part, font_scale)
+    return "".join(parts), False
 
 
 def _format_response_ex(response, font_scale=1.0, signed=None):

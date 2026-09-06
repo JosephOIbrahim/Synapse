@@ -18,10 +18,10 @@ has no dated source.
 
 Ollama and Gemini report their own windows live (``/api/show`` and
 ``models.get``, see the providers); the Gemini row here is the fallback when
-that call fails. Ollama has no per-token list price: a tag without ``:cloud``
-runs on this machine and costs $0 (``local``); a ``:cloud`` tag is metered by
-ollama.com on a subscription with no public per-token rate, so it is unknown —
-never zero. NVIDIA NIM (``integrate.api.nvidia.com``) publishes no per-token
+that call fails. An Ollama tag alone cannot prove local execution. Historical
+usage records lack endpoint-bound locality evidence, so their per-token cost
+is unknown; a cloud relay also has no public per-token rate here. NVIDIA NIM
+(``integrate.api.nvidia.com``) publishes no per-token
 list price for its developer API either (checked 2026-09-05), so Nemotron rows
 are absent on purpose and the face says so.
 
@@ -102,15 +102,16 @@ def price(provider_id, model_id):
     return PRICE_USD_PER_MTOK.get(_key(provider_id, model_id))
 
 
-def is_local(provider_id, model_id, remote_host=None) -> bool:
-    """True when the model runs on this machine and costs nothing per token:
-    an Ollama tag without ``:cloud`` (probe.py: no ``remote_host``) — unless the
-    probe DID see a ``remote_host``, which makes it metered. Everything else
-    is a cloud lane."""
+def is_local(provider_id, model_id, remote_host=None, *, local_evidence=False) -> bool:
+    """A model tag alone cannot establish local inference or a zero price.
+
+    The caller must hold affirmative endpoint-bound evidence. Historical usage
+    records lack it, so their unknown cost stays unknown.
+    """
     if remote_host:
         return False
     pid, model = _key(provider_id, model_id)
-    return pid == "ollama" and bool(model) and ":cloud" not in model
+    return local_evidence is True and pid == "ollama" and bool(model) and ":cloud" not in model
 
 
 def cost(snapshot, remote_host=None):

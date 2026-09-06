@@ -150,6 +150,7 @@ def _completion_self():
     s._author_token = lambda: ""
     s._set_thinking = lambda *a, **k: None
     s._set_busy = lambda *a, **k: None
+    s._refresh_engine_selector = lambda: None
     s._chat = types.SimpleNamespace(
         end_stream=lambda *a, **k: None,
         append_synapse_message=lambda *a, **k: None)

@@ -281,8 +281,10 @@ def test_model_facts_cost_is_local_zero_unknown_none_never_bool():
 
     local = mf.cost({"provider": "ollama", "model": "nemotron-mini:latest",
                      "input_tokens": 11, "output_tokens": 4})
-    assert local == (0.0, "local")
-    assert type(local[0]) is float and not isinstance(local[0], bool)
+    # A tag alone does not prove localhost execution; old receipts lack
+    # endpoint evidence, so their cost must remain unknown.
+    assert local is None
+    assert not mf.is_local("ollama", "nemotron-mini:latest")
 
     # An Ollama :cloud tag is metered by ollama.com with no per-token list
     # price on file -> unknown, never zero (R162: a zero is a claim).
@@ -325,13 +327,15 @@ def test_model_facts_cost_is_local_zero_unknown_none_never_bool():
         {"provider": "claude", "model": "claude-sonnet-4-6", "input_tokens": 1_000_000},
         {"provider": "ollama", "model": "nemotron-mini:latest", "input_tokens": 11, "output_tokens": 4},
     ]}}
-    usd, note = mf.session_cost(snap)
+    assert mf.session_cost(snap) is None
+    assert mf.unpriced_models(snap) == ["nemotron-mini:latest"]
+    priced_only = {"session": {"by_model": snap["session"]["by_model"][:1]}}
+    usd, note = mf.session_cost(priced_only)
     assert abs(usd - 3.0) < 1e-9 and note.startswith("list price · 20")
-    assert mf.unpriced_models(snap) == []
     snap["session"]["by_model"].append(
         {"provider": "ollama", "model": "glm-5:cloud", "input_tokens": 2})
     assert mf.session_cost(snap) is None
-    assert mf.unpriced_models(snap) == ["glm-5:cloud"]
+    assert mf.unpriced_models(snap) == ["nemotron-mini:latest", "glm-5:cloud"]
     assert mf.session_cost({"session": {"by_model": [
-        {"provider": "ollama", "model": "nemotron-mini:latest"}]}}) == (0.0, "local")
+        {"provider": "ollama", "model": "nemotron-mini:latest"}]}}) is None
     assert mf.session_cost({"session": {"by_model": []}}) is None

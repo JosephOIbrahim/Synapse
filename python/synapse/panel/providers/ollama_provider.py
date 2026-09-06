@@ -167,7 +167,8 @@ class OllamaProvider(NemotronProvider):
         if self._ctx_facts is not _NOT_LOOKED_UP:
             return self._ctx_facts
         self._ctx_facts = None
-        scheme, host, path = _ollama_endpoint()
+        scheme, host, path = (self._panel_ollama_base if hasattr(self, "_panel_ollama_base")
+                              else _ollama_endpoint())
         conn_cls = (http.client.HTTPConnection if scheme == "http"
                     else http.client.HTTPSConnection)
         try:
@@ -178,7 +179,7 @@ class OllamaProvider(NemotronProvider):
                                 context=ssl.create_default_context())
             try:
                 conn.request("POST", path + "/api/show",
-                             body=json.dumps({"model": self._model}).encode("utf-8"),
+                             body=json.dumps({"model": self._model}, sort_keys=True).encode("utf-8"),
                              headers={"Content-Type": "application/json"})
                 resp = conn.getresponse()
                 if resp.status != 200:

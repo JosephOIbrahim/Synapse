@@ -115,6 +115,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setReadOnly(True)
         self.setAcceptRichText(True)
         self.setOpenExternalLinks(False)
+        self.setOpenLinks(False)  # transcript must never navigate to a link
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setObjectName("DsChatTranscript")
@@ -255,6 +256,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         if url_str.startswith("node:"):
             node_path = url_str[5:]
             self.node_clicked.emit(node_path)
+        else:
+            target = QtCore.QUrl(url_str)
+            if target.isValid() and target.scheme() in ("http", "https") and target.host() and not target.userInfo():
+                QtGui.QDesktopServices.openUrl(target)
 
     def _scroll_to_bottom(self):
         """Scroll the display to the bottom after appending content."""
@@ -324,18 +329,28 @@ class ChatDisplay(QtWidgets.QTextBrowser):
 
         Best-effort: if the cap ever fights QTextBrowser's relayout, the
         fallback is dropping it (long lines, no breakage)."""
-        super().resizeEvent(event)
+        if getattr(self, "_measuring_resize", False):
+            super().resizeEvent(event)
+            return
+        self._measuring_resize = True
         try:
+            super().resizeEvent(event)
             measure = self._reading_measure()
-            avail = self.viewport().width()
-            self.document().setTextWidth(min(avail, measure))
+            margins = self.viewportMargins()
+            # Use the space BEFORE our own margins. Measuring the already
+            # narrowed viewport toggled pad / no-pad recursively on wide docks.
+            avail = self.viewport().width() + margins.left() + margins.right()
             # Symmetric margin only when there is real slack; a narrow dock
             # keeps every pixel for the text.
             slack = avail - measure
             pad = int(slack / 2) if slack > 40 else 0
-            self.setViewportMargins(pad, 0, pad, 0)
+            if margins.left() != pad or margins.right() != pad:
+                self.setViewportMargins(pad, 0, pad, 0)
+            self.document().setTextWidth(min(self.viewport().width(), measure))
         except Exception:
             pass
+        finally:
+            self._measuring_resize = False
 
     # -- Message append methods ----------------------------------------------
 

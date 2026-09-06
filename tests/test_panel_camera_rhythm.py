@@ -122,9 +122,14 @@ def _method(source, name):
     return "\n".join(source.splitlines()[node.lineno - 1:node.end_lineno])
 
 
-@pytest.mark.parametrize("name", ["_on_done", "_refresh_token_surfaces", "_show_token_face",
-                                  "_build_token_face", "_start_worker", "_on_token",
-                                  "_on_error", "_on_stop", "_set_busy", "closeEvent",
+# Joe's approved first-session roadmap (2026-09-06) changes connection/start,
+# completion attribution, and close/key lifetime. Those paths now have behavior
+# controls in test_first_session_panel and check_first_session_qt, including
+# decline preservation, actual task identity, and QObject destruction. Keep the
+# old CAMERA freeze on the unrelated measurement and lifecycle methods.
+@pytest.mark.parametrize("name", ["_refresh_token_surfaces", "_show_token_face",
+                                  "_build_token_face", "_on_token",
+                                  "_on_stop", "_set_busy",
                                   "showEvent", "_update_context", "_update_health"])
 def test_lifecycle_and_token_completion_methods_byte_identical(name):
     assert _method(_source("synapse_panel.py"), name) == _method(_source("synapse_panel.py", _panel_base()), name)
@@ -134,8 +139,9 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
     current = _method(_source("synapse_panel.py"), "__init__")
     # The first __init__ is _GrowingInput, also protected; compare all init nodes.
     def constructors(source):
-        return [ast.get_source_segment(source, n) for n in ast.walk(ast.parse(source))
-                if isinstance(n, ast.FunctionDef) and n.name == "__init__"]
+        return [ast.get_source_segment(source, n)
+                for cls in ast.parse(source).body if isinstance(cls, ast.ClassDef) and cls.name != "SynapsePanel"
+                for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == "__init__"]
     current = constructors(_source("synapse_panel.py"))
     original = constructors(_source("synapse_panel.py", _panel_base()))
     # The annotation is allowed on BOTH sides (the base now carries it too).
@@ -153,9 +159,10 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
 _J2_BASE = "c28ac3dc"
 
 
-@pytest.mark.parametrize("name,base", [("refresh_from_probe", BASE),
-                                       ("_refresh_usage", _J2_BASE),
-                                       ("measure_static", BASE)])
+# First-session location evidence replaces probe-all/first-result selection.
+# Actual count composition and pricing surfaces retain their original controls.
+@pytest.mark.parametrize("name,base", [("measure_static", BASE),
+                                       ("_refresh_spend", _J2_BASE)])
 def test_token_measurement_paths_are_unchanged(name, base):
     assert _method(_source("face_token.py"), name) == _method(_source("face_token.py", base), name)
 
@@ -167,7 +174,9 @@ def test_token_readout_worker_fontload_and_shelf_unchanged():
     # the J2 landing commit (_J2_BASE); the pill / meter rules and the worker's
     # hou-free invariant are unchanged (tests/test_bp2_paneltruth_token_refresh.py).
     # fontload.py and the shelf stay pinned at ce04dcb0.
-    j2_paths = ["python/synapse/panel/token_readout.py", "python/synapse/panel/claude_worker.py"]
+    # Worker activity and cancellation pairing are covered behaviorally by
+    # test_first_session_panel; the untouched token display rule remains pinned.
+    j2_paths = ["python/synapse/panel/token_readout.py"]
     assert subprocess.check_output(["git", "diff", _J2_BASE, "--", *j2_paths], cwd=ROOT) == b""
     paths = ["python/synapse/panel/designsystem/fontload.py",
              # tokens.py left this list 2026-09-05: W7 (Joe's wordmark

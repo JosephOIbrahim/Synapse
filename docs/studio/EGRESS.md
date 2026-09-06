@@ -112,8 +112,9 @@ anywhere in the codebase.
   dialog) — leaves only as the `Authorization: Bearer` auth header to the
   user-configured base URL, never inside payloads.
 - The **memory store ciphertext** — at-rest only.
-- **Viewport/render pixels** — `capture_viewport` and render tools return
-  *path strings*, not image bytes.
+- Viewport/render pixels are **not** in this never-leaves category: the panel
+  worker can attach image bytes from tool results through `vision_attach`.
+  Treat captures and render previews as project context that can reach the model.
 - The `.hip` file and geometry buffers.
 
 > **Load-bearing caveat:** encryption-at-rest does **not** bound egress.
@@ -143,11 +144,25 @@ anywhere in the codebase.
 
 ## What bounds agent-initiated egress
 
+- The first-session panel flow asks before a task uses a remote or unverified
+  model. It discloses prompts, conversation, scene context, tool/memory results,
+  and tool-supplied images. Provider, requested model, credential, and transport
+  endpoint are captured once for all requests in that task. Decline sends nothing
+  on that panel path. Independent host lanes and external MCP clients remain
+  outside this permission; this is not a project-wide network boundary.
+- `panel/connections.py` checks the selected service using bounded GET metadata
+  requests (Anthropic/Gemini models, OpenAI-compatible models, or Ollama tags).
+  It sends only credentials in headers, no project context. Connection setup
+  runs off the UI thread and does not claim a successful generation. Keys typed
+  in the dialog are panel-session-only; closing clears panel references while
+  an existing worker may finish with its captured key. No new plaintext key
+  persistence or process-environment mutation is introduced.
+
 - The **worker allowlist** (`panel/worker_policy.py`,
   `SYNAPSE_WORKER_TOOL_MODE` strict/standard/unrestricted; `standard`
   denies review/approve/critical-gated tools, fail-closed on unknown)
-  applies to the **autonomous worker only** — the interactive panel is
-  human-in-the-loop with the policy off (your request is the consent).
+  applies to the autonomous worker and the interactive panel, which passes
+  `enforce_worker_policy=True`. A request cannot self-authorize a gated tool.
 - Bridge-path consent gates govern `/mcp` operations.
 - The live `/synapse` path runs `execute_python` **ungated** — the
   documented single-user-localhost posture (CLAUDE.md §1.2 / D1).

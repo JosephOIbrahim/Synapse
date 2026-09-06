@@ -407,7 +407,7 @@ class NemotronProvider(StreamProvider):
                 try:
                     data = json.loads(data_str)
                 except json.JSONDecodeError:
-                    logger.debug("Skipping non-JSON NVIDIA SSE data: %s", data_str[:80])
+                    logger.debug("Skipping non-JSON NVIDIA SSE data")
                     continue
 
                 usage = data.get("usage")
@@ -458,7 +458,7 @@ class NemotronProvider(StreamProvider):
             try:
                 args = json.loads(slot["arguments"]) if slot["arguments"] else {}
             except json.JSONDecodeError:
-                logger.error("Failed to parse NVIDIA tool args: %s", slot["arguments"][:200])
+                logger.error("Failed to parse NVIDIA tool arguments")
                 args = {}
             blocks.append({
                 "type": "tool_use",

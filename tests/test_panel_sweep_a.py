@@ -65,6 +65,10 @@ def test_no_new_structure_and_every_residual_is_reasoned(filename):
         card = source[source.index("class _ProposalCard"):source.index("class GateWidget")]
         assert "sweep_a_style" not in card and "setStyleSheet" not in card
         assert "_LEVEL_COLORS" not in source
+    elif filename == "face_work.py":
+        # Approved first-session activity copy changes the existing row's text,
+        # while preserving constructors, placement, and signal wiring.
+        assert _structure(source.replace("tool_label(name)", "name")) == _structure(_base(path))
     else:
         assert _structure(source) == _structure(_base(path))
     for key, line, exempt in _scan(source, path):

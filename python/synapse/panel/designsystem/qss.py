@@ -921,3 +921,32 @@ def ensure_sweep_b_view(root):
     root.setStyleSheet(stylesheet())
     rhythm.apply(root, root.property("density") or "standard")
 # --- END SWEEP_B
+
+
+# --- FIRST_SESSION (connection setup)
+def prepare_connection_dialog(root, scale=t.FONT_SCALE_DEFAULT):
+    """Install the central sheet on the connection dialog's separate window."""
+    root.setStyleSheet(stylesheet(scale))
+
+
+def _connection_stylesheet(scale=t.FONT_SCALE_DEFAULT):
+    """First-session selectors extend the shared sheet without changing it."""
+    return f"""
+QComboBox#DsConnectionSelect {{
+    background: {t.GROUND}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.GRAPHITE}; padding: {t.SPACE_SM}px;
+    min-height: {t.scaled(t.SIZE_BODY * 2, scale)}px;
+}}
+QComboBox#DsConnectionSelect QAbstractItemView {{
+    background: {t.PANEL}; color: {t.TEXT_PRIMARY};
+    selection-background-color: {t.SIGNAL}; selection-color: {t.TEXT_ON_ACCENT};
+}}
+"""
+
+
+_first_session_base_stylesheet = stylesheet
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _first_session_base_stylesheet(scale) + "\n" + _connection_stylesheet(scale)
+# --- END FIRST_SESSION

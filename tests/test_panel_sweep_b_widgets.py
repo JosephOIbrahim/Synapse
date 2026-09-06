@@ -87,20 +87,27 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     # landing touched nothing upstream - that proof is in the history. Later
     # design waves edit the sheet under written rulings (bc-wave: DsAuthor
     # colour to the text ramp, rail rules), so the pin keeps the STRUCTURE:
-    # the SWEEP_B block still exists, still sits at the tail, still uses only
+    # the SWEEP_B block still exists, still precedes later additions, uses only
     # tokens, and the prefix still parses as one module.
     assert _outside_rhythm_block(prefix), "QSS prefix vanished"
     # Landing r3 (CTO 2026-09-05, R2-03): the tail carries SWEEP_A's block
     # first; SWEEP_B's guarantees are fence-scoped to its own marked block.
     start, end = "# --- SWEEP_B (", "# --- END SWEEP_B"
     assert start in tail and end in tail
-    assert tail.rstrip().endswith(end)
+    # The approved first-session feature appends connection selectors. Keep
+    # the historical block's end intact and apply the same token guard to the
+    # new fenced extension instead of freezing the whole file's end forever.
+    new_start, new_end = "# --- FIRST_SESSION (", "# --- END FIRST_SESSION"
+    assert tail[:tail.index(new_start)].rstrip().endswith(end)
+    assert tail.rstrip().endswith(new_end)
     block_b = tail[tail.index(start):tail.index(end) + len(end)]
-    assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", block_b)
-    assert "font-family:" not in block_b
-    for node in ast.walk(ast.parse(block_b)):
-        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "t":
-            assert hasattr(tokens, node.attr), node.attr
+    new_block = tail[tail.index(new_start):]
+    for block in (block_b, new_block):
+        assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", block)
+        assert "font-family:" not in block
+        for node in ast.walk(ast.parse(block)):
+            if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "t":
+                assert hasattr(tokens, node.attr), node.attr
     sheet = qss.stylesheet()
     assert "SWEEP_B: HDA views" in sheet and "SWEEP_B: working_indicator" in sheet
 

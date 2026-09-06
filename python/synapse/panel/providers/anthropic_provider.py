@@ -265,7 +265,7 @@ class AnthropicProvider(StreamProvider):
                             data = json.loads(data_str)
                             self._handle_sse_event(event_type, data, state, emit_token)
                         except json.JSONDecodeError:
-                            logger.debug("Skipping non-JSON SSE data: %s", data_str[:80])
+                            logger.debug("Skipping non-JSON SSE data")
                     continue
 
                 if line == "":
@@ -350,10 +350,7 @@ class AnthropicProvider(StreamProvider):
                     try:
                         block["input"] = json.loads(state["current_text"])
                     except json.JSONDecodeError:
-                        logger.error(
-                            "Failed to parse tool input JSON: %s",
-                            state["current_text"][:200],
-                        )
+                        logger.error("Failed to parse tool input JSON")
                         block["input"] = {}
 
                 # Never append an empty text block: under display:"omitted" a

@@ -250,6 +250,8 @@ class FaceWork(QtWidgets.QWidget):
         runs and no progress is fabricated."""
         if self._toy is not None:
             self._toy.start() if on else self._toy.stop()
+        if on:
+            self._status.setText("Waiting for model response…")
         if on and not t.reduced_motion():
             self._cook.setRange(0, 0)        # style-driven indeterminate sweep
         else:
@@ -260,7 +262,9 @@ class FaceWork(QtWidgets.QWidget):
 
     def set_tool_status(self, name, phase, detail=None):
         """A live tool event → update the status line + the plan-with-progress."""
-        self._status.setText("%s  %s" % (name, phase))
+        from synapse.panel.activity import tool_status
+        self._status.setText(tool_status(name, phase))
+        self._status.setToolTip(str(name))
         # update-or-append this tool as a plan step
         for step in self._steps:
             if step[0] == name:
@@ -271,6 +275,9 @@ class FaceWork(QtWidgets.QWidget):
             if len(self._steps) > self._MAX_STEPS:
                 self._steps.pop(0)
         self._render_plan()
+
+    def set_activity(self, text):
+        self._status.setText(text)
 
     def set_cook(self, done, total, live=True, label=None):
         """Wire real cook / render progress onto the cook bar. ``live`` is
@@ -335,7 +342,9 @@ class FaceWork(QtWidgets.QWidget):
             self._plan_box.addWidget(row)
             return
         for name, phase in self._steps:
+            from synapse.panel.activity import tool_label
             glyph, color = _PHASE.get(phase, ("·", t.TEXT_SECONDARY))
-            row = c.label("%s  %s" % (glyph, name), role="caption")
+            row = c.label("%s  %s" % (glyph, tool_label(name)), role="caption")
+            row.setToolTip(str(name))
             qss.sweep_a_style(row, "work_step", color)
             self._plan_box.addWidget(row)

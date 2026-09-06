@@ -94,6 +94,7 @@ class ClaudeWorker(QThread):
     tool_status = Signal(str, str, str)
     render_receipt = Signal(object)
     integrity_updated = Signal(object)
+    activity_changed = Signal(str)
 
     def __init__(
         self,
@@ -204,6 +205,7 @@ class ClaudeWorker(QThread):
             if self._abort:
                 return
 
+            self.activity_changed.emit("Waiting for model response…")
             stop_reason, content_blocks = self._provider.stream(
                 messages=self._messages,
                 tools=self._tools,
@@ -254,7 +256,12 @@ class ClaudeWorker(QThread):
                         continue
 
                     if self._abort:
-                        return
+                        tool_results.append({
+                            "type": "tool_result", "tool_use_id": block.get("id", ""),
+                            "content": "Cancelled before execution because the artist stopped this task.",
+                            "is_error": True,
+                        })
+                        continue
 
                     result_msg = self._execute_tool_block(block)
                     tool_results.append(result_msg)

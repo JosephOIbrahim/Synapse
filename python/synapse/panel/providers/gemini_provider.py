@@ -229,7 +229,7 @@ class GeminiProvider(StreamProvider):
                 try:
                     data = json.loads(data_str)
                 except json.JSONDecodeError:
-                    logger.debug("Skipping non-JSON Gemini SSE data: %s", data_str[:80])
+                    logger.debug("Skipping non-JSON Gemini SSE data")
                     continue
 
                 meta = data.get("usageMetadata")

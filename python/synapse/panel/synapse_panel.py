@@ -44,6 +44,15 @@ except Exception:  # pragma: no cover
 # swallowing a consent-relay wiring failure in silence.
 logger = logging.getLogger(__name__)
 
+# A running thread must outlive a destroyed Houdini panel. These references
+# disappear at thread completion; the thread has no QWidget parent.
+_ACTIVE_PANEL_WORKERS = set()
+
+
+def _release_panel_worker(worker):
+    _ACTIVE_PANEL_WORKERS.discard(worker)
+    worker.deleteLater()
+
 # Proven runtime + widgets — composed, not rewritten. All optional so the panel
 # always instantiates (graceful degradation is a runtime contract).
 try:
@@ -406,6 +415,10 @@ class SynapsePanel(QtWidgets.QWidget):
         # never populated. This is the missing half.
         self._turn_tools = []        # [(name, verb, detail), ...] per turn
         self._worker = None
+        self._session_keys = {}       # panel lifetime only; never settings/history
+        self.destroyed.connect(self._session_keys.clear)
+        self._connection_facts = {}
+        self._task_connection = None
         self._last_tool = None       # C8: name of the in-flight tool, for an honest Stop
         # H3b: the NODE the in-flight tool is working on. The tool-status detail
         # already carried it and was discarded during "running"; a cook-cancel
@@ -444,8 +457,9 @@ class SynapsePanel(QtWidgets.QWidget):
             if pid in known:
                 self._provider_id = pid
             elif pid != "claude":
+                self._provider_id = pid
                 self._boot_note = (
-                    "Saved engine %r is unavailable — using Claude." % pid)
+                    "Saved engine %r is unavailable. Choose Connect models." % pid)
             self._model_by_provider = _pset.merged_model_picks(
                 st, self._model_by_provider)
             # L5-4: restore the saved profile tab — _build_ui composes this
@@ -1056,10 +1070,36 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 pass
         try:
-            prov = self._make_provider()
-            self._engine_keyed = prov is not None and prov.resolve_key() is not None
+            connection = self._prepare_connection()
+            self._engine_keyed = bool(connection.provider.resolve_key())
+            task = getattr(self, "_task_connection", None)
+            shown = task or connection
+            detail = shown.facts.description
+            if task:
+                detail = "Current task\n" + detail + "\n\nNext task: " + connection.spec.identity
+            self._model_connection_detail = detail
+            if lbl is not None:
+                lbl.setToolTip(detail)
+            status = getattr(self, "_connection_status", None)
+            if status is not None:
+                status.setText(shown.facts.location + " · Connect models")
+                status.setToolTip(detail)
+            face = getattr(self, "_token_face", None)
+            if face is not None and hasattr(face, "set_connection"):
+                face.set_connection(getattr(self, "_last_task_facts", None) or shown.facts)
+            connection.release()
         except Exception:
             self._engine_keyed = False
+            task = getattr(self, "_task_connection", None)
+            if task is not None:
+                self._model_connection_detail = "Current task\n" + task.facts.description + "\nNext selection is unavailable."
+            else:
+                self._model_connection_detail = "Selected: %s/%s\nLocation unverified. Open Connect models to check it." % (
+                    getattr(self, "_provider_id", "unknown"), self._active_model())
+            status = getattr(self, "_connection_status", None)
+            if status is not None:
+                status.setText((task.facts.location if task else "Unverified") + " · Connect models")
+                status.setToolTip(self._model_connection_detail)
         self._render_token_state()      # getattr-guarded: no-op before the rail
 
     def _build_context_ribbon(self):
@@ -1413,13 +1453,11 @@ class SynapsePanel(QtWidgets.QWidget):
             return []
         rows = list(reg.models_for(pid))
         if pid == "ollama":
-            try:
-                from synapse.panel.providers.ollama_provider import OllamaProvider
-                live = OllamaProvider.available_models(timeout=1.0)
-                if live:
-                    rows = list(live)
-            except Exception:
-                pass
+            # Menu opening must not block Houdini on a network request. Setup
+            # discovers models off-thread; keep checked models visible here.
+            for spec in getattr(self, "_connection_facts", {}):
+                if spec.provider == pid and spec.model not in {mid for mid, _ in rows}:
+                    rows.append((spec.model, spec.model))
         if pid == getattr(self, "_provider_id", "claude"):
             cur = self._active_model()
             if cur and cur not in {mid for mid, _ in rows}:
@@ -1481,6 +1519,8 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             return
         menu = QtWidgets.QMenu(self)
+        menu.addAction("Connect models…", self._open_connections)
+        menu.addSeparator()
         for pid in PROVIDER_IDS:
             sub = menu.addMenu(PROVIDER_LABELS.get(pid, pid))
             self._fill_author_submenu(sub, pid)
@@ -1534,7 +1574,7 @@ class SynapsePanel(QtWidgets.QWidget):
         try:
             from synapse.panel.providers.registry import model_label
             self._chat.append_system_message(
-                "Model set to %s." % model_label(pid, model_id))
+                "Next task will use %s." % model_label(pid, model_id))
         except Exception:
             pass
 
@@ -1650,13 +1690,15 @@ class SynapsePanel(QtWidgets.QWidget):
         """The model token: ``<provider>/<model short id>`` - who is thinking.
         Joe's ruling 2026-09-05 (RULING_DIRECTION_BC.md Addendum 2 + 3.2):
         ``ollama/deepseek-v4-flash``, ``claude/fable-5.1``, ``gemini/3.5-flash``.
-        Provider is the local-vs-cloud and cost signal, so it is never dropped.
+        Complete requested identity and location evidence live in the tooltip;
+        provider name alone is not evidence of locality or cost.
         Lowercase mono data; the curated display label lives in the picker.
         DISPLAY ONLY - it is never authored to USD."""
-        m = self._active_model()
+        task = getattr(self, "_task_connection", None)
+        m = task.spec.model if task else self._active_model()
         if not m:
             return ""
-        pid = (getattr(self, "_provider_id", "claude") or "claude").strip().lower()
+        pid = (task.spec.provider if task else getattr(self, "_provider_id", "claude") or "claude").strip().lower()
         ident = str(m).strip()
         ident = ident.split("/")[-1]            # nvidia/nemotron-... -> nemotron-...
         ident = ident.split(":")[0]             # glm-5.2:cloud -> glm-5.2
@@ -1698,65 +1740,80 @@ class SynapsePanel(QtWidgets.QWidget):
             return False
 
     def _configure_custom(self):
-        """The 3-field Custom-engine dialog (Base URL / Model id / Key env).
-        Accept → persisted to panel_settings.json + chip refresh; takes effect
-        on the NEXT message (the _set_model contract)."""
-        try:
-            from synapse.panel import settings as _pset
-            st = _pset.load_settings()
-        except Exception:
-            return
-        cfg = st.get("custom") or {}
-        dlg = QtWidgets.QDialog(self)
-        dlg.setWindowTitle("Configure Custom engine")
-        form = QtWidgets.QFormLayout(dlg)
-        fields = {}
-        for key, label, placeholder in (
-            ("base_url", "Base URL", "http://localhost:8000  or  https://host/v1"),
-            ("model", "Model id", "e.g. qwen3-vl:30b"),
-            ("key_env", "Key env (optional)", "e.g. MY_ENDPOINT_API_KEY"),
-        ):
-            edit = QtWidgets.QLineEdit(cfg.get(key, ""))
-            edit.setObjectName("DsField")   # designsystem QLineEdit styling
-            edit.setPlaceholderText(placeholder)
-            form.addRow(label, edit)
-            fields[key] = edit
-        buttons = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.StandardButton.Ok
-            | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
-        buttons.accepted.connect(dlg.accept)
-        buttons.rejected.connect(dlg.reject)
-        form.addRow(buttons)
-        if not (dlg.exec() if hasattr(dlg, "exec") else dlg.exec_()):
-            return
-        st["custom"] = {k: e.text().strip() for k, e in fields.items()}
-        # Keep the per-provider pick in lockstep with the new config — a
-        # reconfigured model id must never lose to a stale persisted pick.
-        self._model_by_provider["custom"] = st["custom"]["model"]
-        st["provider_id"] = getattr(self, "_provider_id", "claude")
-        st["model_by_provider"] = dict(self._model_by_provider or {})
-        _pset.save_settings(st)
-        self._refresh_engine_selector()
+        """Use the guided setup for custom endpoints as well."""
+        self._open_connections()
 
     def _make_provider(self):
-        """Build the StreamProvider for the active engine. ``None`` ⇒ the worker
-        falls back to its own Claude default (graceful degradation). An unknown
-        engine id (stale persisted pick) hits the registry's Claude floor — and
-        is SURFACED in chat, never silently swapped."""
-        try:
-            from synapse.panel.providers.registry import build_provider
-            pid = getattr(self, "_provider_id", "claude")
-            model = getattr(self, "_model_by_provider", {}).get(pid)
-            prov = build_provider(pid, model=model)
-            if prov.id != pid:
-                try:
-                    self._chat.append_system_message(
-                        "Engine %r unavailable — using Claude." % pid)
-                except Exception:
-                    pass
-            return prov
-        except Exception:
-            return None
+        """Panel requests fail closed; legacy registry fallback cannot send them."""
+        from synapse.panel.providers.registry import build_provider, PROVIDER_IDS
+        pid = getattr(self, "_provider_id", "claude")
+        if pid not in PROVIDER_IDS:
+            raise ValueError("This engine is unavailable. Choose Connect models.")
+        prov = build_provider(pid, model=self._active_model())
+        if prov is None or prov.id != pid:
+            raise ValueError("This engine could not be loaded. Choose Connect models.")
+        return prov
+
+    def _prepare_connection(self):
+        from synapse.panel import connections as cn
+        provider = self._make_provider()
+        configured_key = provider.resolve_key()
+        spec = cn.provider_spec(provider)
+        secret = getattr(self, "_session_keys", {}).get((spec.provider, spec.endpoint), configured_key)
+        return cn.bind_provider(provider, key=secret,
+                                facts=getattr(self, "_connection_facts", {}).get(spec))
+
+    def _open_connections(self):
+        from synapse.panel.connection_dialog import ConnectionDialog
+        from synapse.panel import settings as pset
+        settings = pset.load_settings()
+        dialog = ConnectionDialog(self, provider_id=self._provider_id,
+                                  models=self._model_by_provider,
+                                  custom=settings.get("custom"),
+                                  session_keys=getattr(self, "_session_keys", {}))
+        accepted = dialog.exec() if hasattr(dialog, "exec") else dialog.exec_()
+        if not accepted or not dialog.selection:
+            dialog.deleteLater()
+            return
+        spec, facts, key, address = dialog.selection
+        dialog.selection = None
+        if spec.provider == "custom":
+            cfg = dict(settings.get("custom") or {})
+            if address != cfg.get("base_url"):
+                # A legacy environment credential belongs to its saved service.
+                # Never restore the previous service's key after reopening.
+                cfg.pop("key_env", None)
+            cfg.update(base_url=address, model=spec.model)
+            settings["custom"] = cfg
+            pset.save_settings(settings)
+        self._session_keys[(spec.provider, spec.endpoint)] = key
+        self._connection_facts[spec] = facts
+        self._provider_id = spec.provider
+        self._model_by_provider[spec.provider] = spec.model
+        self._persist_picks()
+        self._refresh_engine_selector()
+        self._chat.append_system_message("Ready for the next task: %s · %s. Generation has not been tested." %
+                                         (spec.identity, facts.location))
+        dialog.deleteLater()
+
+    def _allow_connection(self, connection):
+        if connection.facts.location == "Local":
+            return True
+        box = QtWidgets.QMessageBox(self)
+        box.setWindowTitle("Allow this panel task?")
+        box.setTextFormat(Qt.PlainText)
+        box.setText(connection.facts.description)
+        box.setInformativeText(
+            "This task can send your prompt, conversation, scene context, tool and memory results, "
+            "and images supplied by tools to this service. This includes follow-up requests while tools run.\n\n"
+            "The saved memory store remains on this computer; recalled contents can be sent with this task. "
+            "This permission covers this panel’s chat requests; "
+            "external MCP clients and independent background services have their own connections.")
+        allow = box.addButton("Allow this task", QtWidgets.QMessageBox.AcceptRole)
+        cancel = box.addButton("Keep editing", QtWidgets.QMessageBox.RejectRole)
+        box.setDefaultButton(cancel)
+        box.exec() if hasattr(box, "exec") else box.exec_()
+        return box.clickedButton() is allow
 
     _MUTATORS = ("create", "set_", "assign", "build", "wire", "connect",
                  "render", "author", "delete", "apply", "configure")
@@ -1884,12 +1941,12 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 pass
             return
-        try:
-            self._chat.append_system_message("Reverting the last change…")
-        except Exception:
-            pass
-        self._send("Undo the last change using houdini_undo, then confirm what was reverted.")
-        self._set_face("direct")            # v9.1 · hand back to the conversation
+        if self._send("Undo the last change using houdini_undo, then confirm what was reverted."):
+            try:
+                self._chat.append_system_message("Revert requested. Waiting for the task result…")
+            except Exception:
+                pass
+            self._set_face("direct")        # return only after an accepted task
 
     def _on_commit(self):
         # Commit is a consent moment — it routes through the gate; the panel
@@ -1985,12 +2042,12 @@ class SynapsePanel(QtWidgets.QWidget):
             return
         ctx = self._hda_ctx.currentText()
         helptxt = " Include help text." if self._hda_help.isChecked() else ""
-        self._hda_prompt.clear()
-        self._set_direct_view("chat")
-        self._send(
+        if self._send(
             "Build a %s HDA: %s. Use the houdini_hda_package tool, then show me "
             "the node path and the promoted parameters.%s" % (ctx, prompt, helptxt)
-        )
+        ):
+            self._hda_prompt.clear()
+            self._set_direct_view("chat")
 
     def _set_thinking(self, on):
         """Delegate the thinking pulse to the Work face (Mile 4)."""
@@ -2070,7 +2127,23 @@ class SynapsePanel(QtWidgets.QWidget):
         self._khint = c.label("↵ send · ⇧↵ newline", role="label")
         self._khint.setFont(fontload.tracked_font(
             "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        col.addWidget(self._khint)
+        footer = QtWidgets.QHBoxLayout()
+        footer.addWidget(self._khint)
+        footer.addStretch()
+        self._commands_btn = c.Button("Commands", variant="ghost")
+        self._commands_btn.setToolTip("Browse commands · / on empty input · Ctrl+K")
+        self._commands_btn.clicked.connect(self._open_palette)
+        footer.addWidget(self._commands_btn)
+        col.addLayout(footer)
+        self._connection_status = c.Button("Connect models", variant="ghost")
+        self._connection_status.clicked.connect(self._open_connections)
+        col.addWidget(self._connection_status)
+        # Expire display evidence without probing or sending any network traffic.
+        self._location_timer = QTimer(self)
+        self._location_timer.setInterval(30000)
+        self._location_timer.timeout.connect(self._refresh_engine_selector)
+        self._location_timer.start()
+        QTimer.singleShot(0, self._refresh_engine_selector)
         return w
 
     def _on_attach(self):
@@ -2466,21 +2539,47 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_submit(self):
         text = self._input.toPlainText().strip()
         if text:
-            self._input.clear()
-            self._send(text)
+            if self._send(text):
+                self._input.clear()
 
     def _send(self, text):
+        if _ACTIVE_PANEL_WORKERS:
+            self._chat.append_system_message(
+                "A SYNAPSE panel task is still running on this workstation. Wait for it to finish before starting another.")
+            return False
+        worker = getattr(self, "_worker", None)
+        if worker is not None and worker.isRunning():
+            self._chat.append_system_message("Still working on the last task. Stop it first, or wait.")
+            return False
         # W7-SESSCOPE: /restore-session brings back the conversation parked by
         # a fresh-boot scoped load. Panel-local, never reaches the model.
         if (text or "").strip().lower() in ("/restore-session", "/restore_session"):
             self._restore_previous_session()
-            return
+            return True
+        if ClaudeWorker is None:
+            self._chat.append_system_message("The chat worker is unavailable in this build.")
+            return False
+        try:
+            connection = self._prepare_connection()
+        except Exception:
+            self._chat.append_system_message("Could not prepare this model. Open Connect models to check the selection.")
+            return False
+        if not connection.provider.resolve_key():
+            connection.release()
+            self._chat.append_system_message("Connect a model before sending. Use Connect models below the prompt.")
+            return False
+        if not self._allow_connection(connection):
+            connection.release()
+            return False
+        self._task_connection = connection
+        self._last_task_facts = connection.facts
         # Submitting is the artist handing off — drop input focus. The last
         # turn's receipt goes with it (bc-wave BC-6a): a new turn, a new record.
         self._hide_turn_receipt()
         if getattr(self, "_input", None) is not None:
             self._input.clearFocus()
         display = text
+        pending = list(self._pending_context)
         if self._pending_context:
             text = "[Context: %s]\n%s" % (", ".join(self._pending_context), text)
             self._pending_context = []
@@ -2489,7 +2588,16 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         self._messages.append({"role": "user", "content": text})
-        self._start_worker()
+        try:
+            self._start_worker()
+        except Exception:
+            connection.release()
+            self._pending_context = pending
+            self._on_error("The task could not start. Your draft is still available.")
+            self._messages.pop()
+            return False
+        self._refresh_engine_selector()
+        return True
 
     def _announce_parked(self):
         """W7-SESSCOPE: tell the artist their previous-boot work is parked, not
@@ -2560,6 +2668,9 @@ class SynapsePanel(QtWidgets.QWidget):
         return (base + "\n\n" + overlay) if overlay else base
 
     def _start_worker(self):
+        connection = getattr(self, "_task_connection", None)
+        if connection is None:
+            raise RuntimeError("A panel task needs an approved connection.")
         # Addendum 3.6 (2026-09-05): never a second worker into the same
         # transcript. While one streams, a new turn (send, revert) waits.
         w = getattr(self, "_worker", None)
@@ -2610,9 +2721,9 @@ class SynapsePanel(QtWidgets.QWidget):
             # Gated ops happen in the native Houdini UI or via a bridge /mcp
             # consent-gated call, not through the panel worker.
             self._worker = ClaudeWorker(self._messages, system_prompt=system,
-                                        tools=tools, parent=self,
+                                        tools=tools, parent=None,
                                         enforce_worker_policy=True,
-                                        provider=self._make_provider())
+                                        provider=connection.provider)
         self._worker.token_received.connect(self._on_token)
         self._worker.stream_done.connect(self._on_done)
         self._worker.stream_error.connect(self._on_error)
@@ -2621,7 +2732,37 @@ class SynapsePanel(QtWidgets.QWidget):
         self._worker.tool_status.connect(self._on_tool_status)
         self._worker.render_receipt.connect(self._on_render_receipt)
         self._worker.integrity_updated.connect(self._on_integrity)
+        self._worker.activity_changed.connect(self._on_activity)
+        # Capture THIS binding, never a later selection. Release only when the
+        # worker thread has actually finished (including close/headless finish).
+        self._worker.finished.connect(connection.release)
+        self._worker.finished.connect(self._on_worker_thread_finished, Qt.QueuedConnection)
+        from functools import partial
+        self._worker.finished.connect(partial(_release_panel_worker, self._worker))
+        _ACTIVE_PANEL_WORKERS.add(self._worker)
         self._worker.start()
+
+    def _on_activity(self, text):
+        face = getattr(self, "_work_face", None)
+        if face is not None:
+            face.set_activity(text)
+
+    def _on_worker_finished(self, worker, connection):
+        # Aborting intentionally omits stream_done in the existing worker.
+        # The thread's terminal event is still authoritative for UI cleanup.
+        if getattr(self, "_task_connection", None) is not connection:
+            return
+        if getattr(worker, "_abort", False):
+            self._on_done()
+            self._chat.append_system_message("Stopped this task. An operation already sent to Houdini may still be finishing.")
+        else:
+            self._on_error("The task ended without a completion receipt.")
+
+    def _on_worker_thread_finished(self):
+        worker = self.sender()
+        connection = getattr(self, "_task_connection", None)
+        if connection is not None and worker is getattr(self, "_worker", None):
+            self._on_worker_finished(worker, connection)
 
     def _on_token(self, tok):
         if not getattr(self, "_streaming_started", False):
@@ -2645,7 +2786,8 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _on_done(self):
         text = "".join(self._stream_buf).strip()
-        signed = self._author_token()   # display-only authorship note on results
+        connection = getattr(self, "_task_connection", None)
+        signed = connection.spec.identity if connection else self._author_token()
         if getattr(self, "_streaming_started", False):
             # finalize the live stream → fully formatted (links, code blocks)
             try:
@@ -2700,6 +2842,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # not trip the rate limit it reports on). Best-effort; never breaks the
         # completion path.
         self._refresh_token_surfaces()
+        self._task_connection = None
+        self._worker = None
+        self._refresh_engine_selector()
 
     def _refresh_token_surfaces(self):
         """Push the last task's per-task token receipt (usage_sink) onto the
@@ -2726,7 +2871,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._set_thinking(False)
         if getattr(self, "_streaming_started", False):
             try:
-                self._chat.end_stream("".join(self._stream_buf).strip() or None)
+                connection = getattr(self, "_task_connection", None)
+                self._chat.end_stream("".join(self._stream_buf).strip() or None,
+                                      signed=connection.spec.identity if connection else None)
             except Exception:
                 pass
         try:
@@ -2734,6 +2881,9 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         self._set_busy(False)
+        self._task_connection = None
+        self._worker = None
+        self._refresh_engine_selector()
 
     def _on_tool_status(self, name, phase, _detail):
         if phase == "running":
@@ -2882,6 +3032,9 @@ class SynapsePanel(QtWidgets.QWidget):
             pid = (getattr(self, "_provider_id", "claude") or "claude").strip().lower()
             state, reason = "off", "No key for %s" % pid
         tip = "Engine & model - click to switch"
+        detail = getattr(self, "_model_connection_detail", "")
+        if detail:
+            tip += "\n\n" + detail
         lbl.setToolTip(tip if reason is None else "%s\n%s" % (tip, reason))
         if lbl.property("liveness") != state:
             lbl.setProperty("liveness", state)
@@ -3073,6 +3226,10 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def closeEvent(self, event):
+        self._session_keys.clear()
+        timer = getattr(self, "_location_timer", None)
+        if timer is not None:
+            timer.stop()
         # Remove the global selection callback so it never fires into a deleted
         # panel (dangling-ref safety).
         cb = getattr(self, "_sel_cb", None)

@@ -586,26 +586,20 @@ class FaceToken(QtWidgets.QWidget):
         Never raises: a face that cannot reach a probe — or a task — shows unknown,
         which is the honest state."""
         self.measure_static()
-        if probe_all is not None:
-            try:
-                results = probe_all()
-            except Exception:
-                results = None
-            for r in (results or []):
-                if not getattr(r, "available", False):
-                    continue
-                host = getattr(r, "remote_host", None)
-                self.set_engine(
-                    model=getattr(r, "model", None),
-                    runs=("metered by %s" % host) if host else "local",
-                    cost=getattr(r, "cost_per_1k_in", None),   # None -> unknown
-                    probed=getattr(r, "probed_at", None),
-                )
-                break
+        # Opening a face must not probe every configured provider on the Qt
+        # thread or label the first reachable service as the selected engine.
+        facts = getattr(self, "_connection_facts", None)
+        if facts is not None:
+            self.set_connection(facts)
         # Real per-task spend has the LAST word: the model that actually spent
         # (the selected engine) and the measured cache split override the probe's
         # advertised model. Runs regardless of whether a probe was reachable.
         self._refresh_usage()
+
+    def set_connection(self, facts):
+        self._connection_facts = facts
+        self.set_engine(model=facts.spec.identity, runs=facts.location, cost=None,
+                        probed=facts.checked_at or None)
 
     def _refresh_usage(self):
         """Feed the CACHE block, the ENGINE model and (J2) the SPEND + SESSION
@@ -648,6 +642,10 @@ class FaceToken(QtWidgets.QWidget):
         model = snap.get("model")
         if model:
             self.set_row("model", model)
+            facts = getattr(self, "_connection_facts", None)
+            matches = facts and facts.spec.provider == snap.get("provider") and facts.spec.model == model
+            self.set_row("runs", facts.location if matches else "Unverified")
+            self.set_row("cost", None)
         self._refresh_spend(snap)
 
     def _refresh_spend(self, snap):
