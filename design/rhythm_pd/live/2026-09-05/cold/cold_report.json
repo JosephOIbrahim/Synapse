@@ -1,0 +1,84 @@
+{
+ "houdini": "22.0.400",
+ "synapse_version": "5.65.0",
+ "synapse_file": "C:\\Users/User/SYNAPSE\\python\\synapse\\__init__.py",
+ "hip": "untitled.hip",
+ "visible_top_levels": [
+  {
+   "cls": "QWidget",
+   "name": "RE_Window",
+   "title": "untitled.hip - Houdini Indie Limited-Com",
+   "size": [
+    5121,
+    3230
+   ]
+  }
+ ],
+ "stray_houdini_titlebars": [],
+ "live_panels": 1,
+ "panel_size": [
+  1636,
+  1359
+ ],
+ "design": {
+  "verb_rail": false,
+  "consent_slot": true,
+  "overflow_menu": true,
+  "rail_meter": false,
+  "fit_rounds_attr": true
+ },
+ "model_token": {
+  "text": "ollama/qwen3.8",
+  "visible": true,
+  "x": 1349,
+  "y": 8,
+  "w": 257,
+  "right_edge": 1606,
+  "panel_w": 1636
+ },
+ "wordmark": {
+  "text": "SYNAPSE",
+  "x": 59,
+  "px": 34,
+  "w": 169
+ },
+ "state_sentence": {
+  "text": "Working on it",
+  "visible": true,
+  "w": 182
+ },
+ "composer": {
+  "h": 325,
+  "viewport_h": 232,
+  "cap": null,
+  "user_h": 325,
+  "font_px": 27,
+  "placeholder": "Ask SYNAPSE\u2026 \u00b7 / commands"
+ },
+ "khint": "\u21b5 send \u00b7 \u21e7\u21b5 newline",
+ "chrome_scale": 2.25,
+ "profile": "expert",
+ "shots": {
+  "curious": {
+   "ok": true,
+   "token_w": 257,
+   "token_text": "ollama/qwen3.8",
+   "composer_h": 325,
+   "viewport_h": 232
+  },
+  "expert": {
+   "ok": true,
+   "token_w": 257,
+   "token_text": "ollama/qwen3.8",
+   "composer_h": 325,
+   "viewport_h": 232
+  },
+  "ml": {
+   "ok": true,
+   "token_w": 257,
+   "token_text": "ollama/qwen3.8",
+   "composer_h": 325,
+   "viewport_h": 232
+  }
+ }
+}

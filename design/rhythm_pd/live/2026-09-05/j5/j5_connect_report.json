@@ -1,0 +1,20 @@
+{
+ "liveness": "live",
+ "conn_state": "connected",
+ "state_sentence": "Ready",
+ "token_chromatic_sample": [
+  [
+   "#6e8f72",
+   30
+  ],
+  [
+   "#5b775f",
+   8
+  ],
+  [
+   "#5d7961",
+   6
+  ]
+ ],
+ "shot": true
+}

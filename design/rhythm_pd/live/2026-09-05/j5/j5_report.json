@@ -1,0 +1,37 @@
+{
+ "steps": [
+  "purged synapse.* from sys.modules",
+  "installFile",
+  "reloaded panetab3"
+ ],
+ "has_j5": {
+  "render_token_state": true
+ },
+ "model_token": {
+  "text": "ollama/deepseek-v4-flash",
+  "w": 414,
+  "x": 1192,
+  "liveness": "off",
+  "chromatic_sample": []
+ },
+ "wordmark_top_y": 16,
+ "overflow_entries": [
+  "Copy conversation",
+  "Build HDA\u2026",
+  "Palette   Ctrl+K",
+  "Ground the corpus",
+  "Engine",
+  "Health",
+  "Larger text",
+  "Default text",
+  "Help",
+  "Cancel cook",
+  "Emergency halt\u2026"
+ ],
+ "usage_sink": "None",
+ "shots": {
+  "direct": true,
+  "token": true
+ },
+ "visible_top_levels": 1
+}

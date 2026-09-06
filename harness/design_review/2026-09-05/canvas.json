@@ -111,6 +111,22 @@
    "w": 720,
    "h": 720,
    "title": "Live after B+C \u00b7 ML"
+  },
+  {
+   "file": "FiveChat.dc.html",
+   "x": 0,
+   "y": 3520,
+   "w": 720,
+   "h": 720,
+   "title": "Live \u00b7 Joe's five \u00b7 CHAT"
+  },
+  {
+   "file": "FiveToken.dc.html",
+   "x": 800,
+   "y": 3520,
+   "w": 720,
+   "h": 720,
+   "title": "Live \u00b7 Joe's five \u00b7 TOKEN"
   }
  ],
  "launch": {
@@ -158,6 +174,13 @@
    "y": 2700,
    "w": 260,
    "text": "LIVE, not offscreen: these three are grabs from the running Houdini after the reload."
+  },
+  {
+   "id": "five-row",
+   "x": -300,
+   "y": 3560,
+   "w": 260,
+   "text": "JOE'S FIVE, landed 19:5x: token is a status light, TOKEN counts, two speaker colours, profiles retired, air above the wordmark. Live grabs."
   }
  ]
 }
