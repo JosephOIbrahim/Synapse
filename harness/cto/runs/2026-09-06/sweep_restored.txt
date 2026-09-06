@@ -1,0 +1,55 @@
+=== D-F1
+rc=2
+Traceback (most recent call last):
+  File "C:\Users\User\SYNAPSE\harness\design_review\2026-09-05\census_subtract.py", line 73, in <module>
+    act = p._font_btn.parentWidget()
+          ^^^^^^^^^^^
+AttributeError: 'SynapsePanel' object has no attribute '_font_btn'. Did you mean: '_send_btn'?
+UNKNOWN: the probe failed - instrument broken, no verdict
+
+=== D-F2
+rc=2
+Traceback (most recent call last):
+  File "C:\Users\User\SYNAPSE\harness\design_review\2026-09-05\use_probe.py", line 38, in <module>
+    act = p._font_btn.parentWidget()
+          ^^^^^^^^^^^
+AttributeError: 'SynapsePanel' object has no attribute '_font_btn'. Did you mean: '_send_btn'?
+UNKNOWN: the probe failed - instrument broken, no verdict
+
+=== D-F4
+rc=0
+FAIL: review buttons=['← REVERT'] fold_h=32
+<string>:2: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+FAIL: 12 hue buckets
+
+=== D-F5
+rc=0
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+{"profile": "expert", "density": "standard", "rail": {"x": 0, "y": 0, "w": 340, "h": 108, "visible": true, "objectName": "DsHeader", "rhythm_role": "shell"}, "ribbon": {"x": 0, "y": 108, "w": 340, "h": 46, "visible": true, "objectName": "DsSection", "rhythm_role": "shell"}, "chat": {"x": 30, "y": 162, "w": 280, "h": 340, "visible": true, "objectName": "DsChatTranscript", "rhythm_role": "group"}, "composer": {"x": 30, "y": 518, "w": 280, "h": 234, "visible": true, "objectName": "DsSection", "rhythm_role": "stack"}, "wordmark": {"x": 59, "y": 16, "w": 75, "h": 32, "visible": true, "objectName": "", "rhythm_role": null, "text": "SYNAPSE", "pixelSize": 15, "bold": true, "weight": 700, "family": "Space Grotesk", "letterSpacing": 116.0, "sizeHint_w": 75}}
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+{"profile": "expert", "density": "tight", "rail": {"x": 0, "y": 0, "w": 340, "h": 100, "visible": true, "objectName": "DsHeader", "rhythm_role": "shell"}, "ribbon": {"x": 0, "y": 100, "w": 340, "h": 46, "visible": true, "objectName": "DsSection", "rhythm_role": "shell"}, "chat": {"x": 30, "y": 154, "w": 280, "h": 354, "visible": true, "objectName": "DsChatTranscript", "rhythm_role": "group"}, "composer": {"x": 30, "y": 520, "w": 280, "h": 232, "visible": true, "objectName": "DsSection", "rhythm_role": "stack"}, "wordmark": {"x": 58, "y": 12, "w": 75, "h": 32, "visible": true, "objectName": "", "rhythm_role": null, "text": "SYNAPSE", "pixelSize": 15, "bold": true, "weight": 700, "family": "Space Grotesk", "letterSpacing": 116.0, "sizeHint_w": 75}}
+<string>:1: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+FAIL: chat_h=[312, 340, 354] RADIUS_ROUND=999
+
+=== D-F6
+rc=0
+FAIL: {'Space Mono': 37, 'Space Grotesk': 32, 'Courier': 8} rename_sites=2
+
+=== D-F9
+rc=0
+<string>:1: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+FAIL: min_px=10 FONT_FLOOR_PX=10
+
+=== D-F10
+rc=0
+FAIL: attach=[258, 630, 52, 54] icon=[36, 36] send=[172, 671, 60, 32] input=[30, 602, 212, 111] slash=2
+
+=== D-F11
+rc=2
+Traceback (most recent call last):
+  File "C:\Users\User\SYNAPSE\harness\design_review\2026-09-05\use_probe.py", line 38, in <module>
+    act = p._font_btn.parentWidget()
+          ^^^^^^^^^^^
+AttributeError: 'SynapsePanel' object has no attribute '_font_btn'. Did you mean: '_send_btn'?
+UNKNOWN: the probe failed - instrument broken, no verdict
+
