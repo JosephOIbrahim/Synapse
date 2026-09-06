@@ -136,6 +136,51 @@ def test_stop_keeps_completed_tool_results_and_pairs_unexecuted_calls():
     assert results[1]["is_error"] is True and "Cancelled before execution" in results[1]["content"]
 
 
+@pytest.mark.parametrize("stop_reason", ["end_turn", "max_tokens"])
+def test_next_request_contains_the_previous_completed_answer(stop_reason):
+    import copy
+    source = Path(__file__).parents[1] / "python/synapse/panel/claude_worker.py"
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_conversation_loop")
+    ns = {"USAGE_SINK": None, "_MAX_TOOL_ITERATIONS": 3, "logger": Mock()}
+    exec(compile(ast.Module(body=[method], type_ignores=[]), str(source), "exec"), ns)
+    first = {"role": "user", "content": "Name this light."}
+    answer = {"role": "assistant", "content": [{"type": "text", "text": "Soft key"}]}
+    followup = {"role": "user", "content": "Make that name uppercase."}
+    responses = iter([(stop_reason, answer["content"]),
+                      ("end_turn", [{"type": "text", "text": "SOFT KEY"}])])
+    requests = []
+    def stream(**kwargs):
+        requests.append(copy.deepcopy(kwargs["messages"]))
+        return next(responses)
+    worker = SimpleNamespace(_abort=False, _messages=[first], _tools=[], _system="",
+                             activity_changed=Mock(), token_received=Mock(),
+                             _provider=SimpleNamespace(stream=stream))
+    ns["_conversation_loop"](worker, "test-key")
+    worker._messages.append(followup)
+    ns["_conversation_loop"](worker, "test-key")
+    assert requests[1] == [first, answer, followup]
+    assert [message["role"] for message in worker._messages] == ["user", "assistant", "user", "assistant"]
+    assert worker._messages[-1]["content"][0]["text"] == "SOFT KEY"
+
+
+def test_truncated_terminal_tool_is_not_replayed_or_executed():
+    source = Path(__file__).parents[1] / "python/synapse/panel/claude_worker.py"
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_conversation_loop")
+    ns = {"USAGE_SINK": None, "_MAX_TOOL_ITERATIONS": 3, "logger": Mock()}
+    exec(compile(ast.Module(body=[method], type_ignores=[]), str(source), "exec"), ns)
+    retained = [{"type": "thinking", "thinking": "Provider content", "signature": "opaque-signature"},
+                {"type": "text", "text": "The reply reached its limit."}]
+    incomplete = {"type": "tool_use", "id": "truncated", "name": "list_nodes", "input": {}}
+    worker = SimpleNamespace(_abort=False, _messages=[], _tools=[], _system="",
+                             activity_changed=Mock(), token_received=Mock(), _execute_tool_block=Mock(),
+                             _provider=SimpleNamespace(stream=lambda **_: ("max_tokens", retained + [incomplete])))
+    ns["_conversation_loop"](worker, "test-key")
+    assert worker._messages == [{"role": "assistant", "content": retained}]
+    worker._execute_tool_block.assert_not_called()
+
+
 def test_failed_selection_does_not_keep_previous_location_tooltip():
     panel = SimpleNamespace(_author_lbl=Mock(), _author_token=lambda: "custom/b",
                             _active_model=lambda: "b", _provider_id="custom",

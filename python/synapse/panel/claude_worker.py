@@ -276,6 +276,17 @@ class ClaudeWorker(QThread):
 
             else:
                 # end_turn, max_tokens, or anything else -- we're done.
+                # The panel syncs this history at completion. Keep the answer
+                # the artist saw so the next request can refer back to it.
+                # A token limit can leave an incomplete tool_use block. It was
+                # not executed, so do not replay an unpaired call next time.
+                completed = [block for block in content_blocks
+                             if block.get("type") != "tool_use"]
+                if completed:
+                    self._messages.append({
+                        "role": "assistant",
+                        "content": completed,
+                    })
                 # L9: record the sequential-turn count (the dominant latency
                 # term) so an imperative build (many turns) vs a one-shot
                 # declarative call (1 turn) is measurable on disk.

@@ -2735,9 +2735,11 @@ class SynapsePanel(QtWidgets.QWidget):
         self._worker.activity_changed.connect(self._on_activity)
         # Capture THIS binding, never a later selection. Release only when the
         # worker thread has actually finished (including close/headless finish).
-        self._worker.finished.connect(connection.release)
-        self._worker.finished.connect(self._on_worker_thread_finished, Qt.QueuedConnection)
+        # Qt does not keep this plain Python bound-method receiver alive. The
+        # panel can drop it in stream_done before the queued finished callback.
         from functools import partial
+        self._worker.finished.connect(partial(type(connection).release, connection))
+        self._worker.finished.connect(self._on_worker_thread_finished, Qt.QueuedConnection)
         self._worker.finished.connect(partial(_release_panel_worker, self._worker))
         _ACTIVE_PANEL_WORKERS.add(self._worker)
         self._worker.start()

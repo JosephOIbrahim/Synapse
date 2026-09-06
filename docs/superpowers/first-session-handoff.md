@@ -5,6 +5,10 @@ where a panel task is going, read its reply, and find commands. The source is on
 `ux/first-session-20260906`, based on `b1ec9a8d`. This build has not been loaded
 into the existing Houdini session.
 
+The first-session flow was qualified on 2026-09-06 in a separate interactive
+Houdini 22.0.400 process using `ollama/qwen3.5:4b`. The running artist session
+was kept intact. The test panel remains available for hands-on feedback.
+
 ## What the artist gets
 
 - **Connect models:** choose a service and model, enter a masked session key,
@@ -47,23 +51,64 @@ Houdini performance result is claimed by those isolated checks. The broader
 suite is reported separately rather than represented as green by the focused
 checks. Windows permission and shared-memory failures need their own follow-up.
 
-## First use session
+## Live qualification
 
-After specific authorization for a separate disposable Houdini test session:
+Joe authorized Houdini testing on 2026-09-06. The disposable trial confirmed
+its imported source paths and isolated preferences, home, settings, and scene.
+Computer Use exercised the composer, visible Commands, chat, and Token view;
+bounded scripts also exercised the actual Qt setup, Stop, and disclosure
+controls through the authenticated bridge on the trial process only.
 
-1. Load this reviewed source and confirm its actual imported path.
-2. Connect the intended service and verify its listed model and displayed
-   destination. Try an invalid selection, then recover in the same dialog.
-3. Submit one small explanation task. Compare the displayed task identity and
-   actual usage with the provider response. For a remote task, decline once and
-   confirm the prompt survives before accepting.
-4. Open and dismiss Commands, then read a reply with a list and code block.
-   Stop one task and try the next task. Confirm no draft loss or misattribution.
-5. Spend a short session creating normally and record interruptions, unclear
-   wording, and extra steps. Use those observations to choose the next edit.
+Verified outcomes:
 
-The present live scene is not a test fixture. Repository AGENTS.md Law 7 gates
-“Anything touching the live Houdini GUI” on the human's word for that act.
+- Missing-model recovery and Local versus Cloud relay classification from
+  actual Ollama metadata; no cloud generation was requested.
+- A real local reply with bullets, a code block, and the exact model signature.
+- Provider-reported usage equals the actual Token widgets. The final two turns
+  reported 24,429/51 and 24,462/48 input/output tokens respectively.
+- Commands opens and dismisses with the draft intact.
+- Stop releases the task and preserves the next draft. An interrupted response
+  with no reported usage displays UNKNOWN. Subsequent local tasks complete.
+- A completed answer is present exactly once in the next request. The model
+  answered `Soft key`, then correctly answered `SOFT KEY` to a follow-up.
+- Naturally expired locality evidence becomes Unverified. Choosing Keep editing
+  in the real disclosure starts no worker and preserves draft, history, and usage.
+
+The trial exposed and corrected three defects: undersized setup labels at the
+host's 2.25 display scale; a Qt callback whose connection receiver could be
+collected before cleanup, causing a native crash; and missing completed answers
+in conversation history. Each has a failing regression before correction and
+passing checks afterward, plus independent review. Crash evidence is preserved.
+The crash correction completed real subsequent replies in a fresh host. Only
+the idle worker module was later reloaded for the history correction; the host,
+panel, and store were retained.
+
+Evidence lives in the accompanying workspace's `checks/houdini-trial`, with
+`connection-checks.json`, `commands-check.json`, `stop-check.json`,
+`history-check-final.json`, `decline-check.json`, and `final-live-state.json`.
+The earlier polling observer missed one immediate task boundary; its mixed
+comparison is not qualification evidence. The final history check captures
+each provider's usage and matching widgets before sending the next request.
+
+The focused correction suite has 127 passes and 19 skips. A wider worker suite
+has 185 passes, six skips, and one failure reproduced on the unchanged baseline
+(missing `hdefereval` in the standalone interpreter). The earlier full suite
+still has ten recorded failures; it is not represented as green. Nine were
+reproduced at baseline and the tenth baseline case remains partially characterized.
+
+This qualifies the bounded first-session flow, not production network building,
+rendering, simulation, USD memory writes, external-client sharing enforcement,
+cloud billing, or sustained production stability. Local classification remains
+recent service-reported evidence. Artist feedback is the next step before the
+next product milestone.
+
+## First hands-on review
+
+Use the separate trial panel for a short session and record interruptions,
+unclear wording, and extra steps. In particular, revisit the large context cost
+of small requests, rechecking locality every three minutes, and the density of
+the Token view. These observations guide the next changes. The original live
+scene is not a test fixture, and this build has not been deployed over it.
 
 ## Next milestones
 

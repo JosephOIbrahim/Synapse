@@ -69,6 +69,36 @@ def fake_check(spec, key):
                               {"size": 100, "details": {"format": "gguf"}}, time.time()))
 
 
+def check_dialog_scaling():
+    # The host's actual 2.25 scale exposed labels stuck at 12px beside 27px fields.
+    # Compare reading text with the rendered control font, not copied QSS text.
+    original_font = QtGui.QFont(app.font())
+    for scale in (1.0, 1.5, 2.25, None):
+        native_font = QtGui.QFont(original_font)
+        native_font.setPixelSize(round(12 * (scale or 1.0)))
+        app.setFont(native_font)
+        host = QtWidgets.QWidget() if scale is not None else None
+        if host is not None:
+            host._chrome_scale = scale
+            host_font = QtGui.QFont(app.font())
+            host_font.setPixelSize(round(12 * scale))
+            host.setFont(host_font)
+        dialog = ConnectionDialog(host, provider_id="ollama")
+        dialog.show()
+        app.processEvents()
+        field_size = QtGui.QFontInfo(dialog.engine.font()).pixelSize()
+        assert field_size >= native_font.pixelSize() * .9, ("host font simulation", scale, field_size)
+        labels = [w for w in dialog.findChildren(QtWidgets.QLabel) if w.isVisible()]
+        assert labels
+        for label in labels:
+            actual = QtGui.QFontInfo(label.font()).pixelSize()
+            assert actual >= field_size * .8, (scale, label.text(), actual, field_size)
+        dialog.reject()
+        dialog.deleteLater()
+        app.processEvents()
+    app.setFont(original_font)
+
+
 def check_dialog():
     # A deliberately delayed result must not freeze Qt or apply to a new choice.
     release = threading.Event()
@@ -254,6 +284,8 @@ def check_worker_wiring(panel):
     from synapse.server import session_store
 
     release = threading.Event()
+    finish_release = threading.Event()
+    finish_release.set()
     original_worker = sp.ClaudeWorker
     original_tools = sp.get_anthropic_tools
     original_save = session_store.save_conversation
@@ -263,6 +295,12 @@ def check_worker_wiring(panel):
             release.wait(2)
             if not self._abort:
                 self.token_received.emit("Finished the test task.")
+
+        def run(self):
+            super().run()
+            # Expose the real gap between stream_done and QThread.finished.
+            # A test-side reference to the binding used to hide this lifetime.
+            finish_release.wait(5)
 
     sp.ClaudeWorker = PreviewWorker
     sp.get_anthropic_tools = lambda: []
@@ -293,14 +331,48 @@ def check_worker_wiring(panel):
             if not cancel:
                 assert "signed custom/model-a" in panel._chat.toPlainText()
         assert len(saved) == 2
+
+        import gc
+        import weakref
+        release.clear()
+        finish_release.clear()
+        provider = CustomProvider(base_url="https://example.invalid/v1", model="lifetime-model")
+        panel._prepare_connection = lambda: cn.bind_provider(provider, key="lifetime-key")
+        assert panel._send("Check completion ownership")
+        connection_ref = weakref.ref(panel._task_connection)
+        worker = panel._worker
+        release.set()
+        pump_until(lambda: panel._task_connection is None)
+        gc.collect()
+        retained = connection_ref() is not None
+        if not retained:
+            # Do not dispatch a known dangling Qt callback in the red control.
+            # The missing owner itself is the failing, measured condition.
+            worker.finished.disconnect()
+        finish_release.set()
+        assert worker.wait(2000), "Ownership test worker did not finish"
+        if not retained:
+            sp._ACTIVE_PANEL_WORKERS.discard(worker)
+            provider._panel_session_key = None
+            worker.deleteLater()
+        assert retained, "Task binding was collected before its queued cleanup callback"
+        pump_until(lambda: not sp._ACTIVE_PANEL_WORKERS)
+        assert provider.resolve_key() is None
+        QtCore.QCoreApplication.sendPostedEvents(None, QtCore.QEvent.DeferredDelete)
+        gc.collect()
+        assert connection_ref() is None, "Finished task binding was retained after cleanup"
+        print("PASS: task binding survives queued cleanup, clears its key, then is collected.", flush=True)
     finally:
         release.set()
+        finish_release.set()
         sp.ClaudeWorker = original_worker
         sp.get_anthropic_tools = original_tools
         session_store.save_conversation = original_save
 
 
 if __name__ == "__main__":
+    print("Checking connection text at host scales…", flush=True)
+    check_dialog_scaling()
     print("Checking connection dialog…", flush=True)
     check_dialog()
     print("Checking text rendering…", flush=True)
