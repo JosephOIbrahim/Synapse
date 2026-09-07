@@ -520,6 +520,16 @@ class SolarisGraphMixin:
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError()
 
+        if payload.get("template") == "copernicus_lookdev":
+            from .solaris_lookdev import validate_request, build_lookdev
+            from .main_thread import run_on_main, _SLOW_TIMEOUT
+            try:
+                settings = validate_request(payload)
+            except ValueError as error:
+                raise SynapseUserError(str(error)) from error
+            return run_on_main(lambda: build_lookdev(hou, settings), timeout=_SLOW_TIMEOUT,
+                               label="solaris_graph:copernicus_lookdev")
+
         parent_path = resolve_param_with_default(payload, "parent", "/stage")
         raw_nodes = payload.get("nodes", [])
         raw_connections = payload.get("connections", [])

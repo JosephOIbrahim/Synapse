@@ -387,11 +387,11 @@ class TestToolGroupKnowledge:
 
     @pytest.fixture
     def tool_group_modules(self):
-        """Import all 5 tool group modules."""
+        """Import tool groups, including the mixed modern/legacy COP surface."""
         import importlib
         modules = {}
         for name in ["mcp_tools_scene", "mcp_tools_render", "mcp_tools_usd",
-                      "mcp_tools_tops", "mcp_tools_memory"]:
+                      "mcp_tools_tops", "mcp_tools_memory", "mcp_tools_cops"]:
             spec = importlib.util.spec_from_file_location(
                 name, ROOT / f"{name}.py"
             )
@@ -440,6 +440,31 @@ class TestToolGroupKnowledge:
         """Memory group knowledge must mention synapse_project_setup."""
         knowledge = tool_group_modules["mcp_tools_memory"].GROUP_KNOWLEDGE
         assert "project_setup" in knowledge.lower() or "synapse_project_setup" in knowledge
+
+    def test_cops_knowledge_distinguishes_modern_parent_and_legacy_helpers(self, tool_group_modules):
+        """The modern-only texture helper cannot accept the legacy COP2 container."""
+        knowledge = tool_group_modules["mcp_tools_cops"].GROUP_KNOWLEDGE
+        assert "cops_create_copnet" in knowledge
+        assert "cops_create_network" in knowledge
+        assert "legacy COP2" in knowledge
+        assert "editable modern Cop" in knowledge
+        assert "configured=True" in knowledge and "cooked=False" in knowledge
+        assert "Not all helpers" in knowledge
+
+    def test_cops_knowledge_does_not_promote_metadata_to_pixel_verification(self, tool_group_modules):
+        """Current analyze_render inspects cook/metadata, not image statistics."""
+        knowledge = tool_group_modules["mcp_tools_cops"].GROUP_KNOWLEDGE
+        assert "cops_analyze_render checks quality (black pixels, clipping, noise)" not in knowledge
+        assert "does not measure pixel" in knowledge
+        assert "separate verification" in knowledge
+
+    def test_cops_knowledge_does_not_promise_global_rollback(self, tool_group_modules):
+        """Grouping creates an undo entry; explicit cleanup is handler-specific."""
+        knowledge = tool_group_modules["mcp_tools_cops"].GROUP_KNOWLEDGE
+        assert "ALL mutations wrap" not in knowledge
+        assert "safe rollback" not in knowledge
+        assert "Undo grouping does not guarantee rollback" in knowledge
+        assert "cleanup" in knowledge
 
 
 # ---------------------------------------------------------------------------

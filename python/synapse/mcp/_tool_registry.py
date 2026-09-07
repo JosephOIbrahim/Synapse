@@ -722,7 +722,9 @@ TOOL_DEFS: list[tuple] = [
      "sublayer stacks, parallel streams. Specify nodes and connections as "
      "a directed acyclic graph. Supports pre-built templates for common "
      "patterns (multi_asset_merge, sublayer_stack, render_pass_split, "
-     "lighting_rig). Use assemble_chain for simple linear wiring.",
+     "lighting_rig). copernicus_lookdev creates a fixed modern Copernicus lookdev fixture "
+     "on Houdini 22.0.400 in a new owned subnet, preserving existing display. An empty network displays the new fixture. "
+     "It verifies configuration/USD, not rendered appearance. Use assemble_chain for simple linear wiring.",
      {"type": "object", "properties": {
          "parent": {"type": "string", "description": "LOP network path (default: /stage)"},
          "nodes": {"type": "array", "items": {"type": "object", "properties": {
@@ -740,9 +742,9 @@ TOOL_DEFS: list[tuple] = [
              "output": {"type": "integer", "minimum": 0, "description": "Source output index (default: 0)"},
          }, "required": ["from", "to"]}, "description": "Connection wiring"},
          "display_node": {"type": "string", "description": "Node id to set display flag (auto-detects if omitted)"},
-         "template": {"type": "string", "enum": ["multi_asset_merge", "sublayer_stack", "render_pass_split", "lighting_rig", "hdri_lighting", "instanceable_assets", "variant_selector"],
-                      "description": "Pre-built topology template (optional). A template alone is a COMPLETE call — pass it WITHOUT nodes/connections and the whole render-ready graph is built in one shot (use this for 'create a solaris scene/network' requests instead of creating LOP nodes one at a time)."},
-         "template_params": {"type": "object", "description": "Parameters for template expansion"},
+         "template": {"type": "string", "enum": ["multi_asset_merge", "sublayer_stack", "render_pass_split", "lighting_rig", "hdri_lighting", "instanceable_assets", "variant_selector", "copernicus_lookdev"],
+                      "description": "Pre-built topology template (optional). A template alone is a COMPLETE call — pass it WITHOUT nodes/connections and the topology is built in one call; rendered appearance requires separate verification (use this for 'create a solaris scene/network' requests instead of creating LOP nodes one at a time)."},
+         "template_params": {"type": "object", "description": "Template parameters. copernicus_lookdev accepts only name, base_color (scene-linear RGB in 0..1), noise_type, frequency and octaves; 256x256 fixed textures. No node/connection or display overrides. Existing names are refused."},
          "layout": {"type": "string", "enum": ["vertical", "horizontal"], "description": "New graph layout. Default vertical; horizontal flows left to right."},
          "relayout": {"type": "boolean", "description": "Explicitly reorganize reused nodes named in this graph. Default false preserves their positions; existing:true references always stay fixed."},
          "dry_run": {"type": "boolean", "description": "Preview graph without creating (default: false)"},

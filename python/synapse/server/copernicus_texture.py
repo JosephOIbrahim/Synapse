@@ -57,7 +57,7 @@ def _set_checked(node, name, value, *, menu=False):
     return actual
 
 
-def build_procedural_texture(parent, noise_type, frequency, octaves, resolution, name, *, undo_context):
+def build_procedural_texture(parent, noise_type, frequency, octaves, resolution, name, *, undo_context, run_init_scripts=True):
     """Build a prevalidated Layer -> noise pair; include undo close in cleanup."""
     category = parent.childTypeCategory()
     if category is None or category.name() != "Cop":
@@ -75,7 +75,10 @@ def build_procedural_texture(parent, noise_type, frequency, octaves, resolution,
     owned = []
 
     def create(type_name, node_name):
-        node = parent.createNode(type_name, node_name, exact_type_name=True)
+        creation_options = {"exact_type_name": True}
+        if not run_init_scripts:
+            creation_options["run_init_scripts"] = False
+        node = parent.createNode(type_name, node_name, **creation_options)
         if node is None:
             raise RuntimeError(f"Could not create modern Copernicus '{type_name}'")
         owned.append(node)

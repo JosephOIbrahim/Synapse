@@ -1,28 +1,37 @@
 """MCP Tool Group: Copernicus (COPs)
 
-Knowledge preamble and tool manifest for Houdini 21 Copernicus image processing tools.
+Knowledge preamble and tool manifest for modern Copernicus and legacy COP2 tools.
 Imported by mcp_server.py for knowledge-enriched tool grouping.
 """
 
 # Domain knowledge for agents consuming these tools
 GROUP_KNOWLEDGE = (
-    "COPERNICUS (COPs) TOOLS: GPU-accelerated image processing in Houdini 21. "
-    "FOUNDATION: cops_create_network creates a COP2 container, cops_create_node "
-    "adds COP nodes, cops_connect wires them, cops_set_opencl sets GPU kernels, "
-    "cops_read_layer_info queries resolution/channels. "
-    "PIPELINE: cops_to_materialx connects COP output as MaterialX texture via op: path. "
-    "cops_composite_aovs builds AOV compositing from Karma EXR renders. "
-    "cops_analyze_render checks quality (black pixels, clipping, noise). "
-    "cops_slap_comp sets up live viewport overlay. "
-    "PROCEDURAL: cops_create_solver creates Block Begin/End feedback loops. "
-    "cops_procedural_texture generates noise textures. "
-    "cops_growth_propagation runs iterative simulations; cops_reaction_diffusion "
-    "scaffolds a simulation graph (placeholder kernel, not cooked). "
-    "cops_pixel_sort scaffolds a sort effect (placeholder kernel); cops_stylize applies motion design effects. "
-    "ADVANCED: cops_wetmap creates temporal decay maps. cops_bake_textures scaffolds "
-    "a UV-baking setup (no bake executed). cops_temporal_analysis checks frame coherence. "
-    "cops_stamp_scatter distributes stamp images. cops_batch_cook batch-processes COP nodes. "
-    "ALL mutations wrap in hou.undos.group for safe rollback."
+    "COP TOOLS: This group contains modern Copernicus and legacy COP2 helpers. "
+    "Confirm the running build, parent category, node types and ports before use. "
+    "MODERN PROCEDURAL TEXTURES: cops_create_copnet creates a modern CopNet. "
+    "cops_procedural_texture requires an editable modern Cop parent and configures "
+    "a scalar noise output with a private resolution layer. Its checked parameters "
+    "and wiring return configured=True, cooked=False; image evaluation is separate. "
+    "LEGACY: cops_create_network creates a legacy COP2 container, which cannot be "
+    "used as the modern procedural texture parent. Not all helpers in this group "
+    "have migrated to Copernicus; verify each helper's supported context. "
+    "cops_create_node and cops_connect use the supplied parent/nodes; discover "
+    "the exact parameters and source/destination ports rather than guessing a chain. "
+    "OBSERVATION: cops_read_layer_info reports available image metadata and cook "
+    "issues; reading an image may evaluate it. cops_analyze_render requests a cook "
+    "and reports metadata/issues, but does not measure pixel statistics such as "
+    "black-pixel fraction, clipping or noise. Missing metadata or no cook errors "
+    "does not prove valid pixels. Graph, image and rendered output need separate verification. "
+    "PIPELINE: cops_to_materialx configures an op: texture reference on a supplied "
+    "shader; this does not verify a Solaris material binding or a rendered result. "
+    "cops_composite_aovs builds a compositing network from supplied EXR paths. "
+    "cops_create_solver creates paired feedback nodes; cops_reaction_diffusion "
+    "and cops_pixel_sort scaffold placeholder kernels, not verified simulations. "
+    "cops_bake_textures scaffolds a bake setup without executing a bake. "
+    "Cooks, renders and exports retain their own permission requirements. "
+    "Undo grouping does not guarantee rollback. Check each operation's returned "
+    "results and cleanup report; report partial state instead of assuming every "
+    "helper removed its changes after failure."
 )
 
 # Tools in this group

@@ -635,6 +635,47 @@ class TestTemplates:
 class TestSystemPromptGuidance:
     """Tests for updated _SOLARIS_CONTEXT_GUIDANCE with graph assembly info."""
 
+    @pytest.fixture
+    def composed_prompt(self, monkeypatch):
+        """Exercise shipped prompt assembly without user tone files or a host."""
+        from synapse.panel import system_prompt
+        monkeypatch.setattr(system_prompt, "_load_tone", lambda: None)
+        monkeypatch.setattr(system_prompt, "_running_build", lambda: "Houdini test build")
+        return system_prompt.build_system_prompt({"network": "/stage"})
+
+    def test_wiring_guidance_allows_branches_and_requires_ports(self, composed_prompt):
+        """The shipped render tail branches; Cop materials also have typed branches."""
+        assert "Every node connects to the previous" not in composed_prompt
+        assert "If a node has no input wired, it is invisible" not in composed_prompt
+        assert "source output" in composed_prompt
+        assert "destination input" in composed_prompt
+        assert "branches" in composed_prompt
+        assert "Copernicus" in composed_prompt
+
+    def test_display_guidance_preserves_the_intended_output(self, composed_prompt):
+        """An inner shader/Cop branch must not steal an artist's stage display."""
+        assert "Always set the display flag" not in composed_prompt
+        assert "last node in the chain gets the display flag" not in composed_prompt
+        assert "display flag at the end of every chain" not in composed_prompt
+        assert "intended stage output" in composed_prompt
+        assert "existing display" in composed_prompt
+
+    def test_build_guidance_does_not_claim_unmeasured_cooks_or_output(self, composed_prompt):
+        """One transport call is measurable; a guaranteed cook count is not."""
+        import re
+        assert not re.search(r"\b(?:one|single)\s+(?:terminal\s+)?cook\b", composed_prompt, re.I)
+        assert "phantom-API-safe" not in composed_prompt
+        assert "no phantom-node-type risk" not in composed_prompt
+        assert "Cook counts" in composed_prompt
+        assert "rendered output" in composed_prompt
+        assert "separate verification" in composed_prompt
+
+    def test_unsupported_build_has_no_automatic_code_fallback(self, composed_prompt):
+        """A missing capability is not authorization for arbitrary Python."""
+        assert "ONE atomic execute_python" not in composed_prompt
+        assert "execute_python only when explicitly authorized" in composed_prompt
+        assert "never bypass a denied tool" in composed_prompt
+
     def test_contains_build_graph(self):
         """Guidance mentions build_graph tool."""
         from synapse.panel.system_prompt import _SOLARIS_CONTEXT_GUIDANCE
