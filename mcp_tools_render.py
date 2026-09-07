@@ -14,10 +14,15 @@ GROUP_KNOWLEDGE = (
     "heavy scenes -- it blocks the WebSocket server. "
     "Set 'picture' on Karma LOP AND 'outputimage' on the ROP. "
     "Karma camera must use USD prim path (/cameras/render_cam), not node path."
+    " DURABLE TOPS: Prefer synapse_farm_inspect/capabilities, then prepare, poll until prepared, "
+    "submit its exact digest, and query that request. Preparation freezes a saved scene. "
+    "Never resubmit with a new ID after a lost acknowledgement. HQueue availability is explicit."
 )
 
 # Tools in this group
 TOOL_NAMES = [
+    "synapse_farm_inspect", "synapse_farm_capabilities", "synapse_farm_prepare",
+    "synapse_farm_submit", "synapse_farm_jobs", "synapse_farm_job", "synapse_farm_cancel",
     "houdini_capture_viewport",
     "houdini_render",
     "synapse_validate_frame",
@@ -39,6 +44,13 @@ TOOL_NAMES = [
 
 # Dispatch entries for this group
 DISPATCH_KEYS = {
+    "synapse_farm_inspect": ("farm_inspect", "identity"),
+    "synapse_farm_capabilities": ("farm_capabilities", "identity"),
+    "synapse_farm_prepare": ("farm_prepare", "identity"),
+    "synapse_farm_submit": ("farm_submit", "identity"),
+    "synapse_farm_jobs": ("farm_jobs", "identity"),
+    "synapse_farm_job": ("farm_job", "identity"),
+    "synapse_farm_cancel": ("farm_cancel", "identity"),
     "houdini_capture_viewport": ("capture_viewport", "identity"),
     "houdini_render":           ("render",           "identity"),
     "synapse_validate_frame":   ("validate_frame",   "identity"),

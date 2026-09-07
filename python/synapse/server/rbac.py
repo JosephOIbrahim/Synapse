@@ -32,6 +32,7 @@ class Role(Enum):
 
 # Read-only commands available to all roles including VIEWER
 _VIEWER_COMMANDS: FrozenSet[str] = frozenset({
+    "farm_inspect", "farm_capabilities", "farm_jobs", "farm_job",
     "ping", "get_health", "get_help", "heartbeat",
     "get_parm", "get_scene_info", "get_selection",
     "get_stage_info", "get_usd_attribute",
@@ -52,6 +53,7 @@ _VIEWER_COMMANDS: FrozenSet[str] = frozenset({
 
 # Write commands available to ARTIST and above
 _ARTIST_COMMANDS: FrozenSet[str] = frozenset({
+    "farm_prepare", "farm_submit", "farm_cancel",
     "create_node", "delete_node", "connect_nodes",
     "set_parm", "set_keyframe",
     "execute_python", "execute_vex",

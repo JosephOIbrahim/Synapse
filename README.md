@@ -244,13 +244,13 @@ Blueprint: [`docs/intake/blueprint-h22-worldlabs-intent.md`](docs/intake/bluepri
 **Refuses to boot on a render node** — *narrowly.* `hou.isUIAvailable()` gates the daemon, the Fork Bomb guard. But it protects a component with no production callers today while other surfaces boot headless. A guard that exists, not a guarantee that holds.
 
 <details>
-<summary><strong>The full claim, unpacked</strong> — everything the one-liner compresses (128 tools, truth contract, five engines, audit trail)</summary>
+<summary><strong>The full claim, unpacked</strong> — everything the one-liner compresses (135 tools, truth contract, five engines, audit trail)</summary>
 
 ### The full claim, unpacked
 
 This is the package description in long form — everything the one-liner compresses.
 
-**128 tools, two paths.** That is the dispatch registry (`synapse.mcp._tool_registry.TOOL_DEFS`, pinned by `tests/test_phase0c_doc1_toolcount.py`); the stdio transport adds 10 local tools (six group preambles, the Inspector, Scout, two BLOCKS fixtures) that never reach a handler. The full safety set (undo-wrapped, reversible, provenance-recorded) rides the audited `/mcp` bridge path. The direct `/synapse` path is RBAC-gated, main-thread-marshalled execution with observe-only provenance. Scene mutations are undo-wrapped and reversible. Filesystem and network effects of executed code are not.
+**135 tools, two paths.** That is the dispatch registry (`synapse.mcp._tool_registry.TOOL_DEFS`, pinned by `tests/test_phase0c_doc1_toolcount.py`); the stdio transport adds 10 local tools (six group preambles, the Inspector, Scout, two BLOCKS fixtures) that never reach a handler. Scene operations use the audited `/mcp` bridge or the direct `/synapse` path with observe-only provenance. Detached render controls use their own consent admission and durable job journal: they do not mutate the artist scene or claim scene-undo protection. The [Render workspace](docs/tops/RENDER_WORKSPACE.md) exposes the seven new farm tools without requiring a model conversation. Filesystem and network effects are not undone by Houdini.
 
 **A registry-wide truth contract.** A result may not claim an outcome the handler did not observe.
 

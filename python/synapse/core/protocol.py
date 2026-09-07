@@ -102,6 +102,14 @@ class CommandType(Enum):
     TOPS_RENDER_SEQUENCE = "tops_render_sequence"
     TOPS_MULTI_SHOT = "tops_multi_shot"
 
+    FARM_INSPECT = "farm_inspect"
+    FARM_CAPABILITIES = "farm_capabilities"
+    FARM_PREPARE = "farm_prepare"
+    FARM_SUBMIT = "farm_submit"
+    FARM_JOBS = "farm_jobs"
+    FARM_JOB = "farm_job"
+    FARM_CANCEL = "farm_cancel"
+
     # Copernicus (COPs) — Foundation
     COPS_CREATE_NETWORK = "cops_create_network"
     COPS_CREATE_COPNET = "cops_create_copnet"

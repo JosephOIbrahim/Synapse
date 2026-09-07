@@ -1272,7 +1272,53 @@ TOOL_DEFS: list[tuple] = [
      "List all available recipes with names, descriptions, and trigger patterns.",
      _EMPTY_SCHEMA, True, False, True),
 
-    # -- Render Farm --
+    # -- Durable artist render workspace --
+    ("synapse_farm_inspect", "farm_inspect", _identity,
+     "Read the saved HIP, selected/displayed Solaris output and frame range without cooking. "
+     "Unsaved changes require the artist to save before preparation.",
+     _EMPTY_SCHEMA, True, False, True),
+    ("synapse_farm_capabilities", "farm_capabilities", _identity,
+     "Read render profiles and measured availability. This does not install or configure a farm.",
+     _EMPTY_SCHEMA, True, False, True),
+    ("synapse_farm_prepare", "farm_prepare", _identity,
+     "Prepare an immutable saved-scene package in a detached Houdini process. Does not render. "
+     "Choose a new request_id for a new intent; retain the ID after a lost reply and query its status. "
+     "Wait for prepared, then explicitly submit the returned digest.",
+     {"type": "object", "properties": {
+         "request_id": {"type": "string", "description": "Stable unique ID for this render intent"},
+         "source_hip": {"type": "string", "description": "Absolute path to a saved HIP"},
+         "source_node": {"type": "string", "description": "Absolute Solaris output node path"},
+         "frames": {"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "integer"}}],
+                    "description": "Exact frame list, for example 1001-1012x2,1040"},
+         "output_root": {"type": "string", "description": "Absolute parent directory for a new job package"},
+         "profile_id": {"type": "string", "default": "local"},
+         "width": {"type": "integer", "default": 256},
+         "height": {"type": "integer", "default": 256},
+         "samples": {"type": "integer", "default": 8},
+     }, "required": ["request_id", "source_hip", "source_node", "frames", "output_root"], "additionalProperties": False},
+     False, False, True),
+    ("synapse_farm_submit", "farm_submit", _identity,
+     "Submit exactly one prepared revision for detached TOPs rendering. Requires the digest returned "
+     "by preparation. A repeated ID cannot create another job. Query status after a lost reply; "
+     "submission_uncertain requires reconciliation, never a blind retry with a new ID.",
+     {"type": "object", "properties": {"request_id": {"type": "string"}, "digest": {"type": "string"}},
+      "required": ["request_id", "digest"], "additionalProperties": False},
+     False, False, True),
+    ("synapse_farm_jobs", "farm_jobs", _identity,
+     "List durable local render history. Opening history never submits or resumes work.",
+     {"type": "object", "properties": {"limit": {"type": "integer", "default": 20}}}, True, False, True),
+    ("synapse_farm_job", "farm_job", _identity,
+     "Refresh one render job from execution evidence. Complete requires every expected image to be "
+     "decoded and verified. This observation never submits or retries work.",
+     {"type": "object", "properties": {"request_id": {"type": "string"}}, "required": ["request_id"]},
+     True, False, True),
+    ("synapse_farm_cancel", "farm_cancel", _identity,
+     "Request cancellation of one identified detached render job. cancel_requested is not confirmed "
+     "stoppage; poll that same request until cancelled or another evidenced terminal state.",
+     {"type": "object", "properties": {"request_id": {"type": "string"}}, "required": ["request_id"]},
+     False, True, True),
+
+    # -- Legacy in-session Render Farm (kept for compatibility) --
     ("synapse_render_sequence", "render_sequence", _identity,
      "Render a frame range with per-frame validation, automatic issue diagnosis, "
      "and self-improving fixes. Learns from each render to start smarter next time.",

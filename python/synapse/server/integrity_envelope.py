@@ -78,6 +78,7 @@ LIVE_AGENT_KEY = "LIVE"
 # also change C5 lock behavior (that set is load-bearing — see the
 # render_farm_cancel note there), so the envelope carries its own.
 ENVELOPE_SKIP_COMMANDS = frozenset({
+    "farm_prepare", "farm_submit", "farm_cancel",  # journal/process control; no scene undo
     "doctor",
     "hda_list",
     "memory_query",

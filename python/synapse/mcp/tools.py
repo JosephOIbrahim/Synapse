@@ -118,13 +118,18 @@ def dispatch_tool(handler, tool_name: str, arguments: dict) -> dict:
         # Try bridge dispatch for undo/integrity wrapping
         try:
             from synapse.panel.bridge_adapter import (
-                execute_through_bridge, is_read_only,
+                execute_through_bridge, is_read_only, execute_farm_control, is_farm_control,
             )
-            if not is_read_only(tool_name):
+            if is_farm_control(tool_name):
+                response = execute_farm_control(tool_name, handler, command)
+            elif not is_read_only(tool_name):
                 response = execute_through_bridge(tool_name, handler, command)
             else:
                 response = handler.handle(command)
         except ImportError:
+            from synapse.core.farm_contract import is_farm_control
+            if is_farm_control(tool_name):
+                return {"content": [{"type": "text", "text": "Render admission is unavailable. No job command was sent."}], "isError": True}
             response = handler.handle(command)
 
         if response.success:

@@ -1,6 +1,6 @@
 # SYNAPSE Agent Team — Lossless MOE Orchestrator
 
-> **Target:** Houdini 22.0.400 (dual-build with H21 artifacts) · SYNAPSE v5.67.1 · Python 3.13 · 128 MCP tools registered
+> **Target:** Houdini 22.0.400 (dual-build with H21 artifacts) · SYNAPSE v5.67.1 · Python 3.13 · 135 MCP tools registered
 > Revisions in §15 were verified live on their own build, not on H22.
 
 ## Identity
@@ -487,4 +487,3 @@ If any §16.2 API surface changes, the corresponding test above fails. The doc/c
 **README.md is always written ADHD-friendly.** This is a standing convention, not a per-request style. Short paragraphs, one idea per block, generous whitespace, bold only for genuine anchors, scannable rather than prose walls. A reader should be able to find the thing they came for without reading the thing they didn't.
 
 Every number in it carries a producer path (Law 2). Every known limitation is stated plainly rather than omitted - a document that hides a gap is worse than one that names it, because the reader finds it anyway and stops trusting the rest.
-

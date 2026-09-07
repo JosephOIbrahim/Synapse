@@ -42,6 +42,7 @@ from .protocol import (
 from .session import MCPSessionManager
 from .resources import get_resources, get_resource_templates, resolve_resource
 from .tools import dispatch_tool, get_tools
+from synapse.core.farm_contract import is_farm_control
 
 # Resilience layer — shared with WebSocket server
 try:
@@ -599,7 +600,7 @@ class MCPServer:
         # synapse_propose_graph / synapse_validate_frame down this unmarshalled
         # branch even though dispatch_tool routes them through the bridge, whose
         # _execute_houdini calls hou.* on the calling thread.
-        if is_transport_fast_path(tool_name):
+        if is_transport_fast_path(tool_name) or tool_name == "synapse_farm_cancel":
             # L8 LAYERING FIX — this branch used to marshal the ENTIRE
             # dispatch_tool onto the main thread with
             # hdefereval.executeInMainThreadWithResult (the blocking
@@ -650,7 +651,8 @@ class MCPServer:
         #    (<=2s) probe first — success resets the stall counter and the
         #    command proceeds, so recovery no longer depends on incidental
         #    read-only traffic.
-        if _STALL_DETECT_AVAILABLE and is_main_thread_stalled() and not probe_main_thread():
+        if (not is_farm_control(tool_name) and _STALL_DETECT_AVAILABLE
+                and is_main_thread_stalled() and not probe_main_thread()):
             if self._circuit_breaker:
                 self._circuit_breaker.record_failure()
             raise JsonRpcError(
@@ -694,7 +696,12 @@ class MCPServer:
         # --- Dispatch with latency tracking ---
         t0 = time.monotonic()
 
-        if tool_name == "synapse_doctor":
+        if is_farm_control(tool_name):
+            # File/journal/process work stays on the transport thread. Its
+            # dedicated admission adapter runs the existing consent policy;
+            # only the handler's tiny source inspection marshals to Houdini.
+            result = dispatch_tool(handler, tool_name, arguments)
+        elif tool_name == "synapse_doctor":
             # W2-S1: off-main-safe dispatch. The resilience gates above have
             # already run; instead of marshalling the doctor's ~514 ms cold
             # store-construct onto Houdini's main thread (the measured hold on

@@ -15,6 +15,7 @@ import logging
 import os
 import sys
 from typing import Any
+from synapse.core.farm_contract import FARM_READ_TOOLS, is_farm_control
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,9 @@ _READ_ONLY_TOOLS = frozenset({
 
 # ── MCP tool name → bridge operation type mapping ────────────────
 _TOOL_TO_OPERATION: dict[str, str] = {
+    "synapse_farm_prepare": "export_file",
+    "synapse_farm_submit": "submit_render",
+    "synapse_farm_cancel": "submit_render",
     # Node operations
     "houdini_create_node": "create_node",
     "houdini_delete_node": "delete_node",
@@ -169,6 +173,7 @@ _TOOL_TO_OPERATION: dict[str, str] = {
 # R4 (shared/bridge.py Operation.gate_level): touches_disk elevates the
 # gate to APPROVE. These writes happen outside the undo system.
 _DISK_WRITING_TOOLS = frozenset({
+    "synapse_farm_prepare", "synapse_farm_submit", "synapse_farm_cancel",
     "synapse_solaris_shotsetup_karma_xpu",  # department .usd layer files
 })
 
@@ -183,6 +188,40 @@ _TOOL_AGENT_MAP: dict[str, str] = {
 
 # ── Singleton bridge ─────────────────────────────────────────────
 _bridge: Any = None
+
+_READ_ONLY_TOOLS = _READ_ONLY_TOOLS | FARM_READ_TOOLS
+
+
+def execute_farm_control(tool_name, handler, command):
+    """Keep job I/O off Houdini's main thread without bypassing consent.
+
+    No generic scene/undo bridge is applicable. FloorGate and the farm journal
+    retain provenance; no scene-integrity success is fabricated for file work.
+    """
+    from synapse.core.protocol import SynapseResponse
+    if not is_farm_control(tool_name):
+        raise ValueError("This dispatch path only accepts detached farm controls.")
+    bridge = get_bridge()
+    authorize = getattr(bridge, "authorize_external_operation", None)
+    if not callable(authorize):
+        return SynapseResponse(id=command.id, success=False,
+                               error="Render admission is unavailable. No job command was sent.")
+    operation = Operation(
+        agent_id=AgentID.HANDS,
+        operation_type=_TOOL_TO_OPERATION[tool_name],
+        summary="{}: {}".format(tool_name, command.payload.get("request_id", "")),
+        fn=lambda: None, kwargs={"touches_disk": True},
+    )
+    if not authorize(operation):
+        return SynapseResponse(id=command.id, success=False,
+                               error="Render permission was denied. No job command was sent.")
+    response = handler.handle(command)
+    if isinstance(getattr(response, "data", None), dict):
+        response.data["_execution"] = {
+            "path": "detached_farm_control", "consent_verified": True,
+            "scene_undo_applicable": False, "scene_integrity_applicable": False,
+        }
+    return response
 
 
 def _panel_consent(operation) -> bool:

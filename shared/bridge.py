@@ -2374,6 +2374,18 @@ class LosslessExecutionBridge:
             agent_id=operation.agent_id, integrity=integrity,
         )
 
+    def authorize_external_operation(self, operation: Operation) -> bool:
+        """Apply existing consent policy to a non-scene operation.
+
+        Admission only: this neither executes the callable nor asserts undo,
+        main-thread or scene-integrity anchors. The caller owns durable job
+        provenance. Used by detached farm control, which must remain available
+        while the artist's main thread is cooking.
+        """
+        if self._gate is None and self._consent_callback is None:
+            return False
+        return self._check_consent(operation)
+
     def _check_consent(self, operation: Operation) -> bool:
         gate = operation.gate_level
         if gate == GateLevel.INFORM:

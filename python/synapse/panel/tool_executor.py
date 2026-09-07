@@ -174,10 +174,24 @@ class _MCPLocalClient:
         self._lock = threading.Lock()
 
     def _detect_port(self) -> Optional[int]:
-        """Detect hwebserver port from Houdini."""
+        """Prefer this host's published endpoint; marshal the tiny HOM fallback."""
+        import os
+        try:
+            from synapse.server.bridge_endpoint import bridge_file
+            with open(bridge_file(), encoding="utf-8") as stream:
+                endpoint = json.loads(stream.read(16384))
+            port = endpoint.get("port")
+            if (endpoint.get("pid") == os.getpid() and type(port) is int
+                    and 0 < port < 65536):
+                return port
+        except (OSError, ValueError, TypeError, AttributeError):
+            pass
         try:
             import hou
-            return hou.webServer.port()
+            from synapse.server.main_thread import run_on_main
+            port = run_on_main(lambda: hou.webServer.port(), timeout=2.0,
+                               label="panel_local_mcp_port")
+            return port if type(port) is int and 0 < port < 65536 else None
         except Exception:
             return None
 
@@ -203,6 +217,12 @@ class _MCPLocalClient:
         }
         if headers:
             all_headers.update(headers)
+        # The in-process client shares the host's configured local credential.
+        # Send it only to loopback; never log or attach it to job packages.
+        from synapse.server.auth import get_auth_key
+        key = get_auth_key()
+        if key:
+            all_headers["Authorization"] = "Bearer " + key
 
         payload = json.dumps(body, sort_keys=True).encode("utf-8")
 
@@ -218,6 +238,12 @@ class _MCPLocalClient:
                 self._session_id = session_hdr
 
             return json.loads(data)
+        except (ConnectionError, OSError):
+            # Only invalidate discovery. Do not replay a possibly admitted
+            # mutation; the next explicit observation can reconnect by job ID.
+            self._port = None
+            self._session_id = None
+            raise
         finally:
             conn.close()
 
@@ -487,6 +513,10 @@ class ToolExecutor(QtCore.QObject):
             # the result is one refused tool with an actionable message instead
             # of a 46-second frozen UI.
             _on_main = threading.current_thread() is threading.main_thread()
+            from synapse.core.farm_contract import is_farm_control
+            if _on_main and is_farm_control(request.tool_name):
+                request.error = "Render commands need the background connection. No job command was sent."
+                return
             if (_on_main and self._last_preflight_heavy
                     and not self._allow_heavy_inline):
                 request.error = (
@@ -541,9 +571,11 @@ class ToolExecutor(QtCore.QObject):
             _t0 = time.perf_counter()
             try:
                 from synapse.panel.bridge_adapter import (
-                    execute_through_bridge, is_read_only,
+                    execute_through_bridge, is_read_only, execute_farm_control, is_farm_control,
                 )
-                if not is_read_only(request.tool_name):
+                if is_farm_control(request.tool_name):
+                    response = execute_farm_control(request.tool_name, handler, command)
+                elif not is_read_only(request.tool_name):
                     # MARSHAL. execute_through_bridge -> bridge.execute ->
                     # _execute_houdini calls hou.* and hou.undos.group()
                     # DIRECTLY on the calling thread, assuming it is already
@@ -574,6 +606,10 @@ class ToolExecutor(QtCore.QObject):
                 else:
                     response = handler.handle(command)
             except ImportError as _marshal_exc:
+                from synapse.core.farm_contract import is_farm_control
+                if is_farm_control(request.tool_name):
+                    request.error = "Render admission is unavailable. No job command was sent."
+                    return
                 # Unmarshalled fallback -- announce it rather than degrading in
                 # silence (the silence is what made this bug unreadable at the
                 # seat). Outside Houdini this is expected dual-mode behaviour.
