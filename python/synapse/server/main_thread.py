@@ -14,6 +14,7 @@ or rendering, which in turn blocks all subsequent WebSocket messages
 import threading
 import time
 import logging
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,9 @@ _STALL_THRESHOLD = 2
 # C6 (Mile 3.1) — dispatch-wait instrumentation. The load-bearing "~2s mutation
 # floor" was never attributed: the per-tool histogram times the WHOLE handler, so
 # enqueue→callback-start wait (the executeDeferred wake latency — hypothesis T1)
-# is indistinguishable from hou work. This histogram measures exactly that gap.
+# is indistinguishable from hou work. This histogram measures waiting until a
+# payload starts, is abandoned, or cannot be scheduled. An expired payload is
+# removed immediately; its inert native wake does not add another wait sample.
 # Buckets straddle the 2000 ms suspect so T1's signature (mass at/near 2000) is
 # unmistakable against T2/T3 (small or cook-correlated waits).
 _DISPATCH_WAIT_BUCKETS_MS = (1, 5, 10, 50, 100, 250, 500, 1000, 2000, 4000)
@@ -67,7 +70,7 @@ def _record_dispatch_wait(ms):
 
 
 def dispatch_wait_stats():
-    """Snapshot of the enqueue→start wait histogram (copy — safe to serialize)."""
+    """Wait until start/abandonment/scheduling failure (detached snapshot)."""
     with _dispatch_lock:
         return {
             "count": _dispatch_wait["count"],
@@ -256,6 +259,79 @@ def reset_main_thread_hold_stats():
 _pending_lock = threading.Lock()
 _pending_dispatches = {}  # token -> (state_lock, abandoned_list, label, enqueue_ts)
 
+# Houdini processes deferred callbacks one at a time when idle. Posting every
+# short-lived poll leaves its expired closure in Houdini's FIFO until another
+# idle turn arrives. Keep removable payloads here and at most one native wake
+# outstanding for this queue. Never inspect or edit hdefereval's private queue.
+_deferred_lock = threading.Lock()
+_deferred_calls = OrderedDict()  # token -> (callback, fail, sample_wait, schedule)
+_deferred_wake = None
+
+
+def _enqueue_deferred(token, callback, fail, sample_wait, schedule):
+    """Reserve a wake under our lock; the caller must post it after unlocking."""
+    global _deferred_wake
+    with _deferred_lock:
+        _deferred_calls[token] = (callback, fail, sample_wait, schedule)
+        if _deferred_wake is not None:
+            return None
+        _deferred_wake = object()
+        return _deferred_wake
+
+
+def _discard_deferred(token):
+    with _deferred_lock:
+        entry = _deferred_calls.pop(token, None)
+        # Even an empty queue may still have an accepted native wake. Retain its
+        # ticket so new work uses that wake instead of posting another one.
+    if entry is not None:
+        entry[2]()
+
+
+def _post_deferred_wake(ticket, schedule):
+    global _deferred_wake
+    try:
+        # executeDeferred may acquire Houdini's HOM lock during registration.
+        # No SYNAPSE lock is held here, including the per-call state lock.
+        schedule(lambda: _drain_deferred(ticket))
+    except BaseException as error:
+        with _deferred_lock:
+            if _deferred_wake is not ticket:
+                return  # a synchronously delivered wake already settled it
+            _deferred_wake = None
+            failed = tuple(_deferred_calls.values())
+            _deferred_calls.clear()
+        # A scheduler can accept a callback and then raise. Its old ticket is
+        # now inert, so it cannot consume work belonging to a later wake.
+        for entry in failed:
+            entry[1](error)
+
+
+def _drain_deferred(ticket):
+    """One live payload per native wake; keep FIFO ordering and yield to Houdini."""
+    global _deferred_wake
+    with _deferred_lock:
+        if _deferred_wake is not ticket:
+            return
+        if not _deferred_calls:
+            _deferred_wake = None
+            return
+        _, entry = _deferred_calls.popitem(last=False)
+    try:
+        entry[0]()
+    finally:
+        next_ticket = None
+        with _deferred_lock:
+            if _deferred_wake is ticket:
+                if _deferred_calls:
+                    next_ticket = object()
+                    _deferred_wake = next_ticket
+                    schedule = next(iter(_deferred_calls.values()))[3]
+                else:
+                    _deferred_wake = None
+        if next_ticket is not None:
+            _post_deferred_wake(next_ticket, schedule)
+
 
 def cancel_pending_dispatches(reason: str = "emergency_halt") -> int:
     """Flip the C4 abandoned flag on every pending (unstarted) dispatch.
@@ -268,14 +344,15 @@ def cancel_pending_dispatches(reason: str = "emergency_halt") -> int:
     deregistered it), so this only reaches dispatches a caller still awaits.
     """
     with _pending_lock:
-        entries = list(_pending_dispatches.values())
+        entries = list(_pending_dispatches.items())
     flipped = 0
-    for state_lock, abandoned, label, enqueue_ts in entries:
+    for token, (state_lock, abandoned, label, enqueue_ts) in entries:
         try:
             with state_lock:
                 if not abandoned[0]:
                     abandoned[0] = True
                     flipped += 1
+            _discard_deferred(token)
         except Exception:
             pass  # a payload that raced out must not break the halt
     if flipped:
@@ -453,18 +530,30 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
     # residual race — the lock only serializes the check-vs-set, not fn() itself.)
     state_lock = threading.Lock()
     abandoned = [False]
+    wait_sampled = [False]
+    started = [False]
     t_enqueue = time.perf_counter()
 
+    def _sample_wait():
+        with state_lock:
+            if not record_wait or wait_sampled[0]:
+                return
+            wait_sampled[0] = True
+        _record_dispatch_wait((time.perf_counter() - t_enqueue) * 1000.0)
+
+    def _schedule_failed(error):
+        with state_lock:
+            abandoned[0] = True
+            error_holder[0] = error
+        _sample_wait()
+        done.set()
+
     def _on_main():
-        # C6: every wake is a dispatch-wait sample — including abandoned ones
-        # (the queue-sit time is the datum, regardless of whether fn() runs) —
-        # unless the caller opted out (record_wait=False: observe-only
-        # envelope captures must not pollute the attribution instrument).
-        if record_wait:
-            _record_dispatch_wait((time.perf_counter() - t_enqueue) * 1000.0)
+        _sample_wait()
         with state_lock:
             if abandoned[0]:
                 return  # caller already timed out — do not mutate the scene
+            started[0] = True
         _tls.on_main = True
         # F4: register the hold NOW — after the C4 abandoned-check passes and
         # before the payload starts. This is what names a deferred zombie
@@ -483,7 +572,7 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
         _t_hold = time.perf_counter()
         try:
             result_holder[0] = fn()
-        except Exception as e:
+        except BaseException as e:
             error_holder[0] = e
         finally:
             # F4: clear the register on exit (restore the previous holder for
@@ -511,12 +600,20 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
             state_lock, abandoned, label or "unlabeled", time.time()
         )
 
-    hdefereval.executeDeferred(_on_main)
-
     try:
+        # Serialize registration against emergency cancellation. Release the
+        # state lock before touching the vendor scheduler to avoid a lock cycle.
+        with state_lock:
+            ticket = None if abandoned[0] else _enqueue_deferred(
+                token, _on_main, _schedule_failed, _sample_wait,
+                hdefereval.executeDeferred,
+            )
+        if ticket is not None:
+            _post_deferred_wake(ticket, hdefereval.executeDeferred)
         if not done.wait(timeout=timeout):
             with state_lock:
                 abandoned[0] = True
+            _discard_deferred(token)
             if record_stall:
                 _record_timeout(timeout)
             raise RuntimeError(
@@ -525,13 +622,21 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
                 "Try again in a moment."
             )
 
-        # Success — reset the stall counter
-        _record_success()
+        # A delivered payload proves the main thread responded, even when fn()
+        # raised. A failed scheduler registration is not a recovery signal.
+        if started[0]:
+            _record_success()
 
         if error_holder[0] is not None:
             raise error_holder[0]
 
         return result_holder[0]
     finally:
+        # Also cover registration errors and a caller interrupted while waiting.
+        # An already-started payload remains free to finish, as before.
+        with state_lock:
+            abandoned[0] = True
+        _discard_deferred(token)
+        _sample_wait()
         with _pending_lock:
             _pending_dispatches.pop(token, None)

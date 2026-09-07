@@ -267,6 +267,14 @@ def vendor(monkeypatch):
     monkeypatch.setattr(mte, "_HDEFEREVAL_AVAILABLE", True, raising=False)
     yield fake
     fake.stop_pump()
+    # Retire accepted callbacks before replacing their vendor. Leaving an inert
+    # native wake behind while throwing away its fake would strand SYNAPSE's
+    # correctly retained single-wake ticket in the next test's different host.
+    for _ in range(100):
+        if not fake.queued():
+            break
+        fake.pump_once()
+    assert fake.queued() == 0
 
 
 @pytest.fixture

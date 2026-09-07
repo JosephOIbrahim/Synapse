@@ -109,7 +109,8 @@ class TestRunOnMain:
         through hdefereval instead of taking the main-thread fast path.
         """
         original = _hdefereval.executeDeferred
-        _hdefereval.executeDeferred = lambda fn: None  # swallow the fn
+        accepted = []
+        _hdefereval.executeDeferred = accepted.append  # hold until after timeout
 
         result_holder = [None]
 
@@ -126,6 +127,10 @@ class TestRunOnMain:
             assert result_holder[0] is not None
             assert "main thread didn't respond" in str(result_holder[0])
         finally:
+            # A real host retains accepted wakes. Drain this fake's wakes before
+            # replacing it, rather than leaving the shared dispatcher stranded.
+            for callback in accepted:
+                callback()
             _hdefereval.executeDeferred = original
 
     def test_reentrant_direct_execution(self):
@@ -164,11 +169,14 @@ class TestRunOnMain:
 
         original = _hdefereval.executeDeferred
 
+        pumps = []
+
         def _delayed_exec(fn):
             def _delayed():
                 time.sleep(0.3)
                 fn()
             t = threading.Thread(target=_delayed, daemon=True)
+            pumps.append(t)
             t.start()
 
         _hdefereval.executeDeferred = _delayed_exec
@@ -188,6 +196,9 @@ class TestRunOnMain:
             assert result_holder[0] is not None
             assert "main thread didn't respond" in str(result_holder[0])
         finally:
+            for pump in pumps:
+                pump.join(timeout=1.0)
+                assert not pump.is_alive()
             _hdefereval.executeDeferred = original
 
     def test_main_thread_direct_execution(self):

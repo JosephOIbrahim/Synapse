@@ -110,7 +110,8 @@ def test_probe_fails_when_still_stalled(clean_stall_state, monkeypatch):
     mt._record_timeout(10.0)
 
     swallow = types.ModuleType("hdefereval")
-    swallow.executeDeferred = lambda fn: None  # main thread never wakes
+    accepted = []
+    swallow.executeDeferred = accepted.append  # main thread does not wake in test
     monkeypatch.setitem(sys.modules, "hdefereval", swallow)
 
     outcome = {}
@@ -118,10 +119,16 @@ def test_probe_fails_when_still_stalled(clean_stall_state, monkeypatch):
     def _from_worker():
         outcome["probe"] = mt.probe_main_thread(timeout=0.1)
 
-    t = threading.Thread(target=_from_worker)
-    t.start()
-    t.join(timeout=5.0)
+    try:
+        t = threading.Thread(target=_from_worker)
+        t.start()
+        t.join(timeout=5.0)
 
-    assert outcome["probe"] is False
-    assert mt.is_main_thread_stalled()
-    assert mt.stall_state()["consecutive_timeouts"] == 3
+        assert outcome["probe"] is False
+        assert mt.is_main_thread_stalled()
+        assert mt.stall_state()["consecutive_timeouts"] == 3
+    finally:
+        # Preserve native ownership: accepted callbacks outlive their caller.
+        # Consume them before this test replaces its vendor fake.
+        for callback in accepted:
+            callback()

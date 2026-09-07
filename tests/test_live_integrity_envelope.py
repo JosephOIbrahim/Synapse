@@ -593,9 +593,10 @@ class TestHandleSeam:
 
 class TestRecordStallOptOut:
     def _timeout_from_worker(self, monkeypatch, record_stall):
-        """Force the worker-path timeout: fake hdefereval drops the callback."""
+        """Force worker timeout, then retire the fake's accepted native wake."""
         fake = types.ModuleType("hdefereval")
-        fake.executeDeferred = lambda fn: None  # main thread never runs it
+        accepted = []
+        fake.executeDeferred = accepted.append  # hold throughout the caller's wait
         monkeypatch.setitem(__import__("sys").modules, "hdefereval", fake)
 
         raised = []
@@ -607,10 +608,16 @@ class TestRecordStallOptOut:
             except RuntimeError as e:
                 raised.append(e)
 
-        t = threading.Thread(target=_run)
-        t.start()
-        t.join(timeout=5)
-        return raised
+        try:
+            t = threading.Thread(target=_run)
+            t.start()
+            t.join(timeout=5)
+            return raised
+        finally:
+            # Do not discard an accepted wake when replacing this vendor fake.
+            # Its expired payload must stay inert when the callback is consumed.
+            for callback in accepted:
+                callback()
 
     def test_record_stall_false_never_feeds_detector(self, monkeypatch):
         mt._record_success()  # clean slate
