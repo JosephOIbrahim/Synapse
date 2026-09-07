@@ -3024,7 +3024,8 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_worker_finished(self, worker, connection):
         # Aborting intentionally omits stream_done in the existing worker.
         # The thread's terminal event is still authoritative for UI cleanup.
-        if getattr(self, "_task_connection", None) is not connection:
+        if (worker is not getattr(self, "_worker", None)
+                or getattr(self, "_task_connection", None) is not connection):
             return
         if getattr(worker, "_abort", False):
             self._on_done()
@@ -3059,6 +3060,10 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def _on_done(self):
+        sender = getattr(self, "sender", lambda: None)()
+        if (sender is not None and ClaudeWorker is not None and isinstance(sender, ClaudeWorker)
+                and sender is not getattr(self, "_worker", None)):
+            return
         text = "".join(self._stream_buf).strip()
         connection = getattr(self, "_task_connection", None)
         if connection is not None:
@@ -3087,7 +3092,9 @@ class SynapsePanel(QtWidgets.QWidget):
                     pass
         if self._worker is not None:
             try:
-                self._messages = self._worker.get_messages()
+                messages = self._worker.get_terminal_messages()
+                if messages is not None:
+                    self._messages = messages
             except Exception:
                 pass
         # Session survival (R.2): persist the completed transcript so a reopen —
@@ -3144,9 +3151,25 @@ class SynapsePanel(QtWidgets.QWidget):
         token_readout.refresh_surfaces(face=face, meter=meter, pill=pill)
 
     def _on_error(self, msg):
+        sender = getattr(self, "sender", lambda: None)()
+        if (sender is not None and ClaudeWorker is not None and isinstance(sender, ClaudeWorker)
+                and sender is not getattr(self, "_worker", None)):
+            return
         connection = getattr(self, "_task_connection", None)
         if connection is not None:
             connection.revoke()
+        # The worker publishes this snapshot before any terminal signal. Never
+        # read its live list while an error/finished event is still in flight.
+        worker = getattr(self, "_worker", None)
+        if worker is not None:
+            try:
+                messages = worker.get_terminal_messages()
+                if messages is not None:
+                    self._messages = messages
+                    from synapse.server import session_store as _session_store
+                    _session_store.save_conversation(self._messages)
+            except Exception:
+                pass
         self._set_thinking(False)
         if getattr(self, "_streaming_started", False):
             try:

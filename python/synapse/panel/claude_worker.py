@@ -107,6 +107,8 @@ class ClaudeWorker(QThread):
     ) -> None:
         super().__init__(parent)
         self._messages: list[dict] = copy.deepcopy(messages)
+        self._terminal_lock = threading.Lock()
+        self._terminal_messages = None
         self._system: str = system_prompt
         # Autonomous worker: advertise only the allowlisted tool subset so the
         # LLM never sees a denied tool. enforce_worker_policy gates the
@@ -159,33 +161,66 @@ class ClaudeWorker(QThread):
         """
         return copy.deepcopy(self._messages)
 
+    def get_terminal_messages(self):
+        """Copy the published terminal transcript, or None while it is live."""
+        with self._terminal_lock:
+            return copy.deepcopy(self._terminal_messages)
+
+    def _publish_terminal_messages(self, outcome):
+        """Finish history before Qt can deliver a terminal signal to the panel."""
+        with self._terminal_lock:
+            if self._terminal_messages is not None:
+                return
+            if outcome in ("stopped", "error"):
+                reason = ("The artist stopped the previous task." if outcome == "stopped"
+                          else "The previous task ended with an error before completion.")
+                self._messages.append({
+                    "role": "user",
+                    "content": (
+                        "[SYNAPSE task status] " + reason +
+                        " Recorded tool results describe only the outcomes received."
+                        " Ending this task does not undo any effects."
+                        " An operation without a confirmed result may still be finishing;"
+                        " inspect unknown outcomes before retrying. Do not continue the"
+                        " unfinished plan unless the artist asks again. Follow the next user request."
+                    ),
+                })
+            self._terminal_messages = copy.deepcopy(self._messages)
+
     # ------------------------------------------------------------------
     # QThread entry point
     # ------------------------------------------------------------------
 
     def run(self) -> None:
         """Entry point executed on the background thread."""
+        outcome = "error"
+        error_message = None
         try:
             # Key resolution is the provider's concern (Anthropic → hou.secure /
             # ANTHROPIC_API_KEY; Gemini → GEMINI_API_KEY). On a missing key the
             # provider supplies the human-facing message — surfaced, never silent.
             api_key = self._provider.resolve_key()
             if not api_key:
-                self.stream_error.emit(self._provider.key_error_message())
-                return
-
-            self._conversation_loop(api_key)
-            if not self._abort:
-                self.stream_done.emit()
+                error_message = self._provider.key_error_message()
+            else:
+                self._conversation_loop(api_key)
+                outcome = "completed"
 
         except Exception as exc:
             logger.exception("ClaudeWorker fatal error")
-            self.stream_error.emit(str(exc))
+            error_message = str(exc)
         finally:
+            if self._abort:
+                outcome = "stopped"
+            self._publish_terminal_messages(outcome)
             self._model_scope.active = False
             grant = getattr(self._provider, "_model_grant", None)
             if grant is not None:
                 grant.release()
+        if outcome == "completed":
+            self.stream_done.emit()
+        elif outcome == "error":
+            self.stream_error.emit(error_message or "The task ended before completion.")
 
     # ------------------------------------------------------------------
     # Core conversation loop
@@ -273,28 +308,43 @@ class ClaudeWorker(QThread):
 
                 # Process every tool_use block, collect results
                 tool_results: list[dict] = []
-                for block in content_blocks:
-                    if block.get("type") != "tool_use":
-                        continue
+                calls = [block for block in content_blocks if block.get("type") == "tool_use"]
+                try:
+                    for index, block in enumerate(calls):
+                        if self._abort:
+                            tool_results.append({
+                                "type": "tool_result", "tool_use_id": block.get("id", ""),
+                                "content": "Cancelled before execution because the artist stopped this task.",
+                                "is_error": True,
+                            })
+                            continue
 
-                    if self._abort:
-                        tool_results.append({
-                            "type": "tool_result", "tool_use_id": block.get("id", ""),
-                            "content": "Cancelled before execution because the artist stopped this task.",
-                            "is_error": True,
+                        try:
+                            result_msg = self._execute_tool_block(block)
+                        except BaseException:
+                            # The dispatch boundary cannot infer whether a
+                            # failed call already changed Houdini. Keep prior
+                            # results and pair every remaining call truthfully.
+                            tool_results.append({
+                                "type": "tool_result", "tool_use_id": block.get("id", ""),
+                                "content": "Execution outcome unknown: no tool result was received. Inspect the scene before retrying.",
+                                "is_error": True,
+                            })
+                            tool_results.extend({
+                                "type": "tool_result", "tool_use_id": pending.get("id", ""),
+                                "content": "Not executed because an earlier tool call ended the task with an error.",
+                                "is_error": True,
+                            } for pending in calls[index + 1:])
+                            raise
+                        tool_results.append(result_msg)
+                        tool_calls_total += 1
+                finally:
+                    # Also commit earlier results when a later dispatch raises.
+                    if tool_results:
+                        self._messages.append({
+                            "role": "user",
+                            "content": tool_results,
                         })
-                        continue
-
-                    result_msg = self._execute_tool_block(block)
-                    tool_results.append(result_msg)
-                    tool_calls_total += 1
-
-                # Append all tool results in a single user message
-                if tool_results:
-                    self._messages.append({
-                        "role": "user",
-                        "content": tool_results,
-                    })
 
             else:
                 # end_turn, max_tokens, or anything else -- we're done.
