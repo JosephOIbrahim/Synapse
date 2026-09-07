@@ -1,5 +1,6 @@
 """Fixed lookdev input contract: reject ambiguity before entering Houdini."""
 import pytest
+from itertools import permutations
 from unittest.mock import MagicMock
 
 from synapse.server.solaris_lookdev import validate_request, _set, _material_wire, _verify_stage, build_lookdev, _restore_flags
@@ -169,9 +170,11 @@ class Prim:
 def composed_fixture():
     from types import SimpleNamespace
     mesh = Prim("Mesh", {
-        "points": Attribute([(0,0,0)]*4), "faceVertexCounts": Attribute([4]),
-        "faceVertexIndices": Attribute([0,1,2,3]),
+        "points": Attribute([(-1,-1,0), (1,-1,0), (-1,1,0), (1,1,0)]),
+        "faceVertexCounts": Attribute([4]),
+        "faceVertexIndices": Attribute([0,1,3,2]),
         "primvars:st": Attribute([(0,0),(1,0),(1,1),(0,1)], "faceVarying"),
+        "orientation": Attribute("leftHanded"), "subdivisionScheme": Attribute("none"),
     }, {"material:binding": ["/materials/look"]})
     material = Prim("Material", {
         "inputs:base_color": Attribute((1,1,1)), "inputs:base_color_primvar": Attribute(""),
@@ -217,3 +220,88 @@ def test_cook_success_cannot_hide_composed_defects(composed_fixture, defect):
     elif defect == "broken_surface": args[0].stage.return_value.GetAttributeAtPath.return_value = None
     with pytest.raises(RuntimeError):
         _verify_stage(*args)
+
+
+@pytest.mark.parametrize("points", [
+    [(0,0,0)]*4,
+    [(-1,-1,0), (1,-1,0), (-1,1,0), (-1,1,0)],
+    [(float("nan"),-1,0), (1,-1,0), (-1,1,0), (1,1,0)],
+    [(-1,-1,float("inf")), (1,-1,0), (-1,1,0), (1,1,0)],
+    [(-1,-float("inf"),0), (1,-1,0), (-1,1,0), (1,1,0)],
+    [(-1,-1), (1,-1,0), (-1,1,0), (1,1,0)],
+    [(-1,-1,0,0), (1,-1,0), (-1,1,0), (1,1,0)],
+    [("left",-1,0), (1,-1,0), (-1,1,0), (1,1,0)],
+    [(-2,-2,0), (2,-2,0), (-2,2,0), (2,2,0)],
+    [(-1,-1,1), (1,-1,1), (-1,1,1), (1,1,1)],
+    [(-1,-1,0), (1,-1,0), (-1,1,0), (1,1,0.1)],
+], ids=["collapsed", "duplicate", "nan", "positive-inf", "negative-inf",
+        "two-components", "four-components", "nonnumeric", "wrong-size", "offset-plane", "nonplanar"])
+def test_fixed_quad_rejects_bad_positions(composed_fixture, points):
+    args, prims = composed_fixture
+    prims["/mesh"].values["points"].value = points
+    with pytest.raises(RuntimeError, match="lookdev fixture"):
+        _verify_stage(*args)
+
+
+@pytest.mark.parametrize("defect", [
+    "bow-tie", "wrong-unindexed-uv", "wrong-indexed-uv", "unmapped-point-order",
+    "reversed-winding", "flipped-orientation", "invalid-orientation", "missing-orientation",
+    "subdivision", "missing-subdivision",
+])
+def test_fixed_quad_rejects_wrong_corner_relationships(composed_fixture, defect):
+    args, prims = composed_fixture
+    mesh = prims["/mesh"]
+    if defect == "bow-tie":
+        # All corners remain unique, and the UVs still match each visited point.
+        # Only the face's diagonal/crossing edges are wrong.
+        mesh.values["faceVertexIndices"].value = [0,1,2,3]
+        mesh.values["primvars:st"].value = [(0,0),(1,0),(0,1),(1,1)]
+    elif defect == "wrong-unindexed-uv":
+        mesh.values["primvars:st"].value = [(1,0),(0,0),(1,1),(0,1)]
+    elif defect == "wrong-indexed-uv":
+        mesh.values["primvars:st:indices"] = Attribute([1,0,2,3])
+    elif defect == "unmapped-point-order":
+        mesh.values["points"].value = [(1,-1,0), (1,1,0), (-1,-1,0), (-1,1,0)]
+    elif defect == "reversed-winding":
+        mesh.values["faceVertexIndices"].value.reverse()
+        mesh.values["primvars:st"].value.reverse()
+    elif defect == "flipped-orientation":
+        mesh.values["orientation"].value = "rightHanded"
+    elif defect == "invalid-orientation":
+        mesh.values["orientation"].value = "sideways"
+    elif defect == "missing-orientation":
+        mesh.values["orientation"].value = None
+    elif defect == "subdivision":
+        mesh.values["subdivisionScheme"].value = "catmullClark"
+    elif defect == "missing-subdivision":
+        mesh.values["subdivisionScheme"].value = None
+    with pytest.raises(RuntimeError, match="lookdev"):
+        _verify_stage(*args)
+
+
+@pytest.mark.parametrize("point_order", list(permutations(range(4))))
+def test_equivalent_corner_storage_preserves_qualified_fixture(composed_fixture, point_order):
+    args, prims = composed_fixture
+    mesh = prims["/mesh"]
+    # Independent native fixture values: old point IDs and their UV coordinates.
+    points = [(-1,-1,0), (1,-1,0), (-1,1,0), (1,1,0)]
+    uv_by_old_point = [(0,0), (1,0), (0,1), (1,1)]
+    perimeter = [0,1,3,2]
+    uv_table = [(1,1), (0,0), (0,1), (1,0)]
+    mesh.values["points"].value = [points[i] for i in point_order]
+    new_id = {old: new for new, old in enumerate(point_order)}
+    for start in range(4):
+        rotated = perimeter[start:] + perimeter[:start]
+        for reverse in (False, True):
+            walk = rotated[::-1] if reverse else rotated
+            mesh.values["orientation"].value = "rightHanded" if reverse else "leftHanded"
+            mesh.values["faceVertexIndices"].value = [new_id[old] for old in walk]
+            face_uvs = [uv_by_old_point[old] for old in walk]
+            for indexed in (False, True):
+                mesh.values["primvars:st"].value = uv_table if indexed else face_uvs
+                mesh.values["primvars:st:indices"] = Attribute(
+                    [uv_table.index(uv) for uv in face_uvs] if indexed else None)
+                result = _verify_stage(*args)
+                assert result["usd"] == "verified"
+                assert result["texture_pixels"] == "not measured"
+                assert result["rendered_appearance"] == "not checked"

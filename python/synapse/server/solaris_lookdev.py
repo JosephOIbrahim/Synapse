@@ -138,26 +138,66 @@ def _restore_flags(parent, before, owned_node=None, first_display=False):
     return next((path for path, flag in expected.items() if flag), None)
 
 
+def _verify_fixture_geometry(mesh):
+    """Check the fixed local XY polygon, independently of vertex/UV storage order."""
+    try:
+        points = [tuple(point) for point in (mesh.GetAttribute("points").Get() or [])]
+        valid_points = (len(points) == 4
+                        and all(len(point) == 3 and all(math.isfinite(v) for v in point) for point in points)
+                        and set(points) == {(-1.0, -1.0, 0.0), (1.0, -1.0, 0.0),
+                                            (-1.0, 1.0, 0.0), (1.0, 1.0, 0.0)})
+    except (TypeError, ValueError, OverflowError):
+        valid_points = False
+    if not valid_points:
+        raise RuntimeError("The lookdev fixture must be a finite, centered 2 by 2 XY square")
+
+    counts = mesh.GetAttribute("faceVertexCounts").Get()
+    vertices = list(mesh.GetAttribute("faceVertexIndices").Get() or [])
+    if (list(counts or []) != [4] or len(vertices) != 4
+            or any(type(index) is not int for index in vertices) or set(vertices) != {0, 1, 2, 3}):
+        raise RuntimeError("The lookdev fixture has no qualified four-corner face topology")
+    face = [points[index] for index in vertices]
+    # Twice the signed area is +/-8 for a perimeter traversal of this square,
+    # and zero for its crossing permutations. The native leftHanded + CCW
+    # combination fixes the geometric normal; reversing both is equivalent.
+    twice_area = sum(a[0]*b[1] - b[0]*a[1] for a, b in zip(face, face[1:] + face[:1]))
+    orientation = mesh.GetAttribute("orientation").Get()
+    if (orientation not in ("leftHanded", "rightHanded")
+            or twice_area != (8.0 if orientation == "leftHanded" else -8.0)):
+        raise RuntimeError("The lookdev fixture must keep its qualified polygon winding and orientation")
+    if mesh.GetAttribute("subdivisionScheme").Get() != "none":
+        raise RuntimeError("The lookdev fixture must remain an unsubdivided polygon")
+
+    uv = mesh.GetAttribute("primvars:st")
+    values = uv.Get() if uv else None
+    indices = mesh.GetAttribute("primvars:st:indices").Get()
+    if not uv or uv.GetMetadata("interpolation") != "faceVarying" or values is None or len(values) != 4:
+        raise RuntimeError("The lookdev fixture has no qualified four-corner UV topology")
+    try:
+        coordinates = [tuple(value) for value in values]
+        valid_uvs = (all(len(value) == 2 and all(math.isfinite(v) for v in value) for value in coordinates)
+                     and set(coordinates) == {(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)})
+    except (TypeError, ValueError, OverflowError):
+        valid_uvs = False
+    if not valid_uvs:
+        raise RuntimeError("The lookdev UVs must span the four finite unit-square corners")
+    if indices is not None:
+        if (len(indices) != 4 or any(type(index) is not int for index in indices)
+                or set(indices) != {0, 1, 2, 3}):
+            raise RuntimeError("The lookdev UV indices must address each corner exactly once")
+        coordinates = [coordinates[index] for index in indices]
+    if any(uv != ((point[0] + 1.0)/2.0, (point[1] + 1.0)/2.0) for point, uv in zip(face, coordinates)):
+        raise RuntimeError("The lookdev UVs do not match their geometric face corners")
+
+
 def _verify_stage(output, mesh_path, material_path, color, roughness, camera_path, settings_path):
     stage = output.stage(ignore_errors=False)
     if stage is None or output.errors():
         raise RuntimeError(f"Lookdev output did not compose cleanly: {output.errors()}")
     mesh = stage.GetPrimAtPath(mesh_path)
-    if not mesh or mesh.GetTypeName() != "Mesh" or len(mesh.GetAttribute("points").Get() or []) != 4:
+    if not mesh or mesh.GetTypeName() != "Mesh":
         raise RuntimeError("The expected four-point lookdev fixture is missing")
-    uv = mesh.GetAttribute("primvars:st")
-    values = uv.Get() if uv else None
-    indices = mesh.GetAttribute("primvars:st:indices").Get()
-    counts = mesh.GetAttribute("faceVertexCounts").Get()
-    vertices = mesh.GetAttribute("faceVertexIndices").Get()
-    if (not uv or uv.GetMetadata("interpolation") != "faceVarying" or values is None or len(values) != 4
-            or list(counts or []) != [4] or sorted(vertices or []) != [0, 1, 2, 3]):
-        raise RuntimeError("The lookdev fixture has no qualified four-corner UV topology")
-    coordinates = [tuple(value) for value in values]
-    if (any(len(value) != 2 or any(not math.isfinite(v) for v in value) for value in coordinates)
-            or set(coordinates) != {(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)}
-            or (indices is not None and sorted(indices) != [0, 1, 2, 3])):
-        raise RuntimeError("The lookdev UVs must span the four finite unit-square corners")
+    _verify_fixture_geometry(mesh)
     binding = [str(p) for p in mesh.GetRelationship("material:binding").GetTargets()]
     if binding != [material_path]:
         raise RuntimeError(f"Material binding mismatch: {binding!r}")
