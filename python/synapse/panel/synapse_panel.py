@@ -50,6 +50,37 @@ logger = logging.getLogger(__name__)
 _ACTIVE_PANEL_WORKERS = set()
 
 
+def _session_permission_views():
+    """UI observers survive ordinary panel reloads without owning permission."""
+    import os
+    import sys
+    import types
+    import weakref
+    name = "_synapse_panel_session_permission_views_v1"
+    state = sys.modules.get(name)
+    if (not isinstance(state, types.ModuleType)
+            or getattr(state, "owner_pid", None) != os.getpid()
+            or not isinstance(getattr(state, "views", None), weakref.WeakSet)):
+        state = types.ModuleType(name)
+        state.owner_pid = os.getpid()
+        state.views = weakref.WeakSet()
+        sys.modules[name] = state
+    return state.views
+
+
+_SESSION_PERMISSION_VIEWS = _session_permission_views()
+
+
+def _refresh_session_permission_views():
+    """Keep open panels in sync without retaining a destroyed Qt widget."""
+    for panel in tuple(_SESSION_PERMISSION_VIEWS):
+        try:
+            panel._refresh_session_permission()
+        except Exception:
+            # A stale or unavailable view cannot interrupt approval/revocation.
+            _SESSION_PERMISSION_VIEWS.discard(panel)
+
+
 def _revoke_model_connections(connections, *_):
     for connection in tuple(connections):
         connection.revoke()
@@ -1094,6 +1125,7 @@ class SynapsePanel(QtWidgets.QWidget):
             self._engine_keyed = bool(connection.provider.resolve_key())
             task = getattr(self, "_task_connection", None)
             shown = task or connection
+            self._refresh_session_permission(shown)
             detail = shown.facts.description
             if task:
                 detail = "Current task\n" + detail + "\n\nNext task: " + connection.spec.identity
@@ -1110,6 +1142,9 @@ class SynapsePanel(QtWidgets.QWidget):
             connection.release()
         except Exception:
             self._engine_keyed = False
+            permission_button = getattr(self, "_session_permission_btn", None)
+            if permission_button is not None:
+                permission_button.hide()
             task = getattr(self, "_task_connection", None)
             if task is not None:
                 self._model_connection_detail = "Current task\n" + task.facts.description + "\nNext selection is unavailable."
@@ -1840,26 +1875,81 @@ class SynapsePanel(QtWidgets.QWidget):
             provider._model_grant = access.issue_task_grant(connection.spec, key=key,
                 facts=connection.facts, approved=True, scope=scope)
             return True
+        session_grant = access.session_task_grant(connection.spec, key=key,
+            facts=connection.facts, scope=scope)
+        if session_grant is not None:
+            provider._model_grant = session_grant
+            return True
         box = QtWidgets.QMessageBox(self)
-        box.setWindowTitle("Allow this panel task?")
+        box.setWindowTitle("Allow this model connection?")
         box.setTextFormat(Qt.PlainText)
         box.setText(connection.facts.description)
         box.setInformativeText(
-            "This task can send your prompt, conversation, scene context, tool and memory results, "
-            "and images supplied by tools to this service. This includes follow-up requests while tools run.\n\n"
-            "The saved memory store remains on this computer; recalled contents can be sent with this task. "
-            "This permission ends with this task. Background requests require separate Project rules. "
-            "External MCP clients control their own model connections.")
+            "Your prompts, conversation, scene context, recalled memory, tool results and images supplied by "
+            "tools can be sent to this service, including while tools run.\n\n"
+            "Saved memory stays on this computer. Recalled contents may be sent.\n\n"
+            "Allow one task, or allow follow-up panel tasks with this exact connection and selected project "
+            "rules until Houdini exits. Session permission stays in memory. Revoke it below the prompt or in More.\n\n"
+            "Changing project rules requires fresh permission. Background requests need separate Project rules. "
+            "External MCP clients manage their own model connections.")
         allow = box.addButton("Allow this task", QtWidgets.QMessageBox.AcceptRole)
+        session = box.addButton("Allow for this session", QtWidgets.QMessageBox.AcceptRole)
         cancel = box.addButton("Keep editing", QtWidgets.QMessageBox.RejectRole)
         box.setDefaultButton(cancel)
+        box.setEscapeButton(cancel)
         box.exec() if hasattr(box, "exec") else box.exec_()
-        if box.clickedButton() is not allow:
+        clicked = box.clickedButton()
+        box.deleteLater()
+        if clicked is not allow and clicked is not session:
             scope.active = False
             return False
-        provider._model_grant = access.issue_task_grant(connection.spec, key=key,
-            facts=connection.facts, approved=True, scope=scope)
+        if clicked is session:
+            provider._model_grant = access.issue_session_grant(connection.spec, key=key,
+                facts=connection.facts, approved=True, scope=scope)
+            _refresh_session_permission_views()
+        else:
+            provider._model_grant = access.issue_task_grant(connection.spec, key=key,
+                facts=connection.facts, approved=True, scope=scope)
         return True
+
+    def _refresh_session_permission(self, connection=None):
+        """Display permission for the shown recipient; never approve from a read."""
+        button = getattr(self, "_session_permission_btn", None)
+        if button is None:
+            return
+        temporary = None
+        try:
+            from synapse import model_access as access
+            if connection is None:
+                connection = getattr(self, "_task_connection", None)
+            if connection is None:
+                temporary = connection = self._prepare_connection()
+            # A running task can retain an older class generation after another
+            # panel opens. Normalize only this display identity, never its grant.
+            shown_spec = access.ConnectionSpec(connection.spec.provider,
+                connection.spec.model, connection.spec.endpoint)
+            allowed = access.has_session_approval(shown_spec,
+                key=connection.provider.resolve_key())
+            button.setVisible(allowed)
+            if allowed:
+                button.setToolTip(
+                    connection.facts.description + "\n\nAllowed for this Houdini session under the selected project rules. "
+                    "Click to revoke all session model permissions in every open SYNAPSE panel. "
+                    "Requests already sent may finish. Saved Project rules are separate.")
+        except Exception:
+            button.hide()
+        finally:
+            if temporary is not None:
+                temporary.release()
+
+    def _revoke_session_approvals(self):
+        from synapse import model_access as access
+        access.revoke_session_approvals()
+        _refresh_session_permission_views()
+        self._chat.append_system_message(
+            "Session model permissions revoked for all SYNAPSE panels. "
+            "The next request needs permission unless saved Project rules allow it. "
+            "Requests already sent may finish.")
 
     def _route_connection(self, connection, text):
         from synapse.panel.model_routing import choose_route
@@ -2226,6 +2316,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._connection_status = c.Button("Connect models", variant="ghost")
         self._connection_status.clicked.connect(self._open_connections)
         col.addWidget(self._connection_status)
+        self._session_permission_btn = c.Button("Session · Revoke", variant="ghost")
+        self._session_permission_btn.setProperty("synapse_session_permission", True)
+        self._session_permission_btn.clicked.connect(self._revoke_session_approvals)
+        self._session_permission_btn.hide()
+        col.addWidget(self._session_permission_btn)
+        _SESSION_PERMISSION_VIEWS.add(self)
         # Expire display evidence without probing or sending any network traffic.
         self._location_timer = QTimer(self)
         self._location_timer.setInterval(30000)
@@ -2337,6 +2433,7 @@ class SynapsePanel(QtWidgets.QWidget):
         'Larger text / Default text' are the Aa font scale, not density."""
         menu = QtWidgets.QMenu(self)
         menu.addAction("Copy conversation", self._copy_conversation)
+        menu.addAction("Revoke session model permissions", self._revoke_session_approvals)
         # Build HDA: the form is unchanged; only the way in moved (BC-1).
         menu.addAction("Build HDA…", lambda: self._set_direct_view("hda"))
         # BC-2: the rail's chrome reads here. Palette names the ACTUAL bound

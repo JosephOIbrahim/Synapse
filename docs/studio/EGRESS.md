@@ -161,8 +161,18 @@ anywhere in the codebase.
   require permission for remote or unverified models; malformed rules or a corrupt
   project selector refuse dispatch. Project rules offers **Ask** and **Local only**.
   Saved background permissions name an exact provider, model and endpoint and
-  require explicit sharing consent. Panel task permission is temporary and scoped
-  to that task, connection and key. Keys are never stored in these rules.
+  require explicit sharing consent. **Allow this task** is temporary and scoped
+  to that task, connection and key. **Allow for this session** explicitly reuses
+  permission for later panel tasks under the same selected project rules and exact
+  provider, model, endpoint and credential. It survives panel reopening and ends
+  when Houdini exits. Each task still has its own revocable grant. The session
+  approval stays only in process memory and cannot authorize background work or
+  child-process handoffs. Keys are never stored in these rules.
+- **Session · Revoke**, below the prompt, and **More → Revoke session
+  model permissions** revoke session approvals across open panels. This also
+  prevents unsent tool follow-ups from using a revoked session grant. Saved
+  background permissions remain separate. Project rules changes invalidate the
+  session approval; changing HIP files alone does not select new project rules.
 - Project path, revision and selection generation are captured when work is
   accepted, including queued/asynchronous work and child-agent handoffs. Stop,
   completion, changed project or revoked permission prevents later payloads.

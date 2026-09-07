@@ -11,9 +11,11 @@ import inspect
 import json
 import os
 from pathlib import Path
+import sys
 import tempfile
 import threading
 import time
+import types
 import uuid
 import weakref
 
@@ -28,6 +30,18 @@ _LOCK = threading.RLock()
 _SDK_CLIENTS = weakref.WeakKeyDictionary()
 _SDK_REQUEST = ContextVar("synapse_sdk_request", default=None)
 _STREAM_REQUEST = ContextVar("synapse_stream_request", default=None)
+_MAX_SESSION_APPROVALS = 64
+_SESSION_ANCHOR = "_synapse_panel_session_consent_v1"
+# The pypanel loader evicts synapse.* on ordinary reopen. One fully initialized
+# process anchor keeps consent and revocation shared across those generations.
+_session_candidate = types.ModuleType(_SESSION_ANCHOR)
+_session_candidate.schema = 1
+_session_candidate.owner_pid = os.getpid()
+_session_candidate.lock = threading.RLock()
+_session_candidate.approvals = {}
+_session_candidate.expired = False
+_SESSION_STATE = sys.modules.setdefault(_SESSION_ANCHOR, _session_candidate)
+del _session_candidate
 
 
 class ModelAccessDenied(RuntimeError):
@@ -96,6 +110,7 @@ def select_project_policy(path):
     current = settings.load_settings()
     if not settings.save_settings(current, _project_selection=(target, uuid.uuid4().hex)):
         raise ModelAccessDenied("The selected project could not be saved. The previous scope remains active.")
+    revoke_session_approvals()
     return load_policy()
 
 
@@ -131,7 +146,11 @@ def _decode(data):
 
 
 def load_policy(path=None):
-    target = Path(path).resolve() if path is not None else policy_path()
+    try:
+        target = Path(path).resolve() if path is not None else policy_path()
+    except ModelAccessDenied:
+        revoke_session_approvals()
+        raise
     try:
         with target.open("rb") as stream:
             stat = os.fstat(stream.fileno())
@@ -177,6 +196,7 @@ def save_policy(mode, approved_models=(), *, path=None, expected_revision=None):
             os.fsync(stream.fileno())
         os.replace(temporary, target)
         temporary = None
+        _expire_session_path(target)
         return load_policy(target)
     except OSError:
         raise ModelAccessDenied("Project model rules could not be saved. The previous rules remain in place.") from None
@@ -201,19 +221,28 @@ class RequestScope:
 def capture_scope():
     try:
         policy = load_policy()
-        return RequestScope(policy.path, policy.revision, _selection_generation())
+        generation = _selection_generation()
+        _expire_session_approvals(policy, generation)
+        return RequestScope(policy.path, policy.revision, generation)
     except ModelAccessDenied:
+        revoke_session_approvals()
         # Keep offline recipes usable, but never let fixing a corrupt selector
         # authorize a request accepted while its scope was unknown.
         return RequestScope(Path(), "unreadable", "unreadable", active=False)
 
 
 def _check_scope(scope, policy):
+    try:
+        generation = _selection_generation()
+    except ModelAccessDenied:
+        revoke_session_approvals()
+        raise
+    _expire_session_approvals(policy, generation)
     if isinstance(scope, RequestScope) and callable(scope.cancelled) and scope.cancelled():
         scope.active = False
     if not isinstance(scope, RequestScope) or not scope.active:
         raise ModelAccessDenied("This task's project rules changed. Start a new task after reviewing Project rules.")
-    if (scope.path != policy.path or scope.revision != policy.revision or scope.generation != _selection_generation()):
+    if (scope.path != policy.path or scope.revision != policy.revision or scope.generation != generation):
         scope.active = False  # Switching back cannot revive a previously rejected task.
         raise ModelAccessDenied("This task's project rules changed. Start a new task after reviewing Project rules.")
 
@@ -259,12 +288,160 @@ class TaskGrant:
     _key: bytes = field(repr=False)
     _authority: object = field(repr=False)
     active: bool = True
+    _session: object = field(default=None, repr=False, compare=False)
 
     def release(self):
         self.active = False
 
 
+def _session_store():
+    state = _SESSION_STATE
+    if (sys.modules.get(_SESSION_ANCHOR) is not state or not isinstance(state, types.ModuleType)
+            or getattr(state, "schema", None) != 1
+            or type(getattr(state, "schema", None)) is not int
+            or getattr(state, "owner_pid", None) != os.getpid()
+            or type(getattr(state, "owner_pid", None)) is not int
+            or getattr(state, "expired", None) is not False
+            or type(getattr(state, "approvals", None)) is not dict
+            or not isinstance(getattr(state, "lock", None), type(threading.RLock()))):
+        # A schema/PID mismatch is a permanent expiry, even if a later reload
+        # restores the old attributes. Never reinterpret or revive stale consent.
+        if isinstance(state, types.ModuleType):
+            state.expired = True
+            approvals = getattr(state, "approvals", None)
+            if type(approvals) is dict:
+                for parent in approvals.values():
+                    if type(parent) is dict:
+                        parent["active"] = False
+                approvals.clear()
+        raise ModelAccessDenied("Session permissions are unavailable after a runtime change. Restart Houdini or allow one task.")
+    return state
+
+
+def _retire_session_approvals(predicate):
+    """Caller holds the lock; retained task children see a retired parent."""
+    approvals = _session_store().approvals
+    retired = [identity for identity in approvals if predicate(identity)]
+    for identity in retired:
+        approvals.pop(identity)["active"] = False
+    return len(retired)
+
+
+def revoke_session_approvals():
+    """Revoke all panel session approvals, including already issued task children."""
+    try:
+        with _session_store().lock:
+            return _retire_session_approvals(lambda identity: True)
+    except ModelAccessDenied:
+        return 0  # An incompatible or inherited authority cannot authorize sends.
+
+
+def _expire_session_path(path):
+    try:
+        with _session_store().lock:
+            _retire_session_approvals(lambda identity: identity[0] == os.path.normcase(str(path)))
+    except ModelAccessDenied:
+        pass
+
+
+def _expire_session_approvals(policy, generation):
+    try:
+        with _session_store().lock:
+            context = (os.path.normcase(str(policy.path)), policy.revision, generation)
+            _retire_session_approvals(lambda identity: bool(policy.error) or identity[:3] != context)
+    except ModelAccessDenied:
+        pass
+
+
+def _session_identity(spec, key, scope):
+    # Built-in immutable values survive ConnectionSpec class reloads. Never
+    # retain the key itself, a task scope, a panel, a provider or scene content.
+    return (os.path.normcase(str(scope.path)), scope.revision, scope.generation,
+            spec.provider, spec.model, spec.endpoint, _key_digest(key))
+
+
+def _session_request(spec, key, facts, scope):
+    if not isinstance(spec, ConnectionSpec):
+        raise ModelAccessDenied("The model connection is unavailable. Choose a model again.")
+    if facts is not None and (not isinstance(facts, ConnectionFacts) or facts.spec != spec):
+        raise ModelAccessDenied("The checked model connection changed. Check the selected model again.")
+    chosen = scope if scope is not None else capture_scope()
+    # Reuse the ordinary task and physical-send checks before publishing consent.
+    # This validates local-only, credentials, HTTPS and the original project.
+    child = issue_task_grant(spec, key=key, facts=facts, approved=True, scope=chosen)
+    require_access(spec, key=key, facts=facts, grant=child, scope=chosen)
+    return child, _session_identity(spec, key, chosen)
+
+
+def _session_parent(identity):
+    parent = _session_store().approvals.get(identity)
+    if (type(parent) is dict and set(parent) == {"active", "local"}
+            and parent["active"] is True and type(parent["local"]) is bool):
+        return parent
+    return None
+
+
+def issue_session_grant(spec, *, key=None, facts=None, approved=False, scope=None):
+    """Explicit panel consent only; return its first independently revocable task."""
+    if approved is not True:
+        raise ModelAccessDenied("Session permission requires an explicit choice in the panel.")
+    with _session_store().lock:
+        child, identity = _session_request(spec, key, facts, scope)
+        parent = _session_parent(identity)
+        if parent is not None and parent["local"] != child.local:
+            _retire_session_approvals(lambda candidate: candidate == identity)
+            parent = None
+        if parent is None:
+            if len(_session_store().approvals) >= _MAX_SESSION_APPROVALS:
+                raise ModelAccessDenied("Too many session model permissions. End session permissions before allowing another model.")
+            parent = {"local": child.local, "active": True}
+            _session_store().approvals[identity] = parent
+        child._session = parent
+        return child
+
+
+def session_task_grant(spec, *, key=None, facts=None, scope=None):
+    """The panel may redeem existing consent for a fresh original task scope.
+
+    This is never called by ambient SDK, background or process-handoff lanes.
+    Missing consent returns None; invalid project/connection evidence refuses.
+    """
+    try:
+        state = _session_store()
+    except ModelAccessDenied:
+        # Ordinary one-task consent remains available after session state expires.
+        # Still validate the original task: an invalid scope is never a retry.
+        _session_request(spec, key, facts, scope)
+        return None
+    with state.lock:
+        child, identity = _session_request(spec, key, facts, scope)
+        parent = _session_parent(identity)
+        if parent is None:
+            return None
+        if parent["local"] and not child.local:
+            _retire_session_approvals(lambda candidate: candidate == identity)
+            return None
+        child._session = parent
+        return child
+
+
+def has_session_approval(spec, *, key=None, scope=None):
+    """UI observation only; it cannot mint a task grant or authorize a send."""
+    try:
+        with _session_store().lock:
+            chosen = scope if scope is not None else capture_scope()
+            policy = load_policy()
+            _check_scope(chosen, policy)
+            if policy.error or not isinstance(spec, ConnectionSpec):
+                return False
+            return _session_parent(_session_identity(spec, key, chosen)) is not None
+    except (ModelAccessDenied, AttributeError, TypeError):
+        return False
+
+
 def issue_task_grant(spec, *, key=None, facts=None, approved=False, scope=None):
+    if key is not None and (not isinstance(key, str) or any(ord(c) < 32 or ord(c) > 126 for c in key)):
+        raise ModelAccessDenied("The model key contains unsupported characters. Re-enter the key.")
     policy = load_policy()
     chosen_scope = scope if scope is not None else capture_scope()
     _check_scope(chosen_scope, policy)
@@ -298,6 +475,12 @@ def require_access(spec, *, key=None, facts=None, grant=None, scope=None):
         _check_scope(grant.scope, policy)
         if chosen_scope is not None and chosen_scope is not grant.scope:
             raise ModelAccessDenied("This model permission belongs to another task.")
+        if grant._session is not None:
+            with _session_store().lock:
+                identity = _session_identity(spec, key, grant.scope)
+                if _session_parent(identity) is not grant._session:
+                    grant.release()
+                    raise ModelAccessDenied("Session permission ended. Allow this model again before sending.")
         if grant.local and not local:
             grant.release()
             raise ModelAccessDenied("Local execution could not be reverified. Check the model before starting a new task.")
@@ -306,7 +489,7 @@ def require_access(spec, *, key=None, facts=None, grant=None, scope=None):
     if policy.mode == "local_only":
         raise ModelAccessDenied("Local only is active. This model cannot receive project content.")
     if grant is not None:
-        return "task"
+        return "session" if grant._session is not None else "task"
     if spec in policy.approved_models:
         return "project"
     raise ModelAccessDenied("This model needs permission. Open Connect a model → Project rules before running background requests.")
