@@ -1,6 +1,7 @@
 """Audit removed color sites against Git, rather than trusting the mapping table."""
 
 from collections import Counter
+import hashlib
 from pathlib import Path
 import re
 import subprocess
@@ -121,17 +122,25 @@ def test_existing_message_output_remains_byte_identical():
 
 
 def test_protected_source_is_unchanged():
-    # Landing r3 (CTO 2026-09-05, R2-03): fontload.py and the shelf launcher stay
-    # frozen against the master merge-base (master never touched them). The
+    # Landing r3 (CTO 2026-09-05, R2-03): fontload.py stays frozen against the
+    # master merge-base (master never touched it). The
     # CAMERA files synapse_panel.py / face_token.py are edited by the landing
     # under written rulings, so the SWEEP_B guarantee is stated as what it is:
     # SWEEP_B's own commit did not touch them.
     merge_base = subprocess.check_output(
         ["git", "merge-base", "master", "HEAD"], cwd=ROOT, text=True).strip()
-    for path in (PANEL + "designsystem/fontload.py", "houdini/scripts/python/synapse_shelf.py"):
+    for path in (PANEL + "designsystem/fontload.py",):
         frozen = subprocess.check_output(["git", "show", merge_base + ":" + path],
                                          cwd=ROOT, text=True, encoding="utf-8")
         assert (ROOT / path).read_text(encoding="utf-8") == frozen, path
+    # M6's approved shelf-width fix selects the interface at native creation,
+    # before QuickStart can retain its minimum width. Supersede only the shelf
+    # pin with the reviewed source digest (universal newlines, UTF-8), never HEAD.
+    # test_panel_shelf_open and test_bp2_paneltruth_float_fix prove the behavior.
+    shelf = (ROOT / "houdini/scripts/python/synapse_shelf.py").read_text(encoding="utf-8")
+    assert hashlib.sha256(shelf.encode("utf-8")).hexdigest() == (
+        "b46788aafd73f792b0dafa4474c97437d91d03766ad4a6752272888741be34a2"
+    ), "Shelf differs from the reviewed M6 interface-at-creation source"
     sweep_b = "ae046513"
     assert subprocess.check_output(
         ["git", "diff", sweep_b + "~1", sweep_b, "--", PANEL + "synapse_panel.py",

@@ -1,6 +1,7 @@
 """CAMERA display contracts and protected-source controls; no host required."""
 
 import ast
+import hashlib
 import importlib.util
 from pathlib import Path
 import re
@@ -19,8 +20,7 @@ BASE = "ce04dcb0"
 # lifecycle methods are compared against the master merge-base of the landing,
 # because master's B4 (composer cap) edited showEvent / _GrowingInput.__init__
 # after ce04dcb0 and the merge inherits those bytes. Every other CAMERA-frozen
-# file stays pinned to ce04dcb0: `git diff --stat ce04dcb0 master -- <them>`
-# is empty.
+# file stays pinned to ce04dcb0 except the explicit supersessions below.
 #
 # A LITERAL, like BASE above - never `git merge-base master HEAD` (CRUX round 3):
 # the day this lands, merge-base(master, HEAD) == HEAD and the thirteen
@@ -231,16 +231,23 @@ def test_token_readout_worker_fontload_and_shelf_unchanged():
     # window hand-off to the sink, under the written ruling - both re-anchor to
     # the J2 landing commit (_J2_BASE); the pill / meter rules and the worker's
     # hou-free invariant are unchanged (tests/test_bp2_paneltruth_token_refresh.py).
-    # fontload.py and the shelf stay pinned at ce04dcb0.
+    # fontload.py stays pinned at ce04dcb0.
     # Worker activity and cancellation pairing are covered behaviorally by
     # test_first_session_panel; the untouched token display rule remains pinned.
     j2_paths = ["python/synapse/panel/token_readout.py"]
     assert subprocess.check_output(["git", "diff", _J2_BASE, "--", *j2_paths], cwd=ROOT) == b""
-    paths = ["python/synapse/panel/designsystem/fontload.py",
-             # tokens.py left this list 2026-09-05: W7 (Joe's wordmark
-             # addendum) adds a token under a written ruling.
-             "houdini/scripts/python/synapse_shelf.py"]
+    # tokens.py left this list 2026-09-05: W7 (Joe's wordmark
+    # addendum) adds a token under a written ruling.
+    paths = ["python/synapse/panel/designsystem/fontload.py"]
     assert subprocess.check_output(["git", "diff", BASE, "--", *paths], cwd=ROOT) == b""
+    # M6's approved shelf-width fix selects the interface at native creation,
+    # before QuickStart can retain its minimum width. Supersede only the shelf
+    # pin with the reviewed source digest (universal newlines, UTF-8), never HEAD.
+    # test_panel_shelf_open and test_bp2_paneltruth_float_fix prove the behavior.
+    shelf = (ROOT / "houdini/scripts/python/synapse_shelf.py").read_text(encoding="utf-8")
+    assert hashlib.sha256(shelf.encode("utf-8")).hexdigest() == (
+        "b46788aafd73f792b0dafa4474c97437d91d03766ad4a6752272888741be34a2"
+    ), "Shelf differs from the reviewed M6 interface-at-creation source"
 
 
 def camera_census():

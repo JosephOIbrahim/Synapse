@@ -145,17 +145,21 @@ def open_panel():
     pane = anchor.pane() if anchor is not None else (
         desktop.panes()[0] if desktop.panes() else None)
     if pane is not None:
-        tab = pane.createTab(hou.paneTabType.PythonPanel)
-        tab.setActiveInterface(panel_type)
+        # Choose the interface before the default QuickStart pane can set its
+        # native minimum width, which can survive a later interface switch.
+        tab = pane.createTab(
+            hou.paneTabType.PythonPanel,
+            python_panel_interface=panel_type.name(),
+        )
         tab.setIsCurrentTab()
         return
 
     # 3) Float ONLY when there is no pane to dock into.
-    pane = desktop.createFloatingPaneTab(
+    desktop.createFloatingPaneTab(
         hou.paneTabType.PythonPanel,
         size=(320, 600),
+        python_panel_interface=panel_type.name(),
     )
-    pane.setActiveInterface(panel_type)
 
 
 def inspect_selection():

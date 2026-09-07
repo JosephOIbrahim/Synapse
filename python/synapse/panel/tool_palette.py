@@ -6,9 +6,8 @@ Ctrl+K fuzzy-searches across EVERYTHING the artist can ask for:
   * the legacy knowledge base — slash-commands, network recipes, APEX rigs, VEX
     functions (via command_palette.build_palette_entries);
   * per-domain "galleries" — material presets and render-quality tiers.
-Every pick emits a ready-to-send prompt that routes through the agent (and thus
-the gated bridge path), so the palette is deterministic discovery with the
-safety model intact.
+Picks retain their command or prompt identity. Local view commands reach the
+panel directly; other choices use its existing model and permission path.
 """
 
 try:
@@ -160,7 +159,8 @@ def _load_entries():
     try:
         from synapse.panel.command_palette import build_palette_entries
         for e in build_palette_entries():
-            send = (_CATEGORY_PREFIX.get(e.category, "") + (e.description or e.label)).strip()
+            send = (e.command if e.category == "command" else
+                    (_CATEGORY_PREFIX.get(e.category, "") + (e.description or e.label)).strip())
             entries.append(dict(domain=_CATEGORY_DOMAIN.get(e.category, "Commands"),
                                 title=e.label, desc=e.description or "", send=send,
                                 destructive=False,
@@ -205,7 +205,8 @@ def _load_entries():
 class ToolPalette(QtWidgets.QWidget):
     """Frameless fuzzy palette over tools + recipes + commands + galleries."""
 
-    command_selected = Signal(str)  # emits a ready-to-send prompt
+    command_selected = Signal(str)  # selected canonical command or prompt
+    cancelled = Signal()
 
     def __init__(self, parent=None, scale=None):
         super().__init__(parent)
@@ -225,6 +226,9 @@ class ToolPalette(QtWidgets.QWidget):
         except (TypeError, ValueError):
             scale = t.FONT_SCALE_DEFAULT
         self._scale = scale
+        self._screen_clamp = QtCore.QTimer(self)
+        self._screen_clamp.setSingleShot(True)
+        self._screen_clamp.timeout.connect(self._keep_on_screen)
         self.setProperty("rhythm_role", "stack")
         self.setProperty("panel_popup", "tool")
         # Preferred size only: fixed minima made the popup wider than its dock.
@@ -249,6 +253,13 @@ class ToolPalette(QtWidgets.QWidget):
         lay.addLayout(self._build_chip_row("context", "WHERE"))
         self._style_chips()
 
+        self._empty = c.label("No matches. Try another word or clear the filters.", role="caption", scale=self._scale)
+        self._empty.setWordWrap(True)
+        lay.addWidget(self._empty)
+        self._reset = c.Button("Clear search and filters", variant="ghost")
+        self._reset.clicked.connect(self.reset_search)
+        lay.addWidget(self._reset)
+
         self._list = QtWidgets.QListWidget()
         self._list.setObjectName("DsList")
         # bc-wave BC-3: the list is a `stack` consumer - rhythm.apply gives
@@ -263,7 +274,8 @@ class ToolPalette(QtWidgets.QWidget):
         # One line (BC-3): the legend gives its rows back to the options.
         # DO x WHERE and the destructive gate are told where they act (chip
         # tags, the warn row tint + tooltip), not repeated here.
-        hint = c.label("\u2191\u2193 navigate \u00b7 Enter run \u00b7 Esc close", role="caption")
+        hint = c.label("Up/Down navigate \u00b7 Enter choose \u00b7 Esc close", role="caption", scale=self._scale)
+        hint.setWordWrap(True)
         lay.addWidget(hint)
 
         self._populate(self._rows)
@@ -299,6 +311,44 @@ class ToolPalette(QtWidgets.QWidget):
         qss.prepare_sweep_b_popup(self, self._scale)
         super().showEvent(event)
         self._fit_rungs()
+        self._keep_on_screen()
+        # Native window frames can settle after showEvent. Recheck the final
+        # frame without resizing the option list back to its preferred size.
+        self._screen_clamp.start(0)
+        self._search.setFocus()
+
+    def _keep_on_screen(self):
+        if not self.isVisible():
+            return
+        screen = self.screen() or QtWidgets.QApplication.primaryScreen()
+        if screen is None:
+            return
+        available = screen.availableGeometry()
+        frame = self.frameGeometry()
+        handle = self.windowHandle()
+        margins = handle.frameMargins() if handle is not None else QtCore.QMargins()
+        extra_width = max(0, frame.width() - self.width(), margins.left() + margins.right())
+        extra_height = max(0, frame.height() - self.height(), margins.top() + margins.bottom())
+        self.resize(min(self.width(), available.width() - extra_width),
+                    min(self.height(), available.height() - extra_height))
+        # Some native backends expose the frame only on QWindow; QWidget's
+        # frameGeometry can still report the client size. Use the actual
+        # client origin and native margins for the final screen-bound check.
+        origin = self.mapToGlobal(QtCore.QPoint(0, 0))
+        frame = QtCore.QRect(origin.x() - margins.left(), origin.y() - margins.top(),
+                            self.width() + extra_width, self.height() + extra_height)
+        x = max(available.left(), min(frame.x(), available.right() - frame.width() + 1))
+        y = max(available.top(), min(frame.y(), available.bottom() - frame.height() + 1))
+        self.move(self.pos() + QtCore.QPoint(x - frame.x(), y - frame.y()))
+
+    def reset_search(self):
+        """A fresh opening or explicit recovery starts with all choices."""
+        self._rows = _load_entries()
+        self._verb = self._context = None
+        self._search.clear()
+        self._style_chips()
+        self._refilter("")
+        self._search.setFocus()
 
     def _fit_rungs(self):
         """Grow toward the opener until the option list shows six rungs - a
@@ -355,6 +405,8 @@ class ToolPalette(QtWidgets.QWidget):
 
     def _populate(self, rows):
         self._list.clear()
+        self._empty.setVisible(not rows)
+        self._reset.setVisible(not rows)
         last_domain = None
         for e in rows:
             group = _ctx_label(e.get("context"))
@@ -391,10 +443,24 @@ class ToolPalette(QtWidgets.QWidget):
         self._populate(rows)
 
     def _choose(self, item):
+        if not self.isVisible():
+            return
         send = item.data(Qt.ItemDataRole.UserRole)
         if send:
-            self.command_selected.emit(send)
             self.close()
+            self.command_selected.emit(send)
+
+    def _cancel(self):
+        if self.isVisible():
+            self.close()
+            self.cancelled.emit()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self._cancel()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def eventFilter(self, obj, event):
         if obj is self._search and event.type() == QtCore.QEvent.KeyPress:
@@ -408,7 +474,7 @@ class ToolPalette(QtWidgets.QWidget):
                     self._choose(it)
                 return True
             if key == Qt.Key.Key_Escape:
-                self.close()
+                self._cancel()
                 return True
         return super().eventFilter(obj, event)
 

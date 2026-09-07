@@ -2167,6 +2167,7 @@ class SynapsePanel(QtWidgets.QWidget):
         w.setProperty("rhythm_role", "stack")
         col = QtWidgets.QVBoxLayout(w)
         self._input = _GrowingInput()
+        self._input.setAccessibleName("Message to SYNAPSE")
         # Aa scales document text; the inherited root sheet owns the chrome.
         self._set_prompt_font(self._input, self._font_scale)
         self._input.submitted.connect(self._on_submit)
@@ -2181,6 +2182,7 @@ class SynapsePanel(QtWidgets.QWidget):
         attach.setIconSize(QtCore.QSize(36, 36))
         attach.setFixedWidth(52)
         attach.setToolTip("Attach image / file as context")
+        attach.setAccessibleName("Attach image or file")
         attach.clicked.connect(self._on_attach)
         # v9 comp: SEND rides bottom-right INSIDE the composer (the attr name
         # `_send_btn` is load-bearing — the clip audit finds it by name).
@@ -2198,24 +2200,28 @@ class SynapsePanel(QtWidgets.QWidget):
         # the two keys and nothing else - '/' is told once, in the placeholder
         # (the telling G3 pins) - at the chrome floor (SIZE_SMALL, DATA mono,
         # TEXT_SECONDARY via the label colour role), one signal per fact.
-        self._khint = c.label("↵ send · ⇧↵ newline", role="label")
+        self._khint = c.label("Enter sends · Shift+Enter adds a line", role="label")
         self._khint.setFont(fontload.tracked_font(
             "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        footer = QtWidgets.QHBoxLayout()
-        footer.addWidget(self._khint)
-        footer.addStretch()
+        self._khint.setWordWrap(True)
+        col.addWidget(self._khint)
+        footer = QtWidgets.QFormLayout()
+        footer.setRowWrapPolicy(QtWidgets.QFormLayout.WrapLongRows)
+        footer.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
         self._commands_btn = c.Button("Commands", variant="ghost")
         self._commands_btn.setToolTip("Browse commands · / on empty input · Ctrl+K")
         self._commands_btn.clicked.connect(self._open_palette)
-        footer.addWidget(self._commands_btn)
         self._recipes_btn = c.Button("Recipes", variant="ghost")
         self._recipes_btn.setToolTip("Save, tag and reuse local Solaris networks")
         self._recipes_btn.clicked.connect(self._open_saved_recipes)
-        footer.addWidget(self._recipes_btn)
         self._events_btn = c.Button("Events", variant="ghost")
         self._events_btn.setToolTip("Local work and connection updates")
         self._events_btn.clicked.connect(self._open_notifications)
-        footer.addWidget(self._events_btn)
+        local_views = QtWidgets.QFormLayout()
+        local_views.setRowWrapPolicy(QtWidgets.QFormLayout.WrapLongRows)
+        local_views.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
+        local_views.addRow(self._recipes_btn, self._events_btn)
+        footer.addRow(self._commands_btn, local_views)
         col.addLayout(footer)
         self._connection_status = c.Button("Connect models", variant="ghost")
         self._connection_status.clicked.connect(self._open_connections)
@@ -2549,9 +2555,14 @@ class SynapsePanel(QtWidgets.QWidget):
     def _open_palette(self):
         try:
             from synapse.panel.tool_palette import ToolPalette
-            pal = ToolPalette(self, scale=getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT))
-            pal.command_selected.connect(self._on_tool_picked)
-            self._palette = pal  # keep a ref
+            pal = getattr(self, "_palette", None)
+            if pal is None:
+                pal = ToolPalette(self, scale=getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT))
+                pal.command_selected.connect(self._on_tool_picked)
+                pal.cancelled.connect(self._input.setFocus)
+                self._palette = pal
+            elif not pal.isVisible():
+                pal.reset_search()
             # anchor to the input (the ⌘K button is gone — "/" in the input and
             # Ctrl+K are the triggers now)
             self._position_popup(pal, getattr(self, "_input", None))
@@ -2614,8 +2625,7 @@ class SynapsePanel(QtWidgets.QWidget):
         popup.move(int(x), int(y))
 
     def _on_tool_picked(self, prompt):
-        """A palette pick is a ready-to-send prompt; route it through chat (and
-        thus the gated bridge path)."""
+        """Dispatch the selected command or prompt through the existing handler."""
         self._send(prompt)
 
     def _refresh_events(self, snapshot):

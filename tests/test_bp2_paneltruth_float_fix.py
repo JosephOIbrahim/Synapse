@@ -8,7 +8,7 @@ mocked ``hou`` to prove each one:
 
   1. an existing Synapse tab is SURFACED (setIsCurrentTab), never re-created;
   2. otherwise a PythonPanel tab is docked into the Network Editor's pane
-     (pane.createTab + setActiveInterface);
+     (pane.createTab receives the interface at creation);
   3. a floating window appears ONLY when there is no pane to dock into.
 
 Pure stdlib — it never imports a real ``hou`` (a stub loads the module; a
@@ -57,12 +57,13 @@ class _Iface:
 
 
 class _PaneTab:
-    def __init__(self, ttype, iface=None, pane=None):
+    def __init__(self, ttype, iface=None, pane=None, creation_interface=None):
         self._type = ttype
         self._iface = iface
         self._pane = pane
         self.surfaced = 0
         self.set_ifaces = []
+        self.creation_interface = creation_interface
 
     def type(self):
         return self._type
@@ -85,8 +86,10 @@ class _Pane:
         self._ptt = ptt
         self.created = []
 
-    def createTab(self, ttype):
-        tab = _PaneTab(ttype, pane=self)
+    def createTab(self, ttype, python_panel_interface=None):
+        iface = _Iface(python_panel_interface) if python_panel_interface else None
+        tab = _PaneTab(ttype, iface=iface, pane=self,
+                       creation_interface=python_panel_interface)
         self.created.append(tab)
         return tab
 
@@ -109,8 +112,9 @@ class _Desktop:
     def panes(self):
         return list(self._panes)
 
-    def createFloatingPaneTab(self, ttype, size=None):
-        tab = _PaneTab(ttype)
+    def createFloatingPaneTab(self, ttype, size=None, python_panel_interface=None):
+        iface = _Iface(python_panel_interface) if python_panel_interface else None
+        tab = _PaneTab(ttype, iface=iface, creation_interface=python_panel_interface)
         self.floated.append((tab, size))
         return tab
 
@@ -185,7 +189,9 @@ def test_docks_into_network_editor_pane():
     assert len(net_pane.created) == 1                   # a PythonPanel tab docked
     docked = net_pane.created[0]
     assert docked.type() == hou._ptt.PythonPanel
-    assert docked.set_ifaces == [hou._iface]            # set to the synapse panel
+    assert docked.creation_interface == hou._iface.name()  # selected at creation
+    assert docked.activeInterface().name() == hou._iface.name()
+    assert docked.set_ifaces == []                     # no default-then-switch
     assert docked.surfaced == 1                         # brought forward
     assert hou._desktop.floated == []                   # never floated
 
@@ -203,7 +209,9 @@ def test_floats_only_when_no_panes_exist():
     tab, size = hou._desktop.floated[0]
     assert tab.type() == hou._ptt.PythonPanel
     assert size == (320, 600)
-    assert tab.set_ifaces == [hou._iface]
+    assert tab.creation_interface == hou._iface.name()
+    assert tab.activeInterface().name() == hou._iface.name()
+    assert tab.set_ifaces == []
 
 
 # --------------------------------------------------------------------------- #
@@ -221,4 +229,6 @@ def test_docks_into_any_pane_when_no_network_editor():
 
     hou = _run(factory)
     assert len(handles["pane"].created) == 1            # docked into the pane
+    assert handles["pane"].created[0].creation_interface == hou._iface.name()
+    assert handles["pane"].created[0].set_ifaces == []
     assert hou._desktop.floated == []                   # never floated
