@@ -183,22 +183,43 @@ class _MCPLocalClient:
         self._lock = threading.Lock()
 
     def _detect_port(self) -> Optional[int]:
-        """Peek the running adapter; never import a server or call HOM off-thread."""
+        """Peek the running adapter, then this host's published endpoint.
+
+        Never import a server or call HOM off-thread: the adapter module is
+        consulted only if it is already loaded, and the endpoint file is a
+        plain read that must name this very process (pid match)."""
         adapter = sys.modules.get("synapse.server.hwebserver_adapter")
-        if adapter is None or getattr(adapter, "_running", False) is not True:
-            return None
-        port = getattr(adapter, "_port", None)
-        return port if type(port) is int and 0 < port < 65536 else None
+        if adapter is not None and getattr(adapter, "_running", False) is True:
+            port = getattr(adapter, "_port", None)
+            if type(port) is int and 0 < port < 65536:
+                return port
+        import os
+        try:
+            from synapse.server.bridge_endpoint import bridge_file
+            with open(bridge_file(), encoding="utf-8") as stream:
+                endpoint = json.loads(stream.read(16384))
+            port = endpoint.get("port")
+            if (endpoint.get("pid") == os.getpid() and type(port) is int
+                    and 0 < port < 65536):
+                return port
+        except (OSError, ValueError, TypeError, AttributeError):
+            pass
+        return None
 
     @property
     def available(self) -> bool:
-        """Check if MCP endpoint is likely reachable."""
+        """Check if MCP endpoint is likely reachable.
+
+        A newly detected port replaces the cached one and drops the session
+        (a restarted endpoint cannot inherit the old Mcp-Session-Id). Losing
+        discovery alone keeps the cached port: only a failed request on it
+        (see _post) invalidates it, so no HOM probe is ever needed."""
         port = self._detect_port()
         with self._lock:
-            if port != self._port:
+            if port is not None and port != self._port:
                 self._session_id = None
                 self._port = port
-        return port is not None
+            return self._port is not None
 
     def _post(self, body: dict, headers: Optional[dict] = None,
               timeout: float = 35.0) -> dict:
@@ -216,6 +237,12 @@ class _MCPLocalClient:
         }
         if headers:
             all_headers.update(headers)
+        # The in-process client shares the host's configured local credential.
+        # Send it only to loopback; never log or attach it to job packages.
+        from synapse.server.auth import get_auth_key
+        key = get_auth_key()
+        if key:
+            all_headers["Authorization"] = "Bearer " + key
 
         payload = json.dumps(body, sort_keys=True).encode("utf-8")
 
@@ -252,6 +279,13 @@ class _MCPLocalClient:
                 self._session_id = session_hdr
 
             return result
+        except (ConnectionError, OSError, MCPOutcomeUnknown):
+            # Only invalidate discovery (a refused connect, or a reply lost
+            # after possible dispatch). Do not replay a possibly admitted
+            # mutation; the next explicit observation can reconnect by job ID.
+            self._port = None
+            self._session_id = None
+            raise
         finally:
             try:
                 conn.close()
@@ -536,6 +570,10 @@ class ToolExecutor(QtCore.QObject):
             # the result is one refused tool with an actionable message instead
             # of a 46-second frozen UI.
             _on_main = threading.current_thread() is threading.main_thread()
+            from synapse.core.farm_contract import is_farm_control
+            if _on_main and is_farm_control(request.tool_name):
+                request.error = "Render commands need the background connection. No job command was sent."
+                return
             if (_on_main and self._last_preflight_heavy
                     and not self._allow_heavy_inline):
                 request.error = (
@@ -590,9 +628,11 @@ class ToolExecutor(QtCore.QObject):
             _t0 = time.perf_counter()
             try:
                 from synapse.panel.bridge_adapter import (
-                    execute_through_bridge, is_read_only,
+                    execute_through_bridge, is_read_only, execute_farm_control, is_farm_control,
                 )
-                if not is_read_only(request.tool_name):
+                if is_farm_control(request.tool_name):
+                    response = execute_farm_control(request.tool_name, handler, command)
+                elif not is_read_only(request.tool_name):
                     # MARSHAL. execute_through_bridge -> bridge.execute ->
                     # _execute_houdini calls hou.* and hou.undos.group()
                     # DIRECTLY on the calling thread, assuming it is already
@@ -621,6 +661,10 @@ class ToolExecutor(QtCore.QObject):
                 else:
                     response = handler.handle(command)
             except ImportError as _marshal_exc:
+                from synapse.core.farm_contract import is_farm_control
+                if is_farm_control(request.tool_name):
+                    request.error = "Render admission is unavailable. No job command was sent."
+                    return
                 # Unmarshalled fallback -- announce it rather than degrading in
                 # silence (the silence is what made this bug unreadable at the
                 # seat). Outside Houdini this is expected dual-mode behaviour.

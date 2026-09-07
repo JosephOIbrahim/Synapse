@@ -41,6 +41,7 @@ from ..core.protocol import (
 from ..core.queue import DeterministicCommandQueue, ResponseDeliveryQueue
 from .auth import get_auth_key, authenticate, hash_key_for_log, validate_origin, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
+from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from .rbac import Role, check_permission, is_rbac_enabled
 from .sessions import (
     SessionManager,
@@ -545,7 +546,13 @@ class SynapseServer:
             # identical to the plain iterator when no cancel fires.
             for message in iter_messages(websocket, cancel_event):
                 # Lazy session: create on first real command, not on connect
-                if session_id is None:
+                try:
+                    raw_command = json.loads(message)
+                    farm_message = (isinstance(raw_command, dict)
+                                    and raw_command.get("type") in FARM_CONTROL_COMMANDS | FARM_READ_COMMANDS)
+                except (ValueError, TypeError):
+                    farm_message = False
+                if session_id is None and not farm_message:
                     with self._clients_lock:
                         # Double-check under lock to prevent race
                         if websocket not in self._client_sessions:
@@ -685,8 +692,12 @@ class SynapseServer:
 
             # Read-only commands bypass resilience AND latency tracking —
             # they're cheap reads that can't cause cascading failures
-            if command.type in _READ_ONLY_COMMANDS:
-                response = self._handler.handle(command)
+            if command.type in _READ_ONLY_COMMANDS or command.type == "farm_cancel":
+                if command.type == "farm_cancel":
+                    from synapse.panel.bridge_adapter import execute_farm_control
+                    response = execute_farm_control("synapse_farm_cancel", self._handler, command)
+                else:
+                    response = self._handler.handle(command)
                 if self._circuit_breaker and response.success:
                     self._circuit_breaker.record_success()
                 websocket.send(response.to_json())
@@ -739,7 +750,8 @@ class SynapseServer:
             # render_farm_status must keep answering — neither touches the
             # main thread, so the stall gate must not eat them.
             _stall_exempt = (
-                command.type == "render_farm_status"
+                command.type in FARM_CONTROL_COMMANDS
+                or command.type == "render_farm_status"
                 or (command.type == "render"
                     and isinstance(command.payload, dict)
                     and bool(command.payload.get("poll")))
@@ -772,7 +784,11 @@ class SynapseServer:
 
             # Process command with latency tracking
             t0 = time.monotonic()
-            response = self._handler.handle(command)
+            if command.type in FARM_CONTROL_COMMANDS:
+                from synapse.panel.bridge_adapter import execute_farm_control
+                response = execute_farm_control("synapse_" + command.type, self._handler, command)
+            else:
+                response = self._handler.handle(command)
             elapsed = time.monotonic() - t0
             self._avg_latency = (
                 self._latency_alpha * elapsed

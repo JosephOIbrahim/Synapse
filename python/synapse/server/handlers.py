@@ -50,6 +50,7 @@ from .handlers_network_layout import NetworkLayoutMixin
 from .handlers_usd import UsdHandlerMixin
 from .handlers_render import RenderHandlerMixin
 from .handlers_tops import TopsHandlerMixin
+from .handlers_farm import FarmHandlerMixin, FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from .handlers_material import MaterialHandlerMixin
 from .handlers_memory import MemoryHandlerMixin
 from .handlers_hda import HdaHandlerMixin
@@ -266,6 +267,10 @@ _READ_ONLY_COMMANDS = frozenset({
 # batching was refuted for latency (PR #28); this is correctness, not throughput.
 _MUTATION_LOCK = threading.Lock()
 
+# Farm controls mutate the job journal, never the artist scene. Keep their
+# provenance while excluding them from scene serialization and scene hashes.
+_READ_ONLY_COMMANDS = _READ_ONLY_COMMANDS | FARM_READ_COMMANDS
+
 
 # ---------------------------------------------------------------------------
 # Inline-overrun observability (marshal-guard coordination)
@@ -422,7 +427,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
+class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, FarmHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
     """
     Main command handler for the Synapse server.
 
@@ -525,7 +530,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             if (cmd_type == "render" and isinstance(command.payload, dict)
                     and command.payload.get("poll")):
                 _mutating = False
-            _serialize = (_mutating
+            _serialize = (_mutating and cmd_type not in FARM_CONTROL_COMMANDS
                           and threading.current_thread() is not threading.main_thread())
             _lock_cm = _MUTATION_LOCK if _serialize else contextlib.nullcontext()
             # Live-path integrity envelope: cheap topo hashes bracketing the
@@ -609,7 +614,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                      hash_after: Optional[str] = None,
                      enveloped: bool = False):
         """Submit bridge + audit log in a single executor call."""
-        bridge = self._get_bridge()
+        # Detached farm control must not initialize the artist memory store
+        # from a transport worker. Its journal and the audit below own history.
+        bridge = None if cmd_type in FARM_CONTROL_COMMANDS else self._get_bridge()
         sid = self._session_id
         uid = self._user_id
         category = _CMD_CATEGORY.get(cmd_type, AuditCategory.SYNAPSE)
@@ -784,6 +791,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         reg.register("render_sequence", self._handle_render_sequence)
         reg.register("render_farm_status", self._handle_render_farm_status)
         reg.register("render_farm_cancel", self._handle_render_farm_cancel)
+
+        # Durable detached TOPs jobs, also used directly by the Render view.
+        for command in sorted(FARM_READ_COMMANDS | FARM_CONTROL_COMMANDS):
+            reg.register(command, getattr(self, "_handle_" + command))
 
         # H3b -- background-render stop (rps/rkill) + emergency halt
         reg.register("render_processes", self._handle_render_processes)
@@ -983,6 +994,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         commands = payload.get("commands")
         if not commands or not isinstance(commands, list):
             raise ValueError("'commands' must be a non-empty list")
+        if any(isinstance(item, dict) and normalize_command_type(item.get("type", ""))
+               in ((FARM_CONTROL_COMMANDS | FARM_READ_COMMANDS) - {"farm_inspect"}) for item in commands):
+            raise ValueError("Use render preparation, submission and status tools as separate requests, outside a scene-edit batch.")
 
         atomic = payload.get("atomic", True)
         stop_on_error = payload.get("stop_on_error", False)

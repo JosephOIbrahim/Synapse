@@ -2513,6 +2513,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._commands_btn = c.Button("Commands", variant="ghost")
         self._commands_btn.setToolTip("Browse commands · / on empty input · Ctrl+K")
         self._commands_btn.clicked.connect(self._open_palette)
+        self._render_btn = c.Button("Render", variant="ghost")
+        self._render_btn.setToolTip("Prepare a saved scene, render with TOPs and return to recent jobs")
+        self._render_btn.clicked.connect(self._open_render_workspace)
         self._recipes_btn = c.Button("Recipes", variant="ghost")
         self._recipes_btn.setToolTip("Save, tag and reuse local Solaris networks")
         self._recipes_btn.clicked.connect(self._open_saved_recipes)
@@ -2538,11 +2541,11 @@ class SynapsePanel(QtWidgets.QWidget):
         return w
 
     def _build_shortcut_footer(self):
-        """Center the three local links with the same light type as Ready."""
+        """Center the four local links with the same light type as Ready."""
         footer = _ShortcutLayout(
             t.scaled(t.SPACE_LG, self._chrome_scale),
             t.scaled(t.SPACE_XS, self._chrome_scale))
-        for button in (self._commands_btn, self._recipes_btn, self._events_btn):
+        for button in (self._commands_btn, self._render_btn, self._recipes_btn, self._events_btn):
             button.setObjectName("DsFooterLink")
             c.apply_font_role(button, "caption", scale=self._chrome_scale)
             button.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
@@ -3076,6 +3079,18 @@ class SynapsePanel(QtWidgets.QWidget):
         dialog.raise_()
         dialog.activateWindow()
 
+    def _open_render_workspace(self):
+        from synapse.panel.render_workspace import RenderWorkspaceDialog
+        dialog = getattr(self, "_render_workspace_dialog", None)
+        if dialog is None:
+            dialog = RenderWorkspaceDialog(self)
+            self._render_workspace_dialog = dialog
+        else:
+            dialog.refresh()
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+
     def _on_submit(self):
         text = self._input.toPlainText().strip()
         if text:
@@ -3083,6 +3098,9 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._input.clear()
 
     def _send(self, text):
+        if (text or "").strip().lower() == "/render":
+            self._open_render_workspace()
+            return True
         if (text or "").strip().lower() == "/events":
             self._open_notifications()
             return True
