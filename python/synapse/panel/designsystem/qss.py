@@ -1049,3 +1049,31 @@ def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
 #DsRoot[panel_popup="notifications"] QScrollArea#DsEventsScroll {{ background: {t.PANEL}; border: none; }}
 """
 # --- END LOCAL_EVENTS
+
+
+# --- RENDER_WORKSPACE (detached TOPs jobs)
+def prepare_render_dialog(root, scale=t.FONT_SCALE_DEFAULT):
+    """Give the separate Render window the shared type, palette and focus cues."""
+    root.setStyleSheet(stylesheet(scale) + f"""
+#DsRoot[panel_popup="render"] QLineEdit,
+#DsRoot[panel_popup="render"] QComboBox,
+#DsRoot[panel_popup="render"] QSpinBox,
+#DsRoot[panel_popup="render"] QPlainTextEdit {{
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_SM}px; font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+    selection-background-color: {t.SIGNAL}; selection-color: {t.TEXT_ON_ACCENT};
+}}
+#DsRoot[panel_popup="render"] QLineEdit:focus,
+#DsRoot[panel_popup="render"] QComboBox:focus,
+#DsRoot[panel_popup="render"] QSpinBox:focus {{ border-color: {t.SIGNAL}; }}
+#DsRoot[panel_popup="render"] QComboBox QAbstractItemView {{
+    background: {t.PANEL}; color: {t.TEXT_PRIMARY};
+    font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+    selection-background-color: {t.SIGNAL}; selection-color: {t.TEXT_ON_ACCENT};
+}}
+#DsRoot[panel_popup="render"] QWidget#DsRenderPage,
+#DsRoot[panel_popup="render"] QWidget#DsRenderSettings,
+#DsRoot[panel_popup="render"] QScrollArea#DsRenderScroll {{ background: {t.PANEL}; border: none; }}
+""")
+# --- END RENDER_WORKSPACE
