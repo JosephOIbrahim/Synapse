@@ -355,8 +355,20 @@ def test_parse_plan_response_empty_array():
 
 
 @pytest.mark.asyncio
-async def test_create_plan_mock():
+async def test_create_plan_mock(monkeypatch, tmp_path):
     """Mocked Anthropic client returns valid Plan."""
+    import synapse_planner
+    monkeypatch.setenv("SYNAPSE_MODEL_POLICY", str(tmp_path / "model-policy.json"))
+    monkeypatch.setenv("SYNAPSE_PANEL_SETTINGS", str(tmp_path / "panel-settings.json"))
+
+    def scripted_create(client, *, lane, **kwargs):
+        assert isinstance(client, MagicMock)
+        assert lane == "cli-planner"
+        return client.messages.create(**kwargs)
+
+    # Exercise plan parsing/dependencies with the component's explicit double.
+    # The shared model_access guard and real SDK lane tests remain untouched.
+    monkeypatch.setattr(synapse_planner, "guarded_create", scripted_create)
     plan_json = json.dumps([
         {"description": "Inspect scene", "tools_hint": ["synapse_inspect_scene"], "depends_on": [], "verification": "Got scene tree"},
         {"description": "Create light", "tools_hint": ["synapse_execute"], "depends_on": [0], "verification": "Light exists"},

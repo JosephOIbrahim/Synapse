@@ -135,6 +135,9 @@ class ClaudeWorker(QThread):
         # request/response translation live in the provider — the loop below is
         # engine-neutral (it consumes normalized Anthropic-shaped blocks).
         self._provider = provider if provider is not None else _build_provider()
+        from synapse.model_access import capture_scope
+        self._model_scope = getattr(self._provider, "_model_scope", None) or capture_scope()
+        self._provider._model_scope = self._model_scope
 
     # ------------------------------------------------------------------
     # Public API
@@ -143,6 +146,10 @@ class ClaudeWorker(QThread):
     def abort(self) -> None:
         """Signal the worker to stop at the next safe point."""
         self._abort = True
+        self._model_scope.active = False
+        grant = getattr(self._provider, "_model_grant", None)
+        if grant is not None:
+            grant.release()
 
     def get_messages(self) -> list[dict]:
         """Return a copy of the current message history.
@@ -174,6 +181,11 @@ class ClaudeWorker(QThread):
         except Exception as exc:
             logger.exception("ClaudeWorker fatal error")
             self.stream_error.emit(str(exc))
+        finally:
+            self._model_scope.active = False
+            grant = getattr(self._provider, "_model_grant", None)
+            if grant is not None:
+                grant.release()
 
     # ------------------------------------------------------------------
     # Core conversation loop
@@ -206,14 +218,25 @@ class ClaudeWorker(QThread):
                 return
 
             self.activity_changed.emit("Waiting for model response…")
-            stop_reason, content_blocks = self._provider.stream(
-                messages=self._messages,
-                tools=self._tools,
-                system=self._system,
-                api_key=api_key,
-                emit_token=self.token_received.emit,
-                should_abort=lambda: self._abort,
-            )
+            try:
+                stop_reason, content_blocks = self._provider.stream(
+                    messages=self._messages,
+                    tools=self._tools,
+                    system=self._system,
+                    api_key=api_key,
+                    emit_token=self.token_received.emit,
+                    should_abort=lambda: self._abort,
+                )
+            finally:
+                # A interrupted/failed stream can already have measured tokens.
+                if USAGE_SINK is not None:
+                    try:
+                        USAGE_SINK.add(getattr(self._provider, "last_usage", None))
+                        report = getattr(USAGE_SINK, "set_reported_model", None)
+                        if callable(report):
+                            report(getattr(self._provider, "reported_model", None))
+                    except Exception:
+                        pass  # A display meter must not mask a request failure.
 
             # Fold this call's real usage into the task total BEFORE the abort
             # check — those tokens were billed even if the turn is aborting, and
@@ -222,7 +245,6 @@ class ClaudeWorker(QThread):
             # field, so a non-Anthropic engine stays honestly UNKNOWN.
             if USAGE_SINK is not None:
                 try:
-                    USAGE_SINK.add(getattr(self._provider, "last_usage", None))
                     if not context_recorded:
                         # J2: the model's context window, from the provider
                         # (Ollama /api/show, Gemini models.get, or the
@@ -395,7 +417,12 @@ class ClaudeWorker(QThread):
                     # leave this stale - the model that answers is the model
                     # whose capability was checked.
                     _model = getattr(self._provider, "model_identity", "") or ""
-                    result, _verdict = attach_image(result, mcp_result, _model)
+                    facts = getattr(self._provider, "_connection_facts", None)
+                    capabilities = facts.capabilities if facts is not None and facts.fresh() else None
+                    can_see = ("vision" in capabilities) if capabilities is not None else None
+                    if getattr(self._provider, "_automatic_requirements", None) is not None and can_see is None:
+                        can_see = False
+                    result, _verdict = attach_image(result, mcp_result, _model, checked_vision=can_see)
                     # THE VERDICT GOES TO THE PANEL, not just to the model.
                     #
                     # v1 put the refusal in the tool result and trusted the
@@ -758,6 +785,10 @@ def run_turn_blocking(prompt: str, timeout: int = 90, system_prompt: str = None,
         worker._conversation_loop(api_key)
     finally:
         timer.cancel()
+        worker._model_scope.active = False
+        grant = getattr(worker._provider, "_model_grant", None)
+        if grant is not None:
+            grant.release()
 
     if worker._abort:
         raise TimeoutError("headless turn exceeded its %ss budget" % timeout)

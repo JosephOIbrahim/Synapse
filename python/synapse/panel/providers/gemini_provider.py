@@ -25,10 +25,12 @@ import json
 import logging
 import os
 import ssl
+from urllib.parse import quote
 
 from . import gemini_translate as gt
 from . import model_facts as _facts
 from .base import StreamProvider
+from synapse.model_access import guarded_stream, stream_spec, before_stream_send, ModelRequestFailed
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +150,7 @@ class GeminiProvider(StreamProvider):
     # Streaming request
     # ------------------------------------------------------------------
 
+    @guarded_stream
     def stream(self, *, messages, tools, system, api_key, emit_token, should_abort):
         # Reset the per-call usage record BEFORE the request so a failed call
         # can never surface the previous call's numbers as its own (J2).
@@ -168,11 +171,12 @@ class GeminiProvider(StreamProvider):
             body["system_instruction"] = {"parts": [{"text": system}]}
 
         payload = json.dumps(body).encode("utf-8")
-        path = "/v1beta/models/%s:streamGenerateContent?alt=sse" % self._model
+        path = "/v1beta/models/%s:streamGenerateContent?alt=sse" % quote(stream_spec(self).model, safe="")
 
         ctx = ssl.create_default_context()
         conn = http.client.HTTPSConnection(_API_HOST, timeout=_HTTP_TIMEOUT, context=ctx)
         try:
+            before_stream_send(self, api_key, payload, "https://" + _API_HOST + path)
             conn.request(
                 "POST",
                 path,
@@ -184,8 +188,7 @@ class GeminiProvider(StreamProvider):
             )
             response = conn.getresponse()
             if response.status != 200:
-                error_body = response.read().decode("utf-8", errors="replace")
-                raise RuntimeError("Gemini API error %s: %s" % (response.status, error_body))
+                raise ModelRequestFailed("Gemini API error %s. Check model access and service limits." % response.status)
             return self._parse_sse_stream(response, emit_token, should_abort, schema_by_name)
         finally:
             conn.close()
@@ -232,10 +235,16 @@ class GeminiProvider(StreamProvider):
                     logger.debug("Skipping non-JSON Gemini SSE data")
                     continue
 
+                if data.get("modelVersion"):
+                    self.reported_model = data["modelVersion"]
                 meta = data.get("usageMetadata")
                 if isinstance(meta, dict):
                     seen_meta = meta
+                if "error" in data:
+                    raise ModelRequestFailed("Gemini stream error. Check model access and service limits.")
                 for cand in data.get("candidates", []) or []:
+                    if cand.get("finishReason"):
+                        self._stream_complete = True
                     content = cand.get("content", {}) or {}
                     for part in content.get("parts", []) or []:
                         # thoughtSignature is a SIBLING of functionCall/text on the

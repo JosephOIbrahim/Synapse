@@ -23,14 +23,18 @@ def panel_methods(*names):
 def fixture_panel():
     spec = ConnectionSpec("custom", "model-a", "https://example.com/v1/chat/completions")
     connection = SimpleNamespace(spec=spec, facts=ConnectionFacts(spec),
-                                 provider=SimpleNamespace(resolve_key=lambda: "test-key"), release=Mock())
+                                 provider=SimpleNamespace(resolve_key=lambda: "test-key"),
+                                 release=Mock(), revoke=Mock())
     methods = panel_methods("_send", "_on_submit")
     panel = SimpleNamespace(
         _worker=None, _input=Mock(), _pending_context=["/stage/light"],
         _messages=[{"role": "user", "content": "earlier"}], _chat=Mock(),
         _prepare_connection=Mock(return_value=connection),
+        _route_connection=Mock(side_effect=lambda candidate, text: candidate),
+        _permission_connections=[],
         _allow_connection=Mock(return_value=False), _hide_turn_receipt=Mock(),
         _start_worker=Mock(), _refresh_engine_selector=Mock(),
+        _refresh_token_surfaces=Mock(),
     )
     panel._input.toPlainText.return_value = "My unfinished prompt"
     panel._send = lambda text: methods["_send"](panel, text)
@@ -50,9 +54,11 @@ def test_decline_preserves_draft_attachments_and_history():
 
 
 def test_palette_send_also_checks_permission_without_consuming_draft():
-    panel, _, _ = fixture_panel()
+    panel, connection, _ = fixture_panel()
     assert panel._send("Explain selected network") is False
     panel._allow_connection.assert_called_once()
+    panel._route_connection.assert_called_once_with(connection, "Explain selected network")
+    panel._allow_connection.assert_called_once_with(connection)
     panel._input.clear.assert_not_called()
     assert panel._pending_context == ["/stage/light"]
 
@@ -71,7 +77,10 @@ def test_accept_binds_exact_connection_and_consumes_once():
     panel._allow_connection.return_value = True
     methods["_on_submit"](panel)
     assert panel._task_connection is connection
+    assert panel._permission_connections == [connection]
     assert panel._last_task_facts is connection.facts
+    panel._route_connection.assert_called_once_with(connection, "My unfinished prompt")
+    panel._allow_connection.assert_called_once_with(connection)
     panel._start_worker.assert_called_once()
     panel._input.clear.assert_called_once()
     assert len(panel._messages) == 2
@@ -92,6 +101,7 @@ def test_completion_credits_task_even_after_selection_changes(monkeypatch):
     panel._refresh_token_surfaces = Mock()
     panel_methods("_on_done")["_on_done"](panel)
     panel._chat.append_synapse_message.assert_called_once_with("Completed", signed="custom/model-a")
+    connection.revoke.assert_called_once()
     assert panel._task_connection is None
 
 
@@ -203,6 +213,7 @@ def test_failed_stream_still_credits_the_task_model():
     panel._provider_id = "gemini"
     panel_methods("_on_error")["_on_error"](panel, "Model request failed")
     panel._chat.end_stream.assert_called_once_with("Partial answer", signed="custom/model-a")
+    connection.revoke.assert_called_once()
     assert panel._task_connection is None
 
 

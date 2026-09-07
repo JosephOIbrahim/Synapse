@@ -1725,6 +1725,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             "confidence": result.confidence,
             "cached": result.cached,
             "latency_ms": result.latency_ms,
+            "model_request": result.metadata.get("model_request"),
+            "model_access": result.metadata.get("model_access"),
         }
 
     # ------------------------------------------------------------------

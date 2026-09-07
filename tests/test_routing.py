@@ -46,6 +46,28 @@ from synapse.routing.adaptation import EpochAdapter
 from synapse.core.audit import AuditCategory
 
 
+@pytest.fixture(autouse=True)
+def scripted_router_transport(monkeypatch, tmp_path):
+    """Route scripted Mock replies through an explicit component-only SDK seam."""
+    from synapse.routing import router
+
+    monkeypatch.setenv("SYNAPSE_MODEL_POLICY", str(tmp_path / "model-policy.json"))
+    monkeypatch.setenv("SYNAPSE_PANEL_SETTINGS", str(tmp_path / "panel-settings.json"))
+
+    def scripted_create(client, *, lane, **kwargs):
+        assert isinstance(client, Mock)
+        assert lane in ("router-standard", "router-deep")
+        return client.messages.create(**kwargs)
+
+    def no_transport_receipt(client):
+        assert isinstance(client, Mock)
+        return None  # A component double has no physical transport receipt.
+
+    # These function-scoped patches never replace synapse.model_access guards.
+    monkeypatch.setattr(router, "guarded_create", scripted_create)
+    monkeypatch.setattr(router, "sdk_receipt", no_transport_receipt)
+
+
 # =============================================================================
 # HELPERS
 # =============================================================================

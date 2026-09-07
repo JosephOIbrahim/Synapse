@@ -3,6 +3,8 @@ switcher reads. Recreates coverage for the (deleted) test_model_picker: the
 helpers and build_provider(model=...) the picker, chip, and rail author depend on.
 Network-free, Qt-free, hou-free.
 """
+import pytest
+
 from synapse.panel.providers import registry as reg
 
 
@@ -54,8 +56,9 @@ def test_build_provider_honours_model_override():
     assert p.id == "claude" and p.model_identity == "claude-opus-4-8"
     # model=None → provider default
     assert reg.build_provider("claude").model_identity == reg.ANTHROPIC_MODEL
-    # unknown provider → claude floor, never raises
-    assert reg.build_provider("bogus").id == "claude"
+    # M4: an unavailable engine cannot silently change the request destination.
+    with pytest.raises(ValueError, match="engine is unavailable"):
+        reg.build_provider("bogus")
 
 
 def test_build_provider_nemotron_with_picked_model():

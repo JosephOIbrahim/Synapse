@@ -34,6 +34,23 @@ from synapse.cognitive.agent_loop import (
 from synapse.cognitive.dispatcher import Dispatcher
 
 
+@pytest.fixture(autouse=True)
+def scripted_agent_transport(monkeypatch, tmp_path):
+    """Keep usage assertions about observed scripted responses, not SDK ownership."""
+    from synapse.cognitive import agent_loop
+
+    monkeypatch.setenv("SYNAPSE_MODEL_POLICY", str(tmp_path / "model-policy.json"))
+    monkeypatch.setenv("SYNAPSE_PANEL_SETTINGS", str(tmp_path / "panel-settings.json"))
+
+    def scripted_create(client, *, lane, **kwargs):
+        assert lane == "agent-loop"
+        assert type(client).__module__ == __name__
+        return client.messages.create(**kwargs)
+
+    # The real guarded transport is exercised by the model-lane integration tests.
+    monkeypatch.setattr(agent_loop, "guarded_create", scripted_create)
+
+
 # Local doubles, deliberately the SAME minimal shape as the established ones in
 # tests/test_agent_loop.py (content + stop_reason only). ``tests`` is not a
 # package, so this file stays self-contained rather than importing across it.

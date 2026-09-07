@@ -18,6 +18,7 @@ class ConnectionDialog(QtWidgets.QDialog):
         self.setObjectName("DsRoot")
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
         scale = getattr(parent, "_chrome_scale", 1.0)
+        self._chrome_scale = scale
         qss.prepare_connection_dialog(self, scale)
         self.setWindowTitle("Connect a model")
         self.setMinimumWidth(380)
@@ -29,7 +30,7 @@ class ConnectionDialog(QtWidgets.QDialog):
         self._checked = None
         self.selection = None
         layout = QtWidgets.QVBoxLayout(self)
-        intro = c.label("Choose where SYNAPSE sends this panel’s requests.", role="body", scale=scale)
+        intro = c.label("Choose a model and where your work is allowed to go.", role="body", scale=scale)
         intro.setWordWrap(True)
         layout.addWidget(intro)
         form = QtWidgets.QFormLayout()
@@ -58,6 +59,26 @@ class ConnectionDialog(QtWidgets.QDialog):
         for edit in (self.address, self.key, self.model.lineEdit()):
             edit.setObjectName("DsField")
         layout.addLayout(form)
+        from synapse.panel.settings import load_settings
+        saved = load_settings()
+        routing_form = QtWidgets.QFormLayout()
+        self.routing = QtWidgets.QComboBox()
+        self.routing.setObjectName("DsConnectionSelect")
+        self.routing.addItem("Use my chosen model", "chosen_model")
+        self.routing.addItem("Prefer a checked local model", "prefer_checked_local")
+        self.routing.setCurrentIndex(max(0, self.routing.findData(saved.get("routing_mode"))))
+        routing_form.addRow(c.label("For each new task", role="label", scale=scale), self.routing)
+        self.need = QtWidgets.QComboBox()
+        self.need.setObjectName("DsConnectionSelect")
+        self.need.addItem("Conversation", "conversation")
+        self.need.addItem("Build and edit networks", "tools")
+        self.need.addItem("Work with images", "vision")
+        self.need.setCurrentIndex(max(0, self.need.findData(saved.get("task_need"))))
+        routing_form.addRow(c.label("Task needs", role="label", scale=scale), self.need)
+        layout.addLayout(routing_form)
+        rules = c.Button("Project rules…", variant="secondary")
+        rules.clicked.connect(self._project_rules)
+        layout.addWidget(rules)
         self.destination = c.label("", role="body", scale=scale)
         self.destination.setWordWrap(True)
         self.destination.setTextFormat(QtCore.Qt.PlainText)
@@ -68,7 +89,7 @@ class ConnectionDialog(QtWidgets.QDialog):
         layout.addWidget(self.status)
         note = c.label(
             "Entered keys stay in this panel session. Closing the panel clears them; "
-            "a task already running may finish first. Existing environment keys still work.\n\n"
+            "an in-flight response may finish, but closing stops further model requests. Existing environment keys still work.\n\n"
             "The check sends credentials and asks for model metadata only. It sends no scene or prompt.", role="caption", scale=scale)
         note.setWordWrap(True)
         layout.addWidget(note)
@@ -201,9 +222,30 @@ class ConnectionDialog(QtWidgets.QDialog):
         if self._checked is None or self._inputs() != self._request_inputs:
             return
         bound = self._checked
+        from synapse.panel.settings import load_settings, save_settings
+        settings = load_settings()
+        settings.update(routing_mode=self.routing.currentData(), task_need=self.need.currentData())
+        if not save_settings(settings):
+            self.status.setText("The model preferences could not be saved. Try again.")
+            return
         self.selection = (bound.spec, bound.facts, bound.provider.resolve_key(),
                           self.address.text().strip())
         self.accept()
+
+    def _project_rules(self):
+        from synapse.panel.project_rules import ProjectRulesDialog
+        bound = None
+        try:
+            bound = self._candidate()
+            spec = bound.spec
+        except Exception:
+            spec = None
+        finally:
+            if bound is not None:
+                bound.release()
+        dialog = ProjectRulesDialog(self, spec=spec)
+        dialog.exec() if hasattr(dialog, "exec") else dialog.exec_()
+        dialog.deleteLater()
 
     def done(self, result):
         self._timer.stop()

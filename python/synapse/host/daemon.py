@@ -54,6 +54,8 @@ import logging
 import queue
 import sys
 import threading
+from synapse.model_access import capture_scope, request_scope, make_anthropic_client
+from synapse.request_handoff import accepted_child_scope
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional
 
@@ -105,6 +107,7 @@ class _AgentRequest:
     config: AgentTurnConfig
     handle: TurnHandle
     submitted_at: float = field(default_factory=lambda: 0.0)
+    model_scope: object = field(default_factory=accepted_child_scope)
 
 
 class DaemonBootError(RuntimeError):
@@ -499,7 +502,7 @@ class SynapseDaemon:
                 "See Spike 0's install recipe for hython; for stock-"
                 "Python tests pass anthropic_client_factory explicitly."
             ) from exc
-        return Anthropic(api_key=self._resolved_api_key)
+        return make_anthropic_client(api_key=self._resolved_api_key)
 
     def _drain_request_queue(self) -> None:
         """Empty the request queue and cancel any drained handles.
@@ -748,13 +751,14 @@ class SynapseDaemon:
         assert self._dispatcher is not None
         assert self._anthropic_client is not None
         try:
-            result = run_turn(
-                self._anthropic_client,
-                self._dispatcher,
-                request.user_prompt,
-                cancel_event=self._cancel_event,
-                config=request.config,
-            )
+            with request_scope(request.model_scope):
+                result = run_turn(
+                    self._anthropic_client,
+                    self._dispatcher,
+                    request.user_prompt,
+                    cancel_event=self._cancel_event,
+                    config=request.config,
+                )
         except BaseException as exc:  # noqa: BLE001 — protect daemon thread
             logger.exception("run_turn raised outside its own guard")
             result = AgentTurnResult(
@@ -765,6 +769,7 @@ class SynapseDaemon:
         # so callers that polled .result() see the AgentTurnResult
         # shape they expect. _set_exception is reserved for daemon-
         # internal failures that don't fit AgentTurnResult.
+        request.model_scope.active = False
         request.handle._set_result(result)
 
 

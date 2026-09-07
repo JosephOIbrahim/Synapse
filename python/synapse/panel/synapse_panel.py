@@ -11,6 +11,7 @@ Entry point: ``createInterface()`` (Houdini Python Panel convention). The
 """
 
 import logging
+from functools import partial
 
 try:
     from PySide6 import QtWidgets, QtCore, QtGui
@@ -47,6 +48,11 @@ logger = logging.getLogger(__name__)
 # A running thread must outlive a destroyed Houdini panel. These references
 # disappear at thread completion; the thread has no QWidget parent.
 _ACTIVE_PANEL_WORKERS = set()
+
+
+def _revoke_model_connections(connections, *_):
+    for connection in tuple(connections):
+        connection.revoke()
 
 
 def _release_panel_worker(worker):
@@ -419,6 +425,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self.destroyed.connect(self._session_keys.clear)
         self._connection_facts = {}
         self._task_connection = None
+        self._permission_connections = []
+        # The container outlives the QObject without a callback into deleted Qt.
+        self.destroyed.connect(partial(_revoke_model_connections, self._permission_connections))
         self._last_tool = None       # C8: name of the in-flight tool, for an honest Stop
         # H3b: the NODE the in-flight tool is working on. The tool-status detail
         # already carried it and was discarded during "running"; a cook-cancel
@@ -1777,6 +1786,7 @@ class SynapsePanel(QtWidgets.QWidget):
             return
         spec, facts, key, address = dialog.selection
         dialog.selection = None
+        settings = pset.load_settings()  # Rules/preferences may have changed in the dialog.
         if spec.provider == "custom":
             cfg = dict(settings.get("custom") or {})
             if address != cfg.get("base_url"):
@@ -1797,7 +1807,22 @@ class SynapsePanel(QtWidgets.QWidget):
         dialog.deleteLater()
 
     def _allow_connection(self, connection):
-        if connection.facts.location == "Local":
+        from synapse import model_access as access
+        provider = connection.provider
+        scope = getattr(provider, "_model_scope", None) or access.capture_scope()
+        provider._model_scope = scope
+        provider._connection_facts = connection.facts
+        key = provider.resolve_key()
+        try:
+            permission = access.require_access(connection.spec, key=key, facts=connection.facts, scope=scope)
+        except access.ModelAccessDenied:
+            policy = access.load_policy()
+            if policy.error or policy.mode == "local_only" or not scope.active:
+                raise
+            permission = None
+        if permission:
+            provider._model_grant = access.issue_task_grant(connection.spec, key=key,
+                facts=connection.facts, approved=True, scope=scope)
             return True
         box = QtWidgets.QMessageBox(self)
         box.setWindowTitle("Allow this panel task?")
@@ -1807,13 +1832,46 @@ class SynapsePanel(QtWidgets.QWidget):
             "This task can send your prompt, conversation, scene context, tool and memory results, "
             "and images supplied by tools to this service. This includes follow-up requests while tools run.\n\n"
             "The saved memory store remains on this computer; recalled contents can be sent with this task. "
-            "This permission covers this panel’s chat requests; "
-            "external MCP clients and independent background services have their own connections.")
+            "This permission ends with this task. Background requests require separate Project rules. "
+            "External MCP clients control their own model connections.")
         allow = box.addButton("Allow this task", QtWidgets.QMessageBox.AcceptRole)
         cancel = box.addButton("Keep editing", QtWidgets.QMessageBox.RejectRole)
         box.setDefaultButton(cancel)
         box.exec() if hasattr(box, "exec") else box.exec_()
-        return box.clickedButton() is allow
+        if box.clickedButton() is not allow:
+            scope.active = False
+            return False
+        provider._model_grant = access.issue_task_grant(connection.spec, key=key,
+            facts=connection.facts, approved=True, scope=scope)
+        return True
+
+    def _route_connection(self, connection, text):
+        from synapse.panel.model_routing import choose_route
+        from synapse.panel import settings as pset, connections as cn
+        from synapse.panel.providers.registry import build_provider
+        settings = pset.load_settings()
+        decision = choose_route(connection.facts, tuple(self._connection_facts.values()),
+            mode=settings.get("routing_mode", "chosen_model"),
+            need=settings.get("task_need", "conversation"),
+            tools=get_anthropic_tools(),
+            messages=self._messages + [{"role": "user", "content": text}])
+        if not decision.ok:
+            raise ValueError(decision.reason)
+        if decision.facts.spec != connection.spec:
+            target = decision.facts
+            provider = build_provider(target.spec.provider, model=target.spec.model)
+            if cn.provider_spec(provider) != target.spec:
+                raise ValueError("The local service changed. Check the model again before using it.")
+            key = self._session_keys.get((target.spec.provider, target.spec.endpoint), provider.resolve_key())
+            replacement = cn.bind_provider(provider, key=key, facts=target)
+            if replacement.spec != target.spec:
+                replacement.release()
+                raise ValueError("The local service changed while connecting. Check the model again before using it.")
+            connection.release()
+            connection = replacement
+        connection.provider._automatic_requirements = decision.requirements if decision.automatic else None
+        connection.provider._route_reason = decision.reason
+        return connection
 
     _MUTATORS = ("create", "set_", "assign", "build", "wire", "connect",
                  "render", "author", "delete", "apply", "configure")
@@ -2599,19 +2657,38 @@ class SynapsePanel(QtWidgets.QWidget):
             self._chat.append_system_message("The chat worker is unavailable in this build.")
             return False
         try:
+            from synapse.model_access import capture_scope
+            accepted_scope = capture_scope()
             connection = self._prepare_connection()
+            connection = self._route_connection(connection, text)
+            connection.provider._model_scope = accepted_scope
+        except (ValueError, RuntimeError) as exc:
+            if "connection" in locals():
+                connection.release()
+            self._chat.append_system_message(str(exc))
+            return False
         except Exception:
+            if "connection" in locals():
+                connection.release()
             self._chat.append_system_message("Could not prepare this model. Open Connect models to check the selection.")
             return False
         if not connection.provider.resolve_key():
             connection.release()
             self._chat.append_system_message("Connect a model before sending. Use Connect models below the prompt.")
             return False
-        if not self._allow_connection(connection):
+        try:
+            allowed = self._allow_connection(connection)
+        except RuntimeError as exc:
+            connection.release()
+            self._chat.append_system_message(str(exc))
+            return False
+        if not allowed:
             connection.release()
             return False
         self._task_connection = connection
+        self._permission_connections[:] = [connection]
         self._last_task_facts = connection.facts
+        self._chat.append_system_message(getattr(connection.provider, "_route_reason", connection.facts.description))
         # Submitting is the artist handing off — drop input focus. The last
         # turn's receipt goes with it (bc-wave BC-6a): a new turn, a new record.
         self._hide_turn_receipt()
@@ -2828,6 +2905,8 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_done(self):
         text = "".join(self._stream_buf).strip()
         connection = getattr(self, "_task_connection", None)
+        if connection is not None:
+            connection.revoke()
         signed = connection.spec.identity if connection else self._author_token()
         if getattr(self, "_streaming_started", False):
             # finalize the live stream → fully formatted (links, code blocks)
@@ -2909,6 +2988,9 @@ class SynapsePanel(QtWidgets.QWidget):
         token_readout.refresh_surfaces(face=face, meter=meter, pill=pill)
 
     def _on_error(self, msg):
+        connection = getattr(self, "_task_connection", None)
+        if connection is not None:
+            connection.revoke()
         self._set_thinking(False)
         if getattr(self, "_streaming_started", False):
             try:
@@ -2922,6 +3004,7 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         self._set_busy(False)
+        self._refresh_token_surfaces()
         self._task_connection = None
         self._worker = None
         self._refresh_engine_selector()
@@ -2959,6 +3042,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # + the rail mark; the artist switches to Work to watch when they choose.
 
     def _on_stop(self):
+        _revoke_model_connections(getattr(self, "_permission_connections", ()))
         # Honest Stop: abort the loop, but DO NOT claim idle — Houdini may still be
         # finishing the in-flight tool (abort is cooperative; it takes effect at the
         # next tool/iteration boundary). Stay busy and say "Stopping…"; the worker
@@ -3267,6 +3351,7 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def closeEvent(self, event):
+        _revoke_model_connections(getattr(self, "_permission_connections", ()))
         watch = getattr(self, "_recipe_watch", None)
         if watch is not None:
             watch.close()

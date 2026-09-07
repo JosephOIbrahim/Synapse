@@ -104,7 +104,7 @@ def encode_image_block(path: str):
     }, None
 
 
-def attach_image(tool_result: dict, raw_result, model: str):
+def attach_image(tool_result: dict, raw_result, model: str, *, checked_vision=None):
     """Return `(tool_result, verdict)`.
 
     `verdict` is None when there was no image to consider, or
@@ -131,7 +131,8 @@ def attach_image(tool_result: dict, raw_result, model: str):
     if path is None:
         return tool_result, None
 
-    if not model_can_see(model):
+    can_see = checked_vision if type(checked_vision) is bool else model_can_see(model)
+    if not can_see:
         reason = "%s is not vision-capable — the capture was NOT sent" % (model or "model")
         return _with_note(tool_result, reason), ("fail", reason)
 

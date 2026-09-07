@@ -45,7 +45,7 @@ def test_remote_egress_sites_are_frozen():
         if rel.startswith("_vendor/"):
             continue
         text = py.read_text(encoding="utf-8", errors="ignore")
-        if "HTTPSConnection(" in text:
+        if re.search(r"\bHTTPSConnection\b", text):
             https_sites.add(rel)
         if re.search(r"\bAnthropic\(", text):
             anthropic_sites.add(rel)
@@ -57,13 +57,17 @@ def test_remote_egress_sites_are_frozen():
         # same three, read-only, via GET list endpoints with empty bodies.
         # Documented in EGRESS.md under "The capability-probe lane".
         "panel/providers/probe.py",
+        # M4: selected model metadata, bounded GET and model-name-only POST.
+        "panel/providers/metadata_probes.py",
+        # Existing J2 metadata path, now detected through constructor aliases.
+        "panel/providers/ollama_provider.py",
     }
     assert https_sites == _known, (
         f"New raw-HTTPS egress site(s): {https_sites - _known} "
         "— document in docs/studio/EGRESS.md, then extend this pin."
     )
-    allowed = {"host/daemon.py", "routing/router.py"}
-    assert anthropic_sites <= allowed, (
+    allowed = {"model_access.py"}
+    assert anthropic_sites == allowed, (
         f"New Anthropic() construction site(s): {anthropic_sites - allowed} "
         "— document in docs/studio/EGRESS.md, then extend this pin."
     )

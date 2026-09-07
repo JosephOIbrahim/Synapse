@@ -38,6 +38,8 @@ from urllib.parse import urlsplit
 
 from . import model_facts as _facts
 from .base import StreamProvider
+from synapse.model_access import guarded_stream, stream_spec, before_stream_send, ModelRequestFailed
+from synapse.panel.connections import validate_endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +160,15 @@ def _stringify(content):
     return "" if content is None else str(content)
 
 
+def _image_part(block):
+    source = block.get("source") or {}
+    if source.get("type") == "base64" and source.get("media_type") in (
+            "image/png", "image/jpeg", "image/gif", "image/webp") and isinstance(source.get("data"), str):
+        return {"type": "image_url", "image_url": {
+            "url": "data:%s;base64,%s" % (source["media_type"], source["data"])}}
+    raise ValueError("This image format cannot be sent to the selected service. Capture or attach a supported image.")
+
+
 def _usage_from_openai(usage):
     """OpenAI ``usage`` (``prompt_tokens`` / ``completion_tokens``) → the
     Anthropic-shaped ``last_usage`` dict, or ``None`` when nothing genuine was
@@ -201,13 +212,20 @@ def _to_openai_messages(messages, system, directive=_USE_DEFAULT_DIRECTIVE):
             continue
 
         text_parts, tool_calls, tool_results = [], [], []
+        user_parts, tool_images = [], []
         for blk in content:
             if not isinstance(blk, dict):
                 text_parts.append(str(blk))
+                user_parts.append({"type": "text", "text": str(blk)})
                 continue
             btype = blk.get("type")
             if btype == "text":
                 text_parts.append(blk.get("text", ""))
+                user_parts.append({"type": "text", "text": blk.get("text", "")})
+            elif btype == "image":
+                if role != "user":
+                    raise ValueError("This service cannot replay an assistant image. Start a new conversation with the image attached.")
+                user_parts.append(_image_part(blk))
             elif btype == "tool_use":
                 tool_calls.append({
                     "id": blk.get("id", ""),
@@ -218,10 +236,17 @@ def _to_openai_messages(messages, system, directive=_USE_DEFAULT_DIRECTIVE):
                     },
                 })
             elif btype == "tool_result":
+                result_content = blk.get("content")
+                if isinstance(result_content, list):
+                    images = [part for part in result_content if isinstance(part, dict) and part.get("type") == "image"]
+                    if images:
+                        tool_images.append({"type": "text", "text": "Images returned by tool " + str(blk.get("tool_use_id", ""))})
+                        tool_images.extend(_image_part(part) for part in images)
+                        result_content = [part for part in result_content if part not in images]
                 tool_results.append({
                     "role": "tool",
                     "tool_call_id": blk.get("tool_use_id", ""),
-                    "content": _stringify(blk.get("content")),
+                    "content": _stringify(result_content),
                 })
 
         if role == "assistant":
@@ -230,9 +255,14 @@ def _to_openai_messages(messages, system, directive=_USE_DEFAULT_DIRECTIVE):
                 entry["tool_calls"] = tool_calls
             out.append(entry)
         else:  # user — tool_results become standalone tool messages
-            if text_parts:
-                out.append({"role": "user", "content": "".join(text_parts)})
+            if user_parts:
+                content = user_parts if any(part["type"] == "image_url" for part in user_parts) else "".join(text_parts)
+                out.append({"role": "user", "content": content})
             out.extend(tool_results)
+            if tool_images:
+                # OpenAI tool messages take text. Actual images belong to a
+                # following user content block, never a JSON string of pixels.
+                out.append({"role": "user", "content": tool_images})
     return out
 
 
@@ -328,13 +358,14 @@ class NemotronProvider(StreamProvider):
     # Streaming request
     # ------------------------------------------------------------------
 
+    @guarded_stream
     def stream(self, *, messages, tools, system, api_key, emit_token, should_abort):
         # Reset the per-call usage record BEFORE the request so a failed call
         # can never surface the previous call's numbers as its own (J2; the
         # anthropic_provider idiom).
         self.last_usage = None
         body = {
-            "model": self._model,
+            "model": stream_spec(self).model,
             "max_tokens": self._max_tokens,
             "stream": True,
             "messages": _to_openai_messages(
@@ -348,7 +379,8 @@ class NemotronProvider(StreamProvider):
             body["tools"] = otools
 
         payload = json.dumps(body).encode("utf-8")
-        scheme, host, path = self._get_endpoint()
+        endpoint = validate_endpoint(stream_spec(self).endpoint)
+        scheme, host, path = endpoint.scheme, endpoint.netloc, endpoint.path
 
         if scheme == "http":   # plaintext self-hosted (vLLM/Ollama default posture)
             conn = http.client.HTTPConnection(host, timeout=_HTTP_TIMEOUT)
@@ -359,11 +391,11 @@ class NemotronProvider(StreamProvider):
             headers = {"Content-Type": "application/json", "Accept": "text/event-stream"}
             if api_key and api_key != "not-needed":
                 headers["Authorization"] = "Bearer %s" % api_key
+            before_stream_send(self, api_key, payload, "%s://%s%s" % (scheme, host, path))
             conn.request("POST", path, body=payload, headers=headers)
             response = conn.getresponse()
             if response.status != 200:
-                error_body = response.read().decode("utf-8", errors="replace")
-                raise RuntimeError("NVIDIA API error %s: %s" % (response.status, error_body))
+                raise ModelRequestFailed("Model service error %s. Check model access and service limits." % response.status)
             return self._parse_sse_stream(response, emit_token, should_abort)
         finally:
             conn.close()
@@ -402,7 +434,10 @@ class NemotronProvider(StreamProvider):
                 if not line.startswith("data:"):
                     continue
                 data_str = line[5:].strip()
-                if not data_str or data_str == "[DONE]":
+                if data_str == "[DONE]":
+                    self._stream_complete = True
+                    continue
+                if not data_str:
                     continue
                 try:
                     data = json.loads(data_str)
@@ -410,9 +445,13 @@ class NemotronProvider(StreamProvider):
                     logger.debug("Skipping non-JSON NVIDIA SSE data")
                     continue
 
+                if data.get("model"):
+                    self.reported_model = data["model"]
                 usage = data.get("usage")
                 if isinstance(usage, dict):
                     seen_usage = usage
+                if "error" in data:
+                    raise ModelRequestFailed("Model stream error. Check model access and service limits.")
                 for choice in data.get("choices", []) or []:
                     delta = choice.get("delta", {}) or {}
                     text = delta.get("content")
@@ -432,6 +471,7 @@ class NemotronProvider(StreamProvider):
                         if fn.get("arguments"):
                             slot["arguments"] += fn["arguments"]
                     if choice.get("finish_reason"):
+                        self._stream_complete = True
                         finish = choice["finish_reason"]
         finally:
             # J2: publish observed usage even on abort or a mid-stream error —

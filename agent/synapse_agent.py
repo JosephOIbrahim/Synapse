@@ -18,6 +18,7 @@ import sys
 import os
 import logging
 from pathlib import Path
+from model_rules import guarded_create, make_anthropic_client, scoped_request, import_scope
 
 # Setup logging
 _log_dir = Path(__file__).parent / "logs"
@@ -115,6 +116,7 @@ def _filter_tools(tools: list, profile_path: str | None) -> list:
     return tools
 
 
+@scoped_request
 async def run_agent(
     goal: str,
     profile: str | None = None,
@@ -124,7 +126,6 @@ async def run_agent(
     """
     Initialize Synapse connection, then run the agentic tool-use loop.
     """
-    from anthropic import Anthropic
     from synapse_ws import SynapseClient
     from synapse_tools import set_client, execute_tool, TOOL_DEFINITIONS
     from synapse_hooks import validate_execute_code
@@ -144,7 +145,8 @@ async def run_agent(
     logger.info("Scene: %s", scene)
 
     # --- Step 2: Create Anthropic client ---
-    client = Anthropic()
+    from synapse.host.auth import get_anthropic_api_key
+    client = make_anthropic_client(api_key=get_anthropic_api_key())
 
     system_prompt = _load_system_prompt(profile)
     tools = _filter_tools(TOOL_DEFINITIONS, profile)
@@ -183,7 +185,7 @@ async def run_agent(
             except Exception as hb_err:
                 logger.debug("Heartbeat write skipped: %s", hb_err)
 
-        response = client.messages.create(
+        response = guarded_create(client, lane="cli-agent",
             model=MODEL,
             max_tokens=MAX_TOKENS,
             system=system_prompt,
@@ -298,6 +300,7 @@ def main():
         help=f"Maximum agent turns (default: {MAX_AGENT_TURNS})",
     )
 
+    parser.add_argument("--model-scope", default=None, help=argparse.SUPPRESS)
     args = parser.parse_args()
     goal = " ".join(args.goal)
 
@@ -310,6 +313,7 @@ def main():
         profile=args.profile,
         role=args.role,
         max_turns=args.max_turns,
+        _request_scope=import_scope(args.model_scope),
     ))
 
 

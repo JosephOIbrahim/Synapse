@@ -15,6 +15,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
+from model_rules import guarded_create, scoped_request
 
 logger = logging.getLogger("synapse.planner")
 
@@ -257,6 +258,7 @@ Rules:
 """
 
 
+@scoped_request
 async def create_plan(client: Any, goal: str, scene_context: dict, model: str = "claude-opus-4-6-20250929") -> Plan:
     """Single LLM call to decompose goal into sub-goals.
 
@@ -275,7 +277,7 @@ async def create_plan(client: Any, goal: str, scene_context: dict, model: str = 
         "Decompose this goal into 3-8 sub-goals. Return ONLY a JSON array."
     )
 
-    response = client.messages.create(
+    response = guarded_create(client, lane="cli-planner",
         model=model,
         max_tokens=4096,
         system=PLANNING_SYSTEM_PROMPT,

@@ -91,12 +91,19 @@ Or configure it in their Claude Code MCP settings.
 
 ### Environment Variables
 
+`SYNAPSE_MODEL_POLICY` selects the local model-sharing rules file and locks the
+project selector in Connect a model. Without it, Project rules selects a project
+file or defaults to this installation's `.synapse/model_access.json`. Missing
+rules ask before remote requests; unreadable rules refuse requests. External MCP
+clients retain their own model permissions. See `EGRESS.md` for payload details.
+
 Complete reference â€” every `SYNAPSE_*` environment variable read by production
 code, enforced by `tests/test_m3_env_conformance.py` (a new env read without a
 row here fails CI; a stale row fails CI).
 
 | Variable | Meaning | Default | Read by | Single-seat vs studio |
 |----------|---------|---------|---------|-----------------------|
+| `SYNAPSE_MODEL_POLICY` | Deployment override for the local model-sharing policy; takes precedence over the project selector | unset (selected project or installation rules) | `model_access.py`, `panel/project_rules.py` | Both: explicit deployment choice; never contains keys |
 | `SYNAPSE_APEX_MCP_ENDPOINT` | H22 native APEX MCP endpoint for the truth-contract provider; `mock` = in-repo mock (pre-drop) | `mock` | `python/synapse/providers/apex_mcp.py` | Both: stays `mock` until D-H22-4 verifies the shipped surface |
 | `SYNAPSE_SCOUT_SOURCES` | Path to the federated-source registry scout reads for `domain="apex"` (D-H22-2) | `python/synapse/server/scout_sources.json` | `cognitive/tools/scout.py` | Both: default in-repo path |
 | `SYNAPSE_PARM_CATALOG_ROOT` | Root directory of the per-build parameter-name catalog the parm gate validates against | `python/synapse/validation/catalogs` | `python/synapse/validation/catalog.py` | Both: in-repo default; studio may point at a shared build catalog |

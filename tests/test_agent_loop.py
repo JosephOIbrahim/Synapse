@@ -44,6 +44,23 @@ from synapse.cognitive.agent_loop import (
 from synapse.cognitive.dispatcher import AgentToolError, Dispatcher
 
 
+@pytest.fixture(autouse=True)
+def scripted_agent_transport(monkeypatch, tmp_path):
+    """Exercise loop behavior with local scripts; guard integration has its own tests."""
+    from synapse.cognitive import agent_loop
+
+    monkeypatch.setenv("SYNAPSE_MODEL_POLICY", str(tmp_path / "model-policy.json"))
+    monkeypatch.setenv("SYNAPSE_PANEL_SETTINGS", str(tmp_path / "panel-settings.json"))
+
+    def scripted_create(client, *, lane, **kwargs):
+        assert lane == "agent-loop"
+        assert isinstance(client, MagicMock) or type(client).__module__ == __name__
+        return client.messages.create(**kwargs)
+
+    # Patch this component's imported seam only, never the shared permission gate.
+    monkeypatch.setattr(agent_loop, "guarded_create", scripted_create)
+
+
 # ---------------------------------------------------------------------------
 # Scripted mock Anthropic client
 # ---------------------------------------------------------------------------

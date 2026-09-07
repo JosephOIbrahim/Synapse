@@ -1,6 +1,7 @@
 """Settings schema v2 (rope L5-3) — profile + model_choice + v1 migration.
 
-Pins: a v1 file loads as expert; corrupt/unshaped loads as defaults; both new
+Pins: a v1 file loads as expert; corrupt/unshaped keeps cosmetic defaults and
+a model-policy refusal marker; both new
 keys round-trip through save/load; semantic values persist as tokens and are
 resolved against the L4-2a catalog only at compose time. Qt-free, hou-free,
 network-free (tmp_path only).
@@ -50,17 +51,17 @@ def test_missing_file_is_fresh_install_defaulting_expert(tmp_path):
     assert st["profile"] == "expert"
 
 
-# --- defaults-on-corrupt (v1 behavior kept) ----------------------------------
+# --- cosmetic defaults + fail-closed model selector (M4) ---------------------
 
 def test_corrupt_file_returns_defaults(tmp_path):
     p = tmp_path / "panel_settings.json"
     p.write_text("{not json", encoding="utf-8")
-    assert pset.load_settings(p) == pset.default_settings()
+    assert pset.load_settings(p) == dict(pset.default_settings(), model_policy_path=None)
 
 
 def test_unshaped_file_returns_defaults(tmp_path):
     p = _write(tmp_path / "panel_settings.json", ["not", "a", "dict"])
-    assert pset.load_settings(p) == pset.default_settings()
+    assert pset.load_settings(p) == dict(pset.default_settings(), model_policy_path=None)
 
 
 def test_invalid_profile_and_choice_sanitize(tmp_path):

@@ -14,6 +14,8 @@ import time
 import threading
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
+from synapse.model_access import guarded_create, make_anthropic_client, scoped_request, ModelAccessDenied, sdk_receipt
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Deque, Dict, List, Optional, Any, Union
@@ -216,6 +218,7 @@ class TieredRouter:
         # LLM client (lazy-initialized)
         self._llm_client = None
 
+    @scoped_request
     def route(
         self,
         input_text: str,
@@ -679,7 +682,7 @@ class TieredRouter:
                 memory=self._memory,
             )
 
-            response = client.messages.create(
+            response = guarded_create(client, lane="router-standard",
                 model=self._config.llm_model_fast,
                 max_tokens=1024,
                 system=_TIER2_SYSTEM_PROMPT,
@@ -718,6 +721,7 @@ class TieredRouter:
                 "reasoning": parsed.get("reasoning", ""),
                 "action": parsed.get("action", "answer"),
             }
+            tier2_meta["model_request"] = sdk_receipt(client)
             if tier1_hint and tier1_hint.found:
                 tier2_meta["tier1_enrichment"] = {
                     "topic": tier1_hint.topic,
@@ -745,6 +749,9 @@ class TieredRouter:
             self._record_metric(RoutingTier.STANDARD, result.latency_ms, result.success)
             return result
 
+        except ModelAccessDenied as exc:
+            return RoutingResult(success=False, tier=RoutingTier.STANDARD, answer=str(exc),
+                                 metadata={"model_access": "blocked"})
         except Exception as e:
             logger.warning("Tier 2 failed: %s", e)
             return None
@@ -763,8 +770,8 @@ class TieredRouter:
         if self._config.tier3_async:
             # Launch in background thread
             thread = threading.Thread(
-                target=self._tier3_worker,
-                args=(handle, text, context, context_hash, tier1_hint),
+                target=copy_context().run,
+                args=(self._tier3_worker, handle, text, context, context_hash, tier1_hint),
                 daemon=True,
             )
             thread.start()
@@ -883,7 +890,7 @@ class TieredRouter:
             )
 
             # Use deeper model for planning
-            response = client.messages.create(
+            response = guarded_create(client, lane="router-deep",
                 model=self._config.llm_model_deep,
                 max_tokens=4096,
                 system=_TIER2_SYSTEM_PROMPT,
@@ -911,6 +918,7 @@ class TieredRouter:
                 latency_ms=(time.monotonic() - start) * 1000,
                 metadata={
                     "model": self._config.llm_model_deep,
+                    "model_request": sdk_receipt(client),
                     "reasoning": parsed.get("reasoning", ""),
                 },
             )
@@ -921,6 +929,11 @@ class TieredRouter:
             self._record_metric(RoutingTier.DEEP, result.latency_ms, result.success)
             return result
 
+        except ModelAccessDenied as exc:
+            result = RoutingResult(success=False, tier=RoutingTier.DEEP, answer=str(exc),
+                                   metadata={"model_access": "blocked"})
+            self._record_metric(RoutingTier.DEEP, (time.monotonic() - start) * 1000, False)
+            return result
         except Exception as e:
             logger.warning("Tier 3 sync failed: %s", e)
             return None
@@ -952,7 +965,7 @@ class TieredRouter:
 
         try:
             import anthropic
-            self._llm_client = anthropic.Anthropic(
+            self._llm_client = make_anthropic_client(
                 api_key=self._config.llm_api_key,
             )
             return self._llm_client

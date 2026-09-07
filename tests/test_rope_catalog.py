@@ -5,8 +5,6 @@ into a test is the same claim-shape the catalog exists to refuse (R74).
 """
 import json
 import random
-import urllib.error
-import urllib.request
 import uuid
 
 from synapse.panel.providers import catalog
@@ -19,38 +17,25 @@ def _gen_models(n, remote_every=3):
     one carries a remote_host (the :cloud shape) so ``local`` gets both values."""
     rows = []
     for i in range(n):
-        row = {"name": "m-%s:latest" % uuid.uuid4().hex[:10]}
+        row = {"name": "m-%s:latest" % uuid.uuid4().hex[:10],
+               "size": 128, "details": {"format": "gguf"}}
         if remote_every and i % remote_every == 0:
             row["remote_host"] = "https://ollama.example.invalid"
         rows.append(row)
     return rows
 
 
-class _FakeResponse:
-    def __init__(self, payload):
-        self._body = json.dumps(payload).encode("utf-8")
-        self.status = 200
-
-    def read(self):
-        return self._body
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        return False
-
-
 def _serve(monkeypatch, models):
-    def fake_urlopen(req, timeout=None):
-        return _FakeResponse({"models": models})
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    def fake_metadata(endpoint, path, **kwargs):
+        assert endpoint == ENDPOINT and path == "/api/tags"
+        return {"models": models}
+    monkeypatch.setattr(catalog, "request_json", fake_metadata)
 
 
 def _kill_endpoint(monkeypatch):
-    def dead(req, timeout=None):
-        raise urllib.error.URLError("connection refused")
-    monkeypatch.setattr(urllib.request, "urlopen", dead)
+    def dead(*args, **kwargs):
+        raise OSError("connection refused")
+    monkeypatch.setattr(catalog, "request_json", dead)
 
 
 def test_discovery_lists_n_models_zero_hardcoded(monkeypatch, tmp_path):
@@ -151,7 +136,7 @@ def test_panel_start_reads_cache_without_network(monkeypatch, tmp_path):
 
     def boom(*args, **kwargs):
         raise AssertionError("panel start must not touch the network")
-    monkeypatch.setattr(urllib.request, "urlopen", boom)
+    monkeypatch.setattr(catalog, "request_json", boom)
 
     entries = catalog.load_catalog(path)      # the panel-start path
     assert len(entries) == len(models)

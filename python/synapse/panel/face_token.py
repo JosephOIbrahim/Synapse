@@ -684,6 +684,9 @@ class FaceToken(QtWidgets.QWidget):
         window = snap.get("context_window")
         self.set_row("context", tr.context_text(snap.get("last_prompt"), window))
         notes = []
+        reported = snap.get("reported_models") or []
+        notes.append("Requested: %s. API reported: %s" % (
+            snap.get("model") or "unknown", ", ".join(reported) if reported else "unknown"))
         if prompt is None and completion is None:
             notes.append("prompt/completion not reported by %s" % who)
         if window is None:

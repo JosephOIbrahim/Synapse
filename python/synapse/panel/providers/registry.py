@@ -194,8 +194,8 @@ def build_provider(provider_id: str = DEFAULT_PROVIDER, model: str = None):
     """Construct the StreamProvider for ``provider_id`` (data-driven).
 
     ``model`` overrides the provider default (the panel passes the picked model);
-    ``None`` ⇒ the provider's default. Unknown ids fall back to the Claude floor —
-    the panel never crashes on a stale selection.
+    ``None`` ⇒ the provider's default. Unknown ids refuse; a stale selection
+    must never change the destination to a cloud provider.
     """
     pid = (provider_id or DEFAULT_PROVIDER).lower()
     if pid == "gemini":
@@ -219,8 +219,6 @@ def build_provider(provider_id: str = DEFAULT_PROVIDER, model: str = None):
             max_tokens=CUSTOM_MAX_TOKENS,
         )
     if pid != "claude":
-        # Stale persisted / unknown id: fall back to the Claude floor, but
-        # LOUDLY — the panel surfaces the swap in chat (never a silent switch).
-        logger.warning("Unknown provider id %r — falling back to the Claude floor", pid)
+        raise ValueError("This engine is unavailable. Open Connect a model to choose another.")
     from .anthropic_provider import AnthropicProvider
     return AnthropicProvider(model=model or ANTHROPIC_MODEL, max_tokens=ANTHROPIC_MAX_TOKENS)

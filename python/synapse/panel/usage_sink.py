@@ -85,6 +85,7 @@ class UsageSink:
 
     def _reset_task(self, model, provider):
         self._model = model
+        self._reported_models = []
         self._provider = provider
         self._runs = 0
         # field -> summed int. A field ABSENT from this dict was never reported
@@ -148,6 +149,14 @@ class UsageSink:
                     prompt = (prompt or 0) + value
             self._last_prompt = prompt
 
+    def set_reported_model(self, model):
+        """Keep API-reported identity separate from the requested alias."""
+        if not isinstance(model, str) or not model or len(model) > 256 or any(ord(c) < 32 for c in model):
+            return
+        with self._lock:
+            if model not in self._reported_models:
+                self._reported_models.append(model)
+
     def set_context_window(self, window, source=None):
         """Record the model's context window for the current task (J2): the
         provider's OWN figure (``provider.context_window()``) and where it came
@@ -177,6 +186,7 @@ class UsageSink:
             snap.update(_view(self._totals))
             snap.update({
                 "provider": self._provider,
+                "reported_models": list(self._reported_models),
                 "context_window": self._context_window,
                 "context_source": self._context_source,
                 "last_prompt": self._last_prompt,

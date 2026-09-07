@@ -8,6 +8,7 @@ No pytest-asyncio required — async tests use asyncio.run().
 import asyncio
 import json
 import os
+import shlex
 import sys
 import types
 from pathlib import Path
@@ -343,6 +344,11 @@ class TestProfiles:
 class TestSpawner:
     """Tests for agent/spawner.py."""
 
+    @pytest.fixture(autouse=True)
+    def isolated_model_scope(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("SYNAPSE_MODEL_POLICY", str(tmp_path / "model-policy.json"))
+        monkeypatch.setenv("SYNAPSE_PANEL_SETTINGS", str(tmp_path / "panel-settings.json"))
+
     def test_build_agent_command(self):
         """build_agent_command constructs correct CLI string."""
         from spawner import build_agent_command
@@ -353,7 +359,16 @@ class TestSpawner:
         assert "--role" in cmd
         assert "render" in cmd
         assert "--max-turns" in cmd
-        assert '"do the thing"' in cmd
+        # tmux takes a POSIX shell command; quote style is not the contract.
+        # The goal must remain one exact argument and scope travels separately.
+        args = shlex.split(cmd)
+        assert args[-1] == "do the thing"
+        assert "--model-scope" in args
+
+    def test_goal_quoting_roundtrips_shell_metacharacters(self):
+        from spawner import build_agent_command
+        goal = "Keep 'single' and \"double\" quotes; $(synthetic) & pipes | literal"
+        assert shlex.split(build_agent_command("render", goal))[-1] == goal
 
     def test_build_agent_command_custom_profile(self):
         """build_agent_command respects custom profile override."""

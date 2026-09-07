@@ -993,3 +993,29 @@ _recipe_base_stylesheet = stylesheet
 def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
     return _recipe_base_stylesheet(scale) + "\n" + _recipe_stylesheet(scale)
 # --- END SAVED_RECIPES
+
+
+# --- MODEL_RULES (scoped project permissions)
+def prepare_model_rules_dialog(root, scale=t.FONT_SCALE_DEFAULT):
+    root.setStyleSheet(stylesheet(scale))
+
+
+_rules_base_stylesheet = stylesheet
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _rules_base_stylesheet(scale) + f"""
+#DsRoot[panel_popup="model_rules"] QPlainTextEdit#DsRulesPath,
+#DsRoot[panel_popup="model_rules"] QListWidget {{
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+}}
+#DsRoot[panel_popup="model_rules"] QListWidget::item {{ padding: {t.SPACE_SM}px; }}
+#DsRoot[panel_popup="model_rules"] QCheckBox {{
+    color: {t.TEXT_PRIMARY}; font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+}}
+#DsRoot[panel_popup="model_rules"] QWidget#DsRulesPage,
+#DsRoot[panel_popup="model_rules"] QScrollArea#DsRulesScroll {{ background: {t.PANEL}; }}
+"""
+# --- END MODEL_RULES

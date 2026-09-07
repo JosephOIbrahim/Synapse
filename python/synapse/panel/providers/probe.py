@@ -74,16 +74,16 @@ What this module cannot measure, and says so
   models rather than a table typed into code — a declared price table would be
   the very claim-shape this module exists to refuse, and keying one by model id
   would also put model names in code. Where the probe *can* establish cost it
-  does: an Ollama tag with no ``remote_host`` runs on this machine, so there is
-  no per-token vendor charge and the cost is a probed ``0.0``. An Ollama
-  ``:cloud`` tag has a ``remote_host`` and is metered by that host, so it gets
-  ``None`` like any other metered model.
+  does: fresh positive GGUF weight metadata on a loopback Ollama endpoint
+  supports local execution and a vendor token cost of ``0.0``. Cloud tags,
+  remote metadata and every unverified locality retain unknown cost.
 """
 from __future__ import annotations
 
 import http.client
 import json
 import logging
+import math
 import os
 import re
 import ssl
@@ -395,16 +395,42 @@ def _request(scheme: str, host: str, path: str, *, method: str = "GET",
     result rather than letting it escape. Never follows a redirect and never
     retries — a probe that retries is a probe that can amplify a rate limit.
     """
+    from ..connections import is_loopback, validate_endpoint
+    from .metadata_probes import MAX_RESPONSE_BYTES, MAX_TIMEOUT_S, MetadataError
+    endpoint = "%s://%s" % (scheme, host)
+    validate_endpoint(endpoint)
+    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not math.isfinite(timeout) or timeout <= 0:
+        raise MetadataError("The metadata timeout is invalid.", "invalid_timeout")
+    timeout = min(timeout, MAX_TIMEOUT_S)
+    if scheme == "http" and not is_loopback(endpoint) and any(
+            key.lower() in ("authorization", "x-api-key", "x-goog-api-key") and value
+            for key, value in (headers or {}).items()):
+        raise MetadataError("Use HTTPS before sending a key to a remote service.", "insecure_credentials")
     if scheme == "http":
         conn = http.client.HTTPConnection(host, timeout=timeout)
     else:
         conn = http.client.HTTPSConnection(
             host, timeout=timeout, context=ssl.create_default_context())
     t0 = time.perf_counter()
+    deadline = time.monotonic() + timeout
     try:
         conn.request(method, path, body=body, headers=headers or {})
         resp = conn.getresponse()
-        text = resp.read().decode("utf-8", errors="replace")
+        chunks, size = [], 0
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise MetadataError("The metadata check timed out.", "timeout")
+            if conn.sock is not None:
+                conn.sock.settimeout(remaining)
+            chunk = resp.read1(min(16384, MAX_RESPONSE_BYTES + 1 - size))
+            if not chunk:
+                break
+            size += len(chunk)
+            if size > MAX_RESPONSE_BYTES:
+                raise MetadataError("The metadata response is too large.", "response_too_large")
+            chunks.append(chunk)
+        text = b"".join(chunks).decode("utf-8", errors="replace")
         latency_ms = (time.perf_counter() - t0) * 1000.0
         hdrs = {k.lower(): v for k, v in resp.getheaders()}
         return resp.status, hdrs, text, latency_ms
@@ -604,15 +630,8 @@ def ollama_endpoint() -> str:
 
 def probe_ollama(*, now: Optional[float] = None,
                  timeout: float = _HTTP_TIMEOUT_LOCAL) -> list[ProbeResult]:
-    """``GET {OLLAMA_HOST}/api/tags`` — free, local, no quota to consume.
-
-    Cost is genuinely probe-derived here and nowhere else: a tag with no
-    ``remote_host`` runs on this machine, so there is no per-token vendor
-    charge and cost is ``0.0``. A ``:cloud`` tag reports a ``remote_host`` and
-    is metered by that host — it gets ``None``, the same as any other metered
-    model. The registry's default (``glm-5:cloud``) is one of those, so
-    "Ollama is local and free" is not true of the row the panel ships with.
-    """
+    """List metadata only; zero vendor cost requires positive local evidence."""
+    from ..connections import ConnectionFacts, ConnectionSpec
     probed_at = time.time() if now is None else now
     declared = _declared_models("ollama")
     method = "ollama:GET /api/tags"
@@ -635,20 +654,32 @@ def probe_ollama(*, now: Optional[float] = None,
     live: dict[str, dict] = {}
     try:
         payload = json.loads(text)
-        for m in payload.get("models", []) or []:
-            name = m.get("name") or m.get("model")
-            if not name:
+        items = payload.get("models")
+        if not isinstance(items, list):
+            raise ValueError("Invalid model list")
+        endpoint = "%s://%s%s" % (scheme, host, path)
+        for m in items:
+            if not isinstance(m, dict):
                 continue
-            det = m.get("details") or {}
+            name = m.get("name") or m.get("model")
+            if not isinstance(name, str) or not name or any(ord(c) < 32 for c in name):
+                continue
+            det = m.get("details")
+            det = det if isinstance(det, dict) else {}
             remote = m.get("remote_host") or ""
-            cost = ((None, None, "metered:remote_host=%s" % remote) if remote
-                    else (0.0, 0.0, "probed:local_weights_no_remote_host"))
+            facts = ConnectionFacts(ConnectionSpec("ollama", name, endpoint), m, probed_at)
+            location = facts.location_at(probed_at)
+            cost = ((0.0, 0.0, "probed:positive_local_weights") if location == "Local"
+                    else (None, None, "metered:remote_or_relay") if location in ("Remote", "Cloud relay")
+                    else (None, None, "unknown:local_weights_not_verified"))
             live[name] = {
                 "display_name": name,
                 "parameter_size": det.get("parameter_size"),
-                "capabilities": m.get("capabilities"),
+                "capabilities": sorted(facts.capabilities) if facts.capabilities is not None else None,
                 "cost": cost,
                 "detail": {
+                    "endpoint": endpoint,
+                    "location": location,
                     "remote_host": remote or None,
                     "context_length": det.get("context_length"),
                     "family": det.get("family") or None,

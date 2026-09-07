@@ -17,6 +17,23 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def scripted_daemon_transport(monkeypatch, tmp_path):
+    """Host lifecycle tests use scripted replies; real guard lanes are separate."""
+    from synapse.cognitive import agent_loop
+
+    monkeypatch.setenv("SYNAPSE_MODEL_POLICY", str(tmp_path / "model-policy.json"))
+    monkeypatch.setenv("SYNAPSE_PANEL_SETTINGS", str(tmp_path / "panel-settings.json"))
+
+    def scripted_create(client, *, lane, **kwargs):
+        assert lane == "agent-loop"
+        assert (isinstance(client, MagicMock)
+                or type(client).__module__ in (__name__, "test_agent_loop"))
+        return client.messages.create(**kwargs)
+
+    monkeypatch.setattr(agent_loop, "guarded_create", scripted_create)
+
+
 # ---------------------------------------------------------------------------
 # synapse.host.auth
 # ---------------------------------------------------------------------------

@@ -5,6 +5,8 @@ import importlib.util
 from pathlib import Path
 import re
 import subprocess
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -132,7 +134,34 @@ def _method(source, name):
                                   "_on_stop", "_set_busy",
                                   "showEvent", "_update_context", "_update_health"])
 def test_lifecycle_and_token_completion_methods_byte_identical(name):
-    assert _method(_source("synapse_panel.py"), name) == _method(_source("synapse_panel.py", _panel_base()), name)
+    current = _method(_source("synapse_panel.py"), name)
+    if name == "_on_stop":
+        # M4 revokes permission before cooperative worker cancellation. Freeze
+        # every other byte and require the exact additive call, once.
+        addition = '        _revoke_model_connections(getattr(self, "_permission_connections", ()))\n'
+        assert current.count(addition) == 1
+        current = current.replace(addition, "", 1)
+    assert current == _method(_source("synapse_panel.py", _panel_base()), name)
+
+
+def test_stop_revokes_connections_before_worker_abort():
+    tree = ast.parse(_source("synapse_panel.py"))
+    helper = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                  and node.name == "_revoke_model_connections")
+    stop = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+                and node.name == "_on_stop")
+    namespace = {"_STOPPING_PHRASE": "Stopping"}
+    exec(compile(ast.Module(body=[helper, stop], type_ignores=[]), "panel-stop", "exec"), namespace)
+    events = []
+    panel = SimpleNamespace(
+        _permission_connections=[SimpleNamespace(revoke=lambda: events.append("revoke"))],
+        _worker=SimpleNamespace(abort=lambda: events.append("abort")),
+        _stop_btn=Mock(), _header_status=Mock(), _last_tool="synthetic tool", _set_header=Mock())
+    namespace["_on_stop"](panel)
+    assert events == ["revoke", "abort"]
+    assert panel._stopping is True
+    panel._stop_btn.setEnabled.assert_called_once_with(False)
+    panel._set_header.assert_called_once_with("working", "Stopping")
 
 
 def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
@@ -164,7 +193,36 @@ _J2_BASE = "c28ac3dc"
 @pytest.mark.parametrize("name,base", [("measure_static", BASE),
                                        ("_refresh_spend", _J2_BASE)])
 def test_token_measurement_paths_are_unchanged(name, base):
-    assert _method(_source("face_token.py"), name) == _method(_source("face_token.py", base), name)
+    current = _method(_source("face_token.py"), name)
+    if name == "_refresh_spend":
+        # M4 adds requested-versus-reported identity to the note; measured
+        # counts, context arithmetic and pricing keep the J2 byte pin.
+        addition = ('        reported = snap.get("reported_models") or []\n'
+                    '        notes.append("Requested: %s. API reported: %s" % (\n'
+                    '            snap.get("model") or "unknown", ", ".join(reported) if reported else "unknown"))\n')
+        assert current.count(addition) == 1
+        current = current.replace(addition, "", 1)
+    assert current == _method(_source("face_token.py", base), name)
+
+
+@pytest.mark.parametrize("reported,expected", [([], "unknown"), (["api-alias"], "api-alias")])
+def test_spend_note_distinguishes_requested_and_reported_models(reported, expected):
+    source = ast.parse(_source("face_token.py"))
+    method = next(node for node in ast.walk(source) if isinstance(node, ast.FunctionDef)
+                  and node.name == "_refresh_spend")
+    namespace = {"UNKNOWN": "UNKNOWN"}
+    exec(compile(ast.Module(body=[method], type_ignores=[]), "token-spend", "exec"), namespace)
+    face = SimpleNamespace(set_row=Mock(), _set_note=Mock(), _spend_note="spend", _session_note="session")
+    snap = {"provider": "custom", "model": "requested-model", "reported_models": reported,
+            "input_tokens": 11, "output_tokens": 4,
+            "session": {"input_tokens": 11, "output_tokens": 4, "tasks": 1}}
+    namespace["_refresh_spend"](face, snap)
+    note = next(call.args[1] for call in face._set_note.call_args_list if call.args[0] == "spend")
+    assert "Requested: requested-model. API reported: " + expected in note
+    face.set_row.assert_any_call("prompt", 11)
+    face.set_row.assert_any_call("completion", 4)
+    face.set_row.assert_any_call("total", 15)
+    face.set_row.assert_any_call("session total", 15)
 
 
 def test_token_readout_worker_fontload_and_shelf_unchanged():

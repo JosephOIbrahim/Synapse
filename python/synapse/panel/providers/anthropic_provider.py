@@ -19,6 +19,7 @@ import logging
 import ssl
 
 from .base import StreamProvider
+from synapse.model_access import guarded_stream, stream_spec, before_stream_send, ModelRequestFailed
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +170,7 @@ class AnthropicProvider(StreamProvider):
     # Streaming request
     # ------------------------------------------------------------------
 
+    @guarded_stream
     def stream(self, *, messages, tools, system, api_key, emit_token, should_abort):
         """Make one streaming API call, return ``(stop_reason, content_blocks)``."""
         # Reset the per-call usage record BEFORE the request so a failed call
@@ -177,7 +179,7 @@ class AnthropicProvider(StreamProvider):
         cached_tools, cached_system, cached_messages = _with_prompt_cache(
             tools, system, _strip_internal_keys(messages))
         body: dict = {
-            "model": self._model,
+            "model": stream_spec(self).model,
             "max_tokens": self._max_tokens,
             "stream": True,
             "messages": cached_messages,
@@ -192,6 +194,7 @@ class AnthropicProvider(StreamProvider):
         conn = http.client.HTTPSConnection(_API_HOST, timeout=_HTTP_TIMEOUT, context=ctx)
 
         try:
+            before_stream_send(self, api_key, payload, "https://" + _API_HOST + _API_PATH)
             conn.request(
                 "POST",
                 _API_PATH,
@@ -205,9 +208,8 @@ class AnthropicProvider(StreamProvider):
 
             response = conn.getresponse()
             if response.status != 200:
-                error_body = response.read().decode("utf-8", errors="replace")
-                raise RuntimeError(
-                    "Anthropic API error %s: %s" % (response.status, error_body)
+                raise ModelRequestFailed(
+                    "Anthropic API error %s. Check model access and service limits." % response.status
                 )
 
             return self._parse_sse_stream(response, emit_token, should_abort)
@@ -287,6 +289,7 @@ class AnthropicProvider(StreamProvider):
             # cache_read/cache_creation split that prices _with_prompt_cache.
             message = data.get("message")
             if isinstance(message, dict):
+                self.reported_model = message.get("model")
                 _merge_usage(state["usage"], message.get("usage"))
 
         elif event_type == "content_block_start":
@@ -365,14 +368,14 @@ class AnthropicProvider(StreamProvider):
             delta = data.get("delta", {})
             reason = delta.get("stop_reason")
             if reason:
+                self._stream_complete = True
                 state["stop_reason"] = reason
             # message_delta carries cumulative usage at the TOP level (not
             # inside "delta") — the final output_tokens for the turn.
             _merge_usage(state["usage"], data.get("usage"))
 
         elif event_type == "message_stop":
-            pass  # End of message, stop_reason already captured
+            self._stream_complete = True
 
         elif event_type == "error":
-            error_msg = data.get("error", {}).get("message", str(data))
-            raise RuntimeError("Anthropic stream error: %s" % error_msg)
+            raise ModelRequestFailed("Anthropic stream error. Check model access and service limits.")

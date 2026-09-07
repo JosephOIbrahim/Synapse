@@ -127,14 +127,21 @@ class _CapturingConn:
         pass
 
 
-def test_ollama_request_asks_for_usage(monkeypatch):
+def test_ollama_request_asks_for_usage(monkeypatch, tmp_path):
+    from synapse import model_access
+    from synapse.panel.connections import provider_spec
     from synapse.panel.providers.nemotron_provider import NemotronProvider
     from synapse.panel.providers.ollama_provider import OllamaProvider
     monkeypatch.delenv("OLLAMA_HOST", raising=False)
+    monkeypatch.setenv("SYNAPSE_MODEL_POLICY", str(tmp_path / "model-policy.json"))
+    monkeypatch.setenv("SYNAPSE_PANEL_SETTINGS", str(tmp_path / "panel-settings.json"))
     monkeypatch.setattr(http.client, "HTTPConnection", _CapturingConn)
     _CapturingConn.captured.clear()
 
     prov = OllamaProvider(model="nemotron-mini:latest", max_tokens=4)
+    # This exact synthetic destination is allowed only in the temporary policy.
+    # The real stream guard still runs; _CapturingConn prevents network traffic.
+    model_access.save_policy("ask", (provider_spec(prov),))
     prov.stream(messages=[{"role": "user", "content": "Say hi."}], tools=[],
                 system="", api_key="not-needed", **_NOOP)
     method, path, body, _headers = _CapturingConn.captured[-1]

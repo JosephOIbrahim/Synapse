@@ -6,7 +6,7 @@ of discovery: every successful refresh is folded into
 ``.synapse/model_catalog.json`` so the next panel start knows what was served
 *last time*, even when the provider is down at that moment.
 
-GATE A scope: **Ollama only** — ``GET /api/tags`` over stdlib ``urllib``
+GATE A scope: **Ollama only** — bounded ``GET /api/tags`` over stdlib HTTP
 (providers are SDK-free; nothing here imports a vendor SDK). Each entry
 carries a ``provider`` column so later gates can fold in more providers
 without a file-format migration.
@@ -40,17 +40,17 @@ import json
 import logging
 import os
 import time
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
 from . import probe
+from .metadata_probes import MetadataError, request_json
+from ..connections import ConnectionFacts, ConnectionSpec, validate_endpoint
 
 logger = logging.getLogger(__name__)
 
-CATALOG_VERSION = 1
+CATALOG_VERSION = 2
 
 DEFAULT_CATALOG_RELPATH = os.path.join(".synapse", "model_catalog.json")
 """Default cache location, resolved against the process working directory.
@@ -66,7 +66,8 @@ class CatalogEntry:
     """One discovered model as the cache remembers it.
 
     ``first_seen``/``last_seen`` are epoch seconds. ``local`` is probe-derived
-    (an ``/api/tags`` row with no ``remote_host`` runs on this machine).
+    from positive GGUF weight metadata at a loopback service. A cached value
+    records that past observation; it never authorizes a current request.
     ``auth_ok`` records whether the endpoint answered without an auth
     challenge; ``None`` means never established.
     """
@@ -118,7 +119,7 @@ def _as_path(path: Union[str, os.PathLike, None]) -> Path:
     return Path(path) if path is not None else Path(DEFAULT_CATALOG_RELPATH)
 
 
-def _entry_from_row(row: dict) -> Optional[CatalogEntry]:
+def _entry_from_row(row: dict, *, positive_locality=False) -> Optional[CatalogEntry]:
     """One persisted row → entry, or ``None`` when the row is unusable.
     Per-row tolerance: one malformed row must not void the rest of the cache."""
     try:
@@ -132,7 +133,7 @@ def _entry_from_row(row: dict) -> Optional[CatalogEntry]:
             id=model_id,
             provider=provider,
             endpoint=str(row.get("endpoint") or ""),
-            local=bool(row.get("local")),
+            local=positive_locality and row.get("local") is True,
             first_seen=float(row.get("first_seen") or 0.0),
             last_seen=float(row.get("last_seen") or 0.0),
             latency_ms=float(latency) if latency is not None else None,
@@ -161,12 +162,14 @@ def load_catalog(path: Union[str, os.PathLike, None] = None) -> tuple[CatalogEnt
     try:
         payload = json.loads(text)
         rows = payload.get("entries") or []
+        if not isinstance(rows, list):
+            return ()
     except Exception as exc:
         logger.debug("catalog malformed at %s: %s", p, exc)
         return ()
     out = []
     for row in rows:
-        entry = _entry_from_row(row) if isinstance(row, dict) else None
+        entry = _entry_from_row(row, positive_locality=payload.get("version") == CATALOG_VERSION) if isinstance(row, dict) else None
         if entry is not None:
             out.append(entry)
     return tuple(out)
@@ -188,7 +191,7 @@ def save_catalog(entries: Sequence[CatalogEntry],
             "version": CATALOG_VERSION,
             "entries": [e.to_dict() for e in entries],
         }
-        tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        tmp.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
         os.replace(tmp, p)
         return True
     except Exception as exc:
@@ -197,42 +200,43 @@ def save_catalog(entries: Sequence[CatalogEntry],
 
 
 # ---------------------------------------------------------------------------
-# Discovery — stdlib urllib, bounded, every failure becomes a value.
+# Discovery — bounded stdlib HTTP, no redirects, every failure becomes a value.
 # ---------------------------------------------------------------------------
 
 def _discover_ollama(endpoint: str, timeout: float):
     """``GET {endpoint}/api/tags`` → ``(models, latency_ms, reason)``.
 
-    ``models`` maps model id → ``local`` (no ``remote_host`` on the tag);
+    ``models`` maps model id → positive local weight evidence at this endpoint;
     ``None`` with a ``reason`` when the endpoint could not be enumerated.
     Never retries, never follows the failure with a second request.
     """
-    url = endpoint.rstrip("/") + "/api/tags"
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
     t0 = time.perf_counter()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            body = resp.read()
+        p = validate_endpoint(endpoint)
+        payload = request_json(endpoint, p.path.rstrip("/") + "/api/tags", timeout=timeout)
         latency_ms = (time.perf_counter() - t0) * 1000.0
-    except urllib.error.HTTPError as exc:
-        reason = ("unauthorized" if exc.code in (401, 403)
-                  else "rate_limited" if exc.code == 429
-                  else "http_%d" % exc.code)
-        return None, None, reason
-    except Exception as exc:
-        logger.debug("ollama discovery unreachable at %s: %s", url, exc)
+    except MetadataError as exc:
+        return None, None, exc.reason
+    except Exception:
+        logger.debug("Ollama metadata discovery unavailable")
         return None, None, "unreachable"
     try:
-        payload = json.loads(body.decode("utf-8", errors="replace"))
+        items = payload.get("models")
+        if not isinstance(items, list):
+            return None, latency_ms, "unparseable_response"
         models: dict[str, bool] = {}
-        for m in payload.get("models") or []:
-            name = m.get("name") or m.get("model")
-            if not name:
+        stamp = time.time()
+        for m in items:
+            if not isinstance(m, dict):
                 continue
-            models[str(name)] = not (m.get("remote_host") or "")
+            name = m.get("name") or m.get("model")
+            if not isinstance(name, str) or not name or any(ord(c) < 32 for c in name):
+                continue
+            facts = ConnectionFacts(ConnectionSpec(_PROVIDER, name, endpoint), m, stamp)
+            models[name] = facts.location_at(stamp) == "Local"
         return models, latency_ms, None
-    except Exception as exc:
-        logger.debug("ollama /api/tags unparseable: %s", exc)
+    except Exception:
+        logger.debug("Ollama /api/tags unparseable")
         return None, latency_ms, "unparseable_response"
 
 
@@ -251,17 +255,20 @@ def refresh(*, path: Union[str, os.PathLike, None] = None,
     ts = time.time() if now is None else now
     p = _as_path(path)
     cached = load_catalog(p)
+    ep = None
     try:
-        ep = endpoint or probe.ollama_endpoint()
+        ep = (endpoint or probe.ollama_endpoint()).rstrip("/")
+        validate_endpoint(ep)
         served, latency_ms, reason = _discover_ollama(ep, timeout)
     except Exception as exc:            # pragma: no cover - defensive belt
         logger.warning("catalog refresh raised: %s", exc)
         served, latency_ms, reason = None, None, "probe_error"
     if served is None:
-        return RefreshResult(entries=cached, new=(), removed=(),
+        same_endpoint = tuple(e for e in cached if e.provider != _PROVIDER or e.endpoint.rstrip("/") == ep)
+        return RefreshResult(entries=same_endpoint, new=(), removed=(),
                              stale=True, reason=reason)
 
-    prior = {e.id: e for e in cached if e.provider == _PROVIDER}
+    prior = {e.id: e for e in cached if e.provider == _PROVIDER and e.endpoint.rstrip("/") == ep}
     kept = [e for e in cached if e.provider != _PROVIDER]
     rows = [
         CatalogEntry(

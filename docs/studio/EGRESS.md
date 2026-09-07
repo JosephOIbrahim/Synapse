@@ -9,7 +9,9 @@ until this document is updated.
 
 ## Remote endpoints
 
-Three remote hosts exist in first-party code:
+Three default remote hosts exist in first-party code; owned SDK clients also
+honor an explicit `ANTHROPIC_BASE_URL` when created, and permission is checked
+against that effective destination:
 
 - `api.anthropic.com:443` (TLS, `POST /v1/messages`) — the Claude lanes.
 - `generativelanguage.googleapis.com:443` (TLS, `POST …:streamGenerateContent`)
@@ -53,10 +55,11 @@ list/metadata endpoints**:
 | `localhost:11434` (or `OLLAMA_HOST`) | `GET /api/tags` | local tag list — loopback by default |
 
 **No prompt, no scene data, no chat history, no tool schema and no memory
-content is sent on this lane.** The request bodies are empty (every call is a
-`GET`); the only thing that leaves is the auth header and the fact that a probe
-happened. It is the lightest-payload lane in the product, and the one a security
-review should find easiest to clear.
+content is sent on this lane.** List requests have empty bodies. The bounded
+`panel/providers/metadata_probes.py` helper also makes `POST /api/show` requests
+to an Ollama endpoint with exactly the selected model name, to read reported
+capabilities and weight metadata. Credentials travel only in headers. There are
+no model completions or benchmarks during setup.
 
 **No completion is ever requested from this module.** That is enforced, not
 asserted: the endpoint allowlist is `probe.FREE_ENDPOINTS`, and
@@ -66,7 +69,10 @@ non-docstring string literal names a completions path.
 **Frequency:** demand-driven, never on a timer. A probe fires only when a caller
 reads provider state *and* the last result is older than
 `probe.REFRESH_INTERVAL_S` (60 s). An idle panel issues **zero** probes; the
-ceiling under continuous use is 60 requests/hour/provider.
+ceiling for this legacy list probe under continuous use is 60 requests/hour/provider.
+Explicit connection checks and catalog refreshes are separate. A locally approved
+stream rechecks weight metadata before each payload; those checks are not subject
+to the legacy list-probe interval.
 
 Call sites:
 
@@ -80,6 +86,9 @@ Call sites:
 | Host daemon agent loop | `host/daemon.py` → `cognitive/agent_loop.py` | vendored `anthropic` SDK |
 | Routing tiers 2/3 | `routing/router.py` | `anthropic` SDK |
 | Capability probe (all engines) | `panel/providers/probe.py` | stdlib `http.client.HTTPSConnection` / `HTTPConnection`, single bounded `GET`, no retry, no redirect |
+| Connection/catalog metadata | `panel/connections.py`, `panel/providers/catalog.py` → `panel/providers/metadata_probes.py` | stdlib HTTP(S), bounded GET or model-name-only Ollama POST, no retry or redirect |
+| Guarded SDK factory | `python/synapse/model_access.py` | SDK-compatible HTTPX, no environment proxy, redirect, ambient profile auth or automatic retry |
+| CLI agent and planner | `agent/synapse_agent.py`, `agent/synapse_planner.py` → `agent/model_rules.py` | the same guarded SDK factory and request check |
 
 No telemetry, analytics, crash-reporting, or update-check endpoint exists
 anywhere in the codebase.
@@ -92,13 +101,15 @@ anywhere in the codebase.
 | **Daemon agent loop** (`agent_loop` / daemon) | The user prompt + registered cognitive tool results (today: `synapse_inspect_stage` stage summaries). |
 | **Routing tiers 2/3** (`router`) | The user query + tier-1 RAG knowledge + up to 3 project-memory search results embedded in the user message. |
 | **Capability probe** (`providers/probe.py`) | Nothing. Every call is a `GET` with an empty body; only the auth header transits. |
+| **Connection/catalog details** (`providers/metadata_probes.py`) | Empty GET body or only the selected model name for Ollama `/api/show`; credentials in headers. |
+| **CLI agent/planner** | The goal, conversation and tool outputs supplied to that agent or planning operation. The same saved project permission is required. |
 
 ## What NEVER leaves
 
 - The **Fernet encryption key** — in-process only. Only the non-secret
   8-hex `key.fingerprint` is ever written, and only locally.
 - The **ANTHROPIC_API_KEY** — leaves only as the `x-api-key` auth header
-  to `api.anthropic.com` itself, never inside payloads.
+  to the captured Anthropic API destination (`api.anthropic.com` by default), never inside payloads.
 - The **GEMINI_API_KEY** (Gemini provider only) — leaves only as the
   `x-goog-api-key` auth header to `generativelanguage.googleapis.com`, never
   inside payloads.
@@ -128,7 +139,8 @@ anywhere in the codebase.
 - The Ollama panel engine talks to the local daemon at
   `http://localhost:11434` (`POST /v1/chat/completions` for chat +
   `GET /api/tags` for the model menu + `POST /api/show` for the model's
-  context length — body: the model name only, once per task, J2 2026-09-05)
+  context length and capabilities — body: the model name only; connection checks
+  and local provenance rechecks can request this before each model payload)
   — plaintext HTTP, loopback by default.
   **Caveat:** `OLLAMA_HOST` can redirect this lane to a remote (TLS) host,
   at which point it is egress (see "Remote endpoints").
@@ -144,19 +156,44 @@ anywhere in the codebase.
 
 ## What bounds agent-initiated egress
 
-- The first-session panel flow asks before a task uses a remote or unverified
-  model. It discloses prompts, conversation, scene context, tool/memory results,
-  and tool-supplied images. Provider, requested model, credential, and transport
-  endpoint are captured once for all requests in that task. Decline sends nothing
-  on that panel path. Independent host lanes and external MCP clients remain
-  outside this permission; this is not a project-wide network boundary.
-- `panel/connections.py` checks the selected service using bounded GET metadata
-  requests (Anthropic/Gemini models, OpenAI-compatible models, or Ollama tags).
-  It sends only credentials in headers, no project context. Connection setup
+- `model_access.py` applies local project rules to SYNAPSE-owned panel streams,
+  router tiers, daemon/agent-loop, CLI agent and planner requests. Missing rules
+  require permission for remote or unverified models; malformed rules or a corrupt
+  project selector refuse dispatch. Project rules offers **Ask** and **Local only**.
+  Saved background permissions name an exact provider, model and endpoint and
+  require explicit sharing consent. Panel task permission is temporary and scoped
+  to that task, connection and key. Keys are never stored in these rules.
+- Project path, revision and selection generation are captured when work is
+  accepted, including queued/asynchronous work and child-agent handoffs. Stop,
+  completion, changed project or revoked permission prevents later payloads.
+  A request already transmitted may finish. Checks immediately precede physical
+  sends; owned transports disable redirects and hidden retries. This is a rule
+  for SYNAPSE-owned requests, not a workstation firewall or control of external
+  MCP clients. Ask permission discloses prompts, conversation, scene context,
+  recalled memory, tool results and images.
+- Cross-process CLI handoffs carry the accepted project origin and the cancellation
+  state at export. They do not carry a live parent-cancellation channel. The team
+  controller's `stop_team` terminates the child processes; merely retaining or
+  revoking an in-memory parent scope does not cancel an already-exported token.
+  Children still require current saved project permission before each request.
+  In-process queued daemon work inherits cancellation dynamically.
+- Local approval requires fresh positive GGUF weight metadata from the exact
+  loopback Ollama model, checked again on the worker before a payload. Cloud tags,
+  relay fields and unknown locality do not qualify. Service metadata is evidence,
+  not proof of what a service actually runs. Automatic choice uses fresh reported
+  capabilities, includes actual tools/images, and never switches an active task.
+- `panel/connections.py` checks the selected service using bounded metadata
+  requests (Anthropic/Gemini models, OpenAI-compatible models, or Ollama tags and
+  model-name-only details). It sends no project context. Connection setup
   runs off the UI thread and does not claim a successful generation. Keys typed
   in the dialog are panel-session-only; closing clears panel references while
   an existing worker may finish with its captured key. No new plaintext key
   persistence or process-environment mutation is introduced.
+
+- Request receipts are held in a bounded process-local buffer: requested and
+  API-reported model identities, destination, permission result and any reported
+  token counts. They contain no prompt, image, tool result or credential. Missing
+  usage stays unknown; an incomplete stream is a failure rather than a success.
 
 - The **worker allowlist** (`panel/worker_policy.py`,
   `SYNAPSE_WORKER_TOOL_MODE` strict/standard/unrestricted; `standard`

@@ -80,11 +80,16 @@ def build_agent_command(role: str, goal: str, profile: Optional[str] = None) -> 
 
     parts.extend(["--role", role])
     parts.extend(["--max-turns", str(max_turns)])
-    parts.append(f'"{goal}"')
+    from model_rules import export_scope
+    import shlex
+    parts.extend(["--model-scope", export_scope(), goal])
+    return shlex.join(parts)
 
-    return " ".join(parts)
+
+from model_rules import scoped_request
 
 
+@scoped_request
 def spawn_team(goal: str, team: Optional[List[str]] = None) -> bool:
     """Create a tmux session with one pane per agent.
 

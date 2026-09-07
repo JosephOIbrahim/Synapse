@@ -54,6 +54,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
 from synapse.cognitive.dispatcher import AgentToolError, Dispatcher
+from synapse.model_access import guarded_create, scoped_request, request_scope
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +226,7 @@ def _extract_text_blocks(content: Any) -> List[Dict[str, Any]]:
 # -- Public entry point -----------------------------------------------------
 
 
+@scoped_request
 def run_turn(
     client: Any,
     dispatcher: Dispatcher,
@@ -261,8 +263,12 @@ def run_turn(
     ]
     result.messages = messages
 
-    def _cancelled() -> bool:
-        return cancel_event is not None and cancel_event.is_set()
+    with request_scope() as scope:
+        previous_cancelled = scope.cancelled
+        def _cancelled() -> bool:
+            return ((cancel_event is not None and cancel_event.is_set())
+                    or not scope.active or (callable(previous_cancelled) and previous_cancelled()))
+        scope.cancelled = _cancelled
 
     for iteration in range(cfg.max_iterations):
         # -- Cancel check #1: before the API yield ------------------
@@ -284,7 +290,7 @@ def run_turn(
 
         # -- The yield itself ---------------------------------------
         try:
-            response = client.messages.create(**create_kwargs)
+            response = guarded_create(client, lane="agent-loop", **create_kwargs)
         except BaseException as exc:  # noqa: BLE001 - any SDK / network err
             result.status = STATUS_API_ERROR
             result.iterations = iteration

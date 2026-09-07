@@ -463,7 +463,8 @@ def test_unconfigured_provider_makes_no_network_call(monkeypatch):
 # ---------------------------------------------------------------------------
 
 _OLLAMA_PAYLOAD = json.dumps({"models": [
-    {"name": "gemma4:latest", "details": {"parameter_size": "8.0B"},
+    {"name": "gemma4:latest", "size": 128,
+     "details": {"parameter_size": "8.0B", "format": "gguf"},
      "capabilities": ["completion", "tools", "thinking"]},
     {"name": "glm-5.2:cloud", "remote_host": "https://ollama.com:443",
      "details": {"parameter_size": "756b"},
@@ -472,13 +473,14 @@ _OLLAMA_PAYLOAD = json.dumps({"models": [
 
 
 def test_local_tag_costs_zero_and_cloud_tag_costs_unknown(monkeypatch):
-    """A local tag's zero cost is PROBED (no remote_host). A ``:cloud`` tag is
-    metered by that host, so its cost is unknown — not zero."""
+    """Positive GGUF weight evidence on loopback supports zero vendor cost.
+    A ``:cloud`` tag is remote, so its cost remains unknown."""
+    monkeypatch.setenv("OLLAMA_HOST", "http://127.0.0.1:1")
     monkeypatch.setattr(P, "_request", lambda *a, **k: (200, {}, _OLLAMA_PAYLOAD, 3.0))
     rows = {r.model: r for r in P.probe_ollama(now=NOW)}
     local = rows["gemma4:latest"]
     assert (local.cost_per_1k_in, local.cost_per_1k_out) == (0.0, 0.0)
-    assert local.cost_source == "probed:local_weights_no_remote_host"
+    assert local.cost_source == "probed:positive_local_weights"
     cloud = rows["glm-5.2:cloud"]
     assert cloud.cost_per_1k_in is None and cloud.cost_per_1k_out is None
     assert cloud.cost_source.startswith("metered:")

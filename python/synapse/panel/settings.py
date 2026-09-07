@@ -45,6 +45,8 @@ import json
 import logging
 import os
 import re
+import tempfile
+import time
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -66,6 +68,8 @@ _DEFAULTS = {
     "model_choice": {"mode": "exact", "value": ""},
     "custom": {"base_url": "", "model": "", "key_env": ""},
     "composer_height": None,    # None = never dragged → centred (L5-22)
+    "routing_mode": "chosen_model",
+    "task_need": "conversation",
 }
 
 _SIZE_HINT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*b\b", re.IGNORECASE)
@@ -116,10 +120,27 @@ def load_settings(path: Path | None = None) -> dict:
     """
     out = default_settings()
     try:
-        data = json.loads((path or settings_path()).read_text(encoding="utf-8"))
+        # An ordinary preferences write must not repair ambiguous authority
+        # fields into a permissive value. Explicit project selection can repair.
+        def unique(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError("Duplicate settings field")
+                result[key] = value
+            return result
+        with (path or settings_path()).open("rb") as stream:
+            raw = stream.read(65537)
+        if len(raw) > 65536:
+            raise ValueError("Oversized settings")
+        data = json.loads(raw, object_pairs_hook=unique)
+    except FileNotFoundError:
+        return out
     except Exception:
+        out["model_policy_path"] = None
         return out
     if not isinstance(data, dict):
+        out["model_policy_path"] = None
         return out
     out["fresh_install"] = data.get("fresh_install") is True
     if isinstance(data.get("provider_id"), str) and data["provider_id"]:
@@ -146,6 +167,16 @@ def load_settings(path: Path | None = None) -> dict:
         choice = {"mode": "exact",
                   "value": out["model_by_provider"].get(out["provider_id"], "")}
     out["model_choice"] = choice
+    # Policy selection is an authority, not a cosmetic preference. Preserve
+    # even malformed values so an unrelated UI save cannot turn refusal into
+    # the permissive default. model_access validates them before every send.
+    for key in ("model_policy_path", "model_policy_generation"):
+        if key in data:
+            out[key] = data[key]
+    if data.get("routing_mode") in ("chosen_model", "prefer_checked_local"):
+        out["routing_mode"] = data["routing_mode"]
+    if data.get("task_need") in ("conversation", "tools", "vision"):
+        out["task_need"] = data["task_need"]
     ch = data.get("composer_height")
     if isinstance(ch, int) and not isinstance(ch, bool) and ch > 0:
         out["composer_height"] = ch
@@ -153,20 +184,57 @@ def load_settings(path: Path | None = None) -> dict:
     return out
 
 
-def save_settings(settings: dict, path: Path | None = None) -> bool:
+def save_settings(settings: dict, path: Path | None = None, *, _project_selection=None) -> bool:
     """Atomic write (tmp + ``os.replace``). Best-effort — returns False rather
     than raise (a locked/read-only disk must never break a provider switch)."""
     target = path or settings_path()
+    tmp = None
+    lock = target.with_name(target.name + ".lock")
+    lock_fd = None
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_suffix(".json.tmp")
-        tmp.write_text(
-            json.dumps(settings, indent=2, sort_keys=True), encoding="utf-8")
+        for _ in range(10):
+            try:
+                lock_fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                break
+            except FileExistsError:
+                time.sleep(.01)
+        if lock_fd is None:
+            return False
+        # Cosmetic saves can come from another window or process with an old
+        # snapshot. Only the explicit project selector may replace authority.
+        payload = dict(settings)
+        current = load_settings(target)
+        for key in ("model_policy_path", "model_policy_generation"):
+            payload.pop(key, None)
+            if key in current:
+                payload[key] = current[key]
+        if _project_selection is not None:
+            payload["model_policy_path"], payload["model_policy_generation"] = _project_selection
+        with tempfile.NamedTemporaryFile(prefix=".panel-settings-", suffix=".tmp",
+                                         dir=target.parent, delete=False) as stream:
+            tmp = Path(stream.name)
+            stream.write(json.dumps(payload, indent=2, sort_keys=True).encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
         os.replace(tmp, target)
+        tmp = None
         return True
     except Exception as exc:
         logger.debug("panel settings save skipped: %s", exc)
         return False
+    finally:
+        if tmp is not None:
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError:
+                pass
+        if lock_fd is not None:
+            os.close(lock_fd)
+            try:
+                lock.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 COMPOSER_FLOOR = 64
