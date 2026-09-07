@@ -491,6 +491,17 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 pass
         self._wire_gate()
+        self._notification_controller = None
+        self._notifications_dialog = None
+        try:
+            from synapse.panel.notifications import NotificationController
+            self._notification_controller = NotificationController(self)
+            self._notification_controller.changed.connect(self._refresh_events)
+            self._refresh_events(self._notification_controller.journal.snapshot())
+        except Exception:
+            logger.warning("Local Events could not be started", exc_info=True)
+            self._events_btn.setEnabled(False)
+            self._events_btn.setToolTip("Local Events could not be started in this host.")
         self._palette_shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
         self._palette_shortcut.activated.connect(self._open_palette)
         # platform-correct ⌘K / Ctrl+K rail hint, derived from the ACTUAL bound
@@ -1804,6 +1815,11 @@ class SynapsePanel(QtWidgets.QWidget):
         self._refresh_engine_selector()
         self._chat.append_system_message("Ready for the next task: %s · %s. Generation has not been tested." %
                                          (spec.identity, facts.location))
+        controller = getattr(self, "_notification_controller", None)
+        if controller is not None:
+            controller.journal.note("connection", "Model checked", "%s · %s. Endpoint metadata was checked; generation has not been tested." % (spec.identity, facts.location),
+                                    source="model", dedupe_key="model-check")
+            controller.refresh()
         dialog.deleteLater()
 
     def _allow_connection(self, connection):
@@ -2196,6 +2212,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._recipes_btn.setToolTip("Save, tag and reuse local Solaris networks")
         self._recipes_btn.clicked.connect(self._open_saved_recipes)
         footer.addWidget(self._recipes_btn)
+        self._events_btn = c.Button("Events", variant="ghost")
+        self._events_btn.setToolTip("Local work and connection updates")
+        self._events_btn.clicked.connect(self._open_notifications)
+        footer.addWidget(self._events_btn)
         col.addLayout(footer)
         self._connection_status = c.Button("Connect models", variant="ghost")
         self._connection_status.clicked.connect(self._open_connections)
@@ -2598,6 +2618,32 @@ class SynapsePanel(QtWidgets.QWidget):
         thus the gated bridge path)."""
         self._send(prompt)
 
+    def _refresh_events(self, snapshot):
+        button = getattr(self, "_events_btn", None)
+        controller = getattr(self, "_notification_controller", None)
+        if button is None or controller is None:
+            return
+        policy = controller.journal.get_policy()
+        unread = sum(1 for entry in snapshot["entries"] if entry["unread"])
+        button.setText("Events · quiet" if policy["quiet"] else
+                       ("Events (%d)" % unread if unread else "Events"))
+        button.setToolTip("%d unread local updates. History is kept in this Houdini process." % unread)
+
+    def _open_notifications(self):
+        controller = getattr(self, "_notification_controller", None)
+        if controller is None:
+            self._chat.append_system_message("Local Events is unavailable in this host.")
+            return
+        dialog = getattr(self, "_notifications_dialog", None)
+        if dialog is None:
+            from synapse.panel.notifications import NotificationsDialog
+            dialog = NotificationsDialog(controller, self, open_connections=self._open_connections)
+            self._notifications_dialog = dialog
+        dialog.refresh()
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+
     def _open_saved_recipes(self):
         from synapse.host.saved_networks import SavedNetworkService
         from synapse.host.recipe_watch import RecipeWatch
@@ -2637,6 +2683,9 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._input.clear()
 
     def _send(self, text):
+        if (text or "").strip().lower() == "/events":
+            self._open_notifications()
+            return True
         if (text or "").strip().lower() == "/saved-recipes":
             self._open_saved_recipes()
             return True
@@ -3351,6 +3400,9 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def closeEvent(self, event):
+        controller = getattr(self, "_notification_controller", None)
+        if controller is not None:
+            controller.close()
         _revoke_model_connections(getattr(self, "_permission_connections", ()))
         watch = getattr(self, "_recipe_watch", None)
         if watch is not None:

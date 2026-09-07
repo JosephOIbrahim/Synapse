@@ -107,12 +107,17 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     # M4 appends project-rule selectors; prior fences and token-only constraints
     # remain intact rather than treating the previous feature as the file end.
     assert tail[:tail.index(rules_start)].rstrip().endswith(recipe_end)
-    assert tail.rstrip().endswith(rules_end)
+    events_start, events_end = "# --- LOCAL_EVENTS", "# --- END LOCAL_EVENTS"
+    # M5 appends its scoped event selectors. Preserve every earlier fence and
+    # enforce the same token-only/parse checks on the new extension as well.
+    assert tail[:tail.index(events_start)].rstrip().endswith(rules_end)
+    assert tail.rstrip().endswith(events_end)
     block_b = tail[tail.index(start):tail.index(end) + len(end)]
     new_block = tail[tail.index(new_start):tail.index(new_end) + len(new_end)]
     recipe_block = tail[tail.index(recipe_start):tail.index(recipe_end) + len(recipe_end)]
-    rules_block = tail[tail.index(rules_start):]
-    for block in (block_b, new_block, recipe_block, rules_block):
+    rules_block = tail[tail.index(rules_start):tail.index(rules_end) + len(rules_end)]
+    events_block = tail[tail.index(events_start):]
+    for block in (block_b, new_block, recipe_block, rules_block, events_block):
         assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", block)
         assert "font-family:" not in block
         for node in ast.walk(ast.parse(block)):

@@ -545,7 +545,8 @@ class RenderHandlerMixin:
             # edit here.
             _t_inline = time.perf_counter()
             try:
-                return _attach_advisory(self._handle_render(payload))
+                from ..job_events import observe_inline_render
+                return _attach_advisory(observe_inline_render(self._handle_render, payload, node=rop_path or ""))
             finally:
                 try:
                     from ..core.timeouts import timeout_for

@@ -95,6 +95,7 @@ _SLASH_COMMANDS: list[tuple[str, str]] = [
     ("/vex", "VEX code help, explain, or generate"),
     ("/recipes", "Browse and build network recipes"),
     ("/saved-recipes", "Save, tag and reuse local Solaris networks"),
+    ("/events", "See local work updates and watch selected render or cache outputs"),
     ("/hda", "Create HDA from selection or description"),
     ("/login", "Shot login and context setup"),
     ("/apex", "APEX rigging overview"),

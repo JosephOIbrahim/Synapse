@@ -1019,3 +1019,33 @@ def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
 #DsRoot[panel_popup="model_rules"] QScrollArea#DsRulesScroll {{ background: {t.PANEL}; }}
 """
 # --- END MODEL_RULES
+
+# --- LOCAL_EVENTS
+def prepare_events_dialog(root, scale=t.FONT_SCALE_DEFAULT):
+    """Apply the common panel sheet at the native popup boundary."""
+    root.setStyleSheet(stylesheet(scale))
+
+
+_events_base_stylesheet = stylesheet
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _events_base_stylesheet(scale) + f"""
+#DsRoot[panel_popup="notifications"] QListWidget,
+#DsRoot[panel_popup="notifications"] QPlainTextEdit {{
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+}}
+#DsRoot[panel_popup="notifications"] QListWidget::item {{ padding: {t.SPACE_SM}px; }}
+#DsRoot[panel_popup="notifications"] QListWidget::item:selected {{
+    background: {t.GRAPHITE}; color: {t.TEXT_PRIMARY};
+}}
+#DsRoot[panel_popup="notifications"] QCheckBox {{
+    color: {t.TEXT_PRIMARY}; font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+}}
+#DsRoot[panel_popup="notifications"] QWidget#DsEventsPage,
+#DsRoot[panel_popup="notifications"] QWidget#DsEventsViewport,
+#DsRoot[panel_popup="notifications"] QScrollArea#DsEventsScroll {{ background: {t.PANEL}; border: none; }}
+"""
+# --- END LOCAL_EVENTS

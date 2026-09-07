@@ -70,6 +70,8 @@ _DEFAULTS = {
     "composer_height": None,    # None = never dragged → centred (L5-22)
     "routing_mode": "chosen_model",
     "task_need": "conversation",
+    "notifications": {"quiet": False, "desktop": False,
+                      "completions": True, "connections": True},
 }
 
 _SIZE_HINT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*b\b", re.IGNORECASE)
@@ -177,6 +179,11 @@ def load_settings(path: Path | None = None) -> dict:
         out["routing_mode"] = data["routing_mode"]
     if data.get("task_need") in ("conversation", "tools", "vision"):
         out["task_need"] = data["task_need"]
+    notifications = data.get("notifications")
+    if isinstance(notifications, dict):
+        for key in out["notifications"]:
+            if type(notifications.get(key)) is bool:
+                out["notifications"][key] = notifications[key]
     ch = data.get("composer_height")
     if isinstance(ch, int) and not isinstance(ch, bool) and ch > 0:
         out["composer_height"] = ch

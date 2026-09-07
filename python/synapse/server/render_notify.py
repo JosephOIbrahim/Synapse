@@ -1,15 +1,9 @@
 """
 Synapse Render Notifications
 
-Three notification channels, zero new pip dependencies:
-1. Windows Toast -- PowerShell [Windows.UI.Notifications]
-2. Report File  -- Markdown to $HIP/.synapse/render_reports/
-3. WebSocket Push -- Broadcast to connected MCP clients
-
-Notification triggers:
-- Batch complete: always toast + report
-- Persistent failure: immediate toast
-- Milestones (25/50/75%): optional progress toast
+Local journal observations and Markdown reports. Desktop delivery belongs to
+the panel's shared opt-in policy. The standalone send_toast utility remains
+available, but automatic render producers do not call it.
 """
 
 import json
@@ -17,10 +11,12 @@ import logging
 import os
 import subprocess
 import time
+import uuid
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from ..core.determinism import round_float
+from ..job_events import get_journal, observe_batch_report
 
 logger = logging.getLogger("synapse.render_farm")
 
@@ -61,6 +57,7 @@ class BatchReport:
     settings_changed: List[str] = field(default_factory=list)
     settings_restored: List[str] = field(default_factory=list)
     settings_restore_error: str = ""
+    _notification_id: str = field(default_factory=lambda: uuid.uuid4().hex, init=False, repr=False, compare=False)
 
     @property
     def success_rate(self) -> float:
@@ -291,27 +288,23 @@ def notify_batch_complete(report: BatchReport, output_dir: str) -> Dict:
     except Exception as e:
         results["report_error"] = str(e)
 
-    # Toast notification
-    if report.failed_frames > 0:
-        title = "Synapse Render Farm"
-        body = (
-            f"Batch complete: {report.successful_frames}/{report.total_frames} frames OK. "
-            f"{report.failed_frames} failed."
-        )
-    else:
-        title = "Synapse Render Farm"
-        body = (
-            f"All {report.total_frames} frames rendered successfully! "
-            f"Total time: {report.total_wall_time:.0f}s"
-        )
-    results["toast_sent"] = send_toast(title, body)
+    observe_batch_report(report)
+    results["toast_sent"] = False
 
     return results
 
 
 def notify_persistent_failure(frame: int, issue: str, retries: int) -> bool:
-    """Send immediate toast when a frame exhausts all retries."""
-    return send_toast(
-        "Synapse: Render Issue",
-        f"Frame {frame} failed after {retries} retries. Issue: {issue}",
-    )
+    """Record a failure without bypassing the shared desktop policy.
+
+    The return remains the historical toast-delivery boolean (now False).
+    Arbitrary issue text is deliberately not copied into the journal.
+    """
+    try:
+        detail = "A render frame exhausted its retries; inspect the batch report."
+        if type(frame) is int and type(retries) is int:
+            detail = f"Frame {frame} exhausted {retries} retries; inspect the batch report."
+        get_journal().note("render", "Render frame issue", detail, state="failed", source="render_frame_report")
+    except Exception:
+        pass
+    return False

@@ -16,6 +16,8 @@ import time
 import uuid
 from typing import Dict, Optional, Tuple
 
+from ..job_events import observe_render_start, observe_render_result, observe_render_exception
+
 _MAX_SESSIONS = 32
 
 _lock = threading.Lock()
@@ -39,6 +41,7 @@ def start_session(meta: Optional[Dict] = None) -> str:
         }
         _order.append(token)
         _evict_finished_locked()
+    observe_render_start(meta, job_id="render:" + token)
     return token
 
 
@@ -61,6 +64,7 @@ def complete_session(token: str, result: Dict) -> None:
         s["state"] = "done"
         s["result"] = result
         s["finished_at"] = time.time()
+    observe_render_result("render:" + token, result)
 
 
 def fail_session(token: str, exc: BaseException) -> None:
@@ -77,6 +81,7 @@ def fail_session(token: str, exc: BaseException) -> None:
         s["error"] = str(exc)
         s["error_type"] = type(exc).__name__
         s["finished_at"] = time.time()
+    observe_render_exception("render:" + token, exc)
 
 
 def get_session(token: str) -> Optional[Dict]:

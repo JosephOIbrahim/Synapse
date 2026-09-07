@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import tempfile
+import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -46,6 +47,15 @@ write_report = notify_mod.write_report
 build_progress_event = notify_mod.build_progress_event
 notify_batch_complete = notify_mod.notify_batch_complete
 notify_persistent_failure = notify_mod.notify_persistent_failure
+
+
+@pytest.fixture
+def notification_journal(monkeypatch):
+    from synapse import job_events
+    anchor = types.ModuleType(job_events._ANCHOR_NAME)
+    anchor.journal = job_events.JobJournal()
+    monkeypatch.setitem(sys.modules, job_events._ANCHOR_NAME, anchor)
+    return anchor.journal
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +259,7 @@ class TestSendToast:
 
 class TestNotifyBatchComplete:
     @patch("synapse.server.render_notify.send_toast", return_value=True)
-    def test_writes_report_and_toasts(self, mock_toast, tmp_path):
+    def test_writes_report_and_defers_desktop_delivery(self, mock_toast, tmp_path, notification_journal):
         report = BatchReport(
             start_frame=1, end_frame=5,
             total_frames=5, successful_frames=5,
@@ -258,12 +268,14 @@ class TestNotifyBatchComplete:
         )
         result = notify_batch_complete(report, str(tmp_path))
         assert "report_path" in result
-        assert result["toast_sent"] is True
-        mock_toast.assert_called_once()
-        assert "All 5 frames" in mock_toast.call_args[0][1]
+        assert result["toast_sent"] is False
+        mock_toast.assert_not_called()
+        entry = notification_journal.snapshot()["entries"][0]
+        assert entry["state"] == "completed"
+        assert "5 successful frame(s)" in entry["detail"]
 
     @patch("synapse.server.render_notify.send_toast", return_value=True)
-    def test_failure_message(self, mock_toast, tmp_path):
+    def test_failure_message(self, mock_toast, tmp_path, notification_journal):
         report = BatchReport(
             start_frame=1, end_frame=5,
             total_frames=5, successful_frames=3, failed_frames=2,
@@ -273,7 +285,10 @@ class TestNotifyBatchComplete:
             ],
         )
         notify_batch_complete(report, str(tmp_path))
-        assert "2 failed" in mock_toast.call_args[0][1]
+        mock_toast.assert_not_called()
+        entry = notification_journal.snapshot()["entries"][0]
+        assert entry["state"] == "failed"
+        assert "2 failed" in entry["detail"]
 
 
 # ---------------------------------------------------------------------------
@@ -282,8 +297,11 @@ class TestNotifyBatchComplete:
 
 class TestNotifyPersistentFailure:
     @patch("synapse.server.render_notify.send_toast", return_value=True)
-    def test_sends_toast(self, mock_toast):
+    def test_records_failure_and_defers_desktop_delivery(self, mock_toast, notification_journal):
         result = notify_persistent_failure(42, "saturation", 3)
-        assert result is True
-        assert "Frame 42" in mock_toast.call_args[0][1]
-        assert "3 retries" in mock_toast.call_args[0][1]
+        assert result is False
+        mock_toast.assert_not_called()
+        entry = notification_journal.snapshot()["entries"][0]
+        assert entry["state"] == "failed"
+        assert "Frame 42" in entry["detail"]
+        assert "3 retries" in entry["detail"]
