@@ -1163,87 +1163,44 @@ class CopsHandlerMixin:
         return run_on_main(_on_main, label="cops:_handle_cops_create_solver")
 
     def _handle_cops_procedural_texture(self, payload: Dict) -> Dict:
-        """Generate a procedural texture using COP noise nodes.
-
-        Creates a noise-based texture with configurable type, frequency, and ramp mapping.
+        """Configure a modern Houdini 22 Copernicus mono procedural texture.
 
         Payload:
-            parent (str, required): COP network path.
+            parent (str, required): Editable modern Copernicus network (Cop).
             noise_type (str): Noise type - 'perlin', 'worley', 'simplex', 'alligator' (default: 'perlin').
-            frequency (float): Noise frequency (default: 1.0).
-            octaves (int): Fractal octaves (default: 4).
-            resolution (list[int]): Output resolution [w, h] (default: [1024, 1024]).
+            frequency (float): Inverse element size (default: 1.0).
+            octaves (int): Maximum fractal octaves, 1-16 (default: 4).
+            resolution (list[int]): Width/height, each 1-8192 (default: [1024, 1024]).
             name (str): Node name (default: 'procedural_tex').
 
         Returns:
-            Dict with created texture node path and settings.
+            Actual paths and verified settings; configured=True, cooked=False.
+            Worley means F1; simplex uses a planar slice of 3D Fractal Noise.
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         parent_path = resolve_param(payload, "parent")
         noise_type = resolve_param_with_default(payload, "noise_type", "perlin")
-        frequency = float(resolve_param_with_default(payload, "frequency", 1.0))
-        octaves = int(resolve_param_with_default(payload, "octaves", 4))
+        frequency = resolve_param_with_default(payload, "frequency", 1.0)
+        octaves = resolve_param_with_default(payload, "octaves", 4)
         resolution = resolve_param_with_default(payload, "resolution", [1024, 1024])
         name = resolve_param_with_default(payload, "name", "procedural_tex")
 
+        from .copernicus_texture import build_procedural_texture, validate_texture_settings
         from .main_thread import run_on_main
+
+        frequency, resolution = validate_texture_settings(noise_type, frequency, octaves, resolution, name)
 
         def _on_main():
             parent = hou.node(parent_path)
             if parent is None:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
-            with hou.undos.group("synapse_cops_procedural_texture"):
-                # Create noise generator
-                noise_node = parent.createNode("vopcop2gen", name)
-                if noise_node is None:
-                    # Fallback to generic COP noise if vopcop2gen unavailable
-                    noise_node = parent.createNode("noise", name)
-                if noise_node is None:
-                    raise RuntimeError("Couldn't create noise generator node")
-
-                # Set noise type
-                type_parm = noise_node.parm("type") or noise_node.parm("noise_type")
-                if type_parm is not None:
-                    type_map = {"perlin": 0, "worley": 1, "simplex": 2, "alligator": 3}
-                    type_parm.set(type_map.get(noise_type, 0))
-
-                # Set frequency
-                freq_parm = noise_node.parm("freq") or noise_node.parm("frequency")
-                if freq_parm is not None:
-                    freq_parm.set(frequency)
-                else:
-                    ft = noise_node.parmTuple("freq")
-                    if ft is not None:
-                        ft.set([frequency] * len(ft))
-
-                # Set octaves
-                oct_parm = noise_node.parm("octaves") or noise_node.parm("turb")
-                if oct_parm is not None:
-                    oct_parm.set(octaves)
-
-                # Set resolution
-                if isinstance(resolution, (list, tuple)) and len(resolution) >= 2:
-                    for pname, val in [("resx", resolution[0]), ("resy", resolution[1])]:
-                        p = noise_node.parm(pname)
-                        if p is not None:
-                            p.set(int(val))
-
-                noise_node.moveToGoodPosition()
-                try:
-                    noise_node.setDisplayFlag(True)
-                except Exception:
-                    pass
-
-            return {
-                "path": noise_node.path(),
-                "noise_type": noise_type,
-                "frequency": frequency,
-                "octaves": octaves,
-                "resolution": resolution,
-            }
+            return build_procedural_texture(
+                parent, noise_type, frequency, octaves, resolution, name,
+                undo_context=hou.undos.group("synapse_cops_procedural_texture"),
+            )
 
         return run_on_main(_on_main, label="cops:_handle_cops_procedural_texture")
 

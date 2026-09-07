@@ -362,9 +362,14 @@ def _make_parent_node(path="/obj"):
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-def handler():
-    """Create a SynapseHandler instance."""
-    return handlers_mod.SynapseHandler()
+def handler(monkeypatch, tmp_path):
+    """Real dispatch; COP unit tests do not open audit or session-memory stores."""
+    monkeypatch.setenv("SYNAPSE_PROVENANCE_DIR", str(tmp_path / "provenance"))
+    instance = handlers_mod.SynapseHandler()
+    # Asynchronous observation is outside these host-mutation tests. Keep the
+    # registry, FloorGate, main-thread adapter, and handler execution intact.
+    monkeypatch.setattr(instance, "_submit_logs", MagicMock(name="isolated_cop_observation"))
+    return instance
 
 
 # ---------------------------------------------------------------------------
@@ -891,28 +896,659 @@ class TestCopsCreateSolver:
         assert result.data["iterations"] == 50
 
 
-class TestCopsProceduralTexture:
-    def test_procedural_texture_basic(self, handler):
-        net = _make_network_node("/obj/cop2net1")
-        with patch.object(_handlers_hou, "node", return_value=net):
-            result = handler.handle(handlers_mod.SynapseCommand(
-                type="cops_procedural_texture",
-                id="test-23",
-                payload={"parent": "/obj/cop2net1"},
-            ))
-        assert result.success
-        assert result.data["noise_type"] == "perlin"
+class _TextureParm:
+    """Stateful HOM double: setters affect reads; unsupported parms are absent."""
 
-    def test_procedural_texture_worley(self, handler):
-        net = _make_network_node("/obj/cop2net1")
-        with patch.object(_handlers_hou, "node", return_value=net):
-            result = handler.handle(handlers_mod.SynapseCommand(
-                type="cops_procedural_texture",
-                id="test-24",
-                payload={"parent": "/obj/cop2net1", "noise_type": "worley"},
-            ))
-        assert result.success
-        assert result.data["noise_type"] == "worley"
+    def __init__(self, node, name):
+        self.node, self._name = node, name
+
+    def name(self):
+        return self._name
+
+    def path(self):
+        return self.node.path() + "/" + self._name
+
+    def set(self, value):
+        self.node.world.events.append(("set", self.path(), value))
+        fault = self.node.world.faults.get((self.node.kind, self._name))
+        if fault == "raise":
+            raise RuntimeError("injected setter failure: " + self.path())
+        if fault != "noop":
+            menu = self.menuItems()
+            if menu:
+                value = menu[value] if type(value) is int else value
+                if value not in menu:
+                    raise ValueError("invalid menu token: " + str(value))
+            self.node.values[self._name] = value
+
+    def eval(self):
+        value = self.node.values[self._name]
+        if self.node.world.faults.get((self.node.kind, self._name)) == "nonintegral_read":
+            return value + 0.0000001
+        menu = self.menuItems()
+        return menu.index(value) if menu else value
+
+    def evalAsString(self):
+        return str(self.node.values[self._name])
+
+    def evalAsFloat(self):
+        return float(self.eval())
+
+    def evalAsInt(self):
+        return int(self.eval())
+
+    def menuItems(self):
+        tokens = self.node.menus.get(self._name, ())
+        if self.node.world.faults.get((self.node.kind, self._name)) == "missing_token":
+            return tuple(t for t in tokens if t not in ("perlin", "sharp", "f1", "default"))
+        return tokens
+
+    def parmTemplate(self):
+        return types.SimpleNamespace(menuItems=self.menuItems, name=self.name)
+
+
+class _TextureParmTuple:
+    def __init__(self, node):
+        self.node = node
+
+    def set(self, values):
+        fault = self.node.world.faults.get((self.node.kind, "res"))
+        if fault == "raise":
+            raise RuntimeError("injected resolution setter failure")
+        if fault != "noop":
+            for name, value in zip(("resx", "resy"), values):
+                self.node.parm(name).set(value)
+
+    def eval(self):
+        return tuple(self.node.values[n] for n in ("resx", "resy"))
+
+    def __len__(self):
+        return 2
+
+    def __iter__(self):
+        return iter((self.node.parm("resx"), self.node.parm("resy")))
+
+
+class _TextureCategory:
+    def __init__(self, name="Cop", available=None):
+        self._name = name
+        self.available = set(available if available is not None else
+                             ("layer", "fractalnoise", "fractalnoise3d"))
+
+    def name(self):
+        return self._name
+
+    def nodeTypes(self):
+        return {name: _MockNodeType(name, self._name) for name in self.available}
+
+
+class _TextureNode:
+    """Only the observed modern node surface; no permissive MagicMock children."""
+
+    def __init__(self, world, name, kind):
+        self.world, self._name, self.kind = world, name, kind
+        self.destroyed = False
+        self.connections = {}
+        self._position = (8.0, -3.0)
+        self.display = False
+        self.comment = "artist note"
+        self.menus = {}
+        if kind == "layer":
+            # Different initial values expose skipped writes and inherited settings.
+            self.values = dict(signature="f4", setres=0, resx=1920.0, resy=1080.0,
+                               setpixelscale=0, pixelscale=2.0, identityxform=0,
+                               setpixelaspectratio=0, pixelaspectratio=1.5,
+                               setpixelpad=0, pixelpad_h1=4, pixelpad_h2=5,
+                               pixelpad_v1=6, pixelpad_v2=7)
+            self.menus = {"signature": ("f1", "f2", "f3", "f4", "i")}
+        else:
+            self.values = dict(signature="f3", noisetype="torus", elementsize=0.1,
+                               oct=8.0, fractaltype="none")
+            self.menus = {
+                "signature": ("default", "f3"),
+                "noisetype": ("torus", "perlin", "worleyA", "worleyB", "white",
+                              "alligator", "sparse") if kind != "fractalnoise3d" else
+                             ("torus", "perlin", "simplex", "alligator"),
+                "fractaltype": ("none", "sharp", "dampened", "terrain", "hybrid"),
+            }
+            if kind == "fractalnoise":
+                self.values["dotiled"] = 1
+
+    def path(self):
+        return self.world.path() + "/" + self._name
+
+    def name(self):
+        return self._name
+
+    def type(self):
+        return _MockNodeType(self.kind, "Cop")
+
+    def parent(self):
+        return self.world
+
+    def parm(self, name):
+        if name not in self.values or self.world.faults.get((self.kind, name)) == "missing":
+            return None
+        return _TextureParm(self, name)
+
+    def parmTuple(self, name):
+        if (name == "res" and self.kind == "layer" and
+                self.world.faults.get((self.kind, name)) != "missing"):
+            return _TextureParmTuple(self)
+        return None
+
+    def inputNames(self):
+        if self.world.faults.get((self.kind, "inputs")) == "missing":
+            return ("pos", "octaves", "roughness")
+        return ("size_ref", "pos", "octaves", "roughness")
+
+    def outputNames(self):
+        if self.world.faults.get((self.kind, "outputs")) == "missing":
+            return ()
+        if self.world.faults.get((self.kind, "outputs")) == "wrong":
+            return ("unexpected_output",)
+        # Deliberately different from a guessed 'C', 'layer', or 'output' name.
+        return ("reference_pixels",) if self.kind == "layer" else ("noise",)
+
+    def setNamedInput(self, name, source, output):
+        self.world.events.append(("wire", self.path(), name, source.path(), output))
+        fault = self.world.faults.get((self.kind, "wire"))
+        if fault == "raise":
+            raise RuntimeError("injected connection failure")
+        input_index = self.inputNames().index(name)
+        output_index = source.outputNames().index(output) if isinstance(output, str) else output
+        if fault != "noop":
+            self.connections[input_index] = (source, output_index)
+
+    def input(self, index):
+        return self.connections.get(index, (None, 0))[0]
+
+    def inputs(self):
+        return tuple(self.input(i) for i in range(len(self.inputNames())))
+
+    def inputConnections(self):
+        return tuple(types.SimpleNamespace(inputNode=lambda s=s: s,
+                                           outputNode=lambda: self,
+                                           inputIndex=lambda i=i: i,
+                                           outputIndex=lambda o=o: o)
+                     for i, (s, o) in self.connections.items())
+
+    def moveToGoodPosition(self):
+        if self.world.faults.get((self.kind, "position")) == "raise":
+            raise RuntimeError("injected placement failure")
+        # Native .400 qualification observed this API moving an artist sibling.
+        self.world.artist._position = (-1.047, -5.038)
+        self._position = (0.0, 0.0)
+
+    def position(self):
+        return self._position
+
+    def setPosition(self, value):
+        if self.world.faults.get((self.kind, "position")) == "raise":
+            raise RuntimeError("injected placement failure")
+        self._position = tuple(value)
+
+    def setDisplayFlag(self, value):
+        self.world.events.append(("display", self.path(), value))
+        self.display = value
+
+    def cook(self, **kwargs):
+        self.world.events.append(("cook", self.path()))
+        raise AssertionError("texture construction must not cook")
+
+    def cable(self, *args):
+        self.world.events.append(("cable", self.path()))
+        raise AssertionError("cable() would implicitly cook")
+
+    def destroy(self):
+        self.world.events.append(("destroy", self.path()))
+        if self.world.faults.get((self.kind, "destroy")) == "raise":
+            raise RuntimeError("injected destroy failure")
+        if self.world.faults.get((self.kind, "destroy")) == "noop":
+            return
+        self.destroyed = True
+        self.world.nodes.pop(self._name)
+
+    def snapshot(self):
+        return (dict(self.values), dict(self.connections), self._position,
+                self.display, self.comment, self.destroyed)
+
+
+class _TextureWorld:
+    def __init__(self):
+        self.category = _TextureCategory()
+        self.editable = True
+        self.events, self.created, self.nodes, self.faults = [], [], {}, {}
+        self.values = {"setres": 0, "resx": 4096, "resy": 2160, "pixelscale": 4}
+        self.kind = "parent"
+        self.world = self
+        self.menus = {}
+        self.artist = _TextureNode(self, "artist_texture", "fractalnoise")
+        self.artist.display = True
+        self.nodes[self.artist.name()] = self.artist
+
+    def path(self):
+        return "/obj/modern_copnet"
+
+    def childTypeCategory(self):
+        return self.category
+
+    def isEditable(self):
+        return self.editable
+
+    def node(self, name):
+        return self.lookup(name) if name.startswith("/") else self.nodes.get(name)
+
+    def lookup(self, path):
+        if path == self.path():
+            return self
+        return next((n for n in self.nodes.values() if n.path() == path), None)
+
+    def children(self):
+        return tuple(self.nodes.values())
+
+    def parm(self, name):
+        return _TextureParm(self, name) if name in self.values else None
+
+    def parmTuple(self, name):
+        return _TextureParmTuple(self) if name == "res" else None
+
+    def createNode(self, node_type, node_name=None, *, exact_type_name=False, **kwargs):
+        self.events.append(("create", node_type, node_name, exact_type_name))
+        if node_type not in self.category.available:
+            raise RuntimeError("Invalid node type name: " + node_type)
+        if self.faults.get((node_type, "create")) == "raise":
+            raise RuntimeError("injected creation failure")
+        name = node_name or node_type
+        while name in self.nodes:
+            name += "1"
+        node = _TextureNode(self, name, node_type)
+        self.nodes[name] = node
+        self.created.append(node)
+        if self.faults.get((node_type, "substitute")):
+            node.kind = "substituted_type"
+        return node
+
+    def group(self, label):
+        world = self
+        class Group:
+            def __enter__(self):
+                world.events.append(("undo_enter", label))
+            def __exit__(self, *exc):
+                world.events.append(("undo_exit", label))
+                if world.faults.get(("undo", "exit")) == "raise":
+                    raise RuntimeError("injected undo-group exit failure")
+                return False
+        return Group()
+
+    def performUndo(self):
+        self.events.append(("global_undo",))
+        raise AssertionError("global undo could change the artist's work")
+
+
+@pytest.fixture
+def texture_world(monkeypatch):
+    world = _TextureWorld()
+    monkeypatch.setattr(_hc, "hou", types.SimpleNamespace(node=world.lookup, undos=world))
+    monkeypatch.setattr(_hc, "HOU_AVAILABLE", True)
+    return world
+
+
+class TestCopsProceduralTexture:
+    def invoke(self, handler, world, **payload):
+        payload.setdefault("parent", world.path())
+        return handler.handle(handlers_mod.SynapseCommand(
+            type="cops_procedural_texture", id="modern-texture", payload=payload))
+
+    def assert_pair(self, world, result, *, noise_type="perlin", frequency=1.0,
+                    octaves=4, resolution=(1024, 1024)):
+        assert result.success, result.error
+        data = result.data
+        noise = world.lookup(data["path"])
+        layer = world.lookup(data["resolution_node"])
+        expected_type = "fractalnoise3d" if noise_type == "simplex" else "fractalnoise"
+        expected_basis = "worleyA" if noise_type == "worley" else noise_type
+        assert noise.kind == data["node_type"] == expected_type
+        assert layer.kind == "layer"
+        assert noise.values["signature"] == "default"
+        assert noise.values["noisetype"] == data["noise_basis"] == expected_basis
+        assert noise.values["elementsize"] == pytest.approx(1 / frequency)
+        assert noise.values["oct"] == octaves
+        assert noise.values["fractaltype"] == "sharp"
+        if noise_type != "simplex":
+            assert noise.values["dotiled"] == 0
+        assert layer.values == dict(signature="f1", setres=1,
+                                   resx=resolution[0], resy=resolution[1],
+                                   setpixelscale=1, pixelscale=1, identityxform=1,
+                                   setpixelaspectratio=1, pixelaspectratio=1,
+                                   setpixelpad=1, pixelpad_h1=0, pixelpad_h2=0,
+                                   pixelpad_v1=0, pixelpad_v2=0)
+        assert noise.connections == {noise.inputNames().index("size_ref"): (layer, 0)}
+        assert data["output_name"] == "noise"
+        assert data["noise_type"] == noise_type
+        assert data["frequency"] == frequency
+        assert data["octaves"] == octaves
+        assert list(data["resolution"]) == list(resolution)
+        assert data["configured"] is True
+        assert data["cooked"] is False
+        assert all(e[3] is True for e in world.events if e[0] == "create")
+        assert not any(e[0] in ("cook", "cable", "display", "global_undo") for e in world.events)
+        return noise, layer
+
+    @pytest.mark.parametrize("noise_type", ["perlin", "worley", "alligator", "simplex"])
+    def test_procedural_texture_modern_basis(self, handler, texture_world, noise_type):
+        before = (dict(texture_world.values), texture_world.artist.snapshot())
+        result = self.invoke(handler, texture_world, noise_type=noise_type,
+                             frequency=2.5, octaves=6, resolution=[320, 180])
+        self.assert_pair(texture_world, result, noise_type=noise_type,
+                         frequency=2.5, octaves=6, resolution=(320, 180))
+        assert len(texture_world.created) == 2
+        assert (texture_world.values, texture_world.artist.snapshot()) == before
+
+    def test_procedural_texture_defaults(self, handler, texture_world):
+        self.assert_pair(texture_world, self.invoke(handler, texture_world))
+
+    def test_procedural_texture_second_action_preserves_first_and_artist(self, handler, texture_world):
+        first = self.invoke(handler, texture_world, name="artist_texture")
+        noise, layer = self.assert_pair(texture_world, first)
+        before = (noise.snapshot(), layer.snapshot(), texture_world.artist.snapshot())
+        second = self.invoke(handler, texture_world, name="artist_texture", noise_type="simplex")
+        next_noise, next_layer = self.assert_pair(texture_world, second, noise_type="simplex")
+        assert len({noise.path(), layer.path(), next_noise.path(), next_layer.path()}) == 4
+        assert len(texture_world.created) == 4
+        assert (noise.snapshot(), layer.snapshot(), texture_world.artist.snapshot()) == before
+
+    @pytest.mark.parametrize("parent_alias,name_alias,noise_alias", [
+        ("parent_path", "node_name", "noise"),
+        ("parent_node", "nodeName", "noise_basis"),
+    ])
+    def test_procedural_texture_aliases(self, handler, texture_world,
+                                      parent_alias, name_alias, noise_alias):
+        result = handler.handle(handlers_mod.SynapseCommand(
+            type="cops_procedural_texture", id="texture-aliases", payload={
+                parent_alias: texture_world.path(), name_alias: "alias_texture",
+                noise_alias: "worley"}))
+        noise, _ = self.assert_pair(texture_world, result, noise_type="worley")
+        assert noise.name() == "alias_texture"
+
+    @pytest.mark.parametrize("field,value", [
+        ("frequency", True), ("frequency", "2"), ("frequency", 0),
+        ("frequency", -1), ("frequency", float("nan")),
+        ("frequency", float("inf")), ("frequency", -float("inf")),
+        ("frequency", 5e-324), ("frequency", 10 ** 500),
+        ("octaves", True), ("octaves", 2.5), ("octaves", "4"),
+        ("octaves", 0), ("octaves", 17),
+        ("resolution", [64]), ("resolution", [64, 32, 16]),
+        ("resolution", [0, 64]), ("resolution", [64, 8193]),
+        ("resolution", [64.0, 32]), ("resolution", [True, 32]),
+        ("resolution", "64,32"), ("resolution", {"x": 64, "y": 32}),
+        ("name", ""), ("name", "a/b"), ("name", "../artist_texture"),
+        ("name", "with space"), ("name", "caf\u00e9"),
+        ("name", "x" * 129), ("name", 42),
+        ("noise_type", "unknown"), ("noise_type", "worleyA"),
+        ("noise_type", ["perlin"]),
+    ])
+    def test_procedural_texture_invalid_payload_is_rejected_before_creation(
+            self, handler, texture_world, field, value):
+        before = (dict(texture_world.values), texture_world.artist.snapshot())
+        result = self.invoke(handler, texture_world, **{field: value})
+        assert not result.success
+        assert result.error
+        assert not any(e[0] == "create" for e in texture_world.events)
+        assert (texture_world.values, texture_world.artist.snapshot()) == before
+
+    @pytest.mark.parametrize("octaves,resolution,name", [
+        (1, [1, 8192], "1"), (16, [8192, 1], "x" * 128),
+    ])
+    def test_procedural_texture_accepts_declared_limits(
+            self, handler, texture_world, octaves, resolution, name):
+        result = self.invoke(handler, texture_world, octaves=octaves,
+                             resolution=resolution, name=name)
+        self.assert_pair(texture_world, result, octaves=octaves, resolution=resolution)
+
+    @pytest.mark.parametrize("category", ["Cop2", "Lop", "Sop"])
+    def test_procedural_texture_rejects_other_contexts(self, handler, texture_world, category):
+        texture_world.category = _TextureCategory(category)
+        result = self.invoke(handler, texture_world)
+        assert not result.success
+        assert not any(e[0] == "create" for e in texture_world.events)
+
+    def test_procedural_texture_missing_parent(self, handler, texture_world):
+        result = self.invoke(handler, texture_world, parent="/missing")
+        assert not result.success
+        assert not texture_world.created
+
+    def test_procedural_texture_locked_parent(self, handler, texture_world):
+        texture_world.editable = False
+        result = self.invoke(handler, texture_world)
+        assert not result.success
+        assert not any(e[0] == "create" for e in texture_world.events)
+
+    @pytest.mark.parametrize("missing_type,noise_type", [
+        ("layer", "perlin"), ("fractalnoise", "perlin"), ("fractalnoise3d", "simplex"),
+    ])
+    def test_procedural_texture_preflights_all_types(self, handler, texture_world,
+                                                  missing_type, noise_type):
+        texture_world.category.available.remove(missing_type)
+        result = self.invoke(handler, texture_world, noise_type=noise_type)
+        assert not result.success
+        assert missing_type in result.error
+        assert not any(e[0] == "create" for e in texture_world.events)
+
+    def assert_clean_failure(self, world, result, before):
+        assert not result.success
+        assert result.error
+        assert (world.values, world.artist.snapshot()) == before
+        assert list(world.nodes) == [world.artist.name()]
+        assert all(n.destroyed for n in world.created)
+        destroyed = [e[1] for e in world.events if e[0] == "destroy"]
+        assert destroyed == [n.path() for n in reversed(world.created)]
+        assert not any(e[0] in ("global_undo", "cook", "cable", "display") for e in world.events)
+
+    @pytest.mark.parametrize("node_type,parm", [
+        ("layer", "signature"), ("layer", "setres"), ("layer", "resx"),
+        ("layer", "resy"), ("layer", "setpixelscale"), ("layer", "pixelscale"),
+        ("layer", "setpixelaspectratio"), ("layer", "pixelaspectratio"),
+        ("layer", "setpixelpad"), ("layer", "pixelpad_h1"),
+        ("layer", "pixelpad_h2"), ("layer", "pixelpad_v1"),
+        ("layer", "pixelpad_v2"), ("layer", "identityxform"),
+        ("fractalnoise", "signature"), ("fractalnoise", "noisetype"),
+        ("fractalnoise", "fractaltype"), ("fractalnoise", "dotiled"),
+        ("fractalnoise", "elementsize"), ("fractalnoise", "oct"),
+    ])
+    @pytest.mark.parametrize("fault", ["missing", "raise", "noop"])
+    def test_procedural_texture_parameter_failures_restore_owned_scope(
+            self, handler, texture_world, node_type, parm, fault):
+        before = (dict(texture_world.values), texture_world.artist.snapshot())
+        texture_world.faults[(node_type, parm)] = fault
+        result = self.invoke(handler, texture_world)
+        self.assert_clean_failure(texture_world, result, before)
+        assert parm in result.error
+
+    @pytest.mark.parametrize("node_type,parm", [
+        ("layer", "signature"), ("fractalnoise", "signature"),
+        ("fractalnoise", "noisetype"), ("fractalnoise", "fractaltype"),
+    ])
+    def test_procedural_texture_missing_menu_token_is_not_substituted(
+            self, handler, texture_world, node_type, parm):
+        before = (dict(texture_world.values), texture_world.artist.snapshot())
+        texture_world.faults[(node_type, parm)] = "missing_token"
+        result = self.invoke(handler, texture_world)
+        self.assert_clean_failure(texture_world, result, before)
+        assert parm in result.error
+
+    @pytest.mark.parametrize("node_type,operation,fault", [
+        ("layer", "create", "raise"), ("fractalnoise", "create", "raise"),
+        ("layer", "substitute", "wrong_type"), ("fractalnoise", "substitute", "wrong_type"),
+        ("layer", "outputs", "missing"), ("fractalnoise", "inputs", "missing"),
+        ("fractalnoise", "outputs", "wrong"), ("fractalnoise", "outputs", "missing"),
+        ("fractalnoise", "wire", "raise"), ("fractalnoise", "wire", "noop"),
+        ("layer", "position", "raise"), ("fractalnoise", "position", "raise"),
+    ])
+    def test_procedural_texture_node_and_wire_failures_restore_owned_scope(
+            self, handler, texture_world, node_type, operation, fault):
+        before = (dict(texture_world.values), texture_world.artist.snapshot())
+        texture_world.faults[(node_type, operation)] = fault
+        self.assert_clean_failure(texture_world, self.invoke(handler, texture_world), before)
+
+    @pytest.mark.parametrize("cleanup_fault", ["raise", "noop"])
+    def test_procedural_texture_cleanup_failure_reports_live_residue(
+            self, handler, texture_world, cleanup_fault):
+        before = texture_world.artist.snapshot()
+        texture_world.faults[("fractalnoise", "oct")] = "raise"
+        texture_world.faults[("fractalnoise", "destroy")] = cleanup_fault
+        result = self.invoke(handler, texture_world)
+        assert not result.success
+        residue = [n for n in texture_world.created if not n.destroyed]
+        assert len(residue) == 1 and residue[0].kind == "fractalnoise"
+        assert residue[0].path() in result.error
+        assert "cleanup" in result.error.lower()
+        assert texture_world.artist.snapshot() == before
+        assert not any(e[0] == "global_undo" for e in texture_world.events)
+
+    def test_procedural_texture_nonintegral_octave_readback_is_not_rounded(
+            self, handler, texture_world):
+        before = (dict(texture_world.values), texture_world.artist.snapshot())
+        texture_world.faults[("fractalnoise", "oct")] = "nonintegral_read"
+        result = self.invoke(handler, texture_world)
+        self.assert_clean_failure(texture_world, result, before)
+        assert "oct" in result.error
+
+    def test_procedural_texture_undo_exit_failure_cleans_owned_pair(self, handler, texture_world):
+        before = (dict(texture_world.values), texture_world.artist.snapshot())
+        texture_world.faults[("undo", "exit")] = "raise"
+        result = self.invoke(handler, texture_world)
+        self.assert_clean_failure(texture_world, result, before)
+        assert len(texture_world.created) == 2
+        assert "undo-group exit" in result.error
+        kinds = [e[0] for e in texture_world.events]
+        assert kinds.count("undo_enter") == kinds.count("undo_exit") == 1
+        assert all(i > kinds.index("undo_exit") for i, kind in enumerate(kinds) if kind == "destroy")
+
+    def test_procedural_texture_setter_failure_cleanup_stays_in_undo_group(
+            self, handler, texture_world):
+        before = (dict(texture_world.values), texture_world.artist.snapshot())
+        texture_world.faults[("fractalnoise", "oct")] = "raise"
+        result = self.invoke(handler, texture_world)
+        self.assert_clean_failure(texture_world, result, before)
+        kinds = [e[0] for e in texture_world.events]
+        assert kinds.count("undo_enter") == kinds.count("undo_exit") == 1
+        assert all(kinds.index("undo_enter") < i < kinds.index("undo_exit")
+                   for i, kind in enumerate(kinds) if kind == "destroy")
+
+    @pytest.mark.parametrize("cleanup_fault", ["raise", "noop"])
+    def test_procedural_texture_undo_exit_failure_reports_cleanup_residue(
+            self, handler, texture_world, cleanup_fault):
+        before = texture_world.artist.snapshot()
+        texture_world.faults[("undo", "exit")] = "raise"
+        texture_world.faults[("fractalnoise", "destroy")] = cleanup_fault
+        result = self.invoke(handler, texture_world)
+        assert not result.success
+        assert len(texture_world.created) == 2
+        size, noise = texture_world.created
+        assert size.destroyed and not noise.destroyed
+        assert noise.path() in result.error and "undo-group exit" in result.error
+        assert "cleanup" in result.error.lower()
+        assert texture_world.artist.snapshot() == before
+        assert not any(e[0] == "global_undo" for e in texture_world.events)
+
+    def test_procedural_texture_cleanup_never_compares_deleted_hom_wrappers(
+            self, handler, texture_world, monkeypatch):
+        # Native H22 raises ObjectWasDeleted on equality involving a destroyed
+        # node. Both nodes can be removed while list.remove falsely reports residue.
+        def hom_equal(left, right):
+            if left.destroyed or getattr(right, "destroyed", False):
+                raise RuntimeError("Attempt to access an object that no longer exists")
+            return left is right
+
+        monkeypatch.setattr(_TextureNode, "__eq__", hom_equal)
+        texture_world.faults[("fractalnoise", "oct")] = "raise"
+        result = self.invoke(handler, texture_world)
+        assert not result.success
+        assert "injected setter failure" in result.error
+        assert "cleanup incomplete" not in result.error
+        assert "no longer exists" not in result.error
+        assert len(texture_world.created) == 2
+        assert all(node.destroyed for node in texture_world.created)
+        assert tuple(texture_world.nodes.values()) == (texture_world.artist,)
+
+    def test_procedural_texture_failed_second_action_preserves_first(self, handler, texture_world):
+        first = self.invoke(handler, texture_world, name="repeated")
+        noise, layer = self.assert_pair(texture_world, first)
+        before = (noise.snapshot(), layer.snapshot(), texture_world.artist.snapshot(),
+                  dict(texture_world.values))
+        texture_world.faults[("fractalnoise3d", "wire")] = "raise"
+        second = self.invoke(handler, texture_world, name="repeated", noise_type="simplex")
+        assert not second.success
+        assert (noise.snapshot(), layer.snapshot(), texture_world.artist.snapshot(),
+                texture_world.values) == before
+        assert set(texture_world.nodes.values()) == {noise, layer, texture_world.artist}
+        assert all(n.destroyed for n in texture_world.created[2:])
+        texture_world.faults.clear()
+        third = self.invoke(handler, texture_world, name="repeated", noise_type="simplex")
+        self.assert_pair(texture_world, third, noise_type="simplex")
+
+    def probe_step(self, name, namespace):
+        """Execute the actual nested diagnostic step without starting its CLI/host."""
+        import ast
+        source = Path(__file__).resolve().parents[1] / "host" / "introspect_context_capability.py"
+        tree = ast.parse(source.read_text(encoding="utf-8"))
+        probe = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_probe_cop")
+        step = next(n for n in probe.body if isinstance(n, ast.FunctionDef) and n.name == name)
+        module = ast.Module(body=[step], type_ignores=[])
+        exec(compile(module, str(source), "exec"), namespace)
+        return namespace[name]
+
+    @pytest.mark.parametrize("texture_fails", [False, True])
+    def test_procedural_texture_context_probe_owns_modern_parent(
+            self, handler, texture_world, texture_fails):
+        legacy = "/obj/existing_cop2net"
+        roots, calls = [legacy], []
+        if texture_fails:
+            texture_world.faults[("fractalnoise", "oct")] = "raise"
+
+        def dispatch(command, **payload):
+            calls.append((command, payload))
+            if command == "cops_create_copnet":
+                return {"network_path": texture_world.path()}
+            assert command == "cops_procedural_texture"
+            assert payload["parent"] == texture_world.path()
+            result = self.invoke(handler, texture_world, **payload)
+            if not result.success:
+                raise RuntimeError(result.error)
+            return result.data
+
+        step = self.probe_step("x_ptex", dict(drv=types.SimpleNamespace(call=dispatch),
+                                             st={"net": legacy}, roots=roots))
+        if texture_fails:
+            with pytest.raises(RuntimeError, match="oct"):
+                step()
+            assert all(n.destroyed for n in texture_world.created)
+        else:
+            path = step()
+            noise = texture_world.lookup(path)
+            assert noise.kind == "fractalnoise"
+            layer = noise.input(noise.inputNames().index("size_ref"))
+            assert (layer.values["resx"], layer.values["resy"]) == (256, 256)
+        assert [name for name, _ in calls] == ["cops_create_copnet", "cops_procedural_texture"]
+        # The outer diagnostic can clean up the new parent even if texture creation failed.
+        assert roots == [legacy, texture_world.path()]
+
+    def test_procedural_texture_context_probe_preserves_legacy_golden(self):
+        calls, roots, state = [], [], {}
+
+        def dispatch(command, **payload):
+            calls.append((command, payload))
+            return {"network_path": "/obj/legacy_probe", "initial_nodes": [
+                {"path": "/obj/legacy_probe/noise"}]}
+
+        step = self.probe_step("s_network", dict(drv=types.SimpleNamespace(call=dispatch),
+                                                st=state, roots=roots, _StepFail=RuntimeError))
+        step()
+        assert len(calls) == 1 and calls[0][0] == "cops_create_network"
+        assert calls[0][1]["initial_nodes"] == ["noise"]
+        assert state == {"net": "/obj/legacy_probe", "noise": "/obj/legacy_probe/noise"}
+        assert roots == ["/obj/legacy_probe"]
 
 
 class TestCopsGrowthPropagation:

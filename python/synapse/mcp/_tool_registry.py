@@ -1506,14 +1506,16 @@ TOOL_DEFS: list[tuple] = [
      False, True, False),
 
     ("cops_procedural_texture", "cops_procedural_texture", _identity,
-     "Generate procedural texture: noise (perlin/worley/simplex), ramp, tiling.",
+     "Configure a modern Houdini 22 Copernicus mono texture: private resolution Layer -> Fractal Noise. "
+     "Use CopNet (new), not COP2. Worley means F1; simplex uses a planar slice of 3D Fractal Noise. "
+     "Returns verified configuration and output path; does not cook or export an image.",
      {"type": "object", "properties": {
-         "parent": {"type": "string", "description": "COP network path"},
-         "noise_type": {"type": "string", "description": "perlin, worley, simplex, alligator"},
-         "frequency": {"type": "number", "description": "Noise frequency (default: 1.0)"},
-         "octaves": {"type": "integer", "description": "Fractal octaves (default: 4)"},
-         "resolution": {"type": "array", "items": {"type": "integer"}, "description": "[w, h]"},
-         "name": {"type": "string", "description": "Node name"},
+         "parent": {"type": "string", "description": "Existing editable modern Copernicus network path (child category Cop)"},
+         "noise_type": {"type": "string", "enum": ["perlin", "worley", "simplex", "alligator"], "description": "Noise basis (default: perlin); worley = F1, simplex = 3D XY slice"},
+         "frequency": {"type": "number", "exclusiveMinimum": 0, "description": "Inverse element size in canonical image/world units; higher is finer (default: 1.0). No tiling."},
+         "octaves": {"type": "integer", "minimum": 1, "maximum": 16, "description": "Maximum fractal octaves (default: 4)"},
+         "resolution": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 1, "maximum": 8192}, "description": "[width, height], square pixels at full pixel scale (default: [1024, 1024]); leaves parent resolution unchanged"},
+         "name": {"type": "string", "pattern": "^[A-Za-z0-9_]{1,128}$", "description": "Noise node name; creates a companion <name>_resolution Layer. Houdini resolves name collisions."},
      }, "required": ["parent"]},
      False, True, False),
 

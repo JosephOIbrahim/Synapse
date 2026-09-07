@@ -460,10 +460,8 @@ def _probe_lop(drv, hou):
 def _probe_cop(drv, hou):
     # The golden drives the VERIFIED COP surface: cops_create_network (cop2net)
     # with Cop2/noise + Cop2/null — both live-probed in the connectivity catalog.
-    # The modern `copnet` category has NO verified generator spelling ("noise"
-    # exists only as Cop2 in the catalogs), and the whole cops_* tool family is
-    # built on cop2net — probing an unverified modern spelling would manufacture
-    # a phantom failure, not measure capability.
+    # Preserve this legacy golden lane for the remaining COP2 helpers. The
+    # procedural-texture extension below has its own modern Copernicus parent.
     st, roots = {}, []
 
     def s_network():
@@ -510,7 +508,9 @@ def _probe_cop(drv, hou):
     ], golden_steps, gaps)
 
     def x_ptex():
-        r = drv.call("cops_procedural_texture", parent=st.get("net", ""),
+        modern = drv.call("cops_create_copnet", parent="/obj", name="ctxprobe_modern_cop")
+        roots.append(modern["network_path"])
+        r = drv.call("cops_procedural_texture", parent=modern["network_path"],
                      resolution=[256, 256], name="ctxprobe_ptex")
         return r.get("path", "created")
 
