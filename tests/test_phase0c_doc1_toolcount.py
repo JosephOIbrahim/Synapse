@@ -16,6 +16,8 @@ so the test cannot go green against an assumed count.
 import re
 from pathlib import Path
 
+import pytest
+
 _ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -128,8 +130,8 @@ def test_http_lists_registry_core_only():
 # registry (128) and VERSION (5.63.0). Two more bindings so that class of drift
 # fails loud instead of ageing silently: README's tool number derives from the
 # registry (same authority as the CLAUDE.md banner above), and README's
-# "vX.Y.Z is Latest" tag line derives from VERSION (the canonical version file,
-# per test_phase0c_doc1_version_conformance.py).
+# current release tag derives from VERSION. An explicit Preview may retain an
+# older Latest release; ordinary stable releases still require Latest == VERSION.
 
 def _readme():
     return (_ROOT / "README.md").read_text(encoding="utf-8")
@@ -151,17 +153,83 @@ def test_readme_tool_count_matches_registry():
     )
 
 
+def _assert_release_tags(readme, canonical, notes):
+    """Bind the actual banner's current channel, version and release notes.
+
+    Older Latest ordering is not remote-state attestation; publication separately
+    verifies GitHub's retained Latest against the approved release plan.
+    """
+    version = r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)"
+    assert re.fullmatch(version, canonical), "VERSION must be comparable X.Y.Z"
+    banners = [text for text in re.findall(r"<sub>(.*?)</sub>", readme, re.S)
+               if "tags:" in text]
+    assert len(banners) == 1, "README must have exactly one release-tag banner"
+    lines = re.findall(r"(?:^|<br\s*/?>)\s*tags:\s*([^<\n]+)", banners[0])
+    assert len(lines) == 1, "README release-tag line is missing or malformed"
+    parts = [part.strip() for part in lines[0].split("·")]
+    if parts[-1] == "vNEXT tags only via the release ritual (g-receipts are human acts)":
+        parts.pop()
+    parsed = [re.fullmatch(rf"v({version}) is (Latest|Preview|RC)", part) for part in parts]
+    assert parsed and all(parsed), "README release tags must name exact versions and channels"
+    claims = [match.groups() for match in parsed]
+    current, channel = claims[0]
+    assert current == canonical, "README current release tag differs from VERSION"
+    title = notes.splitlines()[0] if notes else ""
+    preview_notes = re.fullmatch(rf"# v{re.escape(canonical)} (?:Preview(?:/RC)?|RC)(?:\s.*)?", title)
+    if channel == "Latest":
+        assert len(claims) == 1, "Stable banner must have one current Latest claim"
+        assert not preview_notes, "Preview release notes cannot claim the current tag as Latest"
+    else:
+        assert len(claims) == 2 and claims[1][1] == "Latest", "Preview must retain one older Latest tag"
+        assert tuple(map(int, claims[1][0].split("."))) < tuple(map(int, canonical.split("."))), (
+            "Preview cannot be Latest; retained Latest must be older than VERSION"
+        )
+        assert preview_notes, "Current Preview requires matching RELEASE_vVERSION.md Preview/RC notes"
+
+
 def test_readme_latest_tag_matches_version_file():
-    """FAILS IF: README's 'tags: vX.Y.Z is Latest' line names a version other
-    than VERSION. The GitHub 'Latest' badge is a human act at release time; the
-    README line must follow the canonical version, not lag it by three tags."""
+    """Keep stable drift red; allow a version-bound, documented Preview channel."""
     canonical = (_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    m = re.search(r"tags:\s*v(\d+\.\d+\.\d+) is Latest", _readme())
-    assert m, (
-        "README.md banner has no 'tags: vX.Y.Z is Latest' line -- the release "
-        "tag claim went missing (did the banner change shape?)."
-    )
-    assert m.group(1) == canonical, (
-        f"README.md says 'v{m.group(1)} is Latest' but VERSION is {canonical} (B8 "
-        "release-truth drift). Update the README banner with the release ritual."
-    )
+    path = _ROOT / "harness" / "notes" / f"RELEASE_v{canonical}.md"
+    notes = path.read_text(encoding="utf-8") if path.exists() else None
+    _assert_release_tags(_readme(), canonical, notes)
+
+
+@pytest.mark.parametrize("tags,notes", [
+    ("v9.10.0 is Latest", None),
+    ("v9.10.0 is Latest", "# v9.10.0 — Stable release"),
+    ("v9.10.0 is Preview · v9.9.9 is Latest", "# v9.10.0 Preview — Example"),
+    ("v9.10.0 is RC · v9.9.9 is Latest", "# v9.10.0 RC — Example"),
+])
+def test_release_channels_accept_matching_stable_and_preview(tags, notes):
+    _assert_release_tags(f"<sub>v9.10.0 · Houdini<br>tags: {tags}</sub>", "9.10.0", notes)
+
+
+@pytest.mark.parametrize("tags,notes", [
+    ("v9.9.9 is Latest", None),  # Original stable drift must still fail.
+    ("", None),
+    ("v9.10 is Latest", None),
+    ("v09.10.0 is Latest", None),
+    ("v9.10.0 is Beta", None),
+    ("v9.9.9 is Preview · v9.8.0 is Latest", "# v9.10.0 Preview"),
+    ("v9.10 is Preview · v9.9.9 is Latest", "# v9.10.0 Preview"),
+    ("v9.10.0 is Preview", "# v9.10.0 Preview"),
+    ("v9.10.0 is Preview · v9.10.0 is Latest", "# v9.10.0 Preview"),
+    ("v9.10.0 is Preview · v10.0.0 is Latest", "# v9.10.0 Preview"),
+    ("v9.10.0 is Latest", "# v9.10.0 Preview — Example"),
+    ("v9.10.0 is Latest · v9.9.9 is Preview", "# v9.10.0 Stable"),
+    ("v9.10.0 is Preview · v9.9.9 is Latest", None),
+    ("v9.10.0 is Preview · v9.9.9 is Latest", ""),
+    ("v9.10.0 is Preview · v9.9.9 is Latest", "# v9.9.9 Preview"),
+    ("v9.10.0 is Preview · v9.9.9 is Latest", "# v9.10.0 Stable\nHistorical Preview/RC mention"),
+    ("v9.10.0 is Preview · v9.9.9 is Latest", "# v9.10.0 Previewed"),
+    ("v9.10.0 is Preview · v9.9.9 is Latest · v9.10.0 is Latest", "# v9.10.0 Preview"),
+])
+def test_release_channels_reject_drift_and_false_claims(tags, notes):
+    with pytest.raises(AssertionError):
+        _assert_release_tags(f"<sub>v9.10.0 · Houdini<br>tags: {tags}</sub>", "9.10.0", notes)
+
+
+def test_release_claim_cannot_be_satisfied_by_prose_outside_banner():
+    with pytest.raises(AssertionError, match="banner"):
+        _assert_release_tags("<sub>v9.10.0 · Houdini</sub>\ntags: v9.10.0 is Latest", "9.10.0", None)
