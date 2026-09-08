@@ -135,6 +135,12 @@ the panel footer shows no *"API gate stale"* warning.
 
 ## Checklist
 
+For installation diagnostics, click **Doctor** beside **Connect / Bridge**
+at the top of the SYNAPSE panel. The **Check SYNAPSE** window runs
+`synapse_doctor` directly with `bundle: false`, without a model request or
+scene changes. It distinguishes passed, failed, and unrun checks. Use
+**Run again** to refresh or **Copy report** to copy the displayed findings.
+
 | # | Step | Command | Pass signal |
 |---|------|---------|-------------|
 | 1 | Regen symbol table | `hython host\introspect_runtime.py` | `TABLE: version=<NEW_BUILD> ... truncated=False`; commit the JSON |

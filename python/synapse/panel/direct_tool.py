@@ -172,8 +172,8 @@ class DirectToolCall(QThread):
             # "done" here would be the exact defect R18 names: an affordance
             # reporting a safety action it did not perform.
             self.failed.emit(
-                "Couldn't reach the SYNAPSE server, so nothing was cancelled. "
-                "Check the bridge is connected and try again."
+                "Couldn't reach the SYNAPSE server. "
+                "Use the panel's Connect button, then try again."
             )
             return
         self.finished_ok.emit(result)

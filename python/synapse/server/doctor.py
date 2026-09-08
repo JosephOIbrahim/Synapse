@@ -765,6 +765,12 @@ def _check_main_thread() -> Dict[str, Any]:
         result = {"stall": state, "dispatch_waits": waits,
                   "main_thread_holds": holds,
                   "cook_sandwiches": sandwich_stats()}
+        # JSON object keys are strings. The live orjson transport rejects the
+        # numeric histogram bounds; normalize only these copied snapshots so
+        # the instrumentation keeps its numeric keys and the doctor can reply.
+        for metric in (waits, holds, result["cook_sandwiches"]):
+            metric["buckets"] = {str(bound): count
+                                 for bound, count in metric["buckets"].items()}
         if state["stalled"]:
             return {"name": name, "status": "fail",
                     "detail": (f"main thread stalled "

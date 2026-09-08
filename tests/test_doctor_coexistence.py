@@ -131,6 +131,25 @@ class TestMainThreadCheck:
 # run_doctor wiring
 # ---------------------------------------------------------------------------
 
+def test_main_thread_report_serializes_without_changing_metric_keys():
+    import json
+    from synapse.mcp._tool_registry import _dumps_str
+    from synapse.server.main_thread import dispatch_wait_stats, main_thread_hold_stats
+    from synapse.server.update_mode import sandwich_stats
+
+    before = [read()["buckets"] for read in (
+        dispatch_wait_stats, main_thread_hold_stats, sandwich_stats)]
+    check = doctor._check_main_thread()
+    assert check["status"] in ("ok", "fail")  # skipped would hide the serialization defect
+    for key, original in zip(("dispatch_waits", "main_thread_holds", "cook_sandwiches"), before):
+        assert check["result"][key]["buckets"] == {str(k): v for k, v in original.items()}
+    assert json.loads(_dumps_str(check)) == check
+    after = [read()["buckets"] for read in (
+        dispatch_wait_stats, main_thread_hold_stats, sandwich_stats)]
+    assert after == before
+    assert all(isinstance(k, (int, float)) for buckets in after for k in buckets)
+
+
 def test_run_doctor_includes_new_checks(tmp_path, monkeypatch):
     monkeypatch.delenv("SYNAPSE_ENCRYPTION_KEY", raising=False)
     monkeypatch.chdir(tmp_path)

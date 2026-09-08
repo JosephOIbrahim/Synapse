@@ -26,6 +26,7 @@ from __future__ import annotations
 import http.client
 import json
 import logging
+import sys
 import threading
 import time
 from dataclasses import dataclass, field
@@ -174,19 +175,22 @@ class _MCPLocalClient:
         self._lock = threading.Lock()
 
     def _detect_port(self) -> Optional[int]:
-        """Detect hwebserver port from Houdini."""
-        try:
-            import hou
-            return hou.webServer.port()
-        except Exception:
+        """Peek the running adapter; never import a server or call HOM off-thread."""
+        adapter = sys.modules.get("synapse.server.hwebserver_adapter")
+        if adapter is None or getattr(adapter, "_running", False) is not True:
             return None
+        port = getattr(adapter, "_port", None)
+        return port if type(port) is int and 0 < port < 65536 else None
 
     @property
     def available(self) -> bool:
         """Check if MCP endpoint is likely reachable."""
-        if self._port is None:
-            self._port = self._detect_port()
-        return self._port is not None
+        port = self._detect_port()
+        with self._lock:
+            if port != self._port:
+                self._session_id = None
+                self._port = port
+        return port is not None
 
     def _post(self, body: dict, headers: Optional[dict] = None,
               timeout: float = 35.0) -> dict:
@@ -194,7 +198,8 @@ class _MCPLocalClient:
 
         ``timeout`` is per-call (C7): slow tools (render 120s, sequences 600s)
         must not be cut off by a one-size socket budget."""
-        if self._port is None:
+        request_port = self._port
+        if request_port is None:
             raise ConnectionError("hwebserver port unknown")
 
         all_headers = {
@@ -206,7 +211,7 @@ class _MCPLocalClient:
 
         payload = json.dumps(body, sort_keys=True).encode("utf-8")
 
-        conn = http.client.HTTPConnection("localhost", self._port, timeout=timeout)
+        conn = http.client.HTTPConnection("localhost", request_port, timeout=timeout)
         try:
             conn.request("POST", "/mcp", body=payload, headers=all_headers)
             resp = conn.getresponse()
@@ -214,7 +219,10 @@ class _MCPLocalClient:
 
             # Capture session ID from response headers
             session_hdr = resp.getheader("Mcp-Session-Id")
-            if session_hdr:
+            # A late reply from the previous endpoint cannot replace the new
+            # endpoint's session after a reconnect. _ensure_session owns the
+            # non-reentrant lock when it calls here; do not lock it again.
+            if session_hdr and self._port == request_port:
                 self._session_id = session_hdr
 
             return json.loads(data)

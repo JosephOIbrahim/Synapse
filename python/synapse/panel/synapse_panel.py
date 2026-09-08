@@ -922,8 +922,13 @@ class SynapsePanel(QtWidgets.QWidget):
             "can reach Houdini. Safe to click anytime - idempotent."
         )
         self._connect_btn.clicked.connect(self._on_connect)
+        self._doctor_btn = c.Button("Doctor", variant="ghost")
+        self._doctor_btn.setAccessibleName("Check SYNAPSE")
+        self._doctor_btn.setToolTip("Run synapse_doctor locally · no model request or scene changes")
+        self._doctor_btn.clicked.connect(self._open_doctor)
         bot.addWidget(self._header_status)
         bot.addStretch(1)
+        bot.addWidget(self._doctor_btn)
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._stop_btn)     # termination never scrolls away
         bot.addWidget(overflow)
@@ -984,7 +989,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # verbs and take the LABEL tracked font (mono) - the same applier as
         # _verb and the CHAT / TOKEN pills - so the chrome siblings match
         # byte-for-byte; no rhythm_role="label" on top of it.
-        for control in (self._connect_btn, self._corpus_btn, self._help_btn, overflow):
+        for control in (self._doctor_btn, self._connect_btn, self._corpus_btn, self._help_btn, overflow):
             control.setObjectName("DsVerb")
             control.setFont(fontload.tracked_font(
                 "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
@@ -2336,6 +2341,18 @@ class SynapsePanel(QtWidgets.QWidget):
         self._location_timer.start()
         QTimer.singleShot(0, self._refresh_engine_selector)
         return w
+
+    def _open_doctor(self):
+        from synapse.panel.doctor_dialog import DoctorDialog
+        dialog = getattr(self, "_doctor_dialog", None)
+        if dialog is None:
+            dialog = DoctorDialog(self)
+            self._doctor_dialog = dialog
+        already_visible = dialog.isVisible()
+        dialog.show()
+        dialog.raise_()
+        if not already_visible:
+            dialog.run_check()
 
     def _on_attach(self):
         """Image-attach button — adds picked files to the next request's context
