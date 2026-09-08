@@ -52,8 +52,8 @@ REGION_BUILDERS = {
 }
 
 # widget id -> the panel attribute its build call creates. "attr.key" reaches
-# into a dict attribute (the mode-bar pills live in _face_pills). The overflow
-# "⋯" button is a build-local variable, not on self — it has no id on purpose.
+# into a dict attribute (the mode-bar pills live in _face_pills). The tools
+# starburst (_overflow_btn) stays on the rail and has no manifest id.
 WIDGET_ATTRS = {
     # rail
     "mark": "_mark",

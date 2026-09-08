@@ -11,6 +11,7 @@ Entry point: ``createInterface()`` (Houdini Python Panel convention). The
 """
 
 import logging
+import math
 from functools import partial
 
 try:
@@ -381,6 +382,31 @@ def _image_icon(px=18, color=None):
     ]))
     p.end()
     return QtGui.QIcon(pm)
+
+
+def _tools_icon(px=18):
+    """Draw a starburst without relying on a symbol font being installed."""
+    icon = QtGui.QIcon()
+    for mode, color in ((QtGui.QIcon.Normal, t.TEXT_PRIMARY),
+                        (QtGui.QIcon.Active, t.TEXT_ACCENT),
+                        (QtGui.QIcon.Disabled, t.TEXT_DISABLED)):
+        pm = QtGui.QPixmap(px * 2, px * 2)
+        pm.setDevicePixelRatio(2)
+        pm.fill(QtGui.QColor(0, 0, 0, 0))
+        painter = QtGui.QPainter(pm)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QtGui.QColor(color))
+        points = []
+        for index in range(16):
+            angle = index * math.pi / 8 - math.pi / 2
+            radius = px * (0.44 if index % 2 == 0 else 0.16)
+            points.append(QtCore.QPointF(px / 2 + math.cos(angle) * radius,
+                                        px / 2 + math.sin(angle) * radius))
+        painter.drawPolygon(QtGui.QPolygonF(points))
+        painter.end()
+        icon.addPixmap(pm, mode)
+    return icon
 
 
 class SynapsePanel(QtWidgets.QWidget):
@@ -897,9 +923,13 @@ class SynapsePanel(QtWidgets.QWidget):
         fm = self._header_status.fontMetrics()
         self._header_status.setMinimumWidth(
             max(fm.horizontalAdvance(phrase) for phrase in _state_phrases()))
-        overflow = c.Button("\u22ef", variant="ghost")
-        overflow.setAccessibleName("More")
-        overflow.setToolTip("Palette, corpus, engine, health, help, text size, halt")
+        overflow = c.Button(variant="ghost")
+        tools_icon_px = max(18, t.scaled(18, self._chrome_scale))
+        overflow.setIcon(_tools_icon(tools_icon_px))
+        overflow.setIconSize(QtCore.QSize(tools_icon_px, tools_icon_px))
+        overflow.setAccessibleName("Tools and settings")
+        overflow.setToolTip(
+            "Tools and settings — commands, saved suggestions, engine, health and help")
         overflow.clicked.connect(self._show_overflow)
         self._stop_btn = c.Button("Stop", variant="danger")
         # L5-20: the mark (MarkDot.set_halt_handler) and this button are two
@@ -993,9 +1023,9 @@ class SynapsePanel(QtWidgets.QWidget):
             control.setObjectName("DsVerb")
             control.setFont(fontload.tracked_font(
                 "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        # The overflow is a click target, not a glyph: SPACE_32 clears the
-        # 26px floor G3 measures (the 24 it had was the audit's one WARN).
-        overflow.setFixedWidth(t.SPACE_32)
+        # Match the host's chrome scale so the starburst and its click target
+        # stay readable alongside Houdini's enlarged text.
+        overflow.setFixedWidth(max(t.SPACE_32, t.scaled(t.SPACE_32, self._chrome_scale)))
         self._overflow_btn = overflow
         self._regate_stop()
         self._region_cache["_build_rail"] = w
