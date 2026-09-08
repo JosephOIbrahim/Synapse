@@ -535,11 +535,11 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             with _lock_cm:
                 if _enveloped:
                     _hash_before = _envelope.capture_scene_hash(command.payload)
-                result = self._registry.invoke(
-                    cmd_type,
-                    command.payload,
+                from ..host.memory_loop import observe_operation
+                result = observe_operation(cmd_type, command.payload, lambda: self._registry.invoke(
+                    cmd_type, command.payload,
                     ctx=FloorContext(session=self._session_id, origin="handler"),
-                )
+                ))
                 # A before-capture miss (busy main thread) already forces the
                 # hash_unavailable sentinel — no delta is computable, so skip
                 # the after-capture rather than hold the C5 lock up to another
@@ -1784,6 +1784,17 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             except Exception as e:
                 _log.debug("KnowledgeIndex init failed: %s", e)
                 self._knowledge = None
+        if self._knowledge is not None:
+            # A scene rebind changes the owner. Observe it on main instead of
+            # retaining the closed previous scene's memory in the index.
+            try:
+                from .main_thread import run_on_main
+                from ..memory import store as _memory_store
+                self._knowledge._memory = run_on_main(
+                    lambda: _memory_store._global_synapse,
+                    timeout=3.0, label="knowledge:existing_memory_owner")
+            except Exception:
+                self._knowledge._memory = None
         return self._knowledge
 
     def _handle_knowledge_lookup(self, payload: Dict) -> Dict:

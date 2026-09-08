@@ -564,13 +564,11 @@ class ToolExecutor(QtCore.QObject):
                     else:
                         from synapse.server.main_thread import run_on_main
                         from synapse.core.timeouts import timeout_for
-                        response = run_on_main(
-                            lambda: execute_through_bridge(
-                                request.tool_name, handler, command,
-                            ),
-                            timeout=timeout_for(request.tool_name),
-                            label=request.tool_name,
-                        )
+                        from synapse.host.memory_loop import observe_operation
+                        response = observe_operation(cmd_type, payload, lambda: run_on_main(
+                            lambda: execute_through_bridge(request.tool_name, handler, command),
+                            timeout=timeout_for(request.tool_name), label=request.tool_name,
+                        ), response=True)
                 else:
                     response = handler.handle(command)
             except ImportError as _marshal_exc:

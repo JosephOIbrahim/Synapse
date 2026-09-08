@@ -8,9 +8,8 @@ VERBATIM signatures (blueprint §4):
     StagePort    compose_sanitized_stage(stage_identifier)
 
 Honest-seam rule: a port whose live substrate is absent reports UNAVAILABLE
-with a reason (phantom-API law). Only Moneta is live today. Hanish/SALUS/
-Octavius/jacobian-monologue are spec-grounded only — their ports satisfy the
-contract surface; their live gates are later rungs.
+with a reason. Optional adapters are supplied by the host; unconfigured
+substrates remain unavailable. Observation never manufactures SALUS approval.
 """
 
 from __future__ import annotations
@@ -234,6 +233,39 @@ class MemoryPort:
 
     # -- binding ------------------------------------------------------------
 
+    @classmethod
+    def from_owner(cls, owner):
+        """Borrow the established host owner; never register or close its handle."""
+        port = cls()
+        if threading.current_thread() is not threading.main_thread():
+            port._bind_error = "Borrowing project memory requires the main thread"
+            port._bind_blocked = True
+            return port
+        from ..memory.moneta_store import MonetaBackedStore
+        store = getattr(owner, "store", owner)
+        if not isinstance(store, MonetaBackedStore):
+            port._bind_error = "The existing owner is not persistent Moneta memory"
+            return port
+        port._storage_uri = MONETA_URI_SCHEME + str(getattr(owner, "storage_dir", "owned"))
+        port._store = store
+        return port
+
+    def deposit_capsule(self, capsule):
+        """Durably deliver an immutable, idempotent host outcome or source note."""
+        if threading.current_thread() is not threading.main_thread():
+            return PortResult.blocked("Memory deposits require the main thread")
+        guard = self._guard()
+        if guard is not None:
+            return guard
+        try:
+            from ..memory.models import Memory
+            memory = Memory.from_dict(capsule)
+            inserted = self._store.add_durable_if_absent(memory)
+            return PortResult.ok({"record_id": memory.id, "inserted": inserted,
+                                  "durable": True})
+        except Exception as exc:
+            return PortResult.unavailable(f"Moneta capsule deposit failed: {exc}")
+
     @property
     def storage_uri(self) -> Optional[str]:
         return self._storage_uri
@@ -261,6 +293,22 @@ class MemoryPort:
                 "the WebSocket observation channel, not by binding a store."
             ), True
         with cls._handles_lock:
+            # Project/ledger owners outrank the legacy isolated harness cache.
+            # Borrow without caching: release() must never close their handles.
+            import sys
+            wanted = storage_dir_from_uri(storage_uri)
+            project_module = sys.modules.get("synapse.memory.store")
+            project = getattr(project_module, "_global_synapse", None)
+            ledger_module = sys.modules.get("synapse.memory.ledger")
+            owners = [(getattr(project, "storage_dir", None), getattr(project, "store", None)),
+                      (getattr(ledger_module, "_MONETA_STORE_KEY", None),
+                       getattr(ledger_module, "_MONETA_STORE", None))]
+            for path, owned in owners:
+                if wanted is not None and path is not None and owned is not None:
+                    if Path(path).resolve() == Path(wanted).resolve():
+                        if getattr(owned, "_closed", False):
+                            return None, "The existing memory owner has closed", False
+                        return owned, None, False
             cached = cls._handles.get(storage_uri)
             if cached is not None:
                 return cached, None, False
@@ -593,10 +641,15 @@ class LedgerPort:
     BEFORE any mutating act, every turn. settle() stays honest-UNAVAILABLE
     until Hanish lands, so every turn verdict is EXPOSED."""
 
-    def __init__(self, ledger_dir_override: Optional[Path] = None) -> None:
+    def __init__(self, ledger_dir_override: Optional[Path] = None, *,
+                 worker=None, attempt=None, terminal=None, forecast_digest=None) -> None:
         # run_recipe threads its ledger_dir here; the classmethod ledger_path()
         # stays the zero-arg oracle the probes ask.
         self._dir = Path(ledger_dir_override).resolve() if ledger_dir_override else ledger_dir()
+        self.worker = worker
+        self.attempt = attempt
+        self.terminal = terminal
+        self.forecast_digest = forecast_digest
 
     @classmethod
     def ledger_path(cls) -> Path:
@@ -625,6 +678,11 @@ class LedgerPort:
         if not isinstance(world_ref, str) or not world_ref.strip():
             return _require_status(PortResult.blocked("world_ref must be a non-empty string"))
 
+        if self.worker is not None and self.attempt is not None:
+            if (probability != 0.5 or world_ref != self.attempt["context_sha256"]
+                    or claim_predicate != "The synchronous handler returns without an explicit failure"):
+                return PortResult.blocked("Observational Hanish requires its declared handler claim, 0.5 baseline and context digest")
+            return self.worker({"action": "author", "ledger_dir": str(self._dir), "attempt": self.attempt})
         line = {
             "event": "precommit",
             "claim_predicate": claim_predicate,
@@ -655,6 +713,12 @@ class LedgerPort:
     def settle(self, turn_id) -> PortResult:
         """Settlement. Hanish (settlement substrate) is absent -> honest
         UNAVAILABLE; the turn stays EXPOSED. Never a fabricated HIT/MISS."""
+        if self.worker is not None and self.attempt is not None:
+            if turn_id != self.attempt["id"]:
+                return PortResult.blocked("Settlement attempt differs from precommit")
+            return self.worker({"action": "settle", "ledger_dir": str(self._dir),
+                "attempt": self.attempt, "terminal": self.terminal,
+                "forecast_digest": self.forecast_digest})
         return _require_status(PortResult.unavailable(
             "Hanish substrate not installed (substrate_presence.hanish=absent); "
             "settlement honest-UNAVAILABLE until V0.2"
@@ -683,7 +747,15 @@ class StagePort:
     without the Octavius stage present).
     """
 
+    def __init__(self, *, worker=None, context=None):
+        self.worker = worker
+        self.context = context
+
     def compose_sanitized_stage(self, stage_identifier) -> PortResult:
+        if self.worker is not None and self.context is not None:
+            from .context import sanitize_context
+            context = sanitize_context(self.context)
+            return self.worker({"action": "compose", "context": context})
         # Deliberately zero side effects: no files, no ledger, no state.
         return _require_status(PortResult.unavailable(
             f"Octavius substrate not installed (substrate_presence.octavius=absent); "

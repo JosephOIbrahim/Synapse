@@ -1,0 +1,144 @@
+{
+  "cards": [
+    {
+      "artist_control": "The artist chooses where populations belong and controls masks, weights and variation. This is background set dressing; individual hero objects still deserve direct placement.",
+      "evidence_status": "LECTURE_CLAIM",
+      "explanation": "Rob describes deferred scattering as a lightweight scene recipe: source geometry, prototypes and placement rules become instances later in the render pipeline.",
+      "id": "scatter_recipe",
+      "keywords": [
+        "scatter",
+        "instances",
+        "hydra",
+        "recipe",
+        "prototypes"
+      ],
+      "source_excerpt": "[14:00] and we can just zoom in here to see that level of detail. Like the these are actually fairly complicated plants each one of these. And then we've got half a million of them scattered around our scene and it all renders quite efficiently inside of Karma. And because this is a render time procedural, it means the USDC scene itself is very lightweight. All we're storing is this kind of recipe for that description of what we are going to scatter, some rules about how and where we're going to scatter it and then those half million things just magically appear.",
+      "timestamp": "14:00–14:33",
+      "title": "Procedural scattering: store the recipe"
+    },
+    {
+      "artist_control": "Offer the artist a choice to edit and then review the update. Do not silently switch global manual cooking or claim a speedup without measuring cook counts.",
+      "evidence_status": "LECTURE_CLAIM",
+      "explanation": "The demonstrated edit state lets the artist move objects while expensive downstream scattering stays unchanged; leaving the state triggers the downstream update. Rob points to cook counts as the measurement.",
+      "id": "edit_state",
+      "keywords": [
+        "edit",
+        "state",
+        "cook",
+        "deferred",
+        "layout"
+      ],
+      "source_excerpt": "[15:53] I don't need the stuff downstream to cook right away. Let me noodle around. When I'm done, I'll tell you, and then you can carry on. So, one of the examples of that is editing. So, here we've got our scene, and I'm now in this edit state. And I'm going to start moving the rock around, and I don't need the scatter to immediately update. I want it to happen sort of on demand, like, okay, now I want to see the impact of it. Okay, I'm going to go move some more rocks around.\r\n\r\n[16:18] I don't need the scattering to respond every single mouse click because it takes a second or two for that scattering. And it's a really really jarring experience as you're moving your mouse. Wait a second. Move your mouse. Wait a second. I just want to move some things around. Wait, wait, wait. Now, please update for me. And I think this is going to be an absolute game changer for people doing that layout, that ability to kind of divorce your current action from that live cooking.\r\n\r\n[16:43] You don't have to go and change to manual mode. It should just make things a lot easier. And just to really hammer that point down, if you look at the kind of performance monitor here, if you look at the cook count, I appreciate the text is kind of small. You can see that as we're moving the rocks around, it's not constantly recooking. You don't see that cook count going jump. It's only when we exit that edit state that you'll see it goes up from two to three to four or whatever it is. Another example is that we are doing more things in Hydra now. So, we've got kind of the starting point of APEX inside of Hydra.",
+      "timestamp": "15:53–17:13",
+      "title": "Edit first, update downstream on leaving the state"
+    },
+    {
+      "artist_control": "Ask whether the artist needs the supplied controls or a custom deformer/procedural. Keep this a workflow choice and verify current support before constructing a graph.",
+      "evidence_status": "LECTURE_CLAIM",
+      "explanation": "Rob describes Hydra scatter/hair as comparatively closed implementations, while the Husk procedural framework remains a route for custom procedural graphs. The talk does not promise arbitrary HDAs can plug into Hydra.",
+      "id": "hydra_husk",
+      "keywords": [
+        "hydra",
+        "husk",
+        "custom",
+        "hda",
+        "procedural"
+      ],
+      "source_excerpt": "[19:03] Now and yeah I would say it is more than subtly different. hopefully this will be very useful for you. And again so these Husk procedurals they're not going away anytime soon. And a big part of that is that customization opportunity that they give you. the Husk procedural framework still not particularly documented as being extensible, but loads of studio loads of students have figured out how to put their own procedurals into place, how to either modify the hair procedural, put their own brand new hair procedural in, put something radically different in we've made that framework fairly generic quite intentionally to allow people to explore that space.\r\n\r\n[19:52] I should say that the subframe sample stuff here is not magically available only to hair. this is something that can be connected to custom procedurals as well. So if you are using the Husk procedural framework to do your own procedurals, please reach out, chat with us. We can help you understand how to make subframe motion blur work with that as well. But then on the flip side of it, the Hydra side, the Hydra one is going to be slightly faster, but it is going to be blackboxed.\r\n\r\n[20:21] And let me kind of reflect back on to scattering. the scattering also lives in that Hydra space right now. It is quite a black box. we do expose lots of controls on the Scatter Instances LOP but that is more or less as far as you can take it right now. We do want to hear from you in terms of what you think is missing. we do want to hear compelling stories as to oh yeah but I really want my own scattering procedural. I really want my own scattering HDA to be plugged in.\r\n\r\n[20:49] and then we can kind of explore what might be possible or how we make that work further in Houdini 23 and beyond. what we have underpinning all of it is arguably a semi-extensible semi-generic way of bringing Houdini engine into Hydra. but whereas the Husk procedurals from day one really let you go and put your own Husk procedural graph in place that is not really the case for the scattering procedural.\r\n\r\n[21:15] It's not just like you can plug in any Houdini engine HDA and expect it to work on Hydra. It's not that extensible right now. Okay, but let's talk more about layout and some other cool stuff that you can do. We've been always improving our rigid body and kind of ragdoll tools. You've seen loads of awesome ragdoll stuff already today. We've been bringing more of that into Solaris, making our tools for physics-based layout better and better.",
+      "timestamp": "19:03–21:43",
+      "title": "Choose procedural speed or custom graph control"
+    },
+    {
+      "artist_control": "Keep material color, pattern and roughness controls visible and editable. The artist chooses the geometry and accepts any network creation. This note itself creates no nodes.",
+      "evidence_status": "LECTURE_CLAIM",
+      "explanation": "The lecture assigns a Texture Material Library LOP to geometry, then enters its embedded COP network to build the material while viewing the result in Solaris.",
+      "id": "texture_material",
+      "keywords": [
+        "texture",
+        "material",
+        "library",
+        "copernicus",
+        "cops",
+        "lookdev"
+      ],
+      "source_excerpt": "[25:35] I need even further control. So we got a variety of shapes. They each have fall-offs things like that. it's just implemented as another light filter for you to play with. Okay. from lighting to texturing. Let's talk about the texture material lop that we've introduced. you saw it earlier in one of the previous talks, but it is a way to kind of make a one jump switch to COPs and allow you just to stay in COPs and build up your look development.\r\n\r\n[26:04] So right now we're inside of Solaris. I'm going to say, hey, hey, I need to work on the material for this canary. I'm going to put down this lop. I'm going to say that yep, it's going to be assigned to the canary. And now I'm going to dive inside of COPs and do all my work. And I'm just going to stay here. I'm just going to stay in this environment. I'm not going to go back to Solaris. I'm just going to build up my material network and I'm going to see the results live as I do it. And so we can do some exploration of colors, all of the various cop nodes, all the various pattern generations.",
+      "timestamp": "25:35–26:31",
+      "title": "Texture Material Library: lookdev inside COPs"
+    },
+    {
+      "artist_control": "Expose the viewport toggle so the artist chooses when to see the render or paint. Do not replace the artist's network or silently change their chosen context.",
+      "evidence_status": "LECTURE_CLAIM",
+      "explanation": "Rob switches the viewer between the parent Solaris context and the embedded COP context. The node network and parameter panes stay in place while the artist chooses rendering or painting.",
+      "id": "parent_context",
+      "keywords": [
+        "follow",
+        "parent",
+        "context",
+        "viewport",
+        "painting",
+        "copernicus"
+      ],
+      "source_excerpt": "[26:31] just yeah, amazing things. You've you've seen how amazing COPs is. I'm not going to pretend that I'm a COPs artist, but some things here. Now, eventually we're going to run into a bit of a limit cuz like, hey, we've painted some little I don't know, what do you want to call those kind of flaky shapes on the back of the canary? We want to paint some more. So, I've paused on this little toggle that we've added to our UI now. And this lets you flip back and forth between your parent view port if you want.\r\n\r\n[26:56] So, like this COP network is embedded inside of a lop network. And right now, we're following that parent context. We're seeing everything inside of LOPs. We're seeing everything rendered in beautiful Karma XPU detail. But maybe I actually want to see things inside of COPs because I want to use the brush tools. So I can just click that one little icon and bang, now we're inside of COPs. I can go in and start to do some more painting. I can paint all these extra little shapes here, all these little extra shells that I want to fill.\r\n\r\n[27:21] Click it again. Back inside of Solaris. And that's the only thing that's changing. Just the viewport is giving us that different view. We've still got our node network there in the bottom right. We still got all the parameters in the top right. We can just flick back and forth depending on what is the useful viewport for us at this second in time. Do I want to see the XPU result? Do I want to be painting on my mesh? And I think this is a really, really powerful workflow that we didn't have previously.",
+      "timestamp": "26:31–27:47",
+      "title": "Follow Parent Context: switch the viewport while staying in COPs"
+    },
+    {
+      "artist_control": "Let the artist choose wet/dry materials, mask direction and blend strength. Verify the actual Karma shader and evaluate the image before offering this as a checked procedure.",
+      "evidence_status": "LECTURE_CLAIM",
+      "explanation": "The talk uses ray-traced ambient occlusion directed roughly upward to blend wet and dry ground shading beneath cover. The shader responds to layout changes. This is a shading workflow, separate from a COP image-filter stack.",
+      "id": "wet_dry_ao",
+      "keywords": [
+        "wet",
+        "dry",
+        "ambient",
+        "occlusion",
+        "karma",
+        "shader"
+      ],
+      "source_excerpt": "[29:11] It's kind of a way to find crevices and kind of convex regions, things like that. And then I also mentioned that you've got ambient occlusion. So again, just some playing around with a few of the parameters here, things that you would tend to expect. And both of these, both the curvature and ambient occlusion are being driven by ray tracing. So just kind of another fun little example of what you can do with ambient occlusion.\r\n\r\n[29:37] I kind of already gave a bit of a teaser to it with the scattering procedural. but let's talk about it in the lookdev context. So let's imagine that you've done two different passes for the ground. You've got Craig outside here. Let's say you've done a wet pass for the ground and you've done a dry pass for the ground. We can use ambient occlusion with kind of more or less pointing straight up vector to blend between them. So we get this really nice rain shadowing effect.\r\n\r\n[30:02] so where the ground was covered either by Craig's umbrella or some of those overhangs, we'll use the dry ground shader and everywhere else we use the wet shader and we get this nice blending in between. And we don't have to go and paint that mask. I mean this is responding dynamically to the scene. So if the director comes in and like actually Craig needs to be a little bit further forwards, that's fine. You just change the layout, move Craig further forwards, and the ground is just going to react automatically. So that's pretty awesome. All right, so now you got a beautiful image, but you want to make it even more beautiful.",
+      "timestamp": "29:11–30:30",
+      "title": "Wet and dry lookdev with scene-responsive occlusion"
+    },
+    {
+      "artist_control": "Offer a reversible effect stack with understandable filter controls. Keep original render output available and let the artist choose which finishing effects to apply.",
+      "evidence_status": "LECTURE_CLAIM",
+      "explanation": "Rob demonstrates an ordered image-filter stack authored as USD data, with a subset of COP effects and a Husk rendering path. His viewport demo also shows RenderMan. Renderer-specific disk output compatibility still needs checking.",
+      "id": "image_filters",
+      "keywords": [
+        "image",
+        "filter",
+        "usd",
+        "effects",
+        "husk",
+        "render"
+      ],
+      "source_excerpt": "[30:30] We're going to apply some cop filtering to it. So we've already had slap comp in the viewport for at least one release now, but it was very much a viewport-driven technique. You click some buttons in the viewport, you'd set up some cop networks somewhere else in your scene where you probably lose track of them later on. and they were stuck in that scene. It wasn't portable. It wasn't something you could bring with you or pass off to another artist in an easy way. So now we've brought this more into USD as a first class citizen.\r\n\r\n[30:58] And we have an image filter lot that allows you to build up these effect stacks. So we'll go and choose from the ones that we expose here. don't have all of COPs available, but there's quite a lot of stuff between denoising and blurring and various glows and various color remapping. You can do things that are either quite subtle or things that are quite drastic. you'll have to put up with my horrible RD attempt to make the image look noticeably different. Maybe in a compelling way, maybe in a compelling way, maybe in a horrible way.\r\n\r\n[31:26] but but there we go. I mean, it's a pretty big change from what the image looked like initially. And again, I really just want to call out the fact that this is now being authored as USD data. these filters don't just exist in some random cop network inside of your HIP file. They're now part of your USD scene. So you save that USD scene out to disk. You can pass that off to your buddy. you can render it on the farm via Husk. It lives as an entity there. Or you can expose it as maybe a studio-wide library.\r\n\r\n[31:57] Maybe you want to build up a library for your entire lighting or compositing department to use. So you build up all these different effect stacks of image filters that they can then go and choose from. Now I said that everybody should be using Karma and you should because it's amazing. we appreciate not everybody is. So here's an example that shows that image filters aren't a Karma specific thing. They will work on the viewport for most if not all renderers. so here we're using RenderMan for example. And you can see it's a live effect as well. So as I start manipulating the scene the image filters are being applied on every single iteration as that image is streamed to the viewport.",
+      "timestamp": "30:30–32:30",
+      "title": "Image Filter LOP: USD-authored effect stacks"
+    },
+    {
+      "artist_control": "Present passes as named artist choices such as hero and environment. Make inclusion/exclusion and output file choices reviewable; do not launch renders as part of retrieving this reference.",
+      "evidence_status": "LECTURE_CLAIM",
+      "explanation": "The lecture connects a render ROP to render passes, each pass to render settings, and settings to products. The onion/no-onion example uses distinct products for separate image files, and a pass pattern lets one ROP run both.",
+      "id": "render_passes",
+      "keywords": [
+        "render",
+        "pass",
+        "settings",
+        "product",
+        "onion",
+        "exclusion"
+      ],
+      "source_excerpt": "[32:30] So we can move this onion around a little bit. So let's stick with our onion and talk a little bit about rendering pipelines. So we had this nice Karma set up already for many many releases. But now you'll notice there's an extra node. so we've got in addition to the render settings and the render ROP, we now have a render pass that is dropped down automatically for you. And part of that is also that there's a new connection that's being placed here.\r\n\r\n[32:55] So now the render pass which we introduced in Houdini 21 to allow you to specify like hey in this render pass I want this object to be matte and this object to be render visible to camera. We now have a connection between the render pass to the render settings. So I'm going to mention this now and I'll mention it again later. The render ROP will specify the render pass. The render pass will specify the render settings. We can see that here that we now have this render source attribute which points at our render settings. So we'll go and set this one up to target the onion.\r\n\r\n[33:24] This is going to be our render pass that is onion specific. And we'll create another Karma setup beside this one. And for this one, we're going to target everything except for the onion. This will be our no onion pass. So we'll go and we'll add an exclusion. so again, we're going to render everything except for the onion case except for the onion in this case. And you might say like, oh, why do I have two settings? I kind of want to do the same thing. I want to have a same number of samples.\r\n\r\n[33:50] I want the same camera. maybe you do, maybe you don't. But when you actually render this thing out to disk, you're probably going to want to render them to different EXR files. You're going to want one EXR file for your onion and a different EXR file for the chopping board. And the only way to do that is to have different render products, which are then encapsulated inside of different render settings. So again, we're going to have a render ROP, which is going to drive multiple render passes, each of which is going to have a render settings, each of which is going to have a render product.\r\n\r\n[34:16] I apologize for getting into the deep nerdy USD speak here. but it is important to kind of understand this a little bit. Now, once we got this all set up, we can go outside of our render ROP and we can actually specify patterns. So, rather than just spec rendering a pass, we can render all the passes. And then when we fire off MPlay, we're going to first render off our no onion pass. And then when that's done, it's just going to automatically carry on and render our onion pass. So again, here I'm just rendering to MPlay, but you can do the same thing rendering to disk.\r\n\r\n[34:43] You don't have to manually go and create renders for every single pass. You can set up all your passes, all your settings, all your products, one ROP at the end, render everything, and you'll get it. So, I I hope that you're excited about all this stuff. We've done lots of improvements to layout, to lookdev, to lighting, to texturing, bringing a lot of workflow enhancements, hopefully just making things better for you as an artist, making things easier across both Karma and Solaris.",
+      "timestamp": "32:30–35:14",
+      "title": "Render passes connect settings to products"
+    }
+  ],
+  "created_at": "2026-09-08T21:00:00+00:00",
+  "schema": "synapse.source_knowledge.v1",
+  "source": {
+    "file": "H22 - Solaris - Houdini 22 HIVE.md",
+    "sha256": "34364d2851943c07a19222c77e97227eb094f1ba7832a757e7c25aafa3692627",
+    "title": "H22 - Solaris | Rob Pieke | Houdini 22 HIVE"
+  }
+}

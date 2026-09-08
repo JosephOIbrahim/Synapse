@@ -64,7 +64,11 @@ class MemoryHandlerMixin:
     def _handle_memory_context(self, payload: Dict) -> Dict:
         """Handle context/engram_context command."""
         bridge = self._get_bridge()  # type: ignore[attr-defined]
-        return bridge.handle_memory_context(payload)
+        result = bridge.handle_memory_context(payload)
+        from ..host.memory_loop import enabled, context_for_request
+        if enabled():
+            result = dict(result, memory_loop=context_for_request(payload.get("query", "")))
+        return result
 
     def _augment_with_knowledge(self, query: str, result: Dict) -> Dict:
         """Unify Moneta and RAG corpus results into a single result set.
