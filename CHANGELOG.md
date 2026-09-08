@@ -2,6 +2,17 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.67.2 — Memory LOOP substrate fixes
+
+*2026-09-08.* Connects optional Moneta recall, private Octavius context composition,
+Hanish forecast/outcome evidence and durable feedback. Adds bounded outbox
+recovery, fixes native WebSocket and panel worker dispatch, preserves backend
+owners across panel reloads, and retains explicitly configured source roots.
+Adds source-verified Solaris reference intake and includes the Stage 0 fixed
+lookdev experience/suggestion scaffold. Observation remains off by default;
+artist consent still governs actions. See the [release notes](docs/releases/v5.67.2.md)
+for configuration, qualification and limitations.
+
 ## v5.65.2 — the loop audited itself and found a lie it had told
 
 *2026-09-06: a record-integrity release; no product code changed. The CTO review loop's second crank ran its SWEEP before the FIND lanes and audited its own backlog. It found B6 marked closed on evidence that could not have been true (the cited merge touched neither file the third clause reads), eight predicates stored clipped at exactly 500 characters and therefore unmeasurable, and all eight silencing their hython probe and reading stale JSON — four of them returning a confident FAIL about a verb rail the B+C wave had already retired. Withdrawn in place, restored whole, and made to report UNKNOWN when the instrument breaks; `harness/cto/check_backlog.py` now refuses both classes and was proven by mutation. Also: the F3 WS-halt pin anchors to the halt call rather than the latch that precedes it (macOS CI flake). Full gate **7613 passed / 0 failed / 357 skipped**. Account: `harness/cto/runs/2026-09-06/SWEEP_REPAIR.md`; notes: `harness/notes/RELEASE_v5.65.2.md`.*
