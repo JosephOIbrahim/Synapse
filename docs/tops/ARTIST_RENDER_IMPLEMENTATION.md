@@ -51,7 +51,7 @@ The per-job thread and task limits do not impose a machine-wide queue or license
 
 The source baseline is v5.67.1 at `87ce354a1aa04722fbfd2a8d308fb5eeb194455b`. The project chats establish one editable Solaris/Copernicus look, preserved artist changes and quiet, clear local controls as priorities.
 
-No component named TRIAGE FARM was found in that tracked baseline. Its exact location is being clarified. This implementation preserves existing registered tools and will connect or retire the identified artist-facing legacy entry deliberately once its producer is known.
+TRIAGE FARM was located on 8 September in the separate `G:/KARMA_TRIAGE_FARM` project, loaded by `houdini22.0/python_panels/tops_farm.pypanel`. It is a local XPU variation/scoring/contact-sheet prototype with a July 22.0.368 probe and shot-specific setup remaining. [TRIAGE_FARM_MIGRATION.md](TRIAGE_FARM_MIGRATION.md) records the static source findings and the proposed Compare looks integration. The existing project and registered tools remain intact; discovery does not qualify its execution or enable another profile.
 
 Actual remote worker inventory, shared storage, service identities and concurrent licenses remain to be established. Local native qualification does not establish a two-machine farm. The current handlers explicitly refuse shared studio deployment because the existing shared transport key does not establish per-user job ownership. Deployment, release/version changes and live artist-session actions remain separate acts after implementation evidence is ready.
 
