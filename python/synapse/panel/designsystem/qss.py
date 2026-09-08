@@ -427,9 +427,15 @@ QWidget#DsCard {{
     padding: {t.SPACE_MD}px; margin: 0;
     border: none; border-bottom: 1px solid {t.BORDER};
 }}
+QTextBrowser#DsCardBody[role="lookdev_suggestion"] {{
+    color: {t.TEXT_PRIMARY}; font-size: {s(t.SIZE_BODY)}px;
+}}
 #DsCard > #DsCardFooter {{
     min-height: {t.SPACE_XL}px; max-height: {t.SPACE_XL}px;
     padding: 0 {t.SPACE_MD}px; margin: 0; border: none;
+}}
+#DsCard > #DsCardFooter[role="lookdev_suggestion"] {{
+    min-height: {t.SPACE_XL * 2}px; max-height: {t.SPACE_XL * 2}px;
 }}
 #DsRoot [rhythm_role="parm_row"] {{
     font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_REGULAR};

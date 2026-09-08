@@ -6,24 +6,60 @@ procedure and returns it when explicitly requested in a matching environment.
 This is the first piece of the artist-controlled assistance described in
 [INTENT.md](../../INTENT.md).
 
-The developer supplies the first working procedure. There is no model training,
-generated repair, automatic execution, panel registration, or Computer Use in
-this stage. Its qualification level is **development scaffold verified**;
-artist-panel integration remains a separate milestone.
+The developer supplies the first working procedure. The scaffold now includes
+an artist-requested panel entry that recalls it and prepares an editable prompt.
+There is no model training, generated repair, automatic recording, automatic
+execution, or Computer Use in this stage. Its qualification level is
+**development scaffold and offscreen panel integration verified**. Deployment
+and interaction in the live artist panel remain unverified.
 
-## What the artist will control
+## What the artist controls
 
-Assistance defaults to disabled. A future host integration must enable it only
-within the artist's chosen scope and request recall only when they ask for help.
-The result explains what was checked and what remains unknown. The artist can
-inspect it, dismiss it, or choose to use the procedure through the existing
-ordinary build route with a fresh destination and authorization.
+The suggestion card starts hidden and performs no lookup at panel startup.
+Open **Saved lookdev suggestion…** in the panel's overflow menu, or choose
+`/lookdev-suggestion` from the command palette. Each request asks for one
+compatible saved procedure; it needs no connected model.
+
+The card shows the settings and verification limits. **Use in prompt** appends
+validated starting settings to the existing composer text, then hides the card.
+The artist can edit that text and send it through SYNAPSE's ordinary build route
+when ready. Preparing the prompt does not submit it or change the scene.
+**Ask again** requests another lookup; **Dismiss** ends this assistance.
+
+The host must already have an initialized Moneta owner for the current project,
+containing a developer-imported Stage 0 record. Missing memory, a busy store, an
+unsupported backend, or a changed environment produces an explanation with no
+usable draft. The panel does not install Moneta, create or switch memory owners,
+or populate a suggestion library automatically.
 
 A recalled procedure contains settings and a reference to the existing builder.
 Historical node paths stay in the evidence; they are never replay instructions.
 The adapter has no scene execution method. A stored success grants no authority
 over the current scene, and a later improvement cannot silently replace a
 network the artist already accepted.
+
+## Private host integration
+
+[`host/lookdev_suggestion.py`](../../python/synapse/host/lookdev_suggestion.py)
+arms a scene observer on the Houdini main thread before queuing the request.
+It uses the existing project owner, confirms its location against the current
+scene, observes the installed environment, and performs the exact recall on
+main. The owner and backend locks are acquired without waiting; contention
+returns `UNAVAILABLE`. Workers carry an observation session, never a memory
+handle. This adds no public MCP tool or argument.
+
+[`panel/lookdev_suggestion.py`](../../python/synapse/panel/lookdev_suggestion.py)
+rejects replies from an older request and validates the returned record again
+before offering a draft. Loading or clearing a scene, including reloading the
+same file, invalidates the request. Saving the scene, replacing its memory
+owner/backend, dismissing the card, or closing the panel also prevents reuse
+of an old result. Ordinary profile recomposition retains the existing card and
+draft. A running lookup can finish after dismissal without reopening the card.
+
+The five-second dispatch timeout bounds a worker's wait. It cannot interrupt
+work already running on main. Environment hashing and exact store enumeration
+still need measurement on large production projects; this scaffold makes no
+frame-time or hard cancellation guarantee.
 
 ## Record, restart, recall
 
@@ -114,18 +150,32 @@ procedure retains those limits in its explanation.
 
 Qualification used a real Houdini 22.0.400 producer, followed by record and exact
 recall in separate Python 3.14 development processes, including an abrupt exit
-without cleanup. The memory consumer has not been qualified inside Houdini's
-Python 3.13 host or the deployed artist panel. The Python 3.14 checks emit the
-existing vendored SDK ABI warning and use installed development dependencies.
+without cleanup. The private host consumer also recalled that retained native
+record inside Houdini 22.0.400 / Python 3.13.10 and after a fresh native-process
+restart. Native recall performed no embedding and did not alter scene nodes;
+reloading the same HIP file invalidated its previous request token.
+
+The native memory run supplied an existing Moneta source checkout through
+`MONETA_SRC` in isolated subprocesses. It did not install or configure Moneta in
+the artist's environment. Without that source, the isolated native environment
+reported Moneta unavailable. The Python 3.14 tests use a separately installed
+development copy and emit the existing vendored SDK ABI warning.
+
+Real Qt 6.8.3 offscreen checks cover the card, queued replies, dismissal,
+destruction while work is pending, prompt preservation, menu/slash routing,
+and full panel composition/profile changes. Full composition uses a controlled
+host result with unrelated background polling disabled; native memory and scene
+callbacks were qualified separately. A 340-pixel composed panel has readable
+text and unclipped action labels. These checks do not qualify the live GUI
+event loop, physical artist interaction, or a subsequent model-directed build.
 
 Focused regression command:
 
 ```powershell
-python -m pytest tests/test_rsi_stage0.py tests/test_moneta_store.py tests/test_moneta_crucible.py tests/test_moneta_substrate_truth.py tests/test_w3_kind_routing.py tests/test_memory_handle_law.py tests/test_solaris_lookdev.py -q -o addopts=
+python -m pytest tests/test_rsi_stage0_panel.py tests/test_rsi_stage0.py tests/test_panel_finesse.py tests/test_moneta_store.py tests/test_moneta_crucible.py tests/test_moneta_substrate_truth.py tests/test_w3_kind_routing.py tests/test_memory_handle_law.py tests/test_solaris_lookdev.py -q -o addopts=
 ```
 
-The next boundary is a small, separately qualified host integration: observe
-the current environment on the Houdini main thread, inject the existing owner,
-and display one suggestion on explicit request. Automatic improvement of
-recipes can build on these retained outcomes later, with separate tests and
-promotion decisions before any artist sees a changed suggestion.
+The next boundary is deployment and artist acceptance of this single requested
+suggestion. Automatic improvement of recipes can build on these retained
+outcomes later, with separate tests and promotion decisions before any artist
+sees a changed suggestion.

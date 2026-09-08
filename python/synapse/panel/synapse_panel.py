@@ -1327,6 +1327,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._recall_card = RecallCard()
         self._recall_card.hide()
         col.addWidget(self._recall_card)
+        from synapse.panel.lookdev_suggestion import LookdevSuggestionCard
+        previous = getattr(self, "_lookdev_suggestion", None)
+        if previous is not None:
+            previous.shutdown()
+        self._lookdev_suggestion = LookdevSuggestionCard()
+        self._lookdev_suggestion.draft_ready.connect(self._prepare_lookdev_prompt)
+        col.addWidget(self._lookdev_suggestion)
         col.addWidget(self._build_input())
         return page
 
@@ -2436,6 +2443,7 @@ class SynapsePanel(QtWidgets.QWidget):
         menu.addAction("Revoke session model permissions", self._revoke_session_approvals)
         # Build HDA: the form is unchanged; only the way in moved (BC-1).
         menu.addAction("Build HDA…", lambda: self._set_direct_view("hda"))
+        menu.addAction("Saved lookdev suggestion…", self._open_lookdev_suggestion)
         # BC-2: the rail's chrome reads here. Palette names the ACTUAL bound
         # key (the hidden owner's text is set from the QShortcut, never a
         # guess); Ground the corpus is checked once the store is built.
@@ -2725,6 +2733,21 @@ class SynapsePanel(QtWidgets.QWidget):
         """Dispatch the selected command or prompt through the existing handler."""
         self._send(prompt)
 
+    def _open_lookdev_suggestion(self):
+        card = getattr(self, "_lookdev_suggestion", None)
+        if card is not None:
+            self._set_face("direct")
+            self._converse_stack.setCurrentIndex(0)
+            card.request()
+
+    def _prepare_lookdev_prompt(self, draft):
+        """Prepare text only. Sending remains the artist's separate action."""
+        if not isinstance(draft, str) or not draft:
+            return
+        existing = self._input.toPlainText().rstrip()
+        self._input.setPlainText(existing + "\n\n" + draft if existing else draft)
+        self._input.setFocus()
+
     def _refresh_events(self, snapshot):
         button = getattr(self, "_events_btn", None)
         controller = getattr(self, "_notification_controller", None)
@@ -2795,6 +2818,9 @@ class SynapsePanel(QtWidgets.QWidget):
             return True
         if (text or "").strip().lower() == "/saved-recipes":
             self._open_saved_recipes()
+            return True
+        if (text or "").strip().lower() == "/lookdev-suggestion":
+            self._open_lookdev_suggestion()
             return True
         if _ACTIVE_PANEL_WORKERS:
             self._chat.append_system_message(
@@ -3530,6 +3556,9 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def closeEvent(self, event):
+        suggestion = getattr(self, "_lookdev_suggestion", None)
+        if suggestion is not None:
+            suggestion.shutdown()
         controller = getattr(self, "_notification_controller", None)
         if controller is not None:
             controller.close()
