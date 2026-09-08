@@ -114,3 +114,77 @@ print(json.dumps(results))
     assert json.loads(completed.stdout) == [
         {'settings': 'first', 'ui': 'first'}, {'settings': 'second', 'ui': 'second'},
     ]
+
+
+def test_panel_reopen_keeps_connection_types_and_existing_permission_checks(tmp_path):
+    # Real import + loader sequence in an isolated process. No model/network calls.
+    probe = r'''
+import json
+import os
+from pathlib import Path
+import sys
+from types import ModuleType
+import xml.etree.ElementTree as ET
+
+source, folder = map(Path, sys.argv[1:])
+root = ModuleType('synapse')
+root.__path__ = [str(source.parents[2] / 'python/synapse')]
+sys.modules['synapse'] = root
+os.environ.pop('SYNAPSE_ROOT', None)
+os.environ['SYNAPSE_MODEL_POLICY'] = str(folder / 'policy.json')
+os.environ['SYNAPSE_PANEL_SETTINGS'] = str(folder / 'settings.json')
+from synapse import model_access as access
+from synapse.panel import connections as original
+authority = access._AUTHORITY
+request_check = access.require_access
+script = ET.parse(source).findtext('./interface/script')
+spec = original.ConnectionSpec('custom', 'demo-model', 'https://demo.invalid/v1/chat/completions')
+
+class Provider:
+    id = 'custom'
+    model_identity = 'demo-model'
+    def _get_endpoint(self):
+        return ('https', 'demo.invalid', '/v1/chat/completions')
+    def stream(self, **kwargs):
+        raise AssertionError('No requests in this test')
+
+results = []
+for _ in range(2):
+    access.issue_session_grant(spec, key='synthetic-key', approved=True)
+    exec(compile(script, str(source), 'exec'), {})
+    from synapse.panel import connections as current
+    from synapse.panel.model_routing import choose_route
+    assert current is original, 'Reopening replaced the authority-owned connection module'
+    assert current.ConnectionSpec is access.ConnectionSpec
+    assert current.ConnectionFacts is access.ConnectionFacts
+    assert access._AUTHORITY is authority and access.require_access is request_check
+    connection = current.bind_provider(Provider(), key='synthetic-key')
+    assert choose_route(connection.facts).ok
+    scope = access.capture_scope()
+    child = access.session_task_grant(connection.spec, key='synthetic-key',
+                                     facts=connection.facts, scope=scope)
+    assert child is not None
+    assert access.require_access(connection.spec, key='synthetic-key',
+                                 facts=connection.facts, grant=child, scope=scope)
+    different = current.ConnectionSpec('custom', 'another-model', spec.endpoint)
+    assert access.session_task_grant(different, key='synthetic-key') is None
+    access.revoke_session_approvals()
+    try:
+        access.require_access(connection.spec, key='synthetic-key',
+                              facts=connection.facts, grant=child, scope=scope)
+    except access.ModelAccessDenied:
+        pass
+    else:
+        raise AssertionError('Reopening bypassed revocation')
+    connection.release()
+    results.append('same types; exact recipient and revocation enforced')
+print(json.dumps(results, sort_keys=True))
+'''
+    completed = subprocess.run([sys.executable, '-I', '-B', '-c', probe,
+                                str(PANEL_PATH), str(tmp_path)],
+                               capture_output=True, text=True, timeout=15)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert json.loads(completed.stdout) == [
+        'same types; exact recipient and revocation enforced',
+        'same types; exact recipient and revocation enforced',
+    ]

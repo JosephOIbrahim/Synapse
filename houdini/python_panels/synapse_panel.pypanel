@@ -34,7 +34,10 @@ if _root:
 # workers: unloading them when a panel opens would create competing owners for
 # the same project memory. Backend updates require a controlled host activation
 # or a Houdini restart. Keep the package roots and their configured paths too.
-for _m in sorted((k for k in sys.modules if k.startswith("synapse.panel.")), reverse=True):
+# Connection data types are also shared with the retained model-access owner;
+# replacing them would invalidate its identity checks after a panel reopen.
+for _m in sorted((k for k in sys.modules if k.startswith("synapse.panel.")
+                  and k != "synapse.panel.connections"), reverse=True):
     _cached = sys.modules.pop(_m, None)
     _parent_name, _, _child_name = _m.rpartition(".")
     _parent = sys.modules.get(_parent_name)
