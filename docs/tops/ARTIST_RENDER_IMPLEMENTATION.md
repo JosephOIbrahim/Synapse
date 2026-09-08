@@ -1,6 +1,6 @@
 # Artist render workspace implementation
 
-The 7 September 2026 renderfarm blueprint is the design authority for this feature. This first implementation makes rendering directly accessible in SYNAPSE and establishes an executable, durable local TOPs path before admitting remote workers.
+The 7 September 2026 renderfarm blueprint guided this first implementation: rendering directly accessible in SYNAPSE with an executable, durable local TOPs path. The [8 September refactored blueprint](TRIAGE_FARM_BLUEPRINT.md) proposes the next comparison, final-render and remote-farm milestones while preserving the qualification recorded here.
 
 ## Artist experience
 
@@ -51,11 +51,11 @@ The per-job thread and task limits do not impose a machine-wide queue or license
 
 The source baseline is v5.67.1 at `87ce354a1aa04722fbfd2a8d308fb5eeb194455b`. The project chats establish one editable Solaris/Copernicus look, preserved artist changes and quiet, clear local controls as priorities.
 
-TRIAGE FARM was located on 8 September in the separate `G:/KARMA_TRIAGE_FARM` project, loaded by `houdini22.0/python_panels/tops_farm.pypanel`. Following the user's clarification, it is concept research for cheap previews and look review; its code, panel and design are not a migration target. The [concept reference](TRIAGE_FARM_MIGRATION.md) retains useful source findings and failure lessons. SYNAPSE's own artist workflow and durable TOPs service define the scaffold. Look comparison remains a possible later extension; the next milestone below continues to prioritize the farm foundation.
+TRIAGE FARM was located on 8 September in the separate `G:/KARMA_TRIAGE_FARM` project, loaded by `houdini22.0/python_panels/tops_farm.pypanel`. Its cheap-preview and look-review concept informs the new design; its code, panel and design are not a migration target. The [concept reference](TRIAGE_FARM_MIGRATION.md) retains the source findings. The [refactored blueprint](TRIAGE_FARM_BLUEPRINT.md) now brings a small local comparison and selected same-frame final into the plan after shared admission. The remote qualification requirements below remain necessary before enabling the farm.
 
 Actual remote worker inventory, shared storage, service identities and concurrent licenses remain to be established. Local native qualification does not establish a two-machine farm. The current handlers explicitly refuse shared studio deployment because the existing shared transport key does not establish per-user job ownership. Deployment, release/version changes and live artist-session actions remain separate acts after implementation evidence is ready.
 
-## Next executable milestone: two machines
+## Remote qualification requirements
 
 Keep the artist's Prepare, Render, Recent renders and Cancel flow. Add a farm profile behind that same interface only when it can prove these conditions:
 
