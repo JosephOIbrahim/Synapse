@@ -51,7 +51,8 @@ def main():
     except Exception as exc:
         result = {"status": "UNAVAILABLE", "payload": None,
                   "error_message": f"{type(exc).__name__}: {exc}"}
-    print(json.dumps(result, sort_keys=True, allow_nan=False))
+    # stdout is the single JSON IPC response; diagnostics belong on stderr.
+    sys.stdout.write(json.dumps(result, sort_keys=True, allow_nan=False) + "\n")
 
 
 if __name__ == "__main__":

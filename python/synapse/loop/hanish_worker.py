@@ -306,4 +306,5 @@ if __name__ == "__main__":
         response = handle(request)
     except Exception as exc:
         response = _result("BLOCKED", error=f"Invalid worker input: {type(exc).__name__}: {exc}")
-    print(_canonical(response))
+    # stdout is the single JSON IPC response; diagnostics belong on stderr.
+    sys.stdout.write(_canonical(response) + "\n")
