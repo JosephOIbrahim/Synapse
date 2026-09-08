@@ -195,6 +195,18 @@ QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
 QPushButton#DsVerb[prominence="hero"]  {{ color: {t.WARM}; }}
 QPushButton#DsVerb[prominence="hero"]:hover {{ color: {t.WARM_HOVER}; }}
 QPushButton#DsVerb[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
+QPushButton#DsVerb[tone="doctor"] {{ color: {t.HOUDINI_TAB_YELLOW}; }}
+QPushButton#DsVerb[tone="doctor"]:hover {{ color: {t.HOUDINI_TAB_YELLOW_HOVER}; }}
+
+/* Quiet, centered local navigation uses Ready's caption family and weight. */
+QPushButton#DsFooterLink {{
+    background: transparent; border: none; padding: 2px 0;
+    min-height: {t.SPACE_LG}px;
+    color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_SMALL)}px;
+    font-weight: {t.WEIGHT_REGULAR}; text-align: center;
+}}
+QPushButton#DsFooterLink:hover {{ color: {t.TEXT_ACCENT}; }}
+QPushButton#DsFooterLink:disabled {{ color: {t.TEXT_DISABLED}; }}
 
 /* ---- two-axis palette chips (⌘K · DO × WHERE) ---------------- */
 /* Cells, not boxes: the chip is no longer a rounded rectangle floating in the

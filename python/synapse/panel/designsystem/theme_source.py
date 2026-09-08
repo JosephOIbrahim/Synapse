@@ -9,10 +9,10 @@ Editor (QML) source can be swapped in without editing the token table.
 
 Backends
 --------
-``hcs``        The current behavior — read ``hou.qt.color(role)`` from the active
+``hcs``        Read ``hou.qt.getColor(role)`` from the active
                Houdini Color Scheme (the ``.hcs`` / ``UIDark.hcs`` greys).
-               BYTE-IDENTICAL to the former inline ``_host_surface_rgb()``: same
-               role, same accessor fallbacks, same None-on-any-failure contract.
+               Legacy ``color`` hosts retain their accessor fallback; missing
+               roles or an unavailable host still return None.
                The active backend under MODE A.
 ``qml_theme``  Pending H22 Theme Editor introspection. Stub — raises
                ``NotImplementedError``. Do NOT switch to it under MODE A.
@@ -22,6 +22,8 @@ load), so this module stays importable + testable headless exactly like
 ``tokens.py`` — any failure degrades to ``None`` and the caller's fallback.
 """
 
+import threading
+
 # The Houdini color-scheme role the panel surface is seeded from. Kept here so
 # the single read site owns the role name.
 # ADAPT: 'PaneEmptyApp' is a placeholder color-scheme role — tune it to the
@@ -29,8 +31,8 @@ load), so this module stays importable + testable headless exactly like
 # the live host color). Any failure -> None -> the caller's hardcoded fallback.
 SURFACE_ROLE = "PaneEmptyApp"
 
-# The backend active under MODE A. 'hcs' preserves the pre-refactor behavior
-# byte-for-byte; 'qml_theme' is reserved for the H22 Theme Editor and stubbed.
+# The backend active under MODE A. 'qml_theme' is reserved for the H22 Theme
+# Editor and stubbed.
 ACTIVE_BACKEND = "hcs"
 
 
@@ -38,12 +40,16 @@ def _hcs_surface_rgb(role):
     """Host pane-background as ``(r, g, b)``, or ``None`` when headless/unavailable.
 
     Reads the active Houdini Color Scheme (the ``.hcs`` / ``UIDark.hcs`` greys)
-    via the ``hou`` Qt color accessor. This is BYTE-IDENTICAL to the read that
-    formerly lived inline in ``tokens.py._host_surface_rgb`` — same role, same
-    accessor-fallback order, same swallow-everything-return-None contract."""
+    via the live-verified H22 getColor accessor, with the legacy color accessor
+    retained as a fallback. Missing roles, unavailable hosts, and worker-thread
+    callers return None; querying a host theme must stay on Houdini's main thread.
+    """
+    if threading.current_thread() is not threading.main_thread():
+        return None
     try:
         import hou
-        c = hou.qt.color(role)
+        get_color = getattr(hou.qt, "getColor", None) or getattr(hou.qt, "color", None)
+        c = get_color(role)
     except Exception:
         return None
     if c is None:
@@ -82,8 +88,8 @@ def host_surface_rgb(role=SURFACE_ROLE, backend=ACTIVE_BACKEND):
     """The host pane-background as ``(r, g, b)``, or ``None`` headless/unavailable.
 
     Routes the host-theme read through the selected ``backend`` (default the
-    MODE-A-active ``'hcs'``). The ``'hcs'`` backend is byte-identical to the
-    pre-refactor inline read; ``'qml_theme'`` is a stub that raises
+    MODE-A-active ``'hcs'``). The ``'hcs'`` backend reads the current host theme
+    on the main thread and otherwise returns None; ``'qml_theme'`` is a stub that raises
     ``NotImplementedError``. Unknown backends raise ``ValueError``."""
     try:
         reader = _BACKENDS[backend]

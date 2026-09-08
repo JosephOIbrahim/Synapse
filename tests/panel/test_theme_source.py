@@ -198,6 +198,24 @@ def test_hcs_backend_reads_host_tuple_identically():
         _restore_hou(saved)
 
 
+def test_hcs_backend_uses_h22_get_color_for_the_tab_marker(monkeypatch):
+    import types
+
+    calls = []
+
+    def get_color(role):
+        calls.append(role)
+        return _FakeColor(185, 134, 32)
+
+    def legacy_color(_role):
+        raise AssertionError("H22 must use its actual getColor accessor")
+
+    monkeypatch.setitem(sys.modules, "hou", types.SimpleNamespace(
+        qt=types.SimpleNamespace(getColor=get_color, color=legacy_color)))
+    assert theme_source.host_surface_rgb("PaneTabMarker") == (185, 134, 32)
+    assert calls == ["PaneTabMarker"]
+
+
 def test_hcs_backend_headless_is_none():
     # No hou -> the former inline read returned None; the backend must too, so
     # the caller falls back to the hardcoded grey. (Any failure -> None.)
@@ -207,6 +225,24 @@ def test_hcs_backend_headless_is_none():
         assert theme_source.host_surface_rgb(backend="hcs") is None
     finally:
         _restore_hou(saved)
+
+
+def test_hcs_backend_never_queries_houdini_from_a_worker(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    import types
+
+    calls = []
+
+    def get_color(role):
+        calls.append(role)
+        return _FakeColor(185, 134, 32)
+
+    monkeypatch.setitem(sys.modules, "hou", types.SimpleNamespace(
+        qt=types.SimpleNamespace(getColor=get_color)))
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        result = pool.submit(theme_source.host_surface_rgb, "PaneTabMarker").result(timeout=2)
+    assert calls == []
+    assert result is None
 
 
 def test_tokens_output_byte_identical_headless():

@@ -11,7 +11,6 @@ Entry point: ``createInterface()`` (Houdini Python Panel convention). The
 """
 
 import logging
-import math
 from functools import partial
 
 try:
@@ -179,6 +178,84 @@ _QUICK_ACTIONS = [
     ("Fix", "Diagnose any problems with the current scene and propose fixes."),
     ("Optimize", "Suggest performance optimizations for the current network."),
 ]
+
+
+class _ShortcutLayout(QtWidgets.QLayout):
+    """Keep local links at their natural width, centered on every wrapped row."""
+
+    def __init__(self, horizontal_gap, vertical_gap):
+        super().__init__()
+        self._items = []
+        self._horizontal_gap = horizontal_gap
+        self._vertical_gap = vertical_gap
+        self.setContentsMargins(0, 0, 0, 0)
+
+    def addItem(self, item):
+        self._items.append(item)
+        self.invalidate()
+
+    def count(self):
+        return len(self._items)
+
+    def itemAt(self, index):
+        return self._items[index] if 0 <= index < len(self._items) else None
+
+    def takeAt(self, index):
+        if 0 <= index < len(self._items):
+            item = self._items.pop(index)
+            self.invalidate()
+            return item
+        return None
+
+    def expandingDirections(self):
+        return Qt.Orientation(0)
+
+    def hasHeightForWidth(self):
+        return True
+
+    def heightForWidth(self, width):
+        return self._arrange(QtCore.QRect(0, 0, width, 0), place=False)
+
+    def minimumSize(self):
+        size = QtCore.QSize()
+        for item in self._items:
+            size = size.expandedTo(item.minimumSize())
+        return size
+
+    def sizeHint(self):
+        sizes = [item.sizeHint() for item in self._items]
+        return QtCore.QSize(
+            sum(size.width() for size in sizes) + self._horizontal_gap * max(0, len(sizes) - 1),
+            max((size.height() for size in sizes), default=0))
+
+    def setGeometry(self, rect):
+        super().setGeometry(rect)
+        self._arrange(rect, place=True)
+
+    def _arrange(self, rect, place):
+        rows, row, row_width = [], [], 0
+        for item in self._items:
+            size = item.sizeHint()
+            gap = self._horizontal_gap if row else 0
+            if row and row_width + gap + size.width() > rect.width():
+                rows.append((row, row_width))
+                row, row_width, gap = [], 0, 0
+            row.append((item, size))
+            row_width += gap + size.width()
+        if row:
+            rows.append((row, row_width))
+        heights = [max(size.height() for _, size in row) for row, _ in rows]
+        height = sum(heights) + self._vertical_gap * max(0, len(rows) - 1)
+        if place:
+            y = rect.y() + max(0, (rect.height() - height) // 2)
+            for (row, width), row_height in zip(rows, heights):
+                x = rect.x() + max(0, (rect.width() - width) // 2)
+                for item, size in row:
+                    item.setGeometry(QtCore.QRect(
+                        QtCore.QPoint(x, y + (row_height - size.height()) // 2), size))
+                    x += size.width() + self._horizontal_gap
+                y += row_height + self._vertical_gap
+        return height
 
 
 class _GrowingInput(QtWidgets.QTextEdit):
@@ -385,7 +462,7 @@ def _image_icon(px=18, color=None):
 
 
 def _tools_icon(px=18):
-    """Draw a starburst without relying on a symbol font being installed."""
+    """Draw a clean lightning bolt without a symbol-font dependency."""
     icon = QtGui.QIcon()
     for mode, color in ((QtGui.QIcon.Normal, t.TEXT_PRIMARY),
                         (QtGui.QIcon.Active, t.TEXT_ACCENT),
@@ -397,12 +474,10 @@ def _tools_icon(px=18):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QtGui.QColor(color))
-        points = []
-        for index in range(16):
-            angle = index * math.pi / 8 - math.pi / 2
-            radius = px * (0.44 if index % 2 == 0 else 0.16)
-            points.append(QtCore.QPointF(px / 2 + math.cos(angle) * radius,
-                                        px / 2 + math.sin(angle) * radius))
+        points = [QtCore.QPointF(px * x, px * y) for x, y in (
+            (0.60, 0.05), (0.18, 0.56), (0.45, 0.56),
+            (0.33, 0.95), (0.83, 0.39), (0.57, 0.39),
+        )]
         painter.drawPolygon(QtGui.QPolygonF(points))
         painter.end()
         icon.addPixmap(pm, mode)
@@ -953,13 +1028,14 @@ class SynapsePanel(QtWidgets.QWidget):
         )
         self._connect_btn.clicked.connect(self._on_connect)
         self._doctor_btn = c.Button("Doctor", variant="ghost")
-        self._doctor_btn.setProperty("prominence", "hero")
+        self._doctor_btn.setProperty("tone", "doctor")
         self._doctor_btn.setAccessibleName("Check SYNAPSE")
         self._doctor_btn.setToolTip("Run synapse_doctor locally · no model request or scene changes")
         self._doctor_btn.clicked.connect(self._open_doctor)
         bot.addWidget(self._header_status)
         bot.addStretch(1)
         bot.addWidget(self._doctor_btn)
+        bot.addSpacing(t.scaled(t.SPACE_12, self._chrome_scale))
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._stop_btn)     # termination never scrolls away
         bot.addWidget(overflow)
@@ -1024,7 +1100,7 @@ class SynapsePanel(QtWidgets.QWidget):
             control.setObjectName("DsVerb")
             control.setFont(fontload.tracked_font(
                 "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        # Match the host's chrome scale so the starburst and its click target
+        # Match the host's chrome scale so the bolt and its click target
         # stay readable alongside Houdini's enlarged text.
         overflow.setFixedWidth(max(t.SPACE_32, t.scaled(t.SPACE_32, self._chrome_scale)))
         self._overflow_btn = overflow
@@ -2338,9 +2414,6 @@ class SynapsePanel(QtWidgets.QWidget):
             "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         self._khint.setWordWrap(True)
         col.addWidget(self._khint)
-        footer = QtWidgets.QFormLayout()
-        footer.setRowWrapPolicy(QtWidgets.QFormLayout.WrapLongRows)
-        footer.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
         self._commands_btn = c.Button("Commands", variant="ghost")
         self._commands_btn.setToolTip("Browse commands · / on empty input · Ctrl+K")
         self._commands_btn.clicked.connect(self._open_palette)
@@ -2350,12 +2423,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._events_btn = c.Button("Events", variant="ghost")
         self._events_btn.setToolTip("Local work and connection updates")
         self._events_btn.clicked.connect(self._open_notifications)
-        local_views = QtWidgets.QFormLayout()
-        local_views.setRowWrapPolicy(QtWidgets.QFormLayout.WrapLongRows)
-        local_views.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
-        local_views.addRow(self._recipes_btn, self._events_btn)
-        footer.addRow(self._commands_btn, local_views)
-        col.addLayout(footer)
+        col.addLayout(self._build_shortcut_footer())
         self._connection_status = c.Button("Connect models", variant="ghost")
         self._connection_status.clicked.connect(self._open_connections)
         col.addWidget(self._connection_status)
@@ -2372,6 +2440,18 @@ class SynapsePanel(QtWidgets.QWidget):
         self._location_timer.start()
         QTimer.singleShot(0, self._refresh_engine_selector)
         return w
+
+    def _build_shortcut_footer(self):
+        """Center the three local links with the same light type as Ready."""
+        footer = _ShortcutLayout(
+            t.scaled(t.SPACE_LG, self._chrome_scale),
+            t.scaled(t.SPACE_XS, self._chrome_scale))
+        for button in (self._commands_btn, self._recipes_btn, self._events_btn):
+            button.setObjectName("DsFooterLink")
+            c.apply_font_role(button, "caption", scale=self._chrome_scale)
+            button.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+            footer.addWidget(button)
+        return footer
 
     def _open_doctor(self):
         from synapse.panel.doctor_dialog import DoctorDialog

@@ -250,6 +250,12 @@ WARM_HOVER  = "#FF8E72"
 WARM_PRESS  = "#E5634A"
 WARM_TINT   = "rgba(255, 119, 89, 0.14)"
 
+# The active Houdini tab marker; the fallback is H22 UIDark.hcs SELECTION_BASE
+# (HSV 40, 0.825, 0.725). Keep diagnostic emphasis separate from warning status.
+_TAB_RGB = theme_source.host_surface_rgb("PaneTabMarker") or (185, 134, 32)
+HOUDINI_TAB_YELLOW = _hexrgb(*_TAB_RGB)
+HOUDINI_TAB_YELLOW_HOVER = _hexrgb(*(channel + 24 for channel in _TAB_RGB))
+
 # v9 muted status hues (comp --ok/--no/--hot) — the Work face's quiet verdict
 # grammar (status dots, DsVerb ok/hot tones). NOT a retune of GROW/ERROR/FIRE:
 # gates, badges and the STATUS table keep the full-strength hues.
