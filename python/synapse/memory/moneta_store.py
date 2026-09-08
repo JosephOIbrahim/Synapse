@@ -160,18 +160,11 @@ class MonetaBackedStore:
 
     Durability
     ----------
-    ``deposit()`` writes to the in-memory ECS and returns immediately.
-    There is no per-deposit fsync. Persistence is via ``save()``, which
-    snapshots the ECS to ``snapshot.json`` under ``.moneta/``.
-
-    The periodic save timer (``_save_interval``, 30 s) bounds the loss
-    window: at most 30 seconds of deposits are at risk between snapshots.
-    The ``atexit`` handler (registered in ``from_storage_dir``) covers
-    **clean exit only** — ``sys.exit()``, normal shutdown, Ctrl+C. A
-    ``kill -9``, native crash, or power loss loses at most 30 s of
-    deposits (the timer's window). This bound is recorded, not silently
-    assumed closed — the repo keeps a crash harness precisely because
-    hard crashes happen.
+    Every ``add()`` attempts a synchronous snapshot. Legacy callers retain
+    best-effort error logging; a returned ID alone is not a durable receipt.
+    ``add_durable_if_absent()`` is the opt-in strict boundary: it requires a
+    persistent, readable store, propagates snapshot failures, and resolves
+    retries by immutable memory identity before depositing again.
 
     The WAL (``wal.log``) is **inert**: SYNAPSE never calls
     ``signal_attention``, which is Moneta's only WAL writer. The WAL path
@@ -215,6 +208,8 @@ class MonetaBackedStore:
         self._last_save: float = 0.0
         self._save_interval: float = 30.0
         self._add_count: int = 0
+        self._load_issue: Optional[str] = None
+        self._strict_deposit_failed = False
 
     # Protected memories (decisions / show-tier / gate) are exactly the
     # keep-forever set, so the per-handle protected quota is set high: Moneta's
@@ -231,6 +226,7 @@ class MonetaBackedStore:
         protected_floor: float = _DEFAULT_PROTECTED_FLOOR,
         protected_quota: int = _PROTECTED_QUOTA,
         dual_write_jsonl: Optional[bool] = None,
+        require_compatible_snapshot: bool = False,
     ) -> "MonetaBackedStore":
         """Build a durable, project-scoped Moneta-backed store.
 
@@ -265,22 +261,28 @@ class MonetaBackedStore:
                 )
                 embedder = HashEmbedder()
         base = Path(storage_dir) / ".moneta"
+        dim = cls._resolve_embedding_dim(embedder)
+        if require_compatible_snapshot:
+            cls._check_snapshot_compatible(base, dim)
         base.mkdir(parents=True, exist_ok=True)
         snapshot_path = base / "snapshot.json"
-        cls._quarantine_if_corrupt(snapshot_path)
-        cls._quarantine_wal_if_unreplayable(base / "wal.log")
+        load_issue = None if require_compatible_snapshot else cls._quarantine_if_corrupt(snapshot_path)
+        if load_issue is None and any(base.glob("snapshot.json.corrupt-*")):
+            load_issue = "A quarantined snapshot needs recovery before checked recall"
+        if not require_compatible_snapshot:
+            cls._quarantine_wal_if_unreplayable(base / "wal.log")
         # ONE dim authority (W3-DIM target 1): the vector index dimension is
         # whatever the ACTIVE embedder emits — resolved here, once, and fed to
         # BOTH construction paths below. Never a hardcoded pin, never a stale
         # snapshot's value. A provider swap changes embedder.dim and the whole
         # index follows from this single read.
-        dim = cls._resolve_embedding_dim(embedder)
         # Stale-snapshot reconcile (W3-DIM target 2): a persisted snapshot whose
         # vectors were written by a DIFFERENT provider (different dim) is derived
         # data gone stale. Rebuild those vectors from the source payloads at the
         # live dim BEFORE Moneta hydrates, so the vendor's upsert dim-guard
         # (vector_index.py:112) never aborts init into a silent jsonl fallback.
-        cls._reconcile_snapshot_dim(snapshot_path, embedder)
+        if not require_compatible_snapshot:
+            cls._reconcile_snapshot_dim(snapshot_path, embedder)
         cfg = mr.MonetaConfig(
             storage_uri=f"moneta-file://{Path(storage_dir).resolve().as_posix()}",
             embedding_dim=dim,
@@ -363,17 +365,8 @@ class MonetaBackedStore:
 
         store = cls(handle, embedder, protected_floor=protected_floor,
                     cortex=cortex, jsonl_net=jsonl_net)
-        # Durability (Moneta audit, reachable-bug #1): deposit() writes to the
-        # in-memory ECS and returns. There is no per-deposit save, the snapshot
-        # daemon is deliberately NOT started (it races the single-writer ECS,
-        # see the from_storage_dir docstring), and the WAL is inert because
-        # SYNAPSE never calls signal_attention. So without this, a clean process
-        # exit dropped every deposit since the last manual sleep pass. Mirror
-        # MemoryStore's own atexit flush (store.py) so a normal shutdown snapshots.
-        # NOTE: this covers clean exit only -- not kill -9 or a native crash
-        # (this repo keeps a crash harness precisely because those happen). Full
-        # coverage would need a per-deposit save or an upstream deposit-WAL;
-        # that bound is recorded, not silently assumed closed.
+        store._load_issue = load_issue
+        # Retain the clean-exit checkpoint in addition to per-deposit saves.
         import atexit
         atexit.register(store.close)
         return store
@@ -384,7 +377,42 @@ class MonetaBackedStore:
     )
 
     @classmethod
-    def _quarantine_if_corrupt(cls, snapshot_path: Path) -> None:
+    def _check_snapshot_compatible(cls, base: Path, dim: int) -> None:
+        """Read-only preflight for developer imports/recall; never repair data.
+
+        The strict factory skips both reconciliation and quarantine. Even if a
+        concurrent external writer changes the file after this check, opening
+        it cannot invoke an embedding rebuild through this factory path.
+        """
+        import json
+        if any(base.glob("snapshot.json.corrupt-*")):
+            raise RuntimeError("A quarantined snapshot needs recovery before checked memory")
+        try:
+            with (base / "wal.log").open("rb") as stream:
+                if stream.read(1):
+                    raise RuntimeError("Pending memory WAL requires review before checked memory")
+        except FileNotFoundError:
+            pass
+        try:
+            with (base / "snapshot.json").open("r", encoding="utf-8") as stream:
+                data = json.load(stream)
+        except FileNotFoundError:
+            return
+        if not isinstance(data, dict) or not isinstance(data.get("rows"), list):
+            raise RuntimeError("Unreadable snapshot rows; checked memory does not repair storage")
+        # Moneta's ordinary hydrate attempts unknown formats on a best-effort
+        # basis. Checked recall must not load and later rewrite such a file.
+        if type(data.get("snapshot_version")) is not int or data["snapshot_version"] != 1:
+            raise RuntimeError("Unsupported snapshot format; checked memory does not migrate storage")
+        for row in data["rows"]:
+            if not isinstance(row, dict) or not all(key in row for key in cls._SNAPSHOT_REQUIRED_KEYS):
+                raise RuntimeError("Incomplete snapshot row")
+            vector = row["semantic_vector"]
+            if not isinstance(vector, list) or len(vector) != dim:
+                raise RuntimeError("Incompatible embedding dimension; checked memory does not rebuild vectors")
+
+    @classmethod
+    def _quarantine_if_corrupt(cls, snapshot_path: Path) -> Optional[str]:
         """Rename a corrupt snapshot aside so startup neither crashes nor
         silently discards it. Best-effort; a valid/absent snapshot is untouched."""
         if not snapshot_path.exists():
@@ -394,7 +422,7 @@ class MonetaBackedStore:
         try:
             with open(snapshot_path, "r", encoding="utf-8") as fp:
                 data = json.load(fp)
-            if not isinstance(data, dict) or not isinstance(data.get("rows", []), list):
+            if not isinstance(data, dict) or not isinstance(data.get("rows"), list):
                 raise ValueError("snapshot missing a 'rows' list")
             for row in data.get("rows", []):
                 if not all(k in row for k in cls._SNAPSHOT_REQUIRED_KEYS):
@@ -415,6 +443,7 @@ class MonetaBackedStore:
                     snapshot_path.unlink()
                 except OSError:
                     pass
+            return "Snapshot recovery required: " + str(exc)
 
     @classmethod
     def _quarantine_wal_if_unreplayable(cls, wal_path) -> None:
@@ -627,7 +656,39 @@ class MonetaBackedStore:
             or memory.source == "gate"
         )
 
-    def add(self, memory: Memory) -> str:
+    def add_durable_if_absent(self, memory: Memory) -> bool:
+        """Store one immutable memory; return True if new, False if a retry.
+
+        A failed snapshot may leave the deposit in memory. Retrying the same
+        identity checkpoints that deposit instead of creating a duplicate.
+        Failure is not rollback, and callers must not report it as STORED.
+        """
+        with self._lock:
+            self._require_durable()
+            matches = [m for m in self._iter_memories(strict=True) if m.id == memory.id]
+            if matches:
+                if len(matches) != 1 or matches[0].to_json() != memory.to_json():
+                    raise ValueError("Memory identity already contains different or duplicate data")
+                self.save(require_durable=True)
+                self._write_cortex(memory, memory.to_json())
+                self._dual_write_jsonl(memory, only_if_missing=True)
+                return False
+            self.add(memory, require_durable=True)
+            return True
+
+    def _require_durable(self) -> None:
+        if getattr(self, "_closed", False):
+            raise RuntimeError("Memory store is closed")
+        if self._load_issue:
+            raise RuntimeError(self._load_issue)
+        if self._strict_deposit_failed:
+            raise RuntimeError("A partial backend deposit requires restart before checked memory can continue")
+        if getattr(self._handle, "durability", None) is None:
+            raise RuntimeError("Checked experience requires persistent Moneta storage")
+
+    def add(self, memory: Memory, *, require_durable: bool = False) -> str:
+        if require_durable:
+            self._require_durable()
         text = memory.content or memory.summary or ""
         embedding = self._embedder.embed(text)
         payload = memory.to_json()
@@ -636,6 +697,11 @@ class MonetaBackedStore:
             try:
                 self._handle.deposit(payload, embedding, protected_floor=floor)
             except Exception as exc:  # ProtectedQuotaExceededError, etc.
+                if require_durable:
+                    # A backend error may occur after ECS insertion. Never retry
+                    # the legacy unprotected deposit and accidentally duplicate it.
+                    self._strict_deposit_failed = True
+                    raise
                 if floor > 0.0:
                     # Never drop a memory because the protected quota is full.
                     logger.warning(
@@ -656,11 +722,14 @@ class MonetaBackedStore:
             # deposit. Cost is O(n) per deposit; the from_storage_dir docstring
             # already named a per-deposit save as the durability fix, and for
             # USER MEMORY correctness outranks the write cost.
-            self.save()  # sets self._last_save
+            if require_durable:
+                self.save(require_durable=True)
+            else:
+                self.save()  # legacy best-effort acknowledgement
             # Opportunistic consolidation: every 100 adds, if the engine has
             # more than 1000 entities, run a sleep pass to keep memory bounded.
             self._add_count += 1
-            if self._add_count % 100 == 0 and self._handle.ecs.n > 1000:
+            if not require_durable and self._add_count % 100 == 0 and self._handle.ecs.n > 1000:
                 try:
                     audit = self.run_sleep_pass()
                     if audit.pruned > 0:
@@ -698,7 +767,7 @@ class MonetaBackedStore:
         except Exception as exc:  # noqa: BLE001 -- typed-USD authoring is best-effort
             logger.warning("cortex write failed (isolated): %s", exc)
 
-    def _dual_write_jsonl(self, memory: Memory) -> None:
+    def _dual_write_jsonl(self, memory: Memory, *, only_if_missing: bool = False) -> None:
         """Land the memory in the JSONL MemoryStore safety net via its own,
         unchanged write path (add -> buffered append -> flush). On first use,
         ensure the key.fingerprint sidecar exists (W3-STORE target 4)."""
@@ -706,7 +775,10 @@ class MonetaBackedStore:
         if net is None:
             return
         try:
-            net.add(memory)
+            get = getattr(net, "get", None)
+            existing = get(memory.id) if only_if_missing and callable(get) else None
+            if existing is None or existing.to_json() != memory.to_json():
+                net.add(memory)
             net.flush()  # synchronous append; drains the buffer to memory.jsonl
             if not self._sidecar_ensured:
                 self._ensure_keyfp_sidecar()
@@ -741,7 +813,7 @@ class MonetaBackedStore:
 
     # -- enumerate (the one coupling to Moneta internals, centralized) ------
 
-    def _iter_memories(self) -> List[Memory]:
+    def _iter_memories(self, *, strict: bool = False) -> List[Memory]:
         # Snapshot the engine under the lock and return a list — NOT a generator.
         # A lazy generator would hold the lock across caller work (or until GC if
         # abandoned). Materializing the rows under the lock gives every read an
@@ -755,8 +827,24 @@ class MonetaBackedStore:
         result: List[Memory] = []
         for row in rows:
             try:
-                result.append(Memory.from_json(row.payload))
+                if strict:
+                    import json
+                    payload = json.loads(row.payload)
+                    required = {"id", "created_at", "content", "memory_type", "tags", "source"}
+                    if not isinstance(payload, dict) or not required <= set(payload):
+                        raise ValueError("Incomplete memory payload")
+                    if any(not isinstance(payload[key], str) for key in required - {"tags"}):
+                        raise ValueError("Invalid memory field type")
+                    if not payload["id"] or not payload["created_at"]:
+                        raise ValueError("Missing stored memory identity or timestamp")
+                    if type(payload["tags"]) is not list or any(type(tag) is not str for tag in payload["tags"]):
+                        raise ValueError("Invalid stored memory tags")
+                    result.append(Memory.from_dict(payload))
+                else:
+                    result.append(Memory.from_json(row.payload))
             except Exception as exc:
+                if strict:
+                    raise RuntimeError("Cannot establish complete recall: corrupt memory payload") from exc
                 logger.warning(
                     "Skipping corrupt Moneta row %s: %s",
                     getattr(row, "entity_id", "<unknown>"), exc,
@@ -789,6 +877,21 @@ class MonetaBackedStore:
     def get_by_tag(self, tag: str) -> List[Memory]:
         # Raw, case-sensitive — matches search() tag semantics across stores.
         return [m for m in self._iter_memories() if tag in m.tags]
+
+    def get_by_tag_strict(self, tag: str, *, limit: int = 20) -> List[Memory]:
+        """Complete exact-tag candidates or an explicit failure; no embeddings.
+
+        Enumeration still scales with the store. The limit bounds returned
+        records, not storage I/O. Never silently truncate a checked lookup.
+        """
+        if type(limit) is not int or limit < 1:
+            raise ValueError("Candidate limit must be a positive integer")
+        with self._lock:
+            self._require_durable()
+            matches = [m for m in self._iter_memories(strict=True) if tag in m.tags]
+            if len(matches) > limit:
+                raise RuntimeError("Checked recall candidate limit exceeded; result is incomplete")
+            return matches
 
     def get_linked(self, memory_id: str) -> List[Memory]:
         all_mems = list(self._iter_memories())
@@ -862,15 +965,19 @@ class MonetaBackedStore:
 
     # -- lifecycle ----------------------------------------------------------
 
-    def save(self) -> None:
-        """Durably snapshot the engine. No-op when durability is disabled (ephemeral)."""
+    def save(self, *, require_durable: bool = False) -> None:
+        """Snapshot the engine; strict callers receive missing/failed durability."""
         with self._lock:
+            if require_durable:
+                self._require_durable()
             dur = getattr(self._handle, "durability", None)
             if dur is not None:
                 try:
                     dur.snapshot_ecs(self._handle.ecs)
                     self._last_save = time.monotonic()
                 except Exception as exc:
+                    if require_durable:
+                        raise
                     logger.warning("Moneta snapshot on save() failed: %s", exc)
 
     def run_sleep_pass(self) -> PruneAudit:
