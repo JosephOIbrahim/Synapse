@@ -1034,10 +1034,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._doctor_btn.clicked.connect(self._open_doctor)
         bot.addWidget(self._header_status)
         bot.addStretch(1)
-        bot.addWidget(self._doctor_btn)
-        bot.addSpacing(t.scaled(t.SPACE_12, self._chrome_scale))
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._stop_btn)     # termination never scrolls away
+        bot.addSpacing(t.scaled(t.SPACE_12, self._chrome_scale))
+        bot.addWidget(self._doctor_btn)
         bot.addWidget(overflow)
         col.addWidget(row)
 
