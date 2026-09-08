@@ -1,6 +1,6 @@
 # TRIAGE FARM concept reference
 
-8 September 2026. Updated after the user's clarification: TRIAGE FARM's concept is useful context for scaffolding SYNAPSE with TOPs. Its implementation and visual design are not a foundation to carry forward. This supersedes the earlier migration recommendation. The existing filename is retained for links to the discovery record.
+8 September 2026. TRIAGE FARM's concept supplies context for scaffolding SYNAPSE with TOPs. Its implementation and visual design are reference material. The user's subsequent request to combine that concept with yesterday's work is developed in the [refactored blueprint](TRIAGE_FARM_BLUEPRINT.md) and [coffee conversation](TRIAGE_FARM_COFFEE_TALK.md). Those documents set the proposed workflow and milestone order; this file retains the discovery findings. The existing filename is retained for links to the discovery record.
 
 Static source review only; no panel, HIP or render code was executed. This reference does not enable another render profile.
 
@@ -28,7 +28,7 @@ Design from the artist's task: choose what to render, review the scope, start it
 
 | Reference idea | Use in SYNAPSE's planning |
 | --- | --- |
-| Cheap previews, look variations and contact-sheet review | Keep as possible future workflows; evaluate their value after the core farm works. |
+| Cheap previews, look variations and contact-sheet review | Design the Preview, Compare and Final journey now; prove a small local comparison after shared admission, alongside farm provisioning. |
 | Technical image measurements | Research optional descriptive flags while keeping creative selection with the artist. No commitment to the existing scoring algorithms. |
 | TOP graph and parameter probes | Retain historical API observations and reverify any needed behavior on the qualified build. |
 | Direct cook/dirty/cancel controls | Learn the failure modes; SYNAPSE actions use its durable request service. |
@@ -59,8 +59,8 @@ Treat image review as a separate stage after verified rendering. If scoring or s
 
 ## Priority and possible future extension
 
-Prioritize the existing Prepare, Render, Recent renders and Cancel flow, then shared resource/license admission and a qualified two-machine farm. Keep one obvious next action, preserve the artist's choices, describe progress in plain language and reveal advanced controls only when needed. The local preview already provides the starting point; the next execution milestone remains the farm foundation.
+Preserve the existing Prepare, Render, Recent renders and Cancel flow. The refactored blueprint starts with shared resource admission, then a local original-plus-three comparison and a selected same-frame final, with two-machine farm qualification following behind the same interface. Keep one obvious next action, preserve the artist's choices, describe progress in plain language and reveal advanced controls only when needed.
 
-Look comparison is an optional future idea, with no committed feature name or inherited layout. If pursued, let the artist choose a few explicit alternatives and a preview budget, review the resulting images, then select a look for final rendering. Its first acceptance fixture would need four distinguishable variants, exact scene/output identity, verified images and a review artifact containing only the current request. Selection and cancellation/restart must preserve that identity.
+Comparison is part of the proposed creative loop, with no inherited layout. The first acceptance fixture uses four distinguishable variants, exact scene/output identity, verified child images and a review record containing only the current comparison. Selection and cancellation/restart preserve that identity. Broader final frame ranges require a newly prepared package with qualified dependency coverage.
 
 No legacy panel or project files were changed or removed during discovery. Actual XPU execution and multi-machine HQueue operation remain unqualified. Loading or replacing the legacy panel is not required to progress SYNAPSE's renderfarm scaffold.
