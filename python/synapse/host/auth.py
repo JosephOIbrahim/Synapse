@@ -70,10 +70,13 @@ def _repo_root() -> Path:
     """Absolute path to the SYNAPSE repo root, independent of CWD.
 
     Houdini launches from an unrelated working directory, so the ``.env``
-    location must be resolved relative to *this file*, never ``os.getcwd()``.
-    ``auth.py`` lives at ``<root>/python/synapse/host/auth.py`` → ``parents[3]``.
+    location follows an explicitly configured ``SYNAPSE_ROOT``. This preserves
+    the existing configuration when qualified Python code runs from a worktree.
+    Without that setting, ``auth.py`` lives at
+    ``<root>/python/synapse/host/auth.py`` → ``parents[3]``; never use the CWD.
     """
-    return Path(__file__).resolve().parents[3]
+    configured = os.environ.get("SYNAPSE_ROOT", "").strip()
+    return Path(configured).expanduser().resolve() if configured else Path(__file__).resolve().parents[3]
 
 
 def _load_dotenv() -> None:
