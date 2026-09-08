@@ -953,6 +953,7 @@ class SynapsePanel(QtWidgets.QWidget):
         )
         self._connect_btn.clicked.connect(self._on_connect)
         self._doctor_btn = c.Button("Doctor", variant="ghost")
+        self._doctor_btn.setProperty("prominence", "hero")
         self._doctor_btn.setAccessibleName("Check SYNAPSE")
         self._doctor_btn.setToolTip("Run synapse_doctor locally · no model request or scene changes")
         self._doctor_btn.clicked.connect(self._open_doctor)
