@@ -2,8 +2,9 @@
 Synapse hwebserver Adapter
 
 Native C++ WebSocket server using Houdini's built-in hwebserver module.
-Eliminates: Python websockets dependency, daemon threads, haio.py conflicts,
-watchdog false positives, and thread pool dispatching.
+Uses Houdini's native socket transport instead of Python websockets. Houdini
+schedules WebSocket coroutines on its asyncio loop; opt-in memory LOOP commands
+await a worker so their sidecar I/O cannot capture the UI thread.
 
 Usage (inside Houdini):
     from synapse.server.hwebserver_adapter import start_hwebserver, stop_hwebserver
@@ -106,8 +107,8 @@ if HWEBSERVER_AVAILABLE:
         Native Houdini WebSocket handler for Synapse protocol.
 
         Handles the same SynapseCommand/SynapseResponse JSON wire format
-        as the Python websockets server, but runs inside Houdini's C++
-        multi-threaded server — no daemon threads, no asyncio, no haio.py.
+        as the Python websockets server, using Houdini's C++ transport and its
+        asyncio integration. Short HOM operations retain host main-thread dispatch.
         """
 
         async def connect(self, req):
@@ -261,9 +262,17 @@ if HWEBSERVER_AVAILABLE:
                     _get_handler().set_session_id(self._session_id)
                     _client_sessions[self._ws_id] = self._session_id
 
-                # Dispatch to handler
+                # hwebserver may invoke this coroutine on Houdini's UI loop.
+                # Only the opt-in LOOP paths need sidecar work: await a worker
+                # here so the handler can marshal short owner/HOM operations
+                # back to main without blocking the UI on ledger subprocesses.
                 handler = _get_handler()
-                response = handler.handle(command)
+                from ..host.memory_loop import enabled, OBSERVED_COMMANDS
+                if enabled() and command.type in OBSERVED_COMMANDS | {"context", "engram_context"}:
+                    import asyncio
+                    response = await asyncio.to_thread(handler.handle, command)
+                else:
+                    response = handler.handle(command)
                 # F3: record successes so a HALF_OPEN breaker (post-timeout
                 # probe cycle) can close again after the main thread recovers.
                 # Failures are deliberately NOT recorded as breaker failures —

@@ -54,6 +54,12 @@ than waiting for a sidecar. The panel's worker brackets its existing main-thread
 bridge call, so its regular mutation path can be observed without this extra UI
 wait. Existing scene cook/render time still belongs to the original host action.
 
+Houdini's native `hwebserver` invokes WebSocket coroutines on its asyncio loop.
+When LOOP observation is enabled, that adapter awaits a worker for eligible
+commands and explicit context requests. Authentication, rate limiting and the
+existing breaker still precede dispatch. The shipped panel loader refreshes UI
+modules while retaining host, server, session and memory owners across reopening.
+
 The explicit `rebind_project_memory` helper preserves and checks records before
 publishing a replacement owner. It can carry an untitled scene's memory into its
 first saved project. It never silently copies memory between unrelated projects.
@@ -97,3 +103,10 @@ changes, owner borrowing and explicit scene rebind. The Hanish version qualified
 here resolves captured event order; the adapter therefore supplies exactly one
 terminal event per attempt and rejects conflicting retries. No generalized
 out-of-order event guarantee or calibration benefit is claimed.
+
+The live H22.0.400 qualification also checks native transport dispatch, the next
+request recalling a persisted outcome, source-note retrieval, and preservation of
+the existing project owner. Fresh-process snapshot checks establish durable
+memory readback without closing the artist's live session. These observations
+do not establish production-scale latency or the correctness of arbitrary
+Solaris graphs suggested from the reference notes.

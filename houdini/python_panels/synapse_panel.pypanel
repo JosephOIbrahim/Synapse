@@ -30,12 +30,20 @@ if _root:
         if os.path.isdir(_p) and _p not in sys.path:
             sys.path.insert(0, _p)
 
-# Hot-reload: flush cached synapse modules so reopening the panel picks up code
-# edits without a Houdini restart. The design system is vendored under
-# synapse.panel.designsystem, so there is NO ~/.synapse/design dependency.
-for _m in sorted(k for k in sys.modules if k.startswith("synapse.")):
-    del sys.modules[_m]
-sys.modules.pop("synapse", None)
+# Refresh UI code only. Host/server/memory modules own live handles, locks and
+# workers: unloading them when a panel opens would create competing owners for
+# the same project memory. Backend updates require a controlled host activation
+# or a Houdini restart. Keep the package roots and their configured paths too.
+for _m in sorted((k for k in sys.modules if k.startswith("synapse.panel.")), reverse=True):
+    _cached = sys.modules.pop(_m, None)
+    _parent_name, _, _child_name = _m.rpartition(".")
+    _parent = sys.modules.get(_parent_name)
+    # ``from synapse.panel import settings`` consults the retained package's
+    # attributes first. Remove only the exact stale child we just unloaded;
+    # unrelated state attached to that package still belongs to its owner.
+    if (_cached is not None and _parent is not None
+            and _parent.__dict__.get(_child_name) is _cached):
+        delattr(_parent, _child_name)
 
 
 def onCreateInterface():
