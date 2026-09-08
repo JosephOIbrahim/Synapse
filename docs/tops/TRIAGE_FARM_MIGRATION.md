@@ -1,6 +1,8 @@
-# TRIAGE FARM discovery and migration
+# TRIAGE FARM concept reference
 
-8 September 2026. Static source review; no panel, HIP or render code was executed. This records the existing prototype and the proposed integration. It does not enable another render profile.
+8 September 2026. Updated after the user's clarification: TRIAGE FARM's concept is useful context for scaffolding SYNAPSE with TOPs. Its implementation and visual design are not a foundation to carry forward. This supersedes the earlier migration recommendation. The existing filename is retained for links to the discovery record.
+
+Static source review only; no panel, HIP or render code was executed. This reference does not enable another render profile.
 
 ## Where it lives
 
@@ -20,24 +22,26 @@ The panel chooses an existing TOP network/node, changes the wedge count, starts 
 
 Sources: [project brief](G:/KARMA_TRIAGE_FARM/h22/CLAUDE.md:7), [builder defaults](G:/KARMA_TRIAGE_FARM/h22/build_farm2.py:53), [panel actions](G:/KARMA_TRIAGE_FARM/panel/tops_farm_panel.py:324).
 
-## Integration decision
+## Direction for SYNAPSE
 
-Use one SYNAPSE render service and one artist workflow. Preserve the existing project as a reference while its useful look-comparison features move into that service.
+Design from the artist's task: choose what to render, review the scope, start it, understand progress and find the result. SYNAPSE supplies one coherent Render experience, durable request records and verified results. TOPs handles dependencies and scheduled work behind that experience. Machine setup belongs in a separate configuration flow.
 
-| Existing part | Treatment |
+| Reference idea | Use in SYNAPSE's planning |
 | --- | --- |
-| Cheap look variations and contact-sheet review | Add an optional **Compare looks** path inside Render. |
-| Technical image measurements | Reuse selected algorithms after validation, as descriptive flags; keep creative selection with the artist. |
-| TOP graph and parameter probes | Use as migration references, then verify the needed APIs on the current qualified build. |
-| Direct cook/dirty/cancel controls | Route future artist actions through the durable prepared-request and execution service. |
-| Shared CSV/output folder | Replace with per-request, per-variation artifacts and one deterministic aggregation step. |
-| Vendored design system and separate launcher | Use SYNAPSE's current design system and a shared render view. Preserve the existing panel entry during migration. |
+| Cheap previews, look variations and contact-sheet review | Keep as possible future workflows; evaluate their value after the core farm works. |
+| Technical image measurements | Research optional descriptive flags while keeping creative selection with the artist. No commitment to the existing scoring algorithms. |
+| TOP graph and parameter probes | Retain historical API observations and reverify any needed behavior on the qualified build. |
+| Direct cook/dirty/cancel controls | Learn the failure modes; SYNAPSE actions use its durable request service. |
+| Shared CSV/output folder | Learn why request-owned outputs and explicit completion checks are necessary. |
+| Panel layout, vendored design system and launcher | Design access through SYNAPSE's current interface and design system. No panel port or compatibility bridge is planned. |
 
-The old Python Panel entry can eventually open the shared view. First separate an embeddable render widget from the existing modeless dialog and test both hosts; merely returning the current dialog from a Python Panel callback would be an unverified integration.
+The scaffold has no planned dependency on TRIAGE FARM's scripts, saved graph or installed panel. Repairs to that standalone project are outside the SYNAPSE farm milestones. Any later algorithm reuse would need its own justification and validation.
 
-Extract reusable image functions into an import-safe component. The three legacy command-line scripts call `main()` unconditionally, so importing them directly can parse arguments, build a graph or launch work. [Proxy entry](G:/KARMA_TRIAGE_FARM/farm/render_proxy.py:116), [scorer entry](G:/KARMA_TRIAGE_FARM/farm/score_frame.py:184), [builder entry](G:/KARMA_TRIAGE_FARM/h22/build_farm2.py:254).
+A concrete implementation lesson: the three legacy command-line scripts call `main()` unconditionally, so importing them directly can parse arguments, build a graph or launch work. [Proxy entry](G:/KARMA_TRIAGE_FARM/farm/render_proxy.py:116), [scorer entry](G:/KARMA_TRIAGE_FARM/farm/score_frame.py:184), [builder entry](G:/KARMA_TRIAGE_FARM/h22/build_farm2.py:254).
 
-## Gaps to close before enabling Compare looks
+## Lessons from the prototype
+
+These findings inform SYNAPSE's contracts and future experiments. They are not a backlog for repairing or migrating TRIAGE FARM.
 
 **Apply every variation to the rendered scene.** The current generated render payload reads `usdpath`; other wedge values travel as `--attrs` log text. The wrapper does not apply those values to USD. A new recipe must create and seal the scene changes for each variation, then prove that a controlled parameter change alters the intended scene property and image. Several distinct, already-authored USD inputs could be used by the old code, but arbitrary wedge attributes alone do not create different looks. [Render payload](G:/KARMA_TRIAGE_FARM/h22/build_farm2.py:125), [wrapper](G:/KARMA_TRIAGE_FARM/farm/render_proxy.py:59).
 
@@ -53,10 +57,10 @@ Treat image review as a separate stage after verified rendering. If scoring or s
 
 **Qualify XPU and resource admission separately.** The old wrapper defaults to a 22.0.368 husk path and 12 CPU threads. The generated TOP scripts call blocking subprocesses, while the builder does not explicitly set the Python TOP execution mode or bind the score/rank nodes to its CPU scheduler. Recheck those settings and enforce a shared GPU/resource budget across requests. Neither the old one-slot graph nor the new per-job CPU limits establish a machine-wide queue. [Wrapper defaults](G:/KARMA_TRIAGE_FARM/farm/render_proxy.py:19), [scheduler construction](G:/KARMA_TRIAGE_FARM/h22/build_farm2.py:201).
 
-## Artist flow and acceptance
+## Priority and possible future extension
 
-Start with **Render** as the ordinary path. **Compare looks** opens only when the artist wants alternatives: choose the property to vary, a small explicit set of values, a preview frame and a budget. Prepare shows the exact number of images and the settings. Render produces a clear thumbnail grid. Optional technical flags explain measurable issues without presenting a quality score as an aesthetic verdict. Selecting thumbnails creates a new reviewed request for higher-quality output.
+Prioritize the existing Prepare, Render, Recent renders and Cancel flow, then shared resource/license admission and a qualified two-machine farm. Keep one obvious next action, preserve the artist's choices, describe progress in plain language and reveal advanced controls only when needed. The local preview already provides the starting point; the next execution milestone remains the farm foundation.
 
-The first acceptance fixture should contain four distinguishable variants of one scene and one frame. Prove that each manifest entry drives a different authored scene value, all four images decode, the sheet contains exactly those four current images, selection preserves variant identity, and cancellation/restart cannot mix attempts. Keep render-farm setup separate from that creative flow.
+Look comparison is an optional future idea, with no committed feature name or inherited layout. If pursued, let the artist choose a few explicit alternatives and a preview budget, review the resulting images, then select a look for final rendering. Its first acceptance fixture would need four distinguishable variants, exact scene/output identity, verified images and a review artifact containing only the current request. Selection and cancellation/restart must preserve that identity.
 
-No legacy panel or project files were changed or removed during discovery. The existing implementation remains independently available. Actual XPU execution, loading the legacy HIP, multi-machine HQueue operation and replacement of the installed panel are still unqualified.
+No legacy panel or project files were changed or removed during discovery. Actual XPU execution and multi-machine HQueue operation remain unqualified. Loading or replacing the legacy panel is not required to progress SYNAPSE's renderfarm scaffold.
