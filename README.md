@@ -132,7 +132,8 @@ authority. HTTP MCP and WebSocket execution have different policy boundaries;
 the panel's worker adds its own tool restrictions and model-data permissions.
 
 - [Architecture and Mermaid diagrams](docs/architecture/overview.md)
-- [Developer installation and tests](docs/getting-started/installation.md#for-contributors)
+- [Developer installation and tests](docs/getting-started/installation.md#source-installs-and-contributors)
+- [Windows installer build instructions](installer/README.md) and [verification record](docs/getting-started/windows-installer-verification.md)
 - [MCP client setup](docs/mcp/SETUP.md)
 - [Changelog](CHANGELOG.md) and [release notes](https://github.com/JosephOIbrahim/Synapse/releases)
 - [Contribution rules](AGENTS.md) and [execution contracts](CLAUDE.md)
