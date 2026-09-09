@@ -517,7 +517,8 @@ def write_session_start(scene_dir: str, goal: str = "") -> None:
     logger.info("Session start written to %s", md_path)
 
 
-def write_decision(scene_dir: str, decision: Dict[str, str], scope: str = "scene") -> None:
+def write_decision(scene_dir: str, decision: Dict[str, str], scope: str = "scene",
+                   *, project_dir: Optional[str] = None) -> None:
     """
     Write decision to memory.
 
@@ -534,6 +535,8 @@ def write_decision(scene_dir: str, decision: Dict[str, str], scope: str = "scene
         entry += "**Alternatives:**\n"
         for alt in alternatives:
             entry += f"- {alt}\n"
+    if decision.get("id"):
+        entry += f"**Memory ID:** {decision['id']}\n"
     entry += "\n"
 
     if scope in ("scene", "both"):
@@ -542,7 +545,8 @@ def write_decision(scene_dir: str, decision: Dict[str, str], scope: str = "scene
     if scope in ("project", "both"):
         # scene_dir is $HIP/claude, project is $JOB/claude
         # Caller provides project_dir explicitly via write_memory_entry
-        project_md = _find_project_md(scene_dir)
+        project_md = (os.path.join(project_dir, "project.md") if project_dir
+                      else _find_project_md(scene_dir))
         if project_md:
             _append_to_md(project_md, entry)
 

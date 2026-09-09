@@ -12,6 +12,8 @@ GROUP_KNOWLEDGE = (
     "Parameter names on USD/Solaris nodes use encoded format "
     "(e.g. xn__inputsintensity_i0a not 'intensity'). "
     "Use houdini_get_parm to read, houdini_set_parm to write. "
+    "Use houdini_layout_network for orientation, focus sections or explicit asset groups; "
+    "it adds readable labels without renaming or rewiring existing nodes. "
     "execute_python wraps in undo group -- automatic rollback on failure. "
     "CONTEXT AWARENESS: When creating Solaris/LOP node types (lights, cameras, "
     "materials, render settings), parent MUST be /stage."
@@ -36,6 +38,7 @@ TOOL_NAMES = [
     "synapse_inspect_scene",
     "synapse_inspect_node",
     "houdini_network_explain",
+    "houdini_layout_network",
     "houdini_undo",
     "houdini_redo",
     "synapse_batch",
@@ -65,6 +68,7 @@ DISPATCH_KEYS = {
     "synapse_inspect_scene":    ("inspect_scene",     "identity"),
     "synapse_inspect_node":     ("inspect_node",      "identity"),
     "houdini_network_explain":  ("network_explain",   "network_explain"),
+    "houdini_layout_network":   ("layout_network",    "identity"),
     "houdini_undo":             ("undo",              "passthrough"),
     "houdini_redo":             ("redo",              "passthrough"),
     "synapse_batch":            ("batch_commands",    "identity"),

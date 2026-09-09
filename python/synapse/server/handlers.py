@@ -46,6 +46,7 @@ from ..core.errors import (
     HoudiniUnavailableError,
 )
 from .handlers_node import NodeHandlerMixin
+from .handlers_network_layout import NetworkLayoutMixin
 from .handlers_usd import UsdHandlerMixin
 from .handlers_render import RenderHandlerMixin
 from .handlers_tops import TopsHandlerMixin
@@ -94,6 +95,7 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "create_node": AuditCategory.PIPELINE,
     "delete_node": AuditCategory.PIPELINE,
     "connect_nodes": AuditCategory.PIPELINE,
+    "layout_network": AuditCategory.PIPELINE,
     "set_parm": AuditCategory.PIPELINE,
     "set_keyframe": AuditCategory.PIPELINE,
     "execute_python": AuditCategory.PIPELINE,
@@ -412,7 +414,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
+class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
     """
     Main command handler for the Synapse server.
 
@@ -604,10 +606,21 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         uid = self._user_id
         category = _CMD_CATEGORY.get(cmd_type, AuditCategory.SYNAPSE)
         output = result if isinstance(result, dict) else {}
+        memory_owner = getattr(bridge, "_synapse", None)
+        memory_binding = getattr(memory_owner, "_memory_binding", None)
 
         def _do_log():
             if bridge and sid:
-                bridge.log_action(f"Executed: {cmd_type}", session_id=sid)
+                def log_memory():
+                    if (getattr(bridge, "_synapse", None) is not memory_owner
+                            or getattr(memory_owner, "_memory_binding", None) != memory_binding):
+                        raise RuntimeError("Scene changed before automatic memory logging")
+                    bridge.log_action(f"Executed: {cmd_type}", session_id=sid)
+                try:
+                    from .main_thread import run_on_main
+                    run_on_main(log_memory, label="memory:automatic_action")
+                except Exception:
+                    _log.warning("Automatic memory log unavailable; retaining audit entry", exc_info=True)
             audit_log().log(
                 operation=cmd_type,
                 message=f"Executed {cmd_type}",
@@ -726,6 +739,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # Solaris auto-assembly
         reg.register("solaris_assemble_chain", self._handle_solaris_assemble_chain)
         reg.register("solaris_build_graph", self._handle_solaris_build_graph)
+        reg.register("layout_network", self._handle_layout_network)
 
         # Solaris NodeFlow tool family (SR1 M1; import_megascans added M5
         # once Ruling 13's F9 + F3 conditions were repaired and live-proven

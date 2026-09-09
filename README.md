@@ -129,7 +129,7 @@ than normal panel chat and is intended for a single-user local machine.
 <details>
 <summary><strong>For developers: architecture, evidence and contribution</strong></summary>
 
-**128 tools, two paths.** The [registry](python/synapse/mcp/_tool_registry.py) is the
+**129 tools, two paths.** The [registry](python/synapse/mcp/_tool_registry.py) is the
 authority. HTTP MCP and WebSocket execution have different policy boundaries;
 the panel's worker adds its own tool restrictions and model-data permissions.
 

@@ -53,7 +53,7 @@ _VIEWER_COMMANDS: FrozenSet[str] = frozenset({
 # Write commands available to ARTIST and above
 _ARTIST_COMMANDS: FrozenSet[str] = frozenset({
     "create_node", "delete_node", "connect_nodes",
-    "set_parm", "set_keyframe",
+    "set_parm", "set_keyframe", "layout_network",
     "execute_python", "execute_vex",
     "create_usd_prim", "modify_usd_prim", "set_usd_attribute",
     "reference_usd",

@@ -108,11 +108,15 @@ def test_correct_key_loads_cleanly_and_saves(tmp_path, crypto):
     store.save()                                    # no raise
 
 
-def test_plaintext_garble_is_not_treated_as_degraded(tmp_path, crypto):
-    # A torn/garbled PLAINTEXT line (no MAGIC_PREFIX) is a separate concern (C32),
-    # not an encrypted-key failure — it must NOT trip the degraded guard.
-    (tmp_path / "memory.jsonl").write_text("{ this is not valid json\n", encoding="utf-8")
+def test_plaintext_garble_is_preserved_like_unreadable_ciphertext(tmp_path, crypto):
+    # Demo repair closes the old C32 gap: plaintext may also be recoverable,
+    # so a permissive partial read cannot authorize its destruction.
+    source = tmp_path / "memory.jsonl"
+    source.write_text("{ this is not valid json\n", encoding="utf-8")
+    original = source.read_bytes()
     mod = _load_store()
     store = mod.MemoryStore(storage_dir=str(tmp_path), background_load=False)
-    assert store._degraded_load is False
-    store.save()                                    # allowed
+    assert store._degraded_load is True
+    with pytest.raises(RuntimeError, match="DEGRADED"):
+        store.save()
+    assert source.read_bytes() == original
