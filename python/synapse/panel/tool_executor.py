@@ -158,6 +158,14 @@ class ToolRequest:
 # MCP local client (lightweight -- stdlib only)
 # ---------------------------------------------------------------------------
 
+class MCPUnavailable(ConnectionError):
+    """No tool request was sent; local fallback is safe."""
+
+
+class MCPOutcomeUnknown(RuntimeError):
+    """A tool request may have run; it must not be dispatched again."""
+
+
 class _MCPLocalClient:
     """Lightweight JSON-RPC client for the local hwebserver MCP endpoint.
 
@@ -200,7 +208,7 @@ class _MCPLocalClient:
         must not be cut off by a one-size socket budget."""
         request_port = self._port
         if request_port is None:
-            raise ConnectionError("hwebserver port unknown")
+            raise MCPUnavailable("hwebserver port unknown")
 
         all_headers = {
             "Content-Type": "application/json",
@@ -213,9 +221,27 @@ class _MCPLocalClient:
 
         conn = http.client.HTTPConnection("localhost", request_port, timeout=timeout)
         try:
-            conn.request("POST", "/mcp", body=payload, headers=all_headers)
-            resp = conn.getresponse()
-            data = resp.read().decode("utf-8")
+            # Separate connection establishment from request transmission.
+            # Once request() starts, even ConnectionError can mean a lost reply.
+            try:
+                conn.connect()
+            except (OSError, http.client.HTTPException) as exc:
+                raise MCPUnavailable("Could not connect to the local MCP endpoint.") from exc
+            try:
+                conn.request("POST", "/mcp", body=payload, headers=all_headers)
+                resp = conn.getresponse()
+                data = resp.read().decode("utf-8")
+                result = json.loads(data)
+                if not isinstance(result, dict) or not ({"result", "error"} & result.keys()):
+                    raise ValueError("Missing JSON-RPC result")
+            except Exception as exc:
+                if body.get("method") == "tools/call":
+                    raise MCPOutcomeUnknown(
+                        "The tool reply was lost or unreadable. The tool may "
+                        "STILL be running inside Houdini or may have finished. "
+                        "Do not retry; check the scene/cook state first."
+                    ) from exc
+                raise
 
             # Capture session ID from response headers
             session_hdr = resp.getheader("Mcp-Session-Id")
@@ -225,9 +251,12 @@ class _MCPLocalClient:
             if session_hdr and self._port == request_port:
                 self._session_id = session_hdr
 
-            return json.loads(data)
+            return result
         finally:
-            conn.close()
+            try:
+                conn.close()
+            except Exception:
+                pass  # Cleanup cannot change an already observed result.
 
     def _ensure_session(self) -> str:
         """Initialize an MCP session if we don't have one."""
@@ -261,10 +290,14 @@ class _MCPLocalClient:
     def call_tool(self, tool_name: str, arguments: dict) -> dict:
         """Call a tool via MCP. Returns the result dict.
 
-        Raises ConnectionError if MCP is unreachable.
-        Raises RuntimeError if the tool call returns a JSON-RPC error.
+        MCPUnavailable proves no tool request was sent. MCPOutcomeUnknown
+        forbids fallback after possible dispatch. Tool errors are RuntimeError.
         """
-        session_id = self._ensure_session()
+        try:
+            session_id = self._ensure_session()
+        except Exception as exc:
+            # Only initialize has been attempted; no scene operation was sent.
+            raise MCPUnavailable("The local MCP session could not be initialized.") from exc
 
         # C7: budget from the shared per-tool table (+5s margin for the HTTP
         # round trip) instead of a fixed 35s that render/sequence tools blow.
@@ -681,21 +714,26 @@ def try_mcp_tool_call(
         Result dict on success, None if MCP is unavailable.
 
     Raises:
-        RuntimeError: If MCP returned a JSON-RPC error (tool-level failure), OR
-            if the call TIMED OUT (C7) — a timeout means the tool may still be
-            executing inside Houdini, so the caller must NOT fall through and
-            re-dispatch the same (possibly mutating) tool a second time.
+        RuntimeError: A tool error or an uncertain outcome after possible
+            dispatch. Only an explicit no-request-sent failure permits fallback.
     """
     if not _mcp_client.available:
         return None
     try:
         return _mcp_client.call_tool(tool_name, arguments)
+    except MCPUnavailable:
+        return None
     except TimeoutError as exc:
         # socket.timeout — MUST precede the OSError catch (it's a subclass).
-        raise RuntimeError(
+        raise MCPOutcomeUnknown(
             "Tool {!r} timed out client-side but may STILL be running inside "
             "Houdini — do not retry; check the scene/cook state first. ({})".format(
                 tool_name, exc or "socket timeout")
         ) from exc
-    except (ConnectionError, OSError):
-        return None  # genuinely unreachable — caller may fall back to the Qt path
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        raise MCPOutcomeUnknown(
+            "The tool outcome is unconfirmed. It may STILL be running inside "
+            "Houdini or may have finished. Do not retry; check the scene/cook state first."
+        ) from exc

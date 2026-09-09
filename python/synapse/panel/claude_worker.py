@@ -30,6 +30,7 @@ from .retry_breaker import ABANDON_THRESHOLD, breaker_message
 from .tool_bridge import get_anthropic_tools_for_worker
 from .tool_executor import ToolRequest, try_mcp_tool_call
 from .worker_policy import denial_tool_result, is_tool_allowed_for_worker
+from synapse.core.tool_results import unpack_tool_result
 
 # W5-PANEL item 3: fold each API call's real token usage into the per-task sink
 # so the Token tab (face_token) can read a receipt instead of a dead counter.
@@ -429,6 +430,15 @@ class ClaudeWorker(QThread):
         try:
             mcp_result = try_mcp_tool_call(tool_name, tool_input)
             if mcp_result is not None:
+                mcp_result, is_error = unpack_tool_result(mcp_result)
+                if is_error:
+                    self.tool_status.emit(tool_name, "error", summary)
+                    return {
+                        "type": "tool_result", "tool_use_id": tool_use_id,
+                        "content": (mcp_result if isinstance(mcp_result, str)
+                                    else json.dumps(mcp_result, sort_keys=True, default=str)),
+                        "is_error": True,
+                    }
                 self._retry_abandons.pop(cmd_key, None)  # F2: success clears
                 # Extract integrity block if present in result
                 self._track_integrity(mcp_result)
@@ -467,12 +477,8 @@ class ClaudeWorker(QThread):
                     # leave this stale - the model that answers is the model
                     # whose capability was checked.
                     _model = getattr(self._provider, "model_identity", "") or ""
-                    facts = getattr(self._provider, "_connection_facts", None)
-                    capabilities = facts.capabilities if facts is not None and facts.fresh() else None
-                    can_see = ("vision" in capabilities) if capabilities is not None else None
-                    if getattr(self._provider, "_automatic_requirements", None) is not None and can_see is None:
-                        can_see = False
-                    result, _verdict = attach_image(result, mcp_result, _model, checked_vision=can_see)
+                    result, _verdict = attach_image(result, mcp_result, _model,
+                                                    checked_vision=self._checked_vision())
                     # THE VERDICT GOES TO THE PANEL, not just to the model.
                     #
                     # v1 put the refusal in the tool result and trusted the
@@ -506,7 +512,15 @@ class ClaudeWorker(QThread):
                 "is_error": True,
             }
         except Exception:
-            pass  # MCP unavailable — fall through to signal path
+            # Result decoding or observation can fail after execution, too.
+            # Only the explicit None above proves local fallback is safe.
+            self._note_abandon(cmd_key)
+            self.tool_status.emit(tool_name, "error", summary)
+            return {
+                "type": "tool_result", "tool_use_id": tool_use_id,
+                "content": "The tool outcome could not be read. Do not retry; check the scene/cook state first.",
+                "is_error": True,
+            }
 
         # --- Fallback: dispatch on a daemon thread (off-main) ---
         # The MCP path is down (try_mcp_tool_call returned None above), so the
@@ -589,12 +603,23 @@ class ClaudeWorker(QThread):
         try:
             from .vision_attach import attach_image
             _model = getattr(self._provider, "model_identity", "") or ""
-            result, _verdict = attach_image(result, request.result, _model)
+            result, _verdict = attach_image(result, request.result, _model,
+                                            checked_vision=self._checked_vision())
             if _verdict is not None:
                 self.tool_status.emit("vision", _verdict[0], _verdict[1])
         except Exception:
             pass
         return result
+
+    def _checked_vision(self):
+        """The same current capability decision applies to either tool route."""
+        facts = getattr(self._provider, "_connection_facts", None)
+        capabilities = facts.capabilities if facts is not None and facts.fresh() else None
+        if capabilities is not None:
+            return "vision" in capabilities
+        if getattr(self._provider, "_automatic_requirements", None) is not None:
+            return False
+        return None
 
     # ------------------------------------------------------------------
     # Off-main fallback dispatch (bridge-DOWN path)

@@ -332,6 +332,10 @@ def test_offmain_read_only_calls_handler_handle_directly(claude_worker_module, m
 def test_offmain_mutating_routes_through_bridge(claude_worker_module, monkeypatch):
     cw = claude_worker_module
     monkeypatch.setattr(cw, "try_mcp_tool_call", lambda name, inp: None)
+    # This is a bridge-routing control with recording fakes, not a HOM test.
+    # Native Python can import hou without providing Houdini's UI scheduler.
+    from synapse.server import main_thread
+    monkeypatch.setattr(main_thread, "run_on_main", lambda fn, **kwargs: fn())
 
     ba = importlib.import_module("synapse.panel.bridge_adapter")
 

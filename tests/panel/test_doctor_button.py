@@ -198,6 +198,8 @@ def test_old_endpoint_response_cannot_replace_reconnected_session(qt, monkeypatc
     class Connection:
         def __init__(self, host, port, **kwargs):
             assert port == 9234
+        def connect(self):
+            pass
         def request(self, *args, **kwargs):
             pass
         def getresponse(self):

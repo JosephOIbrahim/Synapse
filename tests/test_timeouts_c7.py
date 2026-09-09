@@ -97,8 +97,15 @@ def test_timeout_raises_do_not_retry(monkeypatch):
 
 
 def test_connection_refused_still_returns_none(monkeypatch):
-    te = _wired_executor(monkeypatch, exc=ConnectionRefusedError("refused"))
+    from synapse.panel.tool_executor import MCPUnavailable
+    te = _wired_executor(monkeypatch, exc=MCPUnavailable("connection refused before request"))
     assert te.try_mcp_tool_call("houdini_render", {}) is None        # genuine fall-back preserved
+
+
+def test_unqualified_connection_error_cannot_authorize_fallback(monkeypatch):
+    te = _wired_executor(monkeypatch, exc=ConnectionError("reply lost"))
+    with pytest.raises(te.MCPOutcomeUnknown):
+        te.try_mcp_tool_call("houdini_render", {})
 
 
 def test_success_passes_through(monkeypatch):
