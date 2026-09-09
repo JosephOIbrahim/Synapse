@@ -2,6 +2,19 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.67.3 — Panel reliability and memory recovery
+
+*2026-09-09.* Ships the visible Connect/Doctor controls, lightning tools icon,
+centered shortcuts and hint, complete Ollama model discovery, clearer provider
+errors and native history handling. The CTO repairs prevent duplicate dispatch
+after uncertain MCP replies, preserve tool evidence and checked vision capability,
+retain worker admission across panel reloads, and connect the preferred MCP route
+to optional LOOP observation. Interrupted or unreadable journals retain honest
+pending recovery; native timeouts remain unknown and worker output is bounded.
+The fixed Solaris lookdev verifier now resolves and checks the MaterialX surface
+shader. Restart Houdini after updating. See the [release notes](docs/releases/v5.67.3.md)
+for qualification and limits; the unpublished render branch remains separate.
+
 ## v5.67.2 — Memory LOOP substrate fixes
 
 *2026-09-08.* Connects optional Moneta recall, private Octavius context composition,
