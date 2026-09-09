@@ -5,8 +5,8 @@ re-expressed against the ``StreamProvider`` contract. The only changes from the
 original ``_stream_request`` / ``_parse_sse_stream`` / ``_handle_sse_event`` are
 that ``self.token_received.emit`` becomes the injected ``emit_token`` and
 ``self._abort`` becomes ``should_abort()``. Same body, same headers, same SSE
-state machine, same ``RuntimeError`` on non-200 / stream error — **zero
-behaviour change on the Claude path.**
+state machine. Non-200 and stream errors include bounded, sanitized diagnostic
+hints; successful requests and model-access checks are unchanged.
 
 Remote egress: ``api.anthropic.com:443`` (documented in docs/studio/EGRESS.md).
 No Qt, no hou.
@@ -27,6 +27,56 @@ _API_HOST = "api.anthropic.com"
 _API_PATH = "/v1/messages"
 _API_VERSION = "2023-06-01"
 _HTTP_TIMEOUT = 60
+
+
+def _error_detail(data):
+    """Classify service errors without echoing scene text, credentials or HTML.
+
+    Error types are vendor-defined; the few message matches distinguish common
+    invalid_request_error causes. Unknown wording stays unknown. These hints
+    never trigger retries, account changes, or conversation edits.
+    """
+    error = data.get("error") if isinstance(data, dict) else None
+    if not isinstance(error, dict):
+        return "No readable service details were returned."
+    message = error.get("message")
+    message = message.lower() if isinstance(message, str) and len(message) <= 8192 else ""
+    if "credit balance" in message:
+        return "Your Anthropic API credit balance is too low. Check billing in the Anthropic Console."
+    if "spend limit" in message or "spending limit" in message:
+        return "Your Anthropic account or workspace has reached its spend limit. Check the Anthropic Console."
+    kind = error.get("type")
+    if kind == "invalid_request_error":
+        if "thinking" in message or "signature" in message:
+            return "The service rejected the reasoning history. SYNAPSE's conversation replay needs inspection."
+        if "prompt is too long" in message or "context window" in message:
+            return "The conversation is too long for this model. Start a fresh conversation with a concise scene summary."
+        if "tool_use" in message or "tool_result" in message:
+            return "The service rejected the tool history. SYNAPSE's tool-result pairing needs inspection."
+    hints = {
+        "invalid_request_error": "The service rejected the request format or content. Check conversation and model settings.",
+        "authentication_error": "The service rejected the API key. Check the Anthropic connection.",
+        "billing_error": "The service reported a billing problem. Check the Anthropic Console.",
+        "permission_error": "The account lacks permission for this resource. Check model access in the Anthropic Console.",
+        "not_found_error": "The requested model or resource was not found. Check the selected model.",
+        "rate_limit_error": "The account reached a rate limit or usage cap. Check limits in the Anthropic Console.",
+        "overloaded_error": "The Anthropic service is temporarily overloaded. Try again later.",
+        "api_error": "The Anthropic service reported an internal error. Try again later.",
+        "timeout_error": "The Anthropic service timed out. Inspect any completed tool work before retrying.",
+        "request_too_large": "The request is too large. Use a shorter conversation or smaller attachments.",
+    }
+    return hints.get(kind, "The service returned an unrecognized error.") if isinstance(kind, str) else "No readable service details were returned."
+
+
+def _read_error_detail(response):
+    """Bound diagnostic reads; malformed or unavailable bodies retain failure."""
+    try:
+        raw = response.read(8193)
+        if len(raw) <= 8192:
+            return _error_detail(json.loads(raw))
+    except Exception:
+        pass
+    return "No readable service details were returned."
 
 
 def _strip_internal_keys(messages):
@@ -209,7 +259,7 @@ class AnthropicProvider(StreamProvider):
             response = conn.getresponse()
             if response.status != 200:
                 raise ModelRequestFailed(
-                    "Anthropic API error %s. Check model access and service limits." % response.status
+                    "Anthropic API error %s. %s" % (response.status, _read_error_detail(response))
                 )
 
             return self._parse_sse_stream(response, emit_token, should_abort)
@@ -378,4 +428,4 @@ class AnthropicProvider(StreamProvider):
             self._stream_complete = True
 
         elif event_type == "error":
-            raise ModelRequestFailed("Anthropic stream error. Check model access and service limits.")
+            raise ModelRequestFailed("Anthropic stream error. " + _error_detail(data))
