@@ -13,7 +13,7 @@ from synapse.panel.designsystem import components as c, qss, tokens as t
 
 class ConnectionDialog(QtWidgets.QDialog):
     def __init__(self, parent=None, provider_id="ollama", models=None, custom=None,
-                 session_keys=None):
+                 session_keys=None, discovery=None):
         super().__init__(parent)
         self.setObjectName("DsRoot")
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
@@ -29,6 +29,10 @@ class ConnectionDialog(QtWidgets.QDialog):
         self._future = None
         self._checked = None
         self.selection = None
+        from synapse.panel.model_discovery import OllamaDiscovery
+        self._owns_discovery = discovery is None
+        self._discovery = discovery if discovery is not None else OllamaDiscovery(self)
+        self._discovery.changed.connect(self._discovery_changed)
         layout = QtWidgets.QVBoxLayout(self)
         intro = c.label("Choose a model and where your work is allowed to go.", role="body", scale=scale)
         intro.setWordWrap(True)
@@ -130,6 +134,24 @@ class ConnectionDialog(QtWidgets.QDialog):
         self.key.clear()
         self.key.setPlaceholderText("Optional for local Ollama" if pid == "ollama" else "Paste a key, or use an already configured key")
         self._invalidate()
+        if pid == "ollama":
+            self._discovery_changed()
+            self._discovery.refresh()
+
+    def _discovery_changed(self):
+        if self.engine.currentData() != "ollama":
+            return
+        names = self._discovery.names()
+        if names is not None:
+            current = self.model.currentText()
+            self.model.blockSignals(True)
+            self.model.clear()
+            self.model.addItems(list(names))
+            self.model.setCurrentText(current)
+            self.model.blockSignals(False)
+        if self._future is None and self._checked is None:
+            self.status.setText(self._discovery.message() or
+                                "Models found. Check your selection before using it.")
 
     def _inputs(self):
         return (self.engine.currentData(), self.model.currentText().strip(),
@@ -209,6 +231,8 @@ class ConnectionDialog(QtWidgets.QDialog):
                 self.model.addItem(model)
         self.model.setCurrentText(current)
         self.model.blockSignals(False)
+        if bound.spec.provider == "ollama" and (result.models or result.ok):
+            self._discovery.remember(bound.spec.endpoint, result.models)
         self.status.setText(result.message)
         self.destination.setText(result.facts.description if result.facts else "Service: " + bound.spec.endpoint)
         if result.ok:
@@ -248,6 +272,12 @@ class ConnectionDialog(QtWidgets.QDialog):
         dialog.deleteLater()
 
     def done(self, result):
+        try:
+            self._discovery.changed.disconnect(self._discovery_changed)
+        except RuntimeError:
+            pass
+        if self._owns_discovery:
+            self._discovery.close()
         self._timer.stop()
         for bound in (self._checked, getattr(self, "_candidate_bound", None)):
             if bound is not None:

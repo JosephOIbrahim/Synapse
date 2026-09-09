@@ -74,6 +74,24 @@ def test_tag_alone_never_means_local_or_free():
     assert model_facts.cost({"provider": "ollama", "model": "ordinary-tag", "output_tokens": 5}) is None
 
 
+def test_list_only_ollama_discovery_uses_bounded_metadata_without_credentials(monkeypatch):
+    requests = []
+    def get(endpoint, path, headers, timeout):
+        requests.append((endpoint, path, headers, timeout))
+        return {"models": [{"name": "one"}, {"model": "two"}, {"name": "one"},
+                           {"name": "bad\nname"}, None]}
+    monkeypatch.setattr(cn, "_get_json", get)
+    monkeypatch.setattr(cn, "_show_json", lambda *a: pytest.fail("No model detail request during listing"))
+    endpoint = "http://127.0.0.1:11434/team/v1/chat/completions"
+    assert cn.list_ollama_models(endpoint) == ("one", "two")
+    assert requests == [(endpoint, "/team/api/tags", {}, 2.0)]
+    monkeypatch.setattr(cn, "_get_json", lambda *a, **k: {"models": []})
+    assert cn.list_ollama_models(endpoint) == ()
+    monkeypatch.setattr(cn, "_get_json", lambda *a, **k: {"error": "no list"})
+    with pytest.raises(cn.MetadataError):
+        cn.list_ollama_models(endpoint)
+
+
 def test_streaming_error_cannot_echo_session_secret_to_exception_log():
     import traceback
     from synapse.panel.providers.custom_provider import CustomProvider

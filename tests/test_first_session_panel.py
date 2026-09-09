@@ -236,7 +236,8 @@ def test_custom_address_change_does_not_rebind_a_legacy_credential(monkeypatch, 
                         SimpleNamespace(ConnectionDialog=lambda *a, **k: dialog))
     panel = SimpleNamespace(_provider_id="custom", _model_by_provider={}, _session_keys={},
                             _connection_facts={}, _persist_picks=Mock(),
-                            _refresh_engine_selector=Mock(), _chat=Mock())
+                            _refresh_engine_selector=Mock(), _chat=Mock(),
+                            _get_ollama_discovery=Mock(return_value=None))
     panel_methods("_open_connections")["_open_connections"](panel)
     panel._session_keys.clear()  # closing the panel drops only its session key
     fresh_provider = CustomProvider(**saved["custom"])

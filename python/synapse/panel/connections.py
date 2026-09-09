@@ -289,6 +289,31 @@ def _show_json(spec, headers, timeout=3.0):
     return ollama_show(spec, headers, timeout=timeout)
 
 
+def _model_rows(payload, collection, provider):
+    items = payload.get(collection)
+    if not isinstance(items, list):
+        raise MetadataError("The service returned an unreadable model list.")
+    rows = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("id") or item.get("name") or item.get("model")
+        if isinstance(name, str):
+            if provider == "gemini":
+                name = name.removeprefix("models/")
+            if name and not any(ord(c) < 32 for c in name):
+                rows[name] = item
+    return rows
+
+
+def list_ollama_models(endpoint):
+    """List-only discovery: bounded metadata, no credentials, prompts or grants."""
+    p = validate_endpoint(endpoint)
+    path = p.path.removesuffix("/v1/chat/completions").rstrip("/") + "/api/tags"
+    payload = _get_json(endpoint, path, {}, timeout=2.0)
+    return tuple(_model_rows(payload, "models", "ollama"))
+
+
 def check_connection(spec, key):
     """A bounded metadata check. Never sends prompts or claims inference works."""
     try:
@@ -314,19 +339,7 @@ def check_connection(spec, key):
                 path = p.path.removesuffix("/chat/completions") + "/models"
                 collection = "data"
         payload = _get_json(spec.endpoint, path, headers)
-        items = payload.get(collection)
-        if not isinstance(items, list):
-            raise MetadataError("The service returned an unreadable model list.")
-        rows = {}
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            name = item.get("id") or item.get("name") or item.get("model")
-            if isinstance(name, str):
-                if spec.provider == "gemini":
-                    name = name.removeprefix("models/")
-                if name and not any(ord(c) < 32 for c in name):
-                    rows[name] = item
+        rows = _model_rows(payload, collection, spec.provider)
         if spec.model not in rows:
             return ConnectionCheck(False, "Service reached. This model was not listed; choose a listed model and check again.", tuple(rows))
         metadata = dict(rows[spec.model])

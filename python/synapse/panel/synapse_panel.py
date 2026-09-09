@@ -1609,11 +1609,15 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 return ""
 
+    def _get_ollama_discovery(self):
+        from synapse.panel.model_discovery import OllamaDiscovery
+        discovery = getattr(self, "_ollama_discovery", None)
+        if discovery is None or discovery.closed:
+            discovery = self._ollama_discovery = OllamaDiscovery(self)
+        return discovery
+
     def _provider_model_rows(self, pid):
-        """``(model_id, label)`` rows for a provider — the registry rows, with
-        the Ollama live-tag special case hoisted here (menu-open is user-
-        initiated; 1s localhost timeout; the registry row is only the static
-        fallback). Shared by the model picker AND the author engine menu.
+        """Rows shared by both pickers; enumeration runs separately off-thread.
 
         Guarantee (v9 hardening): when ``pid`` is the ACTIVE provider, the
         active model is always among the rows — a persisted pick can go stale
@@ -1627,11 +1631,21 @@ class SynapsePanel(QtWidgets.QWidget):
             return []
         rows = list(reg.models_for(pid))
         if pid == "ollama":
-            # Menu opening must not block Houdini on a network request. Setup
-            # discovers models off-thread; keep checked models visible here.
-            for spec in getattr(self, "_connection_facts", {}):
-                if spec.provider == pid and spec.model not in {mid for mid, _ in rows}:
-                    rows.append((spec.model, spec.model))
+            from synapse.panel.model_discovery import current_endpoint
+            discovery = getattr(self, "_ollama_discovery", None)
+            names = discovery.names() if discovery is not None else None
+            if names is not None:
+                rows = [(name, name) for name in names]
+            else:
+                try:
+                    endpoint = current_endpoint()
+                except ValueError:
+                    endpoint = None
+                # Checked facts remain separate from names and belong to one host.
+                for spec in getattr(self, "_connection_facts", {}):
+                    if (spec.provider == pid and spec.endpoint == endpoint
+                            and spec.model not in {mid for mid, _ in rows}):
+                        rows.append((spec.model, spec.model))
         if pid == getattr(self, "_provider_id", "claude"):
             cur = self._active_model()
             if cur and cur not in {mid for mid, _ in rows}:
@@ -1682,6 +1696,18 @@ class SynapsePanel(QtWidgets.QWidget):
             if not sub.isEmpty():
                 sub.addSeparator()
             sub.addAction("Configure…", self._configure_custom)
+        elif pid == "ollama":
+            self._add_ollama_discovery_actions(sub)
+
+    def _add_ollama_discovery_actions(self, menu):
+        discovery = self._get_ollama_discovery()
+        if not menu.isEmpty():
+            menu.addSeparator()
+        message = discovery.message()
+        if message:
+            menu.addAction(message).setEnabled(False)
+        refresh = menu.addAction("Refresh Ollama models", discovery.refresh)
+        refresh.setEnabled(not discovery.loading)
 
     def _open_author_menu(self):
         """The rail author token's engine+model menu (v9) — one submenu per
@@ -1695,16 +1721,28 @@ class SynapsePanel(QtWidgets.QWidget):
         menu = QtWidgets.QMenu(self)
         menu.addAction("Connect models…", self._open_connections)
         menu.addSeparator()
+        watcher = None
         for pid in PROVIDER_IDS:
             sub = menu.addMenu(PROVIDER_LABELS.get(pid, pid))
             self._fill_author_submenu(sub, pid)
             if pid == "ollama":
-                sub.aboutToShow.connect(
-                    lambda s=sub, p=pid: self._fill_author_submenu(s, p))
+                discovery = self._get_ollama_discovery()
+                from synapse.panel.model_discovery import MenuRefresh
+                watcher = MenuRefresh(menu, discovery,
+                                      lambda s=sub: self._fill_author_submenu(s, "ollama"))
+                sub.aboutToShow.connect(discovery.refresh)
         btn = getattr(self, "_author_lbl", None)
         anchor = btn if btn is not None else self
         pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
-        menu.exec(pos) if hasattr(menu, "exec") else menu.exec_(pos)
+        try:
+            menu.exec(pos) if hasattr(menu, "exec") else menu.exec_(pos)
+        finally:
+            if watcher is not None:
+                watcher.close()
+            try:
+                menu.deleteLater()
+            except RuntimeError:
+                pass  # parent destruction can also end the menu's exec()
 
     def _pick_engine_model(self, pid, mid):
         """A row pick from the author menu: switch the engine if needed, then
@@ -1724,6 +1762,29 @@ class SynapsePanel(QtWidgets.QWidget):
         if not items and pid != "custom":
             return
         menu = QtWidgets.QMenu(self)
+        self._fill_model_menu(menu, pid)
+        watcher = None
+        if pid == "ollama":
+            discovery = self._get_ollama_discovery()
+            from synapse.panel.model_discovery import MenuRefresh
+            watcher = MenuRefresh(menu, discovery, lambda: self._fill_model_menu(menu, pid))
+            menu.aboutToShow.connect(discovery.refresh)
+        chip = getattr(self, "_model_chip", None)
+        anchor = chip if chip is not None else self
+        pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
+        try:
+            menu.exec(pos) if hasattr(menu, "exec") else menu.exec_(pos)
+        finally:
+            if watcher is not None:
+                watcher.close()
+            try:
+                menu.deleteLater()
+            except RuntimeError:
+                pass
+
+    def _fill_model_menu(self, menu, pid):
+        menu.clear()
+        items = self._model_menu_items()
         for mid, lbl, active in items:
             act = menu.addAction("%s   %s" % (lbl, mid))
             act.setCheckable(True)
@@ -1733,10 +1794,8 @@ class SynapsePanel(QtWidgets.QWidget):
             if items:
                 menu.addSeparator()
             menu.addAction("Configure…", self._configure_custom)
-        chip = getattr(self, "_model_chip", None)
-        anchor = chip if chip is not None else self
-        pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
-        menu.exec(pos) if hasattr(menu, "exec") else menu.exec_(pos)
+        elif pid == "ollama":
+            self._add_ollama_discovery_actions(menu)
 
     def _set_model(self, model_id):
         """Pick a model for the active engine. Takes effect on the NEXT message;
@@ -1944,7 +2003,8 @@ class SynapsePanel(QtWidgets.QWidget):
         dialog = ConnectionDialog(self, provider_id=self._provider_id,
                                   models=self._model_by_provider,
                                   custom=settings.get("custom"),
-                                  session_keys=getattr(self, "_session_keys", {}))
+                                  session_keys=getattr(self, "_session_keys", {}),
+                                  discovery=self._get_ollama_discovery())
         accepted = dialog.exec() if hasattr(dialog, "exec") else dialog.exec_()
         if not accepted or not dialog.selection:
             dialog.deleteLater()
@@ -3684,6 +3744,9 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def closeEvent(self, event):
+        discovery = getattr(self, "_ollama_discovery", None)
+        if discovery is not None:
+            discovery.close()
         suggestion = getattr(self, "_lookdev_suggestion", None)
         if suggestion is not None:
             suggestion.shutdown()
