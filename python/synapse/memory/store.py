@@ -18,6 +18,7 @@ import atexit
 import logging
 import os
 import json
+import hashlib
 import re
 import time
 import shutil
@@ -26,6 +27,7 @@ import threading
 from pathlib import Path
 from typing import List, Dict, Optional, Any, Callable
 from dataclasses import dataclass, field
+from functools import wraps
 
 try:
     import hou
@@ -184,10 +186,10 @@ class MemoryStore:
         self._lock = ReadWriteLock()
         self._dirty = False
         self._needs_rewrite = False  # Set by update/delete to trigger full save
-        # C1: set true if encrypted lines failed to decrypt on load (wrong key /
-        # missing 'cryptography' / corruption). A degraded store REFUSES save() so a
-        # truncating rewrite can't destroy recoverable ciphertext.
+        # Any incomplete load refuses writes so a checkpoint cannot destroy
+        # recoverable plaintext, ciphertext, or conflicting identities.
         self._degraded_load = False
+        self._degraded_reason = ""
         self._loaded = threading.Event()
 
         # Write buffer — defers disk I/O to background thread (saves 1-5ms per add)
@@ -239,6 +241,11 @@ class MemoryStore:
         via save() since JSONL append-only format can't express mutations.
         Otherwise, appends buffered add() lines.
         """
+        # A loader can still be checking the source. Never append to a source
+        # whose integrity is unknown or was found incomplete.
+        self._wait_loaded()
+        if not self._loaded.is_set() or self._degraded_load:
+            return
         # Check if a full rewrite is needed (update/delete happened)
         if self._needs_rewrite:
             # Drain the append buffer (those adds are already in _memories)
@@ -325,34 +332,40 @@ class MemoryStore:
             return
 
         crypto = _get_crypto()
-        encrypted_skipped = 0  # C1: encrypted lines we could not decrypt/parse
+        unreadable = []
+        seen = {}
 
         with self._lock.write_lock():
-            with open(self.memory_file, 'r', encoding='utf-8') as f:
-                for line_num, line in enumerate(f, 1):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    # Check the RAW line BEFORE decrypt: a line that is ciphertext
-                    # (MAGIC_PREFIX) but then fails is an unreadable-encrypted line —
-                    # wrong key, or crypto unavailable so it never decrypts — NOT a
-                    # merely-garbled plaintext line.
-                    is_encrypted = line.startswith(MAGIC_PREFIX)
-                    try:
-                        if crypto:
-                            line = crypto.decrypt_line(line)
-                        data = json.loads(line)
-                        memory = Memory.from_dict(data)
-                        self._memories[memory.id] = memory
-                        self._index_memory(memory)
-                    except json.JSONDecodeError as e:
-                        if is_encrypted:
-                            encrypted_skipped += 1
-                        logger.warning("Invalid JSON on line %d: %s", line_num, e)
-                    except Exception as e:
-                        if is_encrypted:
-                            encrypted_skipped += 1
-                        logger.warning("Failed to load memory on line %d: %s", line_num, e)
+            try:
+                with open(self.memory_file, 'r', encoding='utf-8') as f:
+                    for line_num, line in enumerate(f, 1):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            if crypto:
+                                line = crypto.decrypt_line(line)
+                            data = json.loads(line)
+                            required = ("id", "created_at", "content", "memory_type")
+                            if (not isinstance(data, dict)
+                                    or any(not isinstance(data.get(key), str) for key in required)
+                                    or not data["id"] or not data["created_at"]):
+                                raise ValueError("incomplete record identity or content")
+                            memory = Memory.from_dict(data)
+                            canonical = json.dumps(data, sort_keys=True)
+                            prior = seen.get(memory.id)
+                            if prior is not None:
+                                if prior != canonical:
+                                    raise ValueError("conflicting duplicate memory identity")
+                                continue
+                            seen[memory.id] = canonical
+                            self._memories[memory.id] = memory
+                            self._index_memory(memory)
+                        except Exception as e:
+                            unreadable.append(f"line {line_num}: {e}")
+                            logger.warning("Failed to load memory on line %d: %s", line_num, e)
+            except (OSError, UnicodeError) as e:
+                unreadable.append(f"source read failed: {e}")
 
             # Load index if exists
             if self.index_file.exists():
@@ -378,24 +391,18 @@ class MemoryStore:
                 except Exception as e:
                     logger.warning("Failed to load index: %s", e)
 
-        # C1/C3 — degraded-load guard. Two signals that the key is wrong / changed /
-        # 'cryptography' is missing: (1) encrypted lines that won't decrypt, and
-        # (2) a key-fingerprint sidecar that no longer matches the active key (catches
-        # the empty / all-plaintext store where no line happens to fail). Either means
-        # a rewrite would destroy recoverable ciphertext or mix keys — refuse save().
-        degraded_reason = None
-        if encrypted_skipped > 0:
-            degraded_reason = (
-                f"{encrypted_skipped} encrypted line(s) failed to decrypt "
-                "(wrong SYNAPSE_ENCRYPTION_KEY, missing 'cryptography', or corruption)"
-            )
-        else:
-            degraded_reason = self._key_fingerprint_mismatch(crypto)
+        # Plaintext corruption and identity conflicts are as recoverable as a
+        # wrong encryption key. A partial read cannot authorize a rewrite.
+        degraded_reason = (
+            f"{len(unreadable)} incomplete source record/read(s): {unreadable[0]}"
+            if unreadable else self._key_fingerprint_mismatch(crypto)
+        )
         if degraded_reason:
             self._degraded_load = True
+            self._degraded_reason = degraded_reason
             logger.error(
-                "DEGRADED LOAD: %s in %s. Refusing to rewrite the store — fix the key "
-                "/ install cryptography, then restart. The ciphertext is preserved.",
+                "DEGRADED LOAD: %s in %s. Refusing writes; recover the source or "
+                "encryption key, then reopen. Original bytes are preserved.",
                 degraded_reason, self.memory_file,
             )
             self._quarantine_store(reason="degraded-load")
@@ -440,16 +447,21 @@ class MemoryStore:
             return  # Fast path — already loaded
         self._loaded.wait(timeout=timeout)
 
-    def save(self):
-        """Persist all memories to disk."""
-        # C1 guard FIRST — before any file is opened/truncated. A degraded load
-        # (unreadable ciphertext) must never be rewritten over the recoverable file.
+    def _require_writable_load(self):
+        """No write may acknowledge or replace an incomplete source read."""
+        self._wait_loaded()
+        if not self._loaded.is_set():
+            raise RuntimeError("Refusing to write: memory source is still loading")
         if self._degraded_load:
             raise RuntimeError(
-                "Refusing to save: the store loaded in DEGRADED mode (encrypted lines "
-                "failed to decrypt). A rewrite would destroy recoverable ciphertext. "
-                "Fix SYNAPSE_ENCRYPTION_KEY / install 'cryptography', then restart."
+                "Refusing to write: the store loaded in DEGRADED mode. "
+                "Original bytes are preserved; recover the source or encryption "
+                f"key, then reopen. {self._degraded_reason}"
             )
+
+    def save(self):
+        """Persist all memories to disk."""
+        self._require_writable_load()
         crypto = _get_crypto()
         # C2: atomic, backed-up writes. Lazy import keeps store.py's import order
         # unchanged (this module loads very early; write_report is zero-`hou`, and
@@ -497,13 +509,30 @@ class MemoryStore:
 
             self._dirty = False
 
+    def add_durable_if_absent(self, memory: Memory) -> bool:
+        """Checked immutable insertion; a collision never evicts prior data."""
+        self._require_writable_load()
+        with self._lock.write_lock():
+            previous = self._memories.get(memory.id)
+            if previous is not None and previous.to_json() != memory.to_json():
+                raise ValueError("Memory identity already contains different data")
+            inserted = previous is None
+            if inserted:
+                self._memories[memory.id] = memory
+                self._index_memory(memory)
+                self._dirty = True
+        # Save outside the non-reentrant writer lock. Like Moneta, a failed
+        # checkpoint leaves an unsettled insertion, never a durable success.
+        self.save()
+        return inserted
+
     def add(self, memory: Memory) -> str:
         """Add a memory to the store.
 
         Buffers disk write for background flush (saves 1-5ms per call).
         In-memory state is updated immediately for read consistency.
         """
-        self._wait_loaded()  # Block until background load completes
+        self._require_writable_load()
         with self._lock.write_lock():
             self._memories[memory.id] = memory
             self._index_memory(memory)
@@ -535,7 +564,7 @@ class MemoryStore:
         Schedules a full JSONL rewrite on next flush cycle since
         append-only format can't express inline mutations.
         """
-        self._wait_loaded()  # Block until background load completes
+        self._require_writable_load()
         with self._lock.write_lock():
             if memory.id in self._memories:
                 memory.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -552,7 +581,7 @@ class MemoryStore:
         Schedules a full JSONL rewrite on next flush cycle since
         append-only format can't express deletions.
         """
-        self._wait_loaded()  # Block until background load completes
+        self._require_writable_load()
         with self._lock.write_lock():
             if memory_id in self._memories:
                 del self._memories[memory_id]
@@ -577,6 +606,7 @@ class MemoryStore:
 
     def clear(self):
         """Clear all memories."""
+        self._require_writable_load()
         with self._lock.write_lock():
             self._memories.clear()
             self._index = {
@@ -949,14 +979,14 @@ def _read_on_main(fn, label="synapse_store_resolve"):
     ``hou`` today -- only the thread the read runs on changes, and only when off
     main.
 
-    If the marshal primitive cannot be imported, ``fn()`` runs directly: the
-    historical behaviour, correct on the main thread and the only reachable path
-    outside Houdini. (Lazy import, and never a module-level dependency on
-    ``server`` -- memory must import cleanly with no server package present.)
+    If marshalling is unavailable, a Houdini worker fails closed. Python
+    exceptions cannot recover a native crash caused by an off-main hou call.
     """
     try:
         from ..server.main_thread import run_on_main
-    except Exception:  # noqa: BLE001 -- marshal unavailable => historical direct call
+    except Exception as exc:
+        if HOU_AVAILABLE and threading.current_thread() is not threading.main_thread():
+            raise RuntimeError("Houdini memory access requires main-thread dispatch") from exc
         return fn()
     return run_on_main(fn, label=label)
 
@@ -1042,6 +1072,24 @@ def _safe_unsaved_base() -> Path:
 # =============================================================================
 # SYNAPSE MEMORY - HIGH-LEVEL API
 # =============================================================================
+
+def _on_memory_main(method):
+    """Keep host backend work on main, including automatic action logging."""
+    @wraps(method)
+    def call(self, *args, **kwargs):
+        if not HOU_AVAILABLE:
+            return method(self, *args, **kwargs)
+        expected = getattr(self, "_memory_binding", None)
+        def execute():
+            if expected is not None and (
+                _global_synapse is not self
+                or getattr(self, "_memory_binding", None) != expected
+            ):
+                raise RuntimeError("Memory scene changed before the request ran; original owner was not modified")
+            return method(self, *args, **kwargs)
+        return _read_on_main(execute, label="memory:" + method.__name__)
+    return call
+
 
 class SynapseMemory:
     """
@@ -1193,39 +1241,16 @@ class SynapseMemory:
             return _safe_unsaved_base()
 
         if HOU_AVAILABLE:
-            # W2-S1: marshal the hou reads to Houdini's main thread. On the
-            # off-main run_doctor dispatch (hwebserver worker) a cold construct
-            # reaches here with hou present, and a bare hou.* call off main is a
-            # native crash try/except cannot catch (W1-MTFIX F1). Reading the hip
-            # path AND its unsaved verdict (hip_is_unsaved -> hou.hipFile.isNewFile,
-            # store.py:807) in ONE hop keeps both hou reads on main; on-main
-            # callers pass straight through (run_on_main fast path). Semantics
-            # are byte-identical to the direct reads below. See _read_on_main.
-            def _read_hip():
-                hp = hou.hipFile.path()
-                return hp, hip_is_unsaved(hp, hou)
-            hip_path, _unsaved = _read_on_main(_read_hip)
-            if not _unsaved:
-                return Path(hip_path)
-            # Unsaved scene -> the canonical unsaved base. Until 2026-08-01 the
-            # guard compared the FULL path against the bare string
-            # "untitled.hip", which never matched, so this branch was dead code
-            # and the store landed at <process-cwd>/untitled.hip/.synapse.
-            # After the guard was fixed, this branch joined the RAW
-            # expandString("$HOUDINI_TEMP_DIR") result -- and when that variable
-            # is undefined expandString hands the token straight back, so the
-            # store landed at <cwd>/$HOUDINI_TEMP_DIR/untitled/.synapse (the
-            # literal-env directory this W1 recovery cleaned up). _safe_unsaved_base
-            # expands the token AND refuses to join it unexpanded.
-            # MERGE COMPOSITION (W1 x W2-S1): _safe_unsaved_base reads hou
-            # internally, so the CALL is marshalled via _read_on_main -- W1's
-            # path semantics on S1's thread discipline; direct passthrough on
-            # main keeps headless/hython behaviour byte-identical.
-            temp_root = _read_on_main(
-                _safe_unsaved_base, label="synapse_store_resolve_unsaved"
-            )
-            _announce_unsaved_relocation(temp_root)
-            return temp_root
+            from ..host.memory_lifecycle import current_binding
+            binding = _read_on_main(lambda: current_binding(hou), label="synapse_store_resolve_binding")
+            self._memory_binding = binding
+            if binding.unsaved:
+                _announce_unsaved_relocation(binding.project_dir)
+            elif binding.project_source == "hip_directory":
+                # Keep the historical explicit HIP-path representation when
+                # there is no separate containing project; storage is its parent.
+                return Path(binding.hip_path)
+            return binding.project_dir
 
         # Fallback
         return Path.cwd() / "untitled.hip"
@@ -1240,7 +1265,8 @@ class SynapseMemory:
         3. If .engram/ exists -> copy to .synapse/, leave marker
         4. Otherwise -> create .synapse/
         """
-        if self.project_path.is_file():
+        if (self.project_path.is_file()
+                or self.project_path.suffix.lower() in {".hip", ".hiplc", ".hipnc"}):
             base_dir = self.project_path.parent
         else:
             base_dir = self.project_path
@@ -1290,6 +1316,7 @@ class SynapseMemory:
         # Priority 4: Create new .synapse/
         return synapse_dir
 
+    @_on_memory_main
     def add(
         self,
         content: str,
@@ -1304,6 +1331,8 @@ class SynapseMemory:
         alternatives: List[str] = None,
         status: str = "",
         ref_uri: str = "",
+        tier: MemoryTier = MemoryTier.SHOT,
+        require_durable: bool = False,
     ) -> Memory:
         """
         Add a new memory.
@@ -1329,13 +1358,17 @@ class SynapseMemory:
         Returns:
             The created Memory object
         """
+        tier = tier if isinstance(tier, MemoryTier) else MemoryTier(tier)
         # Get Houdini context if available
         hip_file = ""
         hip_version = 0
         frame = None
 
         if HOU_AVAILABLE:
-            hip_file = hou.hipFile.name()
+            hip_file, frame = _read_on_main(
+                lambda: (hou.hipFile.name(), int(hou.frame())),
+                label="memory:add_context",
+            )
             # Try to extract version from filename
             try:
                 import re
@@ -1344,13 +1377,12 @@ class SynapseMemory:
                     hip_version = int(version_match.group(1))
             except Exception:
                 pass
-            frame = int(hou.frame())
 
         # Create memory
         memory = Memory(
             content=content,
             memory_type=memory_type,
-            tier=MemoryTier.SHOT,
+            tier=tier,
             tags=tags or [],
             keywords=keywords or [],
             source=source,
@@ -1375,7 +1407,23 @@ class SynapseMemory:
                 )
 
         # Store
-        self.store.add(memory)
+        if require_durable:
+            # The legacy Memory ID hashes prose + whole-second timestamp +
+            # kind. Identical prose recorded at two scopes in one second must
+            # not overwrite the first decision. Keep old/deserialized IDs
+            # intact; checked new records include all canonical provenance.
+            identity = memory.to_dict()
+            identity.pop("id", None)
+            memory.id = "mem_" + hashlib.sha256(json.dumps(
+                identity, sort_keys=True, allow_nan=False,
+            ).encode("utf-8")).hexdigest()[:12]
+        durable_add = getattr(self.store, "add_durable_if_absent", None)
+        if require_durable and callable(durable_add):
+            durable_add(memory)
+        else:
+            self.store.add(memory)
+            if require_durable:
+                self.store.save()
 
         # Notify callbacks
         for callback in self._on_memory_added:
@@ -1391,7 +1439,8 @@ class SynapseMemory:
         decision: str,
         reasoning: str,
         alternatives: List[str] = None,
-        tags: List[str] = None
+        tags: List[str] = None,
+        tier: MemoryTier = MemoryTier.SHOT,
     ) -> Memory:
         """
         Record a decision with reasoning.
@@ -1426,6 +1475,8 @@ class SynapseMemory:
             # makes a decision a typed prim, not just prose.
             reasoning=reasoning,
             alternatives=alternatives or [],
+            tier=tier,
+            require_durable=True,
         )
 
     def action(
@@ -1454,11 +1505,13 @@ class SynapseMemory:
         """Add a simple note."""
         return self.add(content, MemoryType.NOTE, tags=tags)
 
+    @_on_memory_main
     def search(
         self,
         query: str,
         limit: int = 20,
         memory_types: Optional[List[MemoryType]] = None,
+        tier: Optional[MemoryTier] = None,
     ) -> List[MemorySearchResult]:
         """Search memories by text, optionally filtered to specific kind(s).
 
@@ -1468,17 +1521,44 @@ class SynapseMemory:
         kind's typed prims, not the whole store. ``memory_types=None`` (default)
         is the unchanged full-text behavior.
         """
-        return self.store.search(MemoryQuery(
+        request = MemoryQuery(
             text=query,
             memory_types=list(memory_types) if memory_types else [],
             limit=limit,
-        ))
+            tier=tier,
+        )
+        if tier == MemoryTier.SHOT:
+            # Narrow BEFORE ranking/limiting. Filtering a vector top-N after
+            # the fact can discard a scene's only hit behind sibling scenes.
+            from .moneta_store import score_memories
+            sources = self._scene_sources()
+            pool = (m for kind in (memory_types or list(MemoryType))
+                    for m in self.store.get_by_type(kind)
+                    if self._belongs_to_scene(m, sources))
+            return score_memories(pool, request)
+        return self.store.search(request)
 
+    def _scene_sources(self):
+        from ..host.memory_lifecycle import scene_hip_paths
+        return scene_hip_paths(self)
+
+    @staticmethod
+    def _belongs_to_scene(memory, sources):
+        # Standalone stores have no host scene binding. Bound scenes include
+        # their durable Save As lineage, while retaining original provenance.
+        if not sources:
+            return True
+        return bool(memory.hip_file) and os.path.normcase(
+            str(Path(memory.hip_file).resolve())
+        ) in sources
+
+    @_on_memory_main
     def recall(
         self,
         query: str = "",
         kinds: Optional[List[MemoryType]] = None,
         limit: int = 5,
+        tier: Optional[MemoryTier] = None,
     ) -> List[Memory]:
         """Recall memories of specific kind(s) that match a query, routed on type.
 
@@ -1486,8 +1566,8 @@ class SynapseMemory:
         index, which resolves only that kind's typed prims (store.py:708), never
         a full-store scan. Defaults to DECISION (the historical recall surface)
         when no kind is given. Determinism mirrors the recall handler: id asc,
-        then fresher-first, then a case-insensitive keyword match on
-        content/summary.
+        then fresher-first. Query words match whole words in content/summary,
+        independent of their order; ordinary question words are ignored.
 
         ``kinds`` accepts MemoryType members or their ``.value`` strings; an
         unknown kind raises ValueError (loud) rather than silently widening the
@@ -1499,11 +1579,13 @@ class SynapseMemory:
         else:
             types = [MemoryType.DECISION]
 
+        sources = self._scene_sources() if tier == MemoryTier.SHOT else None
         pool: List[Memory] = []
         seen = set()
         for t in types:
             for m in self.store.get_by_type(t):
-                if m.id not in seen:
+                if (m.id not in seen and (tier is None or m.tier == tier)
+                        and (sources is None or self._belongs_to_scene(m, sources))):
                     seen.add(m.id)
                     pool.append(m)
 
@@ -1513,17 +1595,33 @@ class SynapseMemory:
         pool.sort(key=lambda m: m.id)
         pool.sort(key=lambda m: m.created_at or "", reverse=True)
 
-        q = (query or "").lower()
+        q = (query or "").strip().casefold()
+        # A question is not an exact quotation. The demo's "look decision"
+        # failed against "**Decision:** ... display look" despite both words
+        # being present. Require EVERY meaningful word, not just one shared
+        # word, and never match "oral" inside "coral". This remains a bounded
+        # typed-record lookup; it neither needs vectors nor invents record IDs.
+        question_words = {
+            "a", "an", "the", "what", "which", "was", "were", "is", "are",
+            "did", "do", "does", "we", "you", "i", "our", "my", "for", "of",
+            "on", "in", "to", "and", "about", "have", "has", "had", "please",
+            "remember", "recall",
+        }
+        terms = set(re.findall(r"\w+", q)) - question_words
         matches = [
             m for m in pool
-            if not q or q in m.content.lower() or q in m.summary.lower()
+            if not q or (terms and terms <= set(re.findall(
+                r"\w+", (m.content + " " + m.summary).casefold(),
+            )))
         ]
         return matches[:limit] if limit and limit > 0 else matches
 
+    @_on_memory_main
     def get_decisions(self) -> List[Memory]:
         """Get all decision memories."""
         return self.store.get_by_type(MemoryType.DECISION)
 
+    @_on_memory_main
     def get_recent(self, limit: int = 10) -> List[Memory]:
         """Get most recent memories."""
         return self.store.get_recent(limit)
@@ -1698,20 +1796,29 @@ def get_synapse_memory() -> SynapseMemory:
     window that used to let N concurrent callers build N stores and orphan N-1
     of them on the same storage URI.
     """
-    global _global_synapse
-    existing = _global_synapse
-    if existing is not None:
+    def obtain():
+        global _global_synapse
+        existing = _global_synapse
+        if existing is None:
+            with _GLOBAL_LOCK:
+                if _global_synapse is None:
+                    built = SynapseMemory()
+                    if _global_synapse is None:
+                        _global_synapse = built
+                    else:
+                        # Re-entrant construction published a handle underneath us.
+                        _close_memory_quietly(built, "superseded")
+                existing = _global_synapse
+        if getattr(existing, "_memory_binding", None) is not None:
+            from ..host.memory_lifecycle import register_owner
+            register_owner(existing)
         return existing
-    with _GLOBAL_LOCK:
-        if _global_synapse is None:
-            built = SynapseMemory()
-            if _global_synapse is None:
-                _global_synapse = built
-            else:
-                # Re-entrant construction published a handle underneath us.
-                # One owner per URI: close the loser rather than orphan it.
-                _close_memory_quietly(built, "superseded")
-        return _global_synapse
+    # Marshal the whole constructor BEFORE taking the authority lock. Merely
+    # marshaling hou path reads leaves native Moneta construction on a worker,
+    # and waiting for main while holding this lock can deadlock the owner.
+    if HOU_AVAILABLE:
+        return _read_on_main(obtain, label="synapse_memory_owner")
+    return obtain()
 
 
 def reset_synapse_memory():

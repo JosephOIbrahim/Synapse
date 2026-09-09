@@ -93,7 +93,11 @@ def test_prepare_preserves_composer_and_does_not_send(existing):
 
 def test_private_assistance_does_not_extend_public_recall_schema():
     from synapse.mcp._tool_registry import TOOL_JSON
-    assert set(TOOL_JSON["synapse_recall"]["inputSchema"]["properties"]) == {"query"}
+    # Scope is an explicit public memory feature. Private lookdev-assistance
+    # controls still must not leak into the model-facing recall contract.
+    properties = TOOL_JSON["synapse_recall"]["inputSchema"]["properties"]
+    assert set(properties) == {"query", "scope"}
+    assert properties["scope"]["enum"] == ["all", "scene", "project"]
 
 
 @pytest.fixture

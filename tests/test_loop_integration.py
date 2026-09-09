@@ -180,6 +180,9 @@ def test_rebind_preserves_snapshot_before_publishing(owner, tmp_path, monkeypatc
     from synapse.memory.models import Memory
     memory = Memory(content="Keep the artist's prior choice", node_paths=["/stage"])
     owner.store.add_durable_if_absent(memory)
+    outbox = owner.storage_dir / "loop" / "pending"
+    outbox.mkdir(parents=True)
+    (outbox / "source-only.json").write_text('{"source": "original"}')
     monkeypatch.setattr(module, "_global_synapse", owner)
     monkeypatch.setattr(host, "_on_main", lambda fn: fn())
     replacements = []
@@ -195,11 +198,15 @@ def test_rebind_preserves_snapshot_before_publishing(owner, tmp_path, monkeypatc
     monkeypatch.setattr(tracker, "_bridge", None)
     try:
         result = host.rebind_project_memory(tmp_path / "saved", carry_records=True)
-        assert result["status"] == "REBOUND" and result["snapshot_copied"]
+        assert result["status"] == "REBOUND" and not result["snapshot_copied"]
         assert result["carried_records"] == result["verified_records"] == 1
-        assert module._global_synapse is replacements[0]
-        assert replacements[0].store._iter_memories(strict=True)[0].to_json() == memory.to_json()
+        # Publication follows an actual close/reopen, proving disk readback.
+        assert len(replacements) == 2 and replacements[0].store._closed
+        assert module._global_synapse is replacements[-1]
+        assert replacements[-1].store._iter_memories(strict=True)[0].to_json() == memory.to_json()
         assert owner.store._closed
+        assert (outbox / "source-only.json").exists()
+        assert not (replacements[-1].storage_dir / "loop").exists()
     finally:
         for new in replacements:
             new.store.close()

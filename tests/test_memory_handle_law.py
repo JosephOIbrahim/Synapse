@@ -36,9 +36,13 @@ from synapse.memory import moneta_runtime as mr
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(autouse=True)
-def _isolate_global():
+def _isolate_global(monkeypatch):
     """Never let a test inherit or leak the process-global handle."""
     prior = store_mod._global_synapse
+    # These are standalone backend concurrency tests. conftest's fake hou is
+    # not a native host or a main-thread dispatcher. Host construction is
+    # separately exercised with a real main-thread pump in lifecycle tests.
+    monkeypatch.setattr(store_mod, "HOU_AVAILABLE", False)
     store_mod._global_synapse = None
     store_mod._BACKEND_FALLBACK = None
     yield

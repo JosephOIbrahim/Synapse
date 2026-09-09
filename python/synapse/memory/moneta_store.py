@@ -166,11 +166,9 @@ class MonetaBackedStore:
     persistent, readable store, propagates snapshot failures, and resolves
     retries by immutable memory identity before depositing again.
 
-    The WAL (``wal.log``) is **inert**: SYNAPSE never calls
-    ``signal_attention``, which is Moneta's only WAL writer. The WAL path
-    is configured so an upstream deposit-WAL can light it up without a
-    config change, but it must not be read as "deposits are journalled
-    today," because they are not.
+    Successful vector searches call ``signal_attention``, so the WAL
+    (``wal.log``) may contain attention updates. Deposits are persisted through
+    the snapshot below; an attention WAL is not proof of deposit journalling.
 
     The per-record JSON file (``snapshot.json``) is the durable source of
     truth. A corrupt snapshot is quarantined (renamed with a ``.corrupt-``
@@ -902,6 +900,18 @@ class MonetaBackedStore:
         return [m for m in all_mems if m.id in targets]
 
     def search(self, query: MemoryQuery) -> List[MemorySearchResult]:
+        # Embedding touches no engine state and can be expensive. Querying the
+        # engine and signaling attention, however, must share its existing
+        # owner lock with add/prune/save/close. Text search previously bypassed
+        # that lock, including when reached through recall's knowledge fallback.
+        embedding = self._embedder.embed(query.text) if query.text else None
+        with self._lock:
+            if getattr(self, "_closed", False):
+                raise RuntimeError("Memory store is closed")
+            return self._search_locked(query, embedding)
+
+    def _search_locked(self, query: MemoryQuery, embedding) -> List[MemorySearchResult]:
+        """Search while holding the adapter lock through the attention update."""
         # Hybrid: vector recall as candidate pre-filter, keyword scoring for ranking.
         # When query.text is present, we embed it and use Moneta's vector query to
         # retrieve a candidate pool (over-fetched 3x, minimum 50). The keyword
@@ -912,7 +922,6 @@ class MonetaBackedStore:
         # that happened to be closest in embedding space.
         # For non-text queries (tags/keywords only), fall back to the full scan.
         if query.text:
-            embedding = self._embedder.embed(query.text)
             # Map SYNAPSE memory id -> Moneta entity_id (UUID). Only the vector
             # path yields entity ids; the keyword fallback below does not, so it
             # will not signal attention (correct -- there is nothing to key on).

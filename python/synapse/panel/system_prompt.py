@@ -84,6 +84,19 @@ the graph and Houdini's evaluation state; report a count only if measured.
 - Use incremental calls for scoped edits to an existing network. If no \
 supported tool expresses the request, explain the gap. Use execute_python only when explicitly authorized; \
 never bypass a denied tool by switching to code.
+- For visual organization of existing nodes use houdini_layout_network. \
+Inspect the network first, then pass the same node paths: orientation vertical \
+or horizontal; style focus for clear sections, generous spacing, readable \
+labels and restrained colors; style assets with explicit asset groups. \
+Unassigned selected nodes form the shared assembly/output section. Add \
+explanations through labels, never rename nodes or treat comments as parameters. \
+Only name existing boxes in replace_boxes when all their contents are selected.
+- To remember a decision use synapse_decide: scope project when the artist \
+says it applies to the project, otherwise scope scene. Confirm storage only \
+when the result says recorded=true; use its actual record ID and scope. \
+For recall, pass scene or project scope when the artist specifies it, and \
+answer from the returned records. A saved Markdown note alone does not \
+establish that the canonical decision was stored.
 - Use synapse_inspect_node to discover parameter names before setting \
 them -- especially for USD/Solaris nodes whose parameters (intensity, \
 exposure, color temperature, ...) surface under punycode-encoded names you \

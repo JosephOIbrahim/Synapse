@@ -72,6 +72,9 @@ def _stage_info_payload(args: dict) -> dict:
 
 def _decide_payload(args: dict) -> dict:
     p = {"decision": args["decision"]}
+    for key in ("scope", "tags"):
+        if key in args:
+            p[key] = args[key]
     if "reasoning" in args:
         p["reasoning"] = args["reasoning"]
     if "alternatives" in args:
@@ -1072,6 +1075,40 @@ TOOL_DEFS: list[tuple] = [
      }, "required": []},
      True, False, True),
 
+    # -- Existing-network visual organization --
+    ("houdini_layout_network", "layout_network", _identity,
+     "Organize explicitly named existing nodes without rebuilding, renaming, changing parameters, "
+     "rewiring or changing output flags. One native Undo reverses the visual changes. "
+     "Inspect first. Use plain for orientation, focus for readable sections and muted colors, "
+     "or assets with explicit asset groups; unassigned nodes get a shared assembly/output section. "
+     "Labels add readable comments while retaining artist comments. Existing unrelated boxes are "
+     "retained; regrouping part of an artist box is rejected. replace_boxes explicitly replaces "
+     "named boxes containing only selected nodes.",
+     {"type": "object", "additionalProperties": False, "properties": {
+         "parent": {"type": "string", "description": "Existing network path (default /stage)."},
+         "nodes": {"type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": True,
+                   "items": {"type": "string"}, "description": "Absolute paths of existing direct children."},
+         "orientation": {"type": "string", "enum": ["vertical", "horizontal"]},
+         "style": {"type": "string", "enum": ["plain", "focus", "assets"]},
+         "spacing": {"type": "number", "minimum": 1, "maximum": 4,
+                     "description": "Spacing multiplier; focus/assets already use generous spacing."},
+         "groups": {"type": "array", "maxItems": 32, "items": {
+             "type": "object", "additionalProperties": False, "properties": {
+                 "label": {"type": "string", "minLength": 1, "maxLength": 64},
+                 "nodes": {"type": "array", "minItems": 1, "uniqueItems": True,
+                           "items": {"type": "string"}},
+             }, "required": ["label", "nodes"]},
+             "description": "Explicit asset/section membership. Required for assets; each node in at most one group."},
+         "labels": {"type": "object", "additionalProperties": {
+             "type": "string", "minLength": 1, "maxLength": 120},
+             "description": "Selected node path to readable explanation; preserves node names/references."},
+         "replace_boxes": {"type": "array", "maxItems": 64, "uniqueItems": True,
+                           "items": {"type": "string"},
+                           "description": "Existing box names explicitly replaced; every item must be selected."},
+         "dry_run": {"type": "boolean", "description": "Preview positions, sections and labels without changing the network."},
+     }, "required": ["nodes"]},
+     False, False, True),
+
     # -- Network Explain --
     ("houdini_network_explain", "network_explain", _network_explain_payload,
      "Walk a Houdini node network and produce a structured explanation: data flow order, "
@@ -1095,27 +1132,32 @@ TOOL_DEFS: list[tuple] = [
      _EMPTY_SCHEMA, True, False, True),
 
     ("synapse_search", "search",
-     _filter_keys(("query",)),
+     _filter_keys(("query", "scope")),
      "Search project memory for relevant entries.",
      {"type": "object", "properties": {
          "query": {"type": "string", "description": "Search query"},
+         "scope": {"type": "string", "enum": ["all", "scene", "project"], "description": "Filter canonical memory tiers; default all in the current project store."},
      }, "required": ["query"]},
      True, False, True),
 
     ("synapse_recall", "recall",
-     _filter_keys(("query",)),
+     _filter_keys(("query", "scope")),
      "Recall relevant memories for a given context or question.",
      {"type": "object", "properties": {
          "query": {"type": "string", "description": "Context or question"},
+         "scope": {"type": "string", "enum": ["all", "scene", "project"], "description": "Filter canonical memory tiers; default all in the current project store."},
      }, "required": ["query"]},
      True, False, True),
 
     ("synapse_decide", "decide", _decide_payload,
-     "Record a decision in project memory with reasoning.",
+     "Record a decision with reasoning. Use scope=project for a shared project decision; "
+     "scope=scene (default) records a shot-tier decision. Reports actual scope and storage.",
      {"type": "object", "properties": {
          "decision": {"type": "string", "description": "The decision made"},
          "reasoning": {"type": "string", "description": "Why this decision was made"},
          "alternatives": {"type": "string", "description": "Alternatives considered"},
+         "scope": {"type": "string", "enum": ["scene", "project"], "description": "Requested scope. Default scene; select project explicitly for project-wide decisions."},
+         "tags": {"type": "array", "items": {"type": "string"}, "description": "Optional descriptive tags."},
      }, "required": ["decision"]},
      False, False, False),
 
