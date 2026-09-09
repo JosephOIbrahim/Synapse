@@ -1,8 +1,8 @@
 # Windows installer filming walkthrough
 
 This is a filming plan, not a claim that the live GUI/model checks have been
-recorded. Use a disposable Windows/Houdini test profile. The local artifact is
-unsigned; distribution and publisher signing have not been approved.
+recorded. Use a disposable Windows/Houdini test profile. The published installer
+preview is unsigned.
 
 | Shot | On-screen action | Suggested narration |
 | --- | --- | --- |

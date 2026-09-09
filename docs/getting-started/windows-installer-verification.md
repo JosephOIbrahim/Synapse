@@ -37,6 +37,21 @@ source/artifact consistency and the bounded evidence below, in
 `windows-installer-20260909:delivery-qualified:INTEGRATOR`. Earlier failed receipts
 remain intact.
 
+## Published preview
+
+The exact production EXE above was published on 2026-09-09 as the
+[Windows installer preview](https://github.com/JosephOIbrahim/Synapse/releases/tag/windows-installer-5.67.4-preview.1)
+after explicit authorization, including its Moneta bundle. The
+[public build report](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SYNAPSE-5.67.4-Setup.public-build.json)
+removes machine-local paths while retaining the original file hashes and build
+provenance. GitHub's uploaded-asset SHA-256 matches the EXE hash above.
+
+The preview tag points to `a169c4a1581cb2e14ee6b210a0ff0502fc5fedf4`; only
+README and verification documentation differ from the build-source commit.
+[GitHub CI run 34393243151](https://github.com/JosephOIbrahim/Synapse/actions/runs/34393243151)
+passed all four Linux/macOS jobs on that release-source commit. Publication
+does not extend the native qualification below.
+
 ## Verified scope
 
 - **All 19 compiled lifecycle checks passed** in
@@ -77,8 +92,9 @@ remain intact.
 
 ## Unverified or limited
 
-- The installer EXE is unsigned. Signing and public redistribution were not done.
-  Moneta is proprietary and was bundled only for local evaluation.
+- The installer EXE is unsigned. Moneta remains proprietary. The original
+  build-time evaluation notices are retained; publication of this preview was
+  authorized separately, as recorded above.
 - Native wizard visual inspection hit a computer-use app approval timeout. No
   successful screenshot review or native click-through is claimed.
 - Full live artist GUI, shelf clicks, model access, scene-building behavior,

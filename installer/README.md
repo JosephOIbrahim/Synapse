@@ -2,7 +2,13 @@
 
 This directory builds a conventional per-user Inno Setup wizard. Users run the
 resulting EXE; the commands below are for builders. The reviewed product version
-remains 5.67.4. No release version, tag, public upload or signing is performed.
+remains 5.67.4. These build commands do not change the product version, create
+release tags, upload artifacts or sign the EXE.
+
+The reviewed build is available as an
+[unsigned Windows installer preview](https://github.com/JosephOIbrahim/Synapse/releases/tag/windows-installer-5.67.4-preview.1).
+Artists can follow the [installation guide](../docs/getting-started/installation.md);
+the commands below reproduce a build.
 
 ## Inputs and build
 
@@ -64,9 +70,11 @@ from Houdini. No developer virtual environment is copied into the product.
 
 ### Explicit Moneta artifact
 
-This review included Moneta 1.2.0rc1 for local evaluation. Moneta declares a
-proprietary license; obtain the necessary rights before distributing it. The
-builder never probes for or quietly includes a sibling checkout.
+The reviewed bundle contains Moneta 1.2.0rc1 and was initially built for local
+evaluation. Its inclusion in the published preview was subsequently authorized.
+Moneta retains its proprietary terms; obtain the necessary rights for any
+independently distributed bundle. The builder never probes for or quietly
+includes a sibling checkout.
 
 Export an explicitly selected source into a portable archive:
 
@@ -191,12 +199,12 @@ they are never converted to blanket PASS. No artist GUI or model request is used
 
 ## Release follow-through
 
-This branch provides local build artifacts and evidence. Native wizard visual
+The reviewed EXE is published as the unsigned preview linked above. Native wizard visual
 inspection, a clean Windows machine/VM, a full artist GUI session, model access,
 and genuine historical installer upgrades remain separate qualification work.
 Signing requires an approved publisher certificate/process; no key is embedded.
-Public release, version changes, merge/push/tag and Moneta redistribution require
-their own authorization. No download link to an unpublished release is invented.
+Publication of another build, version changes, merge/push/tag and redistribution
+of a different Moneta bundle require their own authorization.
 
 References: [Inno Setup](https://jrsoftware.org/isinfo.php),
 [Houdini packages](https://www.sidefx.com/docs/houdini/ref/plugins.html), and

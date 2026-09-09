@@ -6,9 +6,11 @@ The Windows Setup wizard installs SYNAPSE, its panel, shelf, icons and required
 Python dependencies in one pass. Ordinary installation needs no terminal, Git,
 system Python, pip, or internet connection. Houdini must already be installed.
 
-This branch contains an **unsigned local review build**, not a newly published
-release. Obtain `SYNAPSE-5.67.4-Setup.exe` from the reviewed build output. The
-current native validation target is **Windows, Houdini 22.0.400, Python 3.13**.
+**[Download SYNAPSE-5.67.4-Setup.exe](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SYNAPSE-5.67.4-Setup.exe)**.
+This is an **unsigned installer preview**; its
+[release page](https://github.com/JosephOIbrahim/Synapse/releases/tag/windows-installer-5.67.4-preview.1)
+includes checksums and the public build report. The current native validation
+target is **Windows, Houdini 22.0.400, Python 3.13**.
 See the [verification record](windows-installer-verification.md) for its limits.
 
 ## Install
@@ -16,7 +18,7 @@ See the [verification record](windows-installer-verification.md) for its limits.
 1. Save your scene and close Houdini. Setup asks you to close a running Houdini;
    it never terminates it.
 2. Open **SYNAPSE-5.67.4-Setup.exe**. Review the license and included components.
-   This local build is unsigned, so Windows may show an unknown publisher.
+   This preview is unsigned, so Windows may show an unknown publisher.
 3. Choose your **Houdini application folder**. Setup lists detected builds and
    checks their actual Python version. Other builds need an explicit
    compatibility acknowledgement; unsupported Python versions are blocked.
@@ -118,12 +120,14 @@ cause a preservation error and require review instead of automatic overwriting.
 
 ## Included components
 
-The local review artifact includes the Anthropic SDK and its shipped dependencies,
+The preview includes the Anthropic SDK and its shipped dependencies,
 WebSocket support, file locking, and an explicitly supplied **Moneta 1.2.0rc1**
 archive with its USD schema. Houdini supplies Python, Qt and OpenUSD; Setup
 contains a separate maintenance Python that does not replace Houdini's Python.
-Moneta's source is proprietary; this local artifact grants no redistribution
-rights. A builder can omit Moneta, in which case the package selects JSONL memory.
+Publication of the included Moneta bundle was explicitly authorized for this
+preview. Moneta retains its separate proprietary terms; SYNAPSE's MIT license
+does not relicense it. A builder can omit Moneta, in which case the package
+selects JSONL memory.
 
 External MCP server environments, local models, semantic-model downloads,
 Hanish, SALUS, Octavius, and optional analysis backends are separate installations.
