@@ -27,16 +27,14 @@ small, optional checked-suggestion scaffold.
 **Current validation target:** Windows with Houdini **22.0.400** and its bundled
 Python **3.13**. Other builds need their own checks.
 
-1. Download and extract the source ZIP from the [latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest) into a folder you will keep.
-2. Open a terminal in that folder and run both installers:
-
-   ```shell
-   python scripts/install_synapse_package.py
-   python install.py
-   ```
-
-3. Restart Houdini. Open **New Pane Tab → Synapse**.
+1. Obtain the reviewed **SYNAPSE-5.67.4-Setup.exe**, save your scene, and close Houdini.
+2. Open Setup, choose the Houdini build and preference folder, then click **Install**.
+3. Launch Houdini. Open **New Pane Tab → Synapse** and run **Doctor**.
 4. Click **Connect models**, choose an engine and model, select **Build and edit networks**, then **Check connection → Use this model**.
+
+The wizard is an unsigned local review build on this branch; it has not been
+published as a new release. Installation requires no terminal or system Python.
+[Source installation and full instructions →](docs/getting-started/installation.md)
 
 For cloud engines, enter the API key in the connection dialog. For a local model,
 start Ollama first and choose an installed model. The connection check reads
