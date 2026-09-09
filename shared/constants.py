@@ -83,6 +83,8 @@ OPERATION_GATES: dict[str, str] = {
     "capture_viewport": "inform",
     "create_node": "inform",
     "set_parameter": "inform",
+    "history_undo": "inform",
+    "history_redo": "inform",
     "connect_nodes": "inform",
     "apply_vex": "inform",
     "create_material": "inform",

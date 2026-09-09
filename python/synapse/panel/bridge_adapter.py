@@ -147,8 +147,8 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "synapse_sleep_pass": "sleep_pass",
     "synapse_project_setup": "set_parameter",
     # Undo/redo
-    "houdini_undo": "set_parameter",
-    "houdini_redo": "set_parameter",
+    "houdini_undo": "history_undo",
+    "houdini_redo": "history_redo",
     # Batch
     "synapse_batch": "build_from_manifest",
     "synapse_solaris_assemble_chain": "build_from_manifest",

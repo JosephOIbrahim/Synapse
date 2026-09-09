@@ -6,7 +6,7 @@ Every agent operation passes through this bridge. Anchors are implemented HERE,
 not in individual agents. Agents cannot bypass this layer.
 
 Four structural safety anchors:
-  - Undo Safety: every mutation in undo group
+  - Undo Safety: scene edits in undo groups; native history traverses existing groups
   - Thread Safety: all hou.* on main thread via hdefereval
   - Artist Consent: gate levels on destructive ops
   - Scene Integrity: USD composition validation
@@ -747,6 +747,8 @@ class GateLevel(str, Enum):
 OPERATION_GATES: dict[str, GateLevel] = {
     op: GateLevel(level) for op, level in _OPERATION_GATES_RAW.items()
 }
+
+_HISTORY_OPERATIONS = frozenset({"history_undo", "history_redo"})
 
 
 # ── Operation Descriptor ────────────────────────────────────────
@@ -1797,6 +1799,8 @@ class LosslessExecutionBridge:
     def _execute_houdini(self, operation: Operation, integrity: IntegrityBlock,
                          hash_target: str) -> ExecutionResult:
         """Production path: undo-wrapped execution on Houdini main thread."""
+        if operation.operation_type in _HISTORY_OPERATIONS:
+            return self._execute_history(operation, integrity)
         # Anchor flags from EVIDENCE, not self-attestation (Finding 1).
         integrity.main_thread_executed = _on_main_thread()
         # Provisional: the exception path keeps the entered-wrap presumption;
@@ -1881,6 +1885,59 @@ class LosslessExecutionBridge:
         finally:
             self._stage_hash_end_op()
 
+    def _execute_history(self, operation: Operation,
+                         integrity: IntegrityBlock) -> ExecutionResult:
+        """One native undo/redo, after consent and main-thread dispatch.
+
+        Houdini rejects history traversal inside an undo group. This path
+        creates no group and never attempts a compensating undo on failure:
+        that could consume a second, unrelated artist edit. History is global,
+        not a transaction for the last SYNAPSE conversation turn.
+        """
+        integrity.main_thread_executed = _on_main_thread()
+        integrity.undo_group_active = False
+        integrity.undo_applicable = False
+        integrity.composition_applicable = False
+        # Observe both common scene contexts, without cooking/flattening USD.
+        # This is the existing shallow topology probe, not a full-scene proof.
+        integrity.hash_target = "/obj,/stage"
+        if not integrity.main_thread_executed:
+            return self._fail_with_integrity(
+                integrity, "Native history requires Houdini's main thread",
+                "thread_violation",
+            )
+
+        def snapshot():
+            parts = [self._compute_scene_hash(path, include_stage=False)
+                     for path in ("/obj", "/stage")]
+            return hashlib.sha256("|".join(parts).encode()).hexdigest()[:HASH_LENGTH]
+
+        self._stage_hash_begin_op()
+        try:
+            integrity.scene_hash_before = snapshot()
+            self._note_external_change(integrity, integrity.hash_target)
+            result = operation.fn(*operation.args, **operation.kwargs)
+            integrity.scene_hash_after = snapshot()
+            self._park_hash(integrity.hash_target, integrity.scene_hash_after)
+            if integrity.scene_hash_before != integrity.scene_hash_after:
+                integrity.delta_hash = hashlib.sha256(
+                    f"{integrity.scene_hash_before}:{integrity.scene_hash_after}".encode()
+                ).hexdigest()[:HASH_LENGTH]
+            else:
+                integrity.delta_hash = "no_change"
+            # handler.handle catches native errors and returns failure as data.
+            # Such a response must not increment the verified-operation count.
+            if getattr(result, "success", None) is False:
+                return self._fail_with_integrity(
+                    integrity, getattr(result, "error", None) or "Native history failed",
+                    "execution_error",
+                )
+            return self._finalize(operation, integrity, result)
+        except Exception as e:
+            return self._fail_with_integrity(integrity, str(e), "execution_error")
+        finally:
+            self._stage_hash_end_op()
+
     # ── R2: Async Execute (FastMCP server path) ──────────────
 
     async def execute_async(self, operation: Operation) -> ExecutionResult:
@@ -1933,6 +1990,8 @@ class LosslessExecutionBridge:
 
         # ── The Synchronous Payload Closure ──────────────────
         def _sync_payload() -> ExecutionResult:
+            if operation.operation_type in _HISTORY_OPERATIONS:
+                return self._execute_history(operation, integrity)
             # Anchor flags from EVIDENCE, not self-attestation (Finding 1;
             # parity with _execute_houdini).
             integrity.main_thread_executed = _on_main_thread()
