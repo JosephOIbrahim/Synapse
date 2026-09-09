@@ -48,7 +48,9 @@ UsePreviousAppDir=yes
 [Files]
 Source: "{#StageDir}\maintenance\*"; DestDir: "{tmp}\boot"; Flags: dontcopy recursesubdirs
 Source: "{#StageDir}\payload.zip"; DestDir: "{tmp}"; Flags: dontcopy
-Source: "{#StageDir}\maintenance\*"; DestDir: "{app}\maintenance"; Flags: ignoreversion recursesubdirs
+; Retain ownership metadata so reinstall recognizes leftover Python caches.
+Source: "{#StageDir}\maintenance\maintenance-manifest.json"; DestDir: "{app}\maintenance"; Flags: ignoreversion uninsneveruninstall
+Source: "{#StageDir}\maintenance\*"; DestDir: "{app}\maintenance"; Excludes: "maintenance-manifest.json"; Flags: ignoreversion recursesubdirs
 
 [Icons]
 Name: "{group}\Getting started with SYNAPSE"; Filename: "{app}\maintenance\getting-started.html"

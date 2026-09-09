@@ -122,7 +122,7 @@ registration and diagnostic stamp with a write-ahead journal. Recovery validates
 all destinations and prior contents. Upgrades keep older runtime directories;
 no obsolete code is copied into the newly active one. Uninstall first deactivates
 registration, then deletes only unchanged manifest-owned runtime files. A
-completion receipt allows Windows cleanup to resume after an interruption.
+completion receipt allows Windows cleanup to resume after an interruption. The maintenance manifest is retained so a later Setup can identify leftover helper caches and reinstall safely.
 
 Edited runtime and added files are retained. Edited maintenance files block
 upgrade/uninstall before Inno can overwrite or delete them; save the edits and
@@ -136,7 +136,8 @@ Run the isolated engine regressions and existing source-installer tests:
 
 ```powershell
 python -B -m unittest discover -s installer/tests -v
-python -m pytest tests/test_install_package.py tests/test_install_package_parity.py tests/test_install_verify.py -q
+$legacyTemp = Join-Path $buildRoot ('legacy-tests-' + [Guid]::NewGuid().ToString('N'))
+python -m pytest tests/test_install_package.py tests/test_install_package_parity.py tests/test_install_verify.py -q --basetemp $legacyTemp
 ```
 
 The

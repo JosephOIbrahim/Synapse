@@ -102,7 +102,7 @@ Start menu shortcut. Uninstall removes the unchanged runtime files owned by
 Setup, its package registration and Windows integration. Projects, HIP files,
 memory stores, credentials, unrelated preferences, added files and changed
 runtime files are preserved. The application folder may remain with an
-`uninstall-receipt.json` and retained data. Do not delete it without reviewing it.
+`uninstall-receipt.json`, maintenance ownership metadata and retained data. Do not delete it without reviewing it.
 
 Panel settings and configurable ledgers/reports use persistent locations under
 `%USERPROFILE%\.synapse` by default; existing environment overrides still apply.
