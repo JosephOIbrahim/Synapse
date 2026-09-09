@@ -93,6 +93,46 @@ def test_complete_corruption_is_not_silently_discarded(legacy):
     assert (folder / "journal.jsonl").read_bytes() == source
 
 
+@pytest.mark.parametrize("format", ["legacy", "atomic"])
+def test_unreadable_committed_journal_stays_pending_then_preserves_terminal(legacy, monkeypatch, format):
+    from synapse.loop import coordinator
+    root, folder, _, worker, deposit, calls, capsules, _ = legacy
+    journal = folder / "journal.jsonl"
+    terminal = {"value": True, "arrived_at": "2020-01-01T00:00:01+00:00", "result_sha256": "c" * 64}
+    event = {"event": "terminal", "terminal": terminal}
+    if format == "legacy":
+        journal.write_text(canonical(event) + "\n", encoding="utf-8")
+    else:
+        coordinator.append(journal, event)
+    with monkeypatch.context() as patch:
+        if format == "atomic":
+            scan = coordinator.os.scandir
+            def denied(path):
+                if Path(path) == journal.with_name(journal.name + ".d"):
+                    raise PermissionError("synthetic journal scan denied")
+                return scan(path)
+            patch.setattr(coordinator.os, "scandir", denied)
+        else:
+            stat, read = coordinator.os.stat, Path.read_bytes
+            def denied_stat(path, *args, **kwargs):
+                if str(path) == str(journal):
+                    raise PermissionError("synthetic journal stat denied")
+                return stat(path, *args, **kwargs)
+            def denied_read(path):
+                if path == journal:
+                    raise PermissionError("synthetic journal read denied")
+                return read(path)
+            patch.setattr(coordinator.os, "stat", denied_stat)
+            patch.setattr(Path, "read_bytes", denied_read)
+        result = LoopCoordinator(root, worker, deposit).recover()[0]
+        assert result["status"] == "UNAVAILABLE", result
+        assert not calls and not capsules
+    assert (root / "pending" / ("a" * 32 + ".json")).is_file()
+    result = LoopCoordinator(root, worker, deposit).recover()[0]
+    assert result["status"] == "SUCCESS" and result["payload"]["outcome"]["verdict"] == "HIT"
+    assert calls[-1]["terminal"] == terminal and len(capsules) == 1
+
+
 def test_absent_forecast_remains_pending_then_reconciles_existing_forecast(legacy):
     root, _, _, worker, deposit, calls, capsules, available = legacy
     available[0] = False

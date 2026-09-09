@@ -52,12 +52,23 @@ def read_journal(path):
     line or published event is not an interruption and must fail visibly.
     """
     events = []
-    if path.exists():
+    try:
         raw = path.read_bytes()
+    except FileNotFoundError:
+        pass
+    else:
         complete = raw[:raw.rfind(b"\n") + 1]
         events.extend(json.loads(line.decode("utf-8")) for line in complete.splitlines())
     directory = path.with_name(path.name + ".d")
-    for entry in sorted(directory.glob("*.json")):
+    # pathlib glob/exists can turn a permission or scan failure into absence.
+    # An unreadable journal is unknown evidence, never an empty history.
+    try:
+        with os.scandir(directory) as entries:
+            published = sorted(directory / entry.name for entry in entries
+                               if entry.name.endswith(".json"))
+    except FileNotFoundError:
+        published = []
+    for entry in published:
         events.append(json.loads(entry.read_text(encoding="utf-8")))
     if any(not isinstance(event, dict) or not isinstance(event.get("event"), str)
            for event in events):
