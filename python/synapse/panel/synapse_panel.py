@@ -45,9 +45,9 @@ except Exception:  # pragma: no cover
 # swallowing a consent-relay wiring failure in silence.
 logger = logging.getLogger(__name__)
 
-# A running thread must outlive a destroyed Houdini panel. These references
-# disappear at thread completion; the thread has no QWidget parent.
-_ACTIVE_PANEL_WORKERS = set()
+# Host ownership survives the shipped loader's recreation of panel modules.
+# It retains running workers and reserves admission before reentrant UI setup.
+from synapse.host.panel_workers import active_workers as _ACTIVE_PANEL_WORKERS
 
 
 def _session_permission_views():
@@ -87,8 +87,8 @@ def _revoke_model_connections(connections, *_):
 
 
 def _release_panel_worker(worker):
-    _ACTIVE_PANEL_WORKERS.discard(worker)
-    worker.deleteLater()
+    if _ACTIVE_PANEL_WORKERS.release(worker):
+        worker.deleteLater()
 
 # Proven runtime + widgets — composed, not rewritten. All optional so the panel
 # always instantiates (graceful degradation is a runtime contract).
@@ -3058,35 +3058,50 @@ class SynapsePanel(QtWidgets.QWidget):
         if not allowed:
             connection.release()
             return False
-        self._task_connection = connection
-        self._permission_connections[:] = [connection]
-        self._last_task_facts = connection.facts
-        self._chat.append_system_message(getattr(connection.provider, "_route_reason", connection.facts.description))
-        # Submitting is the artist handing off — drop input focus. The last
-        # turn's receipt goes with it (bc-wave BC-6a): a new turn, a new record.
-        self._hide_turn_receipt()
-        if getattr(self, "_input", None) is not None:
-            self._input.clearFocus()
-        display = text
-        pending = list(self._pending_context)
-        if self._pending_context:
-            text = "[Context: %s]\n%s" % (", ".join(self._pending_context), text)
-            self._pending_context = []
-        try:
-            self._chat.append_user_message(display)
-        except Exception:
-            pass
-        self._messages.append({"role": "user", "content": text})
-        try:
-            self._start_worker()
-        except Exception:
+        # Approval can run a nested Qt loop. Another panel may have started
+        # meanwhile; refuse before changing this panel's draft or task display.
+        admission = _ACTIVE_PANEL_WORKERS.reserve()
+        if admission is None:
             connection.release()
-            self._pending_context = pending
-            self._on_error("The task could not start. Your draft is still available.")
-            self._messages.pop()
+            self._chat.append_system_message(
+                "A SYNAPSE panel task is still running on this workstation. Wait for it to finish before starting another.")
             return False
-        self._refresh_engine_selector()
-        return True
+        self._worker_admission = admission
+        try:
+            self._task_connection = connection
+            self._permission_connections[:] = [connection]
+            self._last_task_facts = connection.facts
+            self._chat.append_system_message(getattr(connection.provider, "_route_reason", connection.facts.description))
+            # Submitting is the artist handing off — drop input focus. The last
+            # turn's receipt goes with it (bc-wave BC-6a): a new turn, a new record.
+            self._hide_turn_receipt()
+            if getattr(self, "_input", None) is not None:
+                self._input.clearFocus()
+            display = text
+            pending = list(self._pending_context)
+            if self._pending_context:
+                text = "[Context: %s]\n%s" % (", ".join(self._pending_context), text)
+                self._pending_context = []
+            try:
+                self._chat.append_user_message(display)
+            except Exception:
+                pass
+            self._messages.append({"role": "user", "content": text})
+            try:
+                self._start_worker()
+            except Exception:
+                connection.release()
+                self._pending_context = pending
+                self._on_error("The task could not start. Your draft is still available.")
+                self._messages.pop()
+                return False
+            self._refresh_engine_selector()
+            return True
+        finally:
+            # Once bound, only worker completion can release the host slot.
+            _ACTIVE_PANEL_WORKERS.release_reservation(admission)
+            if getattr(self, "_worker_admission", None) is admission:
+                self._worker_admission = None
 
     def _announce_parked(self):
         """W7-SESSCOPE: tell the artist their previous-boot work is parked, not
@@ -3160,6 +3175,9 @@ class SynapsePanel(QtWidgets.QWidget):
         connection = getattr(self, "_task_connection", None)
         if connection is None:
             raise RuntimeError("A panel task needs an approved connection.")
+        admission = getattr(self, "_worker_admission", None)
+        if admission is None:
+            raise RuntimeError("A panel task needs an exclusive worker admission.")
         # Addendum 3.6 (2026-09-05): never a second worker into the same
         # transcript. While one streams, a new turn (send, revert) waits.
         w = getattr(self, "_worker", None)
@@ -3230,8 +3248,18 @@ class SynapsePanel(QtWidgets.QWidget):
         self._worker.finished.connect(partial(type(connection).release, connection))
         self._worker.finished.connect(self._on_worker_thread_finished, Qt.QueuedConnection)
         self._worker.finished.connect(partial(_release_panel_worker, self._worker))
-        _ACTIVE_PANEL_WORKERS.add(self._worker)
-        self._worker.start()
+        worker = self._worker
+        _ACTIVE_PANEL_WORKERS.bind(admission, worker)
+        try:
+            worker.start()
+        except Exception:
+            # A failed return from start is not proof that the thread stopped.
+            # Keep a running worker owned until its existing finished callback.
+            if not worker.isRunning():
+                _release_panel_worker(worker)
+                if getattr(self, "_worker", None) is worker:
+                    self._worker = None
+            raise
 
     def _on_activity(self, text):
         face = getattr(self, "_work_face", None)

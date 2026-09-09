@@ -16,6 +16,7 @@ import pytest
 
 from synapse import model_access as access
 from synapse.panel import connections as cn
+from synapse.host.panel_workers import PanelWorkerRegistry
 
 
 PANEL_SOURCE = Path(__file__).parents[1] / "python/synapse/panel/synapse_panel.py"
@@ -26,7 +27,7 @@ def panel_methods(qt_widgets):
     cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "SynapsePanel")
     names = {"_allow_connection", "_send", "_on_submit", "_refresh_session_permission", "_revoke_session_approvals"}
     namespace = {"QtWidgets": qt_widgets, "Qt": SimpleNamespace(PlainText=0),
-                 "logger": Mock(), "ClaudeWorker": object, "_ACTIVE_PANEL_WORKERS": set(),
+                 "logger": Mock(), "ClaudeWorker": object, "_ACTIVE_PANEL_WORKERS": PanelWorkerRegistry(),
                  "_timed_phase": lambda *args, **kwargs: nullcontext(),
                  "_SESSION_PERMISSION_VIEWS": weakref.WeakSet()}
     for node in tree.body:

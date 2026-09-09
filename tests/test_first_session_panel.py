@@ -7,6 +7,7 @@ from unittest.mock import Mock
 import pytest
 
 from synapse.panel.connections import ConnectionSpec, ConnectionFacts
+from synapse.host.panel_workers import PanelWorkerRegistry
 
 
 def panel_methods(*names):
@@ -14,7 +15,7 @@ def panel_methods(*names):
     tree = ast.parse(source.read_text(encoding="utf-8"))
     cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "SynapsePanel")
     methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
-    namespace = {"ClaudeWorker": object, "_timed_phase": lambda *a, **k: nullcontext(), "logger": Mock(), "_ACTIVE_PANEL_WORKERS": set()}
+    namespace = {"ClaudeWorker": object, "_timed_phase": lambda *a, **k: nullcontext(), "logger": Mock(), "_ACTIVE_PANEL_WORKERS": PanelWorkerRegistry()}
     for method in methods:
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(source), "exec"), namespace)
     return {name: namespace[name] for name in names}
@@ -115,7 +116,8 @@ def test_unknown_provider_cannot_take_registry_fallback():
 def test_other_panel_cannot_overlap_a_retained_task():
     panel, _, _ = fixture_panel()
     send = panel_methods("_send")["_send"]
-    send.__globals__["_ACTIVE_PANEL_WORKERS"].add(object())
+    registry = send.__globals__["_ACTIVE_PANEL_WORKERS"]
+    registry.bind(registry.reserve(), object())
     assert send(panel, "new task") is False
     panel._prepare_connection.assert_not_called()
     assert len(panel._messages) == 1
