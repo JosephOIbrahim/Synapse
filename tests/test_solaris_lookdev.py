@@ -167,8 +167,12 @@ class Prim:
 
 
 @pytest.fixture
-def composed_fixture():
+def composed_fixture(monkeypatch):
     from types import SimpleNamespace
+    from synapse.server import solaris_lookdev
+    # These lightweight doubles exercise topology, parameters and binding.
+    # Real USD surface resolution is tested in test_solaris_surface_contract.py.
+    monkeypatch.setattr(solaris_lookdev, "_verify_material_surface", lambda material: None)
     mesh = Prim("Mesh", {
         "points": Attribute([(-1,-1,0), (1,-1,0), (-1,1,0), (1,1,0)]),
         "faceVertexCounts": Attribute([4]),

@@ -190,6 +190,22 @@ def _verify_fixture_geometry(mesh):
         raise RuntimeError("The lookdev UVs do not match their geometric face corners")
 
 
+def _verify_material_surface(material):
+    """Resolve the MaterialX terminal through real USD shading semantics."""
+    from pxr import Sdf, UsdShade
+
+    surface = material.GetAttribute("outputs:mtlx:surface")
+    usd_material = UsdShade.Material(surface.GetPrim())
+    shader, source_name, source_type = usd_material.ComputeSurfaceSource("mtlx")
+    if (not shader or source_type != UsdShade.AttributeType.Output
+            or surface.GetTypeName() != Sdf.ValueTypeNames.Token
+            or source_name != "out"
+            or not shader.GetOutput(source_name)
+            or shader.GetOutput(source_name).GetTypeName() != Sdf.ValueTypeNames.Token
+            or shader.GetIdAttr().Get() != "ND_standard_surface_surfaceshader"):
+        raise RuntimeError("The MaterialX surface must resolve a standard surface shader output")
+
+
 def _verify_stage(output, mesh_path, material_path, color, roughness, camera_path, settings_path):
     stage = output.stage(ignore_errors=False)
     if stage is None or output.errors():
@@ -219,6 +235,7 @@ def _verify_stage(output, mesh_path, material_path, color, roughness, camera_pat
     surface = material.GetAttribute("outputs:mtlx:surface").GetConnections()
     if len(surface) != 1 or not stage.GetAttributeAtPath(surface[0]):
         raise RuntimeError("The MaterialX surface does not resolve")
+    _verify_material_surface(material)
     camera = stage.GetPrimAtPath(camera_path)
     settings = stage.GetPrimAtPath(settings_path)
     if not camera or camera.GetTypeName() != "Camera" or not settings or settings.GetTypeName() != "RenderSettings":
