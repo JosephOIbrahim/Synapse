@@ -391,7 +391,7 @@ def test_cancel_is_durable_and_fences_late_completion(rig):
         seen = FarmService(service.store.root, backend).get_job(plan["request_id"])
         assert seen["state"] == "cancel_requested"
         assert seen["cancellation_requested"] is True
-        return complete_receipt(plan, folder)
+        return dict(complete_receipt(plan, folder), cancellation_delivered=True)
     backend.on_cancel = stopping
     stopped = service.cancel(first["request_id"])
     assert stopped["state"] == "cancel_requested"
@@ -414,13 +414,14 @@ def test_failed_cancel_acknowledgement_remains_an_acceptance_fence(rig):
     assert service.cancel(first["request_id"])["state"] == "cancel_requested"
     backend.on_poll = lambda plan, folder, record: complete_receipt(plan, folder)
     assert service.refresh(first["request_id"])["state"] == "cancel_requested"
-    assert backend.calls["cancel"] == 1
+    assert backend.calls["cancel"] == 2  # Pending delivery retries; the stop fence never clears.
+    assert backend.calls["submit"] == 1
 
 
 def test_backend_observed_cancellation_also_fences_late_completion(rig):
     service, backend, _ = rig
     first = start(rig)
-    backend.on_poll = lambda *args: {"state": "cancel_requested"}
+    backend.on_poll = lambda *args: {"state": "cancel_requested", "cancellation_delivered": True}
     assert service.refresh(first["request_id"])["cancellation_requested"] is True
     backend.on_poll = lambda plan, folder, record: complete_receipt(plan, folder)
     assert service.refresh(first["request_id"])["state"] == "cancel_requested"

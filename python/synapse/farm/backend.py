@@ -231,7 +231,8 @@ class NativeTopsBackend:
         try:
             meta = self._recover_metadata(plan, job_dir, record)
         except ValueError:
-            return {"state": "cancel_requested", "note": "Cancellation is recorded before process admission.",
+            return {"state": "cancel_requested", "cancellation_delivered": True,
+                    "note": "The stop request was delivered; process admission could not be confirmed.",
                     "verified_frames": record.get("verified_frames", []), "metadata": record.get("metadata", {})}
         record = dict(record, metadata=meta)
         operation = self._operation(job_dir, record)
@@ -239,6 +240,7 @@ class NativeTopsBackend:
                                                 "plan_digest": plan["digest"]})
         status = self.poll(plan, job_dir, record)
         if status.get("state") == "cancelled":
-            return status
-        return {"state": "cancel_requested", "note": "Cancellation requested for this render's owned processes.",
+            return dict(status, cancellation_delivered=True)
+        return {"state": "cancel_requested", "cancellation_delivered": True,
+                "note": "Cancellation requested for this render's owned processes.",
                 "verified_frames": record.get("verified_frames", []), "metadata": record.get("metadata", {})}
