@@ -28,6 +28,7 @@ from synapse.panel.designsystem import qss
 from synapse.panel.designsystem import components as c
 from synapse.panel.designsystem import motion
 from synapse.panel.designsystem import fontload
+from synapse.panel.designsystem import rhythm
 from synapse.panel.gate_stamp import phantom_gate_status
 
 # L5-2: layout manifests + compositor — the region sequence is data-driven.
@@ -188,7 +189,7 @@ class _ShortcutLayout(QtWidgets.QLayout):
         self._items = []
         self._horizontal_gap = horizontal_gap
         self._vertical_gap = vertical_gap
-        self.setContentsMargins(0, 0, 0, 0)
+        rhythm.apply_layout_margins(self, "band")
 
     def addItem(self, item):
         self._items.append(item)

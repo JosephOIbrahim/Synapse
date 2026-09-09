@@ -78,6 +78,15 @@ def _apply_type(widget, role):
     widget.setFont(font)
 
 
+def apply_layout_margins(layout, role, density="standard", edge=None):
+    """Use the shared role margins for both widget-owned and nested layouts."""
+    margins = _MARGINS.get(role, (0, 0, 0, 0))
+    if edge == "top" and role in _EDGE_TOP:
+        margins = (margins[0], tokens.gap(_EDGE_TOP[role], density),
+                   margins[2], margins[3])
+    layout.setContentsMargins(*margins)
+
+
 def apply(root, density="standard"):
     """Apply fixed margins and density-scaled base gaps to marked widgets.
 
@@ -110,12 +119,9 @@ def apply(root, density="standard"):
         layout = layout_getter()
         if layout is not None:
             layout.setSpacing(tokens.gap(ROLE_GAPS[role], level))
-            m = _MARGINS.get(role, (0, 0, 0, 0))
             # J5: the top-edge condition is the owner's, not the role's; the
             # value is the role table's, scaled like every other gap.
-            if prop("rhythm_edge") == "top" and role in _EDGE_TOP:
-                m = (m[0], tokens.gap(_EDGE_TOP[role], level), m[2], m[3])
-            layout.setContentsMargins(*m)
+            apply_layout_margins(layout, role, level, prop("rhythm_edge"))
             applied += 1
         else:
             # bc-wave BC-3: a marked item VIEW (a QListView - no layout of

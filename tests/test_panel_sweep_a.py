@@ -170,6 +170,30 @@ def _outside_ruled_regions(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
+# The artist-approved Doctor accent and quiet local links add five rules to
+# the upstream sheet. Match their entire declarations, not just a selector:
+# changing a color, adding a property, or broadening a target must still fail.
+_APPROVED_LOCAL_RULES = (
+    'QPushButton#DsVerb[tone="doctor"] {{ color: {t.HOUDINI_TAB_YELLOW}; }}',
+    'QPushButton#DsVerb[tone="doctor"]:hover {{ color: {t.HOUDINI_TAB_YELLOW_HOVER}; }}',
+    '''QPushButton#DsFooterLink {{
+    background: transparent; border: none; padding: 2px 0;
+    min-height: {t.SPACE_LG}px;
+    color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_SMALL)}px;
+    font-weight: {t.WEIGHT_REGULAR}; text-align: center;
+}}''',
+    'QPushButton#DsFooterLink:hover {{ color: {t.TEXT_ACCENT}; }}',
+    'QPushButton#DsFooterLink:disabled {{ color: {t.TEXT_DISABLED}; }}',
+)
+
+
+def _assert_upstream_qss_unchanged(prefix, original):
+    for rule in _APPROVED_LOCAL_RULES:
+        assert prefix.count(rule) == 1, "approved local rule changed or duplicated: " + rule
+        prefix = prefix.replace(rule, "", 1)
+    assert _outside_ruled_regions(prefix) == _outside_ruled_regions(original)
+
+
 def test_qss_is_append_only_and_every_style_key_has_rules():
     from synapse.panel.designsystem import qss
 
@@ -177,7 +201,7 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
     original = _base("python/synapse/panel/designsystem/qss.py")
     marker = "# --- SWEEP_A (chat_panel.py)"
     prefix, added = source[:source.index(marker)], source[source.index(marker):]
-    assert _outside_ruled_regions(prefix) == _outside_ruled_regions(original)
+    _assert_upstream_qss_unchanged(prefix, original)
     # Landing r3 (CTO 2026-09-05, R2-03): SWEEP_A owns exactly its own marked
     # block; later sweeps append their own blocks after it, so the pin is
     # fence-scoped to SWEEP_A's block instead of the whole tail.
@@ -196,6 +220,30 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
                 assert '[sweep_a_style="%s"]' % key in sheet, key
     # A sweep must never mutate upstream QSS text or require its own caller.
     assert sheet.startswith(qss._sweep_a_base_stylesheet())
+
+
+@pytest.mark.parametrize("before,after", [
+    ("color: {t.HOUDINI_TAB_YELLOW};", "color: {t.ERROR};"),
+    ("    min-height: {t.SPACE_LG}px;\n    color: {t.TEXT_SECONDARY};",
+     "    min-height: {t.SPACE_SM}px;\n    color: {t.TEXT_SECONDARY};"),
+    ('QPushButton#DsVerb[tone="doctor"]:hover', 'QPushButton#DsVerb:hover'),
+    ("color: {t.MUSHROOM};", "color: {t.TEXT_PRIMARY};"),
+])
+def test_upstream_qss_guard_rejects_local_and_unrelated_style_drift(before, after):
+    source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
+    prefix = source[:source.index("# --- SWEEP_A (chat_panel.py)")]
+    assert before in prefix
+    with pytest.raises(AssertionError):
+        _assert_upstream_qss_unchanged(prefix.replace(before, after, 1),
+                                       _base("python/synapse/panel/designsystem/qss.py"))
+
+
+def test_upstream_qss_guard_rejects_duplicate_local_rules():
+    source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
+    prefix = source[:source.index("# --- SWEEP_A (chat_panel.py)")]
+    with pytest.raises(AssertionError, match="duplicated"):
+        _assert_upstream_qss_unchanged(prefix + _APPROVED_LOCAL_RULES[0],
+                                       _base("python/synapse/panel/designsystem/qss.py"))
 
 
 def test_scoped_rules_keep_pseudo_states_on_the_target():
@@ -301,15 +349,20 @@ def _layout_sequence(widgets, host, child, density):
               if w.property("rhythm_role") and w.layout() is not None]
     assert owners
     roles = [w.property("rhythm_role") for w in owners]
-    # Independently chosen component bases, not copied from ROLE_GAPS.
-    bases = {"group": 16, "parm_row": 4, "card": 16, "stack": 4, "band": 0}
+    # Independently chosen component bases, not copied from current ROLE_GAPS.
+    # Shell is RULING-3's gap 16 and fixed 30/8/30/8 gutter, already present
+    # in rhythm.py at the pre-first-session landing 47ffea0e.
+    bases = {"group": 16, "parm_row": 4, "card": 16, "stack": 4, "band": 0, "shell": 16}
+    # FaceWork / FaceReview use the existing shell gutter. Check it explicitly
+    # instead of assuming every production layout is a flush interior band.
+    margins = {"shell": (30, 8, 30, 8)}
     identities = [id(w) for w in owners]
     for level in (density, "tight", "airy", "standard", density):
         rhythm.apply(child, level)
         for w, role in zip(owners, roles):
             assert w.layout().spacing() == tokens.gap(bases[role], level)
             m = w.layout().contentsMargins()
-            assert (m.left(), m.top(), m.right(), m.bottom()) == (0, 0, 0, 0)
+            assert (m.left(), m.top(), m.right(), m.bottom()) == margins.get(role, (0, 0, 0, 0))
     assert identities == [id(w) for w in owners]
     before = [w.layout().spacing() for w in owners]
     for w in owners:

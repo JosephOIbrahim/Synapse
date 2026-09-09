@@ -1,13 +1,14 @@
 """CAMERA display contracts and protected-source controls; no host required."""
 
 import ast
+from contextlib import nullcontext
 import hashlib
 import importlib.util
 from pathlib import Path
 import re
 import subprocess
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -124,6 +125,25 @@ def _method(source, name):
     return "\n".join(source.splitlines()[node.lineno - 1:node.end_lineno])
 
 
+def _assert_lifecycle_method(current, original, name):
+    if name == "_on_stop":
+        # M4 revokes permission before cooperative worker cancellation. Freeze
+        # every other byte and require the exact additive call, once.
+        addition = '        _revoke_model_connections(getattr(self, "_permission_connections", ()))\n'
+        assert current.count(addition) == 1
+        current = current.replace(addition, "", 1)
+    elif name == "_set_busy":
+        # Artist-approved Connect / Doctor placement keeps Connect visible and
+        # disables it while busy. Only these two statements supersede the pin;
+        # the state transitions and every other lifecycle byte stay frozen.
+        approved = ('        self._connect_btn.setVisible(True)\n'
+                    '        self._connect_btn.setEnabled(not busy)\n')
+        previous = '        self._connect_btn.setVisible(not busy)   # Connect | Stop share one slot\n'
+        assert current.count(approved) == 1, "Connect stays visible and is disabled while busy"
+        current = current.replace(approved, previous, 1)
+    assert current == original
+
+
 # Joe's approved first-session roadmap (2026-09-06) changes connection/start,
 # completion attribution, and close/key lifetime. Those paths now have behavior
 # controls in test_first_session_panel and check_first_session_qt, including
@@ -134,14 +154,39 @@ def _method(source, name):
                                   "_on_stop", "_set_busy",
                                   "showEvent", "_update_context", "_update_health"])
 def test_lifecycle_and_token_completion_methods_byte_identical(name):
+    _assert_lifecycle_method(_method(_source("synapse_panel.py"), name),
+                             _method(_source("synapse_panel.py", _panel_base()), name), name)
+
+
+@pytest.mark.parametrize("name", ["_set_busy", "_on_token", "_update_context"])
+def test_lifecycle_pin_rejects_unrelated_work_even_in_an_amended_method(name):
     current = _method(_source("synapse_panel.py"), name)
-    if name == "_on_stop":
-        # M4 revokes permission before cooperative worker cancellation. Freeze
-        # every other byte and require the exact additive call, once.
-        addition = '        _revoke_model_connections(getattr(self, "_permission_connections", ()))\n'
-        assert current.count(addition) == 1
-        current = current.replace(addition, "", 1)
-    assert current == _method(_source("synapse_panel.py", _panel_base()), name)
+    original = _method(_source("synapse_panel.py", _panel_base()), name)
+    with pytest.raises(AssertionError):
+        _assert_lifecycle_method(current + "\n        self._worker = None", original, name)
+
+
+def test_connect_stays_visible_and_busy_transitions_keep_their_lifecycle():
+    source = ast.parse(_source("synapse_panel.py"))
+    method = next(node for node in ast.walk(source) if isinstance(node, ast.FunctionDef)
+                  and node.name == "_set_busy")
+    namespace = {"_timed_phase": lambda name: nullcontext()}
+    exec(compile(ast.Module(body=[method], type_ignores=[]), "panel-busy", "exec"), namespace)
+    panel = SimpleNamespace(
+        _send_btn=Mock(), _stop_btn=Mock(), _connect_btn=Mock(), _was_busy=False,
+        _stopping=False, _set_work_substate=Mock(), _populate_review=Mock(), _render_state=Mock())
+    sequence = (False, True, True, False, False, True, False)
+    for busy, expected in zip(sequence, ("idle", "working", "working", "done", "idle", "working", "done")):
+        namespace["_set_busy"](panel, busy)
+        assert panel._was_busy is busy and panel._turn_state == expected
+    assert panel._connect_btn.setVisible.call_args_list == [call(True)] * len(sequence)
+    assert panel._connect_btn.setEnabled.call_args_list == [call(not busy) for busy in sequence]
+    assert panel._send_btn.setEnabled.call_args_list == [call(not busy) for busy in sequence]
+    assert panel._stop_btn.setVisible.call_args_list == [call(busy) for busy in sequence]
+    assert panel._stop_btn.setEnabled.call_args_list == [call(busy) for busy in sequence]
+    assert panel._set_work_substate.call_args_list == [call("cook"), call("done")] * 2
+    assert panel._populate_review.call_count == 2
+    assert panel._render_state.call_count == len(sequence)
 
 
 def test_stop_revokes_connections_before_worker_abort():
@@ -164,18 +209,53 @@ def test_stop_revokes_connections_before_worker_abort():
     panel._set_header.assert_called_once_with("working", "Stopping")
 
 
-def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
-    current = _method(_source("synapse_panel.py"), "__init__")
-    # The first __init__ is _GrowingInput, also protected; compare all init nodes.
+def _assert_panel_constructors(current_source, original_source):
+    # Compare class identities: the approved shortcut layout precedes the
+    # protected _GrowingInput constructor but cannot displace its source pin.
     def constructors(source):
-        return [ast.get_source_segment(source, n)
-                for cls in ast.parse(source).body if isinstance(cls, ast.ClassDef) and cls.name != "SynapsePanel"
-                for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == "__init__"]
-    current = constructors(_source("synapse_panel.py"))
-    original = constructors(_source("synapse_panel.py", _panel_base()))
+        result = {}
+        for cls in ast.parse(source).body:
+            if not isinstance(cls, ast.ClassDef) or cls.name == "SynapsePanel":
+                continue
+            for node in cls.body:
+                if isinstance(node, ast.FunctionDef) and node.name == "__init__":
+                    assert cls.name not in result, "duplicate constructor"
+                    result[cls.name] = ast.get_source_segment(source, node)
+        return result
+    current = constructors(current_source)
+    original = constructors(original_source)
+    assert set(current) == set(original) | {"_ShortcutLayout"}
     # The annotation is allowed on BOTH sides (the base now carries it too).
     strip = lambda src: re.sub(r"  # rhythm-exempt:[^\n]*", "", src)
-    assert [strip(s) for s in current] == [strip(s) for s in original]
+    assert {name: strip(current[name]) for name in original} == {
+        name: strip(source) for name, source in original.items()}
+    # The new layout stores caller-owned gaps and gets its zero margins from
+    # the shared band role. No constructor/lifecycle carve-out for other code.
+    shortcut = '''def __init__(self, horizontal_gap, vertical_gap):
+        super().__init__()
+        self._items = []
+        self._horizontal_gap = horizontal_gap
+        self._vertical_gap = vertical_gap
+        rhythm.apply_layout_margins(self, "band")'''
+    assert ast.dump(ast.parse(current["_ShortcutLayout"])) == ast.dump(ast.parse(shortcut))
+
+
+def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
+    _assert_panel_constructors(_source("synapse_panel.py"),
+                               _source("synapse_panel.py", _panel_base()))
+
+
+@pytest.mark.parametrize("before,after", [
+    ("self.setAcceptRichText(False)", "self.setAcceptRichText(True)"),
+    ('rhythm.apply_layout_margins(self, "band")', 'rhythm.apply_layout_margins(self, "row")'),
+    ("class _GrowingInput", "class ExtraOwner:\n    def __init__(self):\n        pass\n\nclass _GrowingInput"),
+])
+def test_constructor_pin_rejects_changed_input_new_owners_and_shortcut_drift(before, after):
+    current = _source("synapse_panel.py")
+    assert current.count(before) == 1
+    with pytest.raises(AssertionError):
+        _assert_panel_constructors(current.replace(before, after, 1),
+                                   _source("synapse_panel.py", _panel_base()))
 
 
 # J2 (RULING_JOE_FIVE.md, 2026-09-05): "the whole point of TOKEN is it supposed

@@ -338,6 +338,29 @@ def test_recorded_layout_sequence_is_derived_from_base_not_current(monkeypatch, 
         assert (unmarked.box.spacing, unmarked.box.margins) == (-7, (1, 2, 3, 4))
 
 
+@pytest.mark.parametrize("role,density,edge,expected", [
+    ("band", "standard", None, (0, 0, 0, 0)),
+    ("row", "airy", None, (16, 12, 16, 12)),
+    ("shell", "tight", None, (30, 8, 30, 8)),
+    ("shell", "airy", "top", (30, 24, 30, 8)),
+    ("shell", "standard", "top", (30, 16, 30, 8)),
+    ("shell", "tight", "top", (30, 12, 30, 8)),
+])
+def test_nested_layout_margins_preserve_band_zero_and_shell_edge(role, density, edge, expected):
+    layout = _Layout()
+    rhythm.apply_layout_margins(layout, role, density, edge)
+    assert layout.margins == expected
+    assert layout.spacing == -7  # this owner only applies margins
+
+
+def test_widget_and_nested_layout_margins_share_the_existing_role_table(monkeypatch):
+    monkeypatch.setitem(rhythm._MARGINS, "band", (3, 5, 7, 11))
+    nested, widget = _Layout(), _Widget("band")
+    rhythm.apply_layout_margins(nested, "band")
+    assert rhythm.apply(widget) == 1
+    assert nested.margins == widget.box.margins == (3, 5, 7, 11)
+
+
 def test_initial_compose_and_actual_recompose_share_post_build_rhythm(monkeypatch):
     panel = _Widget()
     for builder in compositor.REGION_BUILDERS.values():
