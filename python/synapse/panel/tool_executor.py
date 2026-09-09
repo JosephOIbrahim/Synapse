@@ -324,7 +324,15 @@ class _MCPLocalClient:
                     self._session_id = None
             raise RuntimeError(error_msg)
 
-        return result.get("result", {})
+        payload = result.get("result")
+        if not isinstance(payload, dict):
+            # None is the caller's definitely-unsent fallback sentinel. Never
+            # let an invalid reply reuse it after a tools/call was transmitted.
+            raise MCPOutcomeUnknown(
+                "The tool reply was invalid after possible execution. "
+                "Check the scene before trying the command again."
+            )
+        return payload
 
     def reset(self) -> None:
         """Reset the client (e.g., on session expiry)."""

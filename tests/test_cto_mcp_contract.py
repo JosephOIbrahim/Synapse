@@ -36,7 +36,7 @@ def worker(monkeypatch):
     return value
 
 
-@pytest.mark.parametrize('failure', ['before_send', 'remote_disconnect', 'timeout', 'incomplete_read', 'malformed_reply', 'success'])
+@pytest.mark.parametrize('failure', ['before_send', 'remote_disconnect', 'timeout', 'incomplete_read', 'malformed_reply', 'null_reply', 'list_reply', 'scalar_reply', 'success'])
 def test_one_mutation_per_tool_call(worker, monkeypatch, failure, record_property):
     mutations = []
     adapter = SimpleNamespace(_running=True, _port=54321)
@@ -51,6 +51,12 @@ def test_one_mutation_per_tool_call(worker, monkeypatch, failure, record_propert
                 raise http.client.IncompleteRead(b'{', 20)
             if failure == 'malformed_reply':
                 return b'not a JSON-RPC reply'
+            if failure == 'null_reply':
+                return b'{"jsonrpc":"2.0","id":"synthetic","result":null}'
+            if failure == 'list_reply':
+                return b'{"jsonrpc":"2.0","id":"synthetic","result":[]}'
+            if failure == 'scalar_reply':
+                return b'{"jsonrpc":"2.0","id":"synthetic","result":true}'
             return b'{"jsonrpc":"2.0","id":"synthetic","result":{"created":true}}'
         def getheader(self, name):
             return None
