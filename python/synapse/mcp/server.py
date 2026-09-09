@@ -571,11 +571,10 @@ class MCPServer:
         """Dispatch a tool call with resilience checks.
 
         hwebserver @urlHandler callbacks run on worker threads and hou.* calls
-        require the main thread, but this layer does NOT marshal the whole
-        dispatch: every handler that touches hou.* marshals its own critical
-        section through server.main_thread.run_on_main at its own budget.
-        Mutating dispatches are additionally bounded here at the per-tool
-        transport budget (timeout_for).
+        require the main thread. Read-only handlers marshal their own critical
+        sections. Bridge-routed mutations marshal the whole dispatch, bounded
+        at the per-tool transport budget (timeout_for). Optional LOOP sidecars
+        bracket that boundary on the worker; scene/owner snapshots stay on main.
 
         Resilience gates (rate limiter, circuit breaker, stall detection)
         match the WebSocket server's behavior so both transports have the
@@ -707,6 +706,11 @@ class MCPServer:
             # FloorGate provenance are preserved inside handler.handle().
             result = _dispatch_doctor_off_main(handler, tool_name, arguments)
         else:
+            dispatch_started = False
+            def dispatch_once():
+                nonlocal dispatch_started
+                dispatch_started = True
+                return dispatch_tool(handler, tool_name, arguments)
             try:
                 # Route through run_on_main so a heavy cook/render holding the busy
                 # main thread fast-fails THIS dispatch at the per-tool budget instead
@@ -718,13 +722,19 @@ class MCPServer:
                 # out-of-process render (husk) keeps the GUI responsive.
                 from ..server.main_thread import run_on_main
                 from ..core.timeouts import timeout_for
-                result = run_on_main(
-                    lambda: dispatch_tool(handler, tool_name, arguments),
-                    timeout=timeout_for(tool_name),
+                from ..host.memory_loop import observe_operation
+                from ._tool_registry import TOOL_DISPATCH
+                operation = TOOL_DISPATCH.get(tool_name, ("", None))[0]
+                result = observe_operation(operation, arguments, lambda: run_on_main(
+                    dispatch_once, timeout=timeout_for(tool_name),
                     # OCC: attribute the deferred main-thread hold to the tool.
                     label=tool_name,
-                )
+                ), mcp=True)
             except ImportError as _marshal_exc:
+                # An ImportError from an already-entered operation is not proof
+                # that dispatch was unavailable. Never replay that operation.
+                if dispatch_started:
+                    raise
                 # UNMARSHALLED FALLBACK. This branch runs the tool on the CALLING
                 # thread -- an hwebserver worker -- and dispatch_tool routes
                 # mutating tools to bridge.execute -> _execute_houdini, which calls

@@ -21,6 +21,14 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TIMEOUT = 10.0   # seconds -- scene queries, parm reads/writes
 _SLOW_TIMEOUT = 30.0      # seconds -- execute_python, execute_vex, batch
 
+
+class MainThreadTimeout(RuntimeError):
+    """The caller stopped waiting; an already-started payload may still run.
+
+    RuntimeError compatibility is retained for existing transport callers.
+    Observation code can distinguish this from an actual handler failure.
+    """
+
 # Thread-local flag to detect reentrant calls (e.g. batch_commands calling
 # sub-handlers that each use run_on_main). When already on the main thread
 # inside a run_on_main callback, nested calls execute directly.
@@ -616,7 +624,7 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
             _discard_deferred(token)
             if record_stall:
                 _record_timeout(timeout)
-            raise RuntimeError(
+            raise MainThreadTimeout(
                 "Houdini's main thread didn't respond in time -- "
                 "it may be busy cooking or rendering. "
                 "Try again in a moment."

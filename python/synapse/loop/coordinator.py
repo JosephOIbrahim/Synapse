@@ -30,11 +30,39 @@ def utc_now():
 
 
 def append(path, record):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8", newline="\n") as stream:
-        stream.write(canonical(record) + "\n")
-        stream.flush()
-        os.fsync(stream.fileno())
+    """Publish one complete event; retain legacy bytes and interrupted writes.
+
+    A process exit during an append must not poison every later recovery. New
+    events are fsynced separately before their atomic publication. Unpublished
+    .part files remain evidence, but are never interpreted as terminal events.
+    """
+    directory = path.with_name(path.name + ".d")
+    identity = uuid.uuid4().hex
+    temporary = directory / (identity + ".part")
+    published = directory / (identity + ".json")
+    create(temporary, record)
+    os.replace(temporary, published)
+
+
+def read_journal(path):
+    """Read complete legacy lines and atomically published events.
+
+    A legacy final line without its newline is uncommitted, even if its JSON
+    happens to parse. Keep those bytes untouched. Corruption in a committed
+    line or published event is not an interruption and must fail visibly.
+    """
+    events = []
+    if path.exists():
+        raw = path.read_bytes()
+        complete = raw[:raw.rfind(b"\n") + 1]
+        events.extend(json.loads(line.decode("utf-8")) for line in complete.splitlines())
+    directory = path.with_name(path.name + ".d")
+    for entry in sorted(directory.glob("*.json")):
+        events.append(json.loads(entry.read_text(encoding="utf-8")))
+    if any(not isinstance(event, dict) or not isinstance(event.get("event"), str)
+           for event in events):
+        raise ValueError("Invalid committed outbox event")
+    return events
 
 
 def create(path, record):
@@ -97,7 +125,7 @@ class LoopCoordinator:
         if not re.fullmatch(r"[a-f0-9]{32}", attempt["id"]):
             return PortResult.blocked("Invalid outbox attempt identity")
         folder = self.root / "attempts" / attempt["id"]
-        events = [json.loads(line) for line in (folder / "journal.jsonl").read_text(encoding="utf-8").splitlines()]
+        events = read_journal(folder / "journal.jsonl")
         terminal_events = [e["terminal"] for e in events if e["event"] == "terminal"]
         if len(terminal_events) > 1 and any(t != terminal_events[0] for t in terminal_events[1:]):
             return PortResult.blocked("Conflicting terminal observations in outbox")

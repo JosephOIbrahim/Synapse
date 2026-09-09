@@ -41,6 +41,14 @@ not the scene action. A stable memory identity gives exactly-once logical effect
 after a lost acknowledgement or failed memory checkpoint. Recovery examines at
 most four pending attempts on an explicit context request.
 
+New journal events are written and fsynced separately, then atomically published
+under `journal.jsonl.d/`. Recovery also reads complete newline-terminated records
+from older `journal.jsonl` files. A missing old journal or an incomplete final
+line does not block reconciliation of an already-authored forecast. Original
+bytes and unpublished `.part` files remain untouched for diagnosis; they are not
+terminal evidence. Malformed complete records and conflicting terminal values
+still refuse delivery. Recovery never repairs a scene or retries its operation.
+
 Recovery may reconcile a forecast that was already written when its ACK was
 lost. It never creates a forecast after dispatch. An action that had no durable
 forecast remains uninstrumented, with its pending history retained for diagnosis;
@@ -53,6 +61,22 @@ Houdini's UI thread. Direct main-thread handler calls report uninstrumented rath
 than waiting for a sidecar. The panel's worker brackets its existing main-thread
 bridge call, so its regular mutation path can be observed without this extra UI
 wait. Existing scene cook/render time still belongs to the original host action.
+
+The preferred HTTP MCP mutation route also brackets its existing main-thread
+bridge dispatch on the worker. It uses the same observed-command allowlist and
+retains the existing resilience and consent checks. The LOOP reads the decoded
+handler payload, not the MCP wrapper; pending, unreadable and transport-error
+results remain unknown. The receipt is returned inside the existing decoded
+payload. Native main-thread timeouts carry a distinct `MainThreadTimeout` type
+that remains compatible with callers catching `RuntimeError`; the observer does
+not confuse this timeout with an explicit handler failure or replay the action.
+
+Each substrate child has a 256 KiB request cap, a 1 MiB stdout cap, and a 64 KiB
+stderr cap. Both output streams are drained while the child runs. Crossing either
+output cap terminates that child and reports unavailable; the response is never
+accepted partially. The configured timeout also covers a child that stops reading
+its input. These limits cover the direct worker process, not arbitrary descendants
+that a third-party dependency might launch.
 
 Houdini's native `hwebserver` invokes WebSocket coroutines on its asyncio loop.
 When LOOP observation is enabled, that adapter awaits a worker for eligible

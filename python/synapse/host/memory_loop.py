@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import json
 import os
 from pathlib import Path
 import re
@@ -139,7 +140,32 @@ def terminal_value(result):
     return True
 
 
-def _attach(result, receipt, response):
+def _mcp_payload(result):
+    """Only a decoded handler payload is terminal evidence, never its wrapper."""
+    from synapse.core.tool_results import unpack_tool_result
+    try:
+        data, is_error = unpack_tool_result(result)
+    except (ValueError, TypeError, RuntimeError):
+        return None
+    # Unstructured/multi-block envelopes and transport-level errors do not
+    # supply a typed handler outcome. They may hide a timeout or pending work.
+    return None if is_error or data is result else data
+
+
+def _attach(result, receipt, response, mcp=False):
+    if mcp:
+        data = _mcp_payload(result)
+        if not isinstance(data, dict):
+            return result
+        updated = dict(data, memory_loop=receipt._asdict())
+        result = dict(result)
+        if "structuredContent" in result:
+            result["structuredContent"] = updated
+        content = result.get("content")
+        if (isinstance(content, list) and len(content) == 1
+                and isinstance(content[0], dict) and content[0].get("type") == "text"):
+            result["content"] = [dict(content[0], text=json.dumps(updated, allow_nan=False))]
+        return result
     if response:
         if result.data is None or isinstance(result.data, dict):
             result.data = dict(result.data or {}, memory_loop=receipt._asdict())
@@ -150,13 +176,13 @@ def _attach(result, receipt, response):
     return result
 
 
-def observe_operation(operation, payload, dispatch, *, response=False):
+def observe_operation(operation, payload, dispatch, *, response=False, mcp=False):
     """Capture before/after the existing authorized dispatch, without gating it."""
     if not enabled() or operation not in OBSERVED_COMMANDS:
         return dispatch()
     if threading.current_thread() is threading.main_thread():
         return _attach(dispatch(), PortResult.unavailable(
-            "Main-thread dispatch was not instrumented; sidecar work requires a host worker"), response)
+            "Main-thread dispatch was not instrumented; sidecar work requires a host worker"), response, mcp)
     loop = record = None
     try:
         snapshot = _on_main(lambda: _snapshot(operation))
@@ -170,24 +196,25 @@ def observe_operation(operation, payload, dispatch, *, response=False):
         if loop is not None and record is not None:
             try:
                 # A timeout says nothing about whether the host eventually ran.
-                value = None if isinstance(exc, TimeoutError) else False
+                from synapse.server.main_thread import MainThreadTimeout
+                value = None if isinstance(exc, (TimeoutError, MainThreadTimeout)) else False
                 loop.finish(record, value, digest({"exception_type": type(exc).__name__}))
             except Exception:
                 _LOG.exception("LOOP exception evidence remains pending")
         raise
     if loop is not None and record is not None:
         try:
-            data = result.data if response else result
+            data = _mcp_payload(result) if mcp else result.data if response else result
             # A transport-level error can hide a timeout. Without typed evidence
             # it is unknown; it must not become a confident failure observation.
             value = None if response and not result.success else terminal_value(data)
             receipt = loop.finish(record, value, digest(data))
-            result = _attach(result, receipt, response)
+            result = _attach(result, receipt, response, mcp)
         except Exception as exc:
             _LOG.warning("LOOP outcome remains pending: %s", exc)
-            result = _attach(result, PortResult.unavailable(str(exc)), response)
+            result = _attach(result, PortResult.unavailable(str(exc)), response, mcp)
     else:
-        result = _attach(result, PortResult.unavailable("No pre-action forecast acknowledgement"), response)
+        result = _attach(result, PortResult.unavailable("No pre-action forecast acknowledgement"), response, mcp)
     return result
 
 
