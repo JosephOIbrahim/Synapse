@@ -164,7 +164,7 @@ def _attach(result, receipt, response, mcp=False):
         content = result.get("content")
         if (isinstance(content, list) and len(content) == 1
                 and isinstance(content[0], dict) and content[0].get("type") == "text"):
-            result["content"] = [dict(content[0], text=json.dumps(updated, allow_nan=False))]
+            result["content"] = [dict(content[0], text=json.dumps(updated, sort_keys=True, allow_nan=False))]
         return result
     if response:
         if result.data is None or isinstance(result.data, dict):
