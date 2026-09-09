@@ -171,11 +171,25 @@ def test_rail_one_state_sentence_never_elides():
                        if w.isVisible()
                        and w.sizePolicy().horizontalPolicy() == QtWidgets.QSizePolicy.Policy.Ignored]
             assert not ignored, ignored
-            # Working: Stop shows, Connect hides, the sentence follows STATUS and
-            # ignores tool chatter (the Work face's plan already carries it).
+            # Working: Stop shows separately; Connect stays beside Doctor but
+            # cannot reconnect until idle. The sentence ignores tool chatter.
             p._set_busy(True)
             _app().processEvents()
-            assert p._stop_btn.isVisible() and not p._connect_btn.isVisible()
+            assert p._stop_btn.isVisible() and p._connect_btn.isVisible()
+            assert not p._connect_btn.isEnabled()
+            for recompose in (p._regate_stop, lambda: p._recompose(profile)):
+                recompose()
+                _app().processEvents()
+                assert p._stop_btn.isVisible() and p._connect_btn.isVisible()
+                assert not p._connect_btn.isEnabled()
+                row = p._connect_btn.parentWidget().layout()
+                assert row.indexOf(p._connect_btn) < row.indexOf(p._doctor_btn)
+                assert p._stop_btn.parentWidget() is rail
+                stop_top = p._stop_btn.mapTo(rail, QtCore.QPoint(0, 0)).y()
+                row_bottom = p._connect_btn.parentWidget().mapTo(
+                    rail, p._connect_btn.parentWidget().rect().bottomLeft()).y()
+                assert stop_top > row_bottom
+                assert p._stop_btn.width() >= p._stop_btn.sizeHint().width()
             assert sentence.text() == t.STATUS["working"][2]
             p._on_tool_status("houdini_render", "running", "")
             assert sentence.text() == t.STATUS["working"][2]
@@ -186,6 +200,7 @@ def test_rail_one_state_sentence_never_elides():
             _app().processEvents()
             assert sentence.text() == "Result ready"
             assert p._connect_btn.isVisible() and not p._stop_btn.isVisible()
+            assert p._connect_btn.isEnabled()
             # The rail fits the docking bound for its density.
             assert rail.minimumSizeHint().width() <= bounds[profile], (
                 profile, rail.minimumSizeHint().width())

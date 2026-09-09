@@ -849,9 +849,10 @@ class SynapsePanel(QtWidgets.QWidget):
         stop = getattr(self, "_stop_btn", None)
         if stop is not None:
             stop.setVisible(busy)
-        connect = getattr(self, "_connect_btn", None)   # bc-wave BC-2: one slot
+        connect = getattr(self, "_connect_btn", None)
         if connect is not None:
-            connect.setVisible(not busy)
+            connect.setVisible(True)
+            connect.setEnabled(not busy)
         managed = {root.itemAt(i).widget() for i in range(root.count())}
         hidden = set()
         for _item, wdg, _stretch in prev:
@@ -875,12 +876,12 @@ class SynapsePanel(QtWidgets.QWidget):
         stop = getattr(self, "_stop_btn", None)
         if stop is not None:
             stop.setVisible(busy)
-        # bc-wave BC-2: Connect and Stop share one slot on the state row -
-        # Connect at rest, Stop while working - so the compositor's
-        # visible=True on both must be re-gated together.
+        # Keep the Connect / Doctor pair in place while work is running.
+        # Reconnecting is available at rest; Stop has its own working slot.
         connect = getattr(self, "_connect_btn", None)
         if connect is not None:
-            connect.setVisible(not busy)
+            connect.setVisible(True)
+            connect.setEnabled(not busy)
 
     def _build_rail(self):
         """The persistent rail (bc-wave BC-2): one truth, two identities.
@@ -890,10 +891,11 @@ class SynapsePanel(QtWidgets.QWidget):
         the active provider/model is the one fact the artist must never
         lose, so the token never elides and never folds into the overflow.
         Row 2 is STATE - one sentence of what the panel is doing (the STATUS
-        phrases, given the wordmark's never-elide floor) left; Connect / Stop
-        and the overflow right. Nothing else is on the rail.
+        phrases, given the wordmark's never-elide floor) left; the persistent
+        Connect / Doctor pair and overflow right. Stop has its own line while
+        working so narrow panes can keep every control readable.
 
-        Why two rows: at PANEL_PREF_WIDTH the interior is 280 (340 - 2 x
+        Why two rows at rest: at PANEL_PREF_WIDTH the interior is 280 (340 - 2 x
         GUTTER). A never-eliding sentence (~83-90) and a never-eliding
         17-character model id (~112) beside the mark, the wordmark, Connect
         and the overflow need ~330+ on one row; both rows here fit inside 280
@@ -982,7 +984,7 @@ class SynapsePanel(QtWidgets.QWidget):
         top.addWidget(self._author_lbl)
         col.addWidget(ident)
 
-        # -- row 2 - state + action: [sentence] ... [Connect | Stop][overflow] --
+        # -- row 2: [sentence] ... [Connect][Doctor][bolt] --
         row = self._section()
         row.setProperty("rhythm_role", "stack")
         bot = QtWidgets.QHBoxLayout(row)
@@ -1019,8 +1021,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # external MCP clients + the /mcp endpoint the tool executor uses). The
         # panel's chat runs in-process, but tools + external tools need this up,
         # and it does NOT auto-start - this button is the one-click way to force
-        # it without dropping into Houdini's Python Shell. Connect and Stop
-        # share one slot: Connect at rest, Stop while working (_set_busy).
+        # it without dropping into Houdini's Python Shell. Keep Connect visible
+        # beside Doctor; disable it while work is in flight (_set_busy).
         self._connect_btn = c.Button("Connect", variant="primary")
         self._connect_btn.setToolTip(
             "Start the Synapse bridge server (port 9999) so external / MCP tools "
@@ -1035,11 +1037,13 @@ class SynapsePanel(QtWidgets.QWidget):
         bot.addWidget(self._header_status)
         bot.addStretch(1)
         bot.addWidget(self._connect_btn)
-        bot.addWidget(self._stop_btn)     # termination never scrolls away
         bot.addSpacing(t.scaled(t.SPACE_12, self._chrome_scale))
         bot.addWidget(self._doctor_btn)
         bot.addWidget(overflow)
         col.addWidget(row)
+        # A working-only line avoids compressing the state or action labels
+        # when the artist docks SYNAPSE in a narrow pane.
+        col.addWidget(self._stop_btn, 0, Qt.AlignmentFlag.AlignLeft)
 
         # -- hidden owners: constructed, written to, read by the overflow;
         #    in NO layout, never shown. ----------------------------------
@@ -1141,9 +1145,7 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def _refresh_bridge_state(self):
-        """Reflect the live bridge state on the Connect button — once the server
-        is up the button reads 'Bridge ✓' (still clickable to re-confirm). Best
-        effort: any failure leaves the default 'Connect'."""
+        """Keep the Connect action recognizable; report bridge state in its tooltip."""
         running = False
         try:
             from synapse.server.hwebserver_adapter import is_running
@@ -1152,7 +1154,7 @@ class SynapsePanel(QtWidgets.QWidget):
             running = False
         btn = getattr(self, "_connect_btn", None)
         if btn is not None:
-            btn.setText("Bridge ✓" if running else "Connect")
+            btn.setText("Connect")
             btn.setToolTip(
                 "Synapse bridge is running on :9999. Click to re-confirm."
                 if running else
@@ -2473,6 +2475,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._khint.setFont(fontload.tracked_font(
             "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         self._khint.setWordWrap(True)
+        self._khint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         col.addWidget(self._khint)
         self._commands_btn = c.Button("Commands", variant="ghost")
         self._commands_btn.setToolTip("Browse commands · / on empty input · Ctrl+K")
@@ -3458,7 +3461,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._send_btn.setEnabled(not busy)
         self._stop_btn.setEnabled(busy)
         self._stop_btn.setVisible(busy)   # Stop is state-gated to working only
-        self._connect_btn.setVisible(not busy)   # Connect | Stop share one slot
+        self._connect_btn.setVisible(True)
+        self._connect_btn.setEnabled(not busy)
         # state→Work-sub-state edges. Quiet state never moves the visible face
         # (v9.1 · only an ACTIONABLE consent gate auto-surfaces — see
         # _on_gate_raised). A new work cycle shows the cook sub-state; finishing
