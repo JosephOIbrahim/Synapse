@@ -35,6 +35,9 @@ if __name__ == "__main__":
     parser.add_argument("--hfs", required=True, type=Path)
     parser.add_argument("--report", required=True, type=Path)
     args = parser.parse_args()
+    for field in ('app', 'sandbox', 'hfs', 'report'):
+        setattr(args, field, no_links(getattr(args, field)))
+    args.report.parent.mkdir(parents=True, exist_ok=True)
     state = json.loads((args.app / "installation.json").read_text())
     env = probe_environment(args.sandbox, Path(state["registrations"][0]["pref"]))
     command = [str(args.hfs / "bin/hython.exe"), str(Path(__file__).with_name("verify_houdini.py")),

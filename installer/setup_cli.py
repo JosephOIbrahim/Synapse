@@ -71,12 +71,16 @@ def main(argv=None):
         code = 0
     except Exception as exc:
         result, code = {"status": "FAIL", "error": str(exc), "exception": type(exc).__name__}, 1
+    if code:
+        message = result.get("error") or "SYNAPSE could not complete its checks. See the setup log."
+    else:
+        heading = "SYNAPSE" + (" " + str(result["version"]) if result.get("version") else "")
+        message = heading + " checks passed.\n\n" + "\n".join(result.get("manual") or [])
     if args.report:
         atomic_write(args.report, json_bytes(result))
-        message = result.get("error") or ("SYNAPSE " + result.get("version", "") + " checks passed.\n\n" + "\n".join(result.get("manual", [])))
         atomic_write(args.report.with_suffix(".txt"), message.encode("utf-8"))
     if args.show and sys.platform == "win32":
-        ctypes.windll.user32.MessageBoxW(None, result.get("error") or json.dumps(result, indent=2), "SYNAPSE installation check", 0x10 if code else 0x40)
+        ctypes.windll.user32.MessageBoxW(None, message, "SYNAPSE installation check", 0x10 if code else 0x40)
     print(json.dumps(result, indent=2))
     return code
 

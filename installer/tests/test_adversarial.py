@@ -475,6 +475,21 @@ class InstallerAdversarialTests(unittest.TestCase):
                 self.assertEqual(helper.read_bytes(), b"artist modified helper")
                 self.assertEqual(registration.read_bytes(), original_registration)
 
+    def test_successful_uninstall_check_writes_report_with_null_version(self):
+        self.install()
+        report = self.sandbox / "reports/uninstall-check.json"
+        # This matches Inno's InitializeUninstall call, including --report.
+        # A successful uninstall preflight has no payload version to display.
+        with redirect_stdout(io.StringIO()) as output:
+            code = setup_cli.main(["uninstall-check", "--app", str(self.app),
+                                   "--sandbox", str(self.sandbox), "--report", str(report)])
+        self.assertEqual(code, 0, output.getvalue())
+        self.assertEqual(safety.read_json(report)["status"], "PASS")
+        message = report.with_suffix(".txt").read_text(encoding="utf-8")
+        self.assertIn("checks passed", message)
+        self.assertNotIn("\x00", message)
+        self.assertTrue((self.app / engine.STATE).exists(), "Precheck must not uninstall")
+
     def test_recovery_validates_all_embedded_receipts_before_touching_files(self):
         registration = self.pref / "packages/synapse.json"
         real_apply = safety.apply_value
