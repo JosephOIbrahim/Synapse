@@ -11,7 +11,6 @@ import pytest
 QtCore = pytest.importorskip('PySide6.QtCore', reason='Native Qt worker contract')
 if not isinstance(getattr(QtCore, 'QThread', None), type):
     pytest.skip('Native Qt worker contract; generic Qt doubles are insufficient', allow_module_level=True)
-pytestmark = pytest.mark.needs_houdini
 
 SOURCE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SOURCE / 'python'))
