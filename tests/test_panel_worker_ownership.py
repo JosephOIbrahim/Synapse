@@ -17,6 +17,8 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
+from qt_stub_window import capture_real_qt
+
 SOURCE = Path(__file__).parents[1]
 PANEL = SOURCE / "python/synapse/panel/synapse_panel.py"
 LOADER = SOURCE / "houdini/python_panels/synapse_panel.pypanel"
@@ -294,6 +296,8 @@ def test_registry_reservation_is_atomic_and_identity_scoped(generation):
 
 def test_native_qthread_is_retained_through_reload_and_completion(generation):
     QtCore = pytest.importorskip("PySide6.QtCore")
+    if not capture_real_qt({"PySide6.QtCore": QtCore}):
+        pytest.skip("Native PySide6.QtCore unavailable: resident module is a file-less test stub")
     existing = QtCore.QCoreApplication.instance()
     app = existing or QtCore.QCoreApplication([])
     release = threading.Event()

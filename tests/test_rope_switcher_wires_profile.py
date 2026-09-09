@@ -113,6 +113,7 @@ class _Widget:
         self.name = name
         self._props = {}
         self._visible = True
+        self._enabled = True
         self._max_h = None
 
     def setVisible(self, v):
@@ -120,6 +121,12 @@ class _Widget:
 
     def isVisible(self):
         return self._visible
+
+    def setEnabled(self, enabled):
+        self._enabled = enabled
+
+    def isEnabled(self):
+        return self._enabled
 
     def setMaximumHeight(self, h):
         self._max_h = h
@@ -158,6 +165,7 @@ class _FakePanel:
 
     def __init__(self, state):
         self._layout_profile = "expert"          # boot default (== DEFAULT_PROFILE)
+        self._was_busy = False
         self._profile_state = state
         self._profile_pills = {}                  # empty -> _mark_profile_pill is a no-op
         self._recompose_hidden = set()
@@ -256,6 +264,8 @@ def _assert_active(panel, profile):
     assert panel._profile_state.profile == profile, "persisted selection"
     assert panel.prominence("token_pill") == _TOKEN_PILL_PROM[profile], "token_pill prominence"
     assert panel.prominence("author_token") == _AUTHOR_TOKEN_PROM[profile], "author_token prominence"
+    assert panel._connect_btn.isVisible(), "Connect remains visible across recomposition"
+    assert panel._connect_btn.isEnabled() is (not panel._was_busy), "Connect is enabled only while idle"
 
 
 # --------------------------------------------------------------------------- #
@@ -277,12 +287,14 @@ def test_selecting_a_profile_makes_it_the_active_composed_profile(profile):
 def test_switcher_changes_active_profile_across_a_full_sequence():
     """A live walk across every mode AND back — proves the switch is real in
     both directions (the density/prominence resets on switch-back too), and that
-    each selection lands the corresponding rope profile."""
+    Connect stays visible and keeps its idle/busy gate after each recompose."""
     panel = _make_panel()
     _assert_active(panel, "expert")                       # boot
-    for profile in ("curious", "ml", "expert", "ml", "curious", "expert"):
-        SynapsePanel._select_profile(panel, profile)
-        _assert_active(panel, profile)
+    for busy in (False, True, False):
+        panel._was_busy = busy
+        for profile in ("curious", "ml", "expert", "ml", "curious", "expert"):
+            SynapsePanel._select_profile(panel, profile)
+            _assert_active(panel, profile)
 
 
 def test_reselecting_the_active_profile_is_a_noop():

@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from qt_stub_window import capture_real_qt
+
 import shared.bridge as b
 from shared.types import AgentID
 from synapse.core.protocol import SynapseCommand
@@ -192,6 +194,8 @@ def test_async_bridge_history_runs_on_real_main_thread(env, monkeypatch):
 
 def test_tool_executor_off_main_keeps_native_history_on_main(env, monkeypatch):
     QtWidgets = pytest.importorskip('PySide6.QtWidgets')
+    if not capture_real_qt({'PySide6.QtWidgets': QtWidgets}):
+        pytest.skip('Native PySide6.QtWidgets unavailable: resident module is a file-less test stub')
     from synapse.panel.tool_executor import ToolExecutor, ToolRequest
     from synapse.server import main_thread
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
