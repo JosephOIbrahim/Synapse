@@ -1,85 +1,101 @@
-# Quick Start
+# Your first SYNAPSE session
 
-**The short version:** install the package, add your key, restart Houdini, open the panel, type "make a box". No command line beyond one copy-paste, no `pip install`, no MCP client.
+[Install first](installation.md) · [Back to README](../../README.md)
 
-> Not installed yet? Do [README ▸ Install](../../README.md#-install--5-minutes) first (~5 minutes), then come back here.
-
----
+Use a scratch scene for the first run. You are checking the connection and the
+resulting nodes before moving to a shot.
 
 ## 1. Open the panel
 
-In Houdini: **New Pane Tab ▸ Synapse**.
+In Houdini, choose **New Pane Tab → Synapse**.
 
-*(The shelf tool does the same thing -- it opens the panel. It does **not** start any server.)*
+Look for the conversation, prompt field, **Connect models**, and separate
+**Connect** / **Doctor** controls. The lightning icon opens tools and settings.
 
-> ✅ **You should see** the SYNAPSE panel dock, with a chat field, a rail across the top, and a connection strip along the footer.
-> **If you see** no `Synapse` entry in the menu -- Houdini loads packages only at launch. Fully restart Houdini, then run `python scripts/install_synapse_package.py --verify` to confirm the package is wired.
+If the pane is missing, restart Houdini and follow
+[installation verification](installation.md#verify-the-installation).
 
-## 2. Type what you want
+## 2. Choose the model
 
-```
+Click **Connect models** below the prompt.
+
+| You want | Choose |
+|---|---|
+| A local model | Ollama, with an installed model and the local service running. |
+| A cloud model | Claude, Gemini or NVIDIA Nemotron, with the relevant key. |
+| Your own endpoint | Custom, with its service address, model and credentials. |
+
+Select **Build and edit networks** under **Task needs**, then click
+**Check connection → Use this model**. The check reads metadata; it does not test
+generation. Explicit model selection can proceed when capability metadata is
+unknown; automatic selection is stricter. A listed model is not automatically
+able to build or read images.
+
+The dialog shows the data destination. Local Ollama needs no API key, but a
+customized remote Ollama address sends data to that address. Ollama cloud/relay
+models may also send work remotely even through a localhost service. Check the
+model and destination, not just the address. Model-data permission
+belongs to the current task; choosing a model does not grant every scene operation.
+
+## 3. Make something small
+
+Send:
+
+```text
 make a box
 ```
 
-> ✅ **You should see** a real `box` geo node appear in your scene -- and **Ctrl+Z** takes it back. Everything the panel does is an ordinary Houdini action.
+Inspect the created nodes and the panel's result. Try Undo, then Redo.
 
-That's the whole loop. The agent runs **inside** Houdini's own Python, so tools are direct `hou.*` calls -- there is no bridge to start and nothing to connect for normal chat use.
+A supported build operation groups its scene changes. One Undo does not promise
+to reverse a whole conversation, files written to disk, or every failed build.
+A partial network may need inspection and deliberate cleanup.
 
-Try a bigger one:
+## 4. Try the Solaris starter
 
-```
-create a solaris network ending with rendersettings using karma xpu
-```
+Begin with:
 
-The panel proposes the network, validates it against your live scene *and* against probe-verified wiring truth, then builds it in a single undo group.
-
-## 3. Pick your engine (optional)
-
-The rail's **author token** switches between **Claude · Gemini · NVIDIA Nemotron · Ollama (local) · Custom**. Keys for the first three go in the repo-root `.env`; Ollama needs no key; Custom is configured in the panel (base URL · model · key).
-
-```
-ANTHROPIC_API_KEY=sk-ant-...
-GEMINI_API_KEY=AIza...
-NVIDIA_API_KEY=nvapi-...
+```text
+create a solaris network
 ```
 
-> The `.env` is read **at Houdini startup**. Add a key to a Houdini that's already open and it won't be seen -- relaunch from scratch.
+Then make the intended setup explicit:
 
----
+> Use a SOP Create with geometry inside, a dome light using an HDRI I provide,
+> an area light, a Material Library with a standard MaterialX surface, a camera,
+> and Karma XPU render settings.
 
-## Connecting an external client (optional)
+This is a task description. Model choice, available tools and the running Houdini
+build affect the result. Inspect the geometry, HDRI path, material binding, camera
+and render settings. Check node errors before attempting a render.
 
-Everything above runs in-process and needs no server. You only need the bridge if you want **an outside tool** -- Claude Code, Cursor, a custom agent -- to drive Houdini.
+[Lookdev workflow and limits](../copernicus-lookdev.md) ·
+[Solaris reference notes](../knowledge/rob_pieke_h22_solaris.json)
 
-**Start it:** click **Connect** in the SYNAPSE panel footer. It never starts automatically. Once up, the button reads **Bridge ✓**.
+## 5. Ask for a saved suggestion, if configured
 
-That one server serves both surfaces on **one port (default 9999)**: a WebSocket at `/synapse` and an HTTP MCP endpoint at `/mcp`. The real bound port is published to `~/.synapse/bridge.json` -- read that rather than assuming.
+Open **lightning tools menu → Saved lookdev suggestion…**, or send
+`/lookdev-suggestion`.
 
-**Then point your client at it.** Full configuration for Claude Code, Cursor, VS Code and custom agents: [`docs/mcp/SETUP.md`](../mcp/SETUP.md).
+A compatible imported Stage 0 experience produces a card. Read its settings and
+limits. **Use in prompt** appends editable text; it does not submit that text.
+**Dismiss** ends the lookup. Missing memory or a changed version produces an
+explanation rather than an invented suggestion.
 
-> ⚠️ The repo also ships a **stdio** bridge at [`.mcp.json`](../../.mcp.json) (`python mcp_server.py` from the repo root). That path runs in *your* Python, not Houdini's, and needs `pip install mcp websockets` -- neither is vendored. The in-Houdini panel path needs neither.
+[Optional setup](../development/rsi_stage0.md)
 
-## Tools
+## If something stops working
 
-SYNAPSE registers **115 tools** -- 40 `houdini_*`, 37 `synapse_*`, 21 `cops_*`, 17 `tops_*` -- spanning scene and node ops, USD/Solaris, materials, Copernicus, PDG/TOPs, render orchestration and project memory.
+- **Model problem:** reopen **Connect models** and check the selected service.
+- **Houdini bridge problem:** click **Connect**, then **Doctor**.
+- **Need more readable text:** use the lightning tools menu's text-size controls.
+- **Need to stop:** use Stop. A running cook/render may still need to finish or be cancelled separately.
 
-Call `tools/list` for the authoritative list with schemas, or read [`docs/tools.md`](../tools.md).
+The **Connect** button starts the local bridge; it is not the model chooser.
+It stays labeled Connect. The panel can use an off-main local fallback when a
+tool request was definitely not sent. A lost reply after possible dispatch is
+reported as uncertain and must not trigger an automatic duplicate action.
 
-## Authentication (optional)
-
-Bearer-token auth for the bridge is opt-in. Set an API key via environment variable:
-
-```bash
-export SYNAPSE_API_KEY="your-secret-key"
-```
-
-Or create `~/.synapse/auth.key`:
-
-```
-# Lines starting with # are comments
-your-secret-key
-```
-
-When enabled, the first WebSocket message must be an `authenticate` command, and `/mcp` requires an `Authorization: Bearer <token>` header.
-
-> **Security posture — local-first, single-user.** On the live `/synapse` handler path, `execute_python` / `execute_vex` run **ungated** — no per-command permission check. Keeping both surfaces on a single-user local machine is what contains arbitrary code execution. Because both ride one port, exposing that port exposes **both**. Do not put either on an untrusted network; a multi-user deployment needs a handler-layer auth gate that is not yet shipped. Details in [`docs/mcp/SETUP.md`](../mcp/SETUP.md#authentication).
+External MCP clients need their own setup and have different permissions:
+[MCP connection guide](../mcp/SETUP.md) and
+[execution diagrams](../architecture/overview.md#execution-paths).

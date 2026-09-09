@@ -1,64 +1,119 @@
-# Installation (developers)
+# Install SYNAPSE
 
-> **Just want to use SYNAPSE in Houdini?** The 5-minute artist setup lives in the
-> [README ▸ Install](../../README.md#-install--5-minutes) — download, run the installer, paste your
-> API key, open the panel, type "make a box". This page is the editable-install + test
-> path for contributors.
+[Back to README](../../README.md) · [First session](quickstart.md)
 
-## Editable install
+**Current validation target:** Windows, Houdini 22.0.400, bundled Python 3.13.
+Use a terminal with Python available for the installers. Houdini runs SYNAPSE
+with its own Python; installing a system Python does not replace that runtime.
 
-```bash
+## 1. Keep a copy of the repository
+
+Download the source ZIP from the [latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest)
+and extract it into a permanent folder. Open a terminal in the folder containing
+`install.py`.
+
+If you use Git instead:
+
+```shell
 git clone https://github.com/JosephOIbrahim/Synapse.git
 cd Synapse
-pip install -e ".[dev]"
 ```
 
-Optional feature extras (websocket adapter, MCP, routing, encryption):
+## 2. Run both installers
 
-```bash
-pip install -e ".[dev,websocket,mcp,routing,encryption]"
+```shell
+python scripts/install_synapse_package.py
+python install.py
 ```
 
-## Register the Houdini package
+The first registers the package and its source paths. The second installs panel,
+shelf and icon files. Restart Houdini after both finish.
 
-The package ships in-repo at `packages/synapse.json`. Register it once so the SYNAPSE
-panel, shelves, and the `synapse` Python package load on launch:
+<details>
+<summary><strong>OneDrive, custom preferences, or multiple Houdini versions?</strong></summary>
 
-```bash
-python scripts/install_synapse_package.py            # auto-detects your houdini prefs
-python scripts/install_synapse_package.py --dry-run  # preview without writing
-python scripts/install_synapse_package.py --verify   # read-only: did it actually work?
+Give both installers the **same actual Houdini preference folder**. The panel
+installer does not automatically discover every OneDrive/custom location.
+
+Replace this example path before running:
+
+```shell
+python scripts/install_synapse_package.py --pref-dir "C:/Users/you/OneDrive/Documents/houdini22.0"
+python install.py --houdini-prefs "C:/Users/you/OneDrive/Documents/houdini22.0"
 ```
 
-Alternatively — the **portable route, no install** — add the repo's `packages/` directory
-to `$HOUDINI_PACKAGE_DIR` in your `houdini.env`; Houdini then loads the version-controlled
-`packages/synapse.json` directly. Either way, **restart Houdini** afterward — packages load
-at launch.
+Both support `--dry-run` to preview writes. Keep the source repository in place;
+the package refers to that location.
 
-### Confirming the install
+</details>
 
-`--verify` writes nothing. It re-checks each install condition and prints one screen of
-`PASS` / `FAIL` / `MANUAL` rows: the checkout's key paths, which Houdini pref dirs are wired
-to *this* checkout (and whether the pref dir your installed build actually reads is among
-them), the vendored-SDK ABI, API-key presence, and discoverable Houdini installs.
+## 3. Connect a model
 
-`MANUAL` rows are the three things no process outside Houdini can observe — the Pane Tab
-menu entry, "make a box" creating a node, and the Connect button's state. They are never
-rendered as `PASS` and never affect the exit code. Exit is `0` only when no row `FAIL`s.
+Open **New Pane Tab → Synapse**, then **Connect models** below the prompt.
 
-*Note on `--verify` and the pref dir:* the installer writes into **every** candidate pref
-dir it finds, so on a seat with several Houdini majors "the installer succeeded" does not by
-itself prove the right one was hit. `--verify` closes that gap — it derives the pref-dir name
-each discovered build reads and `FAIL`s when an installed build is not covered.
+1. Choose the engine and model.
+2. Enter an API key if the service needs one. For Ollama, start the local service first.
+3. Set **Task needs** to **Build and edit networks** for node creation.
+4. Click **Check connection**, then **Use this model** when the check succeeds.
 
-## Run the tests
+The check requests model metadata; it does not send your scene or prompt.
+Keys entered here stay in the panel session and are cleared when the panel closes.
+An in-flight response may finish after closing. Existing environment keys are
+also supported.
 
-```bash
-python -m pytest tests/ -q
+**Connect models** selects the AI service. The separate **Connect** button starts
+the local Houdini bridge. Use **Doctor** for model-free diagnostics.
+
+[Continue to your first build →](quickstart.md)
+
+## Verify the installation
+
+Run from the repository folder:
+
+```shell
+python scripts/install_synapse_package.py --verify
+python install.py --verify
 ```
 
-Most of the suite (~4,700 collected) runs with **no Houdini required**. ~100 tests skip
-automatically on a clean clone / CI — the Moneta-gated ones need the optional `moneta`
-package, the rest need a live Houdini.
+For a custom folder, include the same `--pref-dir` or `--houdini-prefs` option you
+used during installation. These verification commands do not write files.
 
-> **Upgrading Houdini?** Follow `docs/studio/UPGRADE.md` — symbol-table regen, vendor ABI check, installer re-run, gate confirmation.
+The package verifier reports `PASS`, `FAIL` and `MANUAL`. A `MANUAL` row needs
+a check inside Houdini; it is not a completed test.
+
+**Known verifier limitation:** it still requires `ANTHROPIC_API_KEY` in its key
+check. An Ollama-only setup, another provider, or a key entered only in the panel
+can therefore fail that row even when its model connection works. Check the
+reported paths, use **Check connection**, and read **Doctor** for the running setup.
+Do not add an unrelated provider key just to silence this row.
+
+## Updating
+
+Download the new release or update your clean Git checkout, rerun both installers,
+and restart Houdini. Read the [upgrade guide](../studio/UPGRADE.md) for build changes.
+
+Stage 0 saved suggestions match the exact SYNAPSE version. Existing records are
+retained, but need a matching rehearsal and import before they qualify for a new
+version. The ordinary panel works without this optional suggestion setup.
+
+## For contributors
+
+Use a separate environment for stock-Python development. Match the current
+[CI configuration](../../.github/workflows/ci.yml):
+
+```shell
+python -m pip install -e ".[dev,websocket,mcp]"
+python -m pytest tests/ -m "not needs_houdini" -q -rs
+```
+
+Use `python -m pytest tests/ -q -rs` for the unfiltered suite. Missing runtimes and
+optional substrates report explicit skips; there is no fixed test-count promise.
+Native Python/Qt/USD checks are separate from a live Houdini session.
+
+The shipped SDK wheels target Windows Python 3.11/3.13. Other interpreter/OS
+combinations use installed dependencies and require their own native qualification.
+See [the two test environments](../CI_TWO_WORLDS.md).
+
+Optional Moneta, Hanish and Octavius setup is separate from the basic install:
+[LOOP configuration](../MEMORY_LOOP_REPAIR.md) and
+[Stage 0 experience setup](../development/rsi_stage0.md).

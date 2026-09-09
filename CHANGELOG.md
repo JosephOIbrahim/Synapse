@@ -2,6 +2,17 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.67.4 — Artist guide and architecture diagrams
+
+*2026-09-09.* Reworks the README for quick scanning and progressive detail;
+updates setup and first-session instructions to the current panel. Replaces
+historical front-page diagrams with the artist workflow, actual execution paths,
+three-substrate memory LOOP, checked suggestions and release process. Separates
+shipped behavior from optional scaffolds and future predictive/Computer Use work,
+and records current GitHub topic metadata. Runtime behavior is unchanged; the
+new version requires matching Stage 0 experience qualification. See the
+[release notes](docs/releases/v5.67.4.md).
+
 ## v5.67.3 — Panel reliability and memory recovery
 
 *2026-09-09.* Ships the visible Connect/Doctor controls, lightning tools icon,

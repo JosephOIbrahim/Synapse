@@ -2,7 +2,7 @@
 
 SYNAPSE exposes a standard MCP (Model Context Protocol) endpoint that any MCP-compliant client can connect to -- Claude Code, Cursor, VS Code, Windsurf, Cline, or custom agents.
 
-> **You do not need this page to use SYNAPSE.** The artist path -- panel in Houdini, type "make a box" -- needs no MCP client and no `pip install`. See [README ▸ Install](../../README.md#-install--5-minutes). This page is for connecting an **external** MCP client to a running Houdini.
+> **Using the Houdini panel?** Start with [installation](../getting-started/installation.md) and [your first session](../getting-started/quickstart.md). This page connects an **external** MCP client, which has different permissions from normal panel chat. See the [execution and permission map](../architecture/overview.md#execution-paths).
 
 **Protocol:** MCP 2025-06-18 (Streamable HTTP transport)
 **Endpoint:** `http://localhost:9999/mcp`
@@ -23,9 +23,9 @@ The default port is **9999**. `start_hwebserver(port=...)` binds the port you as
 
 1. **Houdini is running.**
 2. **The SYNAPSE panel is open** -- New Pane Tab ▸ **Synapse**.
-3. **You clicked `Connect` in the panel footer.**
+3. **You clicked the separate `Connect` button in the panel.** `Connect models` chooses an AI service; it does not start the bridge.
 
-> ⚠️ **The bridge never starts automatically.** Not on Houdini launch, not from the shelf button (the shelf tool only *opens the panel* -- it starts no server), not when the panel loads. The footer **Connect** button is the one-click way to start it; it is idempotent and safe to click anytime. Once it is up the button reads **Bridge ✓**.
+> The shelf tool opens the panel. The **Connect** button starts the local bridge and remains labeled **Connect**; read the connection status or run **Doctor** to check the result. The panel's local fallback is a separate path, used only when a tool request was definitely not sent through MCP.
 
 *Headless / no panel?* Run this in Houdini's Python Shell instead:
 
@@ -42,7 +42,7 @@ When the server starts it writes the real bound endpoint to `~/.synapse/bridge.j
 {"host": "localhost", "port": 9999, "pid": 12345}
 ```
 
-**Read this file rather than hardcoding a port.** It is the authoritative answer to "where is SYNAPSE listening right now", and its absence means the server is not running on this machine.
+**Use this file to discover the endpoint, then verify it responds.** A discovery file can be stale after a process exits; file presence alone does not prove a live connection.
 
 ### Verify it is up
 
@@ -53,7 +53,7 @@ curl -s -X POST http://localhost:9999/mcp \
 ```
 
 > ✅ **You should see** a JSON response containing `protocolVersion` and `capabilities`.
-> **If you see** `Connection refused` -- the bridge is not up. Click **Connect** in the panel footer.
+> **If you see** `Connection refused`, check the discovered endpoint, click **Connect**, then run **Doctor**.
 
 *Status: the `/mcp`-on-9999 wiring is confirmed by reading the registration code (`mcp/server.py:685` + `hwebserver_adapter.py:273`). **Verify live** with the curl above before depending on it in a studio setup.*
 
@@ -91,7 +91,7 @@ This repo ships a working stdio config at [`.mcp.json`](../../.mcp.json) -- it r
 }
 ```
 
-> ⚠️ **This path needs two pip installs:** `pip install mcp websockets`. Neither is vendored (`python/synapse/_vendor/` carries the Anthropic SDK stack only), and this bridge runs in *your* Python, not Houdini's. The in-Houdini panel path needs neither.
+> This adapter runs in the external client's Python. From the repository, install its tested dependency set with `python -m pip install -e ".[mcp]"`. This preserves the MCP version pin required by the adapter; an unpinned install can change its API. The in-Houdini panel does not require an external MCP client.
 
 Run it from the repo root (the `args` path is relative), or give an absolute path to `mcp_server.py`.
 
@@ -150,16 +150,12 @@ SYNAPSE uses the `Mcp-Session-Id` header for session tracking:
 
 ## Available Tools
 
-SYNAPSE registers **115 tools**. By name prefix:
-
-| Prefix | Tools | Covers |
-|---|---|---|
-| `houdini_` | 40 | scene, nodes, parms, execution, USD/Solaris, materials, HDAs, render, undo/redo |
-| `synapse_` | 37 | memory, introspection, propose/validate/build, render orchestration, health, diagnostics |
-| `cops_` | 21 | Copernicus -- networks, solvers, procedural texture, stylize, AOV comp, MaterialX |
-| `tops_` | 17 | PDG -- cook, wedge, work items, schedulers, dependency graph, multi-shot |
-
-**Call `tools/list` for the authoritative list** with descriptions and input schemas -- that is generated from the live registry and can never drift from it. A per-tool reference lives in [`docs/tools.md`](../tools.md).
+**Call `tools/list` on the connected endpoint** for its registered names,
+descriptions and input schemas. The source authority is the
+[tool registry](../../python/synapse/mcp/_tool_registry.py); the README's count is
+checked against that registry. The stdio adapter adds local helper tools, so its
+list need not have the same total as HTTP MCP. Tool availability does not imply
+that normal panel chat permits every tool.
 
 ## Configuration
 
@@ -177,7 +173,12 @@ SYNAPSE registers **115 tools**. By name prefix:
 
 MCP Bearer token authentication is opt-in. When `SYNAPSE_API_KEY` is set (or `~/.synapse/auth.key` exists), the `/mcp` endpoint requires an `Authorization: Bearer <token>` header on all requests. Without a key configured, auth is disabled (backward compatible).
 
-SYNAPSE assumes a **single-user, localhost** posture, and that assumption is load-bearing for safety: on the live `/synapse` handler path `execute_python` / `execute_vex` run **ungated** — no per-command permission check (see CLAUDE.md §1.2) — so keeping both the WebSocket (`/synapse`) and MCP HTTP (`/mcp`) surfaces on a single-user local machine is what contains arbitrary code execution. Do **not** expose either surface to an untrusted network. Because both surfaces share one port, opening that one port exposes **both** — there is no configuration in which you can publish `/mcp` while keeping `/synapse` private. A multi-user / studio-LAN / VPN deployment requires a handler-layer auth gate (tracked as **SEC-1** in `docs/SCIENCE_HARNESS_LEDGER.md`), which is **not yet shipped**; the Bearer-token auth above gates `/mcp` when `SYNAPSE_API_KEY` is set, but does not by itself make `execute_python` safe on a shared host.
+SYNAPSE assumes a **single-user, localhost** setup. Bearer authentication identifies
+a client; it does not provide per-operation artist approval or sandbox executed
+Python/VEX. External clients do not inherit the normal panel worker's restricted
+tool policy. Both endpoints share the server port, so exposing it exposes both
+surfaces. A shared or untrusted-network deployment needs additional isolation and
+policy work. See the [current permission map](../architecture/overview.md#permission-and-undo-boundaries).
 
 ```bash
 # Set API key via environment variable
@@ -205,17 +206,20 @@ MCP clients that support auth headers can pass the token. For Claude Code, confi
 
 ## SSE Streaming
 
-SSE (Server-Sent Events) streaming is not yet supported. Houdini's hwebserver uses a C++ request-response model that doesn't support long-lived streaming connections. Use `resources/read` polling as an alternative for real-time data.
+The HTTP handler supports SSE-formatted **short polling responses**, including
+queued progress events; it does not hold a long-lived event stream open.
+Clients must poll again for subsequent updates. See the
+[GET handler and event queue](../../python/synapse/mcp/server.py).
 
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| **"Connection refused"** | The bridge isn't running -- it never auto-starts | Click **Connect** in the SYNAPSE panel footer. Headless: `from synapse.server.hwebserver_adapter import start_hwebserver; start_hwebserver(port=9999)` in Houdini's Python Shell. |
-| **Connected, but on the wrong port** | Something else held 9999, or the server was started with a different `port=` | Read `~/.synapse/bridge.json` for the real bound endpoint and point your client there. No file = not running. |
-| **Panel is open but nothing listens** | Opening the panel is not starting the bridge | The footer **Connect** button starts it. The shelf tool only opens the panel -- it starts no server. |
+| **"Connection refused"** | The endpoint is wrong or the bridge is unavailable | Check the discovered endpoint, click **Connect**, then run **Doctor**. |
+| **Connected, but on the wrong port** | The server was started at another address/port, or the record is stale | Read the configured discovery file and verify the endpoint responds. |
+| **Panel is open but nothing listens** | Opening the panel does not start the bridge | Use the separate **Connect** control. |
 | **"Unknown session"** | `Mcp-Session-Id` header missing or expired | Send a new `initialize` request for a fresh session. |
 | **"Method not found"** | Calling an unimplemented MCP method | Supported: `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, `resources/templates/list`, `ping`. |
-| **`ModuleNotFoundError: mcp` / `websockets`** | The stdio bridge's two deps aren't installed | `pip install mcp websockets`. Only the stdio path needs them -- the in-Houdini panel does not. |
-| **Tools timing out** | Render and wedge operations take minutes | Default timeout is 10s for most tools, 30s for execution/introspection, 120s for render/wedge. Raise your client's timeout. |
+| **`ModuleNotFoundError: mcp` / `websockets`** | Dependencies are missing in the stdio client's Python | From the repository, run `python -m pip install -e ".[mcp]"` in that environment. |
+| **Tools timing out** | The client or host wait ended | Check the operation and [shared timeout table](../../python/synapse/core/timeouts.py). A timeout does not prove the action stopped; inspect before retrying a scene mutation. |
 | **Stale version in `serverInfo`** | Installed package metadata is stale | Run `pip install -e .` from the SYNAPSE repo root to refresh it. |

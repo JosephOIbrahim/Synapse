@@ -1,0 +1,25 @@
+{
+  "description": "Artist-controlled AI assistance inside Houdini. Build editable node networks, connect local or cloud models, and explore checked suggestions with optional project memory.",
+  "topics": [
+    "ai-agents",
+    "artist-tools",
+    "houdini",
+    "houdini-22",
+    "houdini-python",
+    "houdini-tools",
+    "human-in-the-loop",
+    "karma",
+    "llm",
+    "materialx",
+    "mcp",
+    "natural-language",
+    "ollama",
+    "openusd",
+    "procedural-modeling",
+    "python",
+    "sidefx",
+    "solaris",
+    "vfx",
+    "vfx-pipeline"
+  ]
+}
