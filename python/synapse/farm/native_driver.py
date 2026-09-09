@@ -356,7 +356,12 @@ def _localize_usd(usd_path, package_root, output_path, plan):
     product.GetAttribute("productName").Set(str(output_path).replace("\\", "/"))
     settings.GetAttribute("resolution").Set(Gf.Vec2i(plan["width"], plan["height"]))
     for key in ("karma:global:samplesperpixel", "karma:global:pathtracedsamples"):
-        settings.CreateAttribute(key, Sdf.ValueTypeNames.Int).Set(plan["samples"])
+        attr = settings.CreateAttribute(key, Sdf.ValueTypeNames.Int)
+        # A default alone does not override time samples in the exported layer.
+        # Remove its value opinions before authoring the reviewed constant budget.
+        attr.Clear()
+        if not attr.Set(plan["samples"]) or attr.GetTimeSamples():
+            raise ValueError("The reviewed sample budget could not be applied to every frame.")
     settings.CreateAttribute("karma:global:abortmissingtexture", Sdf.ValueTypeNames.Bool).Set(True)
     for attr, timecode, values in list(_asset_values(stage)):
         changed, updated = False, []

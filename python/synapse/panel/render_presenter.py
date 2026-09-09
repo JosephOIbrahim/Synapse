@@ -209,11 +209,16 @@ def job_presentation(job, *, observation_note=""):
         title = "The completion record is missing verified output evidence."
     else:
         title = titles[state]
+    output_recheck = (job.get("state") == "status_unavailable" and
+                      job.get("output_recheck_pending") is True and
+                      job.get("error_code") == "output_unavailable")
     if observation_note:
         title = "Status unavailable. The render may still be running."
+    if output_recheck:
+        title = "The rendered images could not be checked. Refresh to check them again."
     return {"state": state, "title": title, "note": observation_note or str(job.get("note") or ""),
             "verified": count, "total": total,
-            "can_cancel": bool(job.get("request_id")) and job.get("state") in (
+            "can_cancel": not output_recheck and bool(job.get("request_id")) and job.get("state") in (
                 ACTIVE_STATES | {"prepared", "submission_uncertain", "status_unavailable"}),
             "can_open": can_open and not observation_note, "poll": state in POLL_STATES or bool(observation_note)}
 
@@ -229,6 +234,7 @@ class RenderWorkspaceModel:
         self.observation_note = ""
         self.form_revision = 0
         self._binding = None
+        self._verified_before_recheck = {}
         self._new_id = request_id_factory or (lambda: uuid.uuid4().hex)
 
     def edit(self, values):
@@ -293,12 +299,48 @@ class RenderWorkspaceModel:
                               job.get("error_code") == "output_changed" and
                               type(old_revision) is int and type(new_revision) is int and new_revision > old_revision and
                               job.get("verified") is False and job.get("outputs") == [] and job.get("verified_frames") == [])
+        newer = type(old_revision) is int and type(new_revision) is int and new_revision > old_revision
+        same_identity = all(job.get(key) == previous.get(key) for key in (
+            "request_id", "digest", "plan", "job_dir", "backend_id"))
+        metadata, old_metadata = job.get("metadata") or {}, previous.get("metadata") or {}
+        same_identity = same_identity and isinstance(metadata, dict) and isinstance(old_metadata, dict)
+        for key in ("native_token", "native_phase"):
+            same_identity = same_identity and metadata.get(key) == old_metadata.get(key)
+        output_unavailable = (previous.get("state") == "complete" and
+                              job["state"] == "status_unavailable" and
+                              job.get("error_code") == "output_unavailable" and
+                              job.get("output_recheck_pending") is True and newer and same_identity and
+                              job.get("verified") is False and job.get("outputs") == [] and
+                              job.get("verified_frames") == [] and job.get("verification") is None)
+        recovering = (previous.get("state") == "status_unavailable" and
+                      previous.get("output_recheck_pending") is True)
+        recovery_conflict = False
+        if recovering and job["state"] == "complete":
+            anchor = self._verified_before_recheck.get(rid)
+            recovery_conflict = (not newer or not same_identity or
+                                 job.get("output_recheck_pending") is not False or
+                                 job.get("cancellation_requested") is True or not verified_output_paths(job) or
+                                 (anchor is not None and any(job.get(key) != anchor.get(key) for key in (
+                                     "outputs", "verified_frames", "verification"))))
+        elif recovering:
+            empty = (job.get("verified") is False and job.get("outputs") == [] and
+                     job.get("verified_frames") == [] and job.get("verification") is None)
+            expected = ((job["state"] == "status_unavailable" and
+                         job.get("output_recheck_pending") is True and job.get("error_code") == "output_unavailable") or
+                        (job["state"] == "failed" and job.get("error_code") == "output_changed") or
+                        (job["state"] in {"cancel_requested", "cancelled"} and job.get("cancellation_requested") is True))
+            recovery_conflict = (not same_identity or not empty or not expected or
+                                 type(old_revision) is not int or type(new_revision) is not int or new_revision < old_revision)
         if (previous.get("state") in {"complete", "cancelled", "failed"} and
-                job["state"] != previous["state"] and not output_invalidated):
+                job["state"] != previous["state"] and not output_invalidated and not output_unavailable) or recovery_conflict:
             if self.job and self.job.get("request_id") == rid:
                 self.pending = None
                 self.observation_note = "The render service returned a conflicting terminal state. Check this request's status."
             return False
+        if output_unavailable:
+            self._verified_before_recheck[rid] = deepcopy(previous)
+        elif recovering and job["state"] in {"complete", "failed", "cancelled"}:
+            self._verified_before_recheck.pop(rid, None)
         self.jobs[rid] = deepcopy(job)
         if not self.job or self.job.get("request_id") != rid:
             return False

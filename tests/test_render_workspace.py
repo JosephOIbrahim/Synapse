@@ -162,6 +162,96 @@ def test_authoritative_output_invalidation_stays_failed_after_reselection():
     assert view.job["state"] == "failed"
 
 
+def unreadable_outputs(complete):
+    return dict(complete, state="status_unavailable", error_code="output_unavailable",
+                output_recheck_pending=True, revision=complete["revision"] + 1,
+                verified=False, outputs=[], verified_frames=[], verification=None,
+                note="Previously verified images could not be read. Refresh to check them again.")
+
+
+def test_verified_output_read_recovery_updates_the_selected_record():
+    view = model()
+    complete = completed()
+    view.jobs[complete["request_id"]] = complete
+    view.select_job(complete["request_id"])
+    unavailable = unreadable_outputs(complete)
+    assert view.receive_job(unavailable)
+    presentation = job_presentation(view.job)
+    assert not presentation["can_open"] and not presentation["can_cancel"]
+    assert "running" not in presentation["title"].lower()
+    assert presentation["poll"]
+    restored = dict(complete, revision=unavailable["revision"] + 1, output_recheck_pending=False)
+    assert view.receive_job(restored)
+    assert job_presentation(view.job)["can_open"]
+    assert not view.can_submit
+
+
+@pytest.mark.parametrize("damage", ["digest", "plan", "job_dir", "pending", "revision", "outputs", "native_token"])
+def test_read_failure_cannot_replace_verified_identity_or_expose_outputs(damage):
+    view = model()
+    complete = completed()
+    view.jobs[complete["request_id"]] = complete
+    view.select_job(complete["request_id"])
+    unavailable = unreadable_outputs(complete)
+    if damage == "digest":
+        unavailable["digest"] = "c" * 64
+    elif damage == "plan":
+        unavailable["plan"] = dict(complete["plan"], samples=64)
+    elif damage == "job_dir":
+        unavailable["job_dir"] = "C:/other"
+    elif damage == "pending":
+        unavailable.pop("output_recheck_pending")
+    elif damage == "revision":
+        unavailable["revision"] = complete["revision"]
+    elif damage == "native_token":
+        unavailable["metadata"] = {"native_token": "different-owner"}
+    else:
+        unavailable["outputs"] = complete["outputs"]
+    assert not view.receive_job(unavailable)
+    assert not job_presentation(view.job, observation_note=view.observation_note)["can_open"]
+
+
+@pytest.mark.parametrize("damage", ["digest", "plan", "job_dir", "revision", "outputs", "native_token", "cancelled", "pending"])
+def test_restored_output_must_match_the_previously_verified_receipt(damage):
+    view = model()
+    complete = completed()
+    view.jobs[complete["request_id"]] = complete
+    view.select_job(complete["request_id"])
+    unavailable = unreadable_outputs(complete)
+    assert view.receive_job(unavailable)
+    restored = deepcopy(complete)
+    restored.update(revision=unavailable["revision"] + 1, output_recheck_pending=False)
+    if damage == "digest":
+        restored["digest"] = "c" * 64
+    elif damage == "plan":
+        restored["plan"]["samples"] = 64
+    elif damage == "job_dir":
+        restored["job_dir"] = "C:/other"
+    elif damage == "revision":
+        restored["revision"] = unavailable["revision"]
+    elif damage == "outputs":
+        restored["outputs"][0]["sha256"] = "c" * 64
+    elif damage == "native_token":
+        restored["metadata"] = {"native_token": "different-owner"}
+    elif damage == "cancelled":
+        restored["cancellation_requested"] = True
+    else:
+        restored["output_recheck_pending"] = True
+    assert not view.receive_job(restored)
+    assert not job_presentation(view.job, observation_note=view.observation_note)["can_open"]
+
+
+def test_reopened_view_can_recover_the_same_unavailable_request():
+    view = model()
+    complete = completed()
+    unavailable = unreadable_outputs(complete)
+    view.jobs[complete["request_id"]] = unavailable
+    view.select_job(complete["request_id"])
+    restored = dict(complete, revision=unavailable["revision"] + 1, output_recheck_pending=False)
+    assert view.receive_job(restored)
+    assert job_presentation(view.job)["can_open"]
+
+
 @pytest.mark.parametrize("state", ["rendering", "status_unavailable", "submission_uncertain"])
 def test_unavailable_status_still_allows_explicit_stop_request(state):
     view = model()

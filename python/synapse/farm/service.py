@@ -61,6 +61,7 @@ class FarmService:
                   "total_frames": len(plan["frames"]), "outputs": [],
                   "verified": False, "verification": None, "metadata": {},
                   "submission_attempted": False, "cancellation_requested": False,
+                  "cancellation_delivery_pending": False,
                   "created_at": stamp, "updated_at": stamp, "revision": 1,
                   "_operation": token, "_phase": "prepare"}
         record, created = self.store.reserve(record)
@@ -75,10 +76,14 @@ class FarmService:
             if not job_dir.resolve().is_relative_to(Path(plan["output_root"])):
                 raise OSError("Render folder escaped its output root")
         except OSError as exc:
+            if self.store.get(request_id)["cancellation_requested"]:
+                return self._confirm_no_dispatch(request_id, "prepare")
             return self._record_exception(request_id, token, "prepare",
                 FarmError("output_unavailable", "The new render folder could not be created. Choose a writable output folder and a new request ID."))
         current = self.store.get(request_id)
-        if current["cancellation_requested"] or current["state"] in _TERMINAL:
+        if current["cancellation_requested"]:
+            return self._confirm_no_dispatch(request_id, "prepare")
+        if current["state"] in _TERMINAL:
             return _public(current)
         try:
             result = self.backend.prepare(deepcopy(plan), job_dir)
@@ -104,7 +109,9 @@ class FarmService:
         if record.get("_operation") != token:
             return _public(record)
         current = self.store.get(request_id)
-        if current["cancellation_requested"] or current["state"] in _TERMINAL:
+        if current["cancellation_requested"]:
+            return self._confirm_no_dispatch(request_id, "submit")
+        if current["state"] in _TERMINAL:
             return _public(current)
         try:
             result = self.backend.submit(deepcopy(record["plan"]),
@@ -112,6 +119,23 @@ class FarmService:
         except Exception as exc:
             return self._record_exception(request_id, token, "submit", exc)
         return self._record_result(request_id, token, "submit", result)
+
+    def _confirm_no_dispatch(self, request_id: str, phase: str) -> dict:
+        """Only the admitted caller can prove it skipped its backend invocation.
+
+        A missing process receipt after restart proves nothing. This acknowledgement
+        is written by the still-running prepare/submit owner before it returns.
+        """
+        def confirm(record):
+            if (record["state"] != "cancel_requested" or not record["cancellation_requested"]
+                    or record["submission_attempted"] != (phase == "submit")):
+                return None
+            record.update(state="cancelled", cancellation_delivery_pending=False,
+                          verified=False, verification=None, verified_frames=[], outputs=[],
+                          _dispatch_skipped=phase,
+                          note=f"Cancelled before {phase} dispatch. No work was started by that operation.")
+            return record
+        return _public(self.store.update(request_id, confirm))
 
     def get_job(self, request_id: str) -> dict:
         record = self.store.get(validate_request_id(request_id))
@@ -125,47 +149,82 @@ class FarmService:
     def refresh(self, request_id: str) -> dict:
         request_id, token = validate_request_id(request_id), uuid.uuid4().hex
         def observe(record):
-            if record["state"] in _TERMINAL or record["state"] == "prepared":
+            if (record["state"] in _TERMINAL or record["state"] == "prepared"
+                    or (record["state"] == "status_unavailable" and
+                        record.get("output_recheck_pending") is True)):
                 return None
             record["_operation"] = token
             return record
         record = self.store.update(request_id, observe)
         if record.get("_operation") != token:
-            if record["state"] == "complete":
+            if record["state"] == "complete" or (record["state"] == "status_unavailable" and
+                                                record.get("output_recheck_pending") is True):
                 return self._recheck_complete(record)
             return _public(record)
+        # The stop fence and stop delivery have separate lifetimes. A restart or
+        # lost acknowledgement retries only the idempotent cancellation message.
+        action = ("cancel" if record["cancellation_requested"] and
+                  record.get("cancellation_delivery_pending", True) else "poll")
         try:
-            result = self.backend.poll(deepcopy(record["plan"]),
+            result = getattr(self.backend, action)(deepcopy(record["plan"]),
                                        Path(record["job_dir"]), _public(record))
         except Exception as exc:
-            return self._record_exception(request_id, token, "poll", exc)
-        return self._record_result(request_id, token, "poll", result)
+            return self._record_exception(request_id, token, action, exc)
+        return self._record_result(request_id, token, action, result)
 
     def _recheck_complete(self, observed: dict) -> dict:
-        """A fresh observation may invalidate a previously accepted output set."""
+        """Recheck only the original accepted bytes; never consult the backend."""
+        receipt = (observed.get("_last_verified_receipt")
+                   if observed.get("output_recheck_pending") is True else observed)
         try:
-            verify_completion(observed["plan"], Path(observed["job_dir"]), observed)
+            if receipt is not observed and (type(receipt) is not dict or receipt.get("digest") != observed["digest"]
+                    or receipt.get("backend_id") != observed["backend_id"]
+                    or receipt.get("metadata") != observed["metadata"]):
+                raise FarmError("verification_unavailable", "The original output receipt binding is unavailable.")
+            outputs = verify_completion(observed["plan"], Path(observed["job_dir"]), receipt)
         except Exception as exc:
+            changed = isinstance(exc, FarmError) and exc.code == "verification_failed"
             def invalidate(record):
-                if (record["state"] != "complete" or record["revision"] != observed["revision"]
+                if (record["revision"] != observed["revision"]
                         or record["cancellation_requested"]):
                     return None
-                record["_last_verified_receipt"] = {
-                    "outputs": record["outputs"], "verification": record["verification"],
-                    "verified_frames": record["verified_frames"], "updated_at": record["updated_at"]}
-                record.update(state="failed", error_code="output_changed", verified=False,
+                if record["state"] == "complete":
+                    record["_last_verified_receipt"] = {
+                        "outputs": record["outputs"], "verification": record["verification"],
+                        "verified_frames": record["verified_frames"], "updated_at": record["updated_at"],
+                        "digest": record["digest"], "backend_id": record["backend_id"],
+                        "metadata": deepcopy(record["metadata"])}
+                record.update(state="failed" if changed else "status_unavailable",
+                              error_code="output_changed" if changed else "output_unavailable",
+                              output_recheck_pending=not changed, verified=False,
                               outputs=[], verified_frames=[], verification=None,
-                              note="Previously verified images are missing, changed or could not be read. This render will not be resubmitted automatically.")
+                              note=("Previously verified images are missing or changed. This render will not be resubmitted automatically."
+                                    if changed else "Previously verified images could not be read. Refresh to check the original images again; no render will be restarted."))
                 return record
             return _public(self.store.update(observed["request_id"], invalidate))
+        if observed.get("output_recheck_pending") is True:
+            def restore(record):
+                if (record["revision"] != observed["revision"] or record["cancellation_requested"]
+                        or record.get("output_recheck_pending") is not True):
+                    return None
+                record.update(state="complete", verified=True, outputs=outputs,
+                              verified_frames=list(record["plan"]["frames"]),
+                              verification=deepcopy(receipt["verification"]),
+                              output_recheck_pending=False,
+                              note="The original verified images are readable and still match their receipts. No work was restarted.")
+                record.pop("error_code", None)
+                return record
+            return _public(self.store.update(observed["request_id"], restore))
         return _public(self.store.get(observed["request_id"]))
 
     def cancel(self, request_id: str) -> dict:
         request_id, token = validate_request_id(request_id), uuid.uuid4().hex
         def fence(record):
-            if record["state"] in _TERMINAL or record["cancellation_requested"]:
+            if record["state"] in _TERMINAL:
                 return None
             record.update(state="cancel_requested", cancellation_requested=True,
+                          cancellation_delivery_pending=True,
+                          output_recheck_pending=False,
                           note="Stopping this render; waiting for the backend to confirm.",
                           verified=False, verification=None, verified_frames=[], outputs=[],
                           _operation=token)
@@ -187,6 +246,8 @@ class FarmService:
             if record["cancellation_requested"]:
                 record.update(state="cancel_requested",
                               note=f"Stop was requested; backend confirmation is unavailable ({type(exc).__name__}).")
+            elif isinstance(exc, FarmError) and exc.code == "verification_unavailable":
+                record.update(state="status_unavailable", note=exc.message, error_code=exc.code)
             elif isinstance(exc, FarmError):
                 record.update(state="failed", note=exc.message, error_code=exc.code)
             elif action == "submit":
@@ -212,6 +273,7 @@ class FarmService:
                     if (record["cancellation_requested"] and record["state"] == "cancel_requested"
                             and record["submission_attempted"] == current["submission_attempted"]):
                         record.update(state="cancelled", note="The backend confirmed this render request has stopped.",
+                                      cancellation_delivery_pending=False,
                                       outputs=[], verified_frames=[], verified=False, verification=None)
                         return record
                     return None
@@ -247,8 +309,12 @@ class FarmService:
             record["metadata"].update(result.get("metadata", {}))
             # Cancellation is a permanent acceptance fence, including late success.
             if state in {"cancel_requested", "cancelled"}:
+                if not record["cancellation_requested"]:
+                    record["cancellation_delivery_pending"] = True
                 record["cancellation_requested"] = True
             if record["cancellation_requested"]:
+                if state == "cancelled" or result.get("cancellation_delivered") is True:
+                    record["cancellation_delivery_pending"] = False
                 record["state"] = "cancelled" if state == "cancelled" else "cancel_requested"
                 record["note"] = note[:2000] if state == "cancelled" else "Stop was requested; waiting for the backend to confirm it has stopped."
                 record.update(verified=False, verification=None, outputs=[], verified_frames=[])

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import os
 import re
+import stat
 
 from .models import FarmError, file_identity
 
@@ -37,7 +38,23 @@ def verify_completion(plan: dict, job_dir: Path, result: dict) -> list[dict]:
         if type(frame) is not int or frame not in expected or frame in seen_frames or type(name) is not str:
             raise FarmError("verification_failed", "An output frame is missing, duplicated or unexpected.")
         path = Path(name)
-        if not path.is_absolute() or path.is_symlink() or not path.resolve().is_relative_to(owned):
+        if not path.is_absolute():
+            raise FarmError("verification_failed", "A verified image is outside this render request's output folder.")
+        try:
+            current_stat = path.lstat()
+        except FileNotFoundError as exc:
+            # A disconnected share may also report ENOENT. A readable parent
+            # distinguishes a missing image from an unavailable directory.
+            try:
+                path.parent.stat()
+            except OSError as parent_exc:
+                raise FarmError("verification_unavailable", "The output directory is unavailable. Refresh to check the original images again.") from parent_exc
+            raise FarmError("verification_failed", "A verified output is missing.") from exc
+        except OSError as exc:
+            raise FarmError("verification_unavailable", "A verified output could not be inspected. Refresh to check its original bytes again.") from exc
+        if not stat.S_ISREG(current_stat.st_mode) or current_stat.st_size <= 0:
+            raise FarmError("verification_failed", "A verified output is empty or is no longer a regular file.")
+        if not path.resolve().is_relative_to(owned):
             raise FarmError("verification_failed", "A verified image is outside this render request's output folder.")
         resolved = str(path.resolve())
         if os.path.normcase(resolved) in seen_paths:
@@ -52,7 +69,9 @@ def verify_completion(plan: dict, job_dir: Path, result: dict) -> list[dict]:
         try:
             identity = file_identity(path)
         except FarmError as exc:
-            raise FarmError("verification_failed", "A verified output is missing, empty or changing.") from exc
+            # Metadata was readable above, but the stable byte read was not.
+            # No matching hash is accepted until a later read actually succeeds.
+            raise FarmError("verification_unavailable", "A verified output could not be read consistently. Refresh to check its original bytes again.") from exc
         if (identity["sha256"], identity["size"]) != (digest, output["size"]):
             raise FarmError("verification_failed", "An image changed after the backend verified it.")
         seen_frames.add(frame)
