@@ -70,7 +70,18 @@ flowchart TD
     C --> D["Keep, refine, or undo an operation"]
 ```
 
-[![Watch SYNAPSE DEMO v2 — rings rendered with Karma XPU](assets/demo_v2_video_thumb.jpg)](https://vimeo.com/1225720538)
+### SYNAPSE tool demonstration
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://vimeo.com/1225720538">
+        <img src="assets/demo_v2_video_thumb.jpg" alt="Play SYNAPSE tool demonstration on Vimeo" width="900">
+      </a>
+      <p><a href="https://vimeo.com/1225720538"><strong>▶ Watch the video on Vimeo</strong></a></p>
+    </td>
+  </tr>
+</table>
 
 *Recorded demonstration; the current panel and feature limits are described below.*
 
