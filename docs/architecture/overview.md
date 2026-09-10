@@ -77,6 +77,53 @@ ensure that rollback succeeds. See [bridge implementation](../../shared/bridge.p
 Use the external bridge on a single-user local machine. See
 [MCP setup and authentication](../mcp/SETUP.md) before connecting a client.
 
+## Project and scene memory
+
+The [README diagram](../../README.md#how-synapse-remembers) follows a saved
+decision from recording to inspection and recall. Memory retains information
+about the work; retrieving a decision returns context rather than a Houdini
+network reconstruction.
+
+**Recording.** `synapse_decide` creates a decision record with an ID, choice,
+reasoning and alternatives. Its handler also attempts a scene-memory note.
+`synapse_memory_write` can write entries at scene or project scope.
+
+These are the normal locations for a saved project; path resolution can select
+a fallback location for an unsaved scene or an unwritable project.
+
+| Storage | Role |
+|---|---|
+| `.synapse/memory.jsonl` | Persistent records for the JSONL backend; also a secondary copy when the Moneta adapter is configured. |
+| `.synapse/.moneta/snapshot.json` | Persistent source for the Moneta-backed record store. |
+| `.synapse/.moneta/cortex_root.usda` | Inspectable USD mirror when Moneta and USD authoring are available. Each record has a kind, ID and serialized payload under `/MonetaMemory`. |
+| `$HIP/claude/memory.md` and `$JOB/claude/project.md` | Human-readable scene and project notes in the normal Markdown-backed configuration. |
+
+The store selector uses JSONL when no backend is configured.
+`SYNAPSE_MEMORY_BACKEND=moneta` selects Moneta; import or initialization failures
+fall back to JSONL and record the reason. The USD mirror is a secondary write
+target. Opening or closing an inspection view does not control record persistence.
+
+**Recall has different routes.** `synapse_recall` retrieves matching typed records
+from the configured store, defaulting to decisions. `synapse_memory_query`
+searches loaded scene/project content, while `synapse_project_setup` loads
+starting context. The USD inspection view is not required for these routes.
+Reopen the same project and retrieve the saved choice to check cross-session recall.
+
+**Write limits.** Legacy decision writes attempt persistence, but a returned ID
+alone is not a durable receipt. Snapshot, USD-mirror and note writes are not one
+transaction; secondary writes can fail independently. Verify the stored record
+before claiming it survived a restart.
+
+The optional LOOP below adds observation around scene actions. Ordinary saved
+decisions do not require Octavius or Hanish.
+
+Sources: [decision recording and recall](../../python/synapse/session/tracker.py#L494),
+[store selection](../../python/synapse/memory/store.py#L1075),
+[Moneta persistence and mirrors](../../python/synapse/memory/moneta_store.py#L158),
+[USD record authoring](../../python/synapse/memory/moneta_runtime.py#L868),
+[scene/project notes](../../python/synapse/memory/scene_memory.py#L520),
+[context loading and queries](../../python/synapse/server/handlers_memory.py#L190).
+
 ## Memory LOOP
 
 Three substrates scaffold one another. SYNAPSE owns coordination and the artist's

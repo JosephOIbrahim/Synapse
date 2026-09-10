@@ -10,7 +10,7 @@
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Start here:** [Install](#start-here) · [First build](#your-first-build) · [What's ready](#whats-ready) · [Help](#when-you-get-stuck)
+**Start here:** [Install](#start-here) · [First build](#your-first-build) · [What's ready](#whats-ready) · [Memory](#how-synapse-remembers) · [Help](#when-you-get-stuck)
 
 ## The idea
 
@@ -97,8 +97,34 @@ flowchart TD
 | **Predictive creation + Computer Use** | Product direction in [INTENT.md](INTENT.md); independent artist controls are planned. |
 | **Recursive self-improvement** | A development direction. Stage 0 is a starting scaffold, not a self-maintaining system. |
 
+## How SYNAPSE remembers
+
+Ask SYNAPSE to remember a decision, then ask about it in a later session.
+Saved records and scene or project notes supply context for the answer.
+
+```mermaid
+flowchart TD
+    A["Remember<br/>this decision"] --> B["Record the choice<br/>and reasoning"]
+    B --> S[("Configured<br/>memory store")]
+    B --> N[("Scene or<br/>project notes")]
+    S -.->|"Moneta enabled"| U["USD mirror<br/>cortex_root.usda"]
+    U --> I["Inspect the record<br/>in Houdini"]
+    Q["Ask about an<br/>earlier decision"] --> R["Retrieve matching<br/>records or notes"]
+    S --> R
+    N --> R
+    R --> C["Give the assistant<br/>relevant context"]
+    C --> D["Answer for the<br/>artist to review"]
+```
+
+**USD is an inspection mirror.** With Moneta active and USD authoring available,
+records are mirrored into `cortex_root.usda`. Closing its inspection view leaves
+saved memory intact. Recall does not require that view to be open.
+
+Memory supplies context; scene changes still go through SYNAPSE's action tools.
+[Storage and recall details →](docs/architecture/overview.md#project-and-scene-memory)
+
 <details>
-<summary><strong>How the three memory substrates work together</strong></summary>
+<summary><strong>Optional observation loop: Moneta, Octavius and Hanish</strong></summary>
 
 ```mermaid
 flowchart TD
