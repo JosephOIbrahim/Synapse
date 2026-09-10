@@ -1,0 +1,18 @@
+{
+  "inno": {
+    "version": "7.1.0",
+    "url": "https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe",
+    "sha256": "0362a383ed217d4c4239b5933866dd96d3eb2102737da92f80f6057a4b40df2f",
+    "publisher": "Pyrsys B.V."
+  },
+  "python": {
+    "version": "3.13.15",
+    "url": "https://www.python.org/ftp/python/3.13.15/python-3.13.15-embed-amd64.zip",
+    "filename": "python-3.13.15-embed-amd64.zip",
+    "sha256": "d1f04d990aee1253d8569e8e5104e30fa9f5fa830899f14843448872d936a2cf"
+  },
+  "wheels": {
+    "filelock-3.20.0-py3-none-any.whl": "339b4732ffda5cd79b13f4e2711a31b0365ce445d95d243bb996273d072546a2",
+    "websockets-15.0.1-cp313-cp313-win_amd64.whl": "e09473f095a819042ecb2ab9465aee615bd9c2028e4ef7d933600a8401c79561"
+  }
+}
