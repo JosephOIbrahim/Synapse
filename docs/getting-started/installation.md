@@ -3,10 +3,37 @@
 [Back to README](../../README.md) · [First session](quickstart.md)
 
 **Current validation target:** Windows, Houdini 22.0.400, bundled Python 3.13.
-Use a terminal with Python available for the installers. Houdini runs SYNAPSE
-with its own Python; installing a system Python does not replace that runtime.
+Houdini runs SYNAPSE with its own Python.
 
-## 1. Keep a copy of the repository
+## Windows installer preview
+
+**[Download SYNAPSE-5.67.4-Setup.exe](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SYNAPSE-5.67.4-Setup.exe)**
+
+[Release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/windows-installer-5.67.4-preview.1) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SHA256SUMS.txt)
+
+1. Save your scene and close Houdini.
+2. Open Setup. This preview is unsigned, so Windows may show an unknown publisher.
+3. Select the Houdini application and the preference folder used by your launcher.
+4. Install into the suggested application folder, or another dedicated folder.
+5. Start Houdini, open **New Pane Tab → Synapse**, then run **Doctor**.
+   Continue with [Connect a model](#3-connect-a-model).
+
+Setup includes required Python dependencies and the separately licensed Moneta
+bundle; it needs no terminal, Git or system Python. Model credentials and optional
+external services are separate. Read the release notes for the tested scope:
+native wizard visual inspection, clean-machine testing, live model/scene behavior
+and active Moneta memory persistence remain unverified.
+
+The source installation steps below are an alternative route. Avoid running
+the source scripts over a registration managed by the Setup wizard.
+
+## Source installation
+
+Use a terminal with Python available for these scripts. Installing a system
+Python does not replace Houdini's own runtime.
+
+### 1. Keep a copy of the repository
 
 Download the source ZIP from the [latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 and extract it into a permanent folder. Open a terminal in the folder containing
@@ -19,7 +46,7 @@ git clone https://github.com/JosephOIbrahim/Synapse.git
 cd Synapse
 ```
 
-## 2. Run both installers
+### 2. Run both installers
 
 ```shell
 python scripts/install_synapse_package.py
@@ -68,7 +95,10 @@ the local Houdini bridge. Use **Doctor** for model-free diagnostics.
 
 ## Verify the installation
 
-Run from the repository folder:
+For Setup installations, choose **Verify SYNAPSE installation** from the Windows
+Start menu, then use **Doctor** inside Houdini for live diagnostics.
+
+For source installations, run from the repository folder:
 
 ```shell
 python scripts/install_synapse_package.py --verify
@@ -89,8 +119,14 @@ Do not add an unrelated provider key just to silence this row.
 
 ## Updating
 
-Download the new release or update your clean Git checkout, rerun both installers,
-and restart Houdini. Read the [upgrade guide](../studio/UPGRADE.md) for build changes.
+For Setup installations, save and close Houdini, then run a newer reviewed Setup
+in the same application folder. To uninstall, use Windows **Installed apps →
+SYNAPSE → Uninstall**. Setup preserves projects, memory, credentials, preferences
+and user-added files.
+
+For source installations, download the new release or update your clean Git
+checkout, rerun both scripts, and restart Houdini. Read the
+[upgrade guide](../studio/UPGRADE.md) for build changes.
 
 Stage 0 saved suggestions match the exact SYNAPSE version. Existing records are
 retained, but need a matching rehearsal and import before they qualify for a new

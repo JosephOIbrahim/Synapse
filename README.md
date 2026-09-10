@@ -27,6 +27,16 @@ small, optional checked-suggestion scaffold.
 **Current validation target:** Windows with Houdini **22.0.400** and its bundled
 Python **3.13**. Other builds need their own checks.
 
+**[Download the Windows installer preview](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SYNAPSE-5.67.4-Setup.exe)**
+
+The unsigned Setup wizard installs SYNAPSE and its Houdini interface without a
+terminal or system Python. Save your scene and close Houdini before running it.
+[Setup instructions](docs/getting-started/installation.md#windows-installer-preview) ·
+[Checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SHA256SUMS.txt) ·
+[Release notes and tested scope](https://github.com/JosephOIbrahim/Synapse/releases/tag/windows-installer-5.67.4-preview.1)
+
+For a source installation, use the steps below:
+
 1. Download and extract the source ZIP from the [latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest) into a folder you will keep.
 2. Open a terminal in that folder and run both installers:
 
