@@ -377,6 +377,27 @@ GRAPH_REQUIRED_CHECKS = (
 )
 _GRAPH_STAMP_RE = re.compile(r'^GRAPH-TRUTH-BUILD:[ \t]*(\d+\.\d+\.\d+)[ \t]*$', re.M)
 
+def _graph_ast_dump(node):
+    """Use the compact receipt format on Python 3.11 through 3.14.
+
+    Python 3.13 changed ast.dump() to omit empty list fields. Walk actual
+    fields instead of rewriting dump text: string constants and function
+    docstrings can themselves contain text such as ", keywords=[]".
+    """
+    if isinstance(node, _ast.AST):
+        fields = []
+        for name, value in _ast.iter_fields(node):
+            if value is None and getattr(type(node), name, ...) is None:
+                continue
+            if isinstance(value, list) and not value:
+                continue
+            fields.append('%s=%s' % (name, _graph_ast_dump(value)))
+        return '%s(%s)' % (type(node).__name__, ', '.join(fields))
+    if isinstance(node, list):
+        return '[%s]' % ', '.join(_graph_ast_dump(value) for value in node)
+    return repr(node)
+
+
 def graph_implementation_sha256(source):
     """Hash the executed AST, excluding only its module truth documentation.
 
@@ -389,7 +410,7 @@ def graph_implementation_sha256(source):
             and isinstance(tree.body[0].value.value, str)):
         tree.body.pop(0)
     return _hashlib.sha256(
-        _ast.dump(tree, include_attributes=False).encode('utf-8')).hexdigest()
+        _graph_ast_dump(tree).encode('utf-8')).hexdigest()
 
 
 def _graph_build_agreement(runtime_build=None, receipt_path=None, repo_root=None):

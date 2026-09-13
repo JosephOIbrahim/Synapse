@@ -241,3 +241,24 @@ def test_a_failed_400_receipt_blocks_the_offline_audit(specimen):
     result = check(root)
     assert result["status"] == "FAIL"
     assert result["build_results"]["22.0.417"]["status"] == "PASS"
+
+# Fixed compact-AST fixtures are shared by every CI interpreter. In particular,
+# Python 3.11 must agree with the Python 3.13 Houdini receipt format.
+@pytest.mark.parametrize("source,expected", [
+    ("def sample(value=None):\n    return []\n", "15e558060217660d830dca08e82e8210c14626dbb0b50104969ddf3b82def98f"),
+    ("value = ', keywords=[]'\n", "d12bd8d2155453e422b37f1832ce1ba4b879d2a677e108dd29a5627898b5dc76"),
+    ("class Sample:\n    def method(self, *args):\n        return {'value': None}\n", "49294432cee32609f92af3d3388674afd4310a554a12e925875329f91657bfbc"),
+])
+def test_graph_fingerprint_uses_one_format_across_python_versions(source, expected):
+    assert verifier.graph_implementation_sha256(source) == expected
+
+
+def test_literal_ast_field_text_is_never_removed_from_the_fingerprint():
+    assert verifier.graph_implementation_sha256("value = ', keywords=[]'") != (
+        verifier.graph_implementation_sha256("value = ''"))
+
+
+def test_empty_container_kinds_remain_distinct_in_the_fingerprint():
+    hashes = {verifier.graph_implementation_sha256("value = " + literal)
+              for literal in ("[]", "()", "{}")}
+    assert len(hashes) == 3
