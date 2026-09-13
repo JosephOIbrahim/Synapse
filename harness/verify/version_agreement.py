@@ -353,7 +353,188 @@ def apex_agreement():
                            % (stamp, art_build)}
 
 
+# --- SYN-V2 G2: observed graph truth agreement -------------------------------
+# This is an offline source-to-receipt check. Only an explicitly supplied
+# runtime build is compared; importing this module never imports hou or runs it.
+import ast as _ast
+import hashlib as _hashlib
+
+GRAPH_SOURCE_PATHS = (
+    'python/synapse/host/graph_builder.py',
+    'python/synapse/host/existence_adapter.py',
+    'python/synapse/host/graph_oracle.py',
+)
+GRAPH_RECEIPT_PATH = 'harness/notes/graph_truth_22.0.417.json'
+GRAPH_QUALIFIED_BUILDS = ('22.0.400', '22.0.417')
+GRAPH_RECEIPT_PATHS = {
+    build: 'harness/notes/graph_truth_%s.json' % build
+    for build in GRAPH_QUALIFIED_BUILDS
+}
+GRAPH_REQUIRED_CHECKS = (
+    'runtime', 'environment_isolation', 'symbols', 'oracles',
+    'proposal_rejections', 'build_readback', 'unknown_proposal',
+    'toctou_refusal', 'failure_cleanup', 'scope_cleanup',
+)
+_GRAPH_STAMP_RE = re.compile(r'^GRAPH-TRUTH-BUILD:[ \t]*(\d+\.\d+\.\d+)[ \t]*$', re.M)
+
+def graph_implementation_sha256(source):
+    """Hash the executed AST, excluding only its module truth documentation.
+
+    Comments and source locations do not affect the hash. Function docstrings,
+    constants and all executable statements remain bound to the runtime receipt.
+    """
+    tree = _ast.parse(source)
+    if (tree.body and isinstance(tree.body[0], _ast.Expr)
+            and isinstance(tree.body[0].value, _ast.Constant)
+            and isinstance(tree.body[0].value.value, str)):
+        tree.body.pop(0)
+    return _hashlib.sha256(
+        _ast.dump(tree, include_attributes=False).encode('utf-8')).hexdigest()
+
+
+def _graph_build_agreement(runtime_build=None, receipt_path=None, repo_root=None):
+    """Check source stamps and implementations against the qualifying receipt.
+
+    Missing or incomplete evidence is UNKNOWN and never successful. Observable
+    disagreement is FAIL. PASS qualifies only the recorded headless fixtures;
+    live GUI behavior, catalogs and daemon availability are outside this check.
+    """
+    root = _os.fspath(repo_root) if repo_root is not None else _REPO_ROOT
+    default_path = GRAPH_RECEIPT_PATHS.get(runtime_build, GRAPH_RECEIPT_PATH)
+    path = _os.fspath(receipt_path) if receipt_path is not None else default_path
+    if not _os.path.isabs(path):
+        path = _os.path.join(root, path)
+    result = {
+        'ok': False, 'status': 'UNKNOWN', 'reason': '',
+        'build': None, 'stamps': {}, 'artifact': _os.path.abspath(path),
+        'scope': 'recorded headless graph fixtures and current source only',
+        'runtime_comparison': {'status': 'UNKNOWN', 'build': runtime_build},
+    }
+
+    def finish(status, reason):
+        result.update(ok=status == 'PASS', status=status, reason=reason)
+        return result
+
+    try:
+        with open(path, encoding='utf-8-sig') as stream:
+            receipt = _json.load(stream)
+    except (OSError, ValueError) as exc:
+        return finish('UNKNOWN', 'receipt unavailable or malformed: %s' % exc)
+    if not isinstance(receipt, dict) or receipt.get('schema') != 'synapse.graph_truth/v1':
+        return finish('UNKNOWN', 'missing or unsupported graph receipt schema')
+    build = receipt.get('build')
+    if not isinstance(build, str) or not re.fullmatch(r'\d+\.\d+\.\d+', build):
+        return finish('UNKNOWN', 'receipt has no valid runtime build')
+    result['build'] = build
+    if build not in GRAPH_QUALIFIED_BUILDS:
+        return finish('FAIL', 'receipt build is not declared by the source')
+    if receipt.get('status') != 'PASS':
+        status = 'FAIL' if receipt.get('status') == 'FAIL' else 'UNKNOWN'
+        return finish(status, 'receipt is not a passing observation')
+    checks = receipt.get('checks')
+    if not isinstance(checks, dict):
+        return finish('UNKNOWN', 'receipt has no check observations')
+    for name in GRAPH_REQUIRED_CHECKS:
+        item = checks.get(name)
+        if not isinstance(item, dict) or item.get('status') != 'PASS':
+            status = 'FAIL' if isinstance(item, dict) and item.get('status') == 'FAIL' else 'UNKNOWN'
+            return finish(status, 'required check is not PASS: %s' % name)
+    if checks['runtime'].get('build') != build:
+        return finish('FAIL', 'runtime observation disagrees with receipt build')
+    symbols = receipt.get('symbols')
+    if (not isinstance(symbols, list) or not symbols
+            or not all(isinstance(s, dict) and s.get('owner') and s.get('member')
+                       and s.get('present') is True for s in symbols)
+            or checks['symbols'].get('observations') != len(symbols)):
+        return finish('UNKNOWN', 'required dir() observations are incomplete')
+    seeds = receipt.get('seeds')
+    if not isinstance(seeds, list) or not seeds:
+        return finish('UNKNOWN', 'runtime-stamped proposal fixtures are missing')
+    if not all(isinstance(s, dict) and s.get('houdini_version_stamp') == build
+               for s in seeds):
+        return finish('FAIL', 'proposal fixture build disagrees with receipt')
+    sources = receipt.get('source')
+    if not isinstance(sources, dict):
+        return finish('UNKNOWN', 'receipt has no implementation hashes')
+    for relative in GRAPH_SOURCE_PATHS:
+        entry = sources.get(relative)
+        expected = entry.get('implementation_sha256') if isinstance(entry, dict) else None
+        if not isinstance(expected, str) or not re.fullmatch(r'[a-f0-9]{64}', expected):
+            return finish('UNKNOWN', 'implementation hash missing or malformed: %s' % relative)
+        try:
+            with open(_os.path.join(root, relative), encoding='utf-8-sig') as stream:
+                source = stream.read()
+        except (OSError, UnicodeError) as exc:
+            return finish('UNKNOWN', 'source unavailable: %s (%s)' % (relative, exc))
+        stamps = _GRAPH_STAMP_RE.findall(source)
+        if (tuple(sorted(stamps)) != GRAPH_QUALIFIED_BUILDS
+                or source.count('GRAPH-TRUTH-BUILD:') != len(GRAPH_QUALIFIED_BUILDS)):
+            return finish('FAIL', 'source needs one stamp per qualified build: %s' % relative)
+        result['stamps'][relative] = sorted(stamps)
+        if build not in stamps:
+            return finish('FAIL', 'source stamp disagrees with receipt: %s' % relative)
+        try:
+            observed = graph_implementation_sha256(source)
+        except (SyntaxError, ValueError) as exc:
+            return finish('FAIL', 'source cannot be parsed: %s (%s)' % (relative, exc))
+        if observed != expected:
+            return finish('FAIL', 'implementation changed since qualification: %s' % relative)
+    if runtime_build is not None:
+        if runtime_build != build:
+            result['runtime_comparison']['status'] = 'FAIL'
+            return finish('FAIL', 'requested runtime %s != observed build %s'
+                          % (runtime_build, build))
+        result['runtime_comparison']['status'] = 'PASS'
+    return finish('PASS', 'source stamps and implementations match the observed graph receipt')
+
+
+def graph_agreement(runtime_build=None, receipt_path=None, repo_root=None):
+    """Check one requested build, or every declared build for an offline audit.
+
+    A supplied receipt is checked directly. With no runtime/receipt argument,
+    every declared build needs a complete matching receipt; a second stamp alone
+    cannot qualify a build. This never discovers or claims a live runtime.
+    """
+    if runtime_build is not None or receipt_path is not None:
+        return _graph_build_agreement(runtime_build, receipt_path, repo_root)
+    results = {
+        build: _graph_build_agreement(build, repo_root=repo_root)
+        for build in GRAPH_QUALIFIED_BUILDS
+    }
+    # These are receipt checks, not observations of a currently running process.
+    for row in results.values():
+        row['runtime_comparison'] = {'status': 'UNKNOWN', 'build': None}
+    failures = [row for row in results.values() if row['status'] == 'FAIL']
+    unknowns = [row for row in results.values() if row['status'] == 'UNKNOWN']
+    selected = (failures or unknowns or [results[GRAPH_QUALIFIED_BUILDS[-1]]])[0]
+    result = dict(selected)
+    result['checked_builds'] = list(GRAPH_QUALIFIED_BUILDS)
+    result['build_results'] = results
+    result['scope'] = 'recorded headless graph fixtures for all declared builds and current source only'
+    if result['ok']:
+        result['reason'] = 'all declared source builds have matching observed receipts'
+    return result
+
+
+def _graph_cli(argv):
+    # A separate entry returns before legacy version/public checks (which use
+    # Git). No --fix is accepted: a receipt cannot be repaired by changing data.
+    import argparse
+    parser = argparse.ArgumentParser(description='Check recorded graph truth without Git or Houdini.')
+    parser.add_argument('--graph-only', action='store_true', required=True)
+    parser.add_argument('--runtime-build')
+    parser.add_argument('--graph-receipt')
+    args = parser.parse_args(argv)
+    result = graph_agreement(args.runtime_build, args.graph_receipt)
+    print(_json.dumps(result, indent=2))
+    return 0 if result['ok'] else 1
+
+
+
 if __name__ == '__main__':
+    if '--graph-only' in sys.argv[1:]:
+        sys.exit(_graph_cli(sys.argv[1:]))
+
     fix = '--fix' in sys.argv
 
     if fix and strip_bom('VERSION'):
@@ -405,4 +586,8 @@ if __name__ == '__main__':
     # __version__ and once on pyproject (R80: build it, or strike the ruling
     # that ordered it. This one gets built.) WA1-TRUTH adds the apex gate.
     # REACH R2 adds the public-face gate.
-    sys.exit(0 if (agree and apex['ok'] and public['ok']) else 1)
+    # G2 adds graph receipt agreement without weakening the earlier gates.
+    graph = graph_agreement()
+    print('GRAPH   %s  build=%s  (%s)'
+          % (graph['status'], graph['build'], graph['reason']))
+    sys.exit(0 if (agree and apex['ok'] and public['ok'] and graph['ok']) else 1)

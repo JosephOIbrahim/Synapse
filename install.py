@@ -28,27 +28,16 @@ import glob
 
 # ── Constants ─────────────────────────────────────────────
 
-_VERSION = "1.0.0"
+_VERSION = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION"), encoding="utf-8").read().strip()
 _SYNAPSE_HOME = os.path.dirname(os.path.abspath(__file__))
 
-# Source locations relative to SYNAPSE_HOME
-_SOURCES = {
-    "shelf": os.path.join(_SYNAPSE_HOME, "houdini", "toolbar", "synapse.shelf"),
-    "panel": os.path.join(_SYNAPSE_HOME, "houdini", "python_panels", "synapse_panel.pypanel"),
-    "shelf_callbacks": os.path.join(_SYNAPSE_HOME, "houdini", "scripts", "python", "synapse_shelf.py"),
-    "tokens": os.path.join(_SYNAPSE_HOME, "design", "tokens.py"),
-    "styles": os.path.join(_SYNAPSE_HOME, "design", "synapse_styles.py"),
-    "svg_dir": os.path.join(_SYNAPSE_HOME, "design", "icons", "svg"),
-}
-
-# Houdini target subdirectories
-_TARGETS = {
-    "shelf": os.path.join("toolbar", "synapse.shelf"),
-    "panel": os.path.join("python_panels", "synapse_panel.pypanel"),
-    "shelf_callbacks": os.path.join("scripts", "python", "synapse_shelf.py"),
-    "tokens": os.path.join("scripts", "python", "tokens.py"),
-    "styles": os.path.join("scripts", "python", "synapse_styles.py"),
-}
+# Shared with the Windows payload builder, preventing panel/shelf path drift.
+from pathlib import Path
+sys.path.insert(0, os.path.join(_SYNAPSE_HOME, "installer"))
+from synapse_setup.registration import UI_CORE
+_SOURCES = {key: os.path.join(_SYNAPSE_HOME, src) for key, (src, _) in UI_CORE.items()}
+_SOURCES["svg_dir"] = os.path.join(_SYNAPSE_HOME, "design", "icons", "svg")
+_TARGETS = {key: dst for key, (_, dst) in UI_CORE.items()}
 
 # Icon name mapping: remove size suffix for Houdini registration
 # Houdini looks for SYNAPSE_iconname.svg in config/Icons/

@@ -1,24 +1,17 @@
-"""Implements IConnectivityOracle via hou.* introspection. host/ — hou allowed.
+"""Connectivity checks through live hou introspection. host/ — hou allowed.
 
-Every hou symbol used here is dir()-confirmed against LIVE Houdini 21.0.671
-(Mile-2 §2.5 preflight: harness/notes/verified_connectivity_21.0.671.json,
-cross-checked against the committed scout symbol table). The four phantom symbols
-the Evaluator quarantines (the pdg module, the secure namespace, the lop-network
-accessor, the graph-tick updater) are NOT used here; neither are the type-level
-input/output label methods, which 21.0.671 also lacks (labels are instance-only).
+The oracle reads node types, input/output capacities, occupancy and live paths.
+It creates no nodes. An occupancy read failure propagates so the validator can
+refuse an unsafe overwrite.
 
-Graceful degradation: a false REJECT is cheaper than a false pass (the system has
-an imperative fallback) — EXCEPT input_is_occupied, which must HALT rather than
-degrade to a false 'free', because its downside is severing the artist's live
-wiring.
-
-Read-only by construction: NO method here creates, deletes, or mutates a node.
-The connectivity logic (arity, occupied-input, resolve) was exercised read-only
-against real node types headless in 21.0.671 (see the §2.5 artifact).
-
-Verification residual: the methods were confirmed under headless hython 21.0.671;
-the interactive WS-bridge path calls the identical hou APIs and is owed a live
-end-to-end pass once the graphical bridge is restored."""
+GRAPH-TRUTH-BUILD: 22.0.400
+GRAPH-TRUTH-BUILD: 22.0.417
+Receipts: harness/notes/graph_truth_22.0.400.json and
+harness/notes/graph_truth_22.0.417.json.
+Each headless receipt records dir() membership of the hou members used here and
+SOP arity, occupancy and path-resolution observations, bound to an implementation
+hash. Type-level labels and typed wire compatibility remain unqualified; the
+existing advisory/deferred behavior below is unchanged."""
 from __future__ import annotations
 
 import hou  # noqa: F401 — host layer; never imported by cognitive.*
@@ -44,18 +37,16 @@ class ConnectivityOracle:  # implements IConnectivityOracle
             # by the existence (P1) phase, so this is a belt-and-suspenders floor.
             return (0, 0)
         try:
-            # 21.0.671: variadic inputs report a large finite cap (merge=9999,
-            # add[VOP]=2048), NOT a sentinel — the validator's 'index < max' check
-            # handles that natively.
+            # The H22 receipt observes merge SOP max inputs = 9999. A finite
+            # capacity works with the validator's index < max check.
             return (nt.minNumInputs(), nt.maxNumInputs())
         except Exception:  # noqa: BLE001 — degrade to no-inputs (false-reject-safe)
             return (0, 0)
 
     def input_labels(self, node_type: str, category: str) -> list[str]:
-        # Type-level labels are PHANTOM in 21.0.671 (hou.NodeType.inputLabels /
-        # .outputLabels are absent — §2.5). Labels exist only on a live instance
-        # (hou.Node.inputLabels), which a TYPE oracle has none of, and synthesizing
-        # one would mutate the scene. P3c is advisory-only, so no labels => no hint.
+        # This type-only oracle does not consult an instance for labels.
+        # P3c is advisory-only, so an empty list supplies no hint. H22 label
+        # API availability is not qualified by the G2 receipt.
         return []
 
     def output_count(self, node_type: str, category: str) -> int:
@@ -72,16 +63,10 @@ class ConnectivityOracle:  # implements IConnectivityOracle
 
     def types_compatible(self, src_type: str, src_out: int,
                          tgt_type: str, tgt_in: int, category: str) -> bool:
-        # KNOWN GAP, documented deliberately. 21.0.671 exposes VOP wire data types
-        # only on COOKED INSTANCES (§2.5: a fresh VopNode reads 'undef'); there is
-        # no non-mutating, type-level wire-compatibility surface. The two ways to
-        # force a verdict are both wrong here: a blanket False would false-reject
-        # EVERY typed edge (unusable), and an instance probe would have to CREATE
-        # nodes (a read-only oracle must not mutate). So wire-type enforcement is
-        # DEFERRED to Mile-3 build time, where hou.Node.setInput() rejects an
-        # incompatible connection natively. Unlike input_is_occupied, a miss here
-        # severs nothing — Houdini catches it at build — so we return True (do not
-        # block) rather than the usual false-reject-safe default.
+        # Known limitation: no wire-data-type measurement is made here.
+        # The existing policy defers typed-wire enforcement to build time.
+        # Creating probe instances would violate this oracle's read-only role.
+        # Typed-wire behavior on H22 remains UNKNOWN in the G2 receipt.
         return True
 
     def input_is_occupied(self, scene_path: str, input_index: int) -> bool:

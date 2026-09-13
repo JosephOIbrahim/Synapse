@@ -1,0 +1,750 @@
+{
+  "build": "22.0.417",
+  "build_attempt": {
+    "proposal_response": {
+      "advisories": [],
+      "errors": [],
+      "proposal_id": "g2-build",
+      "status": "valid"
+    },
+    "result": {
+      "connections": [
+        {
+          "input_index": 0,
+          "source": "/obj/synapse_v2_truth_probe/built_box",
+          "source_output": 0,
+          "target": "/obj/synapse_v2_truth_probe/built_xform",
+          "wired": true
+        },
+        {
+          "input_index": 1,
+          "source": "/obj/synapse_v2_truth_probe/built_xform",
+          "source_output": 0,
+          "target": "/obj/synapse_v2_truth_probe/existing_merge",
+          "wired": true
+        }
+      ],
+      "created_paths": [
+        "/obj/synapse_v2_truth_probe/built_box",
+        "/obj/synapse_v2_truth_probe/built_xform"
+      ],
+      "errors": [],
+      "message": "instantiated 2 new node(s) under /obj/synapse_v2_truth_probe",
+      "parameters_set": [
+        {
+          "observed": 2,
+          "parm": "scale",
+          "path": "/obj/synapse_v2_truth_probe/built_box",
+          "requested": 2
+        },
+        {
+          "observed": [
+            1,
+            2,
+            3
+          ],
+          "parm": "t",
+          "path": "/obj/synapse_v2_truth_probe/built_xform",
+          "requested": [
+            1,
+            2,
+            3
+          ]
+        }
+      ],
+      "proposal_id": "g2-build",
+      "revert": "single undo reverts: 'SYNAPSE graph synth g2-build'",
+      "status": "built"
+    }
+  },
+  "checks": {
+    "build_readback": {
+      "proposal_response": {
+        "advisories": [],
+        "errors": [],
+        "proposal_id": "g2-build",
+        "status": "valid"
+      },
+      "result": {
+        "connections": [
+          {
+            "input_index": 0,
+            "source": "/obj/synapse_v2_truth_probe/built_box",
+            "source_output": 0,
+            "target": "/obj/synapse_v2_truth_probe/built_xform",
+            "wired": true
+          },
+          {
+            "input_index": 1,
+            "source": "/obj/synapse_v2_truth_probe/built_xform",
+            "source_output": 0,
+            "target": "/obj/synapse_v2_truth_probe/existing_merge",
+            "wired": true
+          }
+        ],
+        "created_paths": [
+          "/obj/synapse_v2_truth_probe/built_box",
+          "/obj/synapse_v2_truth_probe/built_xform"
+        ],
+        "errors": [],
+        "message": "instantiated 2 new node(s) under /obj/synapse_v2_truth_probe",
+        "parameters_set": [
+          {
+            "observed": 2,
+            "parm": "scale",
+            "path": "/obj/synapse_v2_truth_probe/built_box",
+            "requested": 2
+          },
+          {
+            "observed": [
+              1,
+              2,
+              3
+            ],
+            "parm": "t",
+            "path": "/obj/synapse_v2_truth_probe/built_xform",
+            "requested": [
+              1,
+              2,
+              3
+            ]
+          }
+        ],
+        "proposal_id": "g2-build",
+        "revert": "single undo reverts: 'SYNAPSE graph synth g2-build'",
+        "status": "built"
+      },
+      "status": "PASS"
+    },
+    "environment_isolation": {
+      "module_origins": {
+        "synapse.cognitive.graph_proposal": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\cognitive\\graph_proposal.py",
+        "synapse.cognitive.graph_validator": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\cognitive\\graph_validator.py",
+        "synapse.cognitive.tools.propose_graph": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\cognitive\\tools\\propose_graph.py",
+        "synapse.host.existence_adapter": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\host\\existence_adapter.py",
+        "synapse.host.graph_builder": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\host\\graph_builder.py",
+        "synapse.host.graph_oracle": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\host\\graph_oracle.py",
+        "synapse.host.proposal_store": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\host\\proposal_store.py"
+      },
+      "status": "PASS",
+      "user_preferences": "C:\\Users\\User\\SYNAPSE\\harness\\v2-20260913\\artifacts\\v2-truth-restamp\\houdini22.0"
+    },
+    "failure_cleanup": {
+      "observed_partial_nodes": [
+        "/obj/synapse_v2_truth_probe/rollback_box",
+        "/obj/synapse_v2_truth_probe/rollback_xform"
+      ],
+      "paths_unchanged_after_failure": true,
+      "result": {
+        "connections": [],
+        "created_paths": [],
+        "errors": [],
+        "message": "build failed and was rolled back (zero net mutation): G2 controlled fixture failure after creation",
+        "parameters_set": [],
+        "proposal_id": "g2-rollback",
+        "revert": "",
+        "status": "failed"
+      },
+      "status": "PASS"
+    },
+    "oracles": {
+      "input_arities": {
+        "box": [
+          0,
+          1
+        ],
+        "merge": [
+          0,
+          9999
+        ],
+        "xform": [
+          1,
+          1
+        ]
+      },
+      "output_counts": {
+        "box": 1,
+        "merge": 1,
+        "xform": 1
+      },
+      "parent_type": [
+        "geo",
+        "Object"
+      ],
+      "status": "PASS",
+      "typed_wire_compatibility": "UNKNOWN"
+    },
+    "proposal_rejections": {
+      "responses": [
+        {
+          "advisories": [],
+          "errors": [
+            {
+              "message": "unknown node_type 'g2_nonexistent_type' for category 'Sop' [houdini 22.0.417]",
+              "where": "bad"
+            }
+          ],
+          "proposal_id": "g2-bad-type",
+          "status": "invalid"
+        },
+        {
+          "advisories": [],
+          "errors": [
+            {
+              "message": "node_type 'box' has no parameter 'g2_no_such_parm' [houdini 22.0.417]",
+              "where": "bad"
+            }
+          ],
+          "proposal_id": "g2-bad-parm",
+          "status": "invalid"
+        },
+        {
+          "advisories": [],
+          "errors": [
+            {
+              "message": "input 0 of existing node '/obj/synapse_v2_truth_probe/symbol_xform' is already occupied — wiring it would sever the artist's existing connection [houdini 22.0.417]",
+              "where": "target"
+            }
+          ],
+          "proposal_id": "g2-occupied",
+          "status": "invalid"
+        }
+      ],
+      "status": "PASS"
+    },
+    "runtime": {
+      "build": "22.0.417",
+      "status": "PASS",
+      "ui_available": false
+    },
+    "scope_cleanup": {
+      "remaining_probe_root": null,
+      "status": "PASS"
+    },
+    "symbols": {
+      "observations": 48,
+      "status": "PASS"
+    },
+    "toctou_refusal": {
+      "paths_unchanged": true,
+      "result": {
+        "connections": [],
+        "created_paths": [],
+        "errors": [
+          {
+            "message": "existing node 'gone' path '/obj/synapse_v2_truth_probe/deleted_between' does not resolve in the live scene [houdini 22.0.417]",
+            "where": "gone"
+          }
+        ],
+        "message": "re-validation INVALID — scene changed since propose; zero mutation",
+        "parameters_set": [],
+        "proposal_id": "g2-toctou",
+        "revert": "",
+        "status": "halted"
+      },
+      "status": "PASS"
+    },
+    "unknown_proposal": {
+      "paths_unchanged": true,
+      "result": {
+        "connections": [],
+        "created_paths": [],
+        "errors": [],
+        "message": "unknown proposal_id 'g2-unknown' — nothing to build",
+        "parameters_set": [],
+        "proposal_id": "g2-unknown",
+        "revert": "",
+        "status": "rejected"
+      },
+      "status": "PASS"
+    }
+  },
+  "created_nodes_observed": 9,
+  "ended_utc": "2026-09-13T20:40:31.790830+00:00",
+  "limits": [
+    "Headless SOP fixtures only; no live GUI CARD/scope qualification.",
+    "Typed VOP wire compatibility is not qualified.",
+    "Catalog build agreement and daemon availability belong to G5.",
+    "No real provenance writer or scene-file save is invoked."
+  ],
+  "merge_input0_after": {
+    "input_index": 0,
+    "source": "/obj/synapse_v2_truth_probe/symbol_box",
+    "source_output": 0,
+    "target": "/obj/synapse_v2_truth_probe/existing_merge",
+    "wired": true
+  },
+  "merge_input0_before": {
+    "input_index": 0,
+    "source": "/obj/synapse_v2_truth_probe/symbol_box",
+    "source_output": 0,
+    "target": "/obj/synapse_v2_truth_probe/existing_merge",
+    "wired": true
+  },
+  "peak_nodes_observed": 8,
+  "runtime_environment": {
+    "module_origins": {
+      "synapse.cognitive.graph_proposal": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\cognitive\\graph_proposal.py",
+      "synapse.cognitive.graph_validator": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\cognitive\\graph_validator.py",
+      "synapse.cognitive.tools.propose_graph": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\cognitive\\tools\\propose_graph.py",
+      "synapse.host.existence_adapter": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\host\\existence_adapter.py",
+      "synapse.host.graph_builder": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\host\\graph_builder.py",
+      "synapse.host.graph_oracle": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\host\\graph_oracle.py",
+      "synapse.host.proposal_store": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\v2-truth-restamp\\python\\synapse\\host\\proposal_store.py"
+    },
+    "user_preferences": "C:\\Users\\User\\SYNAPSE\\harness\\v2-20260913\\artifacts\\v2-truth-restamp\\houdini22.0"
+  },
+  "schema": "synapse.graph_truth/v1",
+  "scope": "/obj/synapse_v2_truth_probe",
+  "seeds": [
+    {
+      "edges": [],
+      "houdini_version_stamp": "22.0.417",
+      "model_id": "deterministic-g2-fixture",
+      "natural_language_intent": "G2 isolated graph-truth fixture",
+      "network_type": "SOP",
+      "nodes": [
+        {
+          "friendly_name": "bad_type",
+          "kind": "new",
+          "node_category": "Sop",
+          "node_id": "bad",
+          "node_type": "g2_nonexistent_type",
+          "parameter_overrides": {}
+        }
+      ],
+      "parent_path": "/obj/synapse_v2_truth_probe",
+      "proposal_id": "g2-bad-type"
+    },
+    {
+      "edges": [],
+      "houdini_version_stamp": "22.0.417",
+      "model_id": "deterministic-g2-fixture",
+      "natural_language_intent": "G2 isolated graph-truth fixture",
+      "network_type": "SOP",
+      "nodes": [
+        {
+          "friendly_name": "bad_parm",
+          "kind": "new",
+          "node_category": "Sop",
+          "node_id": "bad",
+          "node_type": "box",
+          "parameter_overrides": {
+            "g2_no_such_parm": 1
+          }
+        }
+      ],
+      "parent_path": "/obj/synapse_v2_truth_probe",
+      "proposal_id": "g2-bad-parm"
+    },
+    {
+      "edges": [
+        {
+          "source_node_id": "source",
+          "source_output_index": 0,
+          "target_input_index": 0,
+          "target_node_id": "target"
+        }
+      ],
+      "houdini_version_stamp": "22.0.417",
+      "model_id": "deterministic-g2-fixture",
+      "natural_language_intent": "G2 isolated graph-truth fixture",
+      "network_type": "SOP",
+      "nodes": [
+        {
+          "friendly_name": "bad_occupied",
+          "kind": "new",
+          "node_category": "Sop",
+          "node_id": "source",
+          "node_type": "box",
+          "parameter_overrides": {}
+        },
+        {
+          "kind": "existing",
+          "node_category": "Sop",
+          "node_id": "target",
+          "scene_path": "/obj/synapse_v2_truth_probe/symbol_xform"
+        }
+      ],
+      "parent_path": "/obj/synapse_v2_truth_probe",
+      "proposal_id": "g2-occupied"
+    },
+    {
+      "edges": [
+        {
+          "source_node_id": "box",
+          "source_output_index": 0,
+          "target_input_index": 0,
+          "target_node_id": "xf"
+        },
+        {
+          "source_node_id": "xf",
+          "source_output_index": 0,
+          "target_input_index": 1,
+          "target_node_id": "merge"
+        }
+      ],
+      "houdini_version_stamp": "22.0.417",
+      "model_id": "deterministic-g2-fixture",
+      "natural_language_intent": "G2 isolated graph-truth fixture",
+      "network_type": "SOP",
+      "nodes": [
+        {
+          "friendly_name": "built_xform",
+          "kind": "new",
+          "node_category": "Sop",
+          "node_id": "xf",
+          "node_type": "xform",
+          "parameter_overrides": {
+            "t": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "friendly_name": "built_box",
+          "kind": "new",
+          "node_category": "Sop",
+          "node_id": "box",
+          "node_type": "box",
+          "parameter_overrides": {
+            "scale": 2
+          }
+        },
+        {
+          "kind": "existing",
+          "node_category": "Sop",
+          "node_id": "merge",
+          "scene_path": "/obj/synapse_v2_truth_probe/existing_merge"
+        }
+      ],
+      "parent_path": "/obj/synapse_v2_truth_probe",
+      "proposal_id": "g2-build"
+    },
+    {
+      "edges": [
+        {
+          "source_node_id": "box",
+          "source_output_index": 0,
+          "target_input_index": 0,
+          "target_node_id": "gone"
+        }
+      ],
+      "houdini_version_stamp": "22.0.417",
+      "model_id": "deterministic-g2-fixture",
+      "natural_language_intent": "G2 isolated graph-truth fixture",
+      "network_type": "SOP",
+      "nodes": [
+        {
+          "friendly_name": "must_not_build",
+          "kind": "new",
+          "node_category": "Sop",
+          "node_id": "box",
+          "node_type": "box",
+          "parameter_overrides": {}
+        },
+        {
+          "kind": "existing",
+          "node_category": "Sop",
+          "node_id": "gone",
+          "scene_path": "/obj/synapse_v2_truth_probe/deleted_between"
+        }
+      ],
+      "parent_path": "/obj/synapse_v2_truth_probe",
+      "proposal_id": "g2-toctou"
+    },
+    {
+      "edges": [
+        {
+          "source_node_id": "box",
+          "source_output_index": 0,
+          "target_input_index": 0,
+          "target_node_id": "xf"
+        }
+      ],
+      "houdini_version_stamp": "22.0.417",
+      "model_id": "deterministic-g2-fixture",
+      "natural_language_intent": "G2 isolated graph-truth fixture",
+      "network_type": "SOP",
+      "nodes": [
+        {
+          "friendly_name": "rollback_box",
+          "kind": "new",
+          "node_category": "Sop",
+          "node_id": "box",
+          "node_type": "box",
+          "parameter_overrides": {
+            "scale": 3
+          }
+        },
+        {
+          "friendly_name": "rollback_xform",
+          "kind": "new",
+          "node_category": "Sop",
+          "node_id": "xf",
+          "node_type": "xform",
+          "parameter_overrides": {}
+        }
+      ],
+      "parent_path": "/obj/synapse_v2_truth_probe",
+      "proposal_id": "g2-rollback"
+    }
+  ],
+  "source": {
+    "python/synapse/host/existence_adapter.py": {
+      "implementation_sha256": "df45f63fd793e5b4d7ad2ef0363a30fe73f93792d6deb5535aba9ab6e591298d"
+    },
+    "python/synapse/host/graph_builder.py": {
+      "implementation_sha256": "16e72915323f803ef4d495afc345787d89897ea74a41fb353e957e36e0f23e7c"
+    },
+    "python/synapse/host/graph_oracle.py": {
+      "implementation_sha256": "b7bbbc3508c142f8a67d6c89d067025ea38292257203bd6bc9a1f70a5d1fd9e1"
+    }
+  },
+  "started_utc": "2026-09-13T20:40:31.639060+00:00",
+  "status": "PASS",
+  "symbols": [
+    {
+      "member": "applicationVersionString",
+      "owner": "hou",
+      "present": true
+    },
+    {
+      "member": "isUIAvailable",
+      "owner": "hou",
+      "present": true
+    },
+    {
+      "member": "node",
+      "owner": "hou",
+      "present": true
+    },
+    {
+      "member": "nodeTypeCategories",
+      "owner": "hou",
+      "present": true
+    },
+    {
+      "member": "nodeType",
+      "owner": "hou",
+      "present": true
+    },
+    {
+      "member": "undos",
+      "owner": "hou",
+      "present": true
+    },
+    {
+      "member": "group",
+      "owner": "hou.undos",
+      "present": true
+    },
+    {
+      "member": "homeHoudiniDirectory",
+      "owner": "hou",
+      "present": true
+    },
+    {
+      "member": "createNode",
+      "owner": "obj.root",
+      "present": true
+    },
+    {
+      "member": "path",
+      "owner": "obj.root",
+      "present": true
+    },
+    {
+      "member": "createNode",
+      "owner": "probe.ObjNode",
+      "present": true
+    },
+    {
+      "member": "path",
+      "owner": "probe.ObjNode",
+      "present": true
+    },
+    {
+      "member": "type",
+      "owner": "probe.ObjNode",
+      "present": true
+    },
+    {
+      "member": "children",
+      "owner": "probe.ObjNode",
+      "present": true
+    },
+    {
+      "member": "destroy",
+      "owner": "probe.ObjNode",
+      "present": true
+    },
+    {
+      "member": "path",
+      "owner": "probe.SopNode",
+      "present": true
+    },
+    {
+      "member": "type",
+      "owner": "probe.SopNode",
+      "present": true
+    },
+    {
+      "member": "parm",
+      "owner": "probe.SopNode",
+      "present": true
+    },
+    {
+      "member": "parmTuple",
+      "owner": "probe.SopNode",
+      "present": true
+    },
+    {
+      "member": "setInput",
+      "owner": "probe.SopNode",
+      "present": true
+    },
+    {
+      "member": "inputConnections",
+      "owner": "probe.SopNode",
+      "present": true
+    },
+    {
+      "member": "destroy",
+      "owner": "probe.SopNode",
+      "present": true
+    },
+    {
+      "member": "set",
+      "owner": "box.Parm",
+      "present": true
+    },
+    {
+      "member": "eval",
+      "owner": "box.Parm",
+      "present": true
+    },
+    {
+      "member": "set",
+      "owner": "xform.ParmTuple",
+      "present": true
+    },
+    {
+      "member": "eval",
+      "owner": "xform.ParmTuple",
+      "present": true
+    },
+    {
+      "member": "inputIndex",
+      "owner": "Sop.NodeConnection",
+      "present": true
+    },
+    {
+      "member": "outputIndex",
+      "owner": "Sop.NodeConnection",
+      "present": true
+    },
+    {
+      "member": "inputNode",
+      "owner": "Sop.NodeConnection",
+      "present": true
+    },
+    {
+      "member": "name",
+      "owner": "Sop.NodeTypeCategory",
+      "present": true
+    },
+    {
+      "member": "parmTemplateGroup",
+      "owner": "Sop.NodeType",
+      "present": true
+    },
+    {
+      "member": "minNumInputs",
+      "owner": "Sop.NodeType",
+      "present": true
+    },
+    {
+      "member": "maxNumInputs",
+      "owner": "Sop.NodeType",
+      "present": true
+    },
+    {
+      "member": "maxNumOutputs",
+      "owner": "Sop.NodeType",
+      "present": true
+    },
+    {
+      "member": "name",
+      "owner": "Sop.NodeType",
+      "present": true
+    },
+    {
+      "member": "category",
+      "owner": "Sop.NodeType",
+      "present": true
+    },
+    {
+      "member": "find",
+      "owner": "Sop.ParmTemplateGroup",
+      "present": true
+    },
+    {
+      "member": "name",
+      "owner": "Object.NodeTypeCategory",
+      "present": true
+    },
+    {
+      "member": "parmTemplateGroup",
+      "owner": "Object.NodeType",
+      "present": true
+    },
+    {
+      "member": "minNumInputs",
+      "owner": "Object.NodeType",
+      "present": true
+    },
+    {
+      "member": "maxNumInputs",
+      "owner": "Object.NodeType",
+      "present": true
+    },
+    {
+      "member": "maxNumOutputs",
+      "owner": "Object.NodeType",
+      "present": true
+    },
+    {
+      "member": "name",
+      "owner": "Object.NodeType",
+      "present": true
+    },
+    {
+      "member": "category",
+      "owner": "Object.NodeType",
+      "present": true
+    },
+    {
+      "member": "find",
+      "owner": "Object.ParmTemplateGroup",
+      "present": true
+    },
+    {
+      "member": "name",
+      "owner": "parent.NodeType",
+      "present": true
+    },
+    {
+      "member": "category",
+      "owner": "parent.NodeType",
+      "present": true
+    },
+    {
+      "member": "name",
+      "owner": "parent.NodeTypeCategory",
+      "present": true
+    }
+  ]
+}

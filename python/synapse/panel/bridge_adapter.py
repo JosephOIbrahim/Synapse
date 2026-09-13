@@ -149,6 +149,8 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     # Undo/redo
     "houdini_undo": "history_undo",
     "houdini_redo": "history_redo",
+    # Validated graph application is reviewed by the host, not the worker.
+    "synapse_instantiate_graph": "build_from_manifest",
     # Batch
     "synapse_batch": "build_from_manifest",
     "synapse_solaris_assemble_chain": "build_from_manifest",

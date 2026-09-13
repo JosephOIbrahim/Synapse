@@ -48,7 +48,10 @@ _MODE_STRICT = "strict"
 _MODE_STANDARD = "standard"
 _MODE_UNRESTRICTED = "unrestricted"
 _MODE_DEMO = "demo"
-_VALID_MODES = (_MODE_STRICT, _MODE_STANDARD, _MODE_UNRESTRICTED, _MODE_DEMO)
+_MODE_PROPOSAL = "proposal"
+_VALID_MODES = (
+    _MODE_STRICT, _MODE_STANDARD, _MODE_UNRESTRICTED, _MODE_DEMO, _MODE_PROPOSAL,
+)
 _DEFAULT_MODE = _MODE_STANDARD
 _PROFILE_ENV_VAR = "SYNAPSE_WORKER_TOOL_PROFILE"
 
@@ -140,6 +143,9 @@ def is_tool_allowed_for_worker(tool_name: str, *, profile: str | None = None) ->
 
     Policy by mode (``SYNAPSE_WORKER_TOOL_MODE``):
 
+      * ``proposal`` -- registered reads, available knowledge groups and
+        declared proposal interfaces only; direct mutations, instantiate,
+        batch and composite builders belong to the reviewed host path.
       * ``demo`` -- registered reads and the constrained recipe proposal only;
         group composites, generic mutation and unknown tools are denied.
       * ``unrestricted`` -- allow everything (restores pre-gate behavior for
@@ -152,6 +158,26 @@ def is_tool_allowed_for_worker(tool_name: str, *, profile: str | None = None) ->
         (fail-closed).
     """
     mode = resolve_mode(profile)
+
+    if mode == _MODE_PROPOSAL:
+        # Proposal interfaces declare intent; application belongs to the host.
+        # Check before the standard-mode composite/inform exceptions below.
+        if tool_name == RUN_RECIPE_TOOL_NAME:
+            return True, "proposal mode: declared recipe proposal"
+        if tool_name.startswith(_GROUP_PREFIX):
+            # Use the available knowledge surface, not the legacy prefix
+            # exception: inventing a group name must not grant authority.
+            from synapse.panel.tool_bridge import _GROUP_TOOLS
+            if any(name == tool_name for name, _description in _GROUP_TOOLS):
+                return True, "proposal mode: read-only knowledge group tool"
+            return False, "proposal mode: unknown knowledge group denied"
+        info = _TOOL_INDEX.get(tool_name)
+        if info and info["read_only"]:
+            return True, "proposal mode: registered read-only tool"
+        return False, (
+            "proposal mode: only reads and declared proposals permitted; "
+            "graph application belongs to the reviewed host path"
+        )
 
     if mode == _MODE_DEMO:
         # This check precedes BOTH the legacy group exception and builder

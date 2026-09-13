@@ -2,198 +2,132 @@
   <img src="assets/SYNAPSE.png" alt="SYNAPSE" width="160">
 </p>
 
-<p align="center"><strong>Artist-controlled AI assistance inside Houdini.</strong><br>Describe a task. Build editable nodes. Keep the creative decisions.</p>
+<p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.67.4 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.67.4 is Latest</sub></p>
+<p align="center"><sub>v5.68.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.68.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Start here:** [Install](#start-here) · [First build](#your-first-build) · [What's ready](#whats-ready) · [Memory](#how-synapse-remembers) · [Help](#when-you-get-stuck)
-
-## The idea
-
-SYNAPSE helps with the routine work of building and inspecting Houdini networks,
-so you can spend more attention on the parts that make a shot yours.
-
-Think **cruise control**: you decide when help is useful and what you want to make.
-That is our [artist-first intent](INTENT.md). Full predictive creation and Computer
-Use are future capabilities; today's starting point is explicit requests and a
-small, optional checked-suggestion scaffold.
+**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SYNAPSE-5.68.0-Setup.exe)** · [What's new](docs/releases/v5.68.0.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
-**Current validation target:** Windows with Houdini **22.0.400** and its bundled
-Python **3.13**. Other builds need their own checks.
+**You need:** Windows and Houdini **22.0.400**. Setup includes the Python dependencies.
 
-**[Download the Windows installer preview](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SYNAPSE-5.67.4-Setup.exe)**
+1. **Save your scene and close Houdini.**
+2. **Run Setup.** Choose your Houdini installation and its preference folder.
+3. **Open Houdini → New Pane Tab → Synapse.**
+4. **Connect models → choose a model → Check connection → Use this model.**
 
-The unsigned Setup wizard installs SYNAPSE and its Houdini interface without a
-terminal or system Python. Save your scene and close Houdini before running it.
-[Setup instructions](docs/getting-started/installation.md#windows-installer-preview) ·
-[Checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SHA256SUMS.txt) ·
-[Release notes and tested scope](https://github.com/JosephOIbrahim/Synapse/releases/tag/windows-installer-5.67.4-preview.1)
+For node creation, select **Build and edit networks** in the model dialog.
+Cloud models need your API key. For Ollama, start Ollama and choose an installed model.
 
-For a source installation, use the steps below:
-
-1. Download and extract the source ZIP from the [latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest) into a folder you will keep.
-2. Open a terminal in that folder and run both installers:
-
-   ```shell
-   python scripts/install_synapse_package.py
-   python install.py
-   ```
-
-3. Restart Houdini. Open **New Pane Tab → Synapse**.
-4. Click **Connect models**, choose an engine and model, select **Build and edit networks**, then **Check connection → Use this model**.
-
-For cloud engines, enter the API key in the connection dialog. For a local model,
-start Ollama first and choose an installed model. The connection check reads
-metadata; it does not test a build. Tool support varies by model.
-
-**Two different controls:** **Connect models** chooses your AI service.
-**Connect** starts Houdini's local bridge. **Doctor** checks SYNAPSE without asking
-a model. [Full setup and troubleshooting →](docs/getting-started/installation.md)
+The installer is unsigned. [Checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SHA256SUMS.txt) · [Full setup guide](docs/getting-started/installation.md) · [Source installation](docs/getting-started/installation.md#source-installation)
 
 ## Your first build
 
-Start in a scratch scene. Send:
+Open a scratch scene and send:
 
 ```text
 make a box
 ```
 
-Inspect the result in Houdini, then try **Undo**. Undo operates on a recorded
+Inspect the nodes, change a parameter, then try **Undo**. Undo reverses a recorded
 operation; it does not reverse an entire conversation or external file writes.
 
-For the Solaris demo, start with **“create a solaris network”**, then specify your
-geometry, HDRI, lights, MaterialX material, camera and Karma XPU settings. Check
-the resulting nodes and render configuration before treating it as shot-ready.
+**Three controls to know**
+
+| Control | Use it for |
+|---|---|
+| **Connect models** | Choose the AI service and model. |
+| **Connect** | Start Houdini's local SYNAPSE bridge. |
+| **Doctor** | Check the setup without asking a model. |
 
 [First-session walkthrough →](docs/getting-started/quickstart.md)
 
-```mermaid
-flowchart TD
-    A["You describe a task"] --> B["SYNAPSE uses allowed tools"]
-    B --> C["You inspect and edit the nodes"]
-    C --> D["Keep, refine, or undo an operation"]
-```
-
-### SYNAPSE tool demonstration
-
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://vimeo.com/1225720538">
-        <img src="assets/demo_v2_video_thumb.jpg" alt="Play SYNAPSE tool demonstration on Vimeo" width="900">
-      </a>
-      <p><a href="https://vimeo.com/1225720538"><strong>▶ Watch the video on Vimeo</strong></a></p>
-    </td>
-  </tr>
-</table>
-
-*Recorded demonstration; the current panel and feature limits are described below.*
-
 ## What's ready
 
-| Feature | Current state |
-|---|---|
-| **Build and inspect** | Explicit requests through the panel's permitted tools; editable Houdini nodes. |
-| **Choose your model** | Claude, Gemini, NVIDIA Nemotron, Ollama and a custom OpenAI-compatible endpoint. Capabilities vary by model. |
-| **Doctor and panel controls** | Direct diagnostics, visible Connect / Doctor controls, and installed Ollama model discovery. |
-| **Saved lookdev suggestion** | Optional Stage 0 scaffold for one checked workflow. It prepares an editable prompt; you decide whether to send it. |
-| **Memory LOOP** | Optional observation and recall across Moneta, Octavius and Hanish. Requires configured substrates. |
-| **Predictive creation + Computer Use** | Product direction in [INTENT.md](INTENT.md); independent artist controls are planned. |
-| **Recursive self-improvement** | A development direction. Stage 0 is a starting scaffold, not a self-maintaining system. |
+- **Build and inspect networks** through the panel's permitted tools.
+- **Choose local or cloud models:** Claude, Gemini, NVIDIA Nemotron, Ollama, or a custom OpenAI-compatible endpoint. Tool support varies.
+- **Recall project decisions** when the memory store is configured.
+- **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 
-## How SYNAPSE remembers
+**New in 5.68.0:** an opt-in worker proposal policy, reviewed graph application,
+and graph verification records for Houdini **22.0.400 and 22.0.417**.
+The installer and full panel target remain **22.0.400**.
+[Release details and limits →](docs/releases/v5.68.0.md)
 
-Ask SYNAPSE to remember a decision, then ask about it in a later session.
-Saved records and scene or project notes supply context for the answer.
+Predictive creation, product-level Computer Use controls, and recursive
+self-improvement remain development work. The attended operator checks in this
+release do not make those features complete. [Artist-first intent →](INTENT.md)
 
-```mermaid
-flowchart TD
-    A["Remember<br/>this decision"] --> B["Record the choice<br/>and reasoning"]
-    B --> S[("Configured<br/>memory store")]
-    B --> N[("Scene or<br/>project notes")]
-    S -.->|"Moneta enabled"| U["USD mirror<br/>cortex_root.usda"]
-    U --> I["Inspect the record<br/>in Houdini"]
-    Q["Ask about an<br/>earlier decision"] --> R["Retrieve matching<br/>records or notes"]
-    S --> R
-    N --> R
-    R --> C["Give the assistant<br/>relevant context"]
-    C --> D["Answer for the<br/>artist to review"]
-```
+## Watch it work
 
-**USD is an inspection mirror.** With Moneta active and USD authoring available,
-records are mirrored into `cortex_root.usda`. Closing its inspection view leaves
-saved memory intact. Recall does not require that view to be open.
+[![Play the SYNAPSE tool demonstration](assets/demo_v2_video_thumb.jpg)](https://vimeo.com/1225720538)
 
-Memory supplies context; scene changes still go through SYNAPSE's action tools.
-[Storage and recall details →](docs/architecture/overview.md#project-and-scene-memory)
-
-<details>
-<summary><strong>Optional observation loop: Moneta, Octavius and Hanish</strong></summary>
-
-```mermaid
-flowchart TD
-    M["Moneta: remember project outcomes"] --> O["Octavius: compose private context"]
-    O --> H["Hanish: record forecast and outcome"]
-    H --> M
-```
-
-SYNAPSE coordinates this optional loop around requested operations. Recalled
-records remain advice; they do not choose the next scene action. Unavailable
-substrates and unknown outcomes remain visible.
-
-Saved suggestions require an initialized project store and a compatible,
-developer-imported record. Use **lightning tools menu → Saved lookdev suggestion…**
-or `/lookdev-suggestion`. **Use in prompt** prepares text without sending it.
-Exact version matching means an older checked experience needs a new rehearsal
-and import after a SYNAPSE version change.
-
-[LOOP setup](docs/MEMORY_LOOP_REPAIR.md) · [Stage 0 setup](docs/development/rsi_stage0.md) · [Detailed diagrams](docs/architecture/overview.md#memory-loop)
-
-</details>
+**[Watch the recorded demonstration on Vimeo →](https://vimeo.com/1225720538)**
 
 ## When you get stuck
 
-| What you see | First thing to try |
+| What you see | Try this first |
 |---|---|
-| No Synapse pane | Restart Houdini, then follow [installation verification](docs/getting-started/installation.md#verify-the-installation). |
-| Missing Ollama models | Start Ollama at the configured address, reopen **Connect models**, then **Check connection**. |
-| Houdini connection trouble | Click **Connect**, then **Doctor**. |
-| No saved suggestion | Read the card's reason. A matching imported experience and an available project memory owner are required. |
+| No Synapse pane | Restart Houdini, then [verify installation](docs/getting-started/installation.md#verify-the-installation). |
+| Missing Ollama models | Start Ollama, reopen **Connect models**, then **Check connection**. |
+| Connection trouble | Click **Connect**, then **Doctor**. |
+| No saved suggestion | Read the card's reason; a matching experience and project memory owner are required. |
 
-**Know the limits:** a failed build can leave partial nodes; undo grouping does
-not guarantee rollback. Stop prevents further panel work, but does not prove that
-a running cook or render has finished. The external bridge has broader permissions
-than normal panel chat and is intended for a single-user local machine.
+A failed build can leave partial nodes. Stop prevents further panel work; it does
+not prove an active cook or render has finished. Review results in Houdini.
 
-[Current limits and verification](docs/status.md) · [Report a bug](https://github.com/JosephOIbrahim/Synapse/issues/new/choose)
+[Current status](docs/status.md) · [Report a bug](https://github.com/JosephOIbrahim/Synapse/issues/new/choose)
 
 <details>
-<summary><strong>For developers: architecture, evidence and contribution</strong></summary>
+<summary><strong>How SYNAPSE remembers</strong></summary>
 
-**128 tools, two paths.** The [registry](python/synapse/mcp/_tool_registry.py) is the
-authority. HTTP MCP and WebSocket execution have different policy boundaries;
-the panel's worker adds its own tool restrictions and model-data permissions.
+Ask SYNAPSE to remember a decision, then ask about it later. Configured memory
+and scene/project notes provide context for the answer.
 
-- [Architecture and Mermaid diagrams](docs/architecture/overview.md)
-- [Developer installation and tests](docs/getting-started/installation.md#for-contributors)
-- [MCP client setup](docs/mcp/SETUP.md)
-- [Changelog](CHANGELOG.md) and [release notes](https://github.com/JosephOIbrahim/Synapse/releases)
-- [Contribution rules](AGENTS.md) and [execution contracts](CLAUDE.md)
+With Moneta active, records can also appear in the USD inspection mirror,
+`cortex_root.usda`. Closing that view leaves saved memory intact.
 
-GitHub CI runs the stock-Python suite on Linux and macOS. Native Houdini checks
-are a separate qualification; a green CI badge is not a live render or demo pass.
-Release tags are created after version agreement and published after their
-exact commit passes CI. [Release process →](docs/architecture/overview.md#release-process)
+The optional observation loop connects Moneta, Octavius and Hanish. Recalled
+records remain advice; scene changes still use action tools. Missing substrates
+and unknown outcomes remain visible.
+
+[Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [LOOP setup](docs/MEMORY_LOOP_REPAIR.md) · [Saved suggestions](docs/development/rsi_stage0.md)
+
+</details>
+
+<details>
+<summary><strong>For developers: policy, evidence and source setup</strong></summary>
+
+**128 tools, two paths.** The external MCP bridge and live
+WebSocket handlers have different consent and integrity boundaries. Panel workers
+add their own tool restrictions.
+
+The new `proposal` worker mode permits registered reads, real knowledge tools and
+declared proposals. Direct mutation and graph instantiation are denied to the
+worker. It is opt-in; the default remains `standard`. Host graph instantiation is
+classified for review. These changes do not add consent gating to the separate
+live WebSocket path.
+
+- [Architecture and diagrams](docs/architecture/overview.md)
+- [Installer build and tests](installer/README.md)
+- [Source installation and tests](docs/getting-started/installation.md#for-contributors)
+- [MCP setup](docs/mcp/SETUP.md)
+- [Release notes](docs/releases/v5.68.0.md) · [Changelog](CHANGELOG.md)
+
+GitHub CI tests stock Python on Linux and macOS. Native Houdini and Windows
+installer checks are separate. A green CI badge does not establish a live render
+or a clean-machine installation. Older Stage 0 experiences need matching
+qualification after a SYNAPSE version bump.
 
 </details>
 
 ## License
 
-[MIT](LICENSE). Patent applications pending on the USD cognitive-state substrate,
-digital injection, and predictive lighting.
+[MIT](LICENSE). Bundled Moneta retains its separate proprietary terms.
+Patent applications pending on the USD cognitive-state substrate, digital injection,
+and predictive lighting.

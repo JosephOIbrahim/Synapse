@@ -49,44 +49,17 @@ def moneta_schema_for(repo_root: Path) -> str | None:
 
 
 def build_package(repo_root: Path) -> dict:
-    """The resolved (absolute-path) package dict. Pure — easy to test."""
-    env = [
-        {"var": "SYNAPSE_ROOT", "value": repo_root.as_posix()},
-        # BOTH paths: python/ (the `synapse` package) AND the repo ROOT (so
-        # `import shared` works — shared/ lives at the root, NOT under python/).
-        # Omitting the root made SynapseHandler fail to import inside the panel
-        # and surfaced a misleading "hou not responding" to the artist.
-        {"var": "PYTHONPATH",
-         "value": [(repo_root / "python").as_posix(), repo_root.as_posix()],
-         "method": "prepend"},
-    ]
-    moneta = moneta_src_for(repo_root)
-    if moneta:
-        env.append({"var": "MONETA_SRC", "value": moneta})
-        # Parity with packages/synapse.json (the tracked package): the deployed
-        # copy must carry the SAME env surface, or the Moneta memory substrate
-        # silently degrades. Drift here is exactly how the MonetaMemory schema
-        # went unregistered on H22 (2026-08-09): the tracked package set
-        # PXR_PLUGINPATH_NAME, this resolver did not, and only this resolver's
-        # output ever reached a Houdini prefs dir. tests/test_install_package_parity.py
-        # now pins the env-var name sets together.
-        schema = moneta_schema_for(repo_root)
-        if schema:
-            # Registration is process-global and must be in the package env
-            # (set before USD's plugin registry first loads), not at runtime.
-            env.append({"var": "PXR_PLUGINPATH_NAME", "value": schema})
-        env.append({"var": "SYNAPSE_MEMORY_BACKEND", "value": "moneta"})
-    return {
-        "name": "synapse",
-        "enable": True,
-        # Guard against a double-load if both this deployed copy AND
-        # HOUDINI_PACKAGE_DIR point at the repo (would double-prepend PYTHONPATH).
-        "load_package_once": True,
-        "env": env,
-        # hpath = the HOUDINI_PATH keyword ("path" is deprecated as of H22);
-        # points Houdini at <repo>/houdini (shelves, python panels, scripts).
-        "hpath": (repo_root / "houdini").as_posix(),
-    }
+    """Use the same package author as Windows Setup; retain source discovery."""
+    sys.path.insert(0, str(repo_root_for_installer() / "installer"))
+    from synapse_setup.registration import package
+    src = moneta_src_for(repo_root)
+    return package(repo_root, moneta_src=src,
+                   moneta_schema=moneta_schema_for(repo_root) if src else None,
+                   backend="moneta" if src else None)
+
+
+def repo_root_for_installer():
+    return Path(__file__).resolve().parents[1]
 
 
 def candidate_pref_dirs() -> list[Path]:

@@ -5,15 +5,15 @@
 **Current validation target:** Windows, Houdini 22.0.400, bundled Python 3.13.
 Houdini runs SYNAPSE with its own Python.
 
-## Windows installer preview
+## Windows installer
 
-**[Download SYNAPSE-5.67.4-Setup.exe](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SYNAPSE-5.67.4-Setup.exe)**
+**[Download SYNAPSE-5.68.0-Setup.exe](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SYNAPSE-5.68.0-Setup.exe)**
 
-[Release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/windows-installer-5.67.4-preview.1) ·
-[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/windows-installer-5.67.4-preview.1/SHA256SUMS.txt)
+[Release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.68.0) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SHA256SUMS.txt)
 
 1. Save your scene and close Houdini.
-2. Open Setup. This preview is unsigned, so Windows may show an unknown publisher.
+2. Open Setup. This installer is unsigned, so Windows may show an unknown publisher.
 3. Select the Houdini application and the preference folder used by your launcher.
 4. Install into the suggested application folder, or another dedicated folder.
 5. Start Houdini, open **New Pane Tab → Synapse**, then run **Doctor**.

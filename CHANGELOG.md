@@ -2,6 +2,15 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.68.0 — Graph review controls and Windows Setup
+
+*2026-09-13.* Adds the opt-in proposal worker policy and classifies host graph
+instantiation for review. Graph evidence covers Houdini 22.0.400 and 22.0.417;
+builder/oracle algorithms are unchanged. Brings the existing Windows Setup
+implementation into main, refreshes the installer payload, and shortens the
+README into a clear starting path. See the [release notes](docs/releases/v5.68.0.md)
+for qualification and unfinished work.
+
 ## v5.67.4 — Artist guide and architecture diagrams
 
 *2026-09-09.* Reworks the README for quick scanning and progressive detail;

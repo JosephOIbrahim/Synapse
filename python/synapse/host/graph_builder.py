@@ -1,22 +1,17 @@
-"""Atomic instantiation from a VALIDATED proposal. host/ — hou allowed.
+"""Atomic instantiation from a validated proposal. host/ — hou allowed.
 
-Re-run validation UNCONDITIONALLY (§7 TOCTOU guard) against the *current* live
-scene before building. Then ONE undo block: create NEW nodes (topological order;
-EXISTING already placed) -> set parms (NEW only) -> connect edges -> close ->
-emit a best-effort provenance receipt. Truth contract: read back every parm set
-and every connection made; the result reports the ACTUAL observed state, never an
-unobserved claim.
+Revalidate against the current scene before building, create new nodes inside
+one undo group, and return observed parameters and connections.
 
-hou symbols used here are dir()-confirmed against LIVE Houdini 21.0.671 at the
-bench (instance-level for the SWIG methods the type-introspection table misses):
-  hou.node, hou.undos.group, hou.Node.createNode, hou.Node.setInput,
-  hou.Node.parm / .parmTuple (instance methods), hou.Node.path, hou.Node.type,
-  hou.Node.inputConnections, hou.Parm.set/.eval, hou.ParmTuple.eval,
-  hou.NodeConnection.inputIndex/.outputIndex/.inputNode.
-None of the four quarantined phantoms (the pdg module, the secure namespace, the
-lop-network accessor, the graph-tick updater) appear here.
-
-Not imported by the Mile-1 cognitive path; filled at the bench in Mile 3."""
+GRAPH-TRUTH-BUILD: 22.0.400
+GRAPH-TRUTH-BUILD: 22.0.417
+Receipts: harness/notes/graph_truth_22.0.400.json and
+harness/notes/graph_truth_22.0.417.json.
+Each headless receipt records dir() membership of every hou member used here and
+SOP fixtures for scalar/tuple parameters, connections, existing-input
+preservation, unknown-id rejection, TOCTOU refusal, and partial-build cleanup.
+Each receipt binds the implementation hash to its observed build. GUI undo/consent,
+typed VOP wires, and production provenance are not qualified by these fixtures."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -30,7 +25,7 @@ from synapse.cognitive.graph_proposal import (
 )
 
 # §12 import guard — the module must import HEADLESS (the gated test drives it with
-# a fake hou). On ImportError the name is None; production runs inside Houdini 21.
+# a fake hou). On ImportError the name is None; production runs inside the supported Houdini runtime.
 try:  # pragma: no cover — exercised both ways across environments
     import hou
 except ImportError:  # headless / CI — the gated test injects a fake hou

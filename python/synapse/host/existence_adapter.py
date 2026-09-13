@@ -1,36 +1,16 @@
-"""IExistenceOracle backing — HOU-BACKED. host/ — hou allowed.
+"""Existence checks through live hou node-type and parameter-template tables.
 
-§2.6 PREFLIGHT RESULT (observed + smoke-tested against the live scout this Mile):
-``synapse_scout`` returns a STRUCTURED verdict (``symbols[].exists_in_runtime``)
-PLUS retrieval ``hits`` — but the structured verdict is built by matching DOTTED
-Python API symbols (``hou.*``/``pdg.*``/``pxr.*``). A BARE node-type name (``box``)
-is not a dotted symbol, so a node-type query returns an EMPTY ``symbols`` array
-and the only fallback signal is documented-presence in the hits. That fallback
-was smoke-tested and FALSE-NEGATIVES real types:
+Bare node-type names need runtime table checks: a documentation match is not an
+API-symbol existence verdict. This oracle is host-only; cognitive tools remain
+free of hou imports.
 
-    node_type_exists("box","Sop")  -> False   # via the scout doc-presence wrapper
-
-So scout cannot be the authoritative node-type existence oracle.
-
-PIVOT (deliver-and-surface): the IExistenceOracle question — does SOP type ``box``
-exist, does it carry parameter ``X`` — IS an ``hou`` question
-(``hou.nodeType(category, name)`` / ``NodeType.parmTemplateGroup().find(...)``),
-exactly symmetric with graph_oracle.py's hou-backed ConnectivityOracle. This ships
-that hou-backed oracle, every symbol dir()-confirmed against LIVE H21.0.671 (probed
-this session: hou.nodeType -> box True / frobnicate False; parmTemplateGroup().find
--> 't' True, 'scale' True, 'zzz_nope' False).
-
-SURFACED FOR ARCHITECT RATIFICATION: this is a deviation from the settled
-"scout-backed existence" Target — scout proved unable to serve it. The alternative
-to a hou-backed oracle is giving scout a real node-type index. Flagging, not
-halting (the panel review judged deliver-and-surface cleaner than a loud stub,
-since both sanctioned scout heuristics genuinely false-negative real types). Scout
-remains the COGNITIVE-layer pre-grounding tool (the model calls it before
-proposing); this is the HOST-layer runtime check.
-
-NOT wired into the MCP registry this Mile; the DoD injects a mock existence oracle.
-Live end-to-end through the interactive bridge is the owed residual (graph_oracle
-shares the same hou surface; both verified read-only this session)."""
+GRAPH-TRUTH-BUILD: 22.0.400
+GRAPH-TRUTH-BUILD: 22.0.417
+Receipts: harness/notes/graph_truth_22.0.400.json and
+harness/notes/graph_truth_22.0.417.json.
+Each headless receipt records dir() membership of the hou members used here,
+positive box/scale and xform/t checks, and negative type/parameter fixtures.
+The implementation hash is bound to both observed builds."""
 from __future__ import annotations
 
 import hou  # noqa: F401 — host layer; never imported by cognitive.*
