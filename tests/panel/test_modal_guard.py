@@ -61,13 +61,13 @@ def _app():
     return _APP
 
 
-def test_a_the_guard_fires_on_a_modal():
+def test_a_the_guard_fires_on_a_modal(modal_error):
     """A modal raises, and the message carries the dialog's own words."""
     _app()
     box = QtWidgets.QMessageBox()
     box.setWindowTitle("Allow this model connection?")
     box.setText("a probe, not a real prompt")
-    with pytest.raises(AssertionError) as caught:
+    with pytest.raises(modal_error) as caught:
         box.exec()
     msg = str(caught.value)
     assert "would have hung the run forever" in msg, msg
@@ -76,10 +76,10 @@ def test_a_the_guard_fires_on_a_modal():
     assert "QMessageBox" in msg, msg
 
 
-def test_b_the_guard_fires_for_a_plain_qdialog_too():
+def test_b_the_guard_fires_for_a_plain_qdialog_too(modal_error):
     """QDialog is the base every custom panel dialog inherits."""
     _app()
-    with pytest.raises(AssertionError):
+    with pytest.raises(modal_error):
         QtWidgets.QDialog().exec()
 
 
@@ -97,7 +97,7 @@ def test_c_the_guard_does_not_leak_between_tests():
     identity check below fails and the leak is named rather than discovered
     later by an unrelated test.
     """
-    import tests.panel.conftest as guard
+    from tests.panel import conftest as guard
     for (cls_name, attr), original in _PRISTINE.items():
         cls = getattr(QtWidgets, cls_name)
         current = getattr(cls, attr)
@@ -106,3 +106,56 @@ def test_c_the_guard_does_not_leak_between_tests():
             "leaked and every later test that shows a dialog is broken"
             % (cls_name, attr))
     assert callable(guard.no_blocking_modal)
+
+
+def test_d_qmenu_is_documented_as_NOT_guarded(modal_error):
+    """QMenu is the guard's known hole, and this pins it as a hole.
+
+    A patch on QMenu.exec is ACCEPTED and INERT -- measured on hython 22.0.400:
+    setattr reports OK, then QMenu().exec(QPoint(0,0)) returns None and never
+    raises. PySide does not consult the Python attribute for that call; the
+    mechanism is UNKNOWN, the behaviour is measured.
+
+    This test exists so nobody "fixes" the guard by adding QMenu back to
+    _BLOCKING_METHODS and concluding, from a green run, that it worked. An
+    inert entry still increments the guard's own proof-of-installation.
+    """
+    from PySide6 import QtCore
+    _app()
+    from tests.panel import conftest as guard
+    assert "QMenu" not in guard._BLOCKING_METHODS, (
+        "QMenu was added back to the patch list. The patch installs and does "
+        "nothing; adding it makes the `patched` self-check lie.")
+    # And the measurement itself: an empty menu does not block, and does not raise.
+    assert QtWidgets.QMenu().exec(QtCore.QPoint(0, 0)) is None
+
+
+def test_e_the_cpp_static_helpers_are_guarded_too(modal_error):
+    """QMessageBox.warning builds and execs its box inside C++ and never
+    consults the Python `exec` attribute. It escaped the first version and was
+    measured still hanging. gate_widget.py:311 is a live call site, on a
+    CONSENT surface."""
+    _app()
+    with pytest.raises(modal_error):
+        QtWidgets.QMessageBox.warning(None, "static title", "static text")
+    with pytest.raises(modal_error):
+        QtWidgets.QFileDialog.getOpenFileNames(None, "pick")
+
+
+def test_f_the_refusal_cannot_be_swallowed_by_except_Exception(modal_error):
+    """synapse_panel.py has 126 `except Exception` blocks, one on the send path.
+    A swallowed guard turns a hang into a GREEN test on a path never exercised
+    -- strictly worse than the hang, which was at least honest."""
+    assert not issubclass(modal_error, Exception), (
+        "the refusal is an Exception; any product `except Exception` can eat it")
+    assert issubclass(modal_error, BaseException)
+    _app()
+    swallowed = False
+    try:
+        try:
+            QtWidgets.QMessageBox().exec()
+        except Exception:                      # noqa: BLE001 - the point
+            swallowed = True
+    except modal_error:
+        pass
+    assert not swallowed, "a bare `except Exception` swallowed the guard"

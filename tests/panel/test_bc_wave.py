@@ -738,8 +738,32 @@ def test_turn_receipt_offers_revert_on_chat():
             badge = [w for w in p._consent_slot.findChildren(QtWidgets.QLabel)
                      if w.isVisible() and "CHANGE" in w.text()]
             assert badge and badge[0].property("rhythm_role") == "tag", profile
+            # F11 measures whether a new send CLEARS the receipt. It does not
+            # measure consent -- but _hide_turn_receipt() (synapse_panel.py:3156)
+            # sits DOWNSTREAM of the consent gate at :3132, so _send cannot reach
+            # it without a permitted connection. The env supplies a real key, so
+            # a real cloud spec is built and the gate legitimately asks.
+            #
+            # Stub the ANSWER, keep the GATE. _prepare_connection, _route_connection
+            # and the whole post-gate _send body stay real; the only thing removed
+            # is the reply to a question this test does not ask.
+            #
+            # NOT a pre-issued session grant: writing a real approval keyed to the
+            # artist's key digest into the process-global consent anchor would
+            # silently pre-approve every later _send in the same hython process.
+            #
+            # What this stops covering: that _allow_connection's early returns
+            # actually admit a permitted connection. Owned by
+            # tests/test_model_session_access.py, tests/test_panel_reload_memory_owner.py:153
+            # and tests/test_first_session_panel.py:36 (the DECLINE half).
+            assert p._prepare_connection is not None
+            gate = mock.Mock(return_value=True)
+            p._allow_connection = gate
             p._send("x")
             _app().processEvents()
+            # The compensation for the stub: a regression that made _send stop
+            # consulting permission at all still goes red here.
+            assert gate.call_count == 1, (profile, gate.call_count)
             assert not any(b.isVisible() and "REVERT" in b.text()
                            for b in face.findChildren(QtWidgets.QAbstractButton)), profile
             assert not p._consent_slot.isVisible()
