@@ -68,7 +68,15 @@ AUDIT_DIR = Path(os.path.expanduser("~")) / ".synapse" / "audit"
 # path is EXACTLY the path pytest takes, because `import hou` fails under
 # pytest - which makes journal provenance decidable from the path alone.
 TEST_MARKER_RE = re.compile(r"^(fake|test|mock|dummy|stub|c5|probe)[_A-Z]|^test$")
-JOURNAL_TOOL_RE = re.compile(r"^\[\d\d:\d\d:\d\d\]\s+TOOL\s+([A-Za-z0-9_]+):")
+# Two stamp shapes, on purpose. Entries written from 2026-09-14 carry a full
+# local date plus UTC offset - `[2026-09-14 14:32:05-0400]`. Everything already
+# on disk carries a bare `[14:32:05]`, and an append-only journal keeps those
+# forever, so the reader has to accept both or it silently counts zero records
+# on a file it can no longer parse.
+JOURNAL_TOOL_RE = re.compile(
+    r"^\[(?:\d{4}-\d\d-\d\d )?\d\d:\d\d:\d\d(?:[+-]\d{4})?\]"
+    r"\s+TOOL\s+([A-Za-z0-9_]+):"
+)
 
 
 def _journal_candidates() -> list[tuple[Path, str, str]]:
@@ -164,9 +172,12 @@ def _scan_journals(known_names: set[str]) -> dict:
         "note": (
             "The journal is the ONLY runtime source that records read-only tool "
             "calls: session_journal is written from mcp/tools.py:148 on every "
-            "dispatch, with no mutation gate. Its weakness is the mirror of the "
-            "audit's - no date on the timestamp (session_journal.py:139 formats "
-            "%H:%M:%S only), so records cannot be ordered across days."
+            "dispatch, with no mutation gate. Entries written from 2026-09-14 "
+            "carry a full local date plus UTC offset, so they CAN be ordered "
+            "and bounded by day. Entries written before that carry %H:%M:%S "
+            "only: their day is UNKNOWN and cannot be recovered, so any "
+            "cross-day ordering over a file that predates the change is "
+            "undefined for its older lines."
         ),
     }
 

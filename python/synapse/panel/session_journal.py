@@ -7,6 +7,7 @@ Thread-safe, works with or without Houdini (hou).
 
 from __future__ import annotations
 
+import datetime
 import json
 import logging
 import os
@@ -138,7 +139,20 @@ class SessionJournal:
 
     @staticmethod
     def _timestamp() -> str:
-        return time.strftime("%H:%M:%S", time.localtime())
+        """Stamp one entry with a full local date-time plus UTC offset.
+
+        Per entry, not once per file: the journal is append-only and is not
+        rotated, so a single header would leave every line after midnight as
+        ambiguous as no date at all.  The offset is explicit so the stamp never
+        has to be *assumed* to be local or UTC, and so elapsed-time arithmetic
+        across a DST boundary stays correct -- INTENT.md Section 9 asks for
+        measured time-to-result and dispatch-stop latency, neither of which is
+        computable from a time of day alone.
+
+        Lines written before this carry a bare ``%H:%M:%S``; readers must keep
+        accepting both (see harness/notes/econ/econ_call_evidence.py).
+        """
+        return datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S%z")
 
     def _append(self, line: str) -> None:
         """Thread-safe append of a single line to the journal file."""
