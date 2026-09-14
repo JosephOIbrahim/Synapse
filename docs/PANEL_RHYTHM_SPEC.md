@@ -27,7 +27,9 @@ imperative layout values. This leg does not claim camera migration is complete.
 leaf padding, minimum dimensions and outer margins. `rhythm.apply(root, density)`
 walks the QObject tree (including the root and through non-widget children),
 changes only marked widget layouts, and derives inter-item spacing from the
-role's base via `tokens.gap`. Layout content margins are fixed per role.
+role's base via `tokens.gap`. Layout content margins are fixed per role, with one
+ratified exception: the TOP-EDGE CONDITION in section 4.1, which is the only margin
+in the system that scales.
 No QApplication or Qt import is required merely to import the rhythm module.
 
 `compose()` stamps density before building, then repolishes the complete tree
@@ -106,7 +108,8 @@ Host font floor provenance remains UNKNOWN until Joe's H22.0.400 GUI probe.
 
 Pixel arithmetic: airy = base *3/2; standard = base; tight = base *3/4.
 All bases belong to SPACE_GRID, hence these products are integral. Contents
-margins below are (left, top, right, bottom); they never scale.
+margins below are (left, top, right, bottom). They do not scale, **except the
+shell's top margin under the edge condition in 4.1.**
 
 | role / gap owner | base | airy | standard | tight | fixed layout margins |
 |---|---:|---:|---:|---:|---|
@@ -118,9 +121,50 @@ margins below are (left, top, right, bottom); they never scale.
 | parm_row: between rows/cells | 4 | 6 | 4 | 3 | (0,0,0,0) |
 | group: between groups | 16 | 24 | 16 | 12 | (0,0,0,0) |
 | parameter section head (label QSS override) | 32 | 48 | 32 | 24 | unchanged |
-| shell: panel edge container (landing r3) | 16 | 24 | 16 | 12 | (GUTTER,SPACE_SM,GUTTER,SPACE_SM) = (30,8,30,8) |
+| shell: panel edge container (landing r3) | 16 | 24 | 16 | 12 | (GUTTER,SPACE_SM,GUTTER,SPACE_SM) = (30,8,30,8) — **top overridden at a top edge, see 4.1** |
 | stack: flush utility stack (landing r3) | 4 | 6 | 4 | 3 | (0,0,0,0) |
 | band: chrome bands owning their hairlines (landing r3) | 0 | 0 | 0 | 0 | (0,0,0,0) |
+
+### 4.1 - The top-edge condition (J5, ratified 2026-09-05)
+
+**The one margin in this system that scales.** A `shell` whose widget also carries
+`rhythm_edge="top"` takes one grid step more air above than the role's `SPACE_SM`,
+density-scaled through `tokens.gap` like a gap rather than held fixed like a margin:
+
+| | airy | standard | tight |
+|---|---:|---:|---:|
+| shell top margin at a top edge | **24** | **16** | **12** |
+| the role default it replaces | 8 | 8 | 8 |
+| cost over the default | +16 | +8 | +4 |
+
+Sides stay `GUTTER`. Bottom stays `SPACE_SM`. Only the top moves.
+
+**Why:** so the identity row is not choked by the pane edge. Joe's five, J5 —
+`d46a061a`, 2026-09-05 18:41, *"the rail's shell inset takes a density-scaled
+SPACE_MD top margin carried by the rhythm role; wordmark top y 8 -> 16 at 340x760."*
+
+**Blast radius: one widget.** `synapse_panel.py:1107` is the only
+`rhythm_edge="top"` set-site in the product — the rail. The other shell owners (the
+ribbon and the faces) keep `SPACE_SM`, so the air *under* the rail does not move.
+
+**Where it lives:** `_EDGE_TOP = {"shell": tokens.SPACE_MD}` at `rhythm.py:50`,
+applied in `apply_layout_margins` at `rhythm.py:81-86`.
+
+**Reconciled 2026-09-14.** This section did not exist and the spec asserted the
+opposite in two places — section 2's *"content margins are fixed per role"* and
+section 4's *"they never scale"*. J5 landed **six hours and forty-nine minutes after
+this document's previous commit** (`c9b1216c`, 11:52) and was never absorbed, so for
+nine days the spec described a panel that was not shipping. That gap misled a
+diagnosis on 2026-09-14, which convicted `rhythm.py` of violating this document when
+the document was the stale party.
+
+**What this reconciliation did NOT do:** it changed no code and settled no open
+question. The role table above was verified row-by-row against the live
+`ROLE_GAPS`/`_MARGINS` and matched exactly — base, airy, standard, tight and margins,
+all nine roles. Only the edge condition was missing. Proposals to change `ROLE_GAPS`
+(F12) or to move `_EDGE_TOP` to `SPACE_LG` (D4) are **unruled and deliberately absent
+here**; a spec records what ships. They live in
+`harness/design_review/2026-09-14/`.
 
 1. **Label.** Set `rhythm_role="label"` on section text: muted mono, upper,
    tracked, 24 above/12 below via QSS. No border on the label. Use the existing
