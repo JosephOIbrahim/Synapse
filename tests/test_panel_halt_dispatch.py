@@ -87,6 +87,11 @@ class _Panel:
         self.started = []         # .start() actually called
         self.said = []            # chat messages the artist would read
         self.header = []          # (state, text) pairs
+        # BOTH shapes are present on purpose. The single slot is what the
+        # pre-HALT-1 code wrote; keeping it here means a revert to that shape
+        # still RUNS against this fake and fails on the behavioural assertion
+        # below, instead of dying on AttributeError. A pin should fail for the
+        # reason it names.
         self._direct_call = None
         self._direct_calls = {}
         self._last_tool_node = "/obj/geo1/topnet1"
@@ -108,6 +113,22 @@ def _bind(panel):
     return panel
 
 
+def _live(panel, tool_name):
+    """The live call for ``tool_name``, whichever register the code used.
+
+    Shape-agnostic so the assertions below measure BEHAVIOUR under either the
+    per-verb register or the single slot it replaced.
+    """
+    call = panel._direct_calls.get(tool_name)
+    if call is None and getattr(panel, "_direct_call", None) is not None:
+        if panel._direct_call.tool_name == tool_name:
+            call = panel._direct_call
+    assert call is not None, (
+        "no live call recorded for %r; registers were %r / %r"
+        % (tool_name, panel._direct_calls, panel._direct_call))
+    return call
+
+
 def test_a_first_click_dispatches():
     """Baseline: with nothing in flight, the halt goes out."""
     p = _bind(_Panel())
@@ -115,18 +136,53 @@ def test_a_first_click_dispatches():
     assert p.started == ["synapse_emergency_halt"], p.started
 
 
-def test_b_blocked_request_is_never_silent():
-    """The guard fires NEITHER terminal signal, so it must speak for itself.
+def test_b_the_halt_is_not_blocked_by_an_unrelated_tool():
+    """THE PIN. A cancel in flight must not swallow the halt.
+
+    server/handlers.py exempts emergency_halt from the C5 mutation lock so it
+    cannot queue behind the operation it exists to interrupt. A single-slot
+    guard in the panel re-imposed exactly that, and dropped the request rather
+    than queueing it.
+
+    Fails against b8aa22da and every commit before it.
+    """
+    p = _bind(_Panel())
+    p._on_cancel_cook()
+    _live(p, "tops_cancel_cook")._running = True          # cancel still alive
+    p._on_emergency_halt()
+    assert "synapse_emergency_halt" in p.started, (
+        "the emergency halt was dropped because an unrelated tool was running "
+        "-- that is a decoration, not a kill switch (p.started=%r)" % p.started)
+
+
+def test_c_the_same_verb_twice_is_still_guarded_and_still_speaks():
+    """The guard is narrowed, not removed: one verb still cannot double-fire.
+
+    And the branch that refuses must report itself -- it fires NEITHER of
+    DirectToolCall's two terminal signals, so silence here is a request the
+    artist believes went out.
 
     Fails against 5424853a, where this branch was a bare ``return``.
     """
     p = _bind(_Panel())
-    p._on_cancel_cook()
-    p._direct_call._running = True          # the cancel thread is still alive
-    before = len(p.started)
     p._on_emergency_halt()
-    blocked = len(p.started) == before
-    if blocked:
-        assert p.said, (
-            "a request that was NOT dispatched said nothing to the artist; "
-            "the rail alone reads as in progress")
+    _live(p, "synapse_emergency_halt")._running = True
+    before = list(p.started)
+    p._on_emergency_halt()
+    assert p.started == before, (
+        "the same verb double-fired: %r" % p.started)
+    assert p.said, (
+        "a request that was NOT dispatched said nothing to the artist; the "
+        "rail alone reads as in progress")
+    assert "Emergency halt" in p.said[-1], (
+        "the message does not name what is still running: %r" % p.said[-1])
+
+
+def test_d_a_finished_call_does_not_block_its_own_verb():
+    """isRunning() False must reopen the verb, or a halt fires exactly once
+    per session and the control dies silently after its first use."""
+    p = _bind(_Panel())
+    p._on_emergency_halt()
+    _live(p, "synapse_emergency_halt")._running = False   # it finished
+    p._on_emergency_halt()
+    assert p.started.count("synapse_emergency_halt") == 2, p.started

@@ -566,7 +566,15 @@ class SynapsePanel(QtWidgets.QWidget):
         # already carried it and was discarded during "running"; a cook-cancel
         # needs a target, and this is the only place the panel ever sees one.
         self._last_tool_node = None
-        self._direct_call = None     # live DirectToolCall, kept off the GC
+        # tool_name -> its live DirectToolCall. Keyed, not a single slot:
+        # server/handlers.py excludes emergency_halt from the C5 mutation
+        # lock because "a mutating-classified stop or halt would queue
+        # behind the very operation it exists to interrupt -- which is the
+        # difference between a kill switch and a decoration." A single slot
+        # re-imposes that serialization at the UI layer. Each entry is also
+        # Qt-parented to the panel, so this register is bookkeeping, not the
+        # thing keeping the thread alive.
+        self._direct_calls = {}
         self._tool_executor = ToolExecutor(parent=self) if ToolExecutor else None
         self._pending_context = []  # paths dropped in; prepended to the next send
         # (_font_scale was set above from the host font)
@@ -2790,7 +2798,8 @@ class SynapsePanel(QtWidgets.QWidget):
                 "That control isn't available — the direct-tool transport "
                 "didn't load.")
             return
-        if self._direct_call is not None and self._direct_call.isRunning():
+        live = self._direct_calls.get(tool_name)
+        if live is not None and live.isRunning():
             # DirectToolCall's contract is "exactly one fires -- a control
             # that can silently do neither is a control the artist cannot
             # trust." Returning here fires NEITHER signal, so this branch
@@ -2800,16 +2809,15 @@ class SynapsePanel(QtWidgets.QWidget):
             # perform. Nothing was dispatched; say so where the artist reads.
             self._set_header("working", "Still %s…" % busy_text)
             self._chat.append_system_message(
-                "We didn't send that — another panel control is still "
-                "finishing. Nothing was dispatched, so nothing changed. "
-                "Try again in a moment.")
+                "We didn't send that — %s is still running. Nothing new "
+                "was dispatched, so nothing changed." % busy_text)
             return
         self._set_header("working", "%s…" % busy_text)
         call = DirectToolCall(tool_name, arguments, parent=self)
         call.finished_ok.connect(
             lambda res: self._on_direct_tool_done(tool_name, res, done_key))
         call.failed.connect(lambda msg: self._on_direct_tool_failed(tool_name, msg))
-        self._direct_call = call
+        self._direct_calls[tool_name] = call
         call.start()
 
     def _display_recall_result(self, result):
