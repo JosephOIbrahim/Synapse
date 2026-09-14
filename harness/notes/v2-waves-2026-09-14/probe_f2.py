@@ -1,6 +1,10 @@
 """CRUCIBLE blast-radius probe: F2 direct-tool held state. Headless, no PySide."""
-import ast, sys, types
-sys.path.insert(0, "C:/Users/User/SYNAPSE/python")
+import ast, os, sys, types
+# Repo root derived from this file, never a hardcoded user path
+# (harness/CLAUDE.md: "No hardcoded user paths ... the C:\Users\User\SYNAPSE
+# fallback is a bug, not a convenience").
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.join(_ROOT, "python"))
 from synapse.panel.designsystem import tokens as t
 
 TREE = sys.argv[1]

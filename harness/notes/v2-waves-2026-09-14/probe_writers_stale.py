@@ -6,7 +6,11 @@ and pre-existing, and the branch merely arms it on a hotter path. Tested here
 against MASTER's agent_state -- no branch code involved.
 """
 import os, subprocess, sys, tempfile
-sys.path.insert(0, "C:/Users/User/SYNAPSE/python")
+# Repo root derived from this file, never a hardcoded user path
+# (harness/CLAUDE.md: "No hardcoded user paths ... the C:\Users\User\SYNAPSE
+# fallback is a bug, not a convenience").
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.join(_ROOT, "python"))
 from pxr import Usd, Sdf                                   # noqa: E402
 import synapse.memory.agent_state as agent                 # noqa: E402
 

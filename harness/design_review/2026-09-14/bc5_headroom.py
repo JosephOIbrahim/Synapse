@@ -10,7 +10,11 @@ No .exec() anywhere: a standalone script has no modal guard.
 import os, sys
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("SYNAPSE_REDUCED_MOTION", "1")
-ROOT = "C:/Users/User/SYNAPSE"
+# Repo root derived from this file, never a hardcoded user path
+# (harness/CLAUDE.md: "No hardcoded user paths ... the C:\Users\User\SYNAPSE
+# fallback is a bug, not a convenience").
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__)))))
 for p in (ROOT, os.path.join(ROOT, "python")):
     if p not in sys.path:
         sys.path.insert(0, p)
