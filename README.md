@@ -4,13 +4,17 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.68.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.68.0 is Latest</sub></p>
+<p align="center"><sub>v5.69.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.69.0 is Preview · v5.68.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SYNAPSE-5.68.0-Setup.exe)** · [What's new](docs/releases/v5.68.0.md) · [Help](#when-you-get-stuck)
+**[Download Windows Setup 5.68.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SYNAPSE-5.68.0-Setup.exe)** · [What's new in 5.69.0](docs/releases/v5.69.0.md) · [Help](#when-you-get-stuck)
+
+> **5.69.0 is a Preview; 5.68.0 stays Latest.** The Preview has no installer yet, so the
+> button above is the 5.68.0 Setup — it exists and it works. Running from source? Pull
+> `v5.69.0`. [What that means →](docs/releases/v5.69.0.md#update)
 
 ## Start here
 
@@ -66,10 +70,11 @@ rambling.
 - **Recall project decisions** when the memory store is configured.
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 
-**New in 5.68.0:** an opt-in worker proposal policy, reviewed graph application,
-and graph verification records for Houdini **22.0.400 and 22.0.417**.
-The installer and full panel target remain **22.0.400**.
-[Release details and limits →](docs/releases/v5.68.0.md)
+**New in 5.69.0:** the stop controls actually stop. Emergency halt used to be
+dropped in silence when another panel tool was running; it now fires, and a
+refused request says so instead of returning quietly. A REVIEW consent card no
+longer records a rejection that never happened. Preview channel — see the
+note at the top. [Release details and limits →](docs/releases/v5.69.0.md)
 
 Predictive creation, product-level Computer Use controls, and recursive
 self-improvement remain development work. The attended operator checks in this
@@ -131,7 +136,7 @@ live WebSocket path.
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.68.0.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.69.0.md) · [Changelog](CHANGELOG.md)
 
 GitHub CI tests stock Python on Linux and macOS. Native Houdini and Windows
 installer checks are separate. A green CI badge does not establish a live render

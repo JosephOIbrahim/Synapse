@@ -2,10 +2,12 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
-## Unreleased — honesty and control fixes on master
+## v5.69.0 — The stop controls actually stop
 
-*2026-09-14.* Landed after `v5.68.0`; **no version bump, so nothing here is
-released yet.** Listed so the gap between the tag and `master` is legible.
+*2026-09-14.* Tagged on the **Preview** channel: no Windows Setup for 5.69.0 yet, so
+`v5.68.0` stays Latest and the README's download button still serves it. See the
+[release notes](docs/releases/v5.69.0.md) for scope, measurements and what is
+still unfinished.
 
 **Artist-facing**
 
