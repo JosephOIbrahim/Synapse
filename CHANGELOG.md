@@ -4,8 +4,9 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.69.0 — The stop controls actually stop
 
-*2026-09-14.* Tagged on the **Preview** channel: no Windows Setup for 5.69.0 yet, so
-`v5.68.0` stays Latest and the README's download button still serves it. See the
+*2026-09-14.* Published as **Latest** with a qualified Windows Setup (19 of 19 installer
+checks PASS). It spent its first hour on the Preview channel while the build toolchain
+was fetched and verified; `harness/notes/RELEASE_v5.69.0.md` keeps that record. See the
 [release notes](docs/releases/v5.69.0.md) for scope, measurements and what is
 still unfinished.
 

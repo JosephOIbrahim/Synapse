@@ -4,17 +4,13 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.69.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.69.0 is Preview · v5.68.0 is Latest</sub></p>
+<p align="center"><sub>v5.69.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.69.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Download Windows Setup 5.68.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SYNAPSE-5.68.0-Setup.exe)** · [What's new in 5.69.0](docs/releases/v5.69.0.md) · [Help](#when-you-get-stuck)
-
-> **5.69.0 is a Preview; 5.68.0 stays Latest.** The Preview has no installer yet, so the
-> button above is the 5.68.0 Setup — it exists and it works. Running from source? Pull
-> `v5.69.0`. [What that means →](docs/releases/v5.69.0.md#update)
+**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.69.0/SYNAPSE-5.69.0-Setup.exe)** · [What's new](docs/releases/v5.69.0.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
@@ -28,7 +24,7 @@
 For node creation, select **Build and edit networks** in the model dialog.
 Cloud models need your API key. For Ollama, start Ollama and choose an installed model.
 
-The installer is unsigned. [Checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SHA256SUMS.txt) · [Full setup guide](docs/getting-started/installation.md) · [Source installation](docs/getting-started/installation.md#source-installation)
+The installer is unsigned. [Checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.69.0/SHA256SUMS.txt) · [Full setup guide](docs/getting-started/installation.md) · [Source installation](docs/getting-started/installation.md#source-installation)
 
 ## Your first build
 
@@ -73,8 +69,8 @@ rambling.
 **New in 5.69.0:** the stop controls actually stop. Emergency halt used to be
 dropped in silence when another panel tool was running; it now fires, and a
 refused request says so instead of returning quietly. A REVIEW consent card no
-longer records a rejection that never happened. Preview channel — see the
-note at the top. [Release details and limits →](docs/releases/v5.69.0.md)
+longer records a rejection that never happened.
+[Release details and limits →](docs/releases/v5.69.0.md)
 
 Predictive creation, product-level Computer Use controls, and recursive
 self-improvement remain development work. The attended operator checks in this
