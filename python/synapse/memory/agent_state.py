@@ -545,6 +545,35 @@ def get_routing_log(agent_usd_path: str) -> List[Dict[str, str]]:
 
 # ── Memory Decisions (build/mutation provenance) ─────────────────
 
+# The ratified decision schema: payload key -> USD attribute name.
+# A payload key NOT in this map is still recorded -- see _DECISION_EXT_PREFIX.
+_DECISION_ATTRS: Dict[str, str] = {
+    "decision": "synapse:decision",
+    "reasoning": "synapse:reasoning",
+    "revert": "synapse:revert",
+    "parent_path": "synapse:parentPath",
+    "model_id": "synapse:modelId",
+    "created_paths": "synapse:createdPaths",
+}
+
+# Namespace for payload keys the ratified schema has no field for. They are
+# written verbatim, one queryable attribute each (never a blob), under a prefix
+# that keeps them visibly distinct from ratified fields.
+_DECISION_EXT_PREFIX = "synapse:ext:"
+
+
+def _decision_str(value: Any) -> str:
+    """Coerce a decision payload value to the String agent_state authors.
+
+    Sequences are newline-joined (agent_state authors Strings, not
+    StringArrays); None becomes "" rather than the literal "None".
+    """
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple)):
+        return "\n".join(str(v) for v in value)
+    return str(value)
+
 
 def log_decision(agent_usd_path: str, payload: Dict[str, Any]) -> str:
     """Append a build/mutation decision to /SYNAPSE/memory/decisions/.
@@ -553,9 +582,19 @@ def log_decision(agent_usd_path: str, payload: Dict[str, Any]) -> str:
     BUILD (an operation, not a verified science claim — the ledger is the wrong
     home for it). Mirrors log_routing_decision's structure exactly.
 
-    payload keys read: decision, reasoning, revert, parent_path, model_id,
-    created_paths (list -> joined with newlines, since agent_state authors
-    Strings not StringArrays).
+    Ratified payload keys (_DECISION_ATTRS): decision, reasoning, revert,
+    parent_path, model_id, created_paths (list -> joined with newlines, since
+    agent_state authors Strings not StringArrays).
+
+    Any OTHER payload key is NOT dropped. It is written as its own attribute
+    under "synapse:ext:", and every such key is named in the record's
+    "synapse:unrecognizedKeys" (always authored; "" means the payload was
+    entirely schema-native) and reported once at WARNING. That is deliberate:
+    INTENT.md §6 requires the record to connect the operation to its actual
+    changes, route, verification and recovery, and unsupported content must
+    read as UNKNOWN rather than vanish. A widened caller therefore reaches disk
+    without this function being edited, while the "synapse:ext:" namespace
+    keeps a passthrough field honestly distinguishable from a ratified one.
 
     Returns the prim name of the logged decision, or "" if pxr is unavailable
     or the /SYNAPSE/memory/decisions parent prim is missing.
@@ -571,24 +610,33 @@ def log_decision(agent_usd_path: str, payload: Dict[str, Any]) -> str:
 
     name = _counter_suffix(parent, "decision_")
     prim = stage.DefinePrim(f"/SYNAPSE/memory/decisions/{name}", "Xform")
-    prim.CreateAttribute("synapse:decision", Sdf.ValueTypeNames.String).Set(
-        str(payload.get("decision", ""))
+
+    for key, attr_name in _DECISION_ATTRS.items():
+        prim.CreateAttribute(attr_name, Sdf.ValueTypeNames.String).Set(
+            _decision_str(payload.get(key))
+        )
+
+    unrecognized = sorted(k for k in payload if k not in _DECISION_ATTRS)
+    used = set()
+    for key in unrecognized:
+        attr_name = f"{_DECISION_EXT_PREFIX}{_safe_prim_name(str(key))}"
+        while attr_name in used:  # distinct keys that sanitize alike
+            attr_name += "_"
+        used.add(attr_name)
+        prim.CreateAttribute(attr_name, Sdf.ValueTypeNames.String).Set(
+            _decision_str(payload[key])
+        )
+
+    prim.CreateAttribute("synapse:unrecognizedKeys", Sdf.ValueTypeNames.String).Set(
+        "\n".join(unrecognized)
     )
-    prim.CreateAttribute("synapse:reasoning", Sdf.ValueTypeNames.String).Set(
-        str(payload.get("reasoning", ""))
-    )
-    prim.CreateAttribute("synapse:revert", Sdf.ValueTypeNames.String).Set(
-        str(payload.get("revert", ""))
-    )
-    prim.CreateAttribute("synapse:parentPath", Sdf.ValueTypeNames.String).Set(
-        str(payload.get("parent_path", ""))
-    )
-    prim.CreateAttribute("synapse:modelId", Sdf.ValueTypeNames.String).Set(
-        str(payload.get("model_id", ""))
-    )
-    prim.CreateAttribute("synapse:createdPaths", Sdf.ValueTypeNames.String).Set(
-        "\n".join(payload.get("created_paths") or [])
-    )
+    if unrecognized:
+        logger.warning(
+            "log_decision %s: %d payload key(s) outside the ratified decision "
+            "schema recorded under '%s' and listed in synapse:unrecognizedKeys: %s",
+            name, len(unrecognized), _DECISION_EXT_PREFIX, ", ".join(unrecognized),
+        )
+
     prim.CreateAttribute("synapse:timestamp", Sdf.ValueTypeNames.String).Set(_now())
 
     stage.GetRootLayer().Save()
