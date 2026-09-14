@@ -537,6 +537,156 @@ def graph_agreement(runtime_build=None, receipt_path=None, repo_root=None):
     return result
 
 
+# --- G5a: packaged LOP knowledge catalog build-stamp agreement ---------------
+# python/synapse/core/lop_knowledge.py:_pkg_catalog_path() resolves the packaged
+# catalog by MAJOR only, and its own docstring states the law it stops short of:
+#   "NO existence check and NO cross-major fallback here - wrong-major CONTEXT
+#    truth is the stale-advice class itself, so a missing per-major file must
+#    fail in the loader, loudly."
+# The loader validates `schema` plus a blake2b over `content` and never reads
+# `houdini_version`, so a WITHIN-major point-release drift passes in silence.
+# This is the detector for that gap, built on the _graph_build_agreement shape.
+# It REPORTS ONLY: nothing here changes what the loader or GraphValidator does
+# on a mismatch. Same posture as the graph check - no `hou`, no live runtime.
+
+LOP_CATALOG_DIR = 'python/synapse/cognitive/tools/data'
+LOP_CATALOG_RE = re.compile(r'^lop_solaris_knowledge_(\d+)\.json$')
+LOP_REFERENCE_NAME = 'h%s_symbol_table.json'
+_LOP_BUILD_RE = re.compile(r'^(\d+)\.\d+\.\d+$')
+
+
+def _houdini_version_stamp(path):
+    """(build, reason) for a JSON artifact's ``houdini_version`` stamp."""
+    try:
+        with open(path, encoding='utf-8-sig') as stream:
+            data = _json.load(stream)
+    except (OSError, ValueError) as exc:
+        return None, 'unreadable or malformed (%s)' % exc
+    if not isinstance(data, dict):
+        return None, 'artifact is not a JSON object'
+    build = data.get('houdini_version')
+    if not isinstance(build, str) or not _LOP_BUILD_RE.fullmatch(build):
+        return None, 'no valid houdini_version stamp'
+    return build, 'stamped %s' % build
+
+
+def _lop_catalog_row(root, major, filename):
+    """One catalog against the same-major introspected symbol table."""
+    path = _os.path.join(root, LOP_CATALOG_DIR, filename)
+    reference_name = LOP_REFERENCE_NAME % major
+    reference_path = _os.path.join(root, LOP_CATALOG_DIR, reference_name)
+    row = {'status': 'UNKNOWN', 'reason': '', 'major': major,
+           'catalog': _os.path.abspath(path), 'catalog_build': None,
+           'reference': _os.path.abspath(reference_path),
+           'reference_build': None}
+
+    def finish(status, reason):
+        row.update(status=status, reason=reason)
+        return row
+
+    build, why = _houdini_version_stamp(path)
+    if build is None:
+        return finish('UNKNOWN', 'catalog %s: %s' % (filename, why))
+    row['catalog_build'] = build
+    if _LOP_BUILD_RE.fullmatch(build).group(1) != major:
+        return finish('FAIL', 'catalog %s is stamped %s, a different major'
+                              % (filename, build))
+    reference, why = _houdini_version_stamp(reference_path)
+    if reference is None:
+        return finish('UNKNOWN', 'reference %s: %s' % (reference_name, why))
+    row['reference_build'] = reference
+    if reference != build:
+        return finish('FAIL', 'catalog %s is stamped %s but the introspected '
+                              'runtime authority %s is stamped %s'
+                              % (filename, build, reference_name, reference))
+    return finish('PASS', 'catalog %s agrees with %s at %s'
+                          % (filename, reference_name, build))
+
+
+def lop_catalog_agreement(runtime_build=None, repo_root=None):
+    """Verdict for every packaged LOP knowledge catalog's build stamp.
+
+    Each ``lop_solaris_knowledge_<major>.json`` is compared with the same-major
+    ``h<major>_symbol_table.json`` beside it - the introspected existence
+    authority CLAUDE.md names, regenerated on the target build by ``hython
+    host/introspect_runtime.py``. Both are per-major artifacts harvested from a
+    running build, so a point-release disagreement between them is a catalog
+    harvested on a build the runtime has moved past.
+
+    Observable disagreement is FAIL. Missing or unstamped evidence is UNKNOWN
+    and never PASS. No live runtime is discovered or claimed: ``runtime_build``
+    is compared only when a caller supplies one.
+    """
+    root = _os.fspath(repo_root) if repo_root is not None else _REPO_ROOT
+    directory = _os.path.join(root, LOP_CATALOG_DIR)
+    result = {
+        'ok': False, 'status': 'UNKNOWN', 'reason': '', 'catalogs': {},
+        'directory': _os.path.abspath(directory),
+        'scope': 'committed per-major catalog stamps against the same-major '
+                 'introspected symbol table only',
+        'runtime_comparison': {'status': 'UNKNOWN', 'build': runtime_build},
+    }
+
+    def finish(status, reason):
+        result.update(ok=status == 'PASS', status=status, reason=reason)
+        return result
+
+    try:
+        names = sorted(_os.listdir(directory))
+    except OSError as exc:
+        return finish('UNKNOWN', 'catalog directory unavailable: %s' % exc)
+    for name in names:
+        matched = LOP_CATALOG_RE.match(name)
+        if matched:
+            result['catalogs'][matched.group(1)] = _lop_catalog_row(
+                root, matched.group(1), name)
+    rows = result['catalogs']
+    if not rows:
+        return finish('UNKNOWN', 'no packaged LOP knowledge catalog to compare')
+
+    if runtime_build is not None:
+        matched = (_LOP_BUILD_RE.fullmatch(runtime_build)
+                   if isinstance(runtime_build, str) else None)
+        if matched is None:
+            result['runtime_comparison']['status'] = 'FAIL'
+            return finish('FAIL', 'requested runtime build is not X.Y.Z: %r'
+                                  % (runtime_build,))
+        row = rows.get(matched.group(1))
+        if row is None or row['catalog_build'] is None:
+            return finish('UNKNOWN', row['reason'] if row else
+                          'no packaged catalog for requested major %s'
+                          % matched.group(1))
+        if row['catalog_build'] != runtime_build:
+            result['runtime_comparison']['status'] = 'FAIL'
+            return finish('FAIL', 'requested runtime %s != catalog stamp %s'
+                                  % (runtime_build, row['catalog_build']))
+        result['runtime_comparison']['status'] = 'PASS'
+
+    failures = [row for row in rows.values() if row['status'] == 'FAIL']
+    unknowns = [row for row in rows.values() if row['status'] == 'UNKNOWN']
+    if failures:
+        return finish('FAIL', failures[0]['reason'])
+    if unknowns:
+        return finish('UNKNOWN', unknowns[0]['reason'])
+    return finish('PASS', 'every packaged catalog agrees with its same-major '
+                          'introspected runtime authority')
+
+
+def _lop_catalog_cli(argv):
+    # A separate entry like _graph_cli: no Git, no Houdini, no version chain.
+    # No --fix is accepted: a stale stamp is repaired by re-harvesting the
+    # catalog on the running build, never by editing the number.
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Check packaged LOP catalog build stamps without Houdini.')
+    parser.add_argument('--lop-catalog-only', action='store_true', required=True)
+    parser.add_argument('--runtime-build')
+    args = parser.parse_args(argv)
+    result = lop_catalog_agreement(args.runtime_build)
+    print(_json.dumps(result, indent=2))
+    return 0 if result['ok'] else 1
+
+
 def _graph_cli(argv):
     # A separate entry returns before legacy version/public checks (which use
     # Git). No --fix is accepted: a receipt cannot be repaired by changing data.
@@ -555,6 +705,9 @@ def _graph_cli(argv):
 if __name__ == '__main__':
     if '--graph-only' in sys.argv[1:]:
         sys.exit(_graph_cli(sys.argv[1:]))
+
+    if '--lop-catalog-only' in sys.argv[1:]:
+        sys.exit(_lop_catalog_cli(sys.argv[1:]))
 
     fix = '--fix' in sys.argv
 
@@ -611,4 +764,14 @@ if __name__ == '__main__':
     graph = graph_agreement()
     print('GRAPH   %s  build=%s  (%s)'
           % (graph['status'], graph['build'], graph['reason']))
+
+    # G5a: the packaged LOP catalog stamp, reported beside the others and
+    # DELIBERATELY ABSENT from the exit gate below. harness/finalize.ps1:105
+    # runs this file in the release path, and the shipped h22 catalog is in
+    # observed drift right now, so gating here would stop releases on a harvest
+    # that is nobody's current work. `--lop-catalog-only` exits 1 on FAIL for a
+    # caller that wants the gate; wire it into the line below once the 22.x
+    # catalog is re-harvested on the running build.
+    lop = lop_catalog_agreement()
+    print('LOPCAT  %s  (%s)' % (lop['status'], lop['reason']))
     sys.exit(0 if (agree and apex['ok'] and public['ok'] and graph['ok']) else 1)
