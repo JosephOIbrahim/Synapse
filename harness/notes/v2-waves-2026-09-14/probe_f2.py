@@ -50,6 +50,9 @@ class Panel:
         self._chat = types.SimpleNamespace(append_system_message=lambda m: self.said.append(m))
         self.said = []
         self._direct_call = None
+        self._direct_calls = {}   # HALT-1 per-verb register; both shapes
+                                  # present so this probe runs against
+                                  # pre- and post-HALT-1 trees alike
         self._direct_phrase = None
         self._was_busy = False
         self._stopping = False
@@ -84,7 +87,12 @@ p._on_cancel_cook()
 print("[A] after Cancel cook click   rail=%r tip=%r   calls_started=%d"
       % (rail(p)[0], rail(p)[1], Call.started))
 # the cancel thread is still running; artist now hits EMERGENCY HALT
-p._direct_call.running = True
+# shape-agnostic: pre-HALT-1 wrote one slot, post-HALT-1 writes a per-verb
+# register. Resolve whichever holds the cancel, so this probe measures
+# BEHAVIOUR on either tree rather than dying on the register's shape.
+_cancel = p._direct_call or next(iter(p._direct_calls.values()), None)
+assert _cancel is not None, 'the cancel click recorded no live call'
+_cancel.running = True
 before = Call.started
 p._on_emergency_halt()
 print("[A] after EMERGENCY HALT      rail=%r tip=%r   calls_started=%d (delta %d)"

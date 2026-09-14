@@ -153,9 +153,34 @@ Out of scope: the rail's wording, the hold/release mechanism, and every F2 repai
 |---|---|
 | `de325abd` (F2) | **PARKED.** Branch intact, nothing deleted. Revisit after HALT-1 lands; expect a rebase, not a merge |
 | Its three genuine repairs | Not lost — named above, re-land on the fixed seam |
-| HALT-1 | **OPEN**, scoped above, gate joe on the design call |
+| HALT-1 | **CLOSED 2026-09-14** — `b8aa22da` (a dropped request says so) + `eab47244` (the guard is per-verb). Re-measured with this ruling's own probe: `halt actually dispatched` **False &rarr; True**, `calls_started` delta **0 &rarr; 1**. The design call went to per-verb, not exempt-by-name |
 | Paths B and C | Carried into HALT-1's follow-on, seat-required |
 | `probe_f2.py` | Tracked beside this ruling. The re-runnable producer for all three paths; re-run it on any tree that touches this seam |
+
+## Closure note (2026-09-14)
+
+HALT-1 was built the same day and its design call did not need a judgment: the rule was
+already ratified one layer down. `server/handlers.py:236-241` excludes `emergency_halt`
+from the C5 mutation lock because *"a mutating-classified stop or halt would queue behind
+the very operation it exists to interrupt — which is the difference between a kill switch
+and a decoration."* The panel's single-slot guard re-imposed exactly that at the UI layer,
+and dropped the request rather than queueing it. Per-verb keying was the faithful
+translation; exempting the halt by name would have hard-coded one of only two verbs.
+
+Measured on both trees with `probe_f2.py`, unchanged except for being made shape-agnostic:
+
+```
+5424853a   EMERGENCY HALT   rail 'Still Emergency halt…'   calls_started 1 (delta 0)   dispatched False
+eab47244   EMERGENCY HALT   rail 'Emergency halt…'         calls_started 2 (delta 1)   dispatched True
+```
+
+**Still true after HALT-1, and not claimed otherwise:** the panel's halt marshals
+(`handlers_render._handle_emergency_halt` → `run_on_main(..., timeout=60.0)`), so it fires
+but does not survive a frozen main thread. The freeze-proof `emergency_halt_live` is
+reached only from `freeze_chain.py:236`. Paths B and C remain open and belong to the
+parked F2 branch.
+
+---
 
 **What this ruling does not say.** It does not say F2 was bad work — three of its four
 repairs are genuine and were measured. It does not say the halt bug is new; it is
