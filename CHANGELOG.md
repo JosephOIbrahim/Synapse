@@ -2,6 +2,48 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## Unreleased — honesty and control fixes on master
+
+*2026-09-14.* Landed after `v5.68.0`; **no version bump, so nothing here is
+released yet.** Listed so the gap between the tag and `master` is legible.
+
+**Artist-facing**
+
+- **The emergency halt now fires when another panel tool is running.** The
+  re-entry guard in `_run_direct_tool` keyed on *any* live direct-tool call, so
+  cancelling a cook and then hitting Emergency halt dropped the halt silently
+  while the rail read `Still Emergency halt…` — which reads as *in progress*.
+  The guard is now per verb, and a request that is refused says so instead of
+  returning in silence. The server side already exempted `emergency_halt` from
+  the mutation lock for the same reason.
+- **A REVIEW consent card no longer files a rejection that never happened.**
+  Clicking REVERT while the worker was streaming tore the card down, stamped
+  REJECTED, wrote `GateDecision.REJECTED` against a proposal the bridge had
+  already allowed, and said so in the transcript. None of it had happened. The
+  card now survives the refusal and settles neutrally when a request does go out.
+- **The system-prompt fallback announces itself** instead of substituting
+  silently, and **session journal entries carry a date**.
+
+**Records**
+
+- `log_decision` no longer discards out-of-schema payload keys without saying so.
+- The v2 baseline CSV has a reconstructed, tested producer; every number in it is
+  re-derivable rather than folklore.
+- A detector for a LOP catalog stamped on a build the runtime has moved past.
+
+**Tests and harness**
+
+- **The panel seat suite used to hang forever** on a modal dialog under offscreen
+  Qt — three tests had never executed on any machine, and anything queued behind
+  the file never started. A modal now fails loudly instead of blocking, and the
+  directory runs: 201 passed, 5 failed, 76s. The guard documents what it cannot
+  cover (`QMenu`, measured inert) rather than implying total protection.
+- Recorded: **the suite's skip population is not static.** 21 tests are disabled
+  by a symbol missing from an out-of-tree dependency, which no gate here can see.
+  See `harness/notes/SUITE_FLOOR_IS_NOT_STABLE.md`.
+
+Suite at the time of writing: **8908 passed, 430 skipped, 0 failed.**
+
 ## v5.68.0 — Graph review controls and Windows Setup
 
 *2026-09-13.* Adds the opt-in proposal worker policy and classifies host graph

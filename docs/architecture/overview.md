@@ -39,6 +39,8 @@ flowchart TD
     TRY -->|"possibly sent; reply lost"| UNKNOWN["Outcome unknown; no redispatch"]
     TRY --> HTTP["HTTP /mcp tool dispatch"]
     EXT["External HTTP MCP client"] --> HTTP
+    VERB["Direct safety verbs<br/>(Cancel cook, Emergency halt)"] --> DTC["DirectToolCall<br/>off the UI thread"]
+    DTC --> HTTP
     HTTP --> BRIDGE["Bridge adapter"]
     FALLBACK --> BRIDGE
     STDIO["External stdio MCP client"] --> WS["WebSocket /synapse handlers"]
@@ -47,7 +49,17 @@ flowchart TD
     MAIN --> SCENE["Houdini scene"]
 ```
 
+The panel's two direct safety verbs are a third way into the same dispatch, and
+they carry no model in the loop: the artist's click runs one named tool off the UI
+thread. They are drawn separately because they are the take-control-back path, and
+because a guard meant for one of them used to drop the other. `_run_direct_tool`
+now keys its re-entry guard per tool, so an in-flight Cancel cook can no longer
+swallow an Emergency halt, and a request that is refused says so instead of
+returning in silence — `emergency_halt` is likewise exempt from the C5 mutation
+lock server-side, for the same reason.
+
 Sources: [worker](../../python/synapse/panel/claude_worker.py),
+[direct verbs](../../python/synapse/panel/direct_tool.py),
 [MCP client](../../python/synapse/panel/tool_executor.py),
 [HTTP tools](../../python/synapse/mcp/tools.py),
 [bridge adapter](../../python/synapse/panel/bridge_adapter.py),

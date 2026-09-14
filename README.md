@@ -45,6 +45,18 @@ operation; it does not reverse an entire conversation or external file writes.
 | **Connect** | Start Houdini's local SYNAPSE bridge. |
 | **Doctor** | Check the setup without asking a model. |
 
+**Three ways to stop — they are not the same**
+
+| Control | What it reaches | What it does not do |
+|---|---|---|
+| **Stop** | The panel's current turn. | Does not prove a cook or render already running has finished. |
+| **Cancel cook** *(overflow menu)* | The one cooking node it names. | Only offered when SYNAPSE knows which node; it says so when it doesn't. |
+| **Emergency halt** *(overflow menu)* | Cancels PDG cooks under `/obj` and captures a session report. | Does not stop background renders. Those are reported back so you can stop them deliberately. |
+
+Three verbs, three consequences. They are kept apart on purpose — the one you
+want when a build is running away is not the one you want when a model is
+rambling.
+
 [First-session walkthrough →](docs/getting-started/quickstart.md)
 
 ## What's ready
@@ -78,8 +90,10 @@ release do not make those features complete. [Artist-first intent →](INTENT.md
 | Connection trouble | Click **Connect**, then **Doctor**. |
 | No saved suggestion | Read the card's reason; a matching experience and project memory owner are required. |
 
-A failed build can leave partial nodes. Stop prevents further panel work; it does
-not prove an active cook or render has finished. Review results in Houdini.
+A failed build can leave partial nodes. **Stop** prevents further panel work; it
+does not prove an active cook or render has finished — see [the three stop
+controls](#your-first-build) for the ones that reach work already running.
+Review results in Houdini.
 
 [Current status](docs/status.md) · [Report a bug](https://github.com/JosephOIbrahim/Synapse/issues/new/choose)
 
