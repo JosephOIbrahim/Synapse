@@ -147,12 +147,30 @@ Stated as a constraint graph, not a recommendation:
 
 ---
 
-## The cheapest unrun probe left
+## The cheapest unrun probe — RUN, and it clears
 
-**BC-5's headroom at standard is UNMEASURED.** `test_j5_rail_air.py:148` proves the
-assertion passes but prints no margin. D4 costs +8px at standard. **If that margin is
-under 8px, D4 turns BC-5 red at standard too** — independent of the airy question, and
-nobody has looked.
+It was listed here as unmeasured; it is measured now. Composed at 340x760, 35 font
+families loaded, using `test_bc_wave`'s own helpers so the method cannot drift from the
+assertion it mirrors:
+
+```
+curious  density=airy      chat=367px   share=0.48289   headroom  -13.0px   FAIL
+expert   density=standard  chat=407px   share=0.53553   headroom  +27.0px   PASS
+ml       density=tight     chat=427px   share=0.56184   headroom  +47.0px   PASS
+```
+
+The airy row reproduces the known seat failure exactly — 367 / 0.48289 — which validates
+the method against a figure nobody chose for it.
+
+**Standard carries +27px.** D4's +8 and SYSTEM's shell +8 on the faces total 16, and they
+fit with 11px to spare. **The spacing wave is not blocked at the shipped density.**
+
+Stated so it is not over-read: the 16 is arithmetic on the margins, not a composed
+measurement of the changed panel, and additive estimates understate composed layout costs
+often enough that it has to be re-measured after the edit. +27 means *proceed and measure*,
+not *guaranteed safe*.
+
+Producer: `harness/design_review/2026-09-14/bc5_headroom.py` under hython 22.0.400.
 
 ---
 

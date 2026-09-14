@@ -140,6 +140,32 @@ It becomes dishonest at four points. Write all four into the ruling:
    machinery survives. It does **not** pin that `_select_profile` has zero production
    callers — only a comment guards that today.
 
-**Cheapest next probe, and it is twice as threatening as I said:** BC-5's headroom at
-standard is unmeasured. D4 costs +8 there and SYSTEM's shell costs another +8 on the
-faces — **up to +16 combined**, against a margin nobody has printed.
+---
+
+## That probe is now run, and it clears
+
+I closed this with the measurement rather than leaving it as a worry. BC-5's headroom,
+composed at 340x760 with 35 font families loaded, using `test_bc_wave`'s own helpers so
+the method cannot drift from the assertion:
+
+```
+curious  density=airy      chat=367px   share=0.48289   headroom  -13.0px   FAIL
+expert   density=standard  chat=407px   share=0.53553   headroom  +27.0px   PASS
+ml       density=tight     chat=427px   share=0.56184   headroom  +47.0px   PASS
+```
+
+The airy row reproduces the known seat failure exactly (367 / 0.48289), which validates
+the method against a figure I did not choose.
+
+**Standard carries +27px.** The combined standard-density spend I warned about — D4's +8
+plus SYSTEM's shell +8 on the faces — is **16px, and it fits with 11px to spare.** So the
+spacing wave is **not** blocked at the density artists actually run. I said that probe was
+twice as threatening as I first stated; measured, the threat does not land.
+
+**The caveat that keeps this honest:** the 16px is *my arithmetic on the margins*, not a
+composed measurement of the changed panel. Additive estimates understate composed layout
+costs often enough that the real number has to be re-measured after the edit, not
+predicted before it. +27 says "proceed and measure", not "guaranteed safe".
+
+Producer: `harness/design_review/2026-09-14/bc5_headroom.py`, run under
+hython 22.0.400 offscreen.
