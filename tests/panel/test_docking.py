@@ -6,6 +6,16 @@ Contract: docking-minimums (S2). Encodes Design §2.3:
     column open or scrolls its own chrome. … the panel should be usable at
     400px tall, which is its own declared PANEL_MIN_HEIGHT."
 
+SUPERSEDED FIGURE, not a correction to the quote above: PANEL_MIN_HEIGHT is 420,
+raised from 400 by Joe's ruling of 2026-07-17. The quote is Design §2.3 as it was
+written and stays verbatim. This test reads the token, so it tracks the ruling.
+
+Note also that the docking CONTRACT deliberately carries its own, stricter height
+figure and does not follow this token -- see tests/test_panel_rhythm_docking.py::_bounds
+("do not silently follow the conflicting 420px token") and the test named
+test_docking_bounds_read_the_contract_not_panel_height_token. Two bounds, both
+intentional; neither is a typo for the other.
+
 Today the stack is rail + ribbon + mode bar + faces (setMinimumHeight(380),
 synapse_panel.py:401) + the Direct chat (setMinimumHeight(380), :360/:367) +
 a 216px default composer + FaceReview's 168px hero — well past 400.
@@ -100,7 +110,13 @@ def test_usable_at_min_height():
     # once the hard min-heights are halved and faces collapse gracefully.
     from synapse.panel.designsystem import tokens as t
 
-    floor = t.PANEL_MIN_HEIGHT  # 400
+    # The token, never a literal. It has been 420 since Joe's ruling of
+    # 2026-07-17 (Mile-1b vertical body air); the '# 400' that stood here
+    # was stale by 20px and misled a probe into scoring a docking
+    # measurement against the wrong bound. The §2.3 quote above is left
+    # verbatim on purpose -- it is a citation of the design doc as written,
+    # not a claim about today's value.
+    floor = t.PANEL_MIN_HEIGHT
     panel = _make_panel()
     composed = panel.minimumSizeHint().height()
     assert composed <= floor, (
