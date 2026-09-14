@@ -4,11 +4,22 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.70.0 — Tool names an artist can read
 
-*2026-09-14.* The panel's own tool labels destroyed domain words (`USD` became
-`usd`) and led with namespaces nobody needs to read. A curated-label map had also
-been running at **4 of 8** in silence, keyed against the wrong registry column.
-Both repaired, and a guard added that reads the live registry so it cannot rot
-again. See the [release notes](docs/releases/v5.70.0.md).
+*2026-09-14.* Published as **Latest** with a qualified Windows Setup (19 of 19
+installer checks PASS). Unlike 5.69.0 it never needed the Preview channel: the build
+toolchain was already provisioned and lock-verified, so the Setup was built and
+qualified *before* the banner claimed Latest. `harness/notes/RELEASE_v5.70.0.md`
+keeps that record.
+
+The panel's own tool labels destroyed domain words (`USD` became `usd`) and led with
+namespaces nobody needs to read. A curated-label map had also been running at
+**4 of 8** in silence, keyed against the wrong registry column. Both repaired, and a
+guard added that reads the live registry so it cannot rot again. See the
+[release notes](docs/releases/v5.70.0.md).
+
+**Also found while cutting this release:** the panel seat suite and the stock suite
+share `~/.synapse/logs/synapse.log` and **cannot be run concurrently** — the loser of
+the race reports a plausible-looking timing failure. It produced a phantom sixth red
+before being caught. Nothing in either suite detects the collision.
 
 ## v5.69.0 — The stop controls actually stop
 

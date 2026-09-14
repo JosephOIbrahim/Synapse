@@ -1,0 +1,83 @@
+{
+  "installer": "SYNAPSE-5.70.0-Setup.exe",
+  "installer_bytes": 31830148,
+  "installer_sha256": "41cb7368b7e67c2481a6248ce3431a1a97eb47a15886822c3507496795949add",
+  "maintenance_files": {
+    "getting-started.html": "da1ceb911278bd63fd3207b20589eb69215dc352d58d62ec4d14a384f18ae868",
+    "python/LICENSE.txt": "62bec384df47b0328307db41455ff6ea2559e5546b394ac69148561b21703120",
+    "python/_asyncio.pyd": "6941e2aeed3aad1a4658774ecb60309170066a040c2118a5efd16458ac3bed00",
+    "python/_bz2.pyd": "261545bd24f15a783fc0c82568b766a4ab569dde14507a81701cccf5293e6e54",
+    "python/_ctypes.pyd": "9d6dccb4cd84a44a107f9b06b91c0a44e85766d9bf4debb6abbde8fda7494c2c",
+    "python/_decimal.pyd": "1e6a5707163d3c103e0eb4695eefedbea4b855fb227c61cc265b168970d6c6f0",
+    "python/_elementtree.pyd": "26c5c2f3f2b8dac1499f07a50d7afd14315c20a6a541abbe4e306bcd9df404f1",
+    "python/_hashlib.pyd": "79a26289aef0d92545a082507c7021f10e219621d137cb726c4d0fbbfd4b46ae",
+    "python/_lzma.pyd": "ee224aacf5cf9c9974a1b842aac8d89d5d9b7eeebbf4d76619ae0ce4da8ecd96",
+    "python/_multiprocessing.pyd": "db19972cf033b598f5826f8219bc2608412b84061d294f5972b43c2ab95f7af5",
+    "python/_overlapped.pyd": "9db08b5449e18088754ce57e315657d00b46575e0151cd379efef8847488a606",
+    "python/_queue.pyd": "4404c2569443ffb54e7cfffdca8ddf58c9a609175305970728ec12bc1c147b43",
+    "python/_socket.pyd": "ccbd0f83df3784da08147b8e8765e28c978de28b5c0eddcfba5567b59d43fef9",
+    "python/_sqlite3.pyd": "4c5fa9341a76ac525fd36e2cb23260934ad9b9f6825725ff139b26c8dc72436d",
+    "python/_ssl.pyd": "8d2f51fa1dc929073a2ad8d1c7c0c911e8f695870dcf4dda2846f4b75a7f77fb",
+    "python/_uuid.pyd": "b93832742a2348d6659fd62e8a8aff061594693fc537da74c7d2d1cdf83a8475",
+    "python/_wmi.pyd": "db45362354fd4965329cb14bd974e60b26525045d09fb4fdfb1674a93b79d60c",
+    "python/_zoneinfo.pyd": "6650db91accc05e625d3c5d8a40e15127a040ea1135e40e875fd78d8a7665a84",
+    "python/libcrypto-3.dll": "09499e186cf0e434ffa17ad153aa9a66d6048c54a2c03b823e2a06c49d9affe4",
+    "python/libffi-8.dll": "eff52743773eb550fcc6ce3efc37c85724502233b6b002a35496d828bd7b280a",
+    "python/libssl-3.dll": "28c395290279fa4f4f54a57b85cd66d853895f925fefb8f6fdebc0d8b1cdd07c",
+    "python/pyexpat.pyd": "b9c9c5a9f52af559a7eb4e8ddfd60558185bfc7794f32840bed1747d1ec9026a",
+    "python/python.cat": "49eb507453b924ff70c19c8b8940b033ac5865f11cdd637447024725ed105bef",
+    "python/python.exe": "85b71d8c6ec1905935f74be0c9869aae198d00e98f39df699ec66f9c5a84cecd",
+    "python/python3.dll": "76e7fd69a01081726308317d6e502721c2ba6792b48880dc1ef649c755788db7",
+    "python/python313._pth": "5247dd541395e7e8964d881952241fd7c9da8b7d422d514dc8891a892be4e108",
+    "python/python313.dll": "e820bf024efd2b56bb2b82791e6b6ddc7303f070f8e72cba7637482a8a906238",
+    "python/python313.zip": "1916abd946d2044ec8c04c3319f96c8415d5b6fce01e125622827f2b7756cbab",
+    "python/pythonw.exe": "146c01e5448a084ff15d63113a790b9aa75250baf862d984c51dd695ac4775bc",
+    "python/select.pyd": "024f955349fe46cf1bb2c22c6b57fcf38cf5755d46166fbf63e7e5b92433b111",
+    "python/sqlite3.dll": "c6812eaf0f8605df273b9bf7e359b83fd65038ecc66455c3f7a933768cb92f3f",
+    "python/unicodedata.pyd": "111e0fdfeef9887c04f6ebf1972ce1ccbec55b226012e4a288c2d4a0b17b216b",
+    "python/vcruntime140.dll": "d1f4225df2cd877dbf130d5668a021dce3f94118455ff5ec952061c30afc9ce7",
+    "python/vcruntime140_1.dll": "a7146c08f89fe5b04541ab507cdb59ff7b44534d4ba3c668a426c6450a03434e",
+    "python/winsound.pyd": "b078b7f5c53efd3c4201b63fa34a17c6747142e37298293f52c3a9ad643e69e2",
+    "setup_cli.py": "7cd2a89d2ab0073b569ddc4f3d51801e96b888af48dfe3a0af8e75e83c0398f6",
+    "synapse_setup/__init__.py": "4d9d75374f7282d32fa0108ea7d3638bcf9272bd03303c70917671261a490b41",
+    "synapse_setup/discovery.py": "7a1516fe4920e39a022a23e2f3a7284639de1077864325a714dfafbec5f598f8",
+    "synapse_setup/engine.py": "052c494a1c675562c0e520cbd876547734cf0e3cb59edcf3ee4026283c459bba",
+    "synapse_setup/registration.py": "e21e4e269a688931ddf19146f9bbad23f10531965370646c5e9f690d3fe179eb",
+    "synapse_setup/safety.py": "d0fd87872157be238caa2ecc3aaca907fd518746b96f3f95d2046eb01442a5b3"
+  },
+  "payload": {
+    "files": 1817,
+    "moneta": {
+      "archive_sha256": "81a3d8735c7da49ca81302725acab6a3324311091e850c34afcea92e87ea31f7",
+      "distribution": "Local evaluation only. Public redistribution rights have not been confirmed.",
+      "name": "moneta",
+      "version": "1.2.0rc1"
+    },
+    "payload_id": "5.70.0-caf329c319d3215a",
+    "sha256": "50244e9a4022fd091b0ebaacf0c106be2c59b458ad7ae0ecc02c75ee93bc7a8a",
+    "version": "5.70.0"
+  },
+  "qualification_report": "installer-verification.json",
+  "schema": "synapse-public-build-1",
+  "signing": "unsigned",
+  "source_revision": "387e195fec0c7f8cfbcf9e25aa9064f8b9f55ba2",
+  "toolchain": {
+    "inno": {
+      "publisher": "Pyrsys B.V.",
+      "sha256": "0362a383ed217d4c4239b5933866dd96d3eb2102737da92f80f6057a4b40df2f",
+      "url": "https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe",
+      "version": "7.1.0"
+    },
+    "python": {
+      "filename": "python-3.13.15-embed-amd64.zip",
+      "sha256": "d1f04d990aee1253d8569e8e5104e30fa9f5fa830899f14843448872d936a2cf",
+      "url": "https://www.python.org/ftp/python/3.13.15/python-3.13.15-embed-amd64.zip",
+      "version": "3.13.15"
+    },
+    "wheels": {
+      "filelock-3.20.0-py3-none-any.whl": "339b4732ffda5cd79b13f4e2711a31b0365ce445d95d243bb996273d072546a2",
+      "websockets-15.0.1-cp313-cp313-win_amd64.whl": "e09473f095a819042ecb2ab9465aee615bd9c2028e4ef7d933600a8401c79561"
+    }
+  },
+  "version": "5.70.0"
+}

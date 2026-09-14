@@ -1,0 +1,184 @@
+{
+  "ci": {
+    "conclusion": "PENDING_AT_PUBLICATION",
+    "headSha": "387e195fec0c7f8cfbcf9e25aa9064f8b9f55ba2",
+    "scope": "GitHub Actions CI on the tagged commit. Stock Python on Linux and macOS; not a Houdini or Windows-installer check."
+  },
+  "compiled_installer": {
+    "checks": [
+      {
+        "name": "Missing required dependency blocks compiled setup",
+        "result": "PASS"
+      },
+      {
+        "name": "Failure explains the missing dependency in readable text",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows write-denied destination is rejected",
+        "result": "PASS"
+      },
+      {
+        "name": "Fresh installation through compiled Setup",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows uninstall registration and shortcuts exist",
+        "result": "PASS"
+      },
+      {
+        "name": "Repeat installation",
+        "result": "PASS"
+      },
+      {
+        "name": "Upgrade switches active payload",
+        "result": "PASS"
+      },
+      {
+        "name": "One registration points at installed files",
+        "result": "PASS"
+      },
+      {
+        "name": "Bundled maintenance runtime verifies installation",
+        "result": "PASS"
+      },
+      {
+        "name": "No user-data changes during upgrade",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows uninstaller preserves changed registration",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows uninstaller preserves changed maintenance file",
+        "result": "PASS"
+      },
+      {
+        "name": "Generated Windows uninstaller",
+        "result": "PASS"
+      },
+      {
+        "name": "Uninstall preserves projects, memory, credentials and custom files",
+        "result": "PASS"
+      },
+      {
+        "name": "Uninstall removes unchanged payload and maintenance files",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows uninstall registration and shortcuts removed",
+        "result": "PASS"
+      },
+      {
+        "name": "Reinstall after uninstall with retained data",
+        "result": "PASS"
+      },
+      {
+        "name": "Runtime uninstall can finish before Windows cleanup",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows cleanup resumes after runtime uninstall completed",
+        "result": "PASS"
+      }
+    ],
+    "expected_version": "5.70.0",
+    "scope": "Compiled isolated TestSetup in a sandbox root the harness created itself; synthetic prior payload, never a historical release. The TestSetup carries the SAME payload sha256 as the published Setup (50244e9a4022fd091b0ebaacf0c106be2c59b458ad7ae0ecc02c75ee93bc7a8a), which is what binds this qualification to the shipped artifact.",
+    "summary": "19 of 19 PASS, exit 0",
+    "testsetup_sha256": "65a5b61ca6a8b37d8cf665507568b9a747df8a6825dac4f2ccf2a55b507edc6d"
+  },
+  "final_targeted_checks": {
+    "release_tag_pins": "28 passed",
+    "scope": "Version single-sourcing across six surfaces, and the README release-channel banner.",
+    "version_conformance": "11 passed"
+  },
+  "installed_houdini": {
+    "build": "22.0.400",
+    "known_failures": [
+      "test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks",
+      "test_bc_wave.py::test_profile_row_retired",
+      "test_failure_trail.py::test_dead_verb_hidden",
+      "test_j1_token_liveness.py::test_connected_keyed_engine_is_live_then_working_then_live",
+      "test_j2_token_face.py::test_face_counts_an_ollama_task"
+    ],
+    "measurement_hazard": "A first run of this suite reported 6 failed / 200 passed. The sixth, test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt, failed as Discovery-did-not-settle with PermissionError [WinError 32] rotating ~/.synapse/logs/synapse.log -- the stock suite was running concurrently and held the same file. Re-run alone it passes. The seat suite and the stock suite MUST NOT be run at the same time; nothing in either detects the collision. The summary above was measured alone.",
+    "note": "The first two are recorded design conflicts awaiting a ruling, not defects. The other three are named and undiagnosed. None is new in 5.70.0.",
+    "python": "3.13.10",
+    "scope": "Separate headless Houdini process with offscreen Qt, not the artist's session.",
+    "status": "PASS",
+    "summary": "tests/panel/ 201 passed, 5 failed, 69.55s"
+  },
+  "installer_unit_checks": {
+    "scope": "installer/tests lifecycle and adversarial engine, unchanged in this release.",
+    "summary": "37 passed in 14.18s"
+  },
+  "live_houdini": {
+    "build": "22.0.400",
+    "dead_curated_keys_live": [],
+    "labels_measured_live": {
+      "cops_composite_aovs": "Composite AOVs",
+      "cops_reaction_diffusion": "Reaction diffusion",
+      "houdini_create_usd_prim": "Create USD primitive",
+      "houdini_set_parm": "Set a parameter",
+      "synapse_ping": "Check the Houdini connection",
+      "synapse_solaris_shotsetup_karma_xpu": "Solaris shot setup Karma XPU"
+    },
+    "loaded_from": "source tree, not the installed Setup",
+    "method": "Node census before and after (9 nodes / 0 obj / 0 stage / frame 1.0, identical both times). Nothing created, set, cooked or rendered. Selection is the artist's own UI state and is deliberately not asserted.",
+    "module_sha256": "2c574a9590b6abef47d409f2e2ada6b2476cd16fdd1d999f6b8a72bc8ebdb671",
+    "module_sha256_matches_tagged_file": true,
+    "old_capitalize_gone": true,
+    "panel_activity_was_resident": false,
+    "python": "3.13.10",
+    "resident_caveat": "The panel activity module was NOT already resident; this check imported it (a pure-string module; synapse.panel.__init__ is inert). So this proves the running process's tree carries the fix. It does NOT prove an already-open panel picked it up -- a live session holds the old module until the panel is reloaded or Houdini restarts, which the release notes state.",
+    "scene_unchanged": true,
+    "scope": "Read-only introspection against the artist's RUNNING Houdini via the live bridge. It answers whether THIS process's source tree produces the new labels, which source inspection on the build machine cannot establish.",
+    "status": "PASS",
+    "version_reported_by_live_process": "5.70.0"
+  },
+  "local_stock_suite": {
+    "scope": "Local Windows, stock Python 3.14, vendored SDK inactive.",
+    "source_revision": "387e195fec0c7f8cfbcf9e25aa9064f8b9f55ba2",
+    "summary": "8920 passed, 430 skipped, 0 failed, 625 warnings in 335.90s"
+  },
+  "payload_audit": {
+    "builds": [
+      {
+        "bytes": 31830148,
+        "name": "SYNAPSE-5.70.0-Setup.exe",
+        "sha256": "41cb7368b7e67c2481a6248ce3431a1a97eb47a15886822c3507496795949add"
+      },
+      {
+        "name": "SYNAPSE-5.70.0-TestSetup.exe",
+        "sha256": "65a5b61ca6a8b37d8cf665507568b9a747df8a6825dac4f2ccf2a55b507edc6d"
+      }
+    ],
+    "moneta": {
+      "archive_sha256": "81a3d8735c7da49ca81302725acab6a3324311091e850c34afcea92e87ea31f7",
+      "note": "Byte-identical to the reviewed, previously authorized 1.2.0rc1 bundle. Verified BEFORE the build; no unreviewed content was substituted."
+    },
+    "payload_id": "5.70.0-caf329c319d3215a",
+    "payload_sha256": "50244e9a4022fd091b0ebaacf0c106be2c59b458ad7ae0ecc02c75ee93bc7a8a",
+    "source_revision": "387e195fec0c7f8cfbcf9e25aa9064f8b9f55ba2",
+    "status": "PASS"
+  },
+  "remaining_qualification": [
+    "Unsigned installer; code signing remains outstanding.",
+    "No clean Windows machine and no native wizard visual qualification in this run.",
+    "Synthetic prior payload covers the upgrade path; not a historical released installer.",
+    "The local suite's skip population is not stable: 21 tests are disabled by a symbol missing from an out-of-tree dependency and no gate in this repository can see it (harness/notes/SUITE_FLOOR_IS_NOT_STABLE.md).",
+    "Five panel seat tests remain red; two are recorded design conflicts awaiting a ruling.",
+    "QMenu modals can still hang a seat test. The guard covers dialog exec() and the C++ static helpers; a patch on QMenu.exec was measured to install and do nothing, so it is documented as an uncovered hole rather than implied closed."
+  ],
+  "retained_failed_attempts": [
+    {
+      "result": "6 failed / 200 passed, run concurrently with the stock suite. Discarded as a log-file contention artifact after re-running alone reproduced 201/5. Kept because the failure looked like a real timing regression and would have been reported as one.",
+      "scope": "First seat-suite measurement"
+    }
+  ],
+  "schema": "synapse-release-verification-1",
+  "source_revision": "387e195fec0c7f8cfbcf9e25aa9064f8b9f55ba2",
+  "status": "PASS",
+  "version": "5.70.0"
+}
