@@ -208,9 +208,19 @@ def no_blocking_modal(request, monkeypatch):
             if hasattr(cls, name):
                 _patch(cls, name, _refuse_static("{0}.{1}".format(cls_name, name)))
 
-    # A guard that silently installed nothing is worse than no guard: it reads
-    # as protection while the next modal still hangs the run.
-    assert patched, (
-        "the modal guard installed nothing -- PySide refused every patch, so "
-        "this suite is still one dialog away from hanging forever")
+    # NO ASSERT HERE, deliberately, and this is the second correction to it.
+    #
+    # The first version asserted `patched` to prove it had installed. A guard
+    # that silently installed nothing IS worse than no guard -- but proving it
+    # from inside an autouse fixture makes every unrelated test in the
+    # directory depend on the proof. It broke the full suite twice: first 121
+    # ERRORs at setup, then a narrowed version that still errored on a real-Qt
+    # stub whose classes exist but refuse assignment. Both times tests/panel/
+    # alone was GREEN, so the directory could never have caught it.
+    #
+    # The proof belongs in a test, not in a runtime side effect.
+    # tests/panel/test_modal_guard.py proves installation the strong way -- by
+    # opening actual dialogs under real Qt and requiring each to raise --
+    # which counting patched attributes never did anyway.
+    request.node.stash  # noqa: B018 - keeps `request` used and the intent local
     yield
