@@ -157,6 +157,53 @@ Out of scope: the rail's wording, the hold/release mechanism, and every F2 repai
 | Paths B and C | Carried into HALT-1's follow-on, seat-required |
 | `probe_f2.py` | Tracked beside this ruling. The re-runnable producer for all three paths; re-run it on any tree that touches this seam |
 
+## AMENDMENT (2026-09-14, same day) — path B is REFUTED, and by my own probe's artefact
+
+This ruling held paths B and C open and priced the seat work at two paths. **Path B does
+not exist.** Measured in pixels under hython 22.0.400 with the bundled fonts loaded:
+
+```
+rail floor  _header_status.minimumWidth() = 83 px   (set by 'Not connected', 13 glyphs)
+'Not cancelled'                           = 76 px   (13 glyphs)
+76 <= 83  ->  IT FITS, 7 px of headroom
+_sentence_fits('Not cancelled') driven live on de325abd = True
+```
+
+Driven through the real `_on_direct_tool_failed` on **both** trees, the rail reads
+`Not cancelled`. **A failed direct tool does not print "Result ready" in live Houdini.**
+
+**Where the false row came from, stated plainly.** This ruling's path-B table entry was
+produced by `probe_f2.py` running its own stub with `fits=lambda s: False`. That is a
+synthetic state, not a reachable one. The ruling was right that the comparison was
+unmeasured — *"both strings are 13 glyphs"* was the correct doubt — but it then recorded
+the stub's output as behaviour. **Glyph count was the wrong unit: the two 13-glyph strings
+differ by 7 px.**
+
+**What survives, and is stronger than before.** The clip F2 exists to fix is real on
+master, in pixels, and master has no recovery surface:
+
+```
+'Cancelling the cook on /obj/geo1/topnet1…'                      234 px
+'Still Cancelling the cook on /obj/geo1/topnet1…'                258 px
+'unmappable: no cooking node matched /obj/geo1/topnet1'          316 px
+a realistic longer node path                                     374 px
+        ...all into a label that stops growing at 112-121 px, no elide, no ellipsis.
+```
+
+On the `_on_direct_tool_done` path master additionally **clears the tooltip**, so an
+artist told a cancel was `unmappable` has nowhere to read which node. F2 `de325abd` clips
+**none** of the eleven candidates and puts every full sentence in the tooltip.
+
+**Effect on the disposition.** The parking decision rested on three paths. One has stopped
+existing. Path A was closed by HALT-1. **Only path C remains**, and the pixel evidence for
+un-parking F2's B8 single-tooltip-writer repair is now measured rather than argued. Still
+gate joe. The ruling is not reversed here — it is re-priced, and whoever takes it next
+should know the seat-required follow-on is one path, not two.
+
+Producer: `harness/notes/v2-waves-2026-09-14/probe_f2_pixels.py <tree>`.
+
+---
+
 ## Closure note (2026-09-14)
 
 HALT-1 was built the same day and its design call did not need a judgment: the rule was
