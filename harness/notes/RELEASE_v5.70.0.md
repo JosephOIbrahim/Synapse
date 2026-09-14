@@ -56,6 +56,15 @@ be run at the same time.** Nothing in either suite detects the collision; it sur
 as a plausible-looking timing failure in whichever one loses the race. Related:
 `harness/notes/` already records that pytest writes to that production log at all.
 
+## CI concluded after publication, and the report said so
+
+The release went out while GitHub Actions was still running on the tagged commit.
+`installer-verification.json` was uploaded with `ci.conclusion` =
+**`PENDING_AT_PUBLICATION`** rather than a guess. CI then concluded **success** on all
+four matrix jobs (ubuntu/macOS x Python 3.11/3.14, run `34895063247`), and the
+published asset was amended in place — the same way 5.69.0's evidence gap was closed.
+The amendment is recorded in the report itself, not silently swapped.
+
 ## What is NOT behind this Latest
 
 - The installer is **unsigned**.

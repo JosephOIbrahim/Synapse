@@ -62,9 +62,19 @@ report = {
     "version": "5.70.0",
     "source_revision": REV,
     "status": "PASS",
+    "amended": ("2026-09-14: CI was still running when this release was published, and this "
+                "report was uploaded saying so rather than guessing. It concluded success and "
+                "the report was amended in place."),
     "ci": {
         "headSha": REV,
-        "conclusion": "PENDING_AT_PUBLICATION",
+        "conclusion": "success",
+        "run_id": 34895063247,
+        "jobs": ["test (ubuntu-latest, 3.11) -> success",
+                 "test (ubuntu-latest, 3.14) -> success",
+                 "test (macos-latest, 3.11) -> success",
+                 "test (macos-latest, 3.14) -> success"],
+        "note": ("Recorded PENDING_AT_PUBLICATION in the first upload of this report; the "
+                 "release was published before CI finished and the field said so."),
         "scope": ("GitHub Actions CI on the tagged commit. Stock Python on Linux and macOS; "
                   "not a Houdini or Windows-installer check."),
     },
