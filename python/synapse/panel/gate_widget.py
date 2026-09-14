@@ -180,16 +180,17 @@ class _ProposalCard(c.Card):
               verbs right - REJECT tone=hot and APPROVE tone=accent for
               APPROVE / CRITICAL (APPROVE is the one accented thing on the
               card); REVIEW gets '<- REVERT' with no tone: REVIEW 'continues
-              unless rejected' (CLAUDE.md 1.2, shared/bridge.py), so the
-              reject after the fact IS a revert - the verb emits
-              reject_clicked (the ledger) AND revert_requested (the undo the
-              panel routes to _on_revert).
+              unless rejected' (CLAUDE.md 1.2, shared/bridge.py), so the card
+              is not a decision point at all - its verb asks the panel for an
+              undo (revert_requested -> _on_revert) and files no gate decision.
 
     A decision reads as a `tag` in the footer's left slot - APPROVED
     (neutral) or REJECTED (BLOCKED) - with the verbs hidden and the card
     disabled; a decision that never reached the gate reads NOT RECORDED
-    (BLOCKED) with the card still live (RULING 18). Uses QWidget parents (not
-    QFrame) so Houdini's global QFrame styles cannot intercept clicks.
+    (BLOCKED) with the card still live (RULING 18); a REVIEW card whose undo
+    request reached the turn reads UNDO SENT (neutral) and settles the same
+    way (mark_revert_sent). Uses QWidget parents (not QFrame) so Houdini's
+    global QFrame styles cannot intercept clicks.
     """
 
     approve_clicked = Signal(str)   # proposal_id
@@ -285,9 +286,23 @@ class _ProposalCard(c.Card):
         self.reject_clicked.emit(proposal_id)
 
     def _on_revert_clicked(self, checked=False):
-        """REVIEW's verb: the rejection goes to the ledger, the undo goes to
-        the panel (revert_requested -> _on_revert)."""
-        self.reject_clicked.emit(self._proposal_id)
+        """REVIEW's verb asks the panel for the undo, and asks for nothing else.
+
+        It used to emit ``reject_clicked`` first. That called
+        ``HumanGate.decide(pid, REJECTED)`` on a proposal the bridge had already
+        let through - ``shared/bridge.py:_check_consent_gate`` returns
+        ``proposal.decision != REJECTED`` for REVIEW at propose time, with no
+        wait - so the tag, the gate ledger and the chat line all recorded a
+        block that never happened.
+
+        Emitting it first also tore the card down synchronously (reject_clicked
+        -> ``GateWidget._on_reject`` -> ``mark_decided`` -> disabled ->
+        ``_sync_consent_slot`` hides it), which is how the artist ended up
+        reading "Stop the current turn before reverting" beside the space where
+        the control had been. Nothing is recorded here now: the panel answers
+        through ``GateWidget.note_revert_outcome``, and only a request that
+        actually went out settles the card.
+        """
         self.revert_requested.emit(self._proposal_id)
 
     def _on_approve_clicked(self, checked=False):
@@ -356,6 +371,29 @@ class _ProposalCard(c.Card):
             verb.setVisible(False)
         self._show_decision_tag("APPROVED" if is_approved else "REJECTED",
                                 blocked=not is_approved)
+        self.setEnabled(False)
+
+    def mark_revert_sent(self):
+        """The undo request reached the turn. Says that, and only that.
+
+        A REVIEW card is not a decision point - ``shared/bridge.py`` granted its
+        consent at propose time and the mutation went ahead - so there is no
+        APPROVED or REJECTED to report when its verb is used. What happened is
+        that a request went out, so the tag reads UNDO SENT, neutral: a request
+        in flight is neither a block nor a grant.
+
+        The tag does NOT carry the undo's verdict. ``_on_revert`` routes the
+        undo as a turn and says so in the chat ("Waiting for the task result"),
+        and the chat is where the result lands; a card-side verdict would need
+        the turn result routed back to this card, which this change does not
+        build. The card settles and disables exactly as a decided one does, so
+        ``_sync_consent_slot`` retires it on the same rule.
+        """
+        self._stop_timers()
+        self._decision = "revert_sent"
+        for verb in self._verbs():
+            verb.setVisible(False)
+        self._show_decision_tag("UNDO SENT", blocked=False)
         self.setEnabled(False)
 
 
@@ -629,6 +667,25 @@ class GateWidget(QtWidgets.QWidget):
             self.decision_announced.emit(
                 getattr(card, '_operation', op), "rejected", card._level
             )
+        self._update_header_text()
+        self._notify_host()
+
+    def note_revert_outcome(self, proposal_id, sent):
+        """The panel answers the card that asked for an undo.
+
+        ``sent=True`` - the request reached the turn: that card settles reading
+        UNDO SENT. ``sent=False`` - the panel refused (``_on_revert`` refuses
+        while the worker is streaming, which is precisely when a REVIEW card is
+        raised, because the card comes from a tool call inside that turn): then
+        NOTHING is recorded and the card keeps its REVERT, so the artist can
+        stop the turn and use the control they were just told to use.
+
+        Law 3 in one method: the card describes what happened, and on the
+        refused path nothing happened.
+        """
+        card = self._cards.get(proposal_id)
+        if card is not None and sent:
+            card.mark_revert_sent()
         self._update_header_text()
         self._notify_host()
 
