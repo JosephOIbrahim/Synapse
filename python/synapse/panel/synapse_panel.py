@@ -2791,7 +2791,18 @@ class SynapsePanel(QtWidgets.QWidget):
                 "didn't load.")
             return
         if self._direct_call is not None and self._direct_call.isRunning():
+            # DirectToolCall's contract is "exactly one fires -- a control
+            # that can silently do neither is a control the artist cannot
+            # trust." Returning here fires NEITHER signal, so this branch
+            # has to announce itself. The header cannot do it alone:
+            # "Still <verb>..." reads as in progress, which is the R18
+            # defect -- an affordance implying a safety action it did not
+            # perform. Nothing was dispatched; say so where the artist reads.
             self._set_header("working", "Still %s…" % busy_text)
+            self._chat.append_system_message(
+                "We didn't send that — another panel control is still "
+                "finishing. Nothing was dispatched, so nothing changed. "
+                "Try again in a moment.")
             return
         self._set_header("working", "%s…" % busy_text)
         call = DirectToolCall(tool_name, arguments, parent=self)
