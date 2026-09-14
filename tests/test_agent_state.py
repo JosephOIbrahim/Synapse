@@ -654,6 +654,72 @@ class TestMemoryDecisionsWithMockPxr:
         assert n1 == "decision_0000"
         assert n2 == "decision_0001"
 
+    # ── INTENT.md §6: a record must connect the operation to its actual
+    # changes, route, verification and recovery. A writer that drops payload
+    # fields it was not written to expect cannot satisfy that clause, so an
+    # unrecognized key is either written or reported -- never silently eaten.
+
+    def test_unrecognized_payload_keys_are_not_silently_dropped(self, agent_usd_path, mock_pxr):
+        """A widened payload survives to disk as individually queryable
+        attributes, and the record names which keys were outside the schema."""
+        agent_state.initialize_agent_usd(agent_usd_path)
+        payload = dict(self._PAYLOAD)
+        payload["execution_route"] = "live"
+        payload["receipt"] = "verify_0007"
+
+        name = agent_state.log_decision(agent_usd_path, payload)
+        stage = _fake_stages[os.path.normpath(agent_usd_path)]
+        prim = stage.GetPrimAtPath(f"/SYNAPSE/memory/decisions/{name}")
+
+        route = prim.GetAttribute("synapse:ext:execution_route")
+        assert route is not None, "execution_route was dropped with no attribute written"
+        assert route.Get() == "live"
+
+        receipt = prim.GetAttribute("synapse:ext:receipt")
+        assert receipt is not None, "receipt was dropped with no attribute written"
+        assert receipt.Get() == "verify_0007"
+
+        # The record itself declares what it could not schema-type (§6 UNKNOWN).
+        listed = prim.GetAttribute("synapse:unrecognizedKeys")
+        assert listed is not None, "record does not declare its unrecognized keys"
+        assert listed.Get() == "\n".join(["execution_route", "receipt"])
+
+        # The ratified six are untouched by the passthrough.
+        assert prim.GetAttribute("synapse:decision").Get() == self._PAYLOAD["decision"]
+        assert prim.GetAttribute("synapse:createdPaths").Get() == "\n".join(
+            self._PAYLOAD["created_paths"]
+        )
+
+    def test_unrecognized_payload_keys_are_reported_to_the_operator(
+        self, agent_usd_path, mock_pxr, caplog
+    ):
+        """Silence is the defect. An out-of-schema key warns, naming itself."""
+        import logging
+
+        agent_state.initialize_agent_usd(agent_usd_path)
+        payload = dict(self._PAYLOAD)
+        payload["execution_route"] = "live"
+
+        with caplog.at_level(logging.WARNING, logger="synapse.agent_state"):
+            agent_state.log_decision(agent_usd_path, payload)
+
+        warnings = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+        assert any("execution_route" in m for m in warnings), (
+            f"no warning named the out-of-schema key; got {warnings!r}"
+        )
+
+    def test_schema_only_payload_declares_no_unrecognized_keys(self, agent_usd_path, mock_pxr):
+        """The declaration is always present, so a reader can tell 'nothing was
+        outside the schema' from 'this record predates the declaration'."""
+        agent_state.initialize_agent_usd(agent_usd_path)
+        name = agent_state.log_decision(agent_usd_path, self._PAYLOAD)
+
+        stage = _fake_stages[os.path.normpath(agent_usd_path)]
+        prim = stage.GetPrimAtPath(f"/SYNAPSE/memory/decisions/{name}")
+        listed = prim.GetAttribute("synapse:unrecognizedKeys")
+        assert listed is not None, "record does not declare its unrecognized keys"
+        assert listed.Get() == ""
+
 
 class TestHandoffChainWithMockPxr:
     def test_log_single_handoff(self, agent_usd_path, mock_pxr):
