@@ -3144,8 +3144,8 @@ class SynapsePanel(QtWidgets.QWidget):
         overlay = getattr(self, "_system_prompt_overlay", "") or ""
         try:
             from synapse.panel.system_prompt import build_system_prompt
-        except Exception:
-            return overlay
+        except Exception as exc:
+            return self._prompt_fallback(overlay, "import", exc)
         ctx = {}
         try:
             import hou
@@ -3166,11 +3166,49 @@ class SynapsePanel(QtWidgets.QWidget):
             ctx = {}
         try:
             base = build_system_prompt(ctx)
-        except Exception:
-            return overlay
+        except Exception as exc:
+            return self._prompt_fallback(overlay, "build", exc)
+        # This turn is steered by the real prompt. Clearing the marker means a
+        # LATER degradation is announced to the artist again rather than being
+        # swallowed as "already reported".
+        self._prompt_fallback_reason = None
         # L5-2: the active profile's overlay rides on top of the built prompt —
         # tone/pacing only, never capability (L5/L6).
         return (base + "\n\n" + overlay) if overlay else base
+
+    def _prompt_fallback(self, overlay, branch, exc):
+        """Declare a substituted system prompt, then return the same substitute.
+
+        INTENT.md §6 — a substitution nobody is told about is the system
+        claiming a state it has not earned; the steering prompt is UNAVAILABLE
+        and must read that way. §4 — a degraded turn must be distinguishable
+        from a healthy one, so the branch and the reason travel with the
+        notice. §7 — "what is it doing" is an artist-facing question, so the
+        chat says it too, not only the log.
+
+        This reports; it does not steer. The returned prompt is byte-identical
+        to what each fallback branch has always returned.
+        """
+        substitute = "overlay-only" if overlay else "empty"
+        reason = "%s: %s" % (type(exc).__name__, exc)
+        logger.warning(
+            "panel: steering prompt UNAVAILABLE - branch=%s reason=%s - sending an "
+            "%s system prompt; the model may explain build requests instead of "
+            "executing them", branch, reason, substitute)
+        # Announce every degradation, not every turn: the log carries the full
+        # per-turn record, the chat carries the transition into degraded state.
+        signature = (branch, reason)
+        if getattr(self, "_prompt_fallback_reason", None) != signature:
+            self._prompt_fallback_reason = signature
+            try:
+                self._chat.append_system_message(
+                    "Steering prompt UNAVAILABLE (branch=%s, %s) - this turn runs on "
+                    "an %s system prompt, so build requests may be explained instead "
+                    "of executed." % (branch, reason, substitute))
+            except Exception:
+                logger.warning("panel: could not surface the prompt fallback to chat",
+                               exc_info=True)
+        return overlay
 
     def _start_worker(self):
         connection = getattr(self, "_task_connection", None)
