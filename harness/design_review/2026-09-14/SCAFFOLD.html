@@ -1,0 +1,1459 @@
+<title>Panel Spacing &amp; Utility Floor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#f3f5f3; --surface:#ffffff; --surface-2:#e9ece9; --surface-3:#dfe4e0;
+  --ink:#15191a; --ink-2:#48524f; --ink-3:#79837f;
+  --rule:#d2d8d4; --seam:#c0c8c3;
+  --accent:#256a4f; --accent-soft:#dcefe4; --accent-line:#8cc0a8;
+  --crit:#a6382a; --crit-soft:#f8e2dd; --crit-line:#d99485;
+  --warn:#856112; --warn-soft:#f7edd4; --warn-line:#ceac60;
+  --contest:#544785; --contest-soft:#e7e4f4; --contest-line:#a79ccf;
+  --strike:#8e9793;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#111514; --surface:#181d1c; --surface-2:#212826; --surface-3:#2a322f;
+    --ink:#e7ece9; --ink-2:#a6b1ad; --ink-3:#7c8783;
+    --rule:#2b3331; --seam:#3b4542;
+    --accent:#6fc8a0; --accent-soft:#1a3328; --accent-line:#2f6b51;
+    --crit:#e38972; --crit-soft:#361e19; --crit-line:#7d4034;
+    --warn:#d9b064; --warn-soft:#302610; --warn-line:#7b6021;
+    --contest:#ab9ed9; --contest-soft:#231e3c; --contest-line:#4e447a;
+    --strike:#6d7874;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#111514; --surface:#181d1c; --surface-2:#212826; --surface-3:#2a322f;
+  --ink:#e7ece9; --ink-2:#a6b1ad; --ink-3:#7c8783;
+  --rule:#2b3331; --seam:#3b4542;
+  --accent:#6fc8a0; --accent-soft:#1a3328; --accent-line:#2f6b51;
+  --crit:#e38972; --crit-soft:#361e19; --crit-line:#7d4034;
+  --warn:#d9b064; --warn-soft:#302610; --warn-line:#7b6021;
+  --contest:#ab9ed9; --contest-soft:#231e3c; --contest-line:#4e447a;
+  --strike:#6d7874;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:1080px; margin:0 auto; padding-inline:20px; padding-block:40px 96px}
+
+h1,h2,h3,h4{font-family:Archivo,Helvetica,Arial,sans-serif; text-wrap:balance; margin:0}
+code,kbd,.m{font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+.m,code{font-size:.86em}
+code{background:var(--surface-2); padding:.08em .34em; border-radius:3px; color:var(--ink)}
+a{color:var(--accent); text-underline-offset:2px}
+
+.mast{border-top:3px solid var(--ink); padding-top:18px}
+.mast h1{font-size:clamp(30px,5.4vw,46px); font-weight:700; letter-spacing:-.022em; line-height:1.04}
+.mast .sub{font-size:17px; color:var(--ink-2); margin-top:10px; max-width:64ch}
+.meta{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:20px;
+  font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-3);
+  text-transform:uppercase; letter-spacing:.07em}
+.meta b{color:var(--ink); font-weight:500; text-transform:none; letter-spacing:0}
+
+.verdict{margin-top:26px; display:grid; gap:1px; background:var(--rule);
+  border:1px solid var(--rule); grid-template-columns:repeat(auto-fit,minmax(168px,1fr))}
+.verdict div{background:var(--surface); padding:13px 15px}
+.verdict .k{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:5px}
+.verdict .v{font-family:Archivo,sans-serif; font-weight:600; font-size:15px; line-height:1.3}
+.verdict .v.c{color:var(--crit)} .verdict .v.a{color:var(--accent)} .verdict .v.w{color:var(--warn)}
+
+section{margin-top:62px; scroll-margin-top:18px}
+.sec-head{display:grid; grid-template-columns:58px 1fr; gap:16px; align-items:start;
+  border-top:1px solid var(--ink); padding-top:14px; margin-bottom:22px}
+.sec-num{font-family:"IBM Plex Mono",monospace; font-weight:500; font-size:13px;
+  color:var(--ink-3); padding-top:7px; letter-spacing:.02em}
+.sec-head h2{font-size:clamp(23px,3.4vw,30px); font-weight:600; letter-spacing:-.018em; line-height:1.14}
+.sec-head .dek{color:var(--ink-2); font-size:15.5px; margin-top:7px; max-width:68ch}
+h3{font-size:19px; font-weight:600; margin-top:34px; margin-bottom:9px; letter-spacing:-.01em}
+h4{font-size:15px; font-weight:600; margin-top:24px; margin-bottom:7px}
+p{margin:0 0 14px; max-width:74ch}
+ul,ol{margin:0 0 16px; padding-left:22px; max-width:74ch}
+li{margin-bottom:8px}
+li::marker{color:var(--ink-3)}
+strong{font-weight:600}
+
+.rail{border-left:1px solid var(--seam); padding-left:20px; margin-left:2px}
+
+.tw{overflow-x:auto; margin:0 0 20px; border:1px solid var(--rule); background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14px; min-width:520px}
+th,td{text-align:left; padding:9px 13px; border-bottom:1px solid var(--rule); vertical-align:top}
+thead th{font-family:"IBM Plex Mono",monospace; font-size:10.5px; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--ink-3); font-weight:500; background:var(--surface-2);
+  white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td.n,th.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap}
+td.live{background:var(--accent-soft)}
+tr.dead td{color:var(--ink-3)}
+
+.chip{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+  letter-spacing:.075em; text-transform:uppercase; padding:2px 7px; border-radius:2px;
+  border:1px solid; white-space:nowrap; vertical-align:1px; font-weight:500}
+.chip.crit{color:var(--crit); border-color:var(--crit-line); background:var(--crit-soft)}
+.chip.maj{color:var(--warn); border-color:var(--warn-line); background:var(--warn-soft)}
+.chip.ok{color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft)}
+.chip.con{color:var(--contest); border-color:var(--contest-line); background:var(--contest-soft)}
+.chip.plain{color:var(--ink-2); border-color:var(--rule); background:var(--surface-2)}
+
+.was{font-family:"IBM Plex Mono",monospace; font-size:.8em; color:var(--strike);
+  text-decoration:line-through; text-decoration-thickness:1px; margin-left:4px}
+
+.note{border-left:3px solid var(--rule); padding:2px 0 2px 16px; margin:18px 0; color:var(--ink-2)}
+.note.crit{border-color:var(--crit)} .note.ok{border-color:var(--accent)}
+.note.con{border-color:var(--contest)} .note.maj{border-color:var(--warn)}
+.note p:last-child{margin-bottom:0}
+.note .lab{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:4px}
+
+pre{background:var(--surface-2); border:1px solid var(--rule); padding:13px 15px;
+  overflow-x:auto; font-family:"IBM Plex Mono",monospace; font-size:12.5px;
+  line-height:1.58; margin:0 0 18px; color:var(--ink)}
+pre code{background:none; padding:0; font-size:inherit}
+
+.dec{border-top:1px solid var(--rule); padding-top:16px; margin-top:30px}
+.dec .tag{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.09em;
+  color:var(--accent); text-transform:uppercase; font-weight:600}
+.dec h3{margin-top:4px}
+.dec .rec{font-family:Archivo,sans-serif; font-weight:600; font-size:16.5px;
+  margin:0 0 12px; max-width:72ch; line-height:1.42}
+
+.toc{margin-top:34px; border:1px solid var(--rule); background:var(--surface); padding:16px 18px}
+.toc h4{margin:0 0 11px; font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:500}
+.toc ol{list-style:none; padding:0; margin:0; max-width:none;
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); gap:2px 24px}
+.toc li{margin:0; font-size:14.5px; display:flex; gap:9px; align-items:baseline; padding:2px 0}
+.toc .i{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-3); min-width:18px}
+.toc a{text-decoration:none; color:var(--ink)}
+.toc a:hover{color:var(--accent); text-decoration:underline}
+.toc .mv{margin-left:auto; font-family:"IBM Plex Mono",monospace; font-size:9.5px;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--crit)}
+.toc .mv.n{color:var(--accent)}
+
+.card{border:2px solid var(--ink); background:var(--surface); padding:28px 26px; margin-top:26px}
+.card .one{font-family:Archivo,sans-serif; font-size:clamp(19px,2.7vw,25px); font-weight:600;
+  line-height:1.32; letter-spacing:-.014em; margin:0 0 6px; max-width:38ch}
+.mini{display:grid; gap:1px; background:var(--rule); border:1px solid var(--rule); margin:0 0 6px}
+.mini > div{background:var(--surface); padding:8px 12px; display:flex; gap:14px; align-items:baseline; flex-wrap:wrap}
+.mini .r{font-family:"IBM Plex Mono",monospace; font-weight:500; min-width:62px; font-size:13px}
+.mini .px{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+  font-size:15px; font-weight:600; min-width:34px; text-align:right}
+.mini .d{font-size:13.5px; color:var(--ink-2)}
+.dl{list-style:none; padding:0; margin:0; max-width:none}
+.dl li{display:grid; grid-template-columns:36px 1fr; gap:12px; padding:11px 0;
+  border-bottom:1px solid var(--rule); margin:0}
+.dl li:last-child{border-bottom:none}
+.dl .id{font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--accent); font-size:14px}
+.dl .q{font-weight:600; display:block; margin-bottom:2px}
+.dl .a{color:var(--ink-2); font-size:14.5px}
+
+hr{border:none; border-top:1px solid var(--rule); margin:30px 0}
+.small{font-size:13.5px; color:var(--ink-2)}
+@media (max-width:640px){
+  .sec-head{grid-template-columns:1fr; gap:4px}
+  .sec-num{padding-top:0}
+  .rail{padding-left:14px}
+  .dl li{grid-template-columns:1fr; gap:2px}
+}
+</style>
+
+<div class="page">
+
+<header class="mast">
+  <h1>Panel spacing system &amp; the artist-utility floor</h1>
+  <p class="sub">Revision 2 — crucible-folded. Three lenses attacked the draft; their corrections are made <em>at source</em>, not appended. Three findings are refused openly in §11.</p>
+  <div class="meta">
+    <span>Scaffold <b>2026-09-14 · r2</b></span>
+    <span>HEAD <b>bd65e4b6</b></span>
+    <span>Runtime <b>hython 22.0.400 offscreen 340×760</b></span>
+    <span>Lenses <b>token-integrity · implementability · artist-truth</b></span>
+  </div>
+</header>
+
+<div class="verdict">
+  <div><span class="k">Organizing move</span><span class="v">Collapse every three-column authority to the one column that renders</span></div>
+  <div><span class="k">Spacing system</span><span class="v a">Six roles, six rungs — holds</span></div>
+  <div><span class="k">Width authority</span><span class="v w">Holds — but two symbols, not one</span></div>
+  <div><span class="k">Utility floor</span><span class="v c">Two of four re-opened</span></div>
+  <div><span class="k">Joe's decisions</span><span class="v">Six live, two blocked on probes</span></div>
+</div>
+
+<div class="toc">
+  <h4>Contents — <span style="color:var(--crit)">moved</span> marks a section the crucible changed</h4>
+  <ol>
+    <li><span class="i">01</span><a href="#s1">What this changes</a><span class="mv">moved</span></li>
+    <li><span class="i">02</span><a href="#s2">The spacing system</a><span class="mv">moved</span></li>
+    <li><span class="i">03</span><a href="#s3">The 340 question</a><span class="mv">moved</span></li>
+    <li><span class="i">04</span><a href="#s4">The artist-utility floor</a><span class="mv">moved</span></li>
+    <li><span class="i">05</span><a href="#s5">What comes out</a><span class="mv">moved</span></li>
+    <li><span class="i">06</span><a href="#s6">Findings closed</a><span class="mv">moved</span></li>
+    <li><span class="i">07</span><a href="#s7">Where the partners disagreed</a><span class="mv">moved</span></li>
+    <li><span class="i">08</span><a href="#s8">Joe's decisions</a><span class="mv">moved</span></li>
+    <li><span class="i">09</span><a href="#s9">Implementation shape</a><span class="mv">moved</span></li>
+    <li><span class="i">10</span><a href="#s10">What this does not touch</a></li>
+    <li><span class="i">11</span><a href="#s11">Contested</a><span class="mv n">new</span></li>
+    <li><span class="i">12</span><a href="#s12">The card</a><span class="mv n">new</span></li>
+  </ol>
+</div>
+
+<section id="s0" style="margin-top:48px">
+  <div class="sec-head">
+    <span class="sec-num">00</span>
+    <div>
+      <h2>Where every number below comes from</h2>
+      <p class="dek">All measurements are new — taken this session on hython 22.0.400 offscreen at 340×760 against HEAD, not read from the 2026-09-05 JSON. Every code anchor was re-read against the working tree while folding the crucible.</p>
+    </div>
+  </div>
+  <div class="rail">
+<p>This advances <code>harness/design_review/2026-09-05/REVIEW.md</code>. That document's point of view stands verbatim — one voice for words, one for data, one accent meaning the artist's next action, one sentence of state that never gives way, chrome earns 340 or leaves. Nothing below revises it. This closes the two things it left open.</p>
+
+<pre><code>HY="C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe"
+export PYTHONIOENCODING=utf-8
+SYNAPSE_PANEL_SETTINGS=harness/design_review/2026-09-05/settings_expert.json \
+QT_QPA_PLATFORM=offscreen "$HY" &lt;probe&gt;.py &lt;out&gt;.json</code></pre>
+
+<p>Probe sources, this session — <strong>currently in session scratch, not in the tree:</strong><br>
+<code>...\342d86b6-e18d-458b-8a02-ed10eaaff542\scratchpad\</code> → <code>floor_probe.py</code>, <code>width_probe.py</code>, <code>ident_probe.py</code>, <code>faces_probe.py</code>, <code>stack_probe.py</code>, <code>targets_probe.py</code>.</p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · implementability</span>
+  <p>Eight of the ~12 verification cells in §9 named an artifact that does not exist in the repo. <strong>§9 now opens with Wave −1: the six probes land under <code>harness/design_review/2026-09-14/</code> with their own commit and hash before Wave 0 runs.</strong> Until that lands, no row in §9 is executable — and the offscreen flag is now on every command in §9 without exception, including the <code>-c</code> one-liners.</p>
+</div>
+  </div>
+</section>
+
+<section id="s1">
+  <div class="sec-head">
+    <span class="sec-num">01</span>
+    <div><h2>What this changes, in one paragraph</h2></div>
+  </div>
+  <div class="rail">
+<p>The panel composes exactly one profile and one density — <code>synapse_panel.py:724</code> hard-sets <code>profile = DEFAULT_PROFILE</code>, and its own comment says <em>"nothing an artist can reach composes any other manifest"</em> (commit <code>5fdb9c5a</code>, "J4 — the profile switch leaves the UI"). Every three-column authority in the system is therefore describing two panels no artist can reach: three density gap columns, three measured minimum widths, three docking bounds in YAML prose. <strong>The organizing move is to collapse each triple to the one column that renders, then write that one column where the next designer looks.</strong></p>
+
+<p>Not a patch set. One fact — <em>the axis died</em> — settles the spacing table's shape, the width authority's identity, and which of the five partners' proposals codify a dead surface.</p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · implementability</span>
+  <p><strong>The axis dying does not license deleting the tests that live on it.</strong> <code>tests/test_panel_rhythm_docking.py</code> parametrizes five test functions over <code>DENSITIES</code>, and <code>_bounds()</code> at <code>:85-92</code> asserts <code>set(widths) == set(DENSITIES)</code> — so removing the per-density triple takes roughly <strong>60 parametrized cases</strong> with it, including <code>test_every_composed_region_and_face_at_docking_bound[airy]</code>, whose feature line at <code>.synapse/contracts/docking-minimums.yaml:46</code> still records <code>passing: false</code>. Collapsing an <em>authority</em> to one column is right. Collapsing the <em>coverage</em> is deleting a red test to make a suite green. §8 D1 and §9 carry that separation now, and §9's standing rules enforce it.</p>
+</div>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="sec-head">
+    <span class="sec-num">02</span>
+    <div>
+      <h2>The spacing system</h2>
+      <p class="dek">Nine roles resolving to four values become six roles on six distinct rungs. The table survived the crucible intact. Three of the moves that deliver it did not — the type migration, the parm-row filing, and the top-edge companion edit are all re-costed below.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<h3>What is there now</h3>
+
+<p><code>rhythm.ROLE_GAPS</code> (<code>rhythm.py:26-36</code>) has <strong>nine roles resolving to four distinct values.</strong> Measured applied gaps at HEAD, standard density (<code>floor_probe.py</code> → <code>role_gaps_applied</code>, identical in all three runs):</p>
+
+<div class="tw"><table>
+<thead><tr><th class="n">value</th><th>roles claiming it</th></tr></thead>
+<tbody>
+<tr><td class="n">16</td><td><code>shell</code>, <code>group</code>, <code>tag</code>, <code>card</code></td></tr>
+<tr><td class="n">12</td><td><code>label</code>, <code>row</code></td></tr>
+<tr><td class="n">4</td><td><code>parm_row</code>, <code>stack</code></td></tr>
+<tr><td class="n">0</td><td><code>band</code></td></tr>
+</tbody></table></div>
+
+<p><strong>Three collisions, not one.</strong> The 2026-09-05 review named the 4-way tie (<code>REVIEW.md:262</code>); the 2-way ties at 12 and at 4 are real and were named by no lens in the crit round.</p>
+
+<h3>The system</h3>
+
+<p>Six roles. Six distinct bases. Six distinct <code>SPACE_GRID</code> rungs — <code>SPACE_GRID = (4, 8, 12, 16, 24, 32, 48)</code> at <code>tokens.py:491</code>. Scaled by <code>tokens.gap()</code> (<code>tokens.py:506</code>) through <code>DENSITY_GAP_SCALE = {airy 1.5, standard 1.0, tight 0.75}</code> (<code>tokens.py:503</code>). The <strong>standard</strong> column is the only one that renders (§1); airy and tight are kept as specification, not authority.</p>
+
+<div class="tw"><table>
+<thead><tr><th>role</th><th class="n">base</th><th>rung</th><th class="n">airy</th><th class="n">standard</th><th class="n">tight</th><th>where it applies</th><th>what it replaced</th></tr></thead>
+<tbody>
+<tr><td><code>band</code></td><td class="n">0</td><td>—</td><td class="n">0</td><td class="n live">0</td><td class="n">0</td><td>chrome bands that own their own hairline — panel root, act, input</td><td>unchanged</td></tr>
+<tr><td><code>stack</code></td><td class="n">4</td><td><code>SPACE_GRID[0]</code></td><td class="n">6</td><td class="n live">4</td><td class="n">3</td><td>flush utility stacks — toolbars, input rows, card interiors, turn receipt</td><td>unchanged; <strong>absorbs <code>parm_row</code>'s layout gap</strong></td></tr>
+<tr><td><code>pair</code></td><td class="n">8</td><td><code>SPACE_GRID[1]</code></td><td class="n">12</td><td class="n live">8</td><td class="n">6</td><td>a small head and the thing it heads — 4 sites: <code>face_token.py:442</code>, <code>hda_views.py:41</code>, <code>lookdev_suggestion.py:117</code>, <code>recall_card.py:122</code></td><td><strong><code>label</code>, renamed and revalued 12 → 8</strong></td></tr>
+<tr><td><code>tag</code></td><td class="n">12</td><td><code>SPACE_GRID[2]</code></td><td class="n">18</td><td class="n live">12</td><td class="n">9</td><td>chip / badge rows — 4 sites: <code>gate_widget.py:152</code>, <code>recall_card.py:141</code>, <code>synapse_panel.py:1464</code>, <code>tool_palette.py:291</code></td><td>itself, moved 16 → 12</td></tr>
+<tr><td><code>group</code></td><td class="n">16</td><td><code>SPACE_GRID[3]</code></td><td class="n">24</td><td class="n live">16</td><td class="n">12</td><td>related controls; <code>rhythm.apply</code>'s documented unknown-role fallback (<code>rhythm.py:118</code>)</td><td>itself, <strong>absorbs <code>card</code></strong></td></tr>
+<tr><td><code>shell</code></td><td class="n">24</td><td><code>SPACE_GRID[4]</code></td><td class="n">36</td><td class="n live">24</td><td class="n">18</td><td>edge containers — the rail, the ribbon, the faces</td><td>itself, moved 16 → 24</td></tr>
+</tbody></table></div>
+
+<p>Closure predicate from <code>REVIEW.md:266-271</code> passes literally: <code>len(set(ROLE_GAPS.values())) == len(ROLE_GAPS)</code> → 6 == 6.</p>
+
+<h3>The top-edge companion — re-costed, and it supersedes a Joe ruling</h3>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · token-integrity + implementability, independently</span>
+  <p>The draft called this <em>"one line, not a trade-off."</em> It is a trade-off, it is visible, and it revises a dated ruling of Joe's.</p>
+</div>
+
+<p><code>_EDGE_TOP = {"shell": tokens.SPACE_MD}</code> at <code>rhythm.py:50</code> is <strong>not</strong> anchored to <code>ROLE_GAPS["shell"]</code>. The rule above it, <code>rhythm.py:44-49</code>, states its own anchor verbatim:</p>
+
+<pre><code># Edge condition (Joe's five, J5, 2026-09-05): a shell that meets the pane's
+# TOP edge (rhythm_edge="top") takes one grid step more air above than the
+# role's SPACE_SM - SPACE_MD, density-scaled through tokens.gap (24/16/12) -
+# so the identity row is not choked by the pane edge. The role's default is
+# unchanged: the ribbon and the faces (the other shell owners) keep SPACE_SM,
+# so the air UNDER the rail does not move.</code></pre>
+
+<p>The anchor is <code>_MARGINS["shell"]</code>'s top inset of <code>SPACE_SM</code> (<code>rhythm.py:40-42</code>), not the role's gap. <code>SPACE_SM = 8</code>, <code>SPACE_MD = 16</code>, <code>SPACE_LG = 24</code> (<code>tokens.py:476-478</code>). J5 says <em>one</em> step above SPACE_SM. <code>SPACE_LG</code> is two.</p>
+
+<p><code>tests/panel/test_j5_rail_air.py</code> pins the value three ways — <code>:115-116</code> (<code>gap(SPACE_MD,"standard") == 16</code>), <code>:157</code> (<code>edge_top == {"shell": t.SPACE_MD}</code>, an exact-dict assertion), and <code>:168</code> (the density triple 24/16/12).</p>
+
+<p><strong>So the honest shape is:</strong></p>
+
+<ul>
+<li><code>ROLE_GAPS["shell"]</code> 16 → 24 also moves the internal child gap of <strong>the ribbon and the faces</strong>, the two other shell owners. That is a visible change on two surfaces the draft did not price.</li>
+<li>Leaving <code>_EDGE_TOP</code> at <code>SPACE_MD</code> keeps J5 intact and makes the rail's top margin (16) narrower than the gap between its own children (24).</li>
+<li>Moving it to <code>SPACE_LG</code> restores the continuous rhythm and <strong>supersedes J5 by name</strong>, turning <code>test_j5_rail_air.py:157</code> red until the pin is rewritten.</li>
+</ul>
+
+<p>This is D4's cost, not a companion line. §8 D4 states it as a supersession request with the rule quoted, so Joe can see he is being asked to revise his own five.</p>
+
+<h3>The three roles that die, and what absorbs them</h3>
+
+<h4><code>row</code> — deleted outright, nothing absorbs it</h4>
+
+<p>Zero Python set-sites (<code>grep 'rhythm_role", *"row"'</code> across <code>python/synapse/panel/</code>, re-run this session: no hits). Its CSS still ships: <code>qss.py:400-413</code>, a 14-line box including a 44px <code>#DsRowGlyph</code> cell. Dead paint for a role nothing stamps.</p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · token-integrity</span>
+  <p><strong>The deletion set was incomplete twice over.</strong> <code>_MARGINS["row"]</code> survives at <code>rhythm.py:38-39</code> — <code>(SPACE_MD, SPACE_12, SPACE_MD, SPACE_12)</code>, still reachable through <code>apply_layout_margins</code> — so the draft's edit would have left the same dead-key class it exists to close, in the same twelve lines of the same file. And <code>#DsRowGlyph</code> has two <em>test</em> set-sites (<code>tests/test_panel_rhythm_docking.py:265</code>, <code>tests/test_panel_rhythm_owner.py:211</code>) even though production never stamps it. Both now ride in §5 item 1 and in Wave 0's verification clause. Zero pixels move either way; it costs one dict key and two test edits and makes the claim true.</p>
+</div>
+
+<h4><code>card</code> — absorbed by <code>group</code></h4>
+<p>Two set-sites: <code>gate_widget.py:421</code>, <code>synapse_panel.py:1435</code>. Both repoint to <code>"group"</code>. <strong>Zero pixels move</strong> — both resolve to <code>SPACE_GRID[3]</code> today.</p>
+
+<h4><code>parm_row</code> — leaves the rhythm system entirely</h4>
+
+<p>Four set-sites, all in <code>face_token.py</code> (<code>:449</code>, <code>:476</code>, <code>:488</code>, <code>:489</code>). Its layout gap is <code>stack</code>'s. Its actual job is <strong>not one column width. It is two columns and a height</strong>, and the draft's arithmetic was wrong by 4×.</p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · token-integrity</span>
+  <p>The draft wrote <code>PARM_LABEL_COL_W = SPACE_32</code> (32px) and called it a token that "already exists and has no consumers." <code>qss.py:454-464</code> reads:</p>
+  <pre><code>#DsRoot [rhythm_role="parm_row"] {
+    min-height: {t.SPACE_LG}px; ...
+}
+#DsRoot [rhythm_role="parm_row"] &gt; #DsParmLabel {
+    min-width: {t.SPACE_32 * 4}px; max-width: {t.SPACE_32 * 4}px; ...
+}
+#DsRoot [rhythm_role="parm_row"] &gt; #DsParmValue {
+    min-width: {t.SPACE_32 * 2}px; max-width: {t.SPACE_32 * 2}px; ...
+}</code></pre>
+  <p>The label column is <strong>128px</strong>. The value column is <strong>64px</strong> and went unmentioned. The row also carries <code>min-height: SPACE_LG</code>. Shipping the draft's token would have collapsed a 128px column to 32px inside a table that claims zero pixels move.</p>
+</div>
+
+<p><strong>The corrected filing.</strong> Both columns get names, because naming one and leaving the other as a bare multiplier inside a QSS f-string creates two vocabularies for the same parm-grid measurement — the exact accretion this section exists to reduce:</p>
+
+<div class="tw"><table>
+<thead><tr><th>new name</th><th class="n">value</th><th>derivation</th><th>filed</th><th>consumer</th></tr></thead>
+<tbody>
+<tr><td><code>PARM_LABEL_COL_W</code></td><td class="n">128</td><td><code>SPACE_32 * 4</code></td><td>off-ladder dimension block</td><td><code>qss.py:456-458</code></td></tr>
+<tr><td><code>PARM_VALUE_COL_W</code></td><td class="n">64</td><td><code>SPACE_32 * 2</code></td><td>off-ladder dimension block</td><td><code>qss.py:460-462</code></td></tr>
+<tr><td>row min-height</td><td class="n">24</td><td><code>SPACE_LG</code>, unchanged</td><td>stays a rung</td><td><code>qss.py:455</code></td></tr>
+</tbody></table></div>
+
+<p>Both new values are off the <code>SPACE_GRID</code> ladder. That is fine for dimensions and must be filed as such explicitly, the way <code>tokens.py:486</code> already does for <code>SPACE_XL</code>. <strong>The cheaper alternative, stated so it is a choice and not an omission:</strong> leave the QSS multipliers alone and add no token at all — the finding that matters (<em>a dimension wearing a rhythm name</em>) closes the moment the <code>ROLE_GAPS</code> key goes. That option costs zero tokens and leaves the two-vocabulary problem standing. It rides in D4.</p>
+
+<h3>The move that makes the rename safe — delete <code>_apply_type</code></h3>
+
+<p><code>rhythm._apply_type</code> (<code>rhythm.py:62-78</code>) is a <strong>third type mechanism hiding inside the layout applier.</strong> For roles <code>label</code> and <code>tag</code> it sets mono family, AllUppercase, and letter-spacing borrowed from tracking tokens that mean something else:</p>
+
+<pre><code># Battleplan section 4 values: label +0.08 em, tag +0.06 em. No tracking
+# token carries those names (tokens.py is frozen), so the numerically
+# equal existing entries are borrowed: SEND == 0.08, DATA * 2 == 0.06.
+em = (tokens.TRACKING_EM["SEND"] if role == "label"
+      else tokens.TRACKING_EM["DATA"] * 2)</code></pre>
+
+<p><code>rhythm.py:72-76</code> — an unguarded dict index, no <code>.get()</code>, no fallback. Delete the mechanism and rhythm becomes purely spatial, the role name is free of type vocabulary, and the 8 affected widgets take their type at construction like every other control in the panel.</p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · token-integrity — this one changes §7 and §8 too</span>
+  <p><strong>The tag half cannot be expressed with any existing tracking token, and the draft's blast radius was wrong because of it.</strong></p>
+  <p><code>TRACKING_EM</code> (<code>tokens.py:395-404</code>), read in full this session: <code>EYEBROW 0.22 · BRAND 0.286 · LABEL 0.15 · LABEL_SM 0.12 · WORDMARK 0.16 · DATA 0.03 · SEND 0.08 · DISPLAY -0.015 · BODY 0.0</code>. <strong>There is no key equal to 0.06.</strong> And <code>fontload.tracked_font(role, …)</code> takes a <em>named role</em> (<code>fontload.py:161</code>), not a float — so "take <code>tracked_font</code> at construction" is only available to the four <code>pair</code> sites, which land on <code>SEND</code>.</p>
+  <p>Secondary, also unpriced: <code>_apply_type</code> sets <code>font.setCapitalization(AllUppercase)</code> at <code>rhythm.py:71</code>. <code>tracked_font</code> does not. All 8 sites need an explicit capitalization call.</p>
+</div>
+
+<p><strong>The four real options for the four <code>tag</code> sites</strong> — <code>gate_widget.py:152</code>, <code>recall_card.py:141</code>, <code>synapse_panel.py:1464</code>, <code>tool_palette.py:291</code>:</p>
+
+<div class="tw"><table>
+<thead><tr><th class="n">#</th><th>option</th><th>what it costs</th><th>gate</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td>Add <code>TRACKING_EM["TAG"] = 0.06</code></td><td>TYPE's collapse becomes <strong>four keys, not three</strong> — USE's revised position, which §7.1 ruled against. Reopens tokens.py under CAMERA's freeze for a new type value.</td><td class="chip plain">crux + joe</td></tr>
+<tr><td class="n">2</td><td>Chips take <code>DATA</code> (0.03)</td><td>A <strong>visible tracking change on every chip in the panel</strong> (4 surfaces). Halves the tag's tracking. Three keys survive.</td><td class="chip maj">joe</td></tr>
+<tr><td class="n">3</td><td>Chips take <code>SEND</code> (0.08)</td><td>Visible, the other direction — chips track like the send verb. Three keys survive; <code>pair</code> and <code>tag</code> stop being distinguishable in type.</td><td class="chip maj">joe</td></tr>
+<tr><td class="n">4</td><td>Keep <code>TRACKING_EM["DATA"] * 2</code> as an expression at each site</td><td>Zero visual change, zero new token — and it multiplies the borrowed literal from <strong>one</strong> place to <strong>four</strong>. Strictly worse for token integrity than what is there now.</td><td class="chip crit">rejected here</td></tr>
+</tbody></table></div>
+
+<p><strong>Option 4 is refused on the record.</strong> The other three are Joe's, in D4, and whichever he picks <strong><code>_apply_type</code>'s deletion and TYPE's <code>TRACKING_EM</code> collapse must land as one ratified commit</strong> — the collapse's safety is what justifies the deletion, and the deletion's cost is what sets the collapse's key count.</p>
+
+<p>A fifth pin the draft missed: <code>tests/test_panel_rhythm_docking.py:216-219</code> asserts <code>_apply_type</code>'s <em>output</em> — <code>font.capitalization() == AllUppercase</code> and <code>font.letterSpacing() == (108.0 if role == "label" else 106.0)</code>. That file is now named in Wave 2's rewrite ledger.</p>
+
+<h3><code>SPACE_XL</code> 40, settled</h3>
+
+<p><strong>It stays exactly where it is, at 40, off the ladder, and it never enters <code>ROLE_GAPS</code>.</strong> It is not a gap and never was.</p>
+
+<p>Consumers, complete (<code>grep SPACE_XL</code> across <code>python/synapse/</code>): <code>qss.py:434</code>, <code>:446</code>, <code>:450</code> — all three are <code>min-height</code>/<code>max-height</code> on card-band rows. Zero layout-spacing consumers. <code>tokens.py:485-486</code> already documents this: <em>"SPACE_XL (40) is retained as the fixed card-band height (a dimension, off the gap ladder)."</em></p>
+
+<p>The only change is filing. Group it into one labelled off-ladder block with <code>ROW_MIN_H</code> (44, <code>tokens.py:548</code>), <code>WORDMARK_GAP</code> (5, <code>:497</code>), <code>RADIUS_*</code> (<code>:535-547</code>), <code>ICON_GRID</code> (24, <code>:556</code>) and the two new parm-column widths, so the next person skimming <code>SPACE_GRID</code>'s neighbourhood doesn't mistake a dimension for a missing rung — which is exactly the mistake <code>parm_row</code> made.</p>
+
+<p><strong>And say what the <code>- 1</code> is,</strong> since a reader who finds it will otherwise file it as a stray literal. <code>qss.py:434</code> renders <code>min-height: {t.SPACE_XL - 1}px</code> on <code>#DsCardHeader</code>, which also carries <code>border-bottom: 1px solid {t.BORDER}</code>; <code>#DsCardFooter</code> at <code>:446</code> is a flat <code>SPACE_XL</code> with no border. 39 + 1 = 40 = the footer. It is box-model arithmetic that makes the band exactly <code>SPACE_XL</code> tall <em>including its own hairline</em> — not a spacing seam. One comment in the off-ladder block, no token. (This is the one the crucible wanted folded into <code>SEAM_PX</code>; see §11.)</p>
+
+<h3>The hairline rung (F16)</h3>
+
+<p>Add <code>SEAM_PX = 1</code> to the off-ladder block — a seam is a held boundary distance, not a content gap, so it never scales by density and never enters <code>ROLE_GAPS</code>. <code>HAIR</code> (<code>tokens.py:184</code>) keeps the drawn boundary; <code>BORDER</code> (<code>:182</code>) keeps the structural divider; the grip is untouched.</p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · token-integrity</span>
+  <p>The draft said "six raw <code>setSpacing(1|2)</code> literals." The live census in <code>python/synapse/panel/</code>, this session, is <strong>five</strong> — and the composition matters:</p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>site</th><th class="n">px</th><th>status</th><th>disposition</th></tr></thead>
+<tbody>
+<tr><td><code>face_review.py:271</code></td><td class="n">1</td><td>shipped</td><td><code>SEAM_PX</code></td></tr>
+<tr><td><code>face_review.py:299</code></td><td class="n">1</td><td>shipped</td><td><code>SEAM_PX</code></td></tr>
+<tr><td><code>integrity_readout.py:82</code></td><td class="n">1</td><td>shipped</td><td><code>SEAM_PX</code></td></tr>
+<tr><td><code>face_work.py:226</code></td><td class="n">2</td><td>shipped</td><td><strong>Joe's call:</strong> <code>SEAM_PX * 2</code> (a second off-ladder derivation) or 2 → 1 (visible). Rides in D4.</td></tr>
+<tr class="dead"><td><code>chat_panel.py:425</code></td><td class="n">2</td><td>unshipped legacy entry</td><td><strong>out of scope</strong> — §10 refuses to touch this module</td></tr>
+</tbody></table></div>
+
+<p>Three more (<code>ui/panel.py:157</code>, <code>ui/tabs/activity.py:55</code>, <code>ui/tabs/search.py:63</code>) live in <code>python/synapse/ui/</code>, a different package outside the design system. Out of scope, named so the next grep does not read them as a miss.</p>
+
+<p>All five panel sites already carry an explicit <code># rhythm-exempt:</code> comment with a stated reason — <code>integrity_readout.py:82</code> says verbatim <em>"1px hairline stack between claim rows; no role expresses 1px."</em> They are recorded decisions, five of them, made independently. That is precisely F16's finding: <strong>four band-end vocabularies, each locally justified.</strong> A comment is a record, not an authority. <code>SEAM_PX</code> gives them one name.</p>
+
+<p><strong>Wave 2's F16 test is therefore scoped to shipped panel modules</strong>, so it cannot collide with §10's <code>chat_panel.py</code> exclusion.</p>
+
+<h3>The three width authorities → one number with two owners</h3>
+
+<div class="tw"><table>
+<thead><tr><th class="n">#</th><th>authority</th><th>says</th><th>status</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td><code>tokens.PANEL_MIN_WIDTH = 280</code> (<code>tokens.py:634</code>), enforced <code>synapse_panel.py:501</code></td><td>the panel docks at 280</td><td><strong>fiction</strong> — it is <code>340 − 2×30</code> interior arithmetic wearing a docking promise</td></tr>
+<tr><td class="n">2</td><td>measured composed minimums, <code>probe_*.json</code></td><td>393 / 361 / 345</td><td><strong>stale twice</strong> — two of three densities unreachable (J4); the third measures <strong>338</strong><span class="was">361</span></td></tr>
+<tr><td class="n">3</td><td><code>.synapse/contracts/docking-minimums.yaml:45</code> prose, regex-recovered at <code>tests/test_panel_rhythm_docking.py:85-86</code></td><td>≤400 airy, ≤380 standard, ≤380 tight</td><td>a feature-description string parsed by <code>re.findall</code></td></tr>
+<tr><td class="n">4</td><td><code>docs/PANEL_RHYTHM_SPEC.md:78-80</code></td><td>restates 280 as "the width CONTRACT"</td><td>a fourth copy nobody counted</td></tr>
+</tbody></table></div>
+
+<p><strong>The authority is tokens. One number, not a per-density table.</strong> This rules <strong>against SYSTEM's <code>PANEL_MIN_WIDTH_BY_DENSITY = {airy, standard, tight}</code></strong>: writing a three-row table would codify an axis the panel cannot reach.</p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · implementability</span>
+  <p><strong>"The authority is tokens" must not become "the bound is the measurement."</strong> The draft's Wave 3 would have made <code>PANEL_MIN_WIDTH</code> <em>be</em> the measured composed floor and then asserted <code>measured &lt;= PANEL_MIN_WIDTH</code> — <code>x &lt;= x</code>, a guard that can never go red. Worse, <code>tests/test_panel_rhythm_docking.py:94</code> is literally named <code>test_docking_bounds_read_the_contract_not_panel_height_token</code> and asserts <code>tokens.PANEL_MIN_WIDTH &lt;= width</code> at <code>:102</code>; supplying <code>width</code> from that same token inverts a guard into its own tautology while leaving its name standing.</p>
+  <p><strong>So: two symbols, two owners.</strong> <code>PANEL_MIN_WIDTH</code> stays what the panel <em>promises the host</em> and enforces at <code>synapse_panel.py:501</code>. A separate <code>DOCK_BOUND_PX</code> carries what the design <em>owes</em>, and the docking test asserts measured ≤ <code>DOCK_BOUND_PX</code>. When a change pushes the floor past the bound, the test goes red and stays red until the design gives the pixels back. One number cannot do both jobs; that is how 280 became a fiction in the first place.</p>
+</div>
+
+<p>The YAML feature line loses its width clause; the docking test reads <code>DOCK_BOUND_PX</code>; the spec doc points at the tokens instead of restating them. <strong>The YAML rewrite is a governance act, not a regex edit</strong> — see §5 item 7.</p>
+
+  </div>
+</section>
+
+<section id="s3">
+  <div class="sec-head">
+    <span class="sec-num">03</span>
+    <div>
+      <h2>The 340 question</h2>
+      <p class="dek">The review framed it as <em>three sans verbs on a rail, or no rail</em>. B already shipped. The live question has the same shape one row up — and the crucible moved the numbers that answer it.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<h3>The arithmetic, shown</h3>
+
+<p><strong>Constants.</strong> <code>PANEL_PREF_WIDTH = 340</code> (<code>tokens.py:635</code>) · <code>GUTTER = 30</code> (<code>tokens.py:637</code>) · interior <code>= 340 − 2×30 = 280</code> · <code>PANEL_MIN_WIDTH = 280</code> (<code>tokens.py:634</code>). The floor and the interior are the same number because one was derived from the other, not measured.</p>
+
+<h4>2026-09-05 — the verb rail was the binding constraint in all three densities</h4>
+
+<div class="tw"><table>
+<thead><tr><th>density</th><th class="n">natural rail</th><th class="n">+ 2×GUTTER</th><th class="n">= composed min</th><th class="n">over the 280 interior</th></tr></thead>
+<tbody>
+<tr><td>airy</td><td class="n">333</td><td class="n">+60</td><td class="n">393</td><td class="n"><strong>+53</strong></td></tr>
+<tr><td>standard</td><td class="n">301</td><td class="n">+60</td><td class="n">361</td><td class="n"><strong>+21</strong></td></tr>
+<tr><td>tight</td><td class="n">285</td><td class="n">+60</td><td class="n">345</td><td class="n"><strong>+5</strong></td></tr>
+</tbody></table></div>
+
+<p>Producer: <code>use_*.json</code> <code>verb_rail.natural</code> + <code>min_hint</code> (<code>REVIEW.md:54</code>, <code>:96</code>). The +60 closes exactly in all three rows — the rail <em>was</em> the number.</p>
+
+<h4>HEAD — the rail is gone</h4>
+
+<p>Zero hits for <code>verb_rail|_build_verb_rail|class Rail|VerbRail</code> across <code>python/synapse/panel/</code>. <code>synapse_panel.py:1420-1423</code> states it: <em>"The verb rail and the hairline that divided it from the composer left with it (F1 / F16): EXPLAIN / FIX / OPTIMIZE are slash-palette rows and BUILD HDA is an overflow action."</em> EXPLAIN/FIX/OPTIMIZE are live as <code>_QUICK_ACTIONS</code> (<code>synapse_panel.py:177-181</code>), read into palette rows at <code>tool_palette.py:191-192</code>. No verb was dropped in the removal.</p>
+
+<h4>HEAD — the new arithmetic</h4>
+
+<p>Producers: <code>width_probe.py</code> → <code>width.json</code>; <code>stack_probe.py</code> → <code>stack.json</code>; <code>ident_probe.py</code> → <code>ident_clean.json</code> / <code>ident_live.json</code>.</p>
+
+<div class="tw"><table>
+<thead><tr><th>region</th><th class="n">min width</th><th>what sets it</th></tr></thead>
+<tbody>
+<tr><td><code>_build_context_ribbon</code></td><td class="n">166</td><td>not binding</td></tr>
+<tr><td><code>_build_rail</code></td><td class="n"><strong>305</strong> clean / <strong>349</strong> live</td><td>the widest of its two rows</td></tr>
+<tr><td><code>_build_faces</code></td><td class="n"><strong>338</strong></td><td><code>FaceReview.minimumSizeHint = 338</code> — a page in the work stack</td></tr>
+<tr><td><strong>panel</strong></td><td class="n"><strong>338</strong> clean / <strong>349</strong> live</td><td><code>max()</code> of the three</td></tr>
+</tbody></table></div>
+
+<p>Two things set 340's floor now, and neither is the conversation.</p>
+
+<h4>(a) A face the artist is not looking at</h4>
+
+<p><code>stack.json</code>: the faces stack holds three pages — chat <code>minhint 312</code>, work <code>minhint 338</code>, token <code>minhint 36</code>. Inside the work stack: <code>FaceWork 190</code>, <strong><code>FaceReview 338</code></strong>. A <code>QStackedWidget</code> takes the max across <em>all</em> pages regardless of which is current. <strong>FaceReview taxes the chat surface 26px of dock width, permanently, while never being on screen.</strong> The transcript itself needs 36.</p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · implementability</span>
+  <p><strong>There is no size-policy line to flip, and the cheap fix does not work.</strong> <code>grep 'minimumSizeHint|setMinimumWidth|SizePolicy|setFixedWidth|setMinimumSize'</code> over <code>python/synapse/panel/face_review.py</code> returns <strong>nothing</strong> — the 338 is content-driven by its own child layout. Three consequences the draft's "~2 lines" priced at zero:</p>
+  <ul>
+    <li><code>QSizePolicy.Ignored</code> would zero its contribution to the stack's minimum <em>and clip FaceReview's own content when FaceReview is current</em> — F1's exact failure class, reborn on the review surface. The page is not "never current"; it is the surface a review shows on.</li>
+    <li><code>Ignored</code> does not change <code>minimumSizeHint()</code>, and <code>face_review.FaceReview</code> sits in <code>_ALWAYS_MEASURED</code> (<code>tests/test_panel_rhythm_docking.py:51</code>), where <code>_measure()</code> at <code>:236-248</code> reads <code>root.minimumSizeHint().expandedTo(root.minimumSize())</code> on the <em>standalone</em> widget. Against a 312 bound that case is red with no remedy anywhere in this scaffold.</li>
+    <li>So the real work is <strong>fixing FaceReview's content width</strong> — unbounded until someone reads its child layout. It is a sized piece of design work, not a policy flag.</li>
+  </ul>
+  <p><strong>F3 therefore is not recorded closed</strong> while <code>test_alternate_census_widget_regions[*-face_review.FaceReview]</code> is red. §6 now says so; §9 Wave 3 names the case with an owner.</p>
+</div>
+
+<h4>(b) A data string with no width contract</h4>
+
+<p>The identity row, measured item by item (<code>ident_probe.py</code>):</p>
+
+<div class="tw"><table>
+<thead><tr><th></th><th class="n">MarkDot</th><th class="n">gap</th><th class="n">wordmark</th><th class="n"><code>DsAuthor</code></th><th class="n">Σ children</th><th class="n">row hint</th><th class="n">remainder</th><th class="n">rail min</th></tr></thead>
+<tbody>
+<tr><td>clean (<code>claude/sonnet-4.6</code>)</td><td class="n">20</td><td class="n">5</td><td class="n">75</td><td class="n"><strong>131</strong></td><td class="n">231</td><td class="n">239</td><td class="n">8</td><td class="n">305</td></tr>
+<tr><td>this host (<code>ollama/deepseek-v4-flash</code>)</td><td class="n">20</td><td class="n">5</td><td class="n">75</td><td class="n"><strong>181</strong></td><td class="n">281</td><td class="n"><strong>289</strong></td><td class="n">8</td><td class="n"><strong>349</strong></td></tr>
+</tbody></table></div>
+
+<p><code>min == hint</code> on all three children — <strong>nothing in that row elides.</strong> The delta is 1:1 with the model-id string: +50px of author, +50px of row, and 289 + 60 = 349 exactly. Past <code>DsAuthor &gt; 170px</code> the model name — not the design — sets the panel's minimum width, unbounded.</p>
+
+<p><code>DsAuthor</code> arrived after the review, in <code>10e4147a</code> (<em>"model picker (author_token) visible in every profile — it is a control, not an economic readout"</em>). It took the never-elide rule the wordmark earned (<code>synapse_panel.py:964</code>, P2 at <code>REVIEW.md:293</code>) and applied it to arbitrary vendor text.</p>
+
+<h3>The cap — derived, not written</h3>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · token-integrity</span>
+  <p>The draft wrote <em>"a bounded author ≤ 170 = ≤ 270, inside 280 at any string length"</em> and concluded <em>"rail floor returns to 305."</em> Both numbers were literals, both were off the ladder, and the arithmetic did not close: <code>280 − 20 − 5 − 75 = 180</code>, not 170, and the stated 305 outcome needs a far tighter cap than either. The row also carries a <strong>measured 8px layout remainder</strong> (Σ children 231 vs row hint 239; 281 vs 289 — constant across both runs, so it is layout spacing, not stretch). The draft's sum ignored it.</p>
+</div>
+
+<p><strong>The cap is an expression on tokens, computed at build time</strong>, so it tracks D2's floor when the floor moves:</p>
+
+<pre><code>author_max = target_row_content
+           - mark_w            # MarkDot fixed size, components.py:188  = 20
+           - WORDMARK_GAP      # tokens.py:497                          =  5
+           - wordmark_advance  # measured in its own font               = 75
+           - row_remainder     # measured layout spacing                =  8</code></pre>
+
+<p>Which target you pick <em>is</em> the decision, because it sets the panel's floor:</p>
+
+<div class="tw"><table>
+<thead><tr><th>option</th><th>target row content</th><th class="n">author cap</th><th class="n">rail floor</th><th class="n">panel floor</th><th>what truncates</th></tr></thead>
+<tbody>
+<tr><td><strong>A · tuck under the state row</strong></td><td>245 = the state row's content (305 − 2×GUTTER)</td><td class="n">137</td><td class="n">305</td><td class="n"><strong>312</strong> (the chat page)</td><td><code>claude/sonnet-4.6</code> fits at 131 with 6px to spare. Almost everything longer truncates.</td></tr>
+<tr><td><strong>B · fill the interior</strong></td><td>280 = <code>PANEL_MIN_WIDTH</code></td><td class="n">172</td><td class="n">340</td><td class="n"><strong>340</strong> = <code>PANEL_PREF_WIDTH</code></td><td>Only ids past ~172px. But the panel then docks <em>only</em> at its preferred width.</td></tr>
+</tbody></table></div>
+
+<p>Option B makes the rail exactly the preferred width and the floor stops being a floor. Option A keeps a real docking range and truncates aggressively. That is the trade, stated in pixels, and it is D3.</p>
+
+<h3>How the eliding actually works</h3>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · implementability</span>
+  <p><code>self._author_lbl</code> is a <strong><code>QPushButton</code></strong> (<code>synapse_panel.py:972-973</code>, styled <code>QPushButton#DsAuthor</code> at <code>qss.py:150</code>), and it is re-floored on every provider/model switch at <code>synapse_panel.py:1229-1235</code> (<code>setText(...)</code> then <code>setMinimumWidth(sizeHint().width())</code>). <strong>QPushButton does not elide</strong> — QCommonStyle draws the label and clips it, with no ellipsis. So "~4 lines" buys a different behaviour than the cost paragraph describes:</p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>build</th><th class="n">size</th><th>behaviour</th><th>what Joe is actually accepting</th></tr></thead>
+<tbody>
+<tr><td><strong>Static cap</strong> — <code>setMaximumWidth(cap)</code> + <code>QFontMetrics.elidedText</code> at <code>setText</code></td><td class="n">~4 lines</td><td>Truncates at <em>every</em> width. A panel floated at 600px still reads <code>ollama/deepseek-v4-fl…</code></td><td>The model id is never fully visible again, at any size.</td></tr>
+<tr><td><strong>Width-responsive</strong> — an <code>eventFilter</code> on the button re-eliding on resize</td><td class="n">~15 lines + a test</td><td>Full string above the floor, elided below it. This is the "below ~340" behaviour the draft described.</td><td>More code, and <code>text()</code> stops returning the model id either way.</td></tr>
+</tbody></table></div>
+
+<p>Either build must check the three call sites that read <code>text()</code> — <code>synapse_panel.py:1232</code>, <code>:2226</code>, <code>:3317</code> — plus <code>compositor.py:62</code>'s <code>author_token → _author_lbl</code> mapping. Neither needs a custom layout class and neither splits the 3,894-line file.</p>
+
+<h3>A vs B — the call</h3>
+
+<p><strong>B already shipped.</strong> So the live question has the same shape one row up: the rail no longer holds three verbs, it holds a model id that overflows 280 the way the verbs did.</p>
+
+<p class="rec" style="font-family:Archivo,sans-serif;font-weight:600;font-size:17px;max-width:70ch;line-height:1.4;margin:16px 0"><strong>Recommendation: no rail — confirm B, and apply B's own logic to the identity row. <code>DsAuthor</code> elides with a derived cap; never-elide stays the wordmark's alone. Option A's cap (137), width-responsive build.</strong></p>
+
+<p><strong>What it gives up, honestly.</strong> At a 137px cap the artist loses the full model id at a glance below ~312 — <code>ollama/deepseek-v4-fl…</code> plus a hover or the picker. For someone switching models several times a session that is a real tax, and it is the exact affordance <code>10e4147a</code> was written to restore. It also gives up the idea that the rail can carry an arbitrary-length data string at all: after this, <strong>anything on the rail needs a declared maximum before it ships</strong> — and §4.1 shows that rule already being violated one control over.</p>
+
+<p><strong>Why not A.</strong> A is not available. There is no rail to fix tracking on, and reinstating one — IDEA's Direction C — means rebuilding removed chrome <em>plus</em> a per-turn verb-ranking mechanism that exists nowhere in evidence, to replace a four-verb surface (three palette rows + one overflow action) that already works. That is new scope against a working baseline, not a completion of F1.</p>
+
+  </div>
+</section>
+
+<section id="s4">
+  <div class="sec-head">
+    <span class="sec-num">04</span>
+    <div>
+      <h2>The artist-utility floor</h2>
+      <p class="dek">What must be true before anything is pretty. The draft declared three of four closed. The artist-truth lens re-measured under load and <strong>two of those three do not hold</strong> — both were measured in the state where the failure cannot occur.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<div class="note crit">
+  <span class="lab">The method failure, named once</span>
+  <p>§4's draft method was: read the construction site, measure once at rest, declare the floor held. <strong>The floor items are all about what happens under load.</strong> §4.4 was the exception — it questioned the instrument rather than the reading — and §4.4 is the section that found something. Each subsection below now states which state it was measured in.</p>
+</div>
+
+<h3>4.1 · The state sentence — <span class="chip crit">re-opened</span></h3>
+
+<p><strong>One widget.</strong> <code>self._header_status</code>, built <code>synapse_panel.py:996-1004</code>. <strong>One writer</strong>, <code>_set_header</code> (<code>:3599-3607</code>), which sets the dot and the sentence together so they cannot disagree.</p>
+
+<p><strong>Exact position.</strong> Measured <code>[x=30, y=64, w=83, h=38]</code> at 340×760 (<code>floor_probe.py</code>, identical in all three runs). x=30 is <code>GUTTER</code> — first item in the rail's second row, left-aligned, directly under the identity row. 11px.</p>
+
+<p><strong>The floor as built.</strong> <code>setMinimumWidth(max(fm.horizontalAdvance(p) for p in _state_phrases()))</code> — the widest phrase it can ever show, in its own font, no px literal. Measured <code>min == hint == w == 83</code>. <code>QSizePolicy.Preferred</code>, not <code>Ignored</code>. It cannot render at width 0.</p>
+
+<p><strong>Exact words.</strong> Eight, all of them: six from <code>tokens.STATUS</code> (<code>tokens.py:613-620</code>) plus two turn phrases (<code>synapse_panel.py:158-159</code>).</p>
+
+<div class="tw"><table>
+<thead><tr><th>condition</th><th>reads</th></tr></thead>
+<tbody>
+<tr><td><strong>bridge down</strong></td><td><strong>Not connected</strong></td></tr>
+<tr><td><strong>working</strong></td><td><strong>Working on it</strong></td></tr>
+<tr><td><strong>mid-operation, finishing</strong></td><td><strong>Result ready</strong> <span class="small">(<code>_DONE_PHRASE</code>)</span></td></tr>
+<tr><td><strong>mid-operation, aborting</strong></td><td><strong>Stopping…</strong> <span class="small">(<code>_STOPPING_PHRASE</code>)</span></td></tr>
+<tr><td>bridge up, nothing running</td><td>Ready</td></tr>
+<tr><td>no bridge attempt yet</td><td>Standing by</td></tr>
+<tr><td>stale API gate</td><td>Worth a look <span class="small">(the reason rides the tooltip, never the sentence)</span></td></tr>
+<tr><td>failure</td><td>We hit a snag</td></tr>
+</tbody></table></div>
+
+<p><strong>Boot resolves to one truth.</strong> Measured <code>"Not connected"</code> — disconnected outranks idle. <code>_apply_context</code> (<code>:3644-3700</code>) resolves connection state through one branch before touching <code>_render_state</code>. The five <code>QSizePolicy.Ignored</code> labels that painted 304px of hints at width 0 are constructed-but-hidden owners now (<code>:1105-1107</code>), and <code>DsRailMeter</code> has zero references. <strong>That half of F2 is genuinely closed.</strong></p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · artist-truth — F2 re-opens</span>
+  <p><strong><code>_state_phrases()</code> is not the sentence's vocabulary. It is the static half of it.</strong> <code>_run_direct_tool</code> (<code>synapse_panel.py:2734-2737</code>) writes the sentence directly and bypasses the list entirely:</p>
+  <pre><code>self._set_header("working", "Still %s…" % busy_text)   # :2735
+self._set_header("working", "%s…" % busy_text)          # :2737</code></pre>
+  <p>Its two live producers pass <code>"Cancelling the cook on %s" % node</code> (<code>:2794-2796</code>) — a full Houdini path — and <code>"Emergency halt"</code> (<code>:2799</code>). Neither phrase is in <code>_state_phrases()</code>. Neither is in the floor.</p>
+  <p><code>_header_status</code> is <code>c.label(...)</code> = a bare <code>QLabel</code> (<code>components.py:318-324</code>): no <code>setWordWrap</code>, no elide mode. <strong>A QLabel past its width clips — it does not even give the artist an ellipsis.</strong> At the measured 83px, roughly 13 characters survive: <em>"Cancelling th"</em>. And the <code>:2735</code> double-press branch produces the longest string in the system on the exact impatient re-click.</p>
+  <p>So the floor protects <em>Ready</em>, <em>Standing by</em>, <em>Working on it</em> — the phrases that say nothing and need no room — and fails on cancelling a cook and an emergency halt, the two moments an artist most needs to read the panel. That is F2's original complaint surviving underneath a proof that it closed.</p>
+</div>
+
+<p><strong>This is conformance, not a new decision</strong> — the rule already exists in the file. <code>_on_stop</code> at <code>synapse_panel.py:3482-3487</code> states it verbatim:</p>
+
+<pre><code># bc-wave BC-2: the sentence says 'Stopping…' (inside its floor); the
+# in-flight tool it waits on is named in the sentence's tooltip and
+# on the Work face's plan, never as rail text that would elide.</code></pre>
+
+<p><code>_run_direct_tool</code> violates a rule its own module wrote three hundred lines away. <strong>The fix is to route it through the same pattern:</strong> the sentence stays inside its floor (<em>Working on it</em> / <em>Still working</em>), and the node path and the halt reason go to the tooltip and the Work face's plan — where <code>_on_stop</code> already puts them.</p>
+
+<p><strong>And the guard is a test that asserts every string reaching <code>_header_status.setText</code> fits the floor</strong>, not a test that the floor covers a hand-kept list. A hand-kept list is what failed. Re-measure with a direct tool in flight before anything claims F2 closed.</p>
+
+<h3>4.2 · The consent card at REVIEW — <span class="chip crit">verb half re-opened</span></h3>
+
+<p><code>gate_widget.py:255-258</code>:</p>
+
+<pre><code>if self._level == "review":
+    self._revert_btn = _verb("← REVERT", self._on_revert_clicked)</code></pre>
+
+<p>Measured with a live, <strong>undecided</strong> REVIEW proposal: <strong>exactly one button on the card, <code>← REVERT</code>, rendered on the CHAT surface at 65×36</strong> (<code>floor_probe.py</code> → <code>revert_controls</code>). APPROVE/CRITICAL get REJECT (tone <code>hot</code>) + APPROVE (tone <code>accent</code>) at <code>:260-264</code>. The decision reads as a tag, not a hue — <code>mark_decided</code>'s docstring at <code>gate_widget.py:347-351</code> says verbatim <em>"A tag, never a hue (F4)."</em></p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · artist-truth — measured in the wrong state</span>
+  <p><strong>The card does not stay undecided, and when it stops being undecided the verb is removed by design.</strong> <code>GateCard.mark_decided</code> (<code>gate_widget.py:347-358</code>) is unconditional across levels:</p>
+  <pre><code>for verb in self._verbs():
+    verb.setVisible(False)
+...
+self.setEnabled(False)</code></pre>
+  <p><code>_verbs()</code> at <code>:277-279</code> returns all three buttons including <code>_revert_btn</code>. Three paths reach it: <code>_on_approve</code> (<code>:597</code>), <code>_on_reject</code> (<code>:627</code>), and <code>_on_remote_decision</code> (<code>:636-640</code>), whose docstring reads <em>"Handle decision made elsewhere (e.g. another UI or auto-system)."</em></p>
+  <p><strong>REVIEW is the auto-system level.</strong> CLAUDE.md §1.2: <em>"REVIEW … Agent proposes, artist confirms (logs proposal, continues unless rejected)."</em> A REVIEW proposal resolves without the artist pressing anything. When that resolution lands, <code>mark_decided</code> hides <code>_revert_btn</code> and disables the card — at precisely the moment the mutation has happened and the undo becomes useful.</p>
+  <p><strong>The window in which the card's only verb exists is the window before the thing happens. The window in which the artist wants it is after.</strong> Those windows do not overlap.</p>
+  <p><em>One inferred link, stated as inferred:</em> that the auto-continue path emits into <code>_on_remote_decision</code> was not verified within budget. The unconditional hide, and the fact that the draft measured only the undecided state, are both read directly from the code.</p>
+</div>
+
+<p><strong>The fix has a shape:</strong> <code>mark_decided</code> needs a level branch. At APPROVE/CRITICAL the decision landing <em>is</em> the end of the artist's agency and the verbs should go. At REVIEW the decision landing is the <em>start</em> of it, and the card should keep a live undo. That is a small, contained change in one method.</p>
+
+<p><strong>The probe that proves it</strong> is F11's own unrun predicate doing double duty: drive a REVIEW proposal to auto-continue, then read <code>revert_visible_on_chat</code>.</p>
+
+<p><strong>The colour half is separately open.</strong> Nobody has re-measured chroma on the rebuilt card. The review measured the old card at <strong>3.15% chromatic pixels across 12 hue buckets</strong> against chat's <strong>0.84% / 3</strong> (<code>REVIEW.md:115</code>) — a Pillow probe against a regenerated PNG (<code>harness/notes/panel_shot.py</code>), not a design decision. Until it runs, "the consent card speaks the chat's colour grammar" is a code claim, not a measured one.</p>
+
+<h3>4.3 · Undo on the CHAT surface — <span class="chip maj">code right, predicate unrun, rule questioned</span></h3>
+
+<p><code>_build_turn_receipt</code> (<code>synapse_panel.py:1455-1471</code>): a <code>stack</code> row carrying an <code>{n} CHANGES</code> tag plus <code>← REVERT</code> wired to <code>_on_revert</code>. Hidden at construction (<code>:1470</code>), shown by <code>_on_done</code> when the turn's evidence holds a successful mutator, hidden at the top of the next <code>_send</code>. <code>_on_revert</code> (<code>:2278-2290</code>) guards the in-flight case and otherwise issues a real <code>houdini_undo</code>.</p>
+
+<p>Measured: a REVERT verb visible on the direct face at <strong>65×36</strong>. <strong>Not measured:</strong> the quiet-INFORM-turn path — no probe in this review or the last drives a turn before reading. That is F11's own predicate (<code>REVIEW.md:250-253</code>) and it is still unrun.</p>
+
+<div class="note maj">
+  <span class="lab">Extended at source · artist-truth</span>
+  <p><strong>The design rule itself deserves the question, independent of whether the probe runs.</strong> "One turn's receipt, cleared by the next send" is a correctness rule about the in-flight case and an <em>availability</em> failure at 2am. The real sequence is: ask → it builds something wrong → ask it to fix that → realise mid-second-turn that you wanted the first state back. The REVERT for turn N was hidden the moment turn N+1 started. The undo does not become two clicks away; it becomes zero controls and a memory of <code>houdini_undo</code>.</p>
+  <p>Combined with 4.2 — where the card's REVERT vanishes on decision — <strong>there is a plausible state with a mutation in the scene and no undo control on any surface.</strong></p>
+  <p><strong>F11's predicate is therefore extended:</strong> past <em>"is REVERT visible after a quiet INFORM turn"</em> to <em>"after turn N+1 is sent, is turn N's change still revertable from the CHAT surface."</em> If the answer is no, the design question — does the receipt clear on send, or persist per-turn in the transcript — is Joe's. It cannot be decided before the probe runs; it is filed in §8's blocked list, not given a D-number.</p>
+</div>
+
+<h3>4.4 · Every interactive target at or above 26px — <span class="chip ok">holds, one real violation</span></h3>
+
+<p><strong>Measured: zero sub-26px <code>QAbstractButton</code>s</strong> on direct, work, review, token and hda faces, and again with three consent cards live (<code>targets_probe.py</code> → <code>targets.json</code>, every list empty).</p>
+
+<p>The review's four (<code>REVIEW.md:356</code>) are all gone, none by resizing:</p>
+
+<div class="tw"><table>
+<thead><tr><th>was</th><th>→</th></tr></thead>
+<tbody>
+<tr><td><code>?</code> 9×36</td><td>hidden off-rail <code>synapse_panel.py:1105-1107</code>, reached as the overflow's Help</td></tr>
+<tr><td><code>Aa</code> 17×36</td><td>retired as a duplicate, <code>synapse_panel.py:2847</code>; "Larger text / Default text" in the overflow</td></tr>
+<tr><td><code>⋯</code> 24×36</td><td><code>setFixedWidth(max(SPACE_32, scaled(SPACE_32)))</code> = <strong>32 floored</strong>, <code>synapse_panel.py:1110</code></td></tr>
+<tr><td><code>FIX</code> 25×36</td><td>left with the verb rail; a slash-palette row</td></tr>
+</tbody></table></div>
+
+<p><strong>So the premise "the current three" is stale — but the answer is not zero.</strong> There is one violation, and it is the one every probe is structurally blind to:</p>
+
+<div class="note crit">
+  <span class="lab">The halt</span>
+  <p><strong><code>MarkDot</code> — 20×20, and it is the halt.</strong></p>
+  <p><code>setFixedSize(diameter + 4, diameter + 4)</code> at <code>components.py:188</code>, constructed <code>c.MarkDot("disconnected", diameter=16)</code> at <code>synapse_panel.py:928</code> → 20×20; measured <code>w=20, min_w=20</code> (<code>ident_probe.py</code>). <code>mousePressEvent</code> at <code>components.py:246</code> fires <code>self._halt()</code> — the same <code>_on_stop</code> the rail button fires (<code>components.py:159-165</code>: <em>"one control with two surfaces"</em>). It is state-gated to <code>working</code>, so the affordance is honest. <strong>It is a <code>QWidget</code>, not a <code>QAbstractButton</code></strong> — so the 2026-09-05 <code>small_targets</code> walk (<code>use_probe.py:55</code>) and mine both step right over it.</p>
+</div>
+
+<p>The most consequential single click in the panel is 6px under the floor, on the one control that has no audit. The Stop button (<code>_stop_btn</code>, <code>setMinimumWidth(SPACE_48)</code> = 48, <code>synapse_panel.py:1017</code>) is the redundant surface, so nothing is <em>functionally</em> lost — but redundancy is an argument for why the violation is survivable, not a decision about whether the mark grows.</p>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · artist-truth — the missing decision</span>
+  <p>The draft found this, prescribed a permanently-red guard for it, and then <strong>put no decision in front of the only person allowed to close it.</strong> A red test that the design has not decided on is the ratchet pointing the wrong way. <strong>It is D6 now</strong>, with three honest options and the interaction with D3's cap priced.</p>
+</div>
+
+<p><strong>The floor is not a fix job. It is a guard job.</strong> Three of four hold today by construction and nothing pins them; the fourth has never been looked at. §9 Wave 1's <code>test_min_target_26</code> must walk <em>every visible widget that accepts a press</em> — and the draft's selector for that was wrong. See Wave 1.</p>
+
+  </div>
+</section>
+
+<section id="s5">
+  <div class="sec-head">
+    <span class="sec-num">05</span>
+    <div>
+      <h2>What comes out</h2>
+      <p class="dek">Ordered by blast radius, smallest first. This is the section that earns the rest — so every count in it was re-grepped this session, and four of the ten were wrong.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<div class="tw"><table>
+<thead><tr><th class="n">#</th><th>removal</th><th>size</th><th>blast radius</th></tr></thead>
+<tbody>
+<tr>
+  <td class="n">1</td>
+  <td><code>ROLE_GAPS["row"]</code> + <code>_MARGINS["row"]</code> + its CSS block <code>qss.py:400-413</code></td>
+  <td>2 dict keys, ~14 lines CSS, 2 test edits</td>
+  <td><strong>Zero pixels.</strong> 0 Python set-sites, grep-verified this session. <span class="chip crit">corrected</span> <code>_MARGINS["row"]</code> at <code>rhythm.py:38-39</code> was missing from the draft's set and would have survived as a live orphan. <code>#DsRowGlyph</code> also has two <em>test</em> set-sites — <code>tests/test_panel_rhythm_docking.py:265</code>, <code>tests/test_panel_rhythm_owner.py:211</code> — plus <code>expected_margins["row"]</code> at <code>docking:212</code>.</td>
+</tr>
+<tr>
+  <td class="n">2</td>
+  <td><code>ROLE_GAPS["card"]</code></td>
+  <td>1 dict key, 2 lines</td>
+  <td><strong>2 set-sites</strong> (<code>gate_widget.py:421</code>, <code>synapse_panel.py:1435</code>) repoint to <code>"group"</code>. <strong>Zero pixels move</strong> — same rung today.</td>
+</tr>
+<tr>
+  <td class="n">3</td>
+  <td><code>rhythm._apply_type</code></td>
+  <td>17 lines, <code>rhythm.py:62-78</code>, + 8 construction sites, + 1 capitalization call each</td>
+  <td><span class="chip crit">corrected</span> <strong>Not "8 widgets and a one-time eyeball."</strong> The 4 <code>pair</code> sites take <code>tracked_font("SEND")</code> cleanly. The 4 <code>tag</code> sites have <strong>no existing token for 0.06</strong> and force one of three real choices (§2, D4) — one of which is a visible tracking change on every chip. Plus <code>tests/test_panel_rhythm_docking.py:216-219</code> pins the mechanism's output (108.0 / 106.0 + AllUppercase), a fourth pin the draft never named. <strong>Must land in the same ratified commit as TYPE's <code>TRACKING_EM</code> collapse.</strong></td>
+</tr>
+<tr>
+  <td class="n">4</td>
+  <td><code>ROLE_GAPS["parm_row"]</code></td>
+  <td>1 dict key; 0 or 2 new tokens</td>
+  <td><strong>4 set-sites</strong>, all <code>face_token.py</code> (<code>:449</code>, <code>:476</code>, <code>:488</code>, <code>:489</code>). <span class="chip crit">corrected</span> <code>qss.py:454-464</code> holds <strong>three</strong> dimensions, not one: label column <strong>128</strong> (<code>SPACE_32*4</code>), value column <strong>64</strong> (<code>SPACE_32*2</code>), row <code>min-height: SPACE_LG</code>. The draft's <code>PARM_LABEL_COL_W = SPACE_32</code> would have collapsed 128 → 32.</td>
+</tr>
+<tr>
+  <td class="n">5</td>
+  <td><code>RADIUS_ROUND = 999</code> (<code>tokens.py:547</code>)</td>
+  <td>1 token, <strong>7 references across 5 files</strong><span class="was">1 consumer</span></td>
+  <td><span class="chip crit">corrected</span> Code <code>qss.py:417</code> · declaration <code>tokens.py:542</code>, <code>:547</code> · test pin <code>tests/test_bp2_paneldesign_density.py:54</code> · docstring <code>gate_widget.py:149</code> · prose <code>docs/PANEL_RHYTHM_SPEC.md:61</code>, <code>:136</code>, <code>:201</code>. And <code>tokens.py:542-545</code> declares it a <strong>forward contract for unbuilt work</strong>: <em>"The three-band recall card is greenfield (a held spawn) and will consume these; pinned by tests/… so they are contract, not dead code."</em> That is a question about an unbuilt surface, not a cleanup — D5.</td>
+</tr>
+<tr>
+  <td class="n">6</td>
+  <td>the attach control's 52px fixed width + 36px icon</td>
+  <td><code>synapse_panel.py:2452-2455</code></td>
+  <td><strong>Composer row only.</strong> It is the <em>single</em> hard minimum in the entire faces region (<code>faces.json</code>: <code>min_w 52, hint 74, minimumSizeHint 74</code>) — it renders permanently squeezed by 22px. 36px icon against <code>ICON_GRID = 24</code> (<code>tokens.py:556</code>). Attach 52×54 = 2,808px² vs SEND 60×32 = 1,920px². <span class="chip crit">corrected</span> <code>c.Button</code> (<code>components.py:54-61</code>) is a bare <code>QPushButton</code> with no <code>setMinimumSize</code> and no <code>sizeHint</code> override — <code>setFixedWidth(52)</code> is its <em>only</em> width guarantee. Dropping it with a 24px icon can land the button at 24–25px and <strong>turn Wave 1's own 26px guard red.</strong> The replacement must state a number: <strong>a 24px glyph centred in a hit box ≥ 26 in both axes</strong>, with the area predicate kept on top of it.</td>
+</tr>
+<tr>
+  <td class="n">7</td>
+  <td>the per-density width triple</td>
+  <td><span class="chip crit">corrected</span> <strong>a harness rewrite touching ~60 parametrized cases</strong><span class="was">1 YAML clause, 1 regex</span></td>
+  <td><code>_bounds()</code> (<code>docking:79-92</code>) asserts <code>set(widths) == set(DENSITIES)</code> and feeds <code>_measure()</code> (<code>:236-248</code>), which every region test uses: <code>test_real_layout_spacing_role_density_and_removal</code> (9×3), <code>test_component_pattern_at_docking_width</code> (5×3), <code>test_alternate_census_widget_regions</code> (14×3), <code>test_recall_region…</code>, <code>test_every_composed_region_and_face_at_docking_bound</code>. <strong>And it is a governance act:</strong> <code>docking-minimums.yaml:35-44</code> carries <strong>CTO RULING R3-01</strong> (2026-09-05, under Joe's delegation, <code>harness/cto/runs/2026-09-05/RULING_R3-01_docking_airy.md</code>), which sets airy=400 as interim and names the queued remedy verbatim as <em>"a verb rail that collapses to icons below ~360px"</em> — a rail that no longer exists. The file encodes a retired fix under a live ruling. Superseding it needs its own artifact, not a regex edit inside a rhythm commit.</td>
+</tr>
+<tr>
+  <td class="n">8</td>
+  <td><code>PANEL_MIN_WIDTH = 280</code> as a docking promise</td>
+  <td>1 token's meaning, + 1 new token</td>
+  <td><code>synapse_panel.py:501</code>, the YAML, the docking test, <code>docs/PANEL_RHYTHM_SPEC.md:78-80</code>. Either 280 becomes true or it is deleted — the review's own words (<code>REVIEW.md:103</code>). <span class="chip crit">corrected</span> The replacement is <strong>two</strong> symbols: <code>PANEL_MIN_WIDTH</code> (what the panel promises the host) and <code>DOCK_BOUND_PX</code> (what the design owes, asserted against). One symbol doing both jobs is the tautology in §2.</td>
+</tr>
+<tr>
+  <td class="n">9</td>
+  <td><code>FaceReview</code>'s claim on the dock floor</td>
+  <td><span class="chip crit">corrected</span> <strong>unbounded content work, not a size policy</strong><span class="was">1 size policy, ~2 lines</span></td>
+  <td>There is no sizing call in <code>face_review.py</code> at all — the 338 is content-driven. <code>Ignored</code> clips the page when it <em>is</em> current and does not move <code>minimumSizeHint()</code>, which is what <code>_measure()</code> reads for <code>_ALWAYS_MEASURED</code> (<code>docking:51</code>). Real target if the content is fixed: <strong>the panel's minimum width, 338 → 312.</strong> Until it is, <code>test_alternate_census_widget_regions[*-face_review.FaceReview]</code> is a named red with an owner, and F3 is not closed.</td>
+</tr>
+<tr>
+  <td class="n">10</td>
+  <td><code>DsAuthor</code>'s never-elide floor</td>
+  <td><span class="chip crit">corrected</span> ~4 lines static, ~15 + a test responsive</td>
+  <td><strong>The rail's width contract.</strong> Removes the only unbounded data string on a fixed-width surface. Rail floor 349 → <strong>305 (cap 137)</strong> or <strong>340 (cap 172)</strong> — the cap is D3, and it sets D2's number. <code>QPushButton</code> does not elide, so the behaviour is a build choice (§3), not a flag.</td>
+</tr>
+</tbody></table></div>
+
+<p><strong>Token arithmetic, corrected.</strong> The draft claimed "nothing on this list adds a token" and that two consume existing zero-consumer tokens. Neither is true as written. This list adds, at most: <code>SEAM_PX</code>, <code>DOCK_BOUND_PX</code>, <code>PARM_LABEL_COL_W</code>, <code>PARM_VALUE_COL_W</code>, and — depending on D4 — <code>TRACKING_EM["TAG"]</code>. It consumes one existing zero-consumer token, <code>RADIUS_PILL = 14</code> (<code>tokens.py:538</code>). <strong>Every one of those must state its value, its grid position or its explicit off-ladder reason, and its full grep receipt before D4 goes to Joe</strong> — that is Wave 2's admission rule now.</p>
+
+  </div>
+</section>
+
+<section id="s6">
+  <div class="sec-head">
+    <span class="sec-num">06</span>
+    <div>
+      <h2>Findings closed</h2>
+      <p class="dek">Three rows moved backwards after the crucible. A finding recorded closed on a measurement taken in the wrong state is worse than one left open, because the next pass stops looking.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<div class="tw"><table>
+<thead><tr><th class="n">F</th><th>state</th><th>how this scaffold closes it</th><th>gate</th><th>evidence that would prove it</th></tr></thead>
+<tbody>
+<tr><td class="n"><strong>F1</strong></td><td><span class="chip ok">closed</span></td><td>verb rail clipped — already closed by removal (Direction B shipped, <code>synapse_panel.py:1420-1423</code>). <strong>Succeeded</strong> by the identity row; §3 settles the successor, not the original.</td><td>joe</td><td><code>REVIEW.md:63</code> passes vacuously (<code>verbs</code> empty). New: rail <code>minimumSizeHint ≤ DOCK_BOUND_PX</code> with any model id.</td></tr>
+
+<tr><td class="n"><strong>F2</strong></td><td><span class="chip crit">re-opened</span></td><td>panel cannot say its state — the <em>static</em> half is genuinely closed (five Ignored labels gone, one writer, boot resolves to one truth). The <em>dynamic</em> half is open: <code>_run_direct_tool</code> (<code>:2734-2737</code>) writes phrases outside <code>_state_phrases()</code>, and a bare QLabel clips with no ellipsis. §4.1 routes it through the rule <code>_on_stop</code> already follows.</td><td>joe</td><td><strong>Rewritten:</strong> a test that every string reaching <code>_header_status.setText</code> fits the floor — not that the floor covers a hand-kept list. Then re-measure with a direct tool in flight.</td></tr>
+
+<tr><td class="n"><strong>F3</strong></td><td><span class="chip maj">not closed</span></td><td>docking is a patch — §2's authority ruling (two symbols) + §3's arithmetic. One number per symbol, no per-density table. <strong>But</strong> the census case for <code>FaceReview</code> is red with no remedy priced, so F3 does not get recorded closed on this pass.</td><td>joe + crux</td><td><code>REVIEW.md:106-109</code> predicate <strong>must be rewritten</strong> — it requires <code>PANEL_MIN_WIDTH_BY_DENSITY</code>, which §2 rules against, and <code>DOCK_COLLAPSE_PX</code>, which §8 D3 replaces with an elide rule. See §11.</td></tr>
+
+<tr><td class="n"><strong>F4</strong></td><td><span class="chip crit">both halves open</span></td><td>consent card / no REVIEW verb — the verb exists <em>while the proposal is undecided</em>. <code>mark_decided</code> (<code>gate_widget.py:347-358</code>) hides it unconditionally, including on the auto-resolve path REVIEW uses. Colour half never re-measured.</td><td>joe</td><td>Verb half: drive a REVIEW proposal to auto-continue, read <code>revert_visible_on_chat</code>. Colour half: regenerate <code>after_r3/expert/gate_widget.png</code> via <code>harness/notes/panel_shot.py</code>, then the Pillow half of <code>REVIEW.md:126-129</code>.</td></tr>
+
+<tr><td class="n"><strong>F5</strong></td><td><span class="chip maj">half open</span></td><td>profile row — row half closed (<code>synapse_panel.py:1294</code>, <code>qss.py:117</code>). Crux half is §5 item 5 — <code>RADIUS_ROUND</code> → <code>RADIUS_PILL</code>, now a 7-reference change plus a forward-contract question.</td><td>joe + crux</td><td><code>REVIEW.md:148-152</code>: <code>RADIUS_ROUND is None or ≤ 14</code>. Plus: no surviving prose reference to a deleted token.</td></tr>
+
+<tr><td class="n"><strong>F6</strong></td><td><span class="chip plain">untouched</span></td><td>mono against doctrine — still live at <code>synapse_panel.py:1111-1113</code> and <code>_verb</code> <code>:2426-2427</code>. Scoped correctly: <strong>2 visible words</strong> (Connect, Doctor), not five controls — <code>?</code>/<code>Corpus</code> are hidden, <code>⋯</code> is icon-only with no <code>setText</code>.</td><td>joe</td><td><code>REVIEW.md:161-169</code></td></tr>
+
+<tr><td class="n"><strong>F7</strong></td><td><span class="chip maj">made safe — key count now open</span></td><td>ten tracking values — §2's <code>_apply_type</code> deletion removes the unguarded <code>TRACKING_EM["SEND"]</code> index that turns TYPE's collapse into a <code>KeyError</code>. <span class="chip crit">corrected</span> <strong>It does not settle the collapse at three keys.</strong> No existing key carries the tag's 0.06, so three keys costs a visible chip-tracking change and four keys costs a new token. That is D4.</td><td>crux + joe</td><td><code>REVIEW.md:180-186</code>, run <em>after</em> <code>_apply_type</code> is gone and <em>after</em> D4 fixes the key count.</td></tr>
+
+<tr><td class="n"><strong>F8</strong></td><td><span class="chip plain">untouched</span></td><td>SEMIBOLD</td><td>crux</td><td><code>REVIEW.md:196-199</code></td></tr>
+
+<tr><td class="n"><strong>F9</strong></td><td><span class="chip maj">partial</span></td><td>four floors — moved on its own: khint measured at <strong>11px</strong> now (was 10, <code>REVIEW.md:227</code>). Four floor authorities remain. <code>SPACE_XL</code> settled as a dimension, with the card-band <code>- 1</code> explained rather than tokenized (§2, §11).</td><td>joe + auto</td><td><code>REVIEW.md:214-219</code></td></tr>
+
+<tr><td class="n"><strong>F10</strong></td><td><span class="chip maj">half open</span></td><td>composer — <strong>slash half closed:</strong> one telling now, placeholder <code>"Ask SYNAPSE… · / commands"</code> (<code>:280</code>), khint <code>"Enter sends · Shift+Enter adds a line"</code>, Ctrl+K chip hidden. <strong>Attach half open and measured</strong> — §5 item 6, now with a stated width floor.</td><td>joe</td><td><code>REVIEW.md:232-237</code>: <code>legend ≤ 1</code> passes; <code>attach area &lt; send area</code> fails.</td></tr>
+
+<tr><td class="n"><strong>F11</strong></td><td><span class="chip maj">predicate extended, unrun</span></td><td>undo on CHAT — code right (§4.3). <span class="chip crit">corrected</span> The predicate now also asks whether turn N stays revertable after turn N+1 is sent. The answer is a joe decision that cannot be taken before the probe runs.</td><td>joe</td><td><code>REVIEW.md:250-253</code>, with <code>use_probe.py</code> extended as its own note says, plus the N+1 clause.</td></tr>
+
+<tr><td class="n"><strong>F12</strong></td><td><span class="chip ok">closed by §2</span></td><td>nine rhythm roles — §2's six-role table. <strong>Three collisions, not one</strong> — the audit handed to Joe must be complete.</td><td>crux</td><td><code>REVIEW.md:266-271</code>, both clauses.</td></tr>
+
+<tr><td class="n"><strong>F13</strong></td><td><span class="chip plain">deliberately out</span></td><td>dead second entry — §10.</td><td>crux</td><td><code>REVIEW.md:283-287</code></td></tr>
+
+<tr><td class="n"><strong>F14</strong></td><td><span class="chip plain">untouched</span></td><td>eight idle strings</td><td>joe</td><td><code>REVIEW.md:300-304</code></td></tr>
+
+<tr><td class="n"><strong>F16</strong></td><td><span class="chip ok">closed by §2</span></td><td>four band-end vocabularies — <code>SEAM_PX = 1</code> off-ladder; <strong>four shipped panel sites</strong> consume it, one of which is 2px and rides in D4. <code>chat_panel.py:425</code> is out of scope (§10) and the test is scoped to shipped modules so it cannot collide.</td><td>crux</td><td><code>REVIEW.md:331-337</code>, scoped.</td></tr>
+
+<tr><td class="n"><strong>F17</strong></td><td><span class="chip plain">untouched</span></td><td>third family</td><td>joe</td><td><code>REVIEW.md:345-351</code></td></tr>
+
+<tr><td class="n"><strong>F18</strong></td><td><span class="chip maj">4 closed, 1 opened</span></td><td>small targets — <strong>closed for all four named</strong>, measured zero across five faces (§4.4). <strong>Re-opened</strong> on <code>MarkDot</code> 20×20, outside every probe's reach. <span class="chip crit">corrected</span> It now has a decision surface: <strong>D6</strong>.</td><td>joe</td><td><code>REVIEW.md:362-365</code> passes today and is <strong>insufficient</strong>; §9 Wave 1's replacement walks press-accepting widgets with a module-scoped selector.</td></tr>
+</tbody></table></div>
+
+  </div>
+</section>
+
+<section id="s7">
+  <div class="sec-head">
+    <span class="sec-num">07</span>
+    <div>
+      <h2>Where the partners disagreed, and why this call was made</h2>
+      <p class="dek">One of the five rulings below is revised. It was made on a premise the crucible refuted, and the lens that lost the argument was right.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<h3>The collision that ate the round</h3>
+
+<p>Four of five lenses spent their crit on the same fact: <strong>IDEA's Direction C proposes collapsing a rail that is not in the tree.</strong> TYPE, SYSTEM, SUBTRACT and USE each independently ran the grep; each got zero hits; three filed it FATAL. IDEA conceded fully and retracted the 207px-slack arithmetic.</p>
+
+<p>That verdict is right and I am not reopening it. But the round overcorrected on <em>why</em> IDEA was wrong. IDEA's lever — <strong>cut the count of rows claiming the top rail, don't recalibrate their gaps</strong> — is precisely the lever engineering pulled, harder than IDEA asked. The mechanism was dead; the diagnosis was the one that shipped. Which is worth saying because §3 shows the same failure recurring one row up with a different tenant: the rail's width is again set by a row that shouldn't own it.</p>
+
+<h3>The five that moved, and the calls against</h3>
+
+<div class="note crit">
+  <span class="lab">Ruling 1 · revised — the premise was false</span>
+  <p><strong>1 · TYPE's <code>TRACKING_EM</code> collapse vs USE's catch.</strong> TYPE proposed three keys; USE found <code>rhythm.py:75-76</code> indexing <code>TRACKING_EM["SEND"]</code> unguarded and called it FATAL — correctly. TYPE conceded to four keys, keeping SEND alive.</p>
+  <p>The draft ruled against the revised TYPE position too: <em>"don't preserve a key to serve a hidden third type mechanism — delete the mechanism. Three keys, and <code>_apply_type</code> goes."</em></p>
+  <p><strong>That ruling assumed the tag half was expressible in the surviving three keys. It is not.</strong> <code>TRACKING_EM</code> has no 0.06, and <code>fontload.tracked_font</code> takes a role name, not a float (<code>tokens.py:395-404</code>, <code>fontload.py:161</code>). So deleting the mechanism does not delete the value it was borrowing for. <strong>USE was right for a reason even USE did not state:</strong> a four-key collapse is not workaround-thinking, it is the only option that costs nothing visible.</p>
+  <p><strong>Revised ruling:</strong> the mechanism still goes — that part holds and nobody disputed it. The <em>key count</em> is no longer mine to rule on. It is D4, with three live options (§2), and it lands in the same commit as the collapse.</p>
+</div>
+
+<p><strong>2 · TYPE vs SYSTEM on the word <code>eyebrow</code> — ruled against both, and this holds.</strong> SYSTEM renamed <code>rhythm_role="label"</code> → <code>"eyebrow"</code>. SUBTRACT caught that this recreates F12's disease under a new name, since TYPE claims <code>TRACKING_EM['EYEBROW']</code>. TYPE then argued SYSTEM should yield because EYEBROW predates the round. <strong>Both are arguing about who owns a word neither should need.</strong> The role is only named after a type concept <em>because</em> <code>_apply_type</code> makes it carry type. Remove that and the role can be named for what it does spatially — <code>pair</code>. SYSTEM keeps its value move; TYPE keeps its token; nobody yields. <em>Unaffected by ruling 1's revision</em> — the rename is safe whichever key count D4 picks, because the type application leaves <code>rhythm.py</code> either way.</p>
+
+<p><strong>3 · SUBTRACT's minimal dedup vs SYSTEM's full redistribution — both, in order.</strong> SUBTRACT called <code>card</code>+<code>row</code> deletion "the safest class of move." IDEA and SYSTEM both showed it leaves a 3-way tie at 16 and fails the closure predicate; SUBTRACT conceded ("F12 partially addressed, not closed"). SYSTEM's full table is the one that closes the finding. But SUBTRACT's sequencing instinct is right and survives: <strong>the zero-visual deletions land first as their own commit</strong> (they need no ratification), the value moves land second as a joe-gated visual change. <span class="chip crit">corrected</span> That split is now narrower than the draft implied — <code>ROLE_GAPS["shell"]</code> 16 → 24 moves the ribbon and the faces too, so it belongs in the ratified wave, not the free one.</p>
+
+<p><strong>4 · SYSTEM's <code>PANEL_MIN_WIDTH_BY_DENSITY</code> — ruled against, and this holds.</strong> SYSTEM proposed a three-row per-density width table; IDEA caught that SYSTEM's own F12 shell move invalidates the numbers feeding it; SYSTEM conceded the sequencing and re-gated F3 to joe+crux. Good catches, both. <strong>But the table itself is wrong, and for a reason no lens raised:</strong> <code>synapse_panel.py:724</code> composes one profile. Two of its three rows describe panels nothing can reach. <span class="chip crit">corrected</span> <strong>Ruling against the table is not a licence to delete the density-parametrized coverage.</strong> F3's own closure predicate names <code>PANEL_MIN_WIDTH_BY_DENSITY</code>, so the predicate must be rewritten with the ruling — see §11 — and the red cases the axis carries must be re-homed, not dropped (§8 D1).</p>
+
+<p><strong>5 · USE's 32px target floor — ruled against on the number, upheld on the intent.</strong> USE proposed <code>setMinimumWidth(32)</code> for surviving small targets. Measurement says zero <code>QAbstractButton</code>s are under 26 anywhere, so there is nothing to apply it to — and <code>ROW_MIN_H = 44</code> (<code>tokens.py:548</code>) is already the system's glyph-cell contract. A third size constant isn't the gap. <strong>The gap is that nothing pins the floor</strong>, and the one real violation (<code>MarkDot</code> 20×20) is invisible to the probe USE would have run. USE's method was the best in the round; its instrument had a hole. <span class="chip crit">corrected</span> And the draft then left that violation with no decision surface — <strong>D6</strong> fixes that.</p>
+
+<h3>What every lens missed</h3>
+
+<p><strong>None of the five mentioned J4.</strong> The commit that killed the profile switch is <code>5fdb9c5a</code>, dated the same day as the review. Four lenses re-verified against HEAD and caught the rail; none read forty lines further to <code>synapse_panel.py:717-726</code>, where the comment states plainly that nothing an artist can reach composes another manifest. Three lenses then proceeded to write, cite, or argue about per-density numbers.</p>
+
+<p>That is not a lens failure so much as a scoping one: the round asked "did this finding close?" and nobody asked "did the axis the finding was measured on survive?" <strong>SYSTEM and SUBTRACT both independently reached the right conclusion about the 393/361/345 numbers being stale — for the wrong reason</strong> (rail removal) rather than the decisive one (two of the three densities are unreachable).</p>
+
+<h3>What this scaffold missed, and the crucible caught</h3>
+
+<p>Symmetry, since a scoping failure is worth naming in both directions. The draft asked <em>"is the code right?"</em> across §4 and stopped there. It did not ask <em>"was it measured in the state where it can fail?"</em> — and two of three floor items were measured at rest. It also did not ask, on eight separate removals, <em>"what else names this symbol?"</em> — and four of ten blast radii in §5 were undercounted, two of them by an order of magnitude. Both are instrument questions, not analysis questions. §9's standing rules now carry both.</p>
+
+  </div>
+</section>
+
+<section id="s8">
+  <div class="sec-head">
+    <span class="sec-num">08</span>
+    <div>
+      <h2>Joe's decisions</h2>
+      <p class="dek">Six live. All gate <strong>joe</strong> by definition — each changes what the artist sees or what the system is allowed to promise. Two more exist and cannot be put to him yet; they are named at the bottom rather than hidden.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<div class="dec">
+  <span class="tag">D1 — blocks §2's table shape, §3's authority, §9 Wave 3</span>
+  <h3>The density axis — retire, but do not take the red cases with it</h3>
+  <p class="rec">Recommendation: retire it as an <strong>authority</strong>. Keep <code>gap()</code> and <code>DENSITY_GAP_SCALE</code> as specification (pure, tested, free), and strip airy/tight from the width token, the YAML feature line and the docking bound. Write §2's table with three columns and one of them marked live.</p>
+
+  <div class="note crit">
+    <span class="lab">Corrected at source · implementability</span>
+    <p>The draft also said "strip … the docking test's density loop." <strong>That deletes a red test instead of earning it.</strong> <code>test_every_composed_region_and_face_at_docking_bound[airy]</code> is parametrized over <code>DENSITIES</code>; remove the loop and the failing case ceases to exist — functionally identical to widening the bound. The draft never named that test in ten sections.</p>
+  </div>
+
+  <p><strong>Prerequisite, before any of this executes.</strong> Whether airy is red at HEAD is <strong>unmeasured</strong> — only standard was probed this session, and R3-01 already moved airy's figure to 400 after the rail's 393. So: <em>reproduce the airy state at the single surviving density first.</em> If it is red, it carries forward as a named red case with an owner. If it is green, say so and the retirement is clean. Either way the coverage is re-homed, never dropped.</p>
+
+  <p><strong>And it is a governance act.</strong> <code>docking-minimums.yaml:35-44</code> carries CTO RULING R3-01 under Joe's delegation, whose named remedy is a verb rail that no longer exists. Superseding it takes its own ruling artifact that records B11's retirement, referenced from the new contract line.</p>
+
+  <p><strong>Cost of the recommendation.</strong> If the profile switch ever returns, the width work is redone once. And it makes formal something currently only true by accident: SYNAPSE ships one density, and the three-density rhythm is a design intention rather than a shipped feature.</p>
+
+  <p><strong>Blocked until he says a word:</strong> §2's table cannot be written with three live columns. §3's authority cannot be one number. SYSTEM's <code>PANEL_MIN_WIDTH_BY_DENSITY</code> stays a live proposal. ~60 parametrized cases stay on their current axis.</p>
+</div>
+
+<div class="dec">
+  <span class="tag">D2 — blocks F3, the docking test, the YAML, the spec doc</span>
+  <h3>280</h3>
+  <p class="rec">Recommendation: delete it as a docking <em>promise</em>, and write the measured floor as a <strong>second</strong> token that the test asserts against. <code>PANEL_MIN_WIDTH</code> keeps what the panel promises the host; <code>DOCK_BOUND_PX</code> carries what the design owes.</p>
+
+  <div class="note crit">
+    <span class="lab">Corrected at source · implementability</span>
+    <p>The draft's single-token version inverts a guard into <code>x &lt;= x</code>. <code>tests/test_panel_rhythm_docking.py:94</code> is named <code>test_docking_bounds_read_the_contract_not_panel_height_token</code> and asserts <code>tokens.PANEL_MIN_WIDTH &lt;= width</code> at <code>:102</code> — supplying <code>width</code> from that token makes the assertion assert nothing while its name still claims the opposite. And if the bound <em>is</em> the measurement, every future regression is absorbed by a token edit rather than surfacing as red.</p>
+    <p><strong>If a token supplies the bound, that test is renamed or deleted in the same commit</strong> — never left standing asserting its own inverse.</p>
+  </div>
+
+  <p><strong>The number itself is D3's output.</strong> With D3 option A it is <strong>312</strong>; with option B it is <strong>340</strong>. Neither can be written until D3 lands. And <code>FaceReview</code>'s content must come down to 312 or the census case is red at either number (§5 item 9).</p>
+
+  <p><strong>Cost.</strong> The panel formally stops claiming it docks narrower than its measured floor — a real capability the host may want and the artist may notice the day a narrow pane refuses instead of clipping. In exchange the bound stops being an interim figure someone can edit and becomes a measurement someone has to <em>earn</em>: if a change pushes the floor up, the test goes red and stays red until the design gives something back.</p>
+</div>
+
+<div class="dec">
+  <span class="tag">D3 — blocks D2's number, the rail's floor, F1's successor predicate</span>
+  <h3>The model id on the identity row</h3>
+  <p class="rec">Recommendation: <code>DsAuthor</code> elides with a derived cap; never-elide stays the wordmark's alone. <strong>Option A (cap 137, panel floor 312), width-responsive build.</strong></p>
+
+  <p>Two sub-choices, both his, both priced in §3:</p>
+
+  <div class="tw"><table>
+  <thead><tr><th>choice</th><th>option</th><th>consequence</th></tr></thead>
+  <tbody>
+  <tr><td><strong>the cap</strong></td><td>A: 137 — tuck under the state row</td><td>Rail floor 305, panel floor <strong>312</strong>. Real docking range kept. <code>claude/sonnet-4.6</code> (131) fits with 6px to spare; most longer ids truncate.</td></tr>
+  <tr><td></td><td>B: 172 — fill the interior</td><td>Rail floor 340 = <code>PANEL_PREF_WIDTH</code>. Panel floor <strong>340</strong>. Almost nothing truncates, and the panel docks only at its preferred width.</td></tr>
+  <tr><td><strong>the build</strong></td><td>Static (~4 lines)</td><td>Truncates at <em>every</em> width. A panel floated at 600px still reads <code>ollama/deepseek-v4-fl…</code></td></tr>
+  <tr><td></td><td>Responsive (~15 lines + a test)</td><td>Full string above the floor, elided below it — the behaviour the cost paragraph actually describes.</td></tr>
+  </tbody></table></div>
+
+  <div class="note crit">
+    <span class="lab">Corrected at source · token-integrity + implementability</span>
+    <p>The draft's "≤170 → ≤270, inside 280 at any string length" was two off-ladder literals whose arithmetic did not close (<code>280 − 20 − 5 − 75 = 180</code>) and which ignored the row's measured 8px layout remainder. And it promised a "rail floor returns to 305" that its own cap could not deliver. The cap is now an expression on <code>PANEL_MIN_WIDTH</code>, <code>WORDMARK_GAP</code>, MarkDot's fixed size and two measured advances — so it tracks D2 when D2 moves.</p>
+  </div>
+
+  <p><strong>Cost.</strong> The model id truncates, plus a hover or the picker. For anyone who switches models several times a session that is a daily tax, and it partly undoes what <code>10e4147a</code> was written to restore (<em>"it is a control, not an economic readout"</em>). The alternative — keep it unbounded — means the panel's minimum width is set by vendor naming conventions. <strong>And it interacts with D6:</strong> growing <code>MarkDot</code> from 20 to 26 takes 6px straight out of the author's cap.</p>
+</div>
+
+<div class="dec">
+  <span class="tag">D4 — blocks F7, F12, F16, and reopens tokens.py under CAMERA's freeze</span>
+  <h3>The rhythm commit: <code>_apply_type</code>, the tracking key count, <code>pair</code>, and J5</h3>
+  <p class="rec">Recommendation: delete <code>_apply_type</code>; rename <code>label</code> → <code>pair</code>; <strong>take the four-key <code>TRACKING_EM</code> collapse</strong> (add <code>TAG = 0.06</code>) so no chip's tracking changes visibly; move <code>_EDGE_TOP</code> to <code>SPACE_LG</code> and supersede J5 by name.</p>
+
+  <p>Four things are bundled because they are one commit — the collapse's safety justifies the deletion, and the deletion's cost sets the collapse's key count:</p>
+
+  <ol>
+    <li><strong>Delete <code>_apply_type</code>.</strong> Uncontested by any lens. Rhythm becomes purely spatial. 8 construction sites take their font and an explicit <code>setCapitalization</code> call.</li>
+    <li><strong>The tracking key count</strong> — three options in §2, one refused. Four keys is zero visible change and one new token; three keys is zero new tokens and a visible tracking change on every chip in the panel.</li>
+    <li><strong>The parm-row filing</strong> — name both columns (<code>PARM_LABEL_COL_W = 128</code>, <code>PARM_VALUE_COL_W = 64</code>) or name neither and leave the QSS multipliers. Naming one is the accretion §2 exists to reduce.</li>
+    <li><strong><code>_EDGE_TOP</code> and J5.</strong> <code>tests/panel/test_j5_rail_air.py:157</code> asserts <code>edge_top == {"shell": t.SPACE_MD}</code> exactly, and <code>rhythm.py:44-49</code> records the rule as <em>"Joe's five, J5, 2026-09-05."</em> Moving to <code>SPACE_LG</code> is <strong>+8px above the identity row</strong>, a red J5 test, and a supersession of his own ruling. Leaving it makes the rail's top margin narrower than the gap between its own children.</li>
+    <li><strong>The one 2px seam</strong> (<code>face_work.py:226</code>) — <code>SEAM_PX * 2</code>, or 2 → 1 as a visible change.</li>
+  </ol>
+
+  <p><strong>Cost.</strong> Eight construction-site edits plus a one-time visual check on eight widgets. <code>ROLE_GAPS["shell"]</code> 16 → 24 moves the ribbon's and the faces' internal child gaps too — two more surfaces. It reopens <code>tokens.py</code> under CAMERA's freeze (<code>ce04dcb0</code>), and it should land in the <strong>same</strong> ratification as TYPE's <code>TRACKING_EM</code> and <code>WEIGHT_SEMIBOLD</code> work rather than as a second reopen in the same window. <strong>Every new token in that request states its value, its grid position or its off-ladder reason, and its full grep receipt</strong> before the request goes up.</p>
+</div>
+
+<div class="dec">
+  <span class="tag">D5 — blocks F5's crux half only</span>
+  <h3>Tag radius, and a forward contract nobody has revisited</h3>
+  <p class="rec">Recommendation: <code>qss.py:417</code> points at <code>RADIUS_PILL</code> (14). Whether <code>RADIUS_ROUND</code> is <em>deleted</em> depends on an unbuilt surface.</p>
+
+  <div class="note crit">
+    <span class="lab">Corrected at source · token-integrity</span>
+    <p><code>tokens.py:542-545</code> declares <code>RADIUS_ROUND</code> a forward contract, not an orphan: <em>"The three-band recall card is greenfield (a held spawn) and will consume these; pinned by tests/test_bp2_paneldesign_density.py so they are contract, not dead code."</em> And it has <strong>7 references across 5 files</strong>, not one consumer — including three prose sites in <code>docs/PANEL_RHYTHM_SPEC.md</code> (<code>:61</code>, <code>:136</code>, <code>:201</code>) and a docstring at <code>gate_widget.py:149</code>. Deleting it at the draft's stated radius would have left prose naming a token that no longer resolves — a doc/code divergence in the same doc family that already carries the live SIGNAL gremlin, four sections after §10 correctly refuses to touch that gremlin.</p>
+  </div>
+
+  <p><strong>So the question is:</strong> does the three-band recall card still want a 999 pill? If no, the forward contract dies with the token and all seven references go in one commit. If yes, <code>RADIUS_ROUND</code> stays and only <code>qss.py:417</code> moves.</p>
+
+  <p><strong>Cost.</strong> Chips read as rounded rectangles, not lozenges — a visible change to every badge in the panel (4 set-sites). It also fixes the Qt-drops-any-radius-over-half-the-box behaviour the review proved (<code>probe_radius.json</code>, <code>REVIEW.md:141</code>). If the lozenge is wanted, the fix is a real half-box radius per chip height, not 999.</p>
+</div>
+
+<div class="dec">
+  <span class="tag">D6 — blocks Wave 1's guard from landing green, and takes 6px from D3</span>
+  <h3>The halt mark at 20×20</h3>
+  <p class="rec">Recommendation: <strong>grow <code>MarkDot</code> to 26×26</strong> and pay for it out of the author cap. It is the most consequential click in the panel and it is 6px under the floor.</p>
+
+  <p><code>components.py:188</code> — <code>setFixedSize(diameter + 4, diameter + 4)</code>, constructed at <code>synapse_panel.py:928</code> with <code>diameter=16</code>. <code>mousePressEvent</code> at <code>components.py:246</code> fires the panel's own <code>_on_stop</code>. Three honest options:</p>
+
+  <div class="tw"><table>
+  <thead><tr><th>option</th><th>what it costs</th><th>what Wave 1's test does</th></tr></thead>
+  <tbody>
+  <tr><td><strong>a · grow to 26</strong> (diameter 22)</td><td>The identity row re-measures; D3's cap drops by 6 (137 → 131, which is exactly <code>claude/sonnet-4.6</code>'s width). A visibly larger mark.</td><td>Green on landing.</td></tr>
+  <tr><td><strong>b · keep 20, drop the press</strong></td><td>The mark becomes purely a visual state indicator; Stop is the single halt surface. Costs the <em>"one control with two surfaces"</em> idiom the class docstring defends at <code>components.py:159-165</code>.</td><td>Green — nothing presses.</td></tr>
+  <tr><td><strong>c · 20 is the floor for state-gated marks</strong></td><td>A named exemption in the test, written with its reason. The only option that leaves nothing red and nothing moved.</td><td>Green with one documented exemption.</td></tr>
+  </tbody></table></div>
+
+  <p><strong>Why this is a decision and not a fix.</strong> Wave 1's guard is the prerequisite for every visual wave. Landing it red on a violation nobody has ruled on stalls the whole ladder, and a red test that stays red by default is how bounds get widened later. <strong>Pick one before Wave 1 lands.</strong></p>
+</div>
+
+<hr>
+
+<h3>Two decisions that cannot be put to him yet</h3>
+
+<p>Both are real, both are his, and both are <strong>blocked on a probe that has never run</strong>. Naming them here rather than inventing a recommendation:</p>
+
+<ul>
+<li><strong>Does the turn receipt clear on send, or persist per-turn in the transcript?</strong> (§4.3) Blocked on F11's extended predicate. Deciding it before the measurement would be deciding on unmeasured behaviour.</li>
+<li><strong>Does the consent card at REVIEW keep a live undo after the decision lands?</strong> (§4.2) The <em>mechanism</em> is settled — <code>mark_decided</code> needs a level branch. Whether REVIEW is the level that keeps its verb is his, and it needs the auto-continue probe first. The card's <strong>chroma</strong> also needs its Pillow re-measure before F4's colour half can be spoken about at all.</li>
+</ul>
+
+  </div>
+</section>
+
+<section id="s9">
+  <div class="sec-head">
+    <span class="sec-num">09</span>
+    <div>
+      <h2>Implementation shape</h2>
+      <p class="dek">Ordered so nothing lands on a number another change is about to move. Wave −1 is new: eight of the draft's verification cells named a probe that does not exist in the repo.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<h3>Standing rules — every row below obeys all four</h3>
+
+<ol>
+  <li><strong>No bound is widened to make a red test green.</strong> Where a test currently passes against a prose number and will read a measured one instead, the measured number goes in <em>as measured</em>. If that turns the test red, the test is correct and the design owes the pixels.</li>
+  <li><strong>No red case is retired by removing the axis it lives on.</strong> <span class="chip crit">new</span> Deleting a parametrization that carries a failing case is widening by another route. Re-home the case or record it red with an owner.</li>
+  <li><strong>A bound and its measurement are two symbols with two owners.</strong> <span class="chip crit">new</span> A guard that asserts <code>x &lt;= x</code> is not a guard. If a token supplies a bound, any test whose <em>name</em> says otherwise is renamed or deleted in the same commit.</li>
+  <li><strong>Every deletion greps its own name first.</strong> <span class="chip crit">new</span> Code, tests, docstrings, prose. A deletion with surviving prose references is not a deletion, and every new token states its value, its grid position or its off-ladder reason, and its grep receipt.</li>
+</ol>
+
+<p><code>QT_QPA_PLATFORM=offscreen</code> is on <strong>every</strong> command below without exception, including the <code>-c</code> one-liners.</p>
+
+<h3>Wave −1 — the probes land <span class="chip crit">new</span></h3>
+
+<div class="tw"><table>
+<thead><tr><th>change</th><th>where</th><th>test / receipt</th><th>it fails when</th></tr></thead>
+<tbody>
+<tr>
+  <td>The six probes get their own commit and hash</td>
+  <td><code>harness/design_review/2026-09-14/</code> — <code>floor_probe.py</code>, <code>width_probe.py</code>, <code>ident_probe.py</code>, <code>faces_probe.py</code>, <code>stack_probe.py</code>, <code>targets_probe.py</code></td>
+  <td>Each re-run against HEAD reproduces the JSON quoted in §2–§4; the outputs land beside them.</td>
+  <td>Any number in §2–§4 cannot be reproduced from the landed probe. <strong>Until this lands, no row below is executable.</strong></td>
+</tr>
+</tbody></table></div>
+
+<h3>Wave 0 — zero-visual, no ratification</h3>
+
+<div class="tw"><table>
+<thead><tr><th>change</th><th>file</th><th>size</th><th>offscreen verification</th><th>test</th><th>it fails when</th></tr></thead>
+<tbody>
+<tr>
+  <td>delete <code>ROLE_GAPS["row"]</code>, <code>_MARGINS["row"]</code>, <code>qss.py:400-413</code></td>
+  <td><code>rhythm.py</code>, <code>qss.py</code></td>
+  <td>~16 lines + 3 test edits</td>
+  <td><code>QT_QPA_PLATFORM=offscreen "$HY" -c "import sys;sys.path.insert(0,'python');from synapse.panel.designsystem import rhythm,qss;print('row' in rhythm.ROLE_GAPS, 'row' in rhythm._MARGINS, 'rhythm_role=\"row\"' in qss.stylesheet())"</code> → <code>False False False</code></td>
+  <td>extend <code>tests/test_panel_rhythm_owner.py</code>; edit <code>docking:212</code> <code>expected_margins</code>, <code>docking:265</code> and <code>owner:211</code> <code>DsRowGlyph</code></td>
+  <td>any clause is <code>True</code></td>
+</tr>
+<tr>
+  <td><code>card</code> → <code>group</code> at 2 sites</td>
+  <td><code>gate_widget.py:421</code>, <code>synapse_panel.py:1435</code></td>
+  <td>2 lines</td>
+  <td><code>stack_probe.py</code>; every region min width unchanged vs the pre-change run</td>
+  <td>same file</td>
+  <td>any region's <code>minimumSizeHint().width()</code> moves by ≥1px</td>
+</tr>
+</tbody></table></div>
+
+<h3>Wave 1 — the guard, and D6 before it</h3>
+
+<div class="note crit">
+  <span class="lab">Corrected at source · implementability — the selector was wrong</span>
+  <p>The draft specified <em>"<code>QAbstractButton</code> plus anything overriding <code>mousePressEvent</code>."</em> In PySide6, testing "overrides <code>mousePressEvent</code>" by attribute catches every <strong>C++</strong> reimplementor — <code>QScrollBar</code>, <code>QComboBox</code>, <code>QLineEdit</code>, <code>QAbstractItemView</code>. The composer is <code>class _GrowingInput(QtWidgets.QTextEdit)</code> (<code>synapse_panel.py:262</code>), so a scrollbar is a live child on the chat face at 340×760, and there is a <code>QComboBox</code> at <code>:2342</code>. A 12–16px scrollbar trips the walk before <code>MarkDot</code> is ever reported.</p>
+  <p>Grep this session: <strong>exactly two</strong> Python-level <code>mousePressEvent</code> overrides exist in the whole panel package — <code>components.py:246</code> (MarkDot) and <code>synapse_panel.py:397</code>. The wide selector buys nothing and costs the signal.</p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>change</th><th>file</th><th>size</th><th>offscreen verification</th><th>test</th><th>it fails when</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong><code>test_min_target_26</code></strong></td>
+  <td>new, <code>tests/test_panel_target_floor.py</code></td>
+  <td>~40 lines</td>
+  <td><code>QT_QPA_PLATFORM=offscreen "$HY" -m pytest tests/test_panel_target_floor.py -q -p no:cacheprovider</code></td>
+  <td>itself</td>
+  <td>Any visible widget that accepts a press measures <code>min(w,h) &lt; 26</code> on any face at 340×760. <strong>Selector:</strong> <code>QAbstractButton</code>, <em>plus</em> widgets whose <code>__class__.__module__</code> starts with <code>synapse.panel</code> <em>and</em> whose type defines <code>mousePressEvent</code> in its own <code>__dict__</code> — exactly the two Python overrides, and it cannot catch a scrollbar. <strong>D6 lands first</strong>, so this goes green (or green-with-a-named-exemption) rather than red-by-default.</td>
+</tr>
+</tbody></table></div>
+
+<h3>Wave 2 — rhythm, one ratified commit (D4)</h3>
+
+<div class="tw"><table>
+<thead><tr><th>change</th><th>file</th><th>size</th><th>offscreen verification</th><th>test</th><th>it fails when</th></tr></thead>
+<tbody>
+<tr>
+  <td>delete <code>_apply_type</code>; move type + capitalization to the 8 construction sites; apply D4's tracking-key choice</td>
+  <td><code>rhythm.py:62-78</code> + 8 sites + <code>tokens.py</code></td>
+  <td>~17 deleted, ~16 added</td>
+  <td><code>floor_probe.py</code> on all faces; diff the rendered <code>font().pixelSize()</code> / family / capitalization / letterSpacing of the 8 widgets before and after</td>
+  <td>new <code>test_rhythm_is_spatial_only</code></td>
+  <td><code>rhythm.py</code> references <code>fontload</code> or <code>TRACKING_EM</code>; or any of the 8 widgets' measured letter-spacing changed without D4 authorising it</td>
+</tr>
+<tr>
+  <td><code>label</code> → <code>pair</code>, 12 → 8; <code>tag</code> 16 → 12; <code>shell</code> 16 → 24; <code>_EDGE_TOP</code> per D4; <code>parm_row</code> filing per D4</td>
+  <td><code>rhythm.py</code>, <code>qss.py</code>, 8 set-sites, <code>tokens.py</code></td>
+  <td>~30 lines</td>
+  <td><code>width_probe.py</code> + <code>stack_probe.py</code>, all regions, before/after — <strong>including the ribbon and the faces</strong>, whose shell gap also moves</td>
+  <td>new <code>test_role_gaps_unique</code></td>
+  <td><code>len(set(ROLE_GAPS.values())) != len(ROLE_GAPS)</code></td>
+</tr>
+<tr>
+  <td><code>SEAM_PX = 1</code>; the <strong>four shipped</strong> panel sites consume it</td>
+  <td><code>tokens.py</code> + <code>face_review.py:271</code>, <code>:299</code>, <code>integrity_readout.py:82</code>, <code>face_work.py:226</code></td>
+  <td>~8 lines</td>
+  <td>—</td>
+  <td><code>REVIEW.md:331-337</code> predicate as a test, <strong>scoped to shipped panel modules</strong></td>
+  <td>any bare <code>setSpacing(1)</code>/<code>setSpacing(2)</code> survives in a shipped panel module. <code>chat_panel.py:425</code> is explicitly out of scope (§10); <code>python/synapse/ui/</code> is a different package.</td>
+</tr>
+</tbody></table></div>
+
+<p><strong>Rewrite ledger — nine files, not three.</strong> <span class="chip crit">corrected</span> Every one keeps its assertion and changes its expected role name or value. A rename is not a coverage cut.</p>
+
+<div class="tw"><table>
+<thead><tr><th>file</th><th>what it pins</th></tr></thead>
+<tbody>
+<tr><td><code>tests/test_panel_rhythm_docking.py</code></td><td><strong>The densest pin, and the draft never named it.</strong> <code>EXPECTED</code> (<code>:26-32</code>) pins all nine role names × 3 densities = 27 cases; <code>test_component_pattern_at_docking_width</code> parametrizes on <code>("label","row","tag","card","parm_row")</code> × 3 = 15 cases, four of which die or move; <code>_spacing()</code> at <code>:216-219</code> asserts <code>_apply_type</code>'s output (AllUppercase + 108.0/106.0); <code>expected_margins["row"]</code> at <code>:212</code>.</td></tr>
+<tr><td><code>tests/panel/test_j5_rail_air.py</code></td><td><code>_EDGE_TOP</code> exact-dict at <code>:157</code>, <code>gap(SPACE_MD,…)</code> at <code>:115-116</code> and <code>:168</code>. Red the moment D4 supersedes J5.</td></tr>
+<tr><td><code>tests/test_panel_camera_rhythm.py</code>, <code>…_qt.py</code></td><td>role names</td></tr>
+<tr><td><code>tests/test_panel_rhythm_census.py</code></td><td>role names</td></tr>
+<tr><td><code>tests/test_panel_rhythm_owner.py</code></td><td>object names incl. <code>DsRowGlyph</code> (<code>:211</code>)</td></tr>
+<tr><td><code>tests/panel/test_bc_wave.py</code></td><td>role names</td></tr>
+<tr><td><code>tests/panel/test_j2_token_face.py</code></td><td><code>parm_row</code> / token-face roles</td></tr>
+<tr><td><code>tests/test_panel_sweep_a.py</code>, <code>tests/test_panel_sweep_b_widgets.py</code></td><td>role names</td></tr>
+</tbody></table></div>
+
+<p><strong>Ordering fix.</strong> The draft had Wave 2 and Wave 3 both rewriting <code>tests/test_panel_rhythm_docking.py</code>, contradicting §9's own promise that nothing lands on a number another change is about to move. <strong>Those edits merge into one commit inside Wave 2</strong>, or the file is split first.</p>
+
+<h3>Wave 3 — width, after Wave 2's geometry settles (D1, D2, D3)</h3>
+
+<div class="tw"><table>
+<thead><tr><th>change</th><th>file</th><th>size</th><th>offscreen verification</th><th>test</th><th>it fails when</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>Prerequisite:</strong> reproduce the airy docking state at HEAD</td>
+  <td><code>tests/test_panel_rhythm_docking.py</code></td>
+  <td>a run, not an edit</td>
+  <td><code>QT_QPA_PLATFORM=offscreen "$HY" -m pytest "tests/test_panel_rhythm_docking.py::test_every_composed_region_and_face_at_docking_bound" -q -p no:cacheprovider</code></td>
+  <td>—</td>
+  <td>Nothing — this is the measurement D1 needs. Its result decides whether a named red carries forward.</td>
+</tr>
+<tr>
+  <td><code>DsAuthor</code> elides with the derived cap (D3)</td>
+  <td><code>synapse_panel.py</code> identity row + the 3 <code>text()</code> readers (<code>:1232</code>, <code>:2226</code>, <code>:3317</code>)</td>
+  <td>~4 lines static / ~15 responsive</td>
+  <td><code>ident_probe.py</code> with a deliberately long model id; identity-row <code>hint ≤</code> the D3 target</td>
+  <td>new <code>test_identity_row_fits_interior</code></td>
+  <td>rail <code>minimumSizeHint().width() &gt; DOCK_BOUND_PX</code> for any model-id string. The cap is asserted as an <em>expression</em> on tokens, never a literal.</td>
+</tr>
+<tr>
+  <td><code>FaceReview</code>'s content width comes down to 312</td>
+  <td><code>face_review.py</code> child layout</td>
+  <td><strong>unsized until someone reads it</strong></td>
+  <td><code>stack_probe.py</code>; faces <code>minhint</code> 338 → 312</td>
+  <td><code>test_alternate_census_widget_regions[*-face_review.FaceReview]</code> — <strong>a named red with an owner until this lands</strong></td>
+  <td>the standalone widget's <code>minimumSizeHint().width()</code> exceeds <code>DOCK_BOUND_PX</code>. <code>QSizePolicy.Ignored</code> is <em>not</em> the fix: it clips the page when current and does not move <code>minimumSizeHint()</code>.</td>
+</tr>
+<tr>
+  <td><code>DOCK_BOUND_PX</code> written beside <code>PANEL_MIN_WIDTH</code>, each with its own job stated</td>
+  <td><code>tokens.py:634</code></td>
+  <td>~6 lines</td>
+  <td><code>width_probe.py</code>, all three regions</td>
+  <td><code>tests/test_bp2_paneldesign_density.py</code> extended to pin both</td>
+  <td>either token is absent, or they are the same value with no comment saying why</td>
+</tr>
+<tr>
+  <td>docking test reads tokens, not YAML prose; R3-01 superseded by its own ruling artifact</td>
+  <td><code>tests/test_panel_rhythm_docking.py:79-102</code>, <code>.synapse/contracts/docking-minimums.yaml:35-46</code>, <code>docs/PANEL_RHYTHM_SPEC.md:78-80</code>, a new ruling doc</td>
+  <td><strong>~60 parametrized cases</strong><span class="was">~20 lines</span></td>
+  <td><code>QT_QPA_PLATFORM=offscreen "$HY" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider</code></td>
+  <td><strong>rewritten, not deleted</strong> — <code>_bounds()</code>'s regex replaced by a <code>DOCK_BOUND_PX</code> read; <code>test_docking_bounds_read_the_contract_not_panel_height_token</code> <strong>renamed or deleted in the same commit</strong> (its name now asserts the opposite of what it does)</td>
+  <td>any composed region's <code>minimumSizeHint().width()</code> exceeds <code>DOCK_BOUND_PX</code>. <strong>The token takes the measured number. If that number is worse than today's 380 prose bound, the test is red and stays red.</strong></td>
+</tr>
+</tbody></table></div>
+
+<h3>Wave 4 — the visible calls (D5, and F10's attach half)</h3>
+
+<div class="tw"><table>
+<thead><tr><th>change</th><th>file</th><th>size</th><th>offscreen verification</th><th>test</th><th>it fails when</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>RADIUS_ROUND</code> → <code>RADIUS_PILL</code> at the consumer; <strong>all 7 references move in one commit</strong></td>
+  <td><code>qss.py:417</code>, <code>tokens.py:542</code>/<code>:547</code>, <code>gate_widget.py:149</code>, <code>docs/PANEL_RHYTHM_SPEC.md:61</code>/<code>:136</code>/<code>:201</code></td>
+  <td>7 sites</td>
+  <td>regenerate <code>probe_radius.py</code> from the review dir</td>
+  <td><strong>rewritten:</strong> <code>tests/test_bp2_paneldesign_density.py:54</code> re-pins per D5's answer and keeps <code>RADIUS_CARD</code>/<code>ROW_MIN_H</code></td>
+  <td>any pill radius exceeds half its box height; <strong>or</strong> any prose site still names a token that no longer resolves</td>
+</tr>
+<tr>
+  <td>attach → 24px ghost glyph on <code>ICON_GRID</code>, centred in a hit box <strong>≥ 26 in both axes</strong>; drop <code>setFixedWidth(52)</code></td>
+  <td><code>synapse_panel.py:2452-2455</code></td>
+  <td>4 lines</td>
+  <td><code>faces_probe.py</code> — <code>hard_minimums</code> must come back <strong>empty</strong></td>
+  <td><code>REVIEW.md:232-237</code> predicate as a test</td>
+  <td>attach area ≥ SEND area, <strong>or</strong> the icon exceeds <code>ICON_GRID</code>, <strong>or</strong> the control measures under 26 in either axis. <span class="chip crit">corrected</span> <code>ICON_GRID = 24</code> sits below Wave 1's 26px floor — without the stated hit-box number this row turns Wave 1's own guard red.</td>
+</tr>
+</tbody></table></div>
+
+<p><strong>Also rewritten, not deleted, whenever the zero-consumer type tokens are retired (F9):</strong> <code>tests/panel/test_type_scale_native.py:24</code> and <code>tests/test_panel_faces.py:394-446</code>. They currently pin <code>SIZE_HERO</code>/<code>BRAND</code>/<code>BODY</code>/<code>LABEL_SM</code>/<code>DISPLAY</code>. Retirement means editing the assertion in the same commit — the review's own ruling 8 (<code>REVIEW.md:391</code>).</p>
+
+  </div>
+</section>
+
+<section id="s10">
+  <div class="sec-head">
+    <span class="sec-num">10</span>
+    <div>
+      <h2>What this scaffold does not touch</h2>
+      <p class="dek">Exclusions are load-bearing. Each one names why, so the next pass does not read it as an oversight and quietly fold it in.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<p><strong>The frozen surfaces.</strong> The palette (<code>tokens.py:29-44</code>), the contrast ramps, the type scale's <em>values</em>, the wordmark lockup. P1, P2, P3 and P5 in the review (<code>REVIEW.md:369-375</code>) are earned and measured — 0.82–0.84% chromatic pixels, three hue buckets, a wordmark that never gives way, PRIMARY at 8.3:1. Nothing here goes near them. <code>tokens.py</code> is reopened under CAMERA's freeze (<code>ce04dcb0</code>) for spacing and rhythm only, and that reopen should be <strong>one</strong> ratification request carrying both this scaffold's tokens and TYPE's <code>TRACKING_EM</code>/<code>WEIGHT_SEMIBOLD</code> list — not two.</p>
+
+<p><strong>The gremlin, left for its own commit.</strong> The cyan/blue three-source token gremlin from the panel redesign — do not naively unify it. It is unrelated to spacing, it has bitten before, and folding it into a rhythm commit would make a red test ambiguous. <em>(D5's corrected reference count exists so this scaffold does not mint a second one four sections earlier.)</em></p>
+
+<p><strong>The unshipped legacy entry — F13, deliberately out.</strong> Verified present at HEAD: <code>chat_panel.py</code> (1,023 lines), <code>synapse_chat.pypanel</code> (57), <code>quick_actions.py</code> (176), <code>context_bar.py</code> (603), and <code>qss.py</code>'s SWEEP_A blocks — which <code>qss.py:491</code> names outright as <em>"widgets nothing ships (chat_panel, context_bar, quick_actions, hda_views)."</em> It is real dead weight and SUBTRACT is right to want it gone. It is not in this scaffold for three reasons:</p>
+
+<ul>
+  <li>The deletion set as filed is incomplete. <code>context_bar.py</code> is in the same unshipped list but was absent from SUBTRACT's inventory, and <code>styles.py:351-392</code> still carries five <code>get_context_bar_*</code> stylesheet functions — the same dead second stylesheet source that is F4's drift mechanism.</li>
+  <li><code>hda_views.py</code> appears in that "nothing ships" comment but the <code>hda</code> face composed cleanly in this session's probe and <code>hda_views.py:41</code> holds a live <code>rhythm_role</code> set-site. Deleting on the strength of the comment would take a shipped surface with it.</li>
+  <li>It is ~1,900 lines of deletion whose only risk is what <em>else</em> imports it. That belongs in its own commit with its own grep receipt, not folded into a rhythm change where a regression would be unattributable.</li>
+</ul>
+
+<p><strong>Its live consequence for Wave 2:</strong> <code>chat_panel.py:425</code>'s <code>setSpacing(2)</code> is inside that exclusion, so F16's test is scoped to shipped panel modules. A test that forces a change to code this section refuses to touch is a contradiction, not coverage.</p>
+
+<p><strong><code>python/synapse/ui/</code> — a different package.</strong> <code>ui/panel.py:157</code>, <code>ui/tabs/activity.py:55</code> and <code>ui/tabs/search.py:63</code> each carry a bare <code>setSpacing(2)</code>. They are outside the design system, they are not the panel, and <code>SEAM_PX</code> does not reach them. Named here so the next census does not read three live literals as a miss.</p>
+
+<p><strong>The bridge.</strong> Nothing in <code>/mcp</code>, <code>/synapse</code>, the handlers, or <code>LosslessExecutionBridge</code>.</p>
+
+<p><strong>F6, F8, F14, F17.</strong> Real, open, correctly scoped by TYPE and IDEA, and not spacing or floor work. F6's live impact is <strong>two visible words</strong> (Connect, Doctor), not five controls — worth recording so the next pass doesn't re-inflate it.</p>
+
+  </div>
+</section>
+
+<section id="s11">
+  <div class="sec-head">
+    <span class="sec-num">11</span>
+    <div>
+      <h2>Contested</h2>
+      <p class="dek">Three crucible claims are refused, with the anchor that refutes each. Every other blocker across the three lenses is folded at source above — including the two that reversed a ruling of mine and the one that reopened a finding I had recorded closed.</p>
+    </div>
+  </div>
+  <div class="rail">
+
+<div class="dec">
+  <span class="tag" style="color:var(--contest)">C1 · token-integrity, blocker 5 (severity 3) — partial refusal</span>
+  <h3>The <code>SPACE_XL - 1</code> in <code>qss.py:434</code> is not a seam</h3>
+
+  <p><strong>The claim.</strong> <em>"The real seam in the tree is out of <code>SEAM_PX</code>'s reach: <code>qss.py:434</code> renders <code>min-height: {t.SPACE_XL - 1}px</code>, a 1px subtraction encoded inline on the card band … either bring it into <code>SEAM_PX</code>'s scope or say in the off-ladder block why a seam expressed as subtraction is a different thing."</em></p>
+
+  <p><strong>Refused, because it is not a seam at all — it is box-model arithmetic.</strong> Read the two rules together (<code>qss.py:433-449</code>, re-read this session):</p>
+
+  <pre><code>#DsCard &gt; #DsCardHeader {
+    min-height: {t.SPACE_XL - 1}px; max-height: {t.SPACE_XL - 1}px;
+    ...
+    border: none; border-bottom: 1px solid {t.BORDER};
+}
+#DsCard &gt; #DsCardFooter {
+    min-height: {t.SPACE_XL}px; max-height: {t.SPACE_XL}px;
+    padding: 0 {t.SPACE_MD}px; margin: 0; border: none;
+}</code></pre>
+
+  <p>The header carries a 1px <code>border-bottom</code>. The footer carries none. <strong>39 + 1 = 40 = the footer's height.</strong> The subtraction exists so the header band measures exactly <code>SPACE_XL</code> <em>including its own hairline</em> and the two bands read as equal. It is not a distance held between two things; it is a box compensating for its own border.</p>
+
+  <p><strong>Why the distinction matters rather than being pedantry.</strong> Folding it into <code>SEAM_PX</code> would make the token mean two different things — "the width of a drawn boundary" and "the space between two things" — which is exactly the four-vocabularies accretion F16 exists to end. And a future change to <code>BORDER</code>'s width would need this arithmetic to follow it, which a spacing token would not.</p>
+
+  <p><strong>What the finding got right, and is folded at source:</strong> it deserves a comment so the next reader does not file it as a stray literal. §2's off-ladder block now carries that explanation. The finding's operative half — five live sites, two of them 2px, one out of scope, all carrying <code>rhythm-exempt</code> comments — is <strong>accepted in full</strong> and corrected in §2 and §9 Wave 2.</p>
+</div>
+
+<div class="dec">
+  <span class="tag" style="color:var(--contest)">C2 · token-integrity, blocker 6 (severity 2) — provenance refused, substance accepted</span>
+  <h3><code>DOCK_COLLAPSE_PX</code> was not invented by this scaffold</h3>
+
+  <p><strong>The claim.</strong> <em>"<code>DOCK_COLLAPSE_PX</code> has zero hits across <code>python/</code>, <code>tests/</code> and <code>docs/</code>. It is a brand-new token introduced once in an implementation table … A scaffold whose thesis is that untokenized magic numbers set the panel's floor cannot introduce an untyped token into the very token that sets the floor."</em></p>
+
+  <p><strong>The second sentence is refused. The name is F3's own vocabulary, not mine.</strong> <code>REVIEW.md:98</code> — F3's fix text — reads verbatim:</p>
+
+  <blockquote style="margin:0 0 14px; padding-left:16px; border-left:2px solid var(--rule); color:var(--ink-2); max-width:72ch"><em>"Decide what gives way at 340 and write it where the next designer looks: per-density floors beside <code>PANEL_MIN_WIDTH</code>, one <code>DOCK_COLLAPSE_PX</code> token, a written reappear rule for anything that hides."</em></blockquote>
+
+  <p>And F3's <strong>closure predicate</strong> at <code>REVIEW.md:106-107</code> requires the symbol to exist:</p>
+
+  <pre><code>have = hasattr(t,'DOCK_COLLAPSE_PX') and hasattr(t,'PANEL_MIN_WIDTH_BY_DENSITY')</code></pre>
+
+  <p>So the draft was not minting a token — it was carrying forward the finding's own required name. The grep returning zero is not evidence of invention; it is evidence the finding is <strong>unclosed</strong>, which is the whole point of the row.</p>
+
+  <p><strong>The substance is accepted, and goes further than the finding asked.</strong> A name with no value, derivation, consumer or failing condition does not belong in an implementation table, and the draft's row was the only one in Wave 3 with both the test and fails-when cells blank. So:</p>
+
+  <ul>
+    <li><strong><code>DOCK_COLLAPSE_PX</code> is cut.</strong> Not deferred — cut. There is no collapse breakpoint in the design any more, because §3 replaces "what gives way at 340" with a different answer: <strong>the author elides at a derived cap, and anything that lands on the rail from here needs a declared maximum before it ships.</strong> An elide rule and a collapse breakpoint are different mechanisms; writing both would be two vocabularies for one job.</li>
+    <li><strong><code>DOCK_BOUND_PX</code> replaces it</strong>, for a different job — the bound the docking test asserts against, kept separate from the promise <code>PANEL_MIN_WIDTH</code> makes to the host (§2, §8 D2). It ships with a value, a derivation, a consumer and a failing condition.</li>
+    <li><strong>F3's closure predicate is therefore rewritten</strong>, and §6 says so. It names two symbols this scaffold rules against — <code>PANEL_MIN_WIDTH_BY_DENSITY</code> (§2: it codifies a dead axis) and <code>DOCK_COLLAPSE_PX</code> (cut above). A predicate that pins a fix the evidence has since refuted has to be re-derived, not satisfied.</li>
+  </ul>
+
+  <p>Recording the refusal matters because the finding's framing, left standing, would have read as "the scaffold is sloppy with tokens" when the real state is "the review's own fix text named a mechanism the panel no longer needs."</p>
+</div>
+
+<div class="dec">
+  <span class="tag" style="color:var(--contest)">C3 · artist-truth, blocker 2 (severity 5) — mechanism accepted, naming claim refused</span>
+  <h3><code>← REVERT</code> is not "the rejection verb wearing an undo's word"</h3>
+
+  <p><strong>The claim.</strong> <em>"<code>_on_revert_clicked</code> (<code>:287-291</code>) emits <strong>both</strong> <code>reject_clicked</code> and <code>revert_requested</code> — it is the rejection verb wearing an undo's word. An artist reading 'REVERT' on a still-pending proposal at 2am does not know that pressing it blocks the operation rather than unwinding one."</em></p>
+
+  <p><strong>The mechanism half of this finding is accepted in full and reopens F4</strong> — <code>mark_decided</code> hiding the verb unconditionally is real, verified, and corrected at source in §4.2. That is the severity-5 half and I am not softening it.</p>
+
+  <p><strong>The naming half is refused as stated.</strong> The dual emit is not a mislabel; it is a designed split, and the method's own docstring at <code>gate_widget.py:287-291</code> says which half goes where:</p>
+
+  <pre><code>def _on_revert_clicked(self, checked=False):
+    """REVIEW's verb: the rejection goes to the ledger, the undo goes to
+    the panel (revert_requested -&gt; _on_revert)."""
+    self.reject_clicked.emit(self._proposal_id)
+    self.revert_requested.emit(self._proposal_id)</code></pre>
+
+  <p>At REVIEW the operation <em>has already continued</em> — CLAUDE.md §1.2: <em>"Agent proposes, artist confirms (logs proposal, continues unless rejected)."</em> So one press correctly does two things: files the rejection so the ledger records that the artist did not want it, and issues the undo so the scene comes back. "REVERT" names the <em>outcome the artist gets</em>, which is the right thing for a verb to name. Calling it a rejection in disguise gets the direction backwards.</p>
+
+  <p><strong>What survives, reframed.</strong> There is a real legibility gap, and it is the opposite one: <strong>the artist cannot tell that pressing REVERT also files a rejection on the record.</strong> On a still-pending proposal the press is doing something the label does not mention. That is worth a tooltip or a confirmation line in the chat message — and it is small, contained, and not a reason to rename the verb.</p>
+
+  <p>Folded at source in §4.2 as part of the level-branch fix, rather than as a rename.</p>
+</div>
+
+<hr>
+
+<p class="small"><strong>Everything else folded, not contested.</strong> That includes the four findings that reversed positions the draft argued for: the <code>TRACKING_EM</code> key count (§7 ruling 1, revised — USE was right), the airy red case (§8 D1 — the draft would have deleted a failing test), the docking tautology (§8 D2 — the draft's single token asserts nothing), and the three floor items measured at rest (§4 — two of them reopened). Where a lens was right and I had argued otherwise, the ruling changes and says so.</p>
+
+  </div>
+</section>
+
+<section id="s12">
+  <div class="sec-head">
+    <span class="sec-num">12</span>
+    <div>
+      <h2>The card</h2>
+      <p class="dek">One screen. Everything above compressed to what actually needs Joe.</p>
+    </div>
+  </div>
+
+  <div class="card">
+
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px">The one organizing move</p>
+    <p class="one">Collapse every three-column authority to the one column that renders — then write that column where the next designer looks.</p>
+    <p class="small" style="max-width:62ch;margin-bottom:0">Three density gap columns, three measured widths, three docking bounds in YAML prose. <code>synapse_panel.py:724</code> composes one profile. Two thirds of every triple describe panels no artist can reach. <strong>Collapse the authority. Never collapse the coverage</strong> — ~60 parametrized cases live on that axis and one of them is red.</p>
+
+    <hr>
+
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px">The spacing table at a glance — standard, the one that renders</p>
+
+    <div class="mini">
+      <div><span class="r">band</span><span class="px">0</span><span class="d">chrome bands that own their own hairline</span></div>
+      <div><span class="r">stack</span><span class="px">4</span><span class="d">flush utility stacks · absorbs <code>parm_row</code>'s gap</span></div>
+      <div><span class="r">pair</span><span class="px">8</span><span class="d">a small head and the thing it heads · <em>was</em> <code>label</code>, 12</span></div>
+      <div><span class="r">tag</span><span class="px">12</span><span class="d">chip / badge rows · was 16</span></div>
+      <div><span class="r">group</span><span class="px">16</span><span class="d">related controls · absorbs <code>card</code> · the unknown-role fallback</span></div>
+      <div><span class="r">shell</span><span class="px">24</span><span class="d">the rail, the ribbon, the faces · was 16</span></div>
+    </div>
+    <p class="small" style="margin:8px 0 0;max-width:62ch">Six roles, six rungs, <code>len(set(values)) == len(ROLE_GAPS)</code> → 6 == 6. <strong>Three die:</strong> <code>row</code> (zero set-sites, dead paint), <code>card</code> (→ <code>group</code>, zero pixels), <code>parm_row</code> (a 128px and a 64px column wearing a rhythm name).</p>
+
+    <hr>
+
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px">A vs B — the recommendation, in one line</p>
+    <p style="font-family:Archivo,sans-serif;font-weight:600;font-size:17.5px;line-height:1.4;max-width:60ch;margin:0 0 6px"><strong>No rail — B already shipped; apply B's own logic one row up and let the model id elide at a derived cap, so the panel's floor is set by the design and not by vendor naming.</strong></p>
+    <p class="small" style="max-width:64ch;margin-bottom:0">Cost, plainly: the artist loses the full model id at a glance and gets a hover or the picker. Panel floor lands at <strong>312</strong> (cap 137) or <strong>340</strong> (cap 172) — that sub-choice is D3.</p>
+
+    <hr>
+
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:0 0 6px">Five decisions that gate the work</p>
+
+    <ul class="dl">
+      <li>
+        <span class="id">D1</span>
+        <span><span class="q">Retire the density axis as an authority?</span>
+        <span class="a"><strong>Recommend yes</strong> — but measure the airy docking case first and re-home it if it is red. Deleting the parametrization deletes a failing test. It also supersedes CTO RULING R3-01, which needs its own artifact.</span></span>
+      </li>
+      <li>
+        <span class="id">D2</span>
+        <span><span class="q">Is 280 a promise or a measurement?</span>
+        <span class="a"><strong>Recommend: both, as two tokens.</strong> <code>PANEL_MIN_WIDTH</code> keeps the promise to the host; <code>DOCK_BOUND_PX</code> carries what the design owes and is what the test asserts. One symbol doing both jobs makes the guard assert <code>x &lt;= x</code>.</span></span>
+      </li>
+      <li>
+        <span class="id">D3</span>
+        <span><span class="q">How far does the model id get to run?</span>
+        <span class="a"><strong>Recommend: cap 137, width-responsive.</strong> Keeps a real docking range at a 312 floor. Cap 172 keeps the string but makes the panel dock only at 340. <code>QPushButton</code> does not elide on its own, so this is ~15 lines, not 4.</span></span>
+      </li>
+      <li>
+        <span class="id">D4</span>
+        <span><span class="q">The rhythm commit — how many tracking keys, and does J5 move?</span>
+        <span class="a"><strong>Recommend four keys</strong> (add <code>TAG = 0.06</code>) so no chip's tracking changes visibly; three keys is free in tokens and visible on four surfaces. <code>_apply_type</code> goes either way. And moving <code>_EDGE_TOP</code> to <code>SPACE_LG</code> is +8px above the identity row and supersedes <em>your own J5</em>, pinned exactly at <code>test_j5_rail_air.py:157</code>.</span></span>
+      </li>
+      <li>
+        <span class="id">D6</span>
+        <span><span class="q">Does the halt mark grow?</span>
+        <span class="a"><strong>Recommend yes, 20 → 26.</strong> It is the most consequential click in the panel, 6px under the floor, and invisible to every probe because it is a <code>QWidget</code>, not a button. Costs 6px of D3's cap. Decide it <em>before</em> Wave 1 lands, or the guard lands red on a violation nobody ruled on.</span></span>
+      </li>
+    </ul>
+
+    <p class="small" style="margin-top:14px;margin-bottom:0"><strong>D5</strong> (tag radius → <code>RADIUS_PILL</code>, and whether the unbuilt recall card still wants a 999 pill) is the sixth — §8. It blocks nothing but itself. <strong>Two more</strong> are real and cannot be asked yet: the turn receipt's persistence and the consent card's undo at REVIEW, both blocked on probes that have never run.</p>
+
+  </div>
+</section>
+
+<section id="open">
+  <div class="sec-head">
+    <span class="sec-num">—</span>
+    <div><h2>Still open, and honest about it</h2></div>
+  </div>
+  <div class="rail">
+
+<p>Five claims are code-verified but not behaviour-verified. No probe in this review or the last covers them, and none of them is closed by anything above.</p>
+
+<ol>
+  <li><strong>The state sentence under a direct tool call.</strong> §4.1 reopens F2 on a code reading. Nothing has driven <code>_run_direct_tool</code> and measured the clip. The fix is conformance to a rule the file already carries — but the measurement comes first.</li>
+  <li><strong>The consent card at REVIEW, after the decision lands.</strong> Whether the auto-continue path reaches <code>_on_remote_decision</code> is the one inferred link in §4.2. Drive a REVIEW proposal to auto-continue and read <code>revert_visible_on_chat</code>.</li>
+  <li><strong>The consent card's chroma.</strong> 3.15% / 12 buckets was the <em>old</em> card. The rebuilt one has never been measured. Needs a regenerated <code>after_r3/expert/gate_widget.png</code> via <code>harness/notes/panel_shot.py</code>, then the Pillow half of <code>REVIEW.md:126-129</code>.</li>
+  <li><strong>F11's own predicate, plus the N+1 clause.</strong> No probe drives a quiet INFORM turn before reading <code>revert_visible_on_chat</code>, and none sends a second turn after it. The review's own note says <code>use_probe.py</code> must be extended; it has not been.</li>
+  <li><strong>The live dock at 340 beside the network editor.</strong> Everything above is offscreen. Whether the host ever offers the floor, and how the pane behaves at it, is on the GUI gate list (<code>REVIEW.md:398-406</code>) and stays there.</li>
+</ol>
+
+<p class="small">And one thing that is not open, recorded so it does not get re-litigated: <strong><code>FaceReview</code>'s 338 is content, not policy.</strong> <code>grep</code> over <code>face_review.py</code> for any sizing call returns nothing. Whoever takes Wave 3's third row is doing layout design on that face, not flipping a flag.</p>
+
+  </div>
+</section>
+
+</div>
