@@ -2275,7 +2275,24 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
         self._set_face("direct")            # v9.1 · hand back to the conversation
 
-    def _on_revert(self):
+    def _on_revert(self, operation=""):
+        """Ask for the undo. Returns whether the request actually went out.
+
+        The return value is the contract a consent card needs: a card that asked
+        for this undo must not settle on a request the panel refused. Callers
+        that have nothing to settle (the turn receipt, the review face) ignore
+        it.
+
+        ``operation`` is the name the asking surface is showing - a consent
+        card's header paints ``_operation``, e.g. 'delete_node'. Passing it puts
+        that name in the request, so the request names the same thing the card
+        does. It does NOT scope the undo: houdini_undo is
+        ``hou.undos.performUndo()`` (server/handlers.py), one global step with no
+        target, so a turn that raised several cards still steps back its last
+        change whichever card was clicked. What the name buys is that the
+        assistant is told which change was meant and can say the last step is a
+        different one.
+        """
         # Reversibility: route an undo through the proven agent/bridge path
         # rather than touching the substrate from the panel.
         # Addendum 3.6: REVERT is state-gated like Stop - not while streaming.
@@ -2286,13 +2303,20 @@ class SynapsePanel(QtWidgets.QWidget):
                     "Still working - Stop the current turn before reverting.")
             except Exception:
                 pass
-            return
-        if self._send("Undo the last change using houdini_undo, then confirm what was reverted."):
+            return False
+        prompt = "Undo the last change using houdini_undo, then confirm what was reverted."
+        if operation:
+            prompt += (" The change I mean is the %s you just ran; if the last undo"
+                       " step is a different change, say so instead of undoing it."
+                       % operation)
+        if self._send(prompt):
             try:
                 self._chat.append_system_message("Revert requested. Waiting for the task result…")
             except Exception:
                 pass
             self._set_face("direct")        # return only after an accepted task
+            return True
+        return False
 
     def _on_commit(self):
         # Commit is a consent moment — it routes through the gate; the panel
@@ -2571,8 +2595,11 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 logger.warning("consent slot host failed to wire", exc_info=True)
             try:
-                # bc-wave BC-6a: REVIEW's '<- REVERT' on a card asks for the undo.
-                gate.revert_requested.connect(lambda _pid=None: self._on_revert())
+                # bc-wave BC-6a: REVIEW's '<- REVERT' on a card asks for the
+                # undo. The relay is a bound method, not a lambda that drops
+                # the proposal_id: the card has to be told whether its request
+                # went out, and that answer has to reach THAT card.
+                gate.revert_requested.connect(self._on_gate_revert)
             except Exception:
                 logger.warning("gate revert relay failed to wire", exc_info=True)
             try:
@@ -2591,6 +2618,38 @@ class SynapsePanel(QtWidgets.QWidget):
                 # a test that lowers the level and inform nobody in the field.
                 # A degraded consent surface is not debug information anyway.
                 logger.warning("gate proposal relay failed to wire", exc_info=True)
+
+    def _on_gate_revert(self, proposal_id=""):
+        """A consent card asked for the undo; run it, then tell THAT card what
+        happened.
+
+        The card files no gate decision of its own any more, so this is the only
+        thing that retires it - and it retires it only on the path where a
+        request actually went out. On the refused path the card keeps its
+        REVERT, which is the whole point: `_on_revert` refuses while the worker
+        is streaming, and a REVIEW card is raised by a tool call inside that
+        very turn, so the refusal is the ordinary case, not the edge one.
+
+        The card's operation name rides along so the request names what the card
+        names (see `_on_revert`); it does not scope the undo.
+        """
+        gate = getattr(self, "_gate", None)
+        card = None
+        if gate is not None:
+            card = getattr(gate, "_cards", {}).get(proposal_id)
+        sent = bool(self._on_revert(getattr(card, "_operation", "") if card else ""))
+        if gate is not None:
+            try:
+                gate.note_revert_outcome(proposal_id, sent)
+            except Exception:
+                # Never silent: if the answer does not reach the card, the card
+                # is still live and still clickable -- the failure leaves the
+                # artist with a control, not without one -- but it leaves a
+                # trail (Law 3). WARNING because the panel's bootstrap sets the
+                # `synapse` logger to INFO; a debug record here informs nobody.
+                logger.warning("consent card revert outcome failed to land",
+                               exc_info=True)
+        return sent
 
     def _on_gate_raised(self, proposal):
         """An actionable gate proposal arrived → consent surfaces INLINE on the
