@@ -1,0 +1,1713 @@
+hytest: C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe (SYNAPSE_HYTHON pin)
+============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\User\SYNAPSE
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 206 items
+
+tests\panel\test_apex_catalog_membership.py ....                         [  1%]
+tests\panel\test_bc_wave.py ...F....F....                                [  8%]
+tests\panel\test_chat_gate_off_bridge.py ..                              [  9%]
+tests\panel\test_chat_leading.py .....                                   [ 11%]
+tests\panel\test_consent_revert_seat.py ............                     [ 17%]
+tests\panel\test_consent_way_back.py ...........                         [ 22%]
+tests\panel\test_docking.py ...                                          [ 24%]
+tests\panel\test_doctor_button.py .................                      [ 32%]
+tests\panel\test_failure_trail.py .F                                     [ 33%]
+tests\panel\test_flowfix_j4.py .....                                     [ 35%]
+tests\panel\test_font_floor.py ........                                  [ 39%]
+tests\panel\test_font_scale.py ........                                  [ 43%]
+tests\panel\test_gate_consent_honesty.py ...                             [ 45%]
+tests\panel\test_gate_fidelity_unknown.py ........                       [ 49%]
+tests\panel\test_gate_widget_type.py ...                                 [ 50%]
+tests\panel\test_health_strip.py ...............                         [ 57%]
+tests\panel\test_j1_token_liveness.py .F.                                [ 59%]
+tests\panel\test_j2_token_face.py F.                                     [ 60%]
+tests\panel\test_j3_speakers.py ..                                       [ 61%]
+tests\panel\test_j4_profiles_retired.py ..                               [ 62%]
+tests\panel\test_j5_rail_air.py ..                                       [ 63%]
+tests\panel\test_modal_guard.py ......                                   [ 66%]
+tests\panel\test_ollama_discovery.py .........                           [ 70%]
+tests\panel\test_seeded_contrast.py ...                                  [ 71%]
+tests\panel\test_session_scope.py .......                                [ 75%]
+tests\panel\test_single_window.py ..                                     [ 76%]
+tests\panel\test_theme_source.py ..........                              [ 81%]
+tests\panel\test_token_authority.py .................................    [ 97%]
+tests\panel\test_token_seeding.py ..                                     [ 98%]
+tests\panel\test_type_scale_native.py ....                               [100%]
+
+================================== FAILURES ===================================
+____________ test_chat_face_monochrome_one_accent_plus_state_marks ____________
+tests\panel\test_bc_wave.py:329: in test_chat_face_monochrome_one_accent_plus_state_marks
+    assert len(rest) <= 3, (profile, sorted(rest))
+E   AssertionError: ('curious', [0, 2, 13, 14])
+E   assert 4 <= 3
+E    +  where 4 = len({0, 2, 13, 14})
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 325, in test_chat_face_monochrome_one_accent_plus_state_marks
+    p = _panel(profile)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 83, in _panel
+    p = SynapsePanel()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 628, in __init__
+    self._build_ui()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 737, in _build_ui
+    compose(self, root, get_manifest(profile))
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\compositor.py", line 264, in compose
+    widget = getattr(panel, region["builder"])()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 988, in _build_rail
+    self._refresh_engine_selector()      # text + never-elide floor
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1247, in _refresh_engine_selector
+    connection = self._prepare_connection()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 2004, in _prepare_connection
+    configured_key = provider.resolve_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\providers\anthropic_provider.py", line 207, in resolve_key
+    return get_anthropic_api_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\host\auth.py", line 184, in get_anthropic_api_key
+    logger.info("Anthropic API key loaded from %s env var", ENV_VAR)
+Message: 'Anthropic API key loaded from %s env var'
+Arguments: ('ANTHROPIC_API_KEY',)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 325, in test_chat_face_monochrome_one_accent_plus_state_marks
+    p = _panel(profile)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 87, in _panel
+    _app().processEvents()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1247, in _refresh_engine_selector
+    connection = self._prepare_connection()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 2004, in _prepare_connection
+    configured_key = provider.resolve_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\providers\anthropic_provider.py", line 207, in resolve_key
+    return get_anthropic_api_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\host\auth.py", line 184, in get_anthropic_api_key
+    logger.info("Anthropic API key loaded from %s env var", ENV_VAR)
+Message: 'Anthropic API key loaded from %s env var'
+Arguments: ('ANTHROPIC_API_KEY',)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 325, in test_chat_face_monochrome_one_accent_plus_state_marks
+    p = _panel(profile)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 87, in _panel
+    _app().processEvents()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\runtime_beat.py", line 116, in _emit_beat
+    beat()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 430, in beat
+    get_freeze_chain().heartbeat()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 86, in heartbeat
+    self._watchdog.heartbeat()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\resilience.py", line 586, in heartbeat
+    self._ensure_started()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\resilience.py", line 575, in _ensure_started
+    logger.info("Watchdog started monitoring main thread")
+Message: 'Watchdog started monitoring main thread'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 329, in test_chat_face_monochrome_one_accent_plus_state_marks
+    assert len(rest) <= 3, (profile, sorted(rest))
+AssertionError: ('curious', [0, 2, 13, 14])
+assert 4 <= 3
+ +  where 4 = len({0, 2, 13, 14})
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 338, in test_chat_face_monochrome_one_accent_plus_state_marks
+    p._set_provider(pid0)            # the module-wide scratch file stays on its pick
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1963, in _set_provider
+    self._refresh_engine_selector()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1247, in _refresh_engine_selector
+    connection = self._prepare_connection()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 2004, in _prepare_connection
+    configured_key = provider.resolve_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\providers\anthropic_provider.py", line 207, in resolve_key
+    return get_anthropic_api_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\host\auth.py", line 184, in get_anthropic_api_key
+    logger.info("Anthropic API key loaded from %s env var", ENV_VAR)
+Message: 'Anthropic API key loaded from %s env var'
+Arguments: ('ANTHROPIC_API_KEY',)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 329, in test_chat_face_monochrome_one_accent_plus_state_marks
+    assert len(rest) <= 3, (profile, sorted(rest))
+AssertionError: ('curious', [0, 2, 13, 14])
+assert 4 <= 3
+ +  where 4 = len({0, 2, 13, 14})
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 339, in test_chat_face_monochrome_one_accent_plus_state_marks
+    p.close()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 3937, in closeEvent
+    detach_panel()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\runtime_beat.py", line 196, in detach_panel
+    logger.info(
+Message: 'runtime beat: panel detached deliberately; process-lifetime beat still running=%s (detach #%d)'
+Arguments: (True, 10)
+------------------------------ Captured log call ------------------------------
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.resilience:resilience.py:575 Watchdog started monitoring main thread
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.runtime_beat:runtime_beat.py:196 runtime beat: panel detached deliberately; process-lifetime beat still running=True (detach #10)
+-------------------------- Captured stderr teardown ---------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 144, in runtestprotocol
+    reports.append(call_and_report(item, "teardown", log, nextitem=nextitem))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 199, in pytest_runtest_teardown
+    item.session._setupstate.teardown_exact(nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 568, in teardown_exact
+    fin()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1156, in finish
+    fin()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1014, in _teardown_yield_fixture
+    next(it)
+  File "C:\Users\User\SYNAPSE\tests\conftest.py", line 814, in _contain_leaked_freeze_chain
+    fc.shutdown_freeze_chain()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 423, in shutdown_freeze_chain
+    chain.stop()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 103, in stop
+    self._watchdog.stop()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\resilience.py", line 562, in stop
+    logger.info("Watchdog stopped")
+Message: 'Watchdog stopped'
+Arguments: ()
+---------------------------- Captured log teardown ----------------------------
+INFO     synapse.resilience:resilience.py:562 Watchdog stopped
+__________________________ test_profile_row_retired ___________________________
+tests\panel\test_bc_wave.py:627: in test_profile_row_retired
+    assert share >= 0.5, (profile, p._chat.height(), share)
+E   AssertionError: ('curious', 367, 0.48289473684210527)
+E   assert 0.48289473684210527 >= 0.5
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 597, in test_profile_row_retired
+    p = _panel(profile)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 83, in _panel
+    p = SynapsePanel()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 628, in __init__
+    self._build_ui()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 737, in _build_ui
+    compose(self, root, get_manifest(profile))
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\compositor.py", line 264, in compose
+    widget = getattr(panel, region["builder"])()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 988, in _build_rail
+    self._refresh_engine_selector()      # text + never-elide floor
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1247, in _refresh_engine_selector
+    connection = self._prepare_connection()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 2004, in _prepare_connection
+    configured_key = provider.resolve_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\providers\anthropic_provider.py", line 207, in resolve_key
+    return get_anthropic_api_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\host\auth.py", line 184, in get_anthropic_api_key
+    logger.info("Anthropic API key loaded from %s env var", ENV_VAR)
+Message: 'Anthropic API key loaded from %s env var'
+Arguments: ('ANTHROPIC_API_KEY',)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 597, in test_profile_row_retired
+    p = _panel(profile)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 87, in _panel
+    _app().processEvents()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1247, in _refresh_engine_selector
+    connection = self._prepare_connection()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 2004, in _prepare_connection
+    configured_key = provider.resolve_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\providers\anthropic_provider.py", line 207, in resolve_key
+    return get_anthropic_api_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\host\auth.py", line 184, in get_anthropic_api_key
+    logger.info("Anthropic API key loaded from %s env var", ENV_VAR)
+Message: 'Anthropic API key loaded from %s env var'
+Arguments: ('ANTHROPIC_API_KEY',)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 597, in test_profile_row_retired
+    p = _panel(profile)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 87, in _panel
+    _app().processEvents()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\runtime_beat.py", line 116, in _emit_beat
+    beat()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 430, in beat
+    get_freeze_chain().heartbeat()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 86, in heartbeat
+    self._watchdog.heartbeat()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\resilience.py", line 586, in heartbeat
+    self._ensure_started()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\resilience.py", line 575, in _ensure_started
+    logger.info("Watchdog started monitoring main thread")
+Message: 'Watchdog started monitoring main thread'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 627, in test_profile_row_retired
+    assert share >= 0.5, (profile, p._chat.height(), share)
+AssertionError: ('curious', 367, 0.48289473684210527)
+assert 0.48289473684210527 >= 0.5
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 629, in test_profile_row_retired
+    p.close()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 3937, in closeEvent
+    detach_panel()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\runtime_beat.py", line 196, in detach_panel
+    logger.info(
+Message: 'runtime beat: panel detached deliberately; process-lifetime beat still running=%s (detach #%d)'
+Arguments: (True, 20)
+------------------------------ Captured log call ------------------------------
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.resilience:resilience.py:575 Watchdog started monitoring main thread
+INFO     synapse.runtime_beat:runtime_beat.py:196 runtime beat: panel detached deliberately; process-lifetime beat still running=True (detach #20)
+-------------------------- Captured stderr teardown ---------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 144, in runtestprotocol
+    reports.append(call_and_report(item, "teardown", log, nextitem=nextitem))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 199, in pytest_runtest_teardown
+    item.session._setupstate.teardown_exact(nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 568, in teardown_exact
+    fin()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1156, in finish
+    fin()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1014, in _teardown_yield_fixture
+    next(it)
+  File "C:\Users\User\SYNAPSE\tests\conftest.py", line 814, in _contain_leaked_freeze_chain
+    fc.shutdown_freeze_chain()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 423, in shutdown_freeze_chain
+    chain.stop()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 103, in stop
+    self._watchdog.stop()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\resilience.py", line 562, in stop
+    logger.info("Watchdog stopped")
+Message: 'Watchdog stopped'
+Arguments: ()
+---------------------------- Captured log teardown ----------------------------
+INFO     synapse.resilience:resilience.py:562 Watchdog stopped
+____________________________ test_dead_verb_hidden ____________________________
+tests\panel\test_failure_trail.py:175: in test_dead_verb_hidden
+    assert not shown, (
+E   AssertionError: the 'open in render view' verb is present and shown while the render bridge is absent — a visible no-op (Design §2.5). Hide it (or omit it) until the confirmed hou.ui render-view chain is wired.
+E   assert not [<PySide6.QtWidgets.QPushButton(0x581c3080, name="DsVerb") at 0x0000000177E6B5C0>]
+_________ test_connected_keyed_engine_is_live_then_working_then_live __________
+tests\panel\test_j1_token_liveness.py:127: in test_connected_keyed_engine_is_live_then_working_then_live
+    assert tok.toolTip() == "Engine & model - click to switch", tok.toolTip()
+E   AssertionError: Engine & model - click to switch
+E     
+E     Cloud relay
+E     Requested model: ollama/glm-5:cloud
+E     Service: http://localhost:11434/v1/chat/completions
+E     A provider may resolve model aliases internally.
+E     Reported capabilities: unknown
+E     Reported context: unknown
+E   assert 'Engine & mod...text: unknown' == 'Engine & mod...ick to switch'
+E     
+E     - Engine & model - click to switch
+E     + Engine & model - click to switch
+E     ?                                 +
+E     + 
+E     + Cloud relay
+E     + Requested model: ollama/glm-5:cloud...
+E     
+E     ...Full output truncated (4 lines hidden), use '-vv' to show
+---------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_j1_token_liveness.py", line 117, in test_connected_keyed_engine_is_live_then_working_then_live
+    p = _bc._panel("expert")
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 83, in _panel
+    p = SynapsePanel()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 628, in __init__
+    self._build_ui()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 737, in _build_ui
+    compose(self, root, get_manifest(profile))
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\compositor.py", line 264, in compose
+    widget = getattr(panel, region["builder"])()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 988, in _build_rail
+    self._refresh_engine_selector()      # text + never-elide floor
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1247, in _refresh_engine_selector
+    connection = self._prepare_connection()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 2004, in _prepare_connection
+    configured_key = provider.resolve_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\providers\anthropic_provider.py", line 207, in resolve_key
+    return get_anthropic_api_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\host\auth.py", line 184, in get_anthropic_api_key
+    logger.info("Anthropic API key loaded from %s env var", ENV_VAR)
+Message: 'Anthropic API key loaded from %s env var'
+Arguments: ('ANTHROPIC_API_KEY',)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_j1_token_liveness.py", line 117, in test_connected_keyed_engine_is_live_then_working_then_live
+    p = _bc._panel("expert")
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 87, in _panel
+    _app().processEvents()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1247, in _refresh_engine_selector
+    connection = self._prepare_connection()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 2004, in _prepare_connection
+    configured_key = provider.resolve_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\providers\anthropic_provider.py", line 207, in resolve_key
+    return get_anthropic_api_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\host\auth.py", line 184, in get_anthropic_api_key
+    logger.info("Anthropic API key loaded from %s env var", ENV_VAR)
+Message: 'Anthropic API key loaded from %s env var'
+Arguments: ('ANTHROPIC_API_KEY',)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_j1_token_liveness.py", line 117, in test_connected_keyed_engine_is_live_then_working_then_live
+    p = _bc._panel("expert")
+  File "C:\Users\User\SYNAPSE\tests\panel\test_bc_wave.py", line 87, in _panel
+    _app().processEvents()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\runtime_beat.py", line 116, in _emit_beat
+    beat()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 430, in beat
+    get_freeze_chain().heartbeat()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 86, in heartbeat
+    self._watchdog.heartbeat()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\resilience.py", line 586, in heartbeat
+    self._ensure_started()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\resilience.py", line 575, in _ensure_started
+    logger.info("Watchdog started monitoring main thread")
+Message: 'Watchdog started monitoring main thread'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\User\SYNAPSE\tests\panel\test_j1_token_liveness.py", line 127, in test_connected_keyed_engine_is_live_then_working_then_live
+    assert tok.toolTip() == "Engine & model - click to switch", tok.toolTip()
+AssertionError: Engine & model - click to switch
+  
+  Cloud relay
+  Requested model: ollama/glm-5:cloud
+  Service: http://localhost:11434/v1/chat/completions
+  A provider may resolve model aliases internally.
+  Reported capabilities: unknown
+  Reported context: unknown
+assert 'Engine & mod...text: unknown' == 'Engine & mod...ick to switch'
+  
+  - Engine & model - click to switch
+  + Engine & model - click to switch
+  ?                                 +
+  + 
+  + Cloud relay
+  + Requested model: ollama/glm-5:cloud...
+  
+  ...Full output truncated (4 lines hidden), use '-vv' to show
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_j1_token_liveness.py", line 137, in test_connected_keyed_engine_is_live_then_working_then_live
+    p._set_provider(pid0)
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1963, in _set_provider
+    self._refresh_engine_selector()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 1247, in _refresh_engine_selector
+    connection = self._prepare_connection()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 2004, in _prepare_connection
+    configured_key = provider.resolve_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\providers\anthropic_provider.py", line 207, in resolve_key
+    return get_anthropic_api_key()
+  File "C:\Users\User\SYNAPSE\python\synapse\host\auth.py", line 184, in get_anthropic_api_key
+    logger.info("Anthropic API key loaded from %s env var", ENV_VAR)
+Message: 'Anthropic API key loaded from %s env var'
+Arguments: ('ANTHROPIC_API_KEY',)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\User\SYNAPSE\tests\panel\test_j1_token_liveness.py", line 127, in test_connected_keyed_engine_is_live_then_working_then_live
+    assert tok.toolTip() == "Engine & model - click to switch", tok.toolTip()
+AssertionError: Engine & model - click to switch
+  
+  Cloud relay
+  Requested model: ollama/glm-5:cloud
+  Service: http://localhost:11434/v1/chat/completions
+  A provider may resolve model aliases internally.
+  Reported capabilities: unknown
+  Reported context: unknown
+assert 'Engine & mod...text: unknown' == 'Engine & mod...ick to switch'
+  
+  - Engine & model - click to switch
+  + Engine & model - click to switch
+  ?                                 +
+  + 
+  + Cloud relay
+  + Requested model: ollama/glm-5:cloud...
+  
+  ...Full output truncated (4 lines hidden), use '-vv' to show
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 139, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 184, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 1707, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py", line 167, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\User\SYNAPSE\tests\panel\test_j1_token_liveness.py", line 138, in test_connected_keyed_engine_is_live_then_working_then_live
+    p.close()
+  File "C:\Users\User\SYNAPSE\python\synapse\panel\synapse_panel.py", line 3937, in closeEvent
+    detach_panel()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\runtime_beat.py", line 196, in detach_panel
+    logger.info(
+Message: 'runtime beat: panel detached deliberately; process-lifetime beat still running=%s (detach #%d)'
+Arguments: (True, 35)
+------------------------------ Captured log call ------------------------------
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.resilience:resilience.py:575 Watchdog started monitoring main thread
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.runtime_beat:runtime_beat.py:196 runtime beat: panel detached deliberately; process-lifetime beat still running=True (detach #35)
+-------------------------- Captured stderr teardown ---------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 80, in emit
+    self.doRollover()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 185, in doRollover
+    self.rotate(self.baseFilename, dfn)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\PROGRA~1\SIDEEF~1\HOUDIN~1.400\python313\Lib\logging\handlers.py", line 121, in rotate
+    os.rename(source, dest)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\User\\.synapse\\logs\\synapse.log' -> 'C:\\Users\\User\\.synapse\\logs\\synapse.log.1'
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pytest\__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 330, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 384, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\main.py", line 408, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 144, in runtestprotocol
+    reports.append(call_and_report(item, "teardown", log, nextitem=nextitem))
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 249, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 361, in from_call
+    result: TResult | None = func()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 250, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 199, in pytest_runtest_teardown
+    item.session._setupstate.teardown_exact(nextitem)
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 568, in teardown_exact
+    fin()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1156, in finish
+    fin()
+  File "C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1014, in _teardown_yield_fixture
+    next(it)
+  File "C:\Users\User\SYNAPSE\tests\conftest.py", line 814, in _contain_leaked_freeze_chain
+    fc.shutdown_freeze_chain()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 423, in shutdown_freeze_chain
+    chain.stop()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\freeze_chain.py", line 103, in stop
+    self._watchdog.stop()
+  File "C:\Users\User\SYNAPSE\python\synapse\server\resilience.py", line 562, in stop
+    logger.info("Watchdog stopped")
+Message: 'Watchdog stopped'
+Arguments: ()
+---------------------------- Captured log teardown ----------------------------
+INFO     synapse.resilience:resilience.py:562 Watchdog stopped
+_______________________ test_face_counts_an_ollama_task _______________________
+tests\panel\test_j2_token_face.py:100: in test_face_counts_an_ollama_task
+    assert rows["session cost"] == "$0"
+E   AssertionError: assert 'UNKNOWN' == '$0'
+E     
+E     - $0
+E     + UNKNOWN
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+
+tests/panel/test_bc_wave.py: 13 warnings
+tests/panel/test_consent_revert_seat.py: 4 warnings
+tests/panel/test_docking.py: 2 warnings
+tests/panel/test_doctor_button.py: 5 warnings
+tests/panel/test_gate_widget_type.py: 3 warnings
+tests/panel/test_j1_token_liveness.py: 3 warnings
+tests/panel/test_j4_profiles_retired.py: 2 warnings
+tests/panel/test_j5_rail_air.py: 2 warnings
+tests/panel/test_single_window.py: 2 warnings
+  C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py:1014: RuntimeWarning: process-wide FreezeChain left ARMED by this test and shut down by the conftest net (R310a zombie class) -- add shutdown_freeze_chain() to the test's teardown
+    next(it)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks
+FAILED tests/panel/test_bc_wave.py::test_profile_row_retired - AssertionError...
+FAILED tests/panel/test_failure_trail.py::test_dead_verb_hidden - AssertionEr...
+FAILED tests/panel/test_j1_token_liveness.py::test_connected_keyed_engine_is_live_then_working_then_live
+FAILED tests/panel/test_j2_token_face.py::test_face_counts_an_ollama_task - A...
+============ 5 failed, 201 passed, 37 warnings in 69.55s (0:01:09) ============

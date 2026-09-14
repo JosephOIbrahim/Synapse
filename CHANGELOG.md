@@ -2,6 +2,14 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.70.0 — Tool names an artist can read
+
+*2026-09-14.* The panel's own tool labels destroyed domain words (`USD` became
+`usd`) and led with namespaces nobody needs to read. A curated-label map had also
+been running at **4 of 8** in silence, keyed against the wrong registry column.
+Both repaired, and a guard added that reads the live registry so it cannot rot
+again. See the [release notes](docs/releases/v5.70.0.md).
+
 ## v5.69.0 — The stop controls actually stop
 
 *2026-09-14.* Published as **Latest** with a qualified Windows Setup (19 of 19 installer
