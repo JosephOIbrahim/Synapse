@@ -53,7 +53,13 @@ It is not a default.
 12  pytest installer\tests
 
 --- tag + push ------------------------------------------------------------
-13  git add / git commit                            tree must go clean
+13  SYNAPSE_GATE_C=1 git add / git commit           tree must go clean. VERSION
+                                                    is a Gate C path (the
+                                                    pre-commit hook): the bump
+                                                    commit is REFUSED without
+                                                    the override, and an
+                                                    unchecked failure tags an
+                                                    un-bumped HEAD
 14  python scripts\tag_release.py --check-only      preflight, always safe
 15  python scripts\tag_release.py                   creates vX.Y.Z (annotated)
 16  SYNAPSE_GATE_C=1 git push origin master vX.Y.Z  scoped to ONE command,

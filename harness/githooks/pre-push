@@ -22,6 +22,44 @@
 
 z40=0000000000000000000000000000000000000000
 
+# --- Gate C, protected paths over the pushed range ---------------------------
+#
+# harness/githooks/pre-commit fences VERSION, harness/state/** and
+# harness/verify/*_baseline.json at COMMIT time. Git runs no commit-half hook
+# for `git cherry-pick` or `git revert`, so either verb lands a protected path
+# with pre-commit silent - ordinary porcelain, one command, no --no-verify.
+#
+# The capability argument applies to itself: the fence also belongs where the
+# work actually leaves the machine. This checks EVERY COMMIT in the pushed
+# range, not the net diff - a cherry-pick followed by a revert has an empty net
+# diff and must still be caught.
+#
+# Stated edge: when the ref is new to the remote (remote_sha is all-zero) the
+# range is `<local> --not --remotes`. With no remote-tracking refs yet - a
+# fresh clone that has never fetched - that is the whole history, so the check
+# errs toward refusing rather than toward passing.
+protected_in_range() {
+    _revs="$(git rev-parse --git-path gate-c-revs.$$)"
+    _names="$(git rev-parse --git-path gate-c-names.$$)"
+    if ! git rev-list "$@" </dev/null > "$_revs" 2>/dev/null; then
+        rm -f "$_revs" "$_names"
+        printf '%s\n' "<could not read the pushed range>"
+        return 0
+    fi
+    : > "$_names"
+    while IFS= read -r _sha; do
+        git diff-tree -r -z --root --no-commit-id --name-only --no-renames "$_sha" </dev/null 2>/dev/null
+    done < "$_revs" >> "$_names"
+    tr '\0' '\n' < "$_names" | while IFS= read -r _path; do
+        case "$_path" in
+            VERSION|harness/state/*|harness/verify/*_baseline.json)
+                printf '%s\n' "$_path"
+                ;;
+        esac
+    done | sort -u
+    rm -f "$_revs" "$_names"
+}
+
 while read local_ref local_sha remote_ref remote_sha
 do
     case "$remote_ref" in
@@ -48,6 +86,42 @@ do
             echo "pre-push: Gate C override present. Pushing $remote_ref." >&2
             ;;
     esac
+
+    # Protected paths, EVERY ref - not just master. This is the half that
+    # catches `git cherry-pick` and `git revert`, which never ran pre-commit.
+    if [ "$local_sha" != "$z40" ]; then
+        if [ "$remote_sha" = "$z40" ]; then
+            hits=$(protected_in_range "$local_sha" --not --remotes)
+        else
+            hits=$(protected_in_range "$remote_sha..$local_sha")
+        fi
+        if [ -n "$hits" ]; then
+            if [ "$SYNAPSE_GATE_C" != "1" ]; then
+                echo "" >&2
+                echo "  pre-push REFUSED: a commit in the pushed range touches a Gate C path." >&2
+                echo "" >&2
+                printf '%s\n' "$hits" | while IFS= read -r path; do
+                    echo "      $path" >&2
+                done
+                echo "" >&2
+                echo "  Checked per COMMIT, not as a net diff: 'git cherry-pick' and" >&2
+                echo "  'git revert' run no commit-half hook, so pre-commit never saw" >&2
+                echo "  these, and a cherry-pick undone by a revert has an empty net" >&2
+                echo "  diff while still rewriting VERSION twice." >&2
+                echo "" >&2
+                echo "  To push this deliberately:" >&2
+                echo "      SYNAPSE_GATE_C=1 git push ..." >&2
+                echo "  PowerShell:" >&2
+                echo "      \$env:SYNAPSE_GATE_C=1; git push ...; Remove-Item Env:SYNAPSE_GATE_C" >&2
+                echo "" >&2
+                exit 1
+            fi
+            echo "pre-push: Gate C override present. Pushed range touches protected path(s):" >&2
+            printf '%s\n' "$hits" | while IFS= read -r path; do
+                echo "    $path" >&2
+            done
+        fi
+    fi
 done
 
 exit 0

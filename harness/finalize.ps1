@@ -107,8 +107,17 @@ if ($LASTEXITCODE -ne 0) { Die "VERSION and __version__ still disagree after --f
 Ok "VERSION and __version__ agree"
 
 git add VERSION python/synapse/__init__.py
+# Gate C (harness/githooks/pre-commit, harness review 2026-09-15 row 1b):
+# VERSION is a protected path, so this commit is REFUSED unless the gate is set
+# for this one command. Ungated, the commit would exit 1, the tag below would
+# land on the UN-bumped HEAD, and the script would still print READY.
+$env:SYNAPSE_GATE_C = "1"
 git commit -q -m "release(v5.35.0): the instruments were the defect"
+$bumpRc = $LASTEXITCODE
+Remove-Item Env:SYNAPSE_GATE_C -ErrorAction SilentlyContinue
+if ($bumpRc -ne 0) { Die "the VERSION bump commit failed (rc=$bumpRc) - refusing to tag an un-bumped HEAD." }
 git tag -a v5.35.0 -m "v5.35.0 - the instruments were the defect"
+if ($LASTEXITCODE -ne 0) { Die "git tag v5.35.0 failed." }
 Ok "tagged v5.35.0 at $(git rev-parse --short HEAD)"
 
 # --- Gate C stops here -------------------------------------------------------

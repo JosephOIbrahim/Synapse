@@ -48,22 +48,38 @@
 #   - Renames are diffed with --no-renames, so moving a protected path away
 #     shows as a delete of that path and is still caught.
 #   - `--amend` re-checks only what is newly staged against the old HEAD.
+#   - `git cherry-pick` and `git revert` run NO commit-half hook at all, so
+#     either verb lands a protected path with this hook silent - ordinary
+#     porcelain, one command, no --no-verify in sight. That hole is closed on
+#     the other side: pre-push checks every commit in the pushed range, so the
+#     bytes cannot leave the machine ungated. A purely local history can still
+#     carry them.
 #
 # Installed via core.hooksPath so it is versioned and survives a fresh clone -
 # .git/hooks is not in the tree and would be lost on the next checkout.
 
-staged=$(git diff --cached --name-only --no-renames) || {
+# `-z` is load-bearing. Without it git QUOTES any path carrying a byte outside
+# plain ASCII (core.quotepath defaults to on) and prints
+#     "harness/state/caf\303\251.json"
+# - leading double-quote and all. That quote breaks the `harness/state/*`
+# prefix, the case arm never matches, and the commit sails through. NUL-
+# delimited output is never quoted. Command substitution EATS NUL bytes, so the
+# list travels through a file inside .git rather than through a variable.
+list="$(git rev-parse --git-path gate-c-staged.$$)"
+if ! git diff --cached -z --name-only --no-renames > "$list" 2>/dev/null; then
+    rm -f "$list"
     echo "pre-commit: could not read the index (git diff --cached failed). Refusing rather than guessing." >&2
     exit 1
-}
+fi
 
-hits=$(printf '%s\n' "$staged" | while IFS= read -r path; do
+hits=$(tr '\0' '\n' < "$list" | while IFS= read -r path; do
     case "$path" in
         VERSION|harness/state/*|harness/verify/*_baseline.json)
             printf '%s\n' "$path"
             ;;
     esac
 done)
+rm -f "$list"
 
 [ -z "$hits" ] && exit 0
 

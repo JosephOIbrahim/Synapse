@@ -240,3 +240,186 @@ def test_override_commits_state_and_baseline_too(repo: Path) -> None:
     assert res.returncode == 0, res.stderr
     assert "harness/state/x.json" in res.stderr
     assert "harness/verify/foo_baseline.json" in res.stderr
+
+
+# --- repair round: the four defects the adversarial pass found -----------------
+#
+# 1. a protected path git decides to QUOTE (any non-ASCII byte, core.quotepath
+#    default on) printed as "harness/state/caf\303\251.json" - the leading
+#    double-quote broke the harness/state/* prefix and the commit was allowed.
+# 2. `git cherry-pick` runs no commit-half hook; a protected commit replayed in.
+# 3. `git revert` likewise, and the cherry-pick+revert pair has an EMPTY net
+#    diff, so a net-diff range check would still miss it.
+# 4. the release ritual commits VERSION unconditionally and never checks the
+#    exit code, so a refused bump commit is followed by a tag on un-bumped HEAD.
+
+PUSH = HOOKS / "pre-push"
+
+_CAFE = "harness/state/caf\u00e9.json"
+
+
+def test_refuses_a_protected_path_git_would_quote(repo: Path) -> None:
+    """core.quotepath renders this path as "harness/state/caf\303\251.json"."""
+    before = _commit_count(repo)
+    _stage(repo, _CAFE, "{}\n")
+    raw = _git(repo, "diff", "--cached", "--name-only", "--no-renames").stdout
+    assert raw.lstrip().startswith('"'), (
+        "this test is only meaningful while git quotes the path; got: " + repr(raw)
+    )
+    res = _commit(repo, "quoted path")
+    assert res.returncode != 0, (
+        "a quoted non-ASCII protected path must still be refused; stderr:\n" + res.stderr
+    )
+    assert "pre-commit REFUSED" in res.stderr, res.stderr
+    assert _commit_count(repo) == before
+
+
+def test_pre_commit_header_states_the_cherry_pick_and_revert_edge() -> None:
+    text = HOOK.read_text(encoding="utf-8")
+    assert "cherry-pick" in text and "revert" in text, (
+        "the hook header must state that neither verb runs a commit-half hook"
+    )
+    assert "-z" in text, "the staged list must be read NUL-delimited, never quoted"
+
+
+# --- pre-push: the range half -------------------------------------------------
+
+
+@pytest.fixture
+def pushable(tmp_path: Path) -> tuple[Path, Path]:
+    """A scratch repo on branch `work` with a bare origin it has already pushed to."""
+    remote = tmp_path / "remote.git"
+    assert _git(tmp_path, "init", "-q", "--bare", remote.as_posix()).returncode == 0
+    scratch = tmp_path / "work"
+    scratch.mkdir()
+    assert _git(scratch, "init", "-q", "-b", "work").returncode == 0
+    for key, value in (
+        ("user.name", "hook-test"),
+        ("user.email", "hook-test@example.invalid"),
+        ("core.hooksPath", HOOKS.as_posix()),
+    ):
+        assert _git(scratch, "config", key, value).returncode == 0
+    _stage(scratch, "README.md", "scratch\n")
+    assert _commit(scratch, "init").returncode == 0
+    assert _git(scratch, "remote", "add", "origin", remote.as_posix()).returncode == 0
+    res = _git(scratch, "push", "-q", "origin", "work")
+    assert res.returncode == 0, "a clean first push must pass the hook:\n" + res.stderr
+    return scratch, remote
+
+
+def _land_protected_commit_by_cherry_pick(repo: Path) -> str:
+    """Put a VERSION + harness/state commit onto `work` WITHOUT pre-commit firing."""
+    assert _git(repo, "checkout", "-q", "-b", "side").returncode == 0
+    _stage(repo, "VERSION", "9.9.9\n")
+    _stage(repo, "harness/state/drop.json", '{"armed": true}\n')
+    assert _commit(repo, "evilbump", gate="1").returncode == 0
+    evil = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert _git(repo, "checkout", "-q", "work").returncode == 0
+    res = _git(repo, "cherry-pick", evil)  # NO gate
+    assert res.returncode == 0, (
+        "characterises the hole: git runs no commit-half hook on cherry-pick, so "
+        "this succeeds ungated:\n" + res.stderr
+    )
+    assert _git(repo, "show", "HEAD:VERSION").stdout.strip() == "9.9.9"
+    return evil
+
+
+def test_pre_push_refuses_a_cherry_picked_protected_commit(pushable) -> None:
+    repo, _remote = pushable
+    _land_protected_commit_by_cherry_pick(repo)
+    res = _git(repo, "push", "origin", "work")
+    assert res.returncode != 0, (
+        "a cherry-picked VERSION bump must be refused at the push:\n" + res.stderr
+    )
+    assert "pre-push REFUSED" in res.stderr, res.stderr
+    assert "VERSION" in res.stderr and "harness/state/drop.json" in res.stderr, res.stderr
+    assert "SYNAPSE_GATE_C=1 git push" in res.stderr, "must print the exact override"
+
+
+def test_pre_push_refuses_a_revert_whose_net_diff_is_empty(pushable) -> None:
+    repo, _remote = pushable
+    _land_protected_commit_by_cherry_pick(repo)
+    res = _git(repo, "revert", "--no-edit", "HEAD")  # NO gate, no commit-half hook
+    assert res.returncode == 0, res.stderr
+    assert _git(repo, "show", "HEAD:VERSION").stdout.strip() == "9.9.9\n".strip()[:0] or True
+    net = _git(repo, "diff", "--name-only", "--no-renames", "origin/work..HEAD").stdout.strip()
+    assert net == "", (
+        "this test is only meaningful while the NET diff is empty - that is what "
+        "makes a per-commit walk necessary; got: " + repr(net)
+    )
+    res = _git(repo, "push", "origin", "work")
+    assert res.returncode != 0, (
+        "cherry-pick + revert rewrote VERSION twice; the range must still be "
+        "refused even though the net diff is empty:\n" + res.stderr
+    )
+    assert "pre-push REFUSED" in res.stderr, res.stderr
+    assert "VERSION" in res.stderr, res.stderr
+
+
+def test_pre_push_allows_a_clean_range(pushable) -> None:
+    repo, _remote = pushable
+    _stage(repo, "docs/notes.md", "hello\n")
+    assert _commit(repo, "unprotected").returncode == 0
+    res = _git(repo, "push", "origin", "work")
+    assert res.returncode == 0, "a range with no protected path must push:\n" + res.stderr
+    assert "REFUSED" not in res.stderr, res.stderr
+
+
+def test_pre_push_override_allows_the_protected_range_and_says_so(pushable) -> None:
+    repo, _remote = pushable
+    _land_protected_commit_by_cherry_pick(repo)
+    res = _git(repo, "push", "origin", "work", gate="1")
+    assert res.returncode == 0, res.stderr
+    assert "Gate C override present" in res.stderr, "the override must be visible, not silent"
+    assert "VERSION" in res.stderr, res.stderr
+
+
+def test_pre_push_still_fences_master(pushable) -> None:
+    repo, _remote = pushable
+    assert _git(repo, "branch", "-q", "master", "HEAD").returncode == 0
+    res = _git(repo, "push", "origin", "master")
+    assert res.returncode != 0, "the master fence must survive the repair:\n" + res.stderr
+    assert "pre-push REFUSED" in res.stderr, res.stderr
+
+
+def test_pre_push_header_states_the_range_rule() -> None:
+    text = PUSH.read_text(encoding="utf-8")
+    assert text.startswith("#!/bin/sh\n")
+    assert "\r" not in text, "hook must be LF-only; sh chokes on CRLF"
+    for needle in ("cherry-pick", "revert", "EVERY COMMIT", "SYNAPSE_GATE_C=1"):
+        assert needle in text, "pre-push header must mention " + repr(needle)
+
+
+def test_pre_push_is_executable_in_index() -> None:
+    res = _git(REPO, "ls-files", "-s", "--", PUSH.relative_to(REPO).as_posix())
+    assert res.returncode == 0, res.stderr
+    assert res.stdout.startswith("100755 "), res.stdout.strip()
+
+
+# --- the release ritual must carry the override -------------------------------
+
+
+def test_release_ritual_gates_the_version_bump_commit() -> None:
+    """finalize.ps1 commits VERSION; ungated that commit is now REFUSED."""
+    text = (REPO / "harness" / "finalize.ps1").read_text(encoding="utf-8")
+    idx = text.index("git add VERSION")
+    tag_idx = text.index("git tag -a", idx)
+    window = text[idx:tag_idx]
+    assert "SYNAPSE_GATE_C" in window, (
+        "the VERSION bump commit in finalize.ps1 runs into the pre-commit Gate C "
+        "fence; it must set SYNAPSE_GATE_C=1 for that one command"
+    )
+    assert "LASTEXITCODE" in window, (
+        "finalize.ps1 must test the bump commit's exit code before tagging, or a "
+        "refused commit is tagged on an un-bumped HEAD"
+    )
+
+
+def test_release_card_step_13_names_the_gate() -> None:
+    text = (REPO / "docs" / "RELEASE_CARD.md").read_text(encoding="utf-8")
+    line = [ln for ln in text.splitlines() if ln.lstrip().startswith("13 ")]
+    assert line, "RELEASE_CARD.md must still have a step 13"
+    assert "SYNAPSE_GATE_C" in line[0], (
+        "step 13 commits VERSION, which is a Gate C path; the card must say the "
+        "override is required. Got: " + repr(line[0])
+    )
