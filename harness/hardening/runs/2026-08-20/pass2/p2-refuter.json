@@ -1,0 +1,71 @@
+{
+  "leg": "p2-refuter",
+  "verdict": "PARTIAL",
+  "generated": "2026-08-20",
+  "refutations": [
+    {
+      "target": "R1",
+      "pass1_claim": "PASS-1 C3-F11 / V-5 (med): harness text 'evidence lands as untracked evidence' is FALSE/stale because V0.0 evidence is tracked at 6f8f20a5 (6 sites)",
+      "refutation_verdict": "PARTIAL",
+      "severity": "low",
+      "evidence": "git log: loop_truth/DONE/closure_audit/ledger/bus all first appear in 6f8f20a5 (11:49:20 -0400) feat(loop): v00 rung closeout. Mission receipt commit_sha=null, note evidence-only leg no commit authored, needs_joe: evidence already landed as untracked, notes: copied to main tree as untracked evidence. So evidence was committed BY the closeout act, NOT by the mission leg. During every live run the evidence IS untracked (loop.js:152 instructs it). Text is an operationally-true run-time description; PASS-1 conflated run-time state with post-closeout state. A future V0.1 leg experiences the identical sequence. Rewording to tracked evidence alone would mislead a leg into committing main-tree evidence, violating the one-atomic-commit-per-leg rule.",
+      "what_this_means_for_joe": "Reword to: evidence lands untracked during the run and is committed at rung closeout (6f8f20a5). Severity: low wording clarification."
+    },
+    {
+      "target": "R2",
+      "pass1_claim": "PASS-1 C1-F1 HIGH / C1-F2 med: loop-orchestrator.md:87-90 halts on UNRATIFIED and would fire a spurious halt on the next V0.1 dispatch",
+      "refutation_verdict": "PARTIAL",
+      "severity": "low",
+      "evidence": "Orchestrator orientation (loop-orchestrator.md:36-37) says STATE.json gates_closed is law; halt list (:83-96) is hardcoded, not loaded from STATE. loop.js has NO ratification gate (capCheck checks armed/budget/spawned only; gates_open is return text). Next dispatch is V0.1: STATE.json v01 status blocked needs SALUS -> orchestrator stops at orientation step 3 for a GENUINE reason before the halt text. Spurious halt needs a v00 re-dispatch plus pessimistic contradiction resolution. Tripwire counter-hypothesis partially valid (read-only orchestrator), but the text asserts a fact (UNRATIFIED) now false (bb348abe; loop-v00.yaml:2 RATIFIED).",
+      "what_this_means_for_joe": "Severity LOW-MED not HIGH. No spurious halt fires on the real next dispatch. Fix stands: drive halt list off gates_closed or hand-close the two entries."
+    },
+    {
+      "target": "R3",
+      "pass1_claim": "PASS-1 overall 0 BROKEN evidence; crucible: DONE cannot be written without the evidence (runner.py:135-143)",
+      "refutation_verdict": "PARTIAL",
+      "severity": "low",
+      "evidence": "DONE is a 3-field JSON, trivially hand-writable; runner.py derives entries/failures from the in-memory list so the construction binds only RUNNER-written DONE (over-strong in the absolute). No hand-edit found: git status harness/loop CLEAN, git diff HEAD on runs EMPTY, mtimes truth 11:37:51.57 < DONE 11:37:51.63 < ledger 11:37:51.81 < commit 11:49:20, finished stamps consistent. runner.failures() counts only dict values with error key - an UNKNOWN string would NOT count as a failure (latent metric gap; zero UNKNOWN in this truth). Mapper expected column hardcoded (probes.py:175-176) is the contract oracle, not a fabrication seam. 0 BROKEN SURVIVES.",
+      "what_this_means_for_joe": "Bound the two sub-claims: DONE-last is structural not byte-bound; make failures() count UNKNOWN values in future rungs."
+    },
+    {
+      "target": "R4",
+      "pass1_claim": "PASS-1 attack1: ledger 8 lines = 3 + 5 shared append, seq 1..8 monotonic",
+      "refutation_verdict": "SURVIVES",
+      "severity": "low",
+      "evidence": "Direct read: 8 lines; precommit-order seq 1-3, closure-rate seq 4-8; no gap between seq 3 and seq 4. Structural proof: recipe.py:63 world_ref from recipe id; probes.py:209+288; LedgerPort._next_seq continues from max(seq), proving shared append. Truth entry 7 lines_before/after match the worktree ledger at that moment.",
+      "what_this_means_for_joe": "Nothing to fix; 8=3+5 verified against file and code."
+    },
+    {
+      "target": "R5",
+      "pass1_claim": "PASS-1 A1 param names VERBATIM holds",
+      "refutation_verdict": "SURVIVES",
+      "severity": "low",
+      "evidence": "Live inspect.signature: all four methods match blueprint sect-4 param names 1:1, zero param annotations. PortResult._fields correct. No method missing; extra methods outside sect-4 do not refute names verbatim.",
+      "what_this_means_for_joe": "A1 holds. Blueprint shows annotations, seam stripped them; bound contract language already carries this nuance."
+    },
+    {
+      "target": "R6",
+      "pass1_claim": "PASS-1 V-1 six-surface 5.55.0 holds",
+      "refutation_verdict": "SURVIVES",
+      "severity": "low",
+      "evidence": "All six enumerated surfaces agree (VERSION, __version__, docstring, pyproject, CLAUDE.md, README). Remaining 5.54.0 strings: blueprint provenance line (dated grounding 2026-08-19), STATE base_version (grounding-time), loop.js GROUND banner (operational text, C2-F5). None is a release surface; panel has zero version strings.",
+      "what_this_means_for_joe": "Six-surface claim is honest-scoped. Optionally enumerate loop.js GROUND in the ritual."
+    }
+  ],
+  "cross_talk": {
+    "sent_to": [
+      "p2-cleanroom"
+    ],
+    "received_from": [
+      "p2-cleanroom (2 messages)"
+    ],
+    "received_content": "MSG1: re-run from clean worktree bb348abe REPRODUCED 9/9; worktree ledger grew 8+8 seq 9..16 (3+5 grouping reproduces); main-tree ledger hash 882a3c6c69cc9555bfa7be44fc277b96105ea236 unchanged. MSG2 (fresh-ledger run, ledger DELETED then re-run): produced ledger = exactly 8 lines seq 1..8 CONTIGUOUS, no gap between seq 3 and seq 4, growth 8 = 3+5 - shared append-only across probes confirmed (LedgerPort._next_seq = max+1, never restart-per-probe). DONE mtime > truth mtime (~1ms) -> DONE written AFTER the evidence flush; entries=9==DONE.entries, failures=0, no FAILED. Full-leaf diff of fresh truth vs original runs/2026-08-20/loop_truth_pure-python.json: complete diff set = /meta/started, /meta/finished, /entries[0..8]/ts, /entries[6]/value/ledger (checkout path) - EVERYTHING ELSE BYTE-IDENTICAL, including precommit_order lines_before=0/lines_after=3 (proving the original run was itself a fresh-ledger run). Worktree-produced ledger hash == main-tree ledger hash == 882a3c6c... BYTE-IDENTICAL. NO PASS-1 claim contradicted; R4 seq-continuation concern (restart-per-probe) does not occur; R3 ordering + byte-identity hold."
+  },
+  "needs_joe": [
+    "R2: severity downgrade from HIGH to LOW-MED with rationale",
+    "R1: reword to evidence-committed-at-closeout",
+    "R3: count UNKNOWN as failure; note DONE-last is structural",
+    "R6: optional, enumerate loop.js GROUND"
+  ],
+  "notes": "CHECK-ONLY. PASS-1 core verdicts survive (0 BROKEN, A1 holds, durability positive, ledger verified). Two diagnosis downgraded. Clean-room re-run received: corroborates R3/R4, refutes nothing. SECOND clean-room run (fresh ledger): byte-identical reproduction modulo timestamps + checkout path; settles R3/R4 as CONFIRMED, no refutation."
+}

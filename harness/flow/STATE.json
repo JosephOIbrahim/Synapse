@@ -1,0 +1,29 @@
+{
+  "harness": "FLOW",
+  "version": "0.1.0",
+  "grounded": "2026-08-20",
+  "base_version": "5.55.0",
+  "mission": "Production hardening for SYNAPSE artist utilization & flow: shrink every ms between intent and pixel, kill every stall that breaks the artist's trance, make the panel tell the truth about the machine.",
+  "status": "UNRATIFIED working harness until Joe's word (same posture as REACH until ruled otherwise)",
+  "spawn_ledger": { "cap": 30, "spent": 0, "reserve": 4, "note": "standing teammates count once each; workflow fan-out counts per agent()" },
+  "human_gates": [
+    "merges to master, pushes, tags, commits to master tree — Joe per act, always",
+    "ratification flips in any other harness's STATE/queue — never touched by FLOW agents",
+    "live-GUI probes against the artist's running Houdini seat — Joe's word first",
+    "harness ratification (this file) — Joe"
+  ],
+  "write_rules": {
+    "builders": "work only in git worktrees; one atomic commit per claim; never master",
+    "board": "harness/flow/ is the only directory any FLOW agent writes in-place; ROOM.md is append-log, claims ledger is edited in place",
+    "evidence": "no claim closes without a receipt: commit hash, or failing->passing test output pasted to ROOM"
+  },
+  "sprint1_candidates": [
+    { "id": "FLOW-L1", "pain": "every chat turn pays full uncached prompt cost", "source": "latency-scale-ledger: fix #1 = 4-line cache_control", "owner": null, "state": "unclaimed" },
+    { "id": "FLOW-L2", "pain": "marshal-deadlock class still reachable from main thread (websocket serial-loop corollary fixed 2026-07-31)", "source": "memory synapse-marshal-deadlock-class", "owner": null, "state": "unclaimed" },
+    { "id": "FLOW-U1", "pain": "panel gives no IntegrityBlock readout — artist can't tell working from broken (panel Mile 4)", "source": "memory synapse-panel-audit-execution", "owner": null, "state": "unclaimed" },
+    { "id": "FLOW-U2", "pain": "rope L5-14..23 design work + docs/harness panel_diag evidence sit unboarded — review answers rotting untracked", "source": "UNFINISHED_WORK_REVIEW_2026-08-20", "owner": null, "state": "unclaimed" },
+    { "id": "FLOW-R1", "pain": "render freezes the GUI; bounded-render F1 flag gate open (live verify = scripts/live_verify_freeze.ps1, needs seat)", "source": "memory ui-freeze-relief-forge", "owner": null, "state": "unclaimed" }
+  ],
+  "backlog": "harness/flow/BACKLOG.json (written by flow-sprint workflow synthesis leg)",
+  "room": "harness/flow/ROOM.md"
+}

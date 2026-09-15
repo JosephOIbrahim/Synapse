@@ -1,0 +1,299 @@
+{
+  "_schema": "reach/matrix/v1",
+  "_comment": "R3 reach matrix \u2014 blueprint docs/REACH_BLUEPRINT.md \u00a74 R3. Every (houdini_build x licence_tier x os) cell in the named grid is runs / fails / UNKNOWN; no cell is unnamed. UNKNOWN is a verdict with a reason, not an absence. Unmeasured = UNKNOWN, never zero, never an estimate (blueprint \u00a71.1).",
+  "authored": "2026-08-18",
+  "author": "R3-AUTHOR leg, reach phase p1",
+  "synapse_version": "5.52.0 (repo VERSION; v5.52.0 release commit 49f25988)",
+  "grid_axes": {
+    "houdini_build": [
+      "22.0.400",
+      "21.0.773"
+    ],
+    "licence_tier": [
+      "apprentice",
+      "apprentice_hd",
+      "education",
+      "indie",
+      "commercial"
+    ],
+    "os": [
+      "windows",
+      "linux",
+      "macos"
+    ],
+    "grid_rationale": "Build axis = the two targets SYNAPSE claims: 22.0.400 (pinned drop, harness/state/drop.json) and the H21 dual-build line. The H21 cell is named as 21.0.773 \u2014 the only H21 actually installed on the measurement seat; historical 21.0.631/21.0.671 verifications cannot be re-run (builds absent). Tier axis enumerates the five live licenseCategoryType members (verified live: memory synapse-h21-render-husk-indie.md L21 \u2014 Apprentice/ApprenticeHD/Commercial/Education/Indie). OS axis = the three desktop Houdini platforms. Also installed on this seat but NOT named targets today: 22.0.368, 22.0.397, 22.0.406, 22.0.413 (ls 'C:/Program Files/Side Effects Software/' 2026-08-18) \u2014 widening the grid to per-patch H22 cells is a human call."
+  },
+  "seat_facts": {
+    "host_os": "Windows 11 Pro for Workstations 10.0.26200",
+    "installed_houdini_builds": [
+      "21.0.773",
+      "22.0.368",
+      "22.0.397",
+      "22.0.400",
+      "22.0.406",
+      "22.0.413"
+    ],
+    "seat_licence_tier": "indie",
+    "seat_licence_evidence": "harness/notes/probe_render_offload.results.20260815T124545Z.json L9/L16 \u2014 license=licenseCategoryType.Indie, measured live on build 22.0.400, 2026-08-15 (hou.licenseCategory(); hou.isIndieMode is a phantom \u2014 detected via licenseCategory, per memory synapse-h21-render-husk-indie.md L21)",
+    "license_server_present_on_host": true
+  },
+  "cells": [
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "apprentice",
+      "os": "windows",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "apprentice",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "apprentice",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "apprentice_hd",
+      "os": "windows",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "apprentice_hd",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "apprentice_hd",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "education",
+      "os": "windows",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "education",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "education",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "indie",
+      "os": "windows",
+      "verdict": "runs",
+      "evidence": [
+        "harness/state/drop.json \u2014 houdini_build=22.0.400, captured live inside H22.0.400 (written_by note, dropped_at 2026-08-09T11:07:31Z)",
+        "harness/notes/probe_render_offload.results.20260815T124545Z.json L7-11 \u2014 F5a probe 0_environment: verdict=PASS, build=22.0.400, license=licenseCategoryType.Indie, python=3.13.10 (measured live on this seat 2026-08-15)",
+        "harness/notes/probe_render_offload.results.20260815T124545Z.json L13-37 \u2014 a_husk_delegate_load PASS with AND without --indie on this build/license",
+        "repo VERSION=5.52.0 + release tag v5.52.0 (git rev-parse v5.52.0^{commit} == 49f25988 - the release: v5.52.0 commit) - the v5.52.0 release was cut from this seat"
+      ],
+      "note": "The author's seat. The only cell with execution evidence on record; per blueprint \u00a71.1 this is a measured population of one, and the one is the least independent instrument in the building."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "indie",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "indie",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "commercial",
+      "os": "windows",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "commercial",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "22.0.400",
+      "licence_tier": "commercial",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "apprentice",
+      "os": "windows",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "apprentice",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "apprentice",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "apprentice_hd",
+      "os": "windows",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "apprentice_hd",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "apprentice_hd",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Apprentice tiers are where beta testers live (blueprint \u00a74 R3); Gate A L3-5 Apprentice session is an outstanding human task \u2014 closing this cell is the same work. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "education",
+      "os": "windows",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "education",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "education",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "indie",
+      "os": "windows",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21)."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "indie",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "indie",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "commercial",
+      "os": "windows",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "commercial",
+      "os": "linux",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    },
+    {
+      "houdini_build": "21.0.773",
+      "licence_tier": "commercial",
+      "os": "macos",
+      "verdict": "UNKNOWN",
+      "evidence": [],
+      "note": "H21 side of the dual-build claim (project CLAUDE.md). SYNAPSE v5.52.0 has never been executed against this installed build; historical verifications were on H21.0.631/21.0.671, both absent from this host (ls 'C:/Program Files/Side Effects Software/' 2026-08-18 shows 21.0.773 as the only H21). Seat licence is Indie (F5a probe, 2026-08-15). No execution evidence on this tier. Never measured on a real Houdini runtime on this OS. CI pytest runs (memory: synapse-ci-macos-timing-flakes) exercise no licensed Houdini \u2014 skip!=pass discipline means they fill no cell."
+    }
+  ],
+  "summary": {
+    "cells_total": 30,
+    "runs": 1,
+    "fails": 0,
+    "unknown": 29,
+    "unnamed": 0
+  },
+  "known_adjacent_evidence_not_counted": [
+    "v5.26.0 was live-reconfirmed on H22.0.368 (memory h22-agent-harness, 2026-07-16) \u2014 historical SYNAPSE version on a build this matrix does not name as a target; fills no cell.",
+    "F5b probe ALL-PASS 2026-08-15 on 22.0.400/Indie headless hython (memory ui-freeze-relief-forge) \u2014 same seat, supports the one green cell.",
+    "Full local pytest suite green on this seat at v5.48.0 (6301 pass, per memory ui-freeze-relief-forge) \u2014 supports the one green cell; test-suite green is not itself a reach measurement."
+  ]
+}

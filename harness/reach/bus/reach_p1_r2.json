@@ -1,0 +1,40 @@
+{
+  "leg": "reach-p1-r2",
+  "role": "R2-FORGE",
+  "verdict": "PASS",
+  "branch": "reach/p1-r2",
+  "commit_shas": ["2d2bad15"],
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/reach-p1-r2",
+  "free_check": {
+    "readme_fronted_version": "5.52.0",
+    "version_file": "5.52.0",
+    "equal": true,
+    "evidence": "README.md:11 '<sub>v5.52.0 · Houdini 22.0.400' vs VERSION '5.52.0'; README NOT rewritten (per leg brief + blueprint warning that README was rewritten 2026-08-17 in 4089f277)"
+  },
+  "deliverables": {
+    "verifier_extension": "harness/verify/version_agreement.py — readme_banner added to ROOT_FILES (banner joins the in-tree six-way chain); new public_agreement() gates exit red on: tag outrunning banner, banner!=VERSION, missing banner, stale/ahead 'tags: vX is latest' claim; release window (face ahead of tags) stays green; git/tags unavailability = 'nothing to compare', never fabricated red/green; --fix heals only stale claims forward",
+    "contract": ".synapse/contracts/reach-public-agreement.yaml — goalpost README claimed version == newest release tag; drift red; changelog noted as falling out of the bump/verify/tag ritual for free",
+    "tests": "tests/test_reach_public_agreement.py — 15 tests, all pass"
+  },
+  "evidence": [
+    "README.md:11 + VERSION:1 — free check green, 5.52.0 == 5.52.0",
+    "cd C:/Users/User/SYNAPSE/.claude/worktrees/reach-p1-r2 && python harness/verify/version_agreement.py → 'BEFORE  VERSION=5.52.0  __version__=5.52.0  pyproject=5.52.0  docstring=5.52.0  claude_md=5.52.0  readme_banner=5.52.0  agree=True'; 'APEX    stamp=22.0.400  artifact_build=22.0.400  ok=True  (agree)'; 'PUBLIC  ok  readme_banner_present', 'PUBLIC  ok  banner_matches_canonical  (agree)', 'PUBLIC  ok  tag_not_ahead_of_banner  (agree)', 'PUBLIC  RED tag_claim_current  (README tags-claim names v5.50.0 but the latest is v5.52.0 (per newest release tag) - stale public claim about the tag set)'; 'PUBLIC  banner=5.52.0  tag_claim=5.50.0  newest_tag=v5.52.0  describe=v5.52.0-1-g4089f277'; EXIT=1",
+    "python -m pytest tests/test_reach_public_agreement.py -q → '15 passed, 2 warnings in 0.31s'",
+    "python -m pytest tests/test_apex_truth_wa1.py tests/test_phase0c_doc1_version_conformance.py -q → '29 passed, 2 warnings in 0.44s' (do-not-weaken confirmed)",
+    "git -C <worktree> show --stat HEAD → '2d2bad15 feat(verify): reach P1-R2 public-face agreement … 3 files changed, 445 insertions(+), 1 deletion(-)'",
+    "git ls-files .synapse/contracts (master) shows contracts are tracked despite /.synapse/ ignore (gitignore:43); contract force-added per that precedent"
+  ],
+  "artifacts": [
+    "C:/Users/User/SYNAPSE/.claude/worktrees/reach-p1-r2/harness/verify/version_agreement.py",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/reach-p1-r2/.synapse/contracts/reach-public-agreement.yaml",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/reach-p1-r2/tests/test_reach_public_agreement.py",
+    "C:/Users/User/SYNAPSE/harness/reach/bus/reach_p1_r2.json"
+  ],
+  "live_state_note": "The extended verifier runs EXIT=1 RED on master right now for exactly one reason: README.md:11's 'tags: v5.50.0 is latest' is stale against published tag v5.52.0. That is the precise drift shape this contract exists to catch (same class as the v5.43.0 tag-outrunning-tree story in tests/test_phase0c_doc1_version_conformance.py). Banner/chain/APEX/tag-ahead arms are all green. Healing the claim is a one-line README edit — a public-artifact write, reserved as a Joe word per the leg's do-not-touch-README instruction; running the committed verifier's --fix does that heal automatically once a human chooses to.",
+  "needs_joe": [
+    "Merge reach/p1-r2 (commit 2d2bad15) to master when ready — no push/merge performed by this leg.",
+    "Decide on healing README.md:11 'tags: v5.50.0 is latest' → v5.52.0 (one line; or run harness/verify/version_agreement.py --fix after merge). Until healed, the extended verifier exits red on master by design.",
+    "No Houdini cook was needed or attempted; no live-cook claims made."
+  ],
+  "resumed_from": "Prior r2-forge died on provider 429 mid-run leaving the +213-line verifier extension uncommitted in the worktree (per STATE.json spawn_ledger). This run reviewed, hardened (ASCII-safe reason strings after live cp1252 mojibake; stale-vs-ahead reason split), tested, and committed it as one atomic commit."
+}

@@ -1,0 +1,53 @@
+{
+  "_schema": "reach/receipt/v1",
+  "leg": "p1-r3",
+  "role": "R3-AUTHOR",
+  "date": "2026-08-18",
+  "verdict": "PASS",
+  "note": "Second dispatch of this leg. The 2026-08-18 wf_8e92b8cc-256 run's r3-author completed the two artifacts before dying on provider 429; this leg verified every claim in them against live evidence, ran all three contract goalposts green, and committed the contract. Nothing in the artifacts required alteration.",
+  "artifacts": {
+    "matrix": {
+      "path": "C:/Users/User/SYNAPSE/harness/reach/reach_matrix_2026-08-18.json",
+      "state": "main-tree untracked evidence (per STATE.json: evidence artifacts land in main tree)",
+      "validated": "30 cells = 2 builds x 5 tiers x 3 OS, grid complete, no duplicate combos, every cell verdict in {runs, fails, UNKNOWN}, every UNKNOWN carries a note, the one runs cell carries evidence, summary counts match the cells array exactly (cells_total=30, runs=1, fails=0, unknown=29, unnamed=0)"
+    },
+    "contract": {
+      "path": "C:/Users/User/SYNAPSE/.claude/worktrees/reach-p1-r3/.synapse/contracts/reach-matrix.yaml",
+      "commit": "853874a6 feat(reach): p1-r3 reach-matrix contract (green, evidence-only)",
+      "branch": "reach/p1-r3",
+      "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/reach-p1-r3",
+      "gitnote": ".synapse/ is gitignored (.gitignore:43); sibling contracts were historically force-added, so the commit uses git add -f to match repo convention",
+      "goalposts": {
+        "GP1_grid_complete": "PASS — named-axis product set == cell set, summary.unnamed==0",
+        "GP2_honest_verdicts": "PASS — every verdict legal, every UNKNOWN noted, every runs evidenced",
+        "GP3_summary_honesty": "PASS — summary == recomputed counts; exactly one runs cell; zero fails"
+      }
+    }
+  },
+  "the_one_green_cell": "22.0.400 x indie x windows",
+  "licence_tier_verdict": "indie — VERIFIED FROM ARTIFACTS, not inferred",
+  "evidence": [
+    "harness/state/drop.json L1 — houdini_build=22.0.400, python=3.13.10, captured live inside H22.0.400 2026-08-09",
+    "harness/notes/probe_render_offload.results.20260815T124545Z.json L6-12 — F5a 0_environment: verdict=PASS, build=22.0.400, license=licenseCategoryType.Indie, python=3.13.10 (measured live 2026-08-15)",
+    "memory synapse-h21-render-husk-indie.md L21 — licenseCategoryType members Apprentice/ApprenticeHD/Commercial/Education/Indie (line number checked against file; citation in matrix is exact)",
+    "ls 'C:/Program Files/Side Effects Software/' — installed builds 21.0.773, 22.0.368, 22.0.397, 22.0.400, 22.0.406, 22.0.413; License Server present; matches matrix seat_facts and grid_rationale exactly",
+    "python grid-coverage validation — expected 30, actual 30, want==got True, bad verdicts [], UNKNOWN w/o note [], runs w/o evidence [], summary honest True",
+    "contract goalposts re-run green: GP1/GP2/GP3 all PASS (commands in reach-matrix.yaml features[0..2].verify)"
+  ],
+  "honest_unknowns": [
+    "29 of 30 cells",
+    "Apprentice and ApprenticeHD rows are UNKNOWN on every axis — the Gate A L3-5 Apprentice session (outstanding human task) is the work that closes them; same work, two purposes (blueprint §4 R3)",
+    "All linux and macOS cells, including 22.0.400 x indie: UNKNOWN — CI pytest exercises no licensed Houdini; skip!=pass means test-suite green fills no reach cell",
+    "The full H21 line (21.0.773, the only H21 installed): UNKNOWN — v5.52.0 has never executed against it; historical verifications were on builds no longer installed (21.0.631/21.0.671) and cannot be re-run",
+    "Grid widening to per-patch H22 cells (22.0.368/397/406/413 installed but unnamed targets) is a human call, named in both the matrix and the contract"
+  ],
+  "needs_joe": [
+    "Merge reach/p1-r3 (commit 853874a6) when ready — merge is a Joe word, never banked",
+    "Gate A L3-5 Apprentice session is the human work that turns the apprentice rows from UNKNOWN to measured",
+    "Decide whether per-patch H22 cells (22.0.368/397/406/413, all installed on this seat) join the named grid"
+  ],
+  "do_not_do": [
+    "No push, no merge, no tag, no VERSION edit, no scoreboard edits were performed by this leg",
+    "No verdict in the matrix was inferred — every non-green cell is UNKNOWN with a stated reason"
+  ]
+}

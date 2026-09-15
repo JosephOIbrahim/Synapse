@@ -1,0 +1,116 @@
+{
+  "_schema": "hardening/v1",
+  "_comment": "PRODUCTION HARDENING PASS 1 — adversarial check of the RATIFIED THE LOOP v5.1 V0.0 claims against reality. Four-agent specialized team, cross-talking via SendMessage, exercising the repo harness (live seam import, pytest, git provenance). CHECK-ONLY: zero fixes, zero commits, zero tracked-file edits. Findings + dispositions are Joe's per Article V. PASS 2 (adversarial refutation + clean-room re-run) COMPLETE 2026-08-20 — core verdicts survive; R1+R2 downgraded; clean-room 9/9 REPRODUCED with main tree pristine.",
+  "ground": {
+    "governing_directive": "ultrathink run a production hardening pass 2xs with a specialized team of agents that check things are working as expected. agents talking to each other and using the harness in the repo. Think deeply and critically and do this from first principles.",
+    "subject": "RATIFIED THE LOOP v5.1 V0.0 rung (docs/THE_LOOP_v5.1.md, .synapse/contracts/loop-v00.yaml six features passing=true, harness/loop/STATE.json, evidence at 6f8f20a5)",
+    "date": "2026-08-20"
+  },
+  "team": {
+    "p1-cartographer": "harness coherence — orchestrator.md + loop.js gate/version/evidence-claim drift vs STATE.json; evidence durability fact vs text; STATE.json internal consistency",
+    "p1-assayer": "live seam introspection — inspect.signature on imported classes (A1 names verbatim + no param annotations), mapper 27-combo truth, honest-UNAVAILABLE on absent substrates, hermetic pytest",
+    "p1-crucible": "adversarial evidence attacks — ledger provenance, DONE-last sentinel, truth JSON integrity, StagePort live side-effect re-run, closure honesty, receipt audit, six contract features",
+    "p1-verifier": "release + reproducibility — six-surface 5.55.0 agreement, seam 0.1.0 deliberate, hermetic gate re-run, production-isolation-by-design, evidence durability"
+  },
+  "verdict": "PASS — 4/4 receipts; 1 high / 8 med / ~23 low findings; 0 BROKEN evidence; 0 code defects; all findings are DRIFT, WORDING, or PRECISION — none are fabrication. The ratified claims HOLd under adversarial attack. Highest severity: the loop orchestrator + loop.js workflow still carry pre-ratification gate text that would fire a spurious halt on the next V0.1 dispatch.",
+  "findings_by_severity": {
+    "high": [
+      {
+        "id": "C1-F1",
+        "leg": "p1-cartographer",
+        "summary": "loop-orchestrator.md:87-88 still halts on 'blueprint UNRATIFIED' — the blueprint IS ratified (STATE.json:108 CLOSED, bb348abe). Spurious live halt on next V0.1 dispatch.",
+        "disposition": "Joe words a wording update: human-gate list reads CLOSED, or halt list is driven off STATE.json gates_closed. No code change by this pass."
+      }
+    ],
+    "med": [
+      { "id": "C1-F2", "leg": "p1-cartographer", "summary": "loop-orchestrator.md:89-90 still halts on 'contract goalposts bind only after Joe word' — contract is RATIFIED and declares the halt lifted.", "disposition": "Same wording pass as C1-F1." },
+      { "id": "C2-F6", "leg": "p1-cartographer", "summary": "loop.js:45 GROUND claims evidence lands 'as untracked evidence' — all artifacts TRACKED at 6f8f20a5. Live dispatch mechanism mis-states durability.", "disposition": "Reword to 'tracked evidence, committed at rung closeout (6f8f20a5)'." },
+      { "id": "C2-F7", "leg": "p1-cartographer", "summary": "loop.js:152 MISSION stage tells the leg to copy evidence to main tree 'as untracked evidence' — future V0.1 leg would leave evidence uncommitted.", "disposition": "Same reword as C2-F6; optionally instruct mission leg to commit evidence at closeout." },
+      { "id": "C2-F8", "leg": "p1-cartographer", "summary": "loop.js:179-183 runV00 gates_open lists all three gates open incl 'THE LOOP v5.1 stays UNRATIFIED' — all three CLOSED (STATE.json:55-59). Direct opposite of ratified reality.", "disposition": "Rewrite runV00 gates_open to only still-open gates (currently none)." },
+      { "id": "C3-F11", "leg": "p1-cartographer", "summary": "'Untracked evidence' text at 6 sites contradicts tracked reality: STATE.json:3, loop.js:45+152, SPEC.md:70, mission receipt :39+:42. (Verifier V-5 corroborates.)", "disposition": "One durable wording applied to STATE _comment + loop.js GROUND + SPEC.md law 7; receipt occurrences flagged point-in-time." }
+    ],
+    "low": [
+      { "id": "C1-F3", "leg": "p1-cartographer", "summary": "orchestrator.md:3 frontmatter lists closed ratification gates among halts.", "disposition": "Reword to 'halt at OPEN gates per STATE.json'." },
+      { "id": "C1-F4", "leg": "p1-cartographer", "summary": "orchestrator.md:18 V0.0 'status: ready' vs STATE.json 'closed + RATIFIED'.", "disposition": "Update readiness; re-runnable only for regression." },
+      { "id": "C2-F5", "leg": "p1-cartographer", "summary": "loop.js:41 GROUND 'master, v5.54.0' vs 5.55.0 on master.", "disposition": "Update GROUND banner. (Verifier V-1: not a release surface.)" },
+      { "id": "C2-F9", "leg": "p1-cartographer", "summary": "loop.js:193-194 runV01 still asks Joe to merge V0.0 — already merged (9ef3250a ancestor of master).", "disposition": "Trim runV01 text to the SALUS substrate prerequisite only." },
+      { "id": "C3-F10", "leg": "p1-cartographer", "summary": "Evidence durability FACT HOLDS: ledger+runs+bus tracked at 6f8f20a5 — survives clean clone (POSITIVE).", "disposition": "No change — positive half." },
+      { "id": "C4-F17", "leg": "p1-cartographer", "summary": "STATE.json:7 base_version 5.54.0 reads stale against master 5.55.0 (grounding-time value, not a contradiction).", "disposition": "Bump on next STATE touch or relabel base_version_at_runtime." },
+      { "id": "C5-F18", "leg": "p1-cartographer", "summary": "CHANGELOG.md:7 UNRATIFIED wording — legitimate historical entry (release commit preceded ratification same day).", "disposition": "No change; optional ratification addendum." },
+      { "id": "A1-nit", "leg": "p1-assayer", "summary": "PASS-1 probe command's final print(ports.PortResult()) raises TypeError (status has no default). Seam correct — payload defaults to None via signature.", "disposition": "Correct the probe command in run notes only; no code change." },
+      { "id": "A5-nit", "leg": "p1-crucible", "summary": "closure_rate is tautological (probes.py:293-294 terminal_total == turns always); discriminating signal is HIT=0/MISS=0/EXPOSED=5, which is real. Contract F5 already frames rate as derived — wording correct.", "disposition": "Optional V0.1: compute EXPOSED/(HIT+MISS+EXPOSED) so the rate can fail." },
+      { "id": "A6-nit", "leg": "p1-crucible", "summary": "Mission receipt needs_joe is a historical snapshot — all 3 items (merge, worktree, ratification) now CLOSED on master.", "disposition": "Add as-of-mission-run-time qualifier going forward; no claim false as of its own date." },
+      { "id": "A7-nit", "leg": "p1-crucible", "summary": "Contract F1 parenthetical overbroad: 'seam carries no type annotations' — seam carries RETURN + FIELD annotations; only PARAMETER annotations absent. Load-bearing 'names verbatim' claim HOLDS.", "disposition": "Bound-text precision: reword to 'no parameter type annotations; the claim is names, not signatures' (Article V amendment)." },
+      { "id": "A1-nit-2", "leg": "p1-crucible", "summary": "Contract F3 'ledger grows by exactly turns lines' — holds per-question in the shared append-only ledger (8 total = 3+5); shared-accumulation/global-seq stated nowhere.", "disposition": "One clarifying line in F3 verify field (per-question, global seq)." }
+    ]
+  },
+  "cross_talk_log": [
+    { "from": "p1-assayer", "to": "p1-crucible", "content": "seam facts: 4 sigs param-names verbatim + zero param annotations; mapper 27/27 one ALLOW row; GATE_POLICY([]) ALLOW documented; pytest 20 passed; honest-UNAVAILABLE x4." },
+    { "from": "p1-verifier", "to": "p1-cartographer", "content": "stale 'untracked evidence' wording vs tracked reality; stale 'merge forge branch' needs_joe." },
+    { "from": "p1-verifier", "to": "p1-crucible", "content": "six-surface 5.55.0 HOLDS; pytest 20 passed 0 failed; production-isolation empty-grep-by-design; durability drift." },
+    { "from": "p1-crucible", "to": "p1-verifier", "content": "evidence verdict PASS 7/7; ledger math 8=3+5 shared accumulation; receipt needs_joe all CLOSED (historical snapshot); forge 9ef3250a ancestor of master." },
+    { "from": "p1-cartographer", "to": "p1-verifier", "content": "drift list: orchestrator gate text (C1-F1 high), loop.js stale (C2-F5/6/7/8), untracked-evidence 6 sites (C3-F11), STATE internal consistency clean." }
+  ],
+  "reconciliation": [
+    "EVIDENCE IS TRACKED (durability POSITIVE at 6f8f20a5) — 'untracked evidence' text at 6 sites is stale wording; four agents independently converge on this.",
+    "The orchestrator + loop.js still carry pre-ratification gate text — the only HIGH finding, and it would mis-inform the next V0.1 dispatch.",
+    "Seam itself is SOUND under live introspection: A1 (param names verbatim, no param annotations) HOLDS on imported classes; A2 (GATE_POLICY([]) spec-only) documented; A5 (closure_rate as derived consequence) wording correct.",
+    "8-vs-5 ledger math resolves as shared append-only accumulation (3+5=8) — crucible + verifier both re-verified from the files.",
+    "Release six-surface 5.55.0 HOLDS; seam __version__ 0.1.0 is a deliberate distinct plane; hermetic gate reproducible (20 passed, 0 failed).",
+    "Zero BROKEN evidence, zero code defects, zero fabrication vectors found. All findings are drift/wording/precision."
+  ],
+  "receipts": [
+    "harness/hardening/runs/2026-08-20/pass1/p1-cartographer.json",
+    "harness/hardening/runs/2026-08-20/pass1/p1-assayer.json",
+    "harness/hardening/runs/2026-08-20/pass1/p1-crucible.json",
+    "harness/hardening/runs/2026-08-20/pass1/p1-verifier.json"
+  ],
+  "needs_joe": [
+    "DECIDE (high): orchestrator.md human-gate wording — reword the two ratification halts to CLOSED, or drive the halt list off STATE.json gates_closed (cartographer recommends the latter).",
+    "DECIDE (med): one durable evidence-durability wording ('evidence IS tracked at 6f8f20a5') applied to STATE.json _comment + loop.js GROUND (2 sites) + SPEC.md law 7.",
+    "DECIDE (low): STATE.json base_version — bump to 5.55.0 or relabel base_version_at_runtime.",
+    "DECIDE (low, Article V amendment): contract F1 parenthetical — reword 'seam carries no type annotations' to 'no parameter type annotations'.",
+    "DECIDE (low, Article V amendment): contract F3 verify field — add 'per-question in the shared append-only ledger (global seq)' so 8-vs-5 never misreads.",
+    "DECIDE (low): loop.js GROUND banner 5.54.0→5.55.0 + runV00 gates_open to closed + runV01 text trim to SALUS-only.",
+    "DECIDE (low, optional): CHANGELOG ratification addendum.",
+    "AMEND (R1, PASS 2): the evidence-wording fix refines to — 'evidence lands untracked during the run and is committed at rung closeout (6f8f20a5)'. A bare 'tracked evidence' reword could mislead a leg into committing main-tree evidence, violating the one-atomic-commit-per-leg rule.",
+    "AMEND (R2, PASS 2): orchestrator gate severity downgraded HIGH → LOW-MED. No spurious halt fires on the real next dispatch (V0.1 blocks on the SALUS substrate first — a genuine reason). Fix stands: drive the halt list off STATE.json gates_closed, or hand-close the two entries.",
+    "NOTE (R3, PASS 2): 0-BROKEN SURVIVES — no hand-edit found (mtimes truth 11:37:51.57 < DONE .63 < ledger .81 < closeout commit 11:49:20, consistent). Future rungs: make runner.failures() count UNKNOWN values; DONE-last is structural, not byte-bound.",
+    "OPTIONAL (R6, PASS 2): enumerate loop.js GROUND in the version ritual if a 7th operational version surface should be tracked."
+  ],
+  "log": [
+    {
+      "date": "2026-08-20",
+      "event": "pass1-dispatch",
+      "agents": ["p1-cartographer", "p1-assayer", "p1-crucible", "p1-verifier"],
+      "cross_talk": "5 verified exchanges (assayer→crucible, verifier→cartographer, verifier→crucible, crucible→verifier, cartographer→verifier); receipts cross-corroborate with zero contradictions"
+    },
+    {
+      "date": "2026-08-20",
+      "event": "pass1-complete",
+      "verdict": "PASS — 4/4 receipts, 0 BROKEN, 1 high drift finding (orchestrator gate text), all else wording/precision",
+      "note": "p1-crucible persisted its full receipt before an infrastructure 429 killed the return; receipt intact on disk.",
+      "action": "PASS 1 synthesized; findings surfaced to Joe for disposition (no fixes, Article V)"
+    },
+    {
+      "date": "2026-08-20",
+      "event": "pass2-dispatch",
+      "agents": ["p2-refuter", "p2-cleanroom"],
+      "cross_talk": "1 verified exchange (cleanroom→refuter re-run facts); refuter's receipt corroborates the clean-room result, refutes nothing"
+    },
+    {
+      "date": "2026-08-20",
+      "event": "pass2-complete",
+      "verdict": "PARTIAL-REFUTATION / REPRODUCED — PASS-1 core verdicts SURVIVE (0 BROKEN, A1, ledger 8=3+5, six-surface 5.55.0); R1+R2 downgraded (low / low-med); R3 core SURVIVES with 2 sub-claims bounded; clean-room re-run 9/9 REPRODUCED from fresh checkout, main-tree ledger byte-identical",
+      "note": "Refuter's R1 correction: the 'untracked evidence' text is operationally TRUE during runs — evidence is committed at rung closeout (6f8f20a5), not by the mission leg. PASS-1 conflated run-time state with post-closeout state.",
+      "action": "PASS 2 synthesized; amendments appended to needs_joe; hardening pass COMPLETE (2/2)"
+    }
+  ],
+  "pass2": {
+    "team": {
+      "p2-refuter": "adversarial refutation of the six load-bearing PASS-1 verdicts (untracked-wording, orchestrator halt severity, 0-BROKEN fabrication sweep, ledger grouping, A1 names, six-surface version)",
+      "p2-cleanroom": "clean-room reproducibility — fresh worktree checkout at master bb348abe, real runner.py mission re-run, main-tree ledger byte-identical before/after"
+    },
+    "verdict": "PARTIAL-REFUTATION — 2/2 receipts. R4 (ledger 8=3+5), R5 (A1 names-verbatim), R6 (six-surface) SURVIVE. R1 (untracked-wording) downgraded to low: text is operationally true during runs, evidence committed at closeout. R2 (orchestrator gate) downgraded HIGH→low-med: no spurious halt fires on the real next dispatch (V0.1 blocks on SALUS first). R3 (0 BROKEN) core SURVIVES: no hand-edit found (consistent mtime chain), but DONE-last is structural not byte-bound and runner.failures() does not count UNKNOWN values (latent metric gap, zero UNKNOWN in evidence). Clean-room REPRODUCED 9/9 with main tree pristine (ledger hash 882a3c6c before==after). Nothing PASS-1 claimed is contradicted by the re-run."
+  }
+}

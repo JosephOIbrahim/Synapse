@@ -1,0 +1,83 @@
+{
+  "run": "orch_20260903-151611",
+  "date": "2026-09-03",
+  "cap": {
+    "turns": 7,
+    "tokens": null
+  },
+  "status": "open",
+  "reason": null,
+  "enforced_unit": "turns",
+  "token_meter": "measured",
+  "totals": {
+    "turns": 3,
+    "tokens_in": 43457335,
+    "tokens_out": 606188
+  },
+  "remaining": {
+    "turns": 4,
+    "tokens": "UNKNOWN"
+  },
+  "legs": [
+    {
+      "leg": "BP3-CORPUS",
+      "model": "claude-opus-4-8",
+      "tokens_in": 21304365,
+      "tokens_out": 333702,
+      "wall_ms": 1415823,
+      "cap": {
+        "turns": 7,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 6,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp3-corpus\\914abee7-9064-439f-8380-bad08e4ac8af.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP3-CRUX",
+      "model": "claude-fable-5",
+      "tokens_in": 12225604,
+      "tokens_out": 222411,
+      "wall_ms": 4986717,
+      "cap": {
+        "turns": 7,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 4,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp3-crux\\e3e7d965-9e09-406f-8dfb-dc4f41b0d42c.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP3-TIDY",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": 9927366,
+      "tokens_out": 50075,
+      "wall_ms": 685309,
+      "cap": {
+        "turns": 7,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 4,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp3-tidy\\01f9badd-af3e-4f12-87b4-8acbc389d241.jsonl",
+      "settled": true
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}

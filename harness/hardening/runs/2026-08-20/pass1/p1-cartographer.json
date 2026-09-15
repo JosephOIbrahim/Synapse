@@ -1,0 +1,194 @@
+{
+  "leg": "p1-cartographer",
+  "verdict": "PASS",
+  "generated": "2026-08-20",
+  "findings": [
+    {
+      "id": "C1-F1",
+      "claim_under_test": "Orchestrator blueprint-ratification halt: loop-orchestrator.md:87-88 says docs/THE_LOOP_v5.1.md is UNRATIFIED; Joe word makes it law, and instructs a full stop until Joe acts",
+      "verdict": "FAILS",
+      "severity": "high",
+      "evidence": "loop-orchestrator.md:87-88 (Blueprint ratification: docs/THE_LOOP_v5.1.md is UNRATIFIED; Joe word makes it law. Until then it is the working spec) vs STATE.json:108 human_gates.gate_blueprint_ratification = CLOSED 2026-08-20; STATE.json:57 gates_closed entry; ratified by commit bb348abe. A live halt instruction that now fires spuriously on the next V0.1 dispatch.",
+      "disposition_proposal": "Joe words a wording update: human-gate list should read gate_blueprint_ratification as CLOSED, or the halt list should be driven off STATE.json gates_closed instead of hardcoded text. No code change by this leg."
+    },
+    {
+      "id": "C1-F2",
+      "claim_under_test": "Orchestrator contract-ratification halt - loop-orchestrator.md:89-90 says loop-v00.yaml goalposts bind only after Joe word",
+      "verdict": "FAILS",
+      "severity": "med",
+      "evidence": "loop-orchestrator.md:89-90 vs contract loop-v00.yaml:2 Ratification: RATIFIED - Joe word 2026-08-20; goalposts bind (loop-orchestrator halt lifted for these acts) and STATE.json:110 human_gates CLOSED. The contract itself declares the halt lifted.",
+      "disposition_proposal": "Same wording pass as C1-F1 - mark gate_contract_ratification CLOSED in the orchestrator human-gate list."
+    },
+    {
+      "id": "C1-F3",
+      "claim_under_test": "Orchestrator frontmatter description - loop-orchestrator.md:3 lists blueprint ratification and contract ratification among the halts it enforces",
+      "verdict": "HOLDS-WITH-NIT",
+      "severity": "low",
+      "evidence": "loop-orchestrator.md:3 (description frontmatter: HALTS at every human gate (blueprint ratification, contract ratification, substrate installs, all merges/pushes/tags)). Two of the listed halt gates are now CLOSED; substrate installs + merges remain genuinely open.",
+      "disposition_proposal": "Reword to halt at OPEN human gates per STATE.json gates_closed so closed gates are never re-halted."
+    },
+    {
+      "id": "C1-F4",
+      "claim_under_test": "Orchestrator rung-readiness V0.0 status - loop-orchestrator.md:18 says V0.0 status: ready",
+      "verdict": "HOLDS-WITH-NIT",
+      "severity": "low",
+      "evidence": "loop-orchestrator.md:18 (V0.0 (Recipe) - status: ready) vs STATE.json:47 rungs.v00.status = closed + RATIFIED - V0.0 run 2026-08-20 PASS end-to-end. A future dispatch could treat V0.0 as still open.",
+      "disposition_proposal": "Update readiness to status: closed + RATIFIED (re-runnable only for regression)."
+    },
+    {
+      "id": "C2-F5",
+      "claim_under_test": "loop.js GROUND version - line 41 says master, v5.54.0",
+      "verdict": "FAILS",
+      "severity": "low",
+      "evidence": "loop.js:41 (REPO: C:/Users/User/SYNAPSE (master, v5.54.0, Houdini 22.0.400)) vs VERSION file = 5.55.0 and tag v5.55.0; release commit 1aa5468d (release: v5.55.0). This GROUND string is read by every future leg dispatch.",
+      "disposition_proposal": "Update GROUND to master v5.55.0."
+    },
+    {
+      "id": "C2-F6",
+      "claim_under_test": "loop.js GROUND evidence-durability claim - line 45 says evidence goes to main-tree harness/loop/ as untracked evidence",
+      "verdict": "FAILS",
+      "severity": "med",
+      "evidence": "loop.js:45 (... Evidence artifacts (receipts, loop_truth_*.json, closure audit, bus posts, ledger) go to main-tree harness/loop/ as untracked evidence.) vs git ls-files harness/loop/ = ledger + 3 bus receipts + runs/2026-08-20/{DONE, closure_audit.json, loop_truth_pure-python.json} ALL tracked, committed in 6f8f20a5. The live dispatch mechanism for future rungs mis-states durability.",
+      "disposition_proposal": "Reword to: evidence lands in main-tree harness/loop/ and is committed at rung closeout (tracked since 6f8f20a5)."
+    },
+    {
+      "id": "C2-F7",
+      "claim_under_test": "loop.js MISSION instruction - line 152: Copy the evidence artifacts to MAIN-TREE harness/loop/ as untracked evidence",
+      "verdict": "FAILS",
+      "severity": "med",
+      "evidence": "loop.js:152 (MISSION stage). Same contradiction as C2-F6: git ls-files harness/loop/runs/2026-08-20/ shows all three artifacts tracked. A future V0.1 mission leg would leave evidence uncommitted, relying on a closeout that may not fire.",
+      "disposition_proposal": "Same reword as C2-F6; optionally instruct the mission leg to commit evidence at closeout instead of leaving it untracked."
+    },
+    {
+      "id": "C2-F8",
+      "claim_under_test": "loop.js runV00 gates_open - lines 179-183 list contract ratification, v00 merge, and blueprint ratification as open gates",
+      "verdict": "FAILS",
+      "severity": "med",
+      "evidence": "loop.js:179-191 gates_open = [gate_contract_ratification, gate_v00_merge, gate_blueprint_ratification: THE LOOP v5.1 stays UNRATIFIED until Joe word] - all three CLOSED (STATE.json:55-59, 108-110). The UNRATIFIED wording is the direct opposite of ratified reality. This is the LIVE return value for a v00 re-dispatch.",
+      "disposition_proposal": "Rewrite runV00 gates_open to only the still-open gates (currently none for v00; emit empty array or v00 fully closed)."
+    },
+    {
+      "id": "C2-F9",
+      "claim_under_test": "loop.js runV01 refusal/gates text - line 193 needs v00 closed (merge loop/v0.0-forge) and line 194 Joe: merge V0.0, install SALUS substrate",
+      "verdict": "HOLDS-WITH-NIT",
+      "severity": "low",
+      "evidence": "loop.js:193-194. V0.1 IS still blocked (SALUS substrate absent - STATE.json:40 salus=absent) so refusal is correct; but the v00-merge prerequisite is satisfied (STATE.json:56, merged 9ef3250a to master) and the gates text still asks Joe to merge V0.0. p1-verifier cross-note: the mission receipt needs_joe \"merge loop/v0.0-forge to master\" is also stale - seam python/synapse/loop/ + tests already on master at 9ef3250a (merged in 6f8f20a5).",
+      "disposition_proposal": "Trim runV001 text to only the SALUS substrate prerequisite."
+    },
+    {
+      "id": "C3-F10",
+      "claim_under_test": "Evidence durability FACT - ledger, runs/2026-08-20/* and bus receipts are git-tracked",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "git ls-files harness/loop/ returns ledger/v00_precommits.jsonl, bus/{loop_v00_forge, loop_v00_mission, loop_v00_crucible}.json, runs/2026-08-20/{DONE, closure_audit.json, loop_truth_pure-python.json}; committing commit = 6f8f20a5 (git log --oneline -1 -- harness/loop/ledger/v00_precommits.jsonl). All evidence survives a clean clone - durability POSITIVE.",
+      "disposition_proposal": "No change - this is the positive half of the C3 check."
+    },
+    {
+      "id": "C3-F11",
+      "claim_under_test": "Every untracked-evidence claim in the harness - the TEXT now contradicts the tracked reality",
+      "verdict": "FAILS",
+      "severity": "med",
+      "evidence": "Six sites: STATE.json:3 (_comment: evidence artifacts land in main-tree harness/loop/ as untracked evidence - survived the ratification commit which rewrote the _comment), loop.js:45 + 152, harness/loop/bus/loop_v00_mission.json:39 (needs_joe) + :42 (notes), harness/loop/SPEC.md:70 (law 7: untracked files). All conflict with git ls-files output above. p1-verifier cross-note corroborates: same untracked sites from the durability angle; all artifacts tracked (6f8f20a5 / STATE bb348abe).",
+      "disposition_proposal": "Decide one durable wording (evidence is tracked at closeout, 6f8f20a5) and apply to STATE _comment, loop.js GROUND, SPEC.md law 7. The two mission receipt occurrences are historical artifacts - flag as point-in-time."
+    },
+    {
+      "id": "C4-F12",
+      "claim_under_test": "STATE.json spawn ledger arithmetic - spawned=3, spent=3, budget=3, 3 agents, 3 receipts",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "STATE.json:11 spawned=3; :17 spent=3; :18 budget=3; :19-23 agents = [forge, mission, crucible]; :24-28 receipts = all three bus files; :29 verdict string. Arithmetic consistent.",
+      "disposition_proposal": "none"
+    },
+    {
+      "id": "C4-F13",
+      "claim_under_test": "STATE.json rungs.v00 status vs gates_closed count",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "STATE.json:47 rungs.v00.status = closed + RATIFIED and gates_closed (:55-59) exactly 3 entries - gate_v00_merge, gate_blueprint_ratification, gate_contract_ratification. No contradiction.",
+      "disposition_proposal": "none"
+    },
+    {
+      "id": "C4-F14",
+      "claim_under_test": "STATE.json nits_dispositioned (3) matches the contract A1/A2/A5 dispositions",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "STATE.json:60-64 (A1 param-names, A2 GATE_POLICY([]) spec-only carried to V0.1, A5 closure_rate as derived consequence) vs contract loop-v00.yaml:8 (goal), :24 (feature 1: param names verbatim), :27 (feature 2: GATE_POLICY([]) returns ALLOW by vacuous truth carried to the V0.1 live-gate leg), :36 (feature 5: closure_rate = 1.0 as the derived consequence). 1:1 match.",
+      "disposition_proposal": "none"
+    },
+    {
+      "id": "C4-F15",
+      "claim_under_test": "STATE.json log event count (2) and content",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "STATE.json:118-136 log array has exactly 2 entries: v00-run-closed (:120-128) and v00-ratified (:130-135). Consistent with the run + ratification history.",
+      "disposition_proposal": "none"
+    },
+    {
+      "id": "C4-F16",
+      "claim_under_test": "STATE.json human_gates section - internal consistency (team-lead brief stated 2 CLOSED + 2 OPEN)",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "STATE.json:107-113 human_gates has FIVE entries: 3 CLOSED 2026-08-20 (blueprint :108, v00_merge :109, contract :110) + 2 open (substrate_install :111, merges :112). Internally consistent with gates_closed=3. NOTE: the brief 2 CLOSED + 2 OPEN parenthetical is a miscount of the file - the file is 3 CLOSED + 2 OPEN and does not contradict.",
+      "disposition_proposal": "none (no drift; flag to team-lead that the file holds 3+2, not 2+2)"
+    },
+    {
+      "id": "C4-F17",
+      "claim_under_test": "STATE.json base_version - line 7 says 5.54.0 while master is at 5.55.0",
+      "verdict": "HOLDS-WITH-NIT",
+      "severity": "low",
+      "evidence": "STATE.json:7 base_version: 5.54.0; STATE last touched by bb348abe (ratification 2026-08-20) did NOT bump base_version; VERSION = 5.55.0, tag v5.55.0, release commit 1aa5468d. Not an internal contradiction (base_version = version at grounding time) but reads stale against master today.",
+      "disposition_proposal": "Decide: bump to 5.55.0 on next STATE touch, or relabel as base_version_at_runtime so it stops tracking current master."
+    },
+    {
+      "id": "C5-F18",
+      "claim_under_test": "CHANGELOG.md:7 blueprint UNRATIFIED until Joe word (2026-08-20) - false-now or legitimate historical entry",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "CHANGELOG.md:7, :9 (gate_blueprint_ratification still open), :13 (both ratification gates still open). Commit order proves the release commit 1aa5468d (v5.55.0) preceded the ratification commit bb348abe (2026-08-20, same day). At the moment of writing the gates WERE open. Legitimate historical entry: a point-in-time record, not a current-state claim.",
+      "disposition_proposal": "No change. Optional: a later changelog entry can note the v5.55.0 entry was written pre-ratification; blueprint + contract ratified later the same day."
+    }
+  ],
+  "cross_talk": {
+    "sent_to": [
+      "p1-verifier"
+    ],
+    "received_from": [
+      "p1-verifier"
+    ],
+    "received_content": "p1-verifier cross-note (durability angle): corroborates C3-F11 - the phrase \"untracked evidence\" in STATE.json _comment, loop.js:45 + :152, and the mission receipt needs_joe is stale: git ls-files harness/loop/ shows STATE.json, runs/2026-08-20/{DONE, closure_audit.json, loop_truth_pure-python.json}, bus/loop_v00_{forge,crucible,mission}.json, ledger/v00_precommits.jsonl ALL TRACKED (runs+bus+ledger at 6f8f20a5; STATE.json at bb348abe). Verifier also flags the mission receipt needs_joe \"merge loop/v0.0-forge to master\" as stale - the seam python/synapse/loop/ + tests/test_loop_contracts.py are already ON master at 9ef3250a (merged in 6f8f20a5). Verifier verdict: durability POSITIVE; wording is stale-text drift, not a state failure. Reconciled into C3-F10/F11 + C2-F9 + needs_joe."
+  },
+  "needs_joe": [
+    "DECIDE: loop-orchestrator.md human-gate list - drive it off STATE.json gates_closed, or hand-update the two ratification entries to CLOSED (C1-F1/F2/F3). Without a decision the orchestrator may halt spuriously on the next dispatch.",
+    "DECIDE: one durable wording for the evidence-durability claim (evidence IS tracked at commit 6f8f20a5) and apply to STATE.json _comment, loop.js GROUND, SPEC.md law 7 (C3-F11 / C2-F6 / C2-F7).",
+    "DECIDE: whether STATE.json base_version tracks current master (bump 5.54.0 to 5.55.0) or is relabeled base_version_at_runtime (C4-F17).",
+    "DECIDE: whether the CHANGELOG v5.55.0 entry gets a ratification addendum (C5-F18; optional, low)."
+  ],
+  "notes": "ALL CHECKS PERFORMED ON CLEAN TRACKED TREE - no edits to tracked files, no commits, no pushes. Evidence durability is a POSITIVE: the entire V0.0 evidence set is tracked since 6f8f20a5 and survives a clean clone. The untracked-evidence phrasing is a live contradiction in 6 sites (STATE.json:3, loop.js:45+152, SPEC.md:70, mission receipt :39+42) and should be rewritten in the two live-forward documents (loop.js + SPEC.md); the two receipt occurrences are historical point-in-time artifacts. Orchestrator gate text is the highest-severity item (high): it is the conductor halt list and two of its gates are closed. STATE.json internal consistency is clean (5 items checked, 0 contradictions). The team-lead brief 2 CLOSED + 2 OPEN human-gates count does not match the file (3+2); file internally consistent. Cross-talk received from p1-verifier 2026-08-20: corroborates C3-F11 untracked-evidence drift + adds the mission receipt needs_joe merge-stale point (both reconciled above).",
+  "scout_checks": [
+    {
+      "check": "1",
+      "verdict": "FAILS",
+      "summary": "loop-orchestrator.md still halts on blueprint/contract ratification; both closed. v00 readiness stale."
+    },
+    {
+      "check": "2",
+      "verdict": "FAILS",
+      "summary": "loop.js GROUND v5.54.0, untracked evidence x2, runV00 gates_open all stale."
+    },
+    {
+      "check": "3",
+      "verdict": "HOLDS-WITH-NIT",
+      "summary": "Evidence IS tracked (6f8f20a5); text claims untracked in 6 sites."
+    },
+    {
+      "check": "4",
+      "verdict": "HOLDS",
+      "summary": "STATE.json internally consistent; base_version nit only."
+    },
+    {
+      "check": "5",
+      "verdict": "HOLDS",
+      "summary": "CHANGELOG:7 is a legitimate historical entry (release preceded ratification same day)."
+    }
+  ]
+}

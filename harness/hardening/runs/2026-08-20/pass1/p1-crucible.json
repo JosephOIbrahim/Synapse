@@ -1,0 +1,69 @@
+{
+  "leg": "p1-crucible",
+  "verdict": "PASS",
+  "attacks": [
+    {
+      "target": "attack1: Ledger provenance",
+      "verdict": "SOUND",
+      "evidence": "harness/loop/ledger/v00_precommits.jsonl has 8 lines, all event=precommit, author=v0.0-recipe, probability=0.0, seq=1..8 strictly monotonic no gaps no duplicates (python counter verified). world_ref groups: v0.0/precommit-order = seq 1-3 (3 lines == recipe turns=3); v0.0/closure-rate = seq 4-8 (5 lines == recipe turns=5); 3+5=8. Truth entry 7 (precommit_order) reports lines_before=0 lines_after=3 new_precommits=3 precommit_per_turn=true invariant_holds=true; truth entry 9 (closure_rate) reports no ledger counts but the ledger file carries exactly 5 closure lines. Contract F3 wording at loop-v00.yaml L30 (ledger grows by exactly turns lines) holds per-question.",
+      "severity": "low",
+      "disposition_proposal": "Shared-accumulation nit: total 8 lines != any single question turns; resolution is by world_ref only, and nothing in .synapse/contracts/loop-v00.yaml or harness/loop/STATE.json states total-lines vs per-question semantics. Propose one clarifying line in the F3 verify field: grows by exactly turns lines per-question in the shared append-only ledger (global seq). No code change."
+    },
+    {
+      "target": "attack2: DONE-last sentinel",
+      "verdict": "SOUND",
+      "evidence": "DONE is exactly 128 bytes, well-formed JSON: finished=2026-08-20T15:36:29+00:00 entries=9 failures=0 evidence=loop_truth_pure-python.json. Fabrication vector closed by construction: harness/loop/runner.py:135-143 finish() sets meta.finished, flushes evidence atomically, THEN writes DONE deriving entries=len(self.entries) and failures=count of error-entries from the SAME in-memory list, so DONE cannot be written without the evidence. No FAILED sentinel present in runs/2026-08-20/. truth.meta.finished equals DONE.finished (same utc_now stamp).",
+      "severity": "low",
+      "disposition_proposal": "Nit (wording only): the ordering claim is structural (flush then DONE in one function), not timestamp-demonstrable, because the runner stamps both files with the same utc_now() second. Suggest documenting DONE as written after the evidence flush in the same runner call."
+    },
+    {
+      "target": "attack3: Truth JSON integrity",
+      "verdict": "SOUND",
+      "evidence": "loop_truth_pure-python.json parses; exactly 9 entries, one per mission question (5 port_contract + 1 mapper_green + 1 precommit_order + 1 stageport_cow + 1 closure_rate). Per-entry verified: 1-5 contract_holds=true; 6 truth_table_holds=true 27/27; 7 invariant_holds=true new_precommits=3; 8 status=UNAVAILABLE zero_disk_writes=true ledger_unchanged=true; 9 closure_rate=1.0 HIT=0 MISS=0 EXPOSED=5. No entry renders UNKNOWN or absent as PASS: stageport renders honest UNAVAILABLE, closure renders honest EXPOSED counts, runner.failures() counts error entries = 0. All probe-derived from the live seam; mapper expected column hardcoded in probe (probes.py:175-176).",
+      "severity": "low",
+      "disposition_proposal": "none"
+    },
+    {
+      "target": "attack4: StagePort zero side effects (LIVE re-run)",
+      "verdict": "SOUND",
+      "evidence": "Live re-run: find snapshot of harness/loop (14 files) before and after the StagePort call -> diff IDENTICAL; ledger stayed 8 lines. Call returned PortResult(status=UNAVAILABLE, payload=None, error_message starting with Octavius substrate not installed (substrate_presence.octavius=absent)) -- byte-identical to truth entry 8. Also reproduced the vendored-SDK ABI RuntimeWarning (cp311/cp313 vs Python 3.14.2) the mission receipt documents, corroborating the evidence was produced in THIS environment by the runner. ports.py:206-212 is a pure return with no I/O reachable.",
+      "severity": "low",
+      "disposition_proposal": "none"
+    },
+    {
+      "target": "attack5: Closure honesty",
+      "verdict": "SOUND-WITH-NITS",
+      "evidence": "Truth entry 9: verdicts EXPOSED x5; counts HIT=0 MISS=0 EXPOSED=5 UNRESOLVABLE=0; terminal_total=5; closure_rate=1.0; zero_hit_miss=true; all_exposed=true; goalpost_holds=true. Honest derivation: recipe.py:77 sets verdict=EXPOSED iff settlement.status==UNAVAILABLE; LedgerPort.settle returns UNAVAILABLE naming Hanish absent (ports.py:175-181). The ledger file 5 closure-rate lines (seq 4-8) corroborate 5 real turns. No fabricated settlement or verdict.",
+      "severity": "low",
+      "disposition_proposal": "Nit (metric, not evidence): closure_rate is tautological -- probes.py:293-294 computes terminal_total = sum of all verdict counts = turns always, so closure_rate=1.0 can never fail; the discriminating signal is the counts (HIT=0 MISS=0 EXPOSED=5), which are real. Contract F5 (loop-v00.yaml L36) already frames the rate as the derived consequence, so the wording is correct; the decorative closure_rate_1_0 flag is redundant. Optional V0.1: compute EXPOSED/(HIT+MISS+EXPOSED) so the rate can actually fail."
+    },
+    {
+      "target": "attack6: Receipt audit (bus/loop_v00_mission.json)",
+      "verdict": "SOUND-WITH-NITS",
+      "evidence": "loop_v00_mission.json: every claim pointered (artifacts 4 paths; evidence runs sentinel closure_audit ledger; goalposts a-e map to closure_audit goalposts and truth entries). commit_sha=null plus note evidence-only leg: no commit authored, no push, no merge -- HONEST, no phantom merge or push claimed. goalpost e cites truth entry 9 (verified). needs_joe lists merge loop/v0.0-forge (now DONE: git merge-base --is-ancestor 9ef3250a master = YES, merged in 6f8f20a5), dispose mission worktree (now DONE: git worktree list shows no loop/v0.0-mission), ratification gates (now DONE: contract header RATIFIED Joe word 2026-08-20; commit bb348abe).",
+      "severity": "low",
+      "disposition_proposal": "Nit: the receipt needs_joe is a historical snapshot (all three items now closed) without a self-label such as as-of-mission-run-time. Recommend a one-line timestamp qualifier on needs_joe. No claim in the receipt is false as of its own date."
+    },
+    {
+      "target": "attack7: Contract-claim attack (F1-F6)",
+      "verdict": "SOUND-WITH-NITS",
+      "evidence": "F1: all 5 port_contract probes contract_holds=true; source read confirms param names verbatim (ports.py:89-90 evaluate_path(agent_id, path_history_hash, recent_actions, proposed_action, scene_state_digest); query_and_filter(relation_keys, task_context_tokens); author_precommit(claim_predicate, probability, world_ref); compose_sanitized_stage(stage_identifier)); PortResult NamedTuple status payload error_message with payload default None (ports.py:30-35); STATUS frozenset SUCCESS/UNAVAILABLE/BLOCKED. F2: 27/27 rows over all True|False|None triples, expected column hardcoded in probe (probes.py:175-176), GATE_POLICY([]) edge documented in contract F2 as carried to V0.1. F3 SOUND per attack1. F4 SOUND per attack4. F5 SOUND-WITH-NITS per attack5. F6: needs_hou=false (meta needs_hou false, build pur-python, target_build_match true; runner gates hou behind the flag runner.py:200-201), DONE-last structural, receipt verdict PASS consistent with closure_audit overall verdict PASS. All six features supported by evidence.",
+      "severity": "low",
+      "disposition_proposal": "Only nit (F1 parenthetical, loop-v00.yaml L24): the seam-carries-no-type-annotations claim is overbroad -- the seam carries RETURN annotations and field annotations; only PARAMETER annotations are absent. The load-bearing claim (param NAMES verbatim) holds and is what the probe verifies (probes.py:147 names only). Propose rewording to: no parameter type annotations; the claim is names, not signatures."
+    }
+  ],
+  "cross_talk": {
+    "sent_to": [
+      "p1-verifier (ledger math + overall evidence verdict)"
+    ],
+    "received_from": [
+      "p1-assayer (via pass1/p1-assayer.json on disk)",
+      "p1-verifier (via pass1/p1-verifier.json on disk)"
+    ],
+    "received_content": "p1-assayer: all 5 HOLDS or HOLDS-WITH-NIT, zero BROKEN. Live inspect.signature confirms the four port methods carry ZERO parameter annotations (all inspect.Parameter.empty) and param names match blueprint A4 verbatim -- corroborates my attack7 F1 read (operative claim holds; the contract parenthetical is overbroad). mapper: 27/27, exactly one ALLOW row, GATE_POLICY([]) returns ALLOW (documented A2 edge), TypeError on int -- corroborates attack7 F2. PortResult.payload defaults to None via signature. pytest 20 passed -- corroborates. Honest-seam UNAVAILABLE messages name the absent substrate with zero side effects -- corroborates attack4. NO contradiction with the evidence. p1-verifier: V-3 pytest 20 passed corroborates; V-5 evidence DURABILITY POSITIVE (all harness/loop/ evidence TRACKED at commit 6f8f20a5, STATE.json at bb348abe) -- corroborates my notes item 2; verifier received my ledger math and confirms the '8 lines vs EXPOSED=5/5' resolution and that all three mission-receipt needs_joe items are CLOSED (receipt = historical snapshot) -- corroborates my attack6. V-1 six-surface 5.55.0 holds; stale GROUND banner in loop.js is harness text, not a release surface. V-4 seam-not-imported-by-production is BY DESIGN for V0.0. NO contradiction with the evidence."
+  },
+  "needs_joe": [
+    "none new -- all evidence SOUND or SOUND-WITH-NITS, zero BROKEN, zero COULD-NOT-ASSESS. The nits are wording or precision only; adopt the disposition wording proposals if contract-text precision is wanted; no code change required."
+  ],
+  "notes": "7/7 attacks on the RATIFIED THE LOOP v5.1 V0.0 evidence: overall PASS. Converges with the forge crucible (loop_v00_crucible.json SOUND-WITH-NITS; same three nit classes: signatures-vs-names, closure_rate tautology, empty-policy edge) -- all claim-precision, none fabrication. New in this pass: (1) all three receipt needs_joe items now CLOSED (forge 9ef3250a ancestor of master, worktree disposed, ratification landed bb348abe); (2) evidence files now TRACKED in master (git ls-files confirms all 7); (3) byte-identical ledger copy claim no longer independently verifiable (worktree gone) -- prior crucible sha256-verified at the time. Live repro of StagePort UNAVAILABLE plus the vendored-SDK ABI RuntimeWarning corroborates runner authorship in this environment. SCOPE: harness/reach untouched; no commits no pushes; receipt written to untracked harness/hardening/runs/2026-08-20/pass1/. CROSS-CHECK (post-write, from disk siblings): p1-assayer and p1-verifier receipts corroborate every load-bearing evidence claim; NO contradiction between evidence and seam facts. Cross-referenced items in their scope (not mine): stale untracked-evidence wording at 6 harness sites (STATE.json:3, loop.js:45+152, SPEC.md:70, mission receipt); stale master v5.54.0 GROUND banner in loop.js; STATE.json human_gates 3 CLOSED + 2 OPEN (cartographer C2-F8/C4-F17)."
+}

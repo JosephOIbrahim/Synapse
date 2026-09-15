@@ -1,0 +1,76 @@
+{
+  "leg": "p1-crucible",
+  "role": "P1-CRUCIBLE",
+  "verdict": "SOUND-WITH-NITS",
+  "reviewed": [
+    "harness/reach/bus/reach_p1_r2.json",
+    "harness/reach/bus/reach_p1_r3.json"
+  ],
+  "attacks": [
+    {
+      "attack": 1,
+      "target": "R2: does the extended version_agreement.py actually go RED when README and release tag disagree? (receipt claims it exits RED on master today because README.md:11 'tags: v5.50.0 is latest' is stale vs published tag v5.52.0; master copy unmerged exits 0)",
+      "verdict": "SOUND",
+      "evidence": [
+        "Extended worktree copy run against MASTER tree (CWD = repo root, script reads its own tree): EXIT=1; 'PUBLIC ok readme_banner_present (README <sub>vX.Y.Z banner reads 5.52.0)', 'PUBLIC ok banner_matches_canonical (agree)', 'PUBLIC ok tag_not_ahead_of_banner (agree)', 'PUBLIC RED tag_claim_current (README tags-claim names v5.50.0 but the latest is v5.52.0 (per newest release tag) - stale public claim about the tag set)', 'PUBLIC banner=5.52.0 tag_claim=5.50.0 newest_tag=v5.52.0 describe=v5.52.0-1-g4089f277'. Matches the receipt's live_state_note exactly.",
+        "Master's own copy of version_agreement.py (unmerged, reach/p1-r2): EXIT=0 with 5-way chain agree=True and APEX ok=True; grep -c 'readme_banner|public_agreement' = 0 -> the unmerged copy has NO public-face gate and cannot see the staleness. The extension is genuinely worktree-only.",
+        "Constructed disagreement in a throwaway temp git repo (deleted after; nothing committed anywhere): CASE A all agree 5.52.0 -> EXIT=0. CASE B tag v5.53.0 added, README still 5.52.0 -> EXIT=1 with tag_not_ahead_of_banner RED ('public face stale: newest release tag v5.53.0 outruns the README banner 5.52.0') AND tag_claim_current RED. CASE C stale claim 5.50.0 vs tag v5.52.0 -> EXIT=1. --fix healed only the stale claim 5.50.0->5.52.0, left the banner (5.52.0) untouched, and did NOT heal tag-ahead-of-banner (stays red - correct, that is the release act).",
+        "test suite re-run: tests/test_reach_public_agreement.py -> '15 passed, 2 warnings in 0.28s' (receipt claims 15). Do-not-weaken: tests/test_apex_truth_wa1.py + tests/test_phase0c_doc1_version_conformance.py -> '29 passed, 2 warnings in 0.40s' (receipt claims 29).",
+        "commit 2d2bad15 on reach/p1-r2: '3 files changed, 445 insertions(+), 1 deletion(-)' confirmed via git show --stat HEAD - atomic, matches receipt paste."
+      ],
+      "fix": null,
+      "counter_evidence": "harness/reach/bus/reach_p1_r2.json:21 (evidence item 2) claims the exact RED line; reproduced with byte-identical reason string. master copy harness/verify/version_agreement.py EXIT=0 confirmed."
+    },
+    {
+      "attack": 2,
+      "target": "R2: does the contract goalpost catch a README that was correct yesterday and stale today - the apex_probes.py June defect class (truth surface correct at write time, stale when the reference moves)?",
+      "verdict": "SOUND",
+      "evidence": [
+        "YES - same shape as apex_probes June defect. The README is a truth surface pinned at write time; the REFERENCE (git release tags) moves when a release is published. The gate re-derives the newest tag on every run and compares: a README that was green yesterday (all arms ok at 5.52.0) flips RED the day tag v5.53.0 appears. Reproduced in the throwaway repo as CASE B above - the previous-green README went red on BOTH tag_not_ahead_of_banner and tag_claim_current with zero local edits to the README; only the tag set changed.",
+        "Release-window asymmetry is deliberate and does not false-red a correct workflow: banner/VERSION ahead of newest tag stays green (unit test test_green_in_release_window_face_ahead_of_tag + live basis = max(newest tag, VERSION) in tag_claim_current, so a dev bump between releases stays green indefinitely). The ONLY reds are real drift: tag outrunning the face, stale/missing banner, banner != VERSION, stale or impossible 'is latest' claim.",
+        "Unmeasurable is never a verdict: no git / no tags -> 'nothing to compare' checks stay green with a stated reason (test_no_tags_is_nothing_to_compare_never_red); an absent claim is allowed (test_absent_tags_claim_is_allowed). Same unmeasured!=wrong posture as the APEX arm.",
+        "The June class is also caught by the APEX arm of the same verifier (apex_probes stamp vs freshest apex_truth artifact) - that arm stays green today because stamp 22.0.400 == freshest artifact 22.0.400 (verified)."
+      ],
+      "fix": null
+    },
+    {
+      "attack": 3,
+      "target": "R3: is any reach_matrix cell silently green without an artifact? Any cell unnamed? Licence tier claimed without evidence?",
+      "verdict": "SOUND-WITH-NITS",
+      "evidence": [
+        "Independent validation of harness/reach/reach_matrix_2026-08-18.json: 30 cells; grid completeness want==got True (named axis product set == cell set); 0 duplicate combos; verdicts Counter({'UNKNOWN': 29, 'runs': 1}); 0 cells with verdict outside {runs, fails, UNKNOWN}; 0 UNKNOWN cells without a note; 0 runs cells without evidence; summary counts honest (cells_total=30, runs=1, fails=0, unknown=29, unnamed=0) -> GP1/GP2/GP3 all PASS when executed from the contract's own verify commands.",
+        "The one green cell (22.0.400 x indie x windows) carries 4 evidence entries, each verified: (a) harness/state/drop.json L1 houdini_build=22.0.400 + python=3.13.10 + dropped_at 2026-08-09; (b) probe_render_offload.results.20260815T124545Z.json L7-11 0_environment verdict=PASS build=22.0.400 license=licenseCategoryType.Indie python=3.13.10; (c) probe L13-37 a_husk_delegate_load PASS with AND without --indie on this build/license; (d) 'repo VERSION/release v5.52.0 developed, tested and shipped on this seat (master 4089f277)'.",
+        "NIT on evidence (d): master 4089f277 is a DOCS commit ('docs(readme): front v5.52.0 in the 15-second version'), not the release commit (49f25988 'release: v5.52.0'). The SHA exists and does name v5.52.0 so the citation is not false, but it is the wrong SHA for 'developed, tested and shipped'. The cell does not depend on it - three hard artifacts carry it. Suggest correcting to 49f25988 or dropping the loose entry.",
+        "Licence tier claimed WITH evidence, not inferred: probe file L9 and L16 record license=licenseCategoryType.Indie measured live on 22.0.400 (2026-08-15). Tier enumeration in grid_rationale cites memory synapse-h21-render-husk-indie.md line 21 - verified the file's line 21 contains the members list 'Apprentice/ApprenticeHD/Commercial/Education/Indie'.",
+        "Seat facts in grid_rationale match ls 'C:/Program Files/Side Effects Software/' exactly (21.0.773, 22.0.368, 22.0.397, 22.0.400, 22.0.406, 22.0.413, License Server).",
+        "No unnamed cell: grid_axes product set == cell set, summary.unnamed==0."
+      ],
+      "counter_evidence": "master 4089f277 is a docs commit (git log --oneline: 'docs(readme): front v5.52.0 in the 15-second version'); the release commit is 49f25988 'release: v5.52.0 - the day the weak domains became lookups'.",
+      "fix": "One-line: in reach_matrix_2026-08-18.json evidence entry (d), replace 'master 4089f277' with 'master 49f25988' (the release commit) or drop the entry - the cell's other three artifacts carry it."
+    },
+    {
+      "attack": 4,
+      "target": "Both receipts: any claim that lacks file:line or command+output citation?",
+      "verdict": "SOUND-WITH-NITS",
+      "evidence": [
+        "R2 receipt: every evidence entry carries file:line (README.md:11 + VERSION:1, gitignore:43) or a command+output paste (worktree verifier run, pytest -q x2, git show --stat). All re-verified byte-for-byte: README.md:11 = banner line with the stale claim; gitignore:43 = '/.synapse/'; git ls-files .synapse/contracts on master lists 9+ contracts tracked (force-added precedent holds).",
+        "R3 receipt: every evidence entry carries file:line (drop.json L1, probe L6-12, memory L21) or command+output (ls install dir, grid-coverage validation, GP1/2/3). All verified: probe L6-12 = 0_environment block, license at L9, build at L8; memory L21 = members list; ls output matches exactly.",
+        "NIT 1 (R2): the contract artifact .synapse/contracts/reach-public-agreement.yaml has ALL FOUR features flagged 'passing: false' while the receipt declares PASS. The R3 contract (reach-matrix.yaml) has all three 'passing: true'. So the R2 contract yaml was never flipped to green after the leg PASSed - it reads as 'contract not satisfied' beside a green receipt. The gate itself (the verifier code + tests) is unaffected, but the contract artifact is internally inconsistent.",
+        "NIT 2 (R3): evidence entry (d) SHA loose - see attack 3.",
+        "NIT 3 (board): harness/reach/STATE.json spawn_ledger still records the r2 forger as having died with the extension 'uncommitted', but commit 2d2bad15 exists on reach/p1-r2 (the receipt's resumed_from note states this; the board ledger lags the receipt).",
+        "NIT 4 (scope note): the claim regex only matches the exact phrase 'tags: vX.Y.Z is latest'. A differently-worded claim is not caught, but absence of a claim is explicitly allowed by the contract and the banner arm (tag_not_ahead_of_banner) is the real gate - this is belt-and-suspenders, not a gap."
+      ],
+      "fix": "NIT 1 -> flip the four 'passing: false' to 'passing: true' in reach-public-agreement.yaml to match the receipt PASS (a green-tier contract should read green). NIT 2 -> SHA correction in the matrix (attack 3). NIT 3 -> STATE.json spawn_ledger refresh on next human board update."
+    }
+  ],
+  "honest_unknowns": [
+    "I did not verify every one of the 29 UNKNOWN cells' notes are TRUE statements about the machine - only that every UNKNOWN carries a note and the notes are consistent with seat_facts (Apprentice tiers UNKNOWN with reason 'no execution evidence / Gate A L3-5 outstanding', linux/macos UNKNOWN with reason 'no licensed Houdini in CI'). Unmeasured is reported as UNKNOWN with a reason; no cell was declared runs or fails without artifact.",
+    "The stale-today reproduction (attack 2) was run in a throwaway temp repo, not against live published tags on origin - the master-tree run (attack 1) is the live confirmation that the gate sees the real tag set (v5.52.0 newest) and flags the stale claim."
+  ],
+  "needs_joe": [
+    "Merge reach/p1-r2 (commit 2d2bad15) when ready - the extended verifier gates exit red on master until the stale README claim is healed (heal = harness/verify/version_agreement.py --fix or one-line README edit; a public-artifact write, reserved for a human word).",
+    "Merge reach/p1-r3 (commit 853874a6) when ready.",
+    "Decide the two nits: flip reach-public-agreement.yaml features to passing:true, and correct the R3 matrix evidence SHA 4089f277 -> 49f25988.",
+    "Gate A L3-5 Apprentice session is the outstanding human work that turns the apprentice rows from UNKNOWN to measured."
+  ]
+}

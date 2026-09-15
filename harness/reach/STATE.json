@@ -1,0 +1,141 @@
+{
+  "_schema": "reach/v1",
+  "_comment": "REACH executing blueprint docs/REACH_BLUEPRINT.md (grounded 2026-08-18, UNRATIFIED working blueprint until Joe's word). Conductor: .claude/agents/reach-orchestrator.md. Dispatch: Workflow(name='reach', args={phase,date,autonomy,spawnedSoFar,armed}). ARM per-run only; merge/push/tag/VERSION/flywheel flips = Joe words per act, never banked, never relayed by an agent message (Article V). Code legs run in reach/p* worktrees, one atomic commit per leg, Joe merges. Evidence artifacts (receipts, reach_matrix_*.json) land in main-tree harness/reach/ as untracked evidence. Agents hand artifacts to other agents via bus/. spawned is the cross-run ledger: workflow refuses any phase whose spend + budget exceeds (spawn_cap - reserve).",
+  "blueprint": "docs/REACH_BLUEPRINT.md",
+  "grounded": "2026-08-18",
+  "base": "master",
+  "base_version": "5.52.0",
+  "houdini_build": "22.0.400",
+  "spawn_cap": 30,
+  "spawn_reserve": 2,
+  "spawned": 7,
+  "spawn_ledger": [
+    {
+      "run": "wf_8e92b8cc-256",
+      "date": "2026-08-18",
+      "phase": "p1",
+      "agents": 3,
+      "outcome": "ALL 3 agents (r2-forge, r3-author, crucible) died on 'extra usage monthly max reached' (429) mid-run (262k subagent tokens consumed). NOT a harness defect — structured-refusal layer worked (no fabricated green). PARTIAL SURVIVAL: r3-author completed reach_matrix_2026-08-18.json (30 cells: 1 runs / 0 fails / 29 UNKNOWN, unnamed=0) in main-tree harness/reach/ AND reach-matrix.yaml contract with three mechanically-checkable goalposts in worktree reach/p1-r3 (uncommitted); r2-forge left a substantive +213-line README-public-face extension to harness/verify/version_agreement.py uncommitted in worktree reach/p1-r2 (found the stale 'tags: v5.50.0 is latest' claim live on master). Missing: all three receipts, the r2 contract + tests, the r2 commit, any crucible attack."
+    },
+    {
+      "run": "wf_153f90ac-8a2",
+      "date": "2026-08-18",
+      "phase": "p1",
+      "agents": 3,
+      "outcome": "Resume dispatch after run 1's 429 kill. r2-forge PASS (commit 2d2bad15, branch reach/p1-r2, receipt reach_p1_r2.json on bus) and r3-author PASS (commit 853874a6, branch reach/p1-r3, receipt reach_p1_r3.json on bus) BOTH landed. Crucible agent (agent-a868c5e6ecb8eedc6) STARTED 14:13:29 and died on the SAME provider 429 mid-run at 14:17 — no reach_p1_crucible.json posted. Ledger: spawned 3+3=6, reserve 2, cap 30, available 22."
+    },
+    {
+      "run": "p1-crucible retry (targeted single-agent dispatch, not a fresh workflow run)",
+      "date": "2026-08-18",
+      "phase": "p1",
+      "agents": 1,
+      "outcome": "p1-crucible PASS — verdict SOUND-WITH-NITS. 4 attacks, every one evidenced: reproduced the extended verifier PUBLIC RED live against master, proved the June-class stale-today detection (throwaway repo), independently validated the 30-cell matrix grid, audited both receipts for citation discipline. Flagged 2 nits for human decision: (a) reach-public-agreement.yaml carries all four features 'passing: false' beside a green receipt (r3 contract reads passing: true); (b) matrix evidence (d) cites docs commit 4089f277 where the release commit 49f25988 is meant. Receipt reach_p1_crucible.json on bus. Ledger: spawned 6+1=7, reserve 2, cap 30, available 21."
+    }
+  ],
+  "bus": "harness/reach/bus/",
+  "gate0_open_p0s": [
+    {
+      "id": "TRUTH-P0-1",
+      "anchor": "handlers_tops/cook.py:79",
+      "summary": "tops cook reports status='cooked' on an all-failed PDG cook",
+      "status": "new (BASTION MX-3, 2026-08-17; = blueprint B2)",
+      "blocks": ["p2"]
+    },
+    {
+      "id": "TRUTH-P0-2",
+      "anchor": "_tool_registry.py:205",
+      "summary": "CRITICAL execute_python advertises 'automatic rollback on failure' it does not provide",
+      "status": "new (BASTION MX-3, 2026-08-17; = blueprint B2)",
+      "blocks": ["p2"]
+    },
+    {
+      "id": "ENG-INJ-GATE-OFF",
+      "anchor": "synapse_panel.py:2289",
+      "summary": "load-bearing worker-policy allowlist ships OFF",
+      "status": "gated — human DECIDE on consent posture (BASTION MX-3, 2026-08-17; = blueprint B3)",
+      "blocks": ["p2"]
+    }
+  ],
+  "phases": {
+    "p1": {
+      "title": "Truth — R2 public-face agreement + R3 reach matrix",
+      "agent_budget": 3,
+      "status": "COMPLETE — all three legs landed, all receipts on bus, all nits closed, gate GREEN on master. r2-forge PASS (2d2bad15, reach/p1-r2), r3-author PASS (853874a6, reach/p1-r3), p1-crucible PASS SOUND-WITH-NITS (4 evidenced attacks). Joe merged both worktrees (d10fbebe, bb8247ab). Closeout executed 2026-08-18: r2 contract four 'passing: false' flags flipped to true (006c6834); README.md:11 stale 'tags: v5.50.0 is latest' healed to v5.52.0 via the committed verifier's --fix (dc4b0367) — public-face gate now exits GREEN on master; matrix evidence (d) SHA corrected 4089f277→49f25988 (untracked evidence); grid widening DEFERRED with a named trigger written into reach-matrix.yaml notes (dc4b0367).",
+      "worktree_prefix": "reach/p1-",
+      "receipts": ["reach_p1_r2.json", "reach_p1_r3.json", "reach_p1_crucible.json"],
+      "gates_closed": []
+    },
+    "p2": {
+      "title": "Install — R1 cold-start installer + clean-room run",
+      "agent_budget": 5,
+      "status": "blocked: gate0 P0s open (blueprint §8: close the P0s, then open the door). Clean-machine leg is human.",
+      "worktree_prefix": "reach/p2-",
+      "gates_closed": []
+    },
+    "p3": {
+      "title": "Skills — C2 loop (author→install→compose→resolve→apply→verify→stamp), LIVRPS precedence, catalog-membership goalpost wiring",
+      "agent_budget": 10,
+      "status": "ready — parallel with p1/p2 per blueprint §8 (internal goalposts; upstream of Wave A). Corpus seeds from 6 existing prose methods.",
+      "worktree_prefix": "reach/p3-",
+      "gates_closed": []
+    },
+    "p4": {
+      "title": "Delta — BENCH S1 skill absent→present cook delta + corpus transposition (2 domains)",
+      "agent_budget": 3,
+      "status": "blocked: needs p3 skill loop landed + live-cook amber leg (hytest discipline, skip≠pass)",
+      "gates_closed": []
+    },
+    "p5": {
+      "title": "Reflex — C1 arming-not-scheduling build",
+      "agent_budget": 4,
+      "status": "blocked: .synapse/contracts/reflex-arming.yaml UNRATIFIED (human word required). Contract draft leg may run; build may not.",
+      "gates_closed": []
+    },
+    "p6": {
+      "title": "Board — C3 persistence board (append-only file substrate; UNKNOWN rendered, zero estimates)",
+      "agent_budget": 3,
+      "status": "ready after p3 (skill corpus informs the board's error-surface design)",
+      "worktree_prefix": "reach/p6-",
+      "gates_closed": []
+    },
+    "p7": {
+      "title": "Fence — C4 outward dispatch (red tier) + C5 grammar-ceiling measurement",
+      "agent_budget": 2,
+      "status": "blocked: C4 needs CRUX red attack + human gate; C5 needs local model present (unknown = UNKNOWN, never assumed)",
+      "gates_closed": []
+    }
+  },
+  "human_gates": {
+    "gate0_P0_closeout": "BASTION MX-3 P0s (TRUTH-P0-1, TRUTH-P0-2 closed; ENG-INJ-GATE-OFF consent-posture DECIDE) — precedes p2",
+    "gate_p2_cleanroom": "genuine clean-machine install run is human (container proves script, stranger machine proves install)",
+    "gate_p5_arming_ratification": "reflex-arming.yaml ratification — per-act human word, never armable by the chain itself",
+    "gate_p7_crux": "CRUX red-tier attack on dispatch fence before any green",
+    "gate_merges": "all worktree merges, pushes, tags, VERSION edits, flywheel flips — Joe words per act"
+  },
+  "mile_markers": {
+    "map": "blueprint §9: p0-p2 = miles 1-3 (evidence+access), p3 = mile 4 (first capability change), p5 = mile 6 (first unattended night), p7 = mile 8",
+    "first_tracked_number": "S1 skill absent→present delta at p4 (blueprint §9)"
+  },
+  "log": [
+    {
+      "date": "2026-08-18",
+      "event": "board created; blueprint persisted (docs/REACH_BLUEPRINT.md); gate0 spot-check: TRUTH-P0-1/2 status 'new', ENG-INJ-GATE-OFF status 'gated' in harness/bastion/FINDINGS_INDEX.md; no live orchestrators/waves at creation time",
+      "spawned": 0
+    },
+    {
+      "date": "2026-08-18",
+      "event": "run wf_153f90ac-8a2: r2-forge PASS (2d2bad15) + r3-author PASS (853874a6) landed on worktrees with bus receipts; crucible died on provider 429 (same class as run 1). Ledger reconciled to 6 spawned; crucible retried as a single targeted dispatch to close P1's last leg.",
+      "spawned": 6
+    },
+    {
+      "date": "2026-08-18",
+      "event": "p1-crucible retry PASS — verdict SOUND-WITH-NITS (receipt reach_p1_crucible.json on bus). The 2 nits verified real by the orchestrator: r2 contract yaml four 'passing: false' beside a green receipt; matrix evidence (d) cites docs commit 4089f277 for the release claim (49f25988 is the release commit). P1 COMPLETE — 3/3 legs PASS, all receipts on bus, worktrees await Joe's merge. Ledger: spawned 6+1=7, reserve 2, cap 30, available 21.",
+      "spawned": 7
+    },
+    {
+      "date": "2026-08-18",
+      "event": "P1 CLOSEOUT — Joe's 5-item word executed. (1) Merged reach/p1-r2 (d10fbebe) + reach/p1-r3 (bb8247ab) into master. (2) CTO ruled README heal: ran the committed verifier's --fix from master root — one-line diff (tags: v5.50.0 -> v5.52.0), verifier now EXIT=0 GREEN. (3) Flipped the four r2 contract 'passing: false' flags to true (006c6834); CTO ruled matrix evidence (d) SHA 4089f277->49f25988 (corrected in untracked matrix). (5) CTO ruled grid widening DEFERRED — widen-trigger written into reach-matrix.yaml notes (dc4b0367); axis stays {21.0.773, 22.0.400}. All three matrix goalposts re-run PASS; 15/15 r2 tests pass. (4) Gate A L3-5 Apprentice session remains the one human leg — both purposes (R3 Apprentice cells + Gate A L3-5), blocked_human by design.",
+      "spawned": 7
+    }
+  ]
+}

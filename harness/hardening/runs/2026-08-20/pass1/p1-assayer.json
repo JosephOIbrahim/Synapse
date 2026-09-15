@@ -1,0 +1,55 @@
+{
+  "leg": "p1-assayer",
+  "verdict": "PASS",
+  "findings": [
+    {
+      "id": "F1-portresult",
+      "claim_under_test": "PortResult is a NamedTuple with _fields {status, payload, error_message}; payload DEFAULTS TO None; STATUS covers {SUCCESS, UNAVAILABLE, BLOCKED}",
+      "verdict": "HOLDS-WITH-NIT",
+      "severity": "low",
+      "evidence": "cmd: python -c \"import sys; sys.path.insert(0,'python'); from synapse.loop import ports; print(ports.PortResult._fields); import inspect; print(inspect.signature(ports.PortResult)); print(ports.STATUS); print(ports.PortResult())\" -> real output:\n_fields = ('status', 'payload', 'error_message')\nsignature = (status: str, payload: Optional[Dict[str, Any]] = None, error_message: Optional[str] = None)\nSTATUS = frozenset({'BLOCKED', 'SUCCESS', 'UNAVAILABLE'})\nFINAL PROBE ELEMENT FAILED: TypeError: PortResult.__new__() missing 1 required positional argument: 'status' (exit code 1).\npayload defaults to None CONFIRMED via signature (status is the only required positional, correctly). The contract claim HOLDS; the prescribed probe command's final print(ports.PortResult()) is the only failure and it is a probe defect, not a seam defect.",
+      "disposition_proposal": "No code changes. Suggest rewording the probe command to print(ports.PortResult('SUCCESS')) or dropping the zero-arg call; the contract file wording 'PortResult.payload defaults to None' is accurate."
+    },
+    {
+      "id": "F2-signatures-verbatim",
+      "claim_under_test": "The four blueprint §4 method param-name lists match VERBATIM AND no parameter carries a type annotation",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "cmd pattern: python -c \"import sys,inspect; sys.path.insert(0,'python'); from synapse.loop import ports; print([(p, v.annotation) for p,v in inspect.signature(ports.X.m).parameters.items()])\" -> real outputs:\nSafetyPort.evaluate_path: [('self', empty), ('agent_id', empty), ('path_history_hash', empty), ('recent_actions', empty), ('proposed_action', empty), ('scene_state_digest', empty)]\nMemoryPort.query_and_filter: [('self', empty), ('relation_keys', empty), ('task_context_tokens', empty)]\nLedgerPort.author_precommit: [('self', empty), ('claim_predicate', empty), ('probability', empty), ('world_ref', empty)]\nStagePort.compose_sanitized_stage: [('self', empty), ('stage_identifier', empty)]\n(empty = inspect.Parameter.empty; all four match blueprint §4 exactly, zero type annotations.)",
+      "disposition_proposal": "No code changes. Wording for Joe: A1 name-only claim confirmed on the live imported classes — names verbatim, annotations absent."
+    },
+    {
+      "id": "F3-mapper-gate-policy",
+      "claim_under_test": "GATE_POLICY over all 27 (True|False|None)^3 combos: ALLOW iff every predicate True else BLOCK; GATE_POLICY([])==ALLOW (documented A2 spec-only edge); purity (input not mutated); TypeError on non-bool/non-None",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "cmd: python -c truth-table probe -> real result:\ncombos: 27\nALLOW rows: [(True, True, True)]\nBLOCK rows: 26\nNone-containing BLOCKs all: True\nany-False BLOCKs all: True\nGATE_POLICY([]): ALLOW\ninput not mutated: True\nTypeError raised: GATE_POLICY predicates must be bool or None, got int\nAll 27 expected/got pairs matched; exactly one ALLOW row (all-True); empty edge returns ALLOW as documented.",
+      "disposition_proposal": "No code changes. GATE_POLICY([])->ALLOW confirmed as the documented A2 spec-only edge (vacuous truth), carried to V0.1 per contract; not a V0.0 blocker."
+    },
+    {
+      "id": "F4-honest-seam",
+      "claim_under_test": "Every port method returns status UNAVAILABLE with an error_message naming the absent substrate (SALUS / PG-DRM / Hanish / Octavius) — never a fabricated SUCCESS/BLOCK",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "cmd: python -c instantiate+call probe -> real result:\nSafetyPort.evaluate_path: UNAVAILABLE | SALUS substrate not installed (substrate_presence.salus=absent); ...\nMemoryPort.query_and_filter: UNAVAILABLE | PG-DRM task-context filter not wired (V0.2 rung); Moneta is live but ...\nLedgerPort.settle('t1'): UNAVAILABLE | Hanish substrate not installed (substrate_presence.hanish=absent); ...\nStagePort.compose_sanitized_stage('/stage'): UNAVAILABLE | Octavius substrate not installed (substrate_presence.octavius=absent); ...\nAll four name the absent substrate; zero side effects (no ledger_tmp_probe dir created; harness/loop/ ledger unchanged).",
+      "disposition_proposal": "No code changes. Honest-seam wording confirmed verbatim."
+    },
+    {
+      "id": "F5-hermetic-gate",
+      "claim_under_test": "python -m pytest tests/test_loop_contracts.py -q passes (~20 tests), hermetic (tmp ledgers only, no repo writes)",
+      "verdict": "HOLDS",
+      "severity": "low",
+      "evidence": "cmd: python -m pytest tests/test_loop_contracts.py -q (from repo root) -> real summary line:\n======================= 20 passed, 2 warnings in 0.49s ========================\nSide-effect check: harness/loop/ledger/v00_precommits.jsonl mtime unchanged (Aug 20 11:37, before the run); git status clean over harness/loop/, tests/, python/synapse/loop/, .synapse/contracts/loop-v00.yaml.",
+      "disposition_proposal": "No code changes. Hermetic mirror green."
+    }
+  ],
+  "cross_talk": {
+    "sent_to": ["p1-crucible"],
+    "received_from": [],
+    "received_content": "none"
+  },
+  "needs_joe": [
+    "F1 NIT (low): the PASS-1 mission's prescribed probe command ends with print(ports.PortResult()) which raises TypeError (status has no default). Seam is correct — payload defaults to None via signature. Recommend the probe command be corrected in the run notes only; no code change."
+  ],
+  "notes": "Environment: Python 3.14.2; pre-existing RuntimeWarning about vendored-SDK ABI mismatch (cp311+cp313 wheels vs 3.14) is ambient and irrelevant to this pure-python seam. Seam __version__ = 0.1.0 (python/synapse/loop/__init__.py). All five checks ran against the LIVE imported classes via inspect.signature; none trusted file text alone. No tracked file was edited, committed, or pushed."
+}
