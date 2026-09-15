@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import Path
 import re
-import sys
 import threading
 
 from synapse.loop.coordinator import LoopCoordinator, digest
@@ -60,8 +59,12 @@ def _owned(fn, expected_path=None):
 def _snapshot(query=""):
     import hou
     def read(owner, port):
-        resolved = owner._resolve_project_path(None).resolve()
-        base = resolved.parent if resolved.is_file() else resolved
+        if getattr(owner, "_memory_binding", None) is not None:
+            from synapse.host.memory_lifecycle import current_binding
+            base = current_binding().project_dir
+        else:
+            resolved = owner._resolve_project_path(None).resolve()
+            base = resolved.parent if resolved.is_file() else resolved
         if (base / ".synapse").resolve() != Path(owner.storage_dir).resolve():
             raise RuntimeError("Project memory belongs to another scene location; host rebind required")
         selection = [node.path() for node in hou.selectedNodes()][:32]
@@ -224,62 +227,11 @@ def rebind_project_memory(project_path, *, carry_records=False):
     Used for the untitled-to-saved repair. Copying records is never implicit on
     loading an unrelated scene. No panel or worker constructs a memory owner.
     """
-    def migrate(owner, port):
+    def migrate():
         from synapse.memory import store as module
-        from synapse.memory.moneta_store import MonetaBackedStore
-        target_base = Path(project_path).resolve()
-        if target_base.is_file():
-            target_base = target_base.parent
-        if target_base / ".synapse" == Path(owner.storage_dir).resolve():
-            return {"status": "UNCHANGED", "storage_dir": str(owner.storage_dir)}
-        records = owner.store._iter_memories(strict=True) if carry_records else []
-        if len(records) > 2000:
-            raise RuntimeError("Migration exceeds the bounded live record limit")
-        owner.store.save(require_durable=True)
-        destination = target_base / ".synapse"
-        copied_snapshot = False
-        if carry_records and not destination.exists():
-            # A fresh saved scene can reuse the durable snapshot/vectors. Avoid
-            # re-embedding and checkpointing every record on the UI thread.
-            import shutil
-            source = Path(owner.storage_dir).resolve()
-            if destination.is_relative_to(source):
-                raise RuntimeError("Memory destination cannot be inside its source")
-            files = [p for p in source.rglob("*") if p.is_file()]
-            if len(files) > 512 or sum(p.stat().st_size for p in files) > 64 * 1024 * 1024:
-                raise RuntimeError("Memory snapshot exceeds the live migration byte budget")
-            shutil.copytree(source, destination)
-            copied_snapshot = True
-        replacement = module.SynapseMemory(project_path=str(target_base))
-        try:
-            if not isinstance(replacement.store, MonetaBackedStore):
-                raise RuntimeError("Replacement memory did not open Moneta")
-            replacement.store._require_durable()
-            existing = {m.id: m.to_json() for m in replacement.store._iter_memories(strict=True)}
-            for memory in records:
-                if memory.id in existing and existing[memory.id] != memory.to_json():
-                    raise RuntimeError("Destination has a conflicting memory identity")
-            for memory in records:
-                if memory.id not in existing:
-                    replacement.store.add_durable_if_absent(memory)
-            verified = {m.id: m.to_json() for m in replacement.store._iter_memories(strict=True)}
-            if any(verified.get(m.id) != m.to_json() for m in records):
-                raise RuntimeError("Migrated memory readback differs")
-        except Exception:
-            closer = getattr(replacement.store, "close", None)
-            if callable(closer):
-                closer()
-            raise
-        old_path = str(owner.storage_dir)
-        owner.store.close()
-        module._global_synapse = replacement
-        tracker = sys.modules.get("synapse.session.tracker")
-        bridge = getattr(tracker, "_bridge", None)
-        if bridge is not None:
-            bridge._init_synapse()
-            bridge.invalidate_context_cache()
-        return {"status": "REBOUND", "source": old_path, "storage_dir": str(replacement.storage_dir),
-                "carried_records": len(records), "verified_records": len(verified),
-                "snapshot_copied": copied_snapshot,
-                "records_sha256": digest({m.id: m.to_json() for m in records})}
-    return _on_main(lambda: _owned(migrate))
+        from synapse.host.memory_lifecycle import rebind_owner, _records
+        owner = module._global_synapse
+        if owner is None:
+            raise RuntimeError("Project memory has not been initialized by the host")
+        return rebind_owner(project_path, records=_records(owner) if carry_records else [])
+    return _on_main(migrate)

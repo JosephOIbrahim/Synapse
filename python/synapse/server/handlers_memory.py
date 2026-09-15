@@ -22,6 +22,17 @@ from .handler_helpers import _HOUDINI_UNAVAILABLE
 class MemoryHandlerMixin:
     """Mixin providing memory bridge and Living Memory (scene memory) handlers."""
 
+    def _memory_on_main(self, callback):
+        """Resolve, borrow and use the host owner within one main-thread hop."""
+        from .main_thread import run_on_main
+        def on_main():
+            bridge = self._get_bridge()  # type: ignore[attr-defined]
+            refresh = getattr(bridge, "refresh_memory_owner", None)
+            if callable(refresh):
+                refresh()
+            return callback(bridge)
+        return run_on_main(on_main, label="memory:owner")
+
     @staticmethod
     def _scene_paths() -> Dict:
         """Common boilerplate for Living Memory handlers.
@@ -63,8 +74,7 @@ class MemoryHandlerMixin:
 
     def _handle_memory_context(self, payload: Dict) -> Dict:
         """Handle context/engram_context command."""
-        bridge = self._get_bridge()  # type: ignore[attr-defined]
-        result = bridge.handle_memory_context(payload)
+        result = self._memory_on_main(lambda bridge: bridge.handle_memory_context(payload))
         from ..host.memory_loop import enabled, context_for_request
         if enabled():
             result = dict(result, memory_loop=context_for_request(payload.get("query", "")))
@@ -162,19 +172,20 @@ class MemoryHandlerMixin:
         Augmented to also reach the RAG corpus (VEX/reference docs) so the
         memory-search path is no longer blind to the knowledge index.
         """
-        bridge = self._get_bridge()  # type: ignore[attr-defined]
-        result = bridge.handle_memory_search(payload)
-        return self._augment_with_knowledge(payload.get("query", ""), result)
+        def search(bridge):
+            result = bridge.handle_memory_search(payload)
+            if payload.get("scope", "all") != "all" or result.get("error"):
+                return result
+            return self._augment_with_knowledge(payload.get("query", ""), result)
+        return self._memory_on_main(search)
 
     def _handle_memory_add(self, payload: Dict) -> Dict:
         """Handle add_memory/engram_add command."""
-        bridge = self._get_bridge()  # type: ignore[attr-defined]
-        return bridge.handle_memory_add(payload)
+        return self._memory_on_main(lambda bridge: bridge.handle_memory_add(payload))
 
     def _handle_memory_decide(self, payload: Dict) -> Dict:
         """Handle decide/engram_decide command."""
-        bridge = self._get_bridge()  # type: ignore[attr-defined]
-        return bridge.handle_memory_decide(payload)
+        return self._memory_on_main(lambda bridge: bridge.handle_memory_decide(payload))
 
     def _handle_memory_recall(self, payload: Dict) -> Dict:
         """Handle recall/engram_recall command.
@@ -183,9 +194,12 @@ class MemoryHandlerMixin:
         bridge in the RAG corpus so a mid-session question like
         "vex @attrib promote" surfaces the VEX reference, not just decisions.
         """
-        bridge = self._get_bridge()  # type: ignore[attr-defined]
-        result = bridge.handle_memory_recall(payload)
-        return self._augment_with_knowledge(payload.get("query", ""), result)
+        def recall(bridge):
+            result = bridge.handle_memory_recall(payload)
+            if payload.get("scope", "all") != "all" or result.get("error"):
+                return result
+            return self._augment_with_knowledge(payload.get("query", ""), result)
+        return self._memory_on_main(recall)
 
     def _handle_project_setup(self, payload: Dict) -> Dict:
         """Initialize or load SYNAPSE project structure for current scene."""
@@ -311,10 +325,12 @@ class MemoryHandlerMixin:
         # longer contradicts synapse_context -- which read 176 from the live
         # store while status reported 0 from a near-empty markdown file.
         try:
-            bridge = self._get_bridge()  # type: ignore[attr-defined]
-            synapse_mem = getattr(bridge, "_synapse", None)
-            if synapse_mem is not None:
-                status["entries_total"] = synapse_mem.store.count()
+            def count(bridge):
+                memory = getattr(bridge, "_synapse", None)
+                return memory.store.count() if memory is not None else None
+            entries = self._memory_on_main(count)
+            if entries is not None:
+                status["entries_total"] = entries
         except Exception:
             pass
 

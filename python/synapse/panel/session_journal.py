@@ -103,7 +103,8 @@ def _resolve_log_dir() -> str:
     """
     if _HOU_AVAILABLE and hou is not None:
         try:
-            hip_path = hou.hipFile.path()
+            from synapse.server.main_thread import run_on_main
+            hip_path = run_on_main(hou.hipFile.path, label="session_journal:scene_path")
             if hip_path:
                 hip_dir = os.path.dirname(hip_path)
                 if hip_dir and os.path.isdir(hip_dir):

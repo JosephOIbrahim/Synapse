@@ -19,11 +19,21 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..memory.store import SynapseMemory, get_synapse_memory, reset_synapse_memory
-from ..memory.models import Memory, MemoryType, MemoryQuery
+from ..memory.models import Memory, MemoryType, MemoryQuery, MemoryTier
 from ..memory.markdown import MarkdownSync, load_context
 from .summary import generate_session_summary
 
 logger = logging.getLogger("synapse.session")
+
+
+def _scope_tier(scope):
+    if scope == "all":
+        return None
+    if scope == "scene":
+        return MemoryTier.SHOT
+    if scope == "project":
+        return MemoryTier.SHOW
+    raise ValueError("scope must be scene, project, or all")
 
 
 # =============================================================================
@@ -114,6 +124,14 @@ class SynapseBridge:
         """Reload memory (e.g., when project changes)."""
         reset_synapse_memory()
         self._init_synapse()
+
+    def refresh_memory_owner(self):
+        """Borrow the current host owner; never retain a closed prior scene."""
+        from ..host.memory_lifecycle import ensure_current_memory
+        owner = ensure_current_memory()
+        if self._synapse is not owner:
+            self._init_synapse()
+            self.invalidate_context_cache()
 
     # Backwards compatibility
     def reload_nexus(self):
@@ -408,6 +426,11 @@ class SynapseBridge:
         if not self._synapse:
             return {"error": "Memory not available", "results": []}
 
+        try:
+            tier = _scope_tier(payload.get("scope", "all"))
+        except ValueError as exc:
+            return {"error": str(exc), "count": 0, "results": []}
+
         query_text = payload.get("query", "")
         limit = payload.get("limit", 20)
         raw_types = payload.get("types") or payload.get("kinds") or []
@@ -425,7 +448,7 @@ class SynapseBridge:
             }
 
         results = self._synapse.search(
-            query_text, limit=limit, memory_types=type_enums or None
+            query_text, limit=limit, memory_types=type_enums or None, tier=tier,
         )
 
         out = {
@@ -494,46 +517,73 @@ class SynapseBridge:
     def handle_memory_decide(self, payload: Dict) -> Dict:
         """Handle decision recording."""
         if not self._synapse:
-            return {"error": "Memory not available"}
+            return {"error": "Memory not available", "recorded": False}
 
         decision = payload.get("decision", "")
         reasoning = payload.get("reasoning", "")
         alternatives = payload.get("alternatives", [])
         tags = payload.get("tags", [])
+        scope = payload.get("scope", "project" if "project" in tags else "scene")
+        if scope not in ("scene", "project"):
+            return {"error": "Decision scope must be scene or project", "recorded": False}
+        if not isinstance(decision, str) or not decision.strip():
+            return {"error": "A decision must contain readable text", "recorded": False}
+        try:
+            memory = self._synapse.decision(
+                decision=decision,
+                reasoning=reasoning,
+                alternatives=alternatives,
+                tags=tags + ["ai_decision"],
+                tier=_scope_tier(scope),
+            )
+        except Exception as exc:
+            # A partial in-memory deposit is not a durable acknowledgement.
+            return {"error": f"Decision persistence failed: {exc}", "recorded": False,
+                    "scope": scope, "storage_dir": str(self._synapse.storage_dir)}
 
-        memory = self._synapse.decision(
-            decision=decision,
-            reasoning=reasoning,
-            alternatives=alternatives,
-            tags=tags + ["ai_decision"]
-        )
+        warnings = []
 
         # Sync to markdown
         if self._markdown_sync:
-            self._markdown_sync.append_decision(memory)
+            try:
+                self._markdown_sync.append_decision(memory)
+            except Exception as exc:
+                warnings.append(f"Readable decision mirror failed: {exc}")
 
         # Living Memory: dual-write to file-based scene memory
         try:
             from ..memory.scene_memory import write_decision, ensure_scene_structure
             if HOU_AVAILABLE:
-                hip_path = hou.hipFile.path()
-                job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+                from ..memory.store import _read_on_main
+                hip_path = _read_on_main(hou.hipFile.path, label="memory:decision_paths")
+                # The host already resolved JOB vs local-project fallback.
+                # Re-resolving raw JOB here can write the readable mirror to a
+                # different project from the canonical record.
+                job_path = str(self._synapse.storage_dir.parent)
                 paths = ensure_scene_structure(hip_path, job_path)
-                scope = "both" if "project" in tags else "scene"
                 write_decision(paths["scene_dir"], {
+                    "id": memory.id,
                     "name": decision,
                     "choice": decision,
                     "reasoning": reasoning,
                     "alternatives": alternatives,
-                }, scope=scope)
+                }, scope=scope, project_dir=paths["project_dir"])
         except Exception as e:
             logger.warning("Scene memory dual-write failed: %s", e)
+            warnings.append(f"Scene/project readable mirror failed: {e}")
 
-        return {
+        self.invalidate_context_cache()
+        result = {
             "id": memory.id,
             "summary": memory.summary,
-            "recorded": True
+            "recorded": True,
+            "scope": scope,
+            "tier": memory.tier.value,
+            "storage_dir": str(self._synapse.storage_dir),
         }
+        if warnings:
+            result["warnings"] = warnings
+        return result
 
     def handle_memory_context(self, payload: Dict) -> Dict:
         """Handle context request -- now includes file-based scene memory."""
@@ -596,6 +646,11 @@ class SynapseBridge:
         if not self._synapse:
             return {"error": "Memory not available", "found": False}
 
+        try:
+            tier = _scope_tier(payload.get("scope", "all"))
+        except ValueError as exc:
+            return {"error": str(exc), "found": False, "count": 0, "matches": []}
+
         query = payload.get("query", "")
         raw_types = payload.get("types") or payload.get("kinds") or []
 
@@ -611,7 +666,7 @@ class SynapseBridge:
             }
 
         # kinds=None -> DECISION default (back-compat). Routed on type inside recall.
-        recalled = self._synapse.recall(query, kinds=type_enums or None, limit=5)
+        recalled = self._synapse.recall(query, kinds=type_enums or None, limit=5, tier=tier)
 
         # Prose-only match contract (SEAM-C): exactly {id, summary, content, date}.
         matches = [

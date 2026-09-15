@@ -44,6 +44,7 @@ class CommandType(Enum):
     MODIFY_NODE = "modify_node"
     CONNECT_NODES = "connect_nodes"
     NETWORK_EXPLAIN = "network_explain"
+    LAYOUT_NETWORK = "layout_network"
 
     # Scene operations
     GET_SCENE_INFO = "get_scene_info"

@@ -80,6 +80,7 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "houdini_connect_nodes": "connect_nodes",
     "houdini_set_parm": "set_parameter",
     "houdini_set_keyframe": "set_parameter",
+    "houdini_layout_network": "set_parameter",
     # Execution
     "houdini_execute_python": "execute_python",
     "houdini_execute_vex": "execute_vex",
@@ -392,10 +393,14 @@ def execute_through_bridge(
     if tool_name in _DISK_WRITING_TOOLS:
         op_kwargs["touches_disk"] = True
 
+    summary = "{}: {}".format(tool_name, str(payload)[:80])
+    if tool_name == "houdini_layout_network":
+        from synapse.server.network_layout import layout_summary
+        summary = layout_summary(payload)
     op = Operation(
         agent_id=agent_id,
         operation_type=op_type,
-        summary="{}: {}".format(tool_name, str(payload)[:80]),
+        summary=summary,
         fn=_dispatch,
         args=(),
         kwargs=op_kwargs,
