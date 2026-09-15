@@ -103,6 +103,8 @@ row here fails CI; a stale row fails CI).
 
 | Variable | Meaning | Default | Read by | Single-seat vs studio |
 |----------|---------|---------|---------|-----------------------|
+| `SYNAPSE_RENDER_HOME` | Absolute controller-local directory for the detached render journal; keep outside synced folders and network shares | `%LOCALAPPDATA%/SYNAPSE/render_jobs` on Windows | `server/handlers_farm.py` | Local preview only; studio actor/job ownership not yet qualified |
+| `SYNAPSE_FARM_HFS` | Installed Houdini root used by the detached TOPs runner; runtime must match the qualified build | `C:/Program Files/Side Effects Software/Houdini 22.0.400` | `farm/backend.py` | Local Windows Karma CPU preview only |
 | `SYNAPSE_MODEL_POLICY` | Deployment override for the local model-sharing policy; takes precedence over the project selector | unset (selected project or installation rules) | `model_access.py`, `panel/project_rules.py` | Both: explicit deployment choice; never contains keys |
 | `SYNAPSE_APEX_MCP_ENDPOINT` | H22 native APEX MCP endpoint for the truth-contract provider; `mock` = in-repo mock (pre-drop) | `mock` | `python/synapse/providers/apex_mcp.py` | Both: stays `mock` until D-H22-4 verifies the shipped surface |
 | `SYNAPSE_SCOUT_SOURCES` | Path to the federated-source registry scout reads for `domain="apex"` (D-H22-2) | `python/synapse/server/scout_sources.json` | `cognitive/tools/scout.py` | Both: default in-repo path |

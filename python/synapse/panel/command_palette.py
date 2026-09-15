@@ -89,6 +89,7 @@ _SLASH_COMMANDS: list[tuple[str, str]] = [
     ("/diagnose", "Scene health audit and diagnostics"),
     ("/fix", "Auto-fix detected scene issues"),
     ("/preflight", "Pre-render validation checklist"),
+    ("/render", "Prepare a saved scene, render with TOPs and revisit recent jobs"),
     ("/journal", "Session journal and history"),
     ("/explain", "Explain selected node or network"),
     ("/trace", "Trace node dependencies and data flow"),

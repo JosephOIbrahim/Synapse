@@ -55,6 +55,7 @@ from ..core.protocol import (
 )
 from .auth import get_auth_key, authenticate, validate_origin, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
+from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from .resilience import RateLimiter, BackpressureController, CircuitBreaker
 from ..session.tracker import get_bridge
 from .bridge_endpoint import publish_endpoint, clear_endpoint
@@ -221,7 +222,7 @@ if HWEBSERVER_AVAILABLE:
                     return
 
                 # Rate limiting (if enabled)
-                if _rate_limiter:
+                if _rate_limiter and command.type != "farm_cancel":
                     allowed, info = _rate_limiter.acquire(self._client_id)
                     if not allowed:
                         await self.send(SynapseResponse(
@@ -240,7 +241,8 @@ if HWEBSERVER_AVAILABLE:
                 # is observability during a freeze — same bypass as the websocket
                 # path). The "frozen" sentence is honest about WHY: a human reads
                 # this when the UI comes back.
-                if _circuit_breaker is not None and command.type not in _READ_ONLY_COMMANDS:
+                if (_circuit_breaker is not None and command.type not in _READ_ONLY_COMMANDS
+                        and command.type != "farm_cancel"):
                     can_exec, cb_info = _circuit_breaker.can_execute()
                     if not can_exec:
                         await self.send(SynapseResponse(
@@ -256,7 +258,8 @@ if HWEBSERVER_AVAILABLE:
                         return
 
                 # Lazy session creation
-                if self._session_id is None:
+                if (self._session_id is None
+                        and command.type not in FARM_CONTROL_COMMANDS | FARM_READ_COMMANDS):
                     bridge = get_bridge()
                     self._session_id = bridge.start_session(self._client_id)
                     _get_handler().set_session_id(self._session_id)
@@ -267,12 +270,16 @@ if HWEBSERVER_AVAILABLE:
                 # here so the handler can marshal short owner/HOM operations
                 # back to main without blocking the UI on ledger subprocesses.
                 handler = _get_handler()
-                from ..host.memory_loop import enabled, OBSERVED_COMMANDS
-                if enabled() and command.type in OBSERVED_COMMANDS | {"context", "engram_context"}:
-                    import asyncio
-                    response = await asyncio.to_thread(handler.handle, command)
+                if command.type in FARM_CONTROL_COMMANDS:
+                    from synapse.panel.bridge_adapter import execute_farm_control
+                    response = execute_farm_control("synapse_" + command.type, handler, command)
                 else:
-                    response = handler.handle(command)
+                    from ..host.memory_loop import enabled, OBSERVED_COMMANDS
+                    if enabled() and command.type in OBSERVED_COMMANDS | {"context", "engram_context"}:
+                        import asyncio
+                        response = await asyncio.to_thread(handler.handle, command)
+                    else:
+                        response = handler.handle(command)
                 # F3: record successes so a HALF_OPEN breaker (post-timeout
                 # probe cycle) can close again after the main thread recovers.
                 # Failures are deliberately NOT recorded as breaker failures —

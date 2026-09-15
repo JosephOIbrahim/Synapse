@@ -13,11 +13,15 @@ from synapse.host import memory_loop
 
 
 def receive_function(handler):
+    # receive routes farm controls before the LOOP thread choice, so the farm
+    # contract sets it reads at module level must be in scope here too.
+    from synapse.core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
     source = Path(__file__).parents[1] / 'python/synapse/server/hwebserver_adapter.py'
     tree = ast.parse(source.read_text(encoding='utf-8'))
     node = next(n for n in ast.walk(tree) if isinstance(n, ast.AsyncFunctionDef) and n.name == 'receive')
     namespace = {'__name__':'synapse.server.hwebserver_adapter', '__package__':'synapse.server',
                  'json':json, 'SynapseCommand':SynapseCommand, 'SynapseResponse':SynapseResponse,
+                 'FARM_CONTROL_COMMANDS':FARM_CONTROL_COMMANDS, 'FARM_READ_COMMANDS':FARM_READ_COMMANDS,
                  '_get_handler':lambda:handler, '_rate_limiter':None, '_circuit_breaker':None}
     exec(compile(ast.Module(body=[node],type_ignores=[]), str(source), 'exec'), namespace)
     return namespace['receive']
