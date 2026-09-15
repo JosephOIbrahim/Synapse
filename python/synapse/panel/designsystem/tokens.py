@@ -116,23 +116,49 @@ _FALLBACK_RGB = (42, 42, 42)   # #2A2A2A — the host pane grey when no scheme r
 # surface (see _derive_palette's anchor). body=primary is held a hair above AA
 # (4.5); bright is AAA-crisp.
 #
-# D3 (READABILITY.md 2026-09-15, recomputed here): tertiary 3.3 and disabled 2.0
-# were below AA and the module comment claimed "AA holds at every host grey",
-# which was true of primary/secondary only. Both now sit AT the 4.5 floor.
-# Measured on the headless seed (#2A2A2A host):
-#   tertiary  #868686 -> #9E9E9E   panel 3.94 -> 5.36 · surface 3.32 -> 4.51
-#   disabled  #636363 -> #9E9E9E   on DISABLED_BG 2.01 -> 4.51
+# D3 (READABILITY.md 2026-09-15, recomputed here): tertiary shipped at 3.3 --
+# 3.32:1 on SURFACE -- and tertiary is ACTIVE caption/hint text, so the 4.5 AA
+# floor governs it. It now sits AT the floor, measured on the headless seed:
+#   tertiary  #868686 -> #9E9E9E   panel 3.94 -> 5.36 - surface 3.32 -> 4.51
 #
-# CONSEQUENCE, stated rather than hidden: with secondary frozen at 4.6 and the
-# floor at 4.5, the quiet end of the ramp has no room left. tertiary #9E9E9E and
-# secondary #A0A0A0 are two levels apart, and disabled is now the SAME grey as
-# tertiary. Value can no longer carry the quiet rung at this host grey -- form
-# (tracking / caps / the mono family) has to, and disabled state is carried by
-# DISABLED_BG, not by illegible ink. That is a design call for the next pass;
-# what is NOT negotiable is that no role ships below AA.
+# D3b (2026-09-15): D3 also raised disabled 2.0 -> 4.5, on the stated premise
+# that "shipping a role below AA was not an option". For this one role the
+# premise was wrong. WCAG 2.1 SC 1.4.3 exempts text that is part of an INACTIVE
+# user interface component ("Incidental"), so the raise bought no conformance,
+# and it cost the entire signal: at 4.5 the solver returns the SAME ink for
+# disabled and tertiary at EVERY host grey (swept 0..255 step 8: 32 of 32
+# rows). Four live rules carry "disabled"/"inactive" in ink alone with no fill
+# behind them, and all four became literal no-ops --
+#   QPushButton#DsPill:disabled          vs its rest ink   1.000:1
+#   QPushButton#DsAuthor[liveness="off"] vs its rest ink   1.025:1
+#   QPushButton#DsFooterLink:disabled    vs its rest ink   1.025:1
+#   network_trace's trivial-step left rule vs the normal one  1.000:1
+# -- so the mitigation the old note claimed here ("carried by DISABLED_BG, not
+# by illegible ink") was false for precisely the sites that needed it.
+#
+# disabled is therefore back at 2.0, with the exemption stated instead of a
+# floor violation claimed. Measured on the headless seed: 2.01:1 on
+# DISABLED_BG, and -- the number that actually matters -- 2.24:1 away from
+# tertiary. Swept over EVERY host grey 0..255 (not the step-8 grid the report
+# used, which skips the low point): the disabled-to-tertiary step never falls
+# below 1.94:1, at host grey 117.
+#
+# The corollary, and why this is not a plain revert: the ink is exempt only
+# where it paints something INACTIVE. Two rules were spending it as a "quieter
+# than tertiary" rung on ACTIVE labels (DsMeter / DsKHint at prominence=quiet);
+# those now name TEXT_TERTIARY, which is what every other quiet rung in the
+# sheet already names and is the exact grey they have rendered since D3 -- so
+# nothing moves on screen and D3's AA win for them is kept.
+#
+# What remains true from D3, and is still a design call for a later pass: with
+# secondary frozen at 4.6 and the floor at 4.5, the quiet ACTIVE end has no
+# room left. tertiary #9E9E9E and secondary #A0A0A0 are two rungs that value
+# can barely separate; form (tracking / caps / the mono family) has to carry
+# any further step down. That is a separate problem from this one, and it is
+# not solved by spending the inactive ink on active text.
 _TEXT_CONTRAST = {
     "primary": 7.0, "secondary": 4.6, "tertiary": 4.5, "bright": 9.0,
-    "disabled": 4.5,
+    "disabled": 2.0,          # inactive-only: SC 1.4.3 exempt, see D3b above
 }
 
 def _derive_palette(r, g, b):
@@ -142,8 +168,11 @@ def _derive_palette(r, g, b):
     host). The text ramp is SOLVED so each role hits its target contrast against
     the surface it can land on: light text on a dark host, dark text on a light
     host. Because contrast is guaranteed against the *worst-case* surface the
-    text sits on, AA holds at every host grey — that's the seed-blind gap the
-    A3 sweep gates. Exposed (underscore) so the audit can sweep it directly."""
+    text sits on, AA holds at every host grey for every ACTIVE role — that's
+    the seed-blind gap the A3 sweep gates. `disabled` is the one INACTIVE
+    role and is deliberately below the floor (SC 1.4.3); what is gated for
+    it instead is that it stays a visible step away from tertiary.
+    Exposed (underscore) so the audit can sweep it directly."""
     def step(d):
         return _hexrgb(r + d, g + d, b + d)
     # v9 elevation offsets, retuned to the ratified comp (relative to --panel):

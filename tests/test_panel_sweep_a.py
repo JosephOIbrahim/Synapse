@@ -251,6 +251,34 @@ CRIT_20260915_FACE_WORK_AMENDMENTS = (
      'self._cook_lbl = c.label("", role="caption")'),
 )
 
+# READABILITY.md 2026-09-15 D3b edits two more rules inside the protected
+# upstream sheet, and gets its own tuple rather than rows appended to the CRIT
+# one: that list is keyed to the crit, this is a readability-defect repair, and
+# keeping the provenance separate is the whole reason the crit rows were not
+# folded into BC_WAVE_RULED_SELECTORS either. Same mechanism, same strength -
+# exact (old, new) text, each `old` asserted to occur EXACTLY ONCE in the
+# baseline, so any further drift on these two rules still reddens and a stale
+# amendment reddens instead of passing.
+D3B_20260915_QSS_AMENDMENTS = (
+    # TEXT_DISABLED is the INACTIVE-component ink: it sits below the AA floor
+    # on the WCAG 2.1 SC 1.4.3 exemption, which covers inactive components and
+    # nothing else. DsMeter and DsKHint at prominence=quiet are ACTIVE labels
+    # borrowing that ink as a rung below tertiary - and the exemption with it.
+    # They take TEXT_TERTIARY, the rung every other quiet rule already names.
+    # Nothing moves on screen: since D3 both roles resolved to the same grey.
+    ('QLabel#DsMeter[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; }}',
+     'QLabel#DsMeter[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}'),
+    ('QLabel#DsKHint[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; '
+     'border-color: {t.HAIR}; }}',
+     'QLabel#DsKHint[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; '
+     'border-color: {t.HAIR}; }}'),
+)
+
+
+_DECLARED_QSS_AMENDMENTS = (
+    ("CRIT.md 2026-09-15", CRIT_20260915_QSS_AMENDMENTS),
+    ("READABILITY.md 2026-09-15 D3b", D3B_20260915_QSS_AMENDMENTS),
+)
 
 def _amend(original, amendments):
     """Baseline + exactly the ruled deltas, each asserted to be live."""
@@ -262,16 +290,35 @@ def _amend(original, amendments):
         original = original.replace(old, new, 1)
     return original
 def _assert_upstream_qss_unchanged(prefix, original):
-    for old, new in CRIT_20260915_QSS_AMENDMENTS:
-        assert original.count(old) == 1, (
-            "stale CRIT.md 2026-09-15 amendment - the baseline no longer "
-            "contains it exactly once: " + old
-        )
-        original = original.replace(old, new, 1)
+    original = _amend(original)
     for rule in _APPROVED_LOCAL_RULES:
         assert prefix.count(rule) == 1, "approved local rule changed or duplicated: " + rule
         prefix = prefix.replace(rule, "", 1)
     assert _outside_ruled_regions(prefix) == _outside_ruled_regions(original)
+
+
+def test_a_stale_qss_amendment_reddens_instead_of_passing():
+    """The declared-delta mechanism is only honest if a delta that no longer
+    matches the baseline FAILS. Proves it in both directions: an `old` that is
+    absent, and an `old` that is present more than once."""
+    original = _base("python/synapse/panel/designsystem/qss.py")
+    saved = globals()["D3B_20260915_QSS_AMENDMENTS"]
+    try:
+        globals()["_DECLARED_QSS_AMENDMENTS"] = (
+            ("bogus", (("a rule the baseline never contained", "x"),)),)
+        with pytest.raises(AssertionError, match="stale bogus amendment"):
+            _amend(original)
+        globals()["_DECLARED_QSS_AMENDMENTS"] = (("bogus", (("}}", "x"),)),)
+        with pytest.raises(AssertionError, match="stale bogus amendment"):
+            _amend(original)
+    finally:
+        globals()["D3B_20260915_QSS_AMENDMENTS"] = saved
+        globals()["_DECLARED_QSS_AMENDMENTS"] = (
+            ("CRIT.md 2026-09-15", CRIT_20260915_QSS_AMENDMENTS),
+            ("READABILITY.md 2026-09-15 D3b", saved),
+        )
+    # and the real list still applies cleanly
+    _amend(original)
 
 
 def test_qss_is_append_only_and_every_style_key_has_rules():

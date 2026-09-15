@@ -58,21 +58,28 @@ _PINNED_HEADLESS = {
     "TEXT_DISABLED": "#636363",
 }
 
-# READABILITY.md 2026-09-15, D3 ("the quiet ramp was never solved") raises two
-# _TEXT_CONTRAST targets that this baseline captured at their pre-AA values:
-# tertiary 3.3 -> 4.5 and disabled 2.0 -> 4.5, because both shipped under the
-# 4.5 AA floor (tertiary 3.32:1 on SURFACE, disabled 2.01:1 on DISABLED_BG).
+# READABILITY.md 2026-09-15, D3 ("the quiet ramp was never solved") raises one
+# _TEXT_CONTRAST target that this baseline captured at its pre-AA value:
+# tertiary 3.3 -> 4.5, because it shipped under the 4.5 AA floor on ACTIVE
+# caption/hint text (3.32:1 on SURFACE).
 #
-# Recorded as EXACT amendments to the baseline rather than edited into the dict
-# above, the same way CRIT_20260915_QSS_AMENDMENTS is recorded in
-# tests/test_panel_sweep_a.py. Editing the dict would retire the pin for those
-# two roles forever; this way the baseline is still the baseline, every other
-# hex must still match byte-for-byte, any further drift on THESE two still
-# reddens, and a stale amendment (one whose `old` no longer matches) reddens
-# too instead of passing silently.
+# Recorded as an EXACT amendment to the baseline rather than edited into the
+# dict above, the same way CRIT_20260915_QSS_AMENDMENTS is recorded in
+# tests/test_panel_sweep_a.py. Editing the dict would retire the pin for that
+# role forever; this way the baseline is still the baseline, every other hex
+# must still match byte-for-byte, any further drift on THIS one still reddens,
+# and a stale amendment (one whose `old` no longer matches) reddens too instead
+# of passing silently.
+#
+# D3b (2026-09-15): the companion TEXT_DISABLED amendment (#636363 -> #9E9E9E)
+# is GONE, not carved out -- disabled is back at the baseline value, so the
+# baseline pins it directly again and this tuple has one row fewer to except.
+# WCAG 2.1 SC 1.4.3 exempts inactive components from the contrast minimum, so
+# raising it bought nothing and made it the same ink as tertiary at every host
+# seed; see the D3b block in tokens.py and the D3b tests in
+# tests/test_panel_readability_defects.py.
 D3_20260915_RAMP_AMENDMENTS = (
     ("TEXT_TERTIARY", "#868686", "#9E9E9E"),
-    ("TEXT_DISABLED", "#636363", "#9E9E9E"),
 )
 
 

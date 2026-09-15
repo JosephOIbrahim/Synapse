@@ -175,12 +175,19 @@ QLabel#DsKHint {{
 }}
 /* prominence (L5-14 amends L5-13): hero takes the accent its role calls
    for -- the token meter is economic, so SIGNAL; the ⌘K chip is an
-   action affordance, so WARM. Quiet keeps the L5-13 rung below standard
-   (TEXT_DISABLED); the hint's box quiets to the HAIR rule. */
+   action affordance, so WARM. Quiet takes TEXT_TERTIARY -- the rung every
+   other quiet rule in this sheet already names; the hint's box quiets to
+   the HAIR rule.
+   D3b (2026-09-15): these two used to name TEXT_DISABLED, reading it as a
+   rung below tertiary. They are ACTIVE labels, so the SC 1.4.3 inactive
+   exemption that lets TEXT_DISABLED sit under the AA floor does not cover
+   them; borrowing the inactive ink was borrowing its exemption too. The
+   paint does not move -- since D3 both roles resolved to the same grey --
+   only the token they name, and the AA they now hold honestly. */
 QLabel#DsMeter[prominence="hero"]  {{ color: {t.SIGNAL}; }}
-QLabel#DsMeter[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; }}
+QLabel#DsMeter[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 QLabel#DsKHint[prominence="hero"]  {{ color: {t.WARM}; }}
-QLabel#DsKHint[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; border-color: {t.HAIR}; }}
+QLabel#DsKHint[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; border-color: {t.HAIR}; }}
 
 /* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
 /* Verbs read as type, not buttons: flat, mono, the chrome recedes. */

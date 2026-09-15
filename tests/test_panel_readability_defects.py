@@ -165,11 +165,44 @@ def _ramp(host=(42, 42, 42)):
     return t._derive_palette(*host)
 
 
+# D3b: the AA floor governs ACTIVE text. WCAG 2.1 SC 1.4.3 ("Incidental")
+# exempts text that is part of an INACTIVE user-interface component, and
+# `disabled` is the ramp's one inactive role. Listing it here is a claim, and
+# the branch below makes the claim pay for itself: an exempt role still has to
+# be a real step from the quiet ACTIVE rung beside it, or the state it exists
+# to signal is not on screen, and the exemption has to be written down in the
+# module that takes it.
+D3B_INACTIVE_ROLES = ("disabled",)
+
+# The smallest ink-to-ink step that still reads as a different state. D3 left
+# the four ink-only sites at 1.000:1 and 1.025:1 - literally the same grey.
+#
+# 1.5 is a judgement, not a standard: WCAG publishes thresholds for ink against
+# a BACKGROUND, and none for telling two inks apart. It is deliberately set
+# BELOW the ramp's measured worst case (1.941:1, at host grey 117) so that this
+# guard pins the defect CLASS - a state announced in ink that is not a step at
+# all - instead of pinning today's arithmetic. A floor copied from the number
+# the fix happens to produce is a control that passes by quoting its own
+# subject.
+D3B_MIN_STATE_STEP = 1.5
+
+
 @pytest.mark.parametrize(
     "role", ["primary", "secondary", "tertiary", "bright", "disabled"])
 def test_d3_every_text_role_clears_AA_on_every_surface_it_lands_on(role):
     surf, txt = _ramp()
     worst = min((ratio(txt[role], surf[s]), s) for s in _LANDING)
+    if role in D3B_INACTIVE_ROLES:
+        assert "1.4.3" in _src("tokens.py"), (
+            "%s ships below the AA floor with no stated exemption - a role "
+            "under the floor is a defect until the module names the clause "
+            "that exempts it" % role)
+        step = ratio(txt[role], txt["tertiary"])
+        assert step >= D3B_MIN_STATE_STEP, (
+            "%s %s and tertiary %s are %.3f:1 apart - an inactive role is "
+            "exempt from the contrast floor, not from being visible"
+            % (role, txt[role], txt["tertiary"], step))
+        return
     assert worst[0] >= AA, (
         "%s %s is %.2f:1 on %s (%s) - under AA %.1f. The ramp's own docstring "
         "claims AA holds at every host grey." % (
@@ -341,6 +374,144 @@ def test_d4_raster_roles_now_name_the_weight_they_actually_get():
         assert got == spec[2], (
             "TYPE_ROLES[%r] declares weight %d but the screen draws %d"
             % (role, spec[2], got))
+
+
+# -- D3b - the disabled state collapsed into the tertiary state ------------
+#
+# D3 raised `disabled` to the 4.5 floor. At 4.5 the solver returns the SAME ink
+# for disabled and tertiary, so every rule that signalled "disabled" or
+# "inactive" in ink alone became a no-op. These pin the two halves of the
+# repair: the ramp keeps a real inactive step, and the inert ink is only spent
+# where something really is inactive.
+
+
+def test_d3b_the_inactive_step_survives_every_host_seed():
+    """Not just the headless seed. The artist's host grey is whatever their
+    colour scheme says, and the state has to be on screen at all of them.
+
+    EVERY grey, not the step-8 grid the evidence sweep used: the ramp's true
+    worst case is 1.941:1 at host 117, and a step-8 sweep reports 2.025:1 at
+    120 and never visits it. A guard that samples the same grid as the report
+    it is checking inherits the report's blind spots."""
+    worst = (99.0, None)
+    for v in range(256):
+        txt = _ramp((v, v, v))[1]
+        step = ratio(txt["disabled"], txt["tertiary"])
+        if step < worst[0]:
+            worst = (step, v)
+    assert worst[0] >= D3B_MIN_STATE_STEP, (
+        "disabled and tertiary are %.3f:1 apart at host grey %s - the "
+        "disabled state disappears into the quiet rung there"
+        % (worst[0], worst[1]))
+
+
+def _rule(sheet, selector_re):
+    m = re.search(selector_re + r"\s*\{([^}]*)\}", sheet)
+    assert m, "no rule matched %s" % selector_re
+    return m.group(1)
+
+
+def _rule_color(sheet, selector_re):
+    m = re.search(r"(?:^|;)\s*color\s*:\s*([^;}]+)", _rule(sheet, selector_re))
+    assert m, "no color declaration in %s" % selector_re
+    return m.group(1).strip()
+
+
+# (label, the rule that announces the state, the rule it is read against)
+_D3B_INK_ONLY_SITES = (
+    ("DsPill disabled tab", r"QPushButton#DsPill:disabled",
+     r"QPushButton#DsPill"),
+    ("DsAuthor engine token liveness=off",
+     r'QPushButton#DsAuthor\[liveness="off"\]', r"QPushButton#DsAuthor"),
+    ("DsFooterLink disabled", r"QPushButton#DsFooterLink:disabled",
+     r"QPushButton#DsFooterLink"),
+)
+
+
+@pytest.mark.parametrize(
+    "label,state_sel,rest_sel", _D3B_INK_ONLY_SITES,
+    ids=[s[0] for s in _D3B_INK_ONLY_SITES])
+def test_d3b_state_rules_that_carry_state_in_ink_alone_still_say_something(
+        label, state_sel, rest_sel):
+    """Either the state is a real ink step away from the rest state, or the
+    rule puts a fill behind it. What it may not be is the same grey twice."""
+    from synapse.panel.designsystem import qss
+    sheet = qss.stylesheet()
+    if "background" in _rule(sheet, state_sel):
+        return                      # carried by a fill, not by ink alone
+    state, rest = _rule_color(sheet, state_sel), _rule_color(sheet, rest_sel)
+    assert ratio(state, rest) >= D3B_MIN_STATE_STEP, (
+        "%s: state ink %s and rest ink %s are %.3f:1 apart and the rule sets "
+        "no background - it is a no-op"
+        % (label, state, rest, ratio(state, rest)))
+
+
+def test_d3b_the_trace_left_rule_is_a_three_step_grammar_not_two():
+    """network_trace marks hot / trivial / normal steps with a left rule, and
+    the function's own comment says the trivial one "reads as inactive"."""
+    from synapse.panel import network_trace as nt
+
+    def _step(i, ms):
+        return nt.TraceStep(
+            index=i, node_path="/obj/geo1/n%d" % i, node_type="box",
+            node_label="n%d" % i, description="", input_geo=None,
+            output_geo=None, geo_delta="", attrib_delta="", key_parms=[],
+            cook_time_ms=ms)
+
+    report = nt.TraceReport(
+        network_path="/obj/geo1",
+        steps=[_step(1, 500.0), _step(2, 0.1), _step(3, 20.0)],
+        total_cook_ms=520.1, bottleneck="/obj/geo1/n1", bottleneck_pct=96.1)
+    marks = re.findall(r"border-left:\s*3px\s+(\w+)\s+(#[0-9A-Fa-f]{6})",
+                       nt.format_trace_html(report))
+    assert len(marks) == 3, marks
+    assert len(set(marks)) == 3, (
+        "hot / trivial / normal draw the same left rule %r - the three-way "
+        "grammar the comment describes reaches the screen as two" % (marks,))
+
+
+# Every rule in qss.py allowed to paint with the INERT ink, and the inactive
+# component each one is part of. An entry is a claim that the thing is
+# inactive, which is what buys the SC 1.4.3 exemption. The test fails both
+# ways round: an undeclared use reddens, and so does a declared row whose rule
+# no longer exists.
+D3B_INERT_INK_SITES = {
+    'QPushButton#DsButton:disabled': "a disabled button",
+    'QPushButton#DsStop:disabled': "a disabled Stop",
+    'QPushButton#DsPill:disabled': "a disabled tab",
+    'QPushButton#DsSend:disabled': "a disabled Send",
+    'QPushButton#DsFooterLink:disabled': "a disabled footer link",
+    'QPushButton#DsAuthor[liveness="off"]': "no engine is live",
+    'QLabel#DsHdaStageDot': "a build stage not yet reached",
+}
+
+
+def test_d3b_the_inert_ink_is_only_spent_on_inactive_components():
+    """TEXT_DISABLED sits below the AA floor on an exemption that only covers
+    INACTIVE components, so a rule painting ACTIVE text with it is claiming an
+    exemption it does not have. That is what DsMeter and DsKHint at
+    prominence=quiet were doing - using the inert ink as a rung below tertiary.
+
+    Read from SOURCE, not from the rendered sheet, on purpose: while the two
+    roles resolve to the same hex a sheet scan cannot tell them apart, so the
+    one instrument that might have caught the collapse would have been blind
+    to it."""
+    found = set()
+    for line in _src("qss.py").splitlines():
+        stripped = line.strip()
+        if "t.TEXT_DISABLED" not in stripped or stripped.startswith(("#", "*")):
+            continue
+        m = re.match(r"([^{]+?)\s*\{\{", stripped)
+        if m:
+            found.add(" ".join(m.group(1).split()))
+    extra = sorted(found - set(D3B_INERT_INK_SITES))
+    missing = sorted(set(D3B_INERT_INK_SITES) - found)
+    assert not extra, (
+        "these rules paint with the inert ink but nothing declares them "
+        "inactive: %s" % extra)
+    assert not missing, (
+        "declared inert-ink sites whose rule is gone - the list is stale: %s"
+        % missing)
 
 
 if __name__ == "__main__":  # pragma: no cover
