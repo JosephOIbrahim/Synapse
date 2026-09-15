@@ -72,14 +72,23 @@ if ! git diff --cached -z --name-only --no-renames > "$list" 2>/dev/null; then
     exit 1
 fi
 
-hits=$(tr '\0' '\n' < "$list" | while IFS= read -r path; do
+# The hit list travels through a FILE, never a command substitution. A case
+# pattern's closing ")" inside $( ... ) is read by some POSIX shells as the end
+# of the substitution itself -- that is exactly how every CI runner died here,
+# while bash on Git for Windows parsed it fine, and bash -n / dash -n do not
+# catch it locally. The leading "(" on the pattern is the belt to this braces.
+hitfile="$(git rev-parse --git-path gate-c-hits.$$)"
+: > "$hitfile"
+tr '\0' '\n' < "$list" | while IFS= read -r path; do
     case "$path" in
-        VERSION|harness/state/*|harness/verify/*_baseline.json)
-            printf '%s\n' "$path"
+        (VERSION|harness/state/*|harness/verify/*_baseline.json)
+            printf '%s\n' "$path" >> "$hitfile"
             ;;
     esac
-done)
+done
 rm -f "$list"
+hits=$(cat "$hitfile")
+rm -f "$hitfile"
 
 [ -z "$hits" ] && exit 0
 

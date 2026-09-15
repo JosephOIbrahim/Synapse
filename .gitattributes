@@ -45,3 +45,8 @@
 *.pyd   binary
 *.so    binary
 *.dll   binary
+
+# Git hooks are executed by /bin/sh on Linux and macOS CI runners. A CR byte
+# makes them die with "syntax error near unexpected token"; Windows shells
+# tolerate it, so the break is invisible until CI. Pin them to LF explicitly.
+harness/githooks/*	text eol=lf
