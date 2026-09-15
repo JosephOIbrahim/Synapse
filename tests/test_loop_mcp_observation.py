@@ -18,6 +18,8 @@ from typing import Optional
 
 import pytest
 
+from synapse.core.errors import SynapseServiceError
+from synapse.core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS, is_farm_control
 from synapse.core.protocol import SynapseCommand, SynapseResponse
 from synapse.host import memory_loop as host
 from synapse.loop.ports import PortResult
@@ -81,7 +83,11 @@ def rig(monkeypatch):
         "contextlib": contextlib, "_READ_ONLY_COMMANDS": set(), "_MUTATION_LOCK": threading.RLock(),
         "_envelope": SimpleNamespace(envelope_active=lambda _: False),
         "FloorContext": lambda **kwargs: kwargs, "normalize_command_type": lambda value: value,
-        "SynapseUserError": type("SynapseUserError", (Exception,), {}), "logger": logging.getLogger("probe")}
+        "SynapseUserError": type("SynapseUserError", (Exception,), {}), "logger": logging.getLogger("probe"),
+        # handle() reads these module-level imports (farm contract sets, service error);
+        # the AST loader strips module imports, so seed the real objects (as the hweb rig does).
+        "SynapseServiceError": SynapseServiceError,
+        "FARM_CONTROL_COMMANDS": FARM_CONTROL_COMMANDS, "FARM_READ_COMMANDS": FARM_READ_COMMANDS}
     handler = SimpleNamespace(_registry=Registry(), _session_id="synthetic",
         _record_tool_duration=lambda *a, **k: None, _submit_logs=lambda *a, **k: None)
     handler.handle = MethodType(source_method(repo / "python/synapse/server/handlers.py", "SynapseHandler", "handle", handler_globals), handler)
@@ -89,10 +95,19 @@ def rig(monkeypatch):
         assert threading.current_thread() is threading.main_thread()
         events.append("existing_bridge")
         return handler.handle(command)
-    monkeypatch.setitem(sys.modules, "synapse.panel.bridge_adapter", SimpleNamespace(execute_through_bridge=bridge, is_read_only=lambda _: False))
+    def never_farm(tool_name, handler, command):
+        raise AssertionError("farm control path taken for %r" % (tool_name,))
+    # dispatch_tool imports all four names in one statement; a stub missing the
+    # farm pair would throw the whole marshalled path into the ImportError fallback.
+    monkeypatch.setitem(sys.modules, "synapse.panel.bridge_adapter", SimpleNamespace(
+        execute_through_bridge=bridge, is_read_only=lambda _: False,
+        is_farm_control=is_farm_control, execute_farm_control=never_farm))
     monkeypatch.setitem(sys.modules, "synapse.panel.session_journal", SimpleNamespace(get_journal=lambda: SimpleNamespace(log_tool=lambda *a, **k: None)))
     server_globals = {"__package__": "synapse.mcp", "time": time, "Optional": Optional,
         "is_transport_fast_path": lambda _: False, "_STALL_DETECT_AVAILABLE": False,
+        # _handle_tools_call reads the module-level farm contract import; the AST
+        # loader strips module imports, so seed it (same shape as the hweb rig).
+        "is_farm_control": is_farm_control,
         "dispatch_tool": dispatch_tool, "logger": logging.getLogger("probe"),
         "JsonRpcInvalidParams": JsonRpcInvalidParams, "JsonRpcError": JsonRpcError, "INTERNAL_ERROR": INTERNAL_ERROR,
         "_note_marshal_bypass": lambda *args: None,
