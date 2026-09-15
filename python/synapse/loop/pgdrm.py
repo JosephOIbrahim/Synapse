@@ -77,6 +77,30 @@ Two edge semantics are deliberate and pinned by tests:
   * An EMPTY task context makes every tagged record foreign. If the caller
     cannot say what the task is, no scoped memory is admitted.
 
+ONE-SHOT ITERABLES ARE REFUSED
+------------------------------
+A pure function's answer may not depend on how many times it has been called.
+An iterator is destroyed by its first read, so the *same argument object*
+yields a different value on the second call:
+
+    gen = (t for t in ["shot_A"])
+    evaluate(rec, task_context_tokens=gen, ...)   # ALLOW - the token was seen
+    evaluate(rec, task_context_tokens=gen, ...)   # DROP  - context now empty
+
+That was a real defect, found by the M2 crucible. Materializing the argument at
+entry does NOT repair it: the second call never sees the tokens at all, because
+the first call already consumed them. The only reproducible answer is to refuse
+the argument, so every public entry point raises TypeError on a one-shot
+iterator (`iter(x) is x`) and requires a re-iterable collection - set,
+frozenset, tuple, list.
+
+Everything that IS accepted is materialized exactly once, at the entry point,
+before any decision logic reads it: `MemoryRecord.tokens` is frozen to a
+frozenset at construction, `task_context_tokens` to a frozenset, and
+`filter_records`' `records` to a tuple. A record is therefore a stable value
+from the moment it exists, which is what makes evaluating the same record twice
+in one `filter_records` call return the same verdict twice.
+
 PRECEDENCE
 ----------
 Checks run in a fixed order and the first failure wins, so a verdict's `reason`
@@ -135,6 +159,9 @@ class MemoryRecord:
     tokens
         The exact task-scope tokens this record was deposited under. Empty
         means untagged, which claims no scope (see module docstring).
+        Any re-iterable collection of str is accepted and is FROZEN to a
+        frozenset exactly once, here at construction; a one-shot iterator is
+        refused (see module docstring).
     age_seconds
         How old the record is AT DECISION TIME, measured by the caller. The
         kernel never reads a clock. The unit is whatever unit `decay_lambda`
@@ -153,6 +180,14 @@ class MemoryRecord:
     age_seconds: float
     distance: Optional[float] = None
     protected_floor: float = 0.0
+
+    def __post_init__(self) -> None:
+        # Materialize ONCE, at the entry point, before any decision logic can
+        # read the field. Without this a record built from a generator is a
+        # different value on its second read, and `filter_records` returns
+        # DROP then ALLOW for the SAME record inside a SINGLE call.
+        object.__setattr__(self, "tokens",
+                           _token_set("MemoryRecord.tokens", self.tokens))
 
 
 @dataclass(frozen=True)
@@ -196,9 +231,28 @@ def _number(name: str, value: Any, low: float, high: Optional[float]) -> float:
     return v
 
 
+def _reiterable(name: str, value: Any) -> Any:
+    """Refuse a one-shot iterator. `iter(x) is x` is the iterator protocol's
+    own self-identification and does not consume `x`."""
+    if iter(value) is value:
+        raise TypeError(
+            f"{name} must be a re-iterable collection (set, frozenset, tuple, "
+            f"list), not the one-shot iterator {value!r}. A pure function may "
+            f"not answer differently on the second call with the same "
+            f"argument, and an iterator is destroyed by its first read."
+        )
+    return value
+
+
 def _token_set(name: str, tokens: Any) -> frozenset:
+    # A str IS Iterable, so an unguarded frozenset('shot_A') silently becomes
+    # {'A', '_', 'h', 'o', 's', 't'} and every real token reads as foreign.
+    # Shredding a caller's single token into characters is the most plausible
+    # caller mistake on this axis, and it produces a WRONG verdict, not a loud
+    # one — hence a guard, not a coercion.
     if isinstance(tokens, str) or not isinstance(tokens, Iterable):
         raise TypeError(f"{name} must be an iterable of str, got {tokens!r}")
+    _reiterable(name, tokens)
     out = frozenset(tokens)
     bad = [t for t in out if not isinstance(t, str)]
     if bad:
@@ -323,7 +377,14 @@ def filter_records(records: Sequence[MemoryRecord],
 
     Read-only by construction: neither the records nor the token set are
     mutated, and nothing is cached between calls.
+
+    `records` must be a re-iterable collection; a one-shot iterator is refused
+    for the same reason `task_context_tokens` is (see module docstring).
     """
+    if not isinstance(records, Iterable):
+        raise TypeError(f"records must be an iterable, got {records!r}")
+    # Materialize ONCE, at entry, before any decision logic reads it.
+    materialized = tuple(_reiterable("records", records))
     task_tokens = _token_set("task_context_tokens", task_context_tokens)
     verdicts = tuple(
         evaluate(r,
@@ -331,7 +392,7 @@ def filter_records(records: Sequence[MemoryRecord],
                  decay_lambda=decay_lambda,
                  utility_threshold=utility_threshold,
                  distance_threshold=distance_threshold)
-        for r in records
+        for r in materialized
     )
     return FilterResult(
         verdicts=verdicts,
