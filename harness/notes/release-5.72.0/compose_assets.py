@@ -26,8 +26,11 @@ import re
 import subprocess
 import sys
 
-VERSION = "5.72.0"
 REPO = r"C:/Users/User/SYNAPSE"
+# VERSION is READ, never retyped. It was a literal here, and a literal is what let this
+# script be copied forward and keep filling the PREVIOUS release's notes while the one
+# being cut kept its raw placeholders - exit 0, guard green, two public releases wrong.
+VERSION = io.open(os.path.join(REPO, "VERSION"), encoding="utf-8").read().strip()
 BUILD = r"C:/synapse-build/output-5.72.0"
 OUT = os.path.join(BUILD, "output")
 NOTES = os.path.join(REPO, "harness/notes/release-5.72.0")
@@ -206,15 +209,34 @@ fills = {"{{STOCK_SUMMARY}}": STOCK, "{{SEAT_SUMMARY}}": SEAT, "{{INSTALLER_UNIT
 # keys, so every substitution was a no-op that reported success. Accept both spellings.
 fills.update({k.replace("{{", "{").replace("}}", "}"): v for k, v in list(fills.items())})
 fills.update({"{STOCK}": STOCK, "{SEAT}": SEAT, "{INST}": INST, "{QUAL}": QUAL, "{PAYLOAD}": PAYLOAD})
+# @@TOKEN@@ is the spelling a note TEMPLATE should use for a fillable slot, and the one
+# the cut script gates on. Braces cannot do that job: a release note that DOCUMENTS the
+# placeholder bug has to write {STOCK} in prose, and no gate can tell that apart from a
+# slot by shape alone. Proven both ways - stripping code spans misses a real slot (v5.72.0
+# wrote one as `{PAYLOAD}` inside backticks); not stripping fires on the prose. A delimiter
+# prose never contains ends the argument. Brace keys stay filled for older templates.
+fills.update({("@@%s@@" % k.strip("{}")): v for k, v in list(fills.items()) if k.startswith("{")})
 # The file list is derived from VERSION, never hardcoded. Copying this script forward and
 # string-replacing "release-X" left this tuple pointing at the PREVIOUS release for both
 # v5.71.0 and v5.72.0, so both shipped raw {PLACEHOLDER} text to a public release page.
+# The internal report lives in the DATED subdir, not flat under harness/notes/. The flat
+# path has not existed since v5.70.1, so this loop wrote one file and skipped the other -
+# or raised AFTER the first was written, leaving the tree half-composed.
 for md in (os.path.join(REPO, "docs/releases/v%s.md" % VERSION),
-           os.path.join(REPO, "harness/notes/RELEASE_v%s.md" % VERSION)):
+           os.path.join(REPO, "harness/notes/release-%s/RELEASE_v%s.md" % (VERSION, VERSION))):
+    if not os.path.exists(md):
+        raise SystemExit("compose: target missing, refusing to half-compose: " + md)
     t = read(md)
     for k, v in fills.items():
         t = t.replace(k, v)
-    assert "{{" not in t, "unfilled placeholder in " + md
+    # Check the EXACT keys this run was meant to substitute, in the text it just built,
+    # for the file it is about to write. The old guard tested `"{{" not in t` - a spelling
+    # the templates never emit - so it passed vacuously while five single-brace tokens
+    # shipped to a public release page. A guard testing the wrong shape is worse than none:
+    # it reports success for doing nothing.
+    left = sorted(k for k in fills if k in t)
+    if left:
+        raise SystemExit("compose: %s still carries unfilled %s - refusing to write" % (md, left))
     io.open(md, "w", encoding="utf-8", newline="\n").write(t)
 
 print("SHA256SUMS.txt, public-build.json, installer-verification.json written; notes filled")
