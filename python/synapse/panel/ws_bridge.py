@@ -390,7 +390,7 @@ class SynapseWSBridge(QThread):
         with self._queue_lock:
             self._send_queue.append(msg_json)
 
-    def send_command(self, command, payload=None):
+    def send_command(self, command, payload=None, queue_if_down=True):
         """Send a raw SYNAPSE command. Thread-safe.
 
         Parameters
@@ -399,6 +399,20 @@ class SynapseWSBridge(QThread):
             The SYNAPSE command name (e.g., ``inspect_scene``).
         payload : dict, optional
             Command payload.
+        queue_if_down : bool, optional
+            Default ``True`` keeps the long-standing contract: a message
+            that cannot go out now is queued and replayed by
+            ``_drain_queue`` on the next connect (pinned by
+            ``tests/test_hda_panel.py``). Pass ``False`` for messages that
+            must never replay later -- chat (FR-1) -- in which case an
+            unsendable message is dropped and the caller is told.
+
+        Returns
+        -------
+        bool
+            ``True`` when the message went out over the live socket now;
+            ``False`` when it did not (queued, or dropped when
+            ``queue_if_down`` is ``False``).
         """
         msg = {
             "type": command,
@@ -409,12 +423,15 @@ class SynapseWSBridge(QThread):
         if self._ws is not None:
             try:
                 self._ws.send(msg_json)
-                return
+                return True
             except Exception:
                 pass
 
+        if not queue_if_down:
+            return False
         with self._queue_lock:
             self._send_queue.append(msg_json)
+        return False
 
     def gather_context(self):
         """Auto-gather current Houdini state for context.
