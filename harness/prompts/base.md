@@ -9,6 +9,16 @@ per-leg "base" field that already exists in legs.json data (CI0 carries
 "base": "master" - decorative today). Launch line :329 also passes no
 model flag, so leg model = terminal default.
 
+=== DOCTRINE: WRONG BASE MEANS HALT, NOT SELF-REPAIR ===
+A leg that finds itself on the wrong base STOPS. It does not rebase, does
+not reset, and does not write a line. It records what it found in the
+receipt under drift[] and halts. Self-repair on a wrong base is worse than
+no run: a "clean" run there silently reimplements the leg's own
+dependencies from scratch (M5b on feat/repair-heats-01, 2026-08-06, was
+stopped by hand for exactly that). Item 1 below closes the gap at the
+orchestrator; until it lands, every leg brief carries this halt rule as
+its first action, and the fix here must never turn a halt into a rebase.
+
 === THE WORK ===
 1. Per-leg base: when a leg declares "base", cut the worktree from that
    ref (`git worktree add -b <branch> <wt> <base>`). No "base" field ->

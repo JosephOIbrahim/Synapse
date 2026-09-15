@@ -69,6 +69,7 @@ They are not the same. Three verbs, three consequences, kept apart on purpose. T
 - **Choose local or cloud models:** Claude, Gemini, NVIDIA Nemotron, Ollama, or a custom OpenAI-compatible endpoint. Tool support varies by model.
 - **Recall project decisions** when the memory store is configured.
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
+- **Apply a saved scene setup** (`synapse_apply_fixture`, shipped since 5.43.0). A fixture is a setup stored as data, not a prompt: applying it twice is a no-op, and a name clash refuses instead of renaming. Details and what is proven: [BLOCKS in the changelog](CHANGELOG.md).
 
 **New in 5.70.1** — the front door, made readable.
 
