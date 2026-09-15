@@ -1,9 +1,17 @@
 {
+  "amended": "2026-09-15: CI was still running when this release was published, and this report was uploaded saying so rather than guessing. It concluded success on all four matrix jobs and the report was amended in place.",
   "build_revision": "1d8baae24568aeb3e4d280cdfd804aae8d6d2b93",
   "ci": {
-    "conclusion": "PENDING_AT_PUBLICATION",
+    "conclusion": "success",
     "headSha": "36d66baf79c593cd22722e4f0c702f60bf1c191e",
-    "run_id": null,
+    "jobs": [
+      "test (macos-latest, 3.14) -> success",
+      "test (ubuntu-latest, 3.14) -> success",
+      "test (ubuntu-latest, 3.11) -> success",
+      "test (macos-latest, 3.11) -> success"
+    ],
+    "note": "Recorded PENDING_AT_PUBLICATION in the first upload of this report; the release was published before CI finished and the field said so.",
+    "run_id": 34990062395,
     "scope": "GitHub Actions CI on the tagged commit. Stock Python on Linux and macOS; not a Houdini or Windows-installer check."
   },
   "compiled_installer": {
