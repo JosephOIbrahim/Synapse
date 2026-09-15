@@ -22,6 +22,33 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.71.0 — The farm, the receipt, and a bridge that says no
+
+*2026-09-15.* Published as **Latest** with a qualified Windows Setup ({QUAL}). Ten
+branches merged; the registry goes 128 -> 137 tools.
+
+**Artist-facing.** Durable TOPs render jobs with an artist render workspace (seven farm
+tools, `/render`, a footer button). The **Undo Receipt**: every mutating handler already
+computed its undo-group label and discarded it — it now travels with the result and
+reaches the panel, where a repo-wide grep for `Ctrl+Z|undoable|can be undone` had
+returned zero artist-facing strings. The **bridge-down send guard**: a message typed
+while the bridge is down is refused at send time with the text kept in the box, instead
+of being queued silently and replayed into a later scene. `houdini_layout_network`
+(bounded native layout, one undo group, refuses an artist's own boxes).
+`synapse_insert_cache` (undoable boundary insertion behind the review gate, shipped dark
+behind `SYNAPSE_CACHE_ADVISOR_ENABLED`). Scoped memory on `synapse_decide` / `_recall`.
+
+**Repository.** `scripts/ingest_rulings.py` makes a design ruling land in the decision
+board instead of nowhere — ids validated against the roster, unknown ids refuse and write
+nothing. An `AuditLog` session-id collision after GC is fixed, with the failing-then-passing
+test the original branch never had. The 2026-09-15 branch triage, harness review,
+first-principles audit and panel design crit are in the tree.
+
+**Measured alone, in order:** stock {STOCK}; seat suite {SEAT} (five known + ONE NEW, diagnosed in
+`harness/notes/release-5.71.0/SEAT_REDS.md`);
+installer unit {INST}; qualification {QUAL}. See the
+[release notes](docs/releases/v5.71.0.md).
+
 ## v5.70.1 — The front door, made readable
 
 *2026-09-15.* Published as **Latest** with a qualified Windows Setup. **Nothing that

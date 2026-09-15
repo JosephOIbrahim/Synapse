@@ -39,7 +39,7 @@ first line.
 - Installer unit checks: 37 passed, 1 warning in 7.92s
 - Installer qualification: 19 of 19 PASS, exit 0
 - Build revision: 1d8baae24568aeb3e4d280cdfd804aae8d6d2b93; payload sha256 e603cfb3386579710fa5735c26ba69ca220fbbcc10de15929b5b4ebf2d186406; payload_id 5.70.1-325d5be06597f1f8
-- CI on the tagged commit: PENDING_AT_PUBLICATION
+- CI on the tagged commit: success on all four matrix jobs (ubuntu/macOS x 3.11/3.14), run 34990062395 — concluded after publication; `installer-verification.json` was uploaded saying PENDING_AT_PUBLICATION and amended in place
 
 ## Traps that still hold
 
@@ -63,7 +63,28 @@ the newest unless pinned; it was pinned to 22.0.400 for this release.
 - Five panel seat tests remain red; none is new in 5.70.1.
 - The suite's skip population is still not stable — see
   `harness/notes/SUITE_FLOOR_IS_NOT_STABLE.md`.
-- No live-Houdini introspection was run for this release: there is no changed
-  module to look for. The 5.70.0 live check remains the last one.
+- Live Doctor after a Houdini restart: **13 ok, 1 fail** — running package 5.70.1 / protocol
+  4.0.0, symbol table 22.0.400 matches, bridge on :9999, main thread not stalled, Moneta
+  serving 841 rows. The fail is the machine install stamp (2026-09-09 demo-capture install of
+  5.67.4, still on disk) disagreeing with the running repo tree — bookkeeping, not a product
+  defect; fix recorded, not applied (`harness/notes/release-5.70.1/doctor-live.json`).
 - The bridge-down send-queue defect named in the release notes (FR-1 in
   `harness/notes/closeout-2026-09-15/`) is disclosed, not fixed.
+
+## Real-machine install round trip (after publication)
+
+The production Setup was installed on this machine with Houdini closed: exit 0,
+`installation.json` version 5.70.1 with active payload `5.70.1-325d5be06597f1f8`,
+the bundled maintenance runtime's `verify` PASS over 1817 files (Moneta bundled,
+1 registration checked), then a clean silent uninstall. Evidence:
+`harness/notes/release-5.70.1/reinstall*.{txt,log,json}`.
+
+Three refusals came first, each the installer doing its job: Houdini was running
+(Setup never closes it); the machine's source-tree registrations — the preferences
+`packages/synapse.json` and the user `HOUDINI_PACKAGE_DIR` pointing at the repo —
+also load SYNAPSE for this Houdini, so Setup refuses to add a second one. Both were
+parked for the run and restored after; nothing of the developer setup changed. Two
+operator traps on the way: Git Bash rewrites `/VERYSILENT`-style flags into paths
+(launch native installers from PowerShell or with `MSYS_NO_PATHCONV=1`), and
+PowerShell's `Start-Process -ArgumentList` needs explicit quotes around any
+argument value containing a space.

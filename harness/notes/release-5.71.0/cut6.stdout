@@ -1,0 +1,6 @@
+16:27:25 cut v5.71.0: ['suites']
+16:27:25 == suites
+16:33:12   stock: 9369 passed, 430 skipped, 625 warnings in 337.48s (0:05:37)
+16:34:30   seat:  6 failed, 200 passed, 45 warnings in 71.97s (0:01:11)
+16:34:39   inst:  37 passed, 1 warning in 6.36s
+STOP: seat suite reports 6 failed; the notes claim 5 known reds (6 failed, 200 passed, 45 warnings in 71.97s (0:01:11)). Re-read the seat log before shipping.

@@ -1,0 +1,12 @@
+16:04:35 cut v5.71.0: ['wait', 'bump', 'notes', 'build', 'qual', 'suites', 'compose', 'commit', 'tag', 'push', 'publish', 'verify']
+16:04:35 == wait
+16:14:48   #85 merged
+16:14:48   master 1d982426
+16:14:48 == bump
+16:14:48   canonical=5.71.0  verdict=PASS
+16:14:48   README + installation.md surfaces -> 5.71.0
+16:14:48 == notes
+16:14:49   notes drafted with placeholders; tool count 137
+16:14:49 == build
+16:15:15   built; payload bc959b26b00b id 5.71.0-8bf8cf9c275ae547
+16:15:15 == qual

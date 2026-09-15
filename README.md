@@ -4,13 +4,13 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.70.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.70.1 is Latest</sub></p>
+<p align="center"><sub>v5.71.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.71.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.70.1/SYNAPSE-5.70.1-Setup.exe)** · [What's new](docs/releases/v5.70.1.md) · [Help](#when-you-get-stuck)
+**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.71.0/SYNAPSE-5.71.0-Setup.exe)** · [What's new](docs/releases/v5.71.0.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
@@ -27,7 +27,7 @@ Then:
 - Cloud model? It needs your API key.
 - Ollama? Start Ollama first, then choose an installed model.
 
-The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.70.1/SHA256SUMS.txt).
+The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.71.0/SHA256SUMS.txt).
 
 [Full setup guide](docs/getting-started/installation.md) · [Source installation](docs/getting-started/installation.md#source-installation)
 
@@ -71,14 +71,14 @@ They are not the same. Three verbs, three consequences, kept apart on purpose. T
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 - **Apply a saved scene setup** (`synapse_apply_fixture`, shipped since 5.43.0). A fixture is a setup stored as data, not a prompt: applying it twice is a no-op, and a name clash refuses instead of renaming. Details and what is proven: [BLOCKS in the changelog](CHANGELOG.md).
 
-**New in 5.70.1** — the front door, made readable.
+**New in 5.71.0** — the farm, the receipt, and a bridge that says no.
 
-- This README and the [setup guide](docs/getting-started/installation.md) rewritten for scanning: one idea per block, the number you need where you need it.
-- The setup guide's download links now point at the current release; they had been three versions behind.
-- The harness's own state boards are tracked in the repo instead of living only on one machine.
-- No change to the panel, the tools, or the installer payload's code. If 5.70.0 works for you, 5.70.1 changes what you read, not what runs.
+- Durable TOPs render jobs with an artist render workspace: submit, watch, cancel.
+- Every change now says what one Ctrl+Z reverses, before you need it.
+- A message typed while the bridge is down is refused, not queued and replayed later.
+- New tools: bounded network layout, and an undoable cache insertion (dark by default).
 
-[Release details and limits →](docs/releases/v5.70.1.md) · [What 5.70.0 changed →](docs/releases/v5.70.0.md)
+[Release details and limits →](docs/releases/v5.71.0.md)
 
 **Still development work:** predictive creation, product-level Computer Use controls, recursive self-improvement. The attended operator checks in this release do not make them complete. [Artist-first intent →](INTENT.md)
 
@@ -144,7 +144,7 @@ The optional observation loop connects Moneta, Octavius and Hanish. Three things
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.70.1.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.71.0.md) · [Changelog](CHANGELOG.md)
 
 **What the CI badge proves.** GitHub CI tests stock Python on Linux and macOS.
 

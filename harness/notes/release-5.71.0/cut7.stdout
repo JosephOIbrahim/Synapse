@@ -1,0 +1,16 @@
+16:39:34 cut v5.71.0: ['compose', 'commit', 'tag', 'push', 'publish', 'verify']
+16:39:34 == compose
+16:39:34    49 files changed, 5422 insertions(+), 310 deletions(-)
+16:39:34 == commit
+16:39:35   9ba794cd release: v5.71.0 -- the farm, the receipt, and a bridge that says no
+16:39:35 == tag
+FAILED (1): C:\Python314\python.exe scripts/tag_release.py --check-only
+version      5.71.0             OK
+worktree     2 tracked mod(s)  REFUSE
+              M harness/notes/RELEASE_v5.70.1.md
+              M harness/notes/release-5.71.0/cut7.stdout
+sync_check   all CONFORM        OK
+tag_free     v5.71.0             OK
+gate         REFUSED -- no tag was created
+
+

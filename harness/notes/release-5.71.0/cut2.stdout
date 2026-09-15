@@ -1,0 +1,6 @@
+16:19:12 cut v5.71.0: ['build', 'qual', 'suites', 'compose', 'commit', 'tag', 'push', 'publish', 'verify']
+16:19:12 == build
+16:19:39   built; payload bc959b26b00b id 5.71.0-8bf8cf9c275ae547
+16:19:39 == qual
+16:19:40   qualification 0/1 PASS, exit 1
+STOP: qualification not 19/19 exit 0
