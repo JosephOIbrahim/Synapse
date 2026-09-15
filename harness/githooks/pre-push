@@ -90,11 +90,21 @@ do
     # Protected paths, EVERY ref - not just master. This is the half that
     # catches `git cherry-pick` and `git revert`, which never ran pre-commit.
     if [ "$local_sha" != "$z40" ]; then
-        if [ "$remote_sha" = "$z40" ]; then
-            hits=$(protected_in_range "$local_sha" --not --remotes)
-        else
-            hits=$(protected_in_range "$remote_sha..$local_sha")
-        fi
+        # Gate what this push ADDS to the remote - never what range arithmetic
+        # happens to sweep in. This used `$remote_sha..$local_sha` for an
+        # existing ref, and that is wrong after a rebase: a force-push breaks
+        # ancestry, so git hands us the OLD head and the two-dot range swallows
+        # every master commit the branch was rebased over. Observed 2026-09-15:
+        # a six-file panel branch containing ZERO VERSION commits was refused on
+        # VERSION, because master's own release bumps fell inside the range.
+        # Every feature branch rebased after a release hit this.
+        #
+        # `--not --remotes` excludes only commits already on a remote ref, and
+        # those were gated when they got there. The cherry-pick and revert half
+        # is untouched: either verb mints a NEW sha that is on no remote, so it
+        # is still walked. Same idiom the new-ref branch already used, which is
+        # why the two cases now collapse into one.
+        hits=$(protected_in_range "$local_sha" --not --remotes)
         if [ -n "$hits" ]; then
             if [ "$SYNAPSE_GATE_C" != "1" ]; then
                 echo "" >&2

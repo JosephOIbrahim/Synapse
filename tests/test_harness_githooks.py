@@ -382,6 +382,70 @@ def test_pre_push_still_fences_master(pushable) -> None:
     assert "pre-push REFUSED" in res.stderr, res.stderr
 
 
+def test_pre_push_allows_a_rebase_over_a_protected_commit_already_on_the_remote(pushable) -> None:
+    """A branch rebased onto a head that carries a VERSION bump must push, ungated.
+
+    The hook walks EVERY commit in the pushed range on purpose, so cherry-pick and
+    revert cannot slip past. But it used `$remote_sha..$local_sha` for an existing
+    ref, and a force-push after a rebase breaks ancestry: git then hands the hook
+    the OLD head, and the two-dot range swallows every upstream commit the branch
+    was rebased over.
+
+    Observed 2026-09-15 on a six-file panel branch (PR #98) that contained no
+    VERSION commit of its own and was refused on VERSION anyway, because master's
+    release bumps fell inside the range. Every feature branch rebased after a
+    release hit this, and the only way through was the override - which teaches
+    people to reach for it on routine work, and that is how a gate stops meaning
+    anything.
+
+    The branch here adds ONLY an unprotected file. Every protected commit in play
+    belongs to the upstream branch and is already on the remote.
+    """
+    repo, _remote = pushable
+
+    # the upstream branch gains a protected commit, and the remote already has it
+    _stage(repo, "VERSION", "9.9.9\n")
+    assert _commit(repo, "release: bump VERSION upstream", gate="1").returncode == 0
+    res = _git(repo, "push", "origin", "work", gate="1")
+    assert res.returncode == 0, "seeding the remote must succeed:\n" + res.stderr
+
+    # a feature branch cut BEFORE that bump, touching nothing protected
+    assert _git(repo, "checkout", "-q", "-B", "feature", "HEAD~1").returncode == 0
+    _stage(repo, "notes.md", "a file nothing fences\n")
+    assert _commit(repo, "docs: unprotected change").returncode == 0
+    res = _git(repo, "push", "origin", "feature")
+    assert res.returncode == 0, "baseline push of an unprotected branch:\n" + res.stderr
+
+    # now rebase it over the protected commit and force-push, exactly as any
+    # feature branch must once a release lands upstream
+    assert _git(repo, "rebase", "work").returncode == 0
+    res = _git(repo, "push", "--force-with-lease", "origin", "feature")
+
+    assert res.returncode == 0, (
+        "a rebase over a protected commit ALREADY on the remote must push without "
+        "the override - this branch adds no protected path:\n" + res.stderr
+    )
+    assert "pre-push REFUSED" not in res.stderr, res.stderr
+
+
+def test_pre_push_still_refuses_a_cherry_pick_after_the_rebase_narrowing(pushable) -> None:
+    """The narrowing must not cost the protection the hook exists for.
+
+    `--not --remotes` excludes only commits already on a remote ref, and those were
+    gated when they got there. A cherry-pick mints a NEW sha that is on no remote,
+    so it is still walked and still refused. This is the paired test: if the fix
+    above ever gets loosened into "skip anything that looks upstream", this reddens.
+    """
+    repo, _remote = pushable
+    _land_protected_commit_by_cherry_pick(repo)
+    res = _git(repo, "push", "origin", "work")
+    assert res.returncode != 0, (
+        "the cherry-pick half must survive the range narrowing:\n" + res.stderr
+    )
+    assert "pre-push REFUSED" in res.stderr, res.stderr
+    assert "VERSION" in res.stderr, res.stderr
+
+
 def test_pre_push_header_states_the_range_rule() -> None:
     text = PUSH.read_text(encoding="utf-8")
     assert text.startswith("#!/bin/sh\n")
