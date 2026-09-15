@@ -187,7 +187,54 @@ _APPROVED_LOCAL_RULES = (
 )
 
 
+# CRIT.md 2026-09-15 (harness/design_review/2026-09-15/CRIT.md) ranked changes
+# 1, 5 and 6 edit rules inside the protected upstream sheet. They are recorded
+# here as EXACT text amendments to the BASELINE, deliberately NOT as entries in
+# BC_WAVE_RULED_SELECTORS: a selector carve-out retires the guard for that
+# selector forever, and that list is keyed to Joe's rulings - these are crit
+# changes, which are not rulings. Recorded this way the guard keeps full
+# strength: the sheet must still equal baseline-plus-exactly-these-deltas,
+# character for character, so any further drift on these same rules still
+# reddens. Each `old` must still occur exactly once in the baseline, so a stale
+# amendment reddens too instead of silently passing. Newlines are chr(10) for
+# the same reason the bc-wave pattern above is: no escape sequence survives a
+# shell heredoc intact.
+_NL = chr(10)
+CRIT_20260915_QSS_AMENDMENTS = (
+    # rank 5 (one action family): DsStop rests WARM - the fill the rule's own
+    # comment already claimed. HOT_SOFT retires from the action family.
+    ("    background: {t.HOT_SOFT}; color: {t.TEXT_ON_ACCENT};",
+     "    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};"),
+    # rank 5: tone="hot" carries no hue - TEXT_PRIMARY at the verb's own weight.
+    ('QPushButton#DsVerb[tone="hot"]    {{ color: {t.HOT_SOFT}; }}',
+     'QPushButton#DsVerb[tone="hot"]    {{ color: {t.TEXT_PRIMARY}; }}'),
+    # rank 1 (one type scale 11/12/15/19): SIZE_MICRO = 10 is deleted, so its
+    # two consumers here step to SIZE_SMALL = 11 (= audit_panel.py:388
+    # READABLE_FLOOR, the panel's new FONT_FLOOR_PX).
+    ("    border-radius: 0px; padding: 3px 8px 3px 7px;" + _NL +
+     "    font-size: {s(t.SIZE_MICRO)}px;",
+     "    border-radius: 0px; padding: 3px 8px 3px 7px;" + _NL +
+     "    font-size: {s(t.SIZE_SMALL)}px;"),
+    ("    font-size: {s(t.SIZE_MICRO)}px; font-weight: {t.WEIGHT_SEMIBOLD};",
+     "    font-size: {s(t.SIZE_SMALL)}px; font-weight: {t.WEIGHT_SEMIBOLD};"),
+    # rank 6 (P8, dead code): the DsCard tone rows never painted. The only three
+    # c.Card subclasses (gate_widget._ProposalCard:169, lookdev_suggestion:92,
+    # recall_card:107) pass no `tone` to Card.__init__ (components.py:84-85) and
+    # components.set_tone:87 has zero callers repo-wide; gate_widget.py:142 sets
+    # tone on VERBS and its docstring :172 says the level is never a border hue.
+    ('QWidget#DsCard[tone="warn"]  {{ border-color: {t.WARN}; }}' + _NL +
+     'QWidget#DsCard[tone="approve"] {{ border-color: {t.FIRE}; }}' + _NL +
+     'QWidget#DsCard[tone="critical"] {{ border-color: {t.ERROR}; }}' + _NL, ""),
+)
+
+
 def _assert_upstream_qss_unchanged(prefix, original):
+    for old, new in CRIT_20260915_QSS_AMENDMENTS:
+        assert original.count(old) == 1, (
+            "stale CRIT.md 2026-09-15 amendment - the baseline no longer "
+            "contains it exactly once: " + old
+        )
+        original = original.replace(old, new, 1)
     for rule in _APPROVED_LOCAL_RULES:
         assert prefix.count(rule) == 1, "approved local rule changed or duplicated: " + rule
         prefix = prefix.replace(rule, "", 1)

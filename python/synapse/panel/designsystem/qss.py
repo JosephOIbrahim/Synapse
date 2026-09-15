@@ -99,9 +99,14 @@ QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DIS
    siblings (the button ships disabled + hidden until work is in
    flight). Metrics mirror #DsButton so only the paint changes. The
    danger variant itself is untouched: other widgets may rely on it.
+   CRIT.md 2026-09-15 ranked change 5 moved the REST fill from HOT_SOFT to
+   WARM, which is what this comment already claimed ("WARM fill") -- the code
+   had drifted from its own note. Consequence, stated plainly: the :hover rule
+   below is now the same WARM as rest, so hover feedback on Stop rides only
+   :pressed (WARM_PRESS) until someone rules on WARM_HOVER. Out of scope here.
    Not profile-conditional -- Stop looks identical in all three. */
 QPushButton#DsStop {{
-    background: {t.HOT_SOFT}; color: {t.TEXT_ON_ACCENT};
+    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};
     border: none; border-radius: {t.RADIUS_SM}px;
     padding: {t.SPACE_SM}px {t.SPACE_MD}px;
     font-size: {s(t.SIZE_UI)}px; font-weight: {t.WEIGHT_SEMIBOLD};
@@ -186,7 +191,13 @@ QPushButton#DsVerb {{
 }}
 QPushButton#DsVerb:hover {{ color: {t.TEXT_ACCENT}; }}
 QPushButton#DsVerb[tone="ok"]     {{ color: {t.CONIFEROUS}; }}
-QPushButton#DsVerb[tone="hot"]    {{ color: {t.HOT_SOFT}; }}
+/* tone="hot" carries NO hue (CRIT.md 2026-09-15 ranked change 5): a hot verb
+   steps UP the grey ladder to TEXT_PRIMARY at the verb's own weight, while the
+   rest of the row sits at TEXT_SECONDARY. Emphasis by value, not by a second
+   action family. No font-weight row here on purpose -- a QSS font-weight on
+   mono would request a DemiBold Space Mono does not ship (tokens.WEIGHT_BOLD
+   note); weight belongs on QFont, where fontload maps >=600 to setBold. */
+QPushButton#DsVerb[tone="hot"]    {{ color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
 /* prominence (L5-14 amends L5-13): verbs are actions, so hero takes
    WARM, the human accent; after the tone rows so hero outranks a tone
@@ -218,7 +229,7 @@ QPushButton#DsChip {{
     background: transparent; color: {t.MUSHROOM};
     border: none; border-left: {t.STROKE_PX:.0f}px solid transparent;
     border-radius: 0px; padding: 3px 8px 3px 7px;
-    font-size: {s(t.SIZE_MICRO)}px;
+    font-size: {s(t.SIZE_SMALL)}px;
 }}
 QPushButton#DsChip:hover {{ color: {t.TEXT_SECONDARY}; }}
 QPushButton#DsChip[active="true"] {{
@@ -246,14 +257,19 @@ QWidget#DsCard {{
     background: {t.SURFACE}; border: 1px solid {t.BORDER};
     border-radius: {t.RADIUS_LG}px;
 }}
-QWidget#DsCard[tone="warn"]  {{ border-color: {t.WARN}; }}
-QWidget#DsCard[tone="approve"] {{ border-color: {t.FIRE}; }}
-QWidget#DsCard[tone="critical"] {{ border-color: {t.ERROR}; }}
+/* No QWidget#DsCard[tone=...] rows: DEAD, deleted per CRIT.md 2026-09-15
+   ranked change 6 (P8). Verified before deleting -- the only three c.Card
+   subclasses are gate_widget._ProposalCard:169, lookdev_suggestion
+   .LookdevSuggestionCard:92 and recall_card.RecallCard:107; none passes a
+   `tone` to Card.__init__ (components.py:84-85) and components.set_tone:87 has
+   zero callers repo-wide. gate_widget.py:142 sets tone on VERBS, and its own
+   docstring :172 says "A DsCard (no tone - the level is never a border hue)".
+   These rows never painted. */
 
 /* ---- badges / chips ------------------------------------------ */
 QLabel#DsBadge {{
     border-radius: {t.RADIUS_SM}px; padding: 1px {t.SPACE_SM}px;
-    font-size: {s(t.SIZE_MICRO)}px; font-weight: {t.WEIGHT_SEMIBOLD};
+    font-size: {s(t.SIZE_SMALL)}px; font-weight: {t.WEIGHT_SEMIBOLD};
     background: {t.RAISED}; color: {t.TEXT_SECONDARY};
 }}
 QLabel#DsBadge[kind="grow"]  {{ color: {t.GROW};  background: {t.STATE_TINTS["grow"]}; }}
@@ -299,9 +315,24 @@ QLabel[role="accent"]  {{ color: {t.TEXT_ACCENT}; }}
    widget to the accent its own role already calls for -- WARM for
    human/orientation widgets, SIGNAL for technical/economic ones, per
    the roles tokens.py records for the two accents. SIGNAL + WARM are
-   the two-accent ceiling: never a third. Quiet steps DOWN the emphasis
-   ladder (toward TEXT_TERTIARY) -- colour emphasis only, never size,
-   font, or layout. Standard prominence has NO rule on purpose: expert
+   the two-accent ceiling: never a third.
+
+   ACTIONS: ONE FAMILY, SIGNAL, ANY COUNT. (CRIT.md 2026-09-15 ranked
+   change 5, replacing this comment's own former clause "colour emphasis
+   only, never size, font, or layout".) That clause was the policy that
+   generated the drift: if hue IS the emphasis mechanism, then every new
+   shade of emphasis has to arrive as a new hue, and the panel grew
+   four of them on one verb class -- ok/hot/accent/doctor -- plus a
+   fifth by prominence. The count is now unbounded but the family is
+   not: an action is SIGNAL (tokens.SIGNAL / TEXT_ACCENT / SIGNAL_DEEP),
+   however many actions a view holds, so SEND and APPROVE on the same
+   screen read as one system rather than two. WARM is NOT an action
+   hue: it is the ruled mark plus Stop. CONIFEROUS is ruled (J1/J3) as
+   the verified/ok state mark. Emphasis inside the family is carried by
+   VALUE on the grey ladder -- TEXT_PRIMARY up, TEXT_TERTIARY down (see
+   tone="hot" above and quiet below) -- and by weight on QFont, never by
+   a new hue. Quiet steps DOWN that ladder (toward TEXT_TERTIARY).
+   Still never size or layout. Standard prominence has NO rule on purpose: expert
    == v5.42.0 exactly (L5-5), so unmarked widgets must render exactly
    as today. The bare selectors below are the roleless fallback: with
    no role to read they step to TEXT_BRIGHT -- an accent here would
@@ -421,8 +452,10 @@ def _rhythm_stylesheet(scale):
 #DsRoot QLabel#DsBadge[rhythm_role="tag"] {{
     padding: {t.SPACE_12 // 2}px {t.SPACE_SM + t.SPACE_XS // 2}px;
 }}
+/* BLOCKED is the top of the grey ladder, not a hue (CRIT.md 2026-09-15 ranked
+   change 5): TEXT_BRIGHT at the tag's own weight. */
 #DsRoot [rhythm_role="tag"][status="BLOCKED"],
-#DsRoot QLabel#DsBadge[rhythm_role="tag"][status="BLOCKED"] {{ color: {t.HOT_SOFT}; }}
+#DsRoot QLabel#DsBadge[rhythm_role="tag"][status="BLOCKED"] {{ color: {t.TEXT_BRIGHT}; }}
 
 /* The collection role owns inter-card gaps. Individual cards keep their
    fixed-band interior separate from that collection layout. */

@@ -268,6 +268,16 @@ HOUDINI_TAB_YELLOW_HOVER = _hexrgb(*(channel + 24 for channel in _TAB_RGB))
 # WARM without becoming a third accent, because a verdict dot is punctuation.
 CONIFEROUS = "#6E8F72"   # verified / ok
 NO_SOFT    = "#D96975"
+# HOT_SOFT is RETIRED from the action family (CRIT.md 2026-09-15 ranked change
+# 5, "one action family"): it no longer paints DsStop at rest (WARM now),
+# DsVerb[tone="hot"] (TEXT_PRIMARY, no hue) or the BLOCKED tag (TEXT_BRIGHT).
+# The token stays defined because the Work face still reads it as a VERDICT
+# hue, where the crit counts and allows it: integrity_readout.py:55 (warning
+# fidelity), face_review.py:45/:52 (warn / inconclusive) and
+# network_trace.py:463 (the hot step). NO_SOFT likewise survives as the
+# fail/error verdict hue -- face_review.py:46/:52/:63, integrity_readout.py:54,
+# network_trace.py:477/:527 -- so it is NOT deleted; the crit's "NO_SOFT dead
+# (UNVERIFIED)" line is REFUTED by that grep. Neither belongs on an action.
 HOT_SOFT   = "#D08A57"
 
 # Deprecated alias. Kept so every token name that existed before this rename
@@ -311,15 +321,17 @@ FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 # Pentagram character is preserved by TYPE_ROLES + TRACKING_EM below (families,
 # tracking, hierarchy); only the absolute sizes shrink. The Aa control
 # (FONT_SCALE_STEPS) scales the whole set up for the artist.
-SIZE_MICRO  = 10   # tiny labels / numbers
 SIZE_SMALL  = 11   # captions, metadata
 SIZE_UI     = 12   # buttons, pills, menu items, labels — Houdini-native; scalable via Aa
 SIZE_BODY   = 12   # chat body — Houdini-native default (9pt ≈ 12px)
 SIZE_TITLE  = 15   # section headers — gentle step above native
 SIZE_HERO   = 19   # panel title — present, not shouting
 
-# Back-compat alias (design/tokens.py name)
-SIZE_LABEL = SIZE_MICRO
+# Back-compat alias (design/tokens.py name). Aliased to SIZE_SMALL since
+# CRIT.md 2026-09-15 ranked change 1 deleted SIZE_MICRO: the ramp is 11/12/15/19
+# and SIZE_LABEL's ~30 legacy consumers (styles.py, message_formatter.py,
+# context_bar.py, the legacy sheet in qss.py) step 10 -> 11 with it.
+SIZE_LABEL = SIZE_SMALL
 
 # ── the type FLOOR (BP4-PANELFONT) ────────────────────────────
 # Joe's law: "panel fonts consistent and no smaller than the Houdini default."
@@ -329,26 +341,38 @@ SIZE_LABEL = SIZE_MICRO
 # recalled from memory. Provenance ladder: measured GUI paste > a statement in
 # the local H22 help cache (DOC-STATED) > UNKNOWN.
 #
-# Current provenance: UNKNOWN. The local H22.0.400 help cache
-# (…/houdini22.0/config/Help/cache — ref, basics, hom searched 2026-09-03)
-# states no default UI font size. Per the mission fallback the floor is pinned
-# to the smallest size already shipped on master (SIZE_MICRO = 10), so this pass
-# lowers NOTHING; when the probe lands, a follow-up raises the floor to the
-# measured default and lifts any sub-floor role. The scale-comment recall that
-# the sizes "matched 9pt ≈ 12px, verified on H21.0.671/.729" is an H21
-# measurement, NOT an H22 one — deliberately not used as the floor.
+# Current provenance of the HOUDINI DEFAULT: still UNKNOWN. The local
+# H22.0.400 help cache (…/houdini22.0/config/Help/cache — ref, basics, hom
+# searched 2026-09-03) states no default UI font size, and the
+# scripts/probe_ui_font.py GUI paste is still owed. When it lands, a follow-up
+# raises the floor to the measured default and lifts any sub-floor role. The
+# scale-comment recall that the sizes "matched 9pt ≈ 12px, verified on
+# H21.0.671/.729" is an H21 measurement, NOT an H22 one — deliberately not used
+# as the floor.
+#
+# WHAT THE FLOOR IS PINNED TO (changed by CRIT.md 2026-09-15, ranked change 1).
+# It used to be pinned to "the smallest size already shipped on master"
+# (SIZE_MICRO = 10) — which is circular: the floor could never catch the
+# smallest shipped size, because the smallest shipped size WAS the floor. The
+# floor is now the repo's own readability bar: audit_panel.py:388
+# READABLE_FLOOR = 11 ("chrome must clear this"). That constant already existed
+# and was already enforced — but only on rail-header widgets (audit_panel.py
+# :402-403) while ~15 live 10px sites shipped underneath it. Pinning the token
+# floor to it makes the audit's bar the whole panel's bar, and it is a reason
+# external to the scale, so it cannot move just because a size moved.
 #
 # ONE constant, with a provenance string beside it (mission: "the floor lives
-# as ONE constant in the token module with a provenance string"). Kept
-# independent of SIZE_MICRO on purpose: coupling them would make the
-# "no size below the floor" test unable to catch SIZE_MICRO being lowered.
-FONT_FLOOR_PX = 10
+# as ONE constant in the token module with a provenance string"). Still kept
+# independent of the SIZE_* scale on purpose: coupling them would make the
+# "no size below the floor" test unable to catch a size token being lowered.
+FONT_FLOOR_PX = 11
 FONT_FLOOR_PROVENANCE = (
     "UNKNOWN — the local H22.0.400 help cache states no default UI font size "
     "(…/houdini22.0/config/Help/cache, ref+basics+hom searched 2026-09-03); "
-    "awaiting the scripts/probe_ui_font.py GUI paste. Floor pinned to the "
-    "smallest size shipped on master (SIZE_MICRO=10) per BP4-PANELFONT, so no "
-    "role is lowered."
+    "awaiting the scripts/probe_ui_font.py GUI paste. Until it lands the floor "
+    "is pinned to audit_panel.py:388 READABLE_FLOOR = 11, the repo's own "
+    "readability bar, per CRIT.md 2026-09-15 ranked change 1 — NOT to the "
+    "smallest size shipped, which was circular."
 )
 
 # ── weight tokens (BP4-PANELFONT) ─────────────────────────────
@@ -358,6 +382,16 @@ FONT_FLOOR_PROVENANCE = (
 WEIGHT_REGULAR  = 400   # body / caption / code
 WEIGHT_MEDIUM   = 500   # label / status  (Qt QFont.Weight.Medium)
 WEIGHT_SEMIBOLD = 600   # display / title / buttons / badges
+# WEIGHT_BOLD is the weight the mono face actually HAS. designsystem/fonts/
+# ships SpaceMono-Regular (400) + SpaceMono-Bold (700) and nothing between, and
+# fontload.py:158-190 maps any weight >= 600 to setBold — so 500 and 600 on mono
+# are not weights the family owns, they are Qt's synthetic guess at a DemiBold
+# that does not exist in the file. Filed by TYPE as ANSWER 1 of CRIT.md
+# 2026-09-15 (ranked change 19). THIS BRANCH ONLY ADDS THE TOKEN: retoning the
+# roles that currently ask for 500/600 on mono (status 11/500 at TYPE_ROLES
+# below, tag 12/500 at qss.py) is pending M7 — what mono weight 500 renders as
+# today is unmeasured.
+WEIGHT_BOLD     = 700   # mono's real bold (SpaceMono-Bold); see M7 note above
 
 # Roles: (family_css, size_px, weight, letter_spacing_px) — components read these.
 #
