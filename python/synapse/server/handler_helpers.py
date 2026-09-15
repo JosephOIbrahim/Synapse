@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..core.aliases import USD_PARM_ALIASES
+from ..core.tool_results import UNDO_RECEIPT_PREFIX
 
 try:
     import hou
@@ -45,6 +46,72 @@ def _safe_node_name(name, fallback="node"):
     if safe[0].isdigit():
         safe = "_" + safe
     return safe
+
+
+# --- Undo Receipt (TRUST-2 / TRUST-4 disclosure) -----------------------------
+#
+# Every mutating handler already computes the artist's answer to "what does
+# one Ctrl+Z reverse?" as its hou.undos.group("<label>") label. The receipt
+# turns that label into words and rides on the handler's result dict. Pure:
+# no hou, no scene state, no new undo group -- it records, it never wraps.
+
+#: Label words an artist would say differently. Deliberately tiny: the label
+#: is the truth, this only unpacks abbreviations and restores domain capitals.
+_UNDO_LABEL_PLAIN = {
+    "parm": "parameter", "parms": "parameters",
+    "prim": "primitive", "prims": "primitives",
+    "matlib": "material library", "copnet": "COP network",
+    "shotsetup": "shot setup", "loadstate": "load state",
+    "usd": "USD", "hda": "HDA", "vex": "VEX", "xpu": "XPU", "aovs": "AOVs",
+    "opencl": "OpenCL", "materialx": "MaterialX", "karma": "Karma",
+    "solaris": "Solaris", "cops": "COPs", "pdg": "PDG",
+}
+
+#: Namespace spellings in use at the hou.undos.group call sites. Longest first.
+_UNDO_LABEL_PREFIXES = ("SYNAPSE: ", "SYNAPSE:", "synapse_", "synapse:")
+
+_ON_FAILURE_ROLLS_BACK = (
+    "If it fails partway, the change is undone for you (one undo step)."
+)
+_ON_FAILURE_GROUP_ONLY = (
+    "If it fails partway, the partial work stays in the scene until you "
+    "undo it."
+)
+
+
+def undo_label_words(label):
+    """Plain words for an undo-group label: ``synapse_set_parm`` -> ``set parameter``."""
+    text = str(label or "").strip()
+    for prefix in _UNDO_LABEL_PREFIXES:
+        if text.lower().startswith(prefix.lower()):
+            text = text[len(prefix):].strip()
+            break
+    words = []
+    for word in text.replace("_", " ").split():
+        words.extend(_UNDO_LABEL_PLAIN.get(word.lower(), word).split())
+    return " ".join(words) or "this change"
+
+
+def undo_receipt(label, *, rolls_back_on_failure=False):
+    """The Undo Receipt for a handler that wrapped its mutation in ``label``.
+
+    Returns ``{"undo": {...}}`` to merge into the handler's result dict:
+    ``label`` (the exact ``hou.undos.group`` label -- what one Ctrl+Z reverses),
+    ``artist`` (that label in plain words), ``rolls_back_on_failure`` (a
+    STATIC property of the code path: True only where the handler calls
+    ``performUndo()`` on its exception path, never a runtime guess) and
+    ``on_failure`` (the same fact in artist words).
+    """
+    rolls_back = bool(rolls_back_on_failure)
+    return {
+        "undo": {
+            "label": str(label),
+            "artist": UNDO_RECEIPT_PREFIX + undo_label_words(label),
+            "rolls_back_on_failure": rolls_back,
+            "on_failure": (_ON_FAILURE_ROLLS_BACK if rolls_back
+                           else _ON_FAILURE_GROUP_ONLY),
+        }
+    }
 
 
 _FRAME_TOKEN_RE = re.compile(r"\$F(\d*)")

@@ -185,6 +185,7 @@ def test_set_parm_scalar_enters_exactly_one_group(set_parm_call):
     assert result["node"] == "/obj/geo"
     assert result["parm"] == "tx"
     assert result["value"] == 0.5
+    assert result["undo"]["label"] == "synapse_set_parm"  # TRUST-2 receipt
 
 
 def test_set_parm_tuple_via_scalar_name_enters_one_group(set_parm_call):
@@ -200,6 +201,7 @@ def test_set_parm_tuple_via_scalar_name_enters_one_group(set_parm_call):
     assert rec.depth == 0
     assert rec.mutations == [("parm_tuple.set", 1)]
     assert result["value"] == [1, 0, 0]
+    assert result["undo"]["label"] == "synapse_set_parm"  # TRUST-2 receipt
 
 
 def test_set_parm_tuple_path_enters_one_group(set_parm_call):
@@ -215,6 +217,7 @@ def test_set_parm_tuple_path_enters_one_group(set_parm_call):
     assert rec.depth == 0
     assert rec.mutations == [("parm_tuple.set", 1)]
     assert result["value"] == [0.2, 0.4, 0.6]
+    assert result["undo"]["label"] == "synapse_set_parm"  # TRUST-2 receipt
 
 
 def test_set_parm_propagates_and_closes_group_on_error(set_parm_call):
@@ -269,6 +272,7 @@ def test_set_keyframe_with_frame_enters_one_group(set_keyframe_call):
     assert rec.depth == 0
     assert rec.mutations == [("parm.setKeyframe", 1)]
     assert result["frame"] == 12.0
+    assert result["undo"]["label"] == "synapse_set_keyframe"  # TRUST-2 receipt
     assert result["parm"] == "tx"
 
 
@@ -283,6 +287,7 @@ def test_set_keyframe_without_frame_uses_current_frame(set_keyframe_call):
     assert rec.depth == 0
     assert rec.mutations == [("parm.setKeyframe", 1)]
     assert result["frame"] == 1.0  # hou.frame() stub
+    assert result["undo"]["label"] == "synapse_set_keyframe"  # TRUST-2 receipt
 
 
 def test_set_keyframe_propagates_and_closes_group_on_error(set_keyframe_call):

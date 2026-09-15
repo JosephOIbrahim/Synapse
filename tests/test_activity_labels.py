@@ -29,7 +29,8 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(_ROOT, "python"))
 
 from synapse.panel.activity import (  # noqa: E402
-    _PLAIN, _PREFIXES, _PROPER, _TOOLS, tool_label, tool_status)
+    _PLAIN, _PREFIXES, _PROPER, _TOOLS, tool_label, tool_status,
+    with_undo_receipt)
 
 _REGISTRY = os.path.join(_ROOT, "python", "synapse", "mcp", "_tool_registry.py")
 
@@ -154,3 +155,27 @@ def test_the_old_fallback_really_did_produce_the_bad_labels():
 
     assert old("cops_reaction_diffusion") == "Cops reaction diffusion"
     assert tool_label("cops_reaction_diffusion") == "Reaction diffusion"
+
+
+def test_tool_status_appends_the_undo_receipt_when_the_detail_leads_with_one():
+    """TRUST-2: a finished mutation's status line says what one Ctrl+Z reverses.
+    The receipt is minted server-side (handler_helpers.undo_receipt); the panel
+    only renders it, and only when the worker put it in front of the detail."""
+    result = {"node": "/obj/geo1", "undo": {
+        "label": "synapse_set_parm",
+        "artist": "One Ctrl+Z reverses: set parameter",
+        "rolls_back_on_failure": False,
+        "on_failure": "If it fails partway, the partial work stays in the scene until you undo it.",
+    }}
+    detail = with_undo_receipt('{"node": "/obj/geo1", "parm": "tx"}', result)
+    assert tool_status("houdini_set_parm", "done", detail) == (
+        "Finished: Set a parameter \u2014 One Ctrl+Z reverses: set parameter")
+
+
+def test_tool_status_ignores_a_plain_request_summary_detail():
+    """The running phase's detail is json.dumps(tool_input)[:120]; it must never
+    leak onto the status line -- only a minted receipt does."""
+    assert tool_status("houdini_set_parm", "running", '{"node": "/obj/geo1"}') == (
+        "Running: Set a parameter")
+    assert tool_status("houdini_set_parm", "done", "") == "Finished: Set a parameter"
+    assert tool_status("houdini_set_parm", "done", None) == "Finished: Set a parameter"

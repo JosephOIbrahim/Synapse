@@ -12,6 +12,11 @@ because it is what an artist reads for almost everything: the curated map is the
 exception, not the rule.
 """
 
+from synapse.core.tool_results import UNDO_RECEIPT_PREFIX, undo_receipt_line
+
+#: Separates the undo receipt from the rest of a tool's detail string.
+UNDO_RECEIPT_SEP = " \u00b7 "
+
 #: Namespaces an artist never needs to read. ``houdini_`` alone was stripped
 #: before, so ``synapse_``/``cops_``/``tops_`` tools led with a namespace.
 _PREFIXES = ("houdini_", "synapse_", "cops_", "tops_")
@@ -80,7 +85,36 @@ def tool_label(name):
     return " ".join(out)
 
 
-def tool_status(name, phase):
+def with_undo_receipt(detail, result):
+    """Put a result's undo receipt in front of a tool's detail string.
+
+    The worker's ``tool_status`` signal carries one string. The receipt rides
+    at the front so ``tool_status`` can show it; the original detail (the
+    request summary, node paths) survives after the separator for review.
+    """
+    receipt = undo_receipt_line(result)
+    text = "" if detail is None else str(detail)
+    if not receipt:
+        return text
+    return receipt + (UNDO_RECEIPT_SEP + text if text else "")
+
+
+def split_undo_receipt(detail):
+    """``(receipt, rest)`` -- receipt is ``""`` unless the detail leads with one."""
+    text = "" if detail is None else str(detail)
+    if not text.startswith(UNDO_RECEIPT_PREFIX):
+        return "", text
+    receipt, _sep, rest = text.partition(UNDO_RECEIPT_SEP)
+    return receipt, rest
+
+
+def tool_status(name, phase, detail=None):
+    """The status line for a tool event; carries the undo receipt when the
+    detail leads with one (TRUST-2), otherwise exactly the old prefix + label."""
     prefix = {"running": "Running", "done": "Finished", "ok": "Finished",
               "error": "Failed", "failed": "Failed"}.get(phase, "Status")
-    return "%s: %s" % (prefix, tool_label(name))
+    line = "%s: %s" % (prefix, tool_label(name))
+    receipt, _rest = split_undo_receipt(detail)
+    if receipt:
+        line = "%s \u2014 %s" % (line, receipt)
+    return line
