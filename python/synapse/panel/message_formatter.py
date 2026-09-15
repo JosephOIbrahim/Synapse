@@ -69,10 +69,14 @@ _GROUP_MARGIN_Y = _t.SPACE_LG           # 24 - between speakers (was SPACE_MD 16
 _MSG_MARGIN_Y   = _t.SPACE_SM           # 8  - between a speaker's own lines (was 4)
 _TIMESTAMP_SZ   = _t.SIZE_LABEL
 
-# Monospace font stack for genuine code/paths — a NEUTRAL host monospace
-# (Consolas/Courier on Windows), not the designed Space Mono, so code reads as
-# native Houdini rather than web-app type. Body/prose carry no family (inherit).
-_MONO = "'Consolas', 'Courier New', monospace"
+# Monospace font stack for genuine code/paths — the panel's ONE mono: the
+# designed Space Mono chain the chrome already runs on. CRIT.md 2026-09-15 #13
+# (P2 · one mono): this was a host stack ('Consolas', 'Courier New'), off-token
+# against TYPE_ROLES["code"] = FONT_MONO_CSS (tokens.py:376), so the transcript
+# and the chrome were two type systems. If the transcript genuinely needs a
+# different code face, that is a token change, not a change here.
+# Body/prose carry no family (inherit).
+_MONO = _t.FONT_MONO_CSS
 
 # Regex patterns
 _CODE_BLOCK_RE = re.compile(r"```(\w*)\n(.*?)```", re.DOTALL)
@@ -375,8 +379,11 @@ def _speaker_label(who, timestamp, font_scale):
     grouped message, which is what makes it Slack rather than a chat log.
     """
     sz = _scale(_SMALL_PX, font_scale)
+    # CRIT.md 2026-09-15 #1 (P2 · type scale): the timestamp rides the ramp.
+    # max(sz - 1, 8) shipped it at 10px — a size the 11 / 12 / 15 / 19 ramp
+    # does not have. Same size as the speaker label, one step of colour apart.
     ts = ('<span style="color:{d}; font-size:{s}px;">&#160;&#160;{t}</span>'
-          .format(d=_TEXT_DIM, s=max(sz - 1, 8), t=html.escape(timestamp))
+          .format(d=_TEXT_DIM, s=sz, t=html.escape(timestamp))
           if timestamp else "")
     colour = _speaker_colour(who)
     dot = ('<span style="color:{c}; font-size:{s}px;">&#9679;</span>&#160;&#160;'

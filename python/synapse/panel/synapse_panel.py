@@ -271,13 +271,19 @@ class _GrowingInput(QtWidgets.QTextEdit):
         super().__init__(parent)
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
-        # The composer's one '/' telling (BC-4; G3 pins it here). bc-wave
-        # repair (CRUX 2026-09-05): it has to read WHOLE at 340 - the text
-        # width the viewport paints a placeholder in is ~182px, and the old
-        # 'Ask SYNAPSE…    ·    / for commands' advanced 245 and wrapped
-        # behind the send margin as 'Ask SYNAPSE…  ·  / for'. Pinned by
-        # tests/panel/test_bc_wave.py::test_composer_telling_reads_whole_at_340.
-        self.setPlaceholderText("Ask SYNAPSE… · / commands")
+        # One name for the palette (CRIT.md 2026-09-15 #16): the placeholder
+        # says what the composer is for and stops. The palette is already
+        # named twice below the prompt - 'Commands' in the footer and
+        # 'Commands {key}' in the overflow - so the '/' telling moves onto the
+        # Commands tooltip rather than riding here a third time.
+        # History kept: bc-wave repair (CRUX 2026-09-05) - it has to read
+        # WHOLE at 340, where the viewport paints a placeholder in ~182px and
+        # the old 'Ask SYNAPSE…    ·    / for commands' advanced 245 and
+        # wrapped behind the send margin as 'Ask SYNAPSE…  ·  / for'.
+        # Still pinned by tests/panel/test_bc_wave.py::
+        # test_composer_telling_reads_whole_at_340 - the no-wrap predicate is
+        # unchanged; the '/' count moved to the tooltip with the copy.
+        self.setPlaceholderText("Ask SYNAPSE…")
         # L5-22: no constant first-run height (the v9 132 landed the divider
         # above centre in every tall pane — Joe re-dragged it each session).
         # The height settles exactly once, via settle_height: the artist's
@@ -642,7 +648,7 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             logger.warning("Local Events could not be started", exc_info=True)
             self._events_btn.setEnabled(False)
-            self._events_btn.setToolTip("Local Events could not be started in this host.")
+            self._events_btn.setToolTip("Local updates could not be started in this host.")
         self._palette_shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
         self._palette_shortcut.activated.connect(self._open_palette)
         # platform-correct ⌘K / Ctrl+K rail hint, derived from the ACTUAL bound
@@ -1338,8 +1344,13 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         try:
+            # CRIT.md 2026-09-15 #15 (P6 · empty state): "Ready" is booked -
+            # it is STATUS connected (tokens.py:614) - and at boot it sat one
+            # row under the rail's "Not connected" (tokens.py:619, :1005),
+            # two claims in opposite directions. The face asks the question;
+            # the rail owns the state.
             self._chat.append_system_message(
-                "Ready. What are we building?"
+                "What are we building?"
             )
         except Exception:
             pass
@@ -2516,21 +2527,26 @@ class SynapsePanel(QtWidgets.QWidget):
         self._render_btn = c.Button("Render", variant="ghost")
         self._render_btn.setToolTip("Prepare a saved scene, render with TOPs and return to recent jobs")
         self._render_btn.clicked.connect(self._open_render_workspace)
-        self._recipes_btn = c.Button("Recipes", variant="ghost")
+        # CRIT.md 2026-09-15 (USE · copy as design): the footer says what the
+        # artist gets, in the host's vocabulary. "Recipes" is not Houdini's
+        # word for a saved network, and "Events" named the subsystem while its
+        # own tooltip already said updates.
+        self._recipes_btn = c.Button("Saved networks", variant="ghost")
         self._recipes_btn.setToolTip("Save, tag and reuse local Solaris networks")
         self._recipes_btn.clicked.connect(self._open_saved_recipes)
-        self._events_btn = c.Button("Events", variant="ghost")
+        self._events_btn = c.Button("Updates", variant="ghost")
         self._events_btn.setToolTip("Local work and connection updates")
         self._events_btn.clicked.connect(self._open_notifications)
         col.addLayout(self._build_shortcut_footer())
         self._connection_status = c.Button("Connect models", variant="ghost")
         self._connection_status.clicked.connect(self._open_connections)
         col.addWidget(self._connection_status)
-        self._session_permission_btn = c.Button("Session · Revoke", variant="ghost")
-        self._session_permission_btn.setProperty("synapse_session_permission", True)
-        self._session_permission_btn.clicked.connect(self._revoke_session_approvals)
-        self._session_permission_btn.hide()
-        col.addWidget(self._session_permission_btn)
+        # CRIT.md 2026-09-15 #18 (P8 · dead weight): the "Session · Revoke"
+        # ghost is deleted. It was built hidden and duplicated the overflow's
+        # "Revoke session model permissions" (:2702), which owns the action.
+        # The view stays registered: _refresh_session_permission() already
+        # guards on the absent button (getattr -> None) and no-ops, so the
+        # cross-view refresh keeps working the day another surface wants it.
         _SESSION_PERMISSION_VIEWS.add(self)
         # Expire display evidence without probing or sending any network traffic.
         self._location_timer = QTimer(self)
@@ -3028,14 +3044,16 @@ class SynapsePanel(QtWidgets.QWidget):
             return
         policy = controller.journal.get_policy()
         unread = sum(1 for entry in snapshot["entries"] if entry["unread"])
-        button.setText("Events · quiet" if policy["quiet"] else
-                       ("Events (%d)" % unread if unread else "Events"))
+        # The other half of the footer's name (CRIT.md 2026-09-15, USE): this
+        # refresh owns the label after boot, so it says "Updates" too.
+        button.setText("Updates · quiet" if policy["quiet"] else
+                       ("Updates (%d)" % unread if unread else "Updates"))
         button.setToolTip("%d unread local updates. History is kept in this Houdini process." % unread)
 
     def _open_notifications(self):
         controller = getattr(self, "_notification_controller", None)
         if controller is None:
-            self._chat.append_system_message("Local Events is unavailable in this host.")
+            self._chat.append_system_message("Local updates are unavailable in this host.")
             return
         dialog = getattr(self, "_notifications_dialog", None)
         if dialog is None:

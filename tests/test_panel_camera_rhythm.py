@@ -38,6 +38,69 @@ _PANEL_BASE = "47ffea0e"
 
 def _panel_base():
     return _PANEL_BASE
+
+
+# CRIT.md 2026-09-15 crit ruling (harness/design_review/2026-09-15/CRIT.md,
+# ranked change 16 "one name for the palette" + its delete list entry
+# "/ commands"). Joe approved closing the crit out, and the composer copy it
+# ranks lives INSIDE the pinned _GrowingInput constructor. Recorded here as
+# EXACT text deltas applied to the BASELINE before the comparison -
+# deliberately NOT a re-anchor of _PANEL_BASE and NOT a constructor carve-out:
+# a re-anchor would reset every other pinned byte in the file at once, and a
+# carve-out would retire the pin for that constructor forever. This is the same
+# mechanism this crit already used on the append-only sheet guard
+# (tests/test_panel_sweep_a.py::CRIT_20260915_QSS_AMENDMENTS, landed on master
+# by the merged type-ramp branch; it reaches this branch on merge).
+#
+# The pin keeps full strength: the constructor must still equal
+# baseline-plus-exactly-these-deltas, character for character, so any further
+# drift inside _GrowingInput.__init__ still reddens; and each `old` is asserted
+# to occur exactly once in the baseline, so a stale amendment reddens instead
+# of silently no-opping. Newlines are chr(10) and the non-ASCII copy is written
+# as escapes for the same reason the qss pattern is: no escape sequence
+# survives a shell heredoc intact.
+_NL = chr(10)
+CRIT_20260915_CONSTRUCTOR_AMENDMENTS = (
+    # The rationale comment the placeholder carries, rewritten to record why
+    # the "/" telling left the composer (it is named twice already below the
+    # prompt) while keeping the bc-wave 340px no-wrap history it replaced.
+    ("_GrowingInput",
+     "        # The composer's one '/' telling (BC-4; G3 pins it here). bc-wave" + _NL +
+     "        # repair (CRUX 2026-09-05): it has to read WHOLE at 340 - the text" + _NL +
+     "        # width the viewport paints a placeholder in is ~182px, and the old" + _NL +
+     "        # 'Ask SYNAPSE…    ·    / for commands' advanced 245 and wrapped" + _NL +
+     "        # behind the send margin as 'Ask SYNAPSE…  ·  / for'. Pinned by" + _NL +
+     "        # tests/panel/test_bc_wave.py::test_composer_telling_reads_whole_at_340.",
+     "        # One name for the palette (CRIT.md 2026-09-15 #16): the placeholder" + _NL +
+     "        # says what the composer is for and stops. The palette is already" + _NL +
+     "        # named twice below the prompt - 'Commands' in the footer and" + _NL +
+     "        # 'Commands {key}' in the overflow - so the '/' telling moves onto the" + _NL +
+     "        # Commands tooltip rather than riding here a third time." + _NL +
+     "        # History kept: bc-wave repair (CRUX 2026-09-05) - it has to read" + _NL +
+     "        # WHOLE at 340, where the viewport paints a placeholder in ~182px and" + _NL +
+     "        # the old 'Ask SYNAPSE…    ·    / for commands' advanced 245 and" + _NL +
+     "        # wrapped behind the send margin as 'Ask SYNAPSE…  ·  / for'." + _NL +
+     "        # Still pinned by tests/panel/test_bc_wave.py::" + _NL +
+     "        # test_composer_telling_reads_whole_at_340 - the no-wrap predicate is" + _NL +
+     "        # unchanged; the '/' count moved to the tooltip with the copy."),
+    # The copy itself: the placeholder says what the composer is for and stops.
+    ("_GrowingInput",
+     "        self.setPlaceholderText(\"Ask SYNAPSE… · / commands\")",
+     "        self.setPlaceholderText(\"Ask SYNAPSE…\")"),
+)
+
+
+def _amend_constructors(original):
+    """Baseline + exactly the ruled deltas - never a carve-out."""
+    for name, old, new in CRIT_20260915_CONSTRUCTOR_AMENDMENTS:
+        assert name in original, (
+            "stale CRIT.md 2026-09-15 constructor amendment - the baseline has "
+            "no " + name + " constructor")
+        assert original[name].count(old) == 1, (
+            "stale CRIT.md 2026-09-15 constructor amendment - the baseline "
+            + name + " constructor no longer contains it exactly once: " + old)
+        original[name] = original[name].replace(old, new, 1)
+    return original
 CAMERA = ("synapse_panel.py", "face_token.py", "token_readout.py",
           "chat_display.py", "recall_card.py")
 
@@ -223,7 +286,7 @@ def _assert_panel_constructors(current_source, original_source):
                     result[cls.name] = ast.get_source_segment(source, node)
         return result
     current = constructors(current_source)
-    original = constructors(original_source)
+    original = _amend_constructors(constructors(original_source))
     assert set(current) == set(original) | {"_ShortcutLayout"}
     # The annotation is allowed on BOTH sides (the base now carries it too).
     strip = lambda src: re.sub(r"  # rhythm-exempt:[^\n]*", "", src)

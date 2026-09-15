@@ -508,7 +508,9 @@ def test_one_signal_per_fact_at_boot():
     """Ruling item 5 (ADHD spacing, light touch): outside the transcript the
     CHAT face says its idle state ONCE (the rail sentence) - the ribbon is
     absence, not 'no scene context'; the composer tells '/' exactly once
-    (the placeholder G3 pins) and its legend sits at the chrome floor; the
+    (the Commands tooltip since CRIT.md 2026-09-15 #16; the placeholder
+    before it - G3 pins the telling, not the site) and its legend sits at
+    the chrome floor; the
     composer is a `stack` (grip / input / legend at 4/6/3); the recall card
     is a `band` through the applier, with no exemption lines left."""
     import io
@@ -524,8 +526,16 @@ def test_one_signal_per_fact_at_boot():
             khint = p._khint
             assert QtGui.QFontInfo(khint.font()).pixelSize() >= t.scaled(t.SIZE_SMALL, p._chrome_scale), (
                 profile, QtGui.QFontInfo(khint.font()).pixelSize())
-            tellings = p._input.placeholderText().count("/") + khint.text().count("/")
-            assert tellings == 1, (profile, p._input.placeholderText(), khint.text())
+            # CRIT.md 2026-09-15 #16 ("one name for the palette") MOVED this
+            # telling rather than weakening it: the placeholder dropped
+            # "· / commands" because the palette is already named twice below
+            # the prompt, so the '/' now rides the Commands tooltip. Still
+            # exactly one '/' across the composer's surfaces at boot.
+            tellings = (p._input.placeholderText().count("/")
+                        + khint.text().count("/")
+                        + p._commands_btn.toolTip().count("/"))
+            assert tellings == 1, (profile, p._input.placeholderText(),
+                                   khint.text(), p._commands_btn.toolTip())
             composer = p._input.parentWidget()
             assert composer.property("rhythm_role") == "stack"
             assert composer.layout().spacing() == t.gap(t.SPACE_XS, density), (
@@ -545,7 +555,8 @@ def test_one_signal_per_fact_at_boot():
 
 def test_composer_telling_reads_whole_at_340():
     """CRUX repair (2026-09-05, "the only '/' telling is cut mid-sentence"):
-    the composer's one '/' telling is the placeholder (the telling G3 pins),
+    the composer's one '/' telling (the placeholder until CRIT.md 2026-09-15
+    #16 moved it onto the Commands tooltip; G3 pins the telling, not the site),
     and a QTextEdit placeholder sits outside the labels no-elide predicate,
     so this pins it directly. Held constant: nothing on screen the artist
     cannot read at 340. In every profile at 340x760 the placeholder's advance
@@ -562,7 +573,11 @@ def test_composer_telling_reads_whole_at_340():
             avail = inp.viewport().width() - 2 * margin
             assert fm.horizontalAdvance(text) <= avail, (
                 profile, text, fm.horizontalAdvance(text), avail)
-            assert text.count("/") + p._khint.text().count("/") == 1, (text, p._khint.text())
+            # Telling carried to the Commands tooltip (CRIT.md 2026-09-15
+            # #16); the no-wrap predicate above is untouched.
+            assert (text.count("/") + p._khint.text().count("/")
+                    + p._commands_btn.toolTip().count("/")) == 1, (
+                text, p._khint.text(), p._commands_btn.toolTip())
         finally:
             p.close()
 
