@@ -231,6 +231,14 @@ _READ_ONLY_COMMANDS = frozenset({
     # -- and the WS resilience layer (read-only fast path). Audit is written
     # in-handler (handlers_render._handle_render_farm_cancel).
     "render_farm_cancel",
+    # render_farm_status: same rationale as render_farm_cancel. It is a pure
+    # Python-side registry read (farm status + render session summary): no
+    # scene mutation, no undo entry. Mutating-classified it took the C5
+    # mutation lock off-main, so while a farm render held that lock the
+    # status polls that exist to watch it queued behind it -- the opposite
+    # of what a status endpoint is for. Master argued this classification
+    # for cancel/stop/halt/processes and skipped status; this closes it.
+    "render_farm_status",
     # H3b -- the same argument, for the same reason. render_processes only
     # reads rps. render_stop and emergency_halt signal an OS process / cancel
     # PDG contexts; they author no scene state and no undo entry. Critically,

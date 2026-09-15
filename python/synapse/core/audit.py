@@ -14,6 +14,7 @@ import json
 import logging
 import time
 import hashlib
+import itertools
 import threading
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
@@ -178,12 +179,28 @@ class AuditLog:
 
     _instance: Optional['AuditLog'] = None
     _lock = threading.Lock()
+    # Process-wide sequence folded into every session seed (see __init__).
+    _session_seq = itertools.count(1)
 
     def __init__(self, log_dir: Optional[Path] = None):
         self._entries: List[AuditEntry] = []
         self._log_dir = log_dir or Path.home() / ".synapse" / "audit"
         self._log_dir.mkdir(parents=True, exist_ok=True)
-        self._current_session = deterministic_uuid(f"session:{id(self)}:{threading.current_thread().ident}", "session")
+        # deterministic_uuid has NO entropy of its own (same seed => same
+        # UUID by design), and id(self) is only unique among LIVE objects:
+        # once an instance is collected the allocator can recycle its
+        # address, so a second AuditLog built on the same thread minted the
+        # SAME session id and every consumer keyed on it (AuditEntry
+        # .session_id, export_session's target filter) silently merged the
+        # two sessions. time_ns separates process restarts (id / thread
+        # idents recycle across those too); the process-wide sequence
+        # separates back-to-back constructions inside one process even on
+        # a coarse clock. Pinned by tests/test_audit_session_id_unique.py.
+        self._current_session = deterministic_uuid(
+            f"session:{id(self)}:{threading.current_thread().ident}"
+            f":{time.time_ns()}:{next(AuditLog._session_seq)}",
+            "session",
+        )
         self._last_hash = "genesis"
         self._write_lock = threading.Lock()
 
