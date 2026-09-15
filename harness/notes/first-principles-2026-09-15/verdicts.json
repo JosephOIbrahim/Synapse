@@ -1,0 +1,1180 @@
+{
+ "source_journal": "C:/Users/User/.claude/projects/C--Users-User-SYNAPSE/fbc5eb3a-0ab6-44b0-9744-bc47b15f8483/subagents/workflows/wf_283efb14-b58/journal.jsonl",
+ "run_id": "wf_283efb14-b58",
+ "triage": [
+  {
+   "label": "triage:pr80-installer",
+   "team": null,
+   "branch": "feature/windows-installer-20260909",
+   "verdict": "SUPERSEDED",
+   "confidence": 0.97,
+   "one_line": "Master already shipped this exact installer (21 of its 25 files are byte-identical on master; the other 4 are the branch's OLDER 5.67.4-preview text), so merging PR #80 would roll the public download link back from v5.70.0 to a dead preview tag — close it and delete the branch.",
+   "evidence": [
+    "git log master -- installer/  =>  8c23fccc|2026-09-13|Release v5.68.0 with proposal controls and Windows Setup  (sole commit; installer tree is on master)",
+    "git diff --stat master..feature/windows-installer-20260909  over all 25 branch paths => only README.md, docs/getting-started/installation.md, installer/README.md, installer/test_executable.py differ; the other 21 (incl. all of installer/synapse_setup/, Synapse.iss, both test files, toolchain.lock.json) are byte-identical",
+    "git show master:README.md:13 => **[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.70.0/SYNAPSE-5.70.0-Setup.exe)**",
+    "git show feature/windows-installer-20260909:docs/getting-started/installation.md:9 => Download SYNAPSE-5.67.4-Setup.exe ... /releases/download/windows-installer-5.67.4-preview.1/ (branch is the older text)",
+    "git diff master..branch -- installer/test_executable.py => branch REMOVES master's --expected-version argument and reverts the upgrade assertion to a hardcoded current.get(\"version\") == \"5.67.4\"",
+    "git show master:harness/notes/release-5.70.0/installer-verification.json => compiled_installer checks PASS (missing-dependency block, readable failure text, write-denied rejection); ci.conclusion success at headSha 387e195f",
+    "git merge-base master feature/windows-installer-20260909 => d7c90a1522bb66b9a4cbfdfe0058df48f2d787d4; git rev-list --left-right --count master...branch => 51 behind / 6 ahead"
+   ],
+   "action_steps": [
+    "git -C C:/Users/User/SYNAPSE log --format='%h|%cs|%s' master -- installer/    # confirm 8c23fccc shipped it",
+    "git -C C:/Users/User/SYNAPSE diff --stat master..feature/windows-installer-20260909 -- README.md docs/getting-started installer install.py scripts/install_synapse_package.py    # confirm only 4 files differ, all older",
+    "gh pr close 80 --comment \"Superseded: this installer shipped on master in 8c23fccc (v5.68.0) and is now published as SYNAPSE-5.70.0-Setup.exe. The 4 files still differing here are the older 5.67.4-preview text; merging would regress the download link.\"",
+    "git -C C:/Users/User/SYNAPSE branch -D feature/windows-installer-20260909",
+    "git -C C:/Users/User/SYNAPSE worktree prune",
+    "# UNRELATED follow-up, do NOT take it from this branch: master's docs/getting-started/installation.md line 10 still advertises SYNAPSE-5.68.0-Setup.exe while README.md line 13 advertises 5.70.0 — a one-line master-side doc fix, not a reason to keep PR #80."
+   ],
+   "risk": "low",
+   "risk_why": "Deleting is low risk: every file on the branch is present on master, 21 of them identical, and the 4 that differ are older. Nothing is lost. The inverse is the real hazard — MERGING is high risk, because README.md and docs/getting-started/installation.md would resolve the artist-facing download URL back to windows-installer-5.67.4-preview.1 and drop master's --expected-version flag from installer/test_executable.py. Not verified: whether the v5.70.0 release asset is actually downloadable (no network check), and the installer test suite was not executed here.",
+   "artist_value": "none"
+  },
+  {
+   "label": "triage:render-vs-tops",
+   "team": null,
+   "branch": "feature/tops-renderfarm-20260907",
+   "verdict": "SUPERSEDED",
+   "confidence": 0.96,
+   "one_line": "This branch is a strict ancestor of fix/cto-render-20260908 — same seven commit shas, one fix commit behind — so it carries nothing unique and can be archived the moment render lands.",
+   "evidence": [
+    "command: `git merge-base --is-ancestor feature/tops-renderfarm-20260907 fix/cto-render-20260908` -> exit 0 (TOPS IS ANCESTOR OF RENDER); the reverse test returns non-zero",
+    "Identical shas on both branches: be7cb4fe, c867f61f, 89686a3e, 52a79c53, 0c832cd5, d92b6487, 5b7f3964",
+    "`git cherry master <B> | grep -c '^+'` -> render 8, tops 7; the delta is exactly one commit, b07eaa40",
+    "Both branches share merge-base 87ce354a1aa04722fbfd2a8d308fb5eeb194455b and are both 81 commits behind master",
+    "`git diff feature/tops-renderfarm-20260907..fix/cto-render-20260908 --stat` -> 10 files, +788/-27, all additive; nothing on tops is absent from render"
+   ],
+   "action_steps": [
+    "# 1. Re-confirm the ancestry immediately before deleting (it is the whole basis of this verdict):",
+    "git merge-base --is-ancestor feature/tops-renderfarm-20260907 fix/cto-render-20260908 && echo SAFE-TO-ARCHIVE",
+    "# 2. Do NOT delete yet. Wait until fix/cto-render-20260908 is merged to master.",
+    "# 3. After that merge, confirm the shas landed:",
+    "git cherry master feature/tops-renderfarm-20260907 | grep -c '^+'   # expect 0",
+    "# 4. Then archive locally and on the public remote:",
+    "git branch -D feature/tops-renderfarm-20260907",
+    "git push origin --delete feature/tops-renderfarm-20260907",
+    "git worktree prune"
+   ],
+   "risk": "low",
+   "risk_why": "Zero-risk to archive: `git merge-base --is-ancestor feature/tops-renderfarm-20260907 fix/cto-render-20260908` returns true, so no commit here is unreachable from the survivor. The only risk is deleting it BEFORE the render branch lands, which would strand the shared history on one unmerged ref instead of two.",
+   "artist_value": "direct"
+  },
+  {
+   "label": "triage:render-vs-tops",
+   "team": null,
+   "branch": "fix/cto-render-20260908",
+   "verdict": "REBASE_THEN_MERGE",
+   "confidence": 0.72,
+   "one_line": "The real work and the one branch that should survive — a durable out-of-process render farm an artist can actually feel — but master moved 81 commits under it, five files conflict, and two live landmines (a hard 22.0.400 build pin and 541 lines of tests pytest never collects) must be fixed during the rebase, not after.",
+   "evidence": [
+    "`git diff --stat 87ce354a..fix/cto-render-20260908` -> 45 files changed, 6441 insertions(+), 34 deletions(-)",
+    "`git diff --name-only 87ce354a..fix/cto-render-20260908 | grep handlers_render` -> NO MATCH. The freeze path python/synapse/server/handlers_render.py is untouched.",
+    "python/synapse/farm/native_driver.py:216-224 — `executable = Path(config[\"hfs\"]) / \"bin/hython.exe\"` then `subprocess.Popen(command, ..., creationflags=CREATE_NO_WINDOW)`: the render runs out-of-process",
+    "python/synapse/farm/package.py:12 — `QUALIFIED_BUILD = \"22.0.400\"`; native_driver.py:597 gates on `hou.applicationVersionString() != pkg.QUALIFIED_BUILD`",
+    "pyproject.toml:110 — `python_files = [\"test_*.py\"]`; `git grep native_render_workspace fix/cto-render-20260908` -> no references. tests/native_render_workspace.py (541 lines) is never collected.",
+    "python/synapse/server/handlers.py diff — `_serialize = (_mutating and cmd_type not in FARM_CONTROL_COMMANDS and threading.current_thread() is not threading.main_thread())` and `bridge = None if cmd_type in FARM_CONTROL_COMMANDS else self._get_bridge()`",
+    "`git merge-tree --write-tree --name-only master fix/cto-render-20260908` -> CONFLICT in exactly 5 files: CLAUDE.md, README.md, panel/synapse_panel.py, panel/tool_executor.py, server/hwebserver_adapter.py",
+    "`git ls-tree master --name-only python/synapse/farm/` -> empty. Master has no farm/ directory; this work is NOT absorbed.",
+    "`git log 87ce354a..master --oneline --grep=render --grep=tops --grep=farm -i` -> 11 hits, all panel/docs/release work (b475ee22, eab47244, b8aa22da, 616a3469 …); none touch farm/ or duplicate this branch.",
+    "`git rev-list --count fix/cto-render-20260908..master` -> 81",
+    "mcp_tools_render.py diff — seven new artist-facing tools registered; rbac.py diff — farm_inspect/capabilities/jobs/job to VIEWER, farm_prepare/submit/cancel to ARTIST"
+   ],
+   "action_steps": [
+    "# 1. Create a rebase worktree — do NOT rebase in the main tree (absolute-path hazard):",
+    "git worktree add ../SYN-render-rebase fix/cto-render-20260908",
+    "# 2. Rebase onto master. Exactly five files conflict (verified via merge-tree):",
+    "git -C ../SYN-render-rebase rebase master",
+    "#    CONFLICTS, in order of danger:",
+    "#      python/synapse/panel/tool_executor.py      <- REAL CODE, master's Panel PD wave rewrote this",
+    "#      python/synapse/panel/synapse_panel.py      <- REAL CODE, same wave",
+    "#      python/synapse/server/hwebserver_adapter.py<- REAL CODE",
+    "#      CLAUDE.md                                  <- GOVERNING DOC, Joe resolves this one, not a tool",
+    "#      README.md                                  <- ADHD-friendly convention applies",
+    "#    handlers.py, shared/bridge.py, mcp/server.py, bridge_adapter.py, qss.py all auto-merge clean.",
+    "# 3. BLOCKER — unpin the build before merging. Either widen the check or make it a warning:",
+    "grep -n 'QUALIFIED_BUILD' ../SYN-render-rebase/python/synapse/farm/package.py ../SYN-render-rebase/python/synapse/farm/native_driver.py",
+    "#    Confirm behaviour on a 22.0.429 seat, not just 22.0.400.",
+    "# 4. BLOCKER — make the 541-line native harness either collected or honestly labelled:",
+    "git -C ../SYN-render-rebase mv tests/native_render_workspace.py tests/test_native_render_workspace.py   # if it is meant to run",
+    "#    ...or move it out of tests/ entirely so it stops reading as coverage it is not.",
+    "# 5. Run the real gate (full suite, not hython-only). Floor is 8869 passed / 412 skipped / 0 failed:",
+    "pytest tests/",
+    "# 6. Open a PR so this gets CI at all — it currently has none (only #82 and #80 are open).",
+    "# 7. Ask Joe the architecture question in risk_why(1) before or at merge: does houdini_render stay as a second road?"
+   ],
+   "risk": "high",
+   "risk_why": "Four compounding reasons. (1) It does NOT fix the known freeze path — python/synapse/server/handlers_render.py is untouched and `houdini_render` remains in TOOL_NAMES, so the blocking `_handle_render` -> executeInMainThreadWithResult -> node.render() road is still there and still reachable; this adds a safe lane beside an unsafe one rather than closing it. (2) package.py:12 hard-pins QUALIFIED_BUILD = \"22.0.400\" and native_driver.py:597 refuses to run when hou.applicationVersionString() != that string — this host also has 22.0.429 installed and tooling picks the newest Houdini, so the farm will hard-refuse on that seat. (3) tests/native_render_workspace.py is 541 lines of verification that pytest never collects (pyproject.toml:110 python_files = [\"test_*.py\"]) and nothing in the branch references it — the claimed proof does not run in CI. (4) handlers.py carves farm commands out of two safety surfaces: `_serialize = (_mutating and cmd_type not in FARM_CONTROL_COMMANDS ...)` skips _MUTATION_LOCK, and `bridge = None if cmd_type in FARM_CONTROL_COMMANDS else self._get_bridge()` skips bridge provenance. The inline comments justify both (job journal, not artist scene) but they are new holes in the live-path audit surface described in CLAUDE.md §11.2.",
+   "artist_value": "direct"
+  },
+  {
+   "label": "triage:rope-beacon",
+   "team": null,
+   "branch": "rope/beacon",
+   "verdict": "ARCHIVE_DELETE",
+   "confidence": 0.93,
+   "one_line": "A stopped 5-minute cron heartbeat that rewrote one root-level STATUS.md 20 times on 2026-08-03; every verdict it reports is stale against master's harness/rope/STATE.json, so extract the 10 telemetry rows if wanted, then delete local + origin.",
+   "evidence": [
+    "git log --format='%h|%cs|%s' $(git merge-base master rope/beacon)..rope/beacon -> 20 commits, all 2026-08-03, 19 titled 'beacon 2026-08-03 HH:MM:SS' at exact 5-minute spacing (14:14:13, 14:19:15, 14:24:17 ... 15:44:46), plus one outlier ca0d954e 'T+45 UPDATE -- rope gate A status for Joe'",
+    "git diff --stat $(git merge-base master rope/beacon)..rope/beacon -> ' STATUS.md | 25 +++++ ' / '1 file changed, 25 insertions(+)' -- one file, no deletions, net +25 across 20 commits",
+    "merge-base = 51cbe5073946e0a6eaf55acc69a376c7345ef6d4; git cherry master rope/beacon | grep -c '^+' -> 20 (all unapplied, patch-id aware)",
+    "git cat-file -e master:STATUS.md -> ABSENT on master (this branch would introduce a new root-level file, not update one)",
+    "git show rope/beacon:STATUS.md line 2 -> '**2026-08-03 15:44:46** | runner: stopped | sentinel relaunches used: 0/6' -- the branch's own final state declares the producing runner dead",
+    "git show rope/beacon:STATUS.md footer -> 'Read-only: this beacon carries status OUT; it executes nothing FROM the repo, by design.'",
+    "git show master:harness/rope/STATE.json -> tally {'verified': 22, 'blocked_seat': 1, 'blocked_human': 2, 'blocked': 1, 'needs_review': 10}; L5-4 -> verified, L5-10 -> verified, L5-11 -> verified. The beacon reports those same three as needs_review with 'manual pending' / 'DESIGN REVIEW BY JOE' notes, and a tally of verified:18. Master is strictly ahead.",
+    "git show master:harness/rope/STATE.json -> L2-4 blocked_seat, L3-2 blocked_human, L3-5 blocked_human -- the remaining gate-A open items are human gates, not runnable work",
+    "git ls-tree -r --name-only master -- harness/rope/ -> 22 files present (OPERATOR_CARD.md, STATE.json, runner.py, chain.ps1, watch.ps1, t45.ps1, ...): the Rope harness code is still in the tree; only this beacon branch is dead",
+    "git log -3 master -- harness/rope/ -> 5d396916 (2026-09-05) 'chore(harness): carry over uncommitted battleplan/rope/memory-run edits found on master before the v5.64.0 tag', 1f18ab46 (2026-08-07), c9e1dfdd (2026-08-05) -- no active rope development since early August",
+    "git ls-tree -r --name-only master | grep -iE 'rope.*(ledger|status)' -> no match: no rope ledger or status file is tracked on master, which is why the 10 telemetry rows are the branch's only unique data",
+    "git status --porcelain in C:/Users/User/rope-beacon-wt -> empty (clean); directory mtimes all 'Aug 3 14:14' -- the worktree has been frozen since the run and holds no untracked ledger source",
+    "git worktree list | grep -i beacon -> 'C:/Users/User/rope-beacon-wt 6854c72c [rope/beacon]'",
+    "git ls-remote --heads origin | grep -i rope -> '6854c72c9a880224c7c278fad531ab409a089a47 refs/heads/rope/beacon' -- present on the PUBLIC origin at the identical sha, so a local-only delete is insufficient"
+   ],
+   "action_steps": [
+    "cd C:/Users/User/SYNAPSE",
+    "git show rope/beacon:STATUS.md > C:/Users/User/SYNAPSE/harness/rope/beacon_ledger_2026-08-03.md   # OPTIONAL: keep the 10 telemetry rows; skip if runner telemetry from one afternoon is not wanted",
+    "git worktree remove C:/Users/User/rope-beacon-wt   # worktree is clean; add --force only if it refuses",
+    "git branch -D rope/beacon",
+    "git push origin --delete rope/beacon   # REQUIRED: the branch is live on the PUBLIC origin at the same sha, so the local delete alone leaves it published",
+    "git worktree prune"
+   ],
+   "risk": "low",
+   "risk_why": "Deleting loses nothing master lacks: master's harness/rope/STATE.json is strictly ahead (22 verified vs the beacon's 18, and all three items the beacon lists as needs_review are verified on master). The worktree is pristine -- 'git status --porcelain' in C:/Users/User/rope-beacon-wt returns empty, so no in-flight work is destroyed by pruning it. The only non-duplicated data is 10 rows of runner telemetry, preserved by the first action step. Countervailing risk of the opposite choice: MERGING is the risky option -- it would place a stale STATUS.md at the root of a PUBLIC repo advertising 'GATE A: HOLDING' for items since cleared, plus 'You've hit your session limit' strings.",
+   "artist_value": "none"
+  },
+  {
+   "label": "triage:pr82-rulings",
+   "team": null,
+   "branch": "design/rulings-2026-09-14",
+   "verdict": "MERGE_NOW",
+   "confidence": 0.9,
+   "one_line": "Merge it today — one new .md, built on the exact master HEAD it cites, every spot-checked figure still true at the line number it names; then fix two legibility defects before you rule: the headline oversells A1's reach in a way A1's own body already retracts, and C2 hides two separate rulings under one id where the ambiguous answer is the 73-87px expensive one.",
+   "evidence": [
+    "git merge-base master design/rulings-2026-09-14 == 67625294161173b715b23f41c3f9aa8fc083f916 == master HEAD — zero drift, no rebase surface",
+    "git diff --stat: harness/design_review/2026-09-14/RULINGS-OPEN.md | 582 +++++ , 1 file changed, 582 insertions(+), 0 deletions",
+    "git cherry master design/rulings-2026-09-14 | grep -c '^+' == 1 (single commit 5c1e7acb, 2026-09-14)",
+    "Doc header 'Against: master 67625294' matches current HEAD exactly — the roster is not stale against the tree",
+    "Evidence sha is on the mainline: git merge-base --is-ancestor c217428b master => YES (c217428b 2026-09-14 'docs(design): measure the crit's five unrun probes')",
+    "A1 claim '_select_profile has zero callers' VERIFIED on master: grep -rn '_select_profile' python/ returns exactly two hits — the def at python/synapse/panel/synapse_panel.py:757 and a comment at :754. No call sites.",
+    "A1 claim 'synapse_panel.py:732-733 hard-sets DEFAULT_PROFILE' VERIFIED at the cited line on current master: line 732 is `profile = DEFAULT_PROFILE`, preceded by the comment 'SwitcherState read stands as is - this line overrides it, and nothing an artist can reach composes any other manifest.'",
+    "C1 claim 'tokens.py:139 surface and border identical by construction' VERIFIED: python/synapse/panel/designsystem/tokens.py:139 is `\"surface\": step(12), \"raised\": step(8), \"border\": step(12),` — and tests/panel/test_theme_source.py:54 pins both to \"#363636\".",
+    "All four cited Sources are tracked on the branch, so the evidence chain opens on GitHub: git ls-tree design/rulings-2026-09-14 -- harness/design_review/2026-09-14/ lists AIRY-ANSWER.md, DECISION-BRIEF.md, REFINEMENT-COHERE.md, README.md, SCAFFOLD.html, bc5_headroom.py; git ls-files --error-unmatch harness/notes/v2-waves-2026-09-14/SEAT-CONFLICTS-FOR-JOE.md succeeds. harness/design_review/.gitignore excludes only 'synapse-panel-bierut-review.html' and '*.err' — none of the sources.",
+    "A1-GATES-A2/A3/B2 CLAIM: PARTIALLY REFUTED. The headline ('Answering it collapses A2, A3 and B2 from open questions into bookkeeping with a number attached') is contradicted by A1's own body 15 lines later: 'An earlier framing of mine oversold this and is corrected on file. Only BC-5's airy red genuinely dissolves.' The headline re-inflates exactly the overselling the body says it corrected.",
+    "A2 is NOT directly gated by A1 — A2's own opening sentence is 'Whatever B2 decides, the number has to land somewhere that carries an owner.' Real chain is A1 -> B2 -> A2, transitive.",
+    "B2 is NOT collapsed to bookkeeping by A1 — A1 rules that airy is specification, not which of J5's edge air or BC-5's airy share wins at airy. B2 still requires choosing leg 1/2/3, and leg 2 carries a separate obligation the doc states ('and something pins the wordmark y so the next change is not silent'). A1 makes B2 cheaper, not answered.",
+    "A3 is NOT downstream of A1 — it is a guard AGAINST A1 over-reaching ('D1 is explicitly excluded from the airy reclassification'). If A1 is rejected there is no reclassification and A3 is moot, not bookkeeping. Conditional, not collapsed.",
+    "UNCLEAR ASK — C1: the two legs are not distinguishable. Leg 1 is 'record it as a known finding', which is what the doc is already doing by containing C1. Leg 2 is 'rule it and have someone price a fix' — an ASSIGN, not a design call, over a cost the doc itself states is 'unpriced — nobody proposed a fix'. You cannot fork between doing nothing and an unknown. C1 belongs in section D.",
+    "UNCLEAR ASK — C3: explicitly conditional on C1 ('Rule C1 first if you can; this one's stakes depend on it'). Because C1 is not rulable as posed, C3 inherits that. It is the one item where the doc's own 'one line each is enough' is false.",
+    "UNCLEAR ASK — C2: two rulings under one id. The doc flags it in its own subtitle ('and one placement ruling that must be explicit') and warns 'Leaving it in a filing's UNKNOWN is how the expensive version gets built by accident' — then leaves both under id C2. Under the stated reply protocol, 'C2 ship' does not distinguish scroll content (0px) from widget (-73 to -87px, BC-5 fails on the first chevron click).",
+    "UNOWNED REMAINDER — C2's 'two language problems, both open' ('Undoable' reading as un-doable; 'Not recorded' colliding with gate_widget.py:360's existing _show_decision_tag('NOT RECORDED')) carry no option list and no -> line. They are not among the 16. Ruling 'C2 ship' leaves the naming unresolved and unowned."
+   ],
+   "action_steps": [
+    "cd C:/Users/User/SYNAPSE && gh pr view 82 --json mergeable,mergeStateStatus,statusCheckRollup    # confirm still CLEAN and see whether the phantom lint ran",
+    "gh pr merge 82 --squash --subject 'docs(design): put the 16 open design calls on one decision surface'    # merging the roster is NOT ruling on the roster",
+    "# BEFORE ruling, make two edits so the surface can be answered in one word each:",
+    "#   (1) Split C2 into C2a (ship / don't ship the receipt line) and C2b (scroll content / widget). As written, the reply 'C2 ship' does not say which, and the ambiguous reading is the one the doc itself prices at -73 to -87px.",
+    "#   (2) Correct the 'If you only do one thing' sentence to match A1's own body: A1 gates B2, B2 gates A2, A3 is a conditional guard on A1. It does not collapse three items into bookkeeping.",
+    "# THEN rule, in this order, replying on the PR:",
+    "#   A1 first (it is genuinely the head of the chain). Then B2 (still a real 3-leg fork after A1). Then A2 falls out with a number and an owner.",
+    "#   A3, A4, C5, C6 are one word each and independent — clear them in the same reply, they cost nothing.",
+    "#   Defer C1 and C3: C1's second leg is not a ruling (see below) and C3 explicitly depends on it."
+   ],
+   "risk": "low",
+   "risk_why": "Docs-only, one file, a path no tracked file occupies, zero modifications to existing files, merge-base is master HEAD so there is no rebase surface. Worst realistic outcome is a stale decision doc in harness/. The one unchecked surface is CI: I did not query statusCheckRollup, and this repo has a phantom lint that scans text for hou.* symbols — the doc quotes hou.undos.group and houdini_execute_python in prose.",
+   "artist_value": "indirect"
+  },
+  {
+   "label": "triage:cold-repairs",
+   "team": null,
+   "branch": "repair/ledger-moneta-seam",
+   "verdict": "SUPERSEDED",
+   "confidence": 0.94,
+   "one_line": "Every code and test file on this branch is byte-identical to master already, and moneta_runtime.py went further on master a day later — patch-id misses it only because the content landed under a different commit.",
+   "evidence": [
+    "git log --format='%h|%cs|%s' $(git merge-base master B)..B -> eb25abed|2026-07-26|leg(LEDGER): moneta seam - two defects closed, bounded revision walk; git cherry master B | grep -c '^+' -> 1; git rev-list --count B..master -> 1231",
+    "git diff --stat master:python/synapse/memory/ledger.py repair/ledger-moneta-seam:python/synapse/memory/ledger.py -> EMPTY (identical)",
+    "git diff --stat master:python/synapse/science/deposit.py repair/ledger-moneta-seam:... -> EMPTY (identical)",
+    "git diff --stat master:tests/test_ledger_moneta_seam.py repair/ledger-moneta-seam:... -> EMPTY, rc=0 (identical)",
+    "git diff --stat master:python/synapse/memory/moneta_runtime.py repair/ledger-moneta-seam:... -> 22 insertions, 611 deletions going master->branch, i.e. master is a 611-line superset; the 22 branch-only lines are the older single-function moneta_provenance() docstring block",
+    "git log -2 master -- tests/test_ledger_moneta_seam.py -> 189180db|2026-07-27|feat(memory): U1 - moneta_provenance() is one function with all five R64 fields",
+    "git ls-tree -r master --name-only | grep -E 'receipts/LEDGER.json|mutation_ledger_moneta.json' -> both present on master; harness/verify/mutate_ledger_moneta_seam.py also present"
+   ],
+   "action_steps": [
+    "git -C C:/Users/User/SYNAPSE tag archive/repair-ledger-moneta-seam repair/ledger-moneta-seam",
+    "git -C C:/Users/User/SYNAPSE branch -D repair/ledger-moneta-seam",
+    "git -C C:/Users/User/SYNAPSE worktree prune"
+   ],
+   "risk": "low",
+   "risk_why": "Deleting removes nothing unique. The only branch-only bytes are an older, shorter moneta_provenance() docstring that master deliberately replaced with the five-field R64 version.",
+   "artist_value": "indirect"
+  },
+  {
+   "label": "triage:cold-repairs",
+   "team": null,
+   "branch": "repair/h1-schemas-b",
+   "verdict": "SUPERSEDED",
+   "confidence": 0.9,
+   "one_line": "Master already carries both reconciled TOOL_RETURN enums AND the derived AST pin that guards them — it just lives inside tests/test_solaris_tool_registration.py instead of the branch's separate file.",
+   "evidence": [
+    "git log -> 0929d568|2026-07-26|fix(solaris): R33 wire TOOL_RETURN - the schemas gain their first consumer; git cherry master B | grep -c '^+' -> 1; behind master by 1227",
+    "git diff master:.../schema_set_purpose.py repair/h1-schemas-b:.../schema_set_purpose.py -> the line \"enum\": [\"set\", \"updated\", \"unchanged\", \"noop\", \"not_found\"] appears as CONTEXT (no +/- prefix) => master already has the reconciled enum; only comment and description prose differ",
+    "git diff master:.../schema_create_variants.py repair/h1-schemas-b:... -> \"enum\": [\"created\", \"already_exists\"] is CONTEXT => `extended` already removed on master; only prose differs",
+    "git grep -l TOOL_RETURN master -- tests python -> master:tests/test_solaris_tool_registration.py (plus the 5 schema files), i.e. the consumer the branch said did not exist now exists on master",
+    "git show master:tests/test_solaris_tool_registration.py | grep -n TOOL_RETURN -A6 -> contains test_schema_return_status_enum_matches_implementation, test_schema_return_keys_are_producible, test_every_schema_return_contract_is_pinned, test_tool_audit_schema_declares_no_return_contract, and the same 'DERIVED FROM THE IMPLEMENTATION SOURCE' rationale",
+    "git ls-tree -r master --name-only -> harness/notes/receipts/H1.json present on master; tests/test_solaris_schema_return_contract.py absent (folded into the registration test)"
+   ],
+   "action_steps": [
+    "git -C C:/Users/User/SYNAPSE tag archive/repair-h1-schemas-b repair/h1-schemas-b",
+    "git -C C:/Users/User/SYNAPSE branch -D repair/h1-schemas-b",
+    "git -C C:/Users/User/SYNAPSE worktree prune"
+   ],
+   "risk": "low",
+   "risk_why": "Merging now would only reword two schema description strings and re-add a duplicate 364-line pin under a second filename — churn plus a likely conflict against master's version of the same schemas.",
+   "artist_value": "indirect"
+  },
+  {
+   "label": "triage:cold-repairs",
+   "team": null,
+   "branch": "stray/audit-log-threading",
+   "verdict": "ARCHIVE_DELETE",
+   "confidence": 0.72,
+   "one_line": "Genuinely unapplied — 826 lines master does not have — but it has zero consumers on either side and its written revival condition (the R302 instrument lane wanting these fields) came and went without reviving it.",
+   "evidence": [
+    "git log -> 03f279fc|2026-08-02|stray(audit): preserve the abandoned audit-state-capture lane (R308); git cherry -> 1 unapplied; behind master by 919; 6 files, +826/-0",
+    "git show master:python/synapse/core/audit.py | sed -n '218,236p' -> AuditLog.log() signature ends at `sequence_id: str = \"\"` — no duration_ms/before_state_hash/after_state_hash. The threading is genuinely NOT on master",
+    "git ls-tree -r master --name-only | grep -E 'state_digest|AUDIT_STATE_CAPTURE|audit_health|audit_probe' -> no hits; all five sibling files absent from master",
+    "git grep -n replay_info master -- python tests scripts panel -> only its own definition at python/synapse/core/audit.py:440; ZERO callers, so the sole reader of these fields is dead code",
+    "git grep -n 'before_state_hash=' master -- python scripts panel -> only audit.py:156 (from_dict). Nothing in the repo ever populates the fields, so the branch's kwargs would have no producer either",
+    "git show master:harness/notes/CTO_RULINGS_03.md | sed -n '79,98p' -> R308: 'If the C4-rank-6 instrument lane (R302) wants those fields, it revives the branch; otherwise it dies of natural causes in the branch list.'",
+    "harness/notes/perf/PROPOSED_perf_baseline.json:58 on master cites 'R302 lane I's per-op _stage_exceeds cache' as landed work => the R302 lane ran and did not revive these fields"
+   ],
+   "action_steps": [
+    "git -C C:/Users/User/SYNAPSE tag archive/stray-audit-log-threading stray/audit-log-threading",
+    "git -C C:/Users/User/SYNAPSE branch -D stray/audit-log-threading",
+    "git -C C:/Users/User/SYNAPSE worktree prune"
+   ],
+   "risk": "med",
+   "risk_why": "This is the only copy of 826 lines, and R308 created the branch precisely so the inventory stayed visible ('a stash is invisible inventory; a ref is auditable') — so tag before deleting, and if Joe reads 'dies of natural causes in the branch list' as 'leave it sitting there', the correct action is to do nothing at all. One-sentence question if he wants to rule: is the R302/C4-rank-6 instrument lane finished for good, or could it still want duration_ms + state-hash capture?",
+   "artist_value": "none"
+  },
+  {
+   "label": "triage:cold-cache-rope",
+   "team": null,
+   "branch": "feat/cache-insert",
+   "verdict": "REBASE_THEN_MERGE",
+   "confidence": 0.8,
+   "one_line": "The brief's hypothesis is refuted - prompt caching already shipped on master - but this branch is something better: the missing action half of the cache advisor (synapse_insert_cache), which master's own code still documents as absent, and it conflicts in exactly two files.",
+   "evidence": [
+    "git cherry master feat/cache-insert -> `+ 206947a673ef30f3633879910917817eeeffa762` (1 unapplied commit, 2026-08-09, 10 files, +1408/-13)",
+    "REFUTES the brief's cache_control hypothesis: master already carries prompt caching at python/synapse/panel/providers/anthropic_provider.py:132, :137, :150, :157 (`\"cache_control\": {\"type\": \"ephemeral\"}`); `git grep cache_control` on this branch's diff = zero hits",
+    "master:python/synapse/server/handlers_cache.py:11 - \"creates a node, writes a file, or mutates the scene -- there is no ``synapse_insert_cache``\" (the exact absence this branch fills)",
+    "branch python/synapse/server/handlers_cache.py:637 `insert_cache_core`, :903 `_handle_insert_cache`, :475 `resolve_boundary_plan`, :134 `IssuedDecisionStore` - none of which exist on master (git grep decision_id/IssuedDecisionStore on master:handlers_cache.py = 0 hits)",
+    "branch python/synapse/server/handlers.py:786 `reg.register(\"insert_cache\", self._handle_insert_cache)`; branch python/synapse/mcp/_tool_registry.py +1010 registers it readOnlyHint=False, destructiveHint=False, idempotentHint=False",
+    "branch python/synapse/panel/bridge_adapter.py:148 maps the tool to op \"insert_cache\", intentionally absent from OPERATION_GATES so gate_level falls to the REVIEW default (shared/bridge.py:767 per the comment - I did not open bridge.py to confirm that line still says REVIEW)",
+    "git merge-tree --write-tree master feat/cache-insert -> exactly 2 conflicts: CLAUDE.md and python/synapse/server/handlers_cache.py. All other 8 files auto-merge.",
+    "git diff --stat 8c41fe18..master on the touched files: handlers_cache.py 4 lines, _tool_registry.py 125, handlers.py 263, bridge_adapter.py 22, rbac.py 5, mcp_tools_scene.py unchanged",
+    "Ships its own proof: tests/test_cache_insert_gates.py (+533), tests/assay_h22_cache_insert.py (+290), harness/notes/cache_h22_insert_assay_22.0.400.json (+46) - a live assay on the current build, not H21"
+   ],
+   "action_steps": [
+    "git worktree add ../syn-cacheinsert feat/cache-insert",
+    "git -C ../syn-cacheinsert rebase master",
+    "Resolve conflict 1 - CLAUDE.md: branch bumps the header tool count 124 -> 125; master's header now reads 128, so write 129.",
+    "Resolve conflict 2 - python/synapse/server/handlers_cache.py: master's only drift is the 4-line docstring at :11 asserting \"there is no ``synapse_insert_cache``\". Delete that sentence, keep the branch body.",
+    "Check the new registry entry against the post-v5.70.0 artist-readable tool naming/description convention (b475ee22) before it reaches a panel - the branch predates that rename.",
+    "pytest tests/test_cache_insert_gates.py, then the full pytest tests/ against the floor 8869 passed / 412 skipped / 0 failed.",
+    "Live-verify on 22.0.400 through the bridge: run tests/assay_h22_cache_insert.py, insert on a real SOP chain, confirm ONE Ctrl+Z reverses node + wires, and confirm no file hit disk.",
+    "Decide the flag: merge dark (SYNAPSE_CACHE_ADVISOR_ENABLED unset) or flip it on - that is a separate call from the merge.",
+    "Human merges. No push/tag from this triage."
+   ],
+   "risk": "med",
+   "risk_why": "It is a new MUTATING tool on the live path, 740 commits behind master. The two files most likely to hide a semantic break - handlers.py (263 lines drifted since merge-base) and _tool_registry.py (125 lines drifted) - auto-merged with NO conflict, which is exactly where a silent break hides: master just renamed artist-facing tool labels (b475ee22, v5.70.0) and this registry entry was written against the old convention. I read function signatures and wiring hunks, not the 510-line handlers_cache.py body, and I ran no tests.",
+   "artist_value": "direct"
+  },
+  {
+   "label": "triage:cold-cache-rope",
+   "team": null,
+   "branch": "rope/gate-a",
+   "verdict": "SPLIT_SALVAGE",
+   "confidence": 0.85,
+   "one_line": "The engineering commit already landed on master and the harness half is already there too - what remains is documentation that every file conflicts on and that is now factually false, but it names a real still-open gap: BLOCKS shipped and the CHANGELOG never mentioned it.",
+   "evidence": [
+    "git cherry master rope/gate-a -> `- e69703a8` (already patch-landed), `+ de254d09`, `+ 3806af20`",
+    "BLOCKS did ship: master carries python/synapse/blocks/{__init__,canonical,fixtures,plan,runtime,transport}.py and python/synapse/cognitive/tools/apply_fixture.py - so the branch's own line \"*Branch `blocks/m5-reconciler` (`87927076`), not merged*\" and the README's \"*Not on master yet*\" are both false today",
+    "master:harness/legs.json:497-504 already carries the M5b leg entry (id, receipt M5b.json, branch blocks/m5b-rulings, prompt harness/prompts/m5b.md) that commit 3806af20 adds",
+    "master:harness/prompts/m5b.md exists (blob 31098651) vs branch blob cfdeb570; `git diff master:harness/prompts/m5b.md rope/gate-a:harness/prompts/m5b.md --stat` = 1 file, 2 insertions, 2 deletions - that 2-line wording change is the entire unapplied substance of the prompt half",
+    "master:harness/prompts/m5b.md:12 already guards the wrong base (\"Rebase onto blocks/m5-reconciler ... before writing a line\"); the branch's edit changes it to halt-and-report instead of self-repair",
+    "master README.md is 148 lines and `git show master:README.md | grep -n \"mermaid|fixture|BLOCKS|Deterministic\"` returns nothing - the README was rewritten out from under this branch, so its +63 lines of hunks target context that no longer exists",
+    "`git grep -c \"BLOCKS|apply_fixture\" master -- CHANGELOG.md` returns nothing - the still-open gap worth salvaging",
+    "git merge-tree --write-tree master rope/gate-a -> CONFLICT in CHANGELOG.md, README.md, harness/legs.json, and add/add on harness/prompts/m5b.md. Four files touched, four conflicts.",
+    "794 commits behind; merge-base be71cce6 dated 2026-08-05"
+   ],
+   "action_steps": [
+    "Do NOT merge this branch. Every one of its four files conflicts and its headline claim is now false.",
+    "Salvage 1 (the real gap): master's CHANGELOG has zero mention of BLOCKS or apply_fixture while the code ships. Use `git show rope/gate-a:CHANGELOG.md | sed -n '1,30p'` as SOURCE MATERIAL for a fresh entry - keep the four-silent-failures paragraph and the F-1..F-5 invariant list, re-verify every number, delete \"not merged\" and the stale suite counts, and write it against the real shipped state.",
+    "Salvage 2 (optional, artist-facing): rewrite the BLOCKS section for today's 148-line README. Do not port the hunks - the README it targeted no longer exists. Drop the \"*Not on master yet*\" line.",
+    "Salvage 3 (tiny, harness doctrine): the 2-line delta in m5b.md - wrong base means HALT, not self-repair. m5b's own leg is finished, so carry the doctrine into harness/prompts/base.md if it is worth keeping, and otherwise let it go.",
+    "Drop the mermaid theme hunks entirely - master's README has no mermaid diagrams left.",
+    "After salvaging: git branch -D rope/gate-a && git worktree prune (human runs it, and only after the salvage text is captured somewhere durable)."
+   ],
+   "risk": "low",
+   "risk_why": "Docs only, so a merge breaks no behavior. The one real hazard is publishing false statements: origin is a PUBLIC repo, and the text says BLOCKS is unmerged and reports a suite of \"5,745 passing, 9 failing\" against today's 8869 passed / 412 skipped / 0 failed floor. Merging verbatim would ship both untruths.",
+   "artist_value": "indirect"
+  },
+  {
+   "label": "triage:bp2-nits",
+   "team": null,
+   "branch": "bp2/nits",
+   "verdict": "SPLIT_SALVAGE",
+   "confidence": 0.85,
+   "one_line": "Three of the four nits still describe real defects on master today and merge clean, but the fourth (dc9e803e, dashboard pill 'open' -> green) is a legibility regression on the human-gate table, and two evidence paths the branch adds are wrong and need a one-word fix before landing.",
+   "evidence": [
+    "merge-base master bp2/nits = e9ebfeda; `git cherry master bp2/nits` = 5 '+' lines, i.e. all 5 commits genuinely unapplied",
+    "`git merge-tree --write-tree --name-only master bp2/nits` exits 0 at master 67625294 => MERGE CLEAN, no rebase needed",
+    "T1 site still defective on master: `git show master:harness/battleplan/runs/2026-09-01/prove_bp2_meter_dryrun.ps1` line 73 still reads `(& git -C $repoRoot show HEAD:harness/orchestrate.ps1)`",
+    "T2 site still defective on master: `git show master:docs/MONETA_FOLLOWUPS.md` status table still has columns `| Follow-up | Risk | Blocked on | Ship as |` with FU-1/FU-2 rows reading 'focused PR (invert tripwire)' and 'PR when sleep_pass is exposed'",
+    "The work T2 documents IS on master: `git merge-base --is-ancestor 3c4f07f9 master` passes; 3c4f07f9|2026-05-31|'feat(memory): Moneta follow-ups -- FU-1 (Memory.id) + FU-2 (gate run_sleep_pass) (#16)'",
+    "FU-2's gate claim verifies independently: shared/constants.py:100 `\"sleep_pass\": \"approve\"`; python/synapse/server/handlers.py:811 `reg.register(\"sleep_pass\", self._handle_sleep_pass)`; python/synapse/server/handlers_memory.py:360 `operation_type=\"sleep_pass\"`",
+    "T3 site still absent on master: dashboard_bp2.py:207 ok-list on master is `(\"GREEN\", \"SOUND\", \"receipted\", \"MEASURED\", \"ALIVE\", \"done\", \"RECEIPTED\")` -- no 'open'",
+    "T3 is NOT inert: harness/battleplan/dashboard_bp2.py:258 `pill('open' if open_ else 'done')` over `for w, obs, open_ in wds` (the human-words table, wds = words(legs, pidinfo) at :292)",
+    "T4 site still defective on master: `git show master:docs/BATTLEPLAN.md` rows 6/9/12 still read 'MEASURED (number on file)', 'MEASURED + fixed if red', bare 'GREEN'",
+    "master DID move in docs/BATTLEPLAN.md since the merge-base, but at lines 104-111 (rules 7 and 8, RATIFIED stamps) -- non-overlapping with the branch's rows at 81-94, hence the clean merge",
+    "Cited artifacts that DO exist on master: harness/battleplan/runs/2026-09-01/ledger_bp2-meter-settle.json, .../profile_diff.json, harness/notes/receipts/BP2-STORE.json",
+    "Broken citation #1: branch cites `.../memory_latency_hython_provisioned.json`; `git ls-tree -r master` shows the file is `memory_latency_hython_provisioned.jsonl`",
+    "Broken citation #2: branch cites `test_moneta_crucible.py::test_duplicate_content_gets_distinct_ids`; on master that name survives only as prose at tests/test_moneta_crucible.py:213 ('The original test (``test_duplicate_content_gets_distinct_ids``) verified'). The live test at the cited line 244 is `def test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone`. The cited node id would collect zero tests.",
+    "Receipt self-contradiction: harness/notes/receipts/BP2-NITS.json acceptance[2] says the T3 change ensures \"status='open' renders with .ok class (live/green)\" while findings[2] says \"no change to current behavior; the pill() addition future-proofs the reader\". The tree (dashboard_bp2.py:258) shows behavior does change.",
+    "Receipt self-failing predicate: acceptance[0] requires \"an empty diff (artifact committed)\" but its own evidence says \"control logs in .gitignore (not tracked, correct)\" -- marked pass anyway.",
+    "Receipt coverage gap: the summary claims four nits; acceptance[] has three predicates and findings[] has three entries -- T4 (the BATTLEPLAN evidence paths) carries no acceptance predicate at all.",
+    "Worktree state: `git -C C:/Users/User/SYNAPSE/.claude/worktrees/bp2-nits status --porcelain=v1 -b` prints only `## bp2/nits...origin/bp2/nits` -- clean, no untracked files, in sync with origin (already public)."
+   ],
+   "action_steps": [
+    "# 1. Confirm the merge is still clean (it was at master 67625294):",
+    "git -C C:/Users/User/SYNAPSE merge-tree --write-tree --name-only master bp2/nits >/dev/null && echo CLEAN",
+    "# 2. Take the three good commits onto a landing branch, leaving T3 and the receipt behind:",
+    "git -C C:/Users/User/SYNAPSE checkout -b bp2/nits-landed master",
+    "git -C C:/Users/User/SYNAPSE cherry-pick 19a6697c 361cc6e7 dab6c634",
+    "# 3. Fix the two broken citations the branch introduces, then amend:",
+    "#    docs/BATTLEPLAN.md row 6: memory_latency_hython_provisioned.json -> .jsonl (the file on disk is .jsonl)",
+    "#    docs/MONETA_FOLLOWUPS.md FU-1: test_moneta_crucible.py::test_duplicate_content_gets_distinct_ids",
+    "#      -> test_moneta_crucible.py::test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone",
+    "git -C C:/Users/User/SYNAPSE commit -a --amend --no-edit   # or a separate fixup commit",
+    "# 4. Verify the corrected pin actually collects before merging:",
+    "C:/Users/User/SYNAPSE> python -m pytest tests/test_moneta_crucible.py::test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone -q",
+    "# 5. Merge bp2/nits-landed. Then either drop the source branch or keep it for the T3 question:",
+    "git -C C:/Users/User/SYNAPSE branch -D bp2/nits   # only after the landing branch is merged",
+    "git -C C:/Users/User/SYNAPSE worktree remove C:/Users/User/SYNAPSE/.claude/worktrees/bp2-nits",
+    "git -C C:/Users/User/SYNAPSE push origin --delete bp2/nits   # branch is already public and in sync with origin"
+   ],
+   "risk": "med",
+   "risk_why": "Low for T1/T2/T4 -- docs and a dated proof script, zero runtime reach, merge-tree clean. The med comes entirely from T3: dashboard_bp2.py:258 renders the 'Words - yours, per act' human-gate table as `pill('open' if open_ else 'done')`. On master 'open' matches no bucket and renders neutral while 'done' renders green, which reads correctly. Adding 'open' to the ok list makes an outstanding human word render in the same green as a word already given, so the column stops discriminating -- a false-green on the one dashboard whose stated job is 'count, don't feel'. If 'open' belongs anywhere it is the dim bucket next to 'pending'/'held'. Matching is bare substring on a non-lowercased string, so any other status text containing lowercase 'open'/'reopen' would also flip green. Drop dc9e803e and the branch risk is low.",
+   "artist_value": "indirect"
+  },
+  {
+   "label": "triage:mem-pgdrm",
+   "team": null,
+   "branch": "mem/m2-pgdrm",
+   "verdict": "REBASE_THEN_MERGE",
+   "confidence": 0.82,
+   "one_line": "Master has no pgdrm.py at all and the MEMORY board still marks M2 open, so this is live unfinished work - but the branch HEAD still carries the crucible-found one-shot-iterable defect, and its repair is sitting UNCOMMITTED in the worktree, so commit that first, rebase (zero conflicts - both files are new), re-measure, then merge.",
+   "evidence": [
+    "git log --format='%h|%cs|%s' $(git merge-base master mem/m2-pgdrm)..mem/m2-pgdrm -> single commit e4730869|2026-08-21|feat(loop): M2 PG-DRM kernel - pure deterministic filter, hand-computed decay",
+    "git diff --stat -> python/synapse/loop/pgdrm.py +348, tests/test_pgdrm_kernel.py +429, 2 files 777 insertions",
+    "git cherry master mem/m2-pgdrm -> '+ e47308690b5ec0e5fbfdb97425eafa39e5ff3da2' (unapplied, patch-id aware); git rev-list --left-right --count master...mem/m2-pgdrm -> 403 behind / 1 ahead",
+    "git ls-tree -r master --name-only -- python/synapse/loop -> __init__, context, coordinator, hanish_worker, mapper, ports, recipe, subprocess_port, worker. NO pgdrm.py. tests/ has no test_pgdrm_kernel.py. NOT superseded.",
+    "master:harness/memory/STATE.json rungs.m2.status = 'BUILT + ATTACKED (SOUND-WITH-NITS); FIX LEG RUNNING on mem/m2-pgdrm - 2 real defects, not merged' -> rung OPEN",
+    "master:harness/memory/bus/memory_m2_pgdrm_kernel.json -> verdict PASS, branch mem/m2-pgdrm, commit_shas [e4730869], merged:false, pushed:false (pushed:false is STALE - git ls-remote --heads origin mem/m2-pgdrm returns e4730869, the branch IS on the public remote)",
+    "git -C C:/Users/User/synapse-m2-pgdrm-wt status --porcelain -b -> '## mem/m2-pgdrm...origin/mem/m2-pgdrm' with ' M python/synapse/loop/pgdrm.py' and ' M tests/test_pgdrm_kernel.py'; diff --stat = +326/-1. This uncommitted diff IS the fix leg: it adds a 'ONE-SHOT ITERABLES ARE REFUSED' docstring section and MemoryRecord.__post_init__ freezing tokens at construction.",
+    "master:harness/memory/STATE.json spawn_ledger entry run 2026-08-22 rung 'm2-fix' scope: 'defect 1: materialize one-shot iterables once at entry -- evaluate() returned ALLOW then DROP on the same exhausted generator' + 'defect 2: cover pgdrm.py lines 201, 231, 263'",
+    "harness/memory/runs/2026-08-22/m2fix_mutation_ledger.json -> {\"total\": 28, \"red\": 28, \"survivors\": []} - the fix leg finished its mutation goalpost and then never committed",
+    "harness/memory/runs/2026-08-22/m2fix_suite_branch.txt tail -> '3 failed, 6856 passed, 182 skipped in 222.17s' (test_backfill, test_m3_env_conformance, test_phase0c_doc1_version_conformance)",
+    "git merge-tree $(git merge-base master mem/m2-pgdrm) master mem/m2-pgdrm | grep -c '^changed in both' -> 0",
+    "git grep -In pgdrm master -- python tests docs -> only docs/BATTLEPLAN_2026-08-31.md:6 and :85 ('mem/m2-pgdrm (fix leg, not merged)', 'merge mem/m2-pgdrm (memory board gate)'). No import anywhere."
+   ],
+   "action_steps": [
+    "git -C C:/Users/User/synapse-m2-pgdrm-wt status --porcelain   # expect: M python/synapse/loop/pgdrm.py, M tests/test_pgdrm_kernel.py",
+    "git -C C:/Users/User/synapse-m2-pgdrm-wt diff   # review the +326/-1 fix-leg repair before trusting it",
+    "git -C C:/Users/User/synapse-m2-pgdrm-wt add python/synapse/loop/pgdrm.py tests/test_pgdrm_kernel.py && git -C C:/Users/User/synapse-m2-pgdrm-wt commit -F <msg-file>   # msg names defect 1 (one-shot iterables refused) + defect 2 (lines 201/231/263 covered); use -F, never a here-string",
+    "git -C C:/Users/User/synapse-m2-pgdrm-wt fetch origin && git -C C:/Users/User/synapse-m2-pgdrm-wt rebase master   # 403 commits behind; expect zero conflicts (two new files)",
+    "cd C:/Users/User/synapse-m2-pgdrm-wt && python -m pytest tests/test_pgdrm_kernel.py tests/test_loop_contracts.py -q --no-header -p no:cacheprovider",
+    "cd C:/Users/User/synapse-m2-pgdrm-wt && python -m pytest tests/ -q --no-header -p no:cacheprovider   # compare against a FRESH floor at merge-base(master,HEAD); the 2026-08-22 numbers (6856 passed) are ~2000 tests stale vs the current 8869 floor",
+    "python C:/Users/User/SYNAPSE/harness/memory/runs/2026-08-22/m2fix_mutate_harness.py   # re-confirm 28 RED / 0 survivors on the rebased tree",
+    "# after merge: flip harness/memory/STATE.json rungs.m2 status off 'FIX LEG RUNNING' and set merged/pushed in harness/memory/bus/memory_m2_pgdrm_kernel.json (both are stale)",
+    "git -C C:/Users/User/SYNAPSE worktree remove C:/Users/User/synapse-m2-pgdrm-wt   # only AFTER the fix is committed - removing it now destroys the repair"
+   ],
+   "risk": "low",
+   "risk_why": "Merge surface is two brand-new files - `git merge-tree $(git merge-base master mem/m2-pgdrm) master mem/m2-pgdrm | grep -c '^changed in both'` returns 0, master's python/synapse/loop/ has 9 files and none is pgdrm.py, and tests/ has no test_pgdrm_kernel.py. Nothing existing is modified, so regression surface on the composed system is essentially the new tests themselves. The risk that IS real: merging the branch AS-IS ships a known defect (same generator object yields ALLOW then DROP), because the fix exists only as uncommitted working-tree changes. That is a med-risk merge; with the fix committed first it is low.",
+   "artist_value": "none"
+  },
+  {
+   "label": "triage:cold-panel-scene",
+   "team": null,
+   "branch": "feat/scene-model",
+   "verdict": "SPLIT_SALVAGE",
+   "confidence": 0.82,
+   "one_line": "Kill the 1,900-line turn-measurement instrument, but re-apply two small unreplicated fixes by hand: the audit session-id collision (master:python/synapse/core/audit.py:186) and the render_farm_status read-only classification.",
+   "evidence": [
+    "git merge-base master feat/scene-model = 0f14c9500b (2026-07-18); git rev-list --count feat/scene-model..master = 1337; git cherry master feat/scene-model = 2 unapplied",
+    "git diff --stat: 11 files, 1967 insertions, 56 deletions -- 920 of those lines are tests/test_read_ledger.py + tests/test_turns_ledger.py",
+    "master:python/synapse/core/audit.py:186 still reads deterministic_uuid(f\"session:{id(self)}:{threading.current_thread().ident}\", \"session\") -- the branch adds :{time.time_ns()} because deterministic_uuid has no entropy and id()/thread idents recycle across process restarts",
+    "master's _READ_ONLY_COMMANDS frozenset (dumped from master:python/synapse/server/handlers.py) contains render_farm_cancel but NOT render_farm_status; master:python/synapse/server/handlers.py:763 only registers the handler",
+    "git cat-file -e master:<path> => ABSENT for all of: python/synapse/core/jsonl_ledger.py, python/synapse/server/read_ledger.py, python/synapse/panel/turns_ledger.py, scripts/scene_model_report.py",
+    "git grep -ln 'record_read|read_ledger|turns_ledger' master -- python/synapse scripts tests => no hits; no equivalent instrument exists on master",
+    "git ls-remote --heads origin feat/scene-model => 158434344a4205e3b507d4b151a33a5cee299660 (branch is public)"
+   ],
+   "action_steps": [
+    "git -C C:/Users/User/SYNAPSE tag archive/feat-scene-model 15843434   # keep the history before deleting the branch",
+    "git -C C:/Users/User/SYNAPSE show 15843434 -- python/synapse/core/audit.py   # re-type this 1-line seed fix + current_session_id() onto a fresh branch off master; do NOT cherry-pick the commit",
+    "python -m pytest tests/test_stress.py tests/test_studio_integration.py tests/ -k audit   # the two master tests that read _current_session",
+    "git -C C:/Users/User/SYNAPSE show 15843434 -- python/synapse/server/handlers.py   # decide separately on adding \"render_farm_status\" to master's _READ_ONLY_COMMANDS frozenset",
+    "git -C C:/Users/User/SYNAPSE worktree list | grep -E 'scene-model' ; git -C C:/Users/User/SYNAPSE branch -D feat/scene-model",
+    "git -C C:/Users/User/SYNAPSE push origin --delete feat/scene-model   # branch is already public on origin; optional, the archive tag holds the history"
+   ],
+   "risk": "high",
+   "risk_why": "Merging the branch is high risk: 1,337 commits behind, and the largest hunk rewrites the whole ClaudeWorker tool-loop (python/synapse/panel/claude_worker.py) in a file master has reworked repeatedly since June -- it would conflict wholesale and re-open the freeze/abort paths that v5.48-v5.54 hardened. The two salvage fixes are low risk individually, but the audit seed change is NOT free: master:tests/test_stress.py and master:tests/test_studio_integration.py both read _current_session, so they must be run before anyone calls it green.",
+   "artist_value": "indirect"
+  },
+  {
+   "label": "triage:cold-panel-scene",
+   "team": null,
+   "branch": "feat/panel-ux-pass",
+   "verdict": "SUPERSEDED",
+   "confidence": 0.88,
+   "one_line": "The shipped Pentagram panel already does connection-state-at-a-glance on these exact two buttons, and this branch's raw QPushButton would regress the design-system token authority -- archive it.",
+   "evidence": [
+    "git merge-base master feat/panel-ux-pass = 808775c19c (2026-06-26); git rev-list --count feat/panel-ux-pass..master = 1598; 1 unapplied commit; 3 files, +75/-3",
+    "master:python/synapse/panel/compositor.py:66 -- 'connection_dot, connection_label and corpus are hidden data owners'; master:python/synapse/panel/designsystem/tokens.py:239 SIGNAL_DEEP '#627A93 filled-action blue: Connect / Corpus / SEND, one note'",
+    "master:python/synapse/panel/synapse_panel.py:1091 builds the Corpus button as c.Button('Corpus', variant='primary'); _refresh_corpus_state() (master:python/synapse/panel/synapse_panel.py ~1209-1223) flips it to 'Corpus ✓' off entries.jsonl",
+    "branch diff replaces c.Button with QtWidgets.QPushButton + setObjectName('DsConnPill') for BOTH buttons -- straight against master's token authority (master:tests/panel/test_token_authority.py exists)",
+    "branch adds _confirm_rag_dir() calling QMessageBox.exec() inside the connect path; master:tests/panel/test_modal_guard.py docstring: 'a modal exec() raises instead of blocking' for everything in tests/panel/",
+    "git ls-remote --heads origin feat/panel-ux-pass => 0d27a17fbd (public)"
+   ],
+   "action_steps": [
+    "git -C C:/Users/User/SYNAPSE tag archive/feat-panel-ux-pass 0d27a17f",
+    "git -C C:/Users/User/SYNAPSE worktree list | grep -E 'panel-ux' ; git -C C:/Users/User/SYNAPSE branch -D feat/panel-ux-pass",
+    "git -C C:/Users/User/SYNAPSE push origin --delete feat/panel-ux-pass   # already public on origin; the archive tag holds the history",
+    "OPTIONAL, separate ticket: master's _on_corpus announces 'Corpus loaded (n)' but never names the directory -- a one-line addition of str(_scout.RAG_ROOT) to that message would carry the only idea worth keeping, without the modal"
+   ],
+   "risk": "low",
+   "risk_why": "Deleting is safe -- an archive tag preserves the commit and the branch is 1,598 commits behind. Merging would be the risky move: it replaces c.Button() with a raw QPushButton, which is what master's tests/panel/test_token_authority.py and test_theme_source.py exist to catch, and it adds a modal exec() on a path the seat suite's modal guard (tests/panel/conftest.py, pinned by tests/panel/test_modal_guard.py) now raises on.",
+   "artist_value": "direct"
+  },
+  {
+   "label": "triage:cold-panel-scene",
+   "team": null,
+   "branch": "wip/panel-goalposts",
+   "verdict": "ARCHIVE_DELETE",
+   "confidence": 0.9,
+   "one_line": "June WIP goalpost tests for a model picker, an Ollama provider and a hython matrix -- master shipped all three with different APIs, so these tests now pin a June surface that no longer exists.",
+   "evidence": [
+    "git merge-base master wip/panel-goalposts = 2e8ddd3a6f (2026-06-24); git rev-list --count wip/panel-goalposts..master = 1629; 2 unapplied commits; 8 files, +1130/-0, all tests/docs/harness",
+    "master ships the Ollama provider the branch was goalposting: python/synapse/panel/providers/ollama_provider.py, model_discovery.py, connection_dialog.py, connections.py, providers/catalog.py -- plus master:tests/panel/test_ollama_discovery.py",
+    "master ships the model picker: git grep -li 'model_picker|ModelPicker' master -- python/synapse/panel => providers/registry.py and synapse_panel.py (_refresh_engine_selector, 'the rail author token IS the selector')",
+    "tests/panel/test_model_picker.py, test_model_picker_menu.py, test_ollama_provider.py, test_hython_matrix.py, harness/rescope_settings.py, IMPLEMENTATION_BRIEF.md are all ABSENT from master (git cat-file -e master:<path>)",
+    "tests/panel/test_type_scale_native.py is the one file that exists on both: git diff --stat master:<f> wip/panel-goalposts:<f> = +121/-29, i.e. the two evolved apart; master's tests/panel/ now holds 32 files",
+    "git ls-remote --heads origin wip/panel-goalposts => c3a6032404 (public)"
+   ],
+   "action_steps": [
+    "git -C C:/Users/User/SYNAPSE tag archive/wip-panel-goalposts c3a60324",
+    "git -C C:/Users/User/SYNAPSE worktree list | grep -E 'goalposts' ; git -C C:/Users/User/SYNAPSE branch -D wip/panel-goalposts",
+    "git -C C:/Users/User/SYNAPSE push origin --delete wip/panel-goalposts   # already public on origin; the archive tag holds the history"
+   ],
+   "risk": "low",
+   "risk_why": "Deleting is safe -- an archive tag preserves both commits. Merging would add five failing test files to a green suite: they were written against a June API surface, and master's own descendants of the same files have diverged (test_type_scale_native.py alone differs by +121/-29 between the two versions).",
+   "artist_value": "none"
+  },
+  {
+   "label": "triage:demo-repairs",
+   "team": null,
+   "branch": "fix/demo-repairs-20260909",
+   "verdict": "REBASE_THEN_MERGE",
+   "confidence": 0.82,
+   "one_line": "One unapplied commit that adds a brand-new artist-facing tool (houdini_layout_network) plus a scoped-memory fix from the 9-Sep demo post-mortem; nothing on master or any other branch duplicates it, and a test-merge conflicts in exactly two lines (the '128 tools' count in CLAUDE.md and README.md).",
+   "evidence": [
+    "git cherry master fix/demo-repairs-20260909 -> '+ 72de0881759a04fcc6f3ca56eb6c78ce37351623' - exactly one commit, patch-id-unapplied, confirming the brief's count",
+    "git log: 72de0881|2026-09-09|'Repair demo layouts and scoped memory ownership'; merge-base = d7c90a1522bb66b9a4cbfdfe0058df48f2d787d4; git rev-list --left-right --count master...branch -> 51 behind, 1 ahead",
+    "git merge-tree --write-tree --name-only master fix/demo-repairs-20260909 -> conflicts in CLAUDE.md and README.md ONLY; python/synapse/panel/bridge_adapter.py and session_journal.py auto-merged clean",
+    "git cat-file -e master:<path> fails for all 11 new files: python/synapse/server/network_layout.py, handlers_network_layout.py, python/synapse/host/memory_lifecycle.py, scripts/probe_network_layout.py, tests/test_network_layout.py, test_demo_memory_scope.py, test_memory_lifecycle.py, test_moneta_search_serialization.py, test_session_journal_main_thread.py, test_demo_memory_recall.py, test_memory_owner_dispatch.py",
+    "git grep -n 'layout_network' master -- . returns NOTHING; a loop over every local ref shows only fix/demo-repairs-20260909 carries python/synapse/server/network_layout.py - no supersession, no duplicate",
+    "C:/Users/User/SYNAPSE (branch) docs/demo-repairs.md:1-5 - 'This change addresses the failures recorded in the 9 September 2026 SYNAPSE demo. It requires a fresh Houdini session using the repaired source'",
+    "branch python/synapse/core/protocol.py:47 - '+ LAYOUT_NETWORK = \"layout_network\"' (single enum member)",
+    "branch python/synapse/server/rbac.py:56 - layout_network added to _ARTIST_COMMANDS alongside set_parm/set_keyframe",
+    "branch python/synapse/mcp/_tool_registry.py: one new TOOL_DEFS entry ('houdini_layout_network', 'layout_network', _identity, ... False, False, True) plus scope added to synapse_search/_recall/_decide and tags to _decide_payload",
+    "branch python/synapse/server/handlers_memory.py:25-33 - new _memory_on_main() wrapping run_on_main(on_main, label='memory:owner') with a refresh_memory_owner() call; master's copy of this file has no such helper (branch-vs-master delta for the file is the same 48 lines as base-vs-branch, i.e. master never touched it)",
+    "master:python/synapse/server/handlers_memory.py:232 - scope already exists on the WRITE handler default 'scene', but master:python/synapse/mcp/_tool_registry.py synapse_decide schema has NO scope property - the artist-facing gap the branch closes",
+    "git show master:CLAUDE.md | grep 'MCP tools registered' -> line 3 '... SYNAPSE v5.70.0 ... 128 MCP tools registered'; git show master:README.md line 121 '**128 tools, two paths.**' - branch bumps both to 129, matching its +1 tool",
+    "branch python/synapse/server/network_layout.py:25-95 - validate_request/_ordered/_section/plan_layout are pure Python (no hou.* in the first 30 structural matches), including an explicit cycle refusal at :114 and 'Each selected node may belong to only one declared group' at :73"
+   ],
+   "action_steps": [
+    "git fetch --all && git log --oneline -1 master   # confirm still 67625294 before starting",
+    "git checkout -b rebase/demo-repairs fix/demo-repairs-20260909",
+    "git rebase master   # expect exactly 2 conflicts, both one-line",
+    "# CLAUDE.md line 3: keep MASTER's line (SYNAPSE v5.70.0) and change '128 MCP tools registered' -> '129 MCP tools registered'",
+    "# README.md line 121: keep MASTER's line ('**128 tools, two paths.** The external MCP bridge and live') and change 128 -> 129",
+    "git rebase --continue",
+    "python -m pytest tests/test_network_layout.py tests/test_demo_memory_scope.py tests/test_demo_memory_recall.py tests/test_memory_lifecycle.py tests/test_memory_owner_dispatch.py tests/test_moneta_search_serialization.py tests/test_session_journal_main_thread.py -q   # the 7 new suites first",
+    "python -m pytest tests/ -q   # FULL suite - the floor is 8869 passed / 0 failed; half B rewrote store.py, so treat any new red here as blocking",
+    "grep -rn \"128\" tests/ --include=*.py | grep -i tool   # a tool-count-pinning conformance test may also need the 129 bump",
+    "hython scripts/probe_network_layout.py   # live H22.0.400 probe - never run in this triage, and the layout contract (undo grouping, artist-box refusal) is hou-side and unproven",
+    "# OPTIONAL but recommended before merge: git reset --soft master && split into two commits - (A) layout tool: protocol.py, network_layout.py, handlers_network_layout.py, _tool_registry.py layout hunk, mcp_tools_scene.py, rbac.py, system_prompt.py layout paragraph, scripts/probe_network_layout.py, tests/test_network_layout.py, CLAUDE.md, README.md ; (B) memory scope: everything else. A can merge on green units alone; B should wait on the full suite.",
+    "# ORDERING: fix/cto-render-20260908 and feature/tops-renderfarm-20260907 also edit CLAUDE.md, README.md, protocol.py and _tool_registry.py - whichever merges second re-resolves the same tool-count line. Merge this one first; it is the smaller resolution."
+   ],
+   "risk": "med",
+   "risk_why": "Half A is additive and near-zero-risk - the new files are unreferenced by anything on master, and the pure-Python core is hou-free and unit-tested. Half B is the risk: store.py is reworked across 345 lines on a base that is 51 commits stale, and it governs durable decision storage including a deliberate refuse-further-writes-on-damage posture. Master moved independently on neighbouring memory surfaces in that window (agent_state.py, panel/activity.py, worker_policy.py, host/graph_oracle.py all differ branch-vs-master although the branch never touched them), so a textually clean rebase is not proof of a semantically clean one. No test was executed in this triage - read-only law, no checkout.",
+   "artist_value": "direct"
+  }
+ ],
+ "refutes": [
+  {
+   "label": "refute:feature/tops-renderfarm-20260907",
+   "branch": "feature/tops-renderfarm-20260907",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "SUPERSEDED",
+   "reason": "Attacked on all five axes and could not break it. (1) Evidence is real, not fabricated — every citation reproduces: `git merge-base --is-ancestor feature/tops-renderfarm-20260907 fix/cto-render-20260908` exits 0, the reverse exits non-zero; the seven shas be7cb4fe/c867f61f/89686a3e/52a79c53/0c832cd5/d92b6487/5b7f3964 appear identically in both `git log` outputs; `git cherry master B | grep -c '^+'` gives tops 7, render 8 with b07eaa40 as the sole delta; merge-base is 87ce354a and both are exactly 81 behind master. (2) The strongest possible attack — find one hunk on tops that is absent from render — is closed by construction: `git diff fix/cto-render-20260908..feature/tops-renderfarm-20260907 --stat` is the exact byte-inverse of the forward diff (10 files, +27/-788, same file list). There is no unreplicated value to salvage; render's tree is a strict superset. (3) No neighbour contradiction exists to adjudicate — none of the listed neighbours (demo-repairs, cold-cache-rope, cold-repairs, cold-panel-scene) touches the farm file set, and fix/cto-render-20260908, the one branch that shares 42 files, was not given a verdict in this roster, so nothing here competes for the same work. (4) Axis 4 does not apply: this is not a merge verdict, and being 81 behind is irrelevant to an archive that ships zero bytes. What I did NOT check: whether the seven farm commits actually pass tests against current master, whether python/synapse/farm/ still imports cleanly after 81 commits of drift, and whether fix/cto-render-20260908 itself deserves to land — that branch's own disposition is the real open question and this verdict is entirely parasitic on it. What I DID find that the verdict missed cuts in its favour, not against it: feature/tops-renderfarm-20260907 has no ref on origin at all (`git ls-remote origin` returns only refs/heads/fix/cto-render-20260908), so the shared history is already preserved on a pushed remote branch and deleting the local ref strands nothing even if render never merges. The action_steps, however, are not runnable as written: `git branch -D feature/tops-renderfarm-20260907` will hard-fail because that branch is checked out in a live worktree at C:/Users/User/OneDrive/Documents/ChatGPT/SYNAPSE_Refactor/worktrees/tops-renderfarm, and `git worktree prune` is both listed last and cannot remove a worktree whose directory still exists; and `git push origin --delete feature/tops-renderfarm-20260907` will error with \"remote ref does not exist\" since there is no remote ref. Correct sequence: `git worktree remove <that path>`, then `git branch -D`, and drop the push step entirely. `grep` is fine under PowerShell here (C:\\Program Files\\Git\\usr\\bin\\grep.exe is on PATH), so the cherry-count step runs as written.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:feature/windows-installer-20260909",
+   "branch": "feature/windows-installer-20260909",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "SUPERSEDED",
+   "reason": "Every cited fact verified live. `git log master -- installer/` returns the single commit 8c23fccc (2026-09-13, \"Release v5.68.0 with proposal controls and Windows Setup\") — the installer tree is on master. `git diff --stat master..feature/windows-installer-20260909` restricted to the branch's 25 paths shows exactly 4 files differing (README.md, docs/getting-started/installation.md, installer/README.md, installer/test_executable.py); the other 21 including all of installer/synapse_setup/, Synapse.iss, both test files and toolchain.lock.json are byte-identical. All 4 differences point backwards: master README:13 advertises v5.70.0/SYNAPSE-5.70.0-Setup.exe while branch installation.md:9 advertises windows-installer-5.67.4-preview.1; installer/README.md differs only in 5.68.0->5.67.4 version strings; installer/test_executable.py on the branch REMOVES master's --expected-version argparse flag and reverts the upgrade assertion to a hardcoded \"5.67.4\". I hunted for unreplicated value per axis 3 by diffing the branch against its own merge-base d7c90a15 to isolate its own additions: they are the 5.67.4-preview download block plus the wizard walkthrough, and master's installation.md already carries that same walkthrough at 5.68.0 AND master additionally has docs/getting-started/windows-installer-verification.md and windows-installer-demo.md, which the branch's README only links to. Zero unique hunks. No neighbour shares files with this installer tree, so no cross-team contradiction to own. Axis 4 is n/a (not a merge verdict). NOT CHECKED: whether the v5.70.0 release asset actually downloads (no network call was made), and the installer test suite was not executed.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:bp2/nits",
+   "branch": "bp2/nits",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "SPLIT_SALVAGE",
+   "reason": "Four independent spot-checks, no fabricated citation found. (1) The T3 risk — the load-bearing claim — is exactly as stated: `git show master:harness/battleplan/dashboard_bp2.py` pill() has ok-list (\"GREEN\",\"SOUND\",\"receipted\",\"MEASURED\",\"ALIVE\",\"done\",\"RECEIPTED\") with no 'open'; the branch version adds \"open\" to that same elif; and line 258 does read `h.append(f\"<tr>...<td>{pill('open' if open_ else 'done')}</td></tr>\")` inside `for w, obs, open_ in wds` under the \"Words · yours, per act\" header. Matching is `any(k in t for k in ...)` over `t = str(text)` with no .lower(), so the substring-flip concern is real. T3 is not inert and does turn an outstanding human word green. (2) `git cherry master bp2/nits` = 5 '+' lines; `merge-tree --write-tree --name-only master bp2/nits` exits 0 => CLEAN. Both confirmed. (3) Both \"broken citation\" claims are real: `git ls-tree -r --name-only master` shows only `memory_latency_hython_provisioned.jsonl` while the branch's BATTLEPLAN row 6 cites `...provisioned.json`; and `test_duplicate_content_gets_distinct_ids` appears on master only as prose at tests/test_moneta_crucible.py:213, with the live test at :244 named `test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone` — the branch pins the dead name twice (MONETA_FOLLOWUPS prose + the FU-1 table row). Corrections the verdict owes: T1 is presented as a defect fix; it is a defect swap. `$editedOrch` is the worktree file (prove_bp2_meter_dryrun.ps1:18 `$editedOrch = Join-Path $repoRoot 'harness\\orchestrate.ps1'`), so master's `HEAD:` form is a tautology only while the tree is clean — the verdict's \"comparing HEAD to itself\" is loose but the defect is genuine. The branch's `HEAD~1:` is equally unpinned: master HEAD is 67625294 and HEAD~1 is 2c30f890 (a release-docs commit), so running the \"fixed\" script today captures a baseline that has nothing to do with the pre-METER parent. The correct fix pins the actual sha. This does not move the disposition — the script lives under runs/2026-09-01/, has zero runtime reach, and lands clean either way — but T1 should not be described as fixed. Did NOT check: whether the three salvaged commits cherry-pick without textual conflict individually (only the whole-branch merge-tree was verified), and did not run any test.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:repair/h1-schemas-b",
+   "branch": "repair/h1-schemas-b",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "SUPERSEDED",
+   "reason": "Verdict survives a four-axis attack; the core claim is verified byte-level, not inferred. (1) Evidence is real: sha 0929d568 has the exact cited subject and 4-file shape; `git cherry master B | grep -c '^+'` = 1; branch is 1227 behind / 1 ahead. The decisive check reproduces: `git diff master:python/synapse/mcp/tool_impls/solaris/schema_set_purpose.py repair/h1-schemas-b:...` shows `\"enum\": [\"set\", \"updated\", \"unchanged\", \"noop\", \"not_found\"]` as CONTEXT (no +/- prefix), and the create_variants diff shows `\"enum\": [\"created\", \"already_exists\"]` as CONTEXT — master already carries both reconciled enums, only prose differs. (2) master:tests/test_solaris_tool_registration.py carries test_schema_return_status_enum_matches_implementation (:414), test_schema_return_keys_are_producible (:442), test_every_schema_return_contract_is_pinned (:460), test_tool_audit_schema_declares_no_return_contract (:481) AND four reader tests the branch never had (:523/:532/:536/:544) — master's pin is a strict superset of the branch's 364-line file. harness/notes/receipts/H1.json present on master (blob 976d21f6); tests/test_solaris_schema_return_contract.py absent. (3) No neighbour contradiction — render-vs-tops and cold-panel-scene share zero files with these five Solaris schemas. (4) Unreplicated-value hunt found one genuine but sub-threshold hunk (see `missed`), which the verdict itself disclosed as \"reword two schema description strings\" and which the archive tag preserves. (5) Steps run: repair/h1-schemas-b is NOT in `git worktree list` (55 worktrees enumerated, none on it), so `git branch -D` will not hit the used-by-worktree refusal. Correction to the steps, not the verdict: `origin/repair/h1-schemas-b` EXISTS, so a local delete plus a local-only tag leaves the branch alive on the public remote and it returns on any fresh clone — the steps are incomplete. WHAT I DID NOT CHECK: I never ran the test suite, so \"master's pin is green\" is UNVERIFIED — I verified the pin exists and what it reads, not that it passes; and I did not read set_purpose.py/create_variants.py execute() to independently confirm which statuses they actually emit, so the enum reconciliation is verified as \"master == branch\", not as \"master == implementation\".",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:feat/scene-model",
+   "branch": "feat/scene-model",
+   "refuted": true,
+   "original_verdict": null,
+   "corrected_verdict": "SPLIT_SALVAGE",
+   "reason": "Disposition survives, but one citation is fabricated, so refuted=true under the spot-check rule. VERIFIED EXACT: master:python/synapse/core/audit.py:186 is verbatim the cited deterministic_uuid session line; master:python/synapse/server/handlers.py:233 has \"render_farm_cancel\" and the frozenset omits render_farm_status, which is only registered at :763; merge-base 0f14c9500b, 1337 behind, 2 unapplied (d02b0ed0, 15843434), 11 files / 1967 insertions of which 920 are the two new test files; all four new modules ABSENT on master. FALSE: the risk field claims master:tests/test_stress.py and master:tests/test_studio_integration.py both read _current_session -- `git grep -n \"_current_session|current_session_id\" master -- python tests scripts` yields exactly three hits, ALL in python/synapse/core/audit.py (186, 262, 433), and ZERO under tests/. The named verification gate does not exist; a human running it would get a vacuous green. Corrected gate: the real consumers are audit.py:262 (session_id stamped on each AuditEntry) and audit.py:433 (target_session in the verify/filter path), so gate on the audit hash-chain / session-filter tests, not those two files. STRENGTHENED, not broken: master's poll exemption at handlers.py:509-520 is scoped to cmd_type==\"render\" with a poll payload only, and handlers_render.py:1678 spells out master's own rationale (\"a running render holds the C5 mutation lock for its duration\") for classifying render_farm_cancel/render_processes/render_stop read-only -- render_farm_status was skipped, so the frozen-farm-status-readout premise holds on today's master and the salvage is worth more, not less. NOT CHECKED: whether the branch's 15-line audit.py hunk is only the seed fix + current_session_id(); whether any master audit test actually fails under a time_ns seed; no test-merge was run, so \"claude_worker.py conflicts wholesale\" is asserted, not demonstrated.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:feat/panel-ux-pass",
+   "branch": "feat/panel-ux-pass",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "SUPERSEDED",
+   "reason": "Axis 1 (evidence real): every spot-check landed. `git show --stat 0d27a17f` = \"feat(panel): Bridge/Corpus connection pills + RAG-dir confirm on connect\", 2026-06-26, 3 files, +75/-3 (qss.py +15, tokens.py +3, synapse_panel.py +60/-3) — exactly as claimed. merge-base = 808775c19c; `git rev-list --count feat/panel-ux-pass..master` = 1598; `git cherry` = 1 unapplied (+0d27a17f). Branch diff confirms `- self._connect_btn = c.Button(\"Connect\", variant=\"ghost\")` / `+ QtWidgets.QPushButton(\"Connect\")` + `setObjectName(\"DsConnPill\")`, same for Corpus, plus `_confirm_rag_dir()` ending in `box.exec() == QMessageBox.StandardButton.Ok` on the connect path. Master side: synapse_panel.py:1091 is verbatim `c.Button(\"Corpus\", variant=\"primary\", parent=w)`; `_refresh_corpus_state` at 1209-1223 sets `\"Corpus ✓\" if loaded else \"Corpus\"`; tokens.py SIGNAL_DEEP line is verbatim; compositor.py:66 comment is verbatim; tests/panel/test_token_authority.py, test_theme_source.py and test_modal_guard.py all exist, and the modal-guard docstring literally reads \"a modal exec() raises instead of blocking\". No fabrication anywhere.\n\nAxis 2 (neighbour contradiction): none. All four neighbour teams (render/tops, demo-repairs, cold-repairs, cache-rope) are server/harness/docs branches; none touches python/synapse/panel/*. No competing claim to own.\n\nAxis 3 (hunt for unreplicated value): the RAG-directory idea is the only candidate and the verdict already carves it out. I confirmed it is genuinely unreplicated AND correctly scoped: master's `_on_corpus` (synapse_panel.py:1195-1205) announces \"Corpus active (%d entries, probe hit %d docs incl. %s)\" — entries and a source doc name, never the corpus root path. So the optional follow-up ticket is real, and it is correctly kept out of the merge (the value is one string, not a modal). Everything else on the branch is replicated: master answers \"is the bridge up\" with a live connection dot (chat_panel.py:613-616, `_conn_dot` QLabel objectName `status_dot`, recoloured to _SIGNAL on connect at :663) and \"is the corpus grounded\" with the Corpus ✓ flip — both built out of the design system.\n\nAxis 4: n/a (not a merge verdict).\n\nAxis 5: the steps are mostly runnable but two defects — see missed[2] and missed[3].\n\nWhat I did NOT check: I never test-merged the branch, so the qss.py +15 DsConnPill block was not checked for collision with master's current qss/sweep_a_style machinery, and no conflict count exists for this branch. I also did not run tests/panel/ against a merged tree — the merge-blocker claims are read from test docstrings and source, not from a red run.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:wip/panel-goalposts",
+   "branch": "wip/panel-goalposts",
+   "refuted": true,
+   "original_verdict": null,
+   "corrected_verdict": "SPLIT_SALVAGE",
+   "reason": "The verdict's load-bearing claim is \"master shipped all three with different APIs, so these tests pin a June surface that no longer exists.\" That is false for one of the three. master's .synapse/hytest.py carries only the singular pin (master:.synapse/hytest.py:100 os.environ.get(\"SYNAPSE_HYTHON\")) and a single-best-build resolver (_candidates / _usable / find_hython / main) — there is no SYNAPSE_HYTHONS, no per-build aggregation, and `git grep -iE 'SYNAPSE_HYTHONS|build matrix' master` over the entire tree returns zero hits, so the idea is not superseded and not even recorded elsewhere. tests/panel/test_hython_matrix.py (182 lines) is therefore not a stale pin; it is a live unimplemented spec, written pure-Python with monkeypatched hython resolution so it runs under stock `pytest -q` with no Houdini, and its subject got MORE relevant since June: this host now has both Houdini 22.0.400 and 22.0.429 and the shim picks newest. That is the unreplicated hunk ARCHIVE_DELETE would destroy. A second, smaller break: the cited grep `git grep -li 'model_picker|ModelPicker' master -- python/synapse/panel => providers/registry.py and synapse_panel.py` returns NOTHING (re-run with `-e model_picker -e ModelPicker` as well). What master actually has is an engine/provider selector (python/synapse/panel/synapse_panel.py:1225 `_refresh_engine_selector`), which is not the same surface as the branch's goalpost (registry.MODELS with >=2 Claude entries incl. opus+haiku, build_provider taking a model key). The rest of the evidence IS real and I re-ran it: `git cherry master wip/panel-goalposts` = 2 unapplied (91fe5b1e, c3a60324), diffstat exactly 8 files/+1130/-0, the four test files and harness/rescope_settings.py absent from master, and test_type_scale_native.py diverging by exactly +121/-29. So the disposition is right for 6 of 8 files and wrong for at least one: salvage test_hython_matrix.py (or record the H-MATRIX contract in the backlog) BEFORE archiving, then delete the rest. Operational gap in the steps regardless of verdict: they push-delete the public branch but never push the archive tag, leaving a local-only tag as the sole copy of history destroyed on origin.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:rope/beacon",
+   "branch": "rope/beacon",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "ARCHIVE_DELETE",
+   "reason": "Every load-bearing citation reproduced. `git cherry master rope/beacon | grep -c '^+'` -> 20; `git diff --stat` -> ` STATUS.md | 25 +++++ / 1 file changed, 25 insertions(+)`; first/last commits eda15a55 2026-08-03T14:14:13-04:00 and 6854c72c 2026-08-03T15:44:46-04:00 at 5-min spacing; `git cat-file -e master:STATUS.md` -> fatal, ABSENT; `git ls-remote --heads origin` -> 6854c72c9a880224c7c278fad531ab409a089a47 refs/heads/rope/beacon (same sha, live on the PUBLIC origin); worktree C:/Users/User/rope-beacon-wt 6854c72c [rope/beacon] exists. STATUS.md line 2 reads `runner: stopped | sentinel relaunches used: 0/6` and the footer is verbatim as quoted. The \"master is strictly ahead\" claim survives the hardest check: counting task statuses in master:harness/rope/STATE.json yields exactly {verified 22, blocked_seat 1, blocked_human 2, blocked 1, needs_review 10}, and L5-4/L5-10/L5-11 are all `verified` on master while the beacon still prints them as needs_review with \"manual pending\"/\"DESIGN REVIEW BY JOE\". So the branch's only content is a stale read-out. I found no unreplicated hunk of value beyond the 10 telemetry rows the verdict already preserves. The one thing I found that the verdict missed cuts the same way, not against it: master:harness/rope/rc.ps1 is a tracked producer that does `git worktree add -B rope/beacon $bw` (:7) and `git push -f origin rope/beacon` (:50), which makes this branch machine-regenerated output rather than authored work — deleting it is even safer than stated, but the delete is also not durable.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:design/rulings-2026-09-14",
+   "branch": "design/rulings-2026-09-14",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "MERGE_NOW",
+   "reason": "Attacked on all five axes; nothing broke, and the verdict's own admitted blind spot closed green.\n\nAXIS 1 — evidence real? Every spot-check is exact, not approximate. `git merge-base master design/rulings-2026-09-14` == `git rev-parse master` == 67625294161173b715b23f41c3f9aa8fc083f916 (zero drift, no rebase surface). Diffstat is literally `harness/design_review/2026-09-14/RULINGS-OPEN.md | 582 +++++, 1 file changed, 582 insertions(+)`. `git cherry master <branch> | grep -c '^+'` == 1. Three cited code lines are verbatim at the line numbers named: tokens.py:139 is `\"surface\": step(12), \"raised\": step(8), \"border\": step(12),`; synapse_panel.py:732 is `profile = DEFAULT_PROFILE` preceded at :730-731 by exactly the quoted comment; `grep -rn '_select_profile' python/` returns exactly two .py hits (def at :757, comment at :754) — zero call sites, as claimed. No fabricated citation found.\n\nThe load-bearing \"16 calls\" count is real and the classification split is exact. Heading census from `git show <branch>:<file> | grep -nE '^#{1,6} '`: RATIFY = A1(:72) A3(:129) A4(:157) C5(:454) C6(:476) = 5; FORK = B1(:174) B2(:220) C1(:297) C2(:317) C3(:382) C4(:405) = 6; ASSIGN = A2(:108) D1(:494) D2(:505) D3(:518) D4(:529) = 5. Total 16, matching the verdict item for item. The A1 headline the verdict partially refuted is verbatim at :27-28: \"**Rule A1.** It is the only item other items are waiting on. Answering it collapses A2, A3 and B2 from open questions into bookkeeping with a number attached.\" The self-refutation the verdict found is genuine and correctly quoted. C2's heading at :317 does carry the double-ruling in its own subtitle (\"**[FORK]** · *and one placement ruling that must be explicit*\") — the ambiguity the verdict flags is on the face of the heading.\n\nAXIS 2 — neighbour contradiction? None available. The work graph gives this branch no file-sharing neighbours, and I confirmed why: `git ls-tree --name-only master -- harness/design_review/2026-09-14/RULINGS-OPEN.md` returns empty, so the branch's single file occupies a path no tracked file holds. It cannot collide with the fix/cto-render-20260908 <-> feature/tops-renderfarm-20260907 42-file duplicate problem; that contradiction belongs to those two and is not this branch's to own.\n\nAXIS 3 — N/A, verdict is not ARCHIVE_DELETE.\n\nAXIS 4 — \"commits behind, name a moved interface\": structurally unavailable. The branch is ZERO commits behind; merge-base IS master HEAD. There is no window in which an interface could have moved under it. This is the strongest single fact in the verdict and it holds.\n\nAXIS 5 — action steps runnable? I executed step 1 as written (`gh pr view 82 --json ...`) and it returned. `gh pr merge 82 --squash --subject '...'` uses single quotes, valid in both PowerShell 7 and the Bash tool here. No here-string, no `cd && git commit` (the known-denied form in this environment).\n\nCI — the surface the verdict explicitly marked unchecked, now checked, and it REFUTES the verdict's own stated worry rather than the verdict: statusCheckRollup on headRefOid 5c1e7acb (the branch tip) is 5/5 SUCCESS — test (ubuntu 3.11), test (ubuntu 3.14), test (macos 3.11), test (macos 3.14), all conclusion SUCCESS at 2026-09-14T21:05Z, plus CodeRabbit SUCCESS. mergeable MERGEABLE, mergeStateStatus CLEAN. The phantom-lint fear (doc quotes `hou.undos.group` and `houdini_execute_python` in prose) is empirically dead — the lint ran on this head and passed. That removes the verdict's only self-declared unknown and is why I raise confidence 0.90 -> 0.95 rather than leaving it flat.\n\nThe verdict's two legibility criticisms of the doc (A1 headline oversell, C2 double-ruling) are themselves verified and should stay attached to the ruling. They are reasons to edit the doc, not reasons to withhold the merge — the file changes nothing executable, lands at an unoccupied path, and is built on the exact sha it cites.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:rope/gate-a",
+   "branch": "rope/gate-a",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "SPLIT_SALVAGE",
+   "reason": "Attacked on all five axes; nothing broke. Every citation verified live and none was fabricated: git cherry returns exactly `- e69703a8 / + de254d09 / + 3806af20`; master carries all six python/synapse/blocks/*.py plus cognitive/tools/apply_fixture.py, so the branch's own text \"*Branch blocks/m5-reconciler (87927076), not merged*\" (rope/gate-a:CHANGELOG.md:7) and the README hunk \"*On blocks/m5-reconciler. Not on master yet.*\" are both false today; master:harness/legs.json:497-504 is exactly the M5b leg block cited, line numbers correct; master:harness/prompts/m5b.md blob 31098651 vs branch cfdeb570 diffs by precisely 1 file / 2 insertions / 2 deletions, the halt-vs-rebase wording at :12; master:README.md is 148 lines and a case-insensitive grep for mermaid|fixture|BLOCKS|Deterministic returns zero, so the +63 lines target context that no longer exists; a CASE-SENSITIVE grep for BLOCKS|apply_fixture on master:CHANGELOG.md returns zero, confirming the still-open gap the salvage names (a case-insensitive grep hits only generic English \"solver blocks\"/\"thinking blocks\" — not the subsystem, so the gap claim holds); git merge-tree --write-tree master rope/gate-a yields exactly four conflicts on the four touched files (CHANGELOG.md, README.md, harness/legs.json content, harness/prompts/m5b.md add/add); 794 behind / 3 ahead off merge-base be71cce6 dated 2026-08-05. Axis 2: no neighbour contradiction — fix/demo-repairs-20260909 also touches README.md but its conflict is the \"128 tools\" count line, a different region, and rope/gate-a is not proposed for merge either way. Axis 4 is the verdict's own finding, not a counter. Axis 5: rope/gate-a is NOT checked out in any of the 50 live worktrees (only rope/beacon is, at C:/Users/User/rope-beacon-wt), so `git branch -D rope/gate-a` will succeed rather than fail with \"used by worktree\", and `git worktree prune` is a harmless no-op; PS7 supports `&&` and the `git show | sed -n` steps run under the Bash tool. The risk framing is also correct and load-bearing: origin is public, and merging verbatim would publish \"not merged\" plus a stale \"5,745 passing, 9 failing\" against today's 8869/412/0 floor. Verdict survives intact; confidence raised from 0.85 to 0.90 because every spot-check landed. NOT CHECKED: whether refs blocks/m5-reconciler or blocks/m5b-rulings still exist, whether an M5b.json receipt exists, and the substance of the +63 README lines beyond the grep anchors.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:feat/cache-insert",
+   "branch": "feat/cache-insert",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "REBASE_THEN_MERGE",
+   "reason": "I attacked five surfaces and the verdict survived all five, including the one claim it openly marked unverified.\n\n(1) EVIDENCE IS REAL. master:python/synapse/server/handlers_cache.py line 11 literally reads \"creates a node, writes a file, or mutates the scene -- there is no ``synapse_insert_cache``\" (verbatim, `git show master:...| sed -n '1,18p'`). `git cherry master feat/cache-insert` returns exactly one line: `+ 206947a673ef30f3633879910917817eeeffa762`. No fabricated citation.\n\n(2) THE VERDICT'S OWN ADMITTED GAP CLOSES IN ITS FAVOUR. It wrote \"shared/bridge.py:767 per the comment - I did not open bridge.py to confirm that line still says REVIEW\". I opened it: master's `Operation.gate_level` still reads `base = OPERATION_GATES.get(self.operation_type, GateLevel.REVIEW)` with the R4 disk-write elevation intact. The deliberate OPERATION_GATES omission still resolves to REVIEW on master. Claim holds.\n\n(3) CONFLICT SET IS EXACT. `git merge-tree --write-tree master feat/cache-insert` emits exactly two CONFLICT lines: CLAUDE.md and python/synapse/server/handlers_cache.py. The \"2 conflicts, 8 files auto-merge\" claim is verified, not estimated.\n\n(4) AXIS 4 FAILED — I could not find an interface that moved under it. The two files the verdict flagged as the likeliest silent break both held. handlers.py: master still registers at line 785 as `reg.register(\"assess_cache\", self._handle_assess_cache)` — byte-identical call form to the branch's line 785/791 pair, so the 263 lines of drift did not touch the registration API. _tool_registry.py: master's assess_cache entry (:1051) and the branch's insert_cache entry (:1017) are the same 8-field tuple shape (name, wire-op, payload_fn, description, schema, readOnlyHint, destructiveHint, idempotentHint) — the 125 lines of drift did not change the tuple contract. The near-duplicate-branch problem that owns the render pair does not exist here: this branch shares no files with any neighbour except the CLAUDE.md counter line.\n\n(5) STEP 3 IS ALREADY DISCHARGED — and this is the one place I can improve the verdict rather than break it. The v5.70.0 rename (b475ee22) touched only python/synapse/panel/activity.py (+76) and tests/test_activity_labels.py (+156). That test scrapes column 1 of _tool_registry.py and at :48 asserts one-directionally (`dead = k for k in _TOOLS if k not in live`) — a hand-map key that no longer exists fails; a registry tool with no map entry does not. At :92 it then sweeps `for name in _live_tool_names()` through `tool_label()` and checks sentence case on words[1:]. \"synapse_insert_cache\" auto-humanizes to \"Insert cache\", which passes. So the rebase does NOT land a red label test and no hand-list entry is required.\n\nNEIGHBOUR CHECK: no contradiction. fix/demo-repairs-20260909 (also REBASE_THEN_MERGE) touches the same CLAUDE.md \"128 tools\" counter but no other file in common — that is a merge-order dependency, not two branches claiming the same work.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:repair/ledger-moneta-seam",
+   "branch": "repair/ledger-moneta-seam",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "SUPERSEDED",
+   "reason": "Conclusion holds, stated reason was wrong. I verified the cited sha exists verbatim (eb25abed|2026-07-26|leg(LEDGER): moneta seam - two defects closed, bounded revision walk, 8 files) and independently confirmed byte-identity via empty `git diff --shortstat master:<f> repair/ledger-moneta-seam:<f>` for python/synapse/memory/ledger.py, python/synapse/science/deposit.py, tests/test_ledger_moneta_seam.py and harness/notes/receipts/LEDGER.json. The verdict's risk line (\"the only branch-only bytes are an older, shorter moneta_provenance() docstring\") is false by 72 lines: four files differ, not one -- docs/studio/DEPLOYMENT.md (+35/-75), harness/notes/mutation_ledger_moneta.json (+33/-149), harness/verify/mutate_ledger_moneta_seam.py (+4/-153), python/synapse/memory/moneta_runtime.py (+22/-611). I read all 94 branch-only lines. Every hunk is a shorter predecessor of what master carries: the harness's 4 lines are a hardcoded single-target TESTS constant master generalized; the receipt's 33 are stale pytest timings from a 25-mutation run master superseded; moneta_runtime's 22 are the pre-U1 single-function moneta_provenance(). The one genuine candidate for unreplicated value -- the commit's single DEPLOYMENT.md line teaching that SYNAPSE_MEMORY_BACKEND gates both the memory store and the Ledger->Moneta enrichment seam -- is on master verbatim at docs/studio/DEPLOYMENT.md:130 (it showed as a diff `+` only as a whitespace/context artifact). No unreplicated value anywhere. No neighbour contradiction: render-vs-tops and cold-panel-scene claim render-farm and panel/audit files; nobody else touches python/synapse/memory/. Action steps are runnable: `git worktree list | grep -i ledger` is empty and `git branch --format='%(refname:short) %(worktreepath)'` shows an empty worktree path, so `git branch -D` will not be refused; HEAD is on master; the trailing `git worktree prune` is a harmless no-op. The steps tag before deleting, so a wrong call here is recoverable, which is why confidence rises rather than falls despite the corrected risk line.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:mem/m2-pgdrm",
+   "branch": "mem/m2-pgdrm",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "REBASE_THEN_MERGE",
+   "reason": "Attacked on all five axes; it survived. (1) EVIDENCE IS REAL — spot-checked more than one citation: `git log $(merge-base)..mem/m2-pgdrm` = the single commit e4730869|2026-08-21 exactly as quoted; `git diff --stat` = pgdrm.py +348, test_pgdrm_kernel.py +429, 777 insertions; `git cherry master mem/m2-pgdrm` = `+ e47308690b5ec0e5fbfdb97425eafa39e5ff3da2` (unapplied); `git rev-list --left-right --count master...mem/m2-pgdrm` = 403/1; `git ls-tree -r master -- python/synapse/loop` lists 9 files and NO pgdrm.py; `git -C C:/Users/User/synapse-m2-pgdrm-wt status --porcelain -b` still shows ' M' on both files today (2026-09-15) with diffstat +326/-1 — the uncommitted repair is genuinely still sitting there and is genuinely destroyed by a `worktree remove`; harness/memory/runs/2026-08-22/m2fix_mutate_harness.py and m2fix_mutation_ledger.json both exist, ledger reads {\"total\":28,\"red\":28,\"survivors\":[]}; STATE.json:107 carries the quoted status string verbatim; `git ls-remote --heads origin mem/m2-pgdrm` returns e4730869, so the verdict is right that bus `pushed:false` is stale AND right that the work is already on the public remote. No fabricated citation found. (2) NO NEIGHBOUR CONTRADICTION — repair/ledger-moneta-seam, repair/h1-schemas-b and stray/audit-log-threading touch none of python/synapse/loop/pgdrm.py or tests/test_pgdrm_kernel.py; nothing else on master or in the graph claims this file, and merge-tree 'changed in both' = 0. Nobody has to own a conflict here. (3) N/A — not ARCHIVE_DELETE. (4) THE 403-COMMITS-BEHIND ATTACK FAILED, and I pushed it hard because that is the axis that should kill a stale rebase verdict. pgdrm.py itself imports nothing from the repo, but the TEST file does: `from synapse.loop import ports`, and tests/test_pgdrm_kernel.py:94-96 asserts both `\"pgdrm\" not in ports.py` source AND `ports.MemoryPort().query_and_filter([\"r\"],[\"t\"]).status == \"UNAVAILABLE\"`. That is a live coupling to a surface that had 403 commits to move under it. I executed it against master HEAD (67625294): status = UNAVAILABLE. `query_and_filter` still exists at python/synapse/loop/ports.py:456 and `MemoryPort.__init__(storage_uri: Optional[str] = None, ...)` still takes zero required args, so `ports.MemoryPort()` still constructs. No moved interface. I also found no test on master that walks the python/synapse/loop package directory or enumerates its modules, so adding a 10th file trips no census gate. (5) STEPS ARE RUNNABLE — they use `git -C <abs>` (correct: this host denies `cd && git add/commit`) and `git commit -F <msg-file>` (correct: the here-string trap). Two nits below, neither fatal. WHAT I DID NOT CHECK: I did not run the rebase, did not run tests/test_pgdrm_kernel.py or the full suite, did not re-run the mutation harness, did not verify the 66-test count or the hand-computed decay table, did not read m2fix_suite_branch.txt's contents, and did not check CI. A green isolated import probe is not a composed-suite green.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:stray/audit-log-threading",
+   "branch": "stray/audit-log-threading",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "ARCHIVE_DELETE",
+   "reason": "Attacked on all five axes; the disposition survives and got stronger, but two factual corrections are owed. AXIS 1 (evidence real): five spot-checks, all verbatim. `git log -1 03f279fc` -> `03f279fc|2026-08-02|stray(audit): preserve the abandoned audit-state-capture lane (R308)`. `git diff --stat` -> exactly 6 files, +826/-0, the five named siblings plus the 178-line scope doc. `git cherry master` -> 1 unapplied. master:python/synapse/core/audit.py `log()` ends at `sequence_id: str = \"\"` while the branch adds `duration_ms`/`before_state_hash`/`after_state_hash` — threading genuinely absent from master. R308 in master:harness/notes/CTO_RULINGS_03.md:79-86 reads verbatim \"it revives the branch; otherwise it dies of natural causes in the branch list.\" PROPOSED_perf_baseline.json:58 cites R302 lane I as landed. Nothing fabricated. AXIS 3 (hunt for unreplicated value): the strongest candidate was python/synapse/core/state_digest.py (197 lines, a thought-through module — scope gate, playbar-varying parms excluded, null-rather-than-fake for unbounded blast radius). It is NOT an unreplicated capability: `git grep -l 'scene_hash_before|def _topo_hash' master` returns four live implementations of hash-scene-state-around-an-op — shared/bridge.py, python/synapse/server/integrity_envelope.py, python/synapse/panel/session_integrity.py, python/synapse/memory/agent_state.py. The branch is a fifth copy at a dead layer. Dead-reader claim confirmed: `replay_info` appears only at its own definition (audit.py:440) and the fields only at the dataclass (88/132/156) — producer-less and consumer-less on both sides. The one forward hook anyone could cite for keeping it: master:python/synapse/loop/ports.py:90 declares `SafetyPort.evaluate_path(..., scene_state_digest)` and NOTHING on master produces that value (grep over python/tests/panel/scripts hits only the contract stub and tests/test_loop_contracts.py:60) — a signature with no filler, not a live demand. AXIS 4: n/a (not a merge verdict). AXIS 2: no neighbour contradiction — no other branch contains 03f279fc (`git branch -a --contains` -> only itself + its origin ref), and feat/scene-model's audit.py claim is a different hunk (session-id collision at :186). AXIS 5 is where the verdict is WRONG, twice, and both cut toward less risk, not more: (1) \"This is the only copy of 826 lines\" is false — `git for-each-ref` shows `refs/remotes/origin/stray/audit-log-threading 03f279fc`, i.e. the commit is already on the PUBLIC origin. `git branch -D` deletes the local ref only; the branch stays on GitHub, stays in `git branch -a`, and a future work-graph run rediscovers it. So the steps do not achieve their stated effect, and the risk is low, not med — archiving loses nothing. Actually removing it from the list would need `git push origin --delete`, a public-repo mutation only Joe can authorize; leaving the origin ref alone is also exactly what R308's \"dies of natural causes in the branch list\" describes. (2) `git worktree prune` is a no-op: `git worktree list` (54 worktrees) has none on this branch. The local `git tag archive/...` is also local-only and unpushed — fine, since origin holds the copy. NOT CHECKED: whether the 6-line hunk still applies cleanly to master's audit.py (919 commits behind), whether tests/test_state_digest.py passes against master's tree, and the 178-line AUDIT_STATE_CAPTURE_SCOPE.md was not read for decision content absent from CTO_RULINGS_03.md.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:fix/cto-render-20260908",
+   "branch": "fix/cto-render-20260908",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "REBASE_THEN_MERGE",
+   "reason": "Verdict survives; two defects found, neither flips it. (1) EVIDENCE SPOT-CHECKS HELD: package.py:12 `QUALIFIED_BUILD = \"22.0.400\"` exact; native_driver.py:597 `if hou.isUIAvailable() or hou.applicationVersionString() != pkg.QUALIFIED_BUILD: raise ValueError` exact (and correctly read as the spawned worker's gate); master:pyproject.toml:110 `python_files = [\"test_*.py\"]` exact and `git grep native_render_workspace fix/cto-render-20260908` returns ZERO references, so the 541-line harness is genuinely uncollected; handlers.py:523 and :609 carve-outs verbatim; `git ls-tree master --name-only python/synapse/farm/` empty, so the work is not absorbed. (2) THE 42-OF-45 OVERLAP IS NOT A CONTRADICTION: feature/tops-renderfarm-20260907 is a STRICT ANCESTOR. `git rev-list --count fix/cto-render-20260908..feature/tops-renderfarm-20260907` = 0; reverse = 1 (b07eaa40). Tip-to-tip A->B is pure subtraction, -788 lines incl. tests/test_farm_recovery.py (412), test_farm_usd_settings.py, test_render_workspace.py, docs/tops/RENDER_RECOVERY.md. The other branch can hold no unique hunk by construction and should be ruled SUPERSEDED. The verdict asserted survivorship without proving containment; the proof exists and backs it. (3) ONE CITATION PATH IS WRONG: \"mcp_tools_render.py\" does not exist under python/synapse/mcp/ on this branch -- it is at the REPOSITORY ROOT (fix/cto-render-20260908:mcp_tools_render.py:24-25,47-53 registers the seven synapse_farm_* tools; python/synapse/mcp/_tool_registry.py:1276+ registers them too). Claim true, path unresolvable as written, and a root-level MCP tool module is an unruled layout smell. (4) MISSED BLOCKER, axis 4 -- an interface moved under the branch that merge-tree cannot flag: master shipped b475ee22 on 2026-09-14 (one day before this review) adding the artist-facing tool-label authority python/synapse/panel/activity.py (86 lines) + its pin tests/test_activity_labels.py. `git grep -n farm master -- python/synapse/panel/activity.py` -> no hits, and the branch's panel touches (bridge_adapter, command_palette, designsystem/qss, render_presenter, render_workspace, synapse_panel, tool_executor) do NOT include activity.py. Seven new synapse_farm_* tools and a Render workspace therefore land with zero entries in the label map that commit exists to feed, falling through the exact fallback it repaired. No textual overlap => not in the 5-file conflict list => the action_steps as written will not surface it. Add it as blocker #6. (5) Steps otherwise runnable; step 3's bare `grep -n` is Git-Bash-only (PowerShell needs Select-String), and step 5's `pytest tests/` must not run concurrently with the hython seat suite. Attacks that FAILED to break it: no tool-count or len(TOOL_NAMES) pin on master that +7 tools would red; tests/test_knowledge.py's DISPATCH_KEYS-covers-TOOL_NAMES conformance predates the merge-base (`git log 87ce354a..master -- tests/test_knowledge.py` empty), so it is not newly-moved ground. NOT CHECKED: whether the rebase completes, whether the suite is green after it, the handlers_render.py-untouched claim (taken on the verdict's trust), exact RBAC levels, real 22.0.429 seat behaviour, and whether root-level mcp_tools_render.py pre-exists on master.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  },
+  {
+   "label": "refute:fix/demo-repairs-20260909",
+   "branch": "fix/demo-repairs-20260909",
+   "refuted": false,
+   "original_verdict": null,
+   "corrected_verdict": "REBASE_THEN_MERGE",
+   "reason": "Attacked on all five axes and it held; my checks raise confidence rather than lower it. (1) Evidence real: `git cherry master fix/demo-repairs-20260909` returns exactly `+ 72de0881759a04fcc6f3ca56eb6c78ce37351623`, merge-base is d7c90a1522bb66b9a4cbfdfe0058df48f2d787d4, and `git grep -c layout_network master` returns nothing - no fabricated citation found. (2) Axis 4 refutation attempt FAILED and inverts: of the branch's 32 touched files, master has touched only TWO since the merge-base, both in disjoint functions - `panel/session_journal.py` (master 0c98c6a0 rewrote `_timestamp()`; branch edits `_resolve_log_dir()` to route `hou.hipFile.path` through `run_on_main`) and `panel/bridge_adapter.py` (branch hunks are an additive `_TOOL_TO_OPERATION` entry + a `summary` branch). `git log MB..master --` on `_tool_registry.py`, `handlers_memory.py`, `core/protocol.py`, `rbac.py`, `memory/store.py`, `moneta_store.py`, `scene_memory.py`, `session/tracker.py`, `host/memory_loop.py`, `server/handlers.py`, `panel/system_prompt.py`, `mcp_tools_scene.py` returns 0 commits each - so the TOOL_DEFS tuple arity cannot have drifted under the new registry entry, which was my best shot. 51-behind is a commit count, not an interface count, on this branch. (3) The tool-count step is confirmed right and needs no extra work: `tests/test_phase0c_doc1_toolcount.py` binds the CLAUDE.md banner dynamically to `len(TOOL_DEFS)` (it imports the registry, no hardcoded number) and a sibling test does the same for README's \"N tools, two paths\" - so 128->129 in both files IS the whole fix; the only literal 128 under tests/ is a comment at :130. (4) No neighbour contradiction: the render/tops pair shares only CLAUDE.md/README/protocol.py/_tool_registry.py and this verdict already claims merge-first ordering on the smaller resolution, which is correct. Residual risk is exactly what the original verdict named and no more: store.py's 345 reworked lines are unread and untested here, and the hou-side layout contract (undo grouping, artist-box refusal) is unproven - I ran no tests, no rebase, and no live probe.",
+   "evidence": null,
+   "confidence": null,
+   "extra_keys": [
+    "confidence_after",
+    "missed"
+   ]
+  }
+ ],
+ "other_results": [
+  {
+   "label": "artist:firstrun",
+   "key": "v2:fe852860d9c61279a8f709b7c7b7a2a7f3bac8f3ad20a7991b243c674024a97e",
+   "keys": [
+    "lens",
+    "state_of_play",
+    "findings",
+    "top_recommendation",
+    "unverified"
+   ],
+   "summary": "{\"lens\": \"firstrun \\u2014 first contact and orientation: what a Houdini artist sees in the first five minutes after install, whether it tells them what to do, and whether it degrades honestly when the bridge is down.\", \"state_of_play\": \"Read-only pass over master @ 67625294. No panel was launched; every claim below is source-read.\\n\\nThe install path is genuinely good on paper. `README.md:18-28` gives four numbered steps (save scene, run Setup, New Pane Tab -> Synapse, Connect models -> choose -> Check connection -> Use this model), then `README.md:30-60` gives a first build (\\\"make a box\\\"), "
+  },
+  {
+   "label": "artist:utility",
+   "key": "v2:2cd2f4a7c1bf26667685175b4caba3f8d9349bde55a1d26f444e5bfa4fd12ace",
+   "keys": [
+    "lens",
+    "state_of_play",
+    "findings",
+    "top_recommendation",
+    "unverified"
+   ],
+   "summary": "{\"lens\": \"artist utility \\u2014 what a working Houdini artist can actually see, decide, and trust from the SYNAPSE panel\", \"state_of_play\": \"128 tools are registered in C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\mcp\\\\_tool_registry.py (counted: 128 tuples; README.md:121 agrees, \\\"128 tools, two paths\\\").\\n\\nThe panel does NOT hand all 128 to the artist's chat. C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\tool_bridge.py builds the worker's tool list from TOOL_DEFS plus exactly 6 synapse_group_* knowledge tools (_GROUP_MODULE_MAP, tool_bridge.py:20-27). Then C:\\\\Users\\\\User\\\\SYNAPSE\\\\python"
+  },
+  {
+   "label": "artist:trust",
+   "key": "v2:74b54fafbecc88bc01a67fd61186bc8110f77bdd3e35935416d1e110dc4d1938",
+   "keys": [
+    "lens",
+    "state_of_play",
+    "findings",
+    "top_recommendation",
+    "unverified"
+   ],
+   "summary": "{\"lens\": \"trust \\u2014 consent, undo, and honest failure: can an artist let SYNAPSE touch their scene without fear, and does the product tell them which guarantee they had?\", \"state_of_play\": \"Static read of master @ 67625294. No Houdini was launched; nothing here is a live probe.\\n\\n**Undo wrapping is far WIDER than CLAUDE.md admits.** CLAUDE.md \\u00a71 describes a small \\\"tracked set\\\" of live handlers that wrap in `hou.undos.group` (usd/material/cops/batch/execute + node create/connect/delete + set_parm + set_keyframe). The tree has roughly 35 `hou.undos.group(...)` call sites across `C:\\\\U"
+  },
+  {
+   "label": "artist:decisions",
+   "key": "v2:fd3510febbd36d3b15136ffd254068b87752ea79bbfe0e548ca3ebdc1e830aa0",
+   "keys": [
+    "lens",
+    "state_of_play",
+    "findings",
+    "top_recommendation",
+    "unverified"
+   ],
+   "summary": "{\"lens\": \"decisions \\u2014 the decision surface: how a call gets made, recorded, and honoured\", \"state_of_play\": \"There is no decision system in SYNAPSE. There are FOUR decision stores with ZERO edges between them. I looked for a single cross-reference and found exactly one in the whole tree.\\n\\n**1. The harness board** \\u2014 `C:/Users/User/SYNAPSE/harness/decisions.py`. Reads receipt `for_ruling[]` entries plus `harness/state/flywheel_queue.json`, ranks them oldest-first. `--write` renders `harness/state/DECISIONS.md`; `--resolve KEY --reason ...` appends to `harness/state/resolved.json` (wh"
+  },
+  {
+   "label": "synthesize",
+   "key": "v2:089539e49af4f157505a85f6bafb103526f4816c950737d0c9e7d15c0b32d79a",
+   "keys": "str",
+   "summary": "\"## The call\\n\\nFive branches are already on master and can be deleted this morning without review; eleven more are superseded, dead, or worth only a hand-salvaged hunk; five merge, in a fixed order, with `fix/cto-render-20260908` last because it is the only high-risk one and the only one with no PR and therefore no CI. PR #80 closes rather than merges \\u2014 master already shipped that installer and the branch's four differing files are the older 5.67.4-preview text (`git show master:README.md:13` advertises 5.70.0). The one artist-facing scaffold worth building next is **the Undo Receipt**: "
+  }
+ ],
+ "artist_lenses": [
+  {
+   "label": "artist:firstrun",
+   "state_of_play": "Read-only pass over master @ 67625294. No panel was launched; every claim below is source-read.\n\nThe install path is genuinely good on paper. `README.md:18-28` gives four numbered steps (save scene, run Setup, New Pane Tab -> Synapse, Connect models -> choose -> Check connection -> Use this model), then `README.md:30-60` gives a first build (\"make a box\"), a three-controls table (Connect models / Connect / Doctor), and a three-ways-to-stop table that states what each control does NOT reach. `docs/getting-started/quickstart.md` continues it and is careful in the same way (\"The check reads metadata; it does not test generation\"). The v5.70.0 installer artefacts exist at `harness/notes/release-5.70.0/` (installer-verification.json, seat/suite logs, release-body.md, SYNAPSE-5.70.0-Setup.public",
+   "top_recommendation": "Fix the send path first (FR-1), because it is the only finding that silently changes the artist's scene. Everything else in this list is a moment of confusion; FR-1 is a message the artist gave up on, executing twenty minutes later into whatever scene happens to be open. The one-line version: `_send_message` at chat_panel.py:848 checks `self._bridge is not None` where it needs to check `self._bridge.connected`, and the queue behind it (`ws_bridge.py:416-417` + `_drain_queue` at :346) turns that miss into deferred, unannounced execution.\n\nThe deeper pattern worth naming to the team: this codebase already knows how to degrade honestly. `health_strip.py:194-206` literally carries the rule in its docstring — \"never green from absence\" — and applies it rigorously to the status cells. That disci",
+   "unverified": [
+    "I never launched the panel. Every finding is read from source at master @ 67625294 — no live Qt, no Houdini session, no screenshot taken. A composed run could reveal that some of this is masked by behaviour I did not read.",
+    "I did not read `_ensure_server()` past its first ~20 lines (chat_panel.py:284+), so I cannot say what a fresh install's auto-start actually does — it may succeed often enough that FR-1's bridge-down window is narrower than I imply, or it may fail silently and widen it.",
+    "I never opened `doctor_dialog.py`. Doctor may already report the model state and the connection reason clearly; my FR-4 and FR-5 scaffolds assume it does not surface them in the panel's resting view, which is a different claim from 'the information does not exist'.",
+    "I did not check `connection_dialog.py` for whether it blocks sends until a model is chosen, which would partially mitigate FR-4.",
+    "I did not look for tests pinning any of this behaviour. The send-guard and the drain-queue replay may be deliberate and test-locked; I found no test, but I did not search for one.",
+    "I confirmed only the existence of the v5.70.0 installer artefacts (`harness/notes/release-5.70.0/` — installer-verification.json, seat-5.70.0.txt, suite-5.70.0.txt, release-body.md, compose_verification.py, SYNAPSE-5.70.0-Setup.public-build.json). I read none of their contents, so I make no claim about what the installer verifies or whether the Setup.exe first-run path matches the README's four steps.",
+    "I did not read `harness/finesse-20260906/` beyond its file listing, so the finesse pass may already address FR-2 or FR-3 on an unmerged branch.",
+    "The five open commits in the work graph touching panel files were not diffed against these findings — one of the 16 unapplied branches may already fix FR-1."
+   ],
+   "findings": [
+    {
+     "id": "FR-1",
+     "title": "A message typed while the bridge is down is silently queued, spins forever, then fires later without warning",
+     "severity": "blocker",
+     "artist_symptom": "I typed \"make a box\" and the three dots just kept going. Nothing came back, so I typed it again. And again. I went to get coffee, and when I came back there were four boxes in my scene that I didn't ask for right then.",
+     "current_state": "`_send_message` (python/synapse/panel/chat_panel.py:848-870) guards on `if self._bridge is not None:` — the object's existence, not the connection. The only \"Not connected to SYNAPSE server.\" message lives in the `else` branch (:867-869), which is reachable only when no bridge object was ever built (no-Qt / standalone), NOT in the ordinary bridge-down case. So with the bridge object alive but the socket down, the panel appends the user message, sets `_waiting_for_response = True` and calls `show",
+     "proposed_scaffold": "Two decisions, both artist-facing. (1) Make the send guard read the socket, not the object: refuse the send when `not self._bridge.connected` and say so in the artist's words in-stream — \"Not connected to Houdini yet. Press Connect, or run Doctor to see why.\" with the Connect button right there. (2) Decide what a queued message means. Either drop the queue for `route_chat` entirely (chat is not a fire-and-forget command), or — if replay is wanted — surface it as a visible pending item the artist",
+     "effort": "M",
+     "evidence": "['python/synapse/panel/chat_panel.py:848-870 — `if self._bridge is not None:` ... else: append_system_message(\"Not connected to SYNAPSE server.\")', 'python/synapse/panel/ws_bridge.py:409-417 — `if self._ws is not None: try send; ...` then unconditional `self._send_queue.append(msg_json)`', 'python/synapse/panel/ws_bridge.py:346-357 — `_drain_queue` replays all pending messages on reconnect', 'python/synapse/panel/ws_bridge.py:255 — `_drain_queue()` called immediately after `status_changed.emit(T",
+     "files": "['python/synapse/panel/chat_panel.py', 'python/synapse/panel/ws_bridge.py']"
+    },
+    {
+     "id": "FR-2",
+     "title": "The panel's first line says \"Ready.\" before it has connected to anything or been given a model",
+     "severity": "major",
+     "artist_symptom": "It said Ready, so I started typing.",
+     "current_state": "`chat_panel.py:242-245` appends \"Ready. What shall we work on?\" unconditionally inside `createInterface`, before `onActivateInterface` (:250-256) has run `_ensure_server()` or started the bridge thread. At that instant the status chip two rows up correctly reads \"Disconnected\" in red (:613-622) — so the artist gets two contradictory claims in the same pane in the same frame, and the conversational one is the one they read. \"Ready\" is also not true of the model: README step 4 requires Connect mod",
+     "proposed_scaffold": "Make the greeting a function of state, not a constant. Three states worth distinguishing, in the artist's words: no model chosen -> \"First: pick a model. Connect models is below the prompt.\"; model chosen, bridge down -> \"Model is set. Not talking to Houdini yet — press Connect.\"; both live -> \"Ready. What shall we work on?\" Same one-line slot, three truths. The honesty rule already written into health_strip.py (\"never green from absence\") is the rule this line is missing.",
+     "effort": "S",
+     "evidence": "['python/synapse/panel/chat_panel.py:242-245 — unconditional `append_synapse_message(\"Ready. What shall we work on?\")`', 'python/synapse/panel/chat_panel.py:250-256 — `onActivateInterface` runs `_ensure_server()` / `self._bridge.start()` AFTER the greeting was appended', 'python/synapse/panel/chat_panel.py:613-622 — connection chip initialises to \"Disconnected\" / `_ERROR_COLOR`', 'python/synapse/panel/health_strip.py:194-206 — the contrasting rule, stated in its own docstring: \"never green from ",
+     "files": "['python/synapse/panel/chat_panel.py']"
+    },
+    {
+     "id": "FR-3",
+     "title": "Every quick-action pill is a dead end in the empty scene the quickstart tells you to open",
+     "severity": "major",
+     "artist_symptom": "There are five buttons across the bottom and not one of them does anything in a new scene. So I'm looking at a blank box with a blinking cursor and no idea what this thing actually wants from me.",
+     "current_state": "`quick_actions.py:12-63` ships exactly five pills: Explain, Make HDA, Fix Error, Optimize, VEX Help. Each presumes something that already exists — a network to explain, nodes to package, an error to fix, a graph to optimize. `docs/getting-started/quickstart.md:5-6` tells the artist to \"Use a scratch scene for the first run,\" and README.md:34 gives the actual correct first move — `make a box` — which appears nowhere in the panel. So the panel's only visible affordances are all inapplicable at pre",
+     "proposed_scaffold": "The first-run pill row should be a different row. On an empty scene (no nodes under the current network), swap in three build-from-nothing starters that match what README already teaches: \"Make a box\", \"Set up a Solaris shot\", \"Show me what you can do\". Swap back to the current five the moment there is something to act on. This is a decision about what the artist's first click is, not a code cleanup — the pills are the only instruction the panel gives.",
+     "effort": "M",
+     "evidence": "['python/synapse/panel/quick_actions.py:12-63 — QUICK_ACTIONS = Explain / Make HDA / Fix Error / Optimize / VEX Help', 'python/synapse/panel/quick_actions.py:138-139 — all five rendered unconditionally into the pill row', 'docs/getting-started/quickstart.md:5-6 — \"Use a scratch scene for the first run\"', 'README.md:32-36 — the real first move, `make a box`, is documented but not offered in-panel']",
+     "files": "['python/synapse/panel/quick_actions.py', 'python/synapse/panel/chat_panel.py']"
+    },
+    {
+     "id": "FR-4",
+     "title": "At rest, the panel cannot be told apart from \"configured\" vs \"never configured a model\"",
+     "severity": "major",
+     "artist_symptom": "How do I know it's actually hooked up to anything? There's no light for the model — only for Houdini.",
+     "current_state": "Grep across `chat_panel.py`, `claude_worker.py` and `model_discovery.py` for a no-model-chosen guard returns one hit, `model_discovery.py:64 \"No models listed by Ollama\"` — and that string lives inside the Connect-models dialog, which the artist has to have already opened. The chat header has a connection dot for the Houdini bridge (`chat_panel.py:613-640`) but no equivalent for the model. The health strip has cells for connection / memory / project / job (`health_strip.py:273 build_cells`) — no",
+     "proposed_scaffold": "Give the model the same honest chip the bridge already has, using the existing StripCell verdict vocabulary: UNKNOWN when nothing is chosen (never green from absence — the rule is already written), AMBER for chosen-but-unchecked, OK for checked, with the model name as the label. The first-session handoff already sells \"Clear destination: Local, Cloud, Cloud relay, Remote, or Unverified\" — that state exists at connect time; it just doesn't persist anywhere the artist can glance at afterwards.",
+     "effort": "M",
+     "evidence": "['grep no-model guard across python/synapse/panel/{chat_panel,claude_worker,model_discovery}.py — single hit: model_discovery.py:64 \"No models listed by Ollama\"', 'python/synapse/panel/health_strip.py:273 — `build_cells` covers connection / memory / project / job only', \"python/synapse/panel/chat_panel.py:613-640 — the header's only status affordance is the Houdini bridge dot + Connect button\", 'harness/first-session-20260906/artifacts/first-session-handoff.md — \"Clear destination: Local, Cloud,",
+     "files": "['python/synapse/panel/chat_panel.py', 'python/synapse/panel/health_strip.py', 'python/synapse/panel/model_discovery.py']"
+    },
+    {
+     "id": "FR-5",
+     "title": "Connection failure prints three raw exception lines, then goes permanently silent while still failing",
+     "severity": "major",
+     "artist_symptom": "It complained three times with something about ConnectionRefusedError, then went quiet. I figured that meant it sorted itself out.",
+     "current_state": "`ws_bridge.py:222-233`: on each failed connect the reconnect loop emits `\"Couldn't connect ({n}/3): {e}\"` where `e = str(exc) if str(exc) else type(exc).__name__` — i.e. a bare Python exception name in the artist's conversation. The emit is gated on `if attempts <= 3` (:226), so from the fourth attempt onward the loop keeps retrying every 5s (:239-240) and says nothing. `_on_connection_error` (`chat_panel.py:925-927`) pipes that raw string straight into the chat with no translation, even though ",
+     "proposed_scaffold": "Two calls. (1) Route connection errors through the error translator that is already sitting in the package, so the artist reads \"Houdini's SYNAPSE server isn't answering on port 9999\" and a next action (Connect / Doctor), not a class name. (2) Decide what continued silent failure should say. A single persistent line that updates in place — \"Still trying to reach Houdini (4 min)\" with a Doctor button — beats three bursts and a hush, because the hush is what makes the artist assume success.",
+     "effort": "S",
+     "evidence": "['python/synapse/panel/ws_bridge.py:222-233 — `err_msg = str(exc) if str(exc) else type(exc).__name__`; emit gated on `if attempts <= 3`', 'python/synapse/panel/ws_bridge.py:238-240 — backoff continues at 5000ms indefinitely with no further emit', 'python/synapse/panel/chat_panel.py:925-927 — `_on_connection_error` appends the raw string verbatim', 'python/synapse/panel/error_translator.py exists in the same package and is not called on this path']",
+     "files": "['python/synapse/panel/ws_bridge.py', 'python/synapse/panel/chat_panel.py', 'python/synapse/panel/error_translator.py']"
+    }
+   ]
+  },
+  {
+   "label": "artist:utility",
+   "state_of_play": "128 tools are registered in C:\\Users\\User\\SYNAPSE\\python\\synapse\\mcp\\_tool_registry.py (counted: 128 tuples; README.md:121 agrees, \"128 tools, two paths\").\n\nThe panel does NOT hand all 128 to the artist's chat. C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\tool_bridge.py builds the worker's tool list from TOOL_DEFS plus exactly 6 synapse_group_* knowledge tools (_GROUP_MODULE_MAP, tool_bridge.py:20-27). Then C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py filters it at call time (claude_worker.py:401 `is_tool_allowed_for_worker(tool_name)`).\n\nI ran that filter. With no SYNAPSE_WORKER_TOOL_MODE set, resolve_mode() == \"standard\" and the partition is ALLOWED 92 / DENIED 36. Every render tool is in the denied 36: houdini_render, synapse_safe_render, synapse_render_sequence, synapse_re",
+   "top_recommendation": "Wire a worker-policy denial into the approve/reject card the panel already ships (U2).\n\nRight now 36 of 128 tools dead-end as an is_error string the artist never sees, and the LLM is instructed by that string to go do something smaller. Meanwhile gate_widget.py has working approve_clicked / reject_clicked signals and chat_panel.py:219 already connects a proposal stream to it — just the bridge's stream, not the worker's. One signal from ClaudeWorker into that existing widget converts every one of those 36 dead ends into a one-click artist decision.\n\nIt is also the only fix that honors the 2026-08-18 DECIDE rather than fighting it. That ruling says the interactive panel worker may not self-authorize gated ops. An approve card does not let it self-authorize — it makes the artist the authorize",
+   "unverified": [
+    "I never launched Houdini or the panel. Nothing here is a live run — it is the registry, the policy module, and the panel source read statically, plus one headless execution of worker_policy's own partition.",
+    "The allow/deny partition was computed in my shell with SYNAPSE_WORKER_TOOL_MODE unset, which resolved to 'standard'. If Joe's Houdini environment sets that variable (or SYNAPSE_WORKER_TOOL_PROFILE) to 'unrestricted', the deny list is empty and U1/U3/U4 do not fire. I did not check his live environment. Everything in U1-U4 is conditional on default mode.",
+    "My partition ran under Python 3.14 outside Houdini and printed a vendored-SDK ABI mismatch warning. worker_policy is documented as pure Python with zero hou/Qt imports, so the result should hold under Houdini's 3.13 — but I did not re-run it there to confirm.",
+    "I did not verify that a worker denial has NO path to gate_widget. I grepped the panel for 'proposal' and found only the bridge stream (chat_panel.py:219). An indirect path could exist that my grep missed.",
+    "docs/MCP_TOOL_CATALOG.md is a v5.6.0 archive, so its per-tool safety annotations (RO/MUT/IDEM) may not match the current registry flags. The houdini_set_parm USD-encoding note in U5 I treat as still-true because the punycode problem is independently recorded in memory — but I did not re-probe a live UsdLux node.",
+    "I did not read the 6 synapse_group_* GROUP_KNOWLEDGE strings, so I cannot say how useful the LOOK-UP path actually is — only that those 6 tools are present and allowed.",
+    "I did not check whether the panel's own Scene Doctor (which CLAUDE.md's catalog entry describes as distinct from the synapse_doctor tool) still works while synapse_doctor is denied to the worker. If it does, FIX is in better shape than I rated it.",
+    "I did not test whether the /mcp path (Claude Code, this session) completes a render end to end. The denial findings are panel-specific; the external-MCP surface has a different gate story and I did not exercise it.",
+    "The label derivations in U7 (\"Dirty node\", \"Sleep pass\", etc.) I traced by hand through tool_label's code path rather than by executing it."
+   ],
+   "findings": [
+    {
+     "id": "U1",
+     "title": "The panel cannot render, and cannot stop a render",
+     "severity": "blocker",
+     "artist_symptom": "I typed \"render frame 1001 and show me\" and it talked me through what it would do instead of doing it. Then when a render was already grinding I asked it to stop and it couldn't do that either.",
+     "current_state": "worker_policy.resolve_mode() defaults to \"standard\"; _DENIED_GATES = {review, approve, critical} (worker_policy.py:63). Running the live partition over all 128 registry tools: 92 allowed / 36 denied. Denied includes houdini_render, synapse_safe_render, synapse_render_sequence, synapse_render_progressively, synapse_autonomous_render, tops_render_sequence, tops_multi_shot, tops_batch_cook, tops_cook_and_validate, AND synapse_render_stop + synapse_render_farm_cancel + synapse_emergency_halt. Allowe",
+     "proposed_scaffold": "Split the deny set by direction. Starting work stays gated; STOPPING work should not be — carve synapse_render_stop, synapse_render_farm_cancel and synapse_emergency_halt out of _DENIED_GATES into an explicit _WORKER_BRAKE_ALLOWLIST beside the existing _WORKER_BUILDER_ALLOWLIST (worker_policy.py:81), with the same one-paragraph L4 rationale the builder exemption already carries. Starting a render then routes through U2's approve card rather than staying dead.",
+     "effort": "S",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\worker_policy.py:63 _DENIED_GATES = frozenset({\"review\", \"approve\", \"critical\"})', 'ran: PYTHONPATH=\"python;.\" python -c \"from synapse.panel.worker_policy import is_tool_allowed_for_worker...\" -> mode=standard, ALLOWED 92 DENIED 36', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\claude_worker.py:401 allowed, reason = is_tool_allowed_for_worker(tool_name)', 'denied list contains synapse_emergency_halt and synapse_render_stop verbatim']",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\worker_policy.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\claude_worker.py']"
+    },
+    {
+     "id": "U2",
+     "title": "A denied tool dead-ends in chat; the approve/reject card that exists is wired to a different path",
+     "severity": "blocker",
+     "artist_symptom": "It never asks me. It just quietly does something smaller than what I asked for and tells me about it afterwards. I'd have said yes.",
+     "current_state": "denial_tool_result (worker_policy.py:234-248) returns an Anthropic tool_result with is_error=True and the text \"...is not permitted for the panel worker: {reason}. Choose a different, lower-privilege approach.\" That string goes to the LLM, not to the artist. The LLM's designed response is to substitute a weaker plan. Meanwhile a full approve/reject UI already ships: gate_widget.py has approve_clicked / reject_clicked / revert_requested signals (gate_widget.py:196-198) and chat_panel.py:219 conne",
+     "proposed_scaffold": "Make a worker denial emit a gate proposal instead of an is_error string. One new signal on ClaudeWorker (gate_proposal_requested) carrying (tool_name, args, reason); chat_panel routes it into the same _gate_widget.handle_ws_proposal path already wired at chat_panel.py:219; approve dispatches the held tool call, reject returns today's denial_tool_result. The artist becomes the authorizer, which is exactly what the 2026-08-18 DECIDE says should happen — the worker still self-authorizes nothing.",
+     "effort": "M",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\worker_policy.py:234-248 denial_tool_result(...) is_error True, content \"Choose a different, lower-privilege approach.\"', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\gate_widget.py:196-198 approve_clicked / reject_clicked / revert_requested', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\chat_panel.py:219 self._bridge.gate_proposal.connect(self._gate_widget.handle_ws_proposal)', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\wor",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\worker_policy.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\claude_worker.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\chat_panel.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\gate_widget.py']"
+    },
+    {
+     "id": "U3",
+     "title": "The \"Make HDA\" button's own prompt names a tool the panel is not allowed to run",
+     "severity": "major",
+     "artist_symptom": "I selected my subnet, hit Make HDA, and it made something but it never packaged it. The button says package.",
+     "current_state": "quick_actions.py:24-31 ships a QUICK_ACTION labelled \"Make HDA\" whose prompt is literally \"Package the selected subnet into an HDA with a clean interface and help card.\" houdini_hda_create and houdini_hda_promote_parm and houdini_hda_set_help are allowed; houdini_hda_package is in the denied 36. This is one of only three buttons on the panel's primary clickable surface, so an artist who does not know tool names hits it at close to maximum frequency for its cohort.",
+     "proposed_scaffold": "Either add houdini_hda_package to the exempt allowlist with a written rationale (it is a disk write, so it is really U2's approve card), or reword the shipped prompt so it promises what it can deliver. Whichever way it goes, add a test in the shape of tests/test_activity_labels.py::test_every_curated_key_is_a_live_tool — assert that every tool a QUICK_ACTION prompt names by verb is permitted under the default worker mode, so a button can never again promise a denied action.",
+     "effort": "S",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\quick_actions.py:24-31 label \"Make HDA\", prompt \"Package the selected subnet into an HDA...\"', 'houdini_hda_package appears in the computed DENIED 36; houdini_hda_create does not', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\chat_panel.py:518 iterates QUICK_ACTIONS to build the row']",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\quick_actions.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\worker_policy.py']"
+    },
+    {
+     "id": "U4",
+     "title": "Every one-call shot setup is denied while its own ingredients are allowed — the code comment already says that path doesn't finish",
+     "severity": "major",
+     "artist_symptom": "I asked it to set up a Karma shot. It started building nodes one at a time and then just stopped partway through with a wall of text.",
+     "current_state": "_WORKER_BUILDER_ALLOWLIST (worker_policy.py:81-84) exempts exactly two composites: synapse_solaris_build_graph and synapse_solaris_assemble_chain. The rationale written in that block is decisive and self-documenting: the composites are \"ONE undo-wrapped call composed entirely of inform-level primitives... Allowing the composite collapses a 25-turn imperative build (which hit the iteration cap without finishing) into ONE turn + ONE cook, granting NO capability the worker did not already have.\" Th",
+     "proposed_scaffold": "Audit those eight against the exact test the existing exemption states — is the composite made only of create_node / connect_nodes / set_parameter, and does it touch no disk? Promote the ones that pass into _WORKER_BUILDER_ALLOWLIST under the same L4 paragraph. The ones that write to disk (import_megascans, shot_render_ready) go to U2's approve card instead. Do not widen _DENIED_GATES.",
+     "effort": "S",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\worker_policy.py:68-84 the builder-allowlist rationale block, including \"hit the iteration cap without finishing\"', 'computed DENIED 36 contains synapse_solaris_shotsetup_karma_xpu, synapse_solaris_scene_template, synapse_solaris_component_builder, synapse_solaris_create_variants, synapse_solaris_set_purpose, synapse_solaris_import_megascans, synapse_matlib_bind, houdini_shot_render_ready']",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\worker_policy.py']"
+    },
+    {
+     "id": "U5",
+     "title": "\"Make the light brighter\" needs a parameter name no human can type, and the doc that says so points at a tool that does not exist",
+     "severity": "major",
+     "artist_symptom": "I said make the key light brighter. It went looking for the intensity parameter, didn't find anything called intensity, and started guessing.",
+     "current_state": "docs\\MCP_TOOL_CATALOG.md, the houdini_set_parm row, states it plainly: \"**USD note:** parameter names are encoded (e.g. `xn__inputsintensity_i0a` not `intensity`). Use `houdini_inspect_node` first.\" Two problems in one sentence. (1) The remedy it names, houdini_inspect_node, is not a registered tool — the registry has synapse_inspect_node. An LLM following its own catalog calls a phantom. (2) Per the standing memory note on UsdLux punycode, the hand-maintained xn__ parm map is majority phantom a",
+     "proposed_scaffold": "Give the artist's most common phrasing a real destination: a small plain-name resolver (intensity / exposure / color / cone angle / radius) that probes the live node's parmTuples on the main thread and returns the encoded name, rather than a static table. Ship it as a read-only helper the worker is allowed to call before set_parm. Independently, fix the catalog's phantom pointer to synapse_inspect_node — that is a one-word edit that stops teaching an API that does not exist.",
+     "effort": "L",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\docs\\\\MCP_TOOL_CATALOG.md houdini_set_parm row: \"parameter names are encoded (e.g. xn__inputsintensity_i0a not intensity). Use houdini_inspect_node first.\"', 'registry tool list contains synapse_inspect_node; it contains no houdini_inspect_node', 'memory: UsdLux punycode parm map is majority phantom; probe-generate, never guess']",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\docs\\\\MCP_TOOL_CATALOG.md', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\mcp\\\\_tool_registry.py']"
+    },
+    {
+     "id": "U6",
+     "title": "The panel worker has no phantom guard — synapse_scout is not in its tool list",
+     "severity": "major",
+     "artist_symptom": "It confidently wrote me some Python with a hou call that doesn't exist, and I only found out when Houdini threw.",
+     "current_state": "CLAUDE.md §11 rule 15 makes synapse_scout the front-line defense against SYNAPSE's #1 failure class (phantom APIs) and says to call it before emitting any unfamiliar hou./pdg./pxr. symbol. scout is defined at python\\synapse\\cognitive\\tools\\scout.py:1101 and reaches the /mcp path through the cognitive Dispatcher. It is NOT in TOOL_DEFS (not among the 128 names I extracted) and NOT in tool_bridge's _GROUP_MODULE_MAP. tool_bridge._build_cache iterates TOOL_DEFS then _GROUP_TOOLS and nothing else (t",
+     "proposed_scaffold": "Append synapse_scout to the panel worker's tool cache the same way the 6 group tools are appended — it is pure-Python, zero-hou, read-only, so it is an inform-level tool by construction and needs no gate change. Then add one line to the panel system prompt mirroring §11 rule 15. Pin it with a test asserting scout is present in tool_bridge's cache and allowed by worker_policy.",
+     "effort": "S",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\cognitive\\\\tools\\\\scout.py:1101 \"name\": \"synapse_scout\"', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\tool_bridge.py:20-27 _GROUP_MODULE_MAP lists only the 6 synapse_group_* tools', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\tool_bridge.py:50-62 _build_cache iterates TOOL_DEFS + _GROUP_TOOLS', 'synapse_scout absent from the 128 names extracted from _tool_registry.py', 'CLAUDE.md §11 rule 15']",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\tool_bridge.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\cognitive\\\\tools\\\\scout.py']"
+    },
+    {
+     "id": "U7",
+     "title": "120 of 128 labels are transliterated tool ids, not things an artist would say",
+     "severity": "minor",
+     "artist_symptom": "The status line says \"Running: Dirty node\" and \"Running: Sleep pass\" and I have no idea whether that's good news.",
+     "current_state": "b475ee22 is a genuine repair — it stopped .capitalize() destroying domain words and stopped every synapse_/cops_/tops_ tool leading with a namespace, and it pinned the curated map with tests\\test_activity_labels.py so the 4-of-8 rot cannot recur. The module docstring is honest about what remains: _TOOLS carries 8 human sentences (activity.py:45-55) and \"The derivation below is the label for the other ~120 tools.\" Tracing the derivation by hand on live names: tops_dirty_node -> \"Dirty node\", syna",
+     "proposed_scaffold": "Extend _TOOLS by frequency, not by alphabet. Take the ~25 tools that actually fire in a normal session (the allowed 92 minus the long tail) and write each one a sentence in the artist's voice, the way the existing 8 read (\"Read the network\", \"Recall saved context\"). The pinning test already guarantees every key is live, so the map can grow safely. Everything else keeps the derivation.",
+     "effort": "M",
+     "evidence": "['git show b475ee22 — commit body documents the .capitalize() and 4-of-8 defects and their repair', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\activity.py:1-13 docstring: \"The derivation below is the label for the other ~120 tools.\"', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\activity.py:45-55 _TOOLS has exactly 8 entries', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\activity.py:59-88 tool_label derivation']",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\activity.py']"
+    },
+    {
+     "id": "U8",
+     "title": "The only tool catalog in docs/ is wrong by 48 tools and says so about itself",
+     "severity": "minor",
+     "artist_symptom": "I went looking for what this thing can do and found a list from a version that isn't this one.",
+     "current_state": "docs\\MCP_TOOL_CATALOG.md line 1: \"ARCHIVED SNAPSHOT — v5.6.0-era (80 tools). Kept for history; the numbers below are stale.\" Line 2, the correction, is itself stale: \"Current truth: 115 registry tools, v5.22.0.\" The registry has 128 and README.md:121 says 128. So the doc is wrong twice over and points the reader at README + CHANGELOG instead of at a current list. There is no generated current catalog. The header inside tool_bridge.py carries the same drift in a self-limiting form (\"Registry tool",
+     "proposed_scaffold": "Regenerate the catalog from TOOL_DEFS at release time and add the count to scripts/sync_version.py's propagation set, so the tool count is a produced number like every other number in README (Law 2) rather than a hand-typed one. Bonus: generate two columns — \"registered\" and \"reachable from the panel under default mode\" — which is the distinction U1 through U4 are all really about.",
+     "effort": "S",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\docs\\\\MCP_TOOL_CATALOG.md:1-2', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\README.md:121 \"**128 tools, two paths.**\"', 'grep -c on _tool_registry.py tuple heads = 128', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\tool_bridge.py:55 comment says 124']",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\docs\\\\MCP_TOOL_CATALOG.md', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\mcp\\\\_tool_registry.py']"
+    }
+   ]
+  },
+  {
+   "label": "artist:trust",
+   "state_of_play": "Static read of master @ 67625294. No Houdini was launched; nothing here is a live probe.\n\n**Undo wrapping is far WIDER than CLAUDE.md admits.** CLAUDE.md §1 describes a small \"tracked set\" of live handlers that wrap in `hou.undos.group` (usd/material/cops/batch/execute + node create/connect/delete + set_parm + set_keyframe). The tree has roughly 35 `hou.undos.group(...)` call sites across `C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\` — handlers_cops.py alone has ~14, plus handlers_usd.py (6+), handlers_material.py (3), handlers_hda.py (2), handlers_render.py (3), handlers_solaris_graph.py, handlers_solaris_compose.py (2), handlers_node.py (3), handlers.py (batch/set_parm/execute). The doc understates its own coverage.\n\n**Rollback is REAL in some handlers, contradicting \"grouping only, not",
+   "top_recommendation": "**Ship the Undo Receipt (TRUST-2). It is an S-effort change that answers the artist's actual question, and it is the carrier for three other findings.**\n\nEvery mutating handler already writes the true answer — `hou.undos.group(\"synapse_node_create\")`, `hou.undos.group(\"SYNAPSE: build_graph\")` — and then discards it. Add one helper in `server/handler_helpers.py` that opens the group and records it into the response:\n\n```\nundo: { label: \"synapse_node_create\", steps: 1, rolls_back_on_failure: false }\n```\n\nThe panel prints one dim line under each result. That single line closes TRUST-2 (the artist learns what one Ctrl+Z reverses), carries TRUST-4's disclosure (`rolls_back_on_failure` is a static property of each code path — no runtime inference), gives TRUST-3 the label it needs to refuse a mi",
+   "unverified": [
+    "NOTHING WAS RUN. No Houdini, no hython, no live probe. Every claim here is static code reading at master @ 67625294. A green read of a `try/except: performUndo()` block does not prove it reverses anything in a real session.",
+    "Whether GateWidget cards are ever actually RAISED on the /mcp path. I read the widget's construction and its REVERT wiring, not its call sites. The gate card may only exist on the panel-worker path.",
+    "The 'group only, no rollback' half of TRUST-4. My grep for `undos` in python/synapse/server was truncated at 70 results, ending mid-way through handlers_usd.py:1132. handlers_usd.py may contain `performUndo` calls past that line that I did not see. handlers_node.py and handlers_material.py are solid (whole-file coverage within the returned set); handlers_usd.py is partial.",
+    "Whether an OUT-OF-PROCESS MCP server (stdio, separate interpreter) constructs its own bridge with gates armed. I verified the in-process adapter path (mcp/tools.py:118-124 -> bridge_adapter -> gate-less singleton). A separately-launched stdio server could in principle build its own `LosslessExecutionBridge(...)` with a real `_gate`; I did not find such a construction, but I did not exhaustively search for one.",
+    "What `tests/test_phase0b_consent_posture.py` actually pins. CLAUDE.md cites it three times as the proof of the consent posture. I never opened it.",
+    "The resolution logic of `SYNAPSE_WORKER_TOOL_MODE`. I read the mode constants and the standard-mode deny set (worker_policy.py:46-78). I did not read how `unrestricted`, `demo`, or `proposal` resolve, or whether any of them is reachable by default.",
+    "The `_ROLLBACK_ERRORS` tuple contents. handlers.py:1283-1286 describes it in a comment (NameError/SyntaxError/TypeError/AttributeError roll back; render timeout / file-not-found / hou.OperationFailed do not) but I did not read the actual definition.",
+    "Whether the `performUndo()` in handlers_solaris_graph.py:838 is sufficient. It is ONE step. Whether a failed build_graph produces exactly one undo entry is unmeasured — this is the residual named in TRUST-5 and it needs a live probe to close.",
+    "Panel display wiring. I confirmed zero artist-facing undo STRINGS exist, but I did not read chat_display.py or activity.py to confirm where a receipt line would render, so the 'S' effort on TRUST-2 covers the handler side with confidence and the panel side by inference."
+   ],
+   "findings": [
+    {
+     "id": "TRUST-1",
+     "title": "Consent gates are documented, coded, and unreachable — every in-process path auto-approves",
+     "severity": "blocker",
+     "artist_symptom": "\"It deleted the node. It never asked me. The docs say delete is a REVIEW gate and render is APPROVE — I was counting on that.\"",
+     "current_state": "CLAUDE.md §1.1/§1.2/§1.2.1 and §11 rule 5 describe INFORM/REVIEW/APPROVE/CRITICAL gates routing through `synapse.core.gates.HumanGate` with timeout-to-rejection. In the running process no path can reach it. `shared/bridge.py:2942` hardcodes `consent_callback=lambda op: True`; `:2943` sets `_gate = None`. `panel/bridge_adapter.py:214-217` states this is deliberate and order-independent; `_panel_consent` (`:189-205`) returns True unconditionally to avoid a main-thread deadlock that was confirmed l",
+     "proposed_scaffold": "Do not try to re-arm HumanGate — the deadlock reason at bridge_adapter.py:189-205 is legitimate and re-arming it would re-freeze Houdini. Instead make the posture VISIBLE and make it the truth: (a) one line in the panel header that states the running posture in artist words — \"Auto-approve: this panel runs everything you ask without a confirm step\" — sourced from the actual `_consent_callback`/`_gate` state on the live bridge, not a constant; (b) correct CLAUDE.md §1.1/§1.2.1 and §11 rule 5 to s",
+     "effort": "M",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\shared\\\\bridge.py:2937-2945 — `LosslessExecutionBridge(consent_callback=lambda op: True)` then `bridge._gate = None`', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\bridge_adapter.py:189-205 — `_panel_consent` returns True unconditionally', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\bridge_adapter.py:208-231 — `get_bridge()` reuses the process singleton, re-pins `_consent_callback`, sets `_gate = None`', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\mcp\\\\to",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\shared\\\\bridge.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\bridge_adapter.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\mcp\\\\tools.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\worker_policy.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\CLAUDE.md']"
+    },
+    {
+     "id": "TRUST-2",
+     "title": "The product never tells the artist what a given action can undo — zero artist-facing undo words in the entire codebase",
+     "severity": "blocker",
+     "artist_symptom": "\"I save-as before every prompt, because I have no idea whether one Ctrl+Z gets my scene back or whether I'm about to spend ten minutes picking apart a half-built network.\"",
+     "current_state": "Every mutating handler opens a named undo group — `synapse_node_create`, `synapse_set_parm`, `SYNAPSE: build_graph`, `synapse_cops_stylize` and ~30 more. That label is the exact, truthful answer to \"what will one Ctrl+Z reverse?\" and it is thrown away: it never reaches the response payload, the panel, or the chat transcript. A repo-wide grep for `Ctrl+Z`, `undoable`, `one undo`, `can be undone`, `cannot be undone` across all `.py` returns nothing. The artist's only signal is the Houdini undo men",
+     "proposed_scaffold": "**The Undo Receipt — the smallest scaffold that buys the most trust.** The group label already exists at every call site. Add one helper in `server/handler_helpers.py` that both opens the group and records it, then attach to every mutating response: `undo: {label: \"synapse_node_create\", steps: 1, rolls_back_on_failure: true|false}`. The panel prints one dim line under each result: `Undoable — 1 step: \"synapse_node_create\"` or `Undoable — 1 step, but a failure leaves partial work behind`. No new ",
+     "effort": "S",
+     "evidence": "['grep -rn \"Ctrl\\\\+Z|one undo|undoable|can be undone|cannot be undone\" --include=*.py over C:\\\\Users\\\\User\\\\SYNAPSE returned 0 matches', '~35 `hou.undos.group(\"<label>\")` call sites across C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\ — e.g. handlers_node.py:66,144,174; handlers.py:1013,1141,1144,1170,1295; handlers_cops.py:355,434,495,546,586,775,833,1049,1102,1245,1380,1516,1611,1745,1857,2025', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_usd.py:428,542,623,696,809,1132 ",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_node.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_cops.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\chat_display.py']"
+    },
+    {
+     "id": "TRUST-3",
+     "title": "The REVERT button is a global one-step undo wearing an operation's name",
+     "severity": "major",
+     "artist_symptom": "\"I clicked REVERT on the card that said 'delete_node' and it undid the thing I did by hand ten seconds ago instead.\"",
+     "current_state": "`panel/gate_widget.py:258` renders a `← REVERT` verb on REVIEW cards. The panel's own test pins what it actually does: it sends a `houdini_undo` request, which is `hou.undos.performUndo()` — one global step, no target. The test's docstring is explicit that this does NOT scope the undo; it merely injects the card's operation NAME into the prompt text so the request *reads* like it names the change. If the artist touched the scene after the agent's op, or if the op produced more than one undo entr",
+     "proposed_scaffold": "Two options, both cheap. (a) Rename the verb to what it does — `← UNDO LAST` — and put the card's label under it as context rather than as an implied target. (b) Before sending, compare the current top undo label against the label recorded for that operation (TRUST-2's receipt already carries it); if they differ, refuse and say why: \"The last undo step is now 'Edit Parameters', not 'synapse_node_create' — undo by hand so you can see what you're reversing.\" Option (b) is the honest one and reuses",
+     "effort": "S",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\tests\\\\panel\\\\test_consent_way_back.py:245-262 — `test_the_request_names_the_operation_the_card_names`: \"``houdini_undo`` is ``hou.undos.performUndo()`` - one global step, no target - so this does NOT scope the undo. It puts the card\\'s own operation name into the request\"', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\gate_widget.py:258 — `_verb(\"\\\\u2190 REVERT\", self._on_revert_clicked)`', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers.py:924-929",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\gate_widget.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\tests\\\\panel\\\\test_consent_way_back.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers.py']"
+    },
+    {
+     "id": "TRUST-4",
+     "title": "Failure cleanup is a coin flip the artist cannot call — half the handlers roll back, half orphan",
+     "severity": "major",
+     "artist_symptom": "\"Last time a build failed it cleaned itself up. This time it left eight half-wired LOPs in my stage. Same panel, same kind of request — I can't predict which one I'm getting.\"",
+     "current_state": "Two populations of mutating handler, indistinguishable from the artist's side. **Roll back on the exception path:** handlers_solaris_graph.py:834-841, handlers_solaris_compose.py:89,127, handlers_cops.py (9 sites: 379,454,885,1149,1321,1445,1686,1801,1890), handlers_hda.py:592, handlers_render.py:2028, handlers.py:1305-1310. **Group only, no rollback — partial work survives:** handlers_node.py:66,144,174 (create/delete/connect), handlers_usd.py:428,542,623,696,809, handlers_material.py:232,311,5",
+     "proposed_scaffold": "This is the `rolls_back_on_failure` field of TRUST-2's receipt — same one-line change, no new surface. Compute it once per handler (it is a static property of the code path, not a runtime decision) and let the panel say it before or after: \"If this fails partway, it cleans up after itself\" vs \"If this fails partway, what it already built stays in your scene.\" Ship the disclosure first; converging the handlers on one contract is a separate, larger job that should not block the artist knowing whic",
+     "effort": "M",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_graph.py:829-841 — `except Exception:` -> `if undo_enabled and tuple(hou.undos.undoLabels()) != labels_before: hou.undos.performUndo()` then `raise`', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers.py:1281-1310 — selective rollback: `_ROLLBACK_ERRORS` roll back, operational errors keep mutations \"since node creation/wiring may have succeeded\"', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_node.py:",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_graph.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_node.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_cops.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers.py']"
+    },
+    {
+     "id": "TRUST-5",
+     "title": "\"Failed Solaris builds orphan partial networks\" is no longer true for build_graph — and the correction is worse than the old bug if nobody publishes it",
+     "severity": "major",
+     "artist_symptom": "\"I was told SYNAPSE leaves junk behind when a Solaris build fails, so I clean up by hand every time. Turns out it already undid it — I've been deleting nodes that weren't there.\"",
+     "current_state": "CLAUDE.md §Identity carries `(VERIFIED-RUNTIME, L2 2026-07-25: failed Solaris builds orphan partial networks; the undo group does not clean up)` and project memory repeats it. `handlers_solaris_graph.py:829-841` now wraps the whole `SYNAPSE: build_graph` group in `try/except`, snapshots `hou.undos.areEnabled()` + `undoLabels()` BEFORE the group (`:669-673`), and on any exception calls `performUndo()` if and only if the label stack actually moved. `handlers_solaris_compose.py:71-89,120-127` does ",
+     "proposed_scaffold": "Re-stamp the CLAUDE.md §Identity parenthetical and the project-memory entry with the current code state and a dated re-verification, and state the residual honestly: \"build_graph and the Solaris compose handlers roll back one undo step on failure; a failure that produced more than one step leaves the rest.\" Then close the residual with a live probe: force a mid-build exception in `build_graph` under hython and count `undoLabels()` delta before/after. Cheap, and it converts an inherited belief in",
+     "effort": "S",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_graph.py:669-673 — pre-group snapshot of `areEnabled()` / `undoLabels()`', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_graph.py:829-841 — exception-path `performUndo()` guarded on a changed label stack, comment: \"Catch and explicitly undo to prevent undo stack corruption\"', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_compose.py:89,127 — same idiom for shotsetup + matlib_bind', ",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_graph.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_compose.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\CLAUDE.md']"
+    },
+    {
+     "id": "TRUST-6",
+     "title": "Preview-before-commit is built and works — and is offered on 2 of 15 handler modules",
+     "severity": "major",
+     "artist_symptom": "\"There's no 'show me what you're about to do' button. I just send it and find out.\"",
+     "current_state": "`handlers_solaris_graph.py:653-667` already returns a complete preview on `dry_run`: `status: \"preview\"`, `nodes_created`, `nodes_reused`, `connections_made`, `merge_points`, `ambiguous_merges`, `warnings`, `display_node`. `handlers_solaris_assemble.py` has 9 `dry_run` references. `handlers.py` has 7, but those are execute_python's compile-only check (`:1266-1268`), which validates syntax and tells the artist nothing about scene impact. Every other mutating module — node, usd, material, cops, re",
+     "proposed_scaffold": "Two moves, in order. (1) Surface what exists: give the panel a **Preview** verb on the two tools that already support it, rendering the existing payload as a plain list — \"creates 6 nodes, reuses 2, makes 7 connections, 1 ambiguous merge\" — and pair it with TRUST-2's undo receipt so the artist sees scope AND reversibility in the same block before committing. (2) Extend the same `dry_run` contract to the highest-traffic mutators next, in frequency order: create_node, connect_nodes, delete_node, s",
+     "effort": "M",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_graph.py:653-667 — full `status: \"preview\"` payload', 'grep -c dry_run across C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers*.py — handlers.py:7, handlers_solaris_assemble.py:9, handlers_solaris_graph.py:8, all 12 other modules: 0', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers.py:1259-1268 — execute_python dry_run is compile-only, no scene-impact preview']",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_graph.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_solaris_assemble.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_node.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\panel\\\\tool_palette.py']"
+    },
+    {
+     "id": "TRUST-7",
+     "title": "The integrity readout reports \"undo: not applicable\" on operations that are demonstrably undo-wrapped",
+     "severity": "minor",
+     "artist_symptom": "\"The panel's integrity line says undo doesn't apply to this op. I can literally Ctrl+Z it. Why would I trust the rest of that readout?\"",
+     "current_state": "`server/integrity_envelope.py` records `undo_applicable=False` on every live-path `IntegrityBlock`, and its own docstring (~L20-32) explains why: verifying it per-op would need `hou.undos` member APIs absent from the introspected symbol table, so it declines to assert what it cannot check. That is honest engineering. It is also a readout that contradicts observable reality on every mutating op, and the docstring still describes the wrapping as \"grouping only, not rollback\" — which TRUST-4 shows ",
+     "proposed_scaffold": "Split the field. Keep `undo_verified=False` (runtime-unverifiable, honest) and add `undo_declared=<group label or null>` — a static fact the handler knows for certain because it wrote the label. The panel then shows \"undo group: synapse_node_create (declared, not runtime-verified)\" instead of \"not applicable\". Same honesty, without the false negative. While in the file, re-stamp the rollback sentence in the docstring against the handlers_cops/solaris evidence.",
+     "effort": "S",
+     "evidence": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\integrity_envelope.py:20-32 — \"undo: recorded False with ``undo_applicable=False`` ... grouping only, not rollback ... records the anchor as not-verified rather than asserting an undo it cannot check at runtime\"', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\handlers_cops.py:379 et al — the rollback the docstring says does not exist', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\CLAUDE.md §16.2 — operation_stats / recent_operations consume these blocks']",
+     "files": "['C:\\\\Users\\\\User\\\\SYNAPSE\\\\python\\\\synapse\\\\server\\\\integrity_envelope.py', 'C:\\\\Users\\\\User\\\\SYNAPSE\\\\shared\\\\bridge.py']"
+    }
+   ]
+  },
+  {
+   "label": "artist:decisions",
+   "state_of_play": "There is no decision system in SYNAPSE. There are FOUR decision stores with ZERO edges between them. I looked for a single cross-reference and found exactly one in the whole tree.\n\n**1. The harness board** — `C:/Users/User/SYNAPSE/harness/decisions.py`. Reads receipt `for_ruling[]` entries plus `harness/state/flywheel_queue.json`, ranks them oldest-first. `--write` renders `harness/state/DECISIONS.md`; `--resolve KEY --reason ...` appends to `harness/state/resolved.json` (which DOES exist now — `load_resolved` at :102, `resolve` at :299 — the 2026-08-01 review's \"no closure path\" finding is CLOSED). Live count when I ran it just now: **632 open**. Its only consumer anywhere is `harness/statusline.py:265-268`.\n\n**2. The panel log** — `C:/Users/User/SYNAPSE/python/synapse/panel/decision_log.",
+   "top_recommendation": "**One board, one key, one word — and put it where the artist already is.**\n\nThe cheapest real fix is not a new system. `harness/decisions.py` already has both halves of a working decision ledger: `item_key()` (:89) mints a stable id from (kind|source|leg|text), and `resolved.json` + `resolve()` (:102/:299) retire by that id with a reason and a snapshot. That machinery works. It is just fed by two sources and read by one statusline.\n\nThree moves, in order:\n\n1. **Teach `collect()` a third source** — a `harness/state/rulings/` directory of markdown rosters with an id per item. PR #82's sixteen calls then appear on the same 632-item board with real keys, and `--resolve A1 --reason ratify` closes a design ruling the same way it closes a receipt ruling. That alone answers \"what changes when Joe ",
+   "unverified": [
+    "Whether `decisions.py --count` exits 6 today on an over-age item. I piped it through `tail`, so the `$?` I read was tail's status, not Python's. The 632 count is real; the gate's live behaviour is not established.",
+    "Whether the panel credit grid has any OTHER live producer. I proved `DecisionLog` has zero callers. `decision_log.py:46-48` names a second producer, `synapse_panel::_turn_evidence` tagged TOOL via `verdict.decision_from_tool_evidence` — I did not check whether that one is wired. If it is live, the artist may see weaker TOOL-derived credits rather than nothing at all, which would soften DEC-1 from blocker toward major.",
+    "Whether `.synapse/decisions.md` is encrypted in production or only in the committed test fixture. I read `tests/fixtures/.synapse/decisions.md` and the crypto call sites in `markdown.py`; I did not confirm the production default (there may be a key-absent plaintext fallback I did not trace).",
+    "Whether merging PR #82 changes any code path. The work graph reports it as 1 file / +582 and the roster says \"No code in this PR touches `python/`\" — I did not diff it myself.",
+    "I ran no tests and exercised nothing inside Houdini. The `synapse_decide` -> tracker -> markdown chain is traced by reading call sites only; I did not execute it end to end, so I cannot say the composed path writes what the isolated pieces imply. Likewise the statusline number: I ran `decisions.py --count` directly, not the statusline.",
+    "I did not audit the 21 off-master branches for a decisions-surface change already in flight. If one of the 16 unapplied-commit branches already unifies these stores, these findings would be duplicating work that exists but has not landed."
+   ],
+   "findings": [
+    {
+     "id": "DEC-1",
+     "title": "The panel never tells the artist what it decided — the producer was built and never plugged in",
+     "severity": "blocker",
+     "artist_symptom": "I watch it build my network and I never find out why it picked that node over the other one. The panel shows me what happened, never what it chose. If I want to know why it reached for Dark_Glass instead of Diamond, I have to ask it again and hope it remembers.",
+     "current_state": "decision_log.py is complete, tested, and dead. DecisionLog holds <=6 rows in a list that begin_cycle() clears, writes nothing to disk, and is instantiated by no product code.",
+     "proposed_scaffold": "Instantiate one DecisionLog on the panel worker, call record(tool_name, tool_input, reasoning) on every tool dispatch, and feed credit_rows() into FaceReview.set_credit at turn end. The module is already pure-Python and standalone-tested — this is wiring, not design. Then make the rows survive the turn: append each cycle's rows to a plaintext per-scene log so the artist can scroll back a week.",
+     "effort": "M",
+     "evidence": "['grep -rn \"DecisionLog(\" --include=*.py python/  ->  no matches (zero product callers)', 'grep -rln \"DecisionLog\" --include=*.py . (excl. worktrees) -> only python/synapse/panel/decision_log.py, tests/test_autonomy_driver.py, tests/test_v2_verdict_contract.py', 'python/synapse/panel/decision_log.py:252 `self._rows = []` and :257 `begin_cycle` clears — in-memory only, no path, no open(), no write_text', 'python/synapse/panel/decision_log.py:1-8 docstring: the credit grid \"had zero product caller",
+     "files": "['C:/Users/User/SYNAPSE/python/synapse/panel/decision_log.py']"
+    },
+    {
+     "id": "DEC-2",
+     "title": "Four decision stores, zero edges — a ruling made anywhere stays exactly where it was made",
+     "severity": "blocker",
+     "artist_symptom": "I answered that already. I told it in the panel, and the board still shows it open. I wrote it down in one place and the other three places never heard.",
+     "current_state": "harness/decisions.py reads receipts + flywheel_queue only. panel/decision_log.py writes nothing. synapse_decide writes .synapse/decisions.md. PR #82 writes a markdown roster. No file reads any other's store. The single cross-surface edge in the tree is statusline.py importing decisions.py for a count.",
+     "proposed_scaffold": "One board, one key, one word. decisions.py already has the two pieces that make unification cheap: item_key() (:89) hashes (kind|source|leg|text) into a stable id, and resolved.json already retires by that key. Add a fourth collector source — a plain harness/state/rulings/ directory of markdown rosters with an id per item — so PR #82's A1..C6 land on the SAME board with the SAME keys. Then `python harness/decisions.py --resolve A1 --reason ratify` closes a design ruling exactly the way it closes",
+     "effort": "L",
+     "evidence": "['harness/decisions.py:161 collect() — sources are receipt for_ruling[] and flywheel_queue.json only', 'harness/decisions.py:89 item_key() and :102 load_resolved() / :299 resolve() — the stable-id + retirement machinery already exists and works', 'grep -rn \"DECISIONS.md|open decisions|decisions.collect|harness.decisions\" over python/synapse/panel/ and python/synapse/server/ -> no matches (no panel-side reader)', 'python/synapse/session/tracker.py:494-513 — the decide path terminates at .synapse/",
+     "files": "['C:/Users/User/SYNAPSE/harness/decisions.py', 'C:/Users/User/SYNAPSE/python/synapse/panel/decision_log.py', 'C:/Users/User/SYNAPSE/python/synapse/session/tracker.py', 'C:/Users/User/SYNAPSE/harness/design_review/2026-09-14/RULINGS-OPEN.md']"
+    },
+    {
+     "id": "DEC-3",
+     "title": "\"A1 ratify\" on PR #82 changes nothing in the repo — 16 rulings have no landing zone",
+     "severity": "major",
+     "artist_symptom": "I ruled on it. Weeks later somebody asks me the same question again, because my answer is sitting in a GitHub comment thread and the repo never learned it.",
+     "current_state": "RULINGS-OPEN.md instructs a PR reply (`A1 ratify`). No ingester exists. The roster itself is unmerged (PR #82, 1 file, +582, CLEAN/MERGEABLE). A1..C6 are not receipt for_ruling entries and not flywheel cycles, so they do not appear on the 632-item board and have no item_key() to resolve.",
+     "proposed_scaffold": "Make the answer the artefact, not the comment. Give the roster a machine-readable id line per item, and add `decisions.py --rule A1 ratify` that (a) appends to resolved.json with the ruling word and a sha, and (b) stamps the roster file in place so the open roster and the closed record are the same document. The human types one word once, in a terminal or a PR comment a tiny bot mirrors — never twice.",
+     "effort": "M",
+     "evidence": "['harness/design_review/2026-09-14/RULINGS-OPEN.md — \"Reply on the PR with the item id and your word\" / `A1 ratify`', 'grep -rln \"RULINGS-OPEN|rulings-2026\" over harness/ scripts/ .claude/workflows/ -> no matches (hits were for the unrelated `for_ruling` receipt key)', 'gh work graph: PR #82 design/rulings-2026-09-14, CLEAN/MERGEABLE, 1 file (+582)', 'RULINGS-OPEN.md: \"This file is a decision surface, not a proposal to build ... NOTHING BUILT\"']",
+     "files": "['C:/Users/User/SYNAPSE/harness/design_review/2026-09-14/RULINGS-OPEN.md', 'C:/Users/User/SYNAPSE/harness/decisions.py']"
+    },
+    {
+     "id": "DEC-4",
+     "title": "The durable record is 45 days and 346 items behind the live count",
+     "severity": "major",
+     "artist_symptom": "The file that is supposed to tell me what is waiting on me says 286. The tool says 632. I do not know which number to believe, so I believe neither and stop opening it.",
+     "current_state": "harness/state/DECISIONS.md header: \"Generated 2026-08-01 21:05 ... 286 open, 0 older than 30d\". Last commit 54c9d291, 2026-08-01. Today is 2026-09-15. `python harness/decisions.py --count` right now prints 632. Nothing regenerates the file automatically.",
+     "proposed_scaffold": "Either regenerate on a hook (the file is derived and says so — 'Do not hand-edit') or delete it and let the command be the only answer. A derived file that nobody derives is worse than no file, because it reads as current. If it stays, stamp the generating sha in the header so staleness is visible in the first line.",
+     "effort": "S",
+     "evidence": "[\"git log -1 --format='%h %cs' -- harness/state/DECISIONS.md  ->  54c9d291 2026-08-01\", 'harness/state/DECISIONS.md:5  \"286 open, 0 older than 30d.\"', 'python harness/decisions.py --count  ->  632  (run 2026-09-15)', 'grep -rln \"decisions.py\" over .github/ .claude/settings*.json .claude/hooks/ scripts/ -> no matches (no scheduled regeneration)']",
+     "files": "['C:/Users/User/SYNAPSE/harness/state/DECISIONS.md', 'C:/Users/User/SYNAPSE/harness/decisions.py']"
+    },
+    {
+     "id": "DEC-5",
+     "title": "The artist's own decision log is encrypted — you cannot open it, diff it, or hand it to a lead",
+     "severity": "major",
+     "artist_symptom": "I want to see the decisions from last week's shot. I open .synapse/decisions.md and it is a wall of base64. I cannot read my own project's decision history without going back through the tool that wrote it.",
+     "current_state": "synapse_decide -> tracker.py:513 append_decision -> .synapse/decisions.md, written through the crypto layer. The committed fixture is ciphertext.",
+     "proposed_scaffold": "A decision record's whole value is being readable by a human who is not running the tool — a supervisor, a future you, a diff in a PR. Keep encryption opt-in for anything that carries scene paths or client names, and default the decision log to plaintext markdown. If it must stay encrypted, ship `synapse decisions --show` and surface it in the panel, so there is at least one door.",
+     "effort": "S",
+     "evidence": "['tests/fixtures/.synapse/decisions.md — first bytes `SYNAPSE_ENC_V1:gAAAAABp5TEWc025...`', 'python/synapse/memory/markdown.py:327-345 append_decision — reads via `crypto.decrypt_file_content`, writes back encrypted', 'python/synapse/core/crypto.py:14 — \"File encryption: Entire file content encrypted (index.json, context.md, decisions.md)\"', 'python/synapse/session/tracker.py:511-513 — the only writer on this path']",
+     "files": "['C:/Users/User/SYNAPSE/python/synapse/memory/markdown.py', 'C:/Users/User/SYNAPSE/python/synapse/session/tracker.py', 'C:/Users/User/SYNAPSE/tests/fixtures/.synapse/decisions.md']"
+    },
+    {
+     "id": "DEC-6",
+     "title": "The aging gate cannot fire from the one place the number is shown",
+     "severity": "minor",
+     "artist_symptom": "The statusline says \"632 decisions\" and has said something like it for weeks. A number that never changes colour is wallpaper. Nothing ever tells me one of them has been waiting two months.",
+     "current_state": "decisions.py's docstring calls the 30-day gate \"the whole point\" — the difference between a loop that is OBSERVABLE and one that is CLOSED. statusline.py calls collect(with_ages=False) to stay subprocess-free, so it renders a count with no age information and can never escalate.",
+     "proposed_scaffold": "Cache the age pass (one `git log --name-only` run) to harness/state/ on write, and have the statusline read the cached max-age alongside the live count. Then the segment can go from yellow to red on an over-age item without paying a subprocess per prompt. One number that can change colour beats one number that cannot.",
+     "effort": "S",
+     "evidence": "['harness/statusline.py:260-268 — `decision_count()` docstring \"with_ages=False keeps this subprocess-free\"; returns `len(decisions.collect(with_ages=False))`', 'harness/statusline.py:354-355 — `parts.append(\"%s%d decisions%s\" % (YEL, d, OFF))` — always YEL, no age branch', 'harness/decisions.py:35-40 (THE AGING GATE) — \"A queue without a clock is a queue nobody has to answer ... the difference between a loop that is OBSERVABLE and one that is CLOSED\"']",
+     "files": "['C:/Users/User/SYNAPSE/harness/statusline.py', 'C:/Users/User/SYNAPSE/harness/decisions.py']"
+    },
+    {
+     "id": "DEC-7",
+     "title": "There is no tool anywhere for recording that a HUMAN ruled — only that an AI decided",
+     "severity": "minor",
+     "artist_symptom": "The agent can write down what it decided. I cannot write down what I decided, except by typing a CLI command against a board that does not contain the thing I am ruling on.",
+     "current_state": "synapse_decide stamps every entry `tags + [\"ai_decision\"]` (tracker.py:508) — it is an agent-decision recorder. The only human channel is `decisions.py --resolve KEY --reason ... --by human` (:299), a terminal command keyed to receipt/flywheel items. The panel, where the artist actually is, has no ruling input at all.",
+     "proposed_scaffold": "Add the symmetric half: a one-word ruling input in the panel that writes to the SAME resolved.json keys as the CLI. The artist sees the open call where they already are, types one word, and the ruling propagates because both surfaces share item_key(). That is the artist-friendly scaffold the brief asks for, and DEC-2's unification is its precondition.",
+     "effort": "M",
+     "evidence": "['python/synapse/session/tracker.py:504-509 — `self._synapse.decision(... tags=tags + [\"ai_decision\"])`', 'harness/decisions.py:299 — `def resolve(key, reason, by=\"human\")` — the only human ruling channel, CLI-only', 'grep over python/synapse/panel/ and python/synapse/server/ for DECISIONS.md / open decisions / decisions.collect -> no matches: no panel-side read or write of the board']",
+     "files": "['C:/Users/User/SYNAPSE/python/synapse/session/tracker.py', 'C:/Users/User/SYNAPSE/harness/decisions.py']"
+    }
+   ]
+  }
+ ],
+ "patch_landed_deletable_per_state_file": [
+  "fix/cto-release-panel-tests",
+  "fix/cto-release-contracts",
+  "fix/cto-panel-20260908",
+  "fix/cto-memory-20260908",
+  "fix/m09-task-history-20260907"
+ ]
+}

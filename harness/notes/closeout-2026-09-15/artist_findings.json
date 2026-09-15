@@ -1,0 +1,591 @@
+[
+ {
+  "lens": "decisions \u2014 the decision surface: how a call gets made, recorded, and honoured",
+  "state_of_play": "There is no decision system in SYNAPSE. There are FOUR decision stores with ZERO edges between them. I looked for a single cross-reference and found exactly one in the whole tree.\n\n**1. The harness board** \u2014 `C:/Users/User/SYNAPSE/harness/decisions.py`. Reads receipt `for_ruling[]` entries plus `harness/state/flywheel_queue.json`, ranks them oldest-first. `--write` renders `harness/state/DECISIONS.md`; `--resolve KEY --reason ...` appends to `harness/state/resolved.json` (which DOES exist now \u2014 `load_resolved` at :102, `resolve` at :299 \u2014 the 2026-08-01 review's \"no closure path\" finding is CLOSED). Live count when I ran it just now: **632 open**. Its only consumer anywhere is `harness/statusline.py:265-268`.\n\n**2. The panel log** \u2014 `C:/Users/User/SYNAPSE/python/synapse/panel/decision_log.py`. `DecisionLog` holds up to 6 rows in a Python list (`self._rows = []`, :252) that `begin_cycle()` wipes (:257). It writes no file, opens no path, and has **zero product callers**: `grep -rn \"DecisionLog(\" python/` returns nothing at all. The only files in the tree that name it are itself, `tests/test_autonomy_driver.py`, and `tests/test_v2_verdict_contract.py`. Its own docstring (:1-8) says it was built because the credit grid \"had zero product callers\" \u2014 and the fix has zero product callers.\n\n**3. The MCP tool** \u2014 `synapse_decide`, `python/synapse/mcp/_tool_registry.py:1113`, payload shim `_decide_payload` at :73 (which correctly comma-splits `alternatives` into a list \u2014 no bug there). Routes to `python/synapse/server/handlers_memory.py:174` \u2192 `python/synapse/session/tracker.py:494-513` \u2192 `self._synapse.decision(... tags + [\"ai_decision\"])` then `markdown_sync.append_decision(memory)` \u2192 `.synapse/decisions.md`. That file is stored **encrypted** \u2014 `tests/fixtures/.synapse/decisions.md` opens with `SYNAPSE_ENC_V1:gAAAAAB...`.\n\n**4. PR #82's roster** \u2014 `harness/design_review/2026-09-14/RULINGS-OPEN.md`, 16 items. Its \"How to rule\" block asks Joe to reply on the PR with `A1 ratify`. Nothing in the tree ingests that file: grep for `RULINGS-OPEN` across `harness/`, `scripts/`, `.claude/workflows/` returns only files that mention the unrelated `for_ruling` receipt key.\n\nThe durable record disagrees with reality by 346 items. `harness/state/DECISIONS.md` header says \"286 open, 0 older than 30d\", last committed `54c9d291` on **2026-08-01** \u2014 45 days ago. The live board says 632. Nothing runs `decisions.py` on a schedule: grep over `.github/`, `.claude/settings*.json`, `.claude/hooks/`, `scripts/` for `decisions.py` returns nothing.",
+  "findings": [
+   {
+    "id": "DEC-1",
+    "title": "The panel never tells the artist what it decided \u2014 the producer was built and never plugged in",
+    "severity": "blocker",
+    "artist_symptom": "I watch it build my network and I never find out why it picked that node over the other one. The panel shows me what happened, never what it chose. If I want to know why it reached for Dark_Glass instead of Diamond, I have to ask it again and hope it remembers.",
+    "current_state": "decision_log.py is complete, tested, and dead. DecisionLog holds <=6 rows in a list that begin_cycle() clears, writes nothing to disk, and is instantiated by no product code.",
+    "proposed_scaffold": "Instantiate one DecisionLog on the panel worker, call record(tool_name, tool_input, reasoning) on every tool dispatch, and feed credit_rows() into FaceReview.set_credit at turn end. The module is already pure-Python and standalone-tested \u2014 this is wiring, not design. Then make the rows survive the turn: append each cycle's rows to a plaintext per-scene log so the artist can scroll back a week.",
+    "effort": "M",
+    "evidence": [
+     "grep -rn \"DecisionLog(\" --include=*.py python/  ->  no matches (zero product callers)",
+     "grep -rln \"DecisionLog\" --include=*.py . (excl. worktrees) -> only python/synapse/panel/decision_log.py, tests/test_autonomy_driver.py, tests/test_v2_verdict_contract.py",
+     "python/synapse/panel/decision_log.py:252 `self._rows = []` and :257 `begin_cycle` clears \u2014 in-memory only, no path, no open(), no write_text",
+     "python/synapse/panel/decision_log.py:1-8 docstring: the credit grid \"had zero product callers ... could draw a credit it could never earn\" \u2014 the stated fix reproduced the stated defect"
+    ],
+    "files": [
+     "C:/Users/User/SYNAPSE/python/synapse/panel/decision_log.py"
+    ]
+   },
+   {
+    "id": "DEC-2",
+    "title": "Four decision stores, zero edges \u2014 a ruling made anywhere stays exactly where it was made",
+    "severity": "blocker",
+    "artist_symptom": "I answered that already. I told it in the panel, and the board still shows it open. I wrote it down in one place and the other three places never heard.",
+    "current_state": "harness/decisions.py reads receipts + flywheel_queue only. panel/decision_log.py writes nothing. synapse_decide writes .synapse/decisions.md. PR #82 writes a markdown roster. No file reads any other's store. The single cross-surface edge in the tree is statusline.py importing decisions.py for a count.",
+    "proposed_scaffold": "One board, one key, one word. decisions.py already has the two pieces that make unification cheap: item_key() (:89) hashes (kind|source|leg|text) into a stable id, and resolved.json already retires by that key. Add a fourth collector source \u2014 a plain harness/state/rulings/ directory of markdown rosters with an id per item \u2014 so PR #82's A1..C6 land on the SAME board with the SAME keys. Then `python harness/decisions.py --resolve A1 --reason ratify` closes a design ruling exactly the way it closes a receipt ruling today.",
+    "effort": "L",
+    "evidence": [
+     "harness/decisions.py:161 collect() \u2014 sources are receipt for_ruling[] and flywheel_queue.json only",
+     "harness/decisions.py:89 item_key() and :102 load_resolved() / :299 resolve() \u2014 the stable-id + retirement machinery already exists and works",
+     "grep -rn \"DECISIONS.md|open decisions|decisions.collect|harness.decisions\" over python/synapse/panel/ and python/synapse/server/ -> no matches (no panel-side reader)",
+     "python/synapse/session/tracker.py:494-513 \u2014 the decide path terminates at .synapse/decisions.md and never touches harness/state/",
+     "harness/statusline.py:265-268 \u2014 the only cross-surface reference in the tree"
+    ],
+    "files": [
+     "C:/Users/User/SYNAPSE/harness/decisions.py",
+     "C:/Users/User/SYNAPSE/python/synapse/panel/decision_log.py",
+     "C:/Users/User/SYNAPSE/python/synapse/session/tracker.py",
+     "C:/Users/User/SYNAPSE/harness/design_review/2026-09-14/RULINGS-OPEN.md"
+    ]
+   },
+   {
+    "id": "DEC-3",
+    "title": "\"A1 ratify\" on PR #82 changes nothing in the repo \u2014 16 rulings have no landing zone",
+    "severity": "major",
+    "artist_symptom": "I ruled on it. Weeks later somebody asks me the same question again, because my answer is sitting in a GitHub comment thread and the repo never learned it.",
+    "current_state": "RULINGS-OPEN.md instructs a PR reply (`A1 ratify`). No ingester exists. The roster itself is unmerged (PR #82, 1 file, +582, CLEAN/MERGEABLE). A1..C6 are not receipt for_ruling entries and not flywheel cycles, so they do not appear on the 632-item board and have no item_key() to resolve.",
+    "proposed_scaffold": "Make the answer the artefact, not the comment. Give the roster a machine-readable id line per item, and add `decisions.py --rule A1 ratify` that (a) appends to resolved.json with the ruling word and a sha, and (b) stamps the roster file in place so the open roster and the closed record are the same document. The human types one word once, in a terminal or a PR comment a tiny bot mirrors \u2014 never twice.",
+    "effort": "M",
+    "evidence": [
+     "harness/design_review/2026-09-14/RULINGS-OPEN.md \u2014 \"Reply on the PR with the item id and your word\" / `A1 ratify`",
+     "grep -rln \"RULINGS-OPEN|rulings-2026\" over harness/ scripts/ .claude/workflows/ -> no matches (hits were for the unrelated `for_ruling` receipt key)",
+     "gh work graph: PR #82 design/rulings-2026-09-14, CLEAN/MERGEABLE, 1 file (+582)",
+     "RULINGS-OPEN.md: \"This file is a decision surface, not a proposal to build ... NOTHING BUILT\""
+    ],
+    "files": [
+     "C:/Users/User/SYNAPSE/harness/design_review/2026-09-14/RULINGS-OPEN.md",
+     "C:/Users/User/SYNAPSE/harness/decisions.py"
+    ]
+   },
+   {
+    "id": "DEC-4",
+    "title": "The durable record is 45 days and 346 items behind the live count",
+    "severity": "major",
+    "artist_symptom": "The file that is supposed to tell me what is waiting on me says 286. The tool says 632. I do not know which number to believe, so I believe neither and stop opening it.",
+    "current_state": "harness/state/DECISIONS.md header: \"Generated 2026-08-01 21:05 ... 286 open, 0 older than 30d\". Last commit 54c9d291, 2026-08-01. Today is 2026-09-15. `python harness/decisions.py --count` right now prints 632. Nothing regenerates the file automatically.",
+    "proposed_scaffold": "Either regenerate on a hook (the file is derived and says so \u2014 'Do not hand-edit') or delete it and let the command be the only answer. A derived file that nobody derives is worse than no file, because it reads as current. If it stays, stamp the generating sha in the header so staleness is visible in the first line.",
+    "effort": "S",
+    "evidence": [
+     "git log -1 --format='%h %cs' -- harness/state/DECISIONS.md  ->  54c9d291 2026-08-01",
+     "harness/state/DECISIONS.md:5  \"286 open, 0 older than 30d.\"",
+     "python harness/decisions.py --count  ->  632  (run 2026-09-15)",
+     "grep -rln \"decisions.py\" over .github/ .claude/settings*.json .claude/hooks/ scripts/ -> no matches (no scheduled regeneration)"
+    ],
+    "files": [
+     "C:/Users/User/SYNAPSE/harness/state/DECISIONS.md",
+     "C:/Users/User/SYNAPSE/harness/decisions.py"
+    ]
+   },
+   {
+    "id": "DEC-5",
+    "title": "The artist's own decision log is encrypted \u2014 you cannot open it, diff it, or hand it to a lead",
+    "severity": "major",
+    "artist_symptom": "I want to see the decisions from last week's shot. I open .synapse/decisions.md and it is a wall of base64. I cannot read my own project's decision history without going back through the tool that wrote it.",
+    "current_state": "synapse_decide -> tracker.py:513 append_decision -> .synapse/decisions.md, written through the crypto layer. The committed fixture is ciphertext.",
+    "proposed_scaffold": "A decision record's whole value is being readable by a human who is not running the tool \u2014 a supervisor, a future you, a diff in a PR. Keep encryption opt-in for anything that carries scene paths or client names, and default the decision log to plaintext markdown. If it must stay encrypted, ship `synapse decisions --show` and surface it in the panel, so there is at least one door.",
+    "effort": "S",
+    "evidence": [
+     "tests/fixtures/.synapse/decisions.md \u2014 first bytes `SYNAPSE_ENC_V1:gAAAAABp5TEWc025...`",
+     "python/synapse/memory/markdown.py:327-345 append_decision \u2014 reads via `crypto.decrypt_file_content`, writes back encrypted",
+     "python/synapse/core/crypto.py:14 \u2014 \"File encryption: Entire file content encrypted (index.json, context.md, decisions.md)\"",
+     "python/synapse/session/tracker.py:511-513 \u2014 the only writer on this path"
+    ],
+    "files": [
+     "C:/Users/User/SYNAPSE/python/synapse/memory/markdown.py",
+     "C:/Users/User/SYNAPSE/python/synapse/session/tracker.py",
+     "C:/Users/User/SYNAPSE/tests/fixtures/.synapse/decisions.md"
+    ]
+   },
+   {
+    "id": "DEC-6",
+    "title": "The aging gate cannot fire from the one place the number is shown",
+    "severity": "minor",
+    "artist_symptom": "The statusline says \"632 decisions\" and has said something like it for weeks. A number that never changes colour is wallpaper. Nothing ever tells me one of them has been waiting two months.",
+    "current_state": "decisions.py's docstring calls the 30-day gate \"the whole point\" \u2014 the difference between a loop that is OBSERVABLE and one that is CLOSED. statusline.py calls collect(with_ages=False) to stay subprocess-free, so it renders a count with no age information and can never escalate.",
+    "proposed_scaffold": "Cache the age pass (one `git log --name-only` run) to harness/state/ on write, and have the statusline read the cached max-age alongside the live count. Then the segment can go from yellow to red on an over-age item without paying a subprocess per prompt. One number that can change colour beats one number that cannot.",
+    "effort": "S",
+    "evidence": [
+     "harness/statusline.py:260-268 \u2014 `decision_count()` docstring \"with_ages=False keeps this subprocess-free\"; returns `len(decisions.collect(with_ages=False))`",
+     "harness/statusline.py:354-355 \u2014 `parts.append(\"%s%d decisions%s\" % (YEL, d, OFF))` \u2014 always YEL, no age branch",
+     "harness/decisions.py:35-40 (THE AGING GATE) \u2014 \"A queue without a clock is a queue nobody has to answer ... the difference between a loop that is OBSERVABLE and one that is CLOSED\""
+    ],
+    "files": [
+     "C:/Users/User/SYNAPSE/harness/statusline.py",
+     "C:/Users/User/SYNAPSE/harness/decisions.py"
+    ]
+   },
+   {
+    "id": "DEC-7",
+    "title": "There is no tool anywhere for recording that a HUMAN ruled \u2014 only that an AI decided",
+    "severity": "minor",
+    "artist_symptom": "The agent can write down what it decided. I cannot write down what I decided, except by typing a CLI command against a board that does not contain the thing I am ruling on.",
+    "current_state": "synapse_decide stamps every entry `tags + [\"ai_decision\"]` (tracker.py:508) \u2014 it is an agent-decision recorder. The only human channel is `decisions.py --resolve KEY --reason ... --by human` (:299), a terminal command keyed to receipt/flywheel items. The panel, where the artist actually is, has no ruling input at all.",
+    "proposed_scaffold": "Add the symmetric half: a one-word ruling input in the panel that writes to the SAME resolved.json keys as the CLI. The artist sees the open call where they already are, types one word, and the ruling propagates because both surfaces share item_key(). That is the artist-friendly scaffold the brief asks for, and DEC-2's unification is its precondition.",
+    "effort": "M",
+    "evidence": [
+     "python/synapse/session/tracker.py:504-509 \u2014 `self._synapse.decision(... tags=tags + [\"ai_decision\"])`",
+     "harness/decisions.py:299 \u2014 `def resolve(key, reason, by=\"human\")` \u2014 the only human ruling channel, CLI-only",
+     "grep over python/synapse/panel/ and python/synapse/server/ for DECISIONS.md / open decisions / decisions.collect -> no matches: no panel-side read or write of the board"
+    ],
+    "files": [
+     "C:/Users/User/SYNAPSE/python/synapse/session/tracker.py",
+     "C:/Users/User/SYNAPSE/harness/decisions.py"
+    ]
+   }
+  ],
+  "top_recommendation": "**One board, one key, one word \u2014 and put it where the artist already is.**\n\nThe cheapest real fix is not a new system. `harness/decisions.py` already has both halves of a working decision ledger: `item_key()` (:89) mints a stable id from (kind|source|leg|text), and `resolved.json` + `resolve()` (:102/:299) retire by that id with a reason and a snapshot. That machinery works. It is just fed by two sources and read by one statusline.\n\nThree moves, in order:\n\n1. **Teach `collect()` a third source** \u2014 a `harness/state/rulings/` directory of markdown rosters with an id per item. PR #82's sixteen calls then appear on the same 632-item board with real keys, and `--resolve A1 --reason ratify` closes a design ruling the same way it closes a receipt ruling. That alone answers \"what changes when Joe says A1 ratify\": today, nothing; after this, one line in `resolved.json` with a sha.\n\n2. **Wire `DecisionLog` into the panel worker** (DEC-1). It is finished, tested, standalone, and has never been called. This is the only finding an artist hits on *every single turn*, and it is wiring, not design.\n\n3. **Give the panel a one-word ruling input** that writes those same keys. Open call visible where the work is, ruled in one word, propagated because both surfaces share `item_key()` \u2014 no human re-typing anything into a second place.\n\nDo not start by unifying the four stores wholesale. Start at step 1: it is the only one that makes the other two worth doing, and it is the only one that turns the 16 rulings currently parked in an unmerged PR into items the repo can actually honour.",
+  "unverified": [
+   "Whether `decisions.py --count` exits 6 today on an over-age item. I piped it through `tail`, so the `$?` I read was tail's status, not Python's. The 632 count is real; the gate's live behaviour is not established.",
+   "Whether the panel credit grid has any OTHER live producer. I proved `DecisionLog` has zero callers. `decision_log.py:46-48` names a second producer, `synapse_panel::_turn_evidence` tagged TOOL via `verdict.decision_from_tool_evidence` \u2014 I did not check whether that one is wired. If it is live, the artist may see weaker TOOL-derived credits rather than nothing at all, which would soften DEC-1 from blocker toward major.",
+   "Whether `.synapse/decisions.md` is encrypted in production or only in the committed test fixture. I read `tests/fixtures/.synapse/decisions.md` and the crypto call sites in `markdown.py`; I did not confirm the production default (there may be a key-absent plaintext fallback I did not trace).",
+   "Whether merging PR #82 changes any code path. The work graph reports it as 1 file / +582 and the roster says \"No code in this PR touches `python/`\" \u2014 I did not diff it myself.",
+   "I ran no tests and exercised nothing inside Houdini. The `synapse_decide` -> tracker -> markdown chain is traced by reading call sites only; I did not execute it end to end, so I cannot say the composed path writes what the isolated pieces imply. Likewise the statusline number: I ran `decisions.py --count` directly, not the statusline.",
+   "I did not audit the 21 off-master branches for a decisions-surface change already in flight. If one of the 16 unapplied-commit branches already unifies these stores, these findings would be duplicating work that exists but has not landed."
+  ]
+ },
+ {
+  "lens": "artist utility \u2014 what a working Houdini artist can actually see, decide, and trust from the SYNAPSE panel",
+  "state_of_play": "128 tools are registered in C:\\Users\\User\\SYNAPSE\\python\\synapse\\mcp\\_tool_registry.py (counted: 128 tuples; README.md:121 agrees, \"128 tools, two paths\").\n\nThe panel does NOT hand all 128 to the artist's chat. C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\tool_bridge.py builds the worker's tool list from TOOL_DEFS plus exactly 6 synapse_group_* knowledge tools (_GROUP_MODULE_MAP, tool_bridge.py:20-27). Then C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py filters it at call time (claude_worker.py:401 `is_tool_allowed_for_worker(tool_name)`).\n\nI ran that filter. With no SYNAPSE_WORKER_TOOL_MODE set, resolve_mode() == \"standard\" and the partition is ALLOWED 92 / DENIED 36. Every render tool is in the denied 36: houdini_render, synapse_safe_render, synapse_render_sequence, synapse_render_progressively, synapse_autonomous_render, tops_render_sequence, tops_multi_shot \u2014 and also synapse_render_stop and synapse_emergency_halt. So is every one-call Solaris shot builder except two (synapse_solaris_build_graph, synapse_solaris_assemble_chain, explicitly exempted at worker_policy.py:81-84).\n\nThe clickable surface an artist who knows no tool names can actually press is small: QUICK_ACTIONS = Explain / Make HDA / Fix Error (C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\quick_actions.py:12, all `requires_selection: True`), plus _QUICK_ACTIONS = Explain / Fix / Optimize (C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\synapse_panel.py:177), plus a \u2318K palette of slash commands classified two ways by classify_tool (C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\tool_filter.py:67). There is no Render action anywhere in that surface.\n\nLabels: v5.70.0 (b475ee22) fixed the label *derivation* \u2014 namespaces stripped, domain capitals restored, 8 curated human sentences (activity.py:45-55). It is a real fix and it is honest about its scope: the module docstring says \"The derivation below is the label for the other ~120 tools.\" Those 120 read as transliterated tool ids, not intentions.\n\nInventory doc: docs\\MCP_TOOL_CATALOG.md self-labels line 1 \"ARCHIVED SNAPSHOT \u2014 v5.6.0-era (80 tools)\" and its own correction line says \"Current truth: 115 registry tools, v5.22.0\". The registry has 128. The only tool catalog in docs/ is wrong by two generations.\n\nThe five intentions, today:\n- LOOK (what's in my scene): COMPLETES. houdini_scene_info, synapse_inspect_scene, synapse_inspect_selection, houdini_network_explain, houdini_capture_viewport \u2014 all allowed.\n- LOOK UP (what does this do / does this API exist): COMPLETES for docs (synapse_knowledge_lookup + the 6 group tools, allowed), but synapse_scout \u2014 the repo's own #1 anti-phantom defense (CLAUDE.md \u00a711 rule 15) \u2014 is not in TOOL_DEFS and not in tool_bridge's group map, so the panel worker does not have it.\n- LIGHT: PARTIAL. Creating a light node is allowed (houdini_create_node, inform). Making it brighter runs into the encoded USD parm name. Every one-call light/shot setup is denied.\n- RENDER: DOES NOT COMPLETE from the panel. Not one render tool is permitted, and neither is stopping one.\n- FIX: PARTIAL, degrades to advice. synapse_doctor DENIED, houdini_delete_node DENIED, houdini_execute_python/vex DENIED. houdini_undo is allowed. \"Fix\" as a verb resolves to \"explain the problem, then undo.\"",
+  "findings": [
+   {
+    "id": "U1",
+    "title": "The panel cannot render, and cannot stop a render",
+    "severity": "blocker",
+    "artist_symptom": "I typed \"render frame 1001 and show me\" and it talked me through what it would do instead of doing it. Then when a render was already grinding I asked it to stop and it couldn't do that either.",
+    "current_state": "worker_policy.resolve_mode() defaults to \"standard\"; _DENIED_GATES = {review, approve, critical} (worker_policy.py:63). Running the live partition over all 128 registry tools: 92 allowed / 36 denied. Denied includes houdini_render, synapse_safe_render, synapse_render_sequence, synapse_render_progressively, synapse_autonomous_render, tops_render_sequence, tops_multi_shot, tops_batch_cook, tops_cook_and_validate, AND synapse_render_stop + synapse_render_farm_cancel + synapse_emergency_halt. Allowed-but-useless neighbours survive: synapse_render_farm_status, synapse_render_processes, synapse_live_metrics \u2014 the artist can watch a render they cannot start and cannot kill. This is the standing DECIDE from 2026-08-18 (worker may not self-authorize gated ops), so the fix is not to flip the mode.",
+    "proposed_scaffold": "Split the deny set by direction. Starting work stays gated; STOPPING work should not be \u2014 carve synapse_render_stop, synapse_render_farm_cancel and synapse_emergency_halt out of _DENIED_GATES into an explicit _WORKER_BRAKE_ALLOWLIST beside the existing _WORKER_BUILDER_ALLOWLIST (worker_policy.py:81), with the same one-paragraph L4 rationale the builder exemption already carries. Starting a render then routes through U2's approve card rather than staying dead.",
+    "effort": "S",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py:63 _DENIED_GATES = frozenset({\"review\", \"approve\", \"critical\"})",
+     "ran: PYTHONPATH=\"python;.\" python -c \"from synapse.panel.worker_policy import is_tool_allowed_for_worker...\" -> mode=standard, ALLOWED 92 DENIED 36",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\claude_worker.py:401 allowed, reason = is_tool_allowed_for_worker(tool_name)",
+     "denied list contains synapse_emergency_halt and synapse_render_stop verbatim"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\claude_worker.py"
+    ]
+   },
+   {
+    "id": "U2",
+    "title": "A denied tool dead-ends in chat; the approve/reject card that exists is wired to a different path",
+    "severity": "blocker",
+    "artist_symptom": "It never asks me. It just quietly does something smaller than what I asked for and tells me about it afterwards. I'd have said yes.",
+    "current_state": "denial_tool_result (worker_policy.py:234-248) returns an Anthropic tool_result with is_error=True and the text \"...is not permitted for the panel worker: {reason}. Choose a different, lower-privilege approach.\" That string goes to the LLM, not to the artist. The LLM's designed response is to substitute a weaker plan. Meanwhile a full approve/reject UI already ships: gate_widget.py has approve_clicked / reject_clicked / revert_requested signals (gate_widget.py:196-198) and chat_panel.py:219 connects self._bridge.gate_proposal to it \u2014 but that is the BRIDGE's /mcp HumanGate proposal stream, not the worker policy. worker_policy even defines a _MODE_PROPOSAL (worker_policy.py:53) with, as far as I could see, no panel consumer. So the panel owns a consent surface and the worker never reaches it.",
+    "proposed_scaffold": "Make a worker denial emit a gate proposal instead of an is_error string. One new signal on ClaudeWorker (gate_proposal_requested) carrying (tool_name, args, reason); chat_panel routes it into the same _gate_widget.handle_ws_proposal path already wired at chat_panel.py:219; approve dispatches the held tool call, reject returns today's denial_tool_result. The artist becomes the authorizer, which is exactly what the 2026-08-18 DECIDE says should happen \u2014 the worker still self-authorizes nothing.",
+    "effort": "M",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py:234-248 denial_tool_result(...) is_error True, content \"Choose a different, lower-privilege approach.\"",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\gate_widget.py:196-198 approve_clicked / reject_clicked / revert_requested",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\chat_panel.py:219 self._bridge.gate_proposal.connect(self._gate_widget.handle_ws_proposal)",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py:53 _MODE_PROPOSAL declared"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\claude_worker.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\chat_panel.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\gate_widget.py"
+    ]
+   },
+   {
+    "id": "U3",
+    "title": "The \"Make HDA\" button's own prompt names a tool the panel is not allowed to run",
+    "severity": "major",
+    "artist_symptom": "I selected my subnet, hit Make HDA, and it made something but it never packaged it. The button says package.",
+    "current_state": "quick_actions.py:24-31 ships a QUICK_ACTION labelled \"Make HDA\" whose prompt is literally \"Package the selected subnet into an HDA with a clean interface and help card.\" houdini_hda_create and houdini_hda_promote_parm and houdini_hda_set_help are allowed; houdini_hda_package is in the denied 36. This is one of only three buttons on the panel's primary clickable surface, so an artist who does not know tool names hits it at close to maximum frequency for its cohort.",
+    "proposed_scaffold": "Either add houdini_hda_package to the exempt allowlist with a written rationale (it is a disk write, so it is really U2's approve card), or reword the shipped prompt so it promises what it can deliver. Whichever way it goes, add a test in the shape of tests/test_activity_labels.py::test_every_curated_key_is_a_live_tool \u2014 assert that every tool a QUICK_ACTION prompt names by verb is permitted under the default worker mode, so a button can never again promise a denied action.",
+    "effort": "S",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\quick_actions.py:24-31 label \"Make HDA\", prompt \"Package the selected subnet into an HDA...\"",
+     "houdini_hda_package appears in the computed DENIED 36; houdini_hda_create does not",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\chat_panel.py:518 iterates QUICK_ACTIONS to build the row"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\quick_actions.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py"
+    ]
+   },
+   {
+    "id": "U4",
+    "title": "Every one-call shot setup is denied while its own ingredients are allowed \u2014 the code comment already says that path doesn't finish",
+    "severity": "major",
+    "artist_symptom": "I asked it to set up a Karma shot. It started building nodes one at a time and then just stopped partway through with a wall of text.",
+    "current_state": "_WORKER_BUILDER_ALLOWLIST (worker_policy.py:81-84) exempts exactly two composites: synapse_solaris_build_graph and synapse_solaris_assemble_chain. The rationale written in that block is decisive and self-documenting: the composites are \"ONE undo-wrapped call composed entirely of inform-level primitives... Allowing the composite collapses a 25-turn imperative build (which hit the iteration cap without finishing) into ONE turn + ONE cook, granting NO capability the worker did not already have.\" The same argument applies verbatim to the six siblings still denied: synapse_solaris_shotsetup_karma_xpu, synapse_solaris_scene_template, synapse_solaris_component_builder, synapse_solaris_create_variants, synapse_solaris_set_purpose, synapse_solaris_import_megascans, plus synapse_matlib_bind and houdini_shot_render_ready. So the documented failure (iteration cap, no finish) is still the live behaviour for LIGHT and LOOK-DEV.",
+    "proposed_scaffold": "Audit those eight against the exact test the existing exemption states \u2014 is the composite made only of create_node / connect_nodes / set_parameter, and does it touch no disk? Promote the ones that pass into _WORKER_BUILDER_ALLOWLIST under the same L4 paragraph. The ones that write to disk (import_megascans, shot_render_ready) go to U2's approve card instead. Do not widen _DENIED_GATES.",
+    "effort": "S",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py:68-84 the builder-allowlist rationale block, including \"hit the iteration cap without finishing\"",
+     "computed DENIED 36 contains synapse_solaris_shotsetup_karma_xpu, synapse_solaris_scene_template, synapse_solaris_component_builder, synapse_solaris_create_variants, synapse_solaris_set_purpose, synapse_solaris_import_megascans, synapse_matlib_bind, houdini_shot_render_ready"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py"
+    ]
+   },
+   {
+    "id": "U5",
+    "title": "\"Make the light brighter\" needs a parameter name no human can type, and the doc that says so points at a tool that does not exist",
+    "severity": "major",
+    "artist_symptom": "I said make the key light brighter. It went looking for the intensity parameter, didn't find anything called intensity, and started guessing.",
+    "current_state": "docs\\MCP_TOOL_CATALOG.md, the houdini_set_parm row, states it plainly: \"**USD note:** parameter names are encoded (e.g. `xn__inputsintensity_i0a` not `intensity`). Use `houdini_inspect_node` first.\" Two problems in one sentence. (1) The remedy it names, houdini_inspect_node, is not a registered tool \u2014 the registry has synapse_inspect_node. An LLM following its own catalog calls a phantom. (2) Per the standing memory note on UsdLux punycode, the hand-maintained xn__ parm map is majority phantom and shaping/height/radius still need a live re-probe \u2014 so the fallback is a lookup table that lies. houdini_set_parm is allowed to the worker, so this failure lands as a wrong value or a silent miss rather than a denial.",
+    "proposed_scaffold": "Give the artist's most common phrasing a real destination: a small plain-name resolver (intensity / exposure / color / cone angle / radius) that probes the live node's parmTuples on the main thread and returns the encoded name, rather than a static table. Ship it as a read-only helper the worker is allowed to call before set_parm. Independently, fix the catalog's phantom pointer to synapse_inspect_node \u2014 that is a one-word edit that stops teaching an API that does not exist.",
+    "effort": "L",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\docs\\MCP_TOOL_CATALOG.md houdini_set_parm row: \"parameter names are encoded (e.g. xn__inputsintensity_i0a not intensity). Use houdini_inspect_node first.\"",
+     "registry tool list contains synapse_inspect_node; it contains no houdini_inspect_node",
+     "memory: UsdLux punycode parm map is majority phantom; probe-generate, never guess"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\docs\\MCP_TOOL_CATALOG.md",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\mcp\\_tool_registry.py"
+    ]
+   },
+   {
+    "id": "U6",
+    "title": "The panel worker has no phantom guard \u2014 synapse_scout is not in its tool list",
+    "severity": "major",
+    "artist_symptom": "It confidently wrote me some Python with a hou call that doesn't exist, and I only found out when Houdini threw.",
+    "current_state": "CLAUDE.md \u00a711 rule 15 makes synapse_scout the front-line defense against SYNAPSE's #1 failure class (phantom APIs) and says to call it before emitting any unfamiliar hou./pdg./pxr. symbol. scout is defined at python\\synapse\\cognitive\\tools\\scout.py:1101 and reaches the /mcp path through the cognitive Dispatcher. It is NOT in TOOL_DEFS (not among the 128 names I extracted) and NOT in tool_bridge's _GROUP_MODULE_MAP. tool_bridge._build_cache iterates TOOL_DEFS then _GROUP_TOOLS and nothing else (tool_bridge.py:50-62). So the surface where the artist actually talks to SYNAPSE is the one surface without the phantom gate. Note this compounds rather than cancels: houdini_execute_python is denied to the worker, so it cannot run the phantom itself \u2014 it hands the artist code that fails in their hands instead.",
+    "proposed_scaffold": "Append synapse_scout to the panel worker's tool cache the same way the 6 group tools are appended \u2014 it is pure-Python, zero-hou, read-only, so it is an inform-level tool by construction and needs no gate change. Then add one line to the panel system prompt mirroring \u00a711 rule 15. Pin it with a test asserting scout is present in tool_bridge's cache and allowed by worker_policy.",
+    "effort": "S",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\cognitive\\tools\\scout.py:1101 \"name\": \"synapse_scout\"",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\tool_bridge.py:20-27 _GROUP_MODULE_MAP lists only the 6 synapse_group_* tools",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\tool_bridge.py:50-62 _build_cache iterates TOOL_DEFS + _GROUP_TOOLS",
+     "synapse_scout absent from the 128 names extracted from _tool_registry.py",
+     "CLAUDE.md \u00a711 rule 15"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\tool_bridge.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\cognitive\\tools\\scout.py"
+    ]
+   },
+   {
+    "id": "U7",
+    "title": "120 of 128 labels are transliterated tool ids, not things an artist would say",
+    "severity": "minor",
+    "artist_symptom": "The status line says \"Running: Dirty node\" and \"Running: Sleep pass\" and I have no idea whether that's good news.",
+    "current_state": "b475ee22 is a genuine repair \u2014 it stopped .capitalize() destroying domain words and stopped every synapse_/cops_/tops_ tool leading with a namespace, and it pinned the curated map with tests\\test_activity_labels.py so the 4-of-8 rot cannot recur. The module docstring is honest about what remains: _TOOLS carries 8 human sentences (activity.py:45-55) and \"The derivation below is the label for the other ~120 tools.\" Tracing the derivation by hand on live names: tops_dirty_node -> \"Dirty node\", synapse_sleep_pass -> \"Sleep pass\", houdini_set_payload_loadstate -> \"Set payload load state\", synapse_validate_ordering -> \"Validate ordering\", synapse_instantiate_graph -> \"Instantiate graph\", synapse_matlib_bind -> \"Material library bind\". Legible English, correct capitals, zero intention. The rename fixed spelling; it did not translate.",
+    "proposed_scaffold": "Extend _TOOLS by frequency, not by alphabet. Take the ~25 tools that actually fire in a normal session (the allowed 92 minus the long tail) and write each one a sentence in the artist's voice, the way the existing 8 read (\"Read the network\", \"Recall saved context\"). The pinning test already guarantees every key is live, so the map can grow safely. Everything else keeps the derivation.",
+    "effort": "M",
+    "evidence": [
+     "git show b475ee22 \u2014 commit body documents the .capitalize() and 4-of-8 defects and their repair",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\activity.py:1-13 docstring: \"The derivation below is the label for the other ~120 tools.\"",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\activity.py:45-55 _TOOLS has exactly 8 entries",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\activity.py:59-88 tool_label derivation"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\activity.py"
+    ]
+   },
+   {
+    "id": "U8",
+    "title": "The only tool catalog in docs/ is wrong by 48 tools and says so about itself",
+    "severity": "minor",
+    "artist_symptom": "I went looking for what this thing can do and found a list from a version that isn't this one.",
+    "current_state": "docs\\MCP_TOOL_CATALOG.md line 1: \"ARCHIVED SNAPSHOT \u2014 v5.6.0-era (80 tools). Kept for history; the numbers below are stale.\" Line 2, the correction, is itself stale: \"Current truth: 115 registry tools, v5.22.0.\" The registry has 128 and README.md:121 says 128. So the doc is wrong twice over and points the reader at README + CHANGELOG instead of at a current list. There is no generated current catalog. The header inside tool_bridge.py carries the same drift in a self-limiting form (\"Registry tools (124 as of 2026-08-14...)\" at tool_bridge.py:55) \u2014 harmless there because the code counts TOOL_DEFS at build time.",
+    "proposed_scaffold": "Regenerate the catalog from TOOL_DEFS at release time and add the count to scripts/sync_version.py's propagation set, so the tool count is a produced number like every other number in README (Law 2) rather than a hand-typed one. Bonus: generate two columns \u2014 \"registered\" and \"reachable from the panel under default mode\" \u2014 which is the distinction U1 through U4 are all really about.",
+    "effort": "S",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\docs\\MCP_TOOL_CATALOG.md:1-2",
+     "C:\\Users\\User\\SYNAPSE\\README.md:121 \"**128 tools, two paths.**\"",
+     "grep -c on _tool_registry.py tuple heads = 128",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\tool_bridge.py:55 comment says 124"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\docs\\MCP_TOOL_CATALOG.md",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\mcp\\_tool_registry.py"
+    ]
+   }
+  ],
+  "top_recommendation": "Wire a worker-policy denial into the approve/reject card the panel already ships (U2).\n\nRight now 36 of 128 tools dead-end as an is_error string the artist never sees, and the LLM is instructed by that string to go do something smaller. Meanwhile gate_widget.py has working approve_clicked / reject_clicked signals and chat_panel.py:219 already connects a proposal stream to it \u2014 just the bridge's stream, not the worker's. One signal from ClaudeWorker into that existing widget converts every one of those 36 dead ends into a one-click artist decision.\n\nIt is also the only fix that honors the 2026-08-18 DECIDE rather than fighting it. That ruling says the interactive panel worker may not self-authorize gated ops. An approve card does not let it self-authorize \u2014 it makes the artist the authorizer, which is what the ruling was protecting. No mode flip, no widening of _DENIED_GATES.\n\nDo U1's brake carve-out (stop / cancel / halt) in the same pass: an artist who cannot start a render also cannot stop one, and that combines badly with the known render-blocks-the-main-thread freeze class, where the only remaining recovery is killing Houdini.\n\nTogether those two changes move RENDER from \"does not complete\" to \"completes with one click,\" and take LIGHT and FIX along with it.",
+  "unverified": [
+   "I never launched Houdini or the panel. Nothing here is a live run \u2014 it is the registry, the policy module, and the panel source read statically, plus one headless execution of worker_policy's own partition.",
+   "The allow/deny partition was computed in my shell with SYNAPSE_WORKER_TOOL_MODE unset, which resolved to 'standard'. If Joe's Houdini environment sets that variable (or SYNAPSE_WORKER_TOOL_PROFILE) to 'unrestricted', the deny list is empty and U1/U3/U4 do not fire. I did not check his live environment. Everything in U1-U4 is conditional on default mode.",
+   "My partition ran under Python 3.14 outside Houdini and printed a vendored-SDK ABI mismatch warning. worker_policy is documented as pure Python with zero hou/Qt imports, so the result should hold under Houdini's 3.13 \u2014 but I did not re-run it there to confirm.",
+   "I did not verify that a worker denial has NO path to gate_widget. I grepped the panel for 'proposal' and found only the bridge stream (chat_panel.py:219). An indirect path could exist that my grep missed.",
+   "docs/MCP_TOOL_CATALOG.md is a v5.6.0 archive, so its per-tool safety annotations (RO/MUT/IDEM) may not match the current registry flags. The houdini_set_parm USD-encoding note in U5 I treat as still-true because the punycode problem is independently recorded in memory \u2014 but I did not re-probe a live UsdLux node.",
+   "I did not read the 6 synapse_group_* GROUP_KNOWLEDGE strings, so I cannot say how useful the LOOK-UP path actually is \u2014 only that those 6 tools are present and allowed.",
+   "I did not check whether the panel's own Scene Doctor (which CLAUDE.md's catalog entry describes as distinct from the synapse_doctor tool) still works while synapse_doctor is denied to the worker. If it does, FIX is in better shape than I rated it.",
+   "I did not test whether the /mcp path (Claude Code, this session) completes a render end to end. The denial findings are panel-specific; the external-MCP surface has a different gate story and I did not exercise it.",
+   "The label derivations in U7 (\"Dirty node\", \"Sleep pass\", etc.) I traced by hand through tool_label's code path rather than by executing it."
+  ]
+ },
+ {
+  "lens": "firstrun \u2014 first contact and orientation: what a Houdini artist sees in the first five minutes after install, whether it tells them what to do, and whether it degrades honestly when the bridge is down.",
+  "state_of_play": "Read-only pass over master @ 67625294. No panel was launched; every claim below is source-read.\n\nThe install path is genuinely good on paper. `README.md:18-28` gives four numbered steps (save scene, run Setup, New Pane Tab -> Synapse, Connect models -> choose -> Check connection -> Use this model), then `README.md:30-60` gives a first build (\"make a box\"), a three-controls table (Connect models / Connect / Doctor), and a three-ways-to-stop table that states what each control does NOT reach. `docs/getting-started/quickstart.md` continues it and is careful in the same way (\"The check reads metadata; it does not test generation\"). The v5.70.0 installer artefacts exist at `harness/notes/release-5.70.0/` (installer-verification.json, seat/suite logs, release-body.md, SYNAPSE-5.70.0-Setup.public-build.json).\n\nThe merged first-session work is real: `6ea5e923` \"Fix first-session issues found in Houdini trial\" and `f57ef5e2` \"Improve first-session model setup and panel clarity\", with the milestone write-up at `harness/first-session-20260906/artifacts/first-session-handoff.md` \u2014 that doc is unusually honest about its own limits (\"No model generation, billing, network creation, USD memory operation, or live Houdini performance result is claimed by those isolated checks\").\n\nThe honesty discipline exists in the status layer and is well built. `python/synapse/panel/health_strip.py:194-206` `cell_connection` returns UNKNOWN for anything not a confirmed live state, with the docstring \"never green from absence.\" `cell_memory` (:209+) reports a moneta->jsonl fallback as RED carrying the doctor's reason. The chat header's connection chip initialises to \"Disconnected\" in the error colour (`chat_panel.py:613-622`), not to an optimistic green, and `_on_status_changed` (`chat_panel.py:905-922`) flips the dot, the label and the button text together.\n\nThe gap is that none of that honesty reaches the one surface an artist actually touches: the message box. On the bridge-DOWN path \u2014 which is this session's own reported state \u2014 a typed message is accepted, spun on, silently queued, and replayed later.",
+  "findings": [
+   {
+    "id": "FR-1",
+    "title": "A message typed while the bridge is down is silently queued, spins forever, then fires later without warning",
+    "severity": "blocker",
+    "artist_symptom": "I typed \"make a box\" and the three dots just kept going. Nothing came back, so I typed it again. And again. I went to get coffee, and when I came back there were four boxes in my scene that I didn't ask for right then.",
+    "current_state": "`_send_message` (python/synapse/panel/chat_panel.py:848-870) guards on `if self._bridge is not None:` \u2014 the object's existence, not the connection. The only \"Not connected to SYNAPSE server.\" message lives in the `else` branch (:867-869), which is reachable only when no bridge object was ever built (no-Qt / standalone), NOT in the ordinary bridge-down case. So with the bridge object alive but the socket down, the panel appends the user message, sets `_waiting_for_response = True` and calls `show_typing_indicator()` (:860-861), then calls `send_command`. In `ws_bridge.py:409-417` `send_command` finds `self._ws is None` and falls through to `self._send_queue.append(msg_json)` \u2014 no return value, no signal, no error. On the next successful connect, `_connect_and_listen` calls `_drain_queue()` (ws_bridge.py:255, 346-357), which sends every pending message. Nothing clears the typing indicator on a timeout: `_waiting_for_response` is set at chat_panel.py:860 and cleared only in `_on_response` (:875-876).",
+    "proposed_scaffold": "Two decisions, both artist-facing. (1) Make the send guard read the socket, not the object: refuse the send when `not self._bridge.connected` and say so in the artist's words in-stream \u2014 \"Not connected to Houdini yet. Press Connect, or run Doctor to see why.\" with the Connect button right there. (2) Decide what a queued message means. Either drop the queue for `route_chat` entirely (chat is not a fire-and-forget command), or \u2014 if replay is wanted \u2014 surface it as a visible pending item the artist can cancel, and on reconnect ask before replaying: \"You typed 3 messages while disconnected. Send them now?\" Also put a wall-clock ceiling on the typing indicator so it can never spin past a bounded wait.",
+    "effort": "M",
+    "evidence": [
+     "python/synapse/panel/chat_panel.py:848-870 \u2014 `if self._bridge is not None:` ... else: append_system_message(\"Not connected to SYNAPSE server.\")",
+     "python/synapse/panel/ws_bridge.py:409-417 \u2014 `if self._ws is not None: try send; ...` then unconditional `self._send_queue.append(msg_json)`",
+     "python/synapse/panel/ws_bridge.py:346-357 \u2014 `_drain_queue` replays all pending messages on reconnect",
+     "python/synapse/panel/ws_bridge.py:255 \u2014 `_drain_queue()` called immediately after `status_changed.emit(True)`",
+     "python/synapse/panel/chat_panel.py:860-861 and :875-876 \u2014 indicator set on send, cleared only by `_on_response`"
+    ],
+    "files": [
+     "python/synapse/panel/chat_panel.py",
+     "python/synapse/panel/ws_bridge.py"
+    ]
+   },
+   {
+    "id": "FR-2",
+    "title": "The panel's first line says \"Ready.\" before it has connected to anything or been given a model",
+    "severity": "major",
+    "artist_symptom": "It said Ready, so I started typing.",
+    "current_state": "`chat_panel.py:242-245` appends \"Ready. What shall we work on?\" unconditionally inside `createInterface`, before `onActivateInterface` (:250-256) has run `_ensure_server()` or started the bridge thread. At that instant the status chip two rows up correctly reads \"Disconnected\" in red (:613-622) \u2014 so the artist gets two contradictory claims in the same pane in the same frame, and the conversational one is the one they read. \"Ready\" is also not true of the model: README step 4 requires Connect models -> choose -> Check connection -> Use this model (README.md:22), and the panel's own greeting skips all four.",
+    "proposed_scaffold": "Make the greeting a function of state, not a constant. Three states worth distinguishing, in the artist's words: no model chosen -> \"First: pick a model. Connect models is below the prompt.\"; model chosen, bridge down -> \"Model is set. Not talking to Houdini yet \u2014 press Connect.\"; both live -> \"Ready. What shall we work on?\" Same one-line slot, three truths. The honesty rule already written into health_strip.py (\"never green from absence\") is the rule this line is missing.",
+    "effort": "S",
+    "evidence": [
+     "python/synapse/panel/chat_panel.py:242-245 \u2014 unconditional `append_synapse_message(\"Ready. What shall we work on?\")`",
+     "python/synapse/panel/chat_panel.py:250-256 \u2014 `onActivateInterface` runs `_ensure_server()` / `self._bridge.start()` AFTER the greeting was appended",
+     "python/synapse/panel/chat_panel.py:613-622 \u2014 connection chip initialises to \"Disconnected\" / `_ERROR_COLOR`",
+     "python/synapse/panel/health_strip.py:194-206 \u2014 the contrasting rule, stated in its own docstring: \"never green from absence\""
+    ],
+    "files": [
+     "python/synapse/panel/chat_panel.py"
+    ]
+   },
+   {
+    "id": "FR-3",
+    "title": "Every quick-action pill is a dead end in the empty scene the quickstart tells you to open",
+    "severity": "major",
+    "artist_symptom": "There are five buttons across the bottom and not one of them does anything in a new scene. So I'm looking at a blank box with a blinking cursor and no idea what this thing actually wants from me.",
+    "current_state": "`quick_actions.py:12-63` ships exactly five pills: Explain, Make HDA, Fix Error, Optimize, VEX Help. Each presumes something that already exists \u2014 a network to explain, nodes to package, an error to fix, a graph to optimize. `docs/getting-started/quickstart.md:5-6` tells the artist to \"Use a scratch scene for the first run,\" and README.md:34 gives the actual correct first move \u2014 `make a box` \u2014 which appears nowhere in the panel. So the panel's only visible affordances are all inapplicable at precisely the moment the docs put the artist there.",
+    "proposed_scaffold": "The first-run pill row should be a different row. On an empty scene (no nodes under the current network), swap in three build-from-nothing starters that match what README already teaches: \"Make a box\", \"Set up a Solaris shot\", \"Show me what you can do\". Swap back to the current five the moment there is something to act on. This is a decision about what the artist's first click is, not a code cleanup \u2014 the pills are the only instruction the panel gives.",
+    "effort": "M",
+    "evidence": [
+     "python/synapse/panel/quick_actions.py:12-63 \u2014 QUICK_ACTIONS = Explain / Make HDA / Fix Error / Optimize / VEX Help",
+     "python/synapse/panel/quick_actions.py:138-139 \u2014 all five rendered unconditionally into the pill row",
+     "docs/getting-started/quickstart.md:5-6 \u2014 \"Use a scratch scene for the first run\"",
+     "README.md:32-36 \u2014 the real first move, `make a box`, is documented but not offered in-panel"
+    ],
+    "files": [
+     "python/synapse/panel/quick_actions.py",
+     "python/synapse/panel/chat_panel.py"
+    ]
+   },
+   {
+    "id": "FR-4",
+    "title": "At rest, the panel cannot be told apart from \"configured\" vs \"never configured a model\"",
+    "severity": "major",
+    "artist_symptom": "How do I know it's actually hooked up to anything? There's no light for the model \u2014 only for Houdini.",
+    "current_state": "Grep across `chat_panel.py`, `claude_worker.py` and `model_discovery.py` for a no-model-chosen guard returns one hit, `model_discovery.py:64 \"No models listed by Ollama\"` \u2014 and that string lives inside the Connect-models dialog, which the artist has to have already opened. The chat header has a connection dot for the Houdini bridge (`chat_panel.py:613-640`) but no equivalent for the model. The health strip has cells for connection / memory / project / job (`health_strip.py:273 build_cells`) \u2014 none for the model or provider. So \"I picked Claude an hour ago\" and \"I have never opened that dialog\" look identical.",
+    "proposed_scaffold": "Give the model the same honest chip the bridge already has, using the existing StripCell verdict vocabulary: UNKNOWN when nothing is chosen (never green from absence \u2014 the rule is already written), AMBER for chosen-but-unchecked, OK for checked, with the model name as the label. The first-session handoff already sells \"Clear destination: Local, Cloud, Cloud relay, Remote, or Unverified\" \u2014 that state exists at connect time; it just doesn't persist anywhere the artist can glance at afterwards.",
+    "effort": "M",
+    "evidence": [
+     "grep no-model guard across python/synapse/panel/{chat_panel,claude_worker,model_discovery}.py \u2014 single hit: model_discovery.py:64 \"No models listed by Ollama\"",
+     "python/synapse/panel/health_strip.py:273 \u2014 `build_cells` covers connection / memory / project / job only",
+     "python/synapse/panel/chat_panel.py:613-640 \u2014 the header's only status affordance is the Houdini bridge dot + Connect button",
+     "harness/first-session-20260906/artifacts/first-session-handoff.md \u2014 \"Clear destination: Local, Cloud, Cloud relay, Remote, or Unverified\""
+    ],
+    "files": [
+     "python/synapse/panel/chat_panel.py",
+     "python/synapse/panel/health_strip.py",
+     "python/synapse/panel/model_discovery.py"
+    ]
+   },
+   {
+    "id": "FR-5",
+    "title": "Connection failure prints three raw exception lines, then goes permanently silent while still failing",
+    "severity": "major",
+    "artist_symptom": "It complained three times with something about ConnectionRefusedError, then went quiet. I figured that meant it sorted itself out.",
+    "current_state": "`ws_bridge.py:222-233`: on each failed connect the reconnect loop emits `\"Couldn't connect ({n}/3): {e}\"` where `e = str(exc) if str(exc) else type(exc).__name__` \u2014 i.e. a bare Python exception name in the artist's conversation. The emit is gated on `if attempts <= 3` (:226), so from the fourth attempt onward the loop keeps retrying every 5s (:239-240) and says nothing. `_on_connection_error` (`chat_panel.py:925-927`) pipes that raw string straight into the chat with no translation, even though `python/synapse/panel/error_translator.py` exists in the same package. The chip does stay red throughout (:917-922) \u2014 that part is honest \u2014 but silence after three complaints reads as resolution.",
+    "proposed_scaffold": "Two calls. (1) Route connection errors through the error translator that is already sitting in the package, so the artist reads \"Houdini's SYNAPSE server isn't answering on port 9999\" and a next action (Connect / Doctor), not a class name. (2) Decide what continued silent failure should say. A single persistent line that updates in place \u2014 \"Still trying to reach Houdini (4 min)\" with a Doctor button \u2014 beats three bursts and a hush, because the hush is what makes the artist assume success.",
+    "effort": "S",
+    "evidence": [
+     "python/synapse/panel/ws_bridge.py:222-233 \u2014 `err_msg = str(exc) if str(exc) else type(exc).__name__`; emit gated on `if attempts <= 3`",
+     "python/synapse/panel/ws_bridge.py:238-240 \u2014 backoff continues at 5000ms indefinitely with no further emit",
+     "python/synapse/panel/chat_panel.py:925-927 \u2014 `_on_connection_error` appends the raw string verbatim",
+     "python/synapse/panel/error_translator.py exists in the same package and is not called on this path"
+    ],
+    "files": [
+     "python/synapse/panel/ws_bridge.py",
+     "python/synapse/panel/chat_panel.py",
+     "python/synapse/panel/error_translator.py"
+    ]
+   }
+  ],
+  "top_recommendation": "Fix the send path first (FR-1), because it is the only finding that silently changes the artist's scene. Everything else in this list is a moment of confusion; FR-1 is a message the artist gave up on, executing twenty minutes later into whatever scene happens to be open. The one-line version: `_send_message` at chat_panel.py:848 checks `self._bridge is not None` where it needs to check `self._bridge.connected`, and the queue behind it (`ws_bridge.py:416-417` + `_drain_queue` at :346) turns that miss into deferred, unannounced execution.\n\nThe deeper pattern worth naming to the team: this codebase already knows how to degrade honestly. `health_strip.py:194-206` literally carries the rule in its docstring \u2014 \"never green from absence\" \u2014 and applies it rigorously to the status cells. That discipline stops at the status row and never reaches the conversation, which is the only surface a first-time artist actually looks at. The panel's status layer tells the truth to someone who knows where to look; the panel's chat layer says \"Ready.\" and takes the message. Applying the health-strip rule to the chat surface (FR-1, FR-2, FR-4) closes three of these five findings under one principle rather than three patches.\n\nThe specific moment a new artist gets lost: they open the pane on a fresh install, read \"Ready. What shall we work on?\", type the `make a box` the README taught them, and watch the typing dots spin with no error, no timeout, and no instruction \u2014 while a red \"Disconnected\" chip sits above the conversation that just claimed readiness.",
+  "unverified": [
+   "I never launched the panel. Every finding is read from source at master @ 67625294 \u2014 no live Qt, no Houdini session, no screenshot taken. A composed run could reveal that some of this is masked by behaviour I did not read.",
+   "I did not read `_ensure_server()` past its first ~20 lines (chat_panel.py:284+), so I cannot say what a fresh install's auto-start actually does \u2014 it may succeed often enough that FR-1's bridge-down window is narrower than I imply, or it may fail silently and widen it.",
+   "I never opened `doctor_dialog.py`. Doctor may already report the model state and the connection reason clearly; my FR-4 and FR-5 scaffolds assume it does not surface them in the panel's resting view, which is a different claim from 'the information does not exist'.",
+   "I did not check `connection_dialog.py` for whether it blocks sends until a model is chosen, which would partially mitigate FR-4.",
+   "I did not look for tests pinning any of this behaviour. The send-guard and the drain-queue replay may be deliberate and test-locked; I found no test, but I did not search for one.",
+   "I confirmed only the existence of the v5.70.0 installer artefacts (`harness/notes/release-5.70.0/` \u2014 installer-verification.json, seat-5.70.0.txt, suite-5.70.0.txt, release-body.md, compose_verification.py, SYNAPSE-5.70.0-Setup.public-build.json). I read none of their contents, so I make no claim about what the installer verifies or whether the Setup.exe first-run path matches the README's four steps.",
+   "I did not read `harness/finesse-20260906/` beyond its file listing, so the finesse pass may already address FR-2 or FR-3 on an unmerged branch.",
+   "The five open commits in the work graph touching panel files were not diffed against these findings \u2014 one of the 16 unapplied branches may already fix FR-1."
+  ]
+ },
+ {
+  "lens": "trust \u2014 consent, undo, and honest failure: can an artist let SYNAPSE touch their scene without fear, and does the product tell them which guarantee they had?",
+  "state_of_play": "Static read of master @ 67625294. No Houdini was launched; nothing here is a live probe.\n\n**Undo wrapping is far WIDER than CLAUDE.md admits.** CLAUDE.md \u00a71 describes a small \"tracked set\" of live handlers that wrap in `hou.undos.group` (usd/material/cops/batch/execute + node create/connect/delete + set_parm + set_keyframe). The tree has roughly 35 `hou.undos.group(...)` call sites across `C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\` \u2014 handlers_cops.py alone has ~14, plus handlers_usd.py (6+), handlers_material.py (3), handlers_hda.py (2), handlers_render.py (3), handlers_solaris_graph.py, handlers_solaris_compose.py (2), handlers_node.py (3), handlers.py (batch/set_parm/execute). The doc understates its own coverage.\n\n**Rollback is REAL in some handlers, contradicting \"grouping only, not rollback\".** `hou.undos.performUndo()` fires on the exception path in at least: `handlers_solaris_graph.py:838`, `handlers_solaris_compose.py:89,127`, `handlers_cops.py:379,454,885,1149,1321,1445,1686,1801,1890`, `handlers_hda.py:592`, `handlers_render.py:2028`, and `handlers.py:1306`. So the blanket \"grouping only, never rollback\" in CLAUDE.md \u00a71 and in `integrity_envelope.py`'s honesty docstring is now stale in the pessimistic direction.\n\n**Consent, however, is gone on BOTH paths.** `shared/bridge.py:2937-2945` \u2014 `get_process_bridge()` constructs `LosslessExecutionBridge(consent_callback=lambda op: True)` and sets `bridge._gate = None`. `panel/bridge_adapter.py:208-231` \u2014 `get_bridge()` returns that same process singleton and re-pins `_consent_callback = _panel_consent` (which is `return True`, line 189-205) and `_gate = None`. `mcp/tools.py:118-124` \u2014 the MCP dispatch path calls `bridge_adapter.execute_through_bridge(...)`, i.e. the same gate-less singleton. There is no in-process path on which HumanGate can block. The file even contradicts itself: `bridge_adapter.py:202-203` claims \"HumanGate still governs AUTONOMOUS / MCP operations, which use their own bridge instances\" while `get_bridge()`'s own docstring 12 lines below says \"the panel, the in-process /mcp adapter, and the live /synapse envelope all write ONE operation trail\".\n\n**execute_python confirmed as documented, with a nuance.** `handlers.py:1270` builds `exec_globals = {\"hou\": hou, \"__builtins__\": __builtins__}` \u2014 full builtins, no import filter. But `atomic` defaults True (`:1257`) and `handlers.py:1281-1310` implements deliberate *selective* rollback: coding bugs (`_ROLLBACK_ERRORS`) roll the scene back, operational errors intentionally KEEP the mutations.\n\n**Preview already exists \u2014 in two places only.** `dry_run` appears in `handlers_solaris_graph.py` (8), `handlers_solaris_assemble.py` (9), `handlers.py` (7, the execute_python compile-check). Zero in the other 12 handler modules. `handlers_solaris_graph.py:655-667` returns a full preview payload: `nodes_created`, `nodes_reused`, `connections_made`, `merge_points`, `warnings`. That is the scaffold seed and it is already built.\n\n**Nothing tells the artist any of this.** `grep -rn \"Ctrl+Z|one undo|undoable|can be undone|cannot be undone\" --include=*.py` over the whole repo returned **zero** artist-facing strings.",
+  "findings": [
+   {
+    "id": "TRUST-1",
+    "title": "Consent gates are documented, coded, and unreachable \u2014 every in-process path auto-approves",
+    "severity": "blocker",
+    "artist_symptom": "\"It deleted the node. It never asked me. The docs say delete is a REVIEW gate and render is APPROVE \u2014 I was counting on that.\"",
+    "current_state": "CLAUDE.md \u00a71.1/\u00a71.2/\u00a71.2.1 and \u00a711 rule 5 describe INFORM/REVIEW/APPROVE/CRITICAL gates routing through `synapse.core.gates.HumanGate` with timeout-to-rejection. In the running process no path can reach it. `shared/bridge.py:2942` hardcodes `consent_callback=lambda op: True`; `:2943` sets `_gate = None`. `panel/bridge_adapter.py:214-217` states this is deliberate and order-independent; `_panel_consent` (`:189-205`) returns True unconditionally to avoid a main-thread deadlock that was confirmed live (\"make a box\" -> execute_python froze the GUI). `mcp/tools.py:118-124` routes MCP tool calls through that same adapter, so the /mcp path inherits the gate-less singleton too. The only real filter is `panel/worker_policy.py`, which denies review/approve/critical *tools to the autonomous worker* \u2014 a capability allowlist, not artist consent, and it is env-overridable via `SYNAPSE_WORKER_TOOL_MODE` (`unrestricted`/`demo`/`proposal` modes exist at `:46-57`).",
+    "proposed_scaffold": "Do not try to re-arm HumanGate \u2014 the deadlock reason at bridge_adapter.py:189-205 is legitimate and re-arming it would re-freeze Houdini. Instead make the posture VISIBLE and make it the truth: (a) one line in the panel header that states the running posture in artist words \u2014 \"Auto-approve: this panel runs everything you ask without a confirm step\" \u2014 sourced from the actual `_consent_callback`/`_gate` state on the live bridge, not a constant; (b) correct CLAUDE.md \u00a71.1/\u00a71.2.1 and \u00a711 rule 5 to say consent is auto-approve by construction in-process, with HumanGate reserved for a future out-of-process/studio deployment; (c) fix the self-contradiction inside `bridge_adapter.py` (`:202-203` vs `:211-217`).",
+    "effort": "M",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\shared\\bridge.py:2937-2945 \u2014 `LosslessExecutionBridge(consent_callback=lambda op: True)` then `bridge._gate = None`",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\bridge_adapter.py:189-205 \u2014 `_panel_consent` returns True unconditionally",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\bridge_adapter.py:208-231 \u2014 `get_bridge()` reuses the process singleton, re-pins `_consent_callback`, sets `_gate = None`",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\mcp\\tools.py:118-124 \u2014 MCP dispatch calls `bridge_adapter.execute_through_bridge`",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py:46-57 \u2014 five policy modes incl. `unrestricted`, selected by env var"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\shared\\bridge.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\bridge_adapter.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\mcp\\tools.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\worker_policy.py",
+     "C:\\Users\\User\\SYNAPSE\\CLAUDE.md"
+    ]
+   },
+   {
+    "id": "TRUST-2",
+    "title": "The product never tells the artist what a given action can undo \u2014 zero artist-facing undo words in the entire codebase",
+    "severity": "blocker",
+    "artist_symptom": "\"I save-as before every prompt, because I have no idea whether one Ctrl+Z gets my scene back or whether I'm about to spend ten minutes picking apart a half-built network.\"",
+    "current_state": "Every mutating handler opens a named undo group \u2014 `synapse_node_create`, `synapse_set_parm`, `SYNAPSE: build_graph`, `synapse_cops_stylize` and ~30 more. That label is the exact, truthful answer to \"what will one Ctrl+Z reverse?\" and it is thrown away: it never reaches the response payload, the panel, or the chat transcript. A repo-wide grep for `Ctrl+Z`, `undoable`, `one undo`, `can be undone`, `cannot be undone` across all `.py` returns nothing. The artist's only signal is the Houdini undo menu after the fact.",
+    "proposed_scaffold": "**The Undo Receipt \u2014 the smallest scaffold that buys the most trust.** The group label already exists at every call site. Add one helper in `server/handler_helpers.py` that both opens the group and records it, then attach to every mutating response: `undo: {label: \"synapse_node_create\", steps: 1, rolls_back_on_failure: true|false}`. The panel prints one dim line under each result: `Undoable \u2014 1 step: \"synapse_node_create\"` or `Undoable \u2014 1 step, but a failure leaves partial work behind`. No new machinery, no new gate, no thread risk. It converts an existing string into the guarantee statement the artist is currently missing.",
+    "effort": "S",
+    "evidence": [
+     "grep -rn \"Ctrl\\+Z|one undo|undoable|can be undone|cannot be undone\" --include=*.py over C:\\Users\\User\\SYNAPSE returned 0 matches",
+     "~35 `hou.undos.group(\"<label>\")` call sites across C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\ \u2014 e.g. handlers_node.py:66,144,174; handlers.py:1013,1141,1144,1170,1295; handlers_cops.py:355,434,495,546,586,775,833,1049,1102,1245,1380,1516,1611,1745,1857,2025",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_usd.py:428,542,623,696,809,1132 \u2014 labelled groups, label never surfaced"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_node.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_cops.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\chat_display.py"
+    ]
+   },
+   {
+    "id": "TRUST-3",
+    "title": "The REVERT button is a global one-step undo wearing an operation's name",
+    "severity": "major",
+    "artist_symptom": "\"I clicked REVERT on the card that said 'delete_node' and it undid the thing I did by hand ten seconds ago instead.\"",
+    "current_state": "`panel/gate_widget.py:258` renders a `\u2190 REVERT` verb on REVIEW cards. The panel's own test pins what it actually does: it sends a `houdini_undo` request, which is `hou.undos.performUndo()` \u2014 one global step, no target. The test's docstring is explicit that this does NOT scope the undo; it merely injects the card's operation NAME into the prompt text so the request *reads* like it names the change. If the artist touched the scene after the agent's op, or if the op produced more than one undo entry, REVERT walks back the wrong thing. The button's affordance promises targeting it cannot deliver.",
+    "proposed_scaffold": "Two options, both cheap. (a) Rename the verb to what it does \u2014 `\u2190 UNDO LAST` \u2014 and put the card's label under it as context rather than as an implied target. (b) Before sending, compare the current top undo label against the label recorded for that operation (TRUST-2's receipt already carries it); if they differ, refuse and say why: \"The last undo step is now 'Edit Parameters', not 'synapse_node_create' \u2014 undo by hand so you can see what you're reversing.\" Option (b) is the honest one and reuses the receipt.",
+    "effort": "S",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\tests\\panel\\test_consent_way_back.py:245-262 \u2014 `test_the_request_names_the_operation_the_card_names`: \"``houdini_undo`` is ``hou.undos.performUndo()`` - one global step, no target - so this does NOT scope the undo. It puts the card's own operation name into the request\"",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\gate_widget.py:258 \u2014 `_verb(\"\\u2190 REVERT\", self._on_revert_clicked)`",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers.py:924-929 \u2014 `_handle_undo` is a bare `hou.undos.performUndo()`"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\gate_widget.py",
+     "C:\\Users\\User\\SYNAPSE\\tests\\panel\\test_consent_way_back.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers.py"
+    ]
+   },
+   {
+    "id": "TRUST-4",
+    "title": "Failure cleanup is a coin flip the artist cannot call \u2014 half the handlers roll back, half orphan",
+    "severity": "major",
+    "artist_symptom": "\"Last time a build failed it cleaned itself up. This time it left eight half-wired LOPs in my stage. Same panel, same kind of request \u2014 I can't predict which one I'm getting.\"",
+    "current_state": "Two populations of mutating handler, indistinguishable from the artist's side. **Roll back on the exception path:** handlers_solaris_graph.py:834-841, handlers_solaris_compose.py:89,127, handlers_cops.py (9 sites: 379,454,885,1149,1321,1445,1686,1801,1890), handlers_hda.py:592, handlers_render.py:2028, handlers.py:1305-1310. **Group only, no rollback \u2014 partial work survives:** handlers_node.py:66,144,174 (create/delete/connect), handlers_usd.py:428,542,623,696,809, handlers_material.py:232,311,503, handlers.py:1141,1144,1170 (set_parm), handlers_render.py:1168 (set_keyframe), handlers.py:1013 (batch). And execute_python is a third category: `handlers.py:1281-1310` rolls back on coding bugs (`_ROLLBACK_ERRORS`) but *deliberately keeps mutations* on operational errors like a render timeout. Three different failure contracts, zero disclosure.",
+    "proposed_scaffold": "This is the `rolls_back_on_failure` field of TRUST-2's receipt \u2014 same one-line change, no new surface. Compute it once per handler (it is a static property of the code path, not a runtime decision) and let the panel say it before or after: \"If this fails partway, it cleans up after itself\" vs \"If this fails partway, what it already built stays in your scene.\" Ship the disclosure first; converging the handlers on one contract is a separate, larger job that should not block the artist knowing which one they have.",
+    "effort": "M",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_graph.py:829-841 \u2014 `except Exception:` -> `if undo_enabled and tuple(hou.undos.undoLabels()) != labels_before: hou.undos.performUndo()` then `raise`",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers.py:1281-1310 \u2014 selective rollback: `_ROLLBACK_ERRORS` roll back, operational errors keep mutations \"since node creation/wiring may have succeeded\"",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_node.py:66,144,174 \u2014 three `hou.undos.group` opens, no `performUndo` anywhere in the file",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_cops.py:379,454,885,1149,1321,1445,1686,1801,1890 \u2014 nine `hou.undos.performUndo()` rollbacks"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_graph.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_node.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_cops.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers.py"
+    ]
+   },
+   {
+    "id": "TRUST-5",
+    "title": "\"Failed Solaris builds orphan partial networks\" is no longer true for build_graph \u2014 and the correction is worse than the old bug if nobody publishes it",
+    "severity": "major",
+    "artist_symptom": "\"I was told SYNAPSE leaves junk behind when a Solaris build fails, so I clean up by hand every time. Turns out it already undid it \u2014 I've been deleting nodes that weren't there.\"",
+    "current_state": "CLAUDE.md \u00a7Identity carries `(VERIFIED-RUNTIME, L2 2026-07-25: failed Solaris builds orphan partial networks; the undo group does not clean up)` and project memory repeats it. `handlers_solaris_graph.py:829-841` now wraps the whole `SYNAPSE: build_graph` group in `try/except`, snapshots `hou.undos.areEnabled()` + `undoLabels()` BEFORE the group (`:669-673`), and on any exception calls `performUndo()` if and only if the label stack actually moved. `handlers_solaris_compose.py:71-89,120-127` does the same for `solaris_shotsetup_karma_xpu` and `matlib_bind`. The stale claim is load-bearing in two governing documents. Residual risk is real but different: it is ONE `performUndo()` \u2014 if a failed build produced more than one undo entry, only the top one reverses.",
+    "proposed_scaffold": "Re-stamp the CLAUDE.md \u00a7Identity parenthetical and the project-memory entry with the current code state and a dated re-verification, and state the residual honestly: \"build_graph and the Solaris compose handlers roll back one undo step on failure; a failure that produced more than one step leaves the rest.\" Then close the residual with a live probe: force a mid-build exception in `build_graph` under hython and count `undoLabels()` delta before/after. Cheap, and it converts an inherited belief into a measurement.",
+    "effort": "S",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_graph.py:669-673 \u2014 pre-group snapshot of `areEnabled()` / `undoLabels()`",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_graph.py:829-841 \u2014 exception-path `performUndo()` guarded on a changed label stack, comment: \"Catch and explicitly undo to prevent undo stack corruption\"",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_compose.py:89,127 \u2014 same idiom for shotsetup + matlib_bind",
+     "C:\\Users\\User\\SYNAPSE\\CLAUDE.md \u00a7Identity \u2014 \"(VERIFIED-RUNTIME, L2 2026-07-25: failed Solaris builds orphan partial networks; the undo group does not clean up.)\""
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_graph.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_compose.py",
+     "C:\\Users\\User\\SYNAPSE\\CLAUDE.md"
+    ]
+   },
+   {
+    "id": "TRUST-6",
+    "title": "Preview-before-commit is built and works \u2014 and is offered on 2 of 15 handler modules",
+    "severity": "major",
+    "artist_symptom": "\"There's no 'show me what you're about to do' button. I just send it and find out.\"",
+    "current_state": "`handlers_solaris_graph.py:653-667` already returns a complete preview on `dry_run`: `status: \"preview\"`, `nodes_created`, `nodes_reused`, `connections_made`, `merge_points`, `ambiguous_merges`, `warnings`, `display_node`. `handlers_solaris_assemble.py` has 9 `dry_run` references. `handlers.py` has 7, but those are execute_python's compile-only check (`:1266-1268`), which validates syntax and tells the artist nothing about scene impact. Every other mutating module \u2014 node, usd, material, cops, render, hda \u2014 has zero. The affordance that would answer \"what can this undo, and what is it about to touch?\" exists and is proven; it is simply not generalized or surfaced.",
+    "proposed_scaffold": "Two moves, in order. (1) Surface what exists: give the panel a **Preview** verb on the two tools that already support it, rendering the existing payload as a plain list \u2014 \"creates 6 nodes, reuses 2, makes 7 connections, 1 ambiguous merge\" \u2014 and pair it with TRUST-2's undo receipt so the artist sees scope AND reversibility in the same block before committing. (2) Extend the same `dry_run` contract to the highest-traffic mutators next, in frequency order: create_node, connect_nodes, delete_node, set_parm. Copy the shape from handlers_solaris_graph.py:653-667 rather than inventing a second one.",
+    "effort": "M",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_graph.py:653-667 \u2014 full `status: \"preview\"` payload",
+     "grep -c dry_run across C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers*.py \u2014 handlers.py:7, handlers_solaris_assemble.py:9, handlers_solaris_graph.py:8, all 12 other modules: 0",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers.py:1259-1268 \u2014 execute_python dry_run is compile-only, no scene-impact preview"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_graph.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_solaris_assemble.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_node.py",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\tool_palette.py"
+    ]
+   },
+   {
+    "id": "TRUST-7",
+    "title": "The integrity readout reports \"undo: not applicable\" on operations that are demonstrably undo-wrapped",
+    "severity": "minor",
+    "artist_symptom": "\"The panel's integrity line says undo doesn't apply to this op. I can literally Ctrl+Z it. Why would I trust the rest of that readout?\"",
+    "current_state": "`server/integrity_envelope.py` records `undo_applicable=False` on every live-path `IntegrityBlock`, and its own docstring (~L20-32) explains why: verifying it per-op would need `hou.undos` member APIs absent from the introspected symbol table, so it declines to assert what it cannot check. That is honest engineering. It is also a readout that contradicts observable reality on every mutating op, and the docstring still describes the wrapping as \"grouping only, not rollback\" \u2014 which TRUST-4 shows is wrong for a dozen handlers. The \u00a716 observability loop and anything reading `operation_stats()` inherit both distortions.",
+    "proposed_scaffold": "Split the field. Keep `undo_verified=False` (runtime-unverifiable, honest) and add `undo_declared=<group label or null>` \u2014 a static fact the handler knows for certain because it wrote the label. The panel then shows \"undo group: synapse_node_create (declared, not runtime-verified)\" instead of \"not applicable\". Same honesty, without the false negative. While in the file, re-stamp the rollback sentence in the docstring against the handlers_cops/solaris evidence.",
+    "effort": "S",
+    "evidence": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\integrity_envelope.py:20-32 \u2014 \"undo: recorded False with ``undo_applicable=False`` ... grouping only, not rollback ... records the anchor as not-verified rather than asserting an undo it cannot check at runtime\"",
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\handlers_cops.py:379 et al \u2014 the rollback the docstring says does not exist",
+     "C:\\Users\\User\\SYNAPSE\\CLAUDE.md \u00a716.2 \u2014 operation_stats / recent_operations consume these blocks"
+    ],
+    "files": [
+     "C:\\Users\\User\\SYNAPSE\\python\\synapse\\server\\integrity_envelope.py",
+     "C:\\Users\\User\\SYNAPSE\\shared\\bridge.py"
+    ]
+   }
+  ],
+  "top_recommendation": "**Ship the Undo Receipt (TRUST-2). It is an S-effort change that answers the artist's actual question, and it is the carrier for three other findings.**\n\nEvery mutating handler already writes the true answer \u2014 `hou.undos.group(\"synapse_node_create\")`, `hou.undos.group(\"SYNAPSE: build_graph\")` \u2014 and then discards it. Add one helper in `server/handler_helpers.py` that opens the group and records it into the response:\n\n```\nundo: { label: \"synapse_node_create\", steps: 1, rolls_back_on_failure: false }\n```\n\nThe panel prints one dim line under each result. That single line closes TRUST-2 (the artist learns what one Ctrl+Z reverses), carries TRUST-4's disclosure (`rolls_back_on_failure` is a static property of each code path \u2014 no runtime inference), gives TRUST-3 the label it needs to refuse a mis-targeted REVERT, and gives TRUST-7 its `undo_declared` field. No new gate, no new thread, no HumanGate re-arming, no deadlock risk.\n\nDo TRUST-5 in the same pass because it is a documentation correction with a two-line diff and it is actively making Joe distrust a behavior that was fixed: `handlers_solaris_graph.py:829-841` now rolls back failed builds, and CLAUDE.md still tells everyone it does not.\n\n**Do not lead with re-arming consent.** TRUST-1 is the most severe finding, but the reason the gate is off is a confirmed live GUI deadlock (`bridge_adapter.py:189-205`), and re-arming it naively re-freezes Houdini \u2014 which is the failure mode that costs an artist the most trust of all. The right first move on TRUST-1 is to stop the docs promising a gate that cannot fire, and put the real posture in the panel header in one sentence.\n\nSequenced: receipt + doc restamp (S) \u2192 preview surfacing on the two tools that already support it (TRUST-6, M) \u2192 REVERT honesty (TRUST-3, S) \u2192 the consent posture conversation, which is a decision for Joe, not a code change.",
+  "unverified": [
+   "NOTHING WAS RUN. No Houdini, no hython, no live probe. Every claim here is static code reading at master @ 67625294. A green read of a `try/except: performUndo()` block does not prove it reverses anything in a real session.",
+   "Whether GateWidget cards are ever actually RAISED on the /mcp path. I read the widget's construction and its REVERT wiring, not its call sites. The gate card may only exist on the panel-worker path.",
+   "The 'group only, no rollback' half of TRUST-4. My grep for `undos` in python/synapse/server was truncated at 70 results, ending mid-way through handlers_usd.py:1132. handlers_usd.py may contain `performUndo` calls past that line that I did not see. handlers_node.py and handlers_material.py are solid (whole-file coverage within the returned set); handlers_usd.py is partial.",
+   "Whether an OUT-OF-PROCESS MCP server (stdio, separate interpreter) constructs its own bridge with gates armed. I verified the in-process adapter path (mcp/tools.py:118-124 -> bridge_adapter -> gate-less singleton). A separately-launched stdio server could in principle build its own `LosslessExecutionBridge(...)` with a real `_gate`; I did not find such a construction, but I did not exhaustively search for one.",
+   "What `tests/test_phase0b_consent_posture.py` actually pins. CLAUDE.md cites it three times as the proof of the consent posture. I never opened it.",
+   "The resolution logic of `SYNAPSE_WORKER_TOOL_MODE`. I read the mode constants and the standard-mode deny set (worker_policy.py:46-78). I did not read how `unrestricted`, `demo`, or `proposal` resolve, or whether any of them is reachable by default.",
+   "The `_ROLLBACK_ERRORS` tuple contents. handlers.py:1283-1286 describes it in a comment (NameError/SyntaxError/TypeError/AttributeError roll back; render timeout / file-not-found / hou.OperationFailed do not) but I did not read the actual definition.",
+   "Whether the `performUndo()` in handlers_solaris_graph.py:838 is sufficient. It is ONE step. Whether a failed build_graph produces exactly one undo entry is unmeasured \u2014 this is the residual named in TRUST-5 and it needs a live probe to close.",
+   "Panel display wiring. I confirmed zero artist-facing undo STRINGS exist, but I did not read chat_display.py or activity.py to confirm where a receipt line would render, so the 'S' effort on TRUST-2 covers the handler side with confidence and the panel side by inference."
+  ]
+ }
+]

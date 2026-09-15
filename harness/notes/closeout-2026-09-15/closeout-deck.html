@@ -1,0 +1,629 @@
+<title>SYNAPSE Closeout Deck</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EEF0F3; --surface:#FFFFFF; --surface-2:#E5E9EE; --sunk:#DDE3E9;
+  --line:#C8D0D9; --line-soft:#DFE5EB;
+  --ink:#13171C; --ink-2:#56606B; --ink-3:#818C98;
+  --accent:#BE551A; --accent-ink:#FFFFFF; --accent-soft:#F6E3D4;
+  --ok:#2C7A57; --crit:#AC3D2D; --idle:#85909C;
+  --b0:#1E3B57; --b1:#2E6081; --b2:#4B83A6; --b3:#7FA9C2; --b4:#AFC4D4;
+  --chip-ink:#FFFFFF;
+  --edge:#8FA0B0;
+  --shadow:0 1px 2px rgba(19,23,28,.06),0 8px 24px -12px rgba(19,23,28,.18);
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  --disp:"Archivo","IBM Plex Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0E1115; --surface:#161A20; --surface-2:#1D232A; --sunk:#11151A;
+  --line:#2A323B; --line-soft:#212831;
+  --ink:#E7EBF0; --ink-2:#9BA6B2; --ink-3:#6E7985;
+  --accent:#EE9142; --accent-ink:#1A1206; --accent-soft:#3B2815;
+  --ok:#4FB88A; --crit:#E4705C; --idle:#68737F;
+  --b0:#A6CCEA; --b1:#7FADD5; --b2:#5F8DB6; --b3:#476E94; --b4:#365571;
+  --chip-ink:#0E1115;
+  --edge:#3E4A57;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  --ground:#0E1115; --surface:#161A20; --surface-2:#1D232A; --sunk:#11151A;
+  --line:#2A323B; --line-soft:#212831;
+  --ink:#E7EBF0; --ink-2:#9BA6B2; --ink-3:#6E7985;
+  --accent:#EE9142; --accent-ink:#1A1206; --accent-soft:#3B2815;
+  --ok:#4FB88A; --crit:#E4705C; --idle:#68737F;
+  --b0:#A6CCEA; --b1:#7FADD5; --b2:#5F8DB6; --b3:#476E94; --b4:#365571;
+  --chip-ink:#0E1115;
+  --edge:#3E4A57;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);
+  font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;
+  display:flex;flex-direction:column;gap:34px}
+h1,h2,h3{margin:0;font-family:var(--disp);text-wrap:balance}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3)}
+.mono{font-family:var(--mono)}
+
+.mast{display:flex;flex-wrap:wrap;gap:22px 34px;align-items:flex-end;
+  justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:18px}
+.mast h1{font-size:clamp(30px,5.2vw,46px);font-weight:700;letter-spacing:-.025em;line-height:1.02}
+.mast .sub{color:var(--ink-2);margin-top:8px;max-width:62ch}
+.runmeta{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);text-align:right;
+  display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.runmeta b{color:var(--ink);font-weight:600}
+.live{display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+@media (prefers-reduced-motion:no-preference){
+  .dot{animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+}
+
+.track{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--line-soft);
+  border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.stage{background:var(--surface);padding:13px 16px 15px;display:flex;flex-direction:column;
+  gap:7px;min-width:0}
+.stage .top{display:flex;align-items:baseline;gap:9px}
+.stage .idx{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--ink-3)}
+.stage .nm{font-family:var(--disp);font-weight:600;font-size:15.5px;letter-spacing:-.01em}
+.stage .det{font-size:12.2px;color:var(--ink-2);line-height:1.4;flex:1}
+.bar{height:3px;background:var(--sunk);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.stage.wait .bar i{background:var(--idle)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.stat{background:var(--surface);padding:14px 16px}
+.stat .v{font-family:var(--disp);font-size:29px;font-weight:700;letter-spacing:-.03em;
+  line-height:1.05;font-variant-numeric:tabular-nums}
+.stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-3);margin-top:5px}
+.stat .n{font-size:12px;color:var(--ink-2);margin-top:5px;line-height:1.35}
+.stat.hot .v{color:var(--accent)}
+
+section{display:flex;flex-direction:column;gap:16px}
+.shead{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;
+  border-bottom:1px solid var(--line);padding-bottom:9px}
+.shead h2{font-size:20px;font-weight:600;letter-spacing:-.015em}
+.shead .note{font-size:12.5px;color:var(--ink-2);max-width:74ch}
+
+.squad{display:flex;flex-direction:column;gap:9px}
+.squad-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.squad-h .t{font-family:var(--disp);font-size:13.5px;font-weight:600}
+.squad-h .c{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(262px,1fr));gap:9px}
+.team{background:var(--surface);border:1px solid var(--line-soft);border-left:3px solid var(--idle);
+  border-radius:2px;padding:11px 13px 12px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.team.run{border-left-color:var(--accent);box-shadow:var(--shadow)}
+.team.queue{opacity:.72}
+.team .r1{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.team .nm{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:-.01em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;padding:2.5px 7px;border-radius:2px;flex:none;
+  background:var(--sunk);color:var(--ink-2)}
+.pill.run{background:var(--accent);color:var(--accent-ink)}
+.pill.queue{background:var(--sunk);color:var(--ink-3)}
+.pill.done{background:var(--ok);color:#fff}
+.team.done{border-left-color:var(--ok)}
+.team .owns{font-size:11.8px;color:var(--ink-2);line-height:1.45;overflow-wrap:anywhere;flex:1}
+.team .foot{display:flex;gap:12px;font-family:var(--mono);font-size:10px;color:var(--ink-3);
+  border-top:1px solid var(--line-soft);padding-top:7px;flex-wrap:wrap}
+.tier{font-weight:600;letter-spacing:.08em}
+.tier.HOT{color:var(--accent)}
+
+.graphcard{background:var(--surface);border:1px solid var(--line);border-radius:3px;
+  padding:6px 6px 0;overflow-x:auto}
+.graphcard svg{display:block;min-width:840px;width:100%;height:auto}
+.b-0{--bc:var(--b0)}.b-1{--bc:var(--b1)}.b-2{--bc:var(--b2)}.b-3{--bc:var(--b3)}.b-4{--bc:var(--b4)}
+svg .node circle{fill:var(--bc);stroke:var(--surface);stroke-width:2}
+svg .bhead{fill:var(--bc);font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em}
+svg .bcount,svg .sub,svg .scale{fill:var(--ink-3);font-family:var(--mono);font-size:10px}
+svg .bcount{font-size:9.5px}
+svg .lbl{fill:var(--ink);font-family:var(--mono);font-size:12px;font-weight:500}
+svg .edge{fill:none;stroke:var(--edge);stroke-opacity:.5;stroke-linecap:round}
+svg .edge.hero{stroke:var(--accent);stroke-opacity:.95;stroke-width:5}
+svg .herolbl{fill:var(--accent);font-family:var(--mono);font-size:12px;font-weight:600}
+svg .rule{stroke:var(--line-soft);stroke-width:1}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;padding:12px 12px 14px;
+  font-size:12px;color:var(--ink-2);border-top:1px solid var(--line-soft);margin-top:4px}
+.key{display:inline-flex;align-items:center;gap:6px}
+.chip{width:11px;height:11px;border-radius:2px;flex:none;background:var(--bc)}
+.chip.acc{background:var(--accent)}
+.callout{background:var(--accent-soft);border:1px solid var(--accent);border-radius:2px;
+  padding:11px 14px;font-size:13px;display:flex;gap:11px;align-items:flex-start;flex-wrap:wrap}
+.callout .tag{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--accent);flex:none;padding-top:2px}
+.callout .body{flex:1;min-width:240px}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:700px;font-size:12.6px}
+th{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-3);text-align:left;font-weight:600;padding:10px 12px;
+  border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+td{padding:8px 12px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.br{font-family:var(--mono);font-size:12px;white-space:nowrap}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--ink-2)}
+td.n.hi{color:var(--crit);font-weight:500}
+td.l{font-family:var(--mono);text-align:left;color:var(--ink-2)}
+.bchip{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;
+  border-radius:2px;font-family:var(--mono);font-size:10px;font-weight:600;
+  color:var(--chip-ink);background:var(--bc)}
+.state{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase}
+.state.landed{color:var(--ok)}
+.state.judging{color:var(--accent)}
+.state.merge{color:var(--ok)}
+.state.close{color:var(--ink-3)}
+.state.salvage{color:var(--accent)}
+.state.ruling{color:var(--crit)}
+.ov{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:2px}
+tr.muted td{color:var(--ink-3)}
+tr.muted td.br{color:var(--ink-2)}
+
+.gates{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.gate{background:var(--surface);padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px}
+.gate .g{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--crit)}
+.gate h3{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.gate p{font-size:12.6px;color:var(--ink-2);line-height:1.5}
+.gate code{font-family:var(--mono);font-size:11.5px;background:var(--sunk);padding:1px 5px;
+  border-radius:2px;color:var(--ink);overflow-wrap:anywhere}
+
+footer{border-top:1px solid var(--line);padding-top:16px;font-size:12px;color:var(--ink-3);
+  display:flex;flex-wrap:wrap;gap:6px 24px;justify-content:space-between}
+footer .mono{font-size:11px}
+@media (max-width:760px){
+  .track{grid-template-columns:repeat(2,1fr)}
+  .mast{align-items:flex-start}
+  .runmeta{text-align:left;align-items:flex-start}
+}
+@media (max-width:460px){.track{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div>
+      <div class="eyebrow">SYNAPSE v5.70.0 &middot; master 67625294 &middot; Houdini 22.0.400</div>
+      <h1>Closeout Deck</h1>
+      <p class="sub">Twenty-one branches carry commits off master. Ten triage teams and four artist
+      lenses ruled on them, sixteen refuters overturned two, a synthesist wrote the merge train, seven
+      harness lenses reviewed the machinery that ran it, and a first-principles room re-derived every
+      verdict from its premises. Nothing here merged anything &mdash; every action still lands on a human gate.</p>
+    </div>
+    <div class="runmeta">
+      <span class="live" style="color:var(--ok)"><span class="dot" style="background:var(--ok);animation:none"></span>ALL THREE RUNS COMPLETE</span>
+      <span>run <b>wf_283efb14-b58</b></span>
+      <span>snapshot <b>2026-09-15 10:58 EDT</b></span>
+      <span>82 agents &middot; 518+ tool calls &middot; &asymp;9.0M subagent tokens &middot; 0 errors</span>
+    </div>
+  </header>
+
+  <div class="track">
+    <div class="stage">
+      <div class="top"><span class="idx">01</span><span class="nm">Triage</span></div>
+      <div class="det">Ten teams, one per graph cluster. Each rules on the branches it owns.</div>
+      <div class="bar"><i style="width:100%"></i></div>
+      <div class="eyebrow">10 done &middot; 16 verdicts</div>
+    </div>
+    <div class="stage">
+      <div class="top"><span class="idx">02</span><span class="nm">Artist</span></div>
+      <div class="det">Four lenses on decisions, utility, first contact, trust. Concurrent with triage.</div>
+      <div class="bar"><i style="width:100%"></i></div>
+      <div class="eyebrow">4 done &middot; 27 findings</div>
+    </div>
+    <div class="stage">
+      <div class="top"><span class="idx">03</span><span class="nm">Refute</span></div>
+      <div class="det">One skeptic per verdict, each handed its graph neighbours&rsquo; rulings to contradict.</div>
+      <div class="bar"><i style="width:100%"></i></div>
+      <div class="eyebrow">16 done &middot; 2 overturned</div>
+    </div>
+    <div class="stage">
+      <div class="top"><span class="idx">04</span><span class="nm">Synthesize</span></div>
+      <div class="det">Merge train, archive list, the questions only you can answer, the artist scaffold.</div>
+      <div class="bar"><i style="width:100%"></i></div>
+      <div class="eyebrow">1 done &middot; 76k-char plan</div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v">21</div><div class="k">branches off master</div>
+      <div class="n">Two are open GitHub PRs. The other nineteen are worktree branches nobody closed.</div></div>
+    <div class="stat"><div class="v">5</div><div class="k">already landed</div>
+      <div class="n"><span class="mono">git cherry</span> proves the patches are on master. No review needed.</div></div>
+    <div class="stat hot"><div class="v">5</div><div class="k">land, in this order</div>
+      <div class="n">rulings &rarr; demo-repairs &rarr; cache-insert &rarr; m2-pgdrm (gated) &rarr; cto-render (last, high risk).</div></div>
+    <div class="stat"><div class="v">7</div><div class="k">close without merging</div>
+      <div class="n">5 superseded &mdash; master already has it &mdash; and 2 with no remaining value.</div></div>
+    <div class="stat"><div class="v">4</div><div class="k">salvage a hunk, then delete</div>
+      <div class="n">bp2/nits, rope/gate-a, scene-model, panel-goalposts &mdash; one named hunk each.</div></div>
+    <div class="stat hot"><div class="v">2</div><div class="k">verdicts overturned</div>
+      <div class="n">Refuters pulled <span class="mono">panel-goalposts</span> off the delete list and re-scoped <span class="mono">scene-model</span>.</div></div>
+    <div class="stat hot"><div class="v">18</div><div class="k">need one more step</div>
+      <div class="n">The room found every worktree-backed deletion unrunnable as written. Same fix for all: tag, force-remove, then delete.</div></div>
+    <div class="stat"><div class="v">2</div><div class="k">harness blockers</div>
+      <div class="n">Read-only conductors hold Bash with <span class="mono">git:*</span> pre-approved; auto-backup pushes to a public origin with scanning off.</div></div>
+  </div>
+
+  <section>
+    <div class="shead">
+      <h2>Teams in flight</h2>
+      <span class="note">Clustered by staleness and graph degree &mdash; hot work gets a dedicated team, cold archaeology is batched, so token spend tracks value rather than branch count.</span>
+    </div>
+    <div id="roster" class="squad"></div>
+  </section>
+
+  <section>
+    <div class="shead">
+      <h2>The work graph</h2>
+      <span class="note">Column = conflict-free batch. Two branches in the same column touch no common file, so they can land in any internal order. Every edge crosses columns by construction.</span>
+    </div>
+    <div class="graphcard">
+      <svg id="graph" viewBox="0 0 1000 570" role="img"
+           aria-label="Node-link diagram of sixteen live branches arranged in five conflict-free merge batches, with edges weighted by the number of files two branches both touch."></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="callout">
+      <span class="tag">read this</span>
+      <span class="body"><b>The 42-file edge, answered.</b> <span class="mono">feature/tops-renderfarm-20260907</span> is
+      <b>SUPERSEDED</b> (confidence 0.97) &mdash; its content lives in <span class="mono">fix/cto-render-20260908</span>, which
+      is <b>REBASE_THEN_MERGE</b> at 0.78, the lowest confidence on the board: high risk, no PR, no CI, 81 commits
+      behind. It goes last in the train so the four safer stops land first and it rebases onto a settled master.</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead">
+      <h2>What first principles changed</h2>
+      <span class="note">Three checkers re-derived every verdict from its premises and messaged each other on disagreements. Audit: <span class="mono">harness/notes/first-principles-2026-09-15/AUDIT.md</span></span>
+    </div>
+    <div class="gates">
+      <div class="gate">
+        <span class="g">premise failed</span>
+        <h3>P1 holds on content, fails as procedure</h3>
+        <p>All five &ldquo;deletable&rdquo; branches are patch-landed &mdash; and all five are checked out in OneDrive worktrees
+        that git reports dirty because OneDrive materialises ten committed symlinks as files. <code>branch -D</code> refuses;
+        <code>worktree remove</code> needs <code>--force</code>. The noise is not lost work; the procedure was still wrong.</p>
+      </div>
+      <div class="gate">
+        <span class="g">verdict overturned</span>
+        <h3><span class="mono">stray/audit-log-threading</span> is a ruling, not a delete</h3>
+        <p>826 unreplicated lines across six files. Deletion rests on a value judgment about a lane (R302), not on evidence.
+        It is on origin (<code>03f279fc</code>) &mdash; the &ldquo;only copy&rdquo; risk the triage cited was false.</p>
+      </div>
+      <div class="gate">
+        <span class="g">verdict overturned</span>
+        <h3><span class="mono">wip/panel-goalposts</span> salvage is red on master</h3>
+        <p>The rescued test asserts a <code>SYNAPSE_HYTHONS</code> parser master does not have; its own docstring says
+        &ldquo;FAILS now.&rdquo; Park the contract in the backlog. Never merge it.</p>
+      </div>
+      <div class="gate">
+        <span class="g">step missing</span>
+        <h3>Three verdicts hand-type &ldquo;129&rdquo;</h3>
+        <p>The tool count is pinned to <code>len(TOOL_DEFS)</code> for <code>CLAUDE.md:3</code> but not for
+        <code>README.md:121</code>, which can drift silently. Recompute after each rebase; never edit the literal.</p>
+      </div>
+      <div class="gate">
+        <span class="g">step missing</span>
+        <h3>PR #82&rsquo;s steps had the tool merging</h3>
+        <p>Every merge is yours. Corrected: fix the two roster defects on the PR branch (A1&rsquo;s gating claim oversold;
+        C2 carries two rulings under one id) as one push, then you squash-merge so public master gets one commit.</p>
+      </div>
+      <div class="gate">
+        <span class="g">step missing</span>
+        <h3><span class="mono">tops</span>&rsquo;s ancestry proof evaporates after the rebase</h3>
+        <p>Once <span class="mono">cto-render</span> is rebased its shas are rewritten and <code>--is-ancestor</code> proves
+        nothing. The pre-delete gate is <code>git cherry master &hellip; | grep -c '^+'</code> == 0 &mdash; it fails safe.
+        Its remote-delete step targets a ref that does not exist; drop it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead">
+      <h2>Branch ledger</h2>
+      <span class="note">Unapplied is patch-id aware &mdash; a rebased copy already sitting on master counts as zero, which is how the five landed rows were found.</span>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>branch</th><th>batch</th><th style="text-align:right">commits</th>
+          <th style="text-align:right">files</th><th style="text-align:right">unapplied</th>
+          <th style="text-align:right">behind</th><th>rebase risk</th><th>last commit</th><th>state</th>
+        </tr></thead>
+        <tbody id="ledger"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead">
+      <h2>Only you can do these</h2>
+      <span class="note">The agents are read-only by construction. Every line below is a human gate this run stops at.</span>
+    </div>
+    <div class="gates">
+      <div class="gate">
+        <span class="g">gate &mdash; decision</span>
+        <h3>Rule A1 on PR #82</h3>
+        <p>Sixteen design calls are waiting on one word each. A1 &mdash; <em>airy is specification, not
+        binding</em> &mdash; is the only item the others wait on. Answering it collapses A2, A3 and B2 into
+        bookkeeping. Reply on the PR: <code>A1 ratify</code></p>
+      </div>
+      <div class="gate">
+        <span class="g">gate &mdash; merge</span>
+        <h3>Every merge, push and tag</h3>
+        <p>No agent in this run can merge. The synthesist produces an ordered train; you run it. The suite
+        gate stands first: full <code>pytest tests/</code> at merge-base, zero new reds against the
+        8,869 passed / 412 skipped / 0 failed floor.</p>
+      </div>
+      <div class="gate">
+        <span class="g">gate &mdash; deletion</span>
+        <h3>Five branches are safe to delete now</h3>
+        <p>Their patches are already on master by patch-id, so nothing is lost: <code>fix/cto-release-panel-tests</code>,
+        <code>fix/cto-release-contracts</code>, <code>fix/cto-panel-20260908</code>,
+        <code>fix/cto-memory-20260908</code>, <code>fix/m09-task-history-20260907</code>. Still your call,
+        not mine.</p>
+      </div>
+      <div class="gate">
+        <span class="g">gate &mdash; hygiene</span>
+        <h3>About twenty worktrees are fully merged</h3>
+        <p>The <span class="mono">ux/</span> and <span class="mono">release/</span> worktrees under
+        <code>SYNAPSE_Refactor/worktrees/</code> sit at zero ahead &mdash; that work shipped. They are stale
+        checkouts, and a stale checkout is how an absolute path writes into the wrong tree.</p>
+      </div>
+      <div class="gate">
+        <span class="g">gate &mdash; decision</span>
+        <h3>Four calls that block the train</h3>
+        <p><span class="mono">m2-pgdrm</span>: MERGE a kernel with no callers, or HOLD? &middot; <span class="mono">cto-render</span>:
+        does <code>houdini_render</code> STAY beside the farm, or GO? &middot; <span class="mono">cache-insert</span>: merge DARK or
+        flip ON? &middot; <code>houdini_layout_network</code> at INFORM: KEEP or RAISE?</p>
+      </div>
+      <div class="gate">
+        <span class="g">gate &mdash; decision</span>
+        <h3>Rule on <span class="mono">stray/audit-log-threading</span></h3>
+        <p>Is the audit-state-capture lane (R302) finished for good &mdash; demote 826 lines to a local tag and leave origin
+        untouched &mdash; or does R308&rsquo;s &ldquo;a ref is auditable, a stash is invisible&rdquo; still bind, in which case do nothing?</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Read-only throughout. Plan: <span class="mono">harness/notes/closeout-2026-09-15/PLAN.md</span> &middot; harness review: <span class="mono">harness/notes/harness-review-2026-09-15/REPORT.md</span> &middot; audit: <span class="mono">harness/notes/first-principles-2026-09-15/AUDIT.md</span></span>
+    <span class="mono">graph: 16 nodes &middot; 23 edges &middot; 5 batches (greedy colouring)</span>
+  </footer>
+</div>
+
+<script>
+var NODES = [
+  {id:'rulings',      label:'rulings',          branch:'design/rulings-2026-09-14',           b:0, c:1,  f:1,  u:1,  be:0,    risk:'low',  last:'2026-09-14'},
+  {id:'cto-render',   label:'cto-render',       branch:'fix/cto-render-20260908',             b:0, c:8,  f:45, u:8,  be:81,   risk:'high', last:'2026-09-08'},
+  {id:'bp2-nits',     label:'bp2-nits',         branch:'bp2/nits',                            b:0, c:5,  f:5,  u:5,  be:341,  risk:'med',  last:'2026-09-01'},
+  {id:'m2-pgdrm',     label:'m2-pgdrm',         branch:'mem/m2-pgdrm',                        b:0, c:1,  f:2,  u:1,  be:403,  risk:'low',  last:'2026-08-21'},
+  {id:'beacon',       label:'beacon',           branch:'rope/beacon',                         b:0, c:20, f:1,  u:20, be:857,  risk:'low',  last:'2026-08-03'},
+  {id:'audit-log',    label:'audit-log',        branch:'stray/audit-log-threading',           b:0, c:1,  f:6,  u:1,  be:919,  risk:'low',  last:'2026-08-02'},
+  {id:'h1-schemas',   label:'h1-schemas',       branch:'repair/h1-schemas-b',                 b:0, c:1,  f:4,  u:1,  be:1227, risk:'med',  last:'2026-07-26'},
+  {id:'goalposts',    label:'goalposts',        branch:'wip/panel-goalposts',                 b:0, c:2,  f:8,  u:2,  be:1629, risk:'med',  last:'2026-06-24'},
+  {id:'tops-farm',    label:'tops-renderfarm',  branch:'feature/tops-renderfarm-20260907',    b:1, c:7,  f:42, u:7,  be:81,   risk:'high', last:'2026-09-08'},
+  {id:'demo-repairs', label:'demo-repairs',     branch:'fix/demo-repairs-20260909',           b:2, c:1,  f:32, u:1,  be:51,   risk:'med',  last:'2026-09-09'},
+  {id:'ledger-moneta',label:'ledger-moneta',    branch:'repair/ledger-moneta-seam',           b:2, c:1,  f:8,  u:1,  be:1231, risk:'high', last:'2026-07-26'},
+  {id:'panel-ux',     label:'panel-ux',         branch:'feat/panel-ux-pass',                  b:2, c:1,  f:3,  u:1,  be:1598, risk:'med',  last:'2026-06-26'},
+  {id:'installer',    label:'windows-installer',branch:'feature/windows-installer-20260909',  b:3, c:6,  f:25, u:6,  be:51,   risk:'high', last:'2026-09-09'},
+  {id:'scene-model',  label:'scene-model',      branch:'feat/scene-model',                    b:3, c:2,  f:11, u:2,  be:1337, risk:'med',  last:'2026-07-18'},
+  {id:'cache-insert', label:'cache-insert',     branch:'feat/cache-insert',                   b:4, c:1,  f:10, u:1,  be:740,  risk:'high', last:'2026-08-09'},
+  {id:'gate-a',       label:'gate-a',           branch:'rope/gate-a',                         b:4, c:3,  f:4,  u:2,  be:794,  risk:'med',  last:'2026-08-06'}
+];
+
+var LANDED = [
+  {branch:'fix/cto-release-panel-tests',   c:1, f:3,  be:56, risk:'med',  last:'2026-09-09'},
+  {branch:'fix/cto-release-contracts',     c:1, f:6,  be:56, risk:'high', last:'2026-09-09'},
+  {branch:'fix/cto-panel-20260908',        c:1, f:5,  be:63, risk:'high', last:'2026-09-08'},
+  {branch:'fix/cto-memory-20260908',       c:1, f:10, be:63, risk:'high', last:'2026-09-08'},
+  {branch:'fix/m09-task-history-20260907', c:1, f:3,  be:84, risk:'med',  last:'2026-09-07'}
+];
+
+var EDGES = [
+  ['installer','demo-repairs',1],['installer','cto-render',1],['installer','tops-farm',1],['installer','gate-a',1],
+  ['demo-repairs','cto-render',7],['demo-repairs','tops-farm',7],['demo-repairs','cache-insert',6],
+  ['demo-repairs','gate-a',1],['demo-repairs','scene-model',1],
+  ['cto-render','tops-farm',42],['cto-render','cache-insert',5],['cto-render','gate-a',1],
+  ['cto-render','ledger-moneta',1],['cto-render','scene-model',2],['cto-render','panel-ux',2],
+  ['tops-farm','cache-insert',5],['tops-farm','gate-a',1],['tops-farm','ledger-moneta',1],
+  ['tops-farm','scene-model',2],['tops-farm','panel-ux',2],
+  ['cache-insert','scene-model',1],['audit-log','scene-model',1],['ledger-moneta','scene-model',1]
+];
+
+var TEAMS = [
+  {phase:'Triage', name:'pr82-rulings',     tier:'HOT',  budget:8,  state:'done',   owns:'design/rulings-2026-09-14 — PR #82, the sixteen open design calls'},
+  {phase:'Triage', name:'pr80-installer',   tier:'HOT',  budget:10, state:'done',   owns:'feature/windows-installer-20260909 — PR #80, draft and conflicting'},
+  {phase:'Triage', name:'render-vs-tops',   tier:'HOT',  budget:12, state:'done',   owns:'fix/cto-render-20260908 + feature/tops-renderfarm-20260907 — the 42-file supersession'},
+  {phase:'Triage', name:'demo-repairs',     tier:'HOT',  budget:8,  state:'done',   owns:'fix/demo-repairs-20260909 — one commit spread across thirty-two files'},
+  {phase:'Triage', name:'bp2-nits',         tier:'WARM', budget:7,  state:'done',   owns:'bp2/nits — do the nits still describe defects on today’s master?'},
+  {phase:'Triage', name:'rope-beacon',      tier:'WARM', budget:9,  state:'done',   owns:'rope/beacon — twenty commits into a single file'},
+  {phase:'Triage', name:'mem-pgdrm',        tier:'WARM', budget:7,  state:'done',   owns:'mem/m2-pgdrm — MEMORY board rung M2, the PG-DRM kernel'},
+  {phase:'Triage', name:'cold-panel-scene', tier:'COLD', budget:10, state:'done',   owns:'feat/scene-model, feat/panel-ux-pass, wip/panel-goalposts'},
+  {phase:'Triage', name:'cold-repairs',     tier:'COLD', budget:10, state:'done',   owns:'repair/ledger-moneta-seam, repair/h1-schemas-b, stray/audit-log-threading'},
+  {phase:'Triage', name:'cold-cache-rope',  tier:'COLD', budget:8,  state:'done',   owns:'feat/cache-insert, rope/gate-a'},
+  {phase:'Artist', name:'decisions',        tier:'LENS', budget:10, state:'done',   owns:'Is a ruling one system or five copies? decisions.py · decision_log.py · DECISIONS.md · synapse_decide · RULINGS-OPEN.md'},
+  {phase:'Artist', name:'utility',          tier:'LENS', budget:10, state:'done',   owns:'128 registered tools — which are reachable by an artist who does not know tool names?'},
+  {phase:'Artist', name:'firstrun',         tier:'LENS', budget:9,  state:'done',   owns:'The first five minutes. What the panel shows, and what it does when the bridge is down.'},
+  {phase:'Artist', name:'trust',            tier:'LENS', budget:10, state:'done',   owns:'Consent, undo, honest failure — can an artist get their scene back with one Ctrl+Z?'},
+  {phase:'Refute', name:'one per verdict',  tier:'ADV',  budget:6,  state:'done', owns:'Sixteen skeptics. Each is handed its graph neighbours’ rulings and told to find the contradiction.'},
+  {phase:'Harness review', name:'fences',        tier:'LENS', budget:12, state:'done',  owns:'Permissions and fences \u2014 tools: lines vs read-only claims; the one-hop-from-write conductors'},
+  {phase:'Harness review', name:'state',         tier:'LENS', budget:12, state:'done',  owns:'Twelve STATE.json boards \u2014 one source of truth or twelve; spawn caps in code or prose'},
+  {phase:'Harness review', name:'gates',         tier:'LENS', budget:12, state:'done',  owns:'Human gates \u2014 where armed:true is enforced; Article V; is DECISIONS.md write-only'},
+  {phase:'Harness review', name:'observability', tier:'LENS', budget:11, state:'done',  owns:'Can Joe answer \u201cwhat ran, what did it touch, what is waiting on me\u201d in two minutes'},
+  {phase:'Harness review', name:'context',       tier:'LENS', budget:11, state:'done',  owns:'Prompt mass per dispatch \u2014 CLAUDE.md + 35 agent defs; which sections are dead weight'},
+  {phase:'Harness review', name:'roster',        tier:'LENS', budget:12, state:'done',  owns:'35 agents for one developer \u2014 dead, duplicate, stale model pins, YAML-trapped'},
+  {phase:'Harness review', name:'evals',         tier:'LENS', budget:11, state:'done',  owns:'What pins the harness machinery itself \u2014 tests over harness/*.py, fence conformance'},
+  {phase:'Harness review', name:'refuters \u00d7 32',   tier:'ADV',  budget:6,  state:'done', owns:'One skeptic per blocker/major finding. Severities corrected at source; none dismissed \u2014 weigh accordingly.'},
+  {phase:'Harness review', name:'synthesist',      tier:'SYNTH',budget:2,  state:'done', owns:'Findings-first report: 2 blockers, 24 majors, 16 minors, nine-step upgrade path, twelve things not worth fixing.'},
+  {phase:'First-principles room', name:'fp-conductor',   tier:'COND', budget:15, state:'done', owns:'Sequences three checkers, relays disagreements by message, writes AUDIT.md under harness/notes/'},
+  {phase:'First-principles room', name:'fp-necessity',   tier:'FP',   budget:10, state:'done', owns:'What must be TRUE for each verdict to hold? Re-derives every premise instead of trusting the citation.'},
+  {phase:'First-principles room', name:'fp-sufficiency', tier:'FP',   budget:10, state:'done', owns:'If every premise holds, does the verdict FOLLOW? Hunts the gap between evidence and action.'},
+  {phase:'First-principles room', name:'fp-falsifier',   tier:'FP',   budget:10, state:'done', owns:'What single observation would overturn it? Goes and looks. Talks to fp-necessity by message.'},
+  {phase:'Synthesize', name:'synthesist',   tier:'SYNTH',budget:3,  state:'done', owns:'Merge train · archive list · needs-your-word · the artist scaffold · what was not checked'}
+];
+
+var PHASE_NOTE = {
+  Triage:'10 teams · clustered by graph degree',
+  Artist:'4 lenses · concurrent with triage',
+  Refute:'16 agents · fans out as verdicts land',
+  Synthesize:'1 agent · composes the deliverable',
+  'Harness review':'run 2 · 7 lenses → 55 findings → 39 attacked, 39 survived · done',
+  'First-principles room':'21 verdicts re-derived · 2 overturned · 18 need a step · 1 clean · done'
+};
+
+var roster = document.getElementById('roster');
+['Triage','Artist','Refute','Synthesize','Harness review','First-principles room'].forEach(function (p) {
+  var group = TEAMS.filter(function (t) { return t.phase === p; });
+  var box = document.createElement('div');
+  box.className = 'squad';
+  var h = document.createElement('div');
+  h.className = 'squad-h';
+  h.innerHTML = '<span class="t">' + p + '</span><span class="c">' + PHASE_NOTE[p] + '</span>';
+  var grid = document.createElement('div');
+  grid.className = 'teams';
+  group.forEach(function (t) {
+    var el = document.createElement('div');
+    el.className = 'team ' + t.state;
+    el.innerHTML =
+      '<div class="r1"><span class="nm">' + t.name + '</span>' +
+      '<span class="pill ' + t.state + '">' + (t.state === 'run' ? 'running' : t.state === 'done' ? 'done' : 'queued') + '</span></div>' +
+      '<div class="owns">' + t.owns + '</div>' +
+      '<div class="foot"><span class="tier ' + t.tier + '">' + t.tier + '</span>' +
+      '<span>budget ≤ ' + t.budget + ' calls</span></div>';
+    grid.appendChild(el);
+  });
+  box.appendChild(h);
+  box.appendChild(grid);
+  roster.appendChild(box);
+});
+
+var NS = 'http://www.w3.org/2000/svg';
+var COLS = [132, 322, 512, 700, 872];
+var TOP = 52, BOT = 486;
+var byBatch = {};
+NODES.forEach(function (n) { (byBatch[n.b] = byBatch[n.b] || []).push(n); });
+var xy = {};
+Object.keys(byBatch).forEach(function (b) {
+  var list = byBatch[b], n = list.length;
+  list.forEach(function (node, i) {
+    xy[node.id] = { x: COLS[+b], y: n === 1 ? (TOP + BOT) / 2 : TOP + i * ((BOT - TOP) / (n - 1)) };
+  });
+});
+var svg = document.getElementById('graph');
+function mk(tag, attrs, text) {
+  var e = document.createElementNS(NS, tag);
+  for (var k in attrs) { e.setAttribute(k, attrs[k]); }
+  if (text !== undefined) { e.textContent = text; }
+  return e;
+}
+
+[0,1,2,3,4].forEach(function (b) {
+  var count = (byBatch[b] || []).length;
+  var g = mk('g', {'class': 'b-' + b});
+  g.appendChild(mk('text', {x: COLS[b], y: 22, 'text-anchor': 'middle', 'class': 'bhead'}, 'BATCH ' + b));
+  g.appendChild(mk('text', {x: COLS[b], y: 37, 'text-anchor': 'middle', 'class': 'bcount'},
+    count + (count === 1 ? ' branch' : ' branches')));
+  svg.appendChild(g);
+});
+
+EDGES.forEach(function (e) {
+  var p = xy[e[0]], q = xy[e[1]], w = e[2];
+  if (!p || !q) { return; }
+  var hero = w >= 40;
+  var mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
+  var lift = (q.x - p.x) * 0.07;
+  var path = mk('path', {
+    d: 'M ' + p.x + ' ' + p.y + ' Q ' + mx + ' ' + (my - lift) + ' ' + q.x + ' ' + q.y,
+    'class': hero ? 'edge hero' : 'edge'
+  });
+  if (!hero) { path.setAttribute('stroke-width', Math.max(1, Math.min(3.2, 0.8 + w * 0.3))); }
+  svg.appendChild(path);
+  if (hero) {
+    svg.appendChild(mk('text', {x: mx, y: my - lift - 13, 'text-anchor': 'middle', 'class': 'herolbl'},
+      '42 shared files'));
+  }
+});
+
+NODES.forEach(function (n) {
+  var p = xy[n.id], r = 8 + Math.sqrt(n.c) * 2.6;
+  var g = mk('g', {'class': 'node b-' + n.b});
+  g.appendChild(mk('circle', {cx: p.x, cy: p.y, r: r}));
+  var right = n.b <= 2;
+  var tx = right ? p.x + r + 8 : p.x - r - 8;
+  var anchor = right ? 'start' : 'end';
+  g.appendChild(mk('text', {x: tx, y: p.y - 1, 'text-anchor': anchor, 'class': 'lbl'}, n.label));
+  g.appendChild(mk('text', {x: tx, y: p.y + 12, 'text-anchor': anchor, 'class': 'sub'},
+    n.c + 'c · ' + n.f + 'f · ' + n.be + ' behind'));
+  svg.appendChild(g);
+});
+
+svg.appendChild(mk('line', {x1: 16, y1: 522, x2: 984, y2: 522, 'class': 'rule'}));
+svg.appendChild(mk('text', {x: 16, y: 545, 'class': 'scale'},
+  'node area ∝ commits ahead of master   ·   edge width ∝ files two branches both touch   ·   c = commits, f = files'));
+
+var legend = document.getElementById('legend');
+[0,1,2,3,4].forEach(function (b) {
+  var s = document.createElement('span');
+  s.className = 'key b-' + b;
+  s.innerHTML = '<span class="chip"></span>batch ' + b;
+  legend.appendChild(s);
+});
+var heroKey = document.createElement('span');
+heroKey.className = 'key';
+heroKey.innerHTML = '<span class="chip acc"></span>the supersession edge';
+legend.appendChild(heroKey);
+
+var VERDICTS = {
+  'design/rulings-2026-09-14':['MERGE_NOW','merge','1st'],
+  'fix/demo-repairs-20260909':['REBASE_THEN_MERGE','merge','2nd'],
+  'feat/cache-insert':['REBASE_THEN_MERGE','merge','3rd'],
+  'mem/m2-pgdrm':['REBASE_THEN_MERGE','merge','4th \u00b7 gated on a ruling'],
+  'fix/cto-render-20260908':['REBASE_THEN_MERGE','merge','5th \u00b7 last, high risk'],
+  'feature/tops-renderfarm-20260907':['SUPERSEDED','close',''],
+  'feature/windows-installer-20260909':['SUPERSEDED','close','PR #80 closes'],
+  'feat/panel-ux-pass':['SUPERSEDED','close','~0.75 \u00b7 one-line salvage'],
+  'repair/h1-schemas-b':['SUPERSEDED','close',''],
+  'repair/ledger-moneta-seam':['SUPERSEDED','close',''],
+  'rope/beacon':['ARCHIVE_DELETE','close',''],
+  'stray/audit-log-threading':['NEEDS_HUMAN_RULING','ruling','overturned by the room'],
+  'bp2/nits':['SPLIT_SALVAGE','salvage',''],
+  'rope/gate-a':['SPLIT_SALVAGE','salvage',''],
+  'feat/scene-model':['SPLIT_SALVAGE','salvage','refuter re-scoped'],
+  'wip/panel-goalposts':['PARK_RECORD','salvage','red on master \u00b7 never merge']
+};
+var tb = document.getElementById('ledger');
+NODES.slice().sort(function (a, b) { return a.last < b.last ? 1 : a.last > b.last ? -1 : 0; })
+  .forEach(function (n) {
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="br">' + n.branch + '</td>' +
+      '<td class="b-' + n.b + '"><span class="bchip">' + n.b + '</span></td>' +
+      '<td class="n">' + n.c + '</td><td class="n">' + n.f + '</td><td class="n">' + n.u + '</td>' +
+      '<td class="n' + (n.be > 700 ? ' hi' : '') + '">' + n.be.toLocaleString() + '</td>' +
+      '<td class="l">' + n.risk + '</td><td class="l">' + n.last + '</td>' +
+      '<td><span class="state ' + (VERDICTS[n.branch] ? VERDICTS[n.branch][1] : 'judging') + '">' +
+        (VERDICTS[n.branch] ? VERDICTS[n.branch][0].replace(/_/g, ' ') : 'judging') + '</span>' +
+        (VERDICTS[n.branch] && VERDICTS[n.branch][2] ? '<div class="ov">' + VERDICTS[n.branch][2] + '</div>' : '') + '</td>';
+    tb.appendChild(tr);
+  });
+LANDED.forEach(function (n) {
+  var tr = document.createElement('tr');
+  tr.className = 'muted';
+  tr.innerHTML =
+    '<td class="br">' + n.branch + '</td><td>—</td>' +
+    '<td class="n">' + n.c + '</td><td class="n">' + n.f + '</td><td class="n">0</td>' +
+    '<td class="n">' + n.be + '</td>' +
+    '<td class="l">' + n.risk + '</td><td class="l">' + n.last + '</td>' +
+    '<td><span class="state landed">landed</span></td>';
+  tb.appendChild(tr);
+});
+</script>

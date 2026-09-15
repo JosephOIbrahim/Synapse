@@ -1,0 +1,508 @@
+{
+ "counts": {
+  "lenses": 7,
+  "raw": 55,
+  "deduped": 55,
+  "refuted": 39,
+  "survived": 39,
+  "minors": 16
+ },
+ "findings": [
+  {
+   "id": "FENCE-1",
+   "title": "In-session conductors inherit settings.local.json, which pre-approves git push, git:*, python:* with an empty deny list",
+   "severity": "blocker",
+   "silent": true,
+   "lens": "fences \u2014 permissions and structural enforcement vs. stated intent",
+   "effort": "M",
+   "fix": "Either (a) drop Bash from the read-only conductors and give them a read-only Bash-holding scout to dispatch, or (b) add a PreToolUse hook with matcher Bash that denies write-shaped commands (python -c/hython -c with open(...,'w'), sed -i, tee, > redirection, git push) unless an explicit env opt-in is set \u2014 the same capability-hook pattern harness/githooks/pre-push already uses. Also prune settings.local.json: 'Bash(git:*)' and 'Bash(python:*)' are blanket grants that make every agent-side fence moot."
+  },
+  {
+   "id": "FENCE-2",
+   "title": "Backup-Branches pushes every worktree feature branch to a PUBLIC origin with no content gate; idle-loop pushes are fully silent",
+   "severity": "blocker",
+   "silent": true,
+   "lens": "fences \u2014 permissions and structural enforcement vs. stated intent",
+   "effort": "M",
+   "fix": "Gate the push on content, not name: before each push run a cheap scan over `git diff --name-only @{u}..HEAD` (or origin/master..HEAD for new branches) against a deny-pattern list (.env*, *.pem, *.key, settings.local.json, *.log) and a secret grep, refuse + Notify on hit. Add a branch-prefix allowlist (e.g. bp*/, cto/, feat/) or an explicit -Backup switch. Remove the Out-Null at :924 so idle pushes are logged. Consider extending pre-push to refuse any push containing those paths regardless of ref."
+  },
+  {
+   "id": "FENCE-3",
+   "title": "The conductor\u2192writer hop (Agent tool) is governed by prose only; no dispatch allow-list exists anywhere",
+   "severity": "major",
+   "silent": true,
+   "lens": "fences \u2014 permissions and structural enforcement vs. stated intent",
+   "effort": "M",
+   "fix": "Make the hop checkable: a PreToolUse hook with matcher Agent that reads subagent_type from tool_input and compares against a per-conductor allow-list JSON (conductor \u2192 permitted subagent_types); deny with reason otherwise. For gated forges, have the hook require the verdict to come from a file the gatewarden wrote (harness/state/verdicts/<slug>.json) rather than from prompt text."
+  },
+  {
+   "id": "FENCE-4",
+   "title": "Headless profiles' denies are form-matched; Bash(hython:*) in the allow list is an interpreter that writes anything",
+   "severity": "major",
+   "silent": true,
+   "lens": "fences \u2014 permissions and structural enforcement vs. stated intent",
+   "effort": "M",
+   "fix": "Apply the pre-push lesson to the other fences: a PreToolUse Bash hook that denies `hython -c`/`python -c` and shell redirection into VERSION, harness/state/**, harness/verify/*_baseline.json; and/or a versioned pre-commit hook under harness/githooks that refuses commits touching those paths without SYNAPSE_GATE_C=1. Capability, not form."
+  },
+  {
+   "id": "FENCE-7",
+   "title": "No test pins any fence: agent tools: lines, the PreToolUse guard, Backup-Branches, or the profile deny lists",
+   "severity": "major",
+   "silent": true,
+   "lens": "fences \u2014 permissions and structural enforcement vs. stated intent",
+   "effort": "S",
+   "fix": "One test module: parse every .claude/agents/*.md frontmatter; assert any description containing 'read-only'/'never edits' has tools \u2229 {Write, Edit, NotebookEdit} = \u2205; assert agent-settings.json and relay-settings.json deny lists still contain push/merge/VERSION/state; feed guard-edit-targets.py a VERSION path via stdin and assert deny (red today \u2014 that is the ratchet working); grep orchestrate.ps1 Backup-Branches for the master/main skip. Also note agent-settings.json allows Edit(.claude/**), which includes the agent definitions themselves."
+  },
+  {
+   "id": "ST-1",
+   "title": "Board conductors never take lock.py \u2014 no mutual exclusion on loop/memory/reach STATE.json",
+   "severity": "major",
+   "silent": true,
+   "lens": "state \u2014 workflow state and durability (harness/loop, harness/memory, harness/reach boards; lock.py; legs.json; ledgers)",
+   "effort": "S",
+   "fix": "Make the conductors' preflight run `python harness/lock.py acquire <board-id> --worktree <path>` and have the workflow refuse unless the args carry the lock token (exit 3 = already held). Add 'loop', 'memory', 'reach' as leg ids so status.py/statusline.py show them as running."
+  },
+  {
+   "id": "ST-2",
+   "title": "Spawn cap is enforced only against the integer the conductor types in; the write-back is prose through Bash",
+   "severity": "major",
+   "silent": true,
+   "lens": "state \u2014 workflow state and durability (harness/loop, harness/memory, harness/reach boards; lock.py; legs.json; ledgers)",
+   "effort": "M",
+   "fix": "Give the workflow the board path and let it read `spawned` itself (or a tiny `harness/board_state.py read loop spawned` the conductor must pipe through); have the conductor's write-back go through the same helper so the ledger append and the counter increment are one atomic operation. Pin with a test that \u03a3 ledger.spent == spawned."
+  },
+  {
+   "id": "ST-3",
+   "title": "7 of 12 boards \u2014 including harness/reach/ with its bus receipts \u2014 are untracked: off git, off the auto-push backup",
+   "severity": "major",
+   "silent": true,
+   "lens": "state \u2014 workflow state and durability (harness/loop, harness/memory, harness/reach boards; lock.py; legs.json; ledgers)",
+   "effort": "S",
+   "fix": "Commit the boards (STATE.json, bus/, notes/) and add a test or pre-commit check that every harness/*/STATE.json is tracked. Decide explicitly which dated run dirs are evidence (tracked) vs scratch (.gitignore)."
+  },
+  {
+   "id": "ST-5",
+   "title": "Rung readiness is hardcoded in the workflow script; STATE.json is not the gate it claims to be",
+   "severity": "major",
+   "silent": false,
+   "lens": "state \u2014 workflow state and durability (harness/loop, harness/memory, harness/reach boards; lock.py; legs.json; ledgers)",
+   "effort": "M",
+   "fix": "Have the conductor pass the rung's `status` and `substrate_presence` slice from STATE.json in args (like spawnedSoFar) and let the script gate on that; or drop the hardcoded refusals and keep gating in one place. A conformance test that every rung in STATE.rungs has a matching BUDGET key and vice versa would catch drift."
+  },
+  {
+   "id": "ST-6",
+   "title": "No in-progress marker on a rung; crash-resume re-dispatches the whole phase and the log append is manual",
+   "severity": "major",
+   "silent": true,
+   "lens": "state \u2014 workflow state and durability (harness/loop, harness/memory, harness/reach boards; lock.py; legs.json; ledgers)",
+   "effort": "M",
+   "fix": "Write a `dispatched` record (workflow id, rung, agents, timestamp) to the board BEFORE spawning and have resume read bus/ receipts to skip agents that already have one; key ledger entries by workflow id and refuse a duplicate key on append. Give status a small enum (ready|blocked|running|closed) alongside the prose."
+  },
+  {
+   "id": "G1",
+   "title": "The human gate is one boolean the gated agent types itself",
+   "severity": "major",
+   "silent": true,
+   "lens": "gates",
+   "effort": "M",
+   "fix": "Make the arm an artifact Joe produces, not an arg the agent relays: e.g. the workflow reads harness/<board>/ARM.json (or an AskUserQuestion inside the script) carrying a Joe-typed nonce + timestamp within N minutes and the rung name, and stamps that nonce into the envelope and receipt. Same for spawnedSoFar: have the script read STATE.json itself."
+  },
+  {
+   "id": "G2",
+   "title": "'Read-only by design' conductors hold Bash, and no fence sees Bash writes",
+   "severity": "major",
+   "silent": true,
+   "lens": "gates",
+   "effort": "S",
+   "fix": "Either drop Bash from the three conductors (they need Read/Grep/Glob/Agent for orientation) or add a PreToolUse hook on `Bash` that denies commands touching harness/state/**, VERSION, flywheel_queue.json, resolved.json, and `git merge|push|tag`. Add a test that every agent whose description says 'read-only' has no Bash/Write/Edit in its tools line."
+  },
+  {
+   "id": "G3",
+   "title": "Decisions board: who=\"human\" is a hardcoded literal, and the aging clock has no caller",
+   "severity": "major",
+   "silent": true,
+   "lens": "gates",
+   "effort": "S",
+   "fix": "Add `--by` (required, or derived from `git config user.name` + a SYNAPSE_ACTOR env the harness sets for agents) and refuse `by=agent` for kinds that need a human. Run `decisions.py --count` with ages in the SessionStart hook or orchestrate.ps1 preflight so exit 6 actually surfaces; commit DECISIONS.md on --write or stop claiming it is the board."
+  },
+  {
+   "id": "G5",
+   "title": "flow-conductor can bank its own authority via CronCreate",
+   "severity": "major",
+   "silent": true,
+   "lens": "gates",
+   "effort": "S",
+   "fix": "Remove CronCreate from the conductor and make standings a human-run or orchestrate.ps1-owned script; if the cron must exist, have the cron job invoke a read-only agent (tools: Read, Grep, Glob only) rather than the conductor."
+  },
+  {
+   "id": "OBS-2",
+   "title": "2,413 untracked files under harness/ - eight whole boards (STATE.json included) and ten battleplan ledgers exist only in the working tree",
+   "severity": "major",
+   "silent": true,
+   "lens": "observability",
+   "effort": "S",
+   "files": [
+    "harness/finesse-20260906/STATE.json",
+    "harness/notifications-20260906/STATE.json",
+    "harness/v2-20260913/",
+    "harness/battleplan/runs/2026-09-03/",
+    ".claude/agents/flow-conductor.md",
+    ".claude/agents/reach-orchestrator.md",
+    ".claude/workflows/reach.js",
+    "harness/orchestrate.ps1"
+   ],
+   "fix": "Decide per-dir: commit (boards, STATE.json, ledgers, agent/workflow definitions, rulings) or .gitignore explicitly (bus/, artifacts/ scratch). A tiny check in status.py or the proposed morning script: count untracked files under harness/ and .claude/agents|workflows and print it as a line, so the number is visible even before the decision is made. The CTO_RULINGS_BP3.md + ledger files are one git add away."
+  },
+  {
+   "id": "OBS-3",
+   "title": "harness/status.py renders a manifest frozen on 2026-08-13 - the R140 failure class recurring one layer up",
+   "severity": "major",
+   "silent": true,
+   "lens": "observability",
+   "effort": "S",
+   "files": [
+    "harness/status.py",
+    "harness/legs.json",
+    "harness/heats_status.py",
+    "harness/notes/receipts/"
+   ],
+   "fix": "Either make status.py discover boards (glob harness/*/STATE.json and print one line per board: name, status, mtime, open gates) instead of reading a single manifest, or make it fail loud when legs.json is older than the newest STATE.json / receipt (print 'MANIFEST STALE: legs.json 2026-08-13 < receipts/BP4-TIDY.json 2026-09-03' and exit nonzero). The second is a 10-line change and honours R140."
+  },
+  {
+   "id": "OBS-4",
+   "title": "Token/cost is recorded only for -Budget battleplan runs; the 18 workflow scripts and every conductor leave no spend record",
+   "severity": "major",
+   "silent": true,
+   "lens": "observability",
+   "effort": "M",
+   "files": [
+    "harness/orchestrate.ps1",
+    "harness/rails.py",
+    "harness/battleplan/runs/2026-09-03/ledger_orch_20260903-193455.json",
+    ".claude/workflows/memory-loop.js",
+    ".claude/workflows/reach.js",
+    ".claude/workflows/loop.js"
+   ],
+   "fix": "Reuse rails.py's transcript-mining (it already reads message.usage per transcript) as a post-run step the workflow scripts call, or as a standalone 'python harness/rails.py --settle <run-dir>' pointed at the session's ~/.claude transcript dir, writing a ledger next to the board's STATE.json. Add a derived cost_usd from the model id table so the ledger has one number a human reads. Confirm whether status:'open' on the 09-03 ledger is a settle that never ran (orchestrate.ps1:170 says an unrecordable settle 'must be' loud)."
+  },
+  {
+   "id": "CTX-2",
+   "title": "No tool-call budget exists in any of the 18 workflows; 'budget' means spawn count only",
+   "severity": "major",
+   "silent": true,
+   "lens": "context",
+   "effort": "S",
+   "files": [
+    ".claude/workflows/loop.js",
+    ".claude/workflows/reach.js",
+    ".claude/workflows/memory-loop.js",
+    ".claude/workflows/rsi-closure.js"
+   ],
+   "fix": "Add one line to each GROUND/brief: 'CALL BUDGET: <= N tool calls; state count used in your final line.' Start with the three GROUND-carrying workflows (loop, reach, memory-loop), then the others. Pair it with CTX-3 so the number is checked, not just asked for."
+  },
+  {
+   "id": "CTX-4",
+   "title": "CLAUDE.md sits at 97% of the 40k ceiling and roughly 19k of it has no harness consumer",
+   "severity": "major",
+   "silent": true,
+   "lens": "context",
+   "effort": "M",
+   "files": [
+    "CLAUDE.md",
+    "tests/test_router_internals.py",
+    "tests/test_pass7_per_agent_and_canonical.py",
+    "tests/test_undob_live_undo_grouping.py",
+    "tests/_conformance.py"
+   ],
+   "fix": "Cut list with byte estimates, all test-safe if the pinned strings stay: (a) keep ONE live-path paragraph (must retain 'synced by W5-UNDOB', '_handle_set_parm', '_handle_set_keyframe' for tests/test_undob_live_undo_grouping.py:333-338) and make the other two copies one-line pointers: ~3.5k. (b) \u00a73 pipeline box -> five bullets: ~3.3k. (c) Roster/\u00a74/\u00a75/\u00a77/\u00a78/\u00a710 -> one 'orchestration personae (advisory, no runtime consumer)' paragraph that keeps the literal tokens charmander|charmeleon|charizard (pinned by tests/_conformance.py): ~4k. (d) \u00a72.1/2.2/2.4 -> pointer to shared/router.py; keep \u00a72.3's pinned sentences ('calibration period with dense evaluation', retirement statement) and trim its narrative: ~3.5k. (e) \u00a716: keep 16.2 identifier list verbatim (operation_stats, recent_operations, fingerprint_counts, ConductorAdvisor, RecommendationHistory, advise_from_bridge, analyze_history) and move 16.1/16.3/16.4 prose to docs/: ~3k. (f) delete the stale Current Status table: ~1.4k. Net \u2248 18-19k chars -> CLAUDE.md near 20k. Gate: pytest tests/test_router_internals.py tests/test_pass7_per_agent_and_canonical.py tests/test_undob_live_undo_grouping.py tests/test_phase0c_doc1_toolcount.py tests/test_phase0c_doc1_version_conformance.py."
+  },
+  {
+   "id": "R1",
+   "title": "Read-only agents are fenced only by omitting Edit/Write; Bash is an open write channel with no hook, deny, or settings fence for Agent-tool subagents",
+   "severity": "major",
+   "silent": true,
+   "lens": "roster",
+   "effort": "S",
+   "fix": "Two tiers. (a) For agents that only need git log/pytest, keep Bash but add a PreToolUse matcher on Bash that denies write-shaped commands (redirection, sed -i, tee, git commit/push/merge) when the hook payload identifies a subagent - verify first whether the payload carries agent identity. (b) Correct moneta-cartographer.md:11 and the other 14 prose claims to say 'holds no Edit/Write' rather than 'read-only', so the definition stops overstating its fence."
+  },
+  {
+   "id": "R3",
+   "title": "FLOW and REACH harnesses (3 conductors, 2 workflows, 7 board files) exist only in the working tree",
+   "severity": "major",
+   "silent": true,
+   "lens": "roster",
+   "effort": "S",
+   "fix": "Joe's word first (both boards say UNRATIFIED, and committing to any feature branch publishes to the public origin). Then either commit the 12 files on master or move them under harness/retired/ with a one-line note in harness/legs.json. Do not leave them in limbo."
+  },
+  {
+   "id": "EV-1",
+   "title": "No test parses agent frontmatter: neither YAML validity nor tools-fence conformance is pinned",
+   "severity": "major",
+   "silent": true,
+   "lens": "evals \u2014 evaluation coverage of the harness machinery itself (agents, workflows, hooks, harness/*.py, STATE boards, verdict oracle), judged by what the runtime and pytest actually enforce, not by prompt text",
+   "effort": "S",
+   "fix": "One pytest that, for every .claude/agents/*.md: (1) parses the frontmatter with a strict YAML loader and fails on parse error or missing name/tools; (2) asserts any body that claims read-only (regex on 'read-only|writes nothing|repairs nothing') holds no Write/Edit/NotebookEdit, and flags Bash as a warning line; (3) asserts the 10 known conductors hold Agent and no Write/Edit (flow-conductor is the documented exception). Pair with a second assertion that .claude/settings.json PreToolUse matcher still covers Edit|Write."
+  },
+  {
+   "id": "EV-4",
+   "title": "18 workflow scripts, zero tests, zero golden runs, zero replay",
+   "severity": "major",
+   "silent": true,
+   "lens": "evals \u2014 evaluation coverage of the harness machinery itself (agents, workflows, hooks, harness/*.py, STATE boards, verdict oracle), judged by what the runtime and pytest actually enforce, not by prompt text",
+   "effort": "M",
+   "fix": "Two cheap layers: (1) a node --test file that imports each ESM script, asserts meta.whenToUse and meta args parse, and drives the exported refusal predicate with fixture args (armed false, spawnedSoFar missing, cap overrun, valid) \u2014 extract the predicate into an exported function where it is inline today; (2) one recorded golden per conductor-driven workflow: the args + the bus receipts from a known-good run, with a test that a dry-mode invocation reproduces the same dispatch plan (agent names, worktrees, budgets) without spawning."
+  },
+  {
+   "id": "EV-5",
+   "title": "The PreToolUse edit guard and PostToolUse python check have no tests",
+   "severity": "major",
+   "silent": true,
+   "lens": "evals \u2014 evaluation coverage of the harness machinery itself (agents, workflows, hooks, harness/*.py, STATE boards, verdict oracle), judged by what the runtime and pytest actually enforce, not by prompt text",
+   "effort": "S",
+   "fix": "A pytest that runs guard-edit-targets.py as a subprocess with stdin fixtures for each BLOCKED_PATTERN (both slash forms) and asserts the deny JSON, plus one allowed repo path asserting empty output; a second test that loads .claude/settings.json and asserts the PreToolUse matcher contains Edit and Write and points at that script. check-python.sh gets one fixture with a syntax error asserting non-zero."
+  },
+  {
+   "id": "EV-7",
+   "title": "No guard against the 'control pinned to the brief's figure' class \u2014 and this review's own brief carries an instance",
+   "severity": "major",
+   "silent": true,
+   "lens": "evals \u2014 evaluation coverage of the harness machinery itself (agents, workflows, hooks, harness/*.py, STATE boards, verdict oracle), judged by what the runtime and pytest actually enforce, not by prompt text",
+   "effort": "S",
+   "fix": "Convention plus a light lint: any test that reads CLAUDE.md, a SPEC.md, a blueprint, or a receipt to obtain an expected value must (a) name the artifact-side producer in a comment tag such as '# expectation-source: artifact' / 'inherited' and (b) if inherited, carry a sibling BLIND test. A tests/test_expectation_provenance.py that greps tests for read_text on governing docs and requires the tag would make the convention fail loud. Separately, fix the Article V citation in reach-orchestrator.md (and any sibling conductors) to the article that actually carries the rule, or add the rule."
+  },
+  {
+   "id": "FENCE-5",
+   "title": "flow-conductor holds Write+Edit+CronCreate+SendMessage with an unenforced 'writes only harness/flow/' claim, self-perpetuates via cron, and is untracked",
+   "severity": "minor",
+   "silent": true,
+   "lens": "fences \u2014 permissions and structural enforcement vs. stated intent",
+   "effort": "M",
+   "fix": "Split the role: a read-only flow-conductor (Read/Grep/Glob/Bash/Agent) that dispatches a flow-scribe holding Write/Edit, plus a PreToolUse Edit|Write hook rule that denies paths outside harness/flow/** when the writer is the scribe (or simply for any agent while a FLOW room is armed). Drive cadence from harness/orchestrate.ps1's poll loop instead of a self-created cron. Commit the definition so the grant is reviewable."
+  },
+  {
+   "id": "FENCE-6",
+   "title": "The only PreToolUse hook guards deployed copies, matches Edit|Write only, fails open, and is stale for H22",
+   "severity": "minor",
+   "silent": true,
+   "lens": "fences \u2014 permissions and structural enforcement vs. stated intent",
+   "effort": "S",
+   "fix": "Extend the guard to the governance set (VERSION, harness/state/**, harness/verify/*_baseline.json, .claude/settings*.json, harness/*-settings.json, .claude/agents/*.md) with an env opt-in for humans; add a Bash matcher branch that inspects tool_input.command for write-shaped forms; make the exception path deny-with-reason instead of pass; update houdini21.0 \u2192 houdini22.0."
+  },
+  {
+   "id": "ST-4",
+   "title": "STATE.json has no writer: conductors hand-edit 10-22 KB JSON through Bash, not .tmp+replace",
+   "severity": "minor",
+   "silent": true,
+   "lens": "state \u2014 workflow state and durability (harness/loop, harness/memory, harness/reach boards; lock.py; legs.json; ledgers)",
+   "effort": "S",
+   "fix": "One 40-line `harness/board_write.py {board} --spawned N --ledger-json ... --log-json ...` that loads, validates, appends, and writes via .tmp+os.replace; point the three conductor definitions at it and forbid any other STATE.json write in guard-edit-targets.py."
+  },
+  {
+   "id": "ST-7",
+   "title": "spawn_ledger has three shapes across three 'v1' boards and `spawned` is a hand-kept counter nothing can derive",
+   "severity": "minor",
+   "silent": true,
+   "lens": "state \u2014 workflow state and durability (harness/loop, harness/memory, harness/reach boards; lock.py; legs.json; ledgers)",
+   "effort": "S",
+   "fix": "One ledger entry shape (workflow_id, date, rung, spent:int, agents:[names], receipts:[paths], outcome) across boards, a `_schema` bump, and a 20-line validator test that loads every harness/*/STATE.json and asserts \u03a3 spent == spawned and every ledger rung exists in rungs/phases."
+  },
+  {
+   "id": "G4",
+   "title": "Stop hook 'BLOCKED' uses a non-blocking exit code; neither hook gates consent",
+   "severity": "minor",
+   "silent": true,
+   "lens": "gates",
+   "effort": "S",
+   "fix": "Change the Stop branch to exit 2 if blocking is intended (and add a test that pins the exit code per event). Add a PreToolUse hook on Bash that inspects the command for `git merge|push|tag` and `gh pr merge|release` and denies unless an ARM artifact (see G1) is fresh."
+  },
+  {
+   "id": "OBS-1",
+   "title": "No single view of open human gates: 9+ locations, 4 schemas, and the one aggregator reads 2 of them and shows 632 open",
+   "severity": "minor",
+   "silent": true,
+   "lens": "observability",
+   "effort": "M",
+   "files": [
+    "harness/decisions.py",
+    "harness/memory/STATE.json",
+    "harness/loop/STATE.json",
+    "harness/reach/STATE.json",
+    "harness/flow/STATE.json",
+    "harness/tidy/STATE.json",
+    "harness/rope/STATE.json",
+    "harness/legs.json",
+    "harness/state/flywheel_queue.json"
+   ],
+   "fix": "One read-only script (or extend decisions.py collect()) that walks harness/*/STATE.json and normalizes: any human_gates entry not starting with CLOSED, any gates list item, rope gate, legs.json held/blocked, and any board whose status is qualified_with_limits/ready_for_feedback, plus for_ruling items newer than N days. Print a bounded list (top 10 by age, then a count). Give it a --count mode and call that from SessionStart (see OBS-5). Separately, age-cap or archive the 486 for_ruling items so the count means something again."
+  },
+  {
+   "id": "CTX-1",
+   "title": "Workflow GROUND blocks hand every agent a stale version as verbatim truth",
+   "severity": "minor",
+   "silent": true,
+   "lens": "context",
+   "effort": "S",
+   "files": [
+    ".claude/workflows/loop.js",
+    ".claude/workflows/reach.js",
+    ".claude/workflows/memory-loop.js",
+    ".claude/workflows/flow-sprint.js",
+    "VERSION"
+   ],
+   "fix": "Stop baking the version into GROUND. Either read VERSION at script time (fs read, if the Workflow runtime permits) or drop the version token from the REPO line entirely and let the banner in CLAUDE.md (already test-pinned by tests/test_phase0c_doc1_version_conformance.py) be the single source. Same treatment for any other fact in GROUND that has a canonical file."
+  },
+  {
+   "id": "CTX-3",
+   "title": "The biggest spawners (loop 30-cap, reach 30-cap, memory-loop 24-cap, rsi-closure) write no token receipt",
+   "severity": "minor",
+   "silent": true,
+   "lens": "context",
+   "effort": "M",
+   "files": [
+    "harness/rails.py",
+    "harness/battleplan/meter_transcript.py",
+    ".claude/workflows/loop.js",
+    ".claude/workflows/reach.js",
+    ".claude/workflows/memory-loop.js",
+    "harness/memory/STATE.json"
+   ],
+   "fix": "Reuse, do not rebuild: after a rung closes, run meter_transcript.py over the spawned-agent transcripts (the projects-dir slug recipe is already in memory bp2-meter-token-settle.md) and write tokens_in/tokens_out per leg into the board's STATE.json next to spawnedSoFar. Replace the hand-recorded subagent_tokens field with that measured value or mark it UNKNOWN."
+  },
+  {
+   "id": "R2",
+   "title": "panel-relay family (5 agents) is dead but still registered as dispatch targets; one of them is a crucible holding Edit",
+   "severity": "minor",
+   "silent": true,
+   "lens": "roster",
+   "effort": "S",
+   "fix": "git mv .claude/agents/panel-relay/ to harness/retired/ (the directory already exists) so history survives and the picker shrinks. If the relay concept is wanted on H22, re-derive it from the live cto-review lanes rather than reviving these files."
+  },
+  {
+   "id": "R4",
+   "title": "No roster eval: nothing parses .claude/agents/**/*.md for frontmatter validity, tool-line sanity, or cited-path existence",
+   "severity": "minor",
+   "silent": true,
+   "lens": "roster",
+   "effort": "S",
+   "fix": "One pytest under tests/: walk .claude/agents/**/*.md, parse frontmatter with a strict YAML loader, assert name matches filename, assert every tools: entry is in a known set, assert quoted descriptions when they contain ': ', and warn (not fail) on cited paths that do not resolve. Wire it into the existing suite floor."
+  },
+  {
+   "id": "R5",
+   "title": "Consent wall ('never relay consent') is prompt-level, present in 6 of 11 conductors, and absent from the constitution the brief attributes it to",
+   "severity": "minor",
+   "silent": true,
+   "lens": "roster",
+   "effort": "S",
+   "fix": "Add the article to harness/AGENT_CONSTITUTION.md (short, numbered, citable) and the sentence to the 4 live conductors lacking it. Longer: decide whether git push / git merge should be denied for interactive subagents too - that means a Bash PreToolUse hook (R1), since a settings.json deny would also bind Joe's own session (agent-settings.json's _comment explains that trade-off)."
+  },
+  {
+   "id": "EV-2",
+   "title": "The leg verdict oracle (harness/verify/checks.py) is three-quarters untested and has no 'every check can fail' meta-test",
+   "severity": "minor",
+   "silent": true,
+   "lens": "evals \u2014 evaluation coverage of the harness machinery itself (agents, workflows, hooks, harness/*.py, STATE boards, verdict oracle), judged by what the runtime and pytest actually enforce, not by prompt text",
+   "effort": "M",
+   "fix": "Add a parametrized test over every check_* in checks.py that runs each against a deliberately-broken fixture worktree (or a monkeypatched input) and asserts FAIL, plus the known-good fixture asserting PASS. Start with the 26 named in the 'never named' list that gate merges (check_ledger, check_revert_clean, check_mcp_registered, check_wiring_conformance, check_validator_catches_miswire, the *_fresh and *_clean checks)."
+  },
+  {
+   "id": "EV-3",
+   "title": "STATE.json boards have no schema test and the spawn-cap ledger arithmetic is never checked",
+   "severity": "minor",
+   "silent": true,
+   "lens": "evals \u2014 evaluation coverage of the harness machinery itself (agents, workflows, hooks, harness/*.py, STATE boards, verdict oracle), judged by what the runtime and pytest actually enforce, not by prompt text",
+   "effort": "S",
+   "fix": "One test that loads every harness/*/STATE.json, asserts it parses, asserts the boards that carry a spawn_ledger satisfy spawned == sum(entries.agents or entries.spent) <= spawn_cap, and asserts each board declares one of the known schema markers. Keep the schema assertion permissive (marker present, known keys per marker) so it pins drift without freezing content."
+  },
+  {
+   "id": "EV-6",
+   "title": "Decision-making harness modules with zero tests: lane_triage.py recommends dropping worktrees, trust_worktrees.py rewrites ~/.claude.json",
+   "severity": "minor",
+   "silent": true,
+   "lens": "evals \u2014 evaluation coverage of the harness machinery itself (agents, workflows, hooks, harness/*.py, STATE boards, verdict oracle), judged by what the runtime and pytest actually enforce, not by prompt text",
+   "effort": "M",
+   "fix": "lane_triage: a tmp-git fixture with one JUNK, one LANDED, one STALE, one REAL file, asserting the four classes and the three recommendations, plus a CRLF-vs-LF pair asserting it is NOT LANDED. trust_worktrees: run against a copied ~/.claude.json fixture, assert the trusted entry is added and every pre-existing key survives byte-for-byte. board.py: a legs.json fixture with an UNKNOWN leg asserting the rendered HTML contains 'UNKNOWN' and no count for it. Decide forge_evaluator_gate.py: either a smoke test (--mile 1 exits 0/1 on a fixture) or mark it retired in SYNAPSE_HARNESS_LAUNCH.md."
+  }
+ ],
+ "minors": [
+  {
+   "id": "FENCE-8",
+   "title": "Conductors cite 'Article V' for 'never relays consent'; the Constitution's Article V is 'Skill and tool grants' and contains no consent language",
+   "lens": "fences \u2014 permissions and structural enforcement vs. stated intent"
+  },
+  {
+   "id": "ST-8",
+   "title": "No single in-flight registry: legs.json and 12 boards are disjoint, so stale 'RUNNING' claims never expire",
+   "lens": "state \u2014 workflow state and durability (harness/loop, harness/memory, harness/reach boards; lock.py; legs.json; ledgers)"
+  },
+  {
+   "id": "G6",
+   "title": "Every conductor cites 'Article V' for a rule the constitution does not contain",
+   "lens": "gates"
+  },
+  {
+   "id": "G7",
+   "title": "Rung dependencies are hardcoded refusal strings; STATE.json is write-only to the executor",
+   "lens": "gates"
+  },
+  {
+   "id": "G8",
+   "title": "Constitution's structural fence (deny profiles) is unreferenced by any dispatch",
+   "lens": "gates"
+  },
+  {
+   "id": "OBS-5",
+   "title": "SessionStart surfaces Houdini reachability and dead-session capsules, but zero harness state; PostToolUse hooks log nothing about what the agent ran",
+   "lens": "observability"
+  },
+  {
+   "id": "OBS-6",
+   "title": "harness/notes is 360 loose files + 23 subdirs with no index; harness/README.md describes a July-era run.ts harness",
+   "lens": "observability"
+  },
+  {
+   "id": "OBS-7",
+   "title": "harness/board.py is orphaned and its committed output harness/notes/board.html is a five-week-old snapshot",
+   "lens": "observability"
+  },
+  {
+   "id": "CTX-5",
+   "title": "14 of 18 workflows carry no shared context block; each agent rediscovers the repo",
+   "lens": "context"
+  },
+  {
+   "id": "CTX-6",
+   "title": "HARD RULES preamble is copy-pasted across loop/reach/memory-loop and already diverging",
+   "lens": "context"
+  },
+  {
+   "id": "CTX-7",
+   "title": "Per-dispatch fixed preamble is ~111k chars, and 69k of it is the global CLAUDE.md plus the memory index",
+   "lens": "context"
+  },
+  {
+   "id": "CTX-8",
+   "title": "harness/CLAUDE.md preaches 'short = cached = cheap' and spends 60% of itself on HDK/C++ grounding no workflow uses",
+   "lens": "context"
+  },
+  {
+   "id": "R6",
+   "title": "Eight opus pins are deliberate to the MEMORY board but carry no in-file rationale, resolve to an unverified model under the Fable 5.1 CLI, and the board is still open",
+   "lens": "roster"
+  },
+  {
+   "id": "R7",
+   "title": "Eight agents and two workflows serve boards that are closed or 44+ days cold",
+   "lens": "roster"
+  },
+  {
+   "id": "R8",
+   "title": "Specialist duplicates differ by prompt only, and their doctrines have already forked",
+   "lens": "roster"
+  },
+  {
+   "id": "EV-8",
+   "title": "Constitution citations inside agent prose are unpinned and have already drifted",
+   "lens": "evals \u2014 evaluation coverage of the harness machinery itself (agents, workflows, hooks, harness/*.py, STATE boards, verdict oracle), judged by what the runtime and pytest actually enforce, not by prompt text"
+  }
+ ]
+}
