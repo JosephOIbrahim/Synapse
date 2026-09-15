@@ -64,14 +64,36 @@ constants M4 proved dead encoded 3.0×. The beat that survived the collision is 
 The measurement the provenance string has owed since the beginning is now taken, live, read-only:
 the host UI font is **SideFX Source Sans Pro, pixelSize 27, pointSize 10, at 192 DPI**.
 
-`FONT_FLOOR_PX = 11` is **4.1pt on this seat — 41% of the chrome the artist's eye is calibrated
-to.** Even at 96 DPI it sits under the host's 10pt/13.3px. The panel's body runs 12% smaller than
-host chrome; its caption rung 18% smaller.
+`FONT_FLOOR_PX = 11` is **4.12pt on this seat — 40.7% of the chrome the artist's eye is calibrated
+to.** Even at 96 DPI it sits under the host's 10pt/13.3px.
 
-**An absolute pixel constant cannot be a floor relative to a host that moves.** The value needed is
-already computed and discarded one line later in `synapse_panel._host_font_scale`, which reads
-`QFontInfo(app.font()).pixelSize()` and divides it away. `scripts/probe_ui_font.py` — named in the
-provenance string as the owed instrument — does not exist.
+**CORRECTED 2026-09-15, same day, by re-probing the live session.** The first version of this
+section got the finding right and three supporting claims wrong. Recording both, because a document
+that silently fixes itself cannot be audited:
+
+- It cited `synapse_panel._host_font_scale` **twice. That symbol does not exist.** What exists is
+  `chat_display._font_scale`, a *user*-adjustable transcript scale seeded from
+  `tokens.FONT_SCALE_DEFAULT = 1.0`. A fabricated citation is the worst defect a record like this
+  can carry, and it was in the paragraph arguing that someone else's number was unverified.
+- It said the body "runs 12% smaller than host chrome" and elsewhere that 12px "resolves to exactly
+  the host's 27px". Both false, and mutually contradictory. `tokens.scaled()` is
+  `max(8, round(size_px * scale))` with `scale` defaulting to 1.0 — **no host-derived scaling exists
+  anywhere in the panel.**
+- It said `probe_ui_font.py` "does not exist". **It exists**, at
+  `python/synapse/panel/scripts/probe_ui_font.py`. It was looked for at the repo root and declared
+  absent.
+
+**The correction makes the finding worse, not better.** Because nothing scales, an authored 11px is
+eleven actual pixels beside host chrome of twenty-seven. The body token at 12px is **44.4% of host
+size — 56% smaller**, not 12%. The floor is not slightly low; the whole panel is rendering at a
+little over four tenths the size of the application it lives inside, on this seat.
+
+**An absolute pixel constant cannot be a floor relative to a host that moves.** `tokens.py:338`
+already records that the default UI font size is "a MEASURED, GUI-only fact — `QApplication.font()`",
+so the project knows. The instrument to read it exists and is not wired to the floor.
+
+Measured live twice, independently: `QFontInfo(QApplication.font())` → family SideFX Source Sans Pro,
+pixelSize 27, pointSize 10; screen logical DPI 192.0, physical 218.66, devicePixelRatio 1.0.
 
 ---
 
