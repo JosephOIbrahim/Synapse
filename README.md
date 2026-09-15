@@ -43,6 +43,26 @@ Inspect the nodes. Change a parameter. Then try **Undo**.
 
 Undo reverses one recorded operation. It does not reverse a whole conversation, and it does not reverse files written to disk.
 
+### What happens when you send that
+
+```mermaid
+flowchart LR
+    A["You type<br/>make a box"] --> B["Model picks a tool"]
+    B --> C{"Is it destructive?"}
+    C -->|"no"| D["Runs"]
+    C -->|"yes"| E["Asks you first"]
+    E --> D
+    D --> F["Houdini's main thread<br/>inside one undo group"]
+    F --> G["Receipt: what one<br/>Ctrl+Z reverses"]
+```
+
+The receipt is the part worth knowing. Every handler already worked out what a single
+**Ctrl+Z** would take back — it just used to throw that away. Now it tells you, before
+you need it.
+
+**One honest limit:** the undo group *groups*. It does not roll back. If a build fails
+halfway, the part that was already made stays in your scene until you undo it deliberately.
+
 ### Three controls to know
 
 | Control | Use it for |
@@ -60,6 +80,16 @@ Undo reverses one recorded operation. It does not reverse a whole conversation, 
 | **Emergency halt** *(overflow menu)* | PDG cooks under `/obj` (cancelled) and a session report (captured). | Doesn't stop background renders. They are reported back so you can stop them deliberately. |
 
 They are not the same. Three verbs, three consequences, kept apart on purpose. The one you want when a build is running away is not the one you want when a model is rambling.
+
+```mermaid
+flowchart TB
+    S["Stop"] --> S1["The panel's current turn"]
+    C["Cancel cook"] --> C1["One named cooking node"]
+    H["Emergency halt"] --> H1["PDG cooks under /obj"]
+    H --> H2["Writes a session report"]
+    H -.->|"does not reach"| R["Background renders"]
+    R --> R1["Reported back so you<br/>can stop them yourself"]
+```
 
 [First-session walkthrough →](docs/getting-started/quickstart.md)
 
@@ -130,6 +160,28 @@ The optional observation loop connects Moneta, Octavius and Hanish. Three things
 
 - The **external MCP bridge** and the **live WebSocket handlers** have different consent and integrity boundaries.
 - **Panel workers** add their own tool restrictions on top.
+
+```mermaid
+flowchart TB
+    subgraph mcp["External MCP client, /mcp"]
+        M1["LosslessExecutionBridge"] --> M2["undo group · main thread<br/>consent gate · composition check<br/>IntegrityBlock every op"]
+    end
+    subgraph live["Panel and live clients, /synapse WebSocket"]
+        L1["server.handlers, called directly"] --> L2["undo group on tracked handlers<br/>main thread · RBAC<br/>observe-only IntegrityBlock"]
+    end
+    M2 --> H["Houdini"]
+    L2 --> H
+```
+
+The two paths are drawn apart because they **are** apart. The bridge is the audited road:
+consent gates, composition validation, a fidelity verdict per operation. The live handler
+path reaches the same `hou` API by its own wiring — main-thread safe and RBAC-guarded, but
+it does not escalate consent, and `execute_python` / `execute_vex` run there ungated. That
+is the deliberate posture for a single user on localhost, and a real handler-layer gate is
+a prerequisite before any multi-user deployment.
+
+Anything that claims otherwise is drift. Path-qualified `IntegrityBlock`s record which road
+an operation took and mark the anchors that did not apply as not-applicable, never as true.
 
 **The new `proposal` worker mode** is opt-in; the default remains `standard`. It:
 
