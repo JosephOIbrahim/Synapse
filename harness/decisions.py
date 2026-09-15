@@ -56,8 +56,18 @@ deposited (a finding in its own right). Age is therefore DERIVED from git: the
 commit date of the last change to the file carrying the item, via a single
 `git log --name-only` pass. That is a lower bound on the true wait, and it is
 labelled as such rather than presented as the deposit date.
+
+THE THIRD SOURCE (2026-09-15)
+-----------------------------
+Design rosters - harness/design_review/<date>/RULINGS-OPEN.md - asked the
+human to reply on a PR with `A1 ratify`, and nothing in the tree read the
+reply (closeout finding DEC-3). Every `## <ID> - <title>` heading in a roster
+is now a board item of kind `design`, keyed like everything else, and
+scripts/ingest_rulings.py retires it through resolve() carrying the verbatim
+word, who ruled, when (UTC) and the roster path + sha256 as evidence. One
+board, one key, one word.
 """
-import argparse, hashlib, json, os, subprocess, sys, time
+import argparse, hashlib, json, os, re, subprocess, sys, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RDIR = os.path.join(ROOT, "harness", "notes", "receipts")
@@ -65,6 +75,12 @@ FLYWHEEL = os.path.join(ROOT, "harness", "state", "flywheel_queue.json")
 MANIFEST = os.path.join(ROOT, "harness", "legs.json")
 OUT = os.path.join(ROOT, "harness", "state", "DECISIONS.md")
 RESOLVED = os.path.join(ROOT, "harness", "state", "resolved.json")
+# Design rosters - the board's third source (closeout 2026-09-15, DEC-2/DEC-3).
+# One markdown file per review date, one "## <ID> - <title>" heading per open
+# call. A human's one-word ruling lands on THIS board with a real item_key()
+# through scripts/ingest_rulings.py, instead of in a PR comment nobody reads.
+ROSTERS = os.path.join(ROOT, "harness", "design_review")
+ROSTER_NAME = "RULINGS-OPEN.md"
 
 MAX_DAYS = int(os.environ.get("SYNAPSE_DECISION_MAX_DAYS", 30))
 EXIT_OVERDUE = 6
@@ -124,10 +140,77 @@ def _save_resolved(entries):
                             "flywheel_queue.json, and collect() refuses to subtract "
                             "them no matter what this file says. Append via "
                             "'python harness/decisions.py --resolve KEY --reason ...' "
-                            "so every entry carries a snapshot and evidence."),
+                            "so every entry carries a snapshot and evidence. "
+                            "Design-roster rulings arrive through "
+                            "scripts/ingest_rulings.py - same channel, plus the "
+                            "verbatim word and roster evidence."),
                    "resolutions": entries}, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
     os.replace(tmp, RESOLVED)
+
+
+_ROSTER_HEAD = re.compile(r"^##\s+([A-Za-z]\d+[a-z]?)\s+[\u2014\u2013-]\s+(.+?)\s*$")
+_ROSTER_ROW = re.compile(r"^\|\s*\*\*([A-Za-z]\d+[a-z]?)\*\*\s*\|\s*(.*?)\s*\|")
+_ROSTER_TAG = re.compile(r"\*\*\[[A-Z]+\]\*\*")
+
+
+def _rel(path):
+    """Repo-relative forward-slash path; absolute only when relpath is
+    impossible (a roster on another drive)."""
+    try:
+        rel = os.path.relpath(os.path.abspath(path), ROOT)
+    except ValueError:
+        rel = os.path.abspath(path)
+    return rel.replace("\\", "/")
+
+
+def roster_paths():
+    """Every ROSTERS/<date>/RULINGS-OPEN.md the board reads, sorted by date."""
+    out = []
+    try:
+        dates = sorted(os.listdir(ROSTERS))
+    except OSError:
+        return out
+    for d in dates:
+        p = os.path.join(ROSTERS, d, ROSTER_NAME)
+        if os.path.isfile(p):
+            out.append(p)
+    return out
+
+
+def roster_ids(text):
+    """{id: title} for one roster. `## <ID> - <title>` headings are primary;
+    the at-a-glance table rows (`| **<ID>** | <ask> |`) fill in any id that
+    has no heading. The **[RATIFY]**-style tag and markdown emphasis are
+    stripped so the key hashes the question, not its formatting."""
+    ids, table = {}, {}
+    for line in text.splitlines():
+        m = _ROSTER_HEAD.match(line)
+        if m:
+            title = _ROSTER_TAG.sub("", m.group(2))
+            title = " ".join(title.replace("*", "").replace("`", "").split())
+            ids.setdefault(m.group(1), title.strip(" \u00b7-\u2014\u2013"))
+            continue
+        m = _ROSTER_ROW.match(line)
+        if m:
+            cell = " ".join(m.group(2).replace("*", "").replace("`", "").split())
+            table.setdefault(m.group(1), cell)
+    for rid, cell in table.items():
+        ids.setdefault(rid, cell)
+    return ids
+
+
+def roster_items(path, age=None):
+    """Board items for one roster file: kind `design`, leg = the roster id."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return []
+    rel = _rel(path)
+    return [{"kind": "design", "source": rel, "leg": rid,
+             "text": title or "(untitled)", "age": age}
+            for rid, title in roster_ids(text).items()]
 
 
 def file_ages():
@@ -136,7 +219,8 @@ def file_ages():
     try:
         r = subprocess.run(
             ["git", "-C", ROOT, "log", "--format=@%ct", "--name-only",
-             "--", "harness/notes/receipts", "harness/state/flywheel_queue.json"],
+             "--", "harness/notes/receipts", "harness/state/flywheel_queue.json",
+             "harness/design_review"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=30)
         if r.returncode != 0:
@@ -217,6 +301,12 @@ def collect(with_ages=True):
             "flip": 'set "ratified": true on cycle %s' % cid,
         })
 
+    # --- design rosters: a human's one-word calls (DEC-2/DEC-3). Each
+    # `## <ID> - <title>` heading is one item; scripts/ingest_rulings.py
+    # retires them through resolve() with the verbatim word as evidence.
+    for path in roster_paths():
+        items.extend(roster_items(path, age=ages.get(_rel(path))))
+
     # --- resolution subtraction (the closure mechanism the board never had:
     # before this, collect() only ever appended, so the count could not go
     # DOWN except by hand-editing receipt JSON — every triage sitting re-read
@@ -254,9 +344,10 @@ def render(items):
     L.append("  DECISIONS  %d open" % len(items))
     L.append("  " + "-" * 74)
     labels = {"ruling": "for_ruling - the constitution's only channel to you",
+              "design": "design rosters - one word each, via scripts/ingest_rulings.py",
               "receipt": "receipts not green", "flywheel": "flywheel awaiting ratified",
               "unreadable": "unreadable"}
-    for kind in ("ruling", "unreadable", "receipt", "flywheel"):
+    for kind in ("ruling", "design", "unreadable", "receipt", "flywheel"):
         rows = by.get(kind) or []
         if not rows:
             continue
@@ -296,12 +387,28 @@ def markdown(items):
     return "\n".join(L)
 
 
-def resolve(key, reason, by="human"):
+def write_markdown(items, out=None):
+    """Render the board to DECISIONS.md atomically (.tmp + os.replace).
+    `out` defaults to OUT at call time so a test can redirect it."""
+    out = out or OUT
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    tmp = out + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(markdown(items))
+    os.replace(tmp, out)
+    return out
+
+
+def resolve(key, reason, by="human", word=None, evidence=None):
     """Retire ONE live board item. Refuses phantoms and flywheel items.
 
     Requiring the key to match a LIVE item means you cannot pre-resolve
     something that has not surfaced, cannot resolve a typo, and cannot
     resolve the same item twice — each failure mode is a distinct error.
+
+    `word` (a human's verbatim ruling) and `evidence` (e.g. the roster path +
+    sha256 it was ruled against) are recorded when given; both are optional so
+    every existing caller is unchanged.
     """
     if not reason or not reason.strip():
         return 2, "a resolution without a reason is indistinguishable from a deletion"
@@ -317,15 +424,40 @@ def resolve(key, reason, by="human"):
         return 2, ("flywheel items close ONLY via the human ratified flip in "
                    "flywheel_queue.json - this channel refuses them by design")
     entries = list(load_resolved().values())
-    entries.append({
+    entry = {
         "key": key,
         "resolved_at": time.strftime("%Y-%m-%d %H:%M"),
+        "resolved_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "by": by,
         "reason": reason.strip(),
         "item_snapshot": {k: item.get(k) for k in ("kind", "source", "leg", "text")},
-    })
+    }
+    if word is not None:
+        entry["word"] = word          # the human's ruling, verbatim, never paraphrased
+    if evidence is not None:
+        entry["evidence"] = evidence  # what the ruling was made against
+    entries.append(entry)
     _save_resolved(entries)
     return 0, "resolved %s (%s: %s)" % (key, item["leg"], item["text"][:60])
+
+
+def tolerant_stdio():
+    """Make stdout/stderr survive a glyph the console codec cannot encode.
+
+    Board text prints verbatim - item_key hashes it, so it is never rewritten.
+    On a stock Windows console or pipe the codec is cp1252 (PYTHONUTF8 unset),
+    and one roster title carrying U+2190 turned every render into
+    UnicodeEncodeError with rc=1 - --keys stopped at the row before it, and
+    --write never reached write_markdown() because the print precedes it.
+    Unencodable glyphs now print as backslash-u escapes; nothing else changes,
+    and a sink without reconfigure() (a custom capture) is left alone.
+    """
+    for s in (sys.stdout, sys.stderr):
+        if hasattr(s, "reconfigure"):
+            try:
+                s.reconfigure(errors="backslashreplace")
+            except (ValueError, OSError):
+                pass
 
 
 def main(argv=None):
@@ -341,6 +473,7 @@ def main(argv=None):
     p.add_argument("--resolved", action="store_true",
                    help="list past resolutions")
     ns = p.parse_args(argv)
+    tolerant_stdio()
 
     if ns.resolve:
         rc, msg = resolve(ns.resolve, ns.reason)
@@ -368,12 +501,7 @@ def main(argv=None):
 
     print(render(items))
     if ns.write:
-        os.makedirs(os.path.dirname(OUT), exist_ok=True)
-        tmp = OUT + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as fh:
-            fh.write(markdown(items))
-        os.replace(tmp, OUT)
-        print("  wrote %s" % os.path.relpath(OUT, ROOT))
+        print("  wrote %s" % os.path.relpath(write_markdown(items), ROOT))
     return EXIT_OVERDUE if overdue(items) else 0
 
 

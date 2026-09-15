@@ -171,3 +171,45 @@ def test_statusline_count_spawns_no_subprocess(monkeypatch):
 
     monkeypatch.setattr(s.subprocess, "run", boom)
     assert isinstance(s.decision_count(), int)
+
+
+_CP1252 = dict(os.environ, PYTHONIOENCODING="cp1252", PYTHONUTF8="0")
+
+
+def _run_dec(*args, env=None):
+    return subprocess.run([sys.executable, DEC, *args], cwd=ROOT,
+                          capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", env=env or _CP1252)
+
+
+def _design_rows(text):
+    # the kind column, as `awk '$2=="design"'` would read it - not a text grep,
+    # which also matches ruling rows whose title merely contains the word
+    return [l for l in text.splitlines() if l.split()[1:2] == ["design"]]
+
+
+def test_keys_survive_a_cp1252_console():
+    """FAILS if `python harness/decisions.py --keys` dies with UnicodeEncodeError
+    on a stock Windows console or pipe (cp1252, PYTHONUTF8 unset). The real
+    2026-09-14 roster's D3 title carries U+2190; before the fix the listing
+    stopped at the row before it with rc=1 and D3/D4 never printed. Every
+    design row the UTF-8 run prints, the cp1252 run must print too."""
+    r = _run_dec("--keys")
+    assert r.returncode == 0, r.stderr[-400:]
+    assert "UnicodeEncodeError" not in r.stderr
+    assert "design" in r.stdout
+    assert r.stdout.splitlines()[-1].strip().startswith("-- ") and r.stdout.splitlines()[-1].endswith(" open")
+    utf8 = _run_dec("--keys", env=dict(os.environ, PYTHONUTF8="1"))
+    assert utf8.returncode == 0, utf8.stderr[-400:]
+    assert len(_design_rows(r.stdout)) == len(_design_rows(utf8.stdout)) > 0
+
+
+def test_default_render_survives_a_cp1252_console():
+    """FAILS if the bare `python harness/decisions.py` (and so --write, whose
+    print precedes write_markdown) crashes on cp1252. The exit is 0 or the
+    aging gate's EXIT_OVERDUE - never 1, never a traceback."""
+    d = _mod()
+    r = _run_dec()
+    assert r.returncode in (0, d.EXIT_OVERDUE), r.stderr[-400:]
+    assert "UnicodeEncodeError" not in r.stderr
+    assert r.stdout.strip()
