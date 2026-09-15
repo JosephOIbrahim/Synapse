@@ -243,11 +243,22 @@ def test_owned_process_tree_termination_does_not_target_other_processes(tmp_path
     try:
         tree = ProcessTree(child)
         gate.write_text("owned")
-        end = time.monotonic() + 5
-        while not child_pid.exists() and time.monotonic() < end:
-            time.sleep(.02)
+        # Wait for PARSEABLE CONTENT, not for the path to exist. write_text() is not
+        # atomic: the file appears at zero bytes before its content lands, so a test
+        # that waits on exists() can read '' and die on int('') under load. Observed
+        # on 2026-09-15 during the v5.72.1 cut with a live Houdini session on the box
+        # -- one failure in 9558, invisible on an idle machine. Anchoring to real sync
+        # state rather than a weaker proxy is this repo's standing fix for the class;
+        # widening the sleep would only move the window.
+        end, leaf = time.monotonic() + 5, None
+        while time.monotonic() < end:
+            try:
+                leaf = int(child_pid.read_text().strip())
+                break
+            except (FileNotFoundError, ValueError):
+                time.sleep(.02)
+        assert leaf is not None, "child pid file never became readable within 5s"
         assert child_pid.is_file()
-        leaf = int(child_pid.read_text())
         if leader_exits:
             child.wait(timeout=5)
         tree.stop()
