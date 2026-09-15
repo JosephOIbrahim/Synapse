@@ -2,6 +2,21 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.70.1 — The front door, made readable
+
+*2026-09-15.* Published as **Latest** with a qualified Windows Setup. **Nothing that
+runs changed** — the panel, the tools and the installer payload's code are identical
+to 5.70.0 apart from the version string in `python/synapse/__init__.py`;
+`git diff --stat v5.70.0 v5.70.1 -- python installer` shows that one file. What changed is what an artist reads first: the README rewritten for
+scanning (one idea per block; its one number, 128 tools, now names its producer), and
+the setup guide's download links, which had pointed at 5.68.0 for three releases.
+The harness's own state boards are tracked in the tree instead of living on one
+machine; run artifacts are ignored. See the [release notes](docs/releases/v5.70.1.md).
+
+**Disclosed, not fixed:** a message typed while the bridge is down is queued without
+a visible signal and replayed when the bridge returns (found by code reading in the
+2026-09-15 artist-surface review; `harness/notes/closeout-2026-09-15/`).
+
 ## v5.70.0 — Tool names an artist can read
 
 *2026-09-14.* Published as **Latest** with a qualified Windows Setup (19 of 19

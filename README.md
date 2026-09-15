@@ -4,27 +4,32 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.70.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.70.0 is Latest</sub></p>
+<p align="center"><sub>v5.70.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.70.1 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.70.0/SYNAPSE-5.70.0-Setup.exe)** · [What's new](docs/releases/v5.70.0.md) · [Help](#when-you-get-stuck)
+**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.70.1/SYNAPSE-5.70.1-Setup.exe)** · [What's new](docs/releases/v5.70.1.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
 **You need:** Windows and Houdini **22.0.400**. Setup includes the Python dependencies.
 
-1. **Save your scene and close Houdini.**
+1. Save your scene and **close Houdini**.
 2. **Run Setup.** Choose your Houdini installation and its preference folder.
 3. **Open Houdini → New Pane Tab → Synapse.**
 4. **Connect models → choose a model → Check connection → Use this model.**
 
-For node creation, select **Build and edit networks** in the model dialog.
-Cloud models need your API key. For Ollama, start Ollama and choose an installed model.
+Then:
 
-The installer is unsigned. [Checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.70.0/SHA256SUMS.txt) · [Full setup guide](docs/getting-started/installation.md) · [Source installation](docs/getting-started/installation.md#source-installation)
+- Want node creation? Select **Build and edit networks** in the model dialog.
+- Cloud model? It needs your API key.
+- Ollama? Start Ollama first, then choose an installed model.
+
+The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.70.1/SHA256SUMS.txt).
+
+[Full setup guide](docs/getting-started/installation.md) · [Source installation](docs/getting-started/installation.md#source-installation)
 
 ## Your first build
 
@@ -34,10 +39,11 @@ Open a scratch scene and send:
 make a box
 ```
 
-Inspect the nodes, change a parameter, then try **Undo**. Undo reverses a recorded
-operation; it does not reverse an entire conversation or external file writes.
+Inspect the nodes. Change a parameter. Then try **Undo**.
 
-**Three controls to know**
+Undo reverses one recorded operation. It does not reverse a whole conversation, and it does not reverse files written to disk.
+
+### Three controls to know
 
 | Control | Use it for |
 |---|---|
@@ -45,36 +51,35 @@ operation; it does not reverse an entire conversation or external file writes.
 | **Connect** | Start Houdini's local SYNAPSE bridge. |
 | **Doctor** | Check the setup without asking a model. |
 
-**Three ways to stop — they are not the same**
+### Three ways to stop
 
-| Control | What it reaches | What it does not do |
+| Control | Reaches | Limit |
 |---|---|---|
-| **Stop** | The panel's current turn. | Does not prove a cook or render already running has finished. |
-| **Cancel cook** *(overflow menu)* | The one cooking node it names. | Only offered when SYNAPSE knows which node; it says so when it doesn't. |
-| **Emergency halt** *(overflow menu)* | Cancels PDG cooks under `/obj` and captures a session report. | Does not stop background renders. Those are reported back so you can stop them deliberately. |
+| **Stop** | The panel's current turn. | Doesn't prove a cook or render already running has finished. |
+| **Cancel cook** *(overflow menu)* | The one cooking node it names. | Only offered when SYNAPSE knows the node — it says so when it doesn't. |
+| **Emergency halt** *(overflow menu)* | PDG cooks under `/obj` (cancelled) and a session report (captured). | Doesn't stop background renders. They are reported back so you can stop them deliberately. |
 
-Three verbs, three consequences. They are kept apart on purpose — the one you
-want when a build is running away is not the one you want when a model is
-rambling.
+They are not the same. Three verbs, three consequences, kept apart on purpose. The one you want when a build is running away is not the one you want when a model is rambling.
 
 [First-session walkthrough →](docs/getting-started/quickstart.md)
 
 ## What's ready
 
 - **Build and inspect networks** through the panel's permitted tools.
-- **Choose local or cloud models:** Claude, Gemini, NVIDIA Nemotron, Ollama, or a custom OpenAI-compatible endpoint. Tool support varies.
+- **Choose local or cloud models:** Claude, Gemini, NVIDIA Nemotron, Ollama, or a custom OpenAI-compatible endpoint. Tool support varies by model.
 - **Recall project decisions** when the memory store is configured.
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 
-**New in 5.70.0:** the panel names its tools the way an artist would say them.
-"Create usd prim" is now "Create USD primitive"; namespaces like `synapse_` and
-`cops_` no longer lead the label. A curated-label map that had quietly gone stale
-is repaired, and guarded so it cannot rot again.
-[Release details and limits →](docs/releases/v5.70.0.md)
+**New in 5.70.1** — the front door, made readable.
 
-Predictive creation, product-level Computer Use controls, and recursive
-self-improvement remain development work. The attended operator checks in this
-release do not make those features complete. [Artist-first intent →](INTENT.md)
+- This README and the [setup guide](docs/getting-started/installation.md) rewritten for scanning: one idea per block, the number you need where you need it.
+- The setup guide's download links now point at the current release; they had been three versions behind.
+- The harness's own state boards are tracked in the repo instead of living only on one machine.
+- No change to the panel, the tools, or the installer payload's code. If 5.70.0 works for you, 5.70.1 changes what you read, not what runs.
+
+[Release details and limits →](docs/releases/v5.70.1.md) · [What 5.70.0 changed →](docs/releases/v5.70.0.md)
+
+**Still development work:** predictive creation, product-level Computer Use controls, recursive self-improvement. The attended operator checks in this release do not make them complete. [Artist-first intent →](INTENT.md)
 
 ## Watch it work
 
@@ -90,26 +95,28 @@ release do not make those features complete. [Artist-first intent →](INTENT.md
 | Missing Ollama models | Start Ollama, reopen **Connect models**, then **Check connection**. |
 | Connection trouble | Click **Connect**, then **Doctor**. |
 | No saved suggestion | Read the card's reason; a matching experience and project memory owner are required. |
+| Build running away | **Cancel cook** or **Emergency halt** in the overflow menu — see [three ways to stop](#three-ways-to-stop). |
 
-A failed build can leave partial nodes. **Stop** prevents further panel work; it
-does not prove an active cook or render has finished — see [the three stop
-controls](#your-first-build) for the ones that reach work already running.
-Review results in Houdini.
+A failed build can leave **partial nodes**. Review the result in Houdini.
+
+**Stop** prevents further panel work. It does not prove an active cook or render has finished — the [three ways to stop](#three-ways-to-stop) are the ones that reach work already running.
 
 [Current status](docs/status.md) · [Report a bug](https://github.com/JosephOIbrahim/Synapse/issues/new/choose)
 
 <details>
 <summary><strong>How SYNAPSE remembers</strong></summary>
 
-Ask SYNAPSE to remember a decision, then ask about it later. Configured memory
-and scene/project notes provide context for the answer.
+Ask SYNAPSE to remember a decision. Ask about it later.
 
-With Moneta active, records can also appear in the USD inspection mirror,
-`cortex_root.usda`. Closing that view leaves saved memory intact.
+Configured memory plus scene and project notes provide the context for the answer.
 
-The optional observation loop connects Moneta, Octavius and Hanish. Recalled
-records remain advice; scene changes still use action tools. Missing substrates
-and unknown outcomes remain visible.
+With Moneta active, records can also appear in the USD inspection mirror, `cortex_root.usda`. Closing that view leaves saved memory intact.
+
+The optional observation loop connects Moneta, Octavius and Hanish. Three things stay true inside it:
+
+- Recalled records are **advice**. Scene changes still go through action tools.
+- A missing substrate stays **visible**.
+- An unknown outcome is reported as **unknown**.
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [LOOP setup](docs/MEMORY_LOOP_REPAIR.md) · [Saved suggestions](docs/development/rsi_stage0.md)
 
@@ -118,31 +125,36 @@ and unknown outcomes remain visible.
 <details>
 <summary><strong>For developers: policy, evidence and source setup</strong></summary>
 
-**128 tools, two paths.** The external MCP bridge and live
-WebSocket handlers have different consent and integrity boundaries. Panel workers
-add their own tool restrictions.
+**128 tools, two paths.** The count is `len(TOOL_DEFS)` in `python/synapse/mcp/_tool_registry.py`, pinned by `tests/test_phase0c_doc1_toolcount.py`.
 
-The new `proposal` worker mode permits registered reads, real knowledge tools and
-declared proposals. Direct mutation and graph instantiation are denied to the
-worker. It is opt-in; the default remains `standard`. Host graph instantiation is
-classified for review. These changes do not add consent gating to the separate
-live WebSocket path.
+- The **external MCP bridge** and the **live WebSocket handlers** have different consent and integrity boundaries.
+- **Panel workers** add their own tool restrictions on top.
+
+**The new `proposal` worker mode** is opt-in; the default remains `standard`. It:
+
+- Permits registered reads, real knowledge tools and declared proposals.
+- Denies the worker direct mutation and graph instantiation.
+- Classifies host graph instantiation for review.
+- Adds no consent gating to the separate live WebSocket path.
+
+**Read next**
 
 - [Architecture and diagrams](docs/architecture/overview.md)
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.70.0.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.70.1.md) · [Changelog](CHANGELOG.md)
 
-GitHub CI tests stock Python on Linux and macOS. Native Houdini and Windows
-installer checks are separate. A green CI badge does not establish a live render
-or a clean-machine installation. Older Stage 0 experiences need matching
-qualification after a SYNAPSE version bump.
+**What the CI badge proves.** GitHub CI tests stock Python on Linux and macOS.
+
+**What it does not prove.** Native Houdini checks and the Windows installer checks are separate. A green badge does not establish a live render or a clean-machine installation.
+
+**After a SYNAPSE version bump:** older Stage 0 experiences need matching qualification.
 
 </details>
 
 ## License
 
 [MIT](LICENSE). Bundled Moneta retains its separate proprietary terms.
-Patent applications pending on the USD cognitive-state substrate, digital injection,
-and predictive lighting.
+
+Patent applications pending on the USD cognitive-state substrate, digital injection, and predictive lighting — see [PATENTS](PATENTS).

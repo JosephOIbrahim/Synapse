@@ -7,10 +7,10 @@ Houdini runs SYNAPSE with its own Python.
 
 ## Windows installer
 
-**[Download SYNAPSE-5.68.0-Setup.exe](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SYNAPSE-5.68.0-Setup.exe)**
+**[Download SYNAPSE-5.70.1-Setup.exe](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.70.1/SYNAPSE-5.70.1-Setup.exe)**
 
-[Release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.68.0) ·
-[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.68.0/SHA256SUMS.txt)
+[Release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.70.1) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.70.1/SHA256SUMS.txt)
 
 1. Save your scene and close Houdini.
 2. Open Setup. This installer is unsigned, so Windows may show an unknown publisher.
