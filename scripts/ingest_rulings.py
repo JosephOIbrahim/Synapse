@@ -223,6 +223,7 @@ def main(argv=None):
     p.add_argument("--dry-run", action="store_true",
                    help="print what would be recorded; write nothing")
     ns = p.parse_args(argv)
+    decisions.tolerant_stdio()  # a verbatim ruling word must not crash after the write
     roster = ns.roster or os.path.join(decisions.ROSTERS, DEFAULT_ROSTER_DATE,
                                        decisions.ROSTER_NAME)
     try:

@@ -441,6 +441,25 @@ def resolve(key, reason, by="human", word=None, evidence=None):
     return 0, "resolved %s (%s: %s)" % (key, item["leg"], item["text"][:60])
 
 
+def tolerant_stdio():
+    """Make stdout/stderr survive a glyph the console codec cannot encode.
+
+    Board text prints verbatim - item_key hashes it, so it is never rewritten.
+    On a stock Windows console or pipe the codec is cp1252 (PYTHONUTF8 unset),
+    and one roster title carrying U+2190 turned every render into
+    UnicodeEncodeError with rc=1 - --keys stopped at the row before it, and
+    --write never reached write_markdown() because the print precedes it.
+    Unencodable glyphs now print as backslash-u escapes; nothing else changes,
+    and a sink without reconfigure() (a custom capture) is left alone.
+    """
+    for s in (sys.stdout, sys.stderr):
+        if hasattr(s, "reconfigure"):
+            try:
+                s.reconfigure(errors="backslashreplace")
+            except (ValueError, OSError):
+                pass
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--write", action="store_true")
@@ -454,6 +473,7 @@ def main(argv=None):
     p.add_argument("--resolved", action="store_true",
                    help="list past resolutions")
     ns = p.parse_args(argv)
+    tolerant_stdio()
 
     if ns.resolve:
         rc, msg = resolve(ns.resolve, ns.reason)
