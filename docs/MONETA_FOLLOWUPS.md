@@ -49,7 +49,7 @@ change unconditionally.
 inversion. Land **before/with** the production cutover.
 
 **Status: DONE (3c4f07f9, BP2-STORE).** `Memory.__post_init__` reordered to default
-`created_at` before id generation. Test `test_moneta_crucible.py::test_duplicate_content_gets_distinct_ids`
+`created_at` before id generation. Test `test_moneta_crucible.py::test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone`
 pinned by BP2-STORE verification (MonetaBackedStore count()==len(all()) assertion in
 `tests/test_memory_models.py`). Verified against runtime 2026-09-01.
 
@@ -145,6 +145,6 @@ remaining step is Joe creating the secret**, which activates everything:
 ### Status
 | Follow-up | Status | Commit | Test Pins |
 |---|---|---|---|
-| FU-1 Memory.id | DONE | 3c4f07f9 | test_moneta_crucible.py::test_duplicate_content_gets_distinct_ids |
+| FU-1 Memory.id | DONE | 3c4f07f9 | test_moneta_crucible.py::test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone |
 | FU-2 AP6 gating | DONE | 3c4f07f9 | test_memory_models.py (gate rejection blocks prune) |
 | FU-3 CI Moneta | OPEN | — | Requires `MONETA_DEPLOY_KEY` secret provisioning (workflow staged) |

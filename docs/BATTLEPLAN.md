@@ -81,7 +81,7 @@ Demo-ready is the 60-second story running clean on camera. Count, don't feel.
 | 3 | In-session deposit + recall in GUI | GREEN | GREEN |
 | 4 | Cross-session round-trip on camera ×2 | UNMEASURED | your hands, today |
 | 5 | Recall never silent (honesty contract) | AMBER (unflipped) | GREEN (your word) |
-| 6 | Memory latency inside a stated camera budget | UNKNOWN | MEASURED (harness/battleplan/runs/2026-09-01/memory_latency_hython_provisioned.json) |
+| 6 | Memory latency inside a stated camera budget | UNKNOWN | MEASURED (harness/battleplan/runs/2026-09-01/memory_latency_hython_provisioned.jsonl) |
 | 7 | Repeat deposits don't corrupt the store (FU-1) | RED | GREEN (tests/test_moneta_crucible.py:244, harness/notes/receipts/BP2-STORE.json) |
 | 8 | Panel opens docked; no float hijack | RED | GREEN (GUI-verified) |
 | 9 | Profiles visibly differ; switch persists | UNKNOWN | MEASURED (harness/battleplan/runs/2026-09-01/profile_diff.json) + fixed if red |
