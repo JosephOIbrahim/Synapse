@@ -1,0 +1,65 @@
+{
+  "ran_at_utc": "2026-09-15T19:09Z",
+  "houdini_pid": 25072,
+  "summary": {
+    "ok": 13,
+    "fail": 1,
+    "skipped": 0
+  },
+  "checks": {
+    "version": {
+      "status": "fail",
+      "detail": "synapse 5.70.1 / protocol 4.0.0; install stamp says 5.67.4 -- installed tree and stamp disagree"
+    },
+    "symbol_table": {
+      "status": "ok",
+      "detail": "stamp 22.0.400 (36472 symbols, blake2b e408ca0b3e41762282a911d6a8ac2f62) == running 22.0.400"
+    },
+    "bridge_endpoint": {
+      "status": "ok",
+      "detail": "ws://localhost:9999 (pid 25072, published 2026-09-15T19:08:47Z)"
+    },
+    "mcp_coexistence": {
+      "status": "ok",
+      "detail": "localhost:9999 accepting; no foreign MCP ports"
+    },
+    "main_thread": {
+      "status": "ok",
+      "detail": "not stalled; 28 dispatch-wait samples max 81ms; 5192 hold samples max 1ms"
+    },
+    "write_plane_store": {
+      "status": "ok",
+      "detail": "MonetaBackedStore, 841 rows, embedder minilm-l6-v2-d384 dim 384, durable"
+    },
+    "moneta_substrate": {
+      "status": "ok",
+      "detail": "MonetaMemory registered and in use; PXR_PLUGINPATH_NAME=Moneta/schema"
+    },
+    "vector_recall": {
+      "status": "ok"
+    },
+    "use_real_usd": {
+      "status": "ok"
+    },
+    "moneta_consolidation": {
+      "status": "ok",
+      "detail": "841 entities, 303 protected"
+    },
+    "memory_key_fingerprint": {
+      "status": "ok",
+      "detail": "6aa8f313 matches sidecar"
+    },
+    "log_file": {
+      "status": "ok"
+    },
+    "telemetry": {
+      "status": "ok",
+      "detail": "7s old"
+    },
+    "houdini": {
+      "status": "ok"
+    }
+  },
+  "version_fail_explained": "The machine-level install stamp (~/.synapse/install_stamp.json, schema synapse_install_stamp/v1) was written 2026-09-09 by the demo-capture install of 5.67.4, whose tree and package file still exist on disk; the running Houdini loads the repository via a hand-maintained preferences package. doctor.py's repo-direct exemption applies only when the stamped root IS the running tree, which it is not. Operator fix: re-stamp for the repository (scripts/install_synapse_package.py rewrites the package file from its template, so back it up first) or remove the demo-capture install. Not applied here.",
+  "loaded_from": "source tree (C:/Users/User/SYNAPSE), not the installed Setup"
+}

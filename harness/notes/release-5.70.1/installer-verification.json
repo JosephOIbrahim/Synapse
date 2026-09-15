@@ -1,5 +1,5 @@
 {
-  "amended": "2026-09-15: CI was still running when this release was published, and this report was uploaded saying so rather than guessing. It concluded success on all four matrix jobs and the report was amended in place. | 2026-09-15 (2): real_machine_install section added after a successful install/verify/uninstall round trip on the build machine.",
+  "amended": "2026-09-15: CI was still running when this release was published, and this report was uploaded saying so rather than guessing. It concluded success on all four matrix jobs and the report was amended in place. | 2026-09-15 (2): real_machine_install section added after a successful install/verify/uninstall round trip on the build machine. | 2026-09-15 (3): live_houdini replaced NOT_RUN with the measured synapse_doctor readout.",
   "build_revision": "1d8baae24568aeb3e4d280cdfd804aae8d6d2b93",
   "ci": {
     "conclusion": "success",
@@ -125,9 +125,33 @@
     "summary": "37 passed, 1 warning in 7.92s"
   },
   "live_houdini": {
-    "note_2026_09_15": "Real-machine Setup round trip added after publication; see real_machine_install.",
-    "reason": "No module changed in this release; there is nothing new for a live process to load. The 5.70.0 live check remains the last one.",
-    "status": "NOT_RUN"
+    "build": "22.0.400",
+    "fail": {
+      "check": "version",
+      "detail": "install stamp says 5.67.4 -- the machine's 2026-09-09 demo-capture install, still on disk; running tree is the repository",
+      "operator_fix_recorded_not_applied": true,
+      "product_defect": false
+    },
+    "loaded_from": "source tree, not the installed Setup",
+    "ok": [
+      "symbol_table 22.0.400 == running",
+      "bridge_endpoint ws://localhost:9999",
+      "mcp_coexistence",
+      "main_thread not stalled",
+      "write_plane_store MonetaBackedStore 841 rows",
+      "moneta_substrate registered+in_use",
+      "vector_recall",
+      "use_real_usd",
+      "moneta_consolidation",
+      "memory_key_fingerprint",
+      "log_file",
+      "telemetry",
+      "houdini"
+    ],
+    "scope": "Read-only diagnostics over the live bridge after a Houdini restart; no scene mutation. Evidence file: doctor-live.json beside this report in the tree.",
+    "status": "PASS_WITH_ONE_EXPLAINED_FAIL",
+    "summary": "synapse_doctor 13 ok / 1 fail; running package 5.70.1, protocol 4.0.0",
+    "version_reported_by_live_process": "5.70.1"
   },
   "local_stock_suite": {
     "scope": "Local Windows, stock Python 3.14, vendored SDK inactive. Run alone.",
