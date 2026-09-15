@@ -788,6 +788,48 @@ class TestRegression:
         assert msg["type"] == "ping"
         assert msg["payload"]["msg"] == "hello"
 
+    def _bare_bridge(self):
+        bridge = SynapseWSBridge.__new__(SynapseWSBridge)
+        bridge._ws = None
+        bridge._running = False
+        bridge._send_queue = []
+        import threading
+        bridge._queue_lock = threading.Lock()
+        return bridge
+
+    def test_bridge_send_command_reports_sent_on_live_socket(self):
+        bridge = self._bare_bridge()
+        bridge._ws = MagicMock()
+        assert bridge.send_command("ping", {"msg": "hello"}) is True
+        bridge._ws.send.assert_called_once()
+        assert bridge._send_queue == []
+
+    def test_bridge_send_command_default_queues_and_reports_not_sent(self):
+        """The default contract is unchanged: queued for _drain_queue, told False."""
+        bridge = self._bare_bridge()
+        assert bridge.send_command("ping", {"msg": "hello"}) is False
+        assert len(bridge._send_queue) == 1
+
+    def test_bridge_send_command_no_queue_drops_and_reports_not_sent(self):
+        """FR-1: queue_if_down=False never leaves anything for _drain_queue."""
+        bridge = self._bare_bridge()
+        sent = bridge.send_command(
+            "route_chat", {"message": "make a box"}, queue_if_down=False
+        )
+        assert sent is False
+        assert bridge._send_queue == []
+
+    def test_bridge_send_command_no_queue_drops_when_socket_send_raises(self):
+        """The check-then-send race: socket object alive, send() raises."""
+        bridge = self._bare_bridge()
+        bridge._ws = MagicMock()
+        bridge._ws.send.side_effect = RuntimeError("socket closed")
+        sent = bridge.send_command(
+            "route_chat", {"message": "make a box"}, queue_if_down=False
+        )
+        assert sent is False
+        assert bridge._send_queue == []
+
     def test_recipes_import_cleanly(self):
         """Recipes module imports without errors."""
         from synapse.routing.hda_recipes import HDA_RECIPES, get_recipe

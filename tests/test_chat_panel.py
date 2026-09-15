@@ -926,6 +926,138 @@ class TestKeyboardShortcuts:
         panel._send_message()
         assert panel._waiting_for_response is True
 
+    def test_send_message_refuses_when_bridge_down(self):
+        """FR-1: bridge object alive, socket down -> refuse, keep text, say so.
+
+        Before the guard the panel cleared the box, showed the typing
+        indicator and handed the message to send_command, which queued it
+        for replay on the next connect. None of that may happen now.
+        """
+        from synapse.panel.chat_panel import SynapseChatPanel
+        from synapse.panel.send_guard import BRIDGE_DOWN_LINE
+
+        panel = SynapseChatPanel()
+        panel._input = MagicMock()
+        panel._input.toPlainText.return_value = "make a box"
+        panel._chat = MagicMock()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = False
+
+        panel._send_message()
+
+        panel._bridge.send_command.assert_not_called()
+        panel._input.clear.assert_not_called()
+        panel._chat.append_user_message.assert_not_called()
+        panel._chat.show_typing_indicator.assert_not_called()
+        assert panel._waiting_for_response is False
+        assert panel._last_sent_message == ""
+        panel._chat.append_system_message.assert_called_once_with(BRIDGE_DOWN_LINE)
+
+    def test_send_message_no_bridge_keeps_text(self):
+        """No bridge object at all: same refusal, text stays in the box."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+        from synapse.panel.send_guard import NO_BRIDGE_LINE
+
+        panel = SynapseChatPanel()
+        panel._input = MagicMock()
+        panel._input.toPlainText.return_value = "make a box"
+        panel._chat = MagicMock()
+        panel._bridge = None
+
+        panel._send_message()
+
+        panel._input.clear.assert_not_called()
+        panel._chat.append_user_message.assert_not_called()
+        panel._chat.append_system_message.assert_called_once_with(NO_BRIDGE_LINE)
+
+    def test_send_message_connected_uses_no_replay_send(self):
+        """Happy path: the chat send is the no-replay flavour."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._input = MagicMock()
+        panel._input.toPlainText.return_value = "hello"
+        panel._chat = MagicMock()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+        panel._bridge.send_command.return_value = True
+
+        panel._send_message()
+
+        args, kwargs = panel._bridge.send_command.call_args
+        assert args[0] == "route_chat"
+        assert args[1]["message"] == "hello"
+        assert kwargs.get("queue_if_down") is False
+        assert panel._waiting_for_response is True
+        panel._chat.hide_typing_indicator.assert_not_called()
+        panel._chat.append_system_message.assert_not_called()
+
+    def test_send_message_hands_text_back_when_send_fails_midflight(self):
+        """The socket can die between the connected check and the send.
+
+        send_command(queue_if_down=False) then returns False and queues
+        nothing; the panel must stop the spinner, hand the text back and
+        say so -- never spin forever, never replay.
+        """
+        from synapse.panel.chat_panel import SynapseChatPanel
+        from synapse.panel.send_guard import SEND_FAILED_LINE
+
+        panel = SynapseChatPanel()
+        panel._input = MagicMock()
+        panel._input.toPlainText.return_value = "hello"
+        panel._chat = MagicMock()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+        panel._bridge.send_command.return_value = False
+
+        panel._send_message()
+
+        _, kwargs = panel._bridge.send_command.call_args
+        assert kwargs.get("queue_if_down") is False
+        assert panel._waiting_for_response is False
+        panel._chat.hide_typing_indicator.assert_called_once()
+        panel._input.setPlainText.assert_called_once_with("hello")
+        panel._chat.append_system_message.assert_called_once_with(SEND_FAILED_LINE)
+
+    def test_quick_action_refuses_when_bridge_down(self):
+        """FR-1 for pills: same route_chat, same rule -- never queued silently."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+        from synapse.panel.send_guard import QUICK_ACTION_DOWN_LINE
+
+        panel = SynapseChatPanel()
+        panel._chat = MagicMock()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = False
+
+        panel._on_quick_action({
+            "label": "Explain", "prompt": "explain the selection",
+            "requires_selection": True,
+        })
+
+        panel._bridge.send_command.assert_not_called()
+        panel._chat.append_user_message.assert_not_called()
+        # Decided before the selection check: no misleading "select a node".
+        panel._chat.append_system_message.assert_called_once_with(QUICK_ACTION_DOWN_LINE)
+
+    def test_quick_action_connected_uses_no_replay_send(self):
+        from synapse.panel.chat_panel import SynapseChatPanel
+        from synapse.panel.send_guard import QUICK_ACTION_FAILED_LINE
+
+        panel = SynapseChatPanel()
+        panel._chat = MagicMock()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+        panel._bridge.send_command.return_value = False
+
+        panel._on_quick_action({"label": "Scene", "prompt": "describe the scene"})
+
+        args, kwargs = panel._bridge.send_command.call_args
+        assert args[0] == "route_chat"
+        assert args[1]["message"] == "describe the scene"
+        assert kwargs.get("queue_if_down") is False
+        panel._chat.append_user_message.assert_called_once()
+        panel._chat.append_system_message.assert_called_once_with(QUICK_ACTION_FAILED_LINE)
+
     def test_response_clears_waiting_flag(self):
         """_on_response should clear _waiting_for_response."""
         from synapse.panel.chat_panel import SynapseChatPanel

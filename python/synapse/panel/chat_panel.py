@@ -38,6 +38,13 @@ except ImportError:
 from synapse.panel.chat_display import ChatDisplay
 from synapse.panel.context_bar import ContextChips
 from synapse.panel.ws_bridge import SynapseWSBridge
+from synapse.panel.send_guard import (
+    ACTION_EMPTY,
+    QUICK_ACTION_DOWN_LINE,
+    QUICK_ACTION_FAILED_LINE,
+    SEND_FAILED_LINE,
+    decide_send,
+)
 from synapse.panel.quick_actions import (
     QUICK_ACTIONS, CONTEXT_MENU_EXTRAS, QuickActionPills,
 )
@@ -846,28 +853,57 @@ class SynapseChatPanel:
         return self._last_context
 
     def _send_message(self):
-        """Read input field, send via WS bridge, clear input."""
+        """Read the input box and send it via the WS bridge -- if it can go now.
+
+        FR-1 (closeout-2026-09-15): the guard reads the *socket*, not the
+        bridge object. A message typed while the bridge is down is refused
+        on the spot: the text stays in the box, nothing is queued, and a
+        status line says so. It used to be accepted, spun on, queued
+        silently and replayed into whatever scene was open when the bridge
+        came back. The decision itself is ``send_guard.decide_send`` (pure,
+        pinned by ``tests/test_send_guard.py``); the send is the no-replay
+        flavour (``queue_if_down=False``) so the check-then-send race can
+        never leave a message behind for ``_drain_queue`` either.
+        """
         text = self._input.toPlainText().strip()
-        if not text:
+        decision = decide_send(
+            text,
+            bridge_present=self._bridge is not None,
+            bridge_connected=bool(
+                self._bridge is not None and self._bridge.connected
+            ),
+        )
+        if decision.action == ACTION_EMPTY:
+            return
+        if not decision.sends:
+            # Refuse-and-keep-text: the box is untouched, Send again is the
+            # release. No held state, no replay.
+            self._chat.append_system_message(decision.status_line)
             return
 
         self._last_sent_message = text
         self._input.clear()
         self._chat.append_user_message(text)
-
-        if self._bridge is not None:
-            self._ensure_project_initialized()
-            self._waiting_for_response = True
-            self._chat.show_typing_indicator()
-            ctx = self._gather_context_if_stale()
-            self._bridge.send_command("route_chat", {
-                "message": text,
-                "context": ctx,
-            })
-        else:
-            self._chat.append_system_message(
-                "Not connected to SYNAPSE server."
-            )
+        self._ensure_project_initialized()
+        self._waiting_for_response = True
+        self._chat.show_typing_indicator()
+        ctx = self._gather_context_if_stale()
+        sent = self._bridge.send_command(
+            "route_chat",
+            {"message": text, "context": ctx},
+            queue_if_down=False,
+        )
+        if sent is False:
+            # The socket died between the check and the send. Nothing was
+            # queued, so nothing can replay later: hand the text back and
+            # stop the spinner.
+            self._waiting_for_response = False
+            self._chat.hide_typing_indicator()
+            self._input.setPlainText(text)
+            cursor = self._input.textCursor()
+            cursor.movePosition(QtGui.QTextCursor.End)
+            self._input.setTextCursor(cursor)
+            self._chat.append_system_message(SEND_FAILED_LINE)
 
     @Slot(dict)
     def _on_response(self, response):
@@ -945,9 +981,28 @@ class SynapseChatPanel:
         self._context_chips.set_project_context(project_name, evolution_stage)
 
     def _on_quick_action(self, action):
-        """Handle quick action pill press."""
+        """Handle quick action pill press.
+
+        A pill is a chat message (``route_chat``), so the FR-1 rule from
+        ``_send_message`` applies: decide on the *socket* first, never
+        queue silently, never replay later. Decided before the selection
+        check so a down bridge is not misreported as "select a node".
+        """
         prompt = action.get("prompt", "")
         requires_sel = action.get("requires_selection", False)
+
+        decision = decide_send(
+            prompt,
+            bridge_present=self._bridge is not None,
+            bridge_connected=bool(
+                self._bridge is not None and self._bridge.connected
+            ),
+        )
+        if decision.action == ACTION_EMPTY:
+            return
+        if not decision.sends:
+            self._chat.append_system_message(QUICK_ACTION_DOWN_LINE)
+            return
 
         ctx = self._gather_context_if_stale()
 
@@ -963,11 +1018,13 @@ class SynapseChatPanel:
             label=label, prompt=prompt
         ))
 
-        if self._bridge is not None:
-            self._bridge.send_command("route_chat", {
-                "message": prompt,
-                "context": ctx,
-            })
+        sent = self._bridge.send_command(
+            "route_chat",
+            {"message": prompt, "context": ctx},
+            queue_if_down=False,
+        )
+        if sent is False:
+            self._chat.append_system_message(QUICK_ACTION_FAILED_LINE)
 
     def _on_node_clicked(self, node_path):
         """Navigate to a clicked node path in the network editor."""
