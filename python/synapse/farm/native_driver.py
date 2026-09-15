@@ -160,9 +160,39 @@ class ProcessTree:
         elif os.name == "nt":
             if not self.quiescent:
                 raise RuntimeError("Owned process-group quiescence is unavailable.")
-        elif self.process.poll() is None:
-            os.killpg(self.process.pid, signal.SIGTERM)
-        self.process.wait(timeout=timeout)
+        else:
+            # POSIX: the worker was spawned with start_new_session=True, so its pid is
+            # the process-group id. Signal the GROUP whether or not the leader is still
+            # alive -- an orphaned descendant (husk after the leader exits) is still
+            # ours -- then wait until no member remains, escalating to SIGKILL at half
+            # the timeout. killpg(pgid, 0) probes membership without delivering a
+            # signal; ProcessLookupError means the group is empty. poll() reaps the
+            # leader so its zombie cannot hold the group open.
+            pgid = self.process.pid
+            try:
+                os.killpg(pgid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            deadline = time.monotonic() + timeout
+            escalated = False
+            while True:
+                self.process.poll()
+                try:
+                    os.killpg(pgid, 0)
+                except ProcessLookupError:
+                    break
+                now = time.monotonic()
+                if now >= deadline:
+                    raise TimeoutError("The owned worker group has not confirmed that every process stopped.")
+                if not escalated and now >= deadline - timeout / 2:
+                    try:
+                        os.killpg(pgid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        break
+                    escalated = True
+                time.sleep(0.02)
+        if self.process.poll() is None:
+            self.process.wait(timeout=timeout)
         self.quiescent = True
         self.verified_process_count = len(self.process_handles)
 
