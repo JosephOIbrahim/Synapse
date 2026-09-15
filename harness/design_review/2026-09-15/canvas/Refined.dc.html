@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap">
+  <style>
+    body { margin: 0; background: #1a1a1a; }
+    a { color: #8FB3D9; } a:hover { color: #A9C7E6; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+<!-- SYNAPSE panel with the crit room's FIRST CHANGES applied — same tokens, same anatomy as Main.dc.html; only the values the four partners
+     named move. RESTRAINT: flat PANEL ground (no atmosphere gradient); SEND ink neutral (#0F1F2B → #111111); Doctor loses its yellow — awaits B1,
+     shown here as form (weight 700). SPACE: one content edge at GUTTER+16 = 46 (transcript document margin 0; khint + footer left-packed);
+     one owner for the turn beat (24 head / 8 grouped); tag leaf (10,6) → (8,4). TYPE: no 10px anywhere (timestamp, badge → 11); one mono
+     (Space Mono); verbs told apart by weight (700), not hue. USE: 'Connect' → 'Bridge' (12-cell 'Start bridge' withdrawn on width); 'Doctor' stays — 'Check' ships yellow regardless and is B1-gated; empty state 'What are we
+     building?' (no 'Ready.' while the rail says Not connected); 'signed model' dropped when unchanged; '/ commands' dropped from the placeholder. -->
+<div style="width: 340px; height: 760px; display: flex; flex-direction: column; background: #2A2A2A; font-family: 'Space Grotesk', 'DM Sans', 'Segoe UI', sans-serif; color: #C5C5C5; font-size: 12px; overflow: hidden;">
+
+  <!-- RAIL — shell (30,16,30,8); one owner for the seam: shell bottom 8, no extra DsHeader margin -->
+  <div style="display: flex; flex-direction: column; gap: 4px; padding: 16px 30px 8px 30px; border-bottom: 1px solid #303030;">
+    <div style="display: flex; align-items: center; gap: 5px; min-height: 32px;">
+      <div style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #555555; flex: none;"></div>
+      <div style="font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 2.24px; color: #DEDEDE; line-height: 1;">SYNAPSE</div>
+      <div style="flex: 1;"></div>
+      <div style="font-family: 'Space Mono', 'JetBrains Mono', Consolas, monospace; font-size: 11px; letter-spacing: 0.33px; color: #636363; padding: 4px 4px; min-height: 24px; display: flex; align-items: center;">claude&nbsp;&nbsp;&nbsp;claude-sonnet-4-6</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0; min-height: 24px;">
+      <div style="font-size: 11px; color: #A0A0A0;">Not connected</div>
+      <div style="flex: 1;"></div>
+      <div style="font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 1.65px; color: #C5C5C5; padding: 2px 0; margin: 0; min-height: 26px; display: flex; align-items: center;">Bridge</div>
+      <div style="width: 12px; flex: none;"></div>
+      <div style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 1.65px; color: #B98620; padding: 2px 0; margin: 0; min-height: 26px; display: flex; align-items: center;">Doctor</div>
+      <div style="width: 32px; height: 24px; display: flex; align-items: center; justify-content: center; flex: none; margin-left: 4px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line><circle cx="9" cy="7" r="2" fill="#2A2A2A"></circle><circle cx="15" cy="12" r="2" fill="#2A2A2A"></circle><circle cx="8" cy="17" r="2" fill="#2A2A2A"></circle></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEXT RIBBON — unchanged; empty at boot -->
+  <div style="padding: 8px 30px; min-height: 30px; font-size: 12px; font-weight: 500; letter-spacing: 0.5px; color: #868686;"></div>
+
+  <!-- DIRECT FACE — shell (30,8,30,8); group gap 16 -->
+  <div style="display: flex; flex-direction: column; gap: 16px; padding: 8px 30px; flex: 1; min-height: 0;">
+
+    <!-- TRANSCRIPT — GROUND, 1px BORDER, r4; document margin 0 so the body edge = 30 + 16 = 46 -->
+    <div style="flex: 1; min-height: 24px; background: #1F1F1F; border: 1px solid #363636; border-radius: 4px; padding: 12px 15px; display: flex; flex-direction: column; gap: 0; overflow: hidden;">
+      <div style="text-align: left; font-style: italic; font-size: 11px; color: #868686; margin: 6px 0;">What are we building?</div>
+
+      <!-- USER turn — one beat owner: 24 at a group head; label 11 mono 1.2px; timestamp 11 (was 10) -->
+      <div style="display: flex; flex-direction: column; gap: 3px; margin: 24px 0 0 0;">
+        <div style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 1.2px; color: #8FB3D9;">● YOU<span style="color: #868686; font-size: 11px; letter-spacing: 0;">&nbsp;&nbsp;9:41 AM</span></div>
+        <div style="display: flex; gap: 14px;">
+          <div style="width: 2px; background: #8FB3D9; flex: none;"></div>
+          <div style="font-size: 12px; color: #DEDEDE; line-height: 1.35;">make a box</div>
+        </div>
+      </div>
+
+      <!-- SYNAPSE turn — J3's second hue kept; the NAME now also carries weight (700) so type has a turn; no 'signed' line while the model is unchanged -->
+      <div style="display: flex; flex-direction: column; gap: 3px; margin: 24px 0 0 0;">
+        <div style="font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #6E8F72;">● SYNAPSE<span style="color: #868686; font-size: 11px; font-weight: 400; letter-spacing: 0;">&nbsp;&nbsp;9:41 AM</span></div>
+        <div style="display: flex; gap: 14px;">
+          <div style="width: 2px; background: #6E8F72; flex: none;"></div>
+          <div style="font-size: 12px; color: #C5C5C5; line-height: 1.35;">Made a box at <span style="font-family: 'Space Mono', monospace; font-size: 11px; color: #C5C5C5;">▪ /obj/geo1/box1</span> — 8 points, 6 prims. One Undo reverses it.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECEIPT ROW — tag leaf (8,4); weight 700 (Space Mono ships 400/700, not 500); verdict word first per C2a principle -->
+    <div style="display: flex; align-items: center; gap: 0; margin-left: 16px;">
+      <div style="font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.66px; color: #A0A0A0; background: #363636; border-radius: 999px; padding: 4px 8px;">1 change</div>
+      <div style="flex: 1;"></div>
+      <div style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 1.65px; color: #A0A0A0; padding: 2px 0;">← REVERT</div>
+    </div>
+
+    <!-- COMPOSER — DsInput padding 16 15 (16 border-box, kept); SEND ink neutral; placeholder without '/ commands' -->
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="height: 10px; display: flex; align-items: center; justify-content: center;"><div style="width: 32px; height: 2px; background: #3C3C3C; border-radius: 1px;"></div></div>
+      <div style="display: flex; gap: 4px; align-items: stretch;">
+        <div style="flex: 1; height: 64px; background: #1F1F1F; border: 1px solid #363636; border-radius: 4px; padding: 16px 15px; position: relative; font-size: 12px; color: #636363;">
+          Ask SYNAPSE…
+          <div style="position: absolute; right: 8px; bottom: 8px; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.88px; color: #111111; background: #627A93; border-radius: 4px; padding: 9px 15px; line-height: 1;">SEND</div>
+        </div>
+        <div style="width: 52px; display: flex; align-items: center; justify-content: center; flex: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"></path></svg>
+        </div>
+      </div>
+      <!-- khint — left-packed onto the content edge (was centered) -->
+      <div style="text-align: left; padding-left: 16px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.33px; color: #868686; padding-top: 4px; padding-bottom: 4px;">Enter sends · Shift+Enter adds a line</div>
+    </div>
+  </div>
+
+  <!-- ACTS — left-packed onto the content edge; 'Events' → 'Updates', 'Recipes' → 'Saved networks' (USE); no hidden 'Session · Revoke' -->
+  <div style="border-top: 1px solid #303030; padding: 8px 30px 12px 46px; display: flex; justify-content: flex-start; gap: 16px; flex-wrap: wrap;">
+    <div style="font-size: 11px; color: #A0A0A0; min-height: 24px; display: flex; align-items: center;">Commands</div>
+    <div style="font-size: 11px; color: #A0A0A0; min-height: 24px; display: flex; align-items: center;">Saved networks</div>
+    <div style="font-size: 11px; color: #A0A0A0; min-height: 24px; display: flex; align-items: center;">Updates</div>
+    <div style="font-size: 11px; color: #A0A0A0; min-height: 24px; display: flex; align-items: center;">Connect models</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

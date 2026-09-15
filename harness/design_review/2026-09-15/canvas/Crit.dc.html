@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap">
+  <style>
+    body { margin: 0; background: #F3F2EE; }
+    a { color: #3F5C78; } a:hover { color: #2A4256; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+<!-- The crit sheet: what the four-partner room agreed after three rounds (harness/design_review/2026-09-15/CRIT.md). Every value is a token or file:line. -->
+<div style="width: 640px; background: #F3F2EE; color: #1E1F22; font-family: 'Space Grotesk', 'Segoe UI', sans-serif; font-size: 13px; line-height: 1.45; padding: 44px 48px 52px 48px; display: flex; flex-direction: column; gap: 28px;">
+
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #6B6E75;">Panel crit · 2026-09-15 · four lenses, three rounds</div>
+    <div style="font-size: 26px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15;">Keep the marks. Delete the second system.</div>
+    <div style="font-size: 13.5px; color: #3B3D42; max-width: 60ch;">The panel is a typography-led, near-monochrome instrument whose marks are already Pentagram-grade — MarkDot state-by-arc, verbs set as flat type, the underline tab, a contrast-solved grey ladder — with an unearned second system glued underneath: a 10/11/12 size smear, hue written as the emphasis policy, eleven chromatic tokens, four rhythm roles sharing one gap, two owners of the turn beat, and enum words where authored phrases already exist.</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #6B6E75;">The five changes first — all priced at zero vertical cost</div>
+    <div style="display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 0; border-top: 1px solid #1E1F22;">
+      <div style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #D9D7D0;">
+        <div style="font-family: 'Space Mono', monospace; font-size: 11px; color: #6B6E75; width: 44px; flex: none; padding-top: 2px;">P2 · M</div>
+        <div><b>One type scale: 11 / 12 / 15 / 19.</b> Delete <code>SIZE_MICRO</code> 10 (tokens.py:314), alias <code>SIZE_LABEL</code>→<code>SIZE_SMALL</code>, raise <code>FONT_FLOOR_PX</code> 10→11 to match the audit's own readable floor (audit_panel.py:388), replace ~15 literal 10s. CHAT face 0px, Work face +2–3px.</div>
+      </div>
+      <div style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #D9D7D0;">
+        <div style="font-family: 'Space Mono', monospace; font-size: 11px; color: #6B6E75; width: 44px; flex: none; padding-top: 2px;">P6 · S</div>
+        <div><b>The gate card says the phrase it already owns.</b> Delete the enum tag (gate_widget.py:218 — it ships "APPROVE" / "CRITICAL"); the header becomes the authored <code>GATE_LEVELS</code> phrase in sans 12/500 — <i>Heads up · Quick review · Approve? · Confirm</i>; footer verbs "Reject" 400 secondary / "Approve" 700 primary, set through QFont. Carry the test_bc_wave.py:650-654 pin in the same change.</div>
+      </div>
+      <div style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #D9D7D0;">
+        <div style="font-family: 'Space Mono', monospace; font-size: 11px; color: #6B6E75; width: 44px; flex: none; padding-top: 2px;">P3 · M</div>
+        <div><b>One owner for the turn beat.</b> Drop the block top-margin in chat_display.py:190-192 so message_formatter.py:68-69 (24 between speakers, 8 within) is the sole author. Lands <i>before</i> the SUBTRACT/SYSTEM rhythm work — it removes that conflict's KeyError prerequisite. Pending measurement M4 (sum or collapse).</div>
+      </div>
+      <div style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #D9D7D0;">
+        <div style="font-family: 'Space Mono', monospace; font-size: 11px; color: #6B6E75; width: 44px; flex: none; padding-top: 2px;">P4 · S</div>
+        <div><b>Take the hidden fourth hue out of SEND.</b> Its ink <code>TEXT_ON_ACCENT</code> #0F1F2B (tokens.py:206) is chroma 28 at hue ~206 — the "bucket 13" the last review blamed on a SIGNAL straddle. Neutral near-black, contrast re-solved. Then the boot face is three buckets with Doctor still yellow, and B1 is argued on principle, not under a red pin. Pending M6.</div>
+      </div>
+      <div style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #D9D7D0;">
+        <div style="font-family: 'Space Mono', monospace; font-size: 11px; color: #6B6E75; width: 44px; flex: none; padding-top: 2px;">P4 · S</div>
+        <div><b>One action family.</b> Retire <code>HOT_SOFT</code> (Stop rests on WARM; hot verbs become weight, BLOCKED becomes TEXT_BRIGHT) and <code>NO_SOFT</code> if it is as dead as it looks; write "actions: one family, SIGNAL, any count" into the stylesheet's own rule at qss.py:302-306, replacing "colour emphasis only".</div>
+      </div>
+    </div>
+    <div style="font-size: 12px; color: #6B6E75;">Nineteen ranked in CRIT.md. Six through nineteen: the dead card-tone rows, the underline in TEXT_BRIGHT, a flat ground, state slots to grey, one content edge at 46, verb margins to a 26px floor, the F12 roles broken 16 / 12 / 8, one mono, "Connect"→"Bridge", the empty state, palette naming, Work-face phrases, dead widgets, <code>WEIGHT_BOLD</code> 700.</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;">
+    <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; background: #FFFFFF; border: 1px solid #D9D7D0;">
+      <div style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #6B6E75;">Direction A · converged</div>
+      <div style="font-size: 15px; font-weight: 600;">Subtractive column</div>
+      <div style="font-size: 12.5px; color: #3B3D42;">Keep the comp, delete the second system. One left edge, air from the ladder instead of hairlines, hierarchy by weight and case at today's sizes. Backed by RESTRAINT, SPACE and TYPE; USE's copy rides along.</div>
+      <div style="font-size: 12px; color: #6B6E75;"><b>Tradeoff:</b> cannot settle B1 structurally; nothing gets bigger; five pins carried by hand.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; background: #FFFFFF; border: 1px solid #D9D7D0;">
+      <div style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #6B6E75;">Direction B · runner-up</div>
+      <div style="font-size: 15px; font-weight: 600;">Host-native</div>
+      <div style="font-size: 12.5px; color: #3B3D42;">Recede into Houdini: host font, host greys, the pane-tab marker as the one accent — spent on SEND, focus and the underline, never on Doctor. Backed by USE; the only direction that settles B1 structurally.</div>
+      <div style="font-size: 12px; color: #6B6E75;"><b>Tradeoff:</b> loses the v9 identity; needs a J1/J3 supersession; the yellow is lower-contrast so the accent is used less.</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #6B6E75;">What must not be lost</div>
+    <div style="font-size: 12.5px; color: #3B3D42;">The ruled J3 speaker marks · the WARM MarkDot · GUTTER 30 · the state sentence that never elides · <code>TYPE_ROLES</code> as the single type authority · the 24 / 8 transcript rhythm · zero box-shadow.</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #6B6E75;">Not decided here — yours</div>
+    <div style="font-size: 12.5px; color: #3B3D42;"><b>B1</b> Doctor's yellow — the room's read: prominence, not state; a third family; "Check" ships yellow regardless, so it goes only with option (2). <b>C1</b> border == surface (an air pairing is filed as the form remedy). <b>C2a / C2b / C3 / C4 / C5 / C6</b>. <b>D2</b> GUTTER 24 — the only remedy that runs the right direction for the width bound, and under the token's "26–36 safe" note. <b>D3 / D4</b>. A J3 supersession if anyone wants type, not hue, to tell the speakers apart. Seven measurements (M1–M7) pending on hython.</div>
+  </div>
+
+  <div style="font-family: 'Space Mono', monospace; font-size: 10.5px; color: #6B6E75; border-top: 1px solid #D9D7D0; padding-top: 12px;">Room record · 3 rounds · 12 critiques → 4 concede, 7 concede-in-part, 1 hold · 6 withdrawals · every partner answered every round · 16 of 16 replies reached the chair only through the parent (the partners hold no messaging tool — recorded as a harness lesson) · chair 5 of 12 calls, 8 of 12 messages</div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",       "x": 0,    "y": 0, "w": 340, "h": 760, "title": "As built — v5.71 tree" },
+    { "file": "Refined.dc.html",    "x": 440,  "y": 0, "w": 340, "h": 760, "title": "Direction A applied — the concessions" },
+    { "file": "HostNative.dc.html", "x": 880,  "y": 0, "w": 340, "h": 760, "title": "Direction B sketch — Host-native (low-fi)" },
+    { "file": "Crit.dc.html",       "x": 1320, "y": 0, "w": 640, "h": 1180, "title": "The crit sheet", "print": "flow" }
+  ],
+  "annotations": [
+    { "id": "gate-b1",   "x": 660,  "y": -140, "w": 240, "text": "B1 — Doctor's yellow stays as shipped. The room reads it as prominence, not state (a third family). \"Check\" would ship yellow regardless, so it goes only with option (2). Yours." },
+    { "id": "gate-c2",   "x": 440,  "y": 800,  "w": 300, "text": "C2a / C2b / D3 — the receipt row is unchanged in words (\"1 CHANGE\", \"← REVERT\"). Only the form moved: leaf 8/4, weight 700, 11px. What it says and where it lives are your rulings." },
+    { "id": "pending-m", "x": 0,    "y": 800,  "w": 300, "text": "Pending hython measurements M1–M7: DsHeader margin (verb floor 26), \"Bridge\" width at 340/380, tag width at 700, turn-beat sum vs collapse, body x at 46, chroma buckets with the SEND ink swapped, what weight 500 really renders as." },
+    { "id": "gate-d2",   "x": 880,  "y": 800,  "w": 260, "text": "D2 — GUTTER 24 is the only width remedy that runs the right direction, and it sits under tokens.py:637's \"26–36 safe\". Your call; nothing here moves it." }
+  ],
+  "launch": { "view": "canvas" }
+}

@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #1a1a1a; }
+    a { color: #B98620; } a:hover { color: #D19E38; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+<!-- LOW-FI SKETCH of Direction B, Host-native: host font (Segoe UI — what Houdini's own UI uses on Windows), host greys, and the pane-tab marker
+     HOUDINI_TAB_YELLOW #B98620 as the ONE accent, spent on SEND / focus / the underline and never on Doctor. Sketch fidelity only — structure and colour stance. -->
+<div style="width: 340px; height: 760px; display: flex; flex-direction: column; background: #2A2A2A; font-family: 'Segoe UI', system-ui, sans-serif; color: #C5C5C5; font-size: 12px; overflow: hidden;">
+
+  <div style="display: flex; flex-direction: column; gap: 4px; padding: 16px 30px 8px 30px; border-bottom: 1px solid #303030;">
+    <div style="display: flex; align-items: center; gap: 6px; min-height: 32px;">
+      <div style="width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #555555; flex: none;"></div>
+      <div style="font-size: 13px; font-weight: 600; color: #DEDEDE;">Synapse</div>
+      <div style="flex: 1;"></div>
+      <div style="font-size: 11px; color: #636363;">claude · claude-sonnet-4-6</div>
+    </div>
+    <div style="display: flex; align-items: center; min-height: 26px;">
+      <div style="font-size: 11px; color: #A0A0A0;">Not connected</div>
+      <div style="flex: 1;"></div>
+      <div style="font-size: 11px; font-weight: 600; color: #C5C5C5; min-height: 26px; display: flex; align-items: center;">Bridge</div>
+      <div style="width: 12px; flex: none;"></div>
+      <div style="font-size: 11px; color: #A0A0A0; min-height: 26px; display: flex; align-items: center;">Doctor</div>
+      <div style="width: 32px; height: 24px; display: flex; align-items: center; justify-content: center; flex: none; margin-left: 4px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 8px 30px; min-height: 30px;"></div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px; padding: 8px 30px; flex: 1; min-height: 0;">
+    <div style="flex: 1; min-height: 24px; background: #1F1F1F; border: 1px solid #363636; padding: 12px 15px; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="font-style: italic; font-size: 11px; color: #868686; margin: 6px 0;">What are we building?</div>
+      <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 24px;">
+        <div style="font-size: 11px; font-weight: 600; color: #DEDEDE;">You<span style="color: #868686; font-weight: 400;">&nbsp;&nbsp;9:41 AM</span></div>
+        <div style="display: flex; gap: 14px;"><div style="width: 2px; background: #DEDEDE; flex: none;"></div><div style="color: #DEDEDE;">make a box</div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 24px;">
+        <div style="font-size: 11px; font-weight: 600; color: #A0A0A0;">Synapse<span style="color: #868686; font-weight: 400;">&nbsp;&nbsp;9:41 AM</span></div>
+        <div style="display: flex; gap: 14px;"><div style="width: 2px; background: #868686; flex: none;"></div><div style="color: #C5C5C5;">Made a box at <span style="font-family: Consolas, monospace; font-size: 11px;">/obj/geo1/box1</span> — 8 points, 6 prims. One Undo reverses it.</div></div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; margin-left: 16px;">
+      <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #A0A0A0; background: #363636; padding: 4px 8px;">1 change</div>
+      <div style="flex: 1;"></div>
+      <div style="font-size: 11px; letter-spacing: 0.08em; color: #A0A0A0;">← REVERT</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="display: flex; gap: 4px;">
+        <div style="flex: 1; height: 64px; background: #1F1F1F; border: 1px solid #B98620; padding: 16px 15px; position: relative; color: #636363;">
+          Ask Synapse…
+          <div style="position: absolute; right: 8px; bottom: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: #111111; background: #B98620; padding: 9px 15px; line-height: 1;">SEND</div>
+        </div>
+        <div style="width: 52px; display: flex; align-items: center; justify-content: center; flex: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"></path></svg>
+        </div>
+      </div>
+      <div style="padding-left: 16px; font-size: 11px; color: #868686; padding-top: 4px;">Enter sends · Shift+Enter adds a line</div>
+    </div>
+  </div>
+
+  <div style="border-top: 1px solid #303030; padding: 8px 30px 12px 46px; display: flex; gap: 16px; flex-wrap: wrap;">
+    <div style="font-size: 11px; color: #A0A0A0; min-height: 24px; display: flex; align-items: center;">Commands</div>
+    <div style="font-size: 11px; color: #A0A0A0; min-height: 24px; display: flex; align-items: center;">Saved networks</div>
+    <div style="font-size: 11px; color: #A0A0A0; min-height: 24px; display: flex; align-items: center;">Updates</div>
+    <div style="font-size: 11px; color: #A0A0A0; min-height: 24px; display: flex; align-items: center;">Connect models</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,1221 @@
+{
+ "tokens": {
+  "fonts": [
+   {
+    "role": "sans (display/title/body/label/caption \u2014 everything but code)",
+    "family": "Space Grotesk",
+    "fallback": "FONT_SANS_FALLBACKS = (\"DM Sans\", \"Segoe UI\", \"sans-serif\") -> FONT_SANS_CSS = \"Space Grotesk\", \"DM Sans\", \"Segoe UI\", \"sans-serif\"; QFont chain _SANS_CHAIN = (\"Space Grotesk\", \"DM Sans\", \"Segoe UI\")",
+    "source": "python/synapse/panel/designsystem/tokens.py:304-306 (FONT_SANS, FONT_SANS_FALLBACKS, FONT_SANS_CSS); fontload.py:127 (_SANS_CHAIN); shipped file fonts/SpaceGrotesk-Variable.ttf, variable 300-700, uses 400/500/700 (fonts/README.md table)"
+   },
+   {
+    "role": "mono (code/status roles; node paths, tool names, versions, token counts, VEX; rhythm label/tag uppercase)",
+    "family": "Space Mono",
+    "fallback": "FONT_MONO_FALLBACKS = (\"JetBrains Mono\", \"Consolas\", \"monospace\") -> FONT_MONO_CSS = \"Space Mono\", \"JetBrains Mono\", \"Consolas\", \"monospace\"; QFont chain _MONO_CHAIN = (\"Space Mono\", \"JetBrains Mono\", \"Consolas\"); if bundle fails to register, mono falls to QFontDatabase.systemFont(FixedFont) then \"monospace\"",
+    "source": "tokens.py:300-302; fontload.py:128, :149-154; shipped files fonts/SpaceMono-Regular.ttf (400) + fonts/SpaceMono-Bold.ttf (700) (fonts/README.md)"
+   },
+   {
+    "role": "application mechanism (how families reach widgets)",
+    "family": "QFont only \u2014 never QSS. qss.py emits NO font-family (\"inherit Houdini's app-level UI font\"). fontload.apply_family() calls QFont.setFamilies(chain); tracked_font(role, px) sets pixel size + PercentageSpacing tracking; weight 500 -> QFont.Weight.Medium, weight >= 600 or bold=True -> setBold(True) (i.e. Qt Bold, not a literal 600 instance). If either expected family is missing, build_mismatch=True, panel logs a warning and keeps the HOST native family.",
+    "fallback": "host native QApplication font when build_mismatch (fontload.py:106-115, 138-155)",
+    "source": "qss.py:21 (no font-family comment); fontload.py:9-15, :125-128, :138-155, :158-190; rhythm.py:62-78 (label/tag: mono + AllUppercase via QFont)"
+   }
+  ],
+  "colors_light": {
+   "_NOTE": "tokens.py ships ONE palette, not two. Surface + text roles are SEEDED at import from the live Houdini color scheme (hou.qt.getColor('PaneEmptyApp')) via _derive_palette(r,g,b) (tokens.py:123-158, :164-166). There is NO static light hex table in source; a light host produces light values at runtime by the formulas below. The legacy literal palette (SIGNAL, VOID, NEAR_BLACK, CARBON, GRAPHITE, SLATE, SILVER, BONE, WHITE, FIRE, GROW, WARN, ERROR, HOU_*) is NOT seeded and is identical on light and dark (tokens.py:29-46).",
+   "GROUND": "step(-11) = _hexrgb(r-11,g-11,b-11) of host pane (tokens.py:132-138)",
+   "FIELD_INSET": "step(-11) \u2014 same as GROUND (tokens.py:138)",
+   "PANEL": "_hexrgb(r,g,b) = host pane grey verbatim (tokens.py:138)",
+   "SURFACE": "step(+12) (tokens.py:139)",
+   "RAISED": "step(+8) (tokens.py:139)",
+   "BORDER": "step(+12) (tokens.py:139)",
+   "BORDER_STRONG": "step(+18) (tokens.py:140)",
+   "HAIR": "step(+6) (tokens.py:140)",
+   "TEXT_PRIMARY": "_grey_for_contrast(anchor, 7.0, lighter) \u2014 neutral grey solved to 7.0:1 WCAG vs the worst-case landing surface; on a light host 'lighter' flips False so text goes DARK (tokens.py:118-121, :151-157)",
+   "TEXT_SECONDARY": "solved to 4.6:1 (tokens.py:119)",
+   "TEXT_TERTIARY": "solved to 3.3:1 (tokens.py:119)",
+   "TEXT_BRIGHT": "solved to 9.0:1 (tokens.py:119)",
+   "TEXT_DISABLED": "solved to 2.0:1 (tokens.py:120)",
+   "MUSHROOM": "_warm_bias(TEXT_TERTIARY, 12) = tertiary with R+12, B-12 (tokens.py:209-227)",
+   "HOUDINI_TAB_YELLOW": "hou.qt.getColor('PaneTabMarker') live, else (185,134,32) (tokens.py:255-256)",
+   "HOUDINI_TAB_YELLOW_HOVER": "each channel +24 of the tab RGB (tokens.py:257)",
+   "_ILLUSTRATIVE_ONLY_seed_200": "NOT a source constant \u2014 _derive_palette(200,200,200) evaluated headless: ground #BDBDBD panel #C8C8C8 surface #D4D4D4 raised #D0D0D0 border #D4D4D4 border_strong #DADADA hair #CECECE; text primary #303030 secondary #4C4C4C tertiary #616161 bright #1D1D1D disabled #848484"
+  },
+  "colors_dark": {
+   "_NOTE": "Headless/CI fallback = the shipped dark scheme: _FALLBACK_RGB = (42,42,42) = #2A2A2A (tokens.py:113). Values below are the resolved outputs of _derive_palette(42,42,42) evaluated from the module with the theme seam stubbed (no hou), plus the literal tokens.",
+   "SIGNAL": "#8FB3D9 (tokens.py:29) primary accent, muted light blue",
+   "VOID": "#0A0A0A (tokens.py:30) legacy deepest ground",
+   "NEAR_BLACK": "#111111 (tokens.py:31) legacy panel bg",
+   "CARBON": "#1A1A1A (tokens.py:32) legacy surface",
+   "GRAPHITE": "#2A2A2A (tokens.py:33) legacy borders",
+   "SLATE": "#555555 (tokens.py:34) legacy tertiary/disabled text; STATUS disconnected dot",
+   "SILVER": "#999999 (tokens.py:35) legacy secondary text",
+   "BONE": "#CCCCCC (tokens.py:36) legacy primary text",
+   "WHITE": "#F0F0F0 (tokens.py:37) legacy bright text",
+   "FIRE": "#FF6B35 (tokens.py:39) execution active / APPROVE gate / working status",
+   "GROW": "#00E676 (tokens.py:40) success / connected status",
+   "WARN": "#FFAB00 (tokens.py:41) warning / REVIEW gate",
+   "ERROR": "#FF3D71 (tokens.py:42) error / CRITICAL gate / danger button",
+   "HOU_ORANGE": "#D07020 (tokens.py:44)",
+   "HOU_DARK": "#2B2B2B (tokens.py:45)",
+   "HOU_WIRE": "#6A9BC3 (tokens.py:46)",
+   "GROUND": "#1F1F1F = step(-11) (tokens.py:138, :177) input wells / QTextBrowser bg",
+   "FIELD_INSET": "#1F1F1F (tokens.py:138, :178) composer/field well",
+   "PANEL": "#2A2A2A (tokens.py:113, :179) panel body, DsSection, DsHeader",
+   "SURFACE": "#363636 = step(+12) (tokens.py:139, :180) cards, tooltip, menus, secondary button",
+   "RAISED": "#323232 = step(+8) (tokens.py:139, :181) hover surface, badge bg, scrollbar handle; HOVER_BG alias (:280)",
+   "BORDER": "#363636 = step(+12) (tokens.py:139, :182) 1px hairline divider",
+   "BORDER_STRONG": "#3C3C3C = step(+18) (tokens.py:140, :183) secondary button border, scrollbar hover",
+   "HAIR": "#303030 = step(+6) (tokens.py:140, :184) rail bottom rule, acts top rule",
+   "TEXT_PRIMARY": "#C5C5C5 solved 7.0:1 vs SURFACE (measured 7.00 / 8.32 on PANEL / 9.55 on GROUND) (tokens.py:118-121, :200)",
+   "TEXT_SECONDARY": "#A0A0A0 solved 4.6:1 (4.62/5.49/6.30) (tokens.py:201)",
+   "TEXT_TERTIARY": "#868686 solved 3.3:1 (3.32/3.94/4.53) (tokens.py:202)",
+   "TEXT_BRIGHT": "#DEDEDE solved 9.0:1 (8.98/10.67/12.25) (tokens.py:203)",
+   "TEXT_DISABLED": "#636363 solved 2.0:1 (2.01/2.39/2.74) (tokens.py:205)",
+   "TEXT_ACCENT": "#8FB3D9 = SIGNAL (tokens.py:204) links/accent labels only, never body; 6.57:1 on PANEL",
+   "TEXT_ON_ACCENT": "#0F1F2B literal (tokens.py:206) ink on SIGNAL/SIGNAL_DEEP/WARM/HOT_SOFT fills",
+   "MUSHROOM": "#92867A = _warm_bias(#868686, 12) (tokens.py:227) inert metadata, DsChip rest",
+   "SIGNAL_HOVER": "#A9C7E6 (tokens.py:237)",
+   "SIGNAL_PRESS": "#7398BE (tokens.py:238)",
+   "SIGNAL_DEEP": "#627A93 (tokens.py:239) filled-action blue: Connect / Corpus / SEND / primary + hero buttons at rest",
+   "SIGNAL_TINT": "rgba(143, 179, 217, 0.12) (tokens.py:240) selection wash, active chip, list selected",
+   "SIGNAL_TINT_STRONG": "rgba(143, 179, 217, 0.22) (tokens.py:241) input selection-background",
+   "HOVER_WASH": "rgba(255, 255, 255, 0.09) (tokens.py:242)",
+   "WARM": "#FF7759 (tokens.py:248) second accent: thinking mark, Stop hover, hero verbs, \u2318K hero chip",
+   "WARM_HOVER": "#FF8E72 (tokens.py:249)",
+   "WARM_PRESS": "#E5634A (tokens.py:250)",
+   "WARM_TINT": "rgba(255, 119, 89, 0.14) (tokens.py:251)",
+   "HOUDINI_TAB_YELLOW": "#B98620 headless fallback (185,134,32) (tokens.py:255-256) Doctor verb tone",
+   "HOUDINI_TAB_YELLOW_HOVER": "#D19E38 (tokens.py:257)",
+   "CONIFEROUS": "#6E8F72 (tokens.py:269) verified/ok verdict, DsAuthor live; OK_SOFT is a deprecated alias (:278)",
+   "NO_SOFT": "#D96975 (tokens.py:270)",
+   "HOT_SOFT": "#D08A57 (tokens.py:271) DsStop rest fill, hot verbs, BLOCKED tags",
+   "PRESS_BG": "#202022 literal (tokens.py:281) secondary button pressed",
+   "FOCUS_RING": "#8FB3D9 = SIGNAL (tokens.py:282); applied as border-color on :focus, no outline (qss.py:275)",
+   "DISABLED_BG": "#363636 = SURFACE (tokens.py:283)",
+   "STATE_TINTS": "fire rgba(255, 107, 53, 0.14); grow rgba(0, 230, 118, 0.14); warn rgba(255, 171, 0, 0.14); error rgba(255, 61, 113, 0.14); signal = SIGNAL_TINT (tokens.py:285-291)",
+   "DsRoot_background": "qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2E2E2E, stop:1 #262626) = atmosphere(PANEL) with ATMOSPHERE_DELTA 4 (tokens.py:565-577; qss.py:29)"
+  },
+  "accent": {
+   "name": "SIGNAL (primary accent) \u2014 with WARM as the sanctioned second accent and SIGNAL_DEEP as the filled-action fill",
+   "hex_light": "#8FB3D9 \u2014 accents are NOT host-seeded; same hex on any host (tokens.py:29, :196-197 'Brand/semantic accents ... left at full strength')",
+   "hex_dark": "#8FB3D9 (tokens.py:29); fill variant SIGNAL_DEEP #627A93 (tokens.py:239); WARM #FF7759 (tokens.py:248)",
+   "usage_rule": "(1) tokens.py:229-231 WCAG note: 'SIGNAL (#8FB3D9) on PANEL passes AA for >=14px / bold, but FAILS for small body text. Use TEXT_ACCENT for labels/links/icons only; never for running body copy. Body uses TEXT_PRIMARY.' (2) tokens.py:225: 'SIGNAL + WARM remain the two-accent ceiling'; tokens.py:266: 'the ceiling is two accents per view and the render is the only chromatic event'. (3) qss.py:298-302 (prominence L5-14): hero takes the accent its role calls for \u2014 WARM for human/orientation widgets, SIGNAL for technical/economic ones; 'SIGNAL + WARM are the two-accent ceiling: never a third.' (4) qss.py:73-83 (L5-16, Joe's seat call): filled buttons + SEND rest on SIGNAL_DEEP with TEXT_ON_ACCENT ink (stated 5.60:1 AA); hover rises to SIGNAL, press to SIGNAL_PRESS; 'the coral read too loud on buttons; WARM keeps its non-button hero rules'. (5) The 'monochrome + one accent' ruling is pinned by tests/panel/test_bc_wave.py:285-300: 'Pentagram bar: monochrome plus ONE accent for actions, plus the state marks' \u2014 CHAT face <= 3 hue buckets at boot (warm mark + SEND accent), <= 4 connected (adds CONIFEROUS). Allowed rest set {WARM, CONIFEROUS, SIGNAL}. (6) OPEN FORK B1 (harness/design_review/2026-09-14/RULINGS-OPEN.md:176-220): the Doctor verb's HOUDINI_TAB_YELLOW #B98620 (hue 40\u00b0, 139px on the resting CHAT face; producers synapse_panel.py:1042, qss.py:198, tokens.py:255) is a 4th hue; the instrument's 15\u00b0 buckets split SIGNAL (210.8\u00b0) from its ink (205.7\u00b0) so the count sits at exactly 3 with zero headroom; options: keep-accent-retarget-pin / drop accent / record accepted conflict; reviewer's read = (1). Note the source tension: tokens.py says a TWO-accent ceiling, the test says ONE accent + state marks.",
+   "source": "tokens.py:29, :204, :225, :229-231, :237-251, :266; qss.py:73-83, :298-302; tests/panel/test_bc_wave.py:285-310; harness/design_review/2026-09-14/RULINGS-OPEN.md:176-220; docs/PANEL_BATTLEPLAN_PD.md:49, :173 ('one accent doing the pointing')"
+  },
+  "type_ramp": [
+   {
+    "name": "display (TYPE_ROLES)",
+    "size_px": 19,
+    "weight": 600,
+    "line_height": "none in source \u2014 Qt native font metrics (no line-height anywhere in qss.py)",
+    "tracking": "TYPE_ROLES letter_spacing_px 0.5 (tokens.py:372); TRACKING_EM DISPLAY -0.015 em (tokens.py:403) = -0.285px at 19px",
+    "used_for": "panel title (SIZE_HERO 'present, not shouting')",
+    "source": "tokens.py:319 (SIZE_HERO=19), :360 (WEIGHT_SEMIBOLD=600), :372"
+   },
+   {
+    "name": "title (TYPE_ROLES)",
+    "size_px": 15,
+    "weight": 600,
+    "line_height": "none in source",
+    "tracking": "TYPE_ROLES letter_spacing_px 1.0 (tokens.py:373)",
+    "used_for": "section headers; QLabel[role=title] color TEXT_BRIGHT (qss.py:291); DsHdaTitle (qss.py:796-797)",
+    "source": "tokens.py:318 (SIZE_TITLE=15), :373; sans per :363-370 ('title and label move to sans')"
+   },
+   {
+    "name": "body (TYPE_ROLES) / SIZE_BODY",
+    "size_px": 12,
+    "weight": 400,
+    "line_height": "chat dialogue: +1.0px absolute leading per wrapped line = CHAT_LEADING_PT 0.75pt \u00d7 96/72 (tokens.py:522-533), applied as QTextBlockFormat LineDistanceHeight in chat_display (CSS line-height measured inert). Otherwise native.",
+    "tracking": "0 (tokens.py:374); TRACKING_EM BODY 0.0 (:403)",
+    "used_for": "chat body, DsRoot font-size, rows, cards, HDA fields; the Aa scale (1.0/1.15/1.25/1.4/1.6, tokens.py:418) applies to content only",
+    "source": "tokens.py:317 (SIZE_BODY=12 'Houdini-native default 9pt \u2248 12px'), :358 (WEIGHT_REGULAR=400), :374; qss.py:31"
+   },
+   {
+    "name": "label (TYPE_ROLES) / SIZE_UI",
+    "size_px": 12,
+    "weight": 500,
+    "line_height": "none in source",
+    "tracking": "TYPE_ROLES letter_spacing_px 0.5 (tokens.py:375); rhythm label role uses +0.08em (borrows TRACKING_EM SEND, rhythm.py:71-76) = 0.96px at 12px, mono + AllUppercase",
+    "used_for": "buttons, pills, menu items, labels (SIZE_UI comment); QLabel[role=label] TEXT_SECONDARY (qss.py:294); [rhythm_role=label] weight 500, margin-top 24 / bottom 12 (qss.py:393-398)",
+    "source": "tokens.py:316 (SIZE_UI=12), :359 (WEIGHT_MEDIUM=500), :375"
+   },
+   {
+    "name": "code (TYPE_ROLES)",
+    "size_px": 12,
+    "weight": 400,
+    "line_height": "none in source",
+    "tracking": "0 (tokens.py:376)",
+    "used_for": "code, node paths, VEX \u2014 FONT_MONO_CSS",
+    "source": "tokens.py:376"
+   },
+   {
+    "name": "caption (TYPE_ROLES) / SIZE_SMALL",
+    "size_px": 11,
+    "weight": 400,
+    "line_height": "none in source",
+    "tracking": "0 (tokens.py:377)",
+    "used_for": "captions, metadata; DsVerb, DsFooterLink, tooltip, DsHdaStageDot active (qss.py:185, :205, :44)",
+    "source": "tokens.py:315 (SIZE_SMALL=11), :377"
+   },
+   {
+    "name": "status (TYPE_ROLES)",
+    "size_px": 11,
+    "weight": 500,
+    "line_height": "none in source",
+    "tracking": "TYPE_ROLES letter_spacing_px 0.5 (tokens.py:378)",
+    "used_for": "status text, mono",
+    "source": "tokens.py:378"
+   },
+   {
+    "name": "SIZE_MICRO / SIZE_LABEL alias",
+    "size_px": 10,
+    "weight": 600,
+    "line_height": "none in source",
+    "tracking": "per role",
+    "used_for": "DsChip (weight not set in QSS, font 10px, qss.py:221), DsBadge (10px / 600, qss.py:256); legacy sweep-A rules use SIZE_LABEL",
+    "source": "tokens.py:314 (SIZE_MICRO=10), :322 (SIZE_LABEL = SIZE_MICRO); FONT_FLOOR_PX = 10 (tokens.py:345) provenance 'UNKNOWN' (:346-352); rhythm sheet clamps s(px) >= FONT_FLOOR_PX (qss.py:390)"
+   },
+   {
+    "name": "WORDMARK (tracking role)",
+    "size_px": 14,
+    "weight": 600,
+    "line_height": "none in source",
+    "tracking": "TRACKING_EM WORDMARK 0.16 em = 2.24px at 14px (tokens.py:397-402); BRAND 0.286 em = 4.004px at 14px was the weight-400 value (tokens.py:386-388)",
+    "used_for": "the SYNAPSE lockup; WORDMARK_GAP 5px beyond the identity row's stack gap (tokens.py:497)",
+    "source": "tokens.py:386-402 \u2014 the 14px size and weight 600 are stated in COMMENTS only; the live QFont size in synapse_panel.py is UNVERIFIED"
+   },
+   {
+    "name": "TRACKING_EM full map (QFont PercentageSpacing = 100 + em\u00d7100)",
+    "size_px": 0,
+    "weight": 0,
+    "line_height": "n/a",
+    "tracking": "EYEBROW 0.22 \u00b7 BRAND 0.286 \u00b7 LABEL 0.15 \u00b7 LABEL_SM 0.12 \u00b7 WORDMARK 0.16 \u00b7 DATA 0.03 \u00b7 SEND 0.08 \u00b7 DISPLAY -0.015 \u00b7 BODY 0.0; rhythm tag role = DATA\u00d72 = 0.06 em (rhythm.py:75-76)",
+    "used_for": "EYEBROW section labels; BRAND wordmark (400); LABEL the CHAT pill; LABEL_SM credit keys/acts verbs; DATA author/meter/paths/cookline/\u2318K chip; SEND button; DISPLAY verdict; BODY conversation",
+    "source": "tokens.py:381-404; fontload.py:184-188"
+   }
+  ],
+  "spacing": [
+   {
+    "name": "SPACE_XS",
+    "px": 4,
+    "source": "tokens.py:475"
+   },
+   {
+    "name": "SPACE_SM",
+    "px": 8,
+    "source": "tokens.py:476"
+   },
+   {
+    "name": "SPACE_12 (row-breath / label-below rung)",
+    "px": 12,
+    "source": "tokens.py:488"
+   },
+   {
+    "name": "SPACE_MD",
+    "px": 16,
+    "source": "tokens.py:477"
+   },
+   {
+    "name": "SPACE_LG",
+    "px": 24,
+    "source": "tokens.py:478"
+   },
+   {
+    "name": "SPACE_32 (parm-row section-head gap)",
+    "px": 32,
+    "source": "tokens.py:489"
+   },
+   {
+    "name": "SPACE_XL (fixed card-band height, OFF the gap ladder)",
+    "px": 40,
+    "source": "tokens.py:479, :486-487"
+   },
+   {
+    "name": "SPACE_48 (doubled group gap, verb rail; 2\u00d7SPACE_LG)",
+    "px": 48,
+    "source": "tokens.py:490"
+   },
+   {
+    "name": "SPACE_GRID ladder = (4, 8, 12, 16, 24, 32, 48)",
+    "px": 4,
+    "source": "tokens.py:491; docs/PANEL_RHYTHM_SPEC.md \u00a72 per comment :487"
+   },
+   {
+    "name": "GUTTER (panel edge inset, shell role left/right)",
+    "px": 30,
+    "source": "tokens.py:637; rhythm.py:42 (_MARGINS shell = (GUTTER, SPACE_SM, GUTTER, SPACE_SM))"
+   },
+   {
+    "name": "WORDMARK_GAP",
+    "px": 5,
+    "source": "tokens.py:497"
+   },
+   {
+    "name": "DENSITY_GAP_SCALE airy \u00d71.5 / standard \u00d71.0 / tight \u00d70.75 \u2014 gaps only, paddings fixed; gap() = int(round(base\u00d7mult)); ladder resolves standard [4,8,12,16,24,32,48] airy [6,12,18,24,36,48,72] tight [3,6,9,12,18,24,36]",
+    "px": 16,
+    "source": "tokens.py:499-512"
+   },
+   {
+    "name": "rhythm ROLE_GAPS: label 12, row 12, tag 16, card 16, parm_row 4, group 16, shell 16, stack 4, band 0",
+    "px": 16,
+    "source": "rhythm.py:26-36"
+   },
+   {
+    "name": "rhythm _MARGINS: row (16,12,16,12); tag (10,6,10,6) = (SM+XS//2, SPACE_12//2 ...); shell (30,8,30,8); shell rhythm_edge=top \u2192 top = gap(SPACE_MD) = 24/16/12",
+    "px": 16,
+    "source": "rhythm.py:37-50"
+   },
+   {
+    "name": "CHAT_LEADING_PT 0.75pt \u2192 chat_leading_px() = 1.0px",
+    "px": 1,
+    "source": "tokens.py:522-533"
+   },
+   {
+    "name": "ICON_GRID / STROKE_PX 1.5 (one icon line weight)",
+    "px": 24,
+    "source": "tokens.py:556-557"
+   },
+   {
+    "name": "ATMOSPHERE_DELTA (8-bit levels either side of PANEL for the root gradient)",
+    "px": 4,
+    "source": "tokens.py:565"
+   },
+   {
+    "name": "PANEL_MIN_WIDTH 280 / PANEL_PREF_WIDTH 340 / PANEL_MIN_HEIGHT 420",
+    "px": 280,
+    "source": "tokens.py:634-636; synapse_panel.py:501 setMinimumWidth(t.PANEL_MIN_WIDTH)"
+   },
+   {
+    "name": "DsHeader (rail) margin-bottom 8, density airy 12 / tight 6; DsVerb margin-top/bottom 8 (12/6)",
+    "px": 8,
+    "source": "qss.py:339-346"
+   },
+   {
+    "name": "motion (not spacing, recorded for completeness): DUR_FAST 120ms, DUR_BASE 200ms, DUR_SLOW 320ms, EASE OutCubic",
+    "px": 120,
+    "source": "tokens.py:584-587; motion.py:18-24"
+   }
+  ],
+  "radii": [
+   {
+    "name": "RADIUS_SM (buttons, inputs, badges, tooltip, menu items, scrollbar handle, chips in list)",
+    "px": 4,
+    "source": "tokens.py:535; qss.py:49, :271, :283, :255"
+   },
+   {
+    "name": "RADIUS_MD (rhythm rows)",
+    "px": 8,
+    "source": "tokens.py:536; qss.py:403"
+   },
+   {
+    "name": "RADIUS_CARD (DsCard \u2014 the rhythm sheet's later rule overrides the earlier RADIUS_LG 12 at qss.py:247)",
+    "px": 10,
+    "source": "tokens.py:546; qss.py:430"
+   },
+   {
+    "name": "RADIUS_LG (DsCard first declaration; superseded by RADIUS_CARD in the same stylesheet)",
+    "px": 12,
+    "source": "tokens.py:537; qss.py:247"
+   },
+   {
+    "name": "RADIUS_PILL",
+    "px": 14,
+    "source": "tokens.py:538 (no consumer found in qss.py main sheet; legacy quick-actions uses literal 14px at qss.py:768)"
+   },
+   {
+    "name": "RADIUS_ROUND (fully-rounded tag)",
+    "px": 999,
+    "source": "tokens.py:547; qss.py:417"
+   },
+   {
+    "name": "DsPill / DsChip radius 0 (underline tab, edge-marked cell)",
+    "px": 0,
+    "source": "qss.py:121, :220"
+   },
+   {
+    "name": "DsCookBar literal 2px; legacy literals 3px (qss.py:570, :619, :624, :629), 6px (:588, :592)",
+    "px": 2,
+    "source": "qss.py:357-359"
+   }
+  ],
+  "controls": [
+   {
+    "name": "QPushButton#DsButton \u2014 vertical chrome only (2\u00d78 pad + 2\u00d71 border); text line box UNVERIFIED (no min-height in source)",
+    "height_px": 18,
+    "padding": "8px 16px (SPACE_SM SPACE_MD); font 12px/600; border 1px solid transparent; radius 4. primary: SIGNAL_DEEP fill / TEXT_ON_ACCENT, hover SIGNAL, press SIGNAL_PRESS. secondary: SURFACE / TEXT_PRIMARY / 1px BORDER_STRONG, hover RAISED + border TEXT_TERTIARY, press PRESS_BG. ghost: transparent / TEXT_SECONDARY, hover HOVER_BG. danger: transparent / ERROR / 1px ERROR, hover STATE_TINTS error. disabled: DISABLED_BG / TEXT_DISABLED",
+    "source": "qss.py:48-90"
+   },
+   {
+    "name": "QPushButton#DsStop (mark's second surface) \u2014 same metrics as DsButton; min-width 48",
+    "height_px": 16,
+    "padding": "8px 16px; font 12px/600; no border; radius 4; HOT_SOFT fill / TEXT_ON_ACCENT, hover WARM, press WARM_PRESS, disabled DISABLED_BG",
+    "source": "qss.py:103-111; synapse_panel.py:1020-1025 (setMinimumWidth(t.SPACE_48))"
+   },
+   {
+    "name": "QPushButton#DsSend (embedded bottom-right in composer) \u2014 vertical chrome 2\u00d79",
+    "height_px": 18,
+    "padding": "9px 15px; radius 4; no border; SIGNAL_DEEP / TEXT_ON_ACCENT, hover SIGNAL, press SIGNAL_PRESS, disabled DISABLED_BG/TEXT_DISABLED",
+    "source": "qss.py:281-288; synapse_panel.py:2494"
+   },
+   {
+    "name": "QPushButton#DsPill (CHAT tab: underline on a 2px baseline track) \u2014 vertical chrome = 12 pad-bottom + 2 border",
+    "height_px": 14,
+    "padding": "0 0 12px 0; border-bottom 2px solid transparent, active SIGNAL; radius 0; color TEXT_TERTIARY, hover/active TEXT_BRIGHT; family/size/tracking on QFont (LABEL role +0.15em)",
+    "source": "qss.py:119-128"
+   },
+   {
+    "name": "QPushButton#DsAuthor (rail engine+model click target) \u2014 min-height 24 content + 4/4 padding = 32 rendered (Qt min-height is content-box, probed Qt 6.8.3)",
+    "height_px": 32,
+    "padding": "4px 4px; min-height 24 (SPACE_LG); liveness live CONIFEROUS / working WARM / off TEXT_DISABLED; rest TEXT_SECONDARY; hover TEXT_BRIGHT + underline",
+    "source": "qss.py:150-162, :234-236"
+   },
+   {
+    "name": "QListWidget#DsList::item / #DsCommandResults::item \u2014 24 + 8 + 8 = 40 (the SPACE_XL card-band row)",
+    "height_px": 40,
+    "padding": "8px 16px; min-height 24; radius 4; selected SIGNAL_TINT / TEXT_ACCENT",
+    "source": "qss.py:234-242"
+   },
+   {
+    "name": "QPushButton#DsFooterLink \u2014 24 + 2 + 2",
+    "height_px": 28,
+    "padding": "2px 0; min-height 24; 11px/400; TEXT_SECONDARY, hover TEXT_ACCENT",
+    "source": "qss.py:202-209"
+   },
+   {
+    "name": "QPushButton#DsVerb (type-set verbs, act bar)",
+    "height_px": 4,
+    "padding": "2px 0 (+ margin-top/bottom 8, density 12/6); 11px; TEXT_SECONDARY; tones ok CONIFEROUS / hot HOT_SOFT / accent TEXT_ACCENT / doctor HOUDINI_TAB_YELLOW; hero WARM",
+    "source": "qss.py:182-199, :339-341"
+   },
+   {
+    "name": "QLabel#DsKHint (\u2318K chip) \u2014 vertical chrome 3+3+1+1",
+    "height_px": 8,
+    "padding": "3px 7px; 1px BORDER; radius 4; TEXT_TERTIARY (hero WARM, quiet TEXT_DISABLED + HAIR border)",
+    "source": "qss.py:166-178"
+   },
+   {
+    "name": "QPushButton#DsChip (palette cell) \u2014 vertical chrome 3+3",
+    "height_px": 6,
+    "padding": "3px 8px 3px 7px; border-left {STROKE_PX:.0f}px = 2px (1.5 formatted .0f \u2192 '2'); radius 0; 10px; MUSHROOM, hover TEXT_SECONDARY, active SIGNAL_TINT bg / TEXT_ACCENT / SIGNAL left edge",
+    "source": "qss.py:217-227"
+   },
+   {
+    "name": "QLabel#DsBadge \u2014 vertical chrome 1+1",
+    "height_px": 2,
+    "padding": "1px 8px; 10px/600; radius 4; RAISED / TEXT_SECONDARY; kind grow/warn/error/signal = hue + STATE_TINT",
+    "source": "qss.py:254-266"
+   },
+   {
+    "name": "Composer: QTextEdit#DsInput (synapse_panel.py class, objectName DsInput) \u2014 floor 64, max 600, autosize = document height + 18, setFixedHeight; grip above it fixed 10",
+    "height_px": 64,
+    "padding": "16px 15px (SPACE_MD 15px); 1px BORDER, radius 4; FIELD_INSET bg; 12px (SIZE_UI); selection SIGNAL_TINT_STRONG; :focus border SIGNAL",
+    "source": "qss.py:269-275; synapse_panel.py:272 (setObjectName DsInput), :287 (self._floor, self._max_h = 64, 600), :292-300 (_autosize), :380-386 (DsGrip setFixedHeight(10))"
+   },
+   {
+    "name": "Legacy chat_panel composer: QTextEdit styled sweep_a 'chat_input' \u2014 min 44 / max 300, grow = doc height + 12",
+    "height_px": 44,
+    "padding": "UNVERIFIED (sweep_a chat_input rule body not read)",
+    "source": "chat_panel.py:397-402, :489-495; python/synapse/panel/tokens.py:167-168 (CHAT_INPUT_MIN_H=44, CHAT_INPUT_MAX_H=300 \u2014 a SEPARATE panel/tokens.py, not designsystem/tokens.py)"
+   },
+   {
+    "name": "Rail: QWidget#DsHeader (v9 rail) \u2014 height layout-derived, UNVERIFIED px",
+    "height_px": 0,
+    "padding": "flat PANEL bg; border-bottom 1px solid HAIR; margin-bottom 8 (airy 12 / tight 6)",
+    "source": "qss.py:37-40, :344-346; synapse_panel.py:926"
+   },
+   {
+    "name": "Footer/acts row: QWidget#DsActs \u2014 height layout-derived, UNVERIFIED px",
+    "height_px": 0,
+    "padding": "PANEL bg; border-top 1px solid HAIR",
+    "source": "qss.py:362-365"
+   },
+   {
+    "name": "[rhythm_role=row] list row / #DsRowGlyph cell (ROW_MIN_H 44; glyph 43w \u00d7 44h)",
+    "height_px": 44,
+    "padding": "row label/button 12px 16px; radius 8; 1px BORDER; glyph border-right 1px BORDER",
+    "source": "tokens.py:548; qss.py:400-413"
+   },
+   {
+    "name": "#DsCard > #DsCardHeader (SPACE_XL - 1)",
+    "height_px": 39,
+    "padding": "0 16px; border-bottom 1px BORDER",
+    "source": "qss.py:433-437"
+   },
+   {
+    "name": "#DsCard > #DsCardFooter (SPACE_XL); lookdev_suggestion footer 80 (SPACE_XL\u00d72); body padding 16",
+    "height_px": 40,
+    "padding": "0 16px; body 16px + border-bottom 1px BORDER",
+    "source": "qss.py:438-451"
+   },
+   {
+    "name": "[rhythm_role=tag] pill \u2014 padding 12//2=6 / 8+4//2=10",
+    "height_px": 12,
+    "padding": "6px 10px; radius 999; SURFACE bg; 12px/500; margin-left 16; BLOCKED \u2192 HOT_SOFT",
+    "source": "qss.py:414-425"
+   },
+   {
+    "name": "QProgressBar#DsProgress",
+    "height_px": 4,
+    "padding": "SURFACE track, SIGNAL chunk, radius 4",
+    "source": "qss.py:349-353"
+   },
+   {
+    "name": "QProgressBar#DsCookBar (Work face cook bar)",
+    "height_px": 3,
+    "padding": "GROUND track, RAISED chunk, radius 2",
+    "source": "qss.py:356-359; face_work.py:210 (setFixedHeight(3))"
+   },
+   {
+    "name": "QScrollBar:vertical width 8, handle min-height 24",
+    "height_px": 24,
+    "padding": "handle RAISED radius 4, hover BORDER_STRONG; add/sub-line height 0",
+    "source": "qss.py:368-372"
+   },
+   {
+    "name": "QMenu / QMenu::item",
+    "height_px": 16,
+    "padding": "menu 8px, SURFACE, 1px BORDER; item 8px 16px radius 4, selected HOVER_BG / TEXT_ACCENT",
+    "source": "qss.py:375-377"
+   },
+   {
+    "name": "QToolTip",
+    "height_px": 8,
+    "padding": "4px 8px; SURFACE; 1px BORDER; radius 4; 11px",
+    "source": "qss.py:41-45"
+   },
+   {
+    "name": "Legacy chat_panel connection frame (fixed) / toolbar (fixed 36) / HDA prompt min 110 / attach button fixed width 52 / overflow width 32 / faces min-height 160",
+    "height_px": 44,
+    "padding": "literals, not tokens",
+    "source": "chat_panel.py:651 (44), :733 (36); synapse_panel.py:2370 (110), :2487 (52), :1118 (SPACE_32), :1421 (160)"
+   }
+  ],
+  "borders_shadows": [
+   "NO box-shadow anywhere in qss.py (grep 'shadow' across the file returned zero hits); depth is elevation greys + hairlines only (tokens.py:126-141).",
+   "Hairline: 1px solid BORDER #363636 (= step(+12); on the dark fallback identical to SURFACE) \u2014 cards, inputs, tooltip, menus, rows, card header/body bottoms, glyph cell right (qss.py:43, :246, :271, :375, :404, :412, :436, :440).",
+   "Strong separator: 1px solid BORDER_STRONG #3C3C3C (step +18) \u2014 secondary button border; scrollbar handle hover (qss.py:61, :370).",
+   "Quietest rule: 1px solid HAIR #303030 (step +6) \u2014 DsHeader border-bottom (rail rule), DsActs border-top, quiet \u2318K hint border (qss.py:39, :364, :178).",
+   "Tab baseline: DsPill border-bottom 2px solid transparent \u2192 SIGNAL when active (qss.py:121, :127).",
+   "Chip edge marker: DsChip border-left {STROKE_PX:.0f}px = 2px (1.5 \u2192 '2' under .0f) transparent \u2192 SIGNAL active (qss.py:219, :226); STROKE_PX 1.5 is the one drawn-glyph line weight (tokens.py:557).",
+   "Focus: no outline ring \u2014 :focus sets border-color SIGNAL (#8FB3D9) on DsInput/DsField/DsHdaPrompt/DsCommandSearch (qss.py:275, :816, :866); FOCUS_RING token = SIGNAL (tokens.py:282).",
+   "Selection washes: SIGNAL_TINT rgba(143, 179, 217, 0.12) (list selected, active chip); SIGNAL_TINT_STRONG rgba(143, 179, 217, 0.22) (text selection); HOVER_WASH rgba(255, 255, 255, 0.09); WARM_TINT rgba(255, 119, 89, 0.14); STATE_TINTS all at 0.14 alpha (tokens.py:240-242, :251, :285-291).",
+   "Card tone borders: warn WARN #FFAB00, approve FIRE #FF6B35, critical ERROR #FF3D71 (qss.py:249-251).",
+   "Root atmosphere instead of shadow: DsRoot background qlineargradient top #2E2E2E \u2192 bottom #262626 (PANEL \u00b1 4) (qss.py:29; tokens.py:565-577); sections stay flat PANEL (qss.py:33).",
+   "Legacy sweep-A stylesheets still use the literal palette: 1px GRAPHITE #2A2A2A borders, CARBON #1A1A1A surfaces, VOID #0A0A0A text areas, argb SIGNAL washes (qss.py:562-634) \u2014 these do NOT re-seed on a light host.",
+   "Divider widget: designsystem/components.py:331 line.setFixedHeight(1) \u2014 its color UNVERIFIED (components.py not read)."
+  ],
+  "theme_mechanism": "Seeded at import, not toggled: tokens.py:164-166 `_SURF, _TXT = _seed_palette()` calls theme_source.host_surface_rgb() (theme_source.py:87-101) \u2192 ACTIVE_BACKEND \"hcs\" (theme_source.py:36) \u2192 `hou.qt.getColor(\"PaneEmptyApp\")` (SURFACE_ROLE theme_source.py:32; read :50-52, legacy hou.qt.color fallback) on Houdini's MAIN THREAD only (worker threads return None, :47-48); any failure/headless \u2192 None \u2192 `_FALLBACK_RGB = (42, 42, 42)` #2A2A2A (tokens.py:113). `_derive_palette(r,g,b)` (tokens.py:123-158) builds surfaces as fixed offsets (\u221211/+8/+12/+18/+6) and SOLVES the text ramp to target WCAG ratios (7.0/4.6/3.3/9.0/2.0, :118-121), choosing light-vs-dark text by whichever maximizes the minimum contrast across ground/panel/surface (:151-155) \u2014 so a light Houdini scheme yields a light panel with dark text with no separate light table. The tab yellow is seeded the same way from \"PaneTabMarker\" (tokens.py:255). The 'qml_theme' backend (H22 Theme Editor) is a NotImplementedError stub (theme_source.py:67-73). Re-seeding happens on panel reopen because the loader purges synapse.* from sys.modules (fontload.py:33-35 comment).",
+  "unverified": [
+   "Rendered pixel heights of DsButton / DsSend / DsPill / DsVerb / DsChip / DsBadge / DsKHint: only padding+border are declared; the text line box depends on Qt font metrics for Space Grotesk at 12px \u2014 not in source.",
+   "DsHeader (rail) and DsActs (acts row) total heights: layout-derived, no fixed height or min-height in qss.py or synapse_panel.py grep results.",
+   "Line-height for every type role: qss.py declares none; only the chat +1.0px leading (tokens.py:522-533) is explicit. chat_display.py's _apply_leading not read.",
+   "Wordmark live size (14px) and weight (600) come from tokens.py comments (:386-402); the QFont call in synapse_panel.py was not read.",
+   "Whether TYPE_ROLES' 4th slot (letter_spacing_px 0.5/1.0) is consumed anywhere vs TRACKING_EM (em) \u2014 designsystem/components.py was not read (only its setFixedSize/setFixedHeight lines via grep).",
+   "Legacy chat_panel.py 'chat_input' sweep_a rule body (padding/border) \u2014 qss.py:562-634 only sampled via grep; the 'chat_input' entry itself was not located.",
+   "Divider color in components.py:331.",
+   "Light-host hexes: the two 'DERIVED light seed' rows are illustrative evaluations of _derive_palette with hypothetical seeds (200 and 230), not source constants; the real light values depend on the artist's .hcs PaneEmptyApp grey.",
+   "python/synapse/panel/tokens.py (the SEPARATE legacy panel token module that chat_panel.py imports as `t`, holding CHAT_INPUT_MIN_H/MAX_H, HOVER, FONT_SCALE_*) was not read beyond lines 167-168 via grep; the task named designsystem/tokens.py as the source of truth.",
+   "harness/design_review/2026-09-14/DECISION-BRIEF.md, REFINEMENT-COHERE.md (beyond grep hits), docs/PANEL_RHYTHM_SPEC.md and PANEL_REGION_MAP.md were not read; the rhythm spec is cited only via tokens.py/qss.py comments.",
+   "Whether the RULINGS-OPEN B1 fork has since been ruled (the file is dated 2026-09-14; today is 2026-09-15) \u2014 not checked in git log."
+  ]
+ },
+ "anatomy": {
+  "panel_size": {
+   "default_w": 340,
+   "min_w": 280,
+   "source": "synapse_panel.py:501 `self.setMinimumWidth(t.PANEL_MIN_WIDTH)`; tokens.py:634 `PANEL_MIN_WIDTH = 280`; tokens.py:635 `PANEL_PREF_WIDTH = 340` (cited by the rail docstring synapse_panel.py:907 'at PANEL_PREF_WIDTH the interior is 280 (340 - 2 x GUTTER)'; no setter consuming it was found in synapse_panel.py); tokens.py:636 `PANEL_MIN_HEIGHT = 420` has NO setMinimumHeight consumer in synapse_panel.py (grep of setMinimum hit only :501 width, :972, :1010, :1243, :1350, :1360, :1421, :2370) - height is whatever the Houdini pane gives; PANEL_RHYTHM_SPEC.md:80-89 says the docking test reads 380 px width / 400 px tall bounds from .synapse/contracts/docking-minimums.yaml (not read). No default height exists in code (default_h omitted on purpose). Child floors: faces stack minHeight 160 (:1421), chat minHeight 24 (:1350), converse stack minHeight 24 (:1360), composer input fixedHeight floor 64 (:286-296)."
+  },
+  "regions": [
+   {
+    "name": "Root (DsRoot)",
+    "order": 0,
+    "height_rule": "Host pane height; QVBoxLayout with rhythm_role='band' -> gap 0, margins (0,0,0,0) (rhythm.py:35 `\"band\": 0`, apply_layout_margins default (0,0,0,0) rhythm.py:81-86). Region order at runtime comes from compose(get_manifest('expert')) synapse_panel.py:736-739; fallback wiring is identical: rail, context ribbon, faces (stretch 1) synapse_panel.py:745-748.",
+    "contents": [
+     "rail (DsHeader)",
+     "context ribbon",
+     "faces QStackedWidget (stretch 1)"
+    ],
+    "source": "synapse_panel.py:499 setObjectName('DsRoot'); :709-749 _build_ui; :713 rhythm_role='band'",
+    "background_token": "QWidget#DsRoot background = t.atmosphere(t.PANEL) (qss.py:29; tokens.py:565 ATMOSPHERE_DELTA = 4 8-bit levels between two gradient stops, :568 atmosphere()); color TEXT_PRIMARY; font-size s(SIZE_BODY)=12px (qss.py:28-32). PANEL = host pane RGB via theme_source.host_surface_rgb() else fallback (42,42,42) = #2A2A2A (tokens.py:113, :160-166, :179).",
+    "padding": "0 (band role)",
+    "type_tokens": [
+     "SIZE_BODY = 12 (tokens.py:317)",
+     "TEXT_PRIMARY = solved grey at contrast 7.0 vs worst-case surface (tokens.py:118-122, :123-158) - resolved hex UNVERIFIED (needs running _grey_for_contrast)"
+    ]
+   },
+   {
+    "name": "Rail / header (DsHeader) - shell with rhythm_edge='top'",
+    "order": 1,
+    "height_rule": "Content height: two `stack` rows (identity, state) plus a third left-aligned Stop line that is hidden at rest. Layout margins from rhythm _MARGINS['shell'] = (GUTTER 30, SPACE_SM 8, GUTTER 30, SPACE_SM 8) with the TOP replaced by gap(SPACE_MD 16, density) = airy 24 / standard 16 / tight 12 (rhythm.py:42, :50 `_EDGE_TOP = {\"shell\": tokens.SPACE_MD}`, :81-86; synapse_panel.py:1103 rhythm_role='shell', :1107 rhythm_edge='top'). Inter-row gap = shell base 16 (std) / 24 / 12 (PANEL_RHYTHM_SPEC.md:124; ROLE_GAPS['shell'] itself UNVERIFIED - only rhythm.py:35 'band':0 was read). QSS adds margin-bottom SPACE_SM 8px (airy gap(8,'airy')=12 / tight 6) qss.py:344-346, and border-bottom 1px solid HAIR qss.py:37-40.",
+    "contents": [
+     "Row 1 identity (`ident` DsSection, rhythm_role='stack' -> gap 4/6/3, margins 0; synapse_panel.py:931-933): c.MarkDot('disconnected', diameter=16) :938 | addSpacing(WORDMARK_GAP=5) :986 (tokens.py:497) | wordmark 'SYNAPSE' c.label role='body' + property role='title', font tracked_font('WORDMARK', 15, weight=600) = 15px, weight 600, TRACKING_EM WORDMARK 0.16em (=2.4px at 15px), min width = sizeHint (never elides) :965-973 | stretch | `_author_lbl` QPushButton#DsAuthor flat, pointing-hand, tooltip 'Engine & model - click to switch', font tracked_font('DATA', SIZE_SMALL=11, mono=True) = Space Mono 11px, 0.03em; text from _refresh_engine_selector (format UNVERIFIED); click -> _open_author_menu :980-988, :990",
+     "Row 2 state (`row` DsSection rhythm_role='stack' :997-999): `_header_status` c.label(t.STATUS['disconnected'][2] = 'Not connected', role='caption' = sans 11px 400) + property role='label', min width = widest of _state_phrases() measured in its own font :1005-1011 | stretch | 'Connect' c.Button(variant='primary') :1035 | addSpacing(scaled(SPACE_12)) = 12px at scale 1 :1049 | 'Doctor' c.Button(variant='ghost') tone='doctor', accessibleName 'Check SYNAPSE' :1041-1044 | overflow c.Button(variant='ghost') icon _tools_icon(max(18, scaled 18)) , accessibleName 'Tools and settings', tooltip 'Tools and settings \u2014 commands, saved suggestions, engine, health and help', fixedWidth max(SPACE_32=32, scaled 32) = 32 :1012-1019, :1118",
+     "Row 3: `_stop_btn` c.Button('Stop', variant='danger') objectName 'DsStop', minWidth SPACE_48 = 48, setEnabled(False) + setVisible(False) at rest, added AlignLeft on its own line :1020-1029, :1053-1055",
+     "Hidden owners constructed in the rail but in NO layout and setVisible(False): `_meter_lbl` DsMeter ('' until real usage; DATA 11px mono), `_palette_hint` DsKHint, `_foot_dot` StatusDot, `_foot_label` 'Not connected', `_help_btn` '?' (tooltip 'Open docs/studio/UPGRADE.md'), `_corpus_btn` 'Corpus' :1063-1101"
+    ],
+    "source": "synapse_panel.py:895-1121 _build_rail; region map's :608/:622 col.setContentsMargins(t.GUTTER,16,t.GUTTER,14) is STALE (PANEL_REGION_MAP.md:171) - the current code sets no imperative margins, the shell role owns them; at runtime rhythm.apply wins (PANEL_RHYTHM_SPEC.md:128-151 confirms :1107).",
+    "background_token": "QWidget#DsHeader { background: PANEL; border-bottom: 1px solid HAIR } qss.py:37-40. HAIR = step(+6) of host grey = #303030 on the (42,42,42) fallback (tokens.py:136-140, :184).",
+    "padding": "(30, 24|16|12 by density, 30, 8) via rhythm; no QSS padding on the shell",
+    "type_tokens": [
+     "Wordmark: FONT_SANS 'Space Grotesk' (tokens.py:304; family applied by fontload.tracked_font - UNVERIFIED which family tracked_font picks when mono=False, fontload.py:158-187 only partially read), 15px literal (synapse_panel.py:967), weight 600, TRACKING_EM['WORDMARK']=0.16 (tokens.py:399)",
+     "DsAuthor: FONT_MONO 'Space Mono' (tokens.py:300), SIZE_SMALL 11, TRACKING_EM['DATA']=0.03 (tokens.py:401); QSS qss.py:150-162: transparent, min-height SPACE_LG 24px, padding 4px 4px, color TEXT_SECONDARY; [liveness=live] CONIFEROUS #6E8F72, [working] WARM #FF7759, [off] TEXT_DISABLED; :hover TEXT_BRIGHT + underline",
+     "State sentence: TYPE_ROLES['caption'] = (FONT_SANS_CSS, SIZE_SMALL 11, WEIGHT_REGULAR 400, 0.0) tokens.py:378; colour role for property role='label' UNVERIFIED (role-label QSS block at qss.py:290+ not read)",
+     "Connect/Doctor/overflow/Corpus/?: ALL renamed objectName 'DsVerb' + tracked_font('LABEL', 11, mono=True) = Space Mono 11px, TRACKING_EM['LABEL']=0.15 (synapse_panel.py:1112-1115). QSS QPushButton#DsVerb qss.py:182-199: transparent, border none, padding 2px 0, color TEXT_SECONDARY, font-size s(SIZE_SMALL)=11px; :hover TEXT_ACCENT=SIGNAL #8FB3D9; [tone=doctor] HOUDINI_TAB_YELLOW = host PaneTabMarker RGB else (185,134,32) = #B98620, hover +24/channel = #D19E38 (tokens.py:255-257); plus margin-top/bottom SPACE_SM 8 (airy 12 / tight 6) qss.py:339-341. CONSEQUENCE: Connect's variant='primary' only matches `QPushButton#DsButton[variant=\"primary\"]` (qss.py:55-59), which no longer applies after the rename, so Connect renders as a flat TEXT_SECONDARY verb, NOT the SIGNAL_DEEP #627A93 fill that tokens.py:239's comment ('filled-action blue: Connect / Corpus / SEND') describes. Code wins at runtime.",
+     "DsStop QSS qss.py:103-111: background HOT_SOFT #D08A57, color TEXT_ON_ACCENT #0F1F2B, border none, radius RADIUS_SM 4, padding 8px 16px, font-size s(SIZE_UI)=12px, weight 600; :hover WARM #FF7759; :pressed WARM_PRESS #E5634A; :disabled DISABLED_BG(=SURFACE)/TEXT_DISABLED"
+    ]
+   },
+   {
+    "name": "Context ribbon - shell",
+    "order": 2,
+    "height_rule": "Content height of one QHBoxLayout; rhythm shell margins (30,8,30,8), gap 16/24/12 (synapse_panel.py:1287-1288; rhythm.py:42). Region map's :935 `(t.GUTTER,t.SPACE_SM,t.SPACE_MD,t.SPACE_SM)` is STALE (PANEL_REGION_MAP.md:172) - current code sets no imperative margins.",
+    "contents": [
+     "`_ctx_label` objectName 'DsContextLabel', c.label('', role='label') = TYPE_ROLES['label'] (FONT_SANS_CSS, SIZE_UI 12, WEIGHT_MEDIUM 500, 0.5px) tokens.py:375; boot text '' (absence, BC-4); sizePolicy Ignored/Preferred; stretch 1 (synapse_panel.py:1297-1300)",
+     "Pill 'CHAT' c.Pill, tracked_font('LABEL', 11, mono=True); click -> _set_face('direct') :1308-1313",
+     "Pill 'TOKEN' c.Pill, same font; click -> _show_token_face :1318-1324",
+     "NOTE: the DsTabRow profile strip (region map row 1, synapse_panel.py:992-995 lay margins (GUTTER,24,GUTTER,0) spacing 28) is RETIRED - BC-5 folded it, J4 retired the profile switch (synapse_panel.py:1301-1305, :751-757; qss.py:116-118 comment)."
+    ],
+    "source": "synapse_panel.py:1283-1326 _build_context_ribbon",
+    "background_token": "QWidget#DsSection { background: PANEL } qss.py:33",
+    "padding": "(30,8,30,8) via rhythm shell",
+    "type_tokens": [
+     "DsPill QSS qss.py:119-128: background none, color TEXT_TERTIARY, border none, border-bottom 2px solid transparent, radius 0, padding 0 0 12px 0 (SPACE_12); :hover TEXT_BRIGHT; [active=true] TEXT_BRIGHT + border-bottom 2px solid SIGNAL #8FB3D9; family/size/tracking on the QFont (Space Mono 11px 0.15em)"
+    ]
+   },
+   {
+    "name": "Faces stack (QStackedWidget `_faces`)",
+    "order": 3,
+    "height_rule": "Stretch 1 in root (synapse_panel.py:748 / manifest); sizePolicy Expanding/Expanding; setMinimumHeight(160) (:1411-1421). Page 0 = direct/CHAT (resting, :749), page 1 = work, page 2 = token (_FACE_INDEX :1370).",
+    "contents": [
+     "page 0 direct face",
+     "page 1 work face",
+     "page 2 token face"
+    ],
+    "source": "synapse_panel.py:1403-1423 _build_faces",
+    "background_token": "inherits DsRoot atmosphere; pages are DsSection PANEL",
+    "padding": "none (QStackedWidget)",
+    "type_tokens": []
+   },
+   {
+    "name": "Direct face (CHAT) - shell",
+    "order": 4,
+    "height_rule": "Fills the faces stack; QVBoxLayout with rhythm shell margins (30,8,30,8), gap 16/24/12 - the gap is 'the beat between the transcript and the composer' (synapse_panel.py:1425-1434). Region map's :1104 `(t.GUTTER,24,t.GUTTER,24)` spacing 0 is STALE (PANEL_REGION_MAP.md:174).",
+    "contents": [
+     "converse QStackedWidget (stretch 1): page 0 ChatDisplay, page 1 Build-HDA form (:1435, :1327-1367)",
+     "`_consent_slot` DsSection rhythm_role='card' (gap 16/24/12, margins 0), HIDDEN while empty; holds the turn receipt and, when the gate lends them (set_card_host BC-6b), the consent cards (:1442-1448)",
+     "RecallCard (synapse.panel.recall_card) - hidden at build (:1449-1452)",
+     "LookdevSuggestionCard (:1453-1459)",
+     "composer `_build_input()` (:1460)"
+    ],
+    "source": "synapse_panel.py:1425-1461 _build_direct_face; region map row 3 / rhythm spec \u00a74 'shell'",
+    "background_token": "DsSection PANEL (qss.py:33)",
+    "padding": "(30,8,30,8) via rhythm shell",
+    "type_tokens": []
+   },
+   {
+    "name": "Transcript (ChatDisplay, objectName 'DsChatTranscript', rhythm_role='group')",
+    "order": 5,
+    "height_rule": "Stretch 1 inside the direct face; setMinimumHeight(24) (:1350); converse stack sizePolicy Expanding/Ignored + minHeight 24 (:1355-1360). Reading measure: ~90 chars/line, clamped 460..1100 px (chat_display.py:283-285); symmetric viewport margins when there is slack (:339-347).",
+    "contents": [
+     "system lines (centered italic)",
+     "user turns",
+     "SYNAPSE turns",
+     "typing indicator while waiting",
+     "no timestamp dividers (format_timestamp_divider returns '' message_formatter.py:458-461)"
+    ],
+    "source": "chat_display.py:100-131 __init__ (:120 setObjectName('DsChatTranscript'), :122 rhythm_role='group'); synapse_panel.py:1327-1367 _build_converse",
+    "background_token": "QTextBrowser { background: GROUND; border: none } qss.py:34. GROUND = step(-11) of host grey = #1F1F1F on the (42,42,42) fallback (tokens.py:136-140, :177)",
+    "padding": "HTML-owned: turn table margin 24px 0 (SPACE_LG, group head) / 8px 0 (SPACE_SM, grouped) message_formatter.py:68-69, :402-403; _BUBBLE_MARGIN_Y = SPACE_XS//2 = 2 (chat_display.py:69) used only by the typing indicator; +1.0px absolute leading per block (CHAT_LEADING_PT 0.75 * 96/72, tokens.py:522-534; chat_display.py:477-497); _apply_turn_rhythm sets block top margin = gap(ROLE_GAPS[role], density) for blocks carrying UserProperty 'group'/'row' (chat_display.py:174-191; which blocks carry it UNVERIFIED)",
+    "type_tokens": [
+     "_BODY_PX = SIZE_BODY 12; _SMALL_PX = SIZE_SMALL 11; _LABEL_PX = SIZE_LABEL = SIZE_MICRO 10 (message_formatter.py:52-54; tokens.py:314-322)",
+     "_TEXT = TEXT_PRIMARY (agent body); _TEXT_BRIGHT = TEXT_BRIGHT (human body); _TEXT_DIM = TEXT_TERTIARY (system/timestamps) message_formatter.py:35-37",
+     "_SPEAKER = {YOU: SIGNAL #8FB3D9, SYNAPSE: CONIFEROUS #6E8F72} message_formatter.py:46 (CONIFEROUS tokens.py:269)",
+     "content font scale steps (1.0, 1.15, 1.25, 1.4, 1.6) tokens.py:418 - scales transcript + prompt only; chrome frozen (tokens.py:410-416 comment)"
+    ]
+   },
+   {
+    "name": "Consent slot (card collection) + turn receipt",
+    "order": 6,
+    "height_rule": "Hidden unless a live child exists (_sync_consent_slot synapse_panel.py:1481-1498); rhythm_role='card' -> inter-card gap 16/24/12, margins 0 (PANEL_RHYTHM_SPEC.md:120).",
+    "contents": [
+     "turn receipt `stack` row: DsBadge tag text '%d CHANGE%s' -> '1 CHANGE' / '3 CHANGES' (:1502) | stretch | DsVerb '\u2190 REVERT' (renders '\u2190 REVERT') -> _on_revert (:1463-1479)",
+     "consent cards (_ProposalCard) when GateWidget lends its host here (BC-6b)"
+    ],
+    "source": "synapse_panel.py:1442-1448, :1463-1513",
+    "background_token": "DsSection PANEL",
+    "padding": "0 (card collection); tag leaf padding via QSS",
+    "type_tokens": [
+     "Tag QSS qss.py:414-425: color TEXT_SECONDARY, background SURFACE, font-size s(SIZE_BODY)=12px, weight 500, border none, radius RADIUS_ROUND 999, margin-left SPACE_MD 16 (airy 24 / tight 12 qss.py:476-478), leaf padding SPACE_12//2=6px x (SPACE_SM+SPACE_XS//2)=10px; [status=BLOCKED] HOT_SOFT #D08A57; family mono via fontload.apply_family (:1473) and rhythm _apply_type AllUppercase + tracking DATA*2 = 0.06em (rhythm.py:58-72)"
+    ]
+   },
+   {
+    "name": "Composer (_build_input) - stack",
+    "order": 7,
+    "height_rule": "rhythm_role='stack' -> gap 4/6/3, margins 0 (synapse_panel.py:2467-2471). Input: setFixedHeight(64) at construction (floor 64, max 600), settles once from the persisted grip-drag or centred from the pane at show (_settle_composer_height :1850), autosize = document height + 18 clamped to [user_h, max_h] then to the pane cap (:286-300, _fit_composer_to_pane :1878). Grip on top; khint wraps.",
+    "contents": [
+     "_InputResizeGrip (objectName 'DsGrip' :385) drag handle at the top (:2481)",
+     "row: `_input` _GrowingInput#DsInput (stretch 1) + attach c.Button('', ghost) icon 36x36, fixedWidth 52, tooltip 'Attach image / file as context' (:2482-2490, :2502-2503)",
+     "'SEND' QPushButton#DsSend embedded bottom-right INSIDE the input via attach_send; input viewport bottom margin = send sizeHint height + 12 (:2493-2500, :345)",
+     "`_khint` c.label('Enter sends \u00b7 Shift+Enter adds a line', role='label') tracked_font('DATA', 11, mono=True), wordWrap, AlignCenter (:2508-2513)",
+     "_build_shortcut_footer() ('Center the three local links with the same light type as Ready' :2540-2541) holding ghost buttons 'Commands' (tooltip 'Browse commands \u00b7 / on empty input \u00b7 Ctrl+K'), 'Recipes' (tooltip 'Save, tag and reuse local Solaris networks'), 'Events' (tooltip 'Local work and connection updates') (:2514-2522; footer layout body not read)",
+     "`_connection_status` c.Button('Connect models', ghost) -> _open_connections (:2530-2532)",
+     "`_session_permission_btn` c.Button('Session \u00b7 Revoke', ghost), hidden by default (:2533-2537)"
+    ],
+    "source": "synapse_panel.py:2467-2538 _build_input; _GrowingInput :262-300; DsSend QSS qss.py:281-288; DsInput QSS qss.py:269-275. Region map's :1832-1845 (col margins 0, spacing SPACE_XS, row spacing SPACE_SM) is STALE - the stack role now owns it.",
+    "background_token": "DsSection PANEL; input well FIELD_INSET = step(-11) = #1F1F1F on fallback (tokens.py:138, :178)",
+    "padding": "QTextEdit#DsInput padding 16px 15px (SPACE_MD x 15px literal) qss.py:272; DsSend padding 9px 15px qss.py:284",
+    "type_tokens": [
+     "DsInput QSS qss.py:269-275: background FIELD_INSET, color TEXT_PRIMARY, border 1px solid BORDER, radius RADIUS_SM 4, font-size s(SIZE_UI)=12px (then _set_prompt_font applies the content font scale :2475), selection SIGNAL_TINT_STRONG rgba(143,179,217,0.22); :focus border SIGNAL",
+     "DsSend: tracked_font('SEND', SIZE_SMALL 11, weight=500) -> 11px, 500, TRACKING_EM['SEND']=0.08; QSS background SIGNAL_DEEP #627A93, color TEXT_ON_ACCENT #0F1F2B, border none, radius 4; :hover SIGNAL #8FB3D9; :pressed SIGNAL_PRESS #7398BE; :disabled DISABLED_BG/TEXT_DISABLED (qss.py:281-288)",
+     "khint: role='label' colour (role-label QSS not read) with DATA mono 11px 0.03em"
+    ]
+   },
+   {
+    "name": "Work face (faces page 1) - FaceWork shell + done sub-state",
+    "order": 8,
+    "height_rule": "Page = DsSection (rhythm_role='group' from _section :705 -> gap 16, margins 0) holding a QStackedWidget: sub-state 0 FaceWork (rhythm_role='shell' -> (30,8,30,8), gap 16; face_work.py:178-187), sub-state 1 FaceReview (not read) or fallback GateWidget (synapse_panel.py:1516-1575). Region map's :1124-1136 / :1168 margins are STALE.",
+    "contents": [
+     "FaceWork head row (setSpacing SPACE_SM 8, rhythm-exempt :189-190): BouncingToy + `_status` c.label('Standing by', role='caption') sweep 'work_status' (:194-198)",
+     "DsCookBar QProgressBar fixedHeight 3, range 0..1 (:206-212)",
+     "`_cook_lbl` 'waiting for work' tracked_font('DATA', 10, mono) sweep 'work_note' (:214-217)",
+     "`_plan_title` 'PLAN' role='label' + tracked_font('EYEBROW', 10, mono) (EYEBROW 0.22em) (:220-222)",
+     "`_plan_box` QVBoxLayout spacing 2, up to _MAX_STEPS=6 rows (:224-226, :175)",
+     "HealthInfographic embedded (:230-232)",
+     "Done sub-state: FaceReview (UNVERIFIED contents) exposing .gate = GateWidget"
+    ],
+    "source": "face_work.py:171-235; synapse_panel.py:1516-1575; qss.py:743-757 (work_status TEXT_SECONDARY, work_note TEXT_TERTIARY)",
+    "background_token": "DsSection PANEL",
+    "padding": "(30,8,30,8) via shell on FaceWork",
+    "type_tokens": [
+     "caption role sans 11px 400 (tokens.py:378)",
+     "10px literals on cookline/PLAN (face_work.py:216, :221) = FONT_FLOOR_PX 10 (tokens.py:345)"
+    ]
+   },
+   {
+    "name": "Gate widget + proposal card (inside Work done sub-state; cards may be lent to the consent slot)",
+    "order": 9,
+    "height_rule": "GateWidget rhythm_role='stack'; header QPushButton min-height SPACE_LG 24; body hidden until toggled; proposals container maxHeight 200, rhythm_role='card'; integrity row stack (gate_widget.py:430-480). _ProposalCard = c.Card (DsCard) rhythm_role='band' (bands touch, gap 0) with DsCardHeader / DsCardBody / DsCardFooter bands each rhythm_role='stack' (gate_widget.py:159-166, :196-198, :212-245). Region map's gate_widget.py:168-173/:426-470 margins are STALE - roles own them now.",
+    "contents": [
+     "Gate header button: text from _update_header_text (UNVERIFIED), mono, QSS gate_header: transparent, color SLATE #555555, text-align left, min-height 24px, padding 4px 8px, font-size SIZE_LABEL 10px; :hover SIGNAL (qss.py:664-667)",
+     "Card header band: level tag uppercase ('INFORM'/'REVIEW'/'APPROVE'/'CRITICAL'; CRITICAL gets status=BLOCKED -> HOT_SOFT) + operation (mono DATA 11px, body colour) + agent_id (mono DATA 11px caption) (gate_widget.py:213-226)",
+     "Card body: description sans body, wordWrap; CRITICAL adds 'Arbitrary code execution'; body hidden if both empty (:229-241)",
+     "Card footer (docstring :175-185; code past :245 NOT read): countdown mono left; verbs right - 'REJECT' tone=hot, 'APPROVE' tone=accent; REVIEW shows '<- REVERT' with no tone; decisions read as a footer tag 'APPROVED' / 'REJECTED' (BLOCKED) / 'NOT RECORDED' (BLOCKED) / 'UNDO SENT'",
+     "Integrity row: '\u25cf' dot QLabel (gate_fidelity_dot font-size SIZE_UI*7//6 = 14px) + fidelity label mono (gate_fidelity_label SILVER #999999 10px) born UNKNOWN (:466-480; qss.py:674-694)"
+    ],
+    "source": "gate_widget.py:150-245, :415-480; qss.py:245-251, :429-450, :657-694; GATE_LEVELS tokens.py:623-628 (INFORM SIGNAL 'Heads up' 0s / REVIEW WARN 'Quick review' 0s / APPROVE FIRE 'Approve?' 120s / CRITICAL ERROR 'Confirm' 300s)",
+    "background_token": "DsCard: background SURFACE (step +12 = #363636 fallback), border 1px BORDER (also step +12), radius RADIUS_LG 12 at qss.py:245-248 then re-declared RADIUS_CARD 10 at qss.py:429-432 (later rule wins -> 10 at runtime); gate body/integrity GROUND with 1px GRAPHITE #2A2A2A border, radius 4 (qss.py:668-673)",
+    "padding": "DsCardHeader min/max-height SPACE_XL-1 = 39px + border-bottom 1px BORDER, padding 0 16px; DsCardBody padding 16px + border-bottom 1px; DsCardFooter min/max-height SPACE_XL 40px, padding 0 16px (qss.py:433-448). SPEC DIFF: PANEL_RHYTHM_SPEC.md:189 says 'header band 40, body padding 16, footer band 40' - code header is 39 content + 1px border; QSS wins at runtime.",
+    "type_tokens": [
+     "DsCard font-size s(SIZE_BODY) 12px weight 400 (qss.py:429-432)",
+     "tag rule as in consent slot"
+    ]
+   },
+   {
+    "name": "Token face (faces page 2)",
+    "order": 10,
+    "height_rule": "NOT re-read this pass. PANEL_REGION_MAP.md:26 records face_token.py:324-325 outer margins (0,0,0,0) spacing 0; :337-338 body margins (GUTTER,20,GUTTER,20) spacing 18; legend :416-417 margins 0 gap 16; grid :447-449 margins 0, h-gap 18, v-gap 6. Current runtime values UNVERIFIED (the file may have migrated to roles like the others).",
+    "contents": [
+     "TokenField DsSection; composition / cache / engine key-value tables (region map row 6)"
+    ],
+    "source": "PANEL_REGION_MAP.md:26, :158-160 (not confirmed against current face_token.py)",
+    "background_token": "UNVERIFIED",
+    "padding": "UNVERIFIED",
+    "type_tokens": []
+   }
+  ],
+  "header": {
+   "contents": [
+    "Row 1: [MarkDot 16px, state 'disconnected' at boot] [5px WORDMARK_GAP] ['SYNAPSE' 15px/600/0.16em, TEXT_BRIGHT per comment :963 (colour rule not read)] [stretch] [DsAuthor engine+model token, Space Mono 11px 0.03em, TEXT_SECONDARY / liveness colours]",
+    "Row 2: ['Not connected' state sentence, sans 11px] [stretch] ['Connect'] [12px] ['Doctor' in HOUDINI_TAB_YELLOW] [tools-icon overflow 32px wide]",
+    "Row 3 (working only, AlignLeft): ['Stop' HOT_SOFT fill]",
+    "Retired from the chrome and reachable only via the overflow: token meter, \u2318K palette hint, connection dot/label, 'Corpus', '?' Help (synapse_panel.py:914-921, :1057-1101)"
+   ],
+   "engine_pill": "There is no separate engine pill bar any more ('v9: the ENGINE pill bar left the chrome \u2014 the rail author token is the engine+model click target now' synapse_panel.py:717-718). The pill IS `_author_lbl` QPushButton#DsAuthor (:980-988): flat, Space Mono 11px DATA tracking, never elides (min width re-floored on every model switch, :1243), tooltip 'Engine & model - click to switch', QSS colour TEXT_SECONDARY, [liveness=live] CONIFEROUS #6E8F72, [liveness=working] WARM #FF7759, [liveness=off] TEXT_DISABLED, :hover TEXT_BRIGHT underline (qss.py:150-162). Click opens a QMenu of provider model rows ('%s   %s' % (label, model_id) :1800) plus 'Configure\u2026' (:1709, :1807), 'Refresh Ollama models' (:1720) and 'Connect models\u2026' (:1733). Token text format (_author_token) UNVERIFIED.",
+   "source": "synapse_panel.py:895-1121 _build_rail; qss.py:37-40 (#DsHeader), :150-162 (#DsAuthor), :182-199 (#DsVerb), :103-111 (#DsStop), :344-346 (header margin-bottom)"
+  },
+  "transcript_turn": {
+   "user_turn": "At the head of a group (sender changed, or >_GROUP_WINDOW_S=60 s since the last message, chat_display.py:65, :223): a label line rendered as `\u25cf YOU  9:41 AM` \u2014 dot glyph '\u25cf' and the name 'YOU' in SIGNAL #8FB3D9, mono (_MONO \u2014 the exact binding was not read; FONT_MONO_CSS = '\"Space Mono\", \"JetBrains Mono\", \"Consolas\", \"monospace\"' tokens.py:302), font-size _scale(11)=11px, letter-spacing 1.2px, margin-bottom 3px; timestamp after two nbsp in TEXT_TERTIARY at max(11-1, 8)=10px, formatted 'h:mm AM' (chat_display.py:72-77; message_formatter.py:354-386). Then the escaped text (newlines -> <br>) in TEXT_BRIGHT at 12px inside a 3-cell table: 2px cell filled SIGNAL (the speaker rule) | 14px empty cell | text cell (line-height:150% written but inert per :399-401); table margin 24px 0 (SPACE_LG) at a group head, 8px 0 (SPACE_SM) when grouped with no label (message_formatter.py:394-418, :68-69). +1.0px absolute leading merged onto the new blocks (chat_display.py:477-497). Left-aligned, no bubble \u2014 the class docstring's 'User messages right-aligned with subtle background' (chat_display.py:83) is stale.",
+   "assistant_turn": "Same anatomy with the rule and label in CONIFEROUS #6E8F72 and the name 'SYNAPSE': `\u25cf SYNAPSE  9:41 AM` label (11px mono, 1.2px tracking) then the body in TEXT_PRIMARY at 12px behind a 2px CONIFEROUS rule + 14px gap (message_formatter.py:421-446). Body comes from _format_response_ex: an optional status dot prefix, paragraphs `<p style=\"margin:6px 0\">`, lists `margin:4px 0; padding-left:20px`, headings `margin:10px 0 4px`, code blocks `padding:10px; margin:6px 0` in mono, inline code mono, node-path chips with a '\u25aa' mark (:107-165, :244-343). Secondary line: when `signed` is given and the turn is a group head, a quiet 'signed {model}' line in TEXT_TERTIARY 11px, letter-spacing 1px, margin-top 2px sits UNDER the body inside the same ruled cell \u2014 unless the first node chip already carries '\u00b7 signed {model}' (then no standalone line) (:439-446, :142-166). Group margin 24px 0 at head / 8px 0 grouped.",
+   "tool_status_line": "Inside the transcript the only status line is the typing indicator while a reply is pending: `SYNAPSE is thinking.` with 1-3 dots cycling every 500 ms \u2014 'SYNAPSE' in CONIFEROUS, mono, 11px, letter-spacing 1px, weight 600; 'is thinking' italic TEXT_SECONDARY 11px; dots CONIFEROUS; wrapper div margin 2px 0 (_BUBBLE_MARGIN_Y), padding 6px 10px (chat_display.py:709-731, :112-115). Per-tool status text is NOT in the transcript: it goes to FaceWork._status on the Work face ('Standing by' at rest, sans 11px, work_status TEXT_SECONDARY; face_work.py:194-198) and the rail's one state sentence cycles the STATUS phrases 'Ready' / 'Working on it' / 'Standing by' / 'Worth a look' / 'We hit a snag' / 'Not connected' plus 'Stopping\u2026' (tokens.py:613-620; synapse_panel.py:159; _DONE_PHRASE text UNVERIFIED). System interjections (e.g. 'Accepted \u2014 keeping the result.' :2281, 'Revert requested. Waiting for the task result\u2026' :2322, 'Still working on the last task. Stop it first, or wait.' :3101) render centered, italic, TEXT_TERTIARY 11px, margin 6px 0 (message_formatter.py:449-455).",
+   "receipt_line": "Not a transcript line. After a quiet turn whose evidence holds a successful mutator, _on_done shows the turn receipt in the consent slot BETWEEN the transcript and the composer (direct-face shell gap 16 above/below): a `stack` row = DsBadge tag reading '1 CHANGE' or 'N CHANGES' (mono, uppercase, TEXT_SECONDARY on SURFACE, 12px/500, radius 999, padding 6px 10px, margin-left 16) | stretch | DsVerb '\u2190 REVERT' (Space Mono 11px 0.15em, TEXT_SECONDARY, hover SIGNAL). Hidden at the top of the next _send (synapse_panel.py:1463-1513; qss.py:414-425, :182-187).",
+   "gate_card": "A DsCard (SURFACE fill, 1px BORDER, radius 10 at runtime \u2014 qss.py:429 overrides the :245 RADIUS_LG 12) with three touching bands: HEADER (39px + 1px hairline, 0 16px padding): level tag e.g. 'APPROVE' (uppercase mono tag; 'CRITICAL' is the one BLOCKED -> HOT_SOFT #D08A57), the operation name in mono DATA 11px, the agent id in mono DATA 11px caption right; BODY (16px padding + hairline): the description in sans 12px body, CRITICAL adds 'Arbitrary code execution'; FOOTER (40px, 0 16px): countdown mono left (timed levels: APPROVE 120 s, CRITICAL 300 s), verbs right 'REJECT' (tone=hot HOT_SOFT) and 'APPROVE' (tone=accent SIGNAL); a REVIEW card shows only '<- REVERT'. After a decision the footer-left tag reads 'APPROVED' / 'REJECTED' / 'NOT RECORDED' / 'UNDO SENT' and the verbs hide (gate_widget.py:170-245 \u2014 footer/decision labels come from the docstring; the footer code past :245 was not read). Cards live in the GateWidget's proposals container (maxHeight 200) on the Work face, or are lent into the direct face's consent slot (BC-6b)."
+  },
+  "composer": {
+   "height_rule": "Input is a QTextEdit#DsInput with setFixedHeight: floor 64 / max 600 at construction (synapse_panel.py:286-296); the height settles exactly once (persisted grip drag, else centred from the pane's real size at show \u2014 L5-22, :279-292, _settle_composer_height :1850) and auto-grows to document height + 18 clamped to [user_h, 600] then to the pane-imposed cap (_autosize :298-300, _fit_composer_to_pane :1878-1919). Grip-drag persists via height_committed (:2480). Viewport bottom margin reserves SEND height + 12 (:345). Composer stack gap 4/6/3, margins 0 (:2470).",
+   "placeholder": "Ask SYNAPSE\u2026 \u00b7 / commands",
+   "quick_actions": [
+    "(QuickActionPills is UNSHIPPED/exempt \u2014 PANEL_RHYTHM_SPEC.md:96-98, tests/test_panel_alt_entry_unshipped.py)",
+    "khint label: 'Enter sends \u00b7 Shift+Enter adds a line' (centered, DATA mono 11px)",
+    "shortcut footer ghost buttons: 'Commands' \u00b7 'Recipes' \u00b7 'Events' (:2514-2522; footer layout body at :2540+ not read)",
+    "'Connect models' ghost button (:2530)",
+    "'Session \u00b7 Revoke' ghost button, hidden by default (:2533-2536)",
+    "attach button (icon only, 52px wide, tooltip 'Attach image / file as context') right of the input (:2484-2490)"
+   ],
+   "send_control": "'SEND' \u2014 QPushButton#DsSend embedded bottom-right INSIDE the input (attach_send, :2493-2500): tracked_font('SEND', 11, weight=500) = 11px / 500 / 0.08em; QSS background SIGNAL_DEEP #627A93, color TEXT_ON_ACCENT #0F1F2B, border none, radius 4, padding 9px 15px; :hover SIGNAL #8FB3D9; :pressed SIGNAL_PRESS #7398BE; :disabled DISABLED_BG(=SURFACE)/TEXT_DISABLED (qss.py:281-288). Enter submits, Shift+Enter inserts a newline, '/' on an empty prompt opens the command palette (:263, :268, :2477-2478).",
+   "source": "synapse_panel.py:262-300 _GrowingInput (placeholder :280), :2467-2538 _build_input; qss.py:269-275 (#DsInput: FIELD_INSET well, TEXT_PRIMARY, 1px BORDER, radius 4, padding 16px 15px, font-size 12px, focus border SIGNAL), :281-288 (#DsSend)"
+  },
+  "footer_rail": {
+   "controls_in_order": [
+    "NOTE: the Connect/Doctor/Stop rail is the HEADER's second and third rows at the TOP of the panel, not a bottom footer (synapse_panel.py:895-921 docstring, :997-1055).",
+    "'Not connected' \u2014 state sentence (STATUS['disconnected'][2]), sans caption 11px, min width = widest STATUS phrase, never elided (:1005-1011)",
+    "[stretch]",
+    "'Connect' \u2014 c.Button variant='primary' renamed DsVerb -> flat mono 11px TEXT_SECONDARY (tooltip 'Start the Synapse bridge server (port 9999) so external / MCP tools can reach Houdini. Safe to click anytime - idempotent.') (:1035-1040, :1112-1115)",
+    "12px spacer (addSpacing(scaled(SPACE_12))) (:1049)",
+    "'Doctor' \u2014 DsVerb tone=doctor HOUDINI_TAB_YELLOW #B98620 (host PaneTabMarker if readable), tooltip 'Run synapse_doctor locally \u00b7 no model request or scene changes' (:1041-1045)",
+    "[tools icon] overflow \u2014 DsVerb, 32px fixed width, 18px icon, accessible name 'Tools and settings' (:1012-1019, :1118)",
+    "next line, AlignLeft: 'Stop' \u2014 DsStop, min width 48, HOT_SOFT fill, hidden + disabled at rest (:1020-1029, :1055)"
+   ],
+   "overflow_menu": [
+    "Copy conversation",
+    "Revoke session model permissions",
+    "Build HDA\u2026",
+    "Saved lookdev suggestion\u2026",
+    "Palette   {bound key}  (or 'Palette' when the hint is empty)",
+    "Ground the corpus  (checkable; checked when the corpus button text ends with '\u2713')",
+    "\u2014 separator \u2014",
+    "Engine \u25b8 (submenu; one checkable action per PROVIDER_LABELS entry)",
+    "Health \u25b8 (submenu; disabled facts '{label}   {value}' from health_strip.build_cells)",
+    "\u2014 separator \u2014",
+    "Larger text",
+    "Default text",
+    "Help",
+    "\u2014 separator \u2014 (only if DirectToolCall available)",
+    "Cancel cook  \u2014  {node}  (or 'Cancel cook'; enabled only with a node and while busy)",
+    "\u2026further halt items past synapse_panel.py:2770 NOT read (docstring :2757-2760: three halt verbs)"
+   ],
+   "states": [
+    "Stop: setEnabled(False)+setVisible(False) at rest; _regate_stop shows/enables it while working (:1027-1029, :1120)",
+    "Connect: comment says disabled while work is in flight via _set_busy (:1033-1034) \u2014 code not read",
+    "DsAuthor liveness property: 'live' CONIFEROUS / 'working' WARM / 'off' TEXT_DISABLED (qss.py:157-159)",
+    "MarkDot: 'disconnected' resting state at boot (:938); carries working->done per :1525-1526 comment",
+    "State sentence phrases: 'Ready' (connected, GROW) / 'Working on it' (working, FIRE) / 'Standing by' (idle, SIGNAL) / 'Worth a look' (warning, WARN) / 'We hit a snag' (error, ERROR) / 'Not connected' (disconnected, SLATE) (tokens.py:613-620) + 'Stopping\u2026' (:159)",
+    "Overflow 'Ground the corpus' checked state mirrors hidden `_corpus_btn` text ending '\u2713' (:2718-2721)"
+   ],
+   "source": "synapse_panel.py:997-1055 (rail row 2/3), :2688-2770 _build_overflow_menu; qss.py:182-199 (#DsVerb), :103-111 (#DsStop)"
+  },
+  "empty_state": "\"Ready. What are we building?\" \u2014 appended via self._chat.append_system_message(...) in _build_converse (synapse_panel.py:1341-1343), rendered by format_system_message: centered, italic, TEXT_TERTIARY, font-size 11px, margin 6px 0 (message_formatter.py:449-455). Additionally `self._boot_note` is appended as a system message at synapse_panel.py:631 \u2014 its text was NOT read (UNVERIFIED). The context ribbon label boots as '' (absence, :1295-1297), the rail sentence reads 'Not connected', the composer placeholder reads 'Ask SYNAPSE\u2026 \u00b7 / commands', the Work face status reads 'Standing by' / 'waiting for work' / 'PLAN'.",
+  "unverified": [
+   "Resolved hex of PANEL/GROUND/FIELD_INSET/SURFACE/RAISED/BORDER/BORDER_STRONG/HAIR inside Houdini: they are host-derived (theme_source.host_surface_rgb()); the values given (#2A2A2A, #1F1F1F, #363636, #323232, #363636, #3C3C3C, #303030) are the headless fallback (42,42,42) run through step(d) \u2014 hex-letter case per _hexrgb (tokens.py:60) not read.",
+   "Resolved hex of TEXT_PRIMARY/SECONDARY/TERTIARY/BRIGHT/DISABLED: solved by _grey_for_contrast (tokens.py:94-112, not read) to ratios 7.0/4.6/3.3/9.0/2.0 against the worst-case landing surface; the 'CC\u2192AD, 80\u21926D, 6E\u21925E, E6\u2192C4' comment at tokens.py:195-199 describes the pre-seeded ramp, not necessarily the solved output.",
+   "rhythm.py ROLE_GAPS values (lines ~20-34) \u2014 only 'band': 0 (:35) and _MARGINS (:37-43) and _EDGE_TOP (:50) were read; bases for label/row/tag/card/parm_row/group/shell/stack are taken from PANEL_RHYTHM_SPEC.md:114-126, which claims a row-by-row match on 2026-09-14.",
+   "Which family fontload.tracked_font applies when mono=False, and whether it sets capitalization (fontload.py:158-187 only grepped).",
+   "components.py factories (c.Button objectName 'DsButton', c.Pill 'DsPill', c.Badge 'DsBadge', c.label colour handling, MarkDot geometry) \u2014 taken from PANEL_REGION_MAP.md:83 and qss selectors, not read.",
+   "The role-label / role-caption / role-title QSS colour block (qss.py ~290-335) \u2014 not read; so the wordmark's TEXT_BRIGHT, the state sentence's and khint's colours are from code comments only.",
+   "_author_token() text format, _DONE_PHRASE text, _update_header_text() gate header text, self._boot_note text.",
+   "_ProposalCard footer code (gate_widget.py:246+): verb labels 'REJECT'/'APPROVE'/'<- REVERT' and decision tags come from the class docstring (:170-185).",
+   "FaceReview (done sub-state) contents; face_token.py current layout (region map values from 2026-09-04 may be stale like the other files); _build_shortcut_footer layout; _InputResizeGrip (DsGrip) height; RecallCard and LookdevSuggestionCard anatomy.",
+   "Compositor/manifest ('expert') region order \u2014 assumed equal to the documented fallback order rail \u2192 ribbon \u2192 faces (synapse_panel.py:722-748 comment says expert 'is the v5.42.0 wiring exactly').",
+   "Whether any module applies PANEL_MIN_HEIGHT 420 to the panel (no consumer in synapse_panel.py); docking-minimums.yaml (380 wide / 400 tall) not read.",
+   "Overflow menu items after synapse_panel.py:2770 (the remaining halt verbs).",
+   "Runtime pixel results (font metrics, actual row heights, screenshots) \u2014 no hython/Houdini was launched, per instructions."
+  ]
+ },
+ "review": {
+  "reference": "cohere-reference.jpg (204,551 bytes, harness/design_review/2026-09-14/, untracked by .gitignore:106 `*.jpg`; NO text cites the filename \u2014 zero grep hits in harness/design_review/ + docs/ + SCAFFOLD.html) is the Pentagram Cohere case-study board, a q80 JPEG at 1480x1883 from an imgix URL, with three crop regions named in REFINEMENT-COHERE.md:11-82: the phone (light list + dark), the dark OUTPUT region (520,455,880,910), the PARAMETERS column (490,1270,840,1900); the five mechanisms extracted from it (REFINEMENT-COHERE.md:99-113) are addressability, one-winner-marked-once, disclosure-per-row, provenance-by-ground, plain-word-leads.\nMeasured with SYNAPSE's own restraint instrument (chroma = max(r,g,b)-min(r,g,b) > 24, 15-degree hue buckets, buckets under 0.5% of chromatic pixels dropped): WHOLE BOARD 0.82% chromatic / 8 meaningful buckets; phone 2.74% / 7; dark OUTPUT 4.06% / 7; PARAMETERS 5.79% / 2 buckets [18,19] = one orchid accent split across a 15-degree boundary (REFINEMENT-COHERE.md:19-24, 43-49); the board's input/output ground split is ~17:1 vs SYNAPSE GROUND->PANEL 1.148:1 (REFINEMENT-COHERE.md:135) \u2014 so the honest verdict on file is \"the reference is far less restrained than SYNAPSE on any comparable working surface; bucket count, not chromatic %, is the rule doing the work\" (REFINEMENT-COHERE.md:33-41).",
+  "rulings_open": [
+   {
+    "id": "A1",
+    "title": "Airy is specification, not binding",
+    "kind": "RATIFY",
+    "ask": "Supersede the contract lines/suites that still treat airy as a binding target, in an artifact not only in code. Head of the chain: A1 gates B2, B2 gates A2, A3 guards A1 (RULINGS-OPEN.md:27-29, 74-107).",
+    "region": "panel-wide density/profile machinery: synapse_panel.py:732-733 hard-sets profile=DEFAULT_PROFILE before the sole compose() at :737; curious.py:44 is the only 'density: airy' manifest; originator compositor.py:254"
+   },
+   {
+    "id": "A2",
+    "title": "Encode BC-5's airy deficit as a number with an owner",
+    "kind": "ASSIGN",
+    "ask": "A density-conditional assertion carrying -13px and a named owner; never delete the airy branch (J4 says tests still exercise it) (RULINGS-OPEN.md:110-128).",
+    "region": "transcript share of the 340x760 pane (p._chat.height()/H) at airy \u2014 test_bc_wave.py:627"
+   },
+   {
+    "id": "A3",
+    "title": "Bar D1 from the airy reclassification",
+    "kind": "RATIFY",
+    "ask": "In writing: D1's faces-stack red is at standard too (+54/+38/+30) and must not ride A1 into 'specification' (RULINGS-OPEN.md:131-155).",
+    "region": "faces region minimumSizeHint height vs the flat 400px contract bound (tests/test_panel_rhythm_docking.py::_bounds reads docking-minimums.yaml)"
+   },
+   {
+    "id": "A4",
+    "title": "Add the pin J4 lacks",
+    "kind": "RATIFY",
+    "ask": "Add one test asserting _select_profile has zero production callers in python/ (only a code comment guards it today). Cost: one test, zero pixels (RULINGS-OPEN.md:159-165).",
+    "region": "tests/panel/test_j4_profiles_retired.py + synapse_panel.py _select_profile/_recompose"
+   },
+   {
+    "id": "B1",
+    "title": "Doctor button yellow vs monochrome + one accent",
+    "kind": "FORK",
+    "ask": "Pick one: (1) keep the accent, retarget the pin so the monochrome rule counts tokens not buckets [author's read]; (2) drop the accent AND supersede sweep-A's count==1 pin in the same commit; (3) record as accepted conflict (RULINGS-OPEN.md:176-218).",
+    "region": "CHAT face rail: Doctor verb QPushButton#DsVerb[tone=\"doctor\"] (qss.py:198) \u2014 139px of HOUDINI_TAB_YELLOW on the resting CHAT face"
+   },
+   {
+    "id": "B2",
+    "title": "J5's edge air vs BC-5's airy share",
+    "kind": "FORK",
+    "ask": "Pick one: (1) J5 outranks BC-5 at airy -> airy gets its own share figure the way docking width has its own 393 [author's read, same act as A2]; (2) BC-5 outranks J5 -> edge air goes fixed or away AND something pins wordmark top y (nothing pins J5's 'wordmark top y 8 -> 16' today); (3) neither moves, test records accepted conflict (RULINGS-OPEN.md:222-266).",
+    "region": "rail shell top edge (rhythm.py:44-51 _EDGE_TOP={'shell': tokens.SPACE_MD}, density-scaled through tokens.gap 24/16/12 at rhythm.py:84-86) vs transcript share"
+   },
+   {
+    "id": "C1",
+    "title": "BORDER == SURFACE",
+    "kind": "FORK",
+    "ask": "Record it as a known finding, or rule it and have someone price a fix (no fix proposed; cost to fix unpriced). Rule this before C3 (RULINGS-OPEN.md:299-315).",
+    "region": "every card hairline: #DsCard outer border, #DsCardHeader border-bottom, #DsCardBody \u2014 tokens.py:139 'surface': step(12) and 'border': step(12), both #363636 headless (test_theme_source.py:54)"
+   },
+   {
+    "id": "C2a",
+    "title": "The per-turn receipt line \u2014 ship it?",
+    "kind": "FORK",
+    "ask": "Ship / don't ship one line ('Undoable | mcp \u00b7 4/4', verdicts Undoable/Partial/Not recorded, governing row marked in value TEXT_PRIMARY vs TEXT_TERTIARY never hue) appended to every scene-mutating turn. Two open language problems: 'NOT RECORDED' already used by gate_widget.py:360 for a different scope; 'Undoable' reads as un-doable at 10px standalone (RULINGS-OPEN.md:319-340, 369-378). Split from C2 on master.",
+    "region": "transcript turn tail (scroll content inside _ruled_turn body cell); data source SessionIntegrityTracker._blocks (session_integrity.py:46,56), face_work.set_tool_status bare setText (face_work.py:266)"
+   },
+   {
+    "id": "C2b",
+    "title": "Where the receipt lives \u2014 scroll content or widget?",
+    "kind": "FORK",
+    "ask": "Rule the placement explicitly: as HTML scroll content it costs 0px fixed chrome (+18-19px per mutating turn of scrollback, ~30% fewer visible mutating turns 4.4 -> 3.1 in 380px); as a GateWidget-style sibling widget it costs -18 to -19px collapsed and -100 to -114px expanded, i.e. BC-5 fails by 73-87px on the first chevron click (RULINGS-OPEN.md:342-381). Split from C2 on master.",
+    "region": "chat_panel.py:170-180 layout: ChatDisplay stretch=1 -> pills -> GateWidget sibling band -> input container"
+   },
+   {
+    "id": "C3",
+    "title": "Square the receipt's corner",
+    "kind": "FORK",
+    "ask": "Set radius 0 on an in-flow card variant (0px, or -2px gain if the no-op border goes too) vs the consent card's job of reading as 'waiting for you'; given C1, the radius is the card's ONLY boundary \u2014 rule C1 first (RULINGS-OPEN.md:385-404).",
+    "region": "#DsCard corners, RADIUS_CARD = 10 (cited tokens.py:546, UNVERIFIED at HEAD), sitting above the composer"
+   },
+   {
+    "id": "C4",
+    "title": "The turn ordinal",
+    "kind": "FORK",
+    "ask": "Ordinal column in _ruled_turn's spacer cell (contested 22px/-8, 26px/-12, 24-34px/-10..-20 against a contested 264px or 256px body column), or the zero-pixel fallback of appending it to the timestamp ('\u25cf SYNAPSE  14 \u00b7 2:14 PM') [author's read: take the fallback] (RULINGS-OPEN.md:408-454).",
+    "region": "transcript _ruled_turn (message_formatter.py:394-408: cellpadding=0, <td width=2> rule, <td width=14> spacer, <td> body); transcript delivers 39 chars vs _MEASURE_CHARS = 90 (chat_display.py:283)"
+   },
+   {
+    "id": "C5",
+    "title": "One counter, and it is the turn",
+    "kind": "RATIFY",
+    "ask": "Ratify: one counter = the turn; the receipt cites '14.2' (turn.op) or nothing; applies whichever of C2/C4 ship, including neither (RULINGS-OPEN.md:457-475).",
+    "region": "transcript ordinal + receipt line (R6 second surface)"
+   },
+   {
+    "id": "C6",
+    "title": "The squared corner survives R6; the bleed does not",
+    "kind": "RATIFY",
+    "ask": "Ratify the filer's withdrawal of the 280px full-bleed receipt so it is not re-proposed (280 is the rail's interior per synapse_panel.py:907-908, applied to the transcript unread = UNKNOWN under Law 2) (RULINGS-OPEN.md:479-490).",
+    "region": "transcript receipt edge vs ordinal gutter and 2px speaker rule"
+   },
+   {
+    "id": "D1",
+    "title": "The faces-stack 400px red",
+    "kind": "ASSIGN",
+    "ask": "Assign page 0 of the faces stack to a named owner \u2014 a defect, not a design choice; red at every density (RULINGS-OPEN.md:497-504).",
+    "region": "faces region minimumSizeHint height: airy 454 (+54), standard 438 (+38), tight 430 (+30) vs 400px"
+   },
+   {
+    "id": "D2",
+    "title": "R3-01's remedy no longer exists",
+    "kind": "ASSIGN",
+    "ask": "Superseding R3-01 takes its own ruling artifact; it cannot ride A1. Named remedy 'a verb rail that collapses to icons below ~360px' died with F1; option (a) widens a bound, option (c) narrower gutter is the only one standing (RULINGS-OPEN.md:508-517).",
+    "region": ".synapse/contracts/docking-minimums.yaml:41-43 (airy width 400, standard/tight 380, contract floor PANEL_MIN_WIDTH 280)"
+   },
+   {
+    "id": "D3",
+    "title": "Two visible '\u2190 REVERT' controls on CHAT at once",
+    "kind": "ASSIGN",
+    "ask": "Assign an owner and decide which control keeps the word \u2014 same label, same consent slot, different scopes; reproduced 3/3 profiles by driving the panel (RULINGS-OPEN.md:521-528).",
+    "region": "CHAT face consent slot: the turn receipt's REVERT and the consent card's REVERT"
+   },
+   {
+    "id": "D4",
+    "title": "'UNDO SENT' is authored and hidden in the same beat",
+    "kind": "ASSIGN",
+    "ask": "Worth Joe's eye, not a defect claim: the tag merged in 5424853a; on the sent path the card settles and _sync_consent_slot retires it, so an honesty fix may never reach the screen (RULINGS-OPEN.md:532-538).",
+    "region": "consent card decision tag (gate_widget.py _show_decision_tag / _sync_consent_slot)"
+   }
+  ],
+  "measured": [
+   {
+    "what": "BC-5 headroom, composed 340x760, 35 font families, hython 22.0.400 offscreen, DPR 1",
+    "value": "curious/airy chat=367px share=0.48289 headroom -13.0px FAIL; expert/standard chat=407px share=0.53553 headroom +27.0px PASS; ml/tight chat=427px share=0.56184 headroom +47.0px PASS",
+    "source": "AIRY-ANSWER.md:151-155, DECISION-BRIEF.md:156-160, RULINGS-OPEN.md:114-118; producer harness/design_review/2026-09-14/bc5_headroom.py (1939 bytes, not read)"
+   },
+   {
+    "what": "BC-5 predicate",
+    "value": "assert share >= 0.5, (profile, p._chat.height(), share) where share = p._chat.height() / H; ruling text 'conversation >= 50% of the pane at 340x760 in all three'",
+    "source": "tests/panel/test_bc_wave.py:626-627; harness/cto/runs/2026-09-05/RULING_DIRECTION_BC.md:27"
+   },
+   {
+    "what": "Faces region minimumSizeHint height vs flat 400px bound",
+    "value": "airy 454px (+54), standard 438px (+38), tight 430px (+30); re-run by hand: 3 failed, 88 passed, 222s",
+    "source": "AIRY-ANSWER.md:90-104, DECISION-BRIEF.md:49-54; bound from .synapse/contracts/docking-minimums.yaml:3,19 (PANEL_MIN_HEIGHT=400 in the contract), while tokens.py:636 PANEL_MIN_HEIGHT = 420"
+   },
+   {
+    "what": "CHAT-face hue-bucket pin and its red",
+    "value": "assert len(rest) <= 3, (profile, sorted(rest)) -> ('curious', [0, 2, 13, 14]); bucket = int(hsv_hue*360)//15 over pixels with max(r,g,b)-min(r,g,b) > 24",
+    "source": "tests/panel/test_bc_wave.py:329 and :281-282; RULINGS-OPEN.md:179-181"
+   },
+   {
+    "what": "Doctor accent: fourth hue, footprint, producers",
+    "value": "HOUDINI_TAB_YELLOW, hue 40 deg, 139px on the resting CHAT face; QSS rule QPushButton#DsVerb[tone=\"doctor\"] {{ color: {t.HOUDINI_TAB_YELLOW}; }}; token defined as HOUDINI_TAB_YELLOW = _hexrgb(*_TAB_RGB) (review cites #B98620)",
+    "source": "python/synapse/panel/designsystem/qss.py:198; tokens.py:256; RULINGS-OPEN.md:183-185 (the #B98620 literal and synapse_panel.py:1042 tone=\"doctor\" are the review's figures \u2014 see unverified)"
+   },
+   {
+    "what": "Instrument coarseness (bucket straddle)",
+    "value": "SIGNAL 210.8 deg = bucket 14 and its sanctioned ink 205.7 deg = bucket 13 straddle a 15-degree boundary; SIGNAL = \"#8FB3D9\"",
+    "source": "RULINGS-OPEN.md:196-200, REFINEMENT-COHERE.md:43-49; tokens.py:29"
+   },
+   {
+    "what": "Two-accent design intent",
+    "value": "'(SIGNAL + WARM remain the two-accent ceiling)'; WARM = \"#FF7759\"",
+    "source": "tokens.py:225 (comment), tokens.py:248"
+   },
+   {
+    "what": "Surface/border identity",
+    "value": "\"surface\": step(12), \"raised\": step(8), \"border\": step(12), \"border_strong\": step(18), \"hair\": step(6); \"ground\": step(-11), \"panel\": _hexrgb(r,g,b); pinned headless SURFACE #363636 == BORDER #363636 (GROUND #1F1F1F, PANEL #2A2A2A, RAISED #323232, BORDER_STRONG #3C3C3C, HAIR #303030, TEXT_PRIMARY #C5C5C5, TEXT_SECONDARY #A0A0A0)",
+    "source": "tokens.py:137-141 (inside _derive_palette at :123, step at :132); tests/panel/test_theme_source.py:52-56"
+   },
+   {
+    "what": "GROUND->SURFACE and GROUND->PANEL contrast",
+    "value": "GROUND->SURFACE dL* ~11.6, 1.36:1; GROUND->PANEL 1.148:1; reference board ~17:1",
+    "source": "REFINEMENT-COHERE.md:126, 135 (computed by the lenses from tokens.py:137-141; not re-computed here)"
+   },
+   {
+    "what": "Rhythm role gaps (F12 collision)",
+    "value": "ROLE_GAPS: label SPACE_GRID[2], row SPACE_GRID[2], tag SPACE_GRID[3], card SPACE_GRID[3], parm_row SPACE_GRID[0], group SPACE_GRID[3], shell SPACE_GRID[3], stack SPACE_GRID[0], band 0 \u2014 shell/group/card/tag share SPACE_GRID[3] (README says 16)",
+    "source": "python/synapse/panel/designsystem/rhythm.py:26-36; README.md:36-37 (the resolved 16 is the README's figure; SPACE_GRID not read)"
+   },
+   {
+    "what": "J5 edge-air mechanism",
+    "value": "_MARGINS['shell'] = (tokens.GUTTER, tokens.SPACE_SM, tokens.GUTTER, tokens.SPACE_SM); _EDGE_TOP = {\"shell\": tokens.SPACE_MD}; if edge == \"top\" and role in _EDGE_TOP: margins = (margins[0], tokens.gap(_EDGE_TOP[role], density), margins[2], margins[3]); comment says density-scaled 24/16/12; ruling says SPACE_MD 16 at standard, wordmark top y >= 16 at 340x760",
+    "source": "rhythm.py:42, :44-51, :84-86; harness/cto/runs/2026-09-05/RULING_JOE_FIVE.md:48-51; d46a061a 2026-09-05 18:41 vs spec last touch c9b1216c 11:52 (RULINGS-OPEN.md:240-244); docs/PANEL_RHYTHM_SPEC.md:128 \u00a74.1 reconciliation"
+   },
+   {
+    "what": "GUTTER and panel min height tokens",
+    "value": "GUTTER = 30; PANEL_MIN_HEIGHT = 420 ('was 400; raised for Mile-1b ... Joe's ruling 2026-07-17'); PANEL_MIN_WIDTH = 280 (spec)",
+    "source": "tokens.py:637, :636; docs/PANEL_RHYTHM_SPEC.md:81"
+   },
+   {
+    "what": "Body column inside _ruled_turn (contested)",
+    "value": "264px = 340 - 2*GUTTER(30) - 16 (ORDINAL/LANGUAGE/GROUND) or 256px with Qt's default 4px-per-side document margin (EVIDENCE); the 308px figure refuted; ordinal cell 22/26/24-34px",
+    "source": "REFINEMENT-COHERE.md:336-352, RULINGS-OPEN.md:426-439"
+   },
+   {
+    "what": "Transcript measure",
+    "value": "_MEASURE_CHARS = 90; transcript delivers ~39 chars (43%)",
+    "source": "python/synapse/panel/chat_display.py:283; RULINGS-OPEN.md:441-442"
+   },
+   {
+    "what": "Receipt-as-widget cost and scrollback",
+    "value": "widget collapsed -18 to -19 -> +8/+9px left; expanded -100 to -114 -> -73 to -87px; scroll content +18-19px per mutating turn (13-14 derived from SIZE_MICRO = 10, not measured); 380/87 = 4.4 vs 380/124 = 3.1 visible mutating turns",
+    "source": "RULINGS-OPEN.md:350-366, REFINEMENT-COHERE.md:324-371; tokens.py:314 SIZE_MICRO = 10"
+   },
+   {
+    "what": "Type scale at scale 1.0 (G3 output) and body token",
+    "value": "HERO 19px, TITLE 15px, UI 12px, SMALL 11px, MICRO 10px, BODY 12px (floor 12px), 5 distinct steps; SIZE_BODY = 12",
+    "source": "harness/design_review/2026-09-05/audit_strict_TYPE.txt:14-21; tokens.py:317"
+   },
+   {
+    "what": "WCAG contrast matrix (G3, 2026-09-05)",
+    "value": "PRIMARY 8.3/9.5/7.0; SECONDARY 5.5/6.3/4.6; TERTIARY 3.9/4.5/3.3; BRIGHT 10.7/12.3/9.0; ACCENT 6.6/7.5/5.5 (PANEL/GROUND/SURFACE); floors body >= 4.5:1, head/link >= 3.0:1, any essential >= 3.0:1",
+    "source": "harness/design_review/2026-09-05/audit_strict_TYPE.txt:5-12"
+   },
+   {
+    "what": "Seeded-contrast sweep result (G3, 2026-09-05)",
+    "value": "body realistic worst 5.3:1 @ (95, 'surface') ok; body any-grey worst 3.9:1 @ (117, 'surface') ok",
+    "source": "harness/design_review/2026-09-05/audit_strict_TYPE.txt:24-26"
+   },
+   {
+    "what": "Consent card chroma (F4 colour half)",
+    "value": "rebuilt card 0.19% chromatic / 2 buckets (old 3.15% / 12); method reproduced the 2026-09-05 review's 0.84% to the pixel",
+    "source": "DECISION-BRIEF.md:22-27"
+   },
+   {
+    "what": "Restraint floor (2026-09-05 review, unchanged)",
+    "value": "0.82-0.84% chromatic pixels, three hue buckets, one warm mark, wordmark never elides",
+    "source": "README.md:4-6"
+   },
+   {
+    "what": "Docking widths (R3-01)",
+    "value": "composed AIRY panel at 393 (verb rail 237 + four group gaps at 24 + the 30px gutter...); ruling: airy figure 400, standard/tight 380, interim toward the 280 contract; README cites 393/361/345 measured under shell=16",
+    "source": ".synapse/contracts/docking-minimums.yaml:35-45; README.md:39-40 (361/345 are README figures only)"
+   },
+   {
+    "what": "Status-colour tokens named as 5th-bucket doors",
+    "value": "CONIFEROUS = \"#6E8F72\" (127.3 deg, bucket 8 per J1 report), NO_SOFT = \"#D96975\", HOT_SOFT = \"#D08A57\" (~25 deg -> bucket 1), SLATE = \"#555555\"",
+    "source": "tokens.py:269-271, :34; REFINEMENT-COHERE.md:443-444; joe_five_report.json (J1 bucket math)"
+   },
+   {
+    "what": "Airy originator set and J4 pin",
+    "value": "one line, compositor.py:254; curious.py:44 only 'density: airy' manifest; J4 pin 2 passed at HEAD c217428b; _select_profile zero callers in python/",
+    "source": "AIRY-ANSWER.md:22-37"
+   },
+   {
+    "what": "F4 verb half driven",
+    "value": "0 mark_decided / 0 _on_remote_decision / 0 HumanGate.decide calls x3 profiles -> latent, not live; turn receipt REVERT count 1 -> 2 -> 1 across sends, 3/3 profiles",
+    "source": "DECISION-BRIEF.md:29-38"
+   }
+  ],
+  "known_conflicts": [
+   "(a) Doctor button's artist-approved HOUDINI_TAB_YELLOW (qss.py:198, hue 40 deg, 139px on the resting CHAT face) vs the monochrome + one-accent ceiling: tests/panel/test_bc_wave.py:329 `assert len(rest) <= 3` is red at ('curious', [0, 2, 13, 14]) while tests/test_panel_sweep_a.py:172-174 (per RULINGS-OPEN.md:189-194, not read) pins the rule with `prefix.count(rule) == 1` and a mutation guard at :229 \u2014 dropping the rule fails one pin, dropping setProperty leaves the other green over a dead rule; and even without the yellow, rest sits at exactly 3 with zero headroom because SIGNAL (210.8 deg, bucket 14) and its ink (205.7 deg, bucket 13) straddle a 15-degree boundary, the same artifact the Cohere PARAMETERS column produces ([18,19]) \u2014 RULINGS-OPEN.md:176-218, REFINEMENT-COHERE.md:410-414. Related tension: RULING_JOE_FIVE.md:21-22 (J1) says the chat-face bucket pin 'becomes 4 with the token's bucket named' (CONIFEROUS bucket 8 when connected).",
+   "(b) J5's density-scaled top-edge air (rhythm.py:44-51 `_EDGE_TOP = {\"shell\": tokens.SPACE_MD}` routed through tokens.gap at rhythm.py:84-86, 24/16/12 by density, commit d46a061a 2026-09-05 18:41) vs BC-5's 'transcript >= 50% of 760' (test_bc_wave.py:627): red only at airy \u2014 367px / 0.48289 / -13px; standard +27 PASS, tight +47 PASS. PANEL_RHYTHM_SPEC.md:109 '[margins] do not scale, except the...' + \u00a74.1 (:128) now records J5 as the ratified exception; test_j5_rail_air.py:139-148 already carries BC-5's predicate at standard only; nothing pins J5's 'wordmark top y 8 -> 16' \u2014 RULINGS-OPEN.md:222-266, DECISION-BRIEF.md:121-132, REFINEMENT-COHERE.md:416-420.",
+   "(c, secondary) SUBTRACT vs SYSTEM both edit rhythm.py:26-36 (README.md:36-42 'only one can land'); superseded inside SCAFFOLD.html \u00a77 ruling 3 as 'both, in order' \u2014 SUBTRACT's deletion set is a strict prefix of SYSTEM's; they conflict in merge text not design (RULINGS-OPEN.md:553-557, DECISION-BRIEF.md:115-119). Prerequisite for either: the `row` KeyError \u2014 chat_display.py:190-191 hard-indexes rhythm.ROLE_GAPS[role] for role in ('group','row'); two tests pin the key (test_panel_rhythm_owner.py:233, test_panel_camera_rhythm_qt.py:201)."
+  ],
+  "already_ruled": [
+   "J1 (2026-09-05, RULING_JOE_FIVE.md:15-23): model token is a status light \u2014 live CONIFEROUS / working WARM / unreachable TEXT_DISABLED, no new hex; chat-face bucket pin 3 -> 4 with the token's bucket named",
+   "J2 (RULING_JOE_FIVE.md:25-33): TOKEN face counts real provider usage or is removed",
+   "J3 (RULING_JOE_FIVE.md:35-40): two speakers, two colours \u2014 USER = SIGNAL, SYNAPSE = CONIFEROUS or MUSHROOM (warden picks by WCAG); body stays TEXT_PRIMARY; 'one accent for actions; two speaker marks'; frozen seam tests/test_j3_panel_formatter.py:53,60 and tests/panel/test_j3_speakers.py:157-160 (per REFINEMENT-COHERE.md:424-429)",
+   "J4 (RULING_JOE_FIVE.md:42-46): Curious/Expert/ML retired from the UI; composed profile always `expert`; machinery kept and tests still exercise it; persisted profile read as expert \u2014 enforced at synapse_panel.py:732-733",
+   "J5 (RULING_JOE_FIVE.md:48-51): rail shell top margin one grid step larger (SPACE_MD 16 at standard, density-scaled, carried by the rhythm role), wordmark top y >= 16 at 340x760; spec reconciled in PANEL_RHYTHM_SPEC.md \u00a74.1 (:128)",
+   "BC-5 measured goal (RULING_DIRECTION_BC.md:27): conversation >= 50% of the pane at 340x760 in all three profiles, headless H22.0.400",
+   "R3-01 (docking-minimums.yaml:41-43, CTO under Joe's delegation 2026-09-05): airy width figure 400, standard/tight 380, interim toward the 280 contract; named remedy 'verb rail collapsing to icons below ~360px' (now dead via F1)",
+   "RULING-2A (docking-minimums.yaml:28; cited AIRY-ANSWER.md:106-108): the width CONTRACT governs; a figure taken with an empty font database (QFontDatabase.families() == 0) is not a measurement; test_docking_bounds_read_the_contract_not_panel_height_token asserts the contract's 400 is the stricter bound over tokens.py:636 PANEL_MIN_HEIGHT = 420",
+   "PANEL_MIN_HEIGHT 400 -> 420 (Joe's ruling 2026-07-17, tokens.py:636) and GUTTER = 30 ('the Design Director's call', tokens.py:637)",
+   "Restraint floor from the 2026-09-05 review stands verbatim: 0.82-0.84% chromatic pixels, three hue buckets, one warm mark, wordmark never elides (README.md:3-6)",
+   "F1 CLOSED: verb rail retired before this crit (synapse_panel.py:1417-1423; EXPLAIN/FIX/OPTIMIZE are slash-palette rows) \u2014 README.md:18-21",
+   "F4 hue half CLOSED: consent card 0.19% / 2 buckets (DECISION-BRIEF.md:22-27); F4 verb half re-filed LATENT not live (DECISION-BRIEF.md:29-34)",
+   "R1 (tool-label fallback) and R2 (four dead curated keys + registry guard) CLOSED \u2014 shipped in v5.70.0 (RULINGS-OPEN.md:276-278)",
+   "Doctor accent is 'artist-approved' and pinned (tests/test_panel_sweep_a.py:172-174, :229 per RULINGS-OPEN.md:189-194 \u2014 pin not read directly)",
+   "SUBTRACT then SYSTEM 'both, in order' (SCAFFOLD.html \u00a77 ruling 3 per DECISION-BRIEF.md:115-119); the `row` KeyError is a product defect, not gate joe (RULINGS-OPEN.md:545-551)",
+   "Worker consent gate ON (Joe DECIDE 2026-08-18, v5.54.0 \u2014 memory synapse-worker-consent-on.md; not a design ruling but bounds C2's receipts)",
+   "Every \u00a78 SCAFFOLD decision is gate `joe`; nothing from the 2026-09-14 crit has been built (README.md:51, RULINGS-OPEN.md:3-7)"
+  ],
+  "audit_status": "G3 = `hython audit_panel.py --strict` at the repo root (C:/Users/User/SYNAPSE/audit_panel.py; :17 'exit 1 on any FAIL (use this as the gate)', gate at :511). Section A (token audit, :10) is the WCAG contrast matrix over PANEL/GROUND/SURFACE with floors AA_BODY = 4.5 (:54), AA_LARGE = 3.0 (:55), PRAGMATIC (printed as 3.0; constant line not read), type-scale floors incl. BODY_FLOOR 12px (:106). A3 (:111-153) is the seeded-contrast SWEEP: derives the palette through `tokens._derive_palette` (:127; FAIL if missing :130) DENSELY over host grey 0..255 and asserts body contrast >= AA_BODY 4.5 on realistic greys (Houdini dark pane ~46, light >=200) and >= MID_FLOOR = 3.5 (:124) on ANY grey incl. the ~107-127 mid band (the earlier 6-point sample [28,38,46,58,70,200] was a false-green). CI mirror tests/panel/test_seeded_contrast.py: _realistic(v) = v <= 95 or v >= 150 (:34); test_realistic_hosts_hold_AA_body range(0,256) assert wb >= 4.5 (:37-41); test_any_grey_holds_pragmatic_floor worst body >= 3.5 and worst secondary >= 3.0 (:44-48); test_houdini_dark_pane_is_crisp _worst_body(46) >= 7.0 (:51-53). Also checks: interactive targets >= 26px, chrome floor >= 11px (:388-390), chrome FROZEN on Aa / content scales 12->19px, no bundled family on chrome, v9 invariants (same-pane law, consent auto-surfaces, reduced motion). LAST RECORDED RESULTS (all 2026-09-05, hython 22.0.400 offscreen): harness/design_review/2026-09-05/audit_strict_TYPE.txt:65 'G3 RESULT: pass \u00b7 1 WARN' \u2014 the WARN is :31 'interactive targets : 28 found, 3 under 26px'; sweep :24-26 body realistic worst 5.3:1 @ (95,'surface'), any-grey worst 3.9:1 @ (117,'surface'); WCAG matrix all ok. harness/cto/runs/2026-09-05/joe_five_report.json records the joe-five branch gate B 'audit_panel.py --strict: G3 RESULT pass, 0 WARN' and panel_pd_land_report.json records master 'pass \u00b7 1 WARN (same 3 under 26px), exit 0' vs branch pd/panel-integrate '1 FAIL (wordmark 14px @ tracking 116.0%, master B4 fix) \u00b7 1 WARN, exit 1'. NO G3 run is recorded for the 2026-09-14 review (zero 'G3' hits in its five docs) nor in harness/notes/RELEASE_v5.70*.md; G3 at HEAD (rebase/cto-render) is UNVERIFIED. Live-GUI G2 (real host seed, real host font) is still owed per memory synapse-panel-contrast-seed-gate.md. The 'panel-design-warden' grep hit harness/AGENT_CONSTITUTION.md and harness/notes/CTO_RULINGS_01.md (not opened); J3 names 'the design warden' as the WCAG picker.",
+  "unverified": [
+   "cohere-reference.jpg content \u2014 not viewed; description is entirely REFINEMENT-COHERE.md \u00a70 (:11-82). No text in harness/design_review/, docs/ or SCAFFOLD.html cites the filename.",
+   "RADIUS_CARD = 10 at tokens.py:546 \u2014 cited by RULINGS-OPEN.md:387; grep 'RADIUS_CARD =' returned no hit at HEAD (spacing/alignment may differ); not re-read.",
+   "HOUDINI_TAB_YELLOW == #B98620 \u2014 tokens.py:256 defines it as _hexrgb(*_TAB_RGB); _TAB_RGB not read. The review's line cite :255 is one line off at HEAD.",
+   "synapse_panel.py:1042 `tone=\"doctor\"` \u2014 grep for the literal returned nothing in synapse_panel.py; probably a setProperty form; line not read.",
+   "SPACE_GRID[3] == 16, SPACE_MD == 16, SPACE_SM value \u2014 README.md:37 and RULING_JOE_FIVE.md:50 say 16; tokens.py SPACE_* lines not read at HEAD.",
+   "PRAGMATIC constant value in audit_panel.py \u2014 2026-09-05 output prints 3.0; source line not read.",
+   "Docking floors 361/345 \u2014 README.md:39 only; docking-minimums.yaml shows 393 (:36) and 380 (:42,:45); 361/345 not found in the yaml lines grepped.",
+   "tests/test_panel_sweep_a.py:172-174 and :229 (Doctor pin + mutation guard), tests/panel/test_j5_rail_air.py:139-148/:157/:163-175, tests/panel/test_j4_profiles_retired.py, test_j3_* seams \u2014 cited from the review docs, not opened.",
+   "PANEL_RHYTHM_SPEC.md:83 phrase 'Joe's word, editable as that one figure' \u2014 line 83 at HEAD is the yaml reference sentence; 393 appears at :85; exact quote location not confirmed.",
+   "harness/design_review/2026-09-14/bc5_headroom.py (1939 bytes), pr-body.md beyond line 30, SCAFFOLD.html (145,008 bytes; \u00a77 ruling 3, \u00a78 six live decisions, \u00a711, \u00a712) \u2014 not read.",
+   "G3 strict at HEAD rebase/cto-render \u2014 not run (no Houdini/hython per task); no 2026-09-14 record found. Whether the 1 WARN (3 targets < 26px) still stands vs joe-five's '0 WARN' \u2014 not reconciled.",
+   "GROUND->SURFACE dL* ~11.6 / 1.36:1 and GROUND->PANEL 1.148:1 \u2014 the lenses' computation from tokens.py:137-141; not recomputed.",
+   "_warm_bias chroma \u2248 24 on the > 24 threshold (REFINEMENT-COHERE.md:287) \u2014 not measured.",
+   "panel-design-warden agent definition \u2014 grep hit files not opened; its exact checks unknown.",
+   "HiDPI behaviour \u2014 UNKNOWN per every review doc (all numbers at devicePixelRatio 1)."
+  ]
+ },
+ "lens": {
+  "principles": [
+   {
+    "principle": "(1) Typography carries the hierarchy \u2014 size/weight/space, not color or boxes",
+    "status": "partial",
+    "evidence": "The type roles ARE a hierarchy: display 19/600/0.5, title 15/600/1.0, body 12/400/0, label 12/500/0.5, caption 11/400/0, status mono 11/500/0.5 (tokens.py:371-379); wordmark 15px weight 600 at WORDMARK 0.16em (tokens.py:401; synapse_panel.py:967 per map, UNVERIFIED line). But emphasis is then delegated to hue: the prominence system is by its own rule \"colour emphasis only, never size, font, or layout\" (qss.py:303-306) \u2014 hero verbs go WARM #FF7759 (qss.py:195), quiet goes TEXT_TERTIARY (:197); role labels are coloured not sized (QLabel[role=title] TEXT_BRIGHT / body TEXT_PRIMARY / caption TEXT_TERTIARY / label TEXT_SECONDARY / accent TEXT_ACCENT, qss.py:291-295); and the transcript tells you WHO spoke by hue alone \u2014 YOU=SIGNAL #8FB3D9, SYNAPSE=CONIFEROUS #6E8F72 on the dot, the name and the 2px rule (message_formatter.py:38-47, :384-386, :402-405), with the label at mono 11px letter-spacing 1.2px (:384).",
+    "fix": "qss.py:195-197: hero \u2192 font-weight 600 + color TEXT_BRIGHT, quiet \u2192 font-weight 400 + TEXT_TERTIARY; delete the WARM/WARM_HOVER hero rows. message_formatter.py:47 _SPEAKER \u2192 {\"YOU\": TEXT_BRIGHT, \"SYNAPSE\": TEXT_TERTIARY} so speaker = value + position, not hue; keep the 2px rule.",
+    "region": "rail verbs (DsVerb prominence), role labels, transcript speaker label + turn rule",
+    "effort": "M"
+   },
+   {
+    "principle": "(2) One type system, few sizes, deliberate scale",
+    "status": "violates",
+    "evidence": "Six sans sizes 10/11/12/12/15/19 (SIZE_MICRO..SIZE_HERO, tokens.py:314-319) with the bottom three 1px apart \u2014 10\u219211\u219212 is a smear, not a scale \u2014 plus SIZE_LABEL = SIZE_MICRO alias (:322) and a derived timestamp size max(sz-1, 8) = 10 (message_formatter.py:379). Two monospace families ship on one face: Space Mono via QFont for DsAuthor/DsVerb/khint (tokens.py:300; synapse_panel.py:2503-2505), but the transcript deliberately uses _MONO = \"'Consolas', 'Courier New', monospace\" (message_formatter.py:72-75, \"not the designed Space Mono\"). A whole second type system still ships in the same sheet: qss.py:562-768 (HDA generator, connection frame, mode toggles) with sizes computed as SIZE_UI*3//2 = 18px (:611), SIZE_UI*7//6 = 14px (:691, :764), SIZE_UI*3/4 = 9pt in pt units (:720-736), weight WEIGHT_SEMIBOLD+WEIGHT_MEDIUM-WEIGHT_REGULAR = 700 (:565, :575, :592, :619), letter-spacing 1px literals (:565, :592, :616, :619), on the legacy CARBON/GRAPHITE/SLATE/BONE/VOID palette.",
+    "fix": "Four sizes: 11 / 12 / 15 / 19. Delete SIZE_MICRO 10 (tokens.py:314) \u2192 SIZE_SMALL 11 at DsChip (qss.py:221), DsBadge (:256), cook label + PLAN eyebrow (face_work.py:216, :222), timestamp (message_formatter.py:379: s=sz, drop the -1). One mono: message_formatter.py:75 _MONO \u2192 _t.FONT_MONO_CSS. Legacy sheet qss.py:562-768: retoken (SIZE_UI, WEIGHT_SEMIBOLD 600, SURFACE/BORDER/TEXT_*) or delete with the HDA face.",
+    "region": "tokens type scale; transcript mono; legacy HDA/connection QSS block",
+    "effort": "L"
+   },
+   {
+    "principle": "(3) Structural whitespace \u2014 space is a material, margins and rhythm designed not leftover",
+    "status": "partial",
+    "evidence": "The big moves are designed: SPACE_GRID (4, 8, 12, 16, 24, 32, 48) tokens.py:491; between speakers SPACE_LG 24, within a speaker SPACE_SM 8 (message_formatter.py:69-70); rail top SPACE_MD 16 by the J5 edge rule (rhythm.py:44-51); shell margins (GUTTER, 8, GUTTER, 8) (rhythm.py:42). The leaves are leftover: GUTTER = 30 is off the grid \u2014 its own comment says \"26\u201336 is safe\" (tokens.py:637); tag margins (SPACE_SM + SPACE_XS//2, SPACE_12//2) = (10, 6) (rhythm.py:39-41); DsInput padding \"16px 15px\" (qss.py:272); DsSend padding \"9px 15px\" (:284); DsChip padding \"3px 8px 3px 7px\" (:220); DsAuthor padding 4px 4px (:154); card header min/max-height SPACE_XL-1 = 39px (:434) beside a 40px footer (:446); turn rule 2px + a 14px spacer cell (message_formatter.py:404-405); speaker label margin-bottom 3px (:385).",
+    "fix": "GUTTER 30 \u2192 32 (= SPACE_32) tokens.py:637; DsInput padding 16px 15px \u2192 16px 16px (qss.py:272); DsSend 9px 15px \u2192 8px 16px (:284); DsChip 3px 8px 3px 7px \u2192 4px 8px (:220); tag margins \u2192 (SPACE_SM 8, SPACE_XS 4) rhythm.py:39-41; card header 39 \u2192 40 (qss.py:434); _ruled_turn spacer 14 \u2192 16 (message_formatter.py:404); label margin-bottom 3 \u2192 4 (:385).",
+    "region": "gutter, composer well, SEND, chips, gate card bands, transcript turn",
+    "effort": "S"
+   },
+   {
+    "principle": "(4) Restraint \u2014 monochrome + one accent, no gradients, no decorative borders/shadows/radii",
+    "status": "violates",
+    "evidence": "Gradient: QWidget#DsRoot background = qlineargradient #2E2E2E \u2192 #262626 (qss.py:28-30; tokens.py:565 ATMOSPHERE_DELTA 4) \u2014 at 4/255 it is either invisible (then it earns nothing) or decoration. Accents live on the resting CHAT face, not one: SIGNAL #8FB3D9 (pill underline qss.py:127; YOU rule), CONIFEROUS #6E8F72 (SYNAPSE rule, author live), SIGNAL_DEEP #627A93 (SEND fill :283), HOUDINI_TAB_YELLOW #B98620 (Doctor :198 \u2014 awaits ruling B1), and while working WARM #FF7759 + FIRE #FF6B35 (STATUS dot); the two-accent \"ceiling\" is stated at tokens.py:225 but the sheet paints six hues (SIGNAL, WARM, CONIFEROUS, HOT_SOFT, NO_SOFT, HOUDINI_TAB_YELLOW) plus the FIRE/GROW/WARN/ERROR set on dots, badges, card borders and bullets. Radii: six tokens 4/8/10/12/14/999 (tokens.py:535-547) plus literal 2px (qss.py:357-359) and 3/6/14 in the legacy block; DsCard declared twice, RADIUS_LG 12 (:247) then RADIUS_CARD 10 (:430). Borders that paint nothing: DsCard 1px BORDER on SURFACE where BORDER == SURFACE (awaits ruling C1). Shadows: zero box-shadow \u2014 holds.",
+    "fix": "qss.py:29 background \u2192 {t.PANEL}; delete atmosphere()/ATMOSPHERE_DELTA (tokens.py:565-577). RADIUS_SM 4 \u2192 0 on DsButton (:49), DsStop (:105), DsSend (:283), DsInput (:271), DsBadge (:255), QToolTip (:44); keep RADIUS_ROUND 999 for the tag only; delete the RADIUS_LG DsCard block (:245-248) so one card rule remains (its value awaits C3/C6). Doctor yellow awaits B1.",
+    "region": "root field, every rounded control, card, Doctor verb",
+    "effort": "M"
+   },
+   {
+    "principle": "(5) A grid the eye can feel \u2014 alignment across regions, consistent gutters",
+    "status": "partial",
+    "evidence": "One gutter is real: rail, ribbon and faces all take shell margins GUTTER/GUTTER (rhythm.py:42; synapse_panel.py:1103, :1287 per map). But three left edges compete below the ribbon: wordmark, state sentence and CHAT pill sit at x=30; transcript body sits 2+14 = 16px inboard of its rule inside a QTextBrowser on GROUND (message_formatter.py:402-406; document margin UNVERIFIED); composer text sits at border 1 + padding 15 = 16px inboard of the well (qss.py:271-272); and the key legend + the three footer links are CENTERED \u2014 khint AlignCenter (synapse_panel.py:2510), _ShortcutLayout \"Center the three local links\" (:2541-2549), DsFooterLink text-align center (qss.py:206). Left / left+16 / centered on one 280px interior.",
+    "fix": "synapse_panel.py:2510 AlignCenter \u2192 AlignLeft; _ShortcutLayout left-packed (:2541); qss.py:206 text-align center \u2192 left. Put the turn rule in the gutter: transcript body x = GUTTER, rule at GUTTER-16 (document margin GUTTER-16, spacer 14 \u2192 16), so body text shares the wordmark's x. Composer well: padding-left 15 \u2192 16 and well x = GUTTER-17 so its text also lands on GUTTER.",
+    "region": "transcript, composer, key legend, footer links",
+    "effort": "M"
+   },
+   {
+    "principle": "(6) Copy as design \u2014 labels say what happens, no jargon, no filler",
+    "status": "partial",
+    "evidence": "Strong: STATUS phrases \"Ready / Working on it / Standing by / Worth a look / We hit a snag / Not connected\" (tokens.py STATUS); GATE_LEVELS \"Heads up / Quick review / Approve? / Confirm\"; tool_status \"Running: Create node\" (activity.py:83-86) with tool_label expanding ids; khint \"Enter sends \u00b7 Shift+Enter adds a line\" (synapse_panel.py:2503). Weak: \"Doctor\" (:1041) is jargon while its accessible name \"Check SYNAPSE\" (:1043) is the better label and is hidden; \"Session \u00b7 Revoke\" (:2526) is two nouns and a midpoint; \"Connect\" (:1035) and \"Connect models\" (:2523) are two different connects; gate verbs REJECT / APPROVE in caps mono (gate_widget.py:262-265) while every other verb is sentence case; \"Fidelity UNKNOWN\" (:127-128) and \"{n} violations\" (:735) are pipeline words on an artist surface; \"PLAN \u00b7 routed %s\" (face_work.py:336) leaks the router; \"signed {who}\" (message_formatter.py:441) is provenance jargon. \"NOT RECORDED\" / \"UNDO SENT\" await rulings C2a / D4.",
+    "fix": "Doctor \u2192 \"Check\" (synapse_panel.py:1041, keep the tooltip); \"Session \u00b7 Revoke\" \u2192 \"Revoke session approvals\" (:2526); \"Connect models\" \u2192 \"Models\" (:2523); REJECT/APPROVE \u2192 \"Reject\"/\"Approve\", drop AllUppercase, weight 500 (gate_widget.py:262-265); \"Fidelity UNKNOWN\" \u2192 \"Not verified\" (:128); \"{n} violations\" \u2192 hidden at 0, else \"{n} checks failed\" (:735); \"PLAN \u00b7 routed X\" \u2192 \"Plan\" (face_work.py:336); \"signed X\" \u2192 \"by X\" (message_formatter.py:441).",
+    "region": "rail verbs, composer footer, gate card verbs and tags, work face, transcript note",
+    "effort": "S"
+   },
+   {
+    "principle": "(7) State shown in form (weight, position, a single mark), never in a second hue",
+    "status": "violates",
+    "evidence": "Hue-per-state is the panel's default idiom. STATUS is a colour table: connected GROW #00E676, working FIRE #FF6B35, idle SIGNAL, warning WARN #FFAB00, error ERROR #FF3D71, disconnected SLATE #555555 (tokens.py STATUS) worn by the 16px MarkDot in the rail; DsAuthor liveness live CONIFEROUS / working WARM / off TEXT_DISABLED (qss.py:150-162 per map); active tab = 2px SIGNAL underline + TEXT_BRIGHT (qss.py:126-128) \u2014 the underline is form, the hue is a second signal; DsCard tone border-color WARN / FIRE / ERROR (qss.py:249-251); DsBadge kind grow/warn (:258-259); gate BLOCKED tag \u2192 HOT_SOFT (gate_widget.py:146-155); DsVerb tone ok/hot/accent/doctor (qss.py:188-191, :198); DsHdaStageDot active FIRE (:803); transcript status bullets GROW/WARN/ERROR (message_formatter.py:99-103); thinking dots CONIFEROUS (chat_display.py:712-724). One exception already in form: DsPill active underline (qss.py:126-128).",
+    "fix": "Rail dot: one 16px mark \u2014 filled TEXT_BRIGHT = connected, 1.5px STROKE_PX outline = not connected, and the sentence carries working/warning/error (it already does). qss.py:127 border-bottom 2px SIGNAL \u2192 TEXT_BRIGHT. Delete DsCard tone rows :249-251 (the level tag's word already says it). gate_widget.py:155 BLOCKED \u2192 font-weight 600, no HOT_SOFT. message_formatter.py:99-103: \u25cf / \u25cb / \u2715 glyphs in TEXT_TERTIARY, one colour. DsVerb tone rows :188-191 \u2192 weight 600 for accent, TEXT_TERTIARY for quiet, no hue.",
+    "region": "rail dot + author, tab underline, gate card border/tag, transcript bullets, verbs",
+    "effort": "M"
+   },
+   {
+    "principle": "(8) Nothing that does not earn its place",
+    "status": "violates",
+    "evidence": "Built and never shown: six rail widgets constructed in no layout and setVisible(False) \u2014 _meter_lbl, _palette_hint, _foot_dot, _foot_label, _help_btn \"?\", _corpus_btn \"Corpus\" (synapse_panel.py:1063-1101 per map, :1084-1092 read); _session_permission_btn built then .hide() (:2526-2531). Rules that do nothing: line-height:150% on the turn body (message_formatter.py:406) that the same file's comment says \"has never done anything\" (:57-60); format_timestamp_divider returns \"\" (:457-459); Connect keeps variant=\"primary\" (:1035) though its DsVerb rename means the primary fill never applies (map: :1112-1115); the DsCard block declared twice (qss.py:245-248 and :429-432); a 1px card border on its own colour (awaits C1); a \u03944 gradient (qss.py:28-30). Dead weight: ~200 lines of legacy sheet qss.py:562-768 in a retired palette.",
+    "fix": "Delete line-height:150% (message_formatter.py:406) and format_timestamp_divider + its call (:457-459); delete the six hidden rail widgets (synapse_panel.py:1063-1101) \u2014 the overflow menu already owns those actions; drop variant=\"primary\" from Connect (:1035); delete qss.py:245-248 (keep :429-432); flat PANEL for DsRoot (:29); quarantine or delete qss.py:562-768.",
+    "region": "rail hidden owners, transcript dead CSS, duplicate card rule, root gradient, legacy sheet",
+    "effort": "L"
+   }
+  ],
+  "top_three": [
+   "Take hue out of state on the resting CHAT face. Rail dot \u2192 filled/outlined mark in TEXT_BRIGHT; tab underline SIGNAL \u2192 TEXT_BRIGHT (qss.py:127); DsCard tone borders deleted (qss.py:249-251); speaker rule SIGNAL/CONIFEROUS \u2192 TEXT_BRIGHT/TEXT_TERTIARY (message_formatter.py:47); transcript bullets one colour, three glyphs (:99-103). After this the panel is genuinely monochrome and SIGNAL is free to be the one accent \u2014 SEND fill and focus ring only. Doctor's yellow then awaits B1 as the sole open colour question.",
+   "One type scale, one mono. Delete SIZE_MICRO 10 (tokens.py:314) so the scale is 11 / 12 / 15 / 19; make the transcript's _MONO = FONT_MONO_CSS (message_formatter.py:75) so Space Mono is the panel's only mono; sentence-case the gate verbs (gate_widget.py:262-265); bring the legacy sheet qss.py:562-768 onto the same tokens or remove it. Today two design systems share one stylesheet.",
+   "One left edge, flat ground, on-grid leaves. Kill the centered legend and footer links (synapse_panel.py:2510, :2541-2549; qss.py:206); put transcript body and composer text on the wordmark's x (turn spacer 14 \u2192 16, well padding 15 \u2192 16); GUTTER 30 \u2192 32; DsRoot gradient \u2192 flat PANEL (qss.py:29); radius 4 \u2192 0 on buttons/inputs/badges/tooltip. The Cohere reference wins on alignment, not on colour, and this is where the panel gives that back."
+  ],
+  "what_is_already_pentagram": [
+   "Verbs set as type, not buttons: QPushButton#DsVerb is flat, mono, border none, padding 2px 0, 11px, TEXT_SECONDARY (qss.py:182-186) \u2014 chrome recedes, the word is the control.",
+   "Tabs on a baseline track: DsPill radius 0, no fill, a 2px rule under the active word, TEXT_TERTIARY at rest \u2192 TEXT_BRIGHT active (qss.py:119-128). The filled pill was retired on purpose and the comment says why.",
+   "The chip as a cell, not a box: DsChip radius 0, border-left STROKE_PX 1.5, flat wash to the type, asymmetric 3/8/3/7 padding to centre it optically (qss.py:212-224).",
+   "The state sentence: one line of plain language (\"Ready\", \"Working on it\", \"We hit a snag\", \"Not connected\" \u2014 tokens.py STATUS), width floored at the widest phrase measured in its own font so it never elides and never carries a px literal (synapse_panel.py:1005-1011 per map).",
+   "Transcript rhythm bought where the mechanism is real: 24 between speakers, 8 within a speaker (message_formatter.py:69-70), with the honest note that CSS line-height is inert in QTextDocument (:57-67). Space as material, not as CSS analogy.",
+   "The turn anatomy: 2px rule \u00b7 gap \u00b7 body carried by a two-cell table because that is what the renderer honours (message_formatter.py:396-408). Structure, not decoration.",
+   "Tracking on QFont with a per-role em map and a typographer's reasoning for WORDMARK 0.16 vs BRAND 0.286 at weight 600 (tokens.py:395-405).",
+   "A contrast-solved grey ladder: TEXT_PRIMARY/SECONDARY/TERTIARY/BRIGHT/DISABLED solved to 7.0 / 4.6 / 3.3 / 9.0 / 2.0 against the worst landing surface (tokens.py:118-121 per map) \u2014 monochrome done as engineering.",
+   "Zero box-shadow anywhere in the stylesheet (grep, qss.py).",
+   "Copy that names the act: tool_label turns ids into \"Create node\" and tool_status into \"Running: Create node\" (activity.py:56-86); GATE_LEVELS read \"Heads up / Quick review / Approve? / Confirm\"; the key legend \"Enter sends \u00b7 Shift+Enter adds a line\" (synapse_panel.py:2503).",
+   "The stylesheet argues with itself in writing \u2014 qss.py:303-315 is a design rationale, not a comment. That is how a system stays coherent under many hands."
+  ],
+  "directions": [
+   {
+    "name": "Editorial \u2014 type-led, larger, more air",
+    "thesis": "Treat the panel as a column of set text with one hairline: the hierarchy is size and weight, colour is a single accent on the artist's own turn, and the pane earns its height with air rather than chrome.",
+    "changes": [
+     "Scale 12 / 13 / 17 / 22 (body 13, title 17, display 22); wordmark back to weight 400 at BRAND 0.286em (tokens.py:396-405 keeps the reasoning); labels 12/500, captions 12/400 \u2014 three sizes on the resting face",
+     "Between speakers SPACE_32 32, within 12 (message_formatter.py:69-70); rail top SPACE_LG 24 as the standard density; GUTTER 32",
+     "SIGNAL only on the YOU turn rule and the focus ring; SYNAPSE turns carry no rule, only the 16px indent; SEND becomes a type verb (DsVerb) not a filled knockout",
+     "Flat PANEL ground, radius 0 everywhere, no card border \u2014 the consent card is a titled block set apart by 24px above and below"
+    ],
+    "tradeoff": "Costs vertical budget the pane does not have: fewer visible turns in 380px and direct pressure on D1's 400px floor and BC-5's transcript share (awaits A1/A2). Reads as a document, which the composer and gate card must then live inside without ever looking like a form."
+   },
+   {
+    "name": "Instrument \u2014 denser, tabular, receipt-first",
+    "thesis": "The panel is a meter, not a magazine: everything except the conversation body is mono, two sizes, columns aligned, and each mutating turn ends in a right-aligned receipt column that the eye can scan like a ledger.",
+    "changes": [
+     "Two sizes: 11 mono for all chrome (rail, verbs, labels, receipts), 12 sans for conversation body; weights 400/600 only; TRACKING DATA 0.03 everywhere in mono",
+     "Rail collapses to one row: mark \u00b7 SYNAPSE \u00b7 state sentence \u00b7 Connect \u00b7 Check \u00b7 \u22ef \u2014 the second row's height goes to the transcript",
+     "Turn tail = one mono line right-aligned in TEXT_TERTIARY: '14 \u00b7 2:14 PM \u00b7 mcp 4/4' (this is C2a + C4 + C5 ratified together, scroll-content placement per C2b's 0px option)",
+     "Tight density as the default; radius 0; no gradient; DsCard as a ruled table (header rule, body, footer rule) with no side borders"
+    ],
+    "tradeoff": "Reads as a terminal, and the voice guide asks for a senior artist at your shoulder, not a console. Mono at 11px on a 280px pane is at the edge of legibility on a 4K host at 100% scaling; and it commits the team to shipping the receipt (C2a) rather than ruling it separately."
+   },
+   {
+    "name": "Host-native \u2014 recede into Houdini",
+    "thesis": "The panel should look like a Houdini pane that happens to talk: inherit the host font, the host greys and the host's own tab marker as the single accent, so the only brand on screen is the wordmark.",
+    "changes": [
+     "Drop the bundled Space Grotesk / Space Mono; fontload keeps the host QApplication font and QFontDatabase FixedFont for mono (the build_mismatch branch, fontload.py:106-115 per map, becomes the only branch)",
+     "One accent: HOUDINI_TAB_YELLOW from hou.qt.getColor('PaneTabMarker') (tokens.py:255-256) on the active tab underline, the focus ring and the SEND fill; SIGNAL, SIGNAL_DEEP, WARM, CONIFEROUS retired from chrome \u2014 this settles B1 by making the host marker the accent rather than the exception",
+     "Radii = Houdini's own 2px; no gradient; PANEL/GROUND already host-seeded (tokens.py:123-158) so nothing else moves",
+     "Transcript keeps _MONO = Consolas (message_formatter.py:75) as the deliberate choice it already claims to be"
+    ],
+    "tradeoff": "Loses the identity the v9 comp built (Space Grotesk wordmark, the blue/warm pair) and the panel becomes indistinguishable from a native pane until it speaks; a yellow accent on a warm-grey host is lower-contrast than SIGNAL (B1's 139px of yellow was the complaint) so the accent gets used less, not more."
+   }
+  ]
+ }
+}
