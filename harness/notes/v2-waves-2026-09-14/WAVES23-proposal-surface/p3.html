@@ -1,0 +1,186 @@
+<section id="s6">
+<h2><span class="num">06</span><span>The apply path, re-audited</span></h2>
+<p class="subhead">Three headline guarantees. One is asserted without evidence, one is three dispatches under a bound that abandons but does not stop, and one does not exist. The RECORD findings survived; the guarantee grades did not.</p>
+
+<p><code>graph_builder.py</code> = 287 lines, <code>graph_synth_runtime.py</code> = 176, <code>handlers_graph_synth.py</code> = 93, <code>proposal_store.py</code> = 34 <em>(all <code>wc -l</code>)</em>.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; this whole section was re-graded</span>
+  <p>The draft graded the first two guarantees <strong>ANCHORED</strong> and the third <strong>REFUTED</strong>. After the apply-guarantees lens, the grades are <strong>ASSERTED</strong>, <strong>REFUTED-AS-STATED</strong>, and <strong>REFUTED-WITH-A-CAVEAT</strong>. The draft's RECORD analysis (&sect;6.5) and its VERIFY-swallow finding (&sect;6.4) were attacked and held &mdash; both are confirmed correct, and &sect;6.4 got <em>worse</em> on inspection, not better.</p>
+</div>
+
+<h3>6.1 &nbsp;One undo group &mdash; <span class="badge b-warn">asserted</span> not anchored</h3>
+<p><strong>The code shape is right.</strong> <code>with hou.undos.group(undo_label):</code> at <span class="anchor">graph_builder.py:126</span>, wrapping create &rarr; set parms &rarr; connect &rarr; read-back (<span class="anchor">:131-159</span>). Exception path destroys only NEW nodes, still inside the group, returns a structured FAILED (<span class="anchor">:160-183</span>).</p>
+<p><strong>The evidence is not.</strong></p>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; "one artist Ctrl+Z reverses the whole build" is not evidenced anywhere</span>
+  <p><span class="anchor">graph_builder.py:196</span> emits <code>revert=f"single undo reverts: '{undo_label}'"</code> <strong>unconditionally</strong>, with no check that undos are enabled. The file contains zero <code>hou.undos</code> references other than the group itself.</p>
+  <p><strong>The sibling path already solved this.</strong> <span class="anchor">shared/bridge.py:1662-1677</span> derives <code>undo_group_active</code> from <code>hou.undos.areEnabled()</code> plus <code>undoLabels</code> snapshots around the group, and explicitly enumerates the <em>"under a <code>hou.undos.disabler()</code> scope or a zeroed undo memory"</em> case. The pattern exists, in-tree, and was not applied here.</p>
+  <p><strong>The pinning test is mock-deep, not evidence-deep.</strong> <span class="anchor">tests/test_graph_builder_mile3.py:113-126</span> defines a hand-rolled <code>_FakeUndos</code>/<code>_FakeUndosGroup</code> with no <code>areEnabled</code>, installed at <span class="anchor">:167</span>. Scenario 2 (<span class="anchor">:292</span>, <em>"the whole build is wrapped in EXACTLY ONE undos.group"</em>) proves the call was <strong>made</strong> &mdash; not that an undo entry exists, and not that one Ctrl+Z reverses it.</p>
+  <p><strong>The file concedes it.</strong> <span class="anchor">graph_builder.py:13-14</span>: <em>"GUI undo/consent, typed VOP wires, and production provenance are not qualified by these fixtures."</em> The draft quoted that caveat in &sect;10 and still graded &sect;6.1 ANCHORED. The caveat and the grade cannot both stand; the grade goes.</p>
+  <p><strong>Replacement:</strong> the guarantee is <strong>ASSERTED &mdash; code shape confirmed, effect unverified</strong>. W5 ports the bridge's evidence derivation so <code>revert=</code> is emitted only when a group was actually recorded, and the GUI Ctrl+Z check in &sect;10 becomes a gate on the grade rather than a nice-to-have.</p>
+</div>
+
+<h3>6.2 &nbsp;One main-thread dispatch &mdash; <span class="badge b-crit">refuted as stated</span></h3>
+<p><code>run_on_main(_on_main, label="graph_synth:_handle_instantiate_graph")</code> at <span class="anchor">handlers_graph_synth.py:93</span>. <code>graph_builder</code> itself does no marshalling; the handler owns it. Registered as <code>instantiate_graph</code> at <span class="anchor">handlers.py:860</span>. <strong>That much is true. Two things around it are not.</strong></p>
+
+<h4>(a) &nbsp;It is three dispatches, not one</h4>
+<p>A live-path mutating command gets <strong>two additional main-thread dispatches bracketing the handler's one</strong>: <code>integrity_envelope.capture_scene_hash</code> calls <code>run_on_main</code> per capture (<span class="anchor">server/integrity_envelope.py:205-225</span>), and <span class="anchor">handlers.py:521-529</span> places the capture pair <em>inside</em> the C5 mutation lock bracketing the op. <code>instantiate_graph</code> is not in <code>ENVELOPE_SKIP_COMMANDS</code> (<span class="anchor">integrity_envelope.py:80-99</span>), and envelope suppression only fires when bridge-routed (<span class="anchor">:137-146</span>) &mdash; which the live <code>/synapse</code> path is not.</p>
+<p>The envelope file prices this itself at <span class="anchor">:124-134</span>: <em>"if T1 is real, the two capture hops per mutating op become a measurable latency tax."</em> Each hop is bounded at 1.0s (<span class="anchor">:172</span>) and returns honest <code>None</code> on miss, so this is a bounded tax, not a hang. But <strong>any latency claim about apply must count three wakes</strong>, and the shed lever is <code>SYNAPSE_LIVE_ENVELOPE=0</code> (<span class="anchor">integrity_envelope.py:132-134</span>).</p>
+
+<h4>(b) &nbsp;The bound abandons the payload without stopping it &mdash; and a retry double-builds</h4>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; the highest-severity finding in the crucible, and it is silent</span>
+  <p><span class="anchor">handlers_graph_synth.py:93</span> passes <strong>no timeout</strong>, so the apply runs under <code>_DEFAULT_TIMEOUT = 10.0</code> seconds <em>(producer, re-run this pass: <code>grep -n "_DEFAULT_TIMEOUT\|_SLOW_TIMEOUT" python/synapse/server/main_thread.py</code> &rarr; <code>21:_DEFAULT_TIMEOUT = 10.0</code>, <code>22:_SLOW_TIMEOUT = 30.0</code>)</em>.</p>
+  <p>The C4 abandoned-flag machinery only no-ops payloads that have <strong>not started</strong> &mdash; <span class="anchor">main_thread.py:564</span> sets <code>started[0] = True</code> before <code>fn()</code>. The file names the residual itself at <span class="anchor">:536-538</span>: <em>"A payload already inside <code>fn()</code> when the timeout fires is the accepted residual race&hellip; if the deferred payload later runs <code>fn()</code> anyway, that mutation is a zombie applied after the failure report (and a retry then double-applies)."</em></p>
+  <p><strong>Nothing makes apply idempotent.</strong> <code>ProposalStore.get()</code> does not consume &mdash; it returns <code>entry[1]</code> and leaves the entry in place, TTL 1800s, no built-marker <em>(producer: full read of <code>python/synapse/host/proposal_store.py</code>, 34 lines)</em>. TOCTOU re-validation of an all-NEW proposal still returns VALID against a scene that now contains a copy. <strong>So a retry after a timeout builds the graph twice, in two undo groups.</strong></p>
+  <p><strong>Why 10s is not obviously generous:</strong> inside that one payload sit a full live-<code>hou</code> <code>GraphValidator</code> re-validation (<span class="anchor">graph_synth_runtime.py:53-62</span> &mdash; <code>HouExistenceOracle</code> per node <em>and</em> per parm), <code>createNode</code> with init scripts per node, parm sets, <code>setInputs</code>, read-backs, then <code>_agent_usd_provenance</code> (<span class="anchor">graph_synth_runtime.py:96-127</span>) opening and writing a USD stage under <code>$HIP</code>. That nested work is <strong>unbounded</strong>, because <code>run_on_main</code> fast path 1 returns <code>fn()</code> directly with no timeout when already on main (<span class="anchor">main_thread.py:474-475</span>).</p>
+  <p><strong>The only existing mitigation is prompt text.</strong> <span class="anchor">panel/tool_executor.py:738-746</span> and <span class="anchor">panel/claude_worker.py:560</span> emit <em>"may STILL be running inside Houdini &mdash; do not retry."</em> That is a sentence shown to a model in the panel. <strong>The <code>/mcp</code> client never sees it.</strong></p>
+  <p><strong>Replacement:</strong> this becomes <strong>W4</strong> in &sect;9 &mdash; either give <code>instantiate_graph</code> <code>_SLOW_TIMEOUT</code> and report overrun as UNKNOWN rather than FAILED, or make apply idempotent at the store (consume-on-build, or a built-marker keyed by <code>proposal_id</code>) so a retry after a timeout is a no-op. <em>Reachability of the 10s bound is unmeasured &mdash; see &sect;12.4 and G5. The defect does not depend on the answer.</em></p>
+</div>
+
+<div class="diag" role="img" aria-label="Three main-thread dispatches per apply, all inside the C5 mutation lock, with the middle one bounded at ten seconds">
+<svg viewBox="0 0 700 232" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace" font-size="11">
+  <rect x="8" y="8" width="684" height="216" fill="none" stroke="currentColor" stroke-opacity=".18" stroke-dasharray="3 3"/>
+  <text x="20" y="26" fill="currentColor" fill-opacity=".55" font-size="9.5" letter-spacing="1.4">C5 MUTATION LOCK &#183; HELD OFF-MAIN FOR THE WHOLE OP</text>
+
+  <rect x="28" y="44" width="170" height="46" fill="none" stroke="currentColor" stroke-opacity=".45"/>
+  <text x="40" y="63" fill="currentColor" fill-opacity=".75">dispatch 1</text>
+  <text x="40" y="79" fill="currentColor" fill-opacity=".5" font-size="10">hash_before &#183; bound 1.0s</text>
+
+  <rect x="236" y="44" width="228" height="46" fill="none" stroke="currentColor" stroke-width="2"/>
+  <text x="248" y="63" fill="currentColor">dispatch 2 &#8212; the build</text>
+  <text x="248" y="79" fill="currentColor" fill-opacity=".6" font-size="10">bound 10.0s (_DEFAULT_TIMEOUT)</text>
+
+  <rect x="502" y="44" width="170" height="46" fill="none" stroke="currentColor" stroke-opacity=".45"/>
+  <text x="514" y="63" fill="currentColor" fill-opacity=".75">dispatch 3</text>
+  <text x="514" y="79" fill="currentColor" fill-opacity=".5" font-size="10">hash_after &#183; bound 1.0s</text>
+
+  <line x1="198" y1="67" x2="230" y2="67" stroke="currentColor" stroke-opacity=".4"/>
+  <line x1="464" y1="67" x2="496" y2="67" stroke="currentColor" stroke-opacity=".4"/>
+
+  <line x1="350" y1="90" x2="350" y2="116" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="2 3"/>
+  <text x="236" y="132" fill="currentColor" fill-opacity=".55" font-size="9.5" letter-spacing="1.2">AT 10.0s THE CALLER IS TOLD FAILED</text>
+
+  <rect x="236" y="146" width="228" height="60" fill="none" stroke="currentColor" stroke-opacity=".9" stroke-dasharray="5 3"/>
+  <text x="248" y="166" fill="currentColor">payload keeps running</text>
+  <text x="248" y="182" fill="currentColor" fill-opacity=".6" font-size="10">started[0] is already True</text>
+  <text x="248" y="197" fill="currentColor" fill-opacity=".6" font-size="10">nodes land &#183; store still holds the id</text>
+
+  <text x="484" y="172" fill="currentColor" fill-opacity=".85" font-size="10">retry &#8594; second graph</text>
+  <text x="484" y="188" fill="currentColor" fill-opacity=".6" font-size="10">second undo group</text>
+  <line x1="464" y1="176" x2="478" y2="176" stroke="currentColor" stroke-opacity=".5"/>
+</svg>
+</div>
+
+<h3>6.3 &nbsp;One cook &mdash; <span class="badge b-crit">refuted</span>, with one caveat the draft missed</h3>
+<p>Grep for <code>cook</code> across <code>graph_builder.py</code>, <code>graph_synth_runtime.py</code>, and <code>handlers_graph_synth.py</code>: <strong>zero hits</strong> (exit 1). No <code>.cook(force=True)</code>, no <code>.cook(block=&hellip;)</code>, no <code>cookCount</code> read.</p>
+<p><code>parm.eval()</code> / <code>tup.eval()</code> (<span class="anchor">graph_builder.py:245</span>, <span class="anchor">:250</span>) force evaluation of a single parameter expression &mdash; <strong>not a node or network cook.</strong></p>
+<p>Dozens of <code>.cook(</code> calls exist elsewhere in the tree (<code>handlers_usd.py</code>, <code>handlers_material.py</code>, <code>handlers_node.py</code>, <code>handlers_cops.py</code>, <code>handlers_tops/*</code>), so the pattern is established everywhere except here.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; the refutation, and the fix it prescribed</span>
+  <p><strong>On the refutation:</strong> "zero grep hits for <code>cook</code>" proves the apply path never <em>requests</em> a cook. It does not prove none <em>fires</em>. <code>parent.createNode</code> (<span class="anchor">graph_builder.py:133</span>) runs node init scripts by default and <code>parm.set</code> (<span class="anchor">:244</span>) fires authored parm callbacks &mdash; both are documented Houdini routes to cooks and to further node creation. <strong>Restated: no requested cook; implicit cooks via init scripts and parm callbacks are unaudited.</strong></p>
+  <p><strong>On the fix:</strong> the draft prescribed "an explicit cook of created leaf nodes <em>inside or immediately after</em> the undo group." That is unsafe as written, two ways. <strong>(1)</strong> A cook inside the group lands inside the <code>try:</code> at <span class="anchor">:128</span>, so a benign cook error &mdash; a file SOP with an unresolved path &mdash; raises, hits the <code>except</code> at <span class="anchor">:160</span>, destroys every created node, and returns FAILED. <strong>A cook error would nuke a structurally correct build.</strong> <strong>(2)</strong> A forced cook is unbounded work landed inside the 10s dispatch bound of &sect;6.2(b) &mdash; the same class as the documented render freeze (<code>executeInMainThreadWithResult</code> into <code>node.render()</code>).</p>
+  <p><strong>Replacement in &sect;9 (W7):</strong> recon first (G3 as a pure measurement, not a gate), then cook <em>after</em> the group closes and <em>outside</em> the <code>try</code>, bounded, with "built, cook incomplete" as a distinct status rather than a failure. Size holds at S; the <em>design</em> was the defect, not the effort.</p>
+</div>
+
+<h3>6.4 &nbsp;What VERIFY does with an unreadable value</h3>
+<p><strong>It collapses UNKNOWN into <code>None</code>, indistinguishable from a legitimately-<code>None</code> observed value.</strong> <code>_set_and_read</code> (<span class="anchor">graph_builder.py:236-251</span>) initialises the record with <code>observed: None</code> and overwrites it only if <code>node.parm()</code> or <code>node.parmTuple()</code> resolves. A proposal naming a parm that does not exist on the created type yields <code>{requested: &lt;value&gt;, observed: None}</code> &mdash; with <strong>no flag anywhere</strong>, and <code>InstantiationResult.errors</code> is populated only on HALT re-validation issues, never on BUILT (<span class="anchor">graph_builder.py:51</span>, <span class="anchor">:114</span>, <span class="anchor">:189-197</span>).</p>
+<p>The wire read-back is accurate by contrast: <code>_read_connection</code> (<span class="anchor">graph_builder.py:253-268</span>) reports <code>wired: False</code> when the live scene does not show the connection.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; two axes, and the draft only measured one</span>
+  <p>The draft said <em>"half of VERIFY is honest and half is silent,"</em> and prescribed <code>resolved: bool</code> as an <strong>S</strong>. The record-accuracy half of that is right and holds. The missing half is <strong>consumption</strong>, and it is worse than the draft implied:</p>
+  <ul>
+    <li><code>wired: False</code> changes nothing. Status is still <code>InstantiationStatus.BUILT</code>, <code>ok()</code> returns <code>True</code> (<span class="anchor">graph_builder.py:53-54</span>, <span class="anchor">:189-197</span>), <code>errors</code> stays empty on the BUILT path (<span class="anchor">:51</span>), and <code>result_to_dict</code> passes the records through verbatim (<span class="anchor">graph_synth_runtime.py:147-160</span> &mdash; <em>citation corrected from <code>:145-158</code></em>).</li>
+    <li>Grep across <code>python/synapse</code> finds <strong>no consumer of <code>parameters_set</code> and no consumer of <code>connections[*].wired</code></strong>. Nothing compares <code>requested</code> against <code>observed</code> anywhere.</li>
+    <li>The sibling subsystem does exactly that comparison and <em>fails</em> on it &mdash; <span class="anchor">recipes/verify.py:646</span>, <em>"requested values not observed."</em> The pattern was available and not applied.</li>
+  </ul>
+  <p><strong>So an apply where every connection failed to wire and every parm was unreadable returns BUILT / ok=True with a cheerful message.</strong></p>
+  <p><strong>Replacement:</strong> W6 keeps <code>resolved: bool</code> and adds the part that makes it mean something &mdash; any <code>wired: False</code>, or any unresolved parm, must downgrade the status (a PARTIAL state) or populate <code>errors</code> on the BUILT path. Otherwise the new flag is one more field nobody reads. Size moves S &rarr; <strong>S&ndash;M</strong>.</p>
+  <p><em>I accept the substance and contest one word of the framing &mdash; see &sect;12.3. An accurate-but-unconsumed record is not dishonest; it is inert. The two failures need different fixes, and collapsing them hides that.</em></p>
+</div>
+
+<h3>6.5 &nbsp;What RECORD writes, and whether anything reads it</h3>
+<div class="rev r-held">
+  <span class="rl">Held &mdash; attacked and confirmed, to the byte</span>
+  <p>The provenance counts reproduce exactly on an independent re-run: 5,001 directory entries of which one is a <code>.tmp</code> (hence "5,000 of 5,001 parsed"), 57 <code>instantiate_graph</code>, 65 <code>propose_graph</code>. The channel analysis below was not contradicted anywhere.</p>
+</div>
+
+<p><strong>Two independent channels. One is silent-failable; the other is content-free.</strong></p>
+
+<h4>Channel A &mdash; agent.usd decision narrative (silent-failable)</h4>
+<p><code>_emit_provenance</code> (<span class="anchor">graph_builder.py:270-287</span>) writes <code>{decision, reasoning, parent_path, created_paths, model_id, revert}</code> &mdash; the human-readable record, the one that says <em>what was built</em>. It is <strong>live-wired</strong>: <span class="anchor">graph_synth_runtime.py:142</span> constructs <code>GraphBuilder(&hellip;, provenance_writer=_agent_usd_provenance)</code>, and that writer (<span class="anchor">graph_synth_runtime.py:96-127</span>) appends into <code>$HIP/claude/agent.usd</code> &rarr; <code>/SYNAPSE/memory/decisions</code> via <code>agent_state.log_decision</code> (<span class="anchor">memory/agent_state.py:549-573</span>).</p>
+
+<h4>Channel B &mdash; FloorGate Tier-0 (always fires, records digests only)</h4>
+<p><code>CommandHandlerRegistry.invoke()</code> wraps every registered command through <code>FloorGate.wrap</code> (<span class="anchor">handlers.py:387-404</span>); <code>instantiate_graph</code> is registered (<span class="anchor">handlers.py:860</span>) and is <strong>not</strong> in <code>_READ_ONLY_COMMANDS</code> (40 names, <span class="anchor">handlers.py:204-245</span>), so it is classified mutating and gets a record.</p>
+<p><strong>This fires for real.</strong> A sample record read off disk (<code>.synapse/provenance/op-20260913T213803174370Z-000002.json</code>):</p>
+<pre>{ <span class="a">"op"</span>: "instantiate_graph", <span class="a">"op_id"</span>: "op-20260913T213803174370Z-000002",
+  <span class="a">"origin"</span>: "handler", <span class="a">"outcome"</span>: "ok", <span class="a">"parent"</span>: null,
+  <span class="a">"payload_digest"</span>: "60194c93&hellip;", <span class="a">"result_digest"</span>: "1d6533&hellip;",
+  <span class="a">"session"</span>: null, <span class="a">"ts"</span>: "2026-09-13T21:38:03.174965+00:00" }</pre>
+<p>57 such records exist, with outcomes <code>{ok, error}</code> <em>(producer: scan of <code>.synapse/provenance/*.json</code> matching <code>op == "instantiate_graph"</code>)</em>.</p>
+<p><strong>But it records <em>digests</em>, not content.</strong> A human reading that record learns that an instantiate happened and that its result hashes to <code>1d6533&hellip;</code>. They cannot learn <em>what was built</em>, which nodes, which parms, or whether the parm read-back matched. <strong>It is tamper-evidence, not an audit trail.</strong> <code>session</code> is <code>null</code>, so records are not grouped by session either.</p>
+
+<p><strong>Readers:</strong> FloorGate provenance is read by exactly one consumer &mdash; <span class="anchor">server/doctor.py:857-866</span>, which bundles the <strong>newest 3 files</strong> into a diagnostic zip. <span class="anchor">memory/ledger.py:222</span> only mirrors its path-resolution logic. <code>.synapse/ledger/</code> holds 29 files, all science-harness kinds (19 <code>Confirmation</code>, 4 <code>DocConformance</code>, 3 <code>Deferred</code>, 1 <code>DeadEnd</code>, 1 <code>SubstrateAssumption</code>) &mdash; unrelated to instantiate.</p>
+<p><strong>So: RECORD writes 5,001 files</strong> <em>(producer: <code>ls .synapse/provenance | wc -l</code>)</em><strong>, and the only thing that reads them is a support bundle.</strong> No artist-facing read, no query, no verification surface.</p>
+<p>The <code>InstantiationResult</code> &mdash; which <em>does</em> carry the reviewable content (<code>created_paths</code>, <code>parameters_set</code>, <code>connections</code>, <code>revert</code>, <code>errors</code>; <span class="anchor">graph_builder.py:43-51</span>, serialized at <span class="anchor">graph_synth_runtime.py:147-160</span>) &mdash; is returned to the WS caller and <strong>persisted nowhere the artist can re-read it.</strong></p>
+
+<h3>6.6 &nbsp;Law 3 violations found</h3>
+<p><strong>Law 3 &mdash; provenance or it didn't happen.</strong></p>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Violation</th><th>Anchor</th><th>Severity</th></tr></thead>
+<tbody>
+<tr>
+<td><strong>L3-1</strong></td>
+<td><code>_emit_provenance</code> swallows any exception with a bare <code>except Exception: pass</code> and <code>instantiate()</code> returns <code>BUILT</code> regardless (<span class="anchor">:186</span> &rarr; <span class="anchor">:189-197</span>). <code>InstantiationResult</code> has <strong>no</strong> <code>provenance_recorded</code> field (field list, <span class="anchor">:43-51</span>). The artist can never be told <em>"the build worked but the audit trail did not record it."</em></td>
+<td><span class="anchor">graph_builder.py:286-287</span></td>
+<td><strong>Real, narrowed.</strong> Channel B still fires, so system-level "it happened" survives. What can go silent is the <em>content</em> record &mdash; the only channel that says what was built.</td>
+</tr>
+<tr>
+<td><strong>L3-2</strong></td>
+<td>The FAILED-path message asserts <em>"rolled back (zero net mutation)"</em> without verifying the destroy loop completed; per-node destroys are individually swallowed.</td>
+<td><span class="anchor">graph_builder.py:168-172</span> &rarr; message at <span class="anchor">:182</span></td>
+<td><strong>Real.</strong> A claim stronger than the evidence.</td>
+</tr>
+<tr>
+<td><strong>L3-3</strong></td>
+<td>An unresolvable parm produces <code>observed: None</code> with no flag and no entry in <code>errors</code> &mdash; the record <em>looks</em> like a successful read of a null value.</td>
+<td><span class="anchor">graph_builder.py:236-251</span></td>
+<td><strong>Real.</strong> Provenance that misrepresents rather than omits.</td>
+</tr>
+<tr>
+<td><strong>L3-4</strong> <span class="badge b-warn">downgraded</span></td>
+<td>A <strong>stale parenthetical inside an otherwise-correct conditional comment.</strong> Lines <span class="anchor">:271-274</span> read: <em>"If a host wired an agent.usd / agent_state writer, call it; otherwise this is the documented seam where production attaches one. (Residual: the agent.usd provenance writers are dormant &mdash; no live caller yet &mdash; so default is a no-op.)"</em> The leading clause already handles the wired case correctly, and <code>self._provenance is None &rarr; return</code> (<span class="anchor">:275</span>) keeps "default is a no-op" true. Only the <em>Residual</em> clause is stale.</td>
+<td><span class="anchor">graph_builder.py:271-274</span></td>
+<td><strong>Minor.</strong> The draft called this <em>"drift in the one place that must not drift"</em> &mdash; an over-read of a conditional comment. Downgraded. The cleanup stays in W6, and gains a <strong>second target</strong>: the same stale sentence is inherited by the repo <code>CLAUDE.md</code> Current Status line (<em>"agent.usd Schema &hellip; provenance writers dormant"</em>), so fixing one and not the other re-seeds it.</td>
+</tr>
+<tr>
+<td><strong>L3-5</strong></td>
+<td><code>propose_graph</code> writes 65 mutation-class provenance records for an operation its own handler docstring calls <em>"Read-only &mdash; it validates + parks, it does NOT mutate the scene"</em> (<span class="anchor">handlers_graph_synth.py:40-42</span>). Provenance that asserts a mutation that did not occur.</td>
+<td><span class="anchor">handlers.py:204-245</span> (absence)</td>
+<td><strong>Real, inverted.</strong> Most Law 3 breaches are missing records; this one is a false record. <em>The remedy is no longer a one-liner &mdash; see &sect;7.2 and W8.</em></td>
+</tr>
+<tr>
+<td><strong>L3-6</strong> <span class="badge b-acc">new</span></td>
+<td>The rollback loop iterates <code>created.values()</code> only (<span class="anchor">:168-173</span>) &mdash; NEW nodes. Two other mutation vectors are never reversed. <strong>(i)</strong> EXISTING&rarr;EXISTING edges: Amendment 3 permits an existing node on either side (<span class="anchor">graph_proposal.py:42-43</span>; <code>_resolve</code> returns <code>hou.node(scene_path)</code> for EXISTING, <span class="anchor">graph_builder.py:228-233</span>), so <code>tgt.setInput</code> at <span class="anchor">:152</span> can wire two pre-existing nodes with zero NEW nodes involved; a later raise leaves that wire, while <span class="anchor">:182</span> asserts zero net mutation. <strong>(ii)</strong> Side-effect nodes: <code>createNode</code> runs init scripts and <code>parm.set</code> fires authored callbacks &mdash; anything those author is not in <code>created{}</code> and is not destroyed. The pinning test only asserts the EXISTING node is <em>not destroyed</em> (<span class="anchor">tests/test_graph_builder_mile3.py:332</span>); it never asserts its inputs were restored.</td>
+<td><span class="anchor">graph_builder.py:168-173</span>, <span class="anchor">:152</span></td>
+<td><strong>Real.</strong> L3-2 under-scoped. Until fixed, the FAILED message must read <em>"new nodes destroyed; pre-existing wiring not restored,"</em> never <em>"zero net mutation."</em></td>
+</tr>
+<tr>
+<td><strong>L3-7</strong> <span class="badge b-acc">new</span></td>
+<td>VERIFY's output is inert. <code>parameters_set</code> and <code>connections[*].wired</code> have zero consumers tree-wide; an all-failed read-back still returns <code>BUILT</code> / <code>ok()==True</code>. The record can be made accurate (L3-3) and still assert nothing.</td>
+<td><span class="anchor">graph_builder.py:51</span>, <span class="anchor">:53-54</span>, <span class="anchor">:189-197</span></td>
+<td><strong>Real.</strong> Distinct from L3-3: one is a false record, this is a true record with no verdict attached.</td>
+</tr>
+<tr>
+<td><strong>L3-8</strong> <span class="badge b-acc">new</span></td>
+<td><code>revert=</code> is emitted unconditionally with no evidence that an undo entry was recorded, while the sibling bridge path derives exactly that evidence (<span class="anchor">shared/bridge.py:1662-1677</span>). A recovery instruction asserted without proof is a provenance claim.</td>
+<td><span class="anchor">graph_builder.py:196</span>, <span class="anchor">:284</span></td>
+<td><strong>Real.</strong> The &sect;6.1 grade defect, stated as a Law 3 item.</td>
+</tr>
+</tbody></table></div>
+</section>

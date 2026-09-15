@@ -1,0 +1,129 @@
+<section id="s7">
+<h2><span class="num">07</span><span>The instantiate classification</span></h2>
+<p class="subhead">Three tables classify the same tool and they disagree. The row the brief asked for already shipped; the remaining one-liner turns out not to be one.</p>
+
+<h3>7.1 &nbsp;The exact row shape</h3>
+<div class="rev r-held">
+  <span class="rl">Held &mdash; reproduced bit-for-bit on an independent re-run</span>
+  <p>Every number below came back identical: 128 / 41 / 87 tools, 74 rows, 23 gates, distribution 49&middot;16&middot;13&middot;7&middot;2, and the 16-name no-row list matching name-for-name with zero orphan rows.</p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th class="num">#</th><th>Table</th><th>Keyed by</th><th>Shape</th><th><code>propose</code></th><th><code>instantiate</code></th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td><code>TOOL_DEFS</code></td><td>tool name</td><td>8-tuple; slot 5 = <code>read_only</code></td><td><code>read_only=True</code>, <code>destructive=False</code>, <code>idempotent=True</code> (<span class="anchor">_tool_registry.py:1381-1391</span>)</td><td><code>read_only=False</code>, <code>destructive=True</code>, <code>idempotent=False</code> (<span class="anchor">_tool_registry.py:1393-1401</span>)</td></tr>
+<tr><td class="num">2</td><td><code>_TOOL_TO_OPERATION</code> &rarr; <code>OPERATION_GATES</code></td><td>tool name &rarr; op name &rarr; gate word</td><td><code>dict[str,str]</code> &times; <code>dict[str,str]</code></td><td><strong>absent</strong> &rarr; <span class="anchor">bridge_adapter.py:361</span> defaults to <code>"set_parameter"</code> &rarr; <strong>inform</strong></td><td><code>"build_from_manifest"</code> (<span class="anchor">bridge_adapter.py:153</span>) &rarr; <strong>review</strong></td></tr>
+<tr><td class="num">3</td><td><code>_READ_ONLY_COMMANDS</code></td><td><em>command</em> name, not tool name</td><td><code>frozenset[str]</code>, 40 names</td><td><strong>absent</strong> &rarr; mutating</td><td>absent &rarr; mutating</td></tr>
+</tbody></table></div>
+
+<p>The row itself is one line:</p>
+<pre><span class="c"># bridge_adapter.py:153</span>
+<b>"synapse_instantiate_graph": "build_from_manifest",</b></pre>
+
+<p>Two consumers read it: <code>worker_policy._build_index()</code> (<span class="anchor">worker_policy.py:110-118</span>) &rarr; gate <code>review</code> &rarr; denied under <code>_DENIED_GATES</code> (<span class="anchor">worker_policy.py:64</span>, applied <span class="anchor">:224</span>); and <span class="anchor">bridge_adapter.py:361</span> &rarr; the bridge's operation type and consent level on <code>/mcp</code>.</p>
+
+<p><strong>Coverage numbers</strong> <em>(producer: <code>python -c</code> importing <code>TOOL_DEFS</code>, <code>_TOOL_TO_OPERATION</code>, <code>OPERATION_GATES</code> and cross-tabulating)</em>:</p>
+<ul>
+<li><code>TOOL_DEFS</code>: <strong>128</strong> tools &mdash; <strong>41</strong> read-only, <strong>87</strong> mutating</li>
+<li><code>_TOOL_TO_OPERATION</code>: <strong>74</strong> rows (<span class="anchor">bridge_adapter.py:76-169</span>); zero rows point at a tool with no <code>TOOL_DEFS</code> entry</li>
+<li><code>OPERATION_GATES</code>: <strong>23</strong> entries (<span class="anchor">shared/constants.py:79-103</span>)</li>
+<li>Gate distribution over the 87 mutating tools: <strong>inform 49 &middot; no-row 16 &middot; approve 13 &middot; review 7 &middot; critical 2</strong></li>
+</ul>
+
+<h3>7.2 &nbsp;The smallest correct change</h3>
+<p><strong>The change the brief asks for already shipped</strong> in <code>8c23fccc</code> &mdash; instantiate has its row, it maps to <code>build_from_manifest</code>, and <code>build_from_manifest</code> is <code>review</code> (<span class="anchor">shared/constants.py:93</span>). That is correct: the host may (with consent), the worker may not (<span class="anchor">worker_policy.py:178-179</span>).</p>
+
+<p>The draft then proposed adding <code>"propose_graph"</code> to <code>_READ_ONLY_COMMANDS</code> as <em>"one line."</em> The justification for the <em>intent</em> is still written in three places in the tree &mdash; <code>TOOL_DEFS</code> marks it <code>read_only=True</code> (<span class="anchor">_tool_registry.py:1391</span>); its handler docstring says <em>"Read-only &mdash; it validates + parks, it does NOT mutate the scene"</em> (<span class="anchor">handlers_graph_synth.py:40-42</span>); its tool description says <em>"Mutates nothing"</em> (<span class="anchor">_tool_registry.py:1384</span>). <strong>The mechanism is not one line, and one of its side effects is harmful.</strong></p>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; <code>_READ_ONLY_COMMANDS</code> has five branch sites, not one</span>
+  <p><em>Producer, re-run this pass: <code>grep -rn "_READ_ONLY_COMMANDS" python/ harness/ shared/ tests/</code>.</em> The draft reasoned only about the C5 lock. Membership also flips four other behaviours:</p>
+  <div class="tw"><table>
+  <thead><tr><th>Consumer</th><th>Anchor</th><th>What membership does to <code>propose_graph</code></th></tr></thead>
+  <tbody>
+  <tr><td>C5 mutation lock</td><td><span class="anchor">handlers.py:509-520</span></td><td>Stops taking the lock. <em>The intended effect.</em></td></tr>
+  <tr><td>FloorGate Tier-0</td><td><span class="anchor">core/floor_gate.py:292-295</span>, <span class="anchor">:306</span> &mdash; <em>"Read-only ops execute with zero provenance"</em></td><td><strong>Loses its only durable record.</strong> &sect;6.5 establishes <code>InstantiationResult</code> is persisted nowhere the artist can re-read; post-change the propose half of the loop has no record at all. The draft sold this purely as a win ("removes L3-5").</td></tr>
+  <tr><td>WS resilience + latency</td><td><span class="anchor">server/websocket.py:686-693</span> &mdash; <em>"Read-only commands bypass resilience AND latency tracking"</em></td><td>Drops out of rate limiting and circuit-breaker success accounting.</td></tr>
+  <tr><td>F3 freeze breaker</td><td><span class="anchor">server/hwebserver_adapter.py:236-257</span> &mdash; <em>"fast-fail NEW mutating commands instead of queueing them behind the frozen main thread. Read-only commands bypass"</em></td><td><strong>Actively harmful.</strong> <code>_handle_propose_graph</code> is <code>run_on_main</code>-bound (<span class="anchor">handlers_graph_synth.py:69</span>), so after the change a propose issued during a main-thread freeze <em>stops fast-failing and starts queueing behind the frozen main thread</em> &mdash; the precise failure F3 was built to prevent.</td></tr>
+  <tr><td>Live integrity envelope</td><td><span class="anchor">server/integrity_envelope.py:73-77</span></td><td>Skip-set is keyed off the complement; the envelope pair stops firing. <em>Benign, and desirable.</em></td></tr>
+  </tbody></table></div>
+  <p>Plus <code>harness/verify/readonly_hint_agreement.py</code> cross-tabulates the set, and <span class="anchor">server/write_plane.py:82</span> and <span class="anchor">server/doctor.py:24</span> document their behaviour in terms of it.</p>
+  <p><strong>Replacement in &sect;9 (W8):</strong> a four-consumer decision, not a membership edit. The likely correct answer is a <em>third</em> classification &mdash; record-but-do-not-lock &mdash; rather than moving <code>propose_graph</code> into a set that also turns off its provenance and its freeze protection.</p>
+</div>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; "proposals validate during renders" was the draft's whole leverage, and it does not follow</span>
+  <p>The draft ranked this change #1 of nine on the claim that it unblocks proposal validation during a render. <strong>Dropping the C5 lock frees the lock, not the main thread.</strong></p>
+  <p><code>_handle_propose_graph</code> marshals with <code>run_on_main</code> (<span class="anchor">handlers_graph_synth.py:69</span>) because its grounding is a live <code>hou</code> oracle and <em>"MUST run in the Houdini process"</em> (module docstring). <code>_handle_render</code> marshals for the same reason (<span class="anchor">handlers_render.py:628-631</span>: <em>"Marshals via <code>run_on_main</code> since <code>hou.RopNode.render()</code> must run on the main thread"</em>). For any render that occupies the main thread, a reclassified propose still queues on the marshal &mdash; <strong>same wait, different queue.</strong></p>
+  <p><strong>The precedent does not transfer.</strong> <span class="anchor">handlers_render.py:1677-1681</span> justifies <code>render_stop</code>/<code>render_farm_cancel</code> as read-only because <em>"They mutate no scene state and create no undo entry &mdash; they signal an OS process"</em> &mdash; they are main-thread-<strong>independent</strong> (<code>rps</code>/<code>rkill</code> against background processes). <code>propose_graph</code> is main-thread-<strong>bound</strong> by construction.</p>
+  <p><strong>And the draft's own test could not have caught this.</strong> "A propose dispatched off-main while <code>_MUTATION_LOCK</code> is held by another thread returns without blocking" passes after the change, but it proves lock-freedom and is silent on main-thread contention &mdash; it cannot fail for the reason the benefit was claimed.</p>
+  <p><strong>Replacement:</strong> the unblock survives only in the narrow case of a <em>background or farm</em> render that holds the C5 lock without occupying the main thread. Stated unconditionally it is false, so it is stated conditionally in W8, and W8 loses its #1 rank to the two items that genuinely retire a seat requirement.</p>
+</div>
+
+<p><strong>What the misclassification still costs today, per propose call</strong> &mdash; the two surviving items:</p>
+<ol>
+<li><strong>It takes the C5 mutation lock</strong> (<span class="anchor">handlers.py:509-520</span>), so a background/farm render holding that lock blocks proposal validation for its whole duration.</li>
+<li><strong>It captures a live integrity envelope</strong> &mdash; two topo scene hashes bracketing an op that changes nothing (&sect;6.2a).</li>
+<li><strong>It writes a false mutation record</strong> &mdash; 65 of them on disk (&sect;6.6, L3-5). <em>And the obvious remedy also deletes the only record there is.</em></li>
+</ol>
+
+<h3>7.3 &nbsp;The structural question: can the policy table express "host may, model may not"?</h3>
+<p><strong>Only by accident, and the escape hatch proves it.</strong></p>
+<p><code>OPERATION_GATES</code> is <code>dict[str, str]</code> &mdash; <strong>operation &rarr; risk word. One axis. Audience is not a column.</strong></p>
+<p>"Host may, model may not" is expressible today only because two consumers happen to read the same value in opposite ways:</p>
+<ul>
+<li>the bridge reads <code>review</code> as <em>"propose, log, continue unless rejected"</em> (<span class="anchor">shared/bridge.py:2471-2473</span>)</li>
+<li><code>worker_policy</code> reads <code>review</code> as <em>"hard deny"</em> (<span class="anchor">worker_policy.py:64</span>, applied <span class="anchor">:224</span>)</li>
+</ul>
+<p><strong>So risk level is being overloaded as an audience proxy.</strong> Three pieces of evidence that the table cannot carry the axis:</p>
+<ol>
+<li><strong>The inverse need required a hand-maintained frozenset outside the table.</strong> <code>_WORKER_BUILDER_ALLOWLIST</code> (<span class="anchor">worker_policy.py:76-79</span>) re-permits two <code>review</code>-gated composite builders to the worker, with a 10-line rationale comment. If the table could express audience, that allowlist would be a column value.</li>
+<li><strong>A third audience required a new code branch, not a table edit.</strong> The <code>proposal</code> mode is 19 lines of branching (<span class="anchor">worker_policy.py:162-180</span>), not a row.</li>
+<li><strong>The same missing row means opposite things to the two consumers.</strong> For the <strong>16</strong> mutating tools with no <code>_TOOL_TO_OPERATION</code> row (<code>cops_create_copnet</code>, <code>houdini_create_point_instancer</code>, <code>houdini_set_payload_loadstate</code>, <code>houdini_set_usd_primvar</code>, <code>houdini_shot_render_ready</code>, <code>synapse_doctor</code>, <code>synapse_emergency_halt</code>, <code>synapse_render_farm_cancel</code>, <code>synapse_render_stop</code>, <code>synapse_solaris_component_builder</code>, <code>synapse_solaris_create_variants</code>, <code>synapse_solaris_import_megascans</code>, <code>synapse_solaris_scene_template</code>, <code>synapse_solaris_set_purpose</code>, <code>synapse_write_report</code>, <code>tops_monitor_stream</code>): <strong><code>worker_policy</code> fails closed and denies</strong> (<span class="anchor">worker_policy.py:230-231</span>), while <strong><code>bridge_adapter</code> fails open to <code>set_parameter</code> = inform</strong> (<span class="anchor">bridge_adapter.py:361</span>). One absence, two opposite defaults.</li>
+</ol>
+
+<p><strong>That is bigger than a missing row, and bigger than the instantiate question.</strong> It means:</p>
+<ul>
+<li>Any op that is genuinely <em>low-risk for the host</em> but <em>must not be model-initiated</em> has to be branded high-risk at the host too &mdash; so the host pays a consent ceremony for it. <strong>Applying an already-human-reviewed proposal is exactly that op.</strong> If the C1 hunk card is the approval, then a <code>review</code> gate on <code>instantiate_graph</code> is a <em>second</em> approval of the same decision. Double-gating is the structural cost of a table with no audience axis &mdash; and it is a cost the hunk card <strong>ships with</strong> until the gated wave lands (annotated on W10, W11, W12 in &sect;9).</li>
+<li>Adding a per-engagement audience (C7) cannot be a table edit. It is a new dimension.</li>
+</ul>
+
+<p><strong>The honest statement: the policy table cannot express "host may, model may not." It expresses risk, and two consumers interpret risk as audience in ways that happen to be right today and required a hardcoded allowlist the one time they weren't.</strong></p>
+</section>
+
+<section id="s8">
+<h2><span class="num">08</span><span>Gated-surface impact</span></h2>
+<p class="subhead">Nine of sixteen items touch no gated surface at all. The two that touch the contract file are both avoidable in a first cut. The audience-axis wave is the only unavoidably gated one, and it is also the largest.</p>
+
+<h3>8.1 &nbsp;First, the label</h3>
+<p>The phrase <strong>"frozen seam" in this repository means <code>python/synapse/recipes/contracts.py</code></strong> &mdash; <span class="anchor">recipes/__init__.py:7</span> (<em>"The frozen seam every stream codes against is <code>synapse.recipes.contracts</code>"</em>), <span class="anchor">harness/notes/RELEASE_v5.63.0.md:33</span>, <span class="anchor">CHANGELOG.md:67</span> (the Solaris Recipes v3 wave, <em>"six streams over one frozen seam"</em>).</p>
+<p><strong><code>python/synapse/cognitive/graph_proposal.py</code> carries no frozen designation.</strong> Read whole &mdash; <strong>84 lines, final statement (<code>advisories</code>) at <span class="anchor">:84</span></strong> <em>(citation corrected: the draft said "84 lines by <code>wc -l</code>; final statement at :85, no trailing newline," which is internally inconsistent &mdash; <code>wc -l</code> returns 84 and <code>grep -n advisories</code> returns 84, so there is a trailing newline and no line 85)</em>. Its docstring says only <em>"PURE PYTHON &mdash; ZERO hou IMPORTS"</em> and <em>"Spec &sect;4 (v3) + amendments 1,3"</em>. Grep for <code>frozen</code> across <code>python/synapse/cognitive/</code> and <code>python/synapse/recipes/</code> ties the term to recipes only.</p>
+<p><strong>This is a naming correction, not a governance one.</strong> The CTO brief designates four surfaces as separate gated waves; that designation stands on its own authority. It is recorded here so nobody cites a Solaris-v3 process document as the reason.</p>
+
+<h3>8.2 &nbsp;What in this report touches each gated surface</h3>
+<div class="tw"><table>
+<thead><tr><th>Item</th><th class="ctr">graph_<br>proposal.py</th><th class="ctr">recipes/<br>contracts.py</th><th class="ctr">worker<br>policy</th><th class="ctr">OPERATION_<br>GATES</th></tr></thead>
+<tbody>
+<tr><td><strong>Catalog-backed existence oracle</strong> (new adapter over <code>validation/catalog.py</code>)</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Catalog-backed connectivity oracle</strong> <span class="badge b-acc">new</span> (same file, <code>min_inputs</code>/<code>max_inputs</code>/<code>max_outputs</code>)</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Unverified signal via <code>ValidationReport.advisories</code></strong> <span class="badge b-warn">re-routed</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Third validation outcome</strong> (<code>UNVERIFIED</code> in <code>ValidationStatus</code>) &mdash; <em>deferred, not built in the first cut</em></td><td class="ctr"><strong>YES</strong><br><span class="anchor">:68-70</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>OBJ support</strong> (<code>"OBJ": {"Object"}</code>)</td><td class="ctr">no<br><em>row lives in <code>graph_validator.py:28-35</code></em></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Per-hunk fields on <code>ProposedNode</code>/<code>ProposedEdge</code></strong></td><td class="ctr"><strong>YES</strong><br><span class="anchor">:24-48</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Hunks carried in <code>GateProposal.proposed_changes</code> instead</strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Apply idempotency</strong> (consume-on-build / built-marker) <span class="badge b-acc">new</span></td><td class="ctr">no<br><em><code>host/proposal_store.py</code></em></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Slow-timeout + UNKNOWN-not-FAILED on overrun</strong> <span class="badge b-acc">new</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Undo-group evidence derivation</strong> (areEnabled / undoLabels) <span class="badge b-acc">new</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>EXISTING-edge restore, or forbid EXISTING&rarr;EXISTING at validate time</strong> <span class="badge b-acc">new</span></td><td class="ctr">no<br><em>validator-side if forbidden</em></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Status downgrade on unresolved parm / unwired edge</strong> <span class="badge b-acc">new</span></td><td class="ctr">no<br><em><code>graph_builder.py:43-54</code></em></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong><code>provenance_recorded</code> on <code>InstantiationResult</code></strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Cook after the group, outside the try</strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong><code>tops_cancel_cook</code> kill-switch classification</strong> <span class="badge b-acc">new</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no<br><em><code>handlers.py:204-245</code></em></td><td class="ctr">no</td></tr>
+<tr><td><strong><code>propose_graph</code> classification decision</strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no<br><em>different table</em></td><td class="ctr">no</td></tr>
+<tr><td><strong>Approval producer</strong> (non-blocking panel dispatch + a gated bridge instance)</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no &mdash; <em>but it changes what <code>OPERATION_GATES</code> means at runtime for the first time</em></td></tr>
+<tr><td><strong>C7 engagement state</strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr"><strong>NO if it composes</strong> with <code>is_tool_allowed_for_worker</code>; <strong>YES if</strong> boundary enforcement rewrites the mode table</td><td class="ctr">no</td></tr>
+<tr><td><strong>An audience axis on the gate table</strong> (&sect;7.3)</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr"><strong>YES</strong></td><td class="ctr"><strong>YES</strong><br><em>dissolves <code>_WORKER_BUILDER_ALLOWLIST</code></em></td></tr>
+</tbody></table></div>
+
+<p><strong>Read across: nine of the sixteen distinct items touch no gated surface at all, and the crucible's five new items are all ungated.</strong> The two that touch <code>graph_proposal.py</code> (UNVERIFIED status, per-hunk fields) are both avoidable in a first cut &mdash; hunks ride <code>GateProposal.proposed_changes</code>, and the unverified signal rides <code>ValidationReport.advisories</code>, which is already serialized out to the caller (<span class="anchor">cognitive/tools/propose_graph.py:96</span>). <strong>The audience-axis wave is the only one unavoidably gated, and it is also the largest.</strong></p>
+</section>

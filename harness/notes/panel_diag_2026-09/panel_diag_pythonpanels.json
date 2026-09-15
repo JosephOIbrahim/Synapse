@@ -1,0 +1,24 @@
+{
+ "python_panel_tabs": [
+  {
+   "name": "panetab15",
+   "interfaceName": null,
+   "boundLabel": null,
+   "label": "Log Viewer",
+   "paneName": null,
+   "paneId": null,
+   "widget_err": "'PythonPanel' object has no attribute 'qtWidget'",
+   "window_err": "'PythonPanel' object has no attribute 'qtWidget'"
+  },
+  {
+   "name": "panetab3",
+   "interfaceName": null,
+   "boundLabel": null,
+   "label": "Synapse",
+   "paneName": null,
+   "paneId": null,
+   "widget_err": "'PythonPanel' object has no attribute 'qtWidget'",
+   "window_err": "'PythonPanel' object has no attribute 'qtWidget'"
+  }
+ ]
+}

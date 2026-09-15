@@ -1,0 +1,110 @@
+{
+ "desktop_tabs_err": "'ui' object has no attribute 'desktopTabs'",
+ "main_win_err": "'ui' object has no attribute 'mainDesktopWindow'",
+ "pane_tabs": [
+  {
+   "name": "panetab14",
+   "type": "paneTabType.TreeView",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab1",
+   "type": "paneTabType.SceneViewer",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab2",
+   "type": "paneTabType.ChannelEditor",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab4",
+   "type": "paneTabType.CompositorViewer",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab13",
+   "type": "paneTabType.ChannelViewer",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab11",
+   "type": "paneTabType.DetailsView",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab5",
+   "type": "paneTabType.Parm",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab12",
+   "type": "paneTabType.PerformanceMonitor",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab15",
+   "type": "paneTabType.PythonPanel",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab7",
+   "type": "paneTabType.NetworkEditor",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab8",
+   "type": "paneTabType.TreeView",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab9",
+   "type": "paneTabType.MaterialPalette",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  },
+  {
+   "name": "panetab3",
+   "type": "paneTabType.PythonPanel",
+   "pane_class": "Pane",
+   "pane_bounds": null,
+   "window_title": null,
+   "size_hint": null
+  }
+ ]
+}

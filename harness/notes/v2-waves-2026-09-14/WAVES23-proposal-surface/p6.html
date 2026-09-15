@@ -1,0 +1,110 @@
+<section id="s10">
+<h2><span class="num">10</span><span>Needs a seat or a gated run</span></h2>
+<p class="subhead">Seven gated runs, five seat-bound checks. Two of the gated runs are new; one changed from a gate to a measurement.</p>
+
+<h3>Environment pin &mdash; every command below</h3>
+<p>The <code>.synapse/hytest.py</code> shim resolves hython first-usable-wins: <code>$SYNAPSE_HYTHON</code> &rarr; <code>hython</code> on PATH &rarr; <strong>newest</strong> install. Five builds carry <code>hython.exe</code> on this host (21.0.773, 22.0.400, 22.0.413, 22.0.417, 22.0.429); unpinned, the shim picks <strong>22.0.429</strong>, which has <strong>no symbol table</strong>. <em>Producer: <span class="anchor">harness/battleplan/notes/BP3_RECON.md:55-70</span>.</em></p>
+<pre><span class="a">$env:SYNAPSE_HYTHON</span> = "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe"
+<span class="a">$env:HOUDINI_USER_PREF_DIR</span> = "C:/Users/User/OneDrive/Documents/houdini22.0"</pre>
+<p class="footnote">The pref-dir pin is not optional: the pre-redirect <code>C:/Users/User/Documents/houdini22.0</code> is <strong>absent</strong>, and agent-lane hython has looked there before (<span class="anchor">BP3_RECON.md:69</span>).</p>
+
+<h3>G1 &mdash; Confirm the OBJ category name against the live runtime <span class="badge b-mute">W2 corroboration</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON -c "import hou; print(hou.applicationVersionString()); print(sorted(hou.nodeTypeCategories().keys()))"</pre>
+<p><strong>Expect:</strong> <code>22.0.400</code>, and <code>Object</code> present. Already corroborated statically from <code>rag/catalog/h22.0.400/Object.json</code> &mdash; this run is confirmation, not a gate.</p>
+
+<h3>G2 &mdash; Catalog &harr; runtime agreement <span class="badge b-acc">W1 gate</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON -c @"
+import hou, sys
+sys.path.insert(0, r'C:/Users/User/SYNAPSE/python')
+from synapse.validation import catalog
+cat_obj = catalog.default_catalog()
+bad_type, bad_arity = [], []
+for cat_name in ('Sop','Lop','Object'):
+    cat = hou.nodeTypeCategories()[cat_name]
+    live = set(cat.nodeTypes().keys())
+    for nt in sorted(live)[:200]:
+        if not cat_obj.has_type(cat_name, nt):
+            bad_type.append((cat_name, nt))
+print('sampled 600 | catalog-missing types:', len(bad_type)); print(bad_type[:20])
+"@</pre>
+<p><strong>Gate:</strong> any nonzero miss on HFS-shipped types means the composition in W1 must treat catalog-<code>None</code> as <em>unverified</em>, never as <em>absent</em>. Expect Labs/MOPs HDAs to appear as misses &mdash; that is the known third-party split (<em>live-catalogue-denominator-is-machine-config</em>), not a catalog defect.</p>
+<p><strong>Second half, now required:</strong> repeat the comparison for <code>min_inputs</code>/<code>max_inputs</code> against <code>hou.nodeType(...).maxNumInputs()</code> on the same sample. U5's closure made connectivity part of W1, so arity agreement is part of W1's gate.</p>
+
+<h3>G3 &mdash; Post-apply cook state <span class="badge b-warn">re-scoped: recon, then gate</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON C:/Users/User/SYNAPSE/harness/probes/&lt;new_cook_probe&gt;.py</pre>
+<p>Build a two-node SOP chain through <code>graph_synth_runtime.instantiate()</code>, then read <code>cookCount()</code> on the leaf <strong>without</strong> touching the viewport.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; the draft's gate and its own test expected opposite things</span>
+  <p>W5-as-drafted asserted <code>cookCount() &gt; 0</code> would <em>fail</em> today, while G3-as-drafted expected <code>&gt; 0</code> <em>"before and after."</em> If the before-reading is already &gt;0 (init scripts, <code>parm.eval</code>, <code>inputConnections</code> read-back), the test is true by construction and passes before any code changes. If the before-reading is 0, G3's gate is unsatisfiable as written and a builder records a FAIL on a correct implementation.</p>
+  <p><strong>Run G3 as pure recon first and write the number down.</strong> <code>cookCount()</code> is a monotone counter, so only the <strong>delta</strong> attributable to W7 is meaningful. If the recon number is already &gt;0, W7's premise needs re-stating before the row is worth building.</p>
+  <p><strong>Carried at zero marginal cost:</strong> the same probe answers W6's host premise &mdash; request a parm name that does not exist on the created type and confirm <code>node.parm()</code> returns <code>None</code> on a real node type, not just inside the fake fixture.</p>
+</div>
+
+<h3>G4 &mdash; <code>log_decision</code> on an unmigrated <code>agent.usd</code> <span class="badge b-mute">W6 corroboration</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON -c "&hellip;construct an agent.usd below SCHEMA_VERSION 2.0.0, call graph_synth_runtime.instantiate(), then inspect for /SYNAPSE/memory/decisions&hellip;"</pre>
+<p><span class="anchor">memory/agent_state.py:567-569</span> suggests a <strong>silent no-op with only a log warning</strong> when the prim tree is missing. If unmigrated scenes are the common case, Channel A provenance (&sect;6.5) is dormant in practice despite being code-wired &mdash; which would make W6's <code>provenance_recorded</code> field the only way anyone would ever find out.</p>
+
+<h3>G5 &mdash; Apply wall-time against the 10s bound <span class="badge b-acc">new &mdash; W4 recon</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON C:/Users/User/SYNAPSE/harness/probes/&lt;apply_timing_probe&gt;.py</pre>
+<p>Time <code>graph_synth_runtime.instantiate()</code> end-to-end across a spread of proposal sizes (2, 8, 24, 64 nodes), with and without <code>_agent_usd_provenance</code> wired, and record the distribution against <code>_DEFAULT_TIMEOUT = 10.0</code> (<span class="anchor">main_thread.py:21</span>).</p>
+<p><strong>This is recon, not a gate.</strong> The &sect;6.2(b) defect &mdash; a bound that abandons without stopping, over a store that does not consume &mdash; is structural and stands whatever the number is. G5 answers only <em>how often it bites</em>, which sets W4's urgency, not its necessity. Recorded as U9 and argued in &sect;12.4.</p>
+
+<h3>G6 &mdash; Re-stamp the graph-truth receipts, both builds <span class="badge b-acc">new &mdash; W4/W5/W6 exit</span></h3>
+<pre><span class="c"># 22.0.400</span>
+$env:SYNAPSE_HYTHON = "&hellip;/Houdini 22.0.400/bin/hython.exe"; &amp; $env:SYNAPSE_HYTHON &lt;receipt_script&gt;
+<span class="c"># 22.0.417 — a second install, a second run</span>
+$env:SYNAPSE_HYTHON = "&hellip;/Houdini 22.0.417/bin/hython.exe"; &amp; $env:SYNAPSE_HYTHON &lt;receipt_script&gt;</pre>
+<p>Each receipt <em>"binds the implementation hash to its observed build"</em> (<span class="anchor">graph_builder.py:11-12</span>). W4, W5 and W6 all edit <code>graph_builder.py</code> and will invalidate both. <strong>Re-stamp; do not re-check.</strong> Two gated runs on two different Houdini installs &mdash; the draft claimed "Seat/build: none" for this work while also requiring the re-stamp, which cannot both be true.</p>
+
+<h3>G7 &mdash; TOPS cancel under a live cook <span class="badge b-acc">new &mdash; W3 gate</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON C:/Users/User/SYNAPSE/harness/probes/&lt;tops_cancel_probe&gt;.py</pre>
+<p>Start a multi-item TOPS cook, then issue <code>tops_cancel_cook</code> off-main while the cook is in flight. <strong>Gate:</strong> the cancel returns and the cook stops. Today it is classified mutating (<span class="anchor">handlers.py:145</span>, <span class="anchor">:693</span>, absent from the frozenset), so it takes the C5 lock the cook holds &mdash; record the pre-change behaviour as the receipt that W3 was needed.</p>
+
+<h3>Seat-bound &mdash; GUI, no headless substitute</h3>
+<div class="tw"><table>
+<thead><tr><th>Item</th><th>Why a seat</th></tr></thead>
+<tbody>
+<tr><td><strong>Single Ctrl+Z reverses a multi-node apply</strong> <span class="badge b-warn">now a grade gate</span></td><td><span class="anchor">graph_builder.py:13-14</span> states it plainly: <em>"GUI undo/consent&hellip; are not qualified by these fixtures."</em> The 22.0.400/22.0.417 receipts were headless. After the &sect;6.1 downgrade this is no longer a confirmation &mdash; it is the evidence that moves the grade back from ASSERTED.</td></tr>
+<tr><td><strong>Ctrl+Z under a disabled-undo scope</strong> <span class="badge b-acc">new</span></td><td>W5's honest-<code>revert</code> path. Run a build inside a <code>hou.undos.disabler()</code> scope and confirm the result declines to promise a revert.</td></tr>
+<tr><td><strong>The consent card renders in the CHAT slot</strong></td><td>BC-6a/6b card lending is Qt-live behaviour</td></tr>
+<tr><td><strong>W9 &mdash; no freeze on a gated dispatch</strong></td><td>Headless proves non-blocking; only a seat proves <em>not frozen</em>. This is the one that re-arms a confirmed 2026-06-01 deadlock if wrong.</td></tr>
+<tr><td><strong>W10 &mdash; single-hunk card actually reads as one line</strong></td><td>Widget count is measurable offscreen; visual weight is not</td></tr>
+<tr><td><strong>W11 &mdash; engagement sentence and Paused-with-reason display</strong></td><td>Live panel</td></tr>
+</tbody></table></div>
+
+<p><strong>Run order for a single seat session:</strong> G1 &rarr; G3 (recon, before W7) &rarr; G5 &rarr; G7 &rarr; Ctrl+Z check &rarr; disabled-undo check &rarr; card render. G2 and G6 are headless-gated and need no seat. Everything else is headless.</p>
+</section>
+
+<section id="s11">
+<h2><span class="num">11</span><span>Unknowns</span></h2>
+<p class="subhead">Labelled honestly. None are load-bearing for &sect;&sect;1&ndash;9; each is a place where I stopped rather than guessed. One closed this pass, three are new.</p>
+
+<h4>Closed this pass</h4>
+<div class="rev r-held">
+  <span class="rl">U5 &mdash; closed</span>
+  <p><em>Is <code>ConnectivityOracle</code> also live-<code>hou</code>-only?</em> <strong>Yes.</strong> <span class="anchor">host/graph_oracle.py:17</span> &mdash; <code>import hou  # noqa: F401 &mdash; host layer; never imported by cognitive.*</code>, under a docstring opening <em>"Connectivity checks through live hou introspection."</em> <strong>Consequence:</strong> W1 is two adapters, not one, and only the pair makes <code>GraphValidator</code> constructible headless. Folded into &sect;2.3, &sect;5.2, W1 and G2.</p>
+</div>
+
+<h4>Open</h4>
+<p><strong>U1 &mdash; Whether the 22.0.400/22.0.417 graph-truth receipts still bind to today's <code>graph_builder.py</code>.</strong> <code>UNVERIFIED.</code> Each receipt <em>"binds the implementation hash to its observed build"</em> (<span class="anchor">graph_builder.py:11-12</span>). I did not recompute that hash against the current file. <strong>W4, W5 and W6 all edit this file and will invalidate them regardless &mdash; re-stamp via G6, do not re-check.</strong></p>
+
+<p><strong>U2 &mdash; Whether <span class="anchor">memory/store.py:1543</span>'s <code>decisions</code> are the same decisions <code>_agent_usd_provenance</code> writes.</strong> <code>UNVERIFIED, leaning no.</code> <code>store.py:1543</code> reads <code>get_by_type(MemoryType.DECISION)</code> &mdash; a generic Moneta/Memory kind with producers at <span class="anchor">store.py:1416</span>, <span class="anchor">seed_corpus.py:118</span>, <span class="anchor">loop/ports.py:631</span>. <code>agent_state.log_decision</code> writes USD prims under <code>/SYNAPSE/memory/decisions</code> via a direct <code>Usd.Stage.Open</code>. These look like two systems sharing a word. Not proven either way &mdash; one more hop would close it.</p>
+
+<p><strong>U3 &mdash; Whether unmigrated <code>agent.usd</code> (pre-SCHEMA_VERSION 2.0.0) is the common case in live scenes.</strong> <code>UNVERIFIED.</code> If it is, Channel A provenance is effectively dormant despite being wired. <strong>G4 settles it.</strong></p>
+
+<p><strong>U4 &mdash; Whether "typed chat approval" in C1 means free text (<code>"approve"</code>, <code>"apply hunk 2"</code>) or a structured slash-command.</strong> <code>UNDECIDED, not unknown.</code> No chat-command parser exists in <code>synapse_panel.py</code> to extend in either direction, so the choice is genuinely open. A design call, not a research gap.</p>
+
+<p><strong>U6 &mdash; Whether any <code>GateProposal</code> has ever been created in this process's history.</strong> <code>UNVERIFIED, leaning no.</code> The static argument in &sect;1/&sect;3.5 is airtight for the current tree (one production constructor, <code>_gate = None</code>, pinned by test). I did not search for an older provenance or audit artifact that would show the gate having fired in some earlier configuration. <code>.synapse/provenance</code> records carry <code>outcome</code> but no gate field.</p>
+
+<p><strong>U7 &mdash; The remaining ~30 non-panel files in <code>8c23fccc</code></strong> (installer/setup toolchain, <code>host/graph_oracle.py</code>, <code>host/existence_adapter.py</code> changes). <code>NOT READ.</code> <code>git show --stat</code> confirms they do not touch <code>gate_widget.py</code>, and both oracle files were read at HEAD. The boundary between v5.68.0's host-gate work and this wave deserves its own pass if W1 or W9 turn out to overlap it.</p>
+
+<p><strong>U8 &mdash; Whether <code>_WORKER_BUILDER_ALLOWLIST</code>'s two composite builders are genuinely equivalent to their inform-level primitives.</strong> <code>UNVERIFIED.</code> The 10-line rationale at <span class="anchor">worker_policy.py:68-75</span> is specific and signed off (L4, 2026-06-25), and I have no evidence against it. But it is the one place where the policy's audience logic is asserted in a comment rather than enforced by structure &mdash; exactly the surface W12 would dissolve. Worth a targeted read before W12, not before.</p>
+
+<h4>New this pass</h4>
+<p><strong>U9 &mdash; How often a real apply exceeds the 10s dispatch bound.</strong> <code>UNMEASURED.</code> <span class="anchor">handlers_graph_synth.py:93</span> passes no timeout, so apply runs at <code>_DEFAULT_TIMEOUT = 10.0</code>. The crucible argued reachability from the work inside the payload (live-<code>hou</code> re-validation per node and per parm, <code>createNode</code> with init scripts, a USD stage write under <code>$HIP</code>); that argument is plausible and unmeasured. <strong>G5 answers it.</strong> W4 does not depend on the answer &mdash; see &sect;12.4.</p>
+
+<p><strong>U10 &mdash; Whether EXISTING&rarr;EXISTING edges are reachable through validation in practice.</strong> <code>UNVERIFIED.</code> Amendment 3 permits an existing node on either side (<span class="anchor">graph_proposal.py:42-43</span>), and nothing in the P-phase list obviously forbids <em>both</em> sides being existing. If a validator phase does forbid it, L3-6(i) collapses to the side-effect case only and W6(d) shrinks. <strong>One targeted read of the P3/P5 edge phases closes it</strong>, and it should happen before W6(d) is scoped.</p>
+
+<p><strong>U11 &mdash; Whether <code>tops_cancel_cook</code>'s handler is main-thread-bound.</strong> <code>UNVERIFIED, leaning no.</code> W3's whole argument is that PDG-context cancellation is main-thread-independent the way <code>render_farm_cancel</code> is &mdash; which is what makes W3 immune to the &sect;7.2 refutation that demoted W8. <span class="anchor">handlers.py:227-241</span> already groups <code>emergency_halt</code> (which cancels PDG contexts) with the OS-signalling kill switches, which is evidence but not proof for this specific handler. <strong>G7 settles it</strong>, and it should be read before W3 is written, not after.</p>
+</section>

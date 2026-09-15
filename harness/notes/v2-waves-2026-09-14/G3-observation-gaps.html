@@ -1,0 +1,1300 @@
+<title>G3 Observation Gap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#F7F8FA; --paper-2:#FFFFFF; --sunk:#EDF0F4;
+  --ink:#15191F; --ink-2:#4A5360; --ink-3:#6E7885;
+  --rule:#DDE1E7; --rule-2:#C9CFD8;
+  --accent:#1F5F8B; --accent-soft:#E4EEF6;
+  --crit:#A4302B; --crit-soft:#F6E7E5;
+  --warn:#8F5D12; --warn-soft:#F7EEDD;
+  --ok:#2F6B4F; --ok-soft:#E4F0EA;
+  --mute:#6E7885; --mute-soft:#E9ECF1;
+  --measure:74ch;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#10141A; --paper-2:#161B22; --sunk:#1A202A;
+    --ink:#E4E8EE; --ink-2:#97A2B0; --ink-3:#79838F;
+    --rule:#262D37; --rule-2:#333C48;
+    --accent:#6FB2DC; --accent-soft:#152834;
+    --crit:#E4867D; --crit-soft:#2B1A19;
+    --warn:#D6A24A; --warn-soft:#2A2114;
+    --ok:#74C29A; --ok-soft:#152620;
+    --mute:#8B95A2; --mute-soft:#1D232C;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#10141A; --paper-2:#161B22; --sunk:#1A202A;
+  --ink:#E4E8EE; --ink-2:#97A2B0; --ink-3:#79838F;
+  --rule:#262D37; --rule-2:#333C48;
+  --accent:#6FB2DC; --accent-soft:#152834;
+  --crit:#E4867D; --crit-soft:#2B1A19;
+  --warn:#D6A24A; --warn-soft:#2A2114;
+  --ok:#74C29A; --ok-soft:#152620;
+  --mute:#8B95A2; --mute-soft:#1D232C;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  font-size:16.5px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:960px; margin:0 auto; padding-inline:20px; padding-block:0 96px}
+
+.mast{border-bottom:1px solid var(--rule); padding-block:44px 26px; margin-bottom:30px}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11.5px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3);
+  display:flex; flex-wrap:wrap; gap:10px 18px; margin-bottom:16px;
+}
+h1{
+  font-family:Newsreader,Georgia,serif; font-weight:500; font-size:clamp(2.1rem,5.4vw,3.05rem);
+  line-height:1.08; letter-spacing:-.015em; margin:0 0 14px; text-wrap:balance;
+}
+.dek{font-size:1.06rem; color:var(--ink-2); max-width:var(--measure); margin:0 0 20px}
+.mast-meta{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px 28px;
+  border-top:1px solid var(--rule); padding-top:20px; margin-top:24px;
+}
+.mm-k{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:4px}
+.mm-v{font-size:.9rem; color:var(--ink-2); display:block}
+
+nav.jump{
+  position:sticky; top:0; z-index:20; background:var(--paper);
+  border-bottom:1px solid var(--rule); margin-bottom:30px;
+  padding-block:9px; display:flex; gap:3px; overflow-x:auto;
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+}
+nav.jump a{
+  color:var(--ink-3); text-decoration:none; padding:3px 8px; border-radius:3px;
+  white-space:nowrap; letter-spacing:.04em;
+}
+nav.jump a:hover{color:var(--accent); background:var(--accent-soft)}
+nav.jump a.here{color:var(--accent); background:var(--accent-soft); font-weight:600}
+
+section{margin-block:58px; scroll-margin-top:60px}
+h2{
+  font-family:Newsreader,Georgia,serif; font-weight:500; font-size:1.72rem; line-height:1.2;
+  letter-spacing:-.01em; margin:0 0 18px; text-wrap:balance;
+  padding-bottom:9px; border-bottom:2px solid var(--ink);
+}
+h2 .num{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--accent); letter-spacing:.08em; display:block; margin-bottom:6px; font-weight:600}
+h3{font-family:Newsreader,Georgia,serif; font-weight:600; font-size:1.2rem; margin:36px 0 10px; letter-spacing:-.005em; text-wrap:balance}
+h4{font-family:"IBM Plex Mono",monospace; font-size:.78rem; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3); margin:28px 0 10px; font-weight:600}
+p{max-width:var(--measure); margin:0 0 14px}
+ul,ol{max-width:var(--measure); margin:0 0 16px; padding-left:20px}
+li{margin-bottom:9px}
+li::marker{color:var(--ink-3)}
+strong{font-weight:700; color:var(--ink)}
+a{color:var(--accent)}
+
+code,.anch{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.845em;
+  background:var(--mute-soft); padding:1px 4px; border-radius:3px;
+  word-break:break-word;
+}
+.anch{color:var(--accent); background:var(--accent-soft)}
+.tier{
+  font-family:"IBM Plex Mono",monospace; font-size:9.5px; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase; padding:2px 6px; border-radius:2px;
+  white-space:nowrap; display:inline-block; vertical-align:.08em;
+}
+.t-run{background:var(--ok-soft); color:var(--ok)}
+.t-stat{background:var(--accent-soft); color:var(--accent)}
+.t-gate{background:var(--warn-soft); color:var(--warn)}
+.t-unv{background:var(--mute-soft); color:var(--mute)}
+
+.corrected{
+  border-left:3px solid var(--crit); background:var(--crit-soft);
+  padding:15px 18px; margin:22px 0; border-radius:0 4px 4px 0;
+}
+.corrected > :last-child{margin-bottom:0}
+.corrected .lbl{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:600; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--crit); display:block; margin-bottom:7px;
+}
+.note{
+  border-left:3px solid var(--rule-2); background:var(--sunk);
+  padding:15px 18px; margin:22px 0; border-radius:0 4px 4px 0;
+}
+.note > :last-child{margin-bottom:0}
+.note .lbl{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:600; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:7px;
+}
+.note.keyrisk{border-left-color:var(--warn); background:var(--warn-soft)}
+.note.keyrisk .lbl{color:var(--warn)}
+
+.pull{
+  font-family:Newsreader,Georgia,serif; font-size:1.14rem; font-style:italic;
+  color:var(--ink-2); border-left:2px solid var(--accent); padding-left:18px;
+  margin:22px 0; max-width:var(--measure);
+}
+
+.tw{overflow-x:auto; margin:24px 0; border:1px solid var(--rule); border-radius:4px; background:var(--paper-2)}
+table{border-collapse:collapse; width:100%; font-size:.845rem; line-height:1.5; min-width:560px}
+th{
+  font-family:"IBM Plex Mono",monospace; font-size:9.5px; font-weight:600; letter-spacing:.1em;
+  text-transform:uppercase; text-align:left; color:var(--ink-3);
+  padding:10px 12px; border-bottom:1.5px solid var(--rule-2); vertical-align:bottom; background:var(--sunk);
+}
+td{padding:11px 12px; border-bottom:1px solid var(--rule); vertical-align:top; font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+td code{font-size:.93em}
+
+.v{font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:600; letter-spacing:.06em; padding:2px 6px; border-radius:2px; white-space:nowrap; display:inline-block}
+.v-no{background:var(--crit-soft); color:var(--crit)}
+.v-yes{background:var(--ok-soft); color:var(--ok)}
+.v-part{background:var(--warn-soft); color:var(--warn)}
+.v-unk{background:var(--mute-soft); color:var(--mute)}
+
+.finding{border-left:3px solid var(--rule-2); padding-left:16px; margin:20px 0; max-width:var(--measure)}
+.finding.sev-hi{border-left-color:var(--crit)}
+.finding.sev-md{border-left-color:var(--warn)}
+.finding.sev-lo{border-left-color:var(--mute)}
+.finding .fh{font-family:"IBM Plex Mono",monospace; font-size:.8rem; font-weight:600; letter-spacing:.03em; color:var(--ink); display:block; margin-bottom:5px}
+.finding p{margin-bottom:8px}
+.finding > :last-child{margin-bottom:0}
+
+.tk{border:1px solid var(--rule); border-radius:4px; background:var(--paper-2); padding:18px 20px; margin:20px 0}
+.tk .tkh{font-family:"IBM Plex Mono",monospace; font-size:.86rem; letter-spacing:.05em; color:var(--ink); font-weight:600; display:block; margin-bottom:12px}
+.tk .tid{color:var(--accent)}
+.tk dl{margin:0; display:grid; grid-template-columns:auto 1fr; gap:8px 18px; font-size:.9rem}
+.tk dt{font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); padding-top:5px; white-space:nowrap}
+.tk dd{margin:0; max-width:64ch}
+.tk dd > :last-child{margin-bottom:0}
+.tk dd p{margin-bottom:8px}
+.phase{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.11em; text-transform:uppercase;
+  color:var(--ink); background:var(--sunk); border-top:2px solid var(--ink);
+  padding:10px 14px; margin:44px 0 6px; font-weight:600;
+}
+
+.exec{border:2px solid var(--ink); border-radius:5px; padding:26px 26px 20px; margin:24px 0; background:var(--paper-2)}
+.exec-item{display:grid; grid-template-columns:auto 1fr; gap:8px 20px; padding-block:22px; border-top:1px solid var(--rule)}
+.exec-item:first-of-type{border-top:0; padding-top:2px}
+.exec-rank{
+  font-family:Newsreader,Georgia,serif; font-size:2.4rem; line-height:.85; color:var(--accent);
+  font-weight:500; grid-row:span 3; padding-top:5px;
+}
+.exec-h{font-family:Newsreader,Georgia,serif; font-size:1.22rem; font-weight:600; margin:0; line-height:1.25; text-wrap:balance; max-width:58ch}
+.exec-body{margin:0; font-size:.95rem; color:var(--ink-2); max-width:62ch}
+.exec-cost{font-family:"IBM Plex Mono",monospace; font-size:.75rem; color:var(--ink-3); letter-spacing:.02em; margin:0; max-width:62ch; line-height:1.55}
+.exec-cost b{color:var(--ink); font-weight:600}
+
+@media (max-width:560px){
+  body{font-size:16px}
+  .tk dl{grid-template-columns:1fr; gap:2px}
+  .tk dt{padding-top:11px}
+  .exec-item{grid-template-columns:1fr}
+  .exec-rank{grid-row:auto; font-size:1.6rem}
+  .exec{padding:20px 18px}
+  h2{font-size:1.5rem}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">
+    <span>SYNAPSE</span><span>master @ bd65e4b6</span><span>2026-09-14</span><span>Revision 2 &middot; post-crucible</span>
+  </div>
+  <h1>G3 Observation Gap Report</h1>
+  <p class="dek">What SYNAPSE records when it changes an artist's scene, what reads those records back, and what the systems named in law actually have on disk.</p>
+
+  <p><strong>Sources.</strong> 14 route traces + 14 adversarial verdicts, one LOOP ledger anatomy, one coordinator test audit, one three-lens crucible pass over revision 1, and direct read-only filesystem measurement of every on-disk figure below.</p>
+
+  <div class="corrected">
+    <span class="lbl">Masthead corrected at source</span>
+    <p>Revision 1 claimed &ldquo;direct re-verification of every headline number.&rdquo; It had not happened. A crucible anchor audit opened ~60 cited anchors and found <strong>three materially wrong</strong> and <strong>~12 off-by-N</strong>. A false-gap lens found <strong>two always-on record systems missing from the census entirely</strong>. An evidence-hygiene lens found the headline on-disk measurement in §4.1 <strong>inverted</strong>. Every one is corrected in place below, and re-measured here. Where a claim could not be made true, it is deleted and its replacement stated.</p>
+  </div>
+
+  <div class="mast-meta">
+    <div><span class="mm-k">Evidence tiers</span><span class="mm-v"><span class="tier t-stat">VERIFIED-STATIC</span> read at <code>path:line</code></span><span class="mm-v"><span class="tier t-run">VERIFIED-RUNTIME</span> read-only filesystem measurement, this session, no code executed</span><span class="mm-v"><span class="tier t-gate">NEEDS-GATED-RUN</span> &nbsp; <span class="tier t-unv">UNVERIFIED</span></span></div>
+    <div><span class="mm-k">Law 2</span><span class="mm-v">Every number carries its producer path.</span>
+      <span class="mm-k" style="margin-top:12px">Law 3, as used here</span><span class="mm-v">A status must describe what happened, not what was attempted.</span></div>
+    <div><span class="mm-k">Start here</span><span class="mm-v"><a href="#s12"><strong>§12 &mdash; Executive summary.</strong></a> One screen, three things, in order, each with its anchor and its cost.</span>
+      <span class="mm-k" style="margin-top:12px">New this revision</span><span class="mm-v"><a href="#s11">§11 &mdash; Contested findings.</a> Three crucible findings rejected, with reasoning and anchor.</span></div>
+  </div>
+</header>
+
+<nav class="jump" aria-label="Section jump">
+  <a href="#s1">1 Verdict</a>
+  <a href="#s2">2 Ledger census</a>
+  <a href="#s3">3 Routes</a>
+  <a href="#s4">4 Named gaps</a>
+  <a href="#s5">5 Orphans</a>
+  <a href="#s6">6 Coordinator tests</a>
+  <a href="#s7">7 Law 3</a>
+  <a href="#s8">8 Tickets</a>
+  <a href="#s9">9 Gated runs</a>
+  <a href="#s10">10 Unknowns</a>
+  <a href="#s11">11 Contested</a>
+  <a href="#s12">12 Summary</a>
+</nav>
+
+<!-- ======================= 1 ======================= -->
+<section id="s1">
+<h2><span class="num">§1</span>Verdict in one paragraph</h2>
+
+<p>SYNAPSE's observation surface today is <strong>four record systems that fire, disagree about what a record is, and are read back by nothing.</strong> Two are always-on. <strong>FloorGate provenance</strong> writes one flat <code>{op_id, op, ts, session, payload_digest, result_digest, outcome, origin, parent}</code> record per mutating <code>registry.invoke()</code> &mdash; <strong>5000 records + 1 orphaned temp file</strong> on disk (<code>ls .synapse/provenance</code> = 5001 entries, of which 5000 match <code>op-*.json</code> and one is <code>tmp7qjf1g7h.tmp</code>, <span class="tier t-run">VERIFIED-RUNTIME</span>), FIFO-capped at 5000 (<span class="anch">floor_gate.py:126</span>), of which exactly three are read by anything in production (<span class="anch">doctor.py:856-866</span>, newest 3 into the support bundle). <strong>AuditLog</strong> &mdash; absent from revision 1 entirely &mdash; writes a far richer hash-chained, Fernet-encrypted entry carrying the handler's <em>full input payload and full returned output</em> on the same mutating commands, with no env gate and no allowlist (<span class="anch">handlers.py:551-556</span> &rarr; <span class="anch">handlers.py:597-620</span> &rarr; <span class="anch">core/audit.py:220,327-343</span>): <strong>122 daily files, 143 MB, spanning <code>audit_2026-02-06.jsonl</code> to <code>audit_2026-09-14.jsonl</code></strong> &mdash; the newest written today (<code>ls ~/.synapse/audit | wc -l</code>, <code>du -sh</code>, <span class="tier t-run">VERIFIED-RUNTIME</span>). Nothing reads those files back: <code>AuditLog.get_entries()</code> (<span class="anch">core/audit.py:344</span>) queries the in-memory list, so a fresh process cannot read its own history, and a repo-wide grep returns <strong>nine writer sites and zero file readers</strong> outside the doctor's newest-3 bundle.</p>
+
+<p>The third system, <strong>the LOOP</strong> &mdash; the forecast/terminal/delivery journal at <span class="anch">loop/coordinator.py</span> &mdash; is fully built on both the producer and the consumer side and has produced <strong>zero records on this host</strong>: no <code>loop/</code> directory exists under <code>.synapse/</code> or <code>~/.synapse/</code> (<span class="tier t-run">VERIFIED-RUNTIME</span>), because <code>SYNAPSE_LOOP_ENABLED</code> is set nowhere outside three test files (<span class="anch">host/memory_loop.py:24-25</span>), its 12-command allowlist covers 10 reachable commands out of 131 registered (<span class="anch">memory_loop.py:17-21</span> vs <code>grep -c "reg.register(" handlers.py</code> = 131), and its delivery leg cannot complete without a Hanish/Octavius substrate that no installer, package file, or CI job configures (<span class="anch">loop/subprocess_port.py:116-120</span>).</p>
+
+<p>The fourth is the one the repo actually legislates &mdash; <em>&ldquo;Provenance or it didn't happen&hellip; written to <code>agent.usd</code> with <code>decision</code> + <code>reasoning</code> + <code>revert</code>&rdquo;</em> (<span class="anch">harness/CLAUDE.md:16-17</span>) &mdash; which refers to <strong>none</strong> of the other three. It means <span class="anch">memory/agent_state.py:549</span> <code>log_decision()</code>, which has exactly one production caller (<span class="anch">host/graph_synth_runtime.py:122</span>), covering exactly one route, and zero readers anywhere in the tree (<code>grep -rn "memory/decisions" python/</code> returns only writer-side hits).</p>
+
+<p>On top of that: <strong>one of fourteen traced live mutation routes emits nothing anywhere</strong>, three more emit nothing to any operation-record system, two bypass the only LOOP entry point structurally at any configuration, and <strong>at least twenty-five distinct sites return or persist a status that does not describe what happened</strong> &mdash; including the one channel a model actually reads back, which is deposited the string <code>"Executed: &lt;cmd&gt;"</code> whether the command succeeded or failed (<span class="anch">handlers.py:610</span> &rarr; <span class="anch">session/tracker.py:322-328</span>).</p>
+
+<p class="pull">The system is not under-instrumented by accident. It is instrumented four different ways that disagree about what a record is, and every one of them is write-only.</p>
+</section>
+
+<!-- ======================= 2 ======================= -->
+<section id="s2">
+<h2><span class="num">§2</span>The ledger census</h2>
+
+<div class="corrected">
+  <span class="lbl">Corrected at source &mdash; this section was titled &ldquo;The two ledgers&rdquo;</span>
+  <p>Revision 1 counted two ledgers and named five things called &ldquo;provenance.&rdquo; Both counts were wrong. <strong>AuditLog</strong> (<span class="anch">core/audit.py</span>) is a fourth always-on record system with seven months of bytes on disk, and it was absent from the census, the route matrix, and the ticket pack. <strong><code>memory/ledger.py</code></strong> is a fifth system whose line-1 docstring reads <em>&ldquo;Agent.usd Ledger &mdash; durable provenance records&rdquo;</em> and which has <strong>29 records on disk</strong> (<code>ls .synapse/ledger | wc -l</code>, <span class="tier t-run">VERIFIED-RUNTIME</span>). And the <code>_submit_logs</code> path has a <em>second</em> writer revision 1 never traced: a deposit into the Moneta memory substrate the model recalls from. The tables below are rebuilt on seven names, not five.</p>
+</div>
+
+<h3>2.1 &nbsp;The four systems that fire, side by side</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>floor_gate provenance</th><th>AuditLog</th><th>LOOP journal</th><th>agent.usd decisions</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>Trigger</strong></td>
+  <td>Every command reaching <code>CommandHandlerRegistry.invoke()</code> not in <code>_READ_ONLY_COMMANDS</code>. No env gate. <span class="anch">floor_gate.py:297-340</span>; read-only set <span class="anch">handlers.py:204-245</span></td>
+  <td>Every mutating command on the <code>handle()</code> path. No env gate, no allowlist. <span class="anch">handlers.py:551-556</span> &rarr; <span class="anch">:597-620</span></td>
+  <td>Three gates in series: <code>SYNAPSE_LOOP_ENABLED == "1"</code> (<span class="anch">memory_loop.py:24-25</span>) <strong>and</strong> command &isin; 12-name <code>OBSERVED_COMMANDS</code> (<span class="anch">:17-21</span>) <strong>and</strong> caller off-main-thread (<span class="anch">:183-185</span>)</td>
+  <td>One call site: <code>instantiate_graph</code> on the BUILT path. <span class="anch">graph_builder.py:186</span> &rarr; <span class="anch">graph_synth_runtime.py:96-127</span></td>
+</tr>
+<tr>
+  <td><strong>Schema</strong></td>
+  <td>ONE flat dict: <code>op_id, op, ts, session, payload_digest, result_digest, outcome('ok'|'error'), origin, parent</code> (+<code>error_type</code> on failure). <span class="anch">floor_gate.py:362-374</span></td>
+  <td>Hash-chained entry (<code>previous_hash</code>/<code>entry_hash</code>) carrying <code>operation, message, level, category, user_id</code> and the <strong>full unredacted <code>input_data</code> payload + <code>output_data</code> result</strong>. <span class="anch">core/audit.py:220-300</span></td>
+  <td>FOUR event shapes (<code>forecast_ack</code>, <code>dispatch_started</code>, <code>terminal</code>, <code>delivery</code>) + three sidecars (<code>request.json</code>, <code>pending/&lt;id&gt;.json</code>, a Moneta <code>Memory</code> capsule). <span class="anch">coordinator.py:120,123,130-131,176</span> and <span class="anch">:108-116,163-174</span></td>
+  <td>USD prim with <code>decision, reasoning, revert, parent_path, model_id, created_paths</code>. <span class="anch">agent_state.py:557-559</span>; payload built <span class="anch">graph_builder.py:278-285</span></td>
+</tr>
+<tr>
+  <td><strong>What it asserts</strong></td>
+  <td>&ldquo;This op ran; here are two hashes.&rdquo;</td>
+  <td>&ldquo;This op ran; here is exactly what went in and exactly what came out.&rdquo;</td>
+  <td>&ldquo;Before this ran I committed to a prediction; here is what actually happened; here is the settled verdict.&rdquo;</td>
+  <td>&ldquo;An agent decided this, for this reason, and here is how to revert it.&rdquo;</td>
+</tr>
+<tr>
+  <td><strong>Destination</strong></td>
+  <td><code>op-&lt;utc-&micro;s&gt;-&lt;seq:06d&gt;.json</code> in <code>$SYNAPSE_PROVENANCE_DIR</code> else <code>&lt;repo&gt;/.synapse/provenance</code>. <span class="anch">floor_gate.py:109-122</span></td>
+  <td><code>~/.synapse/audit/audit_&lt;date&gt;.jsonl</code>, one file per day, Fernet-encrypted against <code>~/.synapse/encryption.key</code>. <span class="anch">core/audit.py:327-341</span>; key <span class="anch">core/crypto.py:87-104</span></td>
+  <td><code>&lt;project&gt;/.synapse/loop/attempts/&lt;uuid4&gt;/journal.jsonl.d/*.json</code> + <code>pending/</code>. <span class="anch">memory_loop.py:99-105</span> &rarr; <span class="anch">memory/store.py:1065,1233-1248</span></td>
+  <td><code>/SYNAPSE/memory/decisions</code> prim inside the project <code>agent.usd</code>. <span class="anch">agent_state.py:549-574</span></td>
+</tr>
+<tr>
+  <td><strong>Retention</strong></td>
+  <td>FIFO cap 5000, rotation + startup reconcile. <span class="anch">floor_gate.py:126,416-463</span>. Rotation counts only names ending <code>.json</code> (<span class="anch">:455</span>) &mdash; the orphan temp is never reaped</td>
+  <td><strong>None.</strong> <code>grep -n "max_\|rotate\|cap\|retention\|unlink\|prune" core/audit.py</code> returns <strong>zero hits</strong>. 143 MB accrued over 7 months with no reaper</td>
+  <td><strong>None.</strong> No cap, no rotation, no reaper. <code>_deliver</code> unlinks only the pending pointer, and only on SUCCESS (<span class="anch">coordinator.py:178</span>)</td>
+  <td>Append-only prim; no retention policy</td>
+</tr>
+<tr>
+  <td><strong>Consumer</strong></td>
+  <td><strong>Newest 3 into the doctor support bundle</strong> (<span class="anch">doctor.py:856-866</span>). No dashboard, no advisor, no analysis</td>
+  <td><strong>Newest 3 into the same bundle</strong>, capped 5&nbsp;MB each (<span class="anch">doctor.py:843-846</span>, cap <span class="anch">:65</span>). <code>get_entries()</code> reads the in-memory list, never the files (<span class="anch">:344</span>) &mdash; a fresh process cannot read its own history</td>
+  <td>Real chain: <span class="anch">coordinator.py:139</span> &rarr; <span class="anch">memory_loop.py:117</span> &rarr; <span class="anch">handlers_memory.py:68-70</span> &rarr; MCP tool <code>synapse_context</code> (<span class="anch">mcp/_tool_registry.py:1093</span>). Never exercised &mdash; zero records exist</td>
+  <td><strong>Zero.</strong> <code>grep -rn "memory/decisions" python/</code> returns the writer, its docstring, and the path constant</td>
+</tr>
+<tr>
+  <td><strong>Failure posture</strong></td>
+  <td>Best-effort <strong>silent</strong>: write failure <code>except Exception: return</code> with zero logging (<span class="anch">floor_gate.py:396-398</span>); rotation failure likewise (<span class="anch">:405-408</span>)</td>
+  <td><strong>Logged</strong>: <code>logger.error("Failed to persist audit entry %s: %s", ...)</code> (<span class="anch">core/audit.py:342</span>). The op still succeeds &mdash; but the drop is visible</td>
+  <td><strong>Loud</strong>: warns and attaches an explicit <code>PortResult.unavailable("No pre-action forecast acknowledgement")</code> (<span class="anch">memory_loop.py:191-192,217</span>); no port can fabricate SUCCESS (<span class="anch">ports.py:50-56</span>)</td>
+  <td><strong>Silent no-op on three conditions</strong>: no <code>pxr</code> (<span class="anch">agent_state.py:563-564</span>), missing prim (<span class="anch">:567-570</span>, warn only), and the caller swallows the whole write (<span class="anch">graph_builder.py:286-287</span>)</td>
+</tr>
+<tr>
+  <td><strong>Measured state, this host</strong></td>
+  <td><strong>5000 records + 1 orphan temp.</strong> Origin histogram <code>{handler: 5000}</code> &mdash; zero <code>batch</code>, zero <code>autonomy</code>. 4777 carry <code>session: null</code>. <strong>At cap, today</strong> <span class="tier t-run">VERIFIED-RUNTIME</span></td>
+  <td><strong>122 files, 143 MB, 2026-02-06 &rarr; 2026-09-14.</strong> Key present at <code>~/.synapse/encryption.key</code> (44 bytes). <strong><code>encryption.key.bak</code> absent</strong> <span class="tier t-run">VERIFIED-RUNTIME</span></td>
+  <td><strong>0 records. No directory.</strong> <code>ls -d .synapse/loop ~/.synapse/loop</code> &rarr; NONE <span class="tier t-run">VERIFIED-RUNTIME</span></td>
+  <td>Unmeasured &mdash; requires opening a live project <code>agent.usd</code>. See §9 item 12</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>On the honesty ladder the LOOP is the best-built system. On the evidence ladder AuditLog has by far the most bytes. On the readback ladder all four score zero.</strong></p>
+
+<div class="note keyrisk">
+  <span class="lbl">Standing operational risk, surfaced by the census correction</span>
+  <p>143 MB of hash-chained audit history &mdash; seven months of every mutating command's full input and output &mdash; is encrypted against a single 44-byte file at <code>~/.synapse/encryption.key</code>. <span class="anch">core/crypto.py:106-112</span> promises an escrow side-copy <em>&ldquo;so a single deleted/lost key file isn't a total, unrecoverable loss of every encrypted store&rdquo;</em> &mdash; but it writes that copy only on the auto-generate branch, and <strong><code>encryption.key.bak</code> does not exist on this host</strong> (<code>ls -la ~/.synapse/encryption.key*</code>, <span class="tier t-run">VERIFIED-RUNTIME</span>). One deleted file orphans the entire store. Ticketed as <strong>T7</strong>.</p>
+</div>
+
+<h3>2.2 &nbsp;The conflation &mdash; this is a finding, not a footnote</h3>
+
+<p><span class="anch">harness/CLAUDE.md:16-17</span> states the law:</p>
+
+<p class="pull">Provenance or it didn't happen. Any scene/stage mutation is undo-wrapped AND written to <code>agent.usd</code> with <code>decision</code> + <code>reasoning</code> + <code>revert</code> path. No ledger entry &rArr; incomplete.</p>
+
+<p>That sentence refers to <strong>none of the three systems with bytes on disk.</strong> It names a fourth. Its implementation is <span class="anch">memory/agent_state.py:549</span> <code>log_decision()</code>, whose own docstring says so verbatim &mdash; <em>&ldquo;Records the 'provenance or it didn't happen' receipt for a graph-synth BUILD&rdquo;</em> &mdash; and which reads exactly the payload keys the law names (<span class="anch">agent_state.py:557-559</span>).</p>
+
+<p>Its coverage: <strong>one production caller</strong> (<span class="anch">host/graph_synth_runtime.py:115-122</span>, wired at <span class="anch">:142</span>, reached only from <code>instantiate_graph</code>); <strong>zero readers</strong>; <strong>silent no-op on three conditions</strong> (no <code>pxr</code>, missing prim, and the calling site's own bare swallow at <span class="anch">graph_builder.py:286-287</span>).</p>
+
+<p>And the name is overloaded <strong>seven</strong> ways across the tree:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:28%">Thing called &ldquo;provenance&rdquo;</th><th>What it actually is</th><th style="width:26%">Anchor</th></tr></thead>
+<tbody>
+<tr><td>The law's ledger</td><td>agent.usd decision prim with revert path</td><td><span class="anch">agent_state.py:549-574</span></td></tr>
+<tr><td>FloorGate provenance</td><td>flat hash records in <code>.synapse/provenance/</code></td><td><span class="anch">floor_gate.py:362-374</span></td></tr>
+<tr><td><strong>AuditLog</strong> <span class="v v-no">NEW</span></td><td>hash-chained, encrypted, full-payload entries in <code>~/.synapse/audit/</code></td><td><span class="anch">core/audit.py:220-343</span></td></tr>
+<tr><td><strong><code>memory/ledger.py</code></strong> <span class="v v-no">NEW</span></td><td>Its line-1 docstring is literally <em>&ldquo;Agent.usd Ledger &mdash; durable provenance records.&rdquo;</em> A <em>different</em> agent.usd subtree from the law's (<code>/SYNAPSE/agent/ledger</code> vs <code>/SYNAPSE/memory/decisions</code>). 29 records on disk</td><td><span class="anch">memory/ledger.py:1</span>, <span class="anch">:218-228</span></td></tr>
+<tr><td>LOOP journal/capsule</td><td>forecast/terminal/delivery + Moneta capsule</td><td><span class="anch">coordinator.py:120-176</span></td></tr>
+<tr><td>Solaris <code>_stamp_provenance</code></td><td><code>node.setUserData()</code> &mdash; scene metadata, dies with the node</td><td><span class="anch">mcp/tool_impls/solaris/component_builder.py:43-50</span> and 4 siblings</td></tr>
+<tr><td>Live IntegrityBlock envelope</td><td>observe-only block in the shared process bridge</td><td><span class="anch">server/integrity_envelope.py:267-280</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>The eighth destination, and the only one a model reads</h4>
+
+<p><code>_submit_logs</code> has a second writer revision 1 never traced. <span class="anch">handlers.py:610</span> calls <code>bridge.log_action(f"Executed: {cmd_type}", session_id=sid)</code>, which reaches <span class="anch">session/tracker.py:302-328</span> and deposits into the memory substrate: <code>self._synapse.add(content=action, memory_type=MemoryType.ACTION, tags=["action","ai"], node_paths=..., source="ai")</code> (<span class="anch">:322-328</span>).</p>
+
+<p>That is the <strong>one path on which anything resembling a mutation record reaches the model</strong>, via <code>handlers_memory</code> recall. It is also <strong>the least honest of the eight</strong>, and it is a new Law 3 finding rather than a rescue: the deposited content is the fixed string <code>"Executed: &lt;cmd_type&gt;"</code>, assembled before the result is inspected and identical whether the op succeeded or returned <code>{'status':'error'}</code>. See §7.1 item 22 and <a href="#s11">§11 contest C</a>.</p>
+
+<div class="corrected">
+  <span class="lbl">Consequence, restated</span>
+  <p>Revision 1 said: anyone reading <code>harness/CLAUDE.md</code> and then checking <code>.synapse/provenance/</code> concludes the law is satisfied for 131 commands, when by the law's own definition it is satisfied for one. That holds. What changes is the scale of the confusion: there are <strong>seven distinct things named &ldquo;provenance&rdquo;</strong>, four with bytes on disk, none read back, and the one the law names has the fewest records of all. And <span class="anch">autonomy/driver.py:560</span> <code>_log_decision()</code> &mdash; which sounds like the law's writer and produces <code>decision</code>/<code>reasoning</code>/<code>gate</code> &mdash; appends to an <strong>in-memory list</strong> and calls <code>logger.info</code> (<span class="anch">driver.py:568-576</span>). It never touches agent.usd. The autonomy loop's entire decision log is process-local and evaporates on restart.</p>
+</div>
+</section>
+
+<!-- ======================= 3 ======================= -->
+<section id="s3">
+<h2><span class="num">§3</span>Route coverage matrix</h2>
+
+<p>Sorted by artist impact, worst first. The <strong>LOOP</strong> column reflects what the route can emit <em>at any configuration</em>, not just the default. The <strong>AUDIT</strong> column is new this revision and moves several route verdicts from &ldquo;blind&rdquo; to &ldquo;recorded but unreadable&rdquo; &mdash; a different problem with a different fix.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th style="width:19%">Route &middot; entry point</th><th>LOOP</th><th>PROV</th><th>AUDIT</th><th>PROD</th><th>Confirmed gaps</th></tr></thead>
+<tbody>
+
+<tr><td><strong>1</strong></td>
+<td><strong>saved-networks-restore</strong><br>panel &ldquo;Saved recipes&rdquo; &rarr; <span class="anch">host/saved_networks.py:337</span></td>
+<td><span class="v v-no">NO</span></td><td><span class="v v-no">NO</span></td><td><span class="v v-no">NO</span></td><td>YES</td>
+<td>Creates a subnet + bulk-loads up to 1000 nodes/boxes/dots into <code>/stage</code> (<span class="anch">saved_networks.py:352,355</span>) and writes a versioned recipe + USD sidecar to disk (<span class="anch">recipes/library.py:116,124</span>) <strong>outside all four record systems</strong> &mdash; not the registry, not <code>handle()</code>, not the bridge &mdash; and, unlike every sibling trigger in its own feature, it does not even write the feature-local capture notice (<code>record_notice</code> at <span class="anch">saved_networks.py:437</span> has no call from <code>restore</code>). The panel puts the outcome in a QLabel and drops it (<span class="anch">panel/saved_recipes.py:243-251</span>). <strong>This is the single genuine total blind spot in the tree.</strong></td></tr>
+
+<tr><td><strong>2</strong></td>
+<td><strong>autonomy-render-driver</strong><br><span class="anch">handlers.py:1948</span></td>
+<td><span class="v v-no">NO</span></td><td><span class="v v-part">PARTIAL</span></td><td><span class="v v-no">NO</span></td><td>YES</td>
+<td>Every driver step bypasses <code>handle()</code> via direct <code>registry.invoke()</code> (<span class="anch">handlers.py:1997-1999</span>), so it misses <strong>both</strong> the LOOP <em>and</em> <code>_submit_logs</code>/AuditLog. Per-frame renders get zero records. Validator exception &rarr; <code>passed=True</code> (<span class="anch">autonomy/validator.py:321-327</span>). Frame validation exception &rarr; <code>result.success=True</code> and retries abandoned (<span class="anch">render_farm.py:236-241</span>, again <span class="anch">:400-410</span>). agent.usd task lifecycle all <code>_log.debug</code>-swallowed (<span class="anch">handlers.py:1907-1946,2038-2041,2071-2076</span>). Decision log in-memory only (<span class="anch">driver.py:560-576</span>).</td></tr>
+
+<tr><td><strong>3</strong></td>
+<td><strong>render-bounded-farm</strong><br><span class="anch">handlers_render.py:331</span>, <span class="anch">:1478</span></td>
+<td><span class="v v-no">NO</span></td><td><span class="v v-part">PARTIAL</span></td><td><span class="v v-part">PARTIAL</span></td><td>YES</td>
+<td>ONE record brackets an N-frame sequence; per-frame <code>node.render()</code> disk writes go through bound-method callbacks that never touch the registry (<span class="anch">render_farm.py:212,326,368,482,625</span> &rarr; <span class="anch">handlers_render.py:905</span>). A backgrounded render's real terminal outcome lands only in a <strong>32-entry</strong> in-memory registry (cap at <span class="anch">render_session.py:21</span>, eviction <span class="anch">:49</span>) and a <strong>200-entry</strong> <code>JobJournal</code> (cap at <span class="anch">python/synapse/job_events.py:45-46</span>) &mdash; unrecoverable once evicted, because the one provenance record already digested the <code>render_in_progress</code> token (<span class="anch">handlers_render.py:615-626</span> + <span class="anch">floor_gate.py:322,335-339</span>). <code>_handle_render_settings</code> mutates parms with <strong>no <code>hou.undos.group</code> at all</strong> (<span class="anch">handlers_render.py:1189-1250</span>, mutation at <span class="anch">:1229</span>).</td></tr>
+
+<tr><td><strong>4</strong></td>
+<td><strong>tops-pdg-cook</strong><br><span class="anch">handlers_tops/cook.py:25</span>; 19 <code>tops_*</code> + <code>wedge</code> registered (<span class="anch">handlers.py:682,685-711</span>)</td>
+<td><span class="v v-no">NO</span></td><td><span class="v v-yes">YES</span></td><td><span class="v v-yes">YES</span></td><td>YES</td>
+<td>Highest disk-mutation-per-call route in the tree. Failed cooks, failed batch cooks, failed render sequences and failed multi-shots all return normally with an embedded <code>status:'error'</code>, so floor_gate records <code>outcome='ok'</code> and the transport returns <code>success=True</code> (<span class="anch">cook.py:66-75,487-499</span>; <span class="anch">render_sequence.py:295-301,506-512</span>; <span class="anch">floor_gate.py:335-339</span>; <span class="anch">handlers.py:558-563</span>). <strong>The AuditLog entry for the same call persists the literal <code>{'status':'error', ...}</code> dict as <code>output_data</code></strong> (<span class="anch">handlers.py:611-619</span>) &mdash; two live ledgers disagree about one event, and the honest one is the unreadable one. <code>tops_cancel_cook</code> swallows <code>cancelCook()</code> at <span class="anch">cook.py:247</span> and returns <code>'cancelled'</code> unverified.</td></tr>
+
+<tr><td><strong>5</strong></td>
+<td><strong>batch-subops</strong><br><span class="anch">handlers.py:947</span>, sub-op dispatch <span class="anch">:998-1001</span></td>
+<td><span class="v v-no">NO</span></td><td><span class="v v-yes">YES</span><br><span style="font-size:.85em;color:var(--ink-3)">per sub-op</span></td><td><span class="v v-no">NO</span><br><span style="font-size:.85em;color:var(--ink-3)">sub-ops</span></td><td>YES</td>
+<td>N mutations produce <strong>1 integrity envelope + 1 audit line + N provenance files</strong> &mdash; the code says so itself at <span class="anch">handlers.py:516-518,527-531</span>. Sub-ops call <code>registry.invoke()</code> directly and never re-enter <code>handle()</code>, so they bypass the LOOP <em>and</em> <code>_submit_logs</code>. A batch where every sub-op failed still returns <code>success=True</code> (<span class="anch">handlers.py:981-1010</span> + <span class="anch">:558-563</span>).</td></tr>
+
+<tr><td><strong>6</strong></td>
+<td><strong>blocks-fixture-apply</strong><br><span class="anch">mcp_server.py:825,852</span>; runtime at <span class="anch">blocks/runtime.py:418</span></td>
+<td><span class="v v-part">PARTIAL</span></td><td><span class="v v-yes">YES</span><br><span style="font-size:.85em;color:var(--ink-3)">as <code>execute_python</code></span></td><td><span class="v v-yes">YES</span></td><td>YES*</td>
+<td>The scene mutation is laundered through <code>execute_python</code>, so the record says &ldquo;execute_python + opaque code blob&rdquo;, not &ldquo;apply_fixture&rdquo; (<span class="anch">mcp_server.py:838-849</span>). The injected script swallows any reconciler failure into a JSON payload (<span class="anch">cognitive/tools/apply_fixture.py:73-81</span>), <code>_handle_execute_python</code> returns <code>{'executed': True}</code> regardless (<span class="anch">handlers.py:1319-1322</span>), so floor_gate records <code>ok</code> <strong>and</strong> <code>terminal_value()</code> would read it as <code>True</code> (<span class="anch">memory_loop.py:129-140</span>). All three <code>mcp_server.py</code> Dispatchers pass no <code>floor_gate</code> (<span class="anch">:632,:750,:852</span>), so the cognitive layer emits zero Tier-0 provenance of its own (<span class="anch">cognitive/dispatcher.py:295-314</span>) &mdash; <em>bounded by the module's own comment at <span class="anch">:250-258</span>: &ldquo;Live autonomy provenance is covered via the server registry adapter (handlers.py _HandlerAdapter.call &rarr; registry.invoke), not this dispatcher path.&rdquo;</em> *Reachability inherits route 14's UNKNOWN install status.</td></tr>
+
+<tr><td><strong>7</strong></td>
+<td><strong>recipe-watch-scene-exit</strong><br><span class="anch">host/recipe_watch.py:59-61</span>, subscription <span class="anch">saved_networks.py:418-425</span></td>
+<td><span class="v v-no">NO</span></td><td><span class="v v-no">NO</span></td><td><span class="v v-no">NO</span></td><td>YES</td>
+<td><strong>Corrected.</strong> The only live inside-out Houdini&rarr;SYNAPSE event bridge writes a versioned snapshot + USD metadata to disk from a <code>hou.hipFile</code> callback outside all four operation-record systems &mdash; but <em>not</em> outside all recording. <code>_capture</code> &rarr; <code>_notice</code> (<span class="anch">recipe_watch.py:41-57</span>) calls <code>host.record_notice</code> at <span class="anch">:44</span>, which fsyncs and atomically publishes <code>&lt;library root&gt;/last-capture.json</code> (<span class="anch">saved_networks.py:437-461</span>) and is read back on every dialog open (<span class="anch">saved_networks.py:464-474</span> &rarr; <span class="anch">panel/saved_recipes.py:141-147</span>). <strong>That is a single-slot UI status string, not an operation record</strong>: one fixed filename, three keys, no op id, no digests, no parent, and it is overwritten by the next <code>arm()</code> (&ldquo;watching&rdquo;, <span class="anch">:34</span>), <code>disarm()</code> (&ldquo;stopped&rdquo;, <span class="anch">:39</span>), or manual save (<span class="anch">saved_recipes.py:222</span>). Retention is one event, shared with lifecycle notices that are not mutations. On-disk proof: <code>~/.synapse/recipes/last-capture.json</code>, 138 bytes, <code>{"message": "Saved Custom_Studio_Lighting &middot; version 1 locally.", "recorded_utc": "2026-09-08T00:37:13.433047+00:00", "status": "saved"}</code> <span class="tier t-run">VERIFIED-RUNTIME</span>. See <a href="#s11">§11 contest A</a>.</td></tr>
+
+<tr><td><strong>8</strong></td>
+<td><strong>graph-synth-instantiate</strong><br><span class="anch">handlers_graph_synth.py:71</span> &rarr; <span class="anch">host/graph_builder.py:126-159</span></td>
+<td><span class="v v-no">NO</span></td><td><span class="v v-yes">YES</span></td><td><span class="v v-yes">YES</span></td><td>YES</td>
+<td><code>outcome='ok'</code> is recorded for a genuinely FAILED, rolled-back build (<span class="anch">floor_gate.py:335-339</span> never inspects <code>InstantiationResult.status</code>). Rollback completeness unverified: each <code>node.destroy()</code> is <code>except Exception: pass</code> (<span class="anch">graph_builder.py:168-172</span>) and is unconditionally followed by a &ldquo;zero net mutation&rdquo; claim (<span class="anch">:173-182</span>). The agent.usd decision write &mdash; the law's ledger &mdash; is live-wired but silently no-ops on three conditions (<span class="anch">graph_builder.py:286-287</span>, <span class="anch">agent_state.py:563-570</span>).</td></tr>
+
+<tr><td><strong>9</strong></td>
+<td><strong>hwebserver-synapse-ws</strong><br><span class="anch">hwebserver_adapter.py:149,265-275</span></td>
+<td><span class="v v-part">PARTIAL</span></td><td><span class="v v-yes">YES</span></td><td><span class="v v-yes">YES</span></td><td>YES</td>
+<td>The dominant live transport and the widest mutation surface (131 commands). <code>handle()</code> is invoked on a coroutine the code's own comment says <em>&ldquo;hwebserver may invoke this coroutine on Houdini's UI loop&rdquo;</em> (<span class="anch">hwebserver_adapter.py:265</span>), and <code>observe_operation</code> refuses main-thread dispatch (<span class="anch">memory_loop.py:183-185</span>) &mdash; so the LOOP channel is structurally blind here even fully enabled, except via the adapter's <code>asyncio.to_thread</code> branch (<span class="anch">:271-273</span>).</td></tr>
+
+<tr><td><strong>10</strong></td>
+<td><strong>panel-worker-mcp-http</strong><br><span class="anch">claude_worker.py:383,431</span> &rarr; <span class="anch">tool_executor.py:713</span> &rarr; <span class="anch">mcp/server.py:725-732</span></td>
+<td><span class="v v-part">PARTIAL</span></td><td><span class="v v-yes">YES</span></td><td><span class="v v-yes">YES</span></td><td>YES</td>
+<td>The primary artist-facing path. Two nested <code>observe_operation</code> calls: the outer (<span class="anch">mcp/server.py:728</span>) is off-main and gate-eligible; the inner (<span class="anch">handlers.py:539</span>) is always post-<code>run_on_main</code> and therefore <strong>structurally dead</strong> on this route. 118+ of 128 MCP tools fall outside the allowlist (<code>grep -oE '"(synapse|houdini|cops|tops)_[a-z0-9_]+"' _tool_registry.py | sort -u | wc -l</code> = <strong>128</strong>).</td></tr>
+
+<tr><td><strong>11</strong></td>
+<td><strong>mcp-http-endpoint</strong><br><span class="anch">mcp/server.py:942,402,570</span></td>
+<td><span class="v v-part">PARTIAL</span></td><td><span class="v v-yes">YES</span></td><td><span class="v v-yes">YES</span></td><td>YES</td>
+<td>A <strong>second</strong> <code>SynapseHandler</code> instance (<span class="anch">mcp/server.py:395</span>) &rarr; second FloorGate, second duration histogram, second session id in one Houdini process. <code>houdini_set_keyframe</code> is mutating, gets provenance, and is absent from <code>OBSERVED_COMMANDS</code> &mdash; splitting the <code>set_parm</code>/<code>set_keyframe</code> pair that <code>CLAUDE.md §1</code> treats as matched. <code>initialize</code>'s <code>project_setup</code> failure is swallowed (<span class="anch">mcp/server.py:529-533</span>), which starves the whole session's LOOP.</td></tr>
+
+<tr><td><strong>12</strong></td>
+<td><strong>ws-server-legacy</strong><br><span class="anch">websocket.py:640,775</span>; handler at <span class="anch">:186</span></td>
+<td><span class="v v-part">PARTIAL</span></td><td><span class="v v-yes">YES</span></td><td><span class="v v-yes">YES</span></td><td>YES</td>
+<td>A <strong>third</strong> <code>SynapseHandler</code>. Dispatch at <span class="anch">:775</span> runs on the websockets worker thread &mdash; <strong>the one transport where the LOOP would actually fire if the flag were set.</strong> Same batch/autonomy structural bypasses apply.</td></tr>
+
+<tr><td><strong>13</strong></td>
+<td><strong>panel-executor-offmain-bridge</strong><br><span class="anch">tool_executor.py:469,680</span>; decision at <span class="anch">:592-621</span></td>
+<td><span class="v v-part">PARTIAL</span></td><td><span class="v v-yes">YES</span></td><td><span class="v v-yes">YES</span></td><td>YES</td>
+<td>The only route that decides marshalling by inspecting its own thread (<span class="anch">:609</span>). Its <code>ImportError</code> fallback runs <code>handler.handle</code> <strong>unmarshalled</strong> on the calling thread and only logs an error (<span class="anch">:621-638</span>). <span class="anch">bridge_adapter.py:356-358,383-388</span>: when <code>get_bridge()</code> returns None, a &ldquo;bridge-routed&rdquo; call silently degrades to a plain <code>handler.handle</code> with no IntegrityBlock and no marker that the audited path was skipped.</td></tr>
+
+<tr><td><strong>14</strong></td>
+<td><strong>mcp-stdio-proxy</strong><br><span class="anch">mcp_server.py:1137,371</span></td>
+<td>inherits</td><td>inherits</td><td>inherits</td><td><span class="v v-unk">UNKNOWN</span></td>
+<td>Emits zero records of its own &mdash; a JSON-RPC&rarr;WS relay. All observability is inherited from whichever in-Houdini transport terminates it. No <code>claude_desktop_config.json</code> registration found in the tree, so &ldquo;installed&rdquo; is unproven.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>Dead code that still mutates &mdash; findings, not route gaps</h4>
+
+<ul>
+<li><span class="anch">panel/scene_doctor.py:632,655</span> &mdash; <code>apply_fixes()</code> mutates the scene under an undo group. <strong>Zero importers repo-wide.</strong></li>
+<li><span class="anch">handlers_recipe.py:123</span> &mdash; <code>run_recipe</code> is not in <code>SynapseHandler</code>'s mixin list (<span class="anch">handlers.py:415</span>) and is not among the 131 registrations; <span class="anch">python/synapse/server/rbac.py:83</span> grants a role for a command that cannot be invoked.</li>
+<li><span class="anch">server/api_adapter.py:166-454</span> &mdash; ~40 <code>@hwebserver.apiFunction</code> endpoints over <code>SynapseHandler.handle</code>, zero production importers.</li>
+<li><span class="anch">host/daemon.py:123</span>, <span class="anch">host/tops_bridge.py</span>, <span class="anch">host/scene_load_bridge.py</span> &mdash; the designed inside-out perception channel. <strong>No production constructor anywhere.</strong> The only live Houdini&rarr;SYNAPSE subscription in the tree is <span class="anch">saved_networks.py:425</span>.</li>
+<li><span class="anch">cognitive/dispatcher.py:295-314</span> &mdash; the production branch raises <code>NotImplementedError</code>; the module's own comment block at <span class="anch">:250-258</span> admits it <em>&ldquo;is itself unwired today&rdquo;</em> (phrase at <span class="anch">:254</span>).</li>
+</ul>
+</section>
+
+<!-- ======================= 4 ======================= -->
+<section id="s4">
+<h2><span class="num">§4</span>The three named gaps</h2>
+
+<h3>4.1 &nbsp;Proposal records &mdash; <span class="v v-part">PARTIAL</span> &nbsp;the writer is live-wired; the ledger is unread</h3>
+
+<div class="corrected">
+  <span class="lbl">Heading corrected at source</span>
+  <p>Revision 1 titled this <em>&ldquo;the dormant-writer half is REFUTED.&rdquo;</em> The refutation holds and is re-verified below, but that heading reads as closure. It is not closure: the writer is live and lands in a ledger <strong>nothing reads</strong>, on a path that silently no-ops on three conditions.</p>
+</div>
+
+<p><strong>What is REAL:</strong> <code>instantiate_graph</code> performs the actual scene mutation (<span class="anch">graph_builder.py:126-159</span>) and is absent from <code>OBSERVED_COMMANDS</code> (<span class="anch">memory_loop.py:17-21</span>), so it can never produce a LOOP record at any configuration. Its floor_gate record says <code>outcome='ok'</code> even for a FAILED, rolled-back build. <code>ProposalStore</code> is a pure in-memory TTL dict with no disk I/O (<span class="anch">host/proposal_store.py:1-34</span> &mdash; 34 lines total), so the propose half leaves nothing durable either.</p>
+
+<p><strong>What is REFUTED:</strong> the claim that the proposal route's dedicated provenance writer is dormant is <strong>stale</strong>. The live chain:</p>
+
+<div class="tw"><table><thead><tr><th>Step</th><th style="width:40%">Anchor</th></tr></thead><tbody>
+<tr><td><code>_agent_usd_provenance</code> defined</td><td><span class="anch">host/graph_synth_runtime.py:96-127</span></td></tr>
+<tr><td>Injected into <code>GraphBuilder</code></td><td><span class="anch">host/graph_synth_runtime.py:136-143</span></td></tr>
+<tr><td><code>_emit_provenance</code> called on the BUILT path</td><td><span class="anch">host/graph_builder.py:186</span></td></tr>
+<tr><td>Payload keys authored &mdash; <code>decision</code>, <code>reasoning</code>, <code>parent_path</code>, <code>created_paths</code>, <code>model_id</code>, <code>revert</code></td><td><span class="anch">host/graph_builder.py:278-285</span> <span class="v v-no">RE-ANCHORED</span></td></tr>
+<tr><td>Prim written</td><td><span class="anch">memory/agent_state.py:549-574</span></td></tr>
+<tr><td>Handler reaches it</td><td><span class="anch">handlers_graph_synth.py:90</span></td></tr>
+</tbody></table></div>
+
+<p><em>Anchor corrected:</em> revision 1 cited <span class="anch">graph_synth_runtime.py:157</span> for the payload keys. That line is <code>"revert": r.revert,</code> inside <code>_result_to_dict</code> &mdash; the <strong>handler response payload</strong>, not the agent.usd write. The refutation itself stands on independently re-verified ground. The comment at <span class="anch">graph_builder.py:270-274</span> calling the writers <em>&ldquo;dormant &mdash; no live caller yet&rdquo;</em> is doc drift and should be deleted.</p>
+
+<div class="corrected">
+  <span class="lbl">On-disk claim deleted &mdash; it was wrong in both revisions, in opposite directions</span>
+  <p>Revision 1 corrected an earlier &ldquo;zero records&rdquo; trace to <em>&ldquo;122 records &mdash; 57 <code>propose_graph</code> + 65 <code>instantiate_graph</code> &mdash; all carrying <code>session: null</code> and <code>error_type</code> in <code>{SynapseUserError, KeyError}</code>&hellip; zero confirmed-production records; 122 test-authored ones.&rdquo;</em> Two crucible lenses independently re-ran the producer and disagreed; so did this pass. <strong>The correction was itself wrong.</strong></p>
+  <p><strong>Measured, this session</strong> <span class="tier t-run">VERIFIED-RUNTIME</span>. Producer: parse all 5000 <code>.synapse/provenance/op-*.json</code>, histogram <code>(op, outcome, error_type)</code>. 5000 parsed, 0 unparseable.</p>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>op</th><th>outcome</th><th>error_type</th><th style="text-align:right">count</th></tr></thead>
+<tbody>
+<tr><td><code>propose_graph</code></td><td>ok</td><td>&mdash;</td><td style="text-align:right">19</td></tr>
+<tr><td><code>propose_graph</code></td><td>error</td><td><code>SynapseUserError</code></td><td style="text-align:right">19</td></tr>
+<tr><td><code>propose_graph</code></td><td>error</td><td><code>ValueError</code></td><td style="text-align:right">20</td></tr>
+<tr><td><code>propose_graph</code></td><td>error</td><td><code>KeyError</code></td><td style="text-align:right">7</td></tr>
+<tr><td><code>instantiate_graph</code></td><td>ok</td><td>&mdash;</td><td style="text-align:right">38</td></tr>
+<tr><td><code>instantiate_graph</code></td><td>error</td><td><code>SynapseUserError</code></td><td style="text-align:right">19</td></tr>
+<tr><td colspan="3"><strong>Total</strong> &mdash; <code>propose_graph</code> <strong>65</strong>, <code>instantiate_graph</code> <strong>57</strong>; <code>session: null</code> on <strong>122 / 122</strong></td><td style="text-align:right"><strong>122</strong></td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Three things break in revision 1's sentence.</strong> The op split is <em>inverted</em>. <strong>57 of the 122 carry no <code>error_type</code> at all</strong> and record <code>outcome:'ok'</code>, so &ldquo;all carrying <code>error_type</code>&rdquo; is false for 47% of the set. And a third error type is present &mdash; <code>ValueError</code> &times;20 &mdash; absent from the stated pair.</p>
+
+<p><strong>Corrected statement, deliberately weaker than what it replaces:</strong> there are <strong>122 records</strong> for these two ops, <strong>all carrying <code>session: null</code></strong>. 65 carry an error signature consistent with the validation raises at <span class="anch">handlers_graph_synth.py:51-54,81-84</span>. <strong>57 carry no error signature and are unfingerprinted.</strong> <strong>Authorship of the set is <span class="tier t-unv">UNVERIFIED</span></strong> pending the payload-digest fingerprinting producer scheduled at §9 item 9 &mdash; because <code>session: null</code> alone is a superset fingerprint that a real handler with an unset <code>self._session_id</code> also produces, as §10 item 6 already conceded. <strong>The phrase &ldquo;zero confirmed-production records; 122 test-authored ones&rdquo; is deleted, and nothing replaces it until that producer runs.</strong></p>
+
+<h3>4.2 &nbsp;Applied-recipe records &mdash; one REAL meaning, one MOOT, one PARTIALLY REFUTED</h3>
+
+<p>&ldquo;Recipe&rdquo; names three unrelated things in this tree, and the verdict differs per meaning.</p>
+
+<h4>Meaning A &mdash; saved networks (the panel's &ldquo;Saved recipes&rdquo;): <span class="v v-no">REAL</span>, narrowed to <code>restore()</code></h4>
+
+<div class="corrected">
+  <span class="lbl">Corrected at source &mdash; the scope of this gap was overstated</span>
+  <p>Revision 1 said the gap was <em>feature-wide</em>: <em>&ldquo;manual save and armed-watch capture are equally blind, so instrumenting only the scene-exit trigger would fix a third of it.&rdquo;</em> That is false, and its own &ldquo;verified negative&rdquo; is why: the grep was <code>memory_loop|floor_gate|loop.coordinator|observe_operation|provenance</code>, a pattern that can only find the four systems already in the census. It proved absence of those four and generalized to &ldquo;outside every record system.&rdquo;</p>
+  <p>Three of the four triggers <em>do</em> record: scene-exit capture (<span class="anch">recipe_watch.py:63-77</span> &rarr; <span class="anch">:41-57</span> &rarr; <code>record_notice</code> at <span class="anch">:44</span>), <code>arm()</code> (<span class="anch">:34</span>), <code>disarm()</code> (<span class="anch">:39</span>), and manual save (<span class="anch">panel/saved_recipes.py:222</span>). All reach <span class="anch">saved_networks.py:437-461</span>, which writes <code>last-capture.json</code> via <code>NamedTemporaryFile</code> &rarr; <code>flush</code> &rarr; <strong><code>os.fsync</code></strong> &rarr; <code>temporary.replace(path)</code> with a 4-attempt Windows <code>PermissionError</code> backoff &mdash; strictly more durable on the success path than floor_gate's own, which defers its fsync to a background pool. It has a real production reader at <span class="anch">saved_networks.py:464-474</span> &rarr; <span class="anch">panel/saved_recipes.py:141-147</span>.</p>
+  <p><strong>The gap that survives is <code>restore()</code> alone</strong> &mdash; <span class="anch">saved_networks.py:337-416</span> touches neither the four record systems nor <code>record_notice</code>, and the panel's <code>_insert</code> puts the outcome in a QLabel and drops it (<span class="anch">panel/saved_recipes.py:243-251</span>). <code>FloorGate.wrap()</code> has exactly two call sites in the tree (<span class="anch">handlers.py:404</span>, <span class="anch">cognitive/dispatcher.py:259</span>) and neither is reachable from this route.</p>
+</div>
+
+<p><strong>What does not change:</strong> <code>last-capture.json</code> is a <strong>single-slot status string</strong>, not an operation record. One fixed filename; three keys; no op id, no payload digest, no result digest, no parent, no created paths; retention of exactly one event, shared with <code>arm</code>/<code>disarm</code> lifecycle notices that are not mutations at all. A capture record is clobbered the next time the artist arms the watch. The reasoning for rejecting the crucible's stronger inversion is in <a href="#s11">§11, contest A</a>.</p>
+
+<h4>Meaning B &mdash; the recipe <em>handler</em>: <span class="v v-unk">MOOT</span>, because the apply command does not exist</h4>
+
+<p><span class="anch">handlers_recipe.py:123</span> <code>_handle_run_recipe</code> is never registered &mdash; <code>RecipeHandlerMixin</code> is absent from the <code>SynapseHandler</code> mixin list at <span class="anch">handlers.py:415</span>, and <code>run_recipe</code> is not among the 131 <code>reg.register(</code> calls; <span class="anch">tests/test_rbac.py:255</span> says so in a comment. <code>synapse_list_recipes</code> is read-only (<span class="anch">_tool_registry.py:1271-1272</span>). <span class="anch">loop/recipe.py:45</span> <code>run_recipe</code> is called only from <span class="anch">harness/loop/probes.py:210,289</span> <em>and from <span class="anch">tests/test_loop_contracts.py:111,127,169</span></em> &mdash; revision 1 said &ldquo;only from harness&rdquo; while its own §6.4 dissected the test at <span class="anch">:168</span> whose body calls it at <span class="anch">:169</span>. There is no applied-recipe mutation on this surface to instrument. The honest finding is that a registered RBAC role at <span class="anch">python/synapse/server/rbac.py:83</span> points at a command that cannot be invoked.</p>
+
+<h4>Meaning C &mdash; BLOCKS <code>apply_fixture</code>: <span class="v v-part">PARTIALLY REFUTED</span></h4>
+
+<p>It <em>does</em> emit provenance and an audit entry, because it rides <code>execute_python</code> through the registry (<span class="anch">blocks/runtime.py:418</span> &mdash; revision 1 cited <code>:284</code>, which is the <code>_undo_group</code> helper docstring; the undo group is taken at <span class="anch">:483</span>). The real defect is that the record misattributes the operation (op = <code>execute_python</code>, payload = opaque code blob) and reports <code>ok</code> for a failed reconciliation.</p>
+
+<p><strong>New, and outside the original scope:</strong> because AuditLog persists <code>input_data</code> verbatim (<span class="anch">handlers.py:611-619</span>), the injected script's <strong>full source is written to <code>~/.synapse/audit/</code> on every call</strong>. That is a disclosure surface this report's predecessor could not evaluate because the system was absent from its census. Scoped at §9 item 15; not asserted here.</p>
+
+<h3>4.3 &nbsp;Solaris records &mdash; <span class="v v-part">PARTIAL</span> &nbsp;floor_gate half REFUTED; naming collision REAL</h3>
+
+<p><strong>REFUTED:</strong> the claim that Solaris mutations leave no record. All nine <code>solaris_*</code> commands are registered (<span class="anch">handlers.py:731-743</span>), eight are absent from <code>_READ_ONLY_COMMANDS</code> (<span class="anch">handlers.py:204-245</span>), and each therefore gets one floor_gate record via <span class="anch">handlers.py:404</span> &rarr; <span class="anch">floor_gate.py:335-339</span>, plus one AuditLog entry via <span class="anch">handlers.py:551-556</span>. One correction worth carrying: <code>solaris_validate_ordering</code> <strong>is</strong> in <code>_READ_ONLY_COMMANDS</code> (<span class="anch">handlers.py:218</span>) and correctly emits nothing &mdash; a blanket &ldquo;all <code>solaris_*</code> are mutating&rdquo; statement is false.</p>
+
+<p><strong>REAL, part 1 &mdash; LOOP:</strong> none of the eight mutating Solaris tools appear in <code>OBSERVED_COMMANDS</code>. Solaris/USD work is structurally invisible to the LOOP at any configuration, including the one disk-writing tool <code>solaris_shotsetup_karma_xpu</code> (<code>touches_disk=True</code>, <span class="anch">bridge_adapter.py:173-175</span>).</p>
+
+<p><strong>REAL, part 2 &mdash; the naming collision, and a fix that was never back-ported.</strong> <code>_stamp_provenance()</code> writes <code>node.setUserData('synapse:tool'/'synapse:source_pattern'/'synapse:reasoning')</code>. It stamps a <strong>node</strong>, not a record: invisible to floor_gate, invisible to AuditLog, invisible to the LOOP, invisible to agent.usd, and gone when the node is deleted. Worse, four of five swallow the failure of the <em>identity-establishing</em> stamp inside a bare <code>except Exception: pass</code> and then return an unconditional success dict:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>File</th><th>Swallow</th><th>Success return</th></tr></thead>
+<tbody>
+<tr><td><code>component_builder.py</code></td><td><span class="anch">:43-50</span></td><td><span class="anch">:340-346</span> &nbsp;<code>{'status': 'created', ...}</code></td></tr>
+<tr><td><code>scene_template.py</code></td><td><span class="anch">:46-52</span></td><td>same shape</td></tr>
+<tr><td><code>create_variants.py</code></td><td><span class="anch">:35-41</span></td><td>same shape</td></tr>
+<tr><td><code>import_megascans.py</code></td><td><span class="anch">:35-42</span></td><td>same shape</td></tr>
+<tr><td><strong><code>set_purpose.py</code></strong></td><td><strong>fixed</strong> &mdash; <code>_stamp_identity</code> raises <code>IdentityStampError</code> + readback-proves at <span class="anch">:82-94</span></td><td><span class="anch">:349-364</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p><span class="anch">set_purpose.py:70-94</span> documents fixing exactly this defect on itself &mdash; the BLOCKER-1 duplicate-node-stacking bug caused by a silently-failed identity stamp. <strong>The fix was never carried to its four siblings.</strong></p>
+</section>
+
+<!-- ======================= 5 ======================= -->
+<section id="s5">
+<h2><span class="num">§5</span>The orphan question</h2>
+
+<p><strong>Does anything read any of these ledgers back in production? For the LOOP: yes in code, no in fact. For the other three: no, full stop.</strong></p>
+
+<h3>The LOOP's reader chain is real and is not invented after the fact</h3>
+
+<div class="tw"><table><thead><tr><th>Step</th><th style="width:40%">Anchor</th></tr></thead><tbody>
+<tr><td><code>_deliver</code> reads its own journal &mdash; the only <code>read_journal</code> call site</td><td><span class="anch">coordinator.py:139</span></td></tr>
+<tr><td><code>recover</code> reads <code>pending/</code> pointers, bounded to 4</td><td><span class="anch">coordinator.py:192-198</span></td></tr>
+<tr><td><code>loop.recover()</code> &mdash; the only non-test caller</td><td><span class="anch">memory_loop.py:117</span></td></tr>
+<tr><td>Surfaced as the <code>recovery</code> key</td><td><span class="anch">memory_loop.py:122</span></td></tr>
+<tr><td>Attached onto the context result</td><td><span class="anch">handlers_memory.py:68-70</span></td></tr>
+<tr><td><code>synapse_context</code> exposes it to an MCP client</td><td><span class="anch">mcp/_tool_registry.py:1093</span></td></tr>
+<tr><td>Outcome capsule resurfaces via Moneta relation-key recall</td><td><span class="anch">memory_loop.py:72</span> &rarr; <span class="anch">ports.py:456,583-617</span></td></tr>
+<tr><td>Design intent stated: &ldquo;recalled in a subsequent request&rdquo;</td><td><span class="anch">docs/MEMORY_LOOP_REPAIR.md:31-34</span></td></tr>
+</tbody></table></div>
+
+<p>So the LOOP is <strong>not</strong> R20-shaped. R20's router auto-promotion had literally zero call sites &mdash; no producer of outcomes, no consumer of decisions. The LOOP has four real production write sites (<span class="anch">handlers.py:538-542</span>, <span class="anch">mcp/server.py:725-732</span>, <span class="anch">panel/tool_executor.py:616-620</span>, plus <span class="anch">hwebserver_adapter.py:270-273</span> awaiting a worker thread specifically so the LOOP can run) and a real read chain ending at an MCP tool.</p>
+
+<p><strong>It fails a harder test instead: it is a fully-wired producer <em>and</em> consumer that has never been switched on.</strong> Four verified facts:</p>
+
+<ol>
+<li><strong>Off by default, and nothing ships it on.</strong> <code>SYNAPSE_LOOP_ENABLED</code> is set to <code>"1"</code> only in <span class="anch">tests/test_loop_integration.py:145,234</span>, <span class="anch">tests/test_loop_mcp_observation.py:55</span>, <span class="anch">tests/test_loop_native_timeouts.py:27</span>. <em>(<span class="anch">test_loop_mcp_observation.py:146</span> sets it to <code>"0"</code> &mdash; it disables; revision 1 listed it under &ldquo;set.&rdquo;)</em> Not in <code>packages/synapse.json</code>. The installer sets <code>SYNAPSE_LOOP_LEDGER_DIR</code> (<span class="anch">installer/synapse_setup/registration.py:48</span>) &mdash; a ledger directory for a loop that never runs &mdash; but not the enable flag.</li>
+<li><strong>The substrate is unconfigurable as shipped.</strong> <code>SYNAPSE_LOOP_PYTHON</code>, <code>SYNAPSE_HANISH_ROOT</code>, <code>SYNAPSE_OCTAVIUS_ROOT</code> appear only in the reader (<span class="anch">subprocess_port.py:111-113</span>) and two docs rows. Flip the flag and every call returns UNAVAILABLE at <span class="anch">subprocess_port.py:120</span> &mdash; no forecast, no settlement, no capsule, ever.</li>
+<li><strong>Zero bytes on disk.</strong> <span class="tier t-run">VERIFIED-RUNTIME</span> this session.</li>
+<li><strong>The only artifact that exists is test-authored.</strong> <code>harness/loop/ledger/v00_precommits.jsonl</code> holds 8 lines, all <code>"author":"v0.0-recipe"</code>, minted by <span class="anch">harness/loop/probes.py:210,289</span>. Zero production lines. <em>(Revision 1 gave two different, both-wrong line pairs for these same two call sites &mdash; <code>:202,289</code> in §4.2 and <code>:207,284</code> in §5. The 8-line measurement itself reproduces.)</em> It is also a <em>different ledger</em> from the journal &mdash; written by <code>LedgerPort</code> in file-mode, never by the coordinator.</li>
+</ol>
+
+<h3>The second-order orphan &mdash; and this one IS R20-shaped</h3>
+
+<p>The per-operation <strong>receipt</strong> &mdash; built at <span class="anch">memory_loop.py:211</span>, injected at <span class="anch">:155-176</span> into every observed tool result on all four write routes &mdash; is read by <strong>nothing</strong> in production. <code>grep</code> for <code>get("memory_loop")</code> / <code>["memory_loop"]</code> returns <strong>three</strong> test lines (<span class="anch">tests/test_loop_mcp_observation.py:141</span>, <span class="anch">tests/test_loop_integration.py:150,258</span>).</p>
+
+<div class="corrected">
+  <span class="lbl">Corrected at source</span>
+  <p>Revision 1 said four, citing <span class="anch">tests/test_tool_result_contract.py:9</span>. That line contains <code>'_memory_loop'</code> &mdash; a different, underscore-prefixed key in an unrelated <code>unpack_tool_result</code> fixture. It is not a receipt reader. The stated producer did not produce the stated output. Dropping it <em>strengthens</em> the conclusion. Panel scope re-confirmed: <code>python/synapse/panel/*.py</code> contains the write site at <span class="anch">tool_executor.py:616</span> and nothing else.</p>
+</div>
+
+<p>That is a producer with no consumer, wearing R20's exact coat, firing on <strong>the hot path of every mutating tool call</strong> the moment the flag is set. On the MCP branch it is dropped <em>silently</em> when the payload is not a dict (<span class="anch">memory_loop.py:158-159</span> &mdash; no log; revision 1 cited <code>:161</code>); the WS branch at least logs the drop (<span class="anch">:173</span>).</p>
+
+<h3>Consequence for sequencing &mdash; stated explicitly</h3>
+
+<p class="pull">Do not add a single producer to the LOOP before its consumer path is proven end to end.</p>
+
+<p>Concretely, all of these are currently-tempting fixes that would repeat the R20 defect:</p>
+
+<ul>
+<li>adding <code>instantiate_graph</code> / the Solaris composites / <code>set_keyframe</code> to <code>OBSERVED_COMMANDS</code></li>
+<li>refactoring <code>batch_commands</code> or <code>autonomous_render</code> to route sub-ops through <code>observe_operation</code></li>
+<li>widening the allowlist from 10 reachable commands toward 131</li>
+</ul>
+
+<p>Every one wires more producers into a journal that (a) cannot complete a delivery, (b) accretes an <code>attempts/&lt;uuid&gt;/</code> folder and an un-unlinked <code>pending/</code> pointer per operation forever with no reaper, and (c) feeds a receipt nobody reads. The failure mode is not &ldquo;no benefit&rdquo; &mdash; it is <strong>unbounded disk growth on the hot path plus a false impression of coverage.</strong></p>
+
+<h3>The same logic now applies, harder, to the other three</h3>
+
+<div class="corrected">
+  <span class="lbl">Corrected at source &mdash; revision 1 applied this &ldquo;more mildly&rdquo; to floor_gate alone</span>
+  <p>With AuditLog in the census, the orphan finding is not a footnote &mdash; it is the shape of the whole system:</p>
+  <ul>
+    <li><strong>floor_gate</strong>: 5000 records retained, 3 read (<span class="anch">doctor.py:856-866</span>), and the directory is <strong>at its cap today</strong> (<span class="anch">floor_gate.py:126</span> = 5000; <code>ls .synapse/provenance/op-*.json | wc -l</code> = 5000, <span class="tier t-run">VERIFIED-RUNTIME</span>).</li>
+    <li><strong>AuditLog</strong>: 143 MB retained, 3 files read into a support bundle, and <strong>no code path reads an audit file back at all</strong> &mdash; <code>get_entries()</code> queries the in-memory list (<span class="anch">core/audit.py:344</span>), so a restarted process cannot see its own history. Nine writer sites exist (<span class="anch">handlers.py:611</span>, <span class="anch">core/gates.py:328,341,395,455</span>, <span class="anch">handlers_render.py:1659,1743,1874</span>, <span class="anch">websocket.py:500</span>); zero file readers. <em>(<span class="anch">panel/save_shot.py:201</span> and <span class="anch">panel/session_journal.py:190</span> call <code>get_entries</code> on a different journal object, not AuditLog.)</em></li>
+    <li><strong>agent.usd decisions</strong>: 1 writer, 0 readers.</li>
+    <li><strong>LOOP</strong>: 0 records.</li>
+  </ul>
+  <p>Widening floor_gate coverage is still worth doing because its records are the only <em>queryable</em> durable evidence any route produces &mdash; but nobody should mistake writing them for closing the loop, and §8 now sequences a <strong>retention ticket before any coverage-widening ticket</strong>, because the store is full.</p>
+</div>
+</section>
+
+<!-- ======================= 6 ======================= -->
+<section id="s6">
+<h2><span class="num">§6</span>Coordinator test gaps</h2>
+
+<p>Scope: <span class="anch">python/synapse/loop/coordinator.py</span>. Collection counts below are carried from the prior audit's <code>pytest --collect-only</code>; <strong>no suite was executed this session or by the crucible.</strong> The crucible independently re-opened roughly 40 anchors in this section and found <strong>every one exact</strong> &mdash; this is the best-evidenced section in the report, and it is unchanged except for two nits, both marked inline.</p>
+
+<h3>6.1 &nbsp;Which test modules actually execute the coordinator</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Module</th><th style="text-align:right">Collected</th><th>Executes coordinator.py?</th><th>mock-<code>hou</code>?</th></tr></thead>
+<tbody>
+<tr><td><code>tests/test_loop_recovery_interruptions.py</code></td><td style="text-align:right">12</td><td><strong>YES &mdash; the only one in a default or CI run.</strong> Real <code>tmp_path</code>, real fsync, real <code>os.replace</code>; worker + deposit are recording doubles (<span class="anch">:15-47</span>)</td><td>NO &mdash; module never imports <code>hou</code>; coordinator.py imports no <code>hou</code> at all</td></tr>
+<tr><td><code>tests/test_loop_integration.py</code></td><td style="text-align:right">20</td><td>Only via 6 tests that <strong>skip unconditionally</strong> (<span class="anch">:17-23</span>)</td><td><strong>YES at <span class="anch">:153-164</span></strong> &mdash; <code>import hou</code> at <span class="anch">:159</span> resolves to the MagicMock planted by <span class="anch">tests/conftest.py:63-135</span>. <strong>ZERO host coverage.</strong> Does not touch coordinator.py</td></tr>
+<tr><td><code>tests/test_loop_mcp_observation.py</code></td><td style="text-align:right">14</td><td>NO &mdash; coordinator replaced wholesale by <code>RecordingLoop</code> (<span class="anch">:56-65</span>, monkeypatched <span class="anch">:71</span>)</td><td>NO</td></tr>
+<tr><td><code>tests/test_loop_native_timeouts.py</code></td><td style="text-align:right">6</td><td>NO &mdash; <code>RecordingLoop</code> (<span class="anch">:30-37</span>, patched <span class="anch">:41</span>)</td><td>NO (stubs <code>hdefereval</code> at <span class="anch">:26</span>)</td></tr>
+<tr><td><code>tests/test_loop_subprocess_limits.py</code></td><td style="text-align:right">12</td><td>NO &mdash; <code>SubstrateWorker</code> only, real child processes</td><td>NO</td></tr>
+<tr><td><code>tests/test_loop_contracts.py</code></td><td style="text-align:right">20</td><td>NO &mdash; <code>ports.py</code>/<code>mapper.py</code>/<code>recipe.py</code> only</td><td>NO</td></tr>
+<tr><td><code>tests/test_loop_hanish_worker.py</code></td><td style="text-align:right">30</td><td>NO &mdash; but <strong>these DO run</strong>: <code>pytest.importorskip</code> at <span class="anch">:39</span> resolves live (<code>hanish</code> at <code>G:\Hanish\hanish\__init__.py</code>)</td><td>NO &mdash; docstring <span class="anch">:1</span> explicitly refuses to fake its substrate</td></tr>
+<tr><td><code>tests/test_loop_hweb_dispatch.py</code></td><td style="text-align:right">5</td><td>NO &mdash; <code>memory_loop.enabled</code> only</td><td>NO</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>6.2 &nbsp;Per function</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Function</th><th>Line</th><th>Tested</th><th>Failure condition of the covering test &mdash; or why there isn't one</th></tr></thead>
+<tbody>
+<tr><td><code>canonical</code></td><td><span class="anch">:20</span></td><td><span class="v v-no">NO</span></td><td>Tests <em>use</em> <code>canonical()</code> to build their own expectations (<span class="anch">test_loop_recovery_interruptions.py:73,104,153</span>) &mdash; self-referential. Flip <code>sort_keys</code> or <code>separators</code> and both SUT and expectation move together; all pass. <code>allow_nan=False</code> &mdash; the guard that would refuse a NaN probability into a committed event &mdash; has <strong>zero</strong> test hits.</td></tr>
+<tr><td><code>digest</code></td><td><span class="anch">:24</span></td><td><span class="v v-no">NO</span></td><td>Used as a fixture helper (<span class="anch">:19</span>, <span class="anch">test_loop_integration.py:49</span>). Nothing asserts it is sha256-of-canonical; a hash-function or encoding change is invisible.</td></tr>
+<tr><td><code>utc_now</code></td><td><span class="anch">:28</span></td><td><span class="v v-no">NO</span></td><td>No test references it. A drop to naive local time fails nothing.</td></tr>
+<tr><td><code>append</code></td><td><span class="anch">:32</span></td><td><span class="v v-yes">YES</span></td><td><span class="anch">:179</span> fails if <code>create()</code> stops fsyncing before <code>os.replace</code> (<code>assert transitions == ["fsync"]</code> at <span class="anch">:187</span>), if it wrote to the published name (<span class="anch">:189</span>), if the <code>.part</code> payload were wrong (<span class="anch">:188</span>); <span class="anch">:158</span> fails if an interrupted publication deletes or consumes the <code>.part</code> (<span class="anch">:168-170</span>). <strong>Not covered:</strong> no directory fsync exists anywhere in the module, so rename durability is neither implemented nor tested.</td></tr>
+<tr><td><code>read_journal</code></td><td><span class="anch">:47</span></td><td><span class="v v-part">PARTIAL</span></td><td>Fails if an unterminated final legacy line is admitted (<span class="anch">:53</span>), if a torn tail poisons a preceding terminal (<span class="anch">:70</span>), if a committed corrupt legacy line is skipped (<span class="anch">:86</span>), if <code>PermissionError</code> on either read path becomes empty history (<span class="anch">:97</span>). <strong>Untested:</strong> corruption inside a <em>published</em> <code>.d/*.json</code> event, and the shape guard at <span class="anch">:73-75</span> (<code>"Invalid committed outbox event"</code> &mdash; <strong>zero grep hits repo-wide</strong>). Also untested and true-by-design: published events are named by random uuid4 (<span class="anch">:40</span>) and read back <code>sorted()</code> (<span class="anch">:67</span>), so read-back order is arbitrary, not chronological.</td></tr>
+<tr><td><code>create</code></td><td><span class="anch">:79</span></td><td><span class="v v-yes">YES</span> <span style="font-size:.85em;color:var(--ink-3)">indirect</span></td><td>Fails if the fsync is removed (<span class="anch">:187</span>). <strong>Untested:</strong> the exclusive <code>"x"</code> mode &mdash; no test writes the same path twice, so the <code>FileExistsError</code> protection on <code>request.json</code> / the pending pointer is never exercised.</td></tr>
+<tr><td><code>LoopCoordinator.__init__</code></td><td><span class="anch">:88</span></td><td><span class="v v-no">NO</span></td><td>Exercised everywhere, asserted nowhere. Nothing pins <code>Path(root).resolve()</code> or that <code>deposit</code> is a host callback rather than a memory handle &mdash; the comment at <span class="anch">:91</span> is unenforced.</td></tr>
+<tr><td><code>LoopCoordinator.context</code></td><td><span class="anch">:93</span></td><td><span class="v v-no">NO</span></td><td>Zero executing coverage. Only caller is <code>begin()</code> (<span class="anch">:106</span>), and every <code>begin()</code> test skips. The local fallback's own payload keys &mdash; <code>local_host_context</code>, <code>octavius_composed</code> &mdash; appear <strong>only</strong> in coordinator.py repo-wide. Nothing fails if that fallback silently starts shipping Octavius-composed data.</td></tr>
+<tr><td><code>LoopCoordinator.begin</code></td><td><span class="anch">:103</span></td><td><span class="v v-no">NO</span> <span style="font-size:.85em;color:var(--ink-3)">skipped-only</span></td><td>Called at <span class="anch">test_loop_integration.py:49,64,75,92,104,113</span> &mdash; all behind the skipping <code>worker</code> fixture. Nothing exercises: the operation-identity regex (<span class="anch">:104-105</span>, <code>"Invalid operation identity"</code> &mdash; zero test hits), <code>request.json</code> + pending pointer creation (<span class="anch">:115-116</span>), precommit authoring (<span class="anch">:118-119</span>), or the two durable markers (<span class="anch">:120-123</span>). The docstring promise at <span class="anch">:121-122</span> is enforced from the recovery side only.</td></tr>
+<tr><td><code>LoopCoordinator.finish</code></td><td><span class="anch">:126</span></td><td><span class="v v-part">PARTIAL</span></td><td>One executing call (<span class="anch">:167</span>) fails only if an interrupted <code>os.replace</code> doesn't raise out of <code>finish()</code> or leaves no <code>.part</code>. The admissibility guard at <span class="anch">:127-128</span> (<code>"Only a measured Boolean or unknown is admissible"</code>) has <strong>zero test hits</strong> &mdash; an <code>int 1</code> or a numpy bool would be recorded as a terminal observation unnoticed.</td></tr>
+<tr><td><code>LoopCoordinator._deliver</code></td><td><span class="anch">:134</span></td><td><span class="v v-part">PARTIAL</span></td><td>Fails if two differing committed terminals are not refused (<span class="anch">:148</span>), if a lost ACK causes re-authoring (<span class="anch">:136</span>, backed by the fixture worker's own assert at <span class="anch">:30</span>), if a failed deposit is reported as success (<span class="anch">:70</span>), if the pending pointer is not unlinked after a successful deposit (<span class="anch">:65,:83</span> &mdash; <em>nit corrected: revision 1 also cited <span class="anch">:133</span>, which asserts <code>calls[-1]["terminal"] == terminal</code>, not the unlink</em>). <strong>Untested, all zero grep hits:</strong> <code>"Invalid outbox attempt identity"</code> (<span class="anch">:136-137</span>); <code>"No digest-bound forecast acknowledgement"</code> (<span class="anch">:151-153</span>); settle returning non-SUCCESS after a SUCCESS status (<span class="anch">:156-158</span>); <code>"Hanish has no settled outcome yet"</code> (<span class="anch">:159-161</span>). The delivered capsule body (<span class="anch">:163-174</span> &mdash; schema string, the EXPOSED limits string, tags, <code>node_paths</code>, <code>recall_refs</code>) is <strong>never asserted by any executing test</strong>.</td></tr>
+<tr><td><code>LoopCoordinator.recover</code></td><td><span class="anch">:184</span></td><td><span class="v v-part">PARTIAL</span></td><td>Fails if a missing/torn/corrupt/unreadable journal becomes a delivery, or if an exception escapes instead of becoming UNAVAILABLE (<span class="anch">:202-203</span>). <strong>Untested:</strong> the <code>limit=4</code> bound and mtime ordering (<span class="anch">:192-193</span>) &mdash; no test creates more than one pending pointer or passes a limit; and the starvation-rotation <code>pointer.touch()</code> (<span class="anch">:204-209</span>), whose comment claims failures rotate so a missing substrate cannot starve later work. <strong>That claim has no producer test at all.</strong></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>6.3 &nbsp;Per docstring claim</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:20%">Claim</th><th style="width:18%">Verdict</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td><strong>Durable idempotent delivery</strong></td><td><span class="v v-part">PARTIAL</span> &mdash; the half that matters most is untested</td><td><em>Durable:</em> file-level only. <span class="anch">:179</span> proves fsync-before-<code>os.replace</code>; but <code>create()</code> (<span class="anch">:79-84</span>) fsyncs the <strong>file handle only</strong> &mdash; no directory fsync anywhere, so rename durability is neither implemented nor claimed. Against a real store, durability is asserted only in the <strong>skipped</strong> <span class="anch">test_loop_integration.py:73</span>. <em>Idempotent:</em> queue-level YES (pointer unlink at <span class="anch">:178</span>, asserted by <code>recover() == []</code> at <span class="anch">:65,:83</span>). Capsule-level <strong>NO</strong> &mdash; <code>_deliver</code> appends its <code>delivery</code> event (<span class="anch">:176</span>) and never reads prior delivery events back (<span class="anch">:140,:143</span> consult only <code>terminal</code> and <code>forecast_ack</code>). <strong>A crash between a successful deposit (<span class="anch">:175</span>) and the pointer unlink (<span class="anch">:178</span>) re-deposits on the next recover, and nothing in the outbox prevents it.</strong> The only defence is <code>add_durable_if_absent</code> (<span class="anch">ports.py:263</span>), asserted only in skipped tests. <strong>This is the sharpest untested hole in the module</strong> &mdash; and per §8 it is a <em>code</em> change plus a test, not a test alone.</td></tr>
+<tr><td><strong>Interrupted-write tolerance</strong></td><td><span class="v v-yes">TESTED, and well</span></td><td><span class="anch">:158</span> monkeypatches <code>os.replace</code> to raise, asserts the OSError propagates, asserts exactly one <code>.part</code> survives holding <code>true</code>, then restores and asserts the later recover returns SUCCESS with verdict UNRESOLVABLE and <code>terminal=None</code> &mdash; i.e. the <code>.part</code> is evidence, never a terminal event, which is the literal docstring claim at <span class="anch">:36-37</span>. Byte-equality of the <code>.part</code> asserted at <span class="anch">:176</span>. Strongest single test in the module is the negative control at <span class="anch">:52</span>: a <strong>complete</strong>, parseable JSON final line declaring <code>true</code> but lacking its newline must read as uncommitted (<span class="anch">:61</span>).</td></tr>
+<tr><td><strong>Corruption fails visibly</strong></td><td><span class="v v-part">HALF TESTED</span></td><td>Committed <em>legacy line</em>: YES (<span class="anch">:86</span> &mdash; a skip would yield SUCCESS/UNRESOLVABLE instead of BLOCKED/UNAVAILABLE). Published <em>event</em> (<code>.d/*.json</code>): <strong>NO</strong> &mdash; the docstring at <span class="anch">:52</span> covers it, no test corrupts one. Shape guard <span class="anch">:73-75</span>: <strong>NO</strong> &mdash; the guard protecting the <code>e["event"]</code> access at <span class="anch">:140</span> has never run under test.</td></tr>
+<tr><td><strong>Unreadable journal is unknown evidence, never empty history</strong></td><td><span class="v v-yes">TESTED, both branches</span></td><td><span class="anch">:97</span> parametrized <code>["legacy","atomic"]</code>: PermissionError from <code>os.scandir</code> (<span class="anch">:110-114</span>) and from <code>read_bytes</code> (<span class="anch">:121-126</span>). Both assert UNAVAILABLE, zero worker calls, zero capsules, pointer <strong>survives</strong> (<span class="anch">:130</span>), and post-denial the terminal still delivers as HIT (<span class="anch">:131-133</span>).</td></tr>
+<tr><td><strong>Recovery never authors</strong></td><td><span class="v v-yes">TESTED, solid</span></td><td>The fixture worker at <span class="anch">:30</span> asserts every request action is <code>status|settle</code>, so any authoring attempt fails all 12 tests in the file; <span class="anch">:145</span> additionally asserts no <code>author</code> action after a substrate outage.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>6.4 &nbsp;Tests that cannot fail &mdash; named</h3>
+
+<ol>
+<li><strong><span class="anch">tests/test_loop_recovery_interruptions.py:41-45</span></strong> &mdash; the <code>deposit</code> double's <code>if capsule["id"] in capsules: assert capsules[capsule["id"]] == capsule</code> (branch at <span class="anch">:42-43</span>). The <strong>only</strong> content-idempotency check in the module's entire test surface, and the branch <strong>never executes</strong>: no test in the file reaches a second successful deposit for the same attempt. A decoration. <em>It is also why T13b is scoped as a code change &mdash; see §8 and <a href="#s11">§11 contest B</a>.</em></li>
+<li><strong><span class="anch">tests/test_loop_recovery_interruptions.py:64, :83, :133</span></strong> &mdash; <code>assert len(capsules) == 1</code> reads as a duplicate-delivery check and cannot be one. The double is a dict keyed by Memory id, and that id is deterministic (<code>"loop_" + attempt_id</code>, <span class="anch">coordinator.py:169</span>), so a second delivery overwrites the same key and the length is 1 either way. It can only fail if the capsule id changed.</li>
+<li><strong><span class="anch">tests/test_loop_integration.py:46, 73, 85, 98, 111, 119</span></strong> &mdash; not vacuous by construction but <strong>vacuous as evidence</strong>. All six gate on the <code>worker</code> fixture (<span class="anch">:17-23</span>), whose three env vars appear nowhere else in the repository and are not set by CI (<span class="anch">.github/workflows/ci.yml:109</span> runs pytest with no env block). They cannot fail in any run anyone performs. <strong>These are the only tests of <code>begin()</code>, <code>context()</code>, the real-substrate settle path, and real-store delivery idempotency.</strong></li>
+<li><strong><span class="anch">tests/test_loop_contracts.py:168</span></strong> <code>test_closure_rate_goalpost</code> &mdash; <code>closure_rate = sum(counts.values()) / len(verdicts)</code> where <code>counts</code> counts those same verdicts across four names. The ratio is 1.0 by construction unless <code>run_recipe</code> emits a verdict outside the enum. It measures enum membership while being named and read as a closure metric. <em>This is the exact number-with-no-producer shape T13a must not reproduce.</em></li>
+<li><strong><span class="anch">tests/test_loop_contracts.py:141</span></strong> <code>test_stageport_unavailable_with_zero_side_effects</code> &mdash; falsifiable, but pins a branch the coordinator never uses: it constructs <code>StagePort()</code> with no worker, short-circuiting at <span class="anch">ports.py:755</span>, while <code>LoopCoordinator.context()</code> always passes worker <strong>and</strong> context (<span class="anch">coordinator.py:95</span>).</li>
+</ol>
+
+<h3>6.5 &nbsp;Mock-<code>hou</code> tests &mdash; zero host coverage, named</h3>
+
+<p><strong><span class="anch">tests/test_loop_integration.py:153-164</span></strong> <code>test_native_capture_recall_is_consumed</code> &mdash; <code>import hou</code> at <span class="anch">:159</span> resolves to the canonical MagicMock planted by <span class="anch">tests/conftest.py:63-135</span> (<code>_build_canonical_hou</code> at <span class="anch">:63</span>; <code>hou.selectedNodes</code> is a MagicMock at <span class="anch">conftest.py:102</span>, monkeypatched at <span class="anch">:160-161</span>). <strong>Zero coverage of host selection or stage traversal.</strong> Does not touch coordinator.py.</p>
+
+<div class="note">
+  <span class="lbl">Why this matters beyond §6 &mdash; new this revision</span>
+  <p><span class="anch">tests/conftest.py:63-135</span> plants that MagicMock for the <em>entire</em> standalone suite whenever real <code>hou</code> is absent. So every &ldquo;headless pytest&rdquo; test touching a host module gets mock <code>hou</code> <strong>automatically and invisibly</strong> &mdash; the ban in this subsection is not self-enforcing. §8 therefore carries an explicit mock-<code>hou</code> exclusion on <strong>every</strong> ticket whose failure condition depends on real host behaviour, not just on the Solaris ticket as revision 1 had it. The clearest exposure is the saved-network seam: <code>restore()</code> is host-saturated (<code>hou.node('/stage')</code>, <code>stage.createNode</code>, <code>container.loadItemsFromFile(...network.cpio)</code>, <code>allSubChildren</code>, <code>node.position()</code>, <code>isDisplayFlagSet()</code> &mdash; <span class="anch">saved_networks.py:337-360</span>). Under the canonical fake, <code>hou.node</code> returns None and <code>restore</code> raises before any record could be emitted; to get green an implementer must fake the service or the stage, at which point the stated failure condition no longer describes what the test measures.</p>
+</div>
+
+<p>Everything else in the LOOP test surface is either genuinely <code>hou</code>-free (coordinator.py imports no <code>hou</code> at all) or a hand-written double. Note the equivalence: <strong><code>test_loop_mcp_observation.py</code> and <code>test_loop_native_timeouts.py</code> use no mock <code>hou</code>, but replace the coordinator wholesale with <code>RecordingLoop</code></strong> &mdash; same class of evidence problem, different object. <span class="anch">test_loop_mcp_observation.py:134-142</span> is nonetheless the best-built test in the set: it AST-extracts the <em>shipped</em> <code>MCPServer._handle_tools_call</code> and <code>SynapseHandler.handle</code> out of the real source files (<span class="anch">:28-34</span>) and runs them across real threads, failing if <code>observe_operation</code> is removed from either file or if the observer is called on the main thread. It proves <strong>call order only</strong> &mdash; nothing about bytes on disk.</p>
+</section>
+
+<!-- ======================= 7 ======================= -->
+<section id="s7">
+<h2><span class="num">§7</span>Law 3 violations found</h2>
+
+<p><em>Law 3 as applied: a status must describe what happened, not what was attempted.</em></p>
+
+<div class="corrected">
+  <span class="lbl">Two re-anchors, one deletion, two additions</span>
+  <ul>
+    <li><strong>Item 24 re-anchored.</strong> Revision 1 cited <span class="anch">shared/bridge.py:1718</span> for the PDG <code>dirtyAllTasks</code> defect. That line is a <code>logger.warning</code> about inconclusive <em>undo-anchor</em> evidence and has nothing to do with PDG. The real call is <span class="anch">shared/bridge.py:2377</span>. The bad anchors were inherited verbatim from <code>CLAUDE.md §1.7</code>, which carries the same stale numbers and misdirects every future reader &mdash; ticketed separately as <strong>T18</strong>.</li>
+    <li><strong>Item 23 re-anchored.</strong> <code>main_thread_executed=True</code> is at <span class="anch">integrity_envelope.py:272</span>, not <code>:269</code> (a comment line). Revision 1 repeated <code>:269</code> three times, <em>including as the edit target of a remediation ticket</em> &mdash; it would have sent an engineer to edit a comment. The underlying claim is unchanged and true: there is no input under which that field is False.</li>
+    <li><strong>Revision 1's item 22 deleted.</strong> It listed <span class="anch">recipe_watch.py:54-57</span>'s bare <code>except Exception: pass</code> as a Law 3 violation because &ldquo;the artist is never told the capture fired or failed.&rdquo; That is false. The swallowed call is <code>self.notify(result)</code> &mdash; a live panel toast on a QObject that may be mid-destruction &mdash; and it runs <em>after</em> the durable record is written at <span class="anch">:44</span>. The branch that loses the durable record escalates loudly (<span class="anch">:45-53</span> &rarr; <span class="anch">saved_networks.py:476-482</span>: <code>logger.error</code> + <code>hou.ui.setStatusMessage(..., severity=Warning)</code>, with a logging fallback). Revision 1's own note that <code>report_notice_failure</code> &ldquo;is only invoked on the other branch&rdquo; is precisely <em>why</em> the swallow is benign. <strong>Nothing replaces it in §7.1</strong> &mdash; the correct reading now lives in §3 route 7 and §4.2-A. Fixing it as described would have added a log line to a correctly-designed swallow.</li>
+    <li><strong>Two new items</strong> &mdash; <strong>22</strong> (the memory-substrate ping, surfaced by the census correction) and <strong>25</strong> (the discarded restore residue, surfaced by the saved-network re-trace).</li>
+  </ul>
+</div>
+
+<h3>7.1 &nbsp;Status that does not describe what happened</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:4%">#</th><th style="width:24%">Site</th><th>What is swallowed or assumed</th><th>What is still reported</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><span class="anch">core/floor_gate.py:396-398</span></td><td>Any <code>write_report</code> failure (disk full, permission, bad path). <strong>Bare <code>except Exception: return</code>, zero logging at any level</strong></td><td>The op's own success, untouched. The module docstring at <span class="anch">:6</span> promises &ldquo;every mutating operation leaves a durable provenance record&rdquo;; that promise can break for any of 131 commands with no signal anywhere. <em>Contrast <span class="anch">core/audit.py:342</span>, which logs its equivalent drop &mdash; the two always-on ledgers disagree about whether losing a record is worth mentioning.</em></td></tr>
+<tr><td>2</td><td><span class="anch">core/floor_gate.py:405-408</span></td><td>FIFO rotation failure. <code>except Exception: pass</code>, unlogged</td><td>Nothing; the dir can drift past its cap silently</td></tr>
+<tr><td>3</td><td><span class="anch">server/handlers_memory.py:370-376</span></td><td><strong>Any bridge exception during <code>sleep_pass</code></strong> &mdash; then runs <code>_do_prune()</code> ungated anyway</td><td>Success. A destructive memory-prune loses its APPROVE gate and still reports success</td></tr>
+<tr><td>4</td><td><span class="anch">mcp/tool_impls/solaris/component_builder.py:43-50</span> (identical: <span class="anch">scene_template.py:46-52</span>, <span class="anch">create_variants.py:35-41</span>, <span class="anch">import_megascans.py:35-42</span>)</td><td>The <strong>identity-establishing</strong> <code>node.setUserData('synapse:tool', &hellip;)</code></td><td><code>{'status': 'created', &hellip;}</code> unconditionally (<span class="anch">component_builder.py:340-346</span>). The exact defect class <span class="anch">set_purpose.py:70-94</span> documents fixing on itself, never back-ported</td></tr>
+<tr><td>5</td><td><span class="anch">server/render_farm.py:236-241</span></td><td>Exception from <code>self._cb.validate_frame(...)</code></td><td><code>result.success = True</code>, and the remaining auto-fix retry attempts (<span class="anch">:204</span>) are abandoned rather than retried</td></tr>
+<tr><td>6</td><td><span class="anch">server/render_farm.py:400-410</span></td><td>Same exception class on the pooled/async path</td><td>The provisional <code>result.success = True</code> set at <span class="anch">:384</span> is left standing uncorrected</td></tr>
+<tr><td>7</td><td><span class="anch">autonomy/validator.py:321-327</span></td><td>Any exception from the <code>solaris_validate_ordering</code> handler call</td><td><code>PreFlightCheck(passed=True, severity=INFO)</code> &mdash; an exception reported as a passing check</td></tr>
+<tr><td>8</td><td><span class="anch">server/handlers_render.py:2230-2231, 2240-2241</span></td><td>The <code>soho_foreground</code> safety-downgrade settings mutation. <code>except Exception: pass</code>, <strong>no log at all</strong></td><td>Proceeds to <code>self._handle_render</code> as though the safety adjustment succeeded</td></tr>
+<tr><td>9</td><td><span class="anch">server/handlers_tops/cook.py:66-75</span></td><td><code>node.cook()</code> exception &mdash; caught, logged, and <strong>returned</strong> as <code>status:'error'</code> rather than raised</td><td><code>floor_gate</code> records <code>outcome='ok'</code> (<span class="anch">floor_gate.py:335-339</span>) <strong>and</strong> <span class="anch">handlers.py:558-563</span> wraps it <code>success=True</code>. <em>The AuditLog entry for the same call holds the real <code>{'status':'error'}</code> dict &mdash; two live ledgers, one event, opposite verdicts</em></td></tr>
+<tr><td>10</td><td><span class="anch">server/handlers_tops/cook.py:487-499</span></td><td>Per-node cook exceptions in <code>batch_cook</code> with <code>stop_on_error=False</code></td><td>Same double-masking, now hiding multiple failures behind one <code>ok</code> record</td></tr>
+<tr><td>11</td><td><span class="anch">server/handlers_tops/render_sequence.py:295-301, 506-512</span></td><td><code>rop_fetch.cook()</code> / <code>last_node.cook()</code> exceptions</td><td>Same pattern for a full render-sequence and multi-shot cook failure</td></tr>
+<tr><td>12</td><td><span class="anch">server/handlers_tops/cook.py:218-268</span> (swallow at <span class="anch">:247</span>)</td><td><code>ctx.cancelCook()</code> exception &rarr; falls back to per-child <code>dirty()</code></td><td>Unconditional <code>status:'cancelled'</code> with an advisory note, <strong>with no verification that either the cancel or the fallback took effect</strong></td></tr>
+<tr><td>13</td><td><span class="anch">cognitive/tools/apply_fixture.py:73-81</span> &rarr; <span class="anch">handlers.py:1319-1322</span></td><td>Any <code>FixtureError</code>/<code>ReconcilerError</code> inside the injected script, reserialized to JSON</td><td><code>{'executed': True, 'result': &lt;str&gt;}</code> &rarr; <code>floor_gate</code> <code>outcome='ok'</code> &rarr; <code>terminal_value()</code> (<span class="anch">memory_loop.py:129-140</span>) would read <code>True</code>. The caller <em>is</em> told (client-side re-parse raises at <span class="anch">apply_fixture.py:200-206</span>); <strong>floor_gate and the LOOP are both blind, and only the unreadable audit entry holds the truth</strong></td></tr>
+<tr><td>14</td><td><span class="anch">host/graph_builder.py:168-176</span></td><td>Each <code>node.destroy()</code> during failure-rollback</td><td>Unconditionally followed by <code>created.clear()</code> etc. and the message <code>"build failed and was rolled back (zero net mutation)"</code> (<span class="anch">:182</span>) &mdash; an unverified completeness claim whose only verification step was the swallowed call</td></tr>
+<tr><td>15</td><td><span class="anch">host/graph_builder.py:286-287</span> and <span class="anch">host/graph_synth_runtime.py:123-127</span></td><td>The agent.usd decision write &mdash; <strong>the law's own ledger</strong></td><td><code>InstantiationResult(status=BUILT)</code> with no field reflecting whether the receipt landed</td></tr>
+<tr><td>16</td><td><span class="anch">panel/tool_executor.py:621-638</span></td><td><code>ImportError</code> on the marshalling path &rarr; runs <code>handler.handle</code> <strong>unmarshalled on the calling thread</strong>, logs an error</td><td>A normal <code>SynapseResponse</code> with no marker that a degraded path was taken</td></tr>
+<tr><td>17</td><td><span class="anch">panel/bridge_adapter.py:356-358, 383-388</span></td><td><code>get_bridge()</code> returning None</td><td>A &ldquo;bridge-routed&rdquo; call silently degrades to a plain <code>handler.handle</code> &mdash; normal response, <strong>no IntegrityBlock, no marker that the audited path was skipped</strong></td></tr>
+<tr><td>18</td><td><span class="anch">server/handlers.py:1938-1946</span> (+ <span class="anch">:1907-1910, 1912-1942, 2038-2041, 2071-2076</span>)</td><td>Every agent.usd autonomy task-lifecycle write</td><td><code>_log.debug</code> only; the returned <code>RenderReport</code> has no field for it. Consequence named by the code itself at <span class="anch">:2030-2032</span>: a completed render can stay &ldquo;open&rdquo; and be mislabeled <em>suspended</em> on disconnect</td></tr>
+<tr><td>19</td><td><span class="anch">autonomy/driver.py:387-388</span></td><td><code>memory.add()</code> failure for the render's outcome narrative</td><td><code>logger.warning</code>; <code>RenderReport.success</code> unaffected</td></tr>
+<tr><td>20</td><td><span class="anch">server/render_notify.py:288-289</span> &rarr; <span class="anch">server/render_farm.py:643</span></td><td>Markdown report-write failure &rarr; <code>results['report_error']</code></td><td>The caller <strong>never reads <code>notify_results</code> again</strong>, and <code>BatchReport.to_dict()</code> (<span class="anch">render_notify.py:68-97</span>) has no <code>report_path</code>/<code>report_error</code> key. The error is computed and discarded</td></tr>
+<tr><td>21</td><td><span class="anch">server/render_farm.py:668-669</span></td><td>Moneta batch-note write failure</td><td><code>logger.debug</code> &mdash; below default visibility</td></tr>
+<tr><td><strong>22</strong><br><span class="v v-no">NEW</span></td><td><span class="anch">server/handlers.py:610</span> &rarr; <span class="anch">session/tracker.py:302-328</span></td><td><em>Not an exception swallow &mdash; a status assembled before the result exists.</em> <code>bridge.log_action(f"Executed: {cmd_type}", session_id=sid)</code> is built from the command name alone and deposited as <code>content</code> with <code>MemoryType.ACTION</code>, <code>tags=["action","ai"]</code>, <code>source="ai"</code> (<span class="anch">:322-328</span>)</td><td>The memory substrate is told <code>"Executed: tops_cook_node"</code> whether the cook returned <code>{'status':'ok'}</code> or <code>{'status':'error'}</code>. <strong>This is the one channel a model reads back</strong> (via <code>handlers_memory</code> recall), and it is the only destination in the census that <em>cannot</em> represent failure at all &mdash; there is no field for it. Also gated on <code>bridge and sid</code>, and <code>sid</code> is absent on 4777 of 5000 sampled operations, so its coverage is conditional on top of being undifferentiated</td></tr>
+<tr><td><strong>23</strong></td><td><span class="anch">server/integrity_envelope.py:272</span> <span class="v v-no">RE-ANCHORED</span></td><td><em>Not a swallow &mdash; a fabricated field.</em> <code>main_thread_executed=True</code> is hardcoded in every live block, despite the adjacent comment at <span class="anch">:268-270</span> claiming only main-thread marshalling is asserted</td><td>There is no input under which this field can be False. <code>CLAUDE.md §1.3</code> says the same field IS evidence-derived on the bridge path &mdash; <strong>the live path fabricates what the bridge path measures</strong></td></tr>
+<tr><td><strong>24</strong></td><td><span class="anch">shared/bridge.py:2377</span> <span class="v v-no">RE-ANCHORED</span></td><td><code>dirtyAllTasks(remove_files=&hellip;)</code> against the live signature <code>dirtyAllTasks(self, remove_outputs)</code> &mdash; raises TypeError on <strong>every</strong> invocation, caught into <code>rollback_note</code> (declared <span class="anch">:2373</span>, assigned <span class="anch">:2382</span>, surfaced <span class="anch">:2389</span>)</td><td>The PDG rollback has never executed; the failure is <em>recorded</em>, not <em>rolled back</em></td></tr>
+<tr><td><strong>25</strong><br><span class="v v-no">NEW</span></td><td><span class="anch">host/saved_networks.py:395-416</span> &rarr; <span class="anch">panel/saved_recipes.py:250-251</span></td><td><em>Not a swallow &mdash; a diagnostic computed and discarded.</em> A failed <code>restore()</code> probes for residue: if <code>container.destroy()</code> leaves the node alive, or a sibling's position/display flag could not be restored, it builds <code>"Cleanup is incomplete: &lt;residue&gt;"</code> &mdash; <em>an orphaned subnet path still sitting in the artist's <code>/stage</code></em></td><td>That string is raised as a <code>LibraryError</code> and placed in a QLabel (<span class="anch">saved_recipes.py:250-251</span>). It reaches no record system, no log, and vanishes when the dialog closes. <strong>The route with the worst blind spot in the tree also computes the exact diagnostic that would make its failures recoverable, and throws it away.</strong></td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>Structural siblings &mdash; not exception swallows, same class of harm</h4>
+
+<div class="finding sev-hi">
+  <span class="fh">26 &middot; server/handlers.py:981-1010 + :558-563</span>
+  <p>With the default <code>stop_on_error=False</code>, a batch where <strong>every</strong> sub-op errored still returns top-level <code>success=True</code>; the all-failure state lives in an advisory <code>errors</code> array inside <code>data</code>.</p>
+</div>
+
+<div class="finding sev-md">
+  <span class="fh">27 &middot; server/integrity_envelope.py:263-266</span>
+  <p><code>delta = "hash_unavailable"</code> on a missed capture, with fidelity deliberately held at 1.0. Honestly labelled &mdash; but a blind op and a verified-no-change op produce indistinguishable passing envelopes.</p>
+</div>
+
+<h3>7.2 &nbsp;Advisory note attached to a success &mdash; disclosed, but unread</h3>
+
+<p>These are <strong>not</strong> dishonest &mdash; they label themselves correctly. They are listed because the disclosure reaches nobody.</p>
+
+<ul>
+<li><span class="anch">host/memory_loop.py:213-217</span> &mdash; attaches <code>memory_loop: {status: 'UNAVAILABLE', &hellip;}</code> onto an otherwise-successful response. Honest. But <span class="anch">tool_executor.py:665-668</span> checks only <code>response.success</code>, and <strong>no production reader of the <code>memory_loop</code> key exists</strong> (§5). On the MCP branch the receipt is dropped silently when the payload is not a dict (<span class="anch">memory_loop.py:158-159</span>).</li>
+<li><span class="anch">server/handlers_render.py:899-903</span> &mdash; RETINA manifest/sentinel hook failure logged as WARNING with the comment &ldquo;NEVER fails the render&rdquo;. Logged, so milder than §7.1 &mdash; but <code>synapse.log</code> is a known-polluted channel (test-authored INFO records), so the log is a weak destination.</li>
+<li><span class="anch">server/handlers.py:512-517</span> &mdash; a <code>render</code> <strong>poll</strong> rides the same command name and is demoted to read-only for the C5 lock/envelope/audit, <strong>but not for floor_gate</strong>, which re-derives read-only independently from <code>_READ_ONLY_COMMANDS</code> (<span class="anch">floor_gate.py:282-295,311</span>). So one command name produces envelope records on some calls and not others, while producing a provenance record on all of them &mdash; over-recording that accelerates FIFO eviction of real mutation records. <strong>With the store now measured at cap, this is no longer theoretical.</strong></li>
+</ul>
+
+<div class="corrected">
+  <span class="lbl">Corrected at source</span>
+  <p>Revision 1 listed <span class="anch">host/recipe_watch.py:43-47</span> here as &ldquo;defensible, but the status string is what the UI renders.&rdquo; That understated the code: on a <code>record_notice</code> failure the branch at <span class="anch">:45-53</span> both appends the disclosure <em>and</em> escalates through <span class="anch">saved_networks.py:476-482</span> &mdash; <code>logger.error</code> plus <code>hou.ui.setStatusMessage(..., severity=Warning)</code>, with a plain-logging fallback if the host is gone. The disclosure reaches the artist. <strong>This entry is withdrawn from §7.2 as adequately disclosed.</strong></p>
+</div>
+</section>
+
+<!-- ======================= 8 ======================= -->
+<section id="s8">
+<h2><span class="num">§8</span>Remediation tickets</h2>
+
+<p>Ordered for execution. Ranking is (artist impact &times; cheapness), constrained by <strong>two</strong> sequencing rules, not one.</p>
+
+<ol>
+<li><strong>From §5:</strong> no ticket wires a producer into a journal with no consumer before the consumer exists.</li>
+<li><strong>New this revision:</strong> no ticket widens production into a store that is <strong>at its retention cap</strong> before the cap is raised or partitioned. The provenance directory holds 5000 records against a 5000 cap today.</li>
+</ol>
+
+<div class="corrected">
+  <span class="lbl">Tickets renumbered, and one of revision 1's was net-negative</span>
+  <p>Revision 1's T7 added one provenance record per rendered frame and its preamble waived the sequencing rule for floor_gate as &ldquo;a store that has a reader, however thin.&rdquo; The arithmetic was never done. The reader is <code>_newest_files(prov_dir, 3)</code> (<span class="anch">doctor.py:856-866</span>, helper <span class="anch">:813-816</span>), retention is a hard FIFO 5000 (<span class="anch">floor_gate.py:126</span>), and the directory is at cap. <strong>A single 500-frame sequence would evict 500 older mutation records &mdash; 10% of the entire audit history &mdash; to produce 500 records nobody reads.</strong> Revision 1 named that exact harm in its own §7.2 for render polls and then scheduled it. A retention ticket (<strong>T6</strong>) is now blocking for the per-frame ticket (<strong>T10</strong>).</p>
+</div>
+
+<div class="note">
+  <span class="lbl">Standing evidence rule for every ticket below &mdash; new this revision</span>
+  <p><strong>The implementing agent does not run pytest and must not report a suite result.</strong> <span class="anch">harness/agent-settings.json</span> is the headless worktree agent's entire permission surface (loaded via <code>claude --settings</code>; <code>.claude/settings.json</code> has no <code>permissions</code> key at all &mdash; its top-level keys are <code>['statusLine','hooks']</code>). Its only Bash allows are <code>Bash(hython:*)</code>, <code>Bash(husk:*)</code>, <code>Bash(python scripts/run_apex_verify.py:*)</code> and git add/commit/status/diff. The suite is run by the governor through <span class="anch">harness/verify/checks.py:811,922,1127,2553</span>. So every &ldquo;headless pytest&rdquo; below means: <strong>green via <code>harness/verify</code> <code>check_suite_baseline</code>, produced by the governor.</strong> A ticket whose acceptance evidence is a command its executor is denied is the mechanism behind this repo's logged fabricated-green-receipt incident.</p>
+  <p><strong>And: mock <code>hou</code> is never host coverage.</strong> <span class="anch">tests/conftest.py:63-135</span> plants a MagicMock <code>hou</code> across the whole standalone suite automatically. Every ticket whose failure condition depends on real host behaviour says so explicitly and names which tier owns which half.</p>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Order</th><th>Ticket</th><th>Impact</th><th>Cost</th><th>Seat</th></tr></thead>
+<tbody>
+<tr><td colspan="5" style="background:var(--sunk); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.11em; text-transform:uppercase; font-weight:600">Phase 0 &mdash; make the records that already exist honest</td></tr>
+<tr><td>T1</td><td>Outcome must follow the payload</td><td>HIGH</td><td>LOW</td><td>headless</td></tr>
+<tr><td>T2</td><td>Log the provenance drop</td><td>MED</td><td>TRIVIAL</td><td>headless</td></tr>
+<tr><td>T3</td><td>Stop fabricating <code>main_thread_executed</code></td><td>MED</td><td>LOW</td><td>headless</td></tr>
+<tr><td>T4</td><td>Back-port the Solaris identity-stamp fix</td><td>MED-HIGH</td><td>LOW</td><td>hython</td></tr>
+<tr><td>T5</td><td>Stop telling the memory substrate every op succeeded</td><td>HIGH</td><td>LOW</td><td>headless</td></tr>
+<tr><td colspan="5" style="background:var(--sunk); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.11em; text-transform:uppercase; font-weight:600">Phase 1 &mdash; retention, before any widening (T6 blocks T10)</td></tr>
+<tr><td>T6</td><td>Partition provenance retention; reap the orphan temp</td><td>HIGH <span style="color:var(--crit)">blocking</span></td><td>LOW</td><td>headless</td></tr>
+<tr><td>T7</td><td>Audit-store retention + key escrow</td><td>HIGH</td><td>MED</td><td>headless</td></tr>
+<tr><td colspan="5" style="background:var(--sunk); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.11em; text-transform:uppercase; font-weight:600">Phase 2 &mdash; close the blind spots on the store that has a reader</td></tr>
+<tr><td>T8</td><td><code>record_host_action()</code> seam + saved-network restore</td><td>HIGH</td><td>MED</td><td>hython</td></tr>
+<tr><td>T9</td><td>Promote <code>last-capture.json</code> to append-only; add the <code>restore()</code> case</td><td>MED</td><td>LOW</td><td>headless + hython</td></tr>
+<tr><td>T10</td><td>Per-frame render records + backgrounded terminal outcome</td><td>HIGH</td><td>MED-HIGH</td><td>hython</td></tr>
+<tr><td>T11</td><td>Undo-group <code>_handle_render_settings</code></td><td>MED</td><td>TRIVIAL</td><td>hython</td></tr>
+<tr><td>T12</td><td>Surface the restore residue</td><td>MED</td><td>TRIVIAL</td><td>headless</td></tr>
+<tr><td colspan="5" style="background:var(--sunk); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.11em; text-transform:uppercase; font-weight:600">Phase 3 &mdash; build the LOOP's consumer side before touching producers</td></tr>
+<tr><td>T13a</td><td>Close the six coordinator test holes</td><td>MED</td><td>LOW</td><td>headless</td></tr>
+<tr><td>T13b</td><td>Outbox delivery-idempotency guard + its test</td><td>MED-HIGH</td><td>MED</td><td>headless</td></tr>
+<tr><td>T14</td><td>LOOP fails closed, or delivers locally; plus an <code>attempts/</code> reaper</td><td>HIGH <span style="color:var(--crit)">blocking</span></td><td>MED</td><td>headless + 1 live seat</td></tr>
+<tr><td>T15</td><td>Give the receipt a reader &mdash; or delete it</td><td>MED</td><td>LOW</td><td>headless</td></tr>
+<tr><td colspan="5" style="background:var(--sunk); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.11em; text-transform:uppercase; font-weight:600">Phase 4 &mdash; only now widen producers</td></tr>
+<tr><td>T16</td><td>Widen the observed surface; route batch + autonomy sub-ops</td><td>HIGH</td><td>HIGH</td><td>live seat</td></tr>
+<tr><td colspan="5" style="background:var(--sunk); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.11em; text-transform:uppercase; font-weight:600">Phase 5 &mdash; hygiene</td></tr>
+<tr><td>T17</td><td>Delete or wire the dead mutating code</td><td>LOW</td><td>TRIVIAL</td><td>headless</td></tr>
+<tr><td>T18</td><td>Fix <code>CLAUDE.md §1.7</code>'s stale PDG anchors</td><td>MED</td><td>TRIVIAL</td><td>headless</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="phase">Phase 0 &mdash; make the records that already exist honest</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T1</span> &middot; Outcome must follow the payload</span>
+<dl>
+<dt>Change</dt><dd><p><code>FloorGate._record</code> derives <code>outcome</code> from the handler's returned payload when that payload is a dict carrying <code>status</code> / <code>success</code> / <code>error</code>, instead of inferring <code>'ok'</code> from &ldquo;did not raise.&rdquo; One file fixes routes 4, 5, 6 and 8 simultaneously.</p>
+<p><strong>Rescoped.</strong> Revision 1 framed this as recovering lost failure information. It is not lost: the AuditLog entry for the same call persists the literal <code>{'status':'error', ...}</code> dict as <code>output_data</code> (<span class="anch">handlers.py:611-619</span>). <strong>The defect is that two live ledgers disagree about the same event</strong>, and the one a human can query says the wrong thing. That is a correctness fix, not a recovery fix &mdash; see <a href="#s11">§11 contest B</a> for why the audit entry does not make T1 optional.</p></dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/core/floor_gate.py:335-339</span> (and the <code>outcome</code> field at <span class="anch">:362-374</span>). Companion decision needed at <span class="anch">python/synapse/server/handlers.py:558-563</span> on whether an all-failed batch may keep <code>success=True</code>.</dd>
+<dt>Test</dt><dd><code>tests/test_floor_hook.py::test_outcome_follows_payload_status</code>. <strong>Fails if</strong> a handler returning <code>{"status": "error", "error": "..."}</code> produces a provenance record with <code>outcome == "ok"</code>. Add <code>::test_floor_and_audit_agree</code> &mdash; <strong>fails if</strong> the same call produces a floor_gate <code>outcome</code> that contradicts the audit entry's <code>output_data['status']</code>.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green. <em>No mock <code>hou</code> involved &mdash; both ledgers are host-free.</em></dd>
+<dt>Seat</dt><dd>headless</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T2</span> &middot; Log the provenance drop</span>
+<dl>
+<dt>Change</dt><dd>Replace the two bare swallows with a <code>_LOG.warning</code> + a monotonic dropped-record counter, surfaced through <code>operation_stats()</code> and the doctor bundle. The op still must not fail &mdash; only the silence goes away. <em>Reference implementation already in the tree: <span class="anch">core/audit.py:342</span> does exactly this for its own persist failure.</em></dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/core/floor_gate.py:396-398</span> and <span class="anch">:405-408</span>; counter surfaced via <span class="anch">server/doctor.py:856-866</span>.</dd>
+<dt>Test</dt><dd><code>test_floor_hook.py::test_write_failure_is_logged_and_counted</code>. <strong>Fails if</strong> <code>write_report</code> raising produces zero WARNING records or leaves the drop counter at zero.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green.</dd>
+<dt>Seat</dt><dd>headless</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T3</span> &middot; Stop fabricating <code>main_thread_executed</code></span>
+<dl>
+<dt>Change</dt><dd>Derive the field from real thread identity at execution time (<code>threading.current_thread() is threading.main_thread()</code>), matching what <span class="anch">shared/bridge.py</span> already does per <code>CLAUDE.md §1.3</code>. If the live path genuinely cannot assert it, record it as not-applicable &mdash; the envelope schema already supports that (<code>execution_path</code> + <code>*_applicable</code>).</dd>
+<dt>File</dt><dd><span class="anch">python/synapse/server/integrity_envelope.py:272</span> &mdash; <strong>not <code>:269</code>, which is a comment line.</strong> The honesty comment at <span class="anch">:268-270</span> must be corrected in the same commit.</dd>
+<dt>Test</dt><dd><code>tests/test_integrity_envelope.py::test_main_thread_flag_is_evidence_derived</code>. <strong>Fails if</strong> an envelope produced from a non-main thread records <code>main_thread_executed=True</code>.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green.</dd>
+<dt>Seat</dt><dd>headless</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T4</span> &middot; Back-port the Solaris identity-stamp fix</span>
+<dl>
+<dt>Change</dt><dd>Replace <code>_stamp_provenance</code>'s bare <code>except Exception: pass</code> in the four siblings with <code>set_purpose.py</code>'s pattern &mdash; a mandatory <code>_stamp_identity</code> that raises <code>IdentityStampError</code> and readback-proves, with only the <em>descriptive</em> stamps remaining best-effort.</dd>
+<dt>Files</dt><dd><span class="anch">mcp/tool_impls/solaris/component_builder.py:43-50</span>, <span class="anch">scene_template.py:46-52</span>, <span class="anch">create_variants.py:35-41</span>, <span class="anch">import_megascans.py:35-42</span>. Reference: <span class="anch">set_purpose.py:70-99</span>.</dd>
+<dt>Test</dt><dd><code>tests/test_solaris_identity_stamp.py::test_stamp_failure_is_not_reported_as_created</code> &mdash; monkeypatch <code>node.setUserData</code> to raise. <strong>Fails if</strong> any of the four returns <code>status == 'created'</code> after the identity stamp raised.</dd>
+<dt>Evidence</dt><dd><span class="tier t-run">VERIFIED-RUNTIME</span> via hython. <strong>A MagicMock-<code>hou</code> version of this test is zero host coverage (§6.5) and must not be accepted as the proof.</strong></dd>
+<dt>Seat</dt><dd>headless hython; no GUI</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T5</span> &middot; Stop telling the memory substrate every op succeeded &nbsp;<span class="v v-no">NEW</span></span>
+<dl>
+<dt>Change</dt><dd>Build the deposited action string <em>after</em> the result is known, so it carries the outcome: <code>f"Executed: {cmd_type}"</code> becomes <code>f"{cmd_type} &rarr; {outcome}"</code> or equivalent, with <code>details</code> carrying the error when there is one. This is the <strong>only</strong> channel in the census a model reads back, and today it cannot represent failure at all.</dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/server/handlers.py:609-610</span> (the call site, inside <code>_do_log</code>); <span class="anch">python/synapse/session/tracker.py:302-328</span> takes <code>details</code> already and drops it &mdash; wire it into the deposit.</dd>
+<dt>Test</dt><dd><code>tests/test_action_deposit_carries_outcome.py::test_failed_command_is_not_deposited_as_executed</code>. <strong>Fails if</strong> a handler returning <code>{'status':'error'}</code> produces a deposited <code>MemoryType.ACTION</code> whose content is indistinguishable from the success case.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green with a recording memory double. <em>Do not accept a MagicMock-<code>hou</code> run as proof the deposit reached Moneta.</em></dd>
+<dt>Seat</dt><dd>headless for the shape; one live seat to prove recall surfaces it</dd>
+</dl>
+</div>
+
+<div class="phase">Phase 1 &mdash; retention, before any widening</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T6</span> &middot; Partition provenance retention; reap the orphan temp &nbsp;<strong style="color:var(--crit)">BLOCKING for T10</strong></span>
+<dl>
+<dt>Change</dt><dd><p>Three parts. <strong>(a)</strong> Give child records (per-frame, per-sub-op) their own subtree with its own cap, or make child records cap-exempt from the parent FIFO, so a 500-frame sequence cannot evict 500 unrelated mutation records. <strong>(b)</strong> Reap non-<code>.json</code> orphans: <code>_rotate</code>/<code>_reconcile_locked</code> track only names ending <code>.json</code> (<span class="anch">floor_gate.py:455</span>), which is why <code>tmp7qjf1g7h.tmp</code> &mdash; the oldest entry in the directory &mdash; has never been collected. <strong>(c)</strong> Add a <code>.json</code> guard to <code>_newest_files</code>: it filters only on <code>p.is_file()</code> (<span class="anch">doctor.py:813-816</span>), so a recently-written orphan temp would be bundled into a support bundle <em>in place of</em> a record.</p>
+<p><em>The orphan is itself on-disk evidence of the silent-write class catalogued at §7.1 items 1&ndash;2.</em></p></dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/core/floor_gate.py:126,416-463</span>; <span class="anch">python/synapse/server/doctor.py:813-816</span>.</dd>
+<dt>Test</dt><dd><code>tests/test_floor_retention.py::test_child_records_do_not_evict_parents</code> &mdash; <strong>fails if</strong> writing N child records under a full store drops N unrelated parent records. And <code>::test_orphan_temp_is_reaped_and_never_bundled</code> &mdash; <strong>fails if</strong> a stray <code>.tmp</code> survives reconcile or appears in <code>_newest_files</code> output.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green, with <code>SYNAPSE_PROVENANCE_DIR</code> pointed at <code>tmp_path</code>.</dd>
+<dt>Seat</dt><dd>headless</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T7</span> &middot; Audit-store retention + key escrow</span>
+<dl>
+<dt>Change</dt><dd><p><strong>(a) Retention.</strong> <code>core/audit.py</code> has no cap, no rotation and no reaper &mdash; <code>grep -n "max_\|rotate\|cap\|retention\|unlink\|prune"</code> returns zero hits &mdash; and has accrued <strong>143 MB across 122 daily files since 2026-02-06</strong>. Add a retention policy (age or total-size) with the same honesty posture as the rest of the module. <strong>(b) Escrow.</strong> <span class="anch">core/crypto.py:106-112</span> writes <code>encryption.key.bak</code> only on the auto-generate branch; the file is <strong>absent on this host</strong> while the key it protects is present. Write the escrow on resolve, not only on generate, and surface its absence in the doctor. <strong>(c)</strong> Decide, and document, whether unredacted <code>input_data</code> belongs in a 7-month store at all &mdash; see §9 item 15.</p></dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/core/audit.py:327-343</span> (persist + a new reaper); <span class="anch">python/synapse/core/crypto.py:87-112</span>; doctor surface at <span class="anch">server/doctor.py:843-846</span>.</dd>
+<dt>Test</dt><dd><code>tests/test_audit_retention.py::test_store_is_bounded</code> &mdash; <strong>fails if</strong> a store seeded past the policy retains every file. <code>::test_escrow_exists_whenever_key_exists</code> &mdash; <strong>fails if</strong> resolving an existing key leaves no <code>.bak</code>.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green. The 143 MB / 122 files / missing-<code>.bak</code> figures are <span class="tier t-run">VERIFIED-RUNTIME</span> this session.</dd>
+<dt>Seat</dt><dd>headless</dd>
+</dl>
+</div>
+
+<div class="phase">Phase 2 &mdash; close the blind spots on the store that has a reader</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T8</span> &middot; <code>record_host_action()</code> seam + saved-network restore</span>
+<dl>
+<dt>Change</dt><dd>Add a small public recording API next to FloorGate &mdash; <code>record_host_action(op, payload, result, *, origin="host")</code> &mdash; that writes the same flat record shape without requiring a command registration or a registry round-trip. Call it from <code>restore()</code>, <code>save_selection()</code>/<code>save_identity()</code>, and <code>SavedNetworkLibrary.save</code>'s commit. <strong>Do not register new command types</strong> &mdash; that is scope creep and drags in RBAC, gates and the read-only taxonomy. <em>Scope note: revision 1 justified this as a feature-wide blind spot. It is not (§4.2-A). <code>restore()</code> is the half that matters; the save half is a consistency upgrade, not a gap closure.</em></dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/core/floor_gate.py</span> (new API); call sites <span class="anch">python/synapse/host/saved_networks.py:337-416</span> and <span class="anch">:290-310</span>; commit point <span class="anch">python/synapse/recipes/library.py:124</span>.</dd>
+<dt>Test</dt><dd><code>tests/test_saved_network_provenance.py::test_restore_emits_one_record</code>, with <code>SYNAPSE_PROVENANCE_DIR</code> at <code>tmp_path</code>. <strong>Fails if</strong> a completed <code>restore()</code> leaves zero records there, or if a failed restore records <code>outcome == 'ok'</code>.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> for the seam (fake service); <span class="tier t-run">VERIFIED-RUNTIME</span> via hython for the real <code>restore()</code>. <strong>The headless half cannot prove the record emits, because under the canonical MagicMock <code>hou</code> (<span class="anch">conftest.py:63-135</span>) <code>hou.node('/stage')</code> returns None and <code>restore</code> raises before the emit point.</strong> The headless test owns the seam's shape; hython owns &ldquo;a completed restore emits a record.&rdquo;</dd>
+<dt>Seat</dt><dd>seam headless; real-restore proof needs hython</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T9</span> &middot; Promote <code>last-capture.json</code> to append-only; add the <code>restore()</code> case &nbsp;<span class="v v-part">REWRITTEN</span></span>
+<dl>
+<dt>Change</dt><dd><p>Revision 1's T6 sent an engineer to instrument the scene-exit trigger, whose stated failure condition (&ldquo;a simulated <code>BeforeClear</code> that produces a saved version leaves zero records&rdquo;) would have fired today <em>only because the test looked in the wrong directory</em> &mdash; that trigger already writes an fsynced, atomically-published record (§4.2-A). The real defect is the <strong>shape</strong> of that record: a single fixed filename, last-write-wins, clobbered by <code>arm</code>/<code>disarm</code> notices that are not mutations.</p>
+<p>So: change <code>record_notice</code> to append a bounded JSONL history alongside the single-slot pointer the panel already reads, and add the missing <code>restore()</code> call site.</p></dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/host/saved_networks.py:437-461</span> (append + keep <code>last_notice()</code> working at <span class="anch">:464-474</span>); new call from <span class="anch">saved_networks.py:337</span>.</dd>
+<dt>Test</dt><dd><code>tests/test_capture_history.py::test_arm_does_not_erase_a_capture</code> &mdash; <strong>fails if</strong> a capture notice followed by an <code>arm()</code> notice leaves the capture unreadable. <code>::test_restore_writes_a_notice</code> &mdash; <strong>fails if</strong> a completed restore leaves the history unchanged.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green for the history shape. The <code>hou.hipFile</code> callback actually firing is <span class="tier t-gate">NEEDS-GATED-RUN</span> (§9 item 8).</dd>
+<dt>Seat</dt><dd>headless for the shape; a live seat for the callback</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T10</span> &middot; Per-frame render records + backgrounded terminal outcome &nbsp;<strong style="color:var(--crit)">REQUIRES T6</strong></span>
+<dl>
+<dt>Change</dt><dd><strong>(a)</strong> <code>RenderCallbacks.render_frame</code> records one <code>record_host_action</code> per frame with <code>parent=&lt;sequence op_id&gt;</code>, mirroring the batch parent/child shape at <span class="anch">handlers.py:962-972</span> &mdash; <em>into the child subtree T6 creates, never the parent FIFO</em>. <strong>(b)</strong> When a bounded render backgrounds, the worker thread writes a <strong>terminal</strong> record on completion (amending or referencing the <code>render_in_progress</code> op_id) so the outcome survives eviction from the 32-entry session registry (<span class="anch">render_session.py:21</span>).</dd>
+<dt>Files</dt><dd><span class="anch">handlers_render.py:1543-1550</span> (callback wiring), <span class="anch">render_farm.py:212,368</span> (per-frame), <span class="anch">handlers_render.py:577-626</span> + <span class="anch">render_session.py:59-90</span> (terminal).</dd>
+<dt>Test</dt><dd><code>tests/test_render_provenance.py::test_sequence_emits_one_record_per_frame</code> &mdash; <strong>fails if</strong> an N-frame sequence produces fewer than N child records; <code>::test_per_frame_records_evict_no_parents</code> &mdash; <strong>fails if</strong> an N-frame sequence reduces the parent store's count; <code>::test_backgrounded_render_writes_a_terminal_record</code> &mdash; <strong>fails if</strong> the worker completing after the wait budget leaves the only record digesting <code>render_in_progress</code>.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green with a stubbed render callback; a real Karma frame is <span class="tier t-gate">NEEDS-GATED-RUN</span>. <strong>Mock <code>hou</code> proves the record shape only, never that a frame rendered.</strong></dd>
+<dt>Seat</dt><dd>headless for the record shape; hython for a real render</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T11</span> &middot; Undo-group <code>_handle_render_settings</code></span>
+<dl>
+<dt>Change</dt><dd>Wrap the parm writes in <code>hou.undos.group("SYNAPSE: render settings")</code>, matching every other mutating handler. The auto-fix / warmup / baseline-restore path currently writes Karma parms with no undo boundary at all &mdash; independently re-confirmed: <span class="anch">handlers_render.py:1189-1251</span> contains no <code>hou.undos</code>.</dd>
+<dt>File</dt><dd><span class="anch">python/synapse/server/handlers_render.py:1189-1250</span> (mutation at <span class="anch">:1229</span>).</dd>
+<dt>Test</dt><dd><code>tests/test_render_settings_undo.py::test_settings_write_is_undo_grouped</code> &mdash; AST-assert the function body contains a <code>hou.undos.group</code> context around the <code>p.set</code> loop. <strong>Fails if</strong> the wrapper is absent.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> (AST) + hython for a real Ctrl+Z round trip. <em>The AST test is deliberately host-free, so mock <code>hou</code> cannot contaminate it.</em></dd>
+<dt>Seat</dt><dd>AST test headless; behavioural proof needs hython</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T12</span> &middot; Surface the restore residue &nbsp;<span class="v v-no">NEW</span></span>
+<dl>
+<dt>Change</dt><dd>A failed <code>restore()</code> already computes the one diagnostic that makes it recoverable &mdash; the orphaned subnet path left in <code>/stage</code> &mdash; and discards it into a QLabel. Route it into the <code>record_host_action</code> failure record from T8, and log it. Cheapest high-value item in the pack: the diagnostic exists, it just has nowhere to go.</dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/host/saved_networks.py:395-416</span>; consumer at <span class="anch">python/synapse/panel/saved_recipes.py:250-251</span>.</dd>
+<dt>Test</dt><dd><code>tests/test_saved_network_provenance.py::test_residue_reaches_the_record</code> &mdash; <strong>fails if</strong> a restore failure that leaves a live container produces a record with no residue field.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green; hython for the real orphan case.</dd>
+<dt>Seat</dt><dd>headless + hython</dd>
+</dl>
+</div>
+
+<div class="phase">Phase 3 &mdash; build the LOOP's consumer side before touching producers</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T13a</span> &middot; Close the six coordinator test holes &nbsp;<span class="v v-part">SPLIT</span></span>
+<dl>
+<dt>Change</dt><dd><p>Six tests against code that already behaves &mdash; all green on landing, no code change, no Houdini, no substrate. Revision 1 bundled a seventh with these and priced the lot LOW; that seventh test <strong>fails against current code</strong> (§6.3 says the defect exists) and would land red under the green ratchet floor (<span class="anch">harness/verify/suite_baseline.json</span>, <span class="anch">checks.py:2553</span>). It is now T13b, priced as a code change.</p></dd>
+<dt>Tests</dt><dd>
+<div class="tw"><table><thead><tr><th>Test</th><th>Fails if</th></tr></thead><tbody>
+<tr><td><code>test_committed_event_shape_guard</code></td><td>A published <code>.d/*.json</code> containing valid JSON that is not a dict, or whose <code>event</code> is not a str, does <strong>not</strong> raise <code>"Invalid committed outbox event"</code> (<span class="anch">coordinator.py:73-75</span>)</td></tr>
+<tr><td><code>test_published_event_corruption_is_visible</code></td><td>Corrupting a published event file yields SUCCESS instead of a refusal (docstring claim at <span class="anch">:52</span>)</td></tr>
+<tr><td><code>test_terminal_admissibility_guard</code></td><td><code>finish(record, 1, &hellip;)</code> or a numpy bool is accepted as a terminal observation (<span class="anch">:127-128</span>)</td></tr>
+<tr><td><code>test_operation_identity_regex</code></td><td><code>begin("bad op!", &hellip;)</code> does not raise <code>"Invalid operation identity"</code> (<span class="anch">:104-105</span>)</td></tr>
+<tr><td><code>test_recover_bound_and_ordering</code></td><td>With 6 pending pointers, <code>recover()</code> processes more than 4, or processes them out of mtime order (<span class="anch">:192-193</span>)</td></tr>
+<tr><td><code>test_pointer_rotation_prevents_starvation</code></td><td>A permanently-failing pointer is not <code>touch()</code>-rotated, so a later-arriving pointer is never reached (<span class="anch">:204-209</span>)</td></tr>
+</tbody></table></div>
+<p>Plus: pin <code>canonical()</code>'s serialization against a <strong>literal byte string</strong>, not against <code>canonical()</code> itself, and pin <code>digest()</code> as sha256-of-canonical. <strong>Fails if</strong> <code>sort_keys</code>/<code>separators</code>/<code>allow_nan</code> change.</p></dd>
+<dt>Also</dt><dd><strong>Delete or fix</strong> the never-executed idempotency assert at <span class="anch">tests/test_loop_recovery_interruptions.py:42-43</span> and the three vacuous <code>len(capsules) == 1</code> asserts at <span class="anch">:64,:83,:133</span>.</dd>
+<dt>Evidence</dt><dd>Governor-produced green, real filesystem, recording doubles. <strong>No mock <code>hou</code>.</strong></dd>
+<dt>Seat</dt><dd>headless</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T13b</span> &middot; Outbox delivery-idempotency guard + its test &nbsp;<span class="v v-no">NEW / SPLIT</span></span>
+<dl>
+<dt>Change</dt><dd><p><code>_deliver</code> appends its <code>delivery</code> event (<span class="anch">coordinator.py:176</span>) and never reads prior delivery events back (<span class="anch">:140,:143</span> consult only <code>terminal</code> and <code>forecast_ack</code>). A crash between the successful deposit (<span class="anch">:175</span>) and the pointer unlink (<span class="anch">:178</span>) re-deposits on the next recover. Make <code>_deliver</code> consult prior <code>delivery</code> events before depositing, and ship the guard and its test in one commit so nothing lands red.</p></dd>
+<dt>Test</dt><dd><p><code>test_deposit_succeeded_then_crash_before_unlink</code> &mdash; <strong>fails if</strong> <code>recover()</code> re-deposits after a deposit that succeeded but whose unlink was interrupted.</p>
+<p><strong>Mandatory fixture change, or the test cannot fail:</strong> the <code>deposit</code> double at <span class="anch">tests/test_loop_recovery_interruptions.py:41-45</span> is a dict keyed by a <em>deterministic</em> capsule id (<code>"loop_" + attempt_id</code>, <span class="anch">coordinator.py:169</span>) and keeps no call list, so a re-deposit overwrites the same key and leaves no trace. <strong>The double must append every call to a list, and the test must assert <code>len(deposit_calls) == 1</code> &mdash; never <code>len(capsules) == 1</code>.</strong> Written the way revision 1 specified, this test would have become the next entry in the report's own §6.4 list. See <a href="#s11">§11 contest B</a>.</p></dd>
+<dt>Evidence</dt><dd>Governor-produced green. <strong>No mock <code>hou</code>.</strong></dd>
+<dt>Seat</dt><dd>headless</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T14</span> &middot; LOOP fails closed, or delivers locally &mdash; plus an <code>attempts/</code> reaper &nbsp;<strong style="color:var(--crit)">BLOCKING for Phase 4</strong></span>
+<dl>
+<dt>Change</dt><dd>Pick one of two postures and implement it explicitly. <strong>(a) Fail closed:</strong> when <code>SubstrateWorker</code> is unconfigured, <code>observe_operation</code> must not open a journal at all &mdash; it returns the existing honest <code>UNAVAILABLE</code> receipt and writes zero bytes. <strong>(b) Deliver locally:</strong> add a file-mode/no-substrate delivery path so an enabled LOOP completes the cycle and deposits a real Moneta capsule without Hanish. Either way, add a reaper: nothing in <code>coordinator.py</code> ever deletes an attempt folder; only the pending pointer is unlinked, and only on SUCCESS (<span class="anch">:178</span>).</dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/host/memory_loop.py:179-218</span> (the gate), <span class="anch">python/synapse/loop/coordinator.py:134-182</span> (delivery), <span class="anch">python/synapse/loop/subprocess_port.py:116-120</span> (the UNAVAILABLE verdict), plus a new reaper.</dd>
+<dt>Test</dt><dd><code>tests/test_loop_unconfigured_posture.py::test_unconfigured_loop_leaves_no_orphans</code>. <strong>Fails if,</strong> with the worker unconfigured and the flag on, a completed observed operation leaves an <code>attempts/&lt;uuid&gt;/</code> folder <strong>and</strong> an un-unlinked <code>pending/&lt;id&gt;.json</code>.</dd>
+<dt>Evidence</dt><dd>Governor-produced green for the posture; <span class="tier t-gate">NEEDS-GATED-RUN</span> on one live seat to prove a full enabled cycle end to end (§9 item 3). <strong>Blocked in practice by the unlocated Octavius root &mdash; §10 item 3, the cheapest unknown in the report to close.</strong></dd>
+<dt>Seat</dt><dd>headless for the test; one live Houdini seat for the end-to-end proof</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T15</span> &middot; Give the receipt a reader &mdash; or delete it</span>
+<dl>
+<dt>Change</dt><dd>Either surface <code>memory_loop.status</code> in the panel (a single status-line affordance is enough) or remove <code>_attach</code> entirely. Whichever is chosen, fix the asymmetry at <span class="anch">memory_loop.py:158-159</span> (MCP branch drops the receipt silently; WS branch logs it at <span class="anch">:173</span>).</dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/host/memory_loop.py:155-176</span>; a panel display site if keeping.</dd>
+<dt>Test</dt><dd>If keeping &mdash; <code>tests/test_panel_memory_loop_receipt.py::test_receipt_status_reaches_the_panel</code>, <strong>fails if</strong> a response carrying <code>memory_loop.status == 'UNAVAILABLE'</code> produces no panel-visible signal. If deleting &mdash; a grep test that <code>_attach</code> has no callers.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green; panel render verification via hython-offscreen only. <em>Precondition: §9 item 11 must run first &mdash; the zero-readers claim is Python-scoped and <code>.ui</code>/<code>.qml</code>/JS assets were never swept.</em></dd>
+<dt>Seat</dt><dd>headless / hython-offscreen</dd>
+</dl>
+</div>
+
+<div class="phase">Phase 4 &mdash; only now widen producers</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T16</span> &middot; Widen the observed surface; route batch + autonomy sub-ops &nbsp;<strong style="color:var(--crit)">REQUIRES T14 AND T15</strong></span>
+<dl>
+<dt>Change</dt><dd>Three parts, in this order. <strong>(a)</strong> Add the mutating commands that matter to <code>OBSERVED_COMMANDS</code> &mdash; at minimum <code>instantiate_graph</code>, the five Solaris composites, and <code>set_keyframe</code> (which the allowlist splits from its documented pair <code>set_parm</code>). <strong>(b)</strong> Delete the two dead entries <code>build_template</code> and <code>knowledge_intake</code>, which match zero command strings anywhere in the tree &mdash; independently re-confirmed against both <span class="anch">handlers.py</span> registrations and <span class="anch">mcp/_tool_registry.py</span>. <strong>(c)</strong> Route <code>batch_commands</code> sub-ops (<span class="anch">handlers.py:998-1001</span>) and autonomy sub-ops (<span class="anch">handlers.py:1997-1999</span>) through a shared observed-dispatch helper. <em>Note: those two bypasses skip <code>_submit_logs</code>/AuditLog as well as the LOOP, so this ticket also closes the AUDIT column on routes 2 and 5.</em></dd>
+<dt>Files</dt><dd><span class="anch">python/synapse/host/memory_loop.py:17-21</span>; <span class="anch">python/synapse/server/handlers.py:981-1010</span> and <span class="anch">:1991-2002</span>.</dd>
+<dt>Test</dt><dd><code>tests/test_loop_subop_coverage.py::test_batch_subops_are_observed</code> &mdash; <strong>fails if</strong> a batch of 3 allowlisted sub-ops produces fewer than 3 LOOP attempts with the flag on; <code>::test_dead_allowlist_entries_are_gone</code> &mdash; <strong>fails if</strong> any <code>OBSERVED_COMMANDS</code> entry has no matching registered command or <code>TOOL_DISPATCH</code> mapping.</dd>
+<dt>Evidence</dt><dd>Governor-produced green for the routing; <strong><span class="tier t-run">VERIFIED-RUNTIME</span> on a live seat required before claiming coverage</strong>, because the whole point is that journals get written. <strong>Mock <code>hou</code> cannot substantiate any part of the coverage claim.</strong></dd>
+<dt>Seat</dt><dd>live Houdini seat</dd>
+</dl>
+</div>
+
+<div class="phase">Phase 5 &mdash; hygiene</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T17</span> &middot; Delete or wire the dead mutating code</span>
+<dl>
+<dt>Change</dt><dd><span class="anch">panel/scene_doctor.py:632,655</span> mutates the scene under an undo group with zero importers &mdash; delete it or wire it. <span class="anch">handlers_recipe.py:123</span> is unregistered while <span class="anch">python/synapse/server/rbac.py:83</span> grants a role for it &mdash; delete both or register the handler. <span class="anch">server/api_adapter.py:166-454</span> has zero production importers.</dd>
+<dt>Test</dt><dd><code>tests/test_no_orphan_mutators.py::test_every_undo_group_site_is_reachable</code> &mdash; enumerate <code>hou.undos.group</code> sites outside the registry and assert each has a production importer. <strong>Fails if</strong> a scene-mutating module has zero non-test callers.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> + governor-produced green.</dd>
+<dt>Seat</dt><dd>headless</dd>
+</dl>
+</div>
+
+<div class="tk">
+<span class="tkh"><span class="tid">T18</span> &middot; Fix <code>CLAUDE.md §1.7</code>'s stale PDG anchors &nbsp;<span class="v v-no">NEW</span></span>
+<dl>
+<dt>Change</dt><dd>The project <code>CLAUDE.md</code> §1.7 cites <code>shared/bridge.py:1718</code> and <code>:1723</code> for the <code>dirtyAllTasks</code> defect. Both are wrong &mdash; <code>:1718</code> is an undo-evidence <code>logger.warning</code>. The real anchors are <span class="anch">:2377</span> (call), <span class="anch">:2373</span> (declare), <span class="anch">:2382</span> (assign), <span class="anch">:2389</span> (surface). <strong>This is the ticket with the widest blast radius per character changed:</strong> revision 1 of this report inherited those anchors verbatim and shipped them inside a remediation ticket, which is how a governing doc's drift becomes a downstream report's error.</dd>
+<dt>File</dt><dd><code>CLAUDE.md</code> §1.7.</dd>
+<dt>Test</dt><dd>Extend the existing doc/code conformance test so cited <code>path:line</code> anchors in <code>CLAUDE.md</code> are checked to contain the identifier they claim. <strong>Fails if</strong> a cited line does not contain the named symbol.</dd>
+<dt>Evidence</dt><dd><span class="tier t-stat">VERIFIED-STATIC</span> &mdash; both the wrong and right anchors were read at source this session.</dd>
+<dt>Seat</dt><dd>headless</dd>
+</dl>
+</div>
+</section>
+
+<!-- ======================= 9 ======================= -->
+<section id="s9">
+<h2><span class="num">§9</span>Needs a gated run</h2>
+
+<p>Everything below could not be settled statically. Commands are given as they would be run from <code>C:\Users\User\SYNAPSE</code>. <strong>Item 9 is the highest-priority entry in this list</strong> &mdash; it is the producer for §4.1's headline, and §4.1 is now deliberately silent until it runs.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th style="width:30%">Question</th><th>Command</th><th>Seat</th></tr></thead>
+<tbody>
+<tr><td><strong>9</strong></td><td><strong>What is the real production-vs-test split of the 5000 provenance records?</strong> Producer for §4.1 and for §10 item 6</td><td>A script fingerprinting <code>payload_digest</code> against known test fixtures, not just <code>session: null</code></td><td>headless</td></tr>
+<tr><td>1</td><td>Have the six skipped coordinator tests ever passed? Does <span class="anch">v5.67.2.md:64</span>'s &ldquo;334 checks with zero skips, including the real-substrate LOOP tests&rdquo; hold?</td><td><code>$env:SYNAPSE_TEST_HANISH_ROOT="G:\Hanish"; $env:SYNAPSE_TEST_LOOP_PYTHON="&lt;path&gt;"; $env:SYNAPSE_TEST_OCTAVIUS_ROOT="&lt;unlocated&gt;"; python -m pytest tests/test_loop_integration.py -v</code></td><td>headless &mdash; <strong>but see §10 on Octavius</strong></td></tr>
+<tr><td>2</td><td>Baseline green before any Phase 0 edit</td><td>Via the governor: <code>harness/verify</code> <code>check_suite_baseline</code> (<span class="anch">checks.py:2553</span>) &mdash; not by the implementing agent</td><td>governor</td></tr>
+<tr><td>3</td><td>Does the LOOP actually write a journal when enabled on the one off-main transport?</td><td>Set <code>SYNAPSE_LOOP_ENABLED=1</code> in the live process, connect via <code>ws-server-legacy</code> (<span class="anch">chat_panel.py:311</span>), issue one <code>create_node</code>, then <code>ls &lt;hip&gt;/.synapse/loop/attempts/</code></td><td><strong>live seat</strong></td></tr>
+<tr><td>4</td><td>Is <span class="anch">hwebserver_adapter.py:265</span>'s <code>handle()</code> genuinely on Houdini's UI loop? Settles whether route 9's LOOP blindness is structural or configurational</td><td>A probe handler logging <code>threading.current_thread().name</code> and <code>is threading.main_thread()</code>, invoked once over <code>/synapse</code></td><td><strong>live seat</strong></td></tr>
+<tr><td>5</td><td>Does a failed TOPS cook really land as <code>outcome='ok'</code> on disk &mdash; and does its audit entry really hold <code>status:'error'</code>?</td><td>hython: cook a deliberately broken TOP node via <code>_handle_tops_cook_node</code>, then read the newest file in <code>.synapse/provenance/</code> <strong>and</strong> the newest audit entry</td><td>hython</td></tr>
+<tr><td>6</td><td>Does a failed <code>instantiate_graph</code> really land as <code>outcome='ok'</code>, and does the rollback actually remove every node?</td><td>hython: force a mid-build failure in <code>GraphBuilder.instantiate</code>, count nodes under <code>parent_path</code>, read the newest provenance record</td><td>hython</td></tr>
+<tr><td>7</td><td>Does a Solaris identity-stamp failure really return <code>status:'created'</code>?</td><td>hython with <code>node.setUserData</code> monkeypatched to raise, calling <code>solaris_component_builder</code></td><td>hython</td></tr>
+<tr><td>8</td><td>Does <code>hou.hipFile.addEventCallback</code> actually invoke <code>event("BeforeLoad")</code>/<code>("BeforeClear")</code> at runtime?</td><td><strong>live seat</strong>: open the panel, arm the watch, load another hip, check <code>last-capture.json</code></td><td><strong>live seat</strong></td></tr>
+<tr><td>10</td><td>Have <code>origin='batch'</code> / <code>origin='autonomy'</code> ever written a record, or were they evicted by the FIFO cap?</td><td>Point <code>SYNAPSE_PROVENANCE_DIR</code> at a fresh dir, run one <code>batch_commands</code> and one <code>autonomous_render</code>, histogram <code>origin</code></td><td>hython (batch) / <strong>live seat</strong> (autonomy)</td></tr>
+<tr><td>11</td><td>Does the panel render the <code>memory_loop</code> receipt in any <code>.ui</code>/<code>.qml</code>/JS asset? The zero-readers claim is Python-scoped. <em>Precondition for T15</em></td><td><code>grep -rn "memory_loop" --include=*.ui --include=*.qml --include=*.js --include=*.html python/ panel/</code></td><td>headless (trivial; still not done)</td></tr>
+<tr><td>12</td><td>Does the live <code>/SYNAPSE/memory/decisions</code> prim exist on a real seat, or does <code>log_decision</code> silently no-op?</td><td>hython: open the project <code>agent.usd</code>, check <code>GetPrimAtPath("/SYNAPSE/memory/decisions").IsValid()</code></td><td>hython</td></tr>
+<tr><td><strong>13</strong><br><span class="v v-no">NEW</span></td><td><strong>Does anything read <code>~/.synapse/audit/*.jsonl</code> back in production, outside the doctor's newest-3 bundle?</strong> A static grep found nine writers and zero file readers, and <code>get_entries()</code> queries the in-memory list &mdash; but an out-of-tree consumer (a support workflow, a script) would be invisible to it</td><td><code>grep -rn "audit_" --include=*.py --include=*.ps1 --include=*.ts . | grep -v core/audit.py</code>, plus a decrypt-and-read smoke test on one file to prove the store is recoverable at all</td><td>headless</td></tr>
+<tr><td><strong>14</strong><br><span class="v v-no">NEW</span></td><td><strong>Is <code>encryption.key.bak</code> present on any other seat?</strong> Absent here; <span class="anch">crypto.py:106-112</span> writes it only on auto-generate, so a key created before that code landed has no escrow</td><td><code>ls ~/.synapse/encryption.key*</code> on each seat; if absent everywhere, T7(b) is urgent rather than tidy</td><td>every seat</td></tr>
+<tr><td><strong>15</strong><br><span class="v v-no">NEW</span></td><td><strong>What exactly lands in <code>input_data</code>?</strong> <code>execute_python</code>'s full source is persisted verbatim (route 6 launders scene mutations through it), and no redaction layer was found. Whether credential-bearing payloads also land there is unevaluated</td><td>Decrypt one recent <code>audit_&lt;date&gt;.jsonl</code>, scan <code>input_data</code> for code blobs and secret-shaped values</td><td>headless, with the key</td></tr>
+<tr><td><strong>16</strong><br><span class="v v-no">NEW</span></td><td><strong>What is the audit store's growth rate?</strong> 143 MB / 122 files / 7 months is an aggregate, not a rate; T7's retention policy needs the per-day distribution</td><td><code>ls -la ~/.synapse/audit | sort -k5 -n</code> &mdash; per-file sizes and the tail distribution</td><td>headless</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+  <span class="lbl">Seat classification</span>
+  <p><code>hdefereval</code> is unimportable headless and <code>hou.ui</code>/<code>hou.qt</code>/<code>hou.desktop</code> are absent from the headless symbol table, so anything touching main-thread marshalling, the panel, or an interactive render <strong>requires a live GUI seat</strong>. Node creation, USD authoring, TOPS cooks and provenance reads run fine under <code>hython</code>. And per §8: the headless worktree agent cannot run <code>pytest</code> &mdash; the governor does.</p>
+</div>
+</section>
+
+<!-- ======================= 10 ======================= -->
+<section id="s10">
+<h2><span class="num">§10</span>Unknowns</h2>
+
+<p>Labelled honestly. Nothing here is asserted.</p>
+
+<ol>
+<li><strong><span class="tier t-unv">UNVERIFIED</span> &mdash; whether the LOOP has ever produced a journal on any seat.</strong> Only this host was checked. <span class="anch">docs/releases/v5.67.2.md:53-57</span> claims <em>&ldquo;In live Houdini 22.0.400, the native connection completed the cycle and the next request recalled its durable result.&rdquo;</em> No receipt, run artifact, or ledger backing that claim was found anywhere in <code>harness/notes/receipts/</code> (grep for <code>hanish</code>/<code>Hanish</code> there returns nothing). <strong>The claim is doc-only from a static read.</strong></li>
+
+<li><strong><span class="tier t-unv">UNVERIFIED</span> &mdash; whether the real-substrate LOOP tests have ever executed non-skipped.</strong> The three gating env vars appear in no CI file, no conftest, no <code>.env</code> (<span class="anch">.github/workflows/ci.yml:109</span> runs pytest with no env block). <span class="anch">v5.67.2.md:64</span>'s zero-skips claim would require them set on the release machine.</li>
+
+<li><strong>PARTIALLY RESOLVED &mdash; Hanish vs Octavius.</strong> Both are true at different scopes: <strong>no <code>hanish</code> or <code>octavius</code> source tree exists inside <code>C:\Users\User\SYNAPSE</code></strong>, <em>and</em> <code>hanish</code> resolves live on this host at <code>G:\Hanish\hanish\__init__.py</code> (which is why <span class="anch">tests/test_loop_hanish_worker.py</span>'s 30 tests run past <code>importorskip</code> at <span class="anch">:39</span>). <strong>Octavius remains unlocated on this host</strong> &mdash; so <code>SYNAPSE_TEST_OCTAVIUS_ROOT</code> cannot be filled in for §9 item 1, and that one gating variable alone keeps all six coordinator integration tests skipped. <strong>This is the single cheapest unknown to close and it gates T14's end-to-end proof.</strong></li>
+
+<li><strong><span class="tier t-unv">UNVERIFIED</span> &mdash; whether any Qt/QML/JS panel surface renders the <code>memory_loop</code> receipt.</strong> The zero-readers claim is scoped to Python only. §9 item 11 closes it in one command, and it is a precondition for T15.</li>
+
+<li><strong><span class="tier t-unv">UNVERIFIED</span> &mdash; whether unbounded growth of <code>&lt;project&gt;/.synapse/loop/attempts/</code> is mitigated anywhere.</strong> Nothing in <code>coordinator.py</code> deletes an attempt folder. With an unconfigured worker, every observed op would leave a permanent <code>attempts/&lt;uuid&gt;/</code> plus a pending pointer that <code>recover()</code> rotates forever (<span class="anch">:209</span>). No reaper was found; the installer, uninstaller and doctor were not exhaustively grepped for cleanup.</li>
+
+<li><strong><span class="tier t-unv">UNVERIFIED</span> &mdash; the production-vs-test split of the 5000 floor_gate records. <span class="v v-no">REWRITTEN</span></strong> 4777 carry <code>session: null</code>, which is the direct-invoke/pytest fingerprint &mdash; but a real handler whose <code>self._session_id</code> is still None also produces null, so this is a superset, not a fingerprint. Payload digests were not fingerprinted against test fixtures. <strong>Revision 1 nonetheless consumed this unknown as settled inside §4.1, whose &ldquo;122 test-authored&rdquo; conclusion rested on it for 47% of the set. That conclusion is withdrawn.</strong> &ldquo;~223 production records&rdquo; remains an <em>upper bound</em>, not a measurement. Producer: §9 item 9.</li>
+
+<li><strong>UNDECIDABLE from the current directory &mdash; whether <code>FloorContext(origin='batch')</code> (<span class="anch">handlers.py:970</span>) and <code>origin='autonomy'</code> (<span class="anch">handlers.py:1998</span>) have ever written a record.</strong> The on-disk histogram is <code>{handler: 5000}</code> with zero of either. Consistent with &ldquo;never fired&rdquo;, but the FIFO cap could have evicted older ones &mdash; and the store is <em>at</em> cap, which makes eviction the more likely explanation than it was when this unknown was first written.</li>
+
+<li><strong><span class="tier t-unv">UNKNOWN</span> &mdash; <code>mcp-stdio-proxy</code> install status.</strong> No <code>claude_desktop_config.json</code> registration exists in the tree; installation is external to the repo. Route 14's reachability, and therefore route 6's, inherit this.</li>
+
+<li><strong>ASSERTED-BY-DESIGN-CONSISTENCY, not observed &mdash; that hwebserver dispatches <code>@urlHandler</code> callbacks on a thread distinct from Houdini's main thread.</strong> Load-bearing for routes 10 and 11, claimed repeatedly by the code's own comments and by <code>run_on_main</code>'s entire existence, but no live thread-identity dump was taken.</li>
+
+<li><strong><span class="tier t-unv">UNVERIFIED</span> &mdash; whether some out-of-tree deployment sets <code>SYNAPSE_LOOP_ENABLED=1</code>.</strong> Env vars are process-scoped and invisible to a static read. The absence of any journal on disk is strong circumstantial corroboration for this host; it is not proof for every past process or every seat.</li>
+
+<li><strong>NOT EXHAUSTIVELY VERIFIED &mdash; that no individual handler among the ~130 internally re-enters <code>registry.invoke()</code> a second time or short-circuits it.</strong> The single-command coverage claim is high-confidence but was spot-checked, not walked line-by-line across every handler body.</li>
+
+<li><strong>NOT READ LINE-BY-LINE &mdash; <span class="anch">render_farm.py:460-670</span></strong> (settings-restore and report-write paths) were skimmed for <code>except Exception</code> patterns only. Additional swallows may exist there.</li>
+
+<li><strong>PARTIALLY CLOSED &mdash; the third record system on the BLOCKS route.</strong> Revision 1 left this untraced. It is now known that route 6 emits a floor_gate record <em>and</em> an AuditLog entry; whether <code>envelope_active('execute_python')</code> <em>also</em> produces a live <code>IntegrityBlock</code> via <span class="anch">server/integrity_envelope.py</span> remains untraced. It exists and was not followed.</li>
+
+<li><strong><span class="tier t-unv">UNVERIFIED</span> &mdash; whether a live <code>agent.usd</code> carries the <code>/SYNAPSE/memory/decisions</code> prim.</strong> <code>log_decision</code> warns <em>&ldquo;memory/decisions prim missing &mdash; run migrate_to_v2&rdquo;</em> and returns <code>""</code> (<span class="anch">agent_state.py:567-570</span>). If a real project's <code>agent.usd</code> predates the v2 migration, the law's only live writer silently writes nothing on every call. §9 item 12 closes it.</li>
+
+<li><strong><span class="tier t-unv">UNVERIFIED</span> &mdash; whether <code>hou.hipFile.addEventCallback</code> actually fires <code>event("BeforeLoad")</code> / <code>("BeforeClear")</code> with those literal strings at runtime.</strong> Only the registration call and the string-matching logic were read (<span class="anch">saved_networks.py:418-425</span>, <span class="anch">recipe_watch.py:59-61</span>), never a live callback.</li>
+
+<li><strong>Doc drift flagged, and now partly ticketed.</strong> <code>CLAUDE.md</code>'s Current Status table still lists <code>agent.usd Schema &hellip; ⚠ provenance writers dormant</code>, and <span class="anch">graph_builder.py:270-274</span>'s docstring still says &ldquo;no live caller yet&rdquo;. Both are stale as of <span class="anch">graph_synth_runtime.py:142</span>. <code>CLAUDE.md §1.7</code>'s stale PDG anchors are <strong>T18</strong>. Whether any <em>other</em> provenance writer in <code>agent_state.py</code> remains genuinely dormant was not audited.</li>
+
+<li><strong><span class="tier t-unv">UNVERIFIED</span> <span class="v v-no">NEW</span> &mdash; whether the audit store is decryptable at all today.</strong> The key file exists and <code>_resolve_key</code> would find it, but no decrypt was attempted this session. A 143 MB hash-chained store whose readback has never been exercised is, until proven otherwise, a store of unknown recoverability. §9 items 13&ndash;15.</li>
+
+<li><strong><span class="tier t-unv">UNVERIFIED</span> <span class="v v-no">NEW</span> &mdash; whether <code>memory/ledger.py</code>'s 29 records are production or probe output.</strong> A live producer chain exists (<span class="anch">science/deposit.py:23</span> &rarr; <code>ledger.deposit</code>, <span class="anch">science/allocation.py:117</span>) and the doctor bundles the newest 3 (<span class="anch">doctor.py:868-874</span>), but authorship was not fingerprinted &mdash; the same defect §4.1 was corrected for.</li>
+</ol>
+</section>
+
+<!-- ======================= 11 ======================= -->
+<section id="s11">
+<h2><span class="num">§11</span>Contested findings</h2>
+
+<p>Three crucible findings are rejected in whole or in part. Each is recorded with its reasoning and its anchor. <strong>No finding was silently dropped</strong>; everything not listed here was folded into §§1&ndash;10 at source.</p>
+
+<h3>Contest A &mdash; &ldquo;the feature-wide claim is INVERTED&rdquo; &nbsp;<span class="v v-part">PARTLY REJECTED</span></h3>
+
+<div class="finding sev-hi">
+<span class="fh">Finding &middot; false-gap lens, blocker 2, severity 4</span>
+<p><strong>What it claimed.</strong> Route 7 should be re-verdicted from &ldquo;NO record&rdquo; to &ldquo;records to a feature-local durable journal with an artist-visible reader&rdquo;; §4.2-A's feature-wide gap is <em>inverted</em>, with only <code>restore()</code> genuinely blind; and revision 1's T6 should be deleted because it instruments a trigger that already writes an fsynced, atomically-published record.</p>
+<p><strong>Accepted, and corrected at source.</strong> The factual core is right and I re-measured it: <code>_notice</code> calls <code>record_notice</code> at <span class="anch">recipe_watch.py:44</span> <em>before</em> the swallowed <code>notify</code>; <span class="anch">saved_networks.py:437-461</span> fsyncs and atomically publishes; <span class="anch">saved_networks.py:464-474</span> &rarr; <span class="anch">panel/saved_recipes.py:141-147</span> is a real reader; <code>restore()</code> is the only trigger with no <code>record_notice</code> call. Revision 1's &ldquo;no record of any kind&rdquo; and &ldquo;instrumenting the scene-exit trigger would fix a third of it&rdquo; are both false and are rewritten in §3 route 7 and §4.2-A. Revision 1's §7.1 item 22 is deleted. T6 is rewritten as T9.</p>
+<p><strong>Rejected: the word <em>inverted</em>, and the verdict change it implies.</strong> <code>last-capture.json</code> is a UI status slot, not a record of a mutation:</p>
+<ul>
+<li><strong>One fixed filename, last-write-wins.</strong> <span class="anch">saved_networks.py:439-441</span> writes <code>root / "last-capture.json"</code>, always. Retention is one event.</li>
+<li><strong>Its retention is shared with events that are not mutations.</strong> <code>arm()</code> writes <code>{"status":"watching"}</code> (<span class="anch">recipe_watch.py:34</span>) and <code>disarm()</code> writes <code>{"status":"stopped"}</code> (<span class="anch">:39</span>) through the same <code>_notice</code> &rarr; <code>record_notice</code> path. <strong>A capture record is erased the next time the artist arms the watch</strong> &mdash; by a lifecycle notice that changed nothing in the scene.</li>
+<li><strong>It carries no operation identity.</strong> The live file is 138 bytes with three keys &mdash; <code>message</code>, <code>recorded_utc</code>, <code>status</code> (<span class="tier t-run">VERIFIED-RUNTIME</span>). No op id, no payload digest, no result digest, no parent, no created paths. Two captures of different networks are distinguishable only by a human-readable sentence.</li>
+</ul>
+<p><strong>Conclusion.</strong> Route 7's gap is real and stays REAL; what changes is its <em>description</em>, not its verdict. The finding's own fix text concedes the point (&ldquo;single-slot, last-write-wins, not a ledger&rdquo;) and then over-reaches in its headline. <strong>T9 is retained and rewritten, not deleted</strong> &mdash; because &ldquo;promote a clobbered single slot to an append-only history&rdquo; is a different and better ticket than either &ldquo;instrument a trigger that already records&rdquo; (revision 1) or &ldquo;do nothing here&rdquo; (the finding).</p>
+</div>
+
+<h3>Contest B &mdash; &ldquo;the failure IS durably recorded&rdquo; &nbsp;<span class="v v-part">PARTLY REJECTED</span></h3>
+
+<div class="finding sev-hi">
+<span class="fh">Finding &middot; false-gap lens, blocker 1, severity 4</span>
+<p><strong>What it claimed.</strong> AuditLog is a fourth always-on ledger missing from the census &mdash; and therefore T1's premise breaks, because &ldquo;the handler's returned dict, carrying the literal <code>{'status':'error', ...}</code>, is persisted verbatim as <code>output_data</code>&hellip; The failure IS durably recorded, in the system the report omitted.&rdquo;</p>
+<p><strong>Accepted, and corrected at source.</strong> The census correction is the single most valuable finding in the crucible pass and is adopted in full: AuditLog is now a first-class column in §2.1 and §3, <code>memory/ledger.py</code> and the tracker deposit are added to §2.2, §2.1's &ldquo;Consumer: One&rdquo; row is corrected (the doctor bundles three stores &mdash; audit <span class="anch">doctor.py:843-846</span>, provenance <span class="anch">:856-866</span>, ledger <span class="anch">:868-874</span>), and §2.1's &ldquo;silent failure posture&rdquo; row is scoped to floor_gate alone. Every runtime figure reproduced: 122 files, 143 MB, newest <code>audit_2026-09-14.jsonl</code>. T1 is rescoped to &ldquo;two live ledgers disagree,&rdquo; exactly as the finding's fix text suggests.</p>
+<p><strong>Rejected: &ldquo;durably recorded&rdquo; as a claim that the information is recoverable.</strong> Four properties, each verified this session, separate <em>persisted</em> from <em>recoverable</em>:</p>
+<ul>
+<li><strong>Nothing reads it back.</strong> <code>AuditLog.get_entries()</code> (<span class="anch">core/audit.py:344</span>) queries the in-memory list, not the files. A restarted process cannot see its own history. Repo-wide: nine writer sites, zero file readers outside the doctor's newest-3 bundle. <em>The finding's own &ldquo;missing&rdquo; section says the same thing &mdash; it just did not carry that back into the T1 conclusion.</em></li>
+<li><strong>It is encrypted against a key with no escrow.</strong> <code>~/.synapse/encryption.key</code> exists (44 bytes); <code>encryption.key.bak</code> does not, although <span class="anch">crypto.py:106-112</span> promises it. One deleted file orphans all 143 MB.</li>
+<li><strong>The write is fire-and-forget.</strong> <span class="anch">handlers.py:551-556</span>'s own comment is &ldquo;Log action asynchronously &mdash; don't block the response path&rdquo;; a persist failure is logged and dropped at <span class="anch">core/audit.py:342</span>. Better than floor_gate's silence &mdash; not a guarantee.</li>
+<li><strong>The store has never been decrypted in anger.</strong> §10 item 17: readback is unexercised, so recoverability is unproven in the ordinary sense, not merely unaudited.</li>
+</ul>
+<p><strong>Conclusion.</strong> The honest headline the finding itself reached for &mdash; <em>&ldquo;four ledgers fire, none is read&rdquo;</em> &mdash; is stronger than the report shipped, and it is now §1. But that headline is <em>incompatible</em> with treating the audit entry as T1's recovery path. <strong>T1 keeps its HIGH impact.</strong> Fixing it makes the one queryable ledger agree with reality; leaving it makes the only human-readable verdict on a failed TOPS cook say <code>ok</code> forever.</p>
+</div>
+
+<h3>Contest C &mdash; the tracker deposit as &ldquo;the counter-example that most needs addressing&rdquo; &nbsp;<span class="v v-part">PARTLY REJECTED</span></h3>
+
+<div class="finding sev-md">
+<span class="fh">Finding &middot; false-gap lens, blocker 3, severity 2</span>
+<p><strong>What it claimed.</strong> <span class="anch">handlers.py:610</span> &rarr; <span class="anch">session/tracker.py:302-328</span> is a seventh destination and, &ldquo;unlike the other six, it has a genuine production consumer (model-facing recall)&hellip; the counter-example that most needs addressing, because it is the one path where a mutation record reaches the model.&rdquo;</p>
+<p><strong>Accepted, and corrected at source.</strong> The destination was genuinely missing and is now in §2.2 as the eighth entry. The routing is exactly as described.</p>
+<p><strong>Rejected: that it is a counter-example to the orphan thesis.</strong> Read at source, it is not a mutation record reaching the model &mdash; it is an undifferentiated activity ping, and it makes the thesis worse rather than better:</p>
+<ul>
+<li><strong>It cannot represent failure.</strong> The deposited content is <code>f"Executed: {cmd_type}"</code>, assembled at <span class="anch">handlers.py:610</span> from the command name alone, <em>before</em> the result is inspected, and identical whether the handler returned <code>{'status':'ok'}</code> or <code>{'status':'error'}</code>. <code>tracker.log_action</code> passes <code>content=action</code> straight into <code>self._synapse.add(...)</code> (<span class="anch">:322-328</span>) with no outcome field anywhere on the path.</li>
+<li><strong>Its coverage is conditional.</strong> It fires only <code>if bridge and sid</code>, and <code>sid</code> is absent on <strong>4777 of 5000</strong> sampled operations (<code>session: null</code>, <span class="tier t-run">VERIFIED-RUNTIME</span>).</li>
+</ul>
+<p><strong>Conclusion.</strong> Promoting this to &ldquo;the one path where a mutation record reaches the model&rdquo; would license exactly the wrong inference: that the model has some view of what happened. It has a view of <em>what was attempted</em> &mdash; the literal Law 3 failure. So the finding is recorded as a <strong>new §7.1 item (22)</strong> and a <strong>new Phase 0 ticket (T5)</strong> rather than as a rescue. This contest <em>produced</em> a finding; it did not dismiss one.</p>
+</div>
+
+<h3>Findings accepted without contest</h3>
+
+<p>For completeness, the material findings folded in at source with no argument: the three materially-wrong anchors (<span class="anch">bridge.py:1718</span>&rarr;<span class="anch">:2377</span>; <span class="anch">integrity_envelope.py:269</span>&rarr;<span class="anch">:272</span>; §4.1's inverted measurement); the ~12 off-by-N anchors (dispatcher, probes, graph_synth_runtime, blocks/runtime, hwebserver_adapter, memory_loop, websocket, job_events and rbac paths, render_session, proposal_store, driver); the missing <code>memory/ledger.py</code> census entry; the four-of-one-hundred-percent <code>error_type</code> failure; the pytest-permission defect on every headless ticket; the <code>test_tool_result_contract.py:9</code> mis-grep; the FIFO-eviction hazard in revision 1's T7; the mock-<code>hou</code> exclusion missing from three tickets; the T9 split; and the circular deposit-double fixture. Each is marked <span class="v v-no">CORRECTED</span> or discussed in a <strong>Corrected at source</strong> block where it lands.</p>
+
+<div class="note">
+  <span class="lbl">One crucible judgment adopted verbatim</span>
+  <p>From the anchor-audit lens: <em>&ldquo;no structural conclusion collapsed. The three-ledger conflation, the LOOP-never-switched-on finding, the route coverage matrix, the Solaris back-port gap and the Law 3 catalogue all survive. What is broken is the evidence layer.&rdquo;</em> That is the correct reading of revision 1, and it is why this revision changes almost no verdicts while changing a great many citations. A report whose masthead promises <code>path:line</code> and misses on a quarter of them spends the credibility its verdicts depend on.</p>
+</div>
+</section>
+
+<!-- ======================= 12 ======================= -->
+<section id="s12">
+<h2><span class="num">§12</span>Executive summary</h2>
+
+<p>Three things, in the order they should be acted on. Everything else in this report is detail under one of them.</p>
+
+<div class="exec">
+
+<div class="exec-item">
+  <div class="exec-rank">1</div>
+  <h3 class="exec-h" style="margin:0">Four ledgers fire on every mutation. Nothing reads any of them back.</h3>
+  <p class="exec-body">SYNAPSE is not under-instrumented &mdash; it is instrumented four ways that disagree. <strong>floor_gate</strong>: 5000 records, 3 read. <strong>AuditLog</strong>: 143 MB across 122 daily files since February, full input and output of every mutating command, and <code>get_entries()</code> queries an in-memory list so a restarted process cannot read its own history. <strong>LOOP</strong>: 0 records, never switched on. <strong>agent.usd decisions</strong> &mdash; the one the law names: 1 writer, 0 readers. And the <em>only</em> channel a model reads back is told <code>"Executed: &lt;cmd&gt;"</code> whether the command succeeded or failed. A failed TOPS cook is recorded <code>outcome='ok'</code> by the queryable ledger and <code>status:'error'</code> by the unreadable one.</p>
+  <p class="exec-cost"><b>Anchor</b> &nbsp;<code>handlers.py:551-556,597-620</code> &rarr; <code>core/audit.py:220,327-344</code> &middot; <code>floor_gate.py:335-339</code> &middot; <code>doctor.py:843-874</code> &middot; <code>coordinator.py:120-176</code> &middot; <code>agent_state.py:549</code> &middot; <code>handlers.py:610</code> &rarr; <code>tracker.py:322-328</code><br>
+  <b>Cost</b> &nbsp;Phase 0 &mdash; T1&ndash;T5. Five small, independent changes; four headless, one hython. No new subsystem, no live seat, no decision required. <b>T5 is the cheapest honesty win in the report</b>: move one f-string below the result.</p>
+</div>
+
+<div class="exec-item">
+  <div class="exec-rank">2</div>
+  <h3 class="exec-h" style="margin:0">The one queryable evidence store is full today, and the drafted fix would have emptied 10% of it per render.</h3>
+  <p class="exec-body"><code>.synapse/provenance</code> holds <strong>5000 records against a hard FIFO cap of 5000</strong> &mdash; every new record already evicts an old one. Revision 1's remediation pack scheduled one provenance record <em>per rendered frame</em>, so a single 500-frame sequence would have destroyed 500 unrelated mutation records to produce 500 nobody reads. The same directory has carried an orphaned <code>.tmp</code> since before the oldest surviving record, because rotation only counts <code>.json</code> &mdash; and the doctor's bundler has no extension filter, so that orphan can be collected into a support bundle in place of a record. Separately, 143 MB of audit history hangs on one 44-byte key with <strong>no escrow copy present</strong>, contradicting the code's own promise.</p>
+  <p class="exec-cost"><b>Anchor</b> &nbsp;<code>floor_gate.py:126</code> cap vs <code>ls .synapse/provenance/op-*.json | wc -l</code> = 5000 &middot; orphan <code>tmp7qjf1g7h.tmp</code> &middot; <code>floor_gate.py:455</code> &middot; <code>doctor.py:813-816</code> &middot; <code>crypto.py:106-112</code> vs <code>ls ~/.synapse/encryption.key*</code><br>
+  <b>Cost</b> &nbsp;Phase 1 &mdash; T6 (LOW, headless, blocking) and T7 (MED). <b>T6 must land before T10.</b> Doing nothing here does not hold the line &mdash; the store evicts whether or not anyone widens it.</p>
+</div>
+
+<div class="exec-item">
+  <div class="exec-rank">3</div>
+  <h3 class="exec-h" style="margin:0">The LOOP is fully built, has never been switched on, and cannot complete a delivery on this host. Do not add producers to it.</h3>
+  <p class="exec-body">It has four real production write sites and a real read chain ending at an MCP tool &mdash; so it is not R20-shaped. It fails a harder test: nothing ships the enable flag, the Hanish/Octavius substrate is configurable nowhere, and flipping the flag today returns UNAVAILABLE on every call while accreting an <code>attempts/&lt;uuid&gt;/</code> folder and an un-unlinked pointer per operation, forever, with no reaper. Its per-operation <em>receipt</em> &mdash; injected into every observed tool result on four routes &mdash; is read by nothing: that half <strong>is</strong> R20-shaped, on the hot path. Every tempting fix (widen the allowlist, route sub-ops, add <code>instantiate_graph</code>) makes it worse. <strong>Sequence inverted: prove one delivered, recalled outcome first, or make the LOOP fail closed.</strong></p>
+  <p class="exec-cost"><b>Anchor</b> &nbsp;<code>memory_loop.py:24-25,17-21,155-176</code> &middot; <code>subprocess_port.py:116-120</code> &middot; <code>coordinator.py:175-178</code> &middot; zero bytes under <code>.synapse/loop</code><br>
+  <b>Cost</b> &nbsp;Phase 3 &mdash; T13a/T13b/T14/T15, then Phase 4. One binary decision (fail closed vs deliver locally) plus one live seat. <b>Blocked in practice by a single unlocated path:</b> <code>SYNAPSE_TEST_OCTAVIUS_ROOT</code> keeps all six real-substrate coordinator tests skipped. That is the cheapest unknown in the report to close and it gates the most expensive phase.</p>
+</div>
+
+</div>
+
+<div class="note keyrisk">
+  <span class="lbl">Not one of the three &mdash; but decide it this week</span>
+  <p><code>execute_python</code>'s full source is persisted verbatim into <code>~/.synapse/audit/</code> on every call, and route 6 launders scene mutations through <code>execute_python</code>. No redaction layer was found. Whether credential-bearing payloads also land there is <strong>unevaluated</strong> &mdash; not because it was checked and cleared, but because the system was absent from the previous census entirely. <span class="anch">handlers.py:611-619</span>; scoped as §9 item 15.</p>
+</div>
+
+<p style="margin-top:28px; color:var(--ink-3); font-size:.88rem">Revision 2 changed <strong>~15 anchors</strong>, <strong>2 route verdicts</strong>, <strong>1 headline measurement</strong>, <strong>5 ticket scopes</strong>, and added <strong>2 record systems</strong>, <strong>4 Law 3 findings</strong>, <strong>5 tickets</strong> and <strong>4 gated-run items</strong>. It changed <strong>no structural conclusion</strong>. The three-ledger conflation, the LOOP finding, the route matrix, the Solaris back-port gap and the Law 3 catalogue all survived the crucible intact &mdash; it was the evidence layer that failed, and it is the evidence layer that was rebuilt.</p>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.jump a'));
+  var secs = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function mark(){
+    var y = window.scrollY + 90, best = 0;
+    for (var i = 0; i < secs.length; i++){ if (secs[i] && secs[i].offsetTop <= y) best = i; }
+    links.forEach(function(a,i){ a.classList.toggle('here', i === best); });
+  }
+  mark();
+  var t = null;
+  window.addEventListener('scroll', function(){
+    if (t) return;
+    t = window.requestAnimationFrame(function(){ t = null; mark(); });
+  }, {passive:true});
+})();
+</script>
+
+
+
+
+

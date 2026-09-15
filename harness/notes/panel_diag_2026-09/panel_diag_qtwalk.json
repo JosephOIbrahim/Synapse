@@ -1,0 +1,49 @@
+{
+ "top_level_count": 33,
+ "main_window_title": "untitled.hip - Houdini Indie Limited-Commercial 22.0.400 - Py3.13",
+ "synapse_widgets": [
+  {
+   "class": "SynapsePanel",
+   "objname": "QT_Feel",
+   "geo": [
+    2065,
+    244,
+    960,
+    1073
+   ],
+   "visible": true,
+   "children": null,
+   "parent": "QOpenGLWidget",
+   "parent_name": "RE_WindowDrawable"
+  }
+ ],
+ "walk_summary": [
+  {
+   "class": "QWidget",
+   "objname": "RE_Window",
+   "geo": [
+    231,
+    129,
+    3027,
+    2664
+   ],
+   "visible": true,
+   "children": null,
+   "path": "/main"
+  },
+  {
+   "class": "QWidget",
+   "objname": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    3027,
+    2664
+   ],
+   "visible": true,
+   "children": null,
+   "path": "/main/RE_WindowDrawableWrapper"
+  }
+ ],
+ "walk_total": 2
+}

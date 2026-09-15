@@ -1,0 +1,1423 @@
+<title>Proposal Surface</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+<style>
+:root{
+  --ground:#F1F3F1;
+  --surface:#FFFFFF;
+  --surface-2:#E9ECEA;
+  --ink:#15191A;
+  --ink-2:#525C5B;
+  --ink-3:#798483;
+  --rule:#D6DBD9;
+  --rule-soft:#E4E8E6;
+  --accent:#0E6B62;
+  --accent-soft:#DCEBE8;
+  --crit:#95292C;
+  --crit-soft:#F4E0DF;
+  --warn:#855308;
+  --warn-soft:#F5E8D4;
+  --ok:#2C6538;
+  --ok-soft:#DFECE1;
+  --shadow:0 1px 2px rgba(20,28,27,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1312;
+    --surface:#161B1A;
+    --surface-2:#1D2423;
+    --ink:#E4E9E7;
+    --ink-2:#98A4A1;
+    --ink-3:#74807D;
+    --rule:#293130;
+    --rule-soft:#202726;
+    --accent:#4FC6B6;
+    --accent-soft:#14302D;
+    --crit:#E58F88;
+    --crit-soft:#33201F;
+    --warn:#D6A75E;
+    --warn-soft:#2D2516;
+    --ok:#82C08F;
+    --ok-soft:#18291C;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1312;
+  --surface:#161B1A;
+  --surface-2:#1D2423;
+  --ink:#E4E9E7;
+  --ink-2:#98A4A1;
+  --ink-3:#74807D;
+  --rule:#293130;
+  --rule-soft:#202726;
+  --accent:#4FC6B6;
+  --accent-soft:#14302D;
+  --crit:#E58F88;
+  --crit-soft:#33201F;
+  --warn:#D6A75E;
+  --warn-soft:#2D2516;
+  --ok:#82C08F;
+  --ok-soft:#18291C;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+code,kbd,pre,.mono{font-family:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace}
+
+.shell{max-width:1360px;margin:0 auto;padding-inline:20px;padding-block:0}
+.layout{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:1120px){
+  .layout{grid-template-columns:228px minmax(0,1fr);gap:56px;align-items:start}
+}
+
+.mast{border-bottom:1px solid var(--rule);padding-block:44px 26px;margin-bottom:34px}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+}
+h1{
+  font-family:Newsreader,Georgia,serif;font-weight:500;
+  font-size:clamp(34px,6vw,54px);line-height:1.04;letter-spacing:-.018em;
+  margin:.28em 0 .1em;text-wrap:balance;
+}
+.dek{
+  font-family:Newsreader,Georgia,serif;font-size:clamp(17px,2.4vw,21px);
+  color:var(--ink-2);margin:0 0 22px;max-width:56ch;
+}
+.meta{
+  display:flex;flex-wrap:wrap;gap:8px 22px;
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);
+}
+.meta b{color:var(--ink-2);font-weight:500}
+
+.rail{display:none}
+@media (min-width:1120px){
+  .rail{display:block;position:sticky;top:24px;padding-block:6px 40px}
+}
+.rail .rl{
+  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:12px;
+  padding-bottom:8px;border-bottom:1px solid var(--rule);
+}
+.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+.rail a{
+  display:grid;grid-template-columns:22px 1fr;gap:6px;
+  text-decoration:none;color:var(--ink-2);font-size:12.5px;line-height:1.35;
+  padding:5px 6px;border-radius:3px;border-left:2px solid transparent;
+}
+.rail a:hover{background:var(--surface);color:var(--ink);border-left-color:var(--accent)}
+.rail a span:first-child{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-3);padding-top:1px}
+.rail a.new span:first-child{color:var(--accent)}
+
+main{padding-bottom:90px;min-width:0}
+section{margin-bottom:56px;scroll-margin-top:18px}
+h2{
+  font-family:Newsreader,Georgia,serif;font-weight:600;
+  font-size:clamp(25px,3.6vw,33px);line-height:1.14;letter-spacing:-.012em;
+  margin:0 0 6px;text-wrap:balance;
+  display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;
+}
+h2 .num{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:500;
+  color:var(--accent);letter-spacing:.04em;
+}
+.subhead{
+  font-size:13px;color:var(--ink-2);margin:0 0 22px;padding-bottom:14px;
+  border-bottom:1px solid var(--rule);max-width:76ch;
+}
+h3{
+  font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:16px;
+  letter-spacing:-.005em;margin:32px 0 8px;color:var(--ink);
+}
+h4{
+  font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:11px;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);
+  margin:24px 0 8px;
+}
+p{margin:0 0 13px;max-width:78ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:78ch}
+li{margin-bottom:6px}
+li::marker{color:var(--ink-3)}
+strong{font-weight:600}
+a{color:var(--accent)}
+hr{border:0;border-top:1px solid var(--rule);margin:34px 0}
+
+code{
+  font-size:12.5px;background:var(--surface-2);color:var(--ink);
+  padding:1px 4px;border-radius:2px;word-break:break-word;
+}
+.anchor{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;
+  color:var(--accent);background:none;padding:0;
+  border-bottom:1px dotted var(--accent);
+}
+
+.badge{
+  display:inline-block;font-family:"IBM Plex Mono",monospace;
+  font-size:9.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  padding:2px 6px;border-radius:2px;vertical-align:2px;white-space:nowrap;
+}
+.b-crit{background:var(--crit-soft);color:var(--crit)}
+.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-acc{background:var(--accent-soft);color:var(--accent)}
+.b-mute{background:var(--surface-2);color:var(--ink-2)}
+
+.rev{
+  background:var(--surface);border:1px solid var(--rule-soft);
+  border-left:3px solid var(--ink-3);
+  padding:14px 16px;margin:16px 0;border-radius:0 3px 3px 0;box-shadow:var(--shadow);
+}
+.rev > .rl{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
+  display:block;margin-bottom:7px;
+}
+.rev p:last-child,.rev ul:last-child,.rev ol:last-child{margin-bottom:0}
+.rev p{max-width:72ch}
+.r-refuted{border-left-color:var(--crit)}
+.r-refuted > .rl{color:var(--crit)}
+.r-corrected{border-left-color:var(--warn)}
+.r-corrected > .rl{color:var(--warn)}
+.r-new{border-left-color:var(--accent)}
+.r-new > .rl{color:var(--accent)}
+.r-held{border-left-color:var(--ok)}
+.r-held > .rl{color:var(--ok)}
+
+.key{
+  display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);
+  grid-template-columns:1fr;margin-bottom:34px;
+}
+@media (min-width:640px){.key{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:940px){.key{grid-template-columns:repeat(4,1fr)}}
+.key > div{background:var(--surface);padding:11px 13px}
+.key .kl{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:3px;
+}
+.key .kd{font-size:12px;color:var(--ink-2);line-height:1.45}
+
+.tw{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--rule-soft)}
+thead th{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);
+  background:var(--surface-2);border-bottom:1px solid var(--rule);white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+td.ctr{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:11px}
+table code{font-size:11.5px;background:none;padding:0;color:var(--ink-2)}
+table .anchor{font-size:11.5px}
+
+pre{
+  background:var(--surface);border:1px solid var(--rule);
+  padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.55;
+  margin:16px 0;color:var(--ink-2);
+}
+pre b{color:var(--ink);font-weight:600}
+pre .c{color:var(--ink-3)}
+pre .a{color:var(--accent)}
+pre .x{color:var(--crit)}
+
+.band{margin:34px 0 8px;padding:10px 0 0;border-top:2px solid var(--ink)}
+.band .bl{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+}
+.band .bd{font-size:12.5px;color:var(--ink-2);margin:3px 0 0;max-width:74ch}
+.wave{
+  background:var(--surface);border:1px solid var(--rule);
+  padding:16px 18px;margin:14px 0;box-shadow:var(--shadow);
+}
+.wave > h3{
+  margin:0 0 10px;font-size:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;
+}
+.wave > h3 .wid{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);
+  font-weight:600;letter-spacing:.03em;
+}
+.wave dl{display:grid;grid-template-columns:1fr;margin:0}
+@media (min-width:620px){.wave dl{grid-template-columns:120px minmax(0,1fr)}}
+.wave dt{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  padding:7px 0 0;border-top:1px solid var(--rule-soft);
+}
+.wave dd{margin:0;padding:7px 0 9px;font-size:13.5px;border-top:1px solid var(--rule-soft)}
+@media (max-width:619px){
+  .wave dt{border-top:1px solid var(--rule-soft);padding-bottom:0}
+  .wave dd{border-top:0;padding-top:1px}
+}
+
+.tiles{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);grid-template-columns:1fr}
+@media (min-width:780px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{background:var(--surface);padding:17px 18px}
+.tile .tl{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:8px;
+}
+.tile .tv{
+  font-family:Newsreader,Georgia,serif;font-size:20px;line-height:1.22;
+  font-weight:500;letter-spacing:-.01em;margin:0 0 7px;color:var(--ink);
+}
+.tile .tb{font-size:12.5px;color:var(--ink-2);line-height:1.5;margin:0}
+.tile .tb + .tb{margin-top:7px}
+
+.footnote{font-size:12.5px;color:var(--ink-2);max-width:76ch}
+.lead{font-size:16.5px;line-height:1.6;max-width:74ch}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="shell">
+
+<header class="mast">
+  <div class="eyebrow">Waves 2 + 3 consolidated &middot; revision 2</div>
+  <h1>Proposal Surface</h1>
+  <p class="dek">The machine proposes. Nothing yet lets a person say yes to part of it &mdash; and the apply path is weaker than it was graded.</p>
+  <div class="meta">
+    <span><b>HEAD</b> bd65e4b6</span>
+    <span><b>branch</b> master</span>
+    <span><b>date</b> 2026-09-14</span>
+    <span><b>basis</b> probes C1 / C7 / C2 / apply-path</span>
+    <span><b>this pass</b> crucible folded at source &mdash; 3 lenses, 16 findings</span>
+  </div>
+</header>
+
+<div class="layout">
+
+<nav class="rail" aria-label="Contents">
+  <div class="rl">Contents</div>
+  <ol>
+    <li><a href="#s1"><span>01</span><span>Verdict</span></a></li>
+    <li><a href="#s2"><span>02</span><span>What already exists</span></a></li>
+    <li><a href="#s3"><span>03</span><span>C1 &mdash; the card</span></a></li>
+    <li><a href="#s4"><span>04</span><span>C7 &mdash; scope, resume</span></a></li>
+    <li><a href="#s5"><span>05</span><span>C2 &mdash; vocabulary</span></a></li>
+    <li><a href="#s6"><span>06</span><span>The apply path</span></a></li>
+    <li><a href="#s7"><span>07</span><span>Classification</span></a></li>
+    <li><a href="#s8"><span>08</span><span>Gated-surface impact</span></a></li>
+    <li><a href="#s9"><span>09</span><span>Build order</span></a></li>
+    <li><a href="#s10"><span>10</span><span>Seat / gated runs</span></a></li>
+    <li><a href="#s11"><span>11</span><span>Unknowns</span></a></li>
+    <li><a href="#s12" class="new"><span>12</span><span>Contested findings</span></a></li>
+    <li><a href="#s13" class="new"><span>13</span><span>CTO summary</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<div class="key" aria-label="Revision key">
+  <div><span class="kl" style="color:var(--crit)">Refuted</span><span class="kd">The prior claim was false. It is gone, and the replacement says what is true.</span></div>
+  <div><span class="kl" style="color:var(--warn)">Corrected</span><span class="kd">Right in substance, wrong in scope, grade, or mechanism.</span></div>
+  <div><span class="kl" style="color:var(--accent)">New</span><span class="kd">Work the crucible surfaced that was not in the draft at all.</span></div>
+  <div><span class="kl" style="color:var(--ok)">Held</span><span class="kd">Attacked and survived. Recorded so nobody re-litigates it.</span></div>
+</div>
+
+<section id="s1">
+<h2><span class="num">01</span><span>Verdict</span></h2>
+<p class="subhead">Two halves of one path. The machine half runs but does not guarantee what it claims; the human half is complete, styled, tested &mdash; and has never been reachable.</p>
+
+<p class="lead">The machine half of the proposal path <strong>is built and has run</strong> &mdash; propose &rarr; validate &rarr; park &rarr; apply is real code with <strong>57</strong> <code>instantiate_graph</code> and <strong>65</strong> <code>propose_graph</code> provenance records already on disk <em>(producer: <code>python -c</code> over <code>.synapse/provenance/*.json</code>, counting the <code>op</code> key; 5,000 of 5,001 files parsed &mdash; the 5,001st is a <code>.tmp</code>)</em>. What it does <strong>not</strong> do is hold the three guarantees it was graded on. Of "one undo group / one main-thread dispatch / one cook": one is asserted without evidence, one is three dispatches under a 10-second bound that does not stop the payload it abandons, and one does not exist.</p>
+
+<p>The human half &mdash; the surface where a person reads what the machine proposes and says yes to <em>part</em> of it &mdash; is a <strong>complete, styled, test-covered widget wired to a gate that nothing in production feeds</strong>. <code>get_process_bridge()</code> is the only non-test constructor of <code>LosslessExecutionBridge</code> in the tree (<span class="anchor">shared/bridge.py:2942</span>; grep for <code>LosslessExecutionBridge(</code> returns exactly one production hit) and it builds gate-less: <code>bridge._gate = None</code> with <code>consent_callback=lambda op: True</code> (<span class="anchor">shared/bridge.py:2942-2943</span>). <code>_check_consent</code> therefore never reaches Path 1 (<span class="anchor">shared/bridge.py:2436-2450</span>), <code>_propose_gate</code> is never called (<span class="anchor">shared/bridge.py:2452-2464</span>), <code>HumanGate.propose()</code> has no production caller, and <code>_ProposalCard</code> never renders.</p>
+
+<p><strong>The single thing most in the way is not the card's shape &mdash; it is that the card has no producer, and the obvious wiring re-arms a confirmed main-thread self-deadlock</strong> that the codebase documents in its own words: <em>"&#9888; MAIN-THREAD HAZARD &mdash; currently UNREACHABLE, and that is load-bearing"</em> (<span class="anchor">shared/bridge.py:2517-2540</span>), pinned by <span class="anchor">tests/test_panel_consent_no_freeze.py:35</span>. C1 as briefed (hunk list, Apply/Edit/Skip, Apply-all, typed approval) is buildable on existing primitives and is <em>not</em> the hard part; the hard part is a non-blocking panel dispatch, which is panel-side work the bridge file explicitly refuses to paper over.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; what changed in this sentence</span>
+  <p>The draft opened with "built, tested, and has run." <strong><em>Tested</em> is withdrawn from that list for the apply path</strong>, and the guarantee qualifier is inline rather than appended. The apply path's pinning suite (<span class="anchor">tests/test_graph_builder_mile3.py:1-21</span>, <em>"Four scenarios, all driven by a FAKE hou"</em>) installs a hand-rolled <code>_FakeUndos</code> with no <code>areEnabled</code> &mdash; so it proves the undo call was <em>made</em>, never that an undo entry exists or that one Ctrl+Z reverses it. Detail and the replacement grade in &sect;6.1.</p>
+</div>
+
+<p><strong>Order of operations follows from that split.</strong> Everything ungated and headless-testable is cheap and unblocks the verification loop (&sect;9 Band A). Everything the crucible found wrong on the apply path is correctness debt that must land before anyone trusts an apply result (Band B). The card itself cannot move until a producer exists, and the producer is the one item that can re-arm a live freeze (Band D).</p>
+</section>
+
+<section id="s2">
+<h2><span class="num">02</span><span>What already exists</span></h2>
+<p class="subhead">Lead finding: three of the things this wave was scoped to build already exist and are unwired. That is still the cheapest win on the board.</p>
+
+<div class="rev r-held">
+  <span class="rl">Held &mdash; this section was attacked hardest and audited clean</span>
+  <p>A wrong "already exists" here means skipped work, so the anchor-audit lens opened every primitive this section claims is built. <strong>Zero false existence claims.</strong> <code>GateDecision.MODIFIED</code>, <code>decide(modified_changes=)</code> at 416-455, <code>decide_batch</code> at 488-517, <code>approve_all</code>/<code>reject_all</code> at 519-535, the four unused <code>GateProposal</code> dict fields, <code>Catalog.has_type</code> at 183-185, <code>bridge_adapter.py:153</code> and <code>:361</code> &mdash; each verbatim at the cited line. The negative claims held too: zero <code>sequence_id</code> anywhere under <code>python/synapse/panel/</code>. One defect found, in the &sect;2.3 enumeration, corrected below.</p>
+</div>
+
+<h3>2.1 &nbsp;The honest accounting of v5.68.0 "proposal controls"</h3>
+<p>Commit <code>8c23fccc</code>, 41 files. Only <strong>two</strong> touch <code>python/synapse/panel/</code>, and neither touches the consent card.</p>
+
+<div class="tw"><table>
+<thead><tr><th>What shipped</th><th>Anchor</th><th>What it actually bought</th></tr></thead>
+<tbody>
+<tr><td><code>synapse_instantiate_graph</code> &rarr; <code>build_from_manifest</code> operation row</td><td><span class="anchor">panel/bridge_adapter.py:153</span></td><td>Closes a real hole: before this, the tool fell through <code>_TOOL_TO_OPERATION.get(tool_name, "set_parameter")</code> (<span class="anchor">bridge_adapter.py:361</span>) &rarr; gate <strong>inform</strong> on the /mcp bridge path. Now <strong>review</strong>.</td></tr>
+<tr><td>New <code>proposal</code> worker mode</td><td><span class="anchor">panel/worker_policy.py:51-58, 162-180</span></td><td>Registered reads + the declared recipe-proposal tool + declared knowledge groups. Everything else denied, <em>"graph application belongs to the reviewed host path"</em> (<span class="anchor">worker_policy.py:178-179</span>).</td></tr>
+<tr><td>~39 other files</td><td>installer/setup toolchain, <code>host/graph_builder.py</code>, <code>host/graph_oracle.py</code>, <code>host/existence_adapter.py</code>, per-build graph-truth fixtures 22.0.400 / 22.0.417</td><td>Host plumbing and receipts. No UI.</td></tr>
+</tbody></table></div>
+
+<p><strong>So: "proposal controls" was a worker-policy and host-gate change, not a consent-surface change.</strong> The C1 card is exactly as it was.</p>
+<p>It also means the brief's ESTABLISHED FACT &mdash; <em>"<code>synapse_instantiate_graph</code> has no operation row"</em> &mdash; <strong>is stale by one commit</strong>. The row exists at HEAD.</p>
+
+<h3>2.2 &nbsp;The approval primitives that already exist and are unused</h3>
+<div class="tw"><table>
+<thead><tr><th>Primitive</th><th>Anchor</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>GateDecision.MODIFIED</code> &mdash; "Approved with changes"</td><td><span class="anchor">core/gates.py:47</span></td><td>Enum value exists</td></tr>
+<tr><td><code>HumanGate.decide(&hellip;, modified_changes=&hellip;)</code> &mdash; writes <code>proposal.modified_changes</code>, routes through audit at <code>GATE_APPROVAL</code> level</td><td><span class="anchor">core/gates.py:416-455</span></td><td><strong>The consuming half of "Edit" is fully built.</strong> Panel produces nothing into it.</td></tr>
+<tr><td><code>HumanGate.decide_batch(sequence_id, decisions, user_id)</code></td><td><span class="anchor">core/gates.py:488-517</span></td><td><strong>"Apply-all" exists as a core primitive.</strong></td></tr>
+<tr><td><code>HumanGate.approve_all(&hellip;)</code> / <code>reject_all</code></td><td><span class="anchor">core/gates.py:519-535</span></td><td>Same. Zero panel references; <code>gate_widget.py</code> has no <code>sequence_id</code> at all.</td></tr>
+<tr><td><code>GateProposal.proposed_changes</code> / <code>preview_data</code> / <code>rollback_data</code> / <code>modified_changes</code></td><td><span class="anchor">core/gates.py:52-117</span></td><td>Four dict fields already on the wire, dropped on the floor by the card</td></tr>
+</tbody></table></div>
+
+<h3>2.3 &nbsp;The per-build vocabulary that GraphValidator does not read</h3>
+<p><code>python/synapse/validation/catalog.py</code> &mdash; pure-Python, zero-<code>hou</code>, per-build, env-overridable, degrade-safe node-schema lookup (W5-PARMGATE target 2):</p>
+<ul>
+<li><code>Catalog.has_type(category, node_type) -&gt; bool</code> &mdash; <span class="anchor">validation/catalog.py:183-185</span></li>
+<li><code>Catalog.parms(category, node_type) -&gt; frozenset[str] | None</code> &mdash; <span class="anchor">validation/catalog.py:171-181</span></li>
+<li><code>Catalog.signature(&hellip;) -&gt; list[dict] | None</code> &mdash; <span class="anchor">validation/catalog.py:154-169</span></li>
+<li>module-level <code>parms()</code> / <code>signature()</code> (<span class="anchor">validation/catalog.py:210-217</span>), <code>default_catalog()</code> (<span class="anchor">:192-201</span>)</li>
+<li><code>None</code> means <strong>"no authority"</strong>, never a false reject (<span class="anchor">validation/catalog.py:20-24</span>)</li>
+</ul>
+
+<p>Backed by <code>rag/catalog/h22.0.400/</code> &mdash; <strong>19 category files</strong>, <strong>7,862 node types</strong>, <code>total_probe_errors: 0</code>, per-file blake2b.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; the enumeration dropped a row, and the manifest is off by one</span>
+  <p>The draft said "18 categories" and listed 18 rows summing to <strong>7,412</strong> against a stated total of 7,862 &mdash; a <strong>450</strong>-entry hole exactly equal to <code>Data.json</code>, which was omitted. The total and the manifest's own <code>category_count</code> field are both right; the <em>directory holds 19 category files</em>, and the manifest under-reports by one.</p>
+  <p><strong>Producer</strong> (re-run this pass): <code>python -c</code> summing <code>_manifest.json["files"][*]["count"]</code> &rarr; <code>category_count field: 18 &middot; n files keys: 19 &middot; TOTAL 7862 &middot; probe errors 0</code>.</p>
+  <p><strong>Why it points the wrong way:</strong> &sect;5.2 warns that catalog-<code>None</code> must mean "no authority," never "does not exist." A builder scoping coverage from the draft's table would treat <code>Data</code> as uncatalogued when the catalog holds 450 Data types &mdash; manufacturing precisely the false-<code>None</code> path &sect;5.2 exists to prevent. <strong>W1 must derive coverage from <code>files.keys()</code> or the directory glob, never from a hand-copied table.</strong></p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Category file</th><th class="num">Types</th><th>Category file</th><th class="num">Types</th></tr></thead>
+<tbody>
+<tr><td><code>apex_callbacks.json</code></td><td class="num">2,286</td><td><code>Cop2.json</code></td><td class="num">169</td></tr>
+<tr><td><code>Sop.json</code></td><td class="num">1,690</td><td><code>Chop.json</code></td><td class="num">149</td></tr>
+<tr><td><code>Vop.json</code></td><td class="num">1,305</td><td><code>Driver.json</code></td><td class="num">90</td></tr>
+<tr><td><code>Dop.json</code></td><td class="num">505</td><td><code>VopNet.json</code></td><td class="num">17</td></tr>
+<tr><td><strong><code>Data.json</code></strong> <span class="badge b-warn">restored</span></td><td class="num"><strong>450</strong></td><td><code>CopNet.json</code></td><td class="num">3</td></tr>
+<tr><td><code>Cop.json</code></td><td class="num">385</td><td><code>TopNet.json</code></td><td class="num">2</td></tr>
+<tr><td><code>Lop.json</code></td><td class="num">222</td><td><code>ChopNet.json</code></td><td class="num">1</td></tr>
+<tr><td><code>Shop.json</code></td><td class="num">219</td><td><code>Director.json</code></td><td class="num">0</td></tr>
+<tr><td><strong><code>Object.json</code></strong></td><td class="num"><strong>186</strong></td><td><code>Manager.json</code></td><td class="num">0</td></tr>
+<tr><td><code>Top.json</code></td><td class="num">183</td><td><strong>TOTAL &mdash; 19 files</strong></td><td class="num"><strong>7,862</strong></td></tr>
+</tbody></table></div>
+
+<p>Each entry carries <code>parms</code> (name-bearing), plus <code>min_inputs</code> / <code>max_inputs</code> / <code>max_outputs</code> <em>(producer: <code>json.load('rag/catalog/h22.0.400/Object.json')</code>, entry <code>agentcam</code> &rarr; 47 parms, keys <code>['deprecated','is_generator','is_manager','label','max_inputs','max_outputs','min_inputs','parms']</code>, file-level <code>"category": "Object"</code>)</em>.</p>
+
+<p><strong>That is node-type existence, parameter existence, and wiring arity &mdash; the exact three things P1/P2/P3 need &mdash; already on disk, per build, pure Python.</strong></p>
+
+<div class="rev r-new">
+  <span class="rl">New &mdash; the arity fields matter more than the draft realised</span>
+  <p>Closing <strong>U5</strong> this pass (&sect;11) showed <code>ConnectivityOracle</code> <strong>also</strong> hard-imports <code>hou</code> at module scope &mdash; <span class="anchor">host/graph_oracle.py:17</span>, under a docstring that opens <em>"Connectivity checks through live hou introspection."</em> So a catalog-backed <em>existence</em> oracle alone leaves the validator still <code>hou</code>-bound, and W1 as drafted would have half-delivered its headline benefit.</p>
+  <p>But the catalog already carries <code>min_inputs</code>/<code>max_inputs</code>/<code>max_outputs</code> per entry &mdash; <strong>one file can back both oracles</strong>, and only then does the whole validator go headless. W1 gains a sibling adapter: roughly 1.6&times; the cost, roughly 2&times; the value, and the difference between "existence is testable headless" and "validation is testable headless."</p>
+</div>
+
+<p>Already consumed by the recipes subsystem: <span class="anchor">recipes/spec.py:65,73</span> reads <code>rag/catalog/h22.0.400/Lop.json</code>; <span class="anchor">recipes/contracts.py:177</span> carries a <code>catalog_digest</code> field pinning types. <strong>Not consumed by <code>GraphValidator</code>.</strong></p>
+
+<h3>2.4 &nbsp;The rest of the standing surface</h3>
+<div class="tw"><table>
+<thead><tr><th>Thing</th><th>Anchor</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td><code>_ProposalCard</code> &mdash; 3-band card (header: level badge + op + agent; body: flat description; footer: countdown + verbs)</td><td><span class="anchor">panel/gate_widget.py:169-359</span></td><td>686-line file (<code>wc -l</code>)</td></tr>
+<tr><td><code>GateWidget</code> &mdash; <code>proposal_id &rarr; card</code> dict, own fold or lent to chat's consent slot (BC-6a/6b)</td><td><span class="anchor">panel/gate_widget.py:362-560</span></td><td>INFORM silently dropped at <span class="anchor">:545-546</span></td></tr>
+<tr><td>The one host call every approval route must reach</td><td><span class="anchor">gate_widget.py:586</span> (<code>_on_approve</code>), <span class="anchor">:616</span> (<code>_on_reject</code>)</td><td><code>HumanGate.get_instance().decide(proposal_id, GateDecision.APPROVED|REJECTED, "panel_artist")</code></td></tr>
+<tr><td>RULING 18 honesty: a decision that never reached the gate renders <strong>NOT RECORDED</strong> and stays enabled</td><td><span class="anchor">gate_widget.py:336-345</span> (<code>mark_gate_unreachable</code>), called <span class="anchor">:591</span>, <span class="anchor">:621</span></td><td>Already refuses to report false success</td></tr>
+<tr><td>APPLY: one undo group wrapping create &rarr; set parms &rarr; connect &rarr; read-back</td><td><span class="anchor">host/graph_builder.py:126</span>, body <span class="anchor">:131-159</span></td><td>287 lines (<code>wc -l</code>). <strong>Grade downgraded &mdash; &sect;6.1.</strong></td></tr>
+<tr><td>APPLY: main-thread dispatch</td><td><span class="anchor">server/handlers_graph_synth.py:93</span> (<code>run_on_main</code>)</td><td>93 lines. <strong>Not one dispatch &mdash; &sect;6.2.</strong></td></tr>
+<tr><td>TOCTOU re-validation before any mutation, zero-mutation on refusal</td><td><span class="anchor">graph_builder.py:89-115</span></td><td>Never enters the undo group</td></tr>
+<tr><td>Tier-0 provenance on every mutating command</td><td><span class="anchor">core/floor_gate.py:297-340</span> via <code>CommandHandlerRegistry.invoke()</code> at <span class="anchor">server/handlers.py:404</span></td><td><strong>Fires for real</strong> &mdash; 57 <code>instantiate_graph</code> records on disk</td></tr>
+<tr><td>Graph-truth receipts, two builds</td><td><code>harness/notes/graph_truth_22.0.400.json</code>, <code>..._22.0.417.json</code></td><td>48/48 symbol presence PASS + a real multi-node build</td></tr>
+<tr><td><code>NodeKind.EXISTING</code></td><td><span class="anchor">cognitive/graph_proposal.py:13-16</span></td><td>First-class today</td></tr>
+<tr><td>Per-build connectivity + LOP catalogs, <strong>H22 present</strong></td><td><code>cognitive/tools/data/connectivity_22.json</code>, <code>lop_solaris_knowledge_22.json</code></td><td>Closes the C2 probe's open "is connectivity_22 stale?" &mdash; it exists</td></tr>
+</tbody></table></div>
+</section>
+<section id="s3">
+<h2><span class="num">03</span><span>C1 &mdash; the card</span></h2>
+<p class="subhead">A working steering wheel bolted to a car whose engine was removed on purpose. The removal reason is written down, and it is load-bearing.</p>
+
+<h3>3.1 &nbsp;What renders today</h3>
+<p>One <code>GateProposal</code> &rarr; one <code>c.Card</code> with three bands:</p>
+<ul>
+<li><strong>header</strong> &mdash; level badge, operation name (mono), agent id &middot; <span class="anchor">gate_widget.py:214-228</span></li>
+<li><strong>body</strong> &mdash; the single <code>description</code> string, word-wrapped; plus one fixed line <em>"Arbitrary code execution"</em> when level is <code>critical</code> &middot; <span class="anchor">gate_widget.py:230-244</span></li>
+<li><strong>footer</strong> &mdash; countdown (approve/critical) + verbs &middot; <span class="anchor">gate_widget.py:246-305</span></li>
+</ul>
+<p>Verbs: REVIEW gets one &mdash; <code>&larr; REVERT</code> (rejects to the ledger <em>and</em> asks the panel to undo). APPROVE/CRITICAL get REJECT + APPROVE, with CRITICAL's APPROVE behind a confirm dialog.</p>
+
+<p><strong>There is no hunk concept anywhere in the panel.</strong> <code>hunk</code> has <strong>zero word-boundary hits</strong> under <code>python/synapse/panel</code>.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; grep wording</span>
+  <p>The draft said "the literal string <code>hunk</code> has zero hits," which is false as literally worded: <code>stream_chunk</code> and the QSS <code>::chunk</code> pseudo-element both contain those four characters. The true statement is <strong>zero <code>grep -w</code> hits</strong>. The conclusion is unaffected &mdash; no hunk concept exists in the panel &mdash; but the sentence now says what was actually run.</p>
+</div>
+
+<h3>3.2 &nbsp;What a hunk list requires</h3>
+<div class="tw"><table>
+<thead><tr><th>Need</th><th>Cheapest carrier that already exists</th><th>Gap</th></tr></thead>
+<tbody>
+<tr><td>Hunk data on the wire</td><td><code>GateProposal.proposed_changes</code> / <code>preview_data</code> (<span class="anchor">core/gates.py:52-117</span>, non-frozen dicts)</td><td>Nothing populates or reads them</td></tr>
+<tr><td>Per-hunk verb rows</td><td>new rows in the body band</td><td>Card emits exactly one decision for the whole proposal</td></tr>
+<tr><td>Per-hunk decision routing</td><td><strong>three</strong> options, not two &mdash; see below</td><td>&mdash;</td></tr>
+<tr><td>Edit &rarr; <code>MODIFIED</code></td><td><code>decide(&hellip;, modified_changes=&hellip;)</code> (<span class="anchor">core/gates.py:416-455</span>) already persists + audits it</td><td>UI produces nothing</td></tr>
+<tr><td>Apply-all</td><td><code>approve_all</code> / <code>decide_batch</code> (<span class="anchor">core/gates.py:488-535</span>)</td><td>Unreachable from panel; <code>gate_widget.py</code> has no <code>sequence_id</code></td></tr>
+<tr><td>Typed chat approval</td><td>&mdash;</td><td>No chat-text&rarr;gate parser exists (grep on <code>synapse_panel.py</code>: zero hits)</td></tr>
+</tbody></table></div>
+
+<p><strong>On per-hunk routing &mdash; the third option matters.</strong> The probe framed this as a two-horn dilemma (extend <code>decide()</code> for sub-items, <em>or</em> one <code>GateProposal</code> per hunk which breaks the one-line case). There is a third: <strong>mint hunks as <code>GateProposal</code>s sharing one <code>sequence_id</code>, front them behind one compact card, settle them with <code>decide_batch</code> / <code>approve_all</code>.</strong> That is the class's own documented design intent (<span class="anchor">core/gates.py:196-226</span>: <em>"Supports per-sequence batch approval workflow"</em>). It needs <code>sequence_id</code> threading into the card model &mdash; real plumbing, but not invented semantics.</p>
+
+<h3>3.3 &nbsp;The host call every approval route must share</h3>
+<pre><b>HumanGate.get_instance().decide(proposal_id, GateDecision.&hellip;, "panel_artist")</b></pre>
+<p>Exactly two production call sites: <span class="anchor">gate_widget.py:586</span> and <span class="anchor">gate_widget.py:616</span>. (The only other <code>.decide(</code> hits are <span class="anchor">core/gates.py:225</span> &mdash; an inert docstring example &mdash; and <span class="anchor">core/gates.py:514</span> &mdash; <code>decide_batch</code> calling itself.) <strong>The choke point is genuinely narrow.</strong> Hunk verbs, Apply-all, and typed chat approval all converge there.</p>
+
+<h3>3.4 &nbsp;Can a one-hunk proposal render as one line?</h3>
+<p><strong>No.</strong> The only existing collapse is <span class="anchor">gate_widget.py:242-243</span> &mdash; hide the <em>body</em> band when there is no description and the level is not critical. Header and footer bands still build: badge, operation label, agent label, countdown label, verb buttons, each in its own layout. <strong>Every proposal today is a three-band ceremony at minimum.</strong> There is no compact code path to extend.</p>
+
+<h3>3.5 &nbsp;The blocker underneath all of it</h3>
+<p><code>GateWidget._register_gate_callbacks</code> (<span class="anchor">gate_widget.py:492-500</span>) subscribes to <code>HumanGate.get_instance().on_proposal</code> / <code>.on_decision</code>. The only production producer into <code>HumanGate</code> is <code>LosslessExecutionBridge._propose_gate</code> (<span class="anchor">shared/bridge.py:2452-2464</span>), reached only when <code>self._gate is not None</code>.</p>
+<p><code>_gate</code> is <code>None</code> on every production instance:</p>
+<ul>
+<li><code>get_process_bridge()</code> &mdash; the single production constructor &mdash; sets it (<span class="anchor">shared/bridge.py:2942-2943</span>)</li>
+<li><code>bridge_adapter.get_bridge()</code> re-asserts it (<span class="anchor">panel/bridge_adapter.py:230</span>) and installs <code>_panel_consent</code>, which returns <code>True</code> unconditionally (<span class="anchor">bridge_adapter.py:190-205</span>)</li>
+<li>pinned by <span class="anchor">tests/test_panel_consent_no_freeze.py:35</span> (<code>assert bridge._gate is None</code>)</li>
+</ul>
+
+<p><strong>The removal reason</strong> is documented at <span class="anchor">shared/bridge.py:2517-2540</span>: the APPROVE/CRITICAL poll is a blocking <code>time.sleep</code> bounded at 120s/300s, reachable on Houdini's main thread via <code>tool_executor &rarr; bridge_adapter.execute_through_bridge &rarr; bridge.execute</code>, and <em>"If this poll ever ran there it would be a self-deadlock, not merely a freeze&hellip; That exact freeze was confirmed live 2026-06-01."</em> The file names the fix and refuses to do it: <em>"The fix would be to make the panel's dispatch non-blocking (panel-side, not this file) &mdash; do NOT paper over it by shortening the timeout here."</em></p>
+
+<h3>3.6 &nbsp;Needs a live seat</h3>
+<ul>
+<li>The card actually appearing in the CHAT consent slot (BC-6a/6b lending) under a real proposal &mdash; <strong>GUI seat</strong>, no headless substitute (<code>hou.ui</code> is absent from the headless symbol table).</li>
+<li>Countdown behaviour and the CRITICAL confirm dialog under live Qt &mdash; <strong>GUI seat</strong>.</li>
+<li>A single-line compact card's real rendered height &mdash; <strong>GUI seat</strong> (offscreen hython can measure widget counts; visual weight needs eyes).</li>
+</ul>
+</section>
+
+<section id="s4">
+<h2><span class="num">04</span><span>C7 &mdash; scope, and what governs resume</span></h2>
+<p class="subhead">The vocabulary the brief uses does not exist in the code. What exists is a cooperative abort flag and a set of kill switches &mdash; one of which is misfiled.</p>
+
+<h3>4.1 &nbsp;"Takeover" is not in the codebase</h3>
+<p>Grep for <code>takeover|take over</code> across <code>python/synapse/</code> and <code>shared/</code>: <strong>zero hits.</strong></p>
+<p>The vocabulary is real, but it lives only in the design doc: <span class="anchor">INTENT.md:94-96</span> &mdash; <em>"<strong>Take over or Stop:</strong> immediately blocks further automated input and queued actions."</em></p>
+
+<p><strong>The real code vocabulary is:</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Code term</th><th>Anchor</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>Stop</code> / <code>_on_stop</code></td><td><span class="anchor">panel/synapse_panel.py:3469-3485</span></td><td>Cooperative abort at the next tool/iteration boundary; revokes model connections; sets <code>self._stopping</code></td></tr>
+<tr><td><code>"Stopping&hellip;"</code></td><td><span class="anchor">synapse_panel.py:159</span> (<code>_STOPPING_PHRASE</code>)</td><td>The honest in-between state &mdash; the one INTENT state with a code analogue</td></tr>
+<tr><td><code>_abort</code></td><td>checked at <span class="anchor">synapse_panel.py:3276</span></td><td>The worker's flag</td></tr>
+<tr><td><code>render_stop</code>, <code>emergency_halt</code>, <code>render_farm_cancel</code>, <code>render_processes</code></td><td><span class="anchor">handlers.py:227-241</span> &mdash; all four in <code>_READ_ONLY_COMMANDS</code></td><td>Per-subsystem kill switches, classified read-only <em>so they bypass the C5 mutation lock</em> &mdash; <em>"the difference between a kill switch and a decoration"</em></td></tr>
+<tr><td><code>tops_cancel_cook</code></td><td>registered <span class="anchor">handlers.py:693</span>, audited <span class="anchor">handlers.py:145</span> &mdash; <strong>NOT</strong> in <code>_READ_ONLY_COMMANDS</code></td><td>The same shape as the four above and classified the opposite way. See the correction below.</td></tr>
+</tbody></table></div>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; and the refutation inverts the draft's own argument</span>
+  <p>The draft listed <strong>four</strong> names as <em>"all deliberately in <code>_READ_ONLY_COMMANDS</code>"</em> and included <code>tops_cancel_cook</code>. <strong><code>tops_cancel_cook</code> is not in the set.</strong> Producer, re-run this pass: <code>sed -n '204,245p' python/synapse/server/handlers.py</code> &rarr; the frozenset holds <code>render_processes</code>, <code>render_stop</code>, <code>emergency_halt</code>, <code>render_farm_cancel</code>; <code>grep -n tops_cancel_cook handlers.py</code> &rarr; exactly two hits, <code>:145</code> (<code>AuditCategory.PIPELINE</code>) and <code>:693</code> (<code>reg.register</code>). Neither is membership.</p>
+  <p><strong>The draft quoted <em>"the difference between a kill switch and a decoration"</em> as evidence the kill switches are correctly classified &mdash; and picked as its example the one kill switch that is an instance of the defect.</strong> Because <code>_mutating = cmd_type not in _READ_ONLY_COMMANDS</code> and <code>_serialize</code> is true off-main (<span class="anchor">handlers.py:509-520</span>), a mutating-classified <code>tops_cancel_cook</code> <strong>queues behind the very PDG cook it exists to cancel</strong>. A builder reading the draft concludes TOPS cancel is already safe and skips work that was never done.</p>
+  <p><strong>Consequence for &sect;9:</strong> this is not a caveat, it is a work item. It becomes <strong>W3</strong> &mdash; and it is a <em>stronger</em> instance than the draft's own W1, because the justification is already written in the tree verbatim (<span class="anchor">handlers.py:227-241</span>) and the operation is main-thread-independent in the same way <code>render_farm_cancel</code> is.</p>
+</div>
+
+<p><strong>There is no state that blocks further automated input distinct from aborting the loop.</strong> Stop and Take-over are one thing in code, and that thing is a cooperative flag.</p>
+
+<h3>4.2 &nbsp;Engagement state: code vs. document</h3>
+<div class="tw"><table>
+<thead><tr><th>INTENT.md &sect;3 field</th><th>In code?</th><th>Closest thing</th></tr></thead>
+<tbody>
+<tr><td>Identity</td><td><strong>No</strong></td><td>&mdash;</td></tr>
+<tr><td>Goal</td><td><strong>No</strong></td><td>&mdash;</td></tr>
+<tr><td>Capabilities</td><td><strong>Partial</strong></td><td><code>BoundConnection</code> (<span class="anchor">panel/connections.py:216-240</span>) with <code>.spec</code>, <code>.facts</code>, <code>.revoke()</code> &mdash; but this is a <strong>model-provider lease</strong> (endpoint/model), not a scene-capability lease</td></tr>
+<tr><td>Change boundary</td><td><strong>No</strong></td><td>Nothing scopes by asset/node/parameter/file anywhere</td></tr>
+<tr><td>Action scope</td><td><strong>Coarse only</strong></td><td><code>resolve_mode()</code> (<span class="anchor">worker_policy.py:82-103</span>) &mdash; 5 values, env-only</td></tr>
+<tr><td>Starting state</td><td><strong>No</strong></td><td><code>GraphProposal.scene_fingerprint</code> (<span class="anchor">graph_proposal.py:63</span>) is per-proposal, not per-engagement</td></tr>
+<tr><td>Limits</td><td><strong>No</strong></td><td>&mdash;</td></tr>
+<tr><td>Handoff</td><td><strong>No</strong></td><td>&mdash;</td></tr>
+</tbody></table></div>
+
+<p><strong>Control lifecycle</strong> (<span class="anchor">INTENT.md:82-93</span>, seven states): one has a code analogue (<code>Stopping</code>). One has a <em>structural</em> analogue &mdash; <code>HoudiniUnavailableError</code> (<span class="anchor">core/errors.py:100-109</span>) carries a reported reason when a required execution capability is unreachable, which is shaped like INTENT's <code>Unavailable</code>. <code>Disengaged</code> / <code>Engaged</code> / <code>Paused</code> / <code>Completed</code> / <code>Failed</code> have no representation.</p>
+
+<h3>4.3 &nbsp;What governs resume</h3>
+<p><strong>Nothing, and nothing could.</strong></p>
+<p><code>python/synapse/autonomy/driver.py</code> self-describes as supporting <em>"checkpoint/resume"</em> (<span class="anchor">driver.py:1-6</span>). Reality:</p>
+<ul>
+<li><code>_checkpoint(step, state)</code> (<span class="anchor">driver.py:532-542</span>) &mdash; called 3&times; (<span class="anchor">:176</span>, <span class="anchor">:221</span>, <span class="anchor">:270</span>), stores <strong>in-memory</strong>, comment says <em>"Phase 3 will persist to disk"</em></li>
+<li><code>_resume(checkpoint_id)</code> (<span class="anchor">driver.py:544-553</span>) &mdash; <strong>zero call sites</strong> (grep across <code>python/synapse/autonomy/</code>)</li>
+</ul>
+<p>So it is a write-only in-memory checkpoint store in a different subsystem (the offline render Plan/Validate/Execute/Evaluate loop, reachable via <span class="anchor">handlers_render.py:1641</span>). <strong>INTENT's rule <em>"Restart, reconnection, scene replacement, and model suggestions MUST NOT silently resume an engagement"</em> (<span class="anchor">INTENT.md:106-108</span>) is satisfied vacuously</strong> &mdash; nothing can resume, so nothing can silently resume. That is not compliance; it is absence.</p>
+<p><code>driver.py</code> also runs a <strong>second, unreconciled gate vocabulary</strong> &mdash; its own <code>Decision</code>/<code>GateLevel</code> from <code>.models</code>, with decision-logged <code>"Stopping: &hellip;"</code> strings at <span class="anchor">:211</span> and <span class="anchor">:234</span>, parallel to <code>shared.constants.OPERATION_GATES</code>. Two gate vocabularies, no bridge between them.</p>
+
+<h3>4.4 &nbsp;Where the five fields would live</h3>
+<p>There is <strong>no per-session container</strong> in the panel to hang them on. The candidates, ranked:</p>
+<ol>
+<li><strong><code>BoundConnection</code></strong> (<span class="anchor">connections.py:216-240</span>) &mdash; has <code>.revoke()</code>, is held in <code>self._permission_connections</code> (<span class="anchor">synapse_panel.py:561</span>), replaced wholesale per turn (<span class="anchor">synapse_panel.py:3073</span>: <code>self._permission_connections[:] = [connection]</code>), revoked on Stop (<span class="anchor">:3470</span>) and on destroy (<span class="anchor">:563</span>). <strong>This is the only revocable lease in the panel.</strong> It is per-<em>turn</em> and provider-shaped, not per-<em>engagement</em> and scene-shaped &mdash; but its lifecycle hooks (bind &rarr; revoke on stop &rarr; revoke on destroy) are exactly the hooks an engagement needs.</li>
+<li>A new module composing with <code>worker_policy.is_tool_allowed_for_worker</code> &mdash; but <code>resolve_mode()</code>'s only production caller passes no per-session argument (<span class="anchor">panel/tool_bridge.py:107-108</span>), so threading chat-set scope means changing that call site's signature.</li>
+</ol>
+<p><strong>Blocker:</strong> <code>resolve_mode()</code> is a pure function of env + a trusted <code>profile</code> parameter (<span class="anchor">worker_policy.py:82-103</span>). There is no tool, slash-command, or handler that lets an artist set goal / boundary / scope / limits from the conversation. Building "five fields settable from chat" means adding a <strong>new input surface</strong>, not repointing an existing one.</p>
+</section>
+
+<section id="s5">
+<h2><span class="num">05</span><span>C2 &mdash; vocabulary and the contract</span></h2>
+<p class="subhead">The premise is false for existence and true only for LOP wiring. The fix is smaller than the probe sized it &mdash; and now covers twice as much ground.</p>
+
+<h3>5.1 &nbsp;Does GraphValidator load a per-build catalog as vocabulary?</h3>
+<p><strong>For node-type and parameter EXISTENCE &mdash; the checks that actually reject hallucinated nodes &mdash; no. It calls live <code>hou</code>, and there is no fallback.</strong></p>
+<p><code>HouExistenceOracle</code> (<span class="anchor">host/existence_adapter.py:19-36</span>) hard-imports <code>hou</code> at module scope (<span class="anchor">existence_adapter.py:16</span>) and calls <code>hou.nodeTypeCategories()</code> / <code>hou.nodeType()</code> / <code>nt.parmTemplateGroup().find()</code>. Grep confirms it is the <strong>only</strong> <code>IExistenceOracle</code> implementation in <code>python/synapse</code>, and it is wired unconditionally at both production construction sites: <span class="anchor">host/graph_synth_runtime.py:62</span> and <span class="anchor">host/graph_builder.py:65</span>, each <code>GraphValidator(HouExistenceOracle(), ConnectivityOracle())</code>.</p>
+
+<p>Two <em>other</em> checks <strong>do</strong> load per-build catalogs, additively:</p>
+<div class="tw"><table>
+<thead><tr><th>Check</th><th>Catalog</th><th>Load site</th><th>Applied</th><th>Scope</th></tr></thead>
+<tbody>
+<tr><td>U.1 slot/arity (P3e)</td><td><code>core.wiring.load_connectivity_catalog</code> &rarr; <code>cognitive/tools/data/connectivity_22.json</code></td><td><span class="anchor">graph_validator.py:58-59</span></td><td><code>_catalog_slot_check</code>, <span class="anchor">graph_validator.py:244-294</span></td><td>Wiring labels only</td></tr>
+<tr><td>U.5 LOP ordering</td><td><code>core.lop_knowledge.load_lop_catalog</code> &rarr; <code>lop_solaris_knowledge_22.json</code></td><td><span class="anchor">graph_validator.py:61-62</span></td><td><code>_lop_ordering_check</code>, <span class="anchor">graph_validator.py:297-401</span></td><td>Hard-gated to <code>network_type.upper() == "SOLARIS"</code> at <span class="anchor">:315</span></td></tr>
+</tbody></table></div>
+<p>Both are <code>strict=False</code> &rarr; unusable catalog yields <code>None</code> &rarr; the check skips (<span class="anchor">core/wiring.py:92-103</span>).</p>
+<p><strong>So the C2 premise is false for existence and true only for LOP wiring/ordering. This blocks C2 and C4 both, and it leads the section for that reason.</strong></p>
+
+<h3>5.2 &nbsp;But the fix is an adapter, not a subsystem</h3>
+<p>The probe sized a catalog-backed oracle at <strong>M</strong> on the belief it was new work. It is not. <code>python/synapse/validation/catalog.py</code> already provides the two exact lookups an <code>IExistenceOracle</code> needs (&sect;2.3), pure Python, per build, degrade-safe, with <code>rag/catalog/h22.0.400/</code> holding 7,862 types and their parms on disk.</p>
+<p><strong>A catalog-backed <code>IExistenceOracle</code> is a ~30-line adapter.</strong> Downgraded from M to <strong>S</strong>.</p>
+
+<div class="rev r-new">
+  <span class="rl">New &mdash; U5 closed, and the fix grows a second half</span>
+  <p><code>ConnectivityOracle</code> is <em>also</em> <code>hou</code>-bound at module scope (<span class="anchor">host/graph_oracle.py:17</span>). An existence adapter alone therefore leaves <code>GraphValidator</code> un-constructible headless, because both oracles are passed to the same constructor. The same catalog entries already carry <code>min_inputs</code> / <code>max_inputs</code> / <code>max_outputs</code>, so a <code>CatalogConnectivityOracle</code> is the same shape of adapter over the same file.</p>
+  <p><strong>W1 is therefore two adapters, not one:</strong> <strong>S&ndash;M</strong>, not S. The value scales with it &mdash; this is the difference between "the existence check is testable headless" and "the validator is testable headless," and only the second one retires the seat requirement from the verification loop.</p>
+</div>
+
+<p>The one real design decision: <code>None</code> from the catalog means <em>"no authority,"</em> not <em>"does not exist."</em> An oracle that maps <code>None &rarr; False</code> false-rejects; <code>None &rarr; True</code> false-accepts. <strong>The correct composition is: catalog answers when it has authority, live <code>hou</code> answers when present, and a proposal validated with neither is surfaced as unverified rather than silently VALID.</strong></p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; "unverified" must not mean a new enum value in the first cut</span>
+  <p>The draft's phrasing (<em>"stamped UNVERIFIED rather than VALID"</em>) smuggles a gated change into an ungated wave: <code>ValidationStatus</code> is two-valued at HEAD &mdash; <code>class ValidationStatus(str, Enum): VALID / INVALID</code>, <span class="anchor">cognitive/graph_proposal.py:68-70</span> &mdash; and <code>graph_proposal.py</code> is a designated gated surface (&sect;8). A builder implementing the draft's sentence lands in the gated contract file and stalls on an authorization the row never mentioned.</p>
+  <p><strong>Route the first cut through <code>ValidationReport.advisories</code> instead</strong> &mdash; the field already exists (<span class="anchor">graph_proposal.py:84</span>) and is <em>already serialized out to the caller</em> (<span class="anchor">cognitive/tools/propose_graph.py:96</span>), so an unverified proposal reaches a human today with no contract edit. <code>ValidationStatus.UNVERIFIED</code> stays queued for the gated contract wave, where it belongs.</p>
+</div>
+
+<h3>5.3 &nbsp;Can the contract express SOP and OBJ?</h3>
+<p><strong>SOP: yes, fully, today.</strong></p>
+<ul>
+<li><code>GraphProposal.network_type</code> comment lists <code>"SOP"</code> (<span class="anchor">graph_proposal.py:54</span>)</li>
+<li><code>ProposedNode.node_category</code> documents <code>"Sop"</code> (<span class="anchor">graph_proposal.py:28</span>)</li>
+<li><code>_NETWORK_CATEGORIES</code> maps <code>"SOP": {"Sop"}</code> (<span class="anchor">graph_validator.py:28-35</span>)</li>
+</ul>
+
+<p><strong>OBJ: no &mdash; and it fails <em>silently</em>, which is worse than rejecting.</strong></p>
+<p><code>_NETWORK_CATEGORIES</code> has six keys &mdash; <code>SOP</code>, <code>VOP</code>, <code>MAT</code>, <code>DOP</code>, <code>COP</code>, <code>SOLARIS</code> (<span class="anchor">graph_validator.py:28-35</span>). No <code>OBJ</code>. The P4 consistency check does <code>_NETWORK_CATEGORIES.get(p.network_type.upper())</code> (<span class="anchor">graph_validator.py:438-448</span>); for <code>"OBJ"</code> that returns <code>None</code> &rarr; <code>if allowed:</code> is False &rarr; <strong>the category/network-type check is skipped entirely.</strong> An OBJ proposal is neither validated nor rejected. Permissive by omission.</p>
+
+<p><strong>The smallest correct change is one dict row</strong>, and &mdash; critically &mdash; <strong>it is not in the contract file</strong>:</p>
+<pre><span class="c"># graph_validator.py:28-35</span>
+<b>"OBJ": {"Object"},</b></pre>
+<p>The category string is <strong><code>"Object"</code></strong>, verified: <code>rag/catalog/h22.0.400/Object.json</code> carries <code>"category": "Object"</code> and 186 types, and that manifest was dumped from a live 22.0.400 probe keyed by <code>hou.NodeType.category().name()</code> (<span class="anchor">validation/catalog.py:14-16</span>). <strong>This closes the C2 probe's NEEDS-SEAT question without a seat</strong> &mdash; evidence is a live-probe-generated receipt, not a live call made this session.</p>
+<p>The <code>network_type</code> docstring at <span class="anchor">graph_proposal.py:54</span> would also want <code>OBJ</code> added &mdash; but that is a <strong>comment</strong>, not a constraint. No executable change to the contract file is required for OBJ.</p>
+
+<div class="rev r-held">
+  <span class="rl">Held &mdash; the silent-permissive finding survived a caller hunt</span>
+  <p><code>_NETWORK_CATEGORIES</code> has exactly one consumer, the P4 check at <span class="anchor">graph_validator.py:438</span>. The one-row change is genuinely one row, and the test that pins it (<em>an OBJ proposal carrying <code>node_category="Sop"</code> must error</em>) fails today by <strong>passing</strong> &mdash; which is the point.</p>
+</div>
+
+<h3>5.4 &nbsp;Does NodeKind carry EXISTING?</h3>
+<p><strong>Yes.</strong> <code>NodeKind.EXISTING = "existing"</code> (<span class="anchor">graph_proposal.py:13-16</span>), first-class, with <code>scene_path</code> required iff EXISTING (<span class="anchor">:32</span>), <code>parameter_overrides</code> required empty iff EXISTING (<span class="anchor">:31</span>), and edges permitted to reference existing nodes on either side &mdash; <strong>Amendment 3, <span class="anchor">graph_proposal.py:42-43</span></strong> <em>(citation corrected from <code>:44-46</code>, which is the U.1 <code>target_input_label</code> comment)</em>. Resolved through <code>IConnectivityOracle.resolve_node_type</code> in P3/P5 (<span class="anchor">graph_validator.py:131-142</span>, <span class="anchor">:484-536</span>).</p>
+
+<div class="rev r-new">
+  <span class="rl">New &mdash; Amendment 3 has a rollback consequence nobody costed</span>
+  <p>Because an existing node may sit on <strong>either</strong> side of an edge, a proposal can wire two pre-existing nodes together with <em>zero</em> NEW nodes involved. &sect;6's FAILED path only destroys <code>created.values()</code>. That wire is never unwound, while the failure message asserts zero net mutation. Full treatment in &sect;6.6 (L3-6); it is folded into W6.</p>
+</div>
+
+<h3>5.5 &nbsp;Where per-hunk expected effects and scene identity would go</h3>
+<p><strong>Nowhere today.</strong> Neither <code>ProposedNode</code> nor <code>ProposedEdge</code> (<span class="anchor">graph_proposal.py:24-48</span>) carries an expected-effect field or a hunk grouping id. All intent and identity is <strong>whole-proposal</strong>:</p>
+<div class="tw"><table>
+<thead><tr><th>Field</th><th>Anchor</th><th>Granularity</th></tr></thead>
+<tbody>
+<tr><td><code>natural_language_intent</code></td><td><span class="anchor">graph_proposal.py:58</span></td><td>One string for the entire proposal</td></tr>
+<tr><td><code>scene_fingerprint</code></td><td><span class="anchor">graph_proposal.py:63</span></td><td>Whole-proposal staleness hash, set at validate-time</td></tr>
+<tr><td><code>houdini_version_stamp</code></td><td><span class="anchor">graph_proposal.py:61</span></td><td>Whole proposal</td></tr>
+<tr><td><code>scout_snapshot_id</code></td><td><span class="anchor">graph_proposal.py:62</span></td><td>Whole proposal</td></tr>
+</tbody></table></div>
+
+<p><strong>C1's hunk card has nothing to bind to at the data-contract layer.</strong> Two placements, with different costs:</p>
+<ol>
+<li><strong>New fields on <code>ProposedNode</code>/<code>ProposedEdge</code></strong> (<code>expected_effect: str</code>, <code>hunk_id: str</code>) &mdash; the natural home, <strong>requires editing <code>graph_proposal.py</code></strong> &rarr; gated wave (&sect;8).</li>
+<li><strong>Carry hunks in <code>GateProposal.proposed_changes</code></strong> (<span class="anchor">core/gates.py:52-117</span>) as a list of <code>{change, expected_effect}</code> &mdash; <strong>touches no gated file</strong>, and the field already exists unused. Costs a translation layer between the two vocabularies.</li>
+</ol>
+<p>Option 2 is how C1 ships without a contract wave. Option 1 is where it belongs long-term.</p>
+</section>
+<section id="s6">
+<h2><span class="num">06</span><span>The apply path, re-audited</span></h2>
+<p class="subhead">Three headline guarantees. One is asserted without evidence, one is three dispatches under a bound that abandons but does not stop, and one does not exist. The RECORD findings survived; the guarantee grades did not.</p>
+
+<p><code>graph_builder.py</code> = 287 lines, <code>graph_synth_runtime.py</code> = 176, <code>handlers_graph_synth.py</code> = 93, <code>proposal_store.py</code> = 34 <em>(all <code>wc -l</code>)</em>.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; this whole section was re-graded</span>
+  <p>The draft graded the first two guarantees <strong>ANCHORED</strong> and the third <strong>REFUTED</strong>. After the apply-guarantees lens, the grades are <strong>ASSERTED</strong>, <strong>REFUTED-AS-STATED</strong>, and <strong>REFUTED-WITH-A-CAVEAT</strong>. The draft's RECORD analysis (&sect;6.5) and its VERIFY-swallow finding (&sect;6.4) were attacked and held &mdash; both are confirmed correct, and &sect;6.4 got <em>worse</em> on inspection, not better.</p>
+</div>
+
+<h3>6.1 &nbsp;One undo group &mdash; <span class="badge b-warn">asserted</span> not anchored</h3>
+<p><strong>The code shape is right.</strong> <code>with hou.undos.group(undo_label):</code> at <span class="anchor">graph_builder.py:126</span>, wrapping create &rarr; set parms &rarr; connect &rarr; read-back (<span class="anchor">:131-159</span>). Exception path destroys only NEW nodes, still inside the group, returns a structured FAILED (<span class="anchor">:160-183</span>).</p>
+<p><strong>The evidence is not.</strong></p>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; "one artist Ctrl+Z reverses the whole build" is not evidenced anywhere</span>
+  <p><span class="anchor">graph_builder.py:196</span> emits <code>revert=f"single undo reverts: '{undo_label}'"</code> <strong>unconditionally</strong>, with no check that undos are enabled. The file contains zero <code>hou.undos</code> references other than the group itself.</p>
+  <p><strong>The sibling path already solved this.</strong> <span class="anchor">shared/bridge.py:1662-1677</span> derives <code>undo_group_active</code> from <code>hou.undos.areEnabled()</code> plus <code>undoLabels</code> snapshots around the group, and explicitly enumerates the <em>"under a <code>hou.undos.disabler()</code> scope or a zeroed undo memory"</em> case. The pattern exists, in-tree, and was not applied here.</p>
+  <p><strong>The pinning test is mock-deep, not evidence-deep.</strong> <span class="anchor">tests/test_graph_builder_mile3.py:113-126</span> defines a hand-rolled <code>_FakeUndos</code>/<code>_FakeUndosGroup</code> with no <code>areEnabled</code>, installed at <span class="anchor">:167</span>. Scenario 2 (<span class="anchor">:292</span>, <em>"the whole build is wrapped in EXACTLY ONE undos.group"</em>) proves the call was <strong>made</strong> &mdash; not that an undo entry exists, and not that one Ctrl+Z reverses it.</p>
+  <p><strong>The file concedes it.</strong> <span class="anchor">graph_builder.py:13-14</span>: <em>"GUI undo/consent, typed VOP wires, and production provenance are not qualified by these fixtures."</em> The draft quoted that caveat in &sect;10 and still graded &sect;6.1 ANCHORED. The caveat and the grade cannot both stand; the grade goes.</p>
+  <p><strong>Replacement:</strong> the guarantee is <strong>ASSERTED &mdash; code shape confirmed, effect unverified</strong>. W5 ports the bridge's evidence derivation so <code>revert=</code> is emitted only when a group was actually recorded, and the GUI Ctrl+Z check in &sect;10 becomes a gate on the grade rather than a nice-to-have.</p>
+</div>
+
+<h3>6.2 &nbsp;One main-thread dispatch &mdash; <span class="badge b-crit">refuted as stated</span></h3>
+<p><code>run_on_main(_on_main, label="graph_synth:_handle_instantiate_graph")</code> at <span class="anchor">handlers_graph_synth.py:93</span>. <code>graph_builder</code> itself does no marshalling; the handler owns it. Registered as <code>instantiate_graph</code> at <span class="anchor">handlers.py:860</span>. <strong>That much is true. Two things around it are not.</strong></p>
+
+<h4>(a) &nbsp;It is three dispatches, not one</h4>
+<p>A live-path mutating command gets <strong>two additional main-thread dispatches bracketing the handler's one</strong>: <code>integrity_envelope.capture_scene_hash</code> calls <code>run_on_main</code> per capture (<span class="anchor">server/integrity_envelope.py:205-225</span>), and <span class="anchor">handlers.py:521-529</span> places the capture pair <em>inside</em> the C5 mutation lock bracketing the op. <code>instantiate_graph</code> is not in <code>ENVELOPE_SKIP_COMMANDS</code> (<span class="anchor">integrity_envelope.py:80-99</span>), and envelope suppression only fires when bridge-routed (<span class="anchor">:137-146</span>) &mdash; which the live <code>/synapse</code> path is not.</p>
+<p>The envelope file prices this itself at <span class="anchor">:124-134</span>: <em>"if T1 is real, the two capture hops per mutating op become a measurable latency tax."</em> Each hop is bounded at 1.0s (<span class="anchor">:172</span>) and returns honest <code>None</code> on miss, so this is a bounded tax, not a hang. But <strong>any latency claim about apply must count three wakes</strong>, and the shed lever is <code>SYNAPSE_LIVE_ENVELOPE=0</code> (<span class="anchor">integrity_envelope.py:132-134</span>).</p>
+
+<h4>(b) &nbsp;The bound abandons the payload without stopping it &mdash; and a retry double-builds</h4>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; the highest-severity finding in the crucible, and it is silent</span>
+  <p><span class="anchor">handlers_graph_synth.py:93</span> passes <strong>no timeout</strong>, so the apply runs under <code>_DEFAULT_TIMEOUT = 10.0</code> seconds <em>(producer, re-run this pass: <code>grep -n "_DEFAULT_TIMEOUT\|_SLOW_TIMEOUT" python/synapse/server/main_thread.py</code> &rarr; <code>21:_DEFAULT_TIMEOUT = 10.0</code>, <code>22:_SLOW_TIMEOUT = 30.0</code>)</em>.</p>
+  <p>The C4 abandoned-flag machinery only no-ops payloads that have <strong>not started</strong> &mdash; <span class="anchor">main_thread.py:564</span> sets <code>started[0] = True</code> before <code>fn()</code>. The file names the residual itself at <span class="anchor">:536-538</span>: <em>"A payload already inside <code>fn()</code> when the timeout fires is the accepted residual race&hellip; if the deferred payload later runs <code>fn()</code> anyway, that mutation is a zombie applied after the failure report (and a retry then double-applies)."</em></p>
+  <p><strong>Nothing makes apply idempotent.</strong> <code>ProposalStore.get()</code> does not consume &mdash; it returns <code>entry[1]</code> and leaves the entry in place, TTL 1800s, no built-marker <em>(producer: full read of <code>python/synapse/host/proposal_store.py</code>, 34 lines)</em>. TOCTOU re-validation of an all-NEW proposal still returns VALID against a scene that now contains a copy. <strong>So a retry after a timeout builds the graph twice, in two undo groups.</strong></p>
+  <p><strong>Why 10s is not obviously generous:</strong> inside that one payload sit a full live-<code>hou</code> <code>GraphValidator</code> re-validation (<span class="anchor">graph_synth_runtime.py:53-62</span> &mdash; <code>HouExistenceOracle</code> per node <em>and</em> per parm), <code>createNode</code> with init scripts per node, parm sets, <code>setInputs</code>, read-backs, then <code>_agent_usd_provenance</code> (<span class="anchor">graph_synth_runtime.py:96-127</span>) opening and writing a USD stage under <code>$HIP</code>. That nested work is <strong>unbounded</strong>, because <code>run_on_main</code> fast path 1 returns <code>fn()</code> directly with no timeout when already on main (<span class="anchor">main_thread.py:474-475</span>).</p>
+  <p><strong>The only existing mitigation is prompt text.</strong> <span class="anchor">panel/tool_executor.py:738-746</span> and <span class="anchor">panel/claude_worker.py:560</span> emit <em>"may STILL be running inside Houdini &mdash; do not retry."</em> That is a sentence shown to a model in the panel. <strong>The <code>/mcp</code> client never sees it.</strong></p>
+  <p><strong>Replacement:</strong> this becomes <strong>W4</strong> in &sect;9 &mdash; either give <code>instantiate_graph</code> <code>_SLOW_TIMEOUT</code> and report overrun as UNKNOWN rather than FAILED, or make apply idempotent at the store (consume-on-build, or a built-marker keyed by <code>proposal_id</code>) so a retry after a timeout is a no-op. <em>Reachability of the 10s bound is unmeasured &mdash; see &sect;12.4 and G5. The defect does not depend on the answer.</em></p>
+</div>
+
+<div class="diag" role="img" aria-label="Three main-thread dispatches per apply, all inside the C5 mutation lock, with the middle one bounded at ten seconds">
+<svg viewBox="0 0 700 232" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace" font-size="11">
+  <rect x="8" y="8" width="684" height="216" fill="none" stroke="currentColor" stroke-opacity=".18" stroke-dasharray="3 3"/>
+  <text x="20" y="26" fill="currentColor" fill-opacity=".55" font-size="9.5" letter-spacing="1.4">C5 MUTATION LOCK &#183; HELD OFF-MAIN FOR THE WHOLE OP</text>
+
+  <rect x="28" y="44" width="170" height="46" fill="none" stroke="currentColor" stroke-opacity=".45"/>
+  <text x="40" y="63" fill="currentColor" fill-opacity=".75">dispatch 1</text>
+  <text x="40" y="79" fill="currentColor" fill-opacity=".5" font-size="10">hash_before &#183; bound 1.0s</text>
+
+  <rect x="236" y="44" width="228" height="46" fill="none" stroke="currentColor" stroke-width="2"/>
+  <text x="248" y="63" fill="currentColor">dispatch 2 &#8212; the build</text>
+  <text x="248" y="79" fill="currentColor" fill-opacity=".6" font-size="10">bound 10.0s (_DEFAULT_TIMEOUT)</text>
+
+  <rect x="502" y="44" width="170" height="46" fill="none" stroke="currentColor" stroke-opacity=".45"/>
+  <text x="514" y="63" fill="currentColor" fill-opacity=".75">dispatch 3</text>
+  <text x="514" y="79" fill="currentColor" fill-opacity=".5" font-size="10">hash_after &#183; bound 1.0s</text>
+
+  <line x1="198" y1="67" x2="230" y2="67" stroke="currentColor" stroke-opacity=".4"/>
+  <line x1="464" y1="67" x2="496" y2="67" stroke="currentColor" stroke-opacity=".4"/>
+
+  <line x1="350" y1="90" x2="350" y2="116" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="2 3"/>
+  <text x="236" y="132" fill="currentColor" fill-opacity=".55" font-size="9.5" letter-spacing="1.2">AT 10.0s THE CALLER IS TOLD FAILED</text>
+
+  <rect x="236" y="146" width="228" height="60" fill="none" stroke="currentColor" stroke-opacity=".9" stroke-dasharray="5 3"/>
+  <text x="248" y="166" fill="currentColor">payload keeps running</text>
+  <text x="248" y="182" fill="currentColor" fill-opacity=".6" font-size="10">started[0] is already True</text>
+  <text x="248" y="197" fill="currentColor" fill-opacity=".6" font-size="10">nodes land &#183; store still holds the id</text>
+
+  <text x="484" y="172" fill="currentColor" fill-opacity=".85" font-size="10">retry &#8594; second graph</text>
+  <text x="484" y="188" fill="currentColor" fill-opacity=".6" font-size="10">second undo group</text>
+  <line x1="464" y1="176" x2="478" y2="176" stroke="currentColor" stroke-opacity=".5"/>
+</svg>
+</div>
+
+<h3>6.3 &nbsp;One cook &mdash; <span class="badge b-crit">refuted</span>, with one caveat the draft missed</h3>
+<p>Grep for <code>cook</code> across <code>graph_builder.py</code>, <code>graph_synth_runtime.py</code>, and <code>handlers_graph_synth.py</code>: <strong>zero hits</strong> (exit 1). No <code>.cook(force=True)</code>, no <code>.cook(block=&hellip;)</code>, no <code>cookCount</code> read.</p>
+<p><code>parm.eval()</code> / <code>tup.eval()</code> (<span class="anchor">graph_builder.py:245</span>, <span class="anchor">:250</span>) force evaluation of a single parameter expression &mdash; <strong>not a node or network cook.</strong></p>
+<p>Dozens of <code>.cook(</code> calls exist elsewhere in the tree (<code>handlers_usd.py</code>, <code>handlers_material.py</code>, <code>handlers_node.py</code>, <code>handlers_cops.py</code>, <code>handlers_tops/*</code>), so the pattern is established everywhere except here.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; the refutation, and the fix it prescribed</span>
+  <p><strong>On the refutation:</strong> "zero grep hits for <code>cook</code>" proves the apply path never <em>requests</em> a cook. It does not prove none <em>fires</em>. <code>parent.createNode</code> (<span class="anchor">graph_builder.py:133</span>) runs node init scripts by default and <code>parm.set</code> (<span class="anchor">:244</span>) fires authored parm callbacks &mdash; both are documented Houdini routes to cooks and to further node creation. <strong>Restated: no requested cook; implicit cooks via init scripts and parm callbacks are unaudited.</strong></p>
+  <p><strong>On the fix:</strong> the draft prescribed "an explicit cook of created leaf nodes <em>inside or immediately after</em> the undo group." That is unsafe as written, two ways. <strong>(1)</strong> A cook inside the group lands inside the <code>try:</code> at <span class="anchor">:128</span>, so a benign cook error &mdash; a file SOP with an unresolved path &mdash; raises, hits the <code>except</code> at <span class="anchor">:160</span>, destroys every created node, and returns FAILED. <strong>A cook error would nuke a structurally correct build.</strong> <strong>(2)</strong> A forced cook is unbounded work landed inside the 10s dispatch bound of &sect;6.2(b) &mdash; the same class as the documented render freeze (<code>executeInMainThreadWithResult</code> into <code>node.render()</code>).</p>
+  <p><strong>Replacement in &sect;9 (W7):</strong> recon first (G3 as a pure measurement, not a gate), then cook <em>after</em> the group closes and <em>outside</em> the <code>try</code>, bounded, with "built, cook incomplete" as a distinct status rather than a failure. Size holds at S; the <em>design</em> was the defect, not the effort.</p>
+</div>
+
+<h3>6.4 &nbsp;What VERIFY does with an unreadable value</h3>
+<p><strong>It collapses UNKNOWN into <code>None</code>, indistinguishable from a legitimately-<code>None</code> observed value.</strong> <code>_set_and_read</code> (<span class="anchor">graph_builder.py:236-251</span>) initialises the record with <code>observed: None</code> and overwrites it only if <code>node.parm()</code> or <code>node.parmTuple()</code> resolves. A proposal naming a parm that does not exist on the created type yields <code>{requested: &lt;value&gt;, observed: None}</code> &mdash; with <strong>no flag anywhere</strong>, and <code>InstantiationResult.errors</code> is populated only on HALT re-validation issues, never on BUILT (<span class="anchor">graph_builder.py:51</span>, <span class="anchor">:114</span>, <span class="anchor">:189-197</span>).</p>
+<p>The wire read-back is accurate by contrast: <code>_read_connection</code> (<span class="anchor">graph_builder.py:253-268</span>) reports <code>wired: False</code> when the live scene does not show the connection.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; two axes, and the draft only measured one</span>
+  <p>The draft said <em>"half of VERIFY is honest and half is silent,"</em> and prescribed <code>resolved: bool</code> as an <strong>S</strong>. The record-accuracy half of that is right and holds. The missing half is <strong>consumption</strong>, and it is worse than the draft implied:</p>
+  <ul>
+    <li><code>wired: False</code> changes nothing. Status is still <code>InstantiationStatus.BUILT</code>, <code>ok()</code> returns <code>True</code> (<span class="anchor">graph_builder.py:53-54</span>, <span class="anchor">:189-197</span>), <code>errors</code> stays empty on the BUILT path (<span class="anchor">:51</span>), and <code>result_to_dict</code> passes the records through verbatim (<span class="anchor">graph_synth_runtime.py:147-160</span> &mdash; <em>citation corrected from <code>:145-158</code></em>).</li>
+    <li>Grep across <code>python/synapse</code> finds <strong>no consumer of <code>parameters_set</code> and no consumer of <code>connections[*].wired</code></strong>. Nothing compares <code>requested</code> against <code>observed</code> anywhere.</li>
+    <li>The sibling subsystem does exactly that comparison and <em>fails</em> on it &mdash; <span class="anchor">recipes/verify.py:646</span>, <em>"requested values not observed."</em> The pattern was available and not applied.</li>
+  </ul>
+  <p><strong>So an apply where every connection failed to wire and every parm was unreadable returns BUILT / ok=True with a cheerful message.</strong></p>
+  <p><strong>Replacement:</strong> W6 keeps <code>resolved: bool</code> and adds the part that makes it mean something &mdash; any <code>wired: False</code>, or any unresolved parm, must downgrade the status (a PARTIAL state) or populate <code>errors</code> on the BUILT path. Otherwise the new flag is one more field nobody reads. Size moves S &rarr; <strong>S&ndash;M</strong>.</p>
+  <p><em>I accept the substance and contest one word of the framing &mdash; see &sect;12.3. An accurate-but-unconsumed record is not dishonest; it is inert. The two failures need different fixes, and collapsing them hides that.</em></p>
+</div>
+
+<h3>6.5 &nbsp;What RECORD writes, and whether anything reads it</h3>
+<div class="rev r-held">
+  <span class="rl">Held &mdash; attacked and confirmed, to the byte</span>
+  <p>The provenance counts reproduce exactly on an independent re-run: 5,001 directory entries of which one is a <code>.tmp</code> (hence "5,000 of 5,001 parsed"), 57 <code>instantiate_graph</code>, 65 <code>propose_graph</code>. The channel analysis below was not contradicted anywhere.</p>
+</div>
+
+<p><strong>Two independent channels. One is silent-failable; the other is content-free.</strong></p>
+
+<h4>Channel A &mdash; agent.usd decision narrative (silent-failable)</h4>
+<p><code>_emit_provenance</code> (<span class="anchor">graph_builder.py:270-287</span>) writes <code>{decision, reasoning, parent_path, created_paths, model_id, revert}</code> &mdash; the human-readable record, the one that says <em>what was built</em>. It is <strong>live-wired</strong>: <span class="anchor">graph_synth_runtime.py:142</span> constructs <code>GraphBuilder(&hellip;, provenance_writer=_agent_usd_provenance)</code>, and that writer (<span class="anchor">graph_synth_runtime.py:96-127</span>) appends into <code>$HIP/claude/agent.usd</code> &rarr; <code>/SYNAPSE/memory/decisions</code> via <code>agent_state.log_decision</code> (<span class="anchor">memory/agent_state.py:549-573</span>).</p>
+
+<h4>Channel B &mdash; FloorGate Tier-0 (always fires, records digests only)</h4>
+<p><code>CommandHandlerRegistry.invoke()</code> wraps every registered command through <code>FloorGate.wrap</code> (<span class="anchor">handlers.py:387-404</span>); <code>instantiate_graph</code> is registered (<span class="anchor">handlers.py:860</span>) and is <strong>not</strong> in <code>_READ_ONLY_COMMANDS</code> (40 names, <span class="anchor">handlers.py:204-245</span>), so it is classified mutating and gets a record.</p>
+<p><strong>This fires for real.</strong> A sample record read off disk (<code>.synapse/provenance/op-20260913T213803174370Z-000002.json</code>):</p>
+<pre>{ <span class="a">"op"</span>: "instantiate_graph", <span class="a">"op_id"</span>: "op-20260913T213803174370Z-000002",
+  <span class="a">"origin"</span>: "handler", <span class="a">"outcome"</span>: "ok", <span class="a">"parent"</span>: null,
+  <span class="a">"payload_digest"</span>: "60194c93&hellip;", <span class="a">"result_digest"</span>: "1d6533&hellip;",
+  <span class="a">"session"</span>: null, <span class="a">"ts"</span>: "2026-09-13T21:38:03.174965+00:00" }</pre>
+<p>57 such records exist, with outcomes <code>{ok, error}</code> <em>(producer: scan of <code>.synapse/provenance/*.json</code> matching <code>op == "instantiate_graph"</code>)</em>.</p>
+<p><strong>But it records <em>digests</em>, not content.</strong> A human reading that record learns that an instantiate happened and that its result hashes to <code>1d6533&hellip;</code>. They cannot learn <em>what was built</em>, which nodes, which parms, or whether the parm read-back matched. <strong>It is tamper-evidence, not an audit trail.</strong> <code>session</code> is <code>null</code>, so records are not grouped by session either.</p>
+
+<p><strong>Readers:</strong> FloorGate provenance is read by exactly one consumer &mdash; <span class="anchor">server/doctor.py:857-866</span>, which bundles the <strong>newest 3 files</strong> into a diagnostic zip. <span class="anchor">memory/ledger.py:222</span> only mirrors its path-resolution logic. <code>.synapse/ledger/</code> holds 29 files, all science-harness kinds (19 <code>Confirmation</code>, 4 <code>DocConformance</code>, 3 <code>Deferred</code>, 1 <code>DeadEnd</code>, 1 <code>SubstrateAssumption</code>) &mdash; unrelated to instantiate.</p>
+<p><strong>So: RECORD writes 5,001 files</strong> <em>(producer: <code>ls .synapse/provenance | wc -l</code>)</em><strong>, and the only thing that reads them is a support bundle.</strong> No artist-facing read, no query, no verification surface.</p>
+<p>The <code>InstantiationResult</code> &mdash; which <em>does</em> carry the reviewable content (<code>created_paths</code>, <code>parameters_set</code>, <code>connections</code>, <code>revert</code>, <code>errors</code>; <span class="anchor">graph_builder.py:43-51</span>, serialized at <span class="anchor">graph_synth_runtime.py:147-160</span>) &mdash; is returned to the WS caller and <strong>persisted nowhere the artist can re-read it.</strong></p>
+
+<h3>6.6 &nbsp;Law 3 violations found</h3>
+<p><strong>Law 3 &mdash; provenance or it didn't happen.</strong></p>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Violation</th><th>Anchor</th><th>Severity</th></tr></thead>
+<tbody>
+<tr>
+<td><strong>L3-1</strong></td>
+<td><code>_emit_provenance</code> swallows any exception with a bare <code>except Exception: pass</code> and <code>instantiate()</code> returns <code>BUILT</code> regardless (<span class="anchor">:186</span> &rarr; <span class="anchor">:189-197</span>). <code>InstantiationResult</code> has <strong>no</strong> <code>provenance_recorded</code> field (field list, <span class="anchor">:43-51</span>). The artist can never be told <em>"the build worked but the audit trail did not record it."</em></td>
+<td><span class="anchor">graph_builder.py:286-287</span></td>
+<td><strong>Real, narrowed.</strong> Channel B still fires, so system-level "it happened" survives. What can go silent is the <em>content</em> record &mdash; the only channel that says what was built.</td>
+</tr>
+<tr>
+<td><strong>L3-2</strong></td>
+<td>The FAILED-path message asserts <em>"rolled back (zero net mutation)"</em> without verifying the destroy loop completed; per-node destroys are individually swallowed.</td>
+<td><span class="anchor">graph_builder.py:168-172</span> &rarr; message at <span class="anchor">:182</span></td>
+<td><strong>Real.</strong> A claim stronger than the evidence.</td>
+</tr>
+<tr>
+<td><strong>L3-3</strong></td>
+<td>An unresolvable parm produces <code>observed: None</code> with no flag and no entry in <code>errors</code> &mdash; the record <em>looks</em> like a successful read of a null value.</td>
+<td><span class="anchor">graph_builder.py:236-251</span></td>
+<td><strong>Real.</strong> Provenance that misrepresents rather than omits.</td>
+</tr>
+<tr>
+<td><strong>L3-4</strong> <span class="badge b-warn">downgraded</span></td>
+<td>A <strong>stale parenthetical inside an otherwise-correct conditional comment.</strong> Lines <span class="anchor">:271-274</span> read: <em>"If a host wired an agent.usd / agent_state writer, call it; otherwise this is the documented seam where production attaches one. (Residual: the agent.usd provenance writers are dormant &mdash; no live caller yet &mdash; so default is a no-op.)"</em> The leading clause already handles the wired case correctly, and <code>self._provenance is None &rarr; return</code> (<span class="anchor">:275</span>) keeps "default is a no-op" true. Only the <em>Residual</em> clause is stale.</td>
+<td><span class="anchor">graph_builder.py:271-274</span></td>
+<td><strong>Minor.</strong> The draft called this <em>"drift in the one place that must not drift"</em> &mdash; an over-read of a conditional comment. Downgraded. The cleanup stays in W6, and gains a <strong>second target</strong>: the same stale sentence is inherited by the repo <code>CLAUDE.md</code> Current Status line (<em>"agent.usd Schema &hellip; provenance writers dormant"</em>), so fixing one and not the other re-seeds it.</td>
+</tr>
+<tr>
+<td><strong>L3-5</strong></td>
+<td><code>propose_graph</code> writes 65 mutation-class provenance records for an operation its own handler docstring calls <em>"Read-only &mdash; it validates + parks, it does NOT mutate the scene"</em> (<span class="anchor">handlers_graph_synth.py:40-42</span>). Provenance that asserts a mutation that did not occur.</td>
+<td><span class="anchor">handlers.py:204-245</span> (absence)</td>
+<td><strong>Real, inverted.</strong> Most Law 3 breaches are missing records; this one is a false record. <em>The remedy is no longer a one-liner &mdash; see &sect;7.2 and W8.</em></td>
+</tr>
+<tr>
+<td><strong>L3-6</strong> <span class="badge b-acc">new</span></td>
+<td>The rollback loop iterates <code>created.values()</code> only (<span class="anchor">:168-173</span>) &mdash; NEW nodes. Two other mutation vectors are never reversed. <strong>(i)</strong> EXISTING&rarr;EXISTING edges: Amendment 3 permits an existing node on either side (<span class="anchor">graph_proposal.py:42-43</span>; <code>_resolve</code> returns <code>hou.node(scene_path)</code> for EXISTING, <span class="anchor">graph_builder.py:228-233</span>), so <code>tgt.setInput</code> at <span class="anchor">:152</span> can wire two pre-existing nodes with zero NEW nodes involved; a later raise leaves that wire, while <span class="anchor">:182</span> asserts zero net mutation. <strong>(ii)</strong> Side-effect nodes: <code>createNode</code> runs init scripts and <code>parm.set</code> fires authored callbacks &mdash; anything those author is not in <code>created{}</code> and is not destroyed. The pinning test only asserts the EXISTING node is <em>not destroyed</em> (<span class="anchor">tests/test_graph_builder_mile3.py:332</span>); it never asserts its inputs were restored.</td>
+<td><span class="anchor">graph_builder.py:168-173</span>, <span class="anchor">:152</span></td>
+<td><strong>Real.</strong> L3-2 under-scoped. Until fixed, the FAILED message must read <em>"new nodes destroyed; pre-existing wiring not restored,"</em> never <em>"zero net mutation."</em></td>
+</tr>
+<tr>
+<td><strong>L3-7</strong> <span class="badge b-acc">new</span></td>
+<td>VERIFY's output is inert. <code>parameters_set</code> and <code>connections[*].wired</code> have zero consumers tree-wide; an all-failed read-back still returns <code>BUILT</code> / <code>ok()==True</code>. The record can be made accurate (L3-3) and still assert nothing.</td>
+<td><span class="anchor">graph_builder.py:51</span>, <span class="anchor">:53-54</span>, <span class="anchor">:189-197</span></td>
+<td><strong>Real.</strong> Distinct from L3-3: one is a false record, this is a true record with no verdict attached.</td>
+</tr>
+<tr>
+<td><strong>L3-8</strong> <span class="badge b-acc">new</span></td>
+<td><code>revert=</code> is emitted unconditionally with no evidence that an undo entry was recorded, while the sibling bridge path derives exactly that evidence (<span class="anchor">shared/bridge.py:1662-1677</span>). A recovery instruction asserted without proof is a provenance claim.</td>
+<td><span class="anchor">graph_builder.py:196</span>, <span class="anchor">:284</span></td>
+<td><strong>Real.</strong> The &sect;6.1 grade defect, stated as a Law 3 item.</td>
+</tr>
+</tbody></table></div>
+</section>
+<section id="s7">
+<h2><span class="num">07</span><span>The instantiate classification</span></h2>
+<p class="subhead">Three tables classify the same tool and they disagree. The row the brief asked for already shipped; the remaining one-liner turns out not to be one.</p>
+
+<h3>7.1 &nbsp;The exact row shape</h3>
+<div class="rev r-held">
+  <span class="rl">Held &mdash; reproduced bit-for-bit on an independent re-run</span>
+  <p>Every number below came back identical: 128 / 41 / 87 tools, 74 rows, 23 gates, distribution 49&middot;16&middot;13&middot;7&middot;2, and the 16-name no-row list matching name-for-name with zero orphan rows.</p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th class="num">#</th><th>Table</th><th>Keyed by</th><th>Shape</th><th><code>propose</code></th><th><code>instantiate</code></th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td><code>TOOL_DEFS</code></td><td>tool name</td><td>8-tuple; slot 5 = <code>read_only</code></td><td><code>read_only=True</code>, <code>destructive=False</code>, <code>idempotent=True</code> (<span class="anchor">_tool_registry.py:1381-1391</span>)</td><td><code>read_only=False</code>, <code>destructive=True</code>, <code>idempotent=False</code> (<span class="anchor">_tool_registry.py:1393-1401</span>)</td></tr>
+<tr><td class="num">2</td><td><code>_TOOL_TO_OPERATION</code> &rarr; <code>OPERATION_GATES</code></td><td>tool name &rarr; op name &rarr; gate word</td><td><code>dict[str,str]</code> &times; <code>dict[str,str]</code></td><td><strong>absent</strong> &rarr; <span class="anchor">bridge_adapter.py:361</span> defaults to <code>"set_parameter"</code> &rarr; <strong>inform</strong></td><td><code>"build_from_manifest"</code> (<span class="anchor">bridge_adapter.py:153</span>) &rarr; <strong>review</strong></td></tr>
+<tr><td class="num">3</td><td><code>_READ_ONLY_COMMANDS</code></td><td><em>command</em> name, not tool name</td><td><code>frozenset[str]</code>, 40 names</td><td><strong>absent</strong> &rarr; mutating</td><td>absent &rarr; mutating</td></tr>
+</tbody></table></div>
+
+<p>The row itself is one line:</p>
+<pre><span class="c"># bridge_adapter.py:153</span>
+<b>"synapse_instantiate_graph": "build_from_manifest",</b></pre>
+
+<p>Two consumers read it: <code>worker_policy._build_index()</code> (<span class="anchor">worker_policy.py:110-118</span>) &rarr; gate <code>review</code> &rarr; denied under <code>_DENIED_GATES</code> (<span class="anchor">worker_policy.py:64</span>, applied <span class="anchor">:224</span>); and <span class="anchor">bridge_adapter.py:361</span> &rarr; the bridge's operation type and consent level on <code>/mcp</code>.</p>
+
+<p><strong>Coverage numbers</strong> <em>(producer: <code>python -c</code> importing <code>TOOL_DEFS</code>, <code>_TOOL_TO_OPERATION</code>, <code>OPERATION_GATES</code> and cross-tabulating)</em>:</p>
+<ul>
+<li><code>TOOL_DEFS</code>: <strong>128</strong> tools &mdash; <strong>41</strong> read-only, <strong>87</strong> mutating</li>
+<li><code>_TOOL_TO_OPERATION</code>: <strong>74</strong> rows (<span class="anchor">bridge_adapter.py:76-169</span>); zero rows point at a tool with no <code>TOOL_DEFS</code> entry</li>
+<li><code>OPERATION_GATES</code>: <strong>23</strong> entries (<span class="anchor">shared/constants.py:79-103</span>)</li>
+<li>Gate distribution over the 87 mutating tools: <strong>inform 49 &middot; no-row 16 &middot; approve 13 &middot; review 7 &middot; critical 2</strong></li>
+</ul>
+
+<h3>7.2 &nbsp;The smallest correct change</h3>
+<p><strong>The change the brief asks for already shipped</strong> in <code>8c23fccc</code> &mdash; instantiate has its row, it maps to <code>build_from_manifest</code>, and <code>build_from_manifest</code> is <code>review</code> (<span class="anchor">shared/constants.py:93</span>). That is correct: the host may (with consent), the worker may not (<span class="anchor">worker_policy.py:178-179</span>).</p>
+
+<p>The draft then proposed adding <code>"propose_graph"</code> to <code>_READ_ONLY_COMMANDS</code> as <em>"one line."</em> The justification for the <em>intent</em> is still written in three places in the tree &mdash; <code>TOOL_DEFS</code> marks it <code>read_only=True</code> (<span class="anchor">_tool_registry.py:1391</span>); its handler docstring says <em>"Read-only &mdash; it validates + parks, it does NOT mutate the scene"</em> (<span class="anchor">handlers_graph_synth.py:40-42</span>); its tool description says <em>"Mutates nothing"</em> (<span class="anchor">_tool_registry.py:1384</span>). <strong>The mechanism is not one line, and one of its side effects is harmful.</strong></p>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; <code>_READ_ONLY_COMMANDS</code> has five branch sites, not one</span>
+  <p><em>Producer, re-run this pass: <code>grep -rn "_READ_ONLY_COMMANDS" python/ harness/ shared/ tests/</code>.</em> The draft reasoned only about the C5 lock. Membership also flips four other behaviours:</p>
+  <div class="tw"><table>
+  <thead><tr><th>Consumer</th><th>Anchor</th><th>What membership does to <code>propose_graph</code></th></tr></thead>
+  <tbody>
+  <tr><td>C5 mutation lock</td><td><span class="anchor">handlers.py:509-520</span></td><td>Stops taking the lock. <em>The intended effect.</em></td></tr>
+  <tr><td>FloorGate Tier-0</td><td><span class="anchor">core/floor_gate.py:292-295</span>, <span class="anchor">:306</span> &mdash; <em>"Read-only ops execute with zero provenance"</em></td><td><strong>Loses its only durable record.</strong> &sect;6.5 establishes <code>InstantiationResult</code> is persisted nowhere the artist can re-read; post-change the propose half of the loop has no record at all. The draft sold this purely as a win ("removes L3-5").</td></tr>
+  <tr><td>WS resilience + latency</td><td><span class="anchor">server/websocket.py:686-693</span> &mdash; <em>"Read-only commands bypass resilience AND latency tracking"</em></td><td>Drops out of rate limiting and circuit-breaker success accounting.</td></tr>
+  <tr><td>F3 freeze breaker</td><td><span class="anchor">server/hwebserver_adapter.py:236-257</span> &mdash; <em>"fast-fail NEW mutating commands instead of queueing them behind the frozen main thread. Read-only commands bypass"</em></td><td><strong>Actively harmful.</strong> <code>_handle_propose_graph</code> is <code>run_on_main</code>-bound (<span class="anchor">handlers_graph_synth.py:69</span>), so after the change a propose issued during a main-thread freeze <em>stops fast-failing and starts queueing behind the frozen main thread</em> &mdash; the precise failure F3 was built to prevent.</td></tr>
+  <tr><td>Live integrity envelope</td><td><span class="anchor">server/integrity_envelope.py:73-77</span></td><td>Skip-set is keyed off the complement; the envelope pair stops firing. <em>Benign, and desirable.</em></td></tr>
+  </tbody></table></div>
+  <p>Plus <code>harness/verify/readonly_hint_agreement.py</code> cross-tabulates the set, and <span class="anchor">server/write_plane.py:82</span> and <span class="anchor">server/doctor.py:24</span> document their behaviour in terms of it.</p>
+  <p><strong>Replacement in &sect;9 (W8):</strong> a four-consumer decision, not a membership edit. The likely correct answer is a <em>third</em> classification &mdash; record-but-do-not-lock &mdash; rather than moving <code>propose_graph</code> into a set that also turns off its provenance and its freeze protection.</p>
+</div>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; "proposals validate during renders" was the draft's whole leverage, and it does not follow</span>
+  <p>The draft ranked this change #1 of nine on the claim that it unblocks proposal validation during a render. <strong>Dropping the C5 lock frees the lock, not the main thread.</strong></p>
+  <p><code>_handle_propose_graph</code> marshals with <code>run_on_main</code> (<span class="anchor">handlers_graph_synth.py:69</span>) because its grounding is a live <code>hou</code> oracle and <em>"MUST run in the Houdini process"</em> (module docstring). <code>_handle_render</code> marshals for the same reason (<span class="anchor">handlers_render.py:628-631</span>: <em>"Marshals via <code>run_on_main</code> since <code>hou.RopNode.render()</code> must run on the main thread"</em>). For any render that occupies the main thread, a reclassified propose still queues on the marshal &mdash; <strong>same wait, different queue.</strong></p>
+  <p><strong>The precedent does not transfer.</strong> <span class="anchor">handlers_render.py:1677-1681</span> justifies <code>render_stop</code>/<code>render_farm_cancel</code> as read-only because <em>"They mutate no scene state and create no undo entry &mdash; they signal an OS process"</em> &mdash; they are main-thread-<strong>independent</strong> (<code>rps</code>/<code>rkill</code> against background processes). <code>propose_graph</code> is main-thread-<strong>bound</strong> by construction.</p>
+  <p><strong>And the draft's own test could not have caught this.</strong> "A propose dispatched off-main while <code>_MUTATION_LOCK</code> is held by another thread returns without blocking" passes after the change, but it proves lock-freedom and is silent on main-thread contention &mdash; it cannot fail for the reason the benefit was claimed.</p>
+  <p><strong>Replacement:</strong> the unblock survives only in the narrow case of a <em>background or farm</em> render that holds the C5 lock without occupying the main thread. Stated unconditionally it is false, so it is stated conditionally in W8, and W8 loses its #1 rank to the two items that genuinely retire a seat requirement.</p>
+</div>
+
+<p><strong>What the misclassification still costs today, per propose call</strong> &mdash; the two surviving items:</p>
+<ol>
+<li><strong>It takes the C5 mutation lock</strong> (<span class="anchor">handlers.py:509-520</span>), so a background/farm render holding that lock blocks proposal validation for its whole duration.</li>
+<li><strong>It captures a live integrity envelope</strong> &mdash; two topo scene hashes bracketing an op that changes nothing (&sect;6.2a).</li>
+<li><strong>It writes a false mutation record</strong> &mdash; 65 of them on disk (&sect;6.6, L3-5). <em>And the obvious remedy also deletes the only record there is.</em></li>
+</ol>
+
+<h3>7.3 &nbsp;The structural question: can the policy table express "host may, model may not"?</h3>
+<p><strong>Only by accident, and the escape hatch proves it.</strong></p>
+<p><code>OPERATION_GATES</code> is <code>dict[str, str]</code> &mdash; <strong>operation &rarr; risk word. One axis. Audience is not a column.</strong></p>
+<p>"Host may, model may not" is expressible today only because two consumers happen to read the same value in opposite ways:</p>
+<ul>
+<li>the bridge reads <code>review</code> as <em>"propose, log, continue unless rejected"</em> (<span class="anchor">shared/bridge.py:2471-2473</span>)</li>
+<li><code>worker_policy</code> reads <code>review</code> as <em>"hard deny"</em> (<span class="anchor">worker_policy.py:64</span>, applied <span class="anchor">:224</span>)</li>
+</ul>
+<p><strong>So risk level is being overloaded as an audience proxy.</strong> Three pieces of evidence that the table cannot carry the axis:</p>
+<ol>
+<li><strong>The inverse need required a hand-maintained frozenset outside the table.</strong> <code>_WORKER_BUILDER_ALLOWLIST</code> (<span class="anchor">worker_policy.py:76-79</span>) re-permits two <code>review</code>-gated composite builders to the worker, with a 10-line rationale comment. If the table could express audience, that allowlist would be a column value.</li>
+<li><strong>A third audience required a new code branch, not a table edit.</strong> The <code>proposal</code> mode is 19 lines of branching (<span class="anchor">worker_policy.py:162-180</span>), not a row.</li>
+<li><strong>The same missing row means opposite things to the two consumers.</strong> For the <strong>16</strong> mutating tools with no <code>_TOOL_TO_OPERATION</code> row (<code>cops_create_copnet</code>, <code>houdini_create_point_instancer</code>, <code>houdini_set_payload_loadstate</code>, <code>houdini_set_usd_primvar</code>, <code>houdini_shot_render_ready</code>, <code>synapse_doctor</code>, <code>synapse_emergency_halt</code>, <code>synapse_render_farm_cancel</code>, <code>synapse_render_stop</code>, <code>synapse_solaris_component_builder</code>, <code>synapse_solaris_create_variants</code>, <code>synapse_solaris_import_megascans</code>, <code>synapse_solaris_scene_template</code>, <code>synapse_solaris_set_purpose</code>, <code>synapse_write_report</code>, <code>tops_monitor_stream</code>): <strong><code>worker_policy</code> fails closed and denies</strong> (<span class="anchor">worker_policy.py:230-231</span>), while <strong><code>bridge_adapter</code> fails open to <code>set_parameter</code> = inform</strong> (<span class="anchor">bridge_adapter.py:361</span>). One absence, two opposite defaults.</li>
+</ol>
+
+<p><strong>That is bigger than a missing row, and bigger than the instantiate question.</strong> It means:</p>
+<ul>
+<li>Any op that is genuinely <em>low-risk for the host</em> but <em>must not be model-initiated</em> has to be branded high-risk at the host too &mdash; so the host pays a consent ceremony for it. <strong>Applying an already-human-reviewed proposal is exactly that op.</strong> If the C1 hunk card is the approval, then a <code>review</code> gate on <code>instantiate_graph</code> is a <em>second</em> approval of the same decision. Double-gating is the structural cost of a table with no audience axis &mdash; and it is a cost the hunk card <strong>ships with</strong> until the gated wave lands (annotated on W10, W11, W12 in &sect;9).</li>
+<li>Adding a per-engagement audience (C7) cannot be a table edit. It is a new dimension.</li>
+</ul>
+
+<p><strong>The honest statement: the policy table cannot express "host may, model may not." It expresses risk, and two consumers interpret risk as audience in ways that happen to be right today and required a hardcoded allowlist the one time they weren't.</strong></p>
+</section>
+
+<section id="s8">
+<h2><span class="num">08</span><span>Gated-surface impact</span></h2>
+<p class="subhead">Nine of sixteen items touch no gated surface at all. The two that touch the contract file are both avoidable in a first cut. The audience-axis wave is the only unavoidably gated one, and it is also the largest.</p>
+
+<h3>8.1 &nbsp;First, the label</h3>
+<p>The phrase <strong>"frozen seam" in this repository means <code>python/synapse/recipes/contracts.py</code></strong> &mdash; <span class="anchor">recipes/__init__.py:7</span> (<em>"The frozen seam every stream codes against is <code>synapse.recipes.contracts</code>"</em>), <span class="anchor">harness/notes/RELEASE_v5.63.0.md:33</span>, <span class="anchor">CHANGELOG.md:67</span> (the Solaris Recipes v3 wave, <em>"six streams over one frozen seam"</em>).</p>
+<p><strong><code>python/synapse/cognitive/graph_proposal.py</code> carries no frozen designation.</strong> Read whole &mdash; <strong>84 lines, final statement (<code>advisories</code>) at <span class="anchor">:84</span></strong> <em>(citation corrected: the draft said "84 lines by <code>wc -l</code>; final statement at :85, no trailing newline," which is internally inconsistent &mdash; <code>wc -l</code> returns 84 and <code>grep -n advisories</code> returns 84, so there is a trailing newline and no line 85)</em>. Its docstring says only <em>"PURE PYTHON &mdash; ZERO hou IMPORTS"</em> and <em>"Spec &sect;4 (v3) + amendments 1,3"</em>. Grep for <code>frozen</code> across <code>python/synapse/cognitive/</code> and <code>python/synapse/recipes/</code> ties the term to recipes only.</p>
+<p><strong>This is a naming correction, not a governance one.</strong> The CTO brief designates four surfaces as separate gated waves; that designation stands on its own authority. It is recorded here so nobody cites a Solaris-v3 process document as the reason.</p>
+
+<h3>8.2 &nbsp;What in this report touches each gated surface</h3>
+<div class="tw"><table>
+<thead><tr><th>Item</th><th class="ctr">graph_<br>proposal.py</th><th class="ctr">recipes/<br>contracts.py</th><th class="ctr">worker<br>policy</th><th class="ctr">OPERATION_<br>GATES</th></tr></thead>
+<tbody>
+<tr><td><strong>Catalog-backed existence oracle</strong> (new adapter over <code>validation/catalog.py</code>)</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Catalog-backed connectivity oracle</strong> <span class="badge b-acc">new</span> (same file, <code>min_inputs</code>/<code>max_inputs</code>/<code>max_outputs</code>)</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Unverified signal via <code>ValidationReport.advisories</code></strong> <span class="badge b-warn">re-routed</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Third validation outcome</strong> (<code>UNVERIFIED</code> in <code>ValidationStatus</code>) &mdash; <em>deferred, not built in the first cut</em></td><td class="ctr"><strong>YES</strong><br><span class="anchor">:68-70</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>OBJ support</strong> (<code>"OBJ": {"Object"}</code>)</td><td class="ctr">no<br><em>row lives in <code>graph_validator.py:28-35</code></em></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Per-hunk fields on <code>ProposedNode</code>/<code>ProposedEdge</code></strong></td><td class="ctr"><strong>YES</strong><br><span class="anchor">:24-48</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Hunks carried in <code>GateProposal.proposed_changes</code> instead</strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Apply idempotency</strong> (consume-on-build / built-marker) <span class="badge b-acc">new</span></td><td class="ctr">no<br><em><code>host/proposal_store.py</code></em></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Slow-timeout + UNKNOWN-not-FAILED on overrun</strong> <span class="badge b-acc">new</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Undo-group evidence derivation</strong> (areEnabled / undoLabels) <span class="badge b-acc">new</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>EXISTING-edge restore, or forbid EXISTING&rarr;EXISTING at validate time</strong> <span class="badge b-acc">new</span></td><td class="ctr">no<br><em>validator-side if forbidden</em></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Status downgrade on unresolved parm / unwired edge</strong> <span class="badge b-acc">new</span></td><td class="ctr">no<br><em><code>graph_builder.py:43-54</code></em></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong><code>provenance_recorded</code> on <code>InstantiationResult</code></strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong>Cook after the group, outside the try</strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td></tr>
+<tr><td><strong><code>tops_cancel_cook</code> kill-switch classification</strong> <span class="badge b-acc">new</span></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no<br><em><code>handlers.py:204-245</code></em></td><td class="ctr">no</td></tr>
+<tr><td><strong><code>propose_graph</code> classification decision</strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no<br><em>different table</em></td><td class="ctr">no</td></tr>
+<tr><td><strong>Approval producer</strong> (non-blocking panel dispatch + a gated bridge instance)</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr">no &mdash; <em>but it changes what <code>OPERATION_GATES</code> means at runtime for the first time</em></td></tr>
+<tr><td><strong>C7 engagement state</strong></td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr"><strong>NO if it composes</strong> with <code>is_tool_allowed_for_worker</code>; <strong>YES if</strong> boundary enforcement rewrites the mode table</td><td class="ctr">no</td></tr>
+<tr><td><strong>An audience axis on the gate table</strong> (&sect;7.3)</td><td class="ctr">no</td><td class="ctr">no</td><td class="ctr"><strong>YES</strong></td><td class="ctr"><strong>YES</strong><br><em>dissolves <code>_WORKER_BUILDER_ALLOWLIST</code></em></td></tr>
+</tbody></table></div>
+
+<p><strong>Read across: nine of the sixteen distinct items touch no gated surface at all, and the crucible's five new items are all ungated.</strong> The two that touch <code>graph_proposal.py</code> (UNVERIFIED status, per-hunk fields) are both avoidable in a first cut &mdash; hunks ride <code>GateProposal.proposed_changes</code>, and the unverified signal rides <code>ValidationReport.advisories</code>, which is already serialized out to the caller (<span class="anchor">cognitive/tools/propose_graph.py:96</span>). <strong>The audience-axis wave is the only one unavoidably gated, and it is also the largest.</strong></p>
+</section>
+<section id="s9">
+<h2><span class="num">09</span><span>Build order</span></h2>
+<p class="subhead">Re-ranked. The draft's #1 lost its leverage and gained three unenumerated consumers; the crucible added four items that were not on the board; one item split in two.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; why the order moved, in one paragraph</span>
+  <p>The draft ranked nine waves on a single axis: <strong>verification throughput gained &times; inverse cost</strong>. That axis still governs, but it cannot rank a <em>correctness defect</em> &mdash; an item that gains no throughput and retires a silent failure. So the order is now banded, and each band says which axis it is ranked on.</p>
+  <p><strong>Three specific moves.</strong> Old W1 (<code>propose_graph</code> read-only) fell from #1 to <strong>W8</strong>: its headline unblock is refuted (&sect;7.2) and its mechanism turns out to flip four behaviours, one of them harmful. Old W2 (catalog oracle) rose to <strong>W1</strong>: it survived the audit intact and grew in value when U5 closed. The apply-path findings became <strong>Band B</strong>, which did not exist in the draft.</p>
+</div>
+
+<div class="band">
+  <div class="bl">Band A &mdash; verification throughput</div>
+  <p class="bd">Ranked on throughput gained &times; inverse cost. All ungated, all headless-testable, none larger than S&ndash;M. These are what stop the verification loop from needing a Houdini seat.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W1</span> Catalog-backed oracles &mdash; existence <em>and</em> connectivity <span class="badge b-acc">promoted from W2</span></h3>
+<dl>
+<dt>Changes</dt><dd>New <code>CatalogExistenceOracle</code> implementing <code>IExistenceOracle</code> (<span class="anchor">cognitive/interfaces.py:8-16</span>) over <code>validation/catalog.py</code>'s <code>has_type</code> / <code>parms</code>. New <code>CatalogConnectivityOracle</code> over the same entries' <code>min_inputs</code> / <code>max_inputs</code> / <code>max_outputs</code>. Compose each with its live-<code>hou</code> counterpart so <code>hou</code> wins when present, catalog answers when not, and <em>neither</em> emits an explicit unverified signal through <code>ValidationReport.advisories</code> &mdash; <strong>not</strong> a new <code>ValidationStatus</code> member.</dd>
+<dt>Files</dt><dd>new <code>python/synapse/cognitive/catalog_oracles.py</code> (or <code>host/</code>-adjacent if composition needs it) + the two construction sites <span class="anchor">graph_synth_runtime.py:62</span> and <span class="anchor">graph_builder.py:65</span></dd>
+<dt>Size</dt><dd><strong>S&ndash;M</strong> &mdash; two ~30-line adapters + wiring. <em>Was S for one adapter; U5's closure made it two.</em></dd>
+<dt>New test</dt><dd><code>test_validator_constructs_without_hou</code> &mdash; with <code>hou</code> absent from <code>sys.modules</code>, assert <code>GraphValidator</code> constructs, <code>node_type_exists("box","Sop") is True</code>, <code>node_type_exists("bocks","Sop") is False</code>, <code>parameter_exists("box","Sop","sizex")</code> resolves, and <code>input_arity("merge","Sop")</code> returns the catalog's pair.</dd>
+<dt>Fails today</dt><dd>Cannot import. <span class="anchor">existence_adapter.py:16</span> <em>and</em> <span class="anchor">graph_oracle.py:17</span> both hard-import <code>hou</code> at module scope, and both are passed to the same constructor.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_graph_oracle_mile2.py</code>, <code>tests/test_graph_synth_wiring.py</code> (construction-site signature), <code>tests/test_graph_proposal_mile1.py</code> if it asserts oracle identity.</dd>
+<dt>Coverage</dt><dd>Derive category coverage from <code>_manifest.json["files"].keys()</code> or the directory glob &mdash; <strong>never</strong> from a hand-copied table (&sect;2.3).</dd>
+<dt>Seat</dt><dd>None for the adapters. <strong>One gated hython run (G2)</strong> to confirm catalog&harr;runtime agreement on a sample.</dd>
+<dt>Unblocks</dt><dd><strong>C2 and C4 both.</strong> Validation becomes constructible and testable headless &mdash; the verification loop stops requiring a seat. This is the single highest-throughput item on the board.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W2</span> OBJ vocabulary <span class="badge b-mute">was W4</span></h3>
+<dl>
+<dt>Changes</dt><dd>One dict row <code>"OBJ": {"Object"}</code> in <code>_NETWORK_CATEGORIES</code>; update the <code>network_type</code> comment at <span class="anchor">graph_proposal.py:54</span> (comment only &mdash; no executable contract change).</dd>
+<dt>Files</dt><dd><span class="anchor">cognitive/graph_validator.py:28-35</span></dd>
+<dt>Size</dt><dd><strong>XS</strong> &mdash; survived the caller hunt: <code>_NETWORK_CATEGORIES</code> has exactly one consumer, <span class="anchor">graph_validator.py:438</span>.</dd>
+<dt>New test</dt><dd><code>test_obj_network_rejects_wrong_category</code> &mdash; an <code>OBJ</code> proposal carrying <code>node_category="Sop"</code> must produce a P4 error. Uses a protocol-level oracle mock, not a fake <code>hou</code> &mdash; legal, because category membership is contract logic, not host behaviour.</dd>
+<dt>Fails today</dt><dd>It <strong>passes</strong>. <code>_NETWORK_CATEGORIES.get("OBJ")</code> returns <code>None</code>, <code>if allowed:</code> is False, the check is skipped entirely (<span class="anchor">graph_validator.py:438-448</span>). The test fails by <em>not failing</em>, which is the point.</dd>
+<dt>Rewrite</dt><dd>None expected.</dd>
+<dt>Seat</dt><dd>None. The category string <code>"Object"</code> is verified from <code>rag/catalog/h22.0.400/Object.json</code> (<code>"category": "Object"</code>, 186 types) &mdash; a live-probe-generated receipt. G1 is confirmation, not a gate.</dd>
+<dt>Unblocks</dt><dd>OBJ proposals stop being silently permissive. Prerequisite for any object-level graph work.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W3</span> Classify <code>tops_cancel_cook</code> as the kill switch it is <span class="badge b-acc">new &mdash; from the &sect;4.1 refutation</span></h3>
+<dl>
+<dt>Changes</dt><dd>Add <code>"tops_cancel_cook"</code> to <code>_READ_ONLY_COMMANDS</code>, with in-handler audit, following the <code>render_farm_cancel</code> pattern exactly.</dd>
+<dt>Files</dt><dd><span class="anchor">server/handlers.py:204-245</span> + in-handler audit in <code>handlers_tops</code></dd>
+<dt>Size</dt><dd><strong>XS&ndash;S</strong> &mdash; one line plus the audit call the pattern requires.</dd>
+<dt>Why this and not <code>propose_graph</code></dt><dd>The justification is already written in the tree verbatim (<span class="anchor">handlers.py:227-241</span>): a running cook holds the C5 lock for its whole duration, so a mutating-classified cancel <em>queues behind the very operation it exists to interrupt</em> &mdash; <em>"the difference between a kill switch and a decoration."</em> And unlike <code>propose_graph</code>, cancelling a PDG context is main-thread-independent in the same way <code>render_farm_cancel</code> is, so the &sect;7.2 refutation does not apply to it. The four consumers still flip, but for a cancel every one of them flips in the <em>desired</em> direction &mdash; including the F3 breaker bypass, which is exactly what a kill switch wants during a freeze.</dd>
+<dt>New test</dt><dd><code>test_tops_cancel_is_not_lock_blocked</code> &mdash; assert membership, <strong>and</strong> that a cancel dispatched off-main while <code>_MUTATION_LOCK</code> is held returns without blocking.</dd>
+<dt>Fails today</dt><dd>The membership assert fails outright <em>(producer: parse of the frozenset at <span class="anchor">handlers.py:204-245</span> &rarr; 40 names, <code>tops_cancel_cook</code> absent)</em>; the lock test hangs to timeout.</dd>
+<dt>Rewrite</dt><dd>Sweep anything asserting a mutation-class envelope or FloorGate record for <code>tops_cancel_cook</code>; <code>harness/verify/readonly_hint_agreement.py</code> expectations.</dd>
+<dt>Seat</dt><dd>None &mdash; pure Python, headless.</dd>
+<dt>Unblocks</dt><dd>A TOPS cancel that actually cancels. Also removes a false "already safe" reading of &sect;4.1 that would have caused this work to be skipped entirely.</dd>
+</dl>
+</div>
+
+<div class="band">
+  <div class="bl">Band B &mdash; apply-path honesty</div>
+  <p class="bd">Ranked on <strong>risk retired</strong>, not throughput gained. Every item here is correctness debt the crucible surfaced. Nobody should trust an apply result until W4 and W6 land.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W4</span> Apply idempotency and an honest timeout <span class="badge b-crit">new &mdash; highest-severity finding</span></h3>
+<dl>
+<dt>Changes</dt><dd>Two independent halves, either of which alone closes the double-build. <strong>(a)</strong> Give <code>instantiate_graph</code> <code>_SLOW_TIMEOUT</code> (or an explicit larger bound) and report overrun as <strong>UNKNOWN</strong>, not FAILED &mdash; a build that may have completed is not a failure. <strong>(b)</strong> Make apply idempotent at the store: consume-on-build, or a built-marker keyed by <code>proposal_id</code>, so a retry after a timeout is a no-op rather than a second graph.</dd>
+<dt>Files</dt><dd><span class="anchor">server/handlers_graph_synth.py:93</span> (timeout arg), <span class="anchor">host/proposal_store.py</span> (34 lines, whole file in play), <span class="anchor">host/graph_builder.py:189-197</span> (status vocabulary)</dd>
+<dt>Size</dt><dd><strong>S&ndash;M</strong></dd>
+<dt>New test</dt><dd><code>test_apply_retry_after_timeout_is_a_noop</code> &mdash; drive an apply whose payload outlives the bound, assert the caller is told UNKNOWN, then re-issue the same <code>proposal_id</code> and assert <strong>zero</strong> additional nodes and <strong>one</strong> undo group. Plus <code>test_proposal_store_consumes_on_build</code>.</dd>
+<dt>Fails today</dt><dd>Unwritable against the current design without asserting the bug: <code>ProposalStore.get()</code> returns <code>entry[1]</code> and leaves the entry in place, no built-marker anywhere <em>(producer: full read of <code>proposal_store.py</code>)</em>, and <span class="anchor">main_thread.py:564</span> sets <code>started[0] = True</code> before <code>fn()</code>, so the abandoned payload runs to completion.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_graph_builder_mile3.py</code> if it pins the result-status vocabulary; any test asserting <code>ProposalStore.get()</code> is repeatable.</dd>
+<dt>Seat</dt><dd>None for the logic. <strong>G5</strong> measures the real apply wall-time distribution against the bound &mdash; recon, not a gate; the defect stands regardless of the number (&sect;12.4).</dd>
+<dt>Unblocks</dt><dd>The apply result becomes something a human can act on. Until this lands, "FAILED" on an apply is not a fact about the scene.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W5</span> Undo-group evidence derivation <span class="badge b-acc">new &mdash; from the &sect;6.1 downgrade</span></h3>
+<dl>
+<dt>Changes</dt><dd>Port the bridge's evidence pattern into <code>graph_builder</code>: snapshot <code>hou.undos.areEnabled()</code> and <code>undoLabels</code> around the group, and emit <code>revert=</code> <strong>only</strong> when a group was actually recorded; otherwise emit an honest "not undoable in this context."</dd>
+<dt>Files</dt><dd><span class="anchor">host/graph_builder.py:126</span>, <span class="anchor">:196</span>, <span class="anchor">:284</span> &mdash; pattern source at <span class="anchor">shared/bridge.py:1662-1677</span></dd>
+<dt>Size</dt><dd><strong>S</strong></dd>
+<dt>New test</dt><dd><code>test_revert_hint_absent_when_undos_disabled</code> &mdash; run a build under a disabled-undo scope and assert <code>revert</code> is empty and the result says so. This requires a fake <code>hou</code> that <em>has</em> <code>areEnabled</code> &mdash; the current fixture does not.</dd>
+<dt>Fails today</dt><dd><span class="anchor">graph_builder.py:196</span> emits the hint unconditionally; the file has zero <code>hou.undos</code> references beyond the group itself.</dd>
+<dt>Rewrite</dt><dd><strong><code>tests/test_graph_builder_mile3.py:113-126</code></strong> &mdash; <code>_FakeUndos</code>/<code>_FakeUndosGroup</code> must gain <code>areEnabled</code> and <code>undoLabels</code>. Rewrite by <em>strengthening</em>, never by deleting scenario 2 at <span class="anchor">:292</span>.</dd>
+<dt>Seat</dt><dd><strong>GUI seat</strong> for the Ctrl+Z check &mdash; and that check is now a <em>gate on the &sect;6.1 grade</em>, not an optional confirmation.</dd>
+<dt>Unblocks</dt><dd>Moves &sect;6.1 from ASSERTED back toward ANCHORED. Closes L3-8.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W6</span> Honest VERIFY, honest RECORD, honest rollback <span class="badge b-warn">was W3 &mdash; grew</span></h3>
+<dl>
+<dt>Changes</dt><dd>Five fixes, independent of one another.<br>
+<strong>(a)</strong> Add <code>resolved: bool</code> to the <code>_set_and_read</code> record so UNKNOWN &ne; <code>None</code>.<br>
+<strong>(b)</strong> <span class="badge b-acc">new</span> Make the record <em>mean</em> something: any <code>wired: False</code> or unresolved parm downgrades the status to PARTIAL, or populates <code>errors</code> on the BUILT path. Without this, (a) is a field nobody reads (L3-7).<br>
+<strong>(c)</strong> Add <code>provenance_recorded: bool</code> to <code>InstantiationResult</code>, set from <code>_emit_provenance</code>.<br>
+<strong>(d)</strong> <span class="badge b-acc">new</span> Verify the destroy loop <em>and</em> restore EXISTING-node inputs before any message claims zero net mutation &mdash; or forbid EXISTING&rarr;EXISTING edges at validate time. Until one of those, the message reads "new nodes destroyed; pre-existing wiring not restored" (L3-6).<br>
+<strong>(e)</strong> Delete the stale <em>Residual</em> clause at <span class="anchor">:271-274</span> <strong>and</strong> the same sentence in the repo <code>CLAUDE.md</code> Current Status row &mdash; fixing one alone re-seeds it.</dd>
+<dt>Files</dt><dd><span class="anchor">host/graph_builder.py:236-251</span>, <span class="anchor">:43-54</span>, <span class="anchor">:160-183</span>, <span class="anchor">:270-287</span>; repo <code>CLAUDE.md</code></dd>
+<dt>Size</dt><dd><strong>S&ndash;M</strong> <em>(was S; (b) and (d) are the growth)</em></dd>
+<dt>New test</dt><dd><code>test_instantiate_reports_provenance_failure</code> &mdash; inject a <code>provenance_writer</code> that raises; assert <code>provenance_recorded is False</code> while <code>status is BUILT</code>. <code>test_unresolved_parm_downgrades_status</code>. <code>test_failed_build_restores_existing_inputs</code>.</dd>
+<dt>Fails today</dt><dd>None of the fields exist, so none of the tests compile; the swallow at <span class="anchor">:286-287</span> makes success indistinguishable from a thrown provenance write; <span class="anchor">tests/test_graph_builder_mile3.py:332</span> asserts only that the EXISTING node survives, never that its inputs did.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_graph_builder_mile3.py</code> (result-shape assertions).</dd>
+<dt>Test honesty</dt><dd>(a) and (c) are branch logic and are legitimately fake-<code>hou</code> testable &mdash; scope the tests to the branch and say so. The <em>host premise</em> ("an unknown parm name on a real created type yields no template") is a host fact and belongs in <strong>G3</strong>, which is already a hython graph-build probe and carries it at zero marginal cost.</dd>
+<dt>Seat</dt><dd><strong>Two gated hython runs (G6)</strong> to re-stamp <code>graph_truth_22.0.400.json</code> and <code>..._22.0.417.json</code>. <em>The draft said "Seat/build: none" while also requiring a re-stamp of two per-build receipts &mdash; those cannot both be true. Corrected.</em></dd>
+<dt>Unblocks</dt><dd>Closes L3-1, L3-2, L3-3, L3-4, L3-6, L3-7. A human reading an apply result can tell <em>"we could not read this back"</em> from <em>"this is null"</em> &mdash; and the result's verdict now reflects the difference.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W7</span> One cook on the APPLY path <span class="badge b-warn">was W5 &mdash; re-scoped</span></h3>
+<dl>
+<dt>Recon first</dt><dd>Run <strong>G3 as a pure measurement</strong> and record the number <em>before</em> writing the test. If created leaves are already cooking incidentally (via init scripts or <code>parm.eval</code>), the premise "may sit un-cooked" needs re-stating before this row is worth building at all.</dd>
+<dt>Changes</dt><dd>Explicit cook of created leaf nodes <strong>after the undo group closes and outside the <code>try</code></strong>, explicitly bounded, with "built, cook incomplete" as a distinct status. <em>Not</em> inside the group, and <em>not</em> inside the try &mdash; see &sect;6.3.</dd>
+<dt>Files</dt><dd><span class="anchor">host/graph_builder.py</span>, after <span class="anchor">:159</span></dd>
+<dt>Size</dt><dd><strong>S</strong> &mdash; the effort was never the problem; the placement was.</dd>
+<dt>New test</dt><dd><code>test_instantiate_cooks_created_leaf</code> &mdash; assert the <strong>delta</strong> in <code>cookCount()</code> attributable to the change, captured immediately after <code>instantiate()</code> returns. <code>cookCount()</code> is a monotone counter, so <code>&gt; 0</code> alone cannot distinguish "cooked by W7" from "cooked incidentally at build time" &mdash; the delta is the only meaningful reading.</dd>
+<dt>Fails today</dt><dd>Grep confirms <strong>zero</strong> <code>cook</code> occurrences across the three APPLY-path files (exit 1). Whether the <em>observable</em> fails depends on G3's recon number.</dd>
+<dt>Rewrite</dt><dd>None; extends the Mile-3 fixture set.</dd>
+<dt>Seat</dt><dd><strong>Gated hython run (G3)</strong> &mdash; cook state is not observable statically.</dd>
+<dt>Unblocks</dt><dd>The third leg of "one group / one dispatch / one cook." Makes the apply result <em>visibly</em> true in the viewport rather than eventually true &mdash; without letting a benign cook error destroy a structurally correct build.</dd>
+</dl>
+</div>
+
+<div class="band">
+  <div class="bl">Band C &mdash; the contaminated classification</div>
+  <p class="bd">One item, separated out because its remedy is a decision rather than an edit.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W8</span> <code>propose_graph</code> classification &mdash; a four-consumer decision <span class="badge b-crit">was W1 &mdash; demoted</span></h3>
+<dl>
+<dt>The question</dt><dd>Not <em>"add it to the frozenset"</em> but <em>"what classification does a validate-and-park op actually want?"</em> Membership in <code>_READ_ONLY_COMMANDS</code> buys lock-freedom and envelope-skip, and simultaneously costs Tier-0 provenance (<span class="anchor">core/floor_gate.py:292-306</span>), resilience and latency tracking (<span class="anchor">websocket.py:686-693</span>), and <strong>F3 freeze protection</strong> (<span class="anchor">hwebserver_adapter.py:236-257</span>). The last is actively harmful: <code>_handle_propose_graph</code> is <code>run_on_main</code>-bound (<span class="anchor">handlers_graph_synth.py:69</span>), so post-change a propose during a freeze stops fast-failing and starts queueing behind the frozen main thread.</dd>
+<dt>Likely answer</dt><dd>A <strong>third classification</strong> &mdash; record-but-do-not-lock &mdash; rather than membership. Decide (a) whether propose keeps a Tier-0 record, (b) an explicit exclusion so it still hits the F3 breaker gate, or a plain statement that freeze-time proposes will hang.</dd>
+<dt>Files</dt><dd><span class="anchor">server/handlers.py:204-245</span> and <span class="anchor">:509-520</span>, <span class="anchor">core/floor_gate.py:292-306</span>, <span class="anchor">server/websocket.py:686-693</span>, <span class="anchor">server/hwebserver_adapter.py:236-257</span>, <span class="anchor">server/integrity_envelope.py:73-77</span></dd>
+<dt>Size</dt><dd><strong>S&ndash;M</strong> <em>(the draft said XS, 1 line + comment)</em></dd>
+<dt>New test</dt><dd>Lock-freedom, <strong>plus</strong> an F3 regression test: with the transport breaker open, a propose must still fast-fail rather than queue. <strong>Plus</strong> a second test that holds the <em>main thread</em> (not the lock) and asserts what a propose actually does then &mdash; that is the honest measure of "verification throughput," and the draft's test could not see it.</dd>
+<dt>Unblock &mdash; qualified</dt><dd>Proposals validate during <strong>background or farm</strong> renders that hold the C5 lock without occupying the main thread. <strong>Not</strong> during a foreground render &mdash; that blocks on the marshal either way (&sect;7.2). Also retires L3-5's 65 false mutation records, at the cost of whatever record the decision chooses to keep.</dd>
+<dt>Seat</dt><dd>None &mdash; pure Python, headless.</dd>
+</dl>
+</div>
+
+<div class="band">
+  <div class="bl">Band D &mdash; the human surface</div>
+  <p class="bd">Seat-bound, sequential, and gated on W9 existing. Each row names the double-gate it ships with (&sect;7.3) so a builder who meets it does not read it as a bug in their own wave.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W9</span> The approval producer &mdash; non-blocking panel dispatch <span class="badge b-mute">was W6</span></h3>
+<dl>
+<dt>Changes</dt><dd>Make panel tool dispatch non-blocking so a bridge instance can carry a real <code>HumanGate</code> without the main thread sleeping on a decision only the frozen GUI can deliver. Panel-side, per the bridge's own instruction (<span class="anchor">shared/bridge.py:2537-2540</span>). Then wire a gated bridge for artist-facing operations while leaving the in-process trail single.</dd>
+<dt>Files</dt><dd><code>python/synapse/panel/</code> dispatch path (<code>tool_executor</code> &rarr; <code>bridge_adapter.execute_through_bridge</code>), <span class="anchor">panel/bridge_adapter.py:190-232</span></dd>
+<dt>Size</dt><dd><strong>M&ndash;L</strong></dd>
+<dt>New test</dt><dd><code>test_approve_gated_op_does_not_block_main_thread</code> &mdash; a CRITICAL op dispatched from the Qt/main thread must return control to the event loop while the proposal sits PENDING, and the card must render.</dd>
+<dt>Fails today</dt><dd>Cannot be written against the current design &mdash; <code>_check_consent</code> never reaches Path 1, so no proposal is ever created; and if one were, <code>_wait_for_decision</code> would <code>time.sleep</code> on the thread that must draw the card.</dd>
+<dt>Rewrite</dt><dd><strong><code>tests/test_panel_consent_no_freeze.py:35</code></strong> &mdash; it asserts <code>bridge._gate is None</code>. Rewriting it is mandatory and must be done by <em>strengthening</em> it (assert the dispatch is non-blocking), never by deleting it, or the 2026-06-01 freeze returns. Also <code>tests/panel/test_chat_gate_off_bridge.py</code>, <code>tests/test_panel_session_consent.py</code>, <code>tests/test_consent_timeout.py</code>.</dd>
+<dt>Seat</dt><dd><strong>GUI seat required.</strong> Headless proves non-blocking; only a seat proves <em>not frozen</em>. This is the one item that re-arms a confirmed deadlock if it is wrong.</dd>
+<dt>Unblocks</dt><dd><strong>Everything in C1.</strong> Until this lands, hunk rows, Apply-all, Edit, and typed approval are all decoration on an unreachable surface.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W10</span> The hunk list <span class="badge b-mute">was W7</span></h3>
+<dl>
+<dt>Changes</dt><dd>Hunks carried in <code>GateProposal.proposed_changes</code> as <code>[{change, expected_effect}]</code>; per-hunk verb rows in the body band; <code>sequence_id</code> threaded into the card model; Apply-all routed to the existing <code>approve_all</code> / <code>decide_batch</code>; Edit routed to <code>decide(&hellip;, MODIFIED, modified_changes=&hellip;)</code>; a genuine single-line compact path for the one-hunk case; a typed-chat parser converging on the same two <code>decide()</code> call sites.</dd>
+<dt>Files</dt><dd><span class="anchor">panel/gate_widget.py:169-359</span> + <span class="anchor">:362-631</span>, <span class="anchor">panel/synapse_panel.py</span> (chat parser)</dd>
+<dt>Size</dt><dd><strong>M</strong></dd>
+<dt>New test</dt><dd><code>test_single_hunk_proposal_renders_as_one_line</code> &mdash; fixed max row/widget count, or an <code>is_compact</code> code path.</dd>
+<dt>Fails today</dt><dd><code>_ProposalCard</code> unconditionally builds header and footer bands regardless of content; the only conditional (<span class="anchor">gate_widget.py:242-243</span>) hides the body and never collapses the card.</dd>
+<dt>Rewrite</dt><dd><code>tests/panel/test_gate_consent_honesty.py</code> (RULING 18 must hold <strong>per hunk</strong> &mdash; a per-hunk decision that never reached the gate must read NOT RECORDED on that row), <code>tests/panel/test_bc_wave.py</code> (BC-6a/6b card-in-consent-slot), <code>tests/test_consent_timeout.py</code> (countdown still satisfied at whole-proposal level), <code>tests/test_panel_sweep_a.py</code> (needs a hunk-row style).</dd>
+<dt>Ships with</dt><dd><span class="badge b-warn">known</span> <strong>A double approval on applies until W12.</strong> With no audience axis, a <code>review</code>-gated <code>instantiate_graph</code> asks a second time for a decision the hunk card already took (&sect;7.3). This is expected, not a defect in W10.</dd>
+<dt>Seat</dt><dd><strong>GUI seat</strong> for visual weight; hython-offscreen for widget-count assertions.</dd>
+<dt>Unblocks</dt><dd>C1 proper. Depends on W9.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W11</span> C7 engagement state <span class="badge b-mute">was W8</span></h3>
+<dl>
+<dt>Changes</dt><dd>An <code>EngagementState</code> object holding the eight <span class="anchor">INTENT.md:66-77</span> fields; a real lifecycle covering the seven <span class="anchor">INTENT.md:82-93</span> states; change-boundary enforcement composing with (not rewriting) <code>is_tool_allowed_for_worker</code>; a chat-settable input surface; a deliberate-resume check at the session boundary.</dd>
+<dt>Files</dt><dd>new module + <span class="anchor">panel/synapse_panel.py</span> (session boundary, <code>_on_stop</code> at <span class="anchor">:3469</span>), <span class="anchor">panel/tool_bridge.py:107-108</span> (call-site signature)</dd>
+<dt>Size</dt><dd><strong>L</strong></dd>
+<dt>New test</dt><dd>Set a narrower-than-mode engagement scope from the conversation-facing entry point and assert the host <strong>denies</strong> an operation the env-resolved worker mode would otherwise allow.</dd>
+<dt>Fails today</dt><dd>Unwritable &mdash; there is no conversational scope input at all. The only testable condition today is the trivial one: <code>resolve_mode()</code> ignores everything except env/profile (<span class="anchor">worker_policy.py:82-103</span>), so a chat-shaped override provably has zero effect.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_mode_gate.py</code> and any test pinning <code>resolve_mode()</code>'s signature.</dd>
+<dt>Ships with</dt><dd><span class="badge b-warn">known</span> <strong>A provisional boundary.</strong> W12 re-expresses change-boundary as a table dimension; whatever W11 composes on the side is expected to be re-homed then. Compose &mdash; do not rewrite the mode table &mdash; or W11 becomes gated and the rebuild gets expensive (&sect;8.2).</dd>
+<dt>Seat</dt><dd>None for the state object; <strong>GUI seat</strong> for the visible engagement sentence and the Paused-with-reason display.</dd>
+<dt>Unblocks</dt><dd>C7. Prerequisite for anything that claims Take-over / Resume semantics.</dd>
+</dl>
+</div>
+
+<div class="band">
+  <div class="bl">Band E &mdash; gated</div>
+  <p class="bd">Separate CTO authorization. Pure Python and headless &mdash; its only real cost is the authorization, which can be <strong>requested in parallel with Bands A&ndash;C</strong> so it is not the thing Band D waits on.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W12</span> The audience axis <span class="badge b-mute">was W9</span></h3>
+<dl>
+<dt>Changes</dt><dd>Give the policy table a second dimension so "host may, model may not" is <em>declared</em> rather than inferred from risk; dissolve <code>_WORKER_BUILDER_ALLOWLIST</code> (<span class="anchor">worker_policy.py:76-79</span>) into it; reconcile the three disagreeing classification tables (&sect;7.1); reconcile <code>autonomy/driver.py</code>'s parallel <code>GateLevel</code> vocabulary.</dd>
+<dt>Files</dt><dd><span class="anchor">shared/constants.py:79-103</span> <strong>(gated)</strong>, <span class="anchor">panel/worker_policy.py</span> <strong>(gated)</strong></dd>
+<dt>Size</dt><dd><strong>L</strong></dd>
+<dt>New test</dt><dd>An op declared <code>host: allowed, model: denied</code> must be permitted through the bridge with consent and denied to the worker <strong>without</strong> any hardcoded allowlist; and a <code>review</code>-gated op declared model-permitted must be allowed without an allowlist entry.</dd>
+<dt>Fails today</dt><dd>Unwritable &mdash; the table has no audience column; the only way to express model-permitted-despite-review is the frozenset.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_mode_gate.py</code>, <code>tests/test_phase0b_consent_posture.py</code>, plus the <code>CONSTANTS_HASH</code> pin (<code>shared/constants.py</code>) and its drift detector.</dd>
+<dt>Sequencing note</dt><dd>The crucible offered pulling W12 ahead of W11. <strong>I take the other horn</strong> &mdash; annotate W10 and W11 with the consequence and leave W12 last &mdash; because promoting a gated L-sized wave ahead of ungated S work inverts the ranking principle the whole section runs on. What <em>is</em> adopted: request the authorization early so W12 is never the item Band D is waiting on. Reasoning recorded in &sect;12.5.</dd>
+<dt>Seat</dt><dd>None &mdash; pure Python. <strong>Gated wave, separate CTO authorization.</strong></dd>
+<dt>Unblocks</dt><dd>Removes the double-gate on already-human-reviewed applies (&sect;7.3). Makes C7's change boundary expressible rather than bolted on.</dd>
+</dl>
+</div>
+</section>
+<section id="s10">
+<h2><span class="num">10</span><span>Needs a seat or a gated run</span></h2>
+<p class="subhead">Seven gated runs, five seat-bound checks. Two of the gated runs are new; one changed from a gate to a measurement.</p>
+
+<h3>Environment pin &mdash; every command below</h3>
+<p>The <code>.synapse/hytest.py</code> shim resolves hython first-usable-wins: <code>$SYNAPSE_HYTHON</code> &rarr; <code>hython</code> on PATH &rarr; <strong>newest</strong> install. Five builds carry <code>hython.exe</code> on this host (21.0.773, 22.0.400, 22.0.413, 22.0.417, 22.0.429); unpinned, the shim picks <strong>22.0.429</strong>, which has <strong>no symbol table</strong>. <em>Producer: <span class="anchor">harness/battleplan/notes/BP3_RECON.md:55-70</span>.</em></p>
+<pre><span class="a">$env:SYNAPSE_HYTHON</span> = "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe"
+<span class="a">$env:HOUDINI_USER_PREF_DIR</span> = "C:/Users/User/OneDrive/Documents/houdini22.0"</pre>
+<p class="footnote">The pref-dir pin is not optional: the pre-redirect <code>C:/Users/User/Documents/houdini22.0</code> is <strong>absent</strong>, and agent-lane hython has looked there before (<span class="anchor">BP3_RECON.md:69</span>).</p>
+
+<h3>G1 &mdash; Confirm the OBJ category name against the live runtime <span class="badge b-mute">W2 corroboration</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON -c "import hou; print(hou.applicationVersionString()); print(sorted(hou.nodeTypeCategories().keys()))"</pre>
+<p><strong>Expect:</strong> <code>22.0.400</code>, and <code>Object</code> present. Already corroborated statically from <code>rag/catalog/h22.0.400/Object.json</code> &mdash; this run is confirmation, not a gate.</p>
+
+<h3>G2 &mdash; Catalog &harr; runtime agreement <span class="badge b-acc">W1 gate</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON -c @"
+import hou, sys
+sys.path.insert(0, r'C:/Users/User/SYNAPSE/python')
+from synapse.validation import catalog
+cat_obj = catalog.default_catalog()
+bad_type, bad_arity = [], []
+for cat_name in ('Sop','Lop','Object'):
+    cat = hou.nodeTypeCategories()[cat_name]
+    live = set(cat.nodeTypes().keys())
+    for nt in sorted(live)[:200]:
+        if not cat_obj.has_type(cat_name, nt):
+            bad_type.append((cat_name, nt))
+print('sampled 600 | catalog-missing types:', len(bad_type)); print(bad_type[:20])
+"@</pre>
+<p><strong>Gate:</strong> any nonzero miss on HFS-shipped types means the composition in W1 must treat catalog-<code>None</code> as <em>unverified</em>, never as <em>absent</em>. Expect Labs/MOPs HDAs to appear as misses &mdash; that is the known third-party split (<em>live-catalogue-denominator-is-machine-config</em>), not a catalog defect.</p>
+<p><strong>Second half, now required:</strong> repeat the comparison for <code>min_inputs</code>/<code>max_inputs</code> against <code>hou.nodeType(...).maxNumInputs()</code> on the same sample. U5's closure made connectivity part of W1, so arity agreement is part of W1's gate.</p>
+
+<h3>G3 &mdash; Post-apply cook state <span class="badge b-warn">re-scoped: recon, then gate</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON C:/Users/User/SYNAPSE/harness/probes/&lt;new_cook_probe&gt;.py</pre>
+<p>Build a two-node SOP chain through <code>graph_synth_runtime.instantiate()</code>, then read <code>cookCount()</code> on the leaf <strong>without</strong> touching the viewport.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; the draft's gate and its own test expected opposite things</span>
+  <p>W5-as-drafted asserted <code>cookCount() &gt; 0</code> would <em>fail</em> today, while G3-as-drafted expected <code>&gt; 0</code> <em>"before and after."</em> If the before-reading is already &gt;0 (init scripts, <code>parm.eval</code>, <code>inputConnections</code> read-back), the test is true by construction and passes before any code changes. If the before-reading is 0, G3's gate is unsatisfiable as written and a builder records a FAIL on a correct implementation.</p>
+  <p><strong>Run G3 as pure recon first and write the number down.</strong> <code>cookCount()</code> is a monotone counter, so only the <strong>delta</strong> attributable to W7 is meaningful. If the recon number is already &gt;0, W7's premise needs re-stating before the row is worth building.</p>
+  <p><strong>Carried at zero marginal cost:</strong> the same probe answers W6's host premise &mdash; request a parm name that does not exist on the created type and confirm <code>node.parm()</code> returns <code>None</code> on a real node type, not just inside the fake fixture.</p>
+</div>
+
+<h3>G4 &mdash; <code>log_decision</code> on an unmigrated <code>agent.usd</code> <span class="badge b-mute">W6 corroboration</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON -c "&hellip;construct an agent.usd below SCHEMA_VERSION 2.0.0, call graph_synth_runtime.instantiate(), then inspect for /SYNAPSE/memory/decisions&hellip;"</pre>
+<p><span class="anchor">memory/agent_state.py:567-569</span> suggests a <strong>silent no-op with only a log warning</strong> when the prim tree is missing. If unmigrated scenes are the common case, Channel A provenance (&sect;6.5) is dormant in practice despite being code-wired &mdash; which would make W6's <code>provenance_recorded</code> field the only way anyone would ever find out.</p>
+
+<h3>G5 &mdash; Apply wall-time against the 10s bound <span class="badge b-acc">new &mdash; W4 recon</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON C:/Users/User/SYNAPSE/harness/probes/&lt;apply_timing_probe&gt;.py</pre>
+<p>Time <code>graph_synth_runtime.instantiate()</code> end-to-end across a spread of proposal sizes (2, 8, 24, 64 nodes), with and without <code>_agent_usd_provenance</code> wired, and record the distribution against <code>_DEFAULT_TIMEOUT = 10.0</code> (<span class="anchor">main_thread.py:21</span>).</p>
+<p><strong>This is recon, not a gate.</strong> The &sect;6.2(b) defect &mdash; a bound that abandons without stopping, over a store that does not consume &mdash; is structural and stands whatever the number is. G5 answers only <em>how often it bites</em>, which sets W4's urgency, not its necessity. Recorded as U9 and argued in &sect;12.4.</p>
+
+<h3>G6 &mdash; Re-stamp the graph-truth receipts, both builds <span class="badge b-acc">new &mdash; W4/W5/W6 exit</span></h3>
+<pre><span class="c"># 22.0.400</span>
+$env:SYNAPSE_HYTHON = "&hellip;/Houdini 22.0.400/bin/hython.exe"; &amp; $env:SYNAPSE_HYTHON &lt;receipt_script&gt;
+<span class="c"># 22.0.417 — a second install, a second run</span>
+$env:SYNAPSE_HYTHON = "&hellip;/Houdini 22.0.417/bin/hython.exe"; &amp; $env:SYNAPSE_HYTHON &lt;receipt_script&gt;</pre>
+<p>Each receipt <em>"binds the implementation hash to its observed build"</em> (<span class="anchor">graph_builder.py:11-12</span>). W4, W5 and W6 all edit <code>graph_builder.py</code> and will invalidate both. <strong>Re-stamp; do not re-check.</strong> Two gated runs on two different Houdini installs &mdash; the draft claimed "Seat/build: none" for this work while also requiring the re-stamp, which cannot both be true.</p>
+
+<h3>G7 &mdash; TOPS cancel under a live cook <span class="badge b-acc">new &mdash; W3 gate</span></h3>
+<pre>&amp; $env:SYNAPSE_HYTHON C:/Users/User/SYNAPSE/harness/probes/&lt;tops_cancel_probe&gt;.py</pre>
+<p>Start a multi-item TOPS cook, then issue <code>tops_cancel_cook</code> off-main while the cook is in flight. <strong>Gate:</strong> the cancel returns and the cook stops. Today it is classified mutating (<span class="anchor">handlers.py:145</span>, <span class="anchor">:693</span>, absent from the frozenset), so it takes the C5 lock the cook holds &mdash; record the pre-change behaviour as the receipt that W3 was needed.</p>
+
+<h3>Seat-bound &mdash; GUI, no headless substitute</h3>
+<div class="tw"><table>
+<thead><tr><th>Item</th><th>Why a seat</th></tr></thead>
+<tbody>
+<tr><td><strong>Single Ctrl+Z reverses a multi-node apply</strong> <span class="badge b-warn">now a grade gate</span></td><td><span class="anchor">graph_builder.py:13-14</span> states it plainly: <em>"GUI undo/consent&hellip; are not qualified by these fixtures."</em> The 22.0.400/22.0.417 receipts were headless. After the &sect;6.1 downgrade this is no longer a confirmation &mdash; it is the evidence that moves the grade back from ASSERTED.</td></tr>
+<tr><td><strong>Ctrl+Z under a disabled-undo scope</strong> <span class="badge b-acc">new</span></td><td>W5's honest-<code>revert</code> path. Run a build inside a <code>hou.undos.disabler()</code> scope and confirm the result declines to promise a revert.</td></tr>
+<tr><td><strong>The consent card renders in the CHAT slot</strong></td><td>BC-6a/6b card lending is Qt-live behaviour</td></tr>
+<tr><td><strong>W9 &mdash; no freeze on a gated dispatch</strong></td><td>Headless proves non-blocking; only a seat proves <em>not frozen</em>. This is the one that re-arms a confirmed 2026-06-01 deadlock if wrong.</td></tr>
+<tr><td><strong>W10 &mdash; single-hunk card actually reads as one line</strong></td><td>Widget count is measurable offscreen; visual weight is not</td></tr>
+<tr><td><strong>W11 &mdash; engagement sentence and Paused-with-reason display</strong></td><td>Live panel</td></tr>
+</tbody></table></div>
+
+<p><strong>Run order for a single seat session:</strong> G1 &rarr; G3 (recon, before W7) &rarr; G5 &rarr; G7 &rarr; Ctrl+Z check &rarr; disabled-undo check &rarr; card render. G2 and G6 are headless-gated and need no seat. Everything else is headless.</p>
+</section>
+
+<section id="s11">
+<h2><span class="num">11</span><span>Unknowns</span></h2>
+<p class="subhead">Labelled honestly. None are load-bearing for &sect;&sect;1&ndash;9; each is a place where I stopped rather than guessed. One closed this pass, three are new.</p>
+
+<h4>Closed this pass</h4>
+<div class="rev r-held">
+  <span class="rl">U5 &mdash; closed</span>
+  <p><em>Is <code>ConnectivityOracle</code> also live-<code>hou</code>-only?</em> <strong>Yes.</strong> <span class="anchor">host/graph_oracle.py:17</span> &mdash; <code>import hou  # noqa: F401 &mdash; host layer; never imported by cognitive.*</code>, under a docstring opening <em>"Connectivity checks through live hou introspection."</em> <strong>Consequence:</strong> W1 is two adapters, not one, and only the pair makes <code>GraphValidator</code> constructible headless. Folded into &sect;2.3, &sect;5.2, W1 and G2.</p>
+</div>
+
+<h4>Open</h4>
+<p><strong>U1 &mdash; Whether the 22.0.400/22.0.417 graph-truth receipts still bind to today's <code>graph_builder.py</code>.</strong> <code>UNVERIFIED.</code> Each receipt <em>"binds the implementation hash to its observed build"</em> (<span class="anchor">graph_builder.py:11-12</span>). I did not recompute that hash against the current file. <strong>W4, W5 and W6 all edit this file and will invalidate them regardless &mdash; re-stamp via G6, do not re-check.</strong></p>
+
+<p><strong>U2 &mdash; Whether <span class="anchor">memory/store.py:1543</span>'s <code>decisions</code> are the same decisions <code>_agent_usd_provenance</code> writes.</strong> <code>UNVERIFIED, leaning no.</code> <code>store.py:1543</code> reads <code>get_by_type(MemoryType.DECISION)</code> &mdash; a generic Moneta/Memory kind with producers at <span class="anchor">store.py:1416</span>, <span class="anchor">seed_corpus.py:118</span>, <span class="anchor">loop/ports.py:631</span>. <code>agent_state.log_decision</code> writes USD prims under <code>/SYNAPSE/memory/decisions</code> via a direct <code>Usd.Stage.Open</code>. These look like two systems sharing a word. Not proven either way &mdash; one more hop would close it.</p>
+
+<p><strong>U3 &mdash; Whether unmigrated <code>agent.usd</code> (pre-SCHEMA_VERSION 2.0.0) is the common case in live scenes.</strong> <code>UNVERIFIED.</code> If it is, Channel A provenance is effectively dormant despite being wired. <strong>G4 settles it.</strong></p>
+
+<p><strong>U4 &mdash; Whether "typed chat approval" in C1 means free text (<code>"approve"</code>, <code>"apply hunk 2"</code>) or a structured slash-command.</strong> <code>UNDECIDED, not unknown.</code> No chat-command parser exists in <code>synapse_panel.py</code> to extend in either direction, so the choice is genuinely open. A design call, not a research gap.</p>
+
+<p><strong>U6 &mdash; Whether any <code>GateProposal</code> has ever been created in this process's history.</strong> <code>UNVERIFIED, leaning no.</code> The static argument in &sect;1/&sect;3.5 is airtight for the current tree (one production constructor, <code>_gate = None</code>, pinned by test). I did not search for an older provenance or audit artifact that would show the gate having fired in some earlier configuration. <code>.synapse/provenance</code> records carry <code>outcome</code> but no gate field.</p>
+
+<p><strong>U7 &mdash; The remaining ~30 non-panel files in <code>8c23fccc</code></strong> (installer/setup toolchain, <code>host/graph_oracle.py</code>, <code>host/existence_adapter.py</code> changes). <code>NOT READ.</code> <code>git show --stat</code> confirms they do not touch <code>gate_widget.py</code>, and both oracle files were read at HEAD. The boundary between v5.68.0's host-gate work and this wave deserves its own pass if W1 or W9 turn out to overlap it.</p>
+
+<p><strong>U8 &mdash; Whether <code>_WORKER_BUILDER_ALLOWLIST</code>'s two composite builders are genuinely equivalent to their inform-level primitives.</strong> <code>UNVERIFIED.</code> The 10-line rationale at <span class="anchor">worker_policy.py:68-75</span> is specific and signed off (L4, 2026-06-25), and I have no evidence against it. But it is the one place where the policy's audience logic is asserted in a comment rather than enforced by structure &mdash; exactly the surface W12 would dissolve. Worth a targeted read before W12, not before.</p>
+
+<h4>New this pass</h4>
+<p><strong>U9 &mdash; How often a real apply exceeds the 10s dispatch bound.</strong> <code>UNMEASURED.</code> <span class="anchor">handlers_graph_synth.py:93</span> passes no timeout, so apply runs at <code>_DEFAULT_TIMEOUT = 10.0</code>. The crucible argued reachability from the work inside the payload (live-<code>hou</code> re-validation per node and per parm, <code>createNode</code> with init scripts, a USD stage write under <code>$HIP</code>); that argument is plausible and unmeasured. <strong>G5 answers it.</strong> W4 does not depend on the answer &mdash; see &sect;12.4.</p>
+
+<p><strong>U10 &mdash; Whether EXISTING&rarr;EXISTING edges are reachable through validation in practice.</strong> <code>UNVERIFIED.</code> Amendment 3 permits an existing node on either side (<span class="anchor">graph_proposal.py:42-43</span>), and nothing in the P-phase list obviously forbids <em>both</em> sides being existing. If a validator phase does forbid it, L3-6(i) collapses to the side-effect case only and W6(d) shrinks. <strong>One targeted read of the P3/P5 edge phases closes it</strong>, and it should happen before W6(d) is scoped.</p>
+
+<p><strong>U11 &mdash; Whether <code>tops_cancel_cook</code>'s handler is main-thread-bound.</strong> <code>UNVERIFIED, leaning no.</code> W3's whole argument is that PDG-context cancellation is main-thread-independent the way <code>render_farm_cancel</code> is &mdash; which is what makes W3 immune to the &sect;7.2 refutation that demoted W8. <span class="anchor">handlers.py:227-241</span> already groups <code>emergency_halt</code> (which cancels PDG contexts) with the OS-signalling kill switches, which is evidence but not proof for this specific handler. <strong>G7 settles it</strong>, and it should be read before W3 is written, not after.</p>
+</section>
+<section id="s12">
+<h2><span class="num">12</span><span>Contested findings</span></h2>
+<p class="subhead">Five of sixteen crucible findings are rejected in whole or in part. Two are factually wrong and verified so this pass. Three are right in substance and wrong in framing, scope, or sequencing. Nothing was dropped silently.</p>
+
+<p>Thirteen findings were folded at source and are visible in &sect;&sect;1&ndash;11 under the revision key. What follows is everything I declined, with the reasoning and the anchor that settles it. <strong>Two of these are cases where the crucible mis-cited a line the draft had right</strong> &mdash; recorded not to score a point but because a builder navigating by these numbers would be sent to the wrong line, and because a report that silently accepts a wrong correction is no more trustworthy than one that silently ignores a right one.</p>
+
+<hr>
+
+<h3>12.1 &nbsp;<span class="badge b-crit">rejected</span> &nbsp;"<code>bridge_adapter.py:230</code> is the comment; the assignment is at 232"</h3>
+<p><strong>The finding:</strong> anchor-audit lens, severity 1 &mdash; the draft's &sect;3.5 citation of <span class="anchor">bridge_adapter.py:230</span> for <code>_bridge._gate = None</code> was listed as off-by-two.</p>
+<p><strong>Why it is wrong:</strong> the draft was right.</p>
+<pre><span class="c">$ grep -n "_bridge._gate = None\|_bridge._consent_callback" python/synapse/panel/bridge_adapter.py</span>
+229:        _bridge._consent_callback = _panel_consent
+<b>230:        _bridge._gate = None</b></pre>
+<p><strong>Disposition:</strong> the citation stands unchanged at <code>:230</code>. The likely source of the slip is that the <em>comment</em> sits at <code>:228</code> and the callback assignment at <code>:229</code>, so a reader counting from the comment lands two low.</p>
+
+<hr>
+
+<h3>12.2 &nbsp;<span class="badge b-crit">rejected</span> &nbsp;"<code>worker_policy.py:64</code> is the comment; the assignment is at 65"</h3>
+<p><strong>The finding:</strong> same lens, same severity &mdash; the draft's <code>_DENIED_GATES (worker_policy.py:64)</code> was listed as off-by-one.</p>
+<p><strong>Why it is wrong:</strong> the draft was right again.</p>
+<pre><span class="c">$ grep -n "_DENIED_GATES" python/synapse/panel/worker_policy.py</span>
+<b>64:_DENIED_GATES = frozenset({"review", "approve", "critical"})</b>
+224:    if gate in _DENIED_GATES:
+</pre>
+<p><strong>Disposition:</strong> the declaration citation stands at <code>:64</code>. One improvement adopted from the neighbourhood of the finding: the draft cited the <em>application</em> site as <code>:224-229</code>, and it is a single line at <code>:224</code>. &sect;5 and &sect;7 now cite <code>:64</code> for the declaration and <code>:224</code> for the application, separately, so neither can drift into the other.</p>
+<p class="footnote"><strong>The three sibling citations in the same finding were right and are fixed:</strong> Amendment 3 is at <span class="anchor">graph_proposal.py:42-43</span> (draft said :44-46, which is the U.1 <code>target_input_label</code> comment); <code>result_to_dict</code> is at <span class="anchor">graph_synth_runtime.py:147-160</span> (draft said :145-158); and <code>graph_proposal.py</code> is 84 lines with its final statement at <span class="anchor">:84</span>, so the draft's "final statement at :85, no trailing newline" was internally inconsistent and is corrected in &sect;8.1. The "<code>hunk</code> has zero hits" wording is likewise corrected to <em>zero word-boundary hits</em> in &sect;3.1.</p>
+
+<hr>
+
+<h3>12.3 &nbsp;<span class="badge b-warn">partially rejected</span> &nbsp;"VERIFY is not half-honest; it is fully advisory"</h3>
+<p><strong>The finding:</strong> apply-guarantees lens, severity 4 &mdash; the draft's <em>"half of VERIFY is honest and half is silent"</em> overstates the wire half, because <code>wired: False</code> changes nothing: status is still BUILT, <code>ok()</code> is True, <code>errors</code> stays empty, and no consumer of <code>parameters_set</code> or <code>connections[*].wired</code> exists tree-wide.</p>
+<p><strong>What I accept &mdash; all of the substance.</strong> Every one of those facts checks out, and the consequence is worse than the draft said: an apply where every connection failed to wire and every parm was unreadable still returns <code>BUILT</code> / <code>ok()==True</code>. That is now L3-7, and W6 grew a clause <strong>(b)</strong> specifically to fix it, because <code>resolved: bool</code> alone would have been a field nobody reads. The draft's <strong>S</strong> sizing was wrong and is now <strong>S&ndash;M</strong>.</p>
+<p><strong>What I reject &mdash; the collapse of two axes into one word.</strong> "Honest" and "consumed" are different properties, and the two failures need different fixes:</p>
+<div class="tw"><table>
+<thead><tr><th>&nbsp;</th><th>Record accuracy</th><th>Consumption</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td><code>observed: None</code> on an unresolvable parm</td><td><strong>False</strong> &mdash; indistinguishable from a real null read</td><td>none</td><td>Make the record true <em>(W6a)</em> <strong>and</strong> give it a verdict <em>(W6b)</em></td></tr>
+<tr><td><code>wired: False</code> on a failed connection</td><td><strong>True</strong> &mdash; it accurately reports the live scene</td><td>none</td><td>Give it a verdict <em>(W6b)</em> only</td></tr>
+</tbody></table></div>
+<p>Calling both "fully advisory" describes the shared symptom and hides that one of them is also <em>lying</em>. A builder who reads "fully advisory" fixes consumption and ships the false record intact. <strong>&sect;6.4 therefore states both axes explicitly rather than adopting the finding's sentence</strong>, and &sect;6.6 splits them into L3-3 (false record) and L3-7 (true record, no verdict).</p>
+
+<hr>
+
+<h3>12.4 &nbsp;<span class="badge b-warn">partially rejected</span> &nbsp;"10s is reachable"</h3>
+<p><strong>The finding:</strong> apply-guarantees lens, severity 5 &mdash; the highest-severity item in the whole crucible. An apply exceeding <code>_DEFAULT_TIMEOUT = 10.0</code> reports FAILED while the build completes; the store does not consume; a retry double-builds.</p>
+<p><strong>What I accept &mdash; the entire defect, at full weight.</strong> It is corrected at source in &sect;6.2(b), given its own diagram, promoted to <strong>W4</strong> at the head of Band B, and named in &sect;13 as the thing riskier than it looks. Every mechanical claim verified this pass: <code>_DEFAULT_TIMEOUT = 10.0</code> at <span class="anchor">main_thread.py:21</span>, <code>started[0] = True</code> before <code>fn()</code> at <span class="anchor">:564</span>, and <code>ProposalStore.get()</code> returning <code>entry[1]</code> with no built-marker across all 34 lines of <code>proposal_store.py</code>.</p>
+<p><strong>What I reject &mdash; stating reachability as fact.</strong> The finding's evidence for <em>"10s is reachable"</em> is an enumeration of the work inside the payload, not a measurement. No apply has been timed. Writing "10s is reachable" into the report would put an unmeasured number behind a producer path that does not exist, which is the exact failure mode the <em>control pinned to the brief's figure</em> lesson is about: a figure copied from an argument, then cited as evidence for that argument.</p>
+<p><strong>Why the rejection costs nothing.</strong> The defect is structural. A bound that abandons without stopping, over a store that does not consume, is wrong at <em>any</em> frequency &mdash; a once-a-month silent double-build is arguably worse than a daily one, because nobody will ever correlate it. <strong>So W4 is scheduled on the defect and G5 measures the frequency separately</strong>, recorded as U9. The number sets W4's urgency, never its necessity.</p>
+
+<hr>
+
+<h3>12.5 &nbsp;<span class="badge b-warn">horn declined</span> &nbsp;"Pull W12 (audience axis) ahead of W11"</h3>
+<p><strong>The finding:</strong> buildability lens, severity 2 &mdash; W12 is the producer for two things ordered ahead of it. W9 and W10 ship a double approval on applies (&sect;7.3); W11 bolts on a change boundary that W12 then re-expresses. Offered as an either/or: promote W12, <em>or</em> annotate the downstream rows.</p>
+<p><strong>What I accept &mdash; both consequences are real and neither was written down.</strong> W10 and W11 now carry explicit <em>"Ships with"</em> rows naming the double approval and the provisional boundary, so a builder who meets the second approval after W10 does not read it as a bug in W10 and try to fix it there. W11's row also states the composition constraint that keeps it ungated (&sect;8.2).</p>
+<p><strong>What I decline &mdash; the promotion.</strong> &sect;9 ranks on verification throughput gained &times; inverse cost, with Band B ranked on risk retired. W12 is <strong>L</strong>, gated, and gains no throughput; promoting it ahead of Band A's XS-to-S ungated work inverts the principle the whole section runs on, and it would put the one item that cannot start without an external authorization in front of eleven items that can start today.</p>
+<p><strong>What I adopt from the promotion horn instead:</strong> the finding's real insight is that W12's cost is <em>authorization latency</em>, not engineering. So &mdash; <strong>request the CTO authorization in parallel with Band A</strong>, and let it mature while W1&ndash;W8 run. W12 stays last in build order and stops being the thing Band D waits on. That is recorded in W12's <em>Sequencing note</em>.</p>
+
+<hr>
+
+<h3>Findings accepted in full &mdash; for the record</h3>
+<div class="tw"><table>
+<thead><tr><th>Finding</th><th>Sev</th><th>Where it landed</th></tr></thead>
+<tbody>
+<tr><td><code>tops_cancel_cook</code> is not in <code>_READ_ONLY_COMMANDS</code>; the draft's example inverted its own argument</td><td class="num">3</td><td>&sect;4.1 refuted &middot; new <strong>W3</strong> &middot; new <strong>G7</strong> &middot; new <strong>U11</strong></td></tr>
+<tr><td><code>Data.json</code> / 450 missing from the &sect;2.3 enumeration</td><td class="num">2</td><td>&sect;2.3 table restored &middot; W1 coverage clause</td></tr>
+<tr><td>L3-4 over-reads a conditional comment as seam drift</td><td class="num">2</td><td>&sect;6.6 downgraded &middot; W6(e) keeps the cleanup, gains a second target</td></tr>
+<tr><td>&sect;6.1 undo group is asserted, not evidenced; test is mock-deep</td><td class="num">4</td><td>&sect;6.1 regraded &middot; &sect;1 verdict &middot; new <strong>L3-8</strong> &middot; new <strong>W5</strong> &middot; &sect;10 seat rows</td></tr>
+<tr><td>&sect;6.2 is three dispatches, not one</td><td class="num">3</td><td>&sect;6.2(a) &middot; diagram &middot; latency caveat</td></tr>
+<tr><td>&sect;6.2 timeout abandons without stopping; retry double-builds</td><td class="num">5</td><td>&sect;6.2(b) &middot; new <strong>W4</strong> &middot; new <strong>G5</strong> &middot; &sect;13 &middot; <em>reachability contested at &sect;12.4</em></td></tr>
+<tr><td>FAILED path does not restore EXISTING&rarr;EXISTING edges or callback-authored nodes</td><td class="num">3</td><td>&sect;5.4 &middot; new <strong>L3-6</strong> &middot; W6(d) &middot; new <strong>U10</strong></td></tr>
+<tr><td>VERIFY has no consumers; status unaffected</td><td class="num">4</td><td>&sect;6.4 &middot; new <strong>L3-7</strong> &middot; W6(b) &middot; <em>framing contested at &sect;12.3</em></td></tr>
+<tr><td>&sect;6.3 refutation not airtight; prescribed cook fix unsafe</td><td class="num">4</td><td>&sect;6.3 restated &middot; <strong>W7</strong> re-scoped (outside the try, outside the group, bounded)</td></tr>
+<tr><td><code>_READ_ONLY_COMMANDS</code> has five branch sites; F3 bypass is harmful</td><td class="num">4</td><td>&sect;7.2 refuted &middot; <strong>W8</strong> demoted from #1 and re-scoped</td></tr>
+<tr><td>W1's "validate during renders" unblock is refuted &mdash; propose is main-thread-bound</td><td class="num">3</td><td>&sect;7.2 refuted &middot; W8 unblock qualified &middot; second test added</td></tr>
+<tr><td>W3 mixes fake-<code>hou</code> branch tests with a host premise; seat label wrong</td><td class="num">3</td><td>W6 <em>Test honesty</em> row &middot; host premise moved to <strong>G3</strong> &middot; new <strong>G6</strong> re-stamp</td></tr>
+<tr><td>W2's "unverified signal" is the gated <code>ValidationStatus</code> in disguise</td><td class="num">2</td><td>&sect;5.2 re-routed to <code>ValidationReport.advisories</code> &middot; &sect;8.2 rows split &middot; W1 change text</td></tr>
+<tr><td>W5's test and G3's gate expect opposite readings; <code>cookCount</code> is monotone</td><td class="num">2</td><td>&sect;10 G3 re-scoped to recon-first &middot; W7 asserts the delta</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="s13">
+<h2><span class="num">13</span><span>CTO summary</span></h2>
+<p class="subhead">One screen. Three questions: what buys the most verification per unit of cost, what is already built and merely unwired, and what is quietly more dangerous than its grade suggests.</p>
+
+<div class="tiles">
+  <div class="tile">
+    <span class="tl">Build this first</span>
+    <p class="tv">Catalog-backed oracles</p>
+    <p class="tb"><strong>W1.</strong> Two ~30-line adapters over <code>validation/catalog.py</code> &mdash; existence from <code>has_type</code>/<code>parms</code>, connectivity from <code>min_inputs</code>/<code>max_inputs</code>/<code>max_outputs</code> &mdash; composed with the live-<code>hou</code> oracles so <code>hou</code> wins when present.</p>
+    <p class="tb"><strong>Anchor:</strong> <span class="anchor">validation/catalog.py:183-185</span> and <span class="anchor">:171-181</span> against <span class="anchor">cognitive/interfaces.py:8-16</span>, wired at <span class="anchor">graph_synth_runtime.py:62</span> and <span class="anchor">graph_builder.py:65</span>.</p>
+    <p class="tb"><strong>Cost:</strong> S&ndash;M. Ungated &mdash; the unverified signal rides <code>ValidationReport.advisories</code> (<span class="anchor">graph_proposal.py:84</span>, already serialized at <span class="anchor">tools/propose_graph.py:96</span>), so no contract edit. One headless gated run, G2.</p>
+    <p class="tb"><strong>Why it wins:</strong> both oracles hard-import <code>hou</code> at module scope today (<span class="anchor">existence_adapter.py:16</span>, <span class="anchor">graph_oracle.py:17</span>), so <code>GraphValidator</code> cannot even be <em>constructed</em> headless. W1 is the only item that removes a Houdini seat from the verification loop itself. Everything else gets cheaper to check afterwards.</p>
+  </div>
+  <div class="tile">
+    <span class="tl">Already built &mdash; &sect;2</span>
+    <p class="tv">Three primitives, zero wiring</p>
+    <p class="tb"><strong>Approval semantics.</strong> "Edit" and "Apply-all" exist in full at the host: <code>GateDecision.MODIFIED</code> (<span class="anchor">core/gates.py:47</span>), <code>decide(modified_changes=)</code> with audit (<span class="anchor">:416-455</span>), <code>decide_batch</code> (<span class="anchor">:488-517</span>), <code>approve_all</code>/<code>reject_all</code> (<span class="anchor">:519-535</span>). The panel produces nothing into any of them and has no <code>sequence_id</code> at all.</p>
+    <p class="tb"><strong>Per-build vocabulary.</strong> <strong>7,862</strong> node types across <strong>19</strong> category files with parms and arity, <code>total_probe_errors: 0</code> &mdash; already read by the recipes subsystem, never by <code>GraphValidator</code>.</p>
+    <p class="tb"><strong>v5.68.0's real content.</strong> "Proposal controls" was a worker-policy and host-gate change; the consent card is untouched. The brief's premise that <code>synapse_instantiate_graph</code> has no operation row is stale by one commit (<span class="anchor">bridge_adapter.py:153</span>).</p>
+    <p class="tb"><strong>&sect;2 audited clean</strong> &mdash; zero false "already exists" claims across every primitive the crucible opened. One enumeration row was missing and is restored.</p>
+  </div>
+  <div class="tile">
+    <span class="tl">Riskier than it looks</span>
+    <p class="tv">The apply that reports FAILED and builds anyway</p>
+    <p class="tb"><strong>W4.</strong> <span class="anchor">handlers_graph_synth.py:93</span> passes no timeout, so apply runs at <code>_DEFAULT_TIMEOUT = 10.0</code> (<span class="anchor">main_thread.py:21</span>). The abandoned-payload flag only no-ops work that has <em>not started</em> &mdash; <span class="anchor">main_thread.py:564</span> sets <code>started[0] = True</code> before <code>fn()</code>, and the file names the residual itself at <span class="anchor">:536-538</span>.</p>
+    <p class="tb"><strong>Nothing makes apply idempotent.</strong> <code>ProposalStore.get()</code> does not consume and there is no built-marker (whole file, 34 lines). TOCTOU re-validation of an all-NEW proposal still returns VALID against a scene that already contains a copy.</p>
+    <p class="tb"><strong>So: overrun &rarr; caller told FAILED &rarr; graph lands anyway &rarr; retry builds it twice, in two undo groups.</strong> The only mitigation in the tree is prompt text at <span class="anchor">tool_executor.py:738-746</span> that the <code>/mcp</code> client never sees.</p>
+    <p class="tb"><strong>Why it hides:</strong> it wears the "one main-thread dispatch &mdash; ANCHORED" grade the draft gave it, no test covers it, and its frequency is unmeasured (U9, G5). The defect is structural and does not wait on that number.</p>
+  </div>
+</div>
+
+<h3>The shape of the decision</h3>
+<div class="tw"><table>
+<thead><tr><th>Band</th><th>Waves</th><th>Ranked on</th><th>Gated?</th><th>Seat?</th><th>Effect if skipped</th></tr></thead>
+<tbody>
+<tr><td><strong>A</strong> &mdash; throughput</td><td>W1 W2 W3</td><td>throughput &times; inverse cost</td><td>no</td><td>no (3 headless gated runs)</td><td>Every later verification keeps costing a Houdini seat.</td></tr>
+<tr><td><strong>B</strong> &mdash; apply honesty</td><td>W4 W5 W6 W7</td><td>risk retired</td><td>no</td><td>2 seat checks + 3 gated runs</td><td>Apply results stay unreliable as facts. Silent double-builds stay possible.</td></tr>
+<tr><td><strong>C</strong> &mdash; classification</td><td>W8</td><td>decision, not edit</td><td>no</td><td>no</td><td>65 false mutation records keep accruing; background-render proposals stay lock-blocked.</td></tr>
+<tr><td><strong>D</strong> &mdash; human surface</td><td>W9 W10 W11</td><td>sequence-forced</td><td>no</td><td><strong>yes</strong></td><td>C1 and C7 do not exist. The card stays unreachable.</td></tr>
+<tr><td><strong>E</strong> &mdash; audience axis</td><td>W12</td><td>structural</td><td><strong>yes</strong></td><td>no</td><td>Applies stay double-gated; C7's boundary stays bolted on.</td></tr>
+</tbody></table></div>
+
+<h3>Three things to decide, not build</h3>
+<ol>
+<li><strong>Request W12's authorization now, run it last.</strong> Its cost is authorization latency, not engineering &mdash; it is pure Python and headless. Starting the request alongside Band A keeps it from becoming the item Band D waits on (&sect;12.5).</li>
+<li><strong>W8 is a classification question, not a one-liner.</strong> Membership in <code>_READ_ONLY_COMMANDS</code> also turns off Tier-0 provenance, resilience tracking, and F3 freeze protection &mdash; the last one harmfully, because <code>propose_graph</code> is <code>run_on_main</code>-bound. The likely right answer is a third classification, and that is a call to make before anyone writes the line (&sect;7.2).</li>
+<li><strong>W9 is the only item that can re-arm a live freeze.</strong> <span class="anchor">shared/bridge.py:2517-2540</span> documents the 2026-06-01 self-deadlock and names the fix as panel-side. <code>tests/test_panel_consent_no_freeze.py:35</code> must be rewritten by <em>strengthening</em>, never by deleting, and it needs a GUI seat &mdash; headless can prove non-blocking, only a seat proves not frozen.</li>
+</ol>
+
+<p class="footnote"><strong>One line on the grade changes.</strong> Three of this report's own verdicts moved this pass: the apply path's undo guarantee from ANCHORED to ASSERTED, its dispatch guarantee from ANCHORED to refuted-as-stated, and the draft's #1 build item from XS/one-line to a four-consumer decision. Sections 2, 5 and 7 were attacked as hard and held, including &sect;7's coverage numbers reproducing bit-for-bit on an independent re-run. The pattern is consistent and worth naming: <strong>what survived was everything anchored to a file read; what moved was everything anchored to a test that drove a mock.</strong></p>
+</section>
+
+</main>
+</div>
+</div>

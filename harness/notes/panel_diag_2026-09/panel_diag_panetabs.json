@@ -1,0 +1,123 @@
+{
+ "count": 13,
+ "tabs": [
+  {
+   "name": "panetab14",
+   "type": "paneTabType.TreeView",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab1",
+   "type": "paneTabType.SceneViewer",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": true,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab2",
+   "type": "paneTabType.ChannelEditor",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab4",
+   "type": "paneTabType.CompositorViewer",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab13",
+   "type": "paneTabType.ChannelViewer",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab11",
+   "type": "paneTabType.DetailsView",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab5",
+   "type": "paneTabType.Parm",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab12",
+   "type": "paneTabType.PerformanceMonitor",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab15",
+   "type": "paneTabType.PythonPanel",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab7",
+   "type": "paneTabType.NetworkEditor",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": true,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab8",
+   "type": "paneTabType.TreeView",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab9",
+   "type": "paneTabType.MaterialPalette",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": false,
+   "isActiveTab": null,
+   "isVisible": null
+  },
+  {
+   "name": "panetab3",
+   "type": "paneTabType.PythonPanel",
+   "bounds": null,
+   "qt_class": null,
+   "isCurrentTab": true,
+   "isActiveTab": null,
+   "isVisible": null
+  }
+ ],
+ "note": "live pane tab enumeration"
+}

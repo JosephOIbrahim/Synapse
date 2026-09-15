@@ -1,0 +1,125 @@
+{
+ "rail_found": true,
+ "rail_geo": [
+  2688,
+  1642,
+  640,
+  3
+ ],
+ "rail_visible": true,
+ "rail_isHidden": false,
+ "rail_parent_chain": [
+  {
+   "class": "QWidget",
+   "name": "DsRailMeter",
+   "geo": [
+    2688,
+    1642,
+    640,
+    3
+   ],
+   "visible": true
+  }
+ ],
+ "rail_prop_busy": false,
+ "syn_geo": [
+  2065,
+  244,
+  960,
+  1073
+ ],
+ "syn_children": [
+  {
+   "class": "QWidget",
+   "name": "DsHeader",
+   "geo": [
+    0,
+    0,
+    960,
+    167
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "DsSection",
+   "geo": [
+    0,
+    167,
+    960,
+    51
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "DsTabRow",
+   "geo": [
+    0,
+    218,
+    960,
+    76
+   ],
+   "visible": true
+  },
+  {
+   "class": "QStackedWidget",
+   "name": "",
+   "geo": [
+    0,
+    294,
+    960,
+    779
+   ],
+   "visible": true
+  },
+  {
+   "class": "QMenu",
+   "name": "",
+   "geo": [
+    2731,
+    475,
+    166,
+    268
+   ],
+   "visible": false
+  }
+ ],
+ "region_cache": {
+  "_build_rail": [
+   0,
+   0,
+   960,
+   167
+  ],
+  "_build_context_ribbon": [
+   0,
+   167,
+   960,
+   51
+  ],
+  "_build_mode_bar": [
+   0,
+   218,
+   960,
+   76
+  ],
+  "_build_faces": [
+   0,
+   294,
+   960,
+   779
+  ]
+ },
+ "syn_observe": {
+  "same_as_rail": true,
+  "geo": [
+   2688,
+   1642,
+   640,
+   3
+  ],
+  "visible": true,
+  "isHidden": false
+ }
+}

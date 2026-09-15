@@ -1,0 +1,752 @@
+{
+ "synapse_found": true,
+ "synapse_parent_chain": [
+  {
+   "class": "SynapsePanel",
+   "name": "QT_Feel",
+   "geo": [
+    2065,
+    244,
+    960,
+    1073
+   ],
+   "visible": true
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    3027,
+    2664
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    3027,
+    2664
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    231,
+    129,
+    3027,
+    2664
+   ],
+   "visible": true
+  }
+ ],
+ "synapse_parent_children": [
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    27,
+    2450,
+    2996,
+    154
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    2,
+    2608,
+    2568,
+    54
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    2570,
+    2635,
+    0,
+    0
+   ],
+   "visible": true
+  },
+  {
+   "class": "SynapsePanel",
+   "name": "QT_Feel",
+   "geo": [
+    2065,
+    244,
+    960,
+    1073
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    73,
+    391,
+    1917,
+    2053
+   ],
+   "visible": true
+  }
+ ],
+ "synapse_grandparent_children": [
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    3027,
+    2664
+   ],
+   "visible": true
+  }
+ ],
+ "holder_widgets": [
+  {
+   "class": "QScrollArea",
+   "name": "",
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "visible": false
+  },
+  {
+   "class": "QStackedWidget",
+   "name": "",
+   "geo": [
+    30,
+    24,
+    900,
+    306
+   ],
+   "visible": true
+  },
+  {
+   "class": "QSplitter",
+   "name": "contentsSplitter",
+   "geo": [
+    0,
+    0,
+    100,
+    30
+   ],
+   "visible": false
+  },
+  {
+   "class": "QStackedWidget",
+   "name": "view stack",
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "visible": false
+  },
+  {
+   "class": "QStackedWidget",
+   "name": "",
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "visible": false
+  },
+  {
+   "class": "QStackedWidget",
+   "name": "",
+   "geo": [
+    0,
+    294,
+    960,
+    779
+   ],
+   "visible": true
+  }
+ ],
+ "holder_count": 6,
+ "small_visible_widgets": [
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    1897,
+    96
+   ],
+   "visible": true
+  },
+  {
+   "class": "QPushButton",
+   "name": "DsVerb",
+   "geo": [
+    864,
+    16,
+    36,
+    42
+   ],
+   "visible": true
+  },
+  {
+   "class": "Pill",
+   "name": "DsPill",
+   "geo": [
+    760,
+    24,
+    106,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "qt_scrollarea_vcontainer",
+   "geo": [
+    873,
+    17,
+    10,
+    272
+   ],
+   "visible": true
+  },
+  {
+   "class": "QPushButton",
+   "name": "DsSend",
+   "geo": [
+    732,
+    240,
+    98,
+    50
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "DsHeader",
+   "geo": [
+    0,
+    0,
+    960,
+    167
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "qt_scrollarea_viewport",
+   "geo": [
+    16,
+    17,
+    808,
+    207
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "",
+   "geo": [
+    62,
+    16,
+    159,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "",
+   "geo": [
+    30,
+    8,
+    203,
+    35
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "hs_project",
+   "geo": [
+    220,
+    0,
+    107,
+    17
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "DsTabRow",
+   "geo": [
+    0,
+    218,
+    960,
+    76
+   ],
+   "visible": true
+  },
+  {
+   "class": "Button",
+   "name": "DsButton",
+   "geo": [
+    305,
+    76,
+    117,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "Button",
+   "name": "DsButton",
+   "geo": [
+    898,
+    16,
+    32,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    2,
+    2608,
+    2568,
+    54
+   ],
+   "visible": true
+  },
+  {
+   "class": "QPushButton",
+   "name": "DsAuthor",
+   "geo": [
+    654,
+    83,
+    276,
+    38
+   ],
+   "visible": true
+  },
+  {
+   "class": "StatusDot",
+   "name": "",
+   "geo": [
+    30,
+    76,
+    10,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "",
+   "geo": [
+    580,
+    16,
+    153,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QPushButton",
+   "name": "DsVerb",
+   "geo": [
+    390,
+    16,
+    159,
+    42
+   ],
+   "visible": true
+  },
+  {
+   "class": "Pill",
+   "name": "DsPill",
+   "geo": [
+    894,
+    24,
+    36,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "DsRailMeter",
+   "geo": [
+    2688,
+    1642,
+    640,
+    3
+   ],
+   "visible": true
+  },
+  {
+   "class": "QScrollBar",
+   "name": "",
+   "geo": [
+    0,
+    0,
+    10,
+    272
+   ],
+   "visible": true
+  },
+  {
+   "class": "QPushButton",
+   "name": "DsVerb",
+   "geo": [
+    0,
+    16,
+    124,
+    42
+   ],
+   "visible": true
+  },
+  {
+   "class": "MarkDot",
+   "name": "",
+   "geo": [
+    30,
+    16,
+    20,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    311,
+    9,
+    107,
+    65
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "hs_job",
+   "geo": [
+    343,
+    0,
+    74,
+    17
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    550,
+    0,
+    1897,
+    96
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "DsSection",
+   "geo": [
+    30,
+    330,
+    900,
+    66
+   ],
+   "visible": true
+  },
+  {
+   "class": "Button",
+   "name": "DsButton",
+   "geo": [
+    163,
+    76,
+    134,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "",
+   "geo": [
+    0,
+    326,
+    900,
+    33
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    27,
+    2450,
+    2996,
+    154
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "hs_connection",
+   "geo": [
+    0,
+    0,
+    101,
+    17
+   ],
+   "visible": true
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    1897,
+    96
+   ],
+   "visible": true
+  },
+  {
+   "class": "Button",
+   "name": "DsButton",
+   "geo": [
+    430,
+    76,
+    89,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "Pill",
+   "name": "DsPill",
+   "geo": [
+    608,
+    24,
+    124,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    2568,
+    54
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "hs_memory",
+   "geo": [
+    117,
+    0,
+    87,
+    17
+   ],
+   "visible": true
+  },
+  {
+   "class": "HealthStrip",
+   "name": "health_strip",
+   "geo": [
+    30,
+    136,
+    900,
+    17
+   ],
+   "visible": true
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    2996,
+    154
+   ],
+   "visible": true
+  },
+  {
+   "class": "Pill",
+   "name": "DsPill",
+   "geo": [
+    30,
+    24,
+    71,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "DsSection",
+   "geo": [
+    0,
+    167,
+    960,
+    51
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    107,
+    65
+   ],
+   "visible": true
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    2996,
+    154
+   ],
+   "visible": true
+  },
+  {
+   "class": "Pill",
+   "name": "DsPill",
+   "geo": [
+    129,
+    24,
+    88,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "Button",
+   "name": "DsButton",
+   "geo": [
+    848,
+    137,
+    52,
+    54
+   ],
+   "visible": true
+  },
+  {
+   "class": "_InputResizeGrip",
+   "name": "DsGrip",
+   "geo": [
+    0,
+    0,
+    900,
+    10
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "DsKHint",
+   "geo": [
+    764,
+    16,
+    126,
+    52
+   ],
+   "visible": true
+  },
+  {
+   "class": "QPushButton",
+   "name": "DsVerb",
+   "geo": [
+    148,
+    16,
+    53,
+    42
+   ],
+   "visible": true
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    2568,
+    54
+   ],
+   "visible": true
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    107,
+    65
+   ],
+   "visible": true
+  },
+  {
+   "class": "QPushButton",
+   "name": "DsVerb",
+   "geo": [
+    225,
+    16,
+    141,
+    42
+   ],
+   "visible": true
+  },
+  {
+   "class": "QLabel",
+   "name": "",
+   "geo": [
+    48,
+    76,
+    91,
+    52
+   ],
+   "visible": true
+  }
+ ],
+ "small_count": 51
+}

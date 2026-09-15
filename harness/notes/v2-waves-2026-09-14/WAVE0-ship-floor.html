@@ -1,0 +1,1532 @@
+<title>SYNAPSE v5.68.0 Ship Floor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+<style>
+  :root{
+    --ground:#F1F2EF;
+    --surface:#FAFBF8;
+    --surface-2:#E7EAE4;
+    --ink:#191C1A;
+    --ink-2:#565D58;
+    --ink-3:#7B827C;
+    --rule:#D4D8D1;
+    --rule-strong:#B6BDB4;
+    --accent:#1D4E5C;
+    --accent-2:#2E7286;
+    --accent-soft:#DBE8EB;
+    --ok:#2C6547;
+    --ok-soft:#DAE7DE;
+    --warn:#8A5410;
+    --warn-soft:#F0E5CE;
+    --crit:#8A2E28;
+    --crit-soft:#F2DEDB;
+    --code-bg:#E7EAE4;
+    --shadow:0 1px 2px rgba(25,28,26,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#111618;
+      --surface:#181E20;
+      --surface-2:#1F2629;
+      --ink:#E4E8E5;
+      --ink-2:#9BA39E;
+      --ink-3:#79817C;
+      --rule:#293134;
+      --rule-strong:#3A4347;
+      --accent:#6DAEBD;
+      --accent-2:#8CC6D3;
+      --accent-soft:#15323A;
+      --ok:#7CC49A;
+      --ok-soft:#152A1E;
+      --warn:#D9A860;
+      --warn-soft:#2E2313;
+      --crit:#E08B84;
+      --crit-soft:#331A1A;
+      --code-bg:#1F2629;
+      --shadow:0 1px 2px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#111618;
+    --surface:#181E20;
+    --surface-2:#1F2629;
+    --ink:#E4E8E5;
+    --ink-2:#9BA39E;
+    --ink-3:#79817C;
+    --rule:#293134;
+    --rule-strong:#3A4347;
+    --accent:#6DAEBD;
+    --accent-2:#8CC6D3;
+    --accent-soft:#15323A;
+    --ok:#7CC49A;
+    --ok-soft:#152A1E;
+    --warn:#D9A860;
+    --warn-soft:#2E2313;
+    --crit:#E08B84;
+    --crit-soft:#331A1A;
+    --code-bg:#1F2629;
+    --shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    font-size:15.5px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:0 72px}
+
+  /* ---------- masthead ---------- */
+  .mast{
+    border-bottom:2px solid var(--ink);
+    padding-block:44px 20px;
+    margin-bottom:28px;
+  }
+  .mast .eyebrow{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);font-weight:600;
+  }
+  .mast h1{
+    font-family:Newsreader,Georgia,"Times New Roman",serif;
+    font-weight:500;font-size:clamp(2.1rem,5.4vw,3.3rem);
+    line-height:1.07;letter-spacing:-.018em;margin:.28em 0 .34em;
+    text-wrap:balance;
+  }
+  .mast .dek{
+    color:var(--ink-2);max-width:64ch;font-size:15px;margin:0 0 22px;
+  }
+  .runline{
+    display:flex;flex-wrap:wrap;gap:6px 26px;
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:12px;color:var(--ink-2);
+    font-variant-numeric:tabular-nums;
+  }
+  .runline b{color:var(--ink);font-weight:600}
+
+  /* ---------- sections ---------- */
+  section{margin-block:0 52px;scroll-margin-top:20px}
+  .shead{
+    display:grid;grid-template-columns:48px 1fr;gap:14px;align-items:baseline;
+    border-top:1px solid var(--rule-strong);
+    padding-top:14px;margin-bottom:18px;
+  }
+  .snum{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:12.5px;font-weight:600;color:var(--accent);
+    letter-spacing:.04em;padding-top:.42em;
+  }
+  .shead h2{
+    font-family:Newsreader,Georgia,serif;font-weight:500;
+    font-size:clamp(1.5rem,3.2vw,2.05rem);line-height:1.12;
+    letter-spacing:-.012em;margin:0;text-wrap:balance;
+  }
+  .shead .sub{
+    grid-column:2;font-size:13.5px;color:var(--ink-2);margin-top:5px;max-width:70ch;
+  }
+  .body{display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px}
+  .body > .col{grid-column:2;min-width:0}
+  h3{
+    font-family:Newsreader,Georgia,serif;font-weight:600;
+    font-size:1.2rem;line-height:1.25;margin:34px 0 10px;letter-spacing:-.006em;
+  }
+  h4{
+    font-family:"IBM Plex Sans",sans-serif;font-weight:600;
+    font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--ink-2);margin:28px 0 8px;
+  }
+  p{margin:0 0 14px;max-width:74ch}
+  ul,ol{margin:0 0 16px;padding-left:1.15em;max-width:74ch}
+  li{margin-bottom:8px}
+  li::marker{color:var(--ink-3)}
+  strong{font-weight:600}
+  em{font-style:italic;color:var(--ink-2)}
+  a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
+  a:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px;border-radius:2px}
+
+  code,kbd{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:.855em;background:var(--code-bg);
+    padding:.1em .34em;border-radius:2px;
+    overflow-wrap:anywhere;
+  }
+  pre{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    background:var(--surface);border:1px solid var(--rule);
+    border-left:2px solid var(--accent);
+    font-size:12.5px;line-height:1.62;
+    padding:13px 15px;margin:0 0 16px;
+    overflow-x:auto;border-radius:2px;
+    font-variant-numeric:tabular-nums;
+  }
+  pre code{background:none;padding:0;font-size:inherit}
+
+  /* ---------- verdict chips ---------- */
+  .chip{
+    display:inline-block;font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+    padding:2px 7px;border-radius:2px;white-space:nowrap;
+    border:1px solid transparent;vertical-align:.09em;
+  }
+  .c-crit{background:var(--crit-soft);color:var(--crit);border-color:var(--crit)}
+  .c-warn{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+  .c-ok{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+  .c-ref{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .c-flat{background:var(--surface-2);color:var(--ink-2);border-color:var(--rule-strong)}
+
+  .tier{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-3);font-weight:500;white-space:nowrap;
+  }
+
+  /* ---------- tables ---------- */
+  .tscroll{overflow-x:auto;margin:0 0 18px;border:1px solid var(--rule);background:var(--surface);border-radius:2px}
+  table{border-collapse:collapse;width:100%;font-size:13.4px;min-width:640px}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--rule);vertical-align:top}
+  thead th{
+    font-family:"IBM Plex Sans",sans-serif;font-size:11px;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);
+    background:var(--surface-2);border-bottom:1px solid var(--rule-strong);
+    white-space:nowrap;
+  }
+  tbody tr:last-child td{border-bottom:none}
+  td code{font-size:12px}
+  .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+  /* ---------- callouts ---------- */
+  .call{
+    border-left:2px solid var(--accent);background:var(--surface);
+    padding:14px 17px;margin:0 0 18px;border-radius:0 2px 2px 0;
+  }
+  .call.crit{border-left-color:var(--crit)}
+  .call.warn{border-left-color:var(--warn)}
+  .call.ok{border-left-color:var(--ok)}
+  .call p:last-child{margin-bottom:0}
+  .call .ctitle{
+    font-family:"IBM Plex Sans",sans-serif;font-size:11px;font-weight:600;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);
+    display:block;margin-bottom:6px;
+  }
+  .pull{
+    font-family:Newsreader,Georgia,serif;font-size:1.2rem;line-height:1.42;
+    font-weight:500;color:var(--ink);
+    border-top:1px solid var(--rule-strong);border-bottom:1px solid var(--rule-strong);
+    padding:16px 0;margin:0 0 20px;max-width:64ch;
+  }
+
+  /* ---------- producer paths ---------- */
+  .prod{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:11.5px;color:var(--ink-3);line-height:1.55;
+    margin:-8px 0 18px;max-width:80ch;overflow-wrap:anywhere;
+  }
+  .prod b{color:var(--ink-2);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:10px}
+
+  /* ---------- fix items ---------- */
+  .fix{border-top:1px solid var(--rule);padding-top:16px;margin-bottom:26px}
+  .fixhead{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:10px}
+  .fixhead h3{margin:0;font-size:1.12rem}
+  .rank{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;font-weight:600;
+    color:var(--surface);background:var(--accent);
+    padding:1px 8px;border-radius:2px;font-variant-numeric:tabular-nums;
+  }
+  .kv{display:grid;grid-template-columns:112px minmax(0,1fr);gap:5px 16px;font-size:13.6px;margin-bottom:4px}
+  .kv dt{
+    font-family:"IBM Plex Sans",sans-serif;font-size:10.5px;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding-top:.32em;
+  }
+  .kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+  .kv dd ol{margin:0;padding-left:1.1em}
+
+  /* ---------- summary board ---------- */
+  .board{
+    border:1px solid var(--rule-strong);background:var(--surface);
+    padding:22px 24px;border-radius:2px;box-shadow:var(--shadow);
+  }
+  .board .verdictline{
+    font-family:Newsreader,Georgia,serif;font-size:1.45rem;line-height:1.3;
+    font-weight:500;margin:0 0 6px;max-width:60ch;
+  }
+  .three{display:grid;gap:2px;margin:20px 0 0;border-top:1px solid var(--rule)}
+  .three .row{
+    display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:14px;
+    padding:14px 0;border-bottom:1px solid var(--rule);align-items:start;
+  }
+  .three .n{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;
+    font-weight:600;color:var(--accent);padding-top:.1em;
+  }
+  .three .what{min-width:0}
+  .three .what b{display:block;font-size:15px;margin-bottom:3px}
+  .three .what span{font-size:13px;color:var(--ink-2);display:block}
+  .three .cost{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;
+    color:var(--ink-2);text-align:right;white-space:nowrap;padding-top:.28em;
+  }
+  @media (max-width:560px){
+    .three .row{grid-template-columns:22px minmax(0,1fr)}
+    .three .cost{grid-column:2;text-align:left;padding-top:6px}
+  }
+
+  .legend{
+    display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--ink-2);
+    border:1px solid var(--rule);background:var(--surface);padding:11px 14px;
+    margin:0 0 34px;border-radius:2px;
+  }
+
+  hr.sep{border:none;border-top:1px solid var(--rule);margin:26px 0}
+
+  footer{
+    border-top:2px solid var(--ink);margin-top:46px;padding-top:20px;
+    font-family:Newsreader,Georgia,serif;font-size:1.05rem;color:var(--ink-2);
+    max-width:72ch;line-height:1.5;
+  }
+
+  @media (max-width:640px){
+    body{font-size:15px}
+    .body{grid-template-columns:minmax(0,1fr)}
+    .body > .col{grid-column:1}
+    .shead{grid-template-columns:minmax(0,1fr);gap:2px}
+    .shead .sub{grid-column:1}
+    .snum{padding-top:0}
+    .kv{grid-template-columns:minmax(0,1fr);gap:2px 0}
+    .kv dt{padding-top:8px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">Ship floor report &middot; revision 2 &middot; crucible folded</div>
+  <h1>SYNAPSE v5.68.0 Ship Floor</h1>
+  <p class="dek">Eight probes, seven blast-radius passes, three adversarial lenses. This revision corrects the draft at source: two of its own verdicts were refuted, and section 7's order changed with them.</p>
+  <div class="runline">
+    <span><b>Date</b> 2026-09-14</span>
+    <span><b>HEAD</b> bd65e4b6</span>
+    <span><b>Probes</b> 8</span>
+    <span><b>Blast-radius passes</b> 7</span>
+    <span><b>Crucible lenses</b> 3</span>
+  </div>
+</header>
+
+<div class="legend">
+  <span><span class="tier">RE-VERIFIED</span> &nbsp;run in the tree this session</span>
+  <span><span class="tier">RELAYED</span> &nbsp;crucible-supplied, not re-run here</span>
+  <span><span class="tier">VERIFIED-STATIC</span> &nbsp;read at HEAD, no runtime receipt</span>
+  <span><span class="tier">VERIFIED-RUNTIME</span> &nbsp;observed on a live build, commit named</span>
+</div>
+
+<!-- ================= 1 ================= -->
+<section id="s1">
+  <div class="shead">
+    <div class="snum">&sect; 1</div>
+    <h2>Floor verdict</h2>
+    <div class="sub">What the floor is, and what is actually standing in front of the ladder.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <p><strong>Yes &mdash; v5.68.0 is a sound floor, and the gate on building above it is a ruling, not an instrument.</strong></p>
+
+  <p>The draft of this report led with <em>"the single thing most in the way is the measuring instrument."</em> That verdict is refuted. The number the whole architecture ladder is gated on was measured on <strong>2026-09-13</strong> &mdash; the day before this report &mdash; and has been sitting in the tree since: ten blueprint tasks, 89 model calls, <strong>median 8 model round trips per task</strong>.</p>
+
+  <div class="prod"><b>producer</b> &mdash; <code>harness/v2-20260913/artifacts/v2-baseline/baseline.csv</code>, column <code>model_round_trips</code>, ten rows: 11, 8, 8, 5, 9, 11, 8, 8, 7, 14 &rarr; sorted median 8, sum 89. Cross-checked against <code>REPORT.md</code>: <em>"Ten tasks used 89 model calls, median 8 calls."</em> <span class="tier">RE-VERIFIED</span></div>
+
+  <p>The blueprint's own falsifier reads, verbatim: <em>"if median round trips per task is under four, &sect;2's diagnosis is wrong and &sect;16 stops at mile 1"</em> &mdash; and the mile ladder's Mile 0 exit criterion is <em>"P1 median &ge; 4, or stop here and report."</em> <strong>Median 8 clears both.</strong> Mile 0 is met. Mile 1 is licensed.</p>
+
+  <div class="prod"><b>producer</b> &mdash; <code>harness/v2-20260913/artifacts/v2-instantiate-gate/SYNAPSE_V2_BLUEPRINT_B.1.md:208</code> (falsifier) and <code>:400</code> (mile-0 row). <span class="tier">RE-VERIFIED</span></div>
+
+  <p>The instrument that produced that number was never <code>journal.log</code>. It is <strong><code>usage_sink</code></strong> &mdash; the second of the <em>two</em> instruments the blueprint's own P1 row names (<code>blueprint:260</code>: <em>"<code>journal.log</code> per task; <code>usage_sink</code> call count"</em>) &mdash; and it is production-wired at <code>python/synapse/panel/claude_worker.py:247</code> (<code>begin_task</code> per artist task) and <code>:270</code> (<code>add(last_usage)</code> in the <code>finally</code> of every <code>stream()</code> call), counting at <code>usage_sink.py:134</code> and exposed at <code>:185</code>/<code>:196</code>.</p>
+
+  <p>A third instrument exists that the draft also missed. <code>claude_worker.py:363-369</code> emits <code>"Conversation complete: %d turns, %d tool calls"</code> under a comment stating its purpose outright &mdash; <em>"so an imperative build (many turns) vs a one-shot declarative call (1 turn) is measurable on disk"</em> &mdash; seeded by a counter tagged <code># L9</code> at <code>:239</code>. <strong>L9 is wired</strong>; the implementer chose the <code>logging</code> sink rather than the journal. 663 dated records are on disk right now.</p>
+
+  <div class="prod"><b>producer</b> &mdash; regex <code>^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),\d+.*Conversation complete: (\d+) turns, (\d+) tool calls</code> over <code>C:/Users/User/.synapse/logs/synapse.log</code>, <code>.log.1</code>, <code>.log.3</code> &rarr; 663 records, span 2026-08-02 12:09:28 &rarr; 2026-09-13 20:38:08, turns median 3 / mean 6.31 / min 1 / max 25, tool-calls median 4. Handler: <code>python/synapse/core/logfile.py:78-92</code>, RotatingFileHandler on the <code>synapse</code> logger at INFO. <span class="tier">RE-VERIFIED</span></div>
+
+  <div class="call">
+    <span class="ctitle">What the journal probe actually proved &mdash; narrowed, and it survives</span>
+    <p><code>journal.log</code> is <strong>the wrong instrument for turns, not the only instrument.</strong> Its two real defects stand and are cheap: <code>python/synapse/panel/session_journal.py:141</code> emits <code>%H:%M:%S</code> with no date (one line), and three of its four line types have had zero live writers since commit <code>4fa3907f</code> (2026-06-01). Neither blocks anything above it.</p>
+  </div>
+
+  <h3>So what is actually in the way</h3>
+
+  <p>Three things, in this order:</p>
+
+  <ol>
+    <li><strong>Evidence already produced is sitting unruled.</strong> Two packages under <code>harness/v2-20260913/artifacts/</code> &mdash; the baseline and the computer-use preconditions &mdash; close with <em>"Verdict: never written by the operator. Referee review remains pending"</em> and status <code>evidence_ready_for_review</code>. Zero engineering. One reading session by Joe and CRUX.</li>
+    <li><strong>One live stale-truth path.</strong> <code>python/synapse/cognitive/tools/data/lop_solaris_knowledge_22.json</code> stamps <code>houdini_version 22.0.368</code> &mdash; a build no longer installed on this host &mdash; while <code>connectivity_22.json</code> and <code>h22_symbol_table.json</code> both stamp <code>22.0.400</code>, and <code>core/lop_knowledge.py</code> resolves by <em>major</em> only. The validator's LOP phase advises from 368 truth on a 400 runtime today. That is precisely the silently-permissive state G5 exists to kill, and it is live at HEAD.</li>
+    <li><strong>Ten minutes of a human at the GUI.</strong> <code>.synapse/contracts/demo-round-trip.yaml</code>, <code>autonomy: red</code>.</li>
+  </ol>
+
+  <div class="prod"><b>producer</b> &mdash; <code>json.load()</code> on the three catalog files, reading <code>houdini_version</code>: 22.0.368 / 22.0.400 / 22.0.400. <span class="tier">RE-VERIFIED</span></div>
+
+  <p class="pull">Build on the floor. The ladder is licensed by data, and the gate on starting it is a ruling, not a measurement.</p>
+
+  </div></div>
+</section>
+
+<!-- ================= 2 ================= -->
+<section id="s2">
+  <div class="shead">
+    <div class="snum">&sect; 2</div>
+    <h2>The eight probes</h2>
+    <div class="sub">Sorted worst first &mdash; by confirmed defect &times; what it costs, not by how alarming the question sounded.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <div class="call warn">
+    <span class="ctitle">Verdicts that moved in this revision</span>
+    <p><strong>Probe 1</strong> CONFIRMED BROKEN &rarr; <strong>REFUTED as the ladder block</strong> (two cheap defects survive). <strong>Probe 2</strong> re-scoped: not blocked on an external author. <strong>Probe 3</strong> strengthened: the gap is live, not theoretical. <strong>Probe 4</strong> anchors corrected: the prescribed edit was inapplicable to three of its five targets. <strong>Probe 6</strong> narrowed: most of the claimed gap is already netted headless. <strong>Probe 7</strong> narrowed again: not a launch-path capability failure either.</p>
+  </div>
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>#</th><th>Question</th><th>Verdict</th><th>Mechanism</th><th>Live build?</th><th>Fix size</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="num">1</td>
+        <td><strong>Instrument health</strong> &mdash; can the baseline be measured?</td>
+        <td><span class="chip c-ref">Refuted as the block</span><br><span class="chip c-warn">2 defects survive</span></td>
+        <td>The gating number exists and was measured (median 8, <code>baseline.csv</code>) by <code>usage_sink</code>, not the journal. What survives: <code>session_journal.py:141</code> writes <code>%H:%M:%S</code> with no date, and LOGIN/CMD/ERROR writers were orphaned by <code>4fa3907f</code> (2026-06-01) &mdash; 0 live call sites remain.</td>
+        <td>No</td>
+        <td><strong>1 line</strong> (date) + <strong>1 decision</strong> (revive or delete the dead writers)</td>
+      </tr>
+      <tr>
+        <td class="num">2</td>
+        <td><strong>LOOP substrates</strong> &mdash; Moneta / Hanish / Octavius binding</td>
+        <td><span class="chip c-crit">Confirmed broken</span><br><span class="chip c-flat">Hanish only &middot; re-scoped</span></td>
+        <td><code>loop/hanish_worker.py:113-130</code> imports <code>canonical_world_commitment</code> + <code>world_ref_for</code> from <code>hanish.future.claims</code> &mdash; symbols in <strong>zero commits</strong> of <code>G:\Hanish</code>. They are <em>host-side duties</em>, not core exports: <code>G:\Hanish\hanish\adapters\ci.py</code> is a complete reference adapter that implements <code>world_ref()</code> locally and declares the one-way rule <em>"adapter imports core. core imports nothing from adapters."</em> Degrades honestly to UNAVAILABLE.</td>
+        <td>No</td>
+        <td><strong>1 file</strong>, locally answerable against a reference implementation</td>
+      </tr>
+      <tr>
+        <td class="num">3</td>
+        <td><strong>Upgrade path</strong> &mdash; does upgrading to v5.68.0 work?</td>
+        <td><span class="chip c-crit">Confirmed gap</span><br><span class="chip c-flat">strengthened</span></td>
+        <td><code>agent_state.py:168-229 migrate_to_v2</code> has zero production callers; a pre-2.0.0 <code>agent.usd</code> makes <code>log_decision</code> (<code>:569</code>) warn-and-return. <strong>Five released tags wrote 0.1.0</strong> &mdash; v5.2.0, v5.2.1, v5.2.2, v5.3.0, v5.4.0 &mdash; so the gap is live, not theoretical.</td>
+        <td>Yes (<code>pxr</code>)</td>
+        <td><strong>1 wiring call + guard</strong>, plus a release-process addition</td>
+      </tr>
+      <tr>
+        <td class="num">4</td>
+        <td><strong><code>checks.py</code> tiering</strong> &mdash; which of 84 checks are headless / hython / GUI-bound?</td>
+        <td><span class="chip c-crit">Confirmed misclassification</span><br><span class="chip c-flat">anchors corrected</span></td>
+        <td>Over-guarding is real. But only <strong>2</strong> of the 5 named checks carry a local guard (<code>:76</code>, <code>:97</code>); <strong>3</strong> inherit the identical string from the shared helper at <code>:38</code>, and <strong>2 more</strong> unlisted checks hard-return at <code>:1205</code>/<code>:1403</code>. The correct idiom already exists at <code>:293</code>.</td>
+        <td>No (fix)</td>
+        <td><strong>2 local + 3 call-site</strong> &mdash; never the shared helper</td>
+      </tr>
+      <tr>
+        <td class="num">5</td>
+        <td><strong>Windows installer signing</strong></td>
+        <td><span class="chip c-flat">By design, disclosed</span></td>
+        <td><code>installer/build_windows.py:67</code> hardcodes <code>"signing": "unsigned"</code> as a literal &mdash; never computed; zero signtool/cert/CI-secret in the tree; SHA256SUMS is the documented mitigation. <em>Not re-audited by any crucible lens.</em></td>
+        <td>No (needs a fresh Win11 VM)</td>
+        <td><strong>1 doc paragraph + 1 test</strong>; signing itself is procurement</td>
+      </tr>
+      <tr>
+        <td class="num">6</td>
+        <td><strong>RSI Stage 0 scaffold</strong> &mdash; still compatible? do its walls hold?</td>
+        <td><span class="chip c-warn">Partial</span><br><span class="chip c-flat">narrowed</span></td>
+        <td>Files unchanged since ship; walls hold. The gap is smaller than claimed: <code>tests/test_rsi_stage0_panel.py</code> (235 lines) already pins <code>_open_lookdev_suggestion</code> and <code>_prepare_lookdev_prompt</code> against real extracted source, plus 7 host-session invalidation tests. <strong>Only Qt widget construction is uncovered.</strong></td>
+        <td>Yes (Qt offscreen)</td>
+        <td><strong>~40-60 lines, test-only</strong></td>
+      </tr>
+      <tr>
+        <td class="num">7</td>
+        <td><strong>Moneta persistence</strong> &mdash; never binds / writes nowhere / can't read back?</td>
+        <td><span class="chip c-ref">Refuted (durability)</span><br><span class="chip c-flat">narrowed again</span></td>
+        <td>Durability is correct (see &sect;3). The residual is <em>not</em> a launch-path capability failure: <code>loop/ports.py:154-167 _moneta_env_gate()</code> keys on <code>MONETA_SRC</code> <strong>or</strong> <code>PXR_PLUGINPATH_NAME</code>, so either variable binds headless with no launch-path change. The receipt's own evidence names both an unbound and a provisioned headless run. <strong>Not defaulted &ne; broken.</strong></td>
+        <td>Yes (one human-gated demo)</td>
+        <td><strong>1 shim env line + 1 stale-doc fix</strong></td>
+      </tr>
+      <tr>
+        <td class="num">8</td>
+        <td><strong>Python 3.14.2 / vendored ABI</strong></td>
+        <td><span class="chip c-ref">Refuted (production risk)</span></td>
+        <td><code>__init__.py:60 _VENDOR_PYS = frozenset({(3,11),(3,13)})</code> &mdash; Houdini 22 is cp313, inside the set. Failure path is a <em>named</em> RuntimeError. <code>harness/CLAUDE.md</code> claims a "sidecar" architecture with no commit in git history. <em>Not re-audited by any crucible lens.</em></td>
+        <td>No (for the verdict)</td>
+        <td><strong>2 doc lines + 1 CI matrix line</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>Zero probes returned a clean PASS, and zero returned a catastrophic FAIL.</strong> Three now return refutations. Two refuted the <em>question's</em> prior. The third refuted <em>this report's own draft verdict</em> &mdash; and both of the report's misses had the same shape: a capability declared absent because the probe audited one surface and generalized.</p>
+
+  <div class="call crit">
+    <span class="ctitle">Method correction the sweep owes itself</span>
+    <p>Probe 1 audited exactly one on-disk instrument and concluded <em>"the instrument."</em> It never opened <code>~/.synapse/logs/synapse.log</code> (4.2 MB live plus two rotations, referenced by the project's own <code>doctor.py:829-831</code>), never read the blueprint's second named P1 instrument, never opened the dated baseline artifacts already in the tree, and never searched non-master branches &mdash; despite a stale <code>tests/__pycache__/test_turns_ledger.cpython-314.pyc</code> sitting in the working tree pointing at a parked instrument.</p>
+    <p><strong>Standing rule for any re-run:</strong> enumerate log sinks via <code>core/logfile.py</code>, read every instrument the governing doc names, and run <code>git log --all -S &lt;capability&gt;</code> before declaring a capability absent.</p>
+  </div>
+
+  </div></div>
+</section>
+
+<!-- ================= 3 ================= -->
+<section id="s3">
+  <div class="shead">
+    <div class="snum">&sect; 3</div>
+    <h2>Moneta &mdash; the root question</h2>
+    <div class="sub">The answer is none of the three shapes the question offered, and none of the fourth either.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <h3>The answer: none of the three shapes</h3>
+
+  <p>Moneta binds, writes durably, and reads back after restart. Say this forcefully, because the most expensive mistake available in this report is rewriting a storage layer that is already correct:</p>
+
+  <p class="pull"><strong>The Moneta durability mechanism is sound. There is no persistence bug to fix.</strong> Do not rewrite <code>moneta_store.py</code>, <code>durability.py</code>, or the deposit path on the belief that deposits are being lost.</p>
+
+  <h3>The settling anchors</h3>
+
+  <p><strong>Does it write durably?</strong> Yes, on every single deposit.</p>
+
+<pre><code>python/synapse/memory/moneta_store.py  :725-729
+    if require_durable:
+        self.save(require_durable=True)
+    else:
+        self.save()          # legacy best-effort acknowledgement</code></pre>
+
+  <p><code>self.save()</code> is called <strong>unconditionally on both branches</strong>. Commit <code>3ab85e68e</code> (2026-08-09) removed a prior 30-second throttle that had been losing non-first deposits on <code>os._exit</code>. The write itself is atomic: <code>C:/Users/User/Moneta/src/moneta/durability.py:83-117 snapshot_ecs()</code> uses tmp-file + <code>fsync</code> + <code>os.replace</code>.</p>
+
+  <p><strong>Does it read back after restart?</strong> Yes. <code>C:/Users/User/Moneta/src/moneta/api.py:220-247</code> &mdash; <code>Moneta.__init__</code> calls <code>self.durability.hydrate()</code> whenever both snapshot and WAL paths are configured, and <code>moneta_store.py</code> always configures both. Constructing a store <em>is</em> the restart-read.</p>
+
+  <h3>What the runtime receipt covers &mdash; and what it does not</h3>
+
+  <p>This is where the draft over-claimed, and the correction matters more than the alarm does.</p>
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>Claim</th><th>Evidence tier</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Deposits survive an abrupt restart on the <strong>pre-<code>require_durable</code></strong> path (the bare <code>self.save()</code> per deposit)</td>
+        <td><span class="tier">VERIFIED-RUNTIME</span><br>at <code>0ef53146</code></td>
+        <td><code>BP2-LATENCY.json</code> findings[1]: headless hython 22.0.400, provisioned, <em>"known deposit recalled 5/5 both pre- and post-reopen (no silent-empty)"</em>, reopen p95 130.4 ms, cortex USD layer present on all 5 reopens.</td>
+      </tr>
+      <tr>
+        <td>The <strong><code>require_durable</code> two-branch shape at HEAD</strong></td>
+        <td><span class="tier">VERIFIED-STATIC</span><br>at <code>bd65e4b6</code></td>
+        <td>The receipt pins <code>product_head = 0ef5314645d9a69a3e0984b7e8c2560c962e937c</code> (2026-09-01). At that commit <code>require_durable</code> appears <strong>0 times</strong> in <code>moneta_store.py</code>. It landed in <code>3025a825</code> (2026-09-08) &mdash; seven days <em>after</em> the run, and the same commit &sect;2 probe 6 cites as the RSI Stage 0 scaffold.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="prod"><b>producer</b> &mdash; <code>harness/notes/receipts/BP2-LATENCY.json</code> field <code>product_head</code>; <code>git show 0ef53146:python/synapse/memory/moneta_store.py | grep -c require_durable</code> &rarr; <code>0</code>; <code>git log --oneline -S require_durable -- python/synapse/memory/moneta_store.py</code> &rarr; <code>3025a825 Add opt-in checked lookdev experience scaffold</code>. <span class="tier">RE-VERIFIED</span></div>
+
+  <p><strong>The delta is additive toward durability, which is why the directive survives at a lower tier.</strong> Diffing the two shapes directly: at <code>0ef53146</code> the deposit path ended <code>self.save()  # sets self._last_save</code>; at HEAD the <code>else</code> branch is <code>self.save()  # legacy best-effort acknowledgement</code> under the same verbatim comment block. The <code>else</code> branch is the exact path the receipt exercised. The <code>if</code> branch is a strict strengthening. So the receipt <em>under-covers</em> HEAD; it is not evidence against it. (&sect;11.2 contests the remedy that followed from this.)</p>
+
+  <h3>Three caveats the receipt carries that the draft dropped</h3>
+
+  <ul>
+    <li><strong>The cited anchor does not resolve.</strong> <code>findings[1].anchor</code> names <code>.../memory_latency_hython_provisioned.json</code>; the artifact on disk is <code>.jsonl</code>. Directory listing of <code>harness/battleplan/runs/2026-09-01/</code> confirms only the <code>.jsonl</code> forms exist. <span class="tier">RE-VERIFIED</span></li>
+    <li><strong>The 3000&nbsp;ms budget is proposed, not ratified.</strong> <code>for_ruling[0]</code>, verbatim: <em>"The camera budgets &hellip; are PROPOSED; ratifying them is Joe's word. This leg measured against them and did not ratify."</em></li>
+    <li><strong>The GUI half is UNKNOWN and its sufficiency is an open escalation.</strong> <code>acceptance[1].verdict = UNKNOWN</code>. <code>for_ruling[2]</code> asks directly: <em>"is the 'under budget' verdict from the provisioned-headless proxy sufficient for the sec.1 demo beat, or is the .400 GUI half required?"</em> That question is <strong>re-filed, not answered here.</strong> It belongs in the same ten-minute GUI session as <code>demo-round-trip</code> (&sect;8).</li>
+  </ul>
+
+  <h3>The real residual &mdash; smaller than the draft said</h3>
+
+  <p>Headless binding is <strong>not defaulted</strong>. It is not broken.</p>
+
+  <p><code>python/synapse/loop/ports.py:154-167 _moneta_env_gate()</code> keys purely on <code>os.environ.get("MONETA_SRC") or os.environ.get("PXR_PLUGINPATH_NAME")</code>. Setting either binds, with no launch-path change at all &mdash; and its own docstring already says the remedy is operator-side. The receipt's <code>acceptance[0]</code> evidence names <em>both</em> runs from the same day: <code>memory_latency_hython.jsonl</code> (agent lane, <code>bind_reason env_unset</code>, every op UNKNOWN) <strong>and</strong> <code>memory_latency_hython_provisioned.jsonl</code> (real numbers, N 195&rarr;200, backend <code>MonetaBackedStore</code>, embedder <code>minilm-l6-v2-d384</code>, dim 384). The system already distinguishes the two states correctly and labels them honestly.</p>
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>Launch path</th><th>Prefs dir resolved</th><th><code>packages/synapse.json</code> loads?</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Houdini 22.0.400 <strong>GUI</strong></td><td>OneDrive-redirected</td><td><strong>Yes</strong></td><td>G1 ENV pass, G2 PLUGIN pass, G3 LAYER pass</td></tr>
+      <tr><td><strong>hython</strong> / hytest shim, unprovisioned</td><td>Classic (<code>C:/Users/User/houdini22.0</code>)</td><td><strong>No</strong></td><td><code>env_unset</code> &mdash; Moneta never binds</td></tr>
+      <tr><td><strong>hython</strong> with <code>MONETA_SRC</code> set</td><td>irrelevant to the gate</td><td>n/a</td><td><strong>Binds</strong> &mdash; the BP2-LATENCY provisioned lane</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4>What it costs downstream</h4>
+
+  <p><strong>What it does not cost:</strong> any user-facing persistence. A normal install's GUI path binds fine.</p>
+
+  <p><strong>What it actually costs:</strong> <em>false-red tests on every new headless leg that forgets to provision.</em> That compounds, and it has already produced one confound worth naming: <code>tests/test_loop_integration.py:28-31</code> skips only if <code>moneta_available()</code> is False &mdash; and on this host's <em>system</em> Python that returns True via an unrelated system-wide <code>moneta</code> 1.2.0rc1 pip install, so even a "passing" run exercises a different Moneta build than the one shipped.</p>
+
+  <h3>Three corrections this refutation forces</h3>
+
+  <p><strong>1. A live doc asserts the bug that was fixed a month of commits ago.</strong></p>
+
+<pre><code>python/synapse/memory/ledger.py:300-306
+# ... MonetaBackedStore.add() writes to the in-memory ECS and returns;
+# there is no per-deposit save, the snapshot daemon is deliberately not
+# started ... a HARD exit between a deposit and process teardown loses the row.</code></pre>
+
+  <p>That comment is <strong>false against the current code</strong> (fixed 2026-08-09, <code>3ab85e68e</code>). Anyone reading it will re-diagnose a solved problem &mdash; a chunk of this very sweep included. Pure text fix, zero behavior change.</p>
+
+  <p><strong>2. RSI trace findings are never lost on a Moneta failure.</strong> <code>ledger.py:532</code> calls <code>write_report(...)</code> &mdash; the durable per-record JSON &mdash; <strong>before</strong> <code>ledger.py:548</code> calls <code>_deposit_to_moneta(...)</code>. A bind failure degrades <em>semantic-recall enrichment</em>, not existence.</p>
+
+  <p><strong>3. "The proposal ledger" has no Moneta dependency at all.</strong> <code>python/synapse/host/proposal_store.py</code> is 35 lines of stdlib &mdash; an in-memory dict with a 30-minute TTL, explicitly non-persistent by design. Durable proposals would be a <strong>missing feature</strong>, not a persistence bug.</p>
+
+  <h3>The vector index, while we're here</h3>
+
+  <ul>
+    <li><strong><code>synapse_recall</code></strong> never touches embeddings &mdash; <code>tracker.py:568-614</code> &rarr; <code>store.py:1477-1519</code> is a by-type index + lowercase substring scan.</li>
+    <li><strong><code>synapse_search</code></strong> <em>does</em> read Moneta's <strong>internal</strong> vector index (<code>moneta_store.py:904-964</code> &rarr; <code>Moneta/src/moneta/api.py:328-410</code>), written on every deposit and read on every text search. <strong>"The vector index is write-only" is refuted</strong> for that index.</li>
+    <li><strong>The SYNAPSE-side <code>DerivedVectorIndex</code></strong> (<code>memory/vector_recall.py</code>) has exactly one caller in the tree: <code>server/doctor.py:543-550</code>, a health check. It is dormant. Its wiring spawn (<code>harness/notes/receipts/W3-VEC.json</code> spawn[0], <code>held:true</code>) was never picked up.</li>
+  </ul>
+
+  <h3>The one thing genuinely open</h3>
+
+  <p><code>.synapse/contracts/demo-round-trip.yaml</code> &mdash; <strong><code>autonomy: red</code></strong>, every feature <code>passing:false</code>. Live GUI: deposit &rarr; close the <code>.hip</code> &rarr; reopen &rarr; recall. <strong>No agent can close this, including any in this sweep.</strong> It is ten minutes of a human at the rig &mdash; and the same session should absorb <code>BP2-LATENCY</code>'s open <code>for_ruling[2]</code>.</p>
+
+  </div></div>
+</section>
+
+<!-- ================= 4 ================= -->
+<section id="s4">
+  <div class="shead">
+    <div class="snum">&sect; 4</div>
+    <h2>Dependency graph</h2>
+    <div class="sub">Rebuilt. The journal row's HARD-block is deleted; two rows are downgraded; two rows are added that the draft never graded.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>Confirmed failure</th><th>HARD-blocks</th><th>SOFT-blocks</th><th>Provably does NOT block</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Journal date stamp + dead writers</strong><br><span class="tier">was: HARD-blocks G0 + the RSI ladder</span></td>
+        <td><strong>&mdash; nothing.</strong> G0's number came from <code>usage_sink</code>; the falsifier is answered at median 8.</td>
+        <td>Session bounding for journal-derived telemetry only</td>
+        <td>G0, G1&ndash;G5, C1&ndash;C7, all RSI stages, SHIP</td>
+      </tr>
+      <tr>
+        <td><strong>Hanish import drift</strong><br><span class="tier">was: HARD, blocked on an external author</span></td>
+        <td><strong>&mdash; nothing.</strong> The reference implementation is on disk at <code>G:\Hanish\hanish\adapters\ci.py</code>; the two symbols are host-side duties SYNAPSE writes locally.</td>
+        <td>G3's real-substrate coordinator leg, C5, RSI Stage 1/2</td>
+        <td>G0, G1, G2, G4, G5, C1&ndash;C4, C6, C7, RSI Stage 4, SHIP</td>
+      </tr>
+      <tr>
+        <td><strong>Moneta headless not defaulted</strong><br><span class="tier">was: HARD-blocks the demo artifact</span></td>
+        <td><strong>&mdash; nothing</strong> that an env var does not close. <code>demo-round-trip</code> is blocked by <em>autonomy:red</em>, not by this.</td>
+        <td>G3 (false-red confound), C5's acceptance artifact, RSI Stage 1 <em>(design-dependent)</em></td>
+        <td>G0, G1, G2, G4, G5, C1&ndash;C4, C6, C7, RSI Stage 2/3/4</td>
+      </tr>
+      <tr>
+        <td><strong>LOP catalog stamped 22.0.368</strong><br><span class="tier">new row &mdash; not in the draft</span></td>
+        <td>&mdash; <em>(nothing today, because nothing checks the stamp)</em></td>
+        <td><strong>C2's Solaris half, in a specific order:</strong> wiring G5's check before re-probing flips the LOP validator to UNAVAILABLE and degrades C2's qualification area</td>
+        <td>G0, G1, G3, G4, C1, C3, C5&ndash;C7, all RSI stages</td>
+      </tr>
+      <tr>
+        <td><strong>Computer-use lane awaiting ruling</strong><br><span class="tier">new row &mdash; not in the draft</span></td>
+        <td><strong>C1's, C5's and C7's acceptance evidence</strong> &mdash; the lane is the blueprint's evidence executor for all three, plus G0's proxy label</td>
+        <td>Mile 3 and mile 5 of the ladder as scheduled</td>
+        <td>Every <em>build</em> half of every group; nothing here stops code landing</td>
+      </tr>
+      <tr>
+        <td><strong><code>migrate_to_v2</code> zero callers</strong></td>
+        <td>&mdash; <em>(nothing)</em></td>
+        <td>C1&ndash;C2 (provenance evidence half), SHIP (undisclosed in notes)</td>
+        <td>G0&ndash;G5, C3&ndash;C7, RSI Stage 1/2/4</td>
+      </tr>
+      <tr>
+        <td><strong>RSI Stage 0 Qt construction gap</strong></td>
+        <td>&mdash; <em>(nothing)</em></td>
+        <td>C1, C3, C4, C7 <em>(all edit <code>synapse_panel.py</code>, and are partly netted headless already)</em></td>
+        <td>G0&ndash;G5, C2, C5, C6, RSI Stage 1/2/4</td>
+      </tr>
+      <tr>
+        <td><strong><code>checks.py</code> over-guarding</strong></td>
+        <td>&mdash; <em>(nothing)</em></td>
+        <td>SHIP <em>(can't self-certify without a permitted pytest run)</em></td>
+        <td>Everything else</td>
+      </tr>
+      <tr>
+        <td><strong>Installer unsigned</strong></td>
+        <td>&mdash; <em>(nothing)</em></td>
+        <td>&mdash; <em>(nothing)</em></td>
+        <td><strong>All groups</strong></td>
+      </tr>
+      <tr>
+        <td><strong>Py 3.14 vendored ABI</strong></td>
+        <td>&mdash; <em>(nothing)</em></td>
+        <td>&mdash; <em>(nothing)</em></td>
+        <td><strong>All groups</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Two gates the draft never graded</h3>
+
+  <p>The draft said "eight workstream groups" and then graded G0, G3, G4, G5, C1&ndash;C7, the RSI stages and SHIP. <strong>G1 and G2 appear nowhere in it.</strong> Both sit at mile 1 &mdash; the mile the measured baseline just licensed.</p>
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>Gate</th><th>What it is</th><th>Tooling</th><th>Ordering consequence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>G1</strong></td>
+        <td>Classify <code>synapse_instantiate_graph</code> &mdash; add the <code>_TOOL_TO_OPERATION</code> row at gate <code>review</code>, plus the worker-policy rule that the model may not call it in proposal mode. <em>"Pure Python; pinned by a policy test."</em></td>
+        <td><code>text</code></td>
+        <td>None. Start-today eligible.</td>
+      </tr>
+      <tr>
+        <td><strong>G2</strong></td>
+        <td>Re-stamp the write path against H22 &mdash; <code>dir()</code>-confirm every <code>hou</code> symbol on the running build, stamp the file, extend <code>version_agreement.py</code> to cover the stamp. <em>"The H21.0.671 line does not survive this gate."</em></td>
+        <td><code>text</code> + <strong>one hython leg</strong></td>
+        <td><strong>Sits at mile 1, ahead of C2 at miles 2 and 4.</strong> The draft's "C2 proceeds today" skipped this.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="prod"><b>producer</b> &mdash; <code>SYNAPSE_V2_BLUEPRINT_B.1.md:210</code> (G1), <code>:213</code> (G2), <code>:400-410</code> (mile ladder rows 0&ndash;8). <span class="tier">RE-VERIFIED</span></div>
+
+  <h3>Blocked by nothing &mdash; start these today</h3>
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>Group</th><th>Clean across</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><strong>G1 &mdash; classify <code>instantiate_graph</code></strong></td><td>every pass that covers it</td><td>Pure Python policy row + a policy test. No substrate, no seat.</td></tr>
+      <tr><td><strong>G4 &mdash; prompt caching <em>(build half)</em></strong></td><td>all 7 passes</td><td>Zero moneta / hanish / loop / agent_state references in <code>panel/system_prompt.py</code> or <code>panel/providers/anthropic_provider.py</code>. <strong>The contract-green half is not free</strong> &mdash; see &sect;8.</td></tr>
+      <tr><td><strong>G5 &mdash; catalog checker <em>(wiring half)</em></strong></td><td>all 7 passes</td><td><code>harness/verify/version_agreement.py</code> is stdlib-only. <strong>Green requires the LOP re-probe first</strong> &mdash; see &sect;8.</td></tr>
+      <tr><td><strong>C6 &mdash; provider seam</strong></td><td>all 7 passes</td><td>Lives entirely in <code>panel/providers/*</code>; no memory call in the propose/repair contract. Its done-predicate names the bench fixture set at <code>harness/bench/manifest.json</code> (stamped 22.0.400, task ids <code>exp-01 / top-01 / sop-01 / ari-01 / ctx-01</code>), whose perturbation asserts are <code>hou</code>-dependent.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>C3 is gated on G0 &mdash; and the gate can now be read</h3>
+
+  <p>The draft listed C1&ndash;C7 as unblocked by the journal while simultaneously HARD-blocking G0 on it. It cannot be both: the blueprint gates C3 on G0 in three separate places &mdash; <code>:236</code> (<em>"Gated on G0: build only if <code>last_prompt</code> slope exceeds the number G0 measures"</em>), <code>:378</code> (<em>"<code>v2-fold.yaml</code> (C3) | text | amber, gated by G0"</em>), and <code>:406</code> (mile 6: <em>"C3 fold (if G0 slope says so)"</em>).</p>
+
+  <p>With the baseline in hand the gate is readable. <code>first_call_input_tokens</code> across the task sequence:</p>
+
+<pre><code>exp-02   40,108
+exp-03   51,661
+top-01   59,770
+sop-01   71,337
+sop-02   86,209
+sop-03  104,885
+ari-01  113,815
+ari-02  129,088
+ctx-01  139,991      -> 3.49x climb across nine tasks</code></pre>
+
+  <div class="prod"><b>producer</b> &mdash; <code>baseline.csv</code> column <code>first_call_input_tokens</code>; <code>exp-01</code> is UNKNOWN and five later values are explicitly derived from two-call totals per <code>REPORT.md</code>. <span class="tier">RE-VERIFIED</span></div>
+
+  <p><strong>That slope opens C3's gate on evidence.</strong> Record it as opened by data, not as "blocked by nothing."</p>
+
+  <h3>One trap worth keeping</h3>
+
+  <p>"Stage-1" appears in both the RSI Stage 0 probe's evidence <em>and</em> as a workstream label, in <strong>different numbering schemes</strong>. The probe's warning about a missing anti-replacement guard applies to a mechanism that <em>writes to a scene</em> &mdash; Kernel <strong>Stage 3 (Propose)</strong>, explicitly held by D9. Stage 1 (Trace) is pure recording, Stage 2 (Gate) is arithmetic, Stage 4 (Anchor) is read-only. None of the three in-scope stages mutate anything, so that guard is inapplicable to them by construction.</p>
+
+  </div></div>
+</section>
+
+<!-- ================= 5 ================= -->
+<section id="s5">
+  <div class="shead">
+    <div class="snum">&sect; 5</div>
+    <h2>Ship impact</h2>
+    <div class="sub">What a user installing v5.68.0 today actually experiences, per failure.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <h3>Data loss: none</h3>
+
+  <p><strong>Nothing in this report loses user data.</strong> Stated plainly because it is the question that matters most and the answer is unambiguous.</p>
+
+  <ul>
+    <li>Moneta snapshots atomically on every deposit (<code>moneta_store.py:725-729</code> + <code>durability.py:83-117</code>).</li>
+    <li>The ledger writes the durable per-record JSON <strong>first</strong> (<code>ledger.py:532</code> before <code>:548</code>).</li>
+    <li>The installer creates a <em>new</em> content-addressed runtime dir per payload and never overwrites the prior one (<code>installer/synapse_setup/engine.py:344-427</code>); <code>Synapse.iss:269</code> states the preservation contract, and <code>installer/tests/test_lifecycle.py:19-39</code> asserts seeded user files are byte-identical after an upgrade.</li>
+  </ul>
+
+  <h3>Broken: two silent gaps</h3>
+
+  <p><strong>1 &mdash; Provenance silently not written on a pre-2.0.0 <code>agent.usd</code>.</strong> An artist upgrading a project old enough to predate <code>d31bbae7</code> (2026-03-06) applies a graph proposal through v5.68.0's headline review controls. The node is created, wired, undo-grouped, verifiable by read-back &mdash; <strong>it works</strong>. But <code>log_decision</code> (<code>agent_state.py:569</code>) hits a missing v2 prim, logs a warning, and returns. Both call sites swallow it (<code>graph_builder.py:286-287</code>, <code>graph_synth_runtime.py:123-127</code>).</p>
+
+  <p>No crash. No loss. But by the project's own constitutional rule &mdash; <em>no ledger entry &rArr; incomplete</em> &mdash; the result is incomplete and <strong>nothing in the pipeline says so</strong>. A brand-new install is unaffected: <code>initialize_agent_usd</code> always stamps 2.0.0.</p>
+
+  <div class="call warn">
+    <span class="ctitle">This gap is live, not theoretical &mdash; the draft left it open as an unknown</span>
+    <p><code>SCHEMA_VERSION = "0.1.0"</code> was introduced in <code>2a345169</code> (2026-02-11) and replaced by <code>2.0.0</code> in <code>d31bbae7</code> (2026-03-06). <strong>Five release tags fall inside that window</strong> &mdash; v5.2.0, v5.2.1, v5.2.2 (2026-02-11), v5.3.0 (2026-02-12), v5.4.0 (2026-02-14). A build that writes a 0.1.0 <code>agent.usd</code> was tagged and released. <span class="tier">RELAYED</span> &mdash; crucible git archaeology; still unknown whether any artist installed those February tags.</p>
+  </div>
+
+  <p><strong>2 &mdash; The LOP validator advises from a build that is not installed.</strong> <code>lop_solaris_knowledge_22.json</code> stamps <code>22.0.368</code>; the runtime is 22.0.400 (and 22.0.429 is also on this host). <code>core/lop_knowledge.py</code> resolves by major only, so the mismatch is invisible. Every Solaris qualification the validator performs today is advised from 368 truth. No error, no warning, no degradation signal &mdash; the exact silently-permissive shape G5 was written to eliminate.</p>
+
+  <p>Worth naming as an opportunity, not only a defect: <strong>mile 1's own exit criterion is <em>"validator <code>UNAVAILABLE</code> on stamp mismatch demonstrated."</em></strong> This stale stamp is the natural demonstration case. Demonstrate it at mile 1; re-probe before C2 needs the LOP knowledge at mile 2. (&sect;11.3 sharpens this framing.)</p>
+
+  <h3>Annoying: two, both already documented</h3>
+
+  <p><strong>SmartScreen on first download.</strong> A zero-reputation EXE triggers <em>"Windows protected your PC" &rarr; More info &rarr; Run anyway</em>. One deliberate extra click. No UAC prompt &mdash; the install is per-user (<code>Synapse.iss</code> <code>DefaultDirName={localappdata}\...</code>, <code>PrivilegesRequired=lowest</code>). On a studio machine under AppLocker/WDAC/Smart App Control in enforce mode this becomes a <strong>hard stop with no local override</strong>, requiring IT to allowlist first.</p>
+
+  <p><strong>Stage-0 records go <code>NO_MATCH</code> after the version bump.</strong> Anyone with a record captured before 5.68.0, or before the 2026-09-08 <code>solaris_lookdev.py</code> change (<code>95d7abf4</code>), must re-run the rehearsal. Records are not erased. By design, already stated in <code>docs/releases/v5.68.0.md:54</code> and <code>docs/status.md:52-53</code>.</p>
+
+  <h3>Reaches no user at all</h3>
+
+  <ul>
+    <li><strong>LOOP / Hanish / Octavius</strong> &mdash; <code>SYNAPSE_LOOP_ENABLED</code> is unset everywhere outside tests (<code>host/memory_loop.py:24-25</code>), and <code>packages/synapse.json</code> sets no LOOP env var. Dormant by default; <code>observe_operation</code> is structurally fail-open.</li>
+    <li><strong>Py 3.14 ABI</strong> &mdash; Houdini 22 is cp313, inside <code>_VENDOR_PYS</code>. The failure mode requires an interpreter no shipped Houdini uses.</li>
+    <li><strong><code>checks.py</code></strong> &mdash; <code>harness/</code> is never packaged (<code>install.py</code> and <code>pyproject.toml</code> have zero "harness" references).</li>
+    <li><strong>Journal instrument</strong> &mdash; dev telemetry.</li>
+    <li><strong>Moneta headless provisioning</strong> &mdash; a dev-machine concern. Whether the OneDrive-vs-classic prefs split generalizes to a cold-start install is itself an open gate (<code>docs/REACH_BLUEPRINT.md:224-236</code>).</li>
+  </ul>
+
+  </div></div>
+</section>
+
+<!-- ================= 6 ================= -->
+<section id="s6">
+  <div class="shead">
+    <div class="snum">&sect; 6</div>
+    <h2>The measurement question</h2>
+    <div class="sub">Three instruments exist. The draft graded one of them &mdash; the one that cannot answer the question &mdash; and generalized.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <h3>The three instruments</h3>
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>Instrument</th><th>Writer</th><th>Surface it measures</th><th>Answers G0's P1?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>&lt;hip_dir&gt;/claude/journal.log</code></td>
+        <td><code>mcp/tools.py:144-156</code>, the <code>finally</code> in <code>dispatch_tool()</code></td>
+        <td><strong>External-MCP client</strong> tool dispatch</td>
+        <td><strong>No</strong> &mdash; no turn-boundary field of any kind</td>
+      </tr>
+      <tr>
+        <td><code>~/.synapse/logs/synapse.log</code> (+2 rotations)</td>
+        <td><code>claude_worker.py:363-369</code> via <code>core/logfile.py:78-92</code></td>
+        <td><strong>In-panel worker</strong> &mdash; turns <em>per send</em></td>
+        <td><strong>Adjacent</strong> &mdash; wrong denominator, see &sect;11.1</td>
+      </tr>
+      <tr>
+        <td><code>usage_sink</code> receipts</td>
+        <td><code>claude_worker.py:247</code> + <code>:270</code>; counters at <code>usage_sink.py:134</code></td>
+        <td><strong>In-panel worker</strong> &mdash; model calls <em>per task</em></td>
+        <td><strong>Yes &mdash; and it did.</strong> Median 8, 2026-09-13</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>The blueprint names two of these three in its own P1 row (<code>:260</code>). The draft audited the first and concluded the measurement was impossible.</p>
+
+  <h3>Tool calls are not model round trips</h3>
+
+  <p>State this without softening, because it is the load-bearing distinction &mdash; and it is <em>why</em> the draft graded the wrong file:</p>
+
+  <p class="pull"><strong>A TOOL line is one MCP tool-call dispatch. It is not a model turn.</strong> One model turn can emit zero, one, or several tool calls. <code>journal.log</code> has no turn-boundary field of any kind.</p>
+
+  <p>There is no interpretation, no arithmetic, and no fix short of new emission that produces "model round trips per task" <em>from that file</em>. What the draft got wrong was the next step: concluding that therefore no file could.</p>
+
+  <h3>What the journal census still proves</h3>
+
+  <p>The census reproduced exactly:</p>
+
+<pre><code>wc -l                                    2667
+grep -c '^\[.*\] TOOL'                   2468
+grep -c '^\[.*\] LOGIN'                   132
+grep -c '^\[.*\] CMD'                      19
+grep -c '^\[.*\] ERROR'                    25
+last LOGIN at line                       1881
+TOOL lines after the last LOGIN           763
+live log_command/log_event call sites       0</code></pre>
+
+  <div class="prod"><b>producer</b> &mdash; the commands above against <code>C:/Users/User/claude/journal.log</code>, plus <code>grep -rn "log_command(\|log_event(" python/ --include=*.py | grep -v session_journal.py | wc -l</code>. <span class="tier">RE-VERIFIED</span> (0 live call sites independently reconfirmed across all worktrees).</div>
+
+  <h4>The sampling frame, stated</h4>
+
+  <p><code>session_journal.py:99-112 _resolve_log_dir()</code> resolves to <code>$HIP/claude</code>. <code>C:/Users/User/claude/</code> plus the live <code>C:/Users/User/untitled.hip/</code> directory means this census covers <strong>untitled-scene sessions only</strong>. Other journals exist: <code>tests/fixtures/claude/journal.log</code> (286 lines, a fixture) and <code>G:/SYNAPSE_DEMO_SCENES/.../claude/journal.log</code> (1 line). The excluded real-traffic population is negligible, but the frame belongs on the page.</p>
+
+  <h4>Dispatch-failure rate &mdash; a floor, not a total</h4>
+
+  <p><strong>274 of 2,468 logical TOOL entries carry <code>[FAILED: &hellip;]</code> &mdash; 11.10%, and that is a floor.</strong> <code>mcp/tools.py:80</code> does <code>sv = str(v)</code> in <code>_truncate_args</code>, so raw argument values with real newlines (VEX, Python) enter the journal, and <code>session_journal.py:163-165</code> appends the FAILED marker to the <em>end</em> of that multi-line string &mdash; where a line-oriented grep cannot see it.</p>
+
+  <div class="prod"><b>producer</b> &mdash; join every line not matching <code>^\[[0-9:]+\]</code> to the preceding entry &rarr; 2,644 logical entries, 2,468 logical TOOL, 22 multi-line TOOL, <strong>274</strong> carrying FAILED. Confirmed instance at <code>journal.log:2092</code>. The line-oriented count is 273 / 11.06%. <span class="tier">RELAYED</span></div>
+
+  <h4>Tool surface coverage</h4>
+
+  <p><strong>46 of 128 registered tools (35.9%) appear in the untitled-scene journal.</strong> Not "ever appear" &mdash; the frame above is one journal of at least three.</p>
+
+  <div class="prod"><b>producer</b> &mdash; <code>sed -E 's/^\[[0-9:]+\] TOOL ([a-zA-Z0-9_]+):.*/\1/' | sort | uniq -c</code> <strong>intersected with</strong> <code>TOOL_NAMES</code> from <code>synapse.mcp._tool_registry</code>; the sed alone yields 63 rows including code fragments such as <code>int n = 48;</code>. The intersection step is required for the number to reproduce. <span class="tier">RELAYED</span></div>
+
+  <h4>Deleted from this section</h4>
+
+  <div class="call crit">
+    <span class="ctitle">Removed rather than caveated</span>
+    <p>The draft published a per-session <strong>median 26 / mean 60.2</strong> bucketed by LOGIN, in the same subsection that declares session boundaries unprovable and refuses to publish a headline per-session number. Those two figures are <strong>deleted</strong>. They were derived from a boundary marker with zero live writers since 2026-06-01, carried no producer path, and contradicted their own section.</p>
+    <p><strong>What replaced them:</strong> the raw, producer-bearing fact underneath &mdash; <strong>763 of 2,468 TOOL calls (30.9%) fall after the last LOGIN with no denominator at all.</strong> <em>Producer:</em> <code>awk 'NR&gt;1881' journal.log | grep -c '^\[.*\] TOOL'</code> &rarr; 763. <span class="tier">RE-VERIFIED</span></p>
+  </div>
+
+  <h4>Evidence tier on the three journal rates</h4>
+
+  <p>The failure rate, the surface coverage and the primitive:composite ratio are <strong>derived-with-known-contamination</strong>, not "proven." An exhaustive fingerprint for harness-authored traffic was not done. This codebase has an on-file precedent for exactly that failure class: 4,795 "epoch closed" lines in <code>~/.synapse/logs/synapse.log</code> read as production RSI evidence and were all pytest (<code>harness/notes/RSI_SURFACE_AUDIT.md</code>). Bounded contamination found in-file: 6 lines carrying test tokens (<code>/stage/lookdev_fixture</code>, <code>/stage/test_sphere</code>, <code>/stage/test_imp</code>, <code>/stage/pegboard_test</code>) plus ~25 diagnostic calls (<code>synapse_ping</code> 16, <code>synapse_health</code> 7, <code>synapse_metrics</code> 1, <code>synapse_validate_ordering</code> 1) &mdash; about 1% of volume. <span class="tier">RELAYED</span></p>
+
+  <h4>A correction to the premise, kept</h4>
+
+  <p><strong>LOGIN is not uniformly <code>project=flat, scene=flat</code>.</strong> 104/132 read that; <strong>28/132 (21.2%)</strong> read <code>project=none, scene=flat</code>. <em>Producer:</em> <code>grep '^\[.*\] LOGIN' journal.log | grep -c 'project=none'</code> &rarr; 28, against 132 total.</p>
+
+  <h3>The primitive-versus-composite ratio</h3>
+
+  <p>Classified against each tool's own description in <code>_tool_registry.py</code>, summing to exactly 2,468 with zero unclassified:</p>
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>Class</th><th class="num">Count</th><th class="num">Share</th></tr></thead>
+    <tbody>
+      <tr><td>Primitive mutation</td><td class="num">1,557</td><td class="num">63.09%</td></tr>
+      <tr><td>Primitive read</td><td class="num">686</td><td class="num">27.80%</td></tr>
+      <tr><td><strong>Atomic subtotal</strong></td><td class="num"><strong>2,243</strong></td><td class="num"><strong>90.9%</strong></td></tr>
+      <tr><td>Composite (one-call multi-node builders)</td><td class="num">42</td><td class="num">1.70%</td></tr>
+      <tr><td>Opaque (<code>houdini_execute_python</code>)</td><td class="num">134</td><td class="num">5.43%</td></tr>
+      <tr><td>Session / utility</td><td class="num">48</td><td class="num">1.94%</td></tr>
+      <tr><td>Malformed (<code>hrudini_create_noe</code>)</td><td class="num">1</td><td class="num">0.04%</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>What it establishes:</strong> the agent overwhelmingly builds <em>atomically</em> rather than through declarative one-shot builders &mdash; roughly <strong>53:1</strong>. A real, defensible characterization of construction style, and the direct motivation for C2 and G1.</p>
+
+  <p><strong>What it does not establish:</strong> a call count. The 1,557 is a <strong>floor</strong> &mdash; 134 <code>execute_python</code> calls hide an unknowable number of internal operations, and each <code>synapse_batch</code> line hides N sub-commands behind one journal entry.</p>
+
+  <h3>The date-stamp defect and its fix size</h3>
+
+<pre><code>python/synapse/panel/session_journal.py:140-141
+    @staticmethod
+    def _timestamp() -&gt; str:
+        return time.strftime("%H:%M:%S", time.localtime())</code></pre>
+
+  <p><strong>Fix: one line.</strong> <code>"%Y-%m-%d %H:%M:%S"</code> or ISO. <strong>Additive and non-breaking</strong> to all four known readers &mdash; <code>get_entries</code>/<code>search</code> return whole lines, <code>format_journal_html</code> highlights substrings, <code>save_shot.py::_get_tool_actions</code> substring-matches <code>" TOOL "</code>, <code>_get_session_stats</code> reads in-memory counters. No reader slices a fixed timestamp width.</p>
+
+  <p><strong>Two things the one-liner does not do.</strong> It does not retro-date the 2,667 lines already on disk &mdash; no calendar date is recoverable for those. And it does not revive LOGIN/CMD/ERROR; that is a separate decision (revive, or delete the dead methods so the counts stop reading as telemetry).</p>
+
+  <h3>The parked turns instrument, for the record</h3>
+
+  <p>A complete turns instrument exists, built and adversarially reviewed, on <code>feat/scene-model</code> and <code>origin/feat/scene-model</code>. Commit <code>d02b0ed0</code> (2026-07-18) is 1,334 insertions whose own message reads: <em>"panel/turns_ledger.py + panel/claude_worker.py: the U2 turns-per-send instrument &mdash; persists the L9 log-only 'Conversation complete' line."</em> It ships <code>panel/turns_ledger.py</code> (134&nbsp;L, <code>SYNAPSE_TURNS_LEDGER</code> kill switch, FIFO cap, never-raises), <code>scripts/scene_model_report.py</code> (236&nbsp;L, <code>compute_turn_stats()</code> returning <code>turns_median</code> with p25/p75/mean/cap-hit), <code>tests/test_turns_ledger.py</code> (290&nbsp;L), plus <code>server/read_ledger.py</code> + tests. Follow-up <code>15843434</code> is <em>"Mile 0 fix pass &mdash; honest instruments (3 adversarial reviews applied)."</em></p>
+
+  <div class="prod"><b>producer</b> &mdash; <code>git show --stat d02b0ed0</code>; <code>git branch -a --contains d02b0ed0</code> &rarr; <code>feat/scene-model</code>, <code>remotes/origin/feat/scene-model</code>; <code>git rev-list --left-right --count master...feat/scene-model</code> &rarr; <strong>1293 / 2</strong>. Three of the four production files are new since merge-base and cherry-pick clean; only the ~20-line <code>claude_worker.py</code> tap needs re-application. <span class="tier">RE-VERIFIED</span></div>
+
+  <p><strong>Note the denominator carefully.</strong> That instrument measures turns <em>per send</em>. G0's falsifier measures round trips <em>per task</em>. They are different numbers and &sect;11.1 keeps them apart.</p>
+
+  </div></div>
+</section>
+
+<!-- ================= 7 ================= -->
+<section id="s7">
+  <div class="shead">
+    <div class="snum">&sect; 7</div>
+    <h2>Fix order</h2>
+    <div class="sub">Re-ordered. Ranked by (what it unblocks &times; inverse cost), not severity. The draft's #1 and #2 were priced off a block that does not exist; both moved down and shrank.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">01</span><h3>Rule on the evidence already produced</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd>Joe and CRUX read the two closed packages under <code>harness/v2-20260913/artifacts/</code> and issue verdicts: the <strong>v2-baseline</strong> (ten tasks, median 8, all measurements self-labeled <em>proxy</em>, <em>"Verdict: never written by the operator"</em>) and <strong>cu-panel-preconditions</strong> (<code>status: evidence_ready_for_review</code> after a DRIFT halt and a deadline halt on 2026-09-13). Two questions to settle: <em>is the proxy label sufficient for P1</em>, and <em>does the computer-use lane open</em>.</dd>
+      <dt>File</dt><dd>No file. A ruling.</dd>
+      <dt>Size</dt><dd><strong>Zero engineering.</strong> One reading session.</dd>
+      <dt>Fails when</dt><dd>It is failing today, silently &mdash; work is being scheduled around a number that is measured but unratified, which is how the draft came to declare it unmeasurable.</dd>
+      <dt>Live seat</dt><dd>No</dd>
+      <dt>Unblocks</dt><dd><strong>G0's closure, and the computer-use lane &mdash; the blueprint's evidence executor for C1, C5's reopen, and C7.</strong> The single highest-leverage item in this report, and the only one with no engineering cost at all.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">02</span><h3>Re-probe the LOP catalog on 22.0.400</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd>Regenerate <code>lop_solaris_knowledge_22.json</code> against the running build so its <code>houdini_version</code> stamp matches the runtime, and decide where <code>lop_truth_&lt;build&gt;.json</code> canonically lives &mdash; today the only in-tree instances are autoresearch run artifacts stamped 22.0.368, with no packaged copy at all.</dd>
+      <dt>File</dt><dd><code>python/synapse/cognitive/tools/data/lop_solaris_knowledge_22.json</code>; consumers <code>core/lop_knowledge.py</code>, <code>cognitive/graph_validator.py:61-62, 311</code></dd>
+      <dt>Size</dt><dd><strong>One hython probe + one placement decision</strong></dd>
+      <dt>Test</dt><dd>Assert all three catalogs report the same <code>houdini_version</code> as the running build &mdash; the check <code>version_agreement.py</code> is being extended to make in G5.</dd>
+      <dt>Fails when</dt><dd><strong>Fails today.</strong> 22.0.368 vs 22.0.400 vs 22.0.400, resolved by major only, no warning emitted.</dd>
+      <dt>Live seat</dt><dd><strong>Yes</strong> &mdash; hython, pinned 22.0.400</dd>
+      <dt>Unblocks</dt><dd>G5's <em>green</em>, and removes the live stale-truth path from the validator's Solaris advice. <strong>Ordering:</strong> demonstrate <code>UNAVAILABLE</code>-on-mismatch at mile 1 using this stamp as the case, then re-probe before C2 needs LOP knowledge at mile 2. Wiring the check <em>without</em> re-probing degrades C2's qualification area.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">03</span><h3>Journal date stamp</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd><code>_timestamp()</code> returns <code>"%Y-%m-%d %H:%M:%S"</code> instead of <code>"%H:%M:%S"</code></dd>
+      <dt>File</dt><dd><code>python/synapse/panel/session_journal.py:141</code></dd>
+      <dt>Size</dt><dd><strong>1 line</strong></dd>
+      <dt>Test</dt><dd><code>tests/test_session_journal_timestamp_has_date.py</code> &mdash; every written line matches <code>^\[\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}\]</code></dd>
+      <dt>Fails when</dt><dd>Fails <strong>today</strong> under the current format. Will fail again if the format regresses.</dd>
+      <dt>Live seat</dt><dd>No</dd>
+      <dt>Unblocks</dt><dd>Session bounding for journal-derived telemetry. <strong>Not</strong> G0 &mdash; that number comes from <code>usage_sink</code> and is already measured.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">04</span><h3>The dead-writer decision (and optionally, persist turns)</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd><strong>(a) Decide:</strong> re-wire <code>log_command</code>/<code>log_event</code> into the modular panel, <em>or</em> delete them so their frozen LOGIN/CMD/ERROR counts stop reading as telemetry. <strong>(b) Optional, if a durable turns record is wanted beyond the rotating log:</strong> cherry-pick <code>d02b0ed0</code> + <code>15843434</code> from <code>origin/feat/scene-model</code> (three clean new files) and re-apply the ~20-line <code>claude_worker</code> tap, under the ten conditions in <code>docs/reviews/scene-model-cto-gate-2026-07-18.md</code>.</dd>
+      <dt>File</dt><dd><code>python/synapse/panel/session_journal.py</code>; optionally <code>panel/turns_ledger.py</code>, <code>scripts/scene_model_report.py</code>, <code>server/read_ledger.py</code></dd>
+      <dt>Size</dt><dd><strong>A decision, plus a cherry-pick.</strong> <span class="tier">was: "one subsystem &mdash; the largest item in this list"</span> &mdash; that pricing assumed the emission did not exist.</dd>
+      <dt>Test</dt><dd>Two oracles, not one. <strong>(i) Anti-regression:</strong> <code>log_command</code>/<code>log_event</code> (or their replacement) must have &ge;1 live call site outside <code>session_journal.py</code> &mdash; that grep returns exactly <code>0</code> today and would have caught the 2026-06-01 regression on the day it happened. <strong>(ii) Correctness:</strong> write a fixture journal through the emission path containing N synthetic turns of K tool calls each, then assert a named parser recovers exactly N turns and a median of K. The grep alone fails only on <em>deletion</em>; oracle (ii) fails on <em>wrongness</em> &mdash; missing, malformed, misordered, or emitted per-tool instead of per-turn.</dd>
+      <dt>Fails when</dt><dd>(i) fails today. (ii) is new coverage.</dd>
+      <dt>Live seat</dt><dd>No</dd>
+      <dt>Unblocks</dt><dd>Stops three line types reading as live telemetry when they are fossils. Gives the per-send turns distribution a durable home if that is wanted.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">05</span><h3><code>checks.py</code> &mdash; two local guards, three call sites, never the helper</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd><strong>Class A (local guard, 1-3 lines each):</strong> <code>check_doctor</code> (<code>:72-76</code>) and <code>check_probe_runs</code> (<code>:92-97</code>) carry an inline <code>if not ctx["hython"]: return {"ok": False, "detail": "HYTHON unset"}</code>. Replace with the idiom that already exists at <code>:293</code> &mdash; <code>runner = ctx["hython"] or sys.executable</code>. <strong>Class B (no local guard):</strong> <code>check_mcp_registered</code> (<code>:269</code>), <code>check_mcp_truth_contract</code> (<code>:307</code>) and <code>check_scout_federates</code> (<code>:702</code>) have <em>no</em> guard &mdash; they build a code string and call <code>hython(ctx["hython"], code, ctx["wt"])</code>, inheriting the identical string from the shared helper. Give those three an explicit fallback runner at the call site, or a new <code>py_or_hython()</code> helper.</dd>
+      <dt>Do not edit</dt><dd><strong><code>harness/verify/checks.py:35-38</code>.</strong> Relaxing the shared <code>hython()</code> helper silently weakens <em>every</em> hython-tier check, including the ones that legitimately need a Houdini seat &mdash; the exact "honest not-runnable traded for a dishonest weaker pass" hazard this item exists to avoid.</dd>
+      <dt>Also unlisted</dt><dd><code>:1205</code> and <code>:1403</code> also hard-return on HYTHON unset, with wording that is arguably already the honest form: <em>"a golden that cannot run is not verified."</em> Leave them, or re-tier them deliberately &mdash; do not sweep them in.</dd>
+      <dt>File</dt><dd><code>harness/verify/checks.py</code> &mdash; 84 check functions total (<code>grep -c '^def check_'</code>), 11 sites emitting a HYTHON-unset string (<code>:38, :76, :97, :224, :786, :1177, :1205, :1313, :1348, :1373, :1403</code>) <span class="tier">RE-VERIFIED</span></dd>
+      <dt>Test</dt><dd>Per check: run with <code>ctx["hython"]=""</code> against a worktree fixture; assert <code>ok</code> is no longer unconditionally False <strong>and</strong> the detail names which runner actually executed.</dd>
+      <dt>Fails when</dt><dd>Fails today &mdash; <code>ok:False, detail:"HYTHON unset"</code> regardless of input. The underlying misclassification is real: <code>scripts/run_apex_verify.py:57-68</code> wraps <code>import hou</code> in try/except (<em>"hou is a soft dependency"</em>), so <code>check_probe_runs</code> genuinely can run under <code>sys.executable</code>.</dd>
+      <dt>Live seat</dt><dd>No for the fix. The repo's ratchet (<code>check_suite_baseline</code>, <code>:2539-2581</code>) shells a full <code>pytest tests/</code>, so landing it needs a permitted test run &mdash; not a Houdini seat.</dd>
+      <dt>Unblocks</dt><dd>Headless self-certification of doctor / probe_runs / mcp_* / scout. <strong>The draft's "60 &rarr; 65 of 84" tier claim is withdrawn &mdash; no producer path exists for 60, 65, or the "23 hython-tier" figure.</strong> Re-derive the tier counts from the corrected set before publishing any.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">06</span><h3><code>doctor.py</code> &mdash; LOOP substrate visibility</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd>Add <code>_check_hanish_substrate</code> / <code>_check_octavius_substrate</code> (or one <code>_check_loop_substrate</code>) mirroring the existing <code>_check_moneta_substrate</code></dd>
+      <dt>File</dt><dd><code>python/synapse/server/doctor.py</code> (model: <code>:402-475</code>)</dd>
+      <dt>Size</dt><dd><strong>Additive</strong> &mdash; no existing behavior to regress. Same "fenced, never raises" discipline as <code>moneta_runtime.py:615-621</code>.</dd>
+      <dt>Test</dt><dd>Assert LOOP status renders <code>ok</code> / <code>fail</code> / <code>skipped</code> rather than being absent</dd>
+      <dt>Fails when</dt><dd>Fails today &mdash; grep of <code>doctor.py</code> for hanish/octavius/loop returns <strong>zero hits</strong>, versus a rich per-condition Moneta check.</dd>
+      <dt>Live seat</dt><dd>No</dd>
+      <dt>Unblocks</dt><dd>Makes "is the LOOP alive" an operator-visible fact, and makes the Hanish gap diagnosable rather than silent.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">07</span><h3>Default the headless Moneta provisioning</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd><strong>Route 1, seat-free and already proven:</strong> export <code>MONETA_SRC=C:/Users/User/Moneta/src</code> (and <code>PXR_PLUGINPATH_NAME</code>) in the hytest shim and CI/test launchers &mdash; the same provisioning the BP2-LATENCY provisioned lane used successfully. <code>_moneta_env_gate()</code> keys on either variable, so this binds with no launch-path change. <strong>Route 2, only if route 1 proves insufficient:</strong> <code>LAUNCH_PATH_FIX.md</code> Option 1 &mdash; point <code>HOUDINI_PACKAGE_DIR</code> at <code>&lt;repo&gt;/packages</code> for every launch path. Check first whether other packages rely on the classic prefs dir being package-empty.</dd>
+      <dt>File</dt><dd>The hytest shim / CI + test launchers. <strong>Not <code>moneta_store.py</code></strong> &mdash; the storage code is correct.</dd>
+      <dt>Size</dt><dd><strong>One env line</strong> for route 1</dd>
+      <dt>Test</dt><dd>A headless gate asserting <code>ports.py::_moneta_env_gate()</code> reports bound, not <code>env_unset</code>, under the shim</dd>
+      <dt>Fails when</dt><dd>Fails today on an <em>unprovisioned</em> hython launch (<code>memory_latency_hython.jsonl</code>: <code>bind_reason env_unset</code>). It passes on a provisioned one (<code>..._provisioned.jsonl</code>). The defect is the default, not the capability.</dd>
+      <dt>Live seat</dt><dd><strong>No</strong> for route 1 <span class="tier">was: "Yes &mdash; hython, pinned 22.0.400"</span></dd>
+      <dt>Unblocks</dt><dd>Stops every future headless leg (G3, RSI Stage 1, C5) from manufacturing false-reds.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">08</span><h3>Qt construction coverage for <code>LookdevSuggestionCard</code></h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd>Add Qt-construction coverage <strong>on top of the existing headless net</strong> &mdash; one hython/offscreen-PySide test constructing the real card and driving <code>request()</code> / <code>dismiss()</code> / <code>_prepare()</code> through actual Qt signals.</dd>
+      <dt>Build on</dt><dd><code>tests/test_rsi_stage0_panel.py</code> (235 lines) already exercises <code>SuggestionState</code> + <code>suggestion_view</code> from <code>synapse.panel.lookdev_suggestion</code>, seven <code>host.LookdevSuggestionSession</code> invalidation cases (scene change, owner/backend replacement, wrong project, wrong thread, busy memory), and pins <code>_open_lookdev_suggestion</code> (<code>:73-79</code>) and <code>_prepare_lookdev_prompt</code> (<code>:84-88</code>) against real extracted source from <code>synapse_panel.py</code>. <strong>Do not rewrite coverage that exists.</strong> <span class="tier">RELAYED</span></dd>
+      <dt>Size</dt><dd><strong>~40-60 lines, test-only</strong>, touching zero production code</dd>
+      <dt>Fails when</dt><dd>Does not exist today. The <em>rename</em> risk the draft cited is already covered for two of its three names &mdash; a rename of <code>_open_lookdev_suggestion</code> breaks <code>test_local_suggestion_command_never_reaches_a_model</code> today. What is genuinely uncovered is Qt widget construction and the <code>draft_ready</code> signal path.</dd>
+      <dt>Live seat</dt><dd><strong>Yes</strong> &mdash; 22.0.400 with <code>QT_QPA_PLATFORM=offscreen</code>. One of only three items here demanding a seat.</dd>
+      <dt>Unblocks</dt><dd>C1, C3, C4, C7 gain a real-Qt net. <strong>Restated honestly: those four are <em>partially netted headless today</em></strong> <span class="tier">was: "four groups have no real-Qt net"</span>, so the marginal value is the widget layer, not the whole surface.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">09</span><h3>Wire <code>migrate_to_v2</code></h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd>Invoke <code>migrate_to_v2()</code> from a production path when a version mismatch is detected &mdash; <code>scene_memory.validate_memory</code>, <code>doctor</code>, or server startup. <strong>Not a bare <code>Stage.Open()</code> + <code>Save()</code></strong> &mdash; it needs a backup-and-verify gate modeled on <code>migrate.py</code>'s <code>backup_memory_stores()</code> / <code>verify_export()</code>.</dd>
+      <dt>File</dt><dd><code>python/synapse/memory/agent_state.py:168-229</code> + its new caller</dd>
+      <dt>Size</dt><dd><strong>Small wiring + a real guard.</strong> Highest fix_risk in this list: a migration bug could corrupt existing routing/handoff history. Do not rush it.</dd>
+      <dt>Test</dt><dd>Real-<code>pxr</code> (hython) test: open a genuine 0.1.0-shaped <code>agent.usd</code>, drive the production path, assert <code>/SYNAPSE/agent/integrity</code>, <code>/routing_log</code>, <code>/handoff_chain</code>, <code>/memory/decisions</code> populated after.</dd>
+      <dt>Fails when</dt><dd>Fails today on the <strong>"no caller"</strong> half alone. Today's closest test (<code>tests/test_agent_state.py:751-780</code>) is 100% MagicMock-<code>pxr</code> &mdash; zero real coverage.</dd>
+      <dt>Live seat</dt><dd><strong>Yes</strong> &mdash; 22.0.400</dd>
+      <dt>Unblocks</dt><dd>C1&ndash;C2's supporting-evidence half. Closes a constitutional silent no-op inside v5.68.0's headline feature &mdash; and the window is now known to contain <strong>five released tags</strong>, so this is remediation, not hygiene.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">10</span><h3>Write the two host-side Hanish helpers</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd><strong>Write <code>canonical_world_commitment</code> and <code>world_ref_for</code> locally in <code>hanish_worker</code>, mirroring <code>G:\Hanish\hanish\adapters\ci.py</code>.</strong> They are host duties, not core exports &mdash; <code>ci.py</code>'s docstring states the contract: <em>"An adapter may translate names, package values, assign opaque subject identities, and declare host capabilities &hellip; adapter imports core. core imports nothing from adapters."</em> It declares <code>world_ref_capability = WorldRefCapability.REPLAYABLE</code> as a class attribute and implements <code>world_ref()</code> host-side as a sha256 of the host's own coordinates. Importing those two names <em>from</em> <code>hanish.future.claims</code> inverts the documented dependency direction &mdash; which is exactly why they exist in zero commits.</dd>
+      <dt>Verified surface</dt><dd>The other seven imported symbols are core types and all still resolve: <code>WorldRefCapability</code>, <code>EmissionSemantics</code>, <code>Exposure</code>, <code>Comparator</code>, <code>ObservableSpec</code>, <code>ResolutionSpec</code>, <code>Forecast</code>. <code>claims.py</code> exports classes plus <code>forecast_from_dict</code> &mdash; no helper functions of those names. <span class="tier">RE-VERIFIED</span></dd>
+      <dt>Build</dt><dd><strong>Hanish is 0.1.3</strong> &mdash; <code>git -C G:\Hanish log -1</code> &rarr; <code>9813a6b Release 0.1.3 &mdash; the instrument made trustworthy</code>; <code>dist/</code> holds 0.1.0, 0.1.1, 0.1.3 only. <strong>There is no v0.2.</strong> <span class="tier">was: "match Hanish's actual v0.2 surface"</span> &mdash; a builder told to target v0.2 has no such surface to read. Reconcile <code>harness/loop/STATE.json</code>'s "v0.2 PG-DRM rung" separately: either it names a SYNAPSE-side version, or it is itself drifted.</dd>
+      <dt>File</dt><dd><code>python/synapse/loop/hanish_worker.py:113-130</code></dd>
+      <dt>Size</dt><dd><strong>One file, locally answerable.</strong> <span class="tier">was: "gated on an external answer (Hanish's author)"</span> &mdash; nothing is pending on an external author; the reference implementation is on disk.</dd>
+      <dt>Test</dt><dd><code>tests/test_loop_hanish_worker.py</code> run with <code>SYNAPSE_TEST_HANISH_ROOT=G:\Hanish</code> so the fixture's <code>pytest.fail()</code> branch fires instead of <code>pytest.skip()</code></dd>
+      <dt>Fails when</dt><dd>Fails today with that env var set. <strong>Right now it silently SKIPs</strong> &mdash; a reviewer scanning pass/skip/fail counts sees nothing wrong.</dd>
+      <dt>Live seat</dt><dd>No</dd>
+      <dt>Unblocks</dt><dd>G3's real-substrate coordinator coverage; <code>harness/loop/STATE.json</code>'s PG-DRM rung, blocked since 2026-08-20.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">11</span><h3>Doc + governance bundle</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd>Eleven text corrections, all zero-risk:
+        <ol>
+          <li><code>ledger.py:300-314</code> &mdash; the <code>MONETA_DURABILITY</code> comment asserts <em>"there is no per-deposit save,"</em> false since <code>3ab85e68e</code>.</li>
+          <li><code>harness/CLAUDE.md:10-13</code> &mdash; <em>"Default architecture: sidecar"</em> describes something with no commit in git history; <code>daemon.py:1-9</code> says in-process.</li>
+          <li><code>harness/tasks.json</code> task <code>"0.1"</code> &mdash; add the missing <code>ratified</code>/<code>status</code> field; RULING 36's own remedy, still open at HEAD.</li>
+          <li><code>docs/releases/v5.67.2.md</code> &mdash; the "real Hanish interfaces" rehearsal claim is not reproducible against the only Hanish tree on this host.</li>
+          <li><code>docs/releases/v5.68.0.md</code> "Still unfinished" &mdash; add the <code>migrate_to_v2</code> provenance gap <em>and</em> the five affected release tags.</li>
+          <li><code>docs/getting-started/installation.md</code> + <code>README.md</code> &mdash; name the actual SmartScreen flow and state that no UAC prompt is expected.</li>
+          <li><code>docs/development/rsi_stage0.md:164-170</code> &mdash; cite the test behind the "Real Qt 6.8.3 offscreen checks" claim, or soften it.</li>
+          <li><strong>New:</strong> <code>harness/notes/receipts/BP2-LATENCY.json</code> <code>findings[1].anchor</code> &mdash; <code>.json</code> &rarr; <code>.jsonl</code>; and add a <code>product_head</code> field to <code>memory_latency_hython_provisioned.jsonl</code> so the artifact can self-attest which tree it measured.</li>
+          <li><strong>New:</strong> <code>docs/LATENCY_SOLARIS_REVIEW.md:89-92</code> &mdash; L9 is recorded as never wired. It <em>is</em> wired, to the <code>logging</code> sink rather than the journal one-liner the review proposed.</li>
+          <li><strong>New:</strong> <code>harness/loop/STATE.json</code> &mdash; reconcile the "v0.2" Hanish rung against the 0.1.3 build on disk.</li>
+          <li><strong>New:</strong> wherever a doc names <em>one</em> instrument for P1 &mdash; name both, and say which surface each measures.</li>
+        </ol>
+      </dd>
+      <dt>Size</dt><dd><strong>~20 minutes total</strong></dd>
+      <dt>Test</dt><dd>A doc-conformance check: no release note may claim a gate closed while its structural <code>ratified</code> field is false or absent. <strong>Fails today</strong> &mdash; task <code>0.1</code> has no such field while <code>docs/RELEASE_NOTES_v5.34.0.md</code> already claims closure.</dd>
+      <dt>Live seat</dt><dd>No</dd>
+      <dt>Unblocks</dt><dd>Stops future readers &mdash; human and agent &mdash; re-diagnosing solved problems from stale text. Items 1 and 9 alone would have prevented two of this sweep's three largest errors.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">12</span><h3>Installer &mdash; real-historical upgrade test + signature-state test</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd>(a) Extend <code>installer/test_executable.py</code> to build and install a <strong>real</strong> prior release payload (git checkout of an old tag + <code>build_windows.py</code>) instead of the synthetic <code>'0.0.1'</code>/<code>'5.66.0'</code> fixtures. (b) Add a test computing the EXE's actual Authenticode state and comparing it against the literal at <code>build_windows.py:67</code>. (c) Fold <code>installer/tests</code> into CI or a documented release gate.</dd>
+      <dt>File</dt><dd><code>installer/test_executable.py</code>, <code>installer/tests/</code>, <code>pyproject.toml:102-109</code>, <code>.github/workflows/ci.yml:109,136</code></dd>
+      <dt>Size</dt><dd><strong>Medium</strong></dd>
+      <dt>Fails when</dt><dd>(a) does not exist &mdash; the project's own doc says <em>"No historical installer compatibility is inferred from the synthetic prior payload."</em> (b) passes trivially today (both agree: unsigned) &mdash; its value is that nothing currently catches a future divergence between the hardcoded string and the real binary.</dd>
+      <dt>Live seat</dt><dd>No</dd>
+      <dt>Unblocks</dt><dd>An honest upgrade claim. <em>The draft cited "37 tests" in <code>installer/tests</code> with no producer path; that figure is withdrawn pending a count.</em></dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">13</span><h3>Windows CI leg</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd>Add <code>windows-latest</code> to the CI matrix</dd>
+      <dt>File</dt><dd><code>.github/workflows/ci.yml:14</code> (currently <code>ubuntu-latest</code>, <code>macos-latest</code>)</dd>
+      <dt>Size</dt><dd><strong>One matrix line, real blast radius</strong> &mdash; a new runner class brings its own flakiness and maintenance cost</dd>
+      <dt>Test</dt><dd>The existing <code>tests/test_vendored_deps.py::TestVendorResolution</code> (<code>:244-268</code>), un-skipped</dd>
+      <dt>Fails when</dt><dd><strong>It cannot fail today</strong> &mdash; <code>skipif</code>-gated on Windows and skipped unconditionally on all four configured CI legs. A broken cp313 <code>.pyd</code> would ship undetected until a human tested locally.</dd>
+      <dt>Live seat</dt><dd>No</dd>
+      <dt>Unblocks</dt><dd>The vendored native-binary path stops being human-manual-only. <strong>Sequence alongside whatever re-vendors for a new Python</strong>, not ahead of v2 work.</dd>
+    </dl>
+  </div>
+
+  <div class="fix">
+    <div class="fixhead"><span class="rank">14</span><h3>Code signing</h3></div>
+    <dl class="kv">
+      <dt>Changes</dt><dd>Acquire an OV/EV certificate or a Microsoft Trusted Signing subscription; add one <code>signtool</code> step after the ISCC compile; replace <code>build_windows.py:67</code>'s hardcoded literal with the computed check from item 12</dd>
+      <dt>File</dt><dd><code>installer/build_windows.py</code> + credential custody</dd>
+      <dt>Size</dt><dd><strong>Procurement, not engineering.</strong> Lead time in days-to-weeks.</dd>
+      <dt>Live seat</dt><dd>No &mdash; but a fresh Win11 VM to verify the SmartScreen change</dd>
+      <dt>Unblocks</dt><dd>Studio-managed Windows 11 machines under AppLocker/WDAC. <strong>Runs in parallel, by a different actor, taking zero engineering attention from the workstreams.</strong></dd>
+    </dl>
+  </div>
+
+  </div></div>
+</section>
+
+<!-- ================= 8 ================= -->
+<section id="s8">
+  <div class="shead">
+    <div class="snum">&sect; 8</div>
+    <h2>Start-today list</h2>
+    <div class="sub">Corrected to separate "can start editing the files" from "dependency-free to green." For three groups those are different answers.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <div class="call">
+    <span class="ctitle">The distinction this section exists to make</span>
+    <p>A group whose <strong>build</strong> is free and whose <strong>contract-green</strong> needs a scarce resource is not "blocked by nothing." Build it today; schedule the green.</p>
+  </div>
+
+  <h3>Free to build, free to green</h3>
+
+  <p><strong>G1 &mdash; classify <code>synapse_instantiate_graph</code>.</strong> Add the <code>_TOOL_TO_OPERATION</code> row at gate <code>review</code> (same tier as the Solaris composites) and the worker-policy rule: in proposal mode the model may not call it; the host calls it after CARD or inside scope. Keep <code>synapse_batch</code> denied to the model. Pure Python, pinned by a policy test. <em>The draft never listed this gate at all.</em></p>
+
+  <p><strong>C6 &mdash; provider seam.</strong> The propose/repair adapter contract and per-call spend accounting, entirely inside <code>panel/providers/*</code>. Zero import overlap with every failure in this report. Its done-predicate names the bench fixture set at <code>harness/bench/manifest.json</code> &mdash; competence bench v3, stamped Houdini 22.0.400, task ids <code>exp-01 / top-01 / sop-01 / ari-01 / ctx-01</code>, the same set the baseline ran. Closing C6 needs a bench run whose perturbation asserts are <code>hou</code>-dependent; building it does not.</p>
+
+  <p><strong>C2 &mdash; proposal-native SOP/OBJ <em>(build half)</em>.</strong> <code>cognitive/graph_proposal.py</code>, <code>graph_validator.py</code>, <code>host/graph_builder.py</code>, <code>host/proposal_store.py</code> &mdash; verified zero-import-overlap with every failure. Node creation and existing-node edits proceed today. <strong>Two sequencing notes the draft missed:</strong> G2 (re-stamp the write path against H22) sits at mile 1, ahead of C2 at miles 2 and 4; and the LOP re-probe (&sect;7 item 2) must land before C2's Solaris qualification relies on the catalog.</p>
+
+  <p><strong>C4 &mdash; rules-only system prompt.</strong> A string/transcript test with no seat required.</p>
+
+  <h3>Free to build, green needs a scarce resource</h3>
+
+  <p><strong>G4 &mdash; prompt caching.</strong> Move the volatile <code>{network, selection, frame, hip}</code> block out of the system prompt into the user turn. The automated gate is a pure string diff: <em>the system string is byte-identical across two builds with different ctx.</em> <strong>The contract-green half is not free.</strong> <code>v2-cache-seam.yaml</code> requires "Token tab <code>cache_read &gt; cache_creation</code> post-change," and the baseline's cache rows are UNKNOWN for a reason that has nothing to do with any instrument: <strong>the run used Ollama.</strong> <code>step51_usage.json</code> records <code>provider: "ollama"</code>, <code>reported_models: ["deepseek-v4-flash"]</code>, <code>cache_read: null</code>, <code>cache_creation: null</code> &mdash; <code>usage_sink</code>'s four cache fields are the Anthropic fields, and a provider that reports none folds none (its own HONESTY (R162) block: a field the API never reported stays None). <code>last_prompt</code> <em>is</em> populated (156,710), so P3's instrument works. <strong>G4's green needs one attended session on the Anthropic provider.</strong></p>
+
+  <p><strong>G5 &mdash; catalog consistency.</strong> Wire the daemon-start stamp check over <code>h22_symbol_table.json</code> / <code>connectivity_22.json</code> / <code>lop_truth_&lt;build&gt;.json</code>. <code>harness/verify/version_agreement.py</code> is stdlib-only and runs cleanly on this interpreter. <strong>Copy the graceful pattern</strong> from <code>check_connectivity_catalog_fresh</code> or <code>checks.py:293</code> &mdash; <em>not</em> from <code>check_doctor</code>, the miscategorized shape &sect;7 item 5 exists to fix. <strong>Green requires the 22.0.400 LOP re-probe first</strong> (&sect;7 item 2), plus a decision on where <code>lop_truth</code> canonically lives &mdash; it has no packaged copy today. And G5's own contract row assigns it <code>text</code> + <strong>one hython probe</strong>, which the draft dropped.</p>
+
+  <p><strong>C3 &mdash; task-boundary fold.</strong> <strong>Gate status: OPEN on evidence</strong>, not "blocked by nothing." The blueprint gates C3 on G0's <code>last_prompt</code> slope in three places; the measured slope climbs 40,108 &rarr; 139,991 across nine tasks (3.49&times;). Record the gate as opened by data. Then build &mdash; it edits <code>synapse_panel.py</code> without a real-Qt net, and that is fine: <strong>build and merge anyway</strong>, let &sect;7 item 8 backfill the net behind you. A missing safety net is not a missing capability.</p>
+
+  <h3>G3's non-substrate half</h3>
+
+  <p>Add <code>synapse_instantiate_graph</code>, <code>synapse_run_recipe</code>, and the Solaris composites to <code>OBSERVED_COMMANDS</code> (<code>host/memory_loop.py:17-21</code>) and write the coordinator test using the recording-double pattern from <code>tests/test_loop_mcp_observation.py:65</code> and <code>tests/test_loop_native_timeouts.py:28-45</code>. <strong>No Hanish, no Moneta, no Houdini seat.</strong> Only the real-substrate leg is blocked &mdash; and that leg is now locally answerable (&sect;7 item 10).</p>
+
+  <div class="call warn">
+    <span class="ctitle">Which half of that pattern transfers</span>
+    <p><strong>The <code>RecordingLoop</code> port double is the reusable part.</strong> The <code>hdefereval</code> / <code>run_on_main</code> substitution in those files is host-behaviour scaffolding &mdash; <code>test_loop_native_timeouts.py:26</code> does <code>monkeypatch.setitem(sys.modules, "hdefereval", SimpleNamespace(executeDeferred=callbacks.put))</code> &mdash; and must <strong>not</strong> carry into any assertion about marshalling, deferral, or timeout behaviour. This host has a documented counter-truth the stub cannot see: the H22 <code>hdefereval</code> blocking marshal has no thread check and self-deadlocks from main, and <code>executeInMainThread</code> is a phantom on H22. Host-behaviour assertions belong in an hython-gated test that skips without Houdini.</p>
+  </div>
+
+  <h3>The doc bundle</h3>
+
+  <p>Any of the eleven (&sect;7 item 11), any time, by anyone.</p>
+
+  <h3>One five-minute decision worth more than any of them</h3>
+
+  <p><strong>Commit, in writing, that the per-proposal RECORD write is independent of the opt-in LOOP/Hanish transport.</strong> No code. A design decision.</p>
+
+  <p>This single sentence <strong>neutralizes the entire forward blast radius</strong> of both the Hanish drift and the Moneta provisioning default on C5 and RSI Stage 1/2. The blueprint currently leaves it open &mdash; &sect;5 describes reuse of "the observational transport, outbox recovery and journal repair," which is the same <code>LoopCoordinator</code> machinery that returns at <code>coordinator.py:157-158</code> before depositing whenever Hanish is UNAVAILABLE. Nothing forces that coupling. Decide against it now, while it costs nothing, instead of discovering it after Stage 1 is built.</p>
+
+  <h3>The human ask &mdash; re-priced</h3>
+
+  <p>The draft said "ten minutes of Joe at the rig." That is one of three asks, and it is the smallest.</p>
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>Ask</th><th>Who</th><th>Cost</th><th>What it closes</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>A ruling on two closed evidence packages</strong></td>
+        <td>Joe + CRUX</td>
+        <td>One reading session</td>
+        <td>G0's proxy label; the computer-use lane; therefore C1's, C5's and C7's acceptance evidence</td>
+      </tr>
+      <tr>
+        <td><strong>One attended provider session</strong></td>
+        <td>Joe, Token tab open, Anthropic provider</td>
+        <td>Hours, attended, lease-gated</td>
+        <td>G4's cache-seam green; the nine UNKNOWN cache rows and wall-time in the baseline</td>
+      </tr>
+      <tr>
+        <td><strong>Ten minutes at the 22.0.400 GUI</strong></td>
+        <td>Joe alone</td>
+        <td>10 minutes</td>
+        <td><code>demo-round-trip.yaml</code>, and BP2-LATENCY's open <code>for_ruling[2]</code> in the same sitting</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>For the GUI ask: open Houdini &rarr; Python Shell &rarr; run <code>harness/battleplan/notes/probe_silent_recall.py</code> &rarr; record the four gate rows &rarr; then deposit, <strong>File &gt; Save</strong>, close the scene, reopen the same <code>.hip</code>, re-run recall, twice per the contract's repeat-2 discipline. <strong>It is <code>autonomy: red</code> by design and no agent can complete it.</strong></p>
+
+  </div></div>
+</section>
+
+<!-- ================= 9 ================= -->
+<section id="s9">
+  <div class="shead">
+    <div class="snum">&sect; 9</div>
+    <h2>Needs a gated run</h2>
+    <div class="sub">Header corrected: not every command pins a Houdini build, and three deliberately do not.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <div class="call warn">
+    <span class="ctitle">Runner discipline</span>
+    <p><strong>Every Houdini-runtime command below pins <code>SYNAPSE_HYTHON</code>.</strong> This host has <strong>both 22.0.400 and 22.0.429</strong> installed and the hytest shim picks the <em>newest</em> &mdash; an unpinned command silently tests the wrong build. Commands <strong>F, G and H are stock-python by design</strong>: F pins the build via <code>--hython</code>, G exercises the installer, H exists precisely to prove a <code>hou</code>-less process works. <span class="tier">was: "Every command pins SYNAPSE_HYTHON explicitly"</span></p>
+  </div>
+
+  <p>Set once per shell:</p>
+
+<pre><code>export SYNAPSE_HYTHON="C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe"</code></pre>
+
+  <h3>A. Vendored-SDK ABI on H22's embedded cp313</h3>
+  <p>Settles: does the 2026-07-15 drop-day claim in <code>_vendor/README.md</code> still hold?</p>
+<pre><code>cd C:/Users/User/SYNAPSE &amp;&amp; "$SYNAPSE_HYTHON" -c "import sys; sys.path.insert(0,'python'); import warnings; warnings.simplefilter('always'); import synapse, anthropic, pydantic; print(sys.version_info); print('ABI_RISK', synapse._VENDOR_ABI_RISK); print('vendor_active', synapse._vendor_path in sys.path); print(anthropic.__file__); print(pydantic.__file__)"</code></pre>
+
+  <h3>B. <code>migrate_to_v2</code> under real <code>pxr</code></h3>
+  <p>Settles: does the migration logic actually work outside the MagicMock fixture?</p>
+<pre><code>cd C:/Users/User/SYNAPSE &amp;&amp; "$SYNAPSE_HYTHON" -m pytest tests/test_agent_state.py -k Migration -v -o addopts=</code></pre>
+
+  <h3>C. RSI Stage 0 &mdash; Qt card + cross-interpreter recall</h3>
+  <p>Settles: the two unbacked claims in <code>rsi_stage0.md</code>.</p>
+<pre><code>cd C:/Users/User/SYNAPSE &amp;&amp; QT_QPA_PLATFORM=offscreen "$SYNAPSE_HYTHON" -m pytest tests/panel/ tests/test_rsi_stage0_panel.py -q -o addopts=
+cd C:/Users/User/SYNAPSE &amp;&amp; "$SYNAPSE_HYTHON" scripts/live_probes/probe_rsi_stage0.py --output &lt;path&gt;</code></pre>
+
+  <div class="call crit">
+    <span class="ctitle">Name which Moneta binds before running the record/recall pair</span>
+    <p>The follow-up is <code>python scripts/rsi_stage0.py --enable --project-dir &lt;isolated&gt; record --native-report &lt;path&gt; --summary &lt;text&gt;</code> then the matching <code>recall</code> &mdash; deliberately bare <code>python</code>, because cross-interpreter recall is what C settles. <strong>But system <code>python</code> here is 3.14.2 and resolves <code>moneta</code> to <code>C:\Python314\Lib\site-packages\moneta\__init__.py</code></strong> &mdash; a different installation from the <code>C:/Users/User/Moneta/src</code> checkout the hython half binds via <code>MONETA_SRC</code>, as <code>docs/development/rsi_stage0.md:160-164</code> states outright. Record which Moneta each half bound, and distinguish a genuine cross-interpreter pass from a two-different-builds artifact. Pinning both halves to <code>"$SYNAPSE_HYTHON"</code> is the alternative &mdash; and then C no longer settles cross-interpreter recall.</p>
+  </div>
+
+  <h3>D. Headless Moneta binding &mdash; the cheap route first</h3>
+  <p>Settles: does provisioning the env close the <code>env_unset</code> gap without touching the launch path?</p>
+<pre><code>cd C:/Users/User/SYNAPSE &amp;&amp; MONETA_SRC="C:/Users/User/Moneta/src" PXR_PLUGINPATH_NAME="C:/Users/User/Moneta/schema" \
+  "$SYNAPSE_HYTHON" harness/battleplan/notes/probe_silent_recall.py
+# expect G1 ENV pass, G2 PLUGIN pass -- the BP2-LATENCY provisioned lane already did
+# only if that is insufficient, try the launch-path route:
+cd C:/Users/User/SYNAPSE &amp;&amp; HOUDINI_PACKAGE_DIR="C:/Users/User/SYNAPSE/packages" "$SYNAPSE_HYTHON" harness/battleplan/notes/probe_silent_recall.py</code></pre>
+
+  <h3>E. Hanish worker under Houdini's interpreter</h3>
+  <p>Settles: is the drift interpreter-independent? (Expected yes &mdash; it is an import-name mismatch against 0.1.3.)</p>
+<pre><code>cd C:/Users/User/SYNAPSE &amp;&amp; SYNAPSE_LOOP_ENABLED=1 SYNAPSE_HANISH_ROOT="G:/Hanish" SYNAPSE_OCTAVIUS_ROOT="C:/Users/User/Octavius" SYNAPSE_LOOP_PYTHON="$SYNAPSE_HYTHON" "$SYNAPSE_HYTHON" -c "import sys; sys.path.insert(0,'python'); from synapse.loop import hanish_worker as w; print(w.handle({'action':'status','ledger_dir':'&lt;scratch&gt;'}))"</code></pre>
+
+  <h3>F. The hython-tier checks &mdash; do they PASS, not just attempt?</h3>
+<pre><code>cd C:/Users/User/SYNAPSE &amp;&amp; python harness/verify/checks.py --task &lt;id&gt; --worktree C:/Users/User/SYNAPSE --hython "$SYNAPSE_HYTHON" --mode B</code></pre>
+  <p><em>Never omit <code>--hython</code> &mdash; the shim/host ambiguity returns if you do.</em></p>
+
+  <h3>G. Real-historical installer upgrade &mdash; gated, no Houdini seat</h3>
+<pre><code>git checkout &lt;old release tag&gt; &amp;&amp; python installer/build_windows.py
+# then, back on HEAD:
+python -B installer/test_executable.py --setup &lt;new 5.68.0 TestSetup.exe&gt; --previous-setup &lt;that real old TestSetup.exe&gt; --root &lt;scratch&gt; --hfs "C:/Program Files/Side Effects Software/Houdini 22.0.400"</code></pre>
+
+  <h3>H. Permitted now, no seat &mdash; upgrades a claim from STATIC to RUNTIME</h3>
+<pre><code>cd C:/Users/User/SYNAPSE &amp;&amp; python -c "import sys; sys.path.insert(0,'python'); from synapse.server.doctor import run_doctor; import json; print(json.dumps(run_doctor({}, handler=None), indent=2))"</code></pre>
+  <p>Proves <code>run_doctor</code> tolerates a <code>hou</code>-less process &mdash; the premise &sect;7 item 5's whole fix rests on.</p>
+
+  <h3>I. New &mdash; re-tier the deposit path at HEAD</h3>
+  <p>Settles: does the <code>require_durable</code> two-branch shape that landed in <code>3025a825</code> hold at runtime, not just on a static read? Re-run the provisioned probe at <code>bd65e4b6</code> and stamp the artifact with <code>product_head</code> so it can self-attest next time. <em>Worth doing; not a precondition for &sect;3's directive &mdash; see &sect;11.2.</em></p>
+<pre><code>cd C:/Users/User/SYNAPSE &amp;&amp; MONETA_SRC="C:/Users/User/Moneta/src" PXR_PLUGINPATH_NAME="C:/Users/User/Moneta/schema" \
+  "$SYNAPSE_HYTHON" harness/battleplan/notes/probe_memory_latency.py --repeats 5 --stamp-head "$(git rev-parse HEAD)"</code></pre>
+
+  <h3>J. New &mdash; re-probe the LOP catalog on 22.0.400</h3>
+  <p>Settles &sect;7 item 2, and supplies mile 1's <em>"validator UNAVAILABLE on stamp mismatch demonstrated"</em> exit criterion its demonstration case.</p>
+<pre><code>cd C:/Users/User/SYNAPSE &amp;&amp; "$SYNAPSE_HYTHON" scripts/build_node_catalog.py --context lop --out rag/catalog/h22.0.400/
+cd C:/Users/User/SYNAPSE &amp;&amp; python harness/verify/version_agreement.py --require-build 22.0.400</code></pre>
+
+  <h3>K. Human-only &mdash; no agent can run this</h3>
+  <p><strong><code>demo-round-trip.yaml</code>.</strong> <code>autonomy: red</code>. GUI, by hand, twice. See &sect;8. Absorb BP2-LATENCY's <code>for_ruling[2]</code> in the same session.</p>
+
+  <h3>L. Not a Houdini question &mdash; needs a disposable Windows 11 VM</h3>
+  <p>Download <code>SYNAPSE-5.68.0-Setup.exe</code> through an actual browser (so Mark-of-the-Web attaches), double-click, record whether the SmartScreen interstitial appears and whether any UAC prompt appears. <strong>Do not run the installer on this host.</strong></p>
+
+  </div></div>
+</section>
+
+<!-- ================= 10 ================= -->
+<section id="s10">
+  <div class="shead">
+    <div class="snum">&sect; 10</div>
+    <h2>Unknowns</h2>
+    <div class="sub">Honestly UNVERIFIED. None of it is inference presented as fact. One entry was closed by the crucible pass and has moved out of this list into &sect;5.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <h3>About the instruments &mdash; new, and the most consequential</h3>
+
+  <ul>
+    <li><strong>Which client G0's "median round trips per task" governs.</strong> The 663 turn records come from the in-panel worker (<code>synapse.panel.claude_worker</code>); <code>journal.log</code>'s 2,468 TOOL lines come from the external-MCP path (<code>mcp/tools.py:144-156</code>); the baseline's median 8 came from <code>usage_sink</code>, also panel-side. These are different surfaces with different denominators. <strong>Not resolvable from this tree.</strong> The blueprint should say which before median 8 is treated as final &mdash; and &sect;11.1 keeps the two numbers apart in the meantime.</li>
+    <li><strong>Whether the 663 turn records are free of test-authored traffic.</strong> <code>tests/test_first_session_panel.py</code> and <code>tests/test_token_tab_usage.py</code> drive <code>_conversation_loop</code> via AST extraction. That affects the sample's purity, not the finding &mdash; the emission mechanism is live and shipped &mdash; but the median is unfingerprinted. This codebase has a precedent: <code>harness/notes/RSI_SURFACE_AUDIT.md</code>.</li>
+    <li><strong>Whether all 2,468 TOOL lines are genuine artist-directed traffic.</strong> Bounded at roughly 1% contamination by targeted grep; an exhaustive audit of every script run since Feb 2026 was not done.</li>
+    <li><strong>The exact calendar dates of every journal line.</strong> This is the defect itself. Unrecoverable from the file; bounded only by mtime (2026-09-13) and <code>session_journal.py</code>'s creation commit (2026-02-26).</li>
+    <li><strong>The true primitive-operation count.</strong> 1,557 is a floor &mdash; <code>synapse_batch</code> records only its outer line, and 134 <code>execute_python</code> calls are opaque.</li>
+    <li><strong>The precise date of the LOGIN/CMD/ERROR fossilization.</strong> Circumstantially anchored to <code>4fa3907f</code> (2026-06-01) by code content and by all three types ceasing within a ~9-line window &mdash; not proven to the day, because the file carries no date.</li>
+  </ul>
+
+  <h3>About Moneta and the substrates</h3>
+
+  <ul>
+    <li><strong>Whether the HEAD deposit path holds at runtime.</strong> Static read is clean; no runtime receipt covers <code>require_durable</code>. &sect;9 command I settles it.</li>
+    <li><strong>Whether Houdini's embedded cp313 has <code>moneta</code> separately pip-installed</strong> the way system Python 3.14.2 does (it does there, via an unrelated <code>comfy-moneta-bridge</code> dependency). If so, <code>MONETA_SRC</code> would be unnecessary for basic import even on a misconfigured path.</li>
+    <li><strong>Whether the OneDrive-vs-classic prefs-dir split is specific to this machine</strong> or a real cold-start risk. <code>docs/REACH_BLUEPRINT.md:224-236</code>'s R1 gate, explicitly still open.</li>
+    <li><strong>Whether <code>store.py::_safe_unsaved_base</code></strong> (the untitled-scene fallback) resolves to a stable path across restarts or a fresh temp path each time. For a <strong>saved</strong> scene the path is unambiguously stable at <code>&lt;hip-dir&gt;/.synapse</code>.</li>
+    <li><strong>Whether any Hanish build ever exported <code>canonical_world_commitment</code>/<code>world_ref_for</code></strong> &mdash; the finding that they are host-side duties makes a prior export unlikely, but it would explain v5.67.2's "successful real Hanish interfaces" claim. No other Hanish tree exists on this machine.</li>
+    <li><strong>Whether Moneta (<code>6cf05f5f</code>) and Octavius (<code>2f75e8e2</code>) function inside cp313.</strong> Both exercised only on system Python 3.14.2; per the standing interpreter-split trap, that does not generalize.</li>
+    <li><strong>Whether the LOOP env vars are set in any environment not shown</strong> &mdash; a studio launcher, a CI secret, an external <code>.env</code>. Confirmed absent only from <code>packages/synapse.json</code> and this session's ambient shell.</li>
+  </ul>
+
+  <h3>About upgrades and schema</h3>
+
+  <div class="call ok">
+    <span class="ctitle">Closed by the crucible pass &mdash; moved to &sect;5</span>
+    <p>The draft asked whether any real build ever shipped <code>agent.usd</code> at 0.1.0. <strong>Answered: five release tags fall inside the 0.1.0 window</strong> (v5.2.0, v5.2.1, v5.2.2, v5.3.0, v5.4.0). The gap is live, not theoretical. What remains unknown is narrower: whether any artist installed those February 2026 tags.</p>
+  </div>
+
+  <ul>
+    <li><strong>Whether real <code>pxr.Usd.Stage</code>/<code>customLayerData</code> semantics match the MagicMock fixture's assumptions</strong> closely enough that <code>migrate_to_v2</code> would work if wired. CANNOT-SETTLE-STATICALLY &mdash; &sect;9 command B.</li>
+    <li><strong>Whether a genuinely pre-manifest-era install is recognized</strong> by today's <code>state_for()</code>/<code>validate_receipt()</code> (<code>engine.py:80-84, 127-149</code>), or whether such a user hits a hard <code>SetupError</code>. No evidence either way.</li>
+    <li><strong>Whether <code>sqlite_store.py</code>'s missing upgrade branch</strong> (<code>SCHEMA_VERSION=1</code>, no mismatch handling at <code>:176-186</code>) or <code>moneta_store.py</code>'s hard-refuse-on-mismatch (<code>:405-406</code>) have ever fired in the wild. Untested latent gaps, not observed failures.</li>
+  </ul>
+
+  <h3>About the catalogs &mdash; new</h3>
+
+  <ul>
+    <li><strong>Where <code>lop_truth_&lt;build&gt;.json</code> canonically lives.</strong> G5 names the file; no packaged copy exists. The only in-tree instances are autoresearch run artifacts stamped 22.0.368.</li>
+    <li><strong>Whether 22.0.429 ships the same LOP surface as 22.0.400</strong>, and therefore whether a single re-probe covers both installed builds.</li>
+    <li><strong>How long the LOP catalog has been stamped 368 against a 400 runtime</strong>, and whether any shipped Solaris advice was wrong because of it. The defect is confirmed; its blast history is not traced.</li>
+  </ul>
+
+  <h3>About the harness</h3>
+
+  <ul>
+    <li><strong>The producer path for the draft's "60 &rarr; 65 of 84" and "23 hython-tier" figures.</strong> 84 check functions is confirmed (<code>grep -c '^def check_'</code>); the tier counts have no producer anywhere and are withdrawn until re-derived.</li>
+    <li><strong>Whether any CI workflow or orchestrator actually runs the hython-tier checks</strong> with a real <code>HYTHON</code> set, or whether they are permanently not-runnable in every environment that exercises this harness.</li>
+    <li><strong>The origin of the "four vacuous checks shipped in one day" claim.</strong> An independent scan of all 84 functions for the always-True textual pattern found <strong>zero</strong>. Either it refers to a since-fixed commit, a different registry (possibly <code>harness/blocks/invariants_m5.py</code>), or information outside this tree.</li>
+    <li><strong>Whether <code>harness/blocks/invariants_m5.py</code></strong> (852 lines, unguarded <code>import hou</code>) has vacuous invariants beyond the two paired-control cases found by targeted grep.</li>
+    <li><strong>The count behind "37 tests" in <code>installer/tests</code>.</strong> Cited in the draft with no producer; withdrawn.</li>
+  </ul>
+
+  <h3>About signing and CI</h3>
+
+  <ul>
+    <li><strong>Whether the linked <code>SHA256SUMS.txt</code> release asset is live and matches the published EXE right now.</strong> The docs link to it; not fetched.</li>
+    <li><strong>Current pricing and turnaround for OV vs EV certificates or Microsoft Trusted Signing.</strong> Stated qualitatively only &mdash; no repo evidence pins a number, and inventing one violates Law 2.</li>
+    <li><strong>Whether any existing code-signing certificate or organizational identity exists outside this repository.</strong> Nothing in the tree indicates either way.</li>
+    <li><strong>Whether 22.0.429 ships the same cp313 ABI</strong> as the 22.0.368 the vendor was validated against.</li>
+    <li><strong>Whether RULING 30 was ever countersigned outside the tracked files.</strong> No structural <code>ratified</code> flag exists anywhere at HEAD &mdash; but a verbal countersignature would be invisible to this method.</li>
+  </ul>
+
+  <h3>About the ladder above the floor</h3>
+
+  <ul>
+    <li><strong>Whether RSI Stage 1, once built, routes its RECORD write through the Hanish-gated <code>LoopCoordinator</code> or writes independently.</strong> No code exists. This is the open design decision named in &sect;8 &mdash; and it determines whether two of this report's findings matter to the v2 architecture at all.</li>
+  </ul>
+
+  </div></div>
+</section>
+
+<!-- ================= 11 ================= -->
+<section id="s11">
+  <div class="shead">
+    <div class="snum">&sect; 11</div>
+    <h2>Contested findings</h2>
+    <div class="sub">Every crucible finding was folded. These three had a component I judge wrong; the reasoning and anchor are below. None was dropped.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <h3>11.1 &mdash; "The gate already fired (median 3 &lt; 4)"</h3>
+
+  <p><span class="chip c-warn">Mechanism accepted &middot; verdict contested</span></p>
+
+  <p><strong>The finding, in part:</strong> lens 1 established that turns are emitted to disk (<code>claude_worker.py:363-369</code>), that L9 is wired to the <code>logging</code> sink, and that 663 records carry a median of 3 turns. <strong>All of that is accepted and folded at source</strong> &mdash; it is the single most valuable correction in this revision, and it refuted this report's headline.</p>
+
+  <p><strong>What I contest:</strong> the inference that follows &mdash; <em>"G0's falsifier already evaluates (median 3 &lt; 4), so 'do not start the ladder until we can measure' inverts into 'the gate already fired; that is the decision to discuss.'"</em></p>
+
+  <p><strong>Reasoning.</strong> The two numbers have different denominators and are not comparable.</p>
+
+  <div class="tscroll">
+  <table>
+    <thead><tr><th>Number</th><th>Denominator</th><th>Population</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td><strong>median 3</strong></td><td>turns <strong>per send</strong> &mdash; one artist message through the turn-loop to <code>end_turn</code></td><td>All panel traffic, 2026-08-02 &rarr; 2026-09-13, including trivial one-shot sends (min 1, max 25)</td><td><code>~/.synapse/logs/synapse.log</code>, 663 records</td></tr>
+      <tr><td><strong>median 8</strong></td><td>model round trips <strong>per task</strong> &mdash; a full blueprint task to a scene outcome</td><td>The ten approved blueprint baseline tasks</td><td><code>baseline.csv</code>, column <code>model_round_trips</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>The anchor that settles it is the parked instrument's own commit message.</strong> <code>d02b0ed0</code> describes exactly the thing lens 1 measured: <em>"panel/turns_ledger.py + panel/claude_worker.py: <strong>the U2 turns-per-send instrument</strong> &mdash; persists the L9 log-only 'Conversation complete' line."</em> <strong>Per send.</strong> The blueprint's falsifier at <code>:208</code> and the mile-0 exit criterion at <code>:400</code> both say <strong>per task</strong>.</p>
+
+  <p>The two reconcile cleanly rather than conflicting: roughly two to three sends per blueprint task &times; a median of 3 turns per send &asymp; the measured 8 model calls per task. Both numbers are correct about their own denominator.</p>
+
+  <p><strong>Consequence.</strong> The falsifier does <strong>not</strong> fire. Mile 0's exit criterion is <em>met</em>, not tripped. The ladder is licensed, not halted. Lens 1's own scope caveat conceded it could not settle which client G0 governs &mdash; that caveat is carried forward as the first entry in &sect;10's instrument unknowns, and the per-task figure governs until the blueprint says otherwise.</p>
+
+  <h3>11.2 &mdash; "Re-run the probe before restating 'do not touch'"</h3>
+
+  <p><span class="chip c-warn">Tier correction accepted &middot; remedy contested</span></p>
+
+  <p><strong>The finding, in part:</strong> lens 3 established that <code>BP2-LATENCY.json</code> pins <code>product_head = 0ef53146</code> (2026-09-01) while <code>require_durable</code> landed in <code>3025a825</code> (2026-09-08), so the receipt is VERIFIED-RUNTIME about a <em>different tree</em> than the one the draft quoted. <strong>Accepted and folded at source</strong> &mdash; &sect;3 now carries a per-claim evidence tier, the anchor is corrected to <code>.jsonl</code>, and the receipt's three open caveats are carried forward instead of dropped.</p>
+
+  <p><strong>What I contest:</strong> the remedy &mdash; <em>"either re-run the provisioned probe at <code>bd65e4b6</code> before restating 'do not touch', or downgrade the directive."</em> It treats a gap in coverage as if it were evidence of risk, and gates a <em>negative</em> instruction on a positive proof.</p>
+
+  <p><strong>Reasoning.</strong> The direction of the delta matters, and it is checkable. Diffing the two shapes:</p>
+
+<pre><code>0ef53146  (what the receipt ran)        bd65e4b6  (HEAD)
+---------------------------------       ------------------------------------
+self.save()  # sets self._last_save     if require_durable:
+                                            self.save(require_durable=True)
+                                        else:
+                                            self.save()  # legacy best-effort</code></pre>
+
+  <p>Both sit under the same verbatim PRST SEAM A comment block. <strong>The <code>else</code> branch is the exact code path the receipt exercised</strong>, and the <code>if</code> branch is a strict strengthening &mdash; an opt-in <em>additional</em> durability guarantee on top of an unconditional save that never went away. A receipt that passed against the weaker shape is not evidence against the stronger one; it simply does not reach it.</p>
+
+  <p>So the honest position is the one &sect;3 now states: HEAD's deposit path is <span class="tier">VERIFIED-STATIC</span>, the pre-<code>3025a825</code> path is <span class="tier">VERIFIED-RUNTIME</span>, and the re-run is worth doing &mdash; it is &sect;9 command I &mdash; but it is <strong>not a precondition for telling someone not to rewrite the storage layer.</strong> Gating that instruction on a fresh run inverts the cost: the expensive mistake available here is a speculative rewrite of correct code, and delaying the warning is what makes that mistake likelier.</p>
+
+  <p><strong>One thing I adopted beyond the finding:</strong> the run artifact carries <code>build</code>, <code>backend</code>, <code>embedder_id</code> and <code>dim</code> but <strong>no commit field</strong>, so it cannot self-attest which tree it measured. That is the root cause of this whole exchange, and it is now &sect;7 item 11(8) and &sect;9 command I's <code>--stamp-head</code>.</p>
+
+  <h3>11.3 &mdash; "Wiring G5 can break C2"</h3>
+
+  <p><span class="chip c-ok">Finding accepted &middot; framing sharpened</span></p>
+
+  <p><strong>The finding:</strong> lens 2 established the live 22.0.368 LOP stamp and warned that wiring G5's stamp check without re-probing flips the validator to UNAVAILABLE and degrades C2's Solaris qualification &mdash; so one start-today item can break another. <strong>Accepted in full and folded</strong> &mdash; it is now &sect;1's second-ranked obstacle, a &sect;4 row, a &sect;5 ship-impact entry, &sect;7 item 2, and the ordering note in &sect;8.</p>
+
+  <p><strong>What I contest is only the framing as a hazard.</strong> Mile 1's own exit criterion reads: <em>"all five green; <strong>validator <code>UNAVAILABLE</code> on stamp mismatch demonstrated</strong>"</em> (<code>blueprint:401</code>). The stale stamp is not an obstacle to that criterion &mdash; <strong>it is the demonstration material for it.</strong> A gate whose acceptance test requires showing the validator refusing on mismatch needs a real mismatch to show, and one is sitting at HEAD.</p>
+
+  <p>The ordering constraint is real and stands: demonstrate at mile 1, re-probe before C2 relies on LOP knowledge at mile 2. But it should be scheduled as <em>"the demo case is already on disk"</em> rather than <em>"the start-today list contains a self-inflicted wound."</em> The first framing gets the re-probe done in the right week; the second invites someone to defer G5 entirely.</p>
+
+  <h3>Findings accepted without contest &mdash; recorded so none reads as dropped</h3>
+
+  <ul>
+    <li><strong>Probe 1's headline is refuted</strong> (lens 1 + lens 2, independently, by different instruments). Folded into &sect;1, &sect;2, &sect;4, &sect;6, &sect;7.</li>
+    <li><strong>The v2-baseline run was missing entirely</strong> from the draft &mdash; not in the probe table, not in &sect;4, not in &sect;8, not in &sect;10. Folded throughout; it is now &sect;1's opening anchor.</li>
+    <li><strong><code>usage_sink</code> was never mentioned</strong> in a section titled "The measurement question." Folded into &sect;6's three-instrument table.</li>
+    <li><strong>&sect;7 item 3's prescribed edit was inapplicable to three of its five targets</strong>, and the obvious workaround &mdash; relaxing the shared helper &mdash; would have introduced the exact hazard the item warned against. Folded into &sect;7 item 5 with an explicit do-not-edit line.</li>
+    <li><strong>Probe 6's gap is mostly already netted</strong> by <code>tests/test_rsi_stage0_panel.py</code>. Folded; the item shrank and its unblock claim was restated.</li>
+    <li><strong>Moneta's headless binding is not defaulted, not broken</strong> &mdash; <code>_moneta_env_gate()</code> keys on either env var. Folded; the fix lost its live-seat requirement.</li>
+    <li><strong>There is no Hanish v0.2</strong>, and the two missing symbols are host-side duties with a reference implementation on disk. Folded; the item lost its external-author block.</li>
+    <li><strong>G1 and G2 were never graded</strong>; G2 sequences ahead of C2. Folded into &sect;4 and &sect;8.</li>
+    <li><strong>C3 is gated on G0</strong> in three places. Folded; the gate is now read as OPEN on the measured slope.</li>
+    <li><strong>G4's cache rows are UNKNOWN because the run used Ollama</strong>, not because an instrument is missing. Folded into &sect;8.</li>
+    <li><strong>The "only HARD block" claim contradicted &sect;4's own table.</strong> Folded &mdash; &sect;4 is rebuilt and the human ask is re-priced into three rows in &sect;8.</li>
+    <li><strong>The computer-use lane had no row.</strong> Added to &sect;4.</li>
+    <li><strong>The failure rate is 274, a floor, not 273.</strong> Folded into &sect;6 with the multi-line mechanism.</li>
+    <li><strong>The "46 of 128" producer did not reproduce as written.</strong> Folded &mdash; the registry intersection is now stated.</li>
+    <li><strong>The per-session median/mean had no producer and contradicted its own section.</strong> Deleted, with the replacement named.</li>
+    <li><strong>The three journal rates were published at too strong a tier</strong>, with the sampling frame unstated. Folded &mdash; retiered, frame named, "ever appear" corrected.</li>
+    <li><strong>&sect;9's header over-claimed</strong> that every command pins the build. Folded and softened, with F/G/H's by-design exemption stated.</li>
+    <li><strong>&sect;7 item 2's test was true-by-construction.</strong> Folded &mdash; the item now carries two oracles, and the correctness one fails on wrongness.</li>
+    <li><strong>The recording-double exemplar stubs <code>hdefereval</code>.</strong> Folded into &sect;8 as a which-half-transfers callout.</li>
+    <li><strong>Five release tags wrote 0.1.0.</strong> Folded &mdash; it moved out of &sect;10 and strengthened &sect;5 and &sect;7 item 9.</li>
+    <li><strong>The method gap</strong> &mdash; auditing one instrument and generalizing, never searching other branches or log sinks. Folded into &sect;2 as a standing rule.</li>
+  </ul>
+
+  </div></div>
+</section>
+
+<!-- ================= 12 ================= -->
+<section id="s12">
+  <div class="shead">
+    <div class="snum">&sect; 12</div>
+    <h2>CTO summary</h2>
+    <div class="sub">One screen. The floor verdict, the three things that matter in order, and the answer to the only scheduling question.</div>
+  </div>
+  <div class="body"><div class="col">
+
+  <div class="board">
+
+    <p class="verdictline"><strong>The floor holds.</strong> v5.68.0 is sound to build on. Nothing in this report loses user data, and no confirmed failure reaches a normal install except two silent gaps &mdash; provenance on pre-March-2026 projects, and a LOP catalog advising from an uninstalled build.</p>
+
+    <p style="color:var(--ink-2);margin:0;max-width:64ch;">The draft said the measuring instrument was in the way. It is not. The gating number was measured the day before this report and clears its own falsifier. What is in the way is a ruling, a stale stamp, and ten minutes.</p>
+
+    <div class="three">
+
+      <div class="row">
+        <div class="n">1</div>
+        <div class="what">
+          <b>Rule on the evidence already produced</b>
+          <span>Two closed packages sit unruled at <code>harness/v2-20260913/artifacts/</code> &mdash; the baseline (<em>"Verdict: never written by the operator"</em>) and cu-panel-preconditions (<code>evidence_ready_for_review</code>). G0's number is <strong>median 8 round trips per task</strong> (<code>baseline.csv</code>, ten rows, sum 89), against a falsifier of <em>"under four &rarr; stop at mile 1"</em> (<code>blueprint:208</code>). It clears. The label on it is still "proxy," and only Joe and CRUX can change that.</span>
+        </div>
+        <div class="cost">zero engineering<br>one reading session</div>
+      </div>
+
+      <div class="row">
+        <div class="n">2</div>
+        <div class="what">
+          <b>Re-probe the LOP catalog on 22.0.400</b>
+          <span><code>lop_solaris_knowledge_22.json</code> stamps <strong>22.0.368</strong> &mdash; an uninstalled build &mdash; while the other two catalogs stamp 22.0.400, and <code>core/lop_knowledge.py</code> resolves by major only. The validator advises Solaris from stale truth today, silently. It is also mile 1's own demonstration case for <em>"validator UNAVAILABLE on stamp mismatch."</em> Re-probe before C2 needs it at mile 2.</span>
+        </div>
+        <div class="cost">one hython probe<br>+ one placement call</div>
+      </div>
+
+      <div class="row">
+        <div class="n">3</div>
+        <div class="what">
+          <b>Ten minutes at the GUI</b>
+          <span><code>demo-round-trip.yaml</code>, <code>autonomy: red</code>: deposit &rarr; save &rarr; close &rarr; reopen &rarr; recall, twice. No agent can close it, including any in this sweep. Absorb <code>BP2-LATENCY</code>'s open <code>for_ruling[2]</code> &mdash; <em>is the headless proxy sufficient, or is the GUI half required</em> &mdash; in the same sitting.</span>
+        </div>
+        <div class="cost">10 minutes<br>Joe alone</div>
+      </div>
+
+    </div>
+
+    <hr class="sep">
+
+    <h4 style="margin-top:0">Can the eight workstreams start?</h4>
+
+    <p style="max-width:66ch;margin-bottom:0;"><strong>Yes &mdash; Mile 0's exit criterion is met at median 8, which licenses Mile 1, and every workstream's <em>build</em> half is free of every confirmed failure today; what is gated is not code but evidence &mdash; G4's and G5's contract-green, plus C1's, C5's and C7's acceptance, all wait on the ruling, the re-probe and the ten minutes above, in that order.</strong></p>
+
+  </div>
+
+  </div></div>
+</section>
+
+<footer>
+  Eight probes. Zero clean passes. Zero catastrophes. Three refutations &mdash; two of the question's prior, one of this report's own draft. One stale stamp that is also a demonstration case. One HARD block that costs ten minutes of a human's time and cannot be engineered around. <strong>The floor holds. The ruler works. Go get the ruling.</strong>
+</footer>
+
+</div>

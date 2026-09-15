@@ -1,0 +1,214 @@
+<section id="s9">
+<h2><span class="num">09</span><span>Build order</span></h2>
+<p class="subhead">Re-ranked. The draft's #1 lost its leverage and gained three unenumerated consumers; the crucible added four items that were not on the board; one item split in two.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; why the order moved, in one paragraph</span>
+  <p>The draft ranked nine waves on a single axis: <strong>verification throughput gained &times; inverse cost</strong>. That axis still governs, but it cannot rank a <em>correctness defect</em> &mdash; an item that gains no throughput and retires a silent failure. So the order is now banded, and each band says which axis it is ranked on.</p>
+  <p><strong>Three specific moves.</strong> Old W1 (<code>propose_graph</code> read-only) fell from #1 to <strong>W8</strong>: its headline unblock is refuted (&sect;7.2) and its mechanism turns out to flip four behaviours, one of them harmful. Old W2 (catalog oracle) rose to <strong>W1</strong>: it survived the audit intact and grew in value when U5 closed. The apply-path findings became <strong>Band B</strong>, which did not exist in the draft.</p>
+</div>
+
+<div class="band">
+  <div class="bl">Band A &mdash; verification throughput</div>
+  <p class="bd">Ranked on throughput gained &times; inverse cost. All ungated, all headless-testable, none larger than S&ndash;M. These are what stop the verification loop from needing a Houdini seat.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W1</span> Catalog-backed oracles &mdash; existence <em>and</em> connectivity <span class="badge b-acc">promoted from W2</span></h3>
+<dl>
+<dt>Changes</dt><dd>New <code>CatalogExistenceOracle</code> implementing <code>IExistenceOracle</code> (<span class="anchor">cognitive/interfaces.py:8-16</span>) over <code>validation/catalog.py</code>'s <code>has_type</code> / <code>parms</code>. New <code>CatalogConnectivityOracle</code> over the same entries' <code>min_inputs</code> / <code>max_inputs</code> / <code>max_outputs</code>. Compose each with its live-<code>hou</code> counterpart so <code>hou</code> wins when present, catalog answers when not, and <em>neither</em> emits an explicit unverified signal through <code>ValidationReport.advisories</code> &mdash; <strong>not</strong> a new <code>ValidationStatus</code> member.</dd>
+<dt>Files</dt><dd>new <code>python/synapse/cognitive/catalog_oracles.py</code> (or <code>host/</code>-adjacent if composition needs it) + the two construction sites <span class="anchor">graph_synth_runtime.py:62</span> and <span class="anchor">graph_builder.py:65</span></dd>
+<dt>Size</dt><dd><strong>S&ndash;M</strong> &mdash; two ~30-line adapters + wiring. <em>Was S for one adapter; U5's closure made it two.</em></dd>
+<dt>New test</dt><dd><code>test_validator_constructs_without_hou</code> &mdash; with <code>hou</code> absent from <code>sys.modules</code>, assert <code>GraphValidator</code> constructs, <code>node_type_exists("box","Sop") is True</code>, <code>node_type_exists("bocks","Sop") is False</code>, <code>parameter_exists("box","Sop","sizex")</code> resolves, and <code>input_arity("merge","Sop")</code> returns the catalog's pair.</dd>
+<dt>Fails today</dt><dd>Cannot import. <span class="anchor">existence_adapter.py:16</span> <em>and</em> <span class="anchor">graph_oracle.py:17</span> both hard-import <code>hou</code> at module scope, and both are passed to the same constructor.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_graph_oracle_mile2.py</code>, <code>tests/test_graph_synth_wiring.py</code> (construction-site signature), <code>tests/test_graph_proposal_mile1.py</code> if it asserts oracle identity.</dd>
+<dt>Coverage</dt><dd>Derive category coverage from <code>_manifest.json["files"].keys()</code> or the directory glob &mdash; <strong>never</strong> from a hand-copied table (&sect;2.3).</dd>
+<dt>Seat</dt><dd>None for the adapters. <strong>One gated hython run (G2)</strong> to confirm catalog&harr;runtime agreement on a sample.</dd>
+<dt>Unblocks</dt><dd><strong>C2 and C4 both.</strong> Validation becomes constructible and testable headless &mdash; the verification loop stops requiring a seat. This is the single highest-throughput item on the board.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W2</span> OBJ vocabulary <span class="badge b-mute">was W4</span></h3>
+<dl>
+<dt>Changes</dt><dd>One dict row <code>"OBJ": {"Object"}</code> in <code>_NETWORK_CATEGORIES</code>; update the <code>network_type</code> comment at <span class="anchor">graph_proposal.py:54</span> (comment only &mdash; no executable contract change).</dd>
+<dt>Files</dt><dd><span class="anchor">cognitive/graph_validator.py:28-35</span></dd>
+<dt>Size</dt><dd><strong>XS</strong> &mdash; survived the caller hunt: <code>_NETWORK_CATEGORIES</code> has exactly one consumer, <span class="anchor">graph_validator.py:438</span>.</dd>
+<dt>New test</dt><dd><code>test_obj_network_rejects_wrong_category</code> &mdash; an <code>OBJ</code> proposal carrying <code>node_category="Sop"</code> must produce a P4 error. Uses a protocol-level oracle mock, not a fake <code>hou</code> &mdash; legal, because category membership is contract logic, not host behaviour.</dd>
+<dt>Fails today</dt><dd>It <strong>passes</strong>. <code>_NETWORK_CATEGORIES.get("OBJ")</code> returns <code>None</code>, <code>if allowed:</code> is False, the check is skipped entirely (<span class="anchor">graph_validator.py:438-448</span>). The test fails by <em>not failing</em>, which is the point.</dd>
+<dt>Rewrite</dt><dd>None expected.</dd>
+<dt>Seat</dt><dd>None. The category string <code>"Object"</code> is verified from <code>rag/catalog/h22.0.400/Object.json</code> (<code>"category": "Object"</code>, 186 types) &mdash; a live-probe-generated receipt. G1 is confirmation, not a gate.</dd>
+<dt>Unblocks</dt><dd>OBJ proposals stop being silently permissive. Prerequisite for any object-level graph work.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W3</span> Classify <code>tops_cancel_cook</code> as the kill switch it is <span class="badge b-acc">new &mdash; from the &sect;4.1 refutation</span></h3>
+<dl>
+<dt>Changes</dt><dd>Add <code>"tops_cancel_cook"</code> to <code>_READ_ONLY_COMMANDS</code>, with in-handler audit, following the <code>render_farm_cancel</code> pattern exactly.</dd>
+<dt>Files</dt><dd><span class="anchor">server/handlers.py:204-245</span> + in-handler audit in <code>handlers_tops</code></dd>
+<dt>Size</dt><dd><strong>XS&ndash;S</strong> &mdash; one line plus the audit call the pattern requires.</dd>
+<dt>Why this and not <code>propose_graph</code></dt><dd>The justification is already written in the tree verbatim (<span class="anchor">handlers.py:227-241</span>): a running cook holds the C5 lock for its whole duration, so a mutating-classified cancel <em>queues behind the very operation it exists to interrupt</em> &mdash; <em>"the difference between a kill switch and a decoration."</em> And unlike <code>propose_graph</code>, cancelling a PDG context is main-thread-independent in the same way <code>render_farm_cancel</code> is, so the &sect;7.2 refutation does not apply to it. The four consumers still flip, but for a cancel every one of them flips in the <em>desired</em> direction &mdash; including the F3 breaker bypass, which is exactly what a kill switch wants during a freeze.</dd>
+<dt>New test</dt><dd><code>test_tops_cancel_is_not_lock_blocked</code> &mdash; assert membership, <strong>and</strong> that a cancel dispatched off-main while <code>_MUTATION_LOCK</code> is held returns without blocking.</dd>
+<dt>Fails today</dt><dd>The membership assert fails outright <em>(producer: parse of the frozenset at <span class="anchor">handlers.py:204-245</span> &rarr; 40 names, <code>tops_cancel_cook</code> absent)</em>; the lock test hangs to timeout.</dd>
+<dt>Rewrite</dt><dd>Sweep anything asserting a mutation-class envelope or FloorGate record for <code>tops_cancel_cook</code>; <code>harness/verify/readonly_hint_agreement.py</code> expectations.</dd>
+<dt>Seat</dt><dd>None &mdash; pure Python, headless.</dd>
+<dt>Unblocks</dt><dd>A TOPS cancel that actually cancels. Also removes a false "already safe" reading of &sect;4.1 that would have caused this work to be skipped entirely.</dd>
+</dl>
+</div>
+
+<div class="band">
+  <div class="bl">Band B &mdash; apply-path honesty</div>
+  <p class="bd">Ranked on <strong>risk retired</strong>, not throughput gained. Every item here is correctness debt the crucible surfaced. Nobody should trust an apply result until W4 and W6 land.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W4</span> Apply idempotency and an honest timeout <span class="badge b-crit">new &mdash; highest-severity finding</span></h3>
+<dl>
+<dt>Changes</dt><dd>Two independent halves, either of which alone closes the double-build. <strong>(a)</strong> Give <code>instantiate_graph</code> <code>_SLOW_TIMEOUT</code> (or an explicit larger bound) and report overrun as <strong>UNKNOWN</strong>, not FAILED &mdash; a build that may have completed is not a failure. <strong>(b)</strong> Make apply idempotent at the store: consume-on-build, or a built-marker keyed by <code>proposal_id</code>, so a retry after a timeout is a no-op rather than a second graph.</dd>
+<dt>Files</dt><dd><span class="anchor">server/handlers_graph_synth.py:93</span> (timeout arg), <span class="anchor">host/proposal_store.py</span> (34 lines, whole file in play), <span class="anchor">host/graph_builder.py:189-197</span> (status vocabulary)</dd>
+<dt>Size</dt><dd><strong>S&ndash;M</strong></dd>
+<dt>New test</dt><dd><code>test_apply_retry_after_timeout_is_a_noop</code> &mdash; drive an apply whose payload outlives the bound, assert the caller is told UNKNOWN, then re-issue the same <code>proposal_id</code> and assert <strong>zero</strong> additional nodes and <strong>one</strong> undo group. Plus <code>test_proposal_store_consumes_on_build</code>.</dd>
+<dt>Fails today</dt><dd>Unwritable against the current design without asserting the bug: <code>ProposalStore.get()</code> returns <code>entry[1]</code> and leaves the entry in place, no built-marker anywhere <em>(producer: full read of <code>proposal_store.py</code>)</em>, and <span class="anchor">main_thread.py:564</span> sets <code>started[0] = True</code> before <code>fn()</code>, so the abandoned payload runs to completion.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_graph_builder_mile3.py</code> if it pins the result-status vocabulary; any test asserting <code>ProposalStore.get()</code> is repeatable.</dd>
+<dt>Seat</dt><dd>None for the logic. <strong>G5</strong> measures the real apply wall-time distribution against the bound &mdash; recon, not a gate; the defect stands regardless of the number (&sect;12.4).</dd>
+<dt>Unblocks</dt><dd>The apply result becomes something a human can act on. Until this lands, "FAILED" on an apply is not a fact about the scene.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W5</span> Undo-group evidence derivation <span class="badge b-acc">new &mdash; from the &sect;6.1 downgrade</span></h3>
+<dl>
+<dt>Changes</dt><dd>Port the bridge's evidence pattern into <code>graph_builder</code>: snapshot <code>hou.undos.areEnabled()</code> and <code>undoLabels</code> around the group, and emit <code>revert=</code> <strong>only</strong> when a group was actually recorded; otherwise emit an honest "not undoable in this context."</dd>
+<dt>Files</dt><dd><span class="anchor">host/graph_builder.py:126</span>, <span class="anchor">:196</span>, <span class="anchor">:284</span> &mdash; pattern source at <span class="anchor">shared/bridge.py:1662-1677</span></dd>
+<dt>Size</dt><dd><strong>S</strong></dd>
+<dt>New test</dt><dd><code>test_revert_hint_absent_when_undos_disabled</code> &mdash; run a build under a disabled-undo scope and assert <code>revert</code> is empty and the result says so. This requires a fake <code>hou</code> that <em>has</em> <code>areEnabled</code> &mdash; the current fixture does not.</dd>
+<dt>Fails today</dt><dd><span class="anchor">graph_builder.py:196</span> emits the hint unconditionally; the file has zero <code>hou.undos</code> references beyond the group itself.</dd>
+<dt>Rewrite</dt><dd><strong><code>tests/test_graph_builder_mile3.py:113-126</code></strong> &mdash; <code>_FakeUndos</code>/<code>_FakeUndosGroup</code> must gain <code>areEnabled</code> and <code>undoLabels</code>. Rewrite by <em>strengthening</em>, never by deleting scenario 2 at <span class="anchor">:292</span>.</dd>
+<dt>Seat</dt><dd><strong>GUI seat</strong> for the Ctrl+Z check &mdash; and that check is now a <em>gate on the &sect;6.1 grade</em>, not an optional confirmation.</dd>
+<dt>Unblocks</dt><dd>Moves &sect;6.1 from ASSERTED back toward ANCHORED. Closes L3-8.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W6</span> Honest VERIFY, honest RECORD, honest rollback <span class="badge b-warn">was W3 &mdash; grew</span></h3>
+<dl>
+<dt>Changes</dt><dd>Five fixes, independent of one another.<br>
+<strong>(a)</strong> Add <code>resolved: bool</code> to the <code>_set_and_read</code> record so UNKNOWN &ne; <code>None</code>.<br>
+<strong>(b)</strong> <span class="badge b-acc">new</span> Make the record <em>mean</em> something: any <code>wired: False</code> or unresolved parm downgrades the status to PARTIAL, or populates <code>errors</code> on the BUILT path. Without this, (a) is a field nobody reads (L3-7).<br>
+<strong>(c)</strong> Add <code>provenance_recorded: bool</code> to <code>InstantiationResult</code>, set from <code>_emit_provenance</code>.<br>
+<strong>(d)</strong> <span class="badge b-acc">new</span> Verify the destroy loop <em>and</em> restore EXISTING-node inputs before any message claims zero net mutation &mdash; or forbid EXISTING&rarr;EXISTING edges at validate time. Until one of those, the message reads "new nodes destroyed; pre-existing wiring not restored" (L3-6).<br>
+<strong>(e)</strong> Delete the stale <em>Residual</em> clause at <span class="anchor">:271-274</span> <strong>and</strong> the same sentence in the repo <code>CLAUDE.md</code> Current Status row &mdash; fixing one alone re-seeds it.</dd>
+<dt>Files</dt><dd><span class="anchor">host/graph_builder.py:236-251</span>, <span class="anchor">:43-54</span>, <span class="anchor">:160-183</span>, <span class="anchor">:270-287</span>; repo <code>CLAUDE.md</code></dd>
+<dt>Size</dt><dd><strong>S&ndash;M</strong> <em>(was S; (b) and (d) are the growth)</em></dd>
+<dt>New test</dt><dd><code>test_instantiate_reports_provenance_failure</code> &mdash; inject a <code>provenance_writer</code> that raises; assert <code>provenance_recorded is False</code> while <code>status is BUILT</code>. <code>test_unresolved_parm_downgrades_status</code>. <code>test_failed_build_restores_existing_inputs</code>.</dd>
+<dt>Fails today</dt><dd>None of the fields exist, so none of the tests compile; the swallow at <span class="anchor">:286-287</span> makes success indistinguishable from a thrown provenance write; <span class="anchor">tests/test_graph_builder_mile3.py:332</span> asserts only that the EXISTING node survives, never that its inputs did.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_graph_builder_mile3.py</code> (result-shape assertions).</dd>
+<dt>Test honesty</dt><dd>(a) and (c) are branch logic and are legitimately fake-<code>hou</code> testable &mdash; scope the tests to the branch and say so. The <em>host premise</em> ("an unknown parm name on a real created type yields no template") is a host fact and belongs in <strong>G3</strong>, which is already a hython graph-build probe and carries it at zero marginal cost.</dd>
+<dt>Seat</dt><dd><strong>Two gated hython runs (G6)</strong> to re-stamp <code>graph_truth_22.0.400.json</code> and <code>..._22.0.417.json</code>. <em>The draft said "Seat/build: none" while also requiring a re-stamp of two per-build receipts &mdash; those cannot both be true. Corrected.</em></dd>
+<dt>Unblocks</dt><dd>Closes L3-1, L3-2, L3-3, L3-4, L3-6, L3-7. A human reading an apply result can tell <em>"we could not read this back"</em> from <em>"this is null"</em> &mdash; and the result's verdict now reflects the difference.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W7</span> One cook on the APPLY path <span class="badge b-warn">was W5 &mdash; re-scoped</span></h3>
+<dl>
+<dt>Recon first</dt><dd>Run <strong>G3 as a pure measurement</strong> and record the number <em>before</em> writing the test. If created leaves are already cooking incidentally (via init scripts or <code>parm.eval</code>), the premise "may sit un-cooked" needs re-stating before this row is worth building at all.</dd>
+<dt>Changes</dt><dd>Explicit cook of created leaf nodes <strong>after the undo group closes and outside the <code>try</code></strong>, explicitly bounded, with "built, cook incomplete" as a distinct status. <em>Not</em> inside the group, and <em>not</em> inside the try &mdash; see &sect;6.3.</dd>
+<dt>Files</dt><dd><span class="anchor">host/graph_builder.py</span>, after <span class="anchor">:159</span></dd>
+<dt>Size</dt><dd><strong>S</strong> &mdash; the effort was never the problem; the placement was.</dd>
+<dt>New test</dt><dd><code>test_instantiate_cooks_created_leaf</code> &mdash; assert the <strong>delta</strong> in <code>cookCount()</code> attributable to the change, captured immediately after <code>instantiate()</code> returns. <code>cookCount()</code> is a monotone counter, so <code>&gt; 0</code> alone cannot distinguish "cooked by W7" from "cooked incidentally at build time" &mdash; the delta is the only meaningful reading.</dd>
+<dt>Fails today</dt><dd>Grep confirms <strong>zero</strong> <code>cook</code> occurrences across the three APPLY-path files (exit 1). Whether the <em>observable</em> fails depends on G3's recon number.</dd>
+<dt>Rewrite</dt><dd>None; extends the Mile-3 fixture set.</dd>
+<dt>Seat</dt><dd><strong>Gated hython run (G3)</strong> &mdash; cook state is not observable statically.</dd>
+<dt>Unblocks</dt><dd>The third leg of "one group / one dispatch / one cook." Makes the apply result <em>visibly</em> true in the viewport rather than eventually true &mdash; without letting a benign cook error destroy a structurally correct build.</dd>
+</dl>
+</div>
+
+<div class="band">
+  <div class="bl">Band C &mdash; the contaminated classification</div>
+  <p class="bd">One item, separated out because its remedy is a decision rather than an edit.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W8</span> <code>propose_graph</code> classification &mdash; a four-consumer decision <span class="badge b-crit">was W1 &mdash; demoted</span></h3>
+<dl>
+<dt>The question</dt><dd>Not <em>"add it to the frozenset"</em> but <em>"what classification does a validate-and-park op actually want?"</em> Membership in <code>_READ_ONLY_COMMANDS</code> buys lock-freedom and envelope-skip, and simultaneously costs Tier-0 provenance (<span class="anchor">core/floor_gate.py:292-306</span>), resilience and latency tracking (<span class="anchor">websocket.py:686-693</span>), and <strong>F3 freeze protection</strong> (<span class="anchor">hwebserver_adapter.py:236-257</span>). The last is actively harmful: <code>_handle_propose_graph</code> is <code>run_on_main</code>-bound (<span class="anchor">handlers_graph_synth.py:69</span>), so post-change a propose during a freeze stops fast-failing and starts queueing behind the frozen main thread.</dd>
+<dt>Likely answer</dt><dd>A <strong>third classification</strong> &mdash; record-but-do-not-lock &mdash; rather than membership. Decide (a) whether propose keeps a Tier-0 record, (b) an explicit exclusion so it still hits the F3 breaker gate, or a plain statement that freeze-time proposes will hang.</dd>
+<dt>Files</dt><dd><span class="anchor">server/handlers.py:204-245</span> and <span class="anchor">:509-520</span>, <span class="anchor">core/floor_gate.py:292-306</span>, <span class="anchor">server/websocket.py:686-693</span>, <span class="anchor">server/hwebserver_adapter.py:236-257</span>, <span class="anchor">server/integrity_envelope.py:73-77</span></dd>
+<dt>Size</dt><dd><strong>S&ndash;M</strong> <em>(the draft said XS, 1 line + comment)</em></dd>
+<dt>New test</dt><dd>Lock-freedom, <strong>plus</strong> an F3 regression test: with the transport breaker open, a propose must still fast-fail rather than queue. <strong>Plus</strong> a second test that holds the <em>main thread</em> (not the lock) and asserts what a propose actually does then &mdash; that is the honest measure of "verification throughput," and the draft's test could not see it.</dd>
+<dt>Unblock &mdash; qualified</dt><dd>Proposals validate during <strong>background or farm</strong> renders that hold the C5 lock without occupying the main thread. <strong>Not</strong> during a foreground render &mdash; that blocks on the marshal either way (&sect;7.2). Also retires L3-5's 65 false mutation records, at the cost of whatever record the decision chooses to keep.</dd>
+<dt>Seat</dt><dd>None &mdash; pure Python, headless.</dd>
+</dl>
+</div>
+
+<div class="band">
+  <div class="bl">Band D &mdash; the human surface</div>
+  <p class="bd">Seat-bound, sequential, and gated on W9 existing. Each row names the double-gate it ships with (&sect;7.3) so a builder who meets it does not read it as a bug in their own wave.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W9</span> The approval producer &mdash; non-blocking panel dispatch <span class="badge b-mute">was W6</span></h3>
+<dl>
+<dt>Changes</dt><dd>Make panel tool dispatch non-blocking so a bridge instance can carry a real <code>HumanGate</code> without the main thread sleeping on a decision only the frozen GUI can deliver. Panel-side, per the bridge's own instruction (<span class="anchor">shared/bridge.py:2537-2540</span>). Then wire a gated bridge for artist-facing operations while leaving the in-process trail single.</dd>
+<dt>Files</dt><dd><code>python/synapse/panel/</code> dispatch path (<code>tool_executor</code> &rarr; <code>bridge_adapter.execute_through_bridge</code>), <span class="anchor">panel/bridge_adapter.py:190-232</span></dd>
+<dt>Size</dt><dd><strong>M&ndash;L</strong></dd>
+<dt>New test</dt><dd><code>test_approve_gated_op_does_not_block_main_thread</code> &mdash; a CRITICAL op dispatched from the Qt/main thread must return control to the event loop while the proposal sits PENDING, and the card must render.</dd>
+<dt>Fails today</dt><dd>Cannot be written against the current design &mdash; <code>_check_consent</code> never reaches Path 1, so no proposal is ever created; and if one were, <code>_wait_for_decision</code> would <code>time.sleep</code> on the thread that must draw the card.</dd>
+<dt>Rewrite</dt><dd><strong><code>tests/test_panel_consent_no_freeze.py:35</code></strong> &mdash; it asserts <code>bridge._gate is None</code>. Rewriting it is mandatory and must be done by <em>strengthening</em> it (assert the dispatch is non-blocking), never by deleting it, or the 2026-06-01 freeze returns. Also <code>tests/panel/test_chat_gate_off_bridge.py</code>, <code>tests/test_panel_session_consent.py</code>, <code>tests/test_consent_timeout.py</code>.</dd>
+<dt>Seat</dt><dd><strong>GUI seat required.</strong> Headless proves non-blocking; only a seat proves <em>not frozen</em>. This is the one item that re-arms a confirmed deadlock if it is wrong.</dd>
+<dt>Unblocks</dt><dd><strong>Everything in C1.</strong> Until this lands, hunk rows, Apply-all, Edit, and typed approval are all decoration on an unreachable surface.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W10</span> The hunk list <span class="badge b-mute">was W7</span></h3>
+<dl>
+<dt>Changes</dt><dd>Hunks carried in <code>GateProposal.proposed_changes</code> as <code>[{change, expected_effect}]</code>; per-hunk verb rows in the body band; <code>sequence_id</code> threaded into the card model; Apply-all routed to the existing <code>approve_all</code> / <code>decide_batch</code>; Edit routed to <code>decide(&hellip;, MODIFIED, modified_changes=&hellip;)</code>; a genuine single-line compact path for the one-hunk case; a typed-chat parser converging on the same two <code>decide()</code> call sites.</dd>
+<dt>Files</dt><dd><span class="anchor">panel/gate_widget.py:169-359</span> + <span class="anchor">:362-631</span>, <span class="anchor">panel/synapse_panel.py</span> (chat parser)</dd>
+<dt>Size</dt><dd><strong>M</strong></dd>
+<dt>New test</dt><dd><code>test_single_hunk_proposal_renders_as_one_line</code> &mdash; fixed max row/widget count, or an <code>is_compact</code> code path.</dd>
+<dt>Fails today</dt><dd><code>_ProposalCard</code> unconditionally builds header and footer bands regardless of content; the only conditional (<span class="anchor">gate_widget.py:242-243</span>) hides the body and never collapses the card.</dd>
+<dt>Rewrite</dt><dd><code>tests/panel/test_gate_consent_honesty.py</code> (RULING 18 must hold <strong>per hunk</strong> &mdash; a per-hunk decision that never reached the gate must read NOT RECORDED on that row), <code>tests/panel/test_bc_wave.py</code> (BC-6a/6b card-in-consent-slot), <code>tests/test_consent_timeout.py</code> (countdown still satisfied at whole-proposal level), <code>tests/test_panel_sweep_a.py</code> (needs a hunk-row style).</dd>
+<dt>Ships with</dt><dd><span class="badge b-warn">known</span> <strong>A double approval on applies until W12.</strong> With no audience axis, a <code>review</code>-gated <code>instantiate_graph</code> asks a second time for a decision the hunk card already took (&sect;7.3). This is expected, not a defect in W10.</dd>
+<dt>Seat</dt><dd><strong>GUI seat</strong> for visual weight; hython-offscreen for widget-count assertions.</dd>
+<dt>Unblocks</dt><dd>C1 proper. Depends on W9.</dd>
+</dl>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W11</span> C7 engagement state <span class="badge b-mute">was W8</span></h3>
+<dl>
+<dt>Changes</dt><dd>An <code>EngagementState</code> object holding the eight <span class="anchor">INTENT.md:66-77</span> fields; a real lifecycle covering the seven <span class="anchor">INTENT.md:82-93</span> states; change-boundary enforcement composing with (not rewriting) <code>is_tool_allowed_for_worker</code>; a chat-settable input surface; a deliberate-resume check at the session boundary.</dd>
+<dt>Files</dt><dd>new module + <span class="anchor">panel/synapse_panel.py</span> (session boundary, <code>_on_stop</code> at <span class="anchor">:3469</span>), <span class="anchor">panel/tool_bridge.py:107-108</span> (call-site signature)</dd>
+<dt>Size</dt><dd><strong>L</strong></dd>
+<dt>New test</dt><dd>Set a narrower-than-mode engagement scope from the conversation-facing entry point and assert the host <strong>denies</strong> an operation the env-resolved worker mode would otherwise allow.</dd>
+<dt>Fails today</dt><dd>Unwritable &mdash; there is no conversational scope input at all. The only testable condition today is the trivial one: <code>resolve_mode()</code> ignores everything except env/profile (<span class="anchor">worker_policy.py:82-103</span>), so a chat-shaped override provably has zero effect.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_mode_gate.py</code> and any test pinning <code>resolve_mode()</code>'s signature.</dd>
+<dt>Ships with</dt><dd><span class="badge b-warn">known</span> <strong>A provisional boundary.</strong> W12 re-expresses change-boundary as a table dimension; whatever W11 composes on the side is expected to be re-homed then. Compose &mdash; do not rewrite the mode table &mdash; or W11 becomes gated and the rebuild gets expensive (&sect;8.2).</dd>
+<dt>Seat</dt><dd>None for the state object; <strong>GUI seat</strong> for the visible engagement sentence and the Paused-with-reason display.</dd>
+<dt>Unblocks</dt><dd>C7. Prerequisite for anything that claims Take-over / Resume semantics.</dd>
+</dl>
+</div>
+
+<div class="band">
+  <div class="bl">Band E &mdash; gated</div>
+  <p class="bd">Separate CTO authorization. Pure Python and headless &mdash; its only real cost is the authorization, which can be <strong>requested in parallel with Bands A&ndash;C</strong> so it is not the thing Band D waits on.</p>
+</div>
+
+<div class="wave">
+<h3><span class="wid">W12</span> The audience axis <span class="badge b-mute">was W9</span></h3>
+<dl>
+<dt>Changes</dt><dd>Give the policy table a second dimension so "host may, model may not" is <em>declared</em> rather than inferred from risk; dissolve <code>_WORKER_BUILDER_ALLOWLIST</code> (<span class="anchor">worker_policy.py:76-79</span>) into it; reconcile the three disagreeing classification tables (&sect;7.1); reconcile <code>autonomy/driver.py</code>'s parallel <code>GateLevel</code> vocabulary.</dd>
+<dt>Files</dt><dd><span class="anchor">shared/constants.py:79-103</span> <strong>(gated)</strong>, <span class="anchor">panel/worker_policy.py</span> <strong>(gated)</strong></dd>
+<dt>Size</dt><dd><strong>L</strong></dd>
+<dt>New test</dt><dd>An op declared <code>host: allowed, model: denied</code> must be permitted through the bridge with consent and denied to the worker <strong>without</strong> any hardcoded allowlist; and a <code>review</code>-gated op declared model-permitted must be allowed without an allowlist entry.</dd>
+<dt>Fails today</dt><dd>Unwritable &mdash; the table has no audience column; the only way to express model-permitted-despite-review is the frozenset.</dd>
+<dt>Rewrite</dt><dd><code>tests/test_mode_gate.py</code>, <code>tests/test_phase0b_consent_posture.py</code>, plus the <code>CONSTANTS_HASH</code> pin (<code>shared/constants.py</code>) and its drift detector.</dd>
+<dt>Sequencing note</dt><dd>The crucible offered pulling W12 ahead of W11. <strong>I take the other horn</strong> &mdash; annotate W10 and W11 with the consequence and leave W12 last &mdash; because promoting a gated L-sized wave ahead of ungated S work inverts the ranking principle the whole section runs on. What <em>is</em> adopted: request the authorization early so W12 is never the item Band D is waiting on. Reasoning recorded in &sect;12.5.</dd>
+<dt>Seat</dt><dd>None &mdash; pure Python. <strong>Gated wave, separate CTO authorization.</strong></dd>
+<dt>Unblocks</dt><dd>Removes the double-gate on already-human-reviewed applies (&sect;7.3). Makes C7's change boundary expressible rather than bolted on.</dd>
+</dl>
+</div>
+</section>

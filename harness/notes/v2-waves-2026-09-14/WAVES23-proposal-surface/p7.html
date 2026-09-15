@@ -1,0 +1,136 @@
+<section id="s12">
+<h2><span class="num">12</span><span>Contested findings</span></h2>
+<p class="subhead">Five of sixteen crucible findings are rejected in whole or in part. Two are factually wrong and verified so this pass. Three are right in substance and wrong in framing, scope, or sequencing. Nothing was dropped silently.</p>
+
+<p>Thirteen findings were folded at source and are visible in &sect;&sect;1&ndash;11 under the revision key. What follows is everything I declined, with the reasoning and the anchor that settles it. <strong>Two of these are cases where the crucible mis-cited a line the draft had right</strong> &mdash; recorded not to score a point but because a builder navigating by these numbers would be sent to the wrong line, and because a report that silently accepts a wrong correction is no more trustworthy than one that silently ignores a right one.</p>
+
+<hr>
+
+<h3>12.1 &nbsp;<span class="badge b-crit">rejected</span> &nbsp;"<code>bridge_adapter.py:230</code> is the comment; the assignment is at 232"</h3>
+<p><strong>The finding:</strong> anchor-audit lens, severity 1 &mdash; the draft's &sect;3.5 citation of <span class="anchor">bridge_adapter.py:230</span> for <code>_bridge._gate = None</code> was listed as off-by-two.</p>
+<p><strong>Why it is wrong:</strong> the draft was right.</p>
+<pre><span class="c">$ grep -n "_bridge._gate = None\|_bridge._consent_callback" python/synapse/panel/bridge_adapter.py</span>
+229:        _bridge._consent_callback = _panel_consent
+<b>230:        _bridge._gate = None</b></pre>
+<p><strong>Disposition:</strong> the citation stands unchanged at <code>:230</code>. The likely source of the slip is that the <em>comment</em> sits at <code>:228</code> and the callback assignment at <code>:229</code>, so a reader counting from the comment lands two low.</p>
+
+<hr>
+
+<h3>12.2 &nbsp;<span class="badge b-crit">rejected</span> &nbsp;"<code>worker_policy.py:64</code> is the comment; the assignment is at 65"</h3>
+<p><strong>The finding:</strong> same lens, same severity &mdash; the draft's <code>_DENIED_GATES (worker_policy.py:64)</code> was listed as off-by-one.</p>
+<p><strong>Why it is wrong:</strong> the draft was right again.</p>
+<pre><span class="c">$ grep -n "_DENIED_GATES" python/synapse/panel/worker_policy.py</span>
+<b>64:_DENIED_GATES = frozenset({"review", "approve", "critical"})</b>
+224:    if gate in _DENIED_GATES:
+</pre>
+<p><strong>Disposition:</strong> the declaration citation stands at <code>:64</code>. One improvement adopted from the neighbourhood of the finding: the draft cited the <em>application</em> site as <code>:224-229</code>, and it is a single line at <code>:224</code>. &sect;5 and &sect;7 now cite <code>:64</code> for the declaration and <code>:224</code> for the application, separately, so neither can drift into the other.</p>
+<p class="footnote"><strong>The three sibling citations in the same finding were right and are fixed:</strong> Amendment 3 is at <span class="anchor">graph_proposal.py:42-43</span> (draft said :44-46, which is the U.1 <code>target_input_label</code> comment); <code>result_to_dict</code> is at <span class="anchor">graph_synth_runtime.py:147-160</span> (draft said :145-158); and <code>graph_proposal.py</code> is 84 lines with its final statement at <span class="anchor">:84</span>, so the draft's "final statement at :85, no trailing newline" was internally inconsistent and is corrected in &sect;8.1. The "<code>hunk</code> has zero hits" wording is likewise corrected to <em>zero word-boundary hits</em> in &sect;3.1.</p>
+
+<hr>
+
+<h3>12.3 &nbsp;<span class="badge b-warn">partially rejected</span> &nbsp;"VERIFY is not half-honest; it is fully advisory"</h3>
+<p><strong>The finding:</strong> apply-guarantees lens, severity 4 &mdash; the draft's <em>"half of VERIFY is honest and half is silent"</em> overstates the wire half, because <code>wired: False</code> changes nothing: status is still BUILT, <code>ok()</code> is True, <code>errors</code> stays empty, and no consumer of <code>parameters_set</code> or <code>connections[*].wired</code> exists tree-wide.</p>
+<p><strong>What I accept &mdash; all of the substance.</strong> Every one of those facts checks out, and the consequence is worse than the draft said: an apply where every connection failed to wire and every parm was unreadable still returns <code>BUILT</code> / <code>ok()==True</code>. That is now L3-7, and W6 grew a clause <strong>(b)</strong> specifically to fix it, because <code>resolved: bool</code> alone would have been a field nobody reads. The draft's <strong>S</strong> sizing was wrong and is now <strong>S&ndash;M</strong>.</p>
+<p><strong>What I reject &mdash; the collapse of two axes into one word.</strong> "Honest" and "consumed" are different properties, and the two failures need different fixes:</p>
+<div class="tw"><table>
+<thead><tr><th>&nbsp;</th><th>Record accuracy</th><th>Consumption</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td><code>observed: None</code> on an unresolvable parm</td><td><strong>False</strong> &mdash; indistinguishable from a real null read</td><td>none</td><td>Make the record true <em>(W6a)</em> <strong>and</strong> give it a verdict <em>(W6b)</em></td></tr>
+<tr><td><code>wired: False</code> on a failed connection</td><td><strong>True</strong> &mdash; it accurately reports the live scene</td><td>none</td><td>Give it a verdict <em>(W6b)</em> only</td></tr>
+</tbody></table></div>
+<p>Calling both "fully advisory" describes the shared symptom and hides that one of them is also <em>lying</em>. A builder who reads "fully advisory" fixes consumption and ships the false record intact. <strong>&sect;6.4 therefore states both axes explicitly rather than adopting the finding's sentence</strong>, and &sect;6.6 splits them into L3-3 (false record) and L3-7 (true record, no verdict).</p>
+
+<hr>
+
+<h3>12.4 &nbsp;<span class="badge b-warn">partially rejected</span> &nbsp;"10s is reachable"</h3>
+<p><strong>The finding:</strong> apply-guarantees lens, severity 5 &mdash; the highest-severity item in the whole crucible. An apply exceeding <code>_DEFAULT_TIMEOUT = 10.0</code> reports FAILED while the build completes; the store does not consume; a retry double-builds.</p>
+<p><strong>What I accept &mdash; the entire defect, at full weight.</strong> It is corrected at source in &sect;6.2(b), given its own diagram, promoted to <strong>W4</strong> at the head of Band B, and named in &sect;13 as the thing riskier than it looks. Every mechanical claim verified this pass: <code>_DEFAULT_TIMEOUT = 10.0</code> at <span class="anchor">main_thread.py:21</span>, <code>started[0] = True</code> before <code>fn()</code> at <span class="anchor">:564</span>, and <code>ProposalStore.get()</code> returning <code>entry[1]</code> with no built-marker across all 34 lines of <code>proposal_store.py</code>.</p>
+<p><strong>What I reject &mdash; stating reachability as fact.</strong> The finding's evidence for <em>"10s is reachable"</em> is an enumeration of the work inside the payload, not a measurement. No apply has been timed. Writing "10s is reachable" into the report would put an unmeasured number behind a producer path that does not exist, which is the exact failure mode the <em>control pinned to the brief's figure</em> lesson is about: a figure copied from an argument, then cited as evidence for that argument.</p>
+<p><strong>Why the rejection costs nothing.</strong> The defect is structural. A bound that abandons without stopping, over a store that does not consume, is wrong at <em>any</em> frequency &mdash; a once-a-month silent double-build is arguably worse than a daily one, because nobody will ever correlate it. <strong>So W4 is scheduled on the defect and G5 measures the frequency separately</strong>, recorded as U9. The number sets W4's urgency, never its necessity.</p>
+
+<hr>
+
+<h3>12.5 &nbsp;<span class="badge b-warn">horn declined</span> &nbsp;"Pull W12 (audience axis) ahead of W11"</h3>
+<p><strong>The finding:</strong> buildability lens, severity 2 &mdash; W12 is the producer for two things ordered ahead of it. W9 and W10 ship a double approval on applies (&sect;7.3); W11 bolts on a change boundary that W12 then re-expresses. Offered as an either/or: promote W12, <em>or</em> annotate the downstream rows.</p>
+<p><strong>What I accept &mdash; both consequences are real and neither was written down.</strong> W10 and W11 now carry explicit <em>"Ships with"</em> rows naming the double approval and the provisional boundary, so a builder who meets the second approval after W10 does not read it as a bug in W10 and try to fix it there. W11's row also states the composition constraint that keeps it ungated (&sect;8.2).</p>
+<p><strong>What I decline &mdash; the promotion.</strong> &sect;9 ranks on verification throughput gained &times; inverse cost, with Band B ranked on risk retired. W12 is <strong>L</strong>, gated, and gains no throughput; promoting it ahead of Band A's XS-to-S ungated work inverts the principle the whole section runs on, and it would put the one item that cannot start without an external authorization in front of eleven items that can start today.</p>
+<p><strong>What I adopt from the promotion horn instead:</strong> the finding's real insight is that W12's cost is <em>authorization latency</em>, not engineering. So &mdash; <strong>request the CTO authorization in parallel with Band A</strong>, and let it mature while W1&ndash;W8 run. W12 stays last in build order and stops being the thing Band D waits on. That is recorded in W12's <em>Sequencing note</em>.</p>
+
+<hr>
+
+<h3>Findings accepted in full &mdash; for the record</h3>
+<div class="tw"><table>
+<thead><tr><th>Finding</th><th>Sev</th><th>Where it landed</th></tr></thead>
+<tbody>
+<tr><td><code>tops_cancel_cook</code> is not in <code>_READ_ONLY_COMMANDS</code>; the draft's example inverted its own argument</td><td class="num">3</td><td>&sect;4.1 refuted &middot; new <strong>W3</strong> &middot; new <strong>G7</strong> &middot; new <strong>U11</strong></td></tr>
+<tr><td><code>Data.json</code> / 450 missing from the &sect;2.3 enumeration</td><td class="num">2</td><td>&sect;2.3 table restored &middot; W1 coverage clause</td></tr>
+<tr><td>L3-4 over-reads a conditional comment as seam drift</td><td class="num">2</td><td>&sect;6.6 downgraded &middot; W6(e) keeps the cleanup, gains a second target</td></tr>
+<tr><td>&sect;6.1 undo group is asserted, not evidenced; test is mock-deep</td><td class="num">4</td><td>&sect;6.1 regraded &middot; &sect;1 verdict &middot; new <strong>L3-8</strong> &middot; new <strong>W5</strong> &middot; &sect;10 seat rows</td></tr>
+<tr><td>&sect;6.2 is three dispatches, not one</td><td class="num">3</td><td>&sect;6.2(a) &middot; diagram &middot; latency caveat</td></tr>
+<tr><td>&sect;6.2 timeout abandons without stopping; retry double-builds</td><td class="num">5</td><td>&sect;6.2(b) &middot; new <strong>W4</strong> &middot; new <strong>G5</strong> &middot; &sect;13 &middot; <em>reachability contested at &sect;12.4</em></td></tr>
+<tr><td>FAILED path does not restore EXISTING&rarr;EXISTING edges or callback-authored nodes</td><td class="num">3</td><td>&sect;5.4 &middot; new <strong>L3-6</strong> &middot; W6(d) &middot; new <strong>U10</strong></td></tr>
+<tr><td>VERIFY has no consumers; status unaffected</td><td class="num">4</td><td>&sect;6.4 &middot; new <strong>L3-7</strong> &middot; W6(b) &middot; <em>framing contested at &sect;12.3</em></td></tr>
+<tr><td>&sect;6.3 refutation not airtight; prescribed cook fix unsafe</td><td class="num">4</td><td>&sect;6.3 restated &middot; <strong>W7</strong> re-scoped (outside the try, outside the group, bounded)</td></tr>
+<tr><td><code>_READ_ONLY_COMMANDS</code> has five branch sites; F3 bypass is harmful</td><td class="num">4</td><td>&sect;7.2 refuted &middot; <strong>W8</strong> demoted from #1 and re-scoped</td></tr>
+<tr><td>W1's "validate during renders" unblock is refuted &mdash; propose is main-thread-bound</td><td class="num">3</td><td>&sect;7.2 refuted &middot; W8 unblock qualified &middot; second test added</td></tr>
+<tr><td>W3 mixes fake-<code>hou</code> branch tests with a host premise; seat label wrong</td><td class="num">3</td><td>W6 <em>Test honesty</em> row &middot; host premise moved to <strong>G3</strong> &middot; new <strong>G6</strong> re-stamp</td></tr>
+<tr><td>W2's "unverified signal" is the gated <code>ValidationStatus</code> in disguise</td><td class="num">2</td><td>&sect;5.2 re-routed to <code>ValidationReport.advisories</code> &middot; &sect;8.2 rows split &middot; W1 change text</td></tr>
+<tr><td>W5's test and G3's gate expect opposite readings; <code>cookCount</code> is monotone</td><td class="num">2</td><td>&sect;10 G3 re-scoped to recon-first &middot; W7 asserts the delta</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="s13">
+<h2><span class="num">13</span><span>CTO summary</span></h2>
+<p class="subhead">One screen. Three questions: what buys the most verification per unit of cost, what is already built and merely unwired, and what is quietly more dangerous than its grade suggests.</p>
+
+<div class="tiles">
+  <div class="tile">
+    <span class="tl">Build this first</span>
+    <p class="tv">Catalog-backed oracles</p>
+    <p class="tb"><strong>W1.</strong> Two ~30-line adapters over <code>validation/catalog.py</code> &mdash; existence from <code>has_type</code>/<code>parms</code>, connectivity from <code>min_inputs</code>/<code>max_inputs</code>/<code>max_outputs</code> &mdash; composed with the live-<code>hou</code> oracles so <code>hou</code> wins when present.</p>
+    <p class="tb"><strong>Anchor:</strong> <span class="anchor">validation/catalog.py:183-185</span> and <span class="anchor">:171-181</span> against <span class="anchor">cognitive/interfaces.py:8-16</span>, wired at <span class="anchor">graph_synth_runtime.py:62</span> and <span class="anchor">graph_builder.py:65</span>.</p>
+    <p class="tb"><strong>Cost:</strong> S&ndash;M. Ungated &mdash; the unverified signal rides <code>ValidationReport.advisories</code> (<span class="anchor">graph_proposal.py:84</span>, already serialized at <span class="anchor">tools/propose_graph.py:96</span>), so no contract edit. One headless gated run, G2.</p>
+    <p class="tb"><strong>Why it wins:</strong> both oracles hard-import <code>hou</code> at module scope today (<span class="anchor">existence_adapter.py:16</span>, <span class="anchor">graph_oracle.py:17</span>), so <code>GraphValidator</code> cannot even be <em>constructed</em> headless. W1 is the only item that removes a Houdini seat from the verification loop itself. Everything else gets cheaper to check afterwards.</p>
+  </div>
+  <div class="tile">
+    <span class="tl">Already built &mdash; &sect;2</span>
+    <p class="tv">Three primitives, zero wiring</p>
+    <p class="tb"><strong>Approval semantics.</strong> "Edit" and "Apply-all" exist in full at the host: <code>GateDecision.MODIFIED</code> (<span class="anchor">core/gates.py:47</span>), <code>decide(modified_changes=)</code> with audit (<span class="anchor">:416-455</span>), <code>decide_batch</code> (<span class="anchor">:488-517</span>), <code>approve_all</code>/<code>reject_all</code> (<span class="anchor">:519-535</span>). The panel produces nothing into any of them and has no <code>sequence_id</code> at all.</p>
+    <p class="tb"><strong>Per-build vocabulary.</strong> <strong>7,862</strong> node types across <strong>19</strong> category files with parms and arity, <code>total_probe_errors: 0</code> &mdash; already read by the recipes subsystem, never by <code>GraphValidator</code>.</p>
+    <p class="tb"><strong>v5.68.0's real content.</strong> "Proposal controls" was a worker-policy and host-gate change; the consent card is untouched. The brief's premise that <code>synapse_instantiate_graph</code> has no operation row is stale by one commit (<span class="anchor">bridge_adapter.py:153</span>).</p>
+    <p class="tb"><strong>&sect;2 audited clean</strong> &mdash; zero false "already exists" claims across every primitive the crucible opened. One enumeration row was missing and is restored.</p>
+  </div>
+  <div class="tile">
+    <span class="tl">Riskier than it looks</span>
+    <p class="tv">The apply that reports FAILED and builds anyway</p>
+    <p class="tb"><strong>W4.</strong> <span class="anchor">handlers_graph_synth.py:93</span> passes no timeout, so apply runs at <code>_DEFAULT_TIMEOUT = 10.0</code> (<span class="anchor">main_thread.py:21</span>). The abandoned-payload flag only no-ops work that has <em>not started</em> &mdash; <span class="anchor">main_thread.py:564</span> sets <code>started[0] = True</code> before <code>fn()</code>, and the file names the residual itself at <span class="anchor">:536-538</span>.</p>
+    <p class="tb"><strong>Nothing makes apply idempotent.</strong> <code>ProposalStore.get()</code> does not consume and there is no built-marker (whole file, 34 lines). TOCTOU re-validation of an all-NEW proposal still returns VALID against a scene that already contains a copy.</p>
+    <p class="tb"><strong>So: overrun &rarr; caller told FAILED &rarr; graph lands anyway &rarr; retry builds it twice, in two undo groups.</strong> The only mitigation in the tree is prompt text at <span class="anchor">tool_executor.py:738-746</span> that the <code>/mcp</code> client never sees.</p>
+    <p class="tb"><strong>Why it hides:</strong> it wears the "one main-thread dispatch &mdash; ANCHORED" grade the draft gave it, no test covers it, and its frequency is unmeasured (U9, G5). The defect is structural and does not wait on that number.</p>
+  </div>
+</div>
+
+<h3>The shape of the decision</h3>
+<div class="tw"><table>
+<thead><tr><th>Band</th><th>Waves</th><th>Ranked on</th><th>Gated?</th><th>Seat?</th><th>Effect if skipped</th></tr></thead>
+<tbody>
+<tr><td><strong>A</strong> &mdash; throughput</td><td>W1 W2 W3</td><td>throughput &times; inverse cost</td><td>no</td><td>no (3 headless gated runs)</td><td>Every later verification keeps costing a Houdini seat.</td></tr>
+<tr><td><strong>B</strong> &mdash; apply honesty</td><td>W4 W5 W6 W7</td><td>risk retired</td><td>no</td><td>2 seat checks + 3 gated runs</td><td>Apply results stay unreliable as facts. Silent double-builds stay possible.</td></tr>
+<tr><td><strong>C</strong> &mdash; classification</td><td>W8</td><td>decision, not edit</td><td>no</td><td>no</td><td>65 false mutation records keep accruing; background-render proposals stay lock-blocked.</td></tr>
+<tr><td><strong>D</strong> &mdash; human surface</td><td>W9 W10 W11</td><td>sequence-forced</td><td>no</td><td><strong>yes</strong></td><td>C1 and C7 do not exist. The card stays unreachable.</td></tr>
+<tr><td><strong>E</strong> &mdash; audience axis</td><td>W12</td><td>structural</td><td><strong>yes</strong></td><td>no</td><td>Applies stay double-gated; C7's boundary stays bolted on.</td></tr>
+</tbody></table></div>
+
+<h3>Three things to decide, not build</h3>
+<ol>
+<li><strong>Request W12's authorization now, run it last.</strong> Its cost is authorization latency, not engineering &mdash; it is pure Python and headless. Starting the request alongside Band A keeps it from becoming the item Band D waits on (&sect;12.5).</li>
+<li><strong>W8 is a classification question, not a one-liner.</strong> Membership in <code>_READ_ONLY_COMMANDS</code> also turns off Tier-0 provenance, resilience tracking, and F3 freeze protection &mdash; the last one harmfully, because <code>propose_graph</code> is <code>run_on_main</code>-bound. The likely right answer is a third classification, and that is a call to make before anyone writes the line (&sect;7.2).</li>
+<li><strong>W9 is the only item that can re-arm a live freeze.</strong> <span class="anchor">shared/bridge.py:2517-2540</span> documents the 2026-06-01 self-deadlock and names the fix as panel-side. <code>tests/test_panel_consent_no_freeze.py:35</code> must be rewritten by <em>strengthening</em>, never by deleting, and it needs a GUI seat &mdash; headless can prove non-blocking, only a seat proves not frozen.</li>
+</ol>
+
+<p class="footnote"><strong>One line on the grade changes.</strong> Three of this report's own verdicts moved this pass: the apply path's undo guarantee from ANCHORED to ASSERTED, its dispatch guarantee from ANCHORED to refuted-as-stated, and the draft's #1 build item from XS/one-line to a four-consumer decision. Sections 2, 5 and 7 were attacked as hard and held, including &sect;7's coverage numbers reproducing bit-for-bit on an independent re-run. The pattern is consistent and worth naming: <strong>what survived was everything anchored to a file read; what moved was everything anchored to a test that drove a mock.</strong></p>
+</section>
+
+</main>
+</div>
+</div>

@@ -1,0 +1,41 @@
+post-merge HEAD 5ea7dbdf762cdb4ad21473b28e305c93b086ac2c  | floor was 8869 passed / 412 skipped / 0 failed at bd65e4b6
+    table_syms, table_status = _load_symbol_table()
+
+tests/test_scout.py::test_pkg_table_keyed_on_running_major
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:157: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    result = testfunction(**testargs)
+
+tests/test_scout.py::test_pkg_table_keyed_on_running_major
+  C:\Users\User\Synapse\tests\test_scout.py:388: RuntimeWarning: SYNAPSE scout phantom-API gate is DOWN: the symbol table at C:\Users\User\AppData\Local\Temp\pytest-of-User\pytest-4092\test_pkg_table_keyed_on_runnin0\data\h21_symbol_table.json is stamped for Houdini 21.0.671 but this process is running Houdini 23.0.000. A membership verdict cut on a different point release can certify a symbol that is absent here, so existence checks will report None (unverified) rather than a value that cannot be trusted. Regenerate with: hython host/introspect_runtime.py
+    syms23, status23 = scout._load_symbol_table()
+
+tests/test_scout.py::test_external_process_is_not_refused_under_the_fail_closed_policy
+  C:\Users\User\Synapse\tests\test_scout.py:602: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    out = scout.synapse_scout("can I use hou.LopNode", k=3)        # must not raise
+
+tests/test_scout_apex_federation.py::test_hits_tagged_source_and_domain
+  C:\Users\User\SYNAPSE\python\synapse\cognitive\tools\scout.py:978: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    return _scout_apex(query, k, max_chars)
+
+tests/test_scout_eval.py::test_clean_corpus_scores_perfect
+tests/test_scout_eval.py::test_missing_real_is_false_phantom_and_blocks
+tests/test_scout_eval.py::test_phantom_leak_detected
+tests/test_scout_eval.py::test_release_blocking_tracks_metric
+  C:\Users\User\SYNAPSE\python\synapse\cognitive\tools\scout_eval.py:153: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    out = scout_fn(sym, k=1)
+
+tests/test_undo_redo.py::TestUndoHandler::test_undo_handler_calls_performUndo
+tests/test_undo_redo.py::TestUndoHandler::test_undo_returns_status
+tests/test_undo_redo.py::TestUndoHandler::test_undo_registered_in_handlers
+tests/test_undo_redo.py::TestRedoHandler::test_redo_handler_calls_performRedo
+tests/test_undo_redo.py::TestRedoHandler::test_redo_returns_status
+tests/test_undo_redo.py::TestRedoHandler::test_redo_registered_in_handlers
+  C:\Users\User\SYNAPSE\tests\test_undo_redo.py:81: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    import synapse  # noqa: F811
+
+tests/test_vendored_deps.py::TestVendorPathActivation::test_prepend_is_idempotent
+  C:\Python314\Lib\importlib\__init__.py:129: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    _bootstrap._exec(spec, module)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========= 8880 passed, 412 skipped, 625 warnings in 321.49s (0:05:21) =========

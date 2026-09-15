@@ -1,0 +1,434 @@
+{
+ "count": 33,
+ "windows": [
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    2688,
+    1346,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QGraphicsView",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    2276,
+    1521,
+    207,
+    362
+   ],
+   "flags": "265217"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    2688,
+    1346,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QGraphicsView",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QMenu",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    2887,
+    525,
+    275,
+    68
+   ],
+   "flags": "134279177"
+  },
+  {
+   "class": "QMenu",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    100,
+    30
+   ],
+   "flags": "134279177"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    2688,
+    1346,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QMenu",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    100,
+    30
+   ],
+   "flags": "134279177"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": true,
+   "minimized": false,
+   "geo": [
+    2688,
+    1584,
+    640,
+    3
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": true,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": true,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QMenu",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    100,
+    30
+   ],
+   "flags": "134279177"
+  },
+  {
+   "class": "QFrame",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    100,
+    30
+   ],
+   "flags": "134279177"
+  },
+  {
+   "class": "QMenu",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    100,
+    30
+   ],
+   "flags": "134279177"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": true,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "Gallery",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QGraphicsView",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QMenu",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    2887,
+    475,
+    210,
+    318
+   ],
+   "flags": "134279177"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": true,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QMenu",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    2731,
+    475,
+    166,
+    268
+   ],
+   "flags": "134279177"
+  },
+  {
+   "class": "QGraphicsView",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QGraphicsView",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    2688,
+    1346,
+    640,
+    480
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QWidget",
+   "title": "untitled.hip - Houdini Indie Limited-Commercial 22.0.400 - Py3.13",
+   "visible": true,
+   "minimized": false,
+   "geo": [
+    231,
+    71,
+    3027,
+    2664
+   ],
+   "flags": "167833601"
+  },
+  {
+   "class": "QWidget",
+   "title": "Gallery Options",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "flags": "134230017"
+  },
+  {
+   "class": "QFrame",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    100,
+    30
+   ],
+   "flags": "134279177"
+  },
+  {
+   "class": "QWidget",
+   "title": "",
+   "visible": true,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "flags": "134279169"
+  },
+  {
+   "class": "QMenu",
+   "title": "",
+   "visible": false,
+   "minimized": false,
+   "geo": [
+    0,
+    0,
+    100,
+    30
+   ],
+   "flags": "134279177"
+  }
+ ]
+}

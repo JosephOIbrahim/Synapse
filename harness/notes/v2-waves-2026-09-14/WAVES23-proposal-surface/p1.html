@@ -1,0 +1,441 @@
+<title>Proposal Surface</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+<style>
+:root{
+  --ground:#F1F3F1;
+  --surface:#FFFFFF;
+  --surface-2:#E9ECEA;
+  --ink:#15191A;
+  --ink-2:#525C5B;
+  --ink-3:#798483;
+  --rule:#D6DBD9;
+  --rule-soft:#E4E8E6;
+  --accent:#0E6B62;
+  --accent-soft:#DCEBE8;
+  --crit:#95292C;
+  --crit-soft:#F4E0DF;
+  --warn:#855308;
+  --warn-soft:#F5E8D4;
+  --ok:#2C6538;
+  --ok-soft:#DFECE1;
+  --shadow:0 1px 2px rgba(20,28,27,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1312;
+    --surface:#161B1A;
+    --surface-2:#1D2423;
+    --ink:#E4E9E7;
+    --ink-2:#98A4A1;
+    --ink-3:#74807D;
+    --rule:#293130;
+    --rule-soft:#202726;
+    --accent:#4FC6B6;
+    --accent-soft:#14302D;
+    --crit:#E58F88;
+    --crit-soft:#33201F;
+    --warn:#D6A75E;
+    --warn-soft:#2D2516;
+    --ok:#82C08F;
+    --ok-soft:#18291C;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1312;
+  --surface:#161B1A;
+  --surface-2:#1D2423;
+  --ink:#E4E9E7;
+  --ink-2:#98A4A1;
+  --ink-3:#74807D;
+  --rule:#293130;
+  --rule-soft:#202726;
+  --accent:#4FC6B6;
+  --accent-soft:#14302D;
+  --crit:#E58F88;
+  --crit-soft:#33201F;
+  --warn:#D6A75E;
+  --warn-soft:#2D2516;
+  --ok:#82C08F;
+  --ok-soft:#18291C;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+code,kbd,pre,.mono{font-family:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace}
+
+.shell{max-width:1360px;margin:0 auto;padding-inline:20px;padding-block:0}
+.layout{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:1120px){
+  .layout{grid-template-columns:228px minmax(0,1fr);gap:56px;align-items:start}
+}
+
+.mast{border-bottom:1px solid var(--rule);padding-block:44px 26px;margin-bottom:34px}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+}
+h1{
+  font-family:Newsreader,Georgia,serif;font-weight:500;
+  font-size:clamp(34px,6vw,54px);line-height:1.04;letter-spacing:-.018em;
+  margin:.28em 0 .1em;text-wrap:balance;
+}
+.dek{
+  font-family:Newsreader,Georgia,serif;font-size:clamp(17px,2.4vw,21px);
+  color:var(--ink-2);margin:0 0 22px;max-width:56ch;
+}
+.meta{
+  display:flex;flex-wrap:wrap;gap:8px 22px;
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);
+}
+.meta b{color:var(--ink-2);font-weight:500}
+
+.rail{display:none}
+@media (min-width:1120px){
+  .rail{display:block;position:sticky;top:24px;padding-block:6px 40px}
+}
+.rail .rl{
+  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:12px;
+  padding-bottom:8px;border-bottom:1px solid var(--rule);
+}
+.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+.rail a{
+  display:grid;grid-template-columns:22px 1fr;gap:6px;
+  text-decoration:none;color:var(--ink-2);font-size:12.5px;line-height:1.35;
+  padding:5px 6px;border-radius:3px;border-left:2px solid transparent;
+}
+.rail a:hover{background:var(--surface);color:var(--ink);border-left-color:var(--accent)}
+.rail a span:first-child{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-3);padding-top:1px}
+.rail a.new span:first-child{color:var(--accent)}
+
+main{padding-bottom:90px;min-width:0}
+section{margin-bottom:56px;scroll-margin-top:18px}
+h2{
+  font-family:Newsreader,Georgia,serif;font-weight:600;
+  font-size:clamp(25px,3.6vw,33px);line-height:1.14;letter-spacing:-.012em;
+  margin:0 0 6px;text-wrap:balance;
+  display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;
+}
+h2 .num{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:500;
+  color:var(--accent);letter-spacing:.04em;
+}
+.subhead{
+  font-size:13px;color:var(--ink-2);margin:0 0 22px;padding-bottom:14px;
+  border-bottom:1px solid var(--rule);max-width:76ch;
+}
+h3{
+  font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:16px;
+  letter-spacing:-.005em;margin:32px 0 8px;color:var(--ink);
+}
+h4{
+  font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:11px;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);
+  margin:24px 0 8px;
+}
+p{margin:0 0 13px;max-width:78ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:78ch}
+li{margin-bottom:6px}
+li::marker{color:var(--ink-3)}
+strong{font-weight:600}
+a{color:var(--accent)}
+hr{border:0;border-top:1px solid var(--rule);margin:34px 0}
+
+code{
+  font-size:12.5px;background:var(--surface-2);color:var(--ink);
+  padding:1px 4px;border-radius:2px;word-break:break-word;
+}
+.anchor{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;
+  color:var(--accent);background:none;padding:0;
+  border-bottom:1px dotted var(--accent);
+}
+
+.badge{
+  display:inline-block;font-family:"IBM Plex Mono",monospace;
+  font-size:9.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  padding:2px 6px;border-radius:2px;vertical-align:2px;white-space:nowrap;
+}
+.b-crit{background:var(--crit-soft);color:var(--crit)}
+.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-acc{background:var(--accent-soft);color:var(--accent)}
+.b-mute{background:var(--surface-2);color:var(--ink-2)}
+
+.rev{
+  background:var(--surface);border:1px solid var(--rule-soft);
+  border-left:3px solid var(--ink-3);
+  padding:14px 16px;margin:16px 0;border-radius:0 3px 3px 0;box-shadow:var(--shadow);
+}
+.rev > .rl{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
+  display:block;margin-bottom:7px;
+}
+.rev p:last-child,.rev ul:last-child,.rev ol:last-child{margin-bottom:0}
+.rev p{max-width:72ch}
+.r-refuted{border-left-color:var(--crit)}
+.r-refuted > .rl{color:var(--crit)}
+.r-corrected{border-left-color:var(--warn)}
+.r-corrected > .rl{color:var(--warn)}
+.r-new{border-left-color:var(--accent)}
+.r-new > .rl{color:var(--accent)}
+.r-held{border-left-color:var(--ok)}
+.r-held > .rl{color:var(--ok)}
+
+.key{
+  display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);
+  grid-template-columns:1fr;margin-bottom:34px;
+}
+@media (min-width:640px){.key{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:940px){.key{grid-template-columns:repeat(4,1fr)}}
+.key > div{background:var(--surface);padding:11px 13px}
+.key .kl{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:3px;
+}
+.key .kd{font-size:12px;color:var(--ink-2);line-height:1.45}
+
+.tw{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--rule-soft)}
+thead th{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);
+  background:var(--surface-2);border-bottom:1px solid var(--rule);white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+td.ctr{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:11px}
+table code{font-size:11.5px;background:none;padding:0;color:var(--ink-2)}
+table .anchor{font-size:11.5px}
+
+pre{
+  background:var(--surface);border:1px solid var(--rule);
+  padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.55;
+  margin:16px 0;color:var(--ink-2);
+}
+pre b{color:var(--ink);font-weight:600}
+pre .c{color:var(--ink-3)}
+pre .a{color:var(--accent)}
+pre .x{color:var(--crit)}
+
+.band{margin:34px 0 8px;padding:10px 0 0;border-top:2px solid var(--ink)}
+.band .bl{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+}
+.band .bd{font-size:12.5px;color:var(--ink-2);margin:3px 0 0;max-width:74ch}
+.wave{
+  background:var(--surface);border:1px solid var(--rule);
+  padding:16px 18px;margin:14px 0;box-shadow:var(--shadow);
+}
+.wave > h3{
+  margin:0 0 10px;font-size:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;
+}
+.wave > h3 .wid{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);
+  font-weight:600;letter-spacing:.03em;
+}
+.wave dl{display:grid;grid-template-columns:1fr;margin:0}
+@media (min-width:620px){.wave dl{grid-template-columns:120px minmax(0,1fr)}}
+.wave dt{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  padding:7px 0 0;border-top:1px solid var(--rule-soft);
+}
+.wave dd{margin:0;padding:7px 0 9px;font-size:13.5px;border-top:1px solid var(--rule-soft)}
+@media (max-width:619px){
+  .wave dt{border-top:1px solid var(--rule-soft);padding-bottom:0}
+  .wave dd{border-top:0;padding-top:1px}
+}
+
+.tiles{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);grid-template-columns:1fr}
+@media (min-width:780px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{background:var(--surface);padding:17px 18px}
+.tile .tl{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:8px;
+}
+.tile .tv{
+  font-family:Newsreader,Georgia,serif;font-size:20px;line-height:1.22;
+  font-weight:500;letter-spacing:-.01em;margin:0 0 7px;color:var(--ink);
+}
+.tile .tb{font-size:12.5px;color:var(--ink-2);line-height:1.5;margin:0}
+.tile .tb + .tb{margin-top:7px}
+
+.footnote{font-size:12.5px;color:var(--ink-2);max-width:76ch}
+.lead{font-size:16.5px;line-height:1.6;max-width:74ch}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="shell">
+
+<header class="mast">
+  <div class="eyebrow">Waves 2 + 3 consolidated &middot; revision 2</div>
+  <h1>Proposal Surface</h1>
+  <p class="dek">The machine proposes. Nothing yet lets a person say yes to part of it &mdash; and the apply path is weaker than it was graded.</p>
+  <div class="meta">
+    <span><b>HEAD</b> bd65e4b6</span>
+    <span><b>branch</b> master</span>
+    <span><b>date</b> 2026-09-14</span>
+    <span><b>basis</b> probes C1 / C7 / C2 / apply-path</span>
+    <span><b>this pass</b> crucible folded at source &mdash; 3 lenses, 16 findings</span>
+  </div>
+</header>
+
+<div class="layout">
+
+<nav class="rail" aria-label="Contents">
+  <div class="rl">Contents</div>
+  <ol>
+    <li><a href="#s1"><span>01</span><span>Verdict</span></a></li>
+    <li><a href="#s2"><span>02</span><span>What already exists</span></a></li>
+    <li><a href="#s3"><span>03</span><span>C1 &mdash; the card</span></a></li>
+    <li><a href="#s4"><span>04</span><span>C7 &mdash; scope, resume</span></a></li>
+    <li><a href="#s5"><span>05</span><span>C2 &mdash; vocabulary</span></a></li>
+    <li><a href="#s6"><span>06</span><span>The apply path</span></a></li>
+    <li><a href="#s7"><span>07</span><span>Classification</span></a></li>
+    <li><a href="#s8"><span>08</span><span>Gated-surface impact</span></a></li>
+    <li><a href="#s9"><span>09</span><span>Build order</span></a></li>
+    <li><a href="#s10"><span>10</span><span>Seat / gated runs</span></a></li>
+    <li><a href="#s11"><span>11</span><span>Unknowns</span></a></li>
+    <li><a href="#s12" class="new"><span>12</span><span>Contested findings</span></a></li>
+    <li><a href="#s13" class="new"><span>13</span><span>CTO summary</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<div class="key" aria-label="Revision key">
+  <div><span class="kl" style="color:var(--crit)">Refuted</span><span class="kd">The prior claim was false. It is gone, and the replacement says what is true.</span></div>
+  <div><span class="kl" style="color:var(--warn)">Corrected</span><span class="kd">Right in substance, wrong in scope, grade, or mechanism.</span></div>
+  <div><span class="kl" style="color:var(--accent)">New</span><span class="kd">Work the crucible surfaced that was not in the draft at all.</span></div>
+  <div><span class="kl" style="color:var(--ok)">Held</span><span class="kd">Attacked and survived. Recorded so nobody re-litigates it.</span></div>
+</div>
+
+<section id="s1">
+<h2><span class="num">01</span><span>Verdict</span></h2>
+<p class="subhead">Two halves of one path. The machine half runs but does not guarantee what it claims; the human half is complete, styled, tested &mdash; and has never been reachable.</p>
+
+<p class="lead">The machine half of the proposal path <strong>is built and has run</strong> &mdash; propose &rarr; validate &rarr; park &rarr; apply is real code with <strong>57</strong> <code>instantiate_graph</code> and <strong>65</strong> <code>propose_graph</code> provenance records already on disk <em>(producer: <code>python -c</code> over <code>.synapse/provenance/*.json</code>, counting the <code>op</code> key; 5,000 of 5,001 files parsed &mdash; the 5,001st is a <code>.tmp</code>)</em>. What it does <strong>not</strong> do is hold the three guarantees it was graded on. Of "one undo group / one main-thread dispatch / one cook": one is asserted without evidence, one is three dispatches under a 10-second bound that does not stop the payload it abandons, and one does not exist.</p>
+
+<p>The human half &mdash; the surface where a person reads what the machine proposes and says yes to <em>part</em> of it &mdash; is a <strong>complete, styled, test-covered widget wired to a gate that nothing in production feeds</strong>. <code>get_process_bridge()</code> is the only non-test constructor of <code>LosslessExecutionBridge</code> in the tree (<span class="anchor">shared/bridge.py:2942</span>; grep for <code>LosslessExecutionBridge(</code> returns exactly one production hit) and it builds gate-less: <code>bridge._gate = None</code> with <code>consent_callback=lambda op: True</code> (<span class="anchor">shared/bridge.py:2942-2943</span>). <code>_check_consent</code> therefore never reaches Path 1 (<span class="anchor">shared/bridge.py:2436-2450</span>), <code>_propose_gate</code> is never called (<span class="anchor">shared/bridge.py:2452-2464</span>), <code>HumanGate.propose()</code> has no production caller, and <code>_ProposalCard</code> never renders.</p>
+
+<p><strong>The single thing most in the way is not the card's shape &mdash; it is that the card has no producer, and the obvious wiring re-arms a confirmed main-thread self-deadlock</strong> that the codebase documents in its own words: <em>"&#9888; MAIN-THREAD HAZARD &mdash; currently UNREACHABLE, and that is load-bearing"</em> (<span class="anchor">shared/bridge.py:2517-2540</span>), pinned by <span class="anchor">tests/test_panel_consent_no_freeze.py:35</span>. C1 as briefed (hunk list, Apply/Edit/Skip, Apply-all, typed approval) is buildable on existing primitives and is <em>not</em> the hard part; the hard part is a non-blocking panel dispatch, which is panel-side work the bridge file explicitly refuses to paper over.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; what changed in this sentence</span>
+  <p>The draft opened with "built, tested, and has run." <strong><em>Tested</em> is withdrawn from that list for the apply path</strong>, and the guarantee qualifier is inline rather than appended. The apply path's pinning suite (<span class="anchor">tests/test_graph_builder_mile3.py:1-21</span>, <em>"Four scenarios, all driven by a FAKE hou"</em>) installs a hand-rolled <code>_FakeUndos</code> with no <code>areEnabled</code> &mdash; so it proves the undo call was <em>made</em>, never that an undo entry exists or that one Ctrl+Z reverses it. Detail and the replacement grade in &sect;6.1.</p>
+</div>
+
+<p><strong>Order of operations follows from that split.</strong> Everything ungated and headless-testable is cheap and unblocks the verification loop (&sect;9 Band A). Everything the crucible found wrong on the apply path is correctness debt that must land before anyone trusts an apply result (Band B). The card itself cannot move until a producer exists, and the producer is the one item that can re-arm a live freeze (Band D).</p>
+</section>
+
+<section id="s2">
+<h2><span class="num">02</span><span>What already exists</span></h2>
+<p class="subhead">Lead finding: three of the things this wave was scoped to build already exist and are unwired. That is still the cheapest win on the board.</p>
+
+<div class="rev r-held">
+  <span class="rl">Held &mdash; this section was attacked hardest and audited clean</span>
+  <p>A wrong "already exists" here means skipped work, so the anchor-audit lens opened every primitive this section claims is built. <strong>Zero false existence claims.</strong> <code>GateDecision.MODIFIED</code>, <code>decide(modified_changes=)</code> at 416-455, <code>decide_batch</code> at 488-517, <code>approve_all</code>/<code>reject_all</code> at 519-535, the four unused <code>GateProposal</code> dict fields, <code>Catalog.has_type</code> at 183-185, <code>bridge_adapter.py:153</code> and <code>:361</code> &mdash; each verbatim at the cited line. The negative claims held too: zero <code>sequence_id</code> anywhere under <code>python/synapse/panel/</code>. One defect found, in the &sect;2.3 enumeration, corrected below.</p>
+</div>
+
+<h3>2.1 &nbsp;The honest accounting of v5.68.0 "proposal controls"</h3>
+<p>Commit <code>8c23fccc</code>, 41 files. Only <strong>two</strong> touch <code>python/synapse/panel/</code>, and neither touches the consent card.</p>
+
+<div class="tw"><table>
+<thead><tr><th>What shipped</th><th>Anchor</th><th>What it actually bought</th></tr></thead>
+<tbody>
+<tr><td><code>synapse_instantiate_graph</code> &rarr; <code>build_from_manifest</code> operation row</td><td><span class="anchor">panel/bridge_adapter.py:153</span></td><td>Closes a real hole: before this, the tool fell through <code>_TOOL_TO_OPERATION.get(tool_name, "set_parameter")</code> (<span class="anchor">bridge_adapter.py:361</span>) &rarr; gate <strong>inform</strong> on the /mcp bridge path. Now <strong>review</strong>.</td></tr>
+<tr><td>New <code>proposal</code> worker mode</td><td><span class="anchor">panel/worker_policy.py:51-58, 162-180</span></td><td>Registered reads + the declared recipe-proposal tool + declared knowledge groups. Everything else denied, <em>"graph application belongs to the reviewed host path"</em> (<span class="anchor">worker_policy.py:178-179</span>).</td></tr>
+<tr><td>~39 other files</td><td>installer/setup toolchain, <code>host/graph_builder.py</code>, <code>host/graph_oracle.py</code>, <code>host/existence_adapter.py</code>, per-build graph-truth fixtures 22.0.400 / 22.0.417</td><td>Host plumbing and receipts. No UI.</td></tr>
+</tbody></table></div>
+
+<p><strong>So: "proposal controls" was a worker-policy and host-gate change, not a consent-surface change.</strong> The C1 card is exactly as it was.</p>
+<p>It also means the brief's ESTABLISHED FACT &mdash; <em>"<code>synapse_instantiate_graph</code> has no operation row"</em> &mdash; <strong>is stale by one commit</strong>. The row exists at HEAD.</p>
+
+<h3>2.2 &nbsp;The approval primitives that already exist and are unused</h3>
+<div class="tw"><table>
+<thead><tr><th>Primitive</th><th>Anchor</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>GateDecision.MODIFIED</code> &mdash; "Approved with changes"</td><td><span class="anchor">core/gates.py:47</span></td><td>Enum value exists</td></tr>
+<tr><td><code>HumanGate.decide(&hellip;, modified_changes=&hellip;)</code> &mdash; writes <code>proposal.modified_changes</code>, routes through audit at <code>GATE_APPROVAL</code> level</td><td><span class="anchor">core/gates.py:416-455</span></td><td><strong>The consuming half of "Edit" is fully built.</strong> Panel produces nothing into it.</td></tr>
+<tr><td><code>HumanGate.decide_batch(sequence_id, decisions, user_id)</code></td><td><span class="anchor">core/gates.py:488-517</span></td><td><strong>"Apply-all" exists as a core primitive.</strong></td></tr>
+<tr><td><code>HumanGate.approve_all(&hellip;)</code> / <code>reject_all</code></td><td><span class="anchor">core/gates.py:519-535</span></td><td>Same. Zero panel references; <code>gate_widget.py</code> has no <code>sequence_id</code> at all.</td></tr>
+<tr><td><code>GateProposal.proposed_changes</code> / <code>preview_data</code> / <code>rollback_data</code> / <code>modified_changes</code></td><td><span class="anchor">core/gates.py:52-117</span></td><td>Four dict fields already on the wire, dropped on the floor by the card</td></tr>
+</tbody></table></div>
+
+<h3>2.3 &nbsp;The per-build vocabulary that GraphValidator does not read</h3>
+<p><code>python/synapse/validation/catalog.py</code> &mdash; pure-Python, zero-<code>hou</code>, per-build, env-overridable, degrade-safe node-schema lookup (W5-PARMGATE target 2):</p>
+<ul>
+<li><code>Catalog.has_type(category, node_type) -&gt; bool</code> &mdash; <span class="anchor">validation/catalog.py:183-185</span></li>
+<li><code>Catalog.parms(category, node_type) -&gt; frozenset[str] | None</code> &mdash; <span class="anchor">validation/catalog.py:171-181</span></li>
+<li><code>Catalog.signature(&hellip;) -&gt; list[dict] | None</code> &mdash; <span class="anchor">validation/catalog.py:154-169</span></li>
+<li>module-level <code>parms()</code> / <code>signature()</code> (<span class="anchor">validation/catalog.py:210-217</span>), <code>default_catalog()</code> (<span class="anchor">:192-201</span>)</li>
+<li><code>None</code> means <strong>"no authority"</strong>, never a false reject (<span class="anchor">validation/catalog.py:20-24</span>)</li>
+</ul>
+
+<p>Backed by <code>rag/catalog/h22.0.400/</code> &mdash; <strong>19 category files</strong>, <strong>7,862 node types</strong>, <code>total_probe_errors: 0</code>, per-file blake2b.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; the enumeration dropped a row, and the manifest is off by one</span>
+  <p>The draft said "18 categories" and listed 18 rows summing to <strong>7,412</strong> against a stated total of 7,862 &mdash; a <strong>450</strong>-entry hole exactly equal to <code>Data.json</code>, which was omitted. The total and the manifest's own <code>category_count</code> field are both right; the <em>directory holds 19 category files</em>, and the manifest under-reports by one.</p>
+  <p><strong>Producer</strong> (re-run this pass): <code>python -c</code> summing <code>_manifest.json["files"][*]["count"]</code> &rarr; <code>category_count field: 18 &middot; n files keys: 19 &middot; TOTAL 7862 &middot; probe errors 0</code>.</p>
+  <p><strong>Why it points the wrong way:</strong> &sect;5.2 warns that catalog-<code>None</code> must mean "no authority," never "does not exist." A builder scoping coverage from the draft's table would treat <code>Data</code> as uncatalogued when the catalog holds 450 Data types &mdash; manufacturing precisely the false-<code>None</code> path &sect;5.2 exists to prevent. <strong>W1 must derive coverage from <code>files.keys()</code> or the directory glob, never from a hand-copied table.</strong></p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Category file</th><th class="num">Types</th><th>Category file</th><th class="num">Types</th></tr></thead>
+<tbody>
+<tr><td><code>apex_callbacks.json</code></td><td class="num">2,286</td><td><code>Cop2.json</code></td><td class="num">169</td></tr>
+<tr><td><code>Sop.json</code></td><td class="num">1,690</td><td><code>Chop.json</code></td><td class="num">149</td></tr>
+<tr><td><code>Vop.json</code></td><td class="num">1,305</td><td><code>Driver.json</code></td><td class="num">90</td></tr>
+<tr><td><code>Dop.json</code></td><td class="num">505</td><td><code>VopNet.json</code></td><td class="num">17</td></tr>
+<tr><td><strong><code>Data.json</code></strong> <span class="badge b-warn">restored</span></td><td class="num"><strong>450</strong></td><td><code>CopNet.json</code></td><td class="num">3</td></tr>
+<tr><td><code>Cop.json</code></td><td class="num">385</td><td><code>TopNet.json</code></td><td class="num">2</td></tr>
+<tr><td><code>Lop.json</code></td><td class="num">222</td><td><code>ChopNet.json</code></td><td class="num">1</td></tr>
+<tr><td><code>Shop.json</code></td><td class="num">219</td><td><code>Director.json</code></td><td class="num">0</td></tr>
+<tr><td><strong><code>Object.json</code></strong></td><td class="num"><strong>186</strong></td><td><code>Manager.json</code></td><td class="num">0</td></tr>
+<tr><td><code>Top.json</code></td><td class="num">183</td><td><strong>TOTAL &mdash; 19 files</strong></td><td class="num"><strong>7,862</strong></td></tr>
+</tbody></table></div>
+
+<p>Each entry carries <code>parms</code> (name-bearing), plus <code>min_inputs</code> / <code>max_inputs</code> / <code>max_outputs</code> <em>(producer: <code>json.load('rag/catalog/h22.0.400/Object.json')</code>, entry <code>agentcam</code> &rarr; 47 parms, keys <code>['deprecated','is_generator','is_manager','label','max_inputs','max_outputs','min_inputs','parms']</code>, file-level <code>"category": "Object"</code>)</em>.</p>
+
+<p><strong>That is node-type existence, parameter existence, and wiring arity &mdash; the exact three things P1/P2/P3 need &mdash; already on disk, per build, pure Python.</strong></p>
+
+<div class="rev r-new">
+  <span class="rl">New &mdash; the arity fields matter more than the draft realised</span>
+  <p>Closing <strong>U5</strong> this pass (&sect;11) showed <code>ConnectivityOracle</code> <strong>also</strong> hard-imports <code>hou</code> at module scope &mdash; <span class="anchor">host/graph_oracle.py:17</span>, under a docstring that opens <em>"Connectivity checks through live hou introspection."</em> So a catalog-backed <em>existence</em> oracle alone leaves the validator still <code>hou</code>-bound, and W1 as drafted would have half-delivered its headline benefit.</p>
+  <p>But the catalog already carries <code>min_inputs</code>/<code>max_inputs</code>/<code>max_outputs</code> per entry &mdash; <strong>one file can back both oracles</strong>, and only then does the whole validator go headless. W1 gains a sibling adapter: roughly 1.6&times; the cost, roughly 2&times; the value, and the difference between "existence is testable headless" and "validation is testable headless."</p>
+</div>
+
+<p>Already consumed by the recipes subsystem: <span class="anchor">recipes/spec.py:65,73</span> reads <code>rag/catalog/h22.0.400/Lop.json</code>; <span class="anchor">recipes/contracts.py:177</span> carries a <code>catalog_digest</code> field pinning types. <strong>Not consumed by <code>GraphValidator</code>.</strong></p>
+
+<h3>2.4 &nbsp;The rest of the standing surface</h3>
+<div class="tw"><table>
+<thead><tr><th>Thing</th><th>Anchor</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td><code>_ProposalCard</code> &mdash; 3-band card (header: level badge + op + agent; body: flat description; footer: countdown + verbs)</td><td><span class="anchor">panel/gate_widget.py:169-359</span></td><td>686-line file (<code>wc -l</code>)</td></tr>
+<tr><td><code>GateWidget</code> &mdash; <code>proposal_id &rarr; card</code> dict, own fold or lent to chat's consent slot (BC-6a/6b)</td><td><span class="anchor">panel/gate_widget.py:362-560</span></td><td>INFORM silently dropped at <span class="anchor">:545-546</span></td></tr>
+<tr><td>The one host call every approval route must reach</td><td><span class="anchor">gate_widget.py:586</span> (<code>_on_approve</code>), <span class="anchor">:616</span> (<code>_on_reject</code>)</td><td><code>HumanGate.get_instance().decide(proposal_id, GateDecision.APPROVED|REJECTED, "panel_artist")</code></td></tr>
+<tr><td>RULING 18 honesty: a decision that never reached the gate renders <strong>NOT RECORDED</strong> and stays enabled</td><td><span class="anchor">gate_widget.py:336-345</span> (<code>mark_gate_unreachable</code>), called <span class="anchor">:591</span>, <span class="anchor">:621</span></td><td>Already refuses to report false success</td></tr>
+<tr><td>APPLY: one undo group wrapping create &rarr; set parms &rarr; connect &rarr; read-back</td><td><span class="anchor">host/graph_builder.py:126</span>, body <span class="anchor">:131-159</span></td><td>287 lines (<code>wc -l</code>). <strong>Grade downgraded &mdash; &sect;6.1.</strong></td></tr>
+<tr><td>APPLY: main-thread dispatch</td><td><span class="anchor">server/handlers_graph_synth.py:93</span> (<code>run_on_main</code>)</td><td>93 lines. <strong>Not one dispatch &mdash; &sect;6.2.</strong></td></tr>
+<tr><td>TOCTOU re-validation before any mutation, zero-mutation on refusal</td><td><span class="anchor">graph_builder.py:89-115</span></td><td>Never enters the undo group</td></tr>
+<tr><td>Tier-0 provenance on every mutating command</td><td><span class="anchor">core/floor_gate.py:297-340</span> via <code>CommandHandlerRegistry.invoke()</code> at <span class="anchor">server/handlers.py:404</span></td><td><strong>Fires for real</strong> &mdash; 57 <code>instantiate_graph</code> records on disk</td></tr>
+<tr><td>Graph-truth receipts, two builds</td><td><code>harness/notes/graph_truth_22.0.400.json</code>, <code>..._22.0.417.json</code></td><td>48/48 symbol presence PASS + a real multi-node build</td></tr>
+<tr><td><code>NodeKind.EXISTING</code></td><td><span class="anchor">cognitive/graph_proposal.py:13-16</span></td><td>First-class today</td></tr>
+<tr><td>Per-build connectivity + LOP catalogs, <strong>H22 present</strong></td><td><code>cognitive/tools/data/connectivity_22.json</code>, <code>lop_solaris_knowledge_22.json</code></td><td>Closes the C2 probe's open "is connectivity_22 stale?" &mdash; it exists</td></tr>
+</tbody></table></div>
+</section>

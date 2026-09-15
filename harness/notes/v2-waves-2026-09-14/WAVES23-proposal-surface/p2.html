@@ -1,0 +1,207 @@
+<section id="s3">
+<h2><span class="num">03</span><span>C1 &mdash; the card</span></h2>
+<p class="subhead">A working steering wheel bolted to a car whose engine was removed on purpose. The removal reason is written down, and it is load-bearing.</p>
+
+<h3>3.1 &nbsp;What renders today</h3>
+<p>One <code>GateProposal</code> &rarr; one <code>c.Card</code> with three bands:</p>
+<ul>
+<li><strong>header</strong> &mdash; level badge, operation name (mono), agent id &middot; <span class="anchor">gate_widget.py:214-228</span></li>
+<li><strong>body</strong> &mdash; the single <code>description</code> string, word-wrapped; plus one fixed line <em>"Arbitrary code execution"</em> when level is <code>critical</code> &middot; <span class="anchor">gate_widget.py:230-244</span></li>
+<li><strong>footer</strong> &mdash; countdown (approve/critical) + verbs &middot; <span class="anchor">gate_widget.py:246-305</span></li>
+</ul>
+<p>Verbs: REVIEW gets one &mdash; <code>&larr; REVERT</code> (rejects to the ledger <em>and</em> asks the panel to undo). APPROVE/CRITICAL get REJECT + APPROVE, with CRITICAL's APPROVE behind a confirm dialog.</p>
+
+<p><strong>There is no hunk concept anywhere in the panel.</strong> <code>hunk</code> has <strong>zero word-boundary hits</strong> under <code>python/synapse/panel</code>.</p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; grep wording</span>
+  <p>The draft said "the literal string <code>hunk</code> has zero hits," which is false as literally worded: <code>stream_chunk</code> and the QSS <code>::chunk</code> pseudo-element both contain those four characters. The true statement is <strong>zero <code>grep -w</code> hits</strong>. The conclusion is unaffected &mdash; no hunk concept exists in the panel &mdash; but the sentence now says what was actually run.</p>
+</div>
+
+<h3>3.2 &nbsp;What a hunk list requires</h3>
+<div class="tw"><table>
+<thead><tr><th>Need</th><th>Cheapest carrier that already exists</th><th>Gap</th></tr></thead>
+<tbody>
+<tr><td>Hunk data on the wire</td><td><code>GateProposal.proposed_changes</code> / <code>preview_data</code> (<span class="anchor">core/gates.py:52-117</span>, non-frozen dicts)</td><td>Nothing populates or reads them</td></tr>
+<tr><td>Per-hunk verb rows</td><td>new rows in the body band</td><td>Card emits exactly one decision for the whole proposal</td></tr>
+<tr><td>Per-hunk decision routing</td><td><strong>three</strong> options, not two &mdash; see below</td><td>&mdash;</td></tr>
+<tr><td>Edit &rarr; <code>MODIFIED</code></td><td><code>decide(&hellip;, modified_changes=&hellip;)</code> (<span class="anchor">core/gates.py:416-455</span>) already persists + audits it</td><td>UI produces nothing</td></tr>
+<tr><td>Apply-all</td><td><code>approve_all</code> / <code>decide_batch</code> (<span class="anchor">core/gates.py:488-535</span>)</td><td>Unreachable from panel; <code>gate_widget.py</code> has no <code>sequence_id</code></td></tr>
+<tr><td>Typed chat approval</td><td>&mdash;</td><td>No chat-text&rarr;gate parser exists (grep on <code>synapse_panel.py</code>: zero hits)</td></tr>
+</tbody></table></div>
+
+<p><strong>On per-hunk routing &mdash; the third option matters.</strong> The probe framed this as a two-horn dilemma (extend <code>decide()</code> for sub-items, <em>or</em> one <code>GateProposal</code> per hunk which breaks the one-line case). There is a third: <strong>mint hunks as <code>GateProposal</code>s sharing one <code>sequence_id</code>, front them behind one compact card, settle them with <code>decide_batch</code> / <code>approve_all</code>.</strong> That is the class's own documented design intent (<span class="anchor">core/gates.py:196-226</span>: <em>"Supports per-sequence batch approval workflow"</em>). It needs <code>sequence_id</code> threading into the card model &mdash; real plumbing, but not invented semantics.</p>
+
+<h3>3.3 &nbsp;The host call every approval route must share</h3>
+<pre><b>HumanGate.get_instance().decide(proposal_id, GateDecision.&hellip;, "panel_artist")</b></pre>
+<p>Exactly two production call sites: <span class="anchor">gate_widget.py:586</span> and <span class="anchor">gate_widget.py:616</span>. (The only other <code>.decide(</code> hits are <span class="anchor">core/gates.py:225</span> &mdash; an inert docstring example &mdash; and <span class="anchor">core/gates.py:514</span> &mdash; <code>decide_batch</code> calling itself.) <strong>The choke point is genuinely narrow.</strong> Hunk verbs, Apply-all, and typed chat approval all converge there.</p>
+
+<h3>3.4 &nbsp;Can a one-hunk proposal render as one line?</h3>
+<p><strong>No.</strong> The only existing collapse is <span class="anchor">gate_widget.py:242-243</span> &mdash; hide the <em>body</em> band when there is no description and the level is not critical. Header and footer bands still build: badge, operation label, agent label, countdown label, verb buttons, each in its own layout. <strong>Every proposal today is a three-band ceremony at minimum.</strong> There is no compact code path to extend.</p>
+
+<h3>3.5 &nbsp;The blocker underneath all of it</h3>
+<p><code>GateWidget._register_gate_callbacks</code> (<span class="anchor">gate_widget.py:492-500</span>) subscribes to <code>HumanGate.get_instance().on_proposal</code> / <code>.on_decision</code>. The only production producer into <code>HumanGate</code> is <code>LosslessExecutionBridge._propose_gate</code> (<span class="anchor">shared/bridge.py:2452-2464</span>), reached only when <code>self._gate is not None</code>.</p>
+<p><code>_gate</code> is <code>None</code> on every production instance:</p>
+<ul>
+<li><code>get_process_bridge()</code> &mdash; the single production constructor &mdash; sets it (<span class="anchor">shared/bridge.py:2942-2943</span>)</li>
+<li><code>bridge_adapter.get_bridge()</code> re-asserts it (<span class="anchor">panel/bridge_adapter.py:230</span>) and installs <code>_panel_consent</code>, which returns <code>True</code> unconditionally (<span class="anchor">bridge_adapter.py:190-205</span>)</li>
+<li>pinned by <span class="anchor">tests/test_panel_consent_no_freeze.py:35</span> (<code>assert bridge._gate is None</code>)</li>
+</ul>
+
+<p><strong>The removal reason</strong> is documented at <span class="anchor">shared/bridge.py:2517-2540</span>: the APPROVE/CRITICAL poll is a blocking <code>time.sleep</code> bounded at 120s/300s, reachable on Houdini's main thread via <code>tool_executor &rarr; bridge_adapter.execute_through_bridge &rarr; bridge.execute</code>, and <em>"If this poll ever ran there it would be a self-deadlock, not merely a freeze&hellip; That exact freeze was confirmed live 2026-06-01."</em> The file names the fix and refuses to do it: <em>"The fix would be to make the panel's dispatch non-blocking (panel-side, not this file) &mdash; do NOT paper over it by shortening the timeout here."</em></p>
+
+<h3>3.6 &nbsp;Needs a live seat</h3>
+<ul>
+<li>The card actually appearing in the CHAT consent slot (BC-6a/6b lending) under a real proposal &mdash; <strong>GUI seat</strong>, no headless substitute (<code>hou.ui</code> is absent from the headless symbol table).</li>
+<li>Countdown behaviour and the CRITICAL confirm dialog under live Qt &mdash; <strong>GUI seat</strong>.</li>
+<li>A single-line compact card's real rendered height &mdash; <strong>GUI seat</strong> (offscreen hython can measure widget counts; visual weight needs eyes).</li>
+</ul>
+</section>
+
+<section id="s4">
+<h2><span class="num">04</span><span>C7 &mdash; scope, and what governs resume</span></h2>
+<p class="subhead">The vocabulary the brief uses does not exist in the code. What exists is a cooperative abort flag and a set of kill switches &mdash; one of which is misfiled.</p>
+
+<h3>4.1 &nbsp;"Takeover" is not in the codebase</h3>
+<p>Grep for <code>takeover|take over</code> across <code>python/synapse/</code> and <code>shared/</code>: <strong>zero hits.</strong></p>
+<p>The vocabulary is real, but it lives only in the design doc: <span class="anchor">INTENT.md:94-96</span> &mdash; <em>"<strong>Take over or Stop:</strong> immediately blocks further automated input and queued actions."</em></p>
+
+<p><strong>The real code vocabulary is:</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Code term</th><th>Anchor</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>Stop</code> / <code>_on_stop</code></td><td><span class="anchor">panel/synapse_panel.py:3469-3485</span></td><td>Cooperative abort at the next tool/iteration boundary; revokes model connections; sets <code>self._stopping</code></td></tr>
+<tr><td><code>"Stopping&hellip;"</code></td><td><span class="anchor">synapse_panel.py:159</span> (<code>_STOPPING_PHRASE</code>)</td><td>The honest in-between state &mdash; the one INTENT state with a code analogue</td></tr>
+<tr><td><code>_abort</code></td><td>checked at <span class="anchor">synapse_panel.py:3276</span></td><td>The worker's flag</td></tr>
+<tr><td><code>render_stop</code>, <code>emergency_halt</code>, <code>render_farm_cancel</code>, <code>render_processes</code></td><td><span class="anchor">handlers.py:227-241</span> &mdash; all four in <code>_READ_ONLY_COMMANDS</code></td><td>Per-subsystem kill switches, classified read-only <em>so they bypass the C5 mutation lock</em> &mdash; <em>"the difference between a kill switch and a decoration"</em></td></tr>
+<tr><td><code>tops_cancel_cook</code></td><td>registered <span class="anchor">handlers.py:693</span>, audited <span class="anchor">handlers.py:145</span> &mdash; <strong>NOT</strong> in <code>_READ_ONLY_COMMANDS</code></td><td>The same shape as the four above and classified the opposite way. See the correction below.</td></tr>
+</tbody></table></div>
+
+<div class="rev r-refuted">
+  <span class="rl">Refuted &mdash; and the refutation inverts the draft's own argument</span>
+  <p>The draft listed <strong>four</strong> names as <em>"all deliberately in <code>_READ_ONLY_COMMANDS</code>"</em> and included <code>tops_cancel_cook</code>. <strong><code>tops_cancel_cook</code> is not in the set.</strong> Producer, re-run this pass: <code>sed -n '204,245p' python/synapse/server/handlers.py</code> &rarr; the frozenset holds <code>render_processes</code>, <code>render_stop</code>, <code>emergency_halt</code>, <code>render_farm_cancel</code>; <code>grep -n tops_cancel_cook handlers.py</code> &rarr; exactly two hits, <code>:145</code> (<code>AuditCategory.PIPELINE</code>) and <code>:693</code> (<code>reg.register</code>). Neither is membership.</p>
+  <p><strong>The draft quoted <em>"the difference between a kill switch and a decoration"</em> as evidence the kill switches are correctly classified &mdash; and picked as its example the one kill switch that is an instance of the defect.</strong> Because <code>_mutating = cmd_type not in _READ_ONLY_COMMANDS</code> and <code>_serialize</code> is true off-main (<span class="anchor">handlers.py:509-520</span>), a mutating-classified <code>tops_cancel_cook</code> <strong>queues behind the very PDG cook it exists to cancel</strong>. A builder reading the draft concludes TOPS cancel is already safe and skips work that was never done.</p>
+  <p><strong>Consequence for &sect;9:</strong> this is not a caveat, it is a work item. It becomes <strong>W3</strong> &mdash; and it is a <em>stronger</em> instance than the draft's own W1, because the justification is already written in the tree verbatim (<span class="anchor">handlers.py:227-241</span>) and the operation is main-thread-independent in the same way <code>render_farm_cancel</code> is.</p>
+</div>
+
+<p><strong>There is no state that blocks further automated input distinct from aborting the loop.</strong> Stop and Take-over are one thing in code, and that thing is a cooperative flag.</p>
+
+<h3>4.2 &nbsp;Engagement state: code vs. document</h3>
+<div class="tw"><table>
+<thead><tr><th>INTENT.md &sect;3 field</th><th>In code?</th><th>Closest thing</th></tr></thead>
+<tbody>
+<tr><td>Identity</td><td><strong>No</strong></td><td>&mdash;</td></tr>
+<tr><td>Goal</td><td><strong>No</strong></td><td>&mdash;</td></tr>
+<tr><td>Capabilities</td><td><strong>Partial</strong></td><td><code>BoundConnection</code> (<span class="anchor">panel/connections.py:216-240</span>) with <code>.spec</code>, <code>.facts</code>, <code>.revoke()</code> &mdash; but this is a <strong>model-provider lease</strong> (endpoint/model), not a scene-capability lease</td></tr>
+<tr><td>Change boundary</td><td><strong>No</strong></td><td>Nothing scopes by asset/node/parameter/file anywhere</td></tr>
+<tr><td>Action scope</td><td><strong>Coarse only</strong></td><td><code>resolve_mode()</code> (<span class="anchor">worker_policy.py:82-103</span>) &mdash; 5 values, env-only</td></tr>
+<tr><td>Starting state</td><td><strong>No</strong></td><td><code>GraphProposal.scene_fingerprint</code> (<span class="anchor">graph_proposal.py:63</span>) is per-proposal, not per-engagement</td></tr>
+<tr><td>Limits</td><td><strong>No</strong></td><td>&mdash;</td></tr>
+<tr><td>Handoff</td><td><strong>No</strong></td><td>&mdash;</td></tr>
+</tbody></table></div>
+
+<p><strong>Control lifecycle</strong> (<span class="anchor">INTENT.md:82-93</span>, seven states): one has a code analogue (<code>Stopping</code>). One has a <em>structural</em> analogue &mdash; <code>HoudiniUnavailableError</code> (<span class="anchor">core/errors.py:100-109</span>) carries a reported reason when a required execution capability is unreachable, which is shaped like INTENT's <code>Unavailable</code>. <code>Disengaged</code> / <code>Engaged</code> / <code>Paused</code> / <code>Completed</code> / <code>Failed</code> have no representation.</p>
+
+<h3>4.3 &nbsp;What governs resume</h3>
+<p><strong>Nothing, and nothing could.</strong></p>
+<p><code>python/synapse/autonomy/driver.py</code> self-describes as supporting <em>"checkpoint/resume"</em> (<span class="anchor">driver.py:1-6</span>). Reality:</p>
+<ul>
+<li><code>_checkpoint(step, state)</code> (<span class="anchor">driver.py:532-542</span>) &mdash; called 3&times; (<span class="anchor">:176</span>, <span class="anchor">:221</span>, <span class="anchor">:270</span>), stores <strong>in-memory</strong>, comment says <em>"Phase 3 will persist to disk"</em></li>
+<li><code>_resume(checkpoint_id)</code> (<span class="anchor">driver.py:544-553</span>) &mdash; <strong>zero call sites</strong> (grep across <code>python/synapse/autonomy/</code>)</li>
+</ul>
+<p>So it is a write-only in-memory checkpoint store in a different subsystem (the offline render Plan/Validate/Execute/Evaluate loop, reachable via <span class="anchor">handlers_render.py:1641</span>). <strong>INTENT's rule <em>"Restart, reconnection, scene replacement, and model suggestions MUST NOT silently resume an engagement"</em> (<span class="anchor">INTENT.md:106-108</span>) is satisfied vacuously</strong> &mdash; nothing can resume, so nothing can silently resume. That is not compliance; it is absence.</p>
+<p><code>driver.py</code> also runs a <strong>second, unreconciled gate vocabulary</strong> &mdash; its own <code>Decision</code>/<code>GateLevel</code> from <code>.models</code>, with decision-logged <code>"Stopping: &hellip;"</code> strings at <span class="anchor">:211</span> and <span class="anchor">:234</span>, parallel to <code>shared.constants.OPERATION_GATES</code>. Two gate vocabularies, no bridge between them.</p>
+
+<h3>4.4 &nbsp;Where the five fields would live</h3>
+<p>There is <strong>no per-session container</strong> in the panel to hang them on. The candidates, ranked:</p>
+<ol>
+<li><strong><code>BoundConnection</code></strong> (<span class="anchor">connections.py:216-240</span>) &mdash; has <code>.revoke()</code>, is held in <code>self._permission_connections</code> (<span class="anchor">synapse_panel.py:561</span>), replaced wholesale per turn (<span class="anchor">synapse_panel.py:3073</span>: <code>self._permission_connections[:] = [connection]</code>), revoked on Stop (<span class="anchor">:3470</span>) and on destroy (<span class="anchor">:563</span>). <strong>This is the only revocable lease in the panel.</strong> It is per-<em>turn</em> and provider-shaped, not per-<em>engagement</em> and scene-shaped &mdash; but its lifecycle hooks (bind &rarr; revoke on stop &rarr; revoke on destroy) are exactly the hooks an engagement needs.</li>
+<li>A new module composing with <code>worker_policy.is_tool_allowed_for_worker</code> &mdash; but <code>resolve_mode()</code>'s only production caller passes no per-session argument (<span class="anchor">panel/tool_bridge.py:107-108</span>), so threading chat-set scope means changing that call site's signature.</li>
+</ol>
+<p><strong>Blocker:</strong> <code>resolve_mode()</code> is a pure function of env + a trusted <code>profile</code> parameter (<span class="anchor">worker_policy.py:82-103</span>). There is no tool, slash-command, or handler that lets an artist set goal / boundary / scope / limits from the conversation. Building "five fields settable from chat" means adding a <strong>new input surface</strong>, not repointing an existing one.</p>
+</section>
+
+<section id="s5">
+<h2><span class="num">05</span><span>C2 &mdash; vocabulary and the contract</span></h2>
+<p class="subhead">The premise is false for existence and true only for LOP wiring. The fix is smaller than the probe sized it &mdash; and now covers twice as much ground.</p>
+
+<h3>5.1 &nbsp;Does GraphValidator load a per-build catalog as vocabulary?</h3>
+<p><strong>For node-type and parameter EXISTENCE &mdash; the checks that actually reject hallucinated nodes &mdash; no. It calls live <code>hou</code>, and there is no fallback.</strong></p>
+<p><code>HouExistenceOracle</code> (<span class="anchor">host/existence_adapter.py:19-36</span>) hard-imports <code>hou</code> at module scope (<span class="anchor">existence_adapter.py:16</span>) and calls <code>hou.nodeTypeCategories()</code> / <code>hou.nodeType()</code> / <code>nt.parmTemplateGroup().find()</code>. Grep confirms it is the <strong>only</strong> <code>IExistenceOracle</code> implementation in <code>python/synapse</code>, and it is wired unconditionally at both production construction sites: <span class="anchor">host/graph_synth_runtime.py:62</span> and <span class="anchor">host/graph_builder.py:65</span>, each <code>GraphValidator(HouExistenceOracle(), ConnectivityOracle())</code>.</p>
+
+<p>Two <em>other</em> checks <strong>do</strong> load per-build catalogs, additively:</p>
+<div class="tw"><table>
+<thead><tr><th>Check</th><th>Catalog</th><th>Load site</th><th>Applied</th><th>Scope</th></tr></thead>
+<tbody>
+<tr><td>U.1 slot/arity (P3e)</td><td><code>core.wiring.load_connectivity_catalog</code> &rarr; <code>cognitive/tools/data/connectivity_22.json</code></td><td><span class="anchor">graph_validator.py:58-59</span></td><td><code>_catalog_slot_check</code>, <span class="anchor">graph_validator.py:244-294</span></td><td>Wiring labels only</td></tr>
+<tr><td>U.5 LOP ordering</td><td><code>core.lop_knowledge.load_lop_catalog</code> &rarr; <code>lop_solaris_knowledge_22.json</code></td><td><span class="anchor">graph_validator.py:61-62</span></td><td><code>_lop_ordering_check</code>, <span class="anchor">graph_validator.py:297-401</span></td><td>Hard-gated to <code>network_type.upper() == "SOLARIS"</code> at <span class="anchor">:315</span></td></tr>
+</tbody></table></div>
+<p>Both are <code>strict=False</code> &rarr; unusable catalog yields <code>None</code> &rarr; the check skips (<span class="anchor">core/wiring.py:92-103</span>).</p>
+<p><strong>So the C2 premise is false for existence and true only for LOP wiring/ordering. This blocks C2 and C4 both, and it leads the section for that reason.</strong></p>
+
+<h3>5.2 &nbsp;But the fix is an adapter, not a subsystem</h3>
+<p>The probe sized a catalog-backed oracle at <strong>M</strong> on the belief it was new work. It is not. <code>python/synapse/validation/catalog.py</code> already provides the two exact lookups an <code>IExistenceOracle</code> needs (&sect;2.3), pure Python, per build, degrade-safe, with <code>rag/catalog/h22.0.400/</code> holding 7,862 types and their parms on disk.</p>
+<p><strong>A catalog-backed <code>IExistenceOracle</code> is a ~30-line adapter.</strong> Downgraded from M to <strong>S</strong>.</p>
+
+<div class="rev r-new">
+  <span class="rl">New &mdash; U5 closed, and the fix grows a second half</span>
+  <p><code>ConnectivityOracle</code> is <em>also</em> <code>hou</code>-bound at module scope (<span class="anchor">host/graph_oracle.py:17</span>). An existence adapter alone therefore leaves <code>GraphValidator</code> un-constructible headless, because both oracles are passed to the same constructor. The same catalog entries already carry <code>min_inputs</code> / <code>max_inputs</code> / <code>max_outputs</code>, so a <code>CatalogConnectivityOracle</code> is the same shape of adapter over the same file.</p>
+  <p><strong>W1 is therefore two adapters, not one:</strong> <strong>S&ndash;M</strong>, not S. The value scales with it &mdash; this is the difference between "the existence check is testable headless" and "the validator is testable headless," and only the second one retires the seat requirement from the verification loop.</p>
+</div>
+
+<p>The one real design decision: <code>None</code> from the catalog means <em>"no authority,"</em> not <em>"does not exist."</em> An oracle that maps <code>None &rarr; False</code> false-rejects; <code>None &rarr; True</code> false-accepts. <strong>The correct composition is: catalog answers when it has authority, live <code>hou</code> answers when present, and a proposal validated with neither is surfaced as unverified rather than silently VALID.</strong></p>
+
+<div class="rev r-corrected">
+  <span class="rl">Corrected &mdash; "unverified" must not mean a new enum value in the first cut</span>
+  <p>The draft's phrasing (<em>"stamped UNVERIFIED rather than VALID"</em>) smuggles a gated change into an ungated wave: <code>ValidationStatus</code> is two-valued at HEAD &mdash; <code>class ValidationStatus(str, Enum): VALID / INVALID</code>, <span class="anchor">cognitive/graph_proposal.py:68-70</span> &mdash; and <code>graph_proposal.py</code> is a designated gated surface (&sect;8). A builder implementing the draft's sentence lands in the gated contract file and stalls on an authorization the row never mentioned.</p>
+  <p><strong>Route the first cut through <code>ValidationReport.advisories</code> instead</strong> &mdash; the field already exists (<span class="anchor">graph_proposal.py:84</span>) and is <em>already serialized out to the caller</em> (<span class="anchor">cognitive/tools/propose_graph.py:96</span>), so an unverified proposal reaches a human today with no contract edit. <code>ValidationStatus.UNVERIFIED</code> stays queued for the gated contract wave, where it belongs.</p>
+</div>
+
+<h3>5.3 &nbsp;Can the contract express SOP and OBJ?</h3>
+<p><strong>SOP: yes, fully, today.</strong></p>
+<ul>
+<li><code>GraphProposal.network_type</code> comment lists <code>"SOP"</code> (<span class="anchor">graph_proposal.py:54</span>)</li>
+<li><code>ProposedNode.node_category</code> documents <code>"Sop"</code> (<span class="anchor">graph_proposal.py:28</span>)</li>
+<li><code>_NETWORK_CATEGORIES</code> maps <code>"SOP": {"Sop"}</code> (<span class="anchor">graph_validator.py:28-35</span>)</li>
+</ul>
+
+<p><strong>OBJ: no &mdash; and it fails <em>silently</em>, which is worse than rejecting.</strong></p>
+<p><code>_NETWORK_CATEGORIES</code> has six keys &mdash; <code>SOP</code>, <code>VOP</code>, <code>MAT</code>, <code>DOP</code>, <code>COP</code>, <code>SOLARIS</code> (<span class="anchor">graph_validator.py:28-35</span>). No <code>OBJ</code>. The P4 consistency check does <code>_NETWORK_CATEGORIES.get(p.network_type.upper())</code> (<span class="anchor">graph_validator.py:438-448</span>); for <code>"OBJ"</code> that returns <code>None</code> &rarr; <code>if allowed:</code> is False &rarr; <strong>the category/network-type check is skipped entirely.</strong> An OBJ proposal is neither validated nor rejected. Permissive by omission.</p>
+
+<p><strong>The smallest correct change is one dict row</strong>, and &mdash; critically &mdash; <strong>it is not in the contract file</strong>:</p>
+<pre><span class="c"># graph_validator.py:28-35</span>
+<b>"OBJ": {"Object"},</b></pre>
+<p>The category string is <strong><code>"Object"</code></strong>, verified: <code>rag/catalog/h22.0.400/Object.json</code> carries <code>"category": "Object"</code> and 186 types, and that manifest was dumped from a live 22.0.400 probe keyed by <code>hou.NodeType.category().name()</code> (<span class="anchor">validation/catalog.py:14-16</span>). <strong>This closes the C2 probe's NEEDS-SEAT question without a seat</strong> &mdash; evidence is a live-probe-generated receipt, not a live call made this session.</p>
+<p>The <code>network_type</code> docstring at <span class="anchor">graph_proposal.py:54</span> would also want <code>OBJ</code> added &mdash; but that is a <strong>comment</strong>, not a constraint. No executable change to the contract file is required for OBJ.</p>
+
+<div class="rev r-held">
+  <span class="rl">Held &mdash; the silent-permissive finding survived a caller hunt</span>
+  <p><code>_NETWORK_CATEGORIES</code> has exactly one consumer, the P4 check at <span class="anchor">graph_validator.py:438</span>. The one-row change is genuinely one row, and the test that pins it (<em>an OBJ proposal carrying <code>node_category="Sop"</code> must error</em>) fails today by <strong>passing</strong> &mdash; which is the point.</p>
+</div>
+
+<h3>5.4 &nbsp;Does NodeKind carry EXISTING?</h3>
+<p><strong>Yes.</strong> <code>NodeKind.EXISTING = "existing"</code> (<span class="anchor">graph_proposal.py:13-16</span>), first-class, with <code>scene_path</code> required iff EXISTING (<span class="anchor">:32</span>), <code>parameter_overrides</code> required empty iff EXISTING (<span class="anchor">:31</span>), and edges permitted to reference existing nodes on either side &mdash; <strong>Amendment 3, <span class="anchor">graph_proposal.py:42-43</span></strong> <em>(citation corrected from <code>:44-46</code>, which is the U.1 <code>target_input_label</code> comment)</em>. Resolved through <code>IConnectivityOracle.resolve_node_type</code> in P3/P5 (<span class="anchor">graph_validator.py:131-142</span>, <span class="anchor">:484-536</span>).</p>
+
+<div class="rev r-new">
+  <span class="rl">New &mdash; Amendment 3 has a rollback consequence nobody costed</span>
+  <p>Because an existing node may sit on <strong>either</strong> side of an edge, a proposal can wire two pre-existing nodes together with <em>zero</em> NEW nodes involved. &sect;6's FAILED path only destroys <code>created.values()</code>. That wire is never unwound, while the failure message asserts zero net mutation. Full treatment in &sect;6.6 (L3-6); it is folded into W6.</p>
+</div>
+
+<h3>5.5 &nbsp;Where per-hunk expected effects and scene identity would go</h3>
+<p><strong>Nowhere today.</strong> Neither <code>ProposedNode</code> nor <code>ProposedEdge</code> (<span class="anchor">graph_proposal.py:24-48</span>) carries an expected-effect field or a hunk grouping id. All intent and identity is <strong>whole-proposal</strong>:</p>
+<div class="tw"><table>
+<thead><tr><th>Field</th><th>Anchor</th><th>Granularity</th></tr></thead>
+<tbody>
+<tr><td><code>natural_language_intent</code></td><td><span class="anchor">graph_proposal.py:58</span></td><td>One string for the entire proposal</td></tr>
+<tr><td><code>scene_fingerprint</code></td><td><span class="anchor">graph_proposal.py:63</span></td><td>Whole-proposal staleness hash, set at validate-time</td></tr>
+<tr><td><code>houdini_version_stamp</code></td><td><span class="anchor">graph_proposal.py:61</span></td><td>Whole proposal</td></tr>
+<tr><td><code>scout_snapshot_id</code></td><td><span class="anchor">graph_proposal.py:62</span></td><td>Whole proposal</td></tr>
+</tbody></table></div>
+
+<p><strong>C1's hunk card has nothing to bind to at the data-contract layer.</strong> Two placements, with different costs:</p>
+<ol>
+<li><strong>New fields on <code>ProposedNode</code>/<code>ProposedEdge</code></strong> (<code>expected_effect: str</code>, <code>hunk_id: str</code>) &mdash; the natural home, <strong>requires editing <code>graph_proposal.py</code></strong> &rarr; gated wave (&sect;8).</li>
+<li><strong>Carry hunks in <code>GateProposal.proposed_changes</code></strong> (<span class="anchor">core/gates.py:52-117</span>) as a list of <code>{change, expected_effect}</code> &mdash; <strong>touches no gated file</strong>, and the field already exists unused. Costs a translation layer between the two vocabularies.</li>
+</ol>
+<p>Option 2 is how C1 ships without a contract wave. Option 1 is where it belongs long-term.</p>
+</section>

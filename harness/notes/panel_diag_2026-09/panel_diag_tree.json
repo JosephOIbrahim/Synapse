@@ -1,0 +1,294 @@
+{
+ "main_found": true,
+ "walk_total": 22,
+ "walk": [
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    231,
+    129,
+    3027,
+    2664
+   ],
+   "visible": true,
+   "path": "/main"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    3027,
+    2664
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper"
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    3027,
+    2664
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    27,
+    2450,
+    2996,
+    154
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    2996,
+    154
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper"
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    2996,
+    154
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    311,
+    9,
+    107,
+    65
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    107,
+    65
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper"
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    107,
+    65
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    550,
+    0,
+    1897,
+    96
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    1897,
+    96
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper"
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    1897,
+    96
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    2,
+    2608,
+    2568,
+    54
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    2568,
+    54
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper"
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    2568,
+    54
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    2570,
+    2635,
+    0,
+    0
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper"
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable"
+  },
+  {
+   "class": "SynapsePanel",
+   "name": "QT_Feel",
+   "geo": [
+    2065,
+    244,
+    960,
+    1073
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/QT_Feel"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_Window",
+   "geo": [
+    73,
+    391,
+    1917,
+    2053
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window"
+  },
+  {
+   "class": "QWidget",
+   "name": "RE_WindowDrawableWrapper",
+   "geo": [
+    0,
+    0,
+    1917,
+    2053
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper"
+  },
+  {
+   "class": "QOpenGLWidget",
+   "name": "RE_WindowDrawable",
+   "geo": [
+    0,
+    0,
+    1917,
+    2053
+   ],
+   "visible": true,
+   "path": "/main/RE_WindowDrawableWrapper/RE_WindowDrawable/RE_Window/RE_WindowDrawableWrapper/RE_WindowDrawable"
+  }
+ ],
+ "logish_widgets": [
+  {
+   "class": "QTextEdit",
+   "name": "DsInput",
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "visible": false
+  },
+  {
+   "class": "QDialogButtonBox",
+   "name": "",
+   "geo": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "visible": false
+  }
+ ]
+}
