@@ -22,6 +22,20 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.72.0 - One scale, one family, and fences that hold
+
+*Seven branches. The panel's type becomes one scale (11/12/15/19, the 10px size deleted and the
+readable floor raised to match instead of sitting above fifteen sites that ignored it); actions
+become one colour family with weight carrying emphasis; the consent card prints the authored
+phrase it already owned rather than an enum tag over it. On the repository side a capability
+fence lands: `VERSION`, `harness/state/**` and `harness/verify/*_baseline.json` refuse a commit
+without `SYNAPSE_GATE_C=1`, because deny rules match a command's form and `python -c` walks
+around them; every cycle now diffs what it really changed against that set in both `run.ts` and
+`orchestrate.ps1`. Measured alone, in order: stock {STOCK}; seat {SEAT} (six, none new, named in
+`harness/notes/release-5.71.0/SEAT_REDS.md`); installer units {INST}; qualification {QUAL}. Known
+and stated: the commit fence cannot see `git cherry-pick` or `git revert` - git runs no hook
+there - so that hole is closed at push instead. Full notes: `docs/releases/v5.72.0.md`.*
+
 ## v5.71.0 — The farm, the receipt, and a bridge that says no
 
 *2026-09-15.* Published as **Latest** with a qualified Windows Setup ({QUAL}). Ten
