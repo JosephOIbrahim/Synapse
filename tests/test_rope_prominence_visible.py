@@ -152,7 +152,11 @@ def test_stop_defines_hover_pressed_and_disabled():
     and hidden until work is in flight -- that state must exist)."""
     qss = stylesheet()
     for state, token, label in (
-        (":hover", t.WARM, "WARM"),
+        # Hover moved off WARM when rest took it (crit 2026-09-15 rank 5
+        # close-out): WARM == rest made hover invisible. WARM_HOVER is the
+        # same ramp's hover stop, so the pin is carried, not weakened --
+        # still one exact token, still the warm family, still no new hue.
+        (":hover", t.WARM_HOVER, "WARM_HOVER"),
         (":pressed", t.WARM_PRESS, "WARM_PRESS"),
     ):
         rule = re.search(r'QPushButton#DsStop' + state + r'\s*\{[^{}]*\}', qss)
@@ -172,7 +176,7 @@ def test_stop_paints_only_sanctioned_tokens():
     """L5-20: no new hex -- every hex in the DsStop rules is one of the
     tokens the task sanctions (all pre-existing in tokens.py)."""
     sanctioned = (
-        _hexes(t.WARM) | _hexes(t.WARM_PRESS)
+        _hexes(t.WARM) | _hexes(t.WARM_HOVER) | _hexes(t.WARM_PRESS)
         | _hexes(t.TEXT_ON_ACCENT) | _hexes(t.DISABLED_BG) | _hexes(t.TEXT_DISABLED)
     )
     rogue = _hexes("\n".join(_dsstop_rules(stylesheet()))) - sanctioned

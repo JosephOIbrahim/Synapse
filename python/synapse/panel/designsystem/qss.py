@@ -111,7 +111,7 @@ QPushButton#DsStop {{
     padding: {t.SPACE_SM}px {t.SPACE_MD}px;
     font-size: {s(t.SIZE_UI)}px; font-weight: {t.WEIGHT_SEMIBOLD};
 }}
-QPushButton#DsStop:hover   {{ background: {t.WARM}; }}
+QPushButton#DsStop:hover   {{ background: {t.WARM_HOVER}; }}
 QPushButton#DsStop:pressed {{ background: {t.WARM_PRESS}; }}
 QPushButton#DsStop:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
 
