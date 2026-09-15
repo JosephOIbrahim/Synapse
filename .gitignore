@@ -238,3 +238,6 @@ harness/notes/h22/probes/
 _temp_*.json
 harness/**/*.err
 harness/battleplan/board*.html
+
+# harness run artifacts (XML dumps, .hiplc scenes, PNGs) - evidence lives in harness/notes summaries
+harness/*/artifacts/
