@@ -280,14 +280,28 @@ _DECLARED_QSS_AMENDMENTS = (
     ("READABILITY.md 2026-09-15 D3b", D3B_20260915_QSS_AMENDMENTS),
 )
 
-def _amend(original, amendments):
-    """Baseline + exactly the ruled deltas, each asserted to be live."""
-    for old, new in amendments:
-        assert original.count(old) == 1, (
-            "stale CRIT.md 2026-09-15 amendment - the baseline no longer "
-            "contains it exactly once: " + old
-        )
-        original = original.replace(old, new, 1)
+def _amend(original, amendments=None, label="CRIT.md 2026-09-15"):
+    """The baseline with declared deltas applied, each exactly once.
+
+    Two call shapes, both legitimate and both in use:
+      _amend(text)                       -> every tuple in _DECLARED_QSS_AMENDMENTS,
+                                            for the upstream QSS sheet
+      _amend(text, SOME_TUPLE)           -> one named tuple, for a different baseline
+                                            (face_work.py has its own, from #98)
+    The one-argument form carries the label into the staleness message so a stale
+    amendment says which document it came from.
+    """
+    if amendments is not None:
+        declared = ((label, amendments),)
+    else:
+        declared = _DECLARED_QSS_AMENDMENTS
+    for label, amendments in declared:
+        for old, new in amendments:
+            assert original.count(old) == 1, (
+                "stale " + label + " amendment - the baseline no longer "
+                "contains it exactly once: " + old
+            )
+            original = original.replace(old, new, 1)
     return original
 def _assert_upstream_qss_unchanged(prefix, original):
     original = _amend(original)
