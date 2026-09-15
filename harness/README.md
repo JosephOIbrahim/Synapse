@@ -195,3 +195,21 @@ Search the tree for `ADAPT`. The real ones, mostly in `checks.py`:
 8. **Guardrail anchors** — `server/scout_sources.json`, `server/authoring_domains.json`, and the provenance-gateway sentinel in `check_provenance_not_bypassed`.
 
 Until wired, those checks report `ok:false` (or `ok:null` for guardrails) with a reason — by design. Nothing here fakes a pass.
+
+## Git hooks — Gate C (`harness/githooks/`)
+
+Two versioned hooks, bound by `core.hooksPath`. This checkout already points there; a fresh clone binds with `git config core.hooksPath "$(git rev-parse --show-toplevel)/harness/githooks"`. Both fence by **capability**, not command form — a deny rule matches the shape of a command, and `git -C`, `python -c`, `Copy-Item` reach the same file by another shape (pre-push header, F1 2026-07-26).
+
+- **`pre-push`** — refuses a push to `master`/`main` unless `SYNAPSE_GATE_C=1` (the human merge gate), and on **every** ref refuses when any commit in the pushed range touches a protected path. Checked per commit, not as a net diff.
+- **`pre-commit`** — refuses a commit whose *staged* paths include `VERSION`, anything under `harness/state/`, or any `harness/verify/*_baseline.json` unless `SYNAPSE_GATE_C=1`. Closes FENCE-1 (write+commit half), FENCE-4, G2 (state-flip half) and R1 (commit half) from `harness/notes/harness-review-2026-09-15/REPORT.md`. Prints the offending path and the exact override; `git restore --staged <path>` carves the path out instead.
+
+Same variable, same meaning, one command at a time: `SYNAPSE_GATE_C=1 git commit ...` (sh) or `$env:SYNAPSE_GATE_C=1; git commit ...; Remove-Item Env:SYNAPSE_GATE_C` (PowerShell). Pinned by `tests/test_harness_githooks.py`.
+
+Known edges, stated on purpose:
+
+- `--no-verify` skips any pre-commit hook. Same posture as pre-push: this fences the accident and the unprompted agent, not a human who types the bypass out loud.
+- A `git merge` auto-commit runs `pre-merge-commit`, not `pre-commit`.
+- **`git cherry-pick` and `git revert` run no commit-half hook at all** — either verb lands a protected path with `pre-commit` silent. Ordinary porcelain, one command. That hole is closed in `pre-push`, which walks every commit in the pushed range, so the bytes cannot leave the machine ungated; a purely local history can still carry them.
+- A ref that is new to the remote is ranged as `<local> --not --remotes`. In a clone that has never fetched, that is the whole history — the check errs toward refusing.
+
+**The release ritual needs the override.** `harness/finalize.ps1` and `docs/RELEASE_CARD.md` step 13 commit `VERSION`; both now set `SYNAPSE_GATE_C=1` for that one command and check the exit code before tagging, because a refused bump commit followed by an unchecked `git tag` puts the tag on an un-bumped HEAD.
