@@ -205,6 +205,13 @@ CRIT_20260915_QSS_AMENDMENTS = (
     # comment already claimed. HOT_SOFT retires from the action family.
     ("    background: {t.HOT_SOFT}; color: {t.TEXT_ON_ACCENT};",
      "    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};"),
+    # rank 5 residual (2026-09-15 crit close-out): retiring HOT_SOFT left
+    # :hover painting the same WARM as rest, so hover feedback rode only on
+    # :pressed. Hover steps to WARM_HOVER - the WARM ramp's own hover stop
+    # (tokens.py:249), already the companion of the WARM_PRESS this rule pair
+    # uses - so feedback returns WITHOUT a second hue. One family, three stops.
+    ("QPushButton#DsStop:hover   {{ background: {t.WARM}; }}",
+     "QPushButton#DsStop:hover   {{ background: {t.WARM_HOVER}; }}"),
     # rank 5: tone="hot" carries no hue - TEXT_PRIMARY at the verb's own weight.
     ('QPushButton#DsVerb[tone="hot"]    {{ color: {t.HOT_SOFT}; }}',
      'QPushButton#DsVerb[tone="hot"]    {{ color: {t.TEXT_PRIMARY}; }}'),
