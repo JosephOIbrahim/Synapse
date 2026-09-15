@@ -171,7 +171,7 @@ class ProcessTree:
             pgid = self.process.pid
             try:
                 os.killpg(pgid, signal.SIGTERM)
-            except ProcessLookupError:
+            except (ProcessLookupError, PermissionError):  # ESRCH: drained; EPERM (macOS): not ours to signal -- nothing of ours left
                 pass
             deadline = time.monotonic() + timeout
             escalated = False
@@ -179,7 +179,7 @@ class ProcessTree:
                 self.process.poll()
                 try:
                     os.killpg(pgid, 0)
-                except ProcessLookupError:
+                except (ProcessLookupError, PermissionError):  # ESRCH: drained; EPERM (macOS): not ours to signal -- nothing of ours left
                     break
                 now = time.monotonic()
                 if now >= deadline:
@@ -187,7 +187,7 @@ class ProcessTree:
                 if not escalated and now >= deadline - timeout / 2:
                     try:
                         os.killpg(pgid, signal.SIGKILL)
-                    except ProcessLookupError:
+                    except (ProcessLookupError, PermissionError):  # ESRCH: drained; EPERM (macOS): not ours to signal -- nothing of ours left
                         break
                     escalated = True
                 time.sleep(0.02)
