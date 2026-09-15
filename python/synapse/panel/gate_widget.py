@@ -25,10 +25,25 @@ from synapse.panel.designsystem import fontload, qss
 logger = logging.getLogger(__name__)
 
 # bc-wave BC-6a (REVIEW.md F4): the level is never a hue. A consent card is a
-# DsCard in the panel's own vocabulary - the level is a `tag`, the decision is
-# a `tag`, the verbs are DsVerb type; the only warm note is HOT_SOFT through
-# status=BLOCKED (CRITICAL's tag, REJECT, a rejected / unrecorded decision)
-# and the only accent is APPROVE - the artist's next action.
+# DsCard in the panel's own vocabulary - the decision is a `tag`, the verbs are
+# DsVerb type.
+#
+# CRIT.md 2026-09-15, ranked change 2 (P6 + P1): the level is no longer a `tag`
+# either. The header band says the phrase the card already owned - GATE_LEVELS
+# "Heads up / Quick review / Approve? / Confirm" (tokens.py:624-627, authored
+# and until now zero-referenced) - set as a sans label-role title. The enum word
+# `_level.upper()` shipped "APPROVE" one band above a footer verb "APPROVE" that
+# meant something else; the phrase removes that double. The rhythm `tag` role
+# could not carry it: rhythm.py:62-78 forces mono + AllUppercase + 0.06em, so
+# "Approve?" would have shipped as "APPROVE?" and the double would have lived.
+#
+# With the level tag gone the card carries no accent and no HOT_SOFT of its own.
+# The hierarchy is weight: "Approve" bold (SpaceMono-Bold, through QFont, never
+# a QSS font-weight row - Space Mono has no DemiBold), "Reject" regular, because
+# a timeout defaults to rejection (CLAUDE.md 1.2.1) so Approve is the
+# consequential verb. The one warm note left is a decision tag's status=BLOCKED
+# (REJECTED / NOT RECORDED); retiring that hue is CRIT ranked change 5, which
+# owns qss.py / tokens.py and is not this change.
 
 # Gate level -> timeout seconds
 _LEVEL_TIMEOUTS = {
@@ -129,13 +144,19 @@ def _fidelity_text(fidelity):
     return "Fidelity {f:.1f}".format(f=fidelity)
 
 
-def _verb(text, on_click, tone=None, scale=t.FONT_SCALE_DEFAULT):
+def _verb(text, on_click, tone=None, scale=t.FONT_SCALE_DEFAULT, bold=False):
     """The panel's type-set verb idiom (synapse_panel._verb) for the card:
     QPushButton#DsVerb, LABEL tracked mono, flat; ``tone`` in {None, 'hot',
-    'accent'} selects the semantic colour via the canonical DsVerb rule."""
+    'accent'} selects the semantic colour via the canonical DsVerb rule.
+
+    ``bold`` is the consent card's weight hierarchy (CRIT ranked change 2). It
+    goes through QFont, not a QSS ``font-weight`` row: the bundle ships
+    SpaceMono-Regular + SpaceMono-Bold only, so a 600 row would request a
+    DemiBold that does not exist and leave the substitution to Qt."""
     btn = QtWidgets.QPushButton(text)
     btn.setObjectName("DsVerb")
-    btn.setFont(fontload.tracked_font("LABEL", t.SIZE_SMALL, scale=scale, mono=True))
+    btn.setFont(fontload.tracked_font("LABEL", t.SIZE_SMALL, scale=scale,
+                                      mono=True, bold=bold))
     btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
     btn.setFlat(True)
     if tone:
@@ -144,16 +165,26 @@ def _verb(text, on_click, tone=None, scale=t.FONT_SCALE_DEFAULT):
     return btn
 
 
-def _tag(text, blocked=False):
+def _tag(text):
     """A rhythm `tag` badge (mono, upper, +0.06em through rhythm.apply;
-    RADIUS_ROUND, TEXT_SECONDARY); ``blocked`` paints it HOT_SOFT - the one
-    warm note the card may carry."""
+    RADIUS_ROUND, TEXT_SECONDARY).
+
+    CRIT ranked change 2 deleted the level tag, which was the only caller that
+    passed ``blocked=True`` at build time; the card's one remaining tag is the
+    footer's decision slot, and ``_show_decision_tag`` sets the status there."""
     badge = c.Badge(text)
     badge.setProperty("rhythm_role", "tag")
     badge.setFont(fontload.apply_family(badge.font(), mono=True))
-    if blocked:
-        badge.setProperty("status", "BLOCKED")
     return badge
+
+
+def _level_phrase(level):
+    """The authored phrase a gate level already owns - GATE_LEVELS slot [1],
+    tokens.py:624-627: "Heads up" / "Quick review" / "Approve?" / "Confirm".
+    A level the bridge invents falls back to the level in sentence case rather
+    than to the enum in caps."""
+    entry = t.GATE_LEVELS.get(str(level).upper())
+    return entry[1] if entry else str(level).capitalize()
 
 
 def _band(name, parent):
@@ -172,17 +203,24 @@ class _ProposalCard(c.Card):
     A DsCard (no tone - the level is never a border hue) whose three bands
     touch (`band`, 0/0 through the applier):
 
-      header  level `tag` + operation (mono DATA, TEXT_PRIMARY) + agent (mono,
-              TEXT_TERTIARY); CRITICAL's tag is the one BLOCKED (HOT_SOFT)
+      header  the GATE_LEVELS phrase as a sans label-role title (12/500,
+              sentence case: 'Heads up' / 'Quick review' / 'Approve?' /
+              'Confirm') + operation (mono DATA, TEXT_PRIMARY) + agent (mono,
+              TEXT_TERTIARY)
       body    the description in sans body text; CRITICAL adds the line
-              'Arbitrary code execution' in body text - no hue, no pulse
+              'Arbitrary code execution' in body text - no hue, no pulse. With
+              the level tag gone, that line and the header's 'Confirm' are what
+              carry CRITICAL (CRIT ranked change 2).
       footer  countdown (mono DATA, TEXT_SECONDARY; timed levels only) left,
-              verbs right - REJECT tone=hot and APPROVE tone=accent for
-              APPROVE / CRITICAL (APPROVE is the one accented thing on the
-              card); REVIEW gets '<- REVERT' with no tone: REVIEW 'continues
-              unless rejected' (CLAUDE.md 1.2, shared/bridge.py), so the card
-              is not a decision point at all - its verb asks the panel for an
-              undo (revert_requested -> _on_revert) and files no gate decision.
+              verbs right - 'Reject' and 'Approve' for APPROVE / CRITICAL, no
+              tone on either: the hierarchy is weight, 'Approve' bold because a
+              timeout defaults to rejection (CLAUDE.md 1.2.1) so Approve is the
+              consequential verb. Header 'Approve?' (sans) and verb 'Approve'
+              (mono) read as call and response. REVIEW gets '<- REVERT' with no
+              tone: REVIEW 'continues unless rejected' (CLAUDE.md 1.2,
+              shared/bridge.py), so the card is not a decision point at all -
+              its verb asks the panel for an undo (revert_requested ->
+              _on_revert) and files no gate decision.
 
     A decision reads as a `tag` in the footer's left slot - APPROVED
     (neutral) or REJECTED (BLOCKED) - with the verbs hidden and the card
@@ -212,10 +250,16 @@ class _ProposalCard(c.Card):
 
         bands = QtWidgets.QVBoxLayout(self)
 
-        # -- header: [level tag][operation .................][agent] --------
+        # -- header: [level phrase][operation ..............][agent] --------
         header = _band("DsCardHeader", self)
         hrow = QtWidgets.QHBoxLayout(header)
-        self._badge = _tag(self._level.upper(), blocked=(self._level == "critical"))
+        # CRIT ranked change 2: the phrase the card already owns, not the enum.
+        # role="label" IS the spec the crit names - sans, SIZE_UI 12,
+        # WEIGHT_MEDIUM 500, and nothing upper-cases it (TYPE_ROLES["label"],
+        # tokens.py:375). The attribute keeps the name `_badge` because two
+        # out-of-territory pins reach this widget by it
+        # (tests/panel/test_gate_widget_type.py, tests/test_panel_sweep_a.py).
+        self._badge = c.label(_level_phrase(self._level), role="label")
         hrow.addWidget(self._badge)
         self._op_label = c.label(self._operation, role="body")
         self._op_label.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))
@@ -259,10 +303,10 @@ class _ProposalCard(c.Card):
             frow.addWidget(self._revert_btn)
         elif self._level in ("approve", "critical"):
             # Store as instance vars to prevent GC before layout takes ownership
-            self._reject_btn = _verb("REJECT", partial(self._emit_reject, self._proposal_id),
-                                     tone="hot")
+            self._reject_btn = _verb("Reject",
+                                     partial(self._emit_reject, self._proposal_id))
             frow.addWidget(self._reject_btn)
-            self._approve_btn = _verb("APPROVE", self._on_approve_clicked, tone="accent")
+            self._approve_btn = _verb("Approve", self._on_approve_clicked, bold=True)
             frow.addWidget(self._approve_btn)
         bands.addWidget(footer)
 
