@@ -647,11 +647,32 @@ def _tags(card):
 
 def test_consent_card_vocabulary():
     """F4: the consent card speaks the panel's own vocabulary - a DsCard with
-    the three bands, the level as a `tag` (HOT_SOFT only via status=BLOCKED
-    for CRITICAL), DsVerb verbs at the 26px / SPACE_32 target floor, APPROVE
-    the one accented thing on the card, REJECT hot; REVIEW gets '<- REVERT'
-    (CLAUDE.md 1.2: REVIEW continues unless rejected, so the verb after the
-    fact is a revert); a decision reads as a tag, never a hue."""
+    the three bands, DsVerb verbs at the 26px / SPACE_32 target floor; REVIEW
+    gets '<- REVERT' (CLAUDE.md 1.2: REVIEW continues unless rejected, so the
+    verb after the fact is a revert); a decision reads as a tag, never a hue.
+
+    CRIT.md 2026-09-15 ranked change 2 (P6 + P1) moved the level half of this
+    pin. It used to hold "the level as a `tag` (HOT_SOFT only via
+    status=BLOCKED for CRITICAL), APPROVE the one accented thing on the card,
+    REJECT hot" - three assertions on an anatomy the crit deleted, because the
+    tag shipped the enum "APPROVE" one band above a footer verb "APPROVE" that
+    meant something else (gate_widget.py:218 vs :265), while the authored
+    GATE_LEVELS phrases (tokens.py:624-627) had zero references anywhere.
+
+    The mechanism the pin exists to protect is unchanged and still pinned: the
+    level must be legible on the card, and the two verbs must not read as
+    equals. What it pins now is the anatomy that carries them -
+
+      - the header says the GATE_LEVELS phrase, sentence case, in the sans
+        label role (never the rhythm `tag` role, which forces mono +
+        AllUppercase + 0.06em via rhythm.py:62-78 and would ship "APPROVE?");
+      - no tag on the card carries the level enum;
+      - the hierarchy is weight, not hue: "Approve" bold, "Reject" not, and
+        nothing on the card is accented. A timeout defaults to rejection
+        (CLAUDE.md 1.2.1), so Approve is the consequential verb;
+      - CRITICAL, which used to be the one BLOCKED tag, is carried by its
+        phrase "Confirm" plus the body line "Arbitrary code execution".
+    """
     import inspect
     from synapse.panel import gate_widget as gw
     from synapse.panel.designsystem import tokens as t, rhythm
@@ -680,19 +701,38 @@ def test_consent_card_vocabulary():
                     assert list(verbs) == ["← REVERT"], list(verbs)
                     assert verbs["← REVERT"].property("tone") in (None, ""), level
                 else:
-                    assert set(verbs) == {"REJECT", "APPROVE"}, list(verbs)
-                    assert verbs["REJECT"].property("tone") == "hot"
-                    assert verbs["APPROVE"].property("tone") == "accent"
+                    assert set(verbs) == {"Reject", "Approve"}, list(verbs)
+                    # CRIT ranked change 2: hierarchy in weight, not hue.
+                    assert verbs["Approve"].font().bold(), level
+                    assert not verbs["Reject"].font().bold(), level
+                    for text, v in verbs.items():
+                        assert v.property("tone") in (None, ""), (level, text)
+                # Nothing on the card is accented any more (the APPROVE accent
+                # went with the tone; F4's "never a hue" now covers the verbs).
                 accented = [w for w in card.findChildren(QtWidgets.QWidget)
                             if w.property("tone") == "accent"]
-                assert accented == ([verbs["APPROVE"]] if level != "review" else []), level
+                assert accented == [], (level, [w.property("tone") for w in accented])
                 for text, v in verbs.items():
                     assert v.isVisible(), (level, text)
                     assert min(v.width(), v.height()) >= 26, (level, text, v.width(), v.height())
                     assert v.height() >= t.SPACE_32, (level, text, v.height())
-                level_tags = [w for w in _tags(card) if w.text() == level.upper()]
-                assert len(level_tags) == 1, (level, [w.text() for w in _tags(card)])
-                assert (level_tags[0].property("status") == "BLOCKED") == (level == "critical"), level
+                # The header says the phrase the card owns, as a sans
+                # label-role title - never the enum, never a rhythm tag.
+                phrase = t.GATE_LEVELS[level.upper()][1]
+                assert card._badge.text() == phrase, (level, card._badge.text())
+                assert card._badge.property("role") == "label", level
+                assert card._badge.property("rhythm_role") in (None, ""), level
+                assert card._badge.font().pixelSize() == t.scaled(t.SIZE_UI, 1.0), level
+                assert not card._badge.font().bold(), level
+                assert card._badge.text() != level.upper(), level
+                assert not [w for w in _tags(card) if w.text() == level.upper()], (
+                    level, [w.text() for w in _tags(card)])
+                # CRITICAL is carried by "Confirm" + the body line, not a hue.
+                if level == "critical":
+                    assert phrase == "Confirm", phrase
+                    assert card._critical_label is not None
+                    assert card._critical_label.text() == "Arbitrary code execution"
+                    assert card._critical_label.isVisible()
             # A decision is a tag, never a hue: verbs hide, the card disables.
             card = cards["approve"]
             card.mark_decided("rejected")
@@ -835,8 +875,9 @@ def test_consent_inline_on_chat():
             assert card.objectName() == "DsCard"
             assert p._consent_slot.isAncestorOf(card), profile
             assert p._consent_slot.isVisible() and card.isVisible()
+            # CRIT ranked change 2: the footer verb is sentence case now.
             approve = [b for b in card.findChildren(QtWidgets.QPushButton, "DsVerb")
-                       if b.text() == "APPROVE"]
+                       if b.text() == "Approve"]
             assert approve and approve[0].isVisible()
             # The decision landed (a remote/recorded approval): card + slot hide.
             gate._on_remote_decision("p-x", "approved")

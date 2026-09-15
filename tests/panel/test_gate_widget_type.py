@@ -106,19 +106,35 @@ def _card_elements(card):
     }
 
 
-def test_gate_badge_in_the_composed_panel_is_the_bundled_mono(composed_gate):
+def test_gate_header_title_in_the_composed_panel_is_the_bundled_sans(composed_gate):
+    """CRIT.md 2026-09-15 ranked change 2: the header band is no longer the
+    level enum in a mono `tag` - it is the authored GATE_LEVELS phrase
+    (tokens.py:624-627) in the sans label role. This pinned the badge as
+    "APPROVE" in the bundled mono; the mechanism it protects - that the header
+    gets a bundled family from the composed panel and not the host font - is
+    unchanged, so the pin moves to the sans side of the bundle."""
     _, _, card = composed_gate
-    mono, _ = _mono_and_default()
-    badge = _card_elements(card)["gate_badge"]
-    assert badge.text() == "APPROVE"
-    assert _family(badge) == mono, _family(badge)
+    from synapse.panel.designsystem import fontload
+    mono, default = _mono_and_default()
+    sans = QtGui.QFontInfo(fontload.apply_family(QtGui.QFont())).family()
+    assert sans != default, (sans, default)
+    title = _card_elements(card)["gate_badge"]
+    assert title.text() == "Approve?", title.text()
+    assert _family(title) == sans, _family(title)
+    assert _family(title) != mono
 
 
 def test_every_master_mono_gate_element_is_still_mono(composed_gate):
-    """The nine elements master rendered in Space Mono (CRUX round-3 probe):
-    header, badge, operation, countdown, Reject, Approve, fidelity label,
-    counts, violations. Agent / description / critical carried no family on
-    master (host font) and are not pinned."""
+    """The elements master rendered in Space Mono (CRUX round-3 probe):
+    header, operation, countdown, Reject, Approve, fidelity label, counts,
+    violations. Agent / description / critical carried no family on master
+    (host font) and are not pinned.
+
+    The card's own header title left this set with CRIT ranked change 2 - it is
+    the GATE_LEVELS phrase in the sans label role now, pinned as sans by
+    ``test_gate_header_title_in_the_composed_panel_is_the_bundled_sans``.
+    (``gate_header`` below is the GateWidget's section header, not the card's.)
+    """
     _, gate, card = composed_gate
     mono, _ = _mono_and_default()
     by_key = _card_elements(card)
@@ -127,7 +143,6 @@ def test_every_master_mono_gate_element_is_still_mono(composed_gate):
         "gate_fidelity_label": gate._fidelity_label,
         "gate_counts": gate._ops_label,
         "gate_violations": gate._violations_label,
-        "gate_badge": by_key["gate_badge"],
         "gate_operation": by_key["gate_operation"],
         "gate_countdown": by_key["gate_countdown"],
         "gate_reject": by_key["gate_reject"],
