@@ -201,7 +201,16 @@ io.open(os.path.join(OUT, "installer-verification.json"), "w", encoding="utf-8",
 fills = {"{{STOCK_SUMMARY}}": STOCK, "{{SEAT_SUMMARY}}": SEAT, "{{INSTALLER_UNIT_SUMMARY}}": INST, "{{QUAL_SUMMARY}}": QUAL,
          "{{PAYLOAD_SHA}}": PAYLOAD, "{{PAYLOAD_ID}}": PAYLOAD_ID, "{{BUILD_REV}}": BUILD_REV, "{{BUILD_REV_SHORT}}": BUILD_REV[:12],
          "{{CI_STATUS}}": CI_STATUS}
-for md in (os.path.join(REPO, "docs/releases/v5.70.1.md"), os.path.join(REPO, "harness/notes/RELEASE_v5.70.1.md")):
+
+# The notes template emits single-brace tokens; this table only ever carried double-brace
+# keys, so every substitution was a no-op that reported success. Accept both spellings.
+fills.update({k.replace("{{", "{").replace("}}", "}"): v for k, v in list(fills.items())})
+fills.update({"{STOCK}": STOCK, "{SEAT}": SEAT, "{INST}": INST, "{QUAL}": QUAL, "{PAYLOAD}": PAYLOAD})
+# The file list is derived from VERSION, never hardcoded. Copying this script forward and
+# string-replacing "release-X" left this tuple pointing at the PREVIOUS release for both
+# v5.71.0 and v5.72.0, so both shipped raw {PLACEHOLDER} text to a public release page.
+for md in (os.path.join(REPO, "docs/releases/v%s.md" % VERSION),
+           os.path.join(REPO, "harness/notes/RELEASE_v%s.md" % VERSION)):
     t = read(md)
     for k, v in fills.items():
         t = t.replace(k, v)

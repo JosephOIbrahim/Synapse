@@ -79,17 +79,34 @@ Recorded because each one is a class, not an incident.
 
 ### Structural, recommended
 
-**`master` has no branch protection.** `gh api …/branches/master/protection` returns 404 and
-`allow_auto_merge` is false, so there are zero required status checks — nothing prevents a red PR
-from being merged. The CI gate held all day because a human enforced it. Requiring the four
-`test (…)` contexts would make it structural. One settings change.
+**`master` branch protection — APPLIED 2026-09-15, this section was stale.** It formerly read
+"master has no branch protection … returns 404" and filed the fix under *recommended*. That was
+true when written and false within the hour; the commit that added RULING 4 never came back to
+update this page. The live API now returns a protection object requiring the four
+`test (os, py)` contexts, with `strict: false` and `enforce_admins: false`.
+
+`enforce_admins: false` is deliberate — `cut.py` pushes `master` and the tag directly, and enforcing
+admins would brick the next release at its own push step. **But the audit is right that this limits
+the claim:** with no required reviews and a single admin who is also the only merger, that identity
+bypasses the gate on both merge and push. GitHub says so out loud on every push —
+`Bypassed rule violations for refs/heads/master`. The protection stops an *unattended* red merge;
+it does not stop a determined admin, and "the gate held because a human enforced it" is still true
+of the human. Verify: `gh api repos/JosephOIbrahim/Synapse/branches/master/protection`.
 
 ### Recorded here because it exists nowhere else
 
-- **768 tracked files on master contain a hardcoded `C:\Users\User` path**, including
+- **785 tracked files at HEAD contain a hardcoded `C:\Users\User` path**, including
   `.claude/settings.json` and several agent definitions, in a public repository. `harness/CLAUDE.md`
-  calls that "a bug, not a convenience". Pre-existing; introduced by none of today's branches.
-  Reproduce: `git grep -l -I "C:[\\/]Users[\\/]User" master -- . | wc -l`.
+  calls that "a bug, not a convenience".
+  Reproduce: `git grep -l -I "C:[\\/]Users[\\/]User" HEAD -- . | wc -l`.
+
+  **Corrected 2026-09-15 by adversarial audit.** This line first claimed **768** and said the count
+  was "introduced by none of today's branches". Both halves were wrong. 768 was never the count at
+  any commit made today — the low-water mark was 775 — and today's own commits *added* files
+  carrying the path, **including this ledger**. A ledger that cites a reproduce command and then
+  reports a number that command does not give is worse than one that cites nothing, because the
+  command makes it look checked. The number above is re-measured at HEAD and moves whenever the
+  tree does; treat the command as the authority, never the figure.
 - **31 git worktrees exist.** Three under OneDrive and several `bp*` ones carry uncommitted
   changes (`bp3/probe`, `bp3/tidy`, `bp4/b7fix` — merged by ancestry but dirty). The
   `.claude/worktrees/wf_*` set is left over from this session's workflows; two of them hold
@@ -122,8 +139,13 @@ verdict, because it stops the next person looking.
 
 ### Mine, still queued
 
-- Panel crit measurements **M1–M7** — the workflow died on a model usage limit. Needs hython, so it
-  waits for the release seat suite. Resume with the run id in `.token-saver/closeout-state.md`.
+- ~~Panel crit measurements **M1–M7**~~ — **DONE.** All seven landed with their producer scripts
+  and raw output committed beside them (`harness/design_review/2026-09-15/measure/`, commit
+  `d6bb77d5`). This row was stale the moment that commit landed and is kept struck through rather
+  than deleted, because a ledger that quietly removes its own rows cannot be audited.
+- **A superseding test for `_MCPLocalClient.available`** — required by `CTO_RULINGS_04.md` RULING 1,
+  **does not exist and has no owner.** The ruling created this work while claiming to close a loop.
+  It is a real row, not a footnote.
 - Farm tools still need curated `activity.py` labels; they fall back to derived ones.
 
 ---

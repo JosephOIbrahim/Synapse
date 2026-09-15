@@ -27,8 +27,15 @@ thread self-deadlocks **permanently, every invocation, not a race**. One wasted 
 possible unrecoverable hang is not a trade worth making for a tidier flag.
 
 **Beyond the question.** The resilient contract is only safe *because* `_post` invalidates the
-cached port on failure. **Nothing pins that.** Without it, "resilient" quietly degrades into "stale
-forever, with no alarm" — which is strictly worse than the behaviour the test was protecting.
+cached port on failure. **Nothing pins that** — and an adversarial audit sharpened this after the
+ruling was written: `tests/test_mcp_local_client_available.py` already exists, shipped with #85 and
+therefore present in both v5.71.0 and v5.72.0. It is four green tests that pin the **caching half
+only** and never call `_post` at all. So the decoration this ruling warns about is not a
+hypothetical future mistake — **it already merged, and it is green.** The correction makes the
+ruling stronger, not weaker: there is an existing test to supersede, not merely one to write.
+
+Without a pinned invalidation path, "resilient" quietly degrades into "stale forever, with no
+alarm" — which is strictly worse than the behaviour the original test was protecting.
 
 So the superseding test MUST assert the invalidation path, not merely the new caching behaviour.
 Rewriting it to pin "discovery lost → port retained" and stopping there would ratify the risk and
@@ -118,8 +125,18 @@ subsumes another.
 **The remaining panel-crit calls that depend on M1, M4, M5 or M6.** Authority is not the issue;
 evidence is. `CRIT.md` marks these *pending measurement* and a ruling made on an unmeasured claim
 is exactly how "the control pinned to the brief's figure" happens in this repo — a number copied
-from the document under test, ratified, and wrong. M2, M3 and M7 landed
-(`harness/design_review/2026-09-15/measure/numbers.json`) and one of them already overturned a
-derivation: mono weight 500 renders **bold**, so `status 11/500` and `tag 12/500` were never a
-middle weight. That is what measurement is for. The remaining four are being measured; they become
+from the document under test, ratified, and wrong. All seven landed
+(`harness/design_review/2026-09-15/measure/numbers.json`).
+
+**This paragraph originally cited M7 — "mono weight 500 renders bold" — as the showcase for what
+measurement is for. That citation is withdrawn.** An adversarial audit showed the instrument was
+wrong: `QFontInfo::bold()` is *defined* as `weight() > 400`, so the reading merely restated the
+request, and the same call claimed an exact match at four weights for a two-face family. M2's
+tracking figures were likewise modelled with the CSS letter-spacing rule where Qt uses
+`setLetterSpacing(PercentageSpacing, 115)`.
+
+The lesson survives the example, and is sharper for losing it: **a measurement can be as wrong as a
+derivation, and a number that agrees with what you hoped is not evidence.** M1, M4 and M5 did
+overturn crit claims and hold up — M1 showed deleting the `#DsHeader` rule makes the airy rail
+*taller*, and M4 showed the formatter's 24/8 never render at all. Those are the showcase now. The remaining four are being measured; they become
 ruleable when they land, and not before.

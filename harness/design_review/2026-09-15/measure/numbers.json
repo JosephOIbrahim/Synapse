@@ -237,7 +237,20 @@
     },
     "delta_Bridge_minus_Connect_px": -8.65,
     "delta_StartBridge_minus_Connect_px": 43.25,
-    "verdict": "'Bridge' BUYS 8.65px of row-2 width rather than costing any - the rename is free and then some. 'Start bridge' costs +43.25px, which D2's GUTTER 30->24 remedy (-12) cannot cover; the crit derived ~+41 and the sign and magnitude both hold. USE's withdrawal of 'Start bridge' on width grounds is confirmed by measurement, not just by derivation."
+    "verdict": "'Bridge' BUYS 8.65px of row-2 width rather than costing any - the rename is free and then some. 'Start bridge' costs +43.25px, which D2's GUTTER 30->24 remedy (-12) cannot cover; the crit derived ~+41 and the sign and magnitude both hold. USE's withdrawal of 'Start bridge' on width grounds is confirmed by measurement, not just by derivation.",
+    "qt_model": {
+      "_correction": "CORRECTED 2026-09-15 by adversarial audit. The 'with_tracking' figures below were ARITHMETIC, not measurement: em x font-pixel-size over n-1 gaps, which is the CSS letter-spacing model. Qt does not do that. fontload.py:187 calls setLetterSpacing(PercentageSpacing, 115), which scales each advance by 1.15 and applies to EVERY cell, not n-1 gaps. Only 'advance' was measured; everything derived from it was modelled with the wrong model.",
+      "advance_x_1.15_px": {
+        "Connect": 56.35,
+        "Bridge": 48.3,
+        "Start bridge": 96.6,
+        "Doctor": 48.3,
+        "Connect models": 112.7
+      },
+      "delta_Bridge_minus_Connect_px": -8.05,
+      "delta_StartBridge_minus_Connect_px": 40.25,
+      "verdict": "The DIRECTION survives and the argument is unchanged: 'Bridge' still buys width, 'Start bridge' still costs far more than GUTTER 30->24 (-12) can cover. The magnitudes move: -8.05 not -8.65, and +40.25 not +43.25. Note the crit's own derived '~+41' matches the Qt model BETTER than this record's first figure did - the derivation was closer to the truth than the measurement that claimed to replace it."
+    }
   },
   "M3_tag_width_at_700": {
     "status": "MEASURED",
@@ -483,7 +496,7 @@
     "verdict": "The boot face holds FOUR buckets today, in all three profiles - so `test_bc_wave.py:329` (`assert len(rest) <= 3`) is RED at HEAD, and B1 is currently being argued under a red pin. And #4 does not clear it. Neutralising TEXT_ON_ACCENT strips 57 of bucket 13's 59 colours, but TWO survive - (65,79,92) and (71,87,102), which are antialias pixels on the SIGNAL fill's own edge, landing at hue 205-206 and falling into bucket 13 rather than SIGNAL's 14. One pixel pair on the wrong side of a 15-degree boundary keeps the bucket alive and the count at 4. So: the fourth bucket is not a fourth hue family, it is the instrument's bucket boundary cutting through one accent's antialias ramp. That is exactly what B1 option (1) ('count tokens not buckets') said was happening, and it is now measured rather than suspected. CRIT.md:179 - 'After #4 the boot face sits at 3 buckets with Doctor included' - is REFUTED as written: it sits at 4 before #4 and at 4 after. B1 cannot be argued free of a red pin on this evidence; either the pin re-baselines to <= 4, or the predicate changes to count token families instead of 15-degree buckets."
   },
   "M7_mono_weight_500": {
-    "status": "MEASURED",
+    "status": "INCONCLUSIVE",
     "question": "what mono weight 500 renders as today",
     "resolved": {
       "400": {
@@ -511,7 +524,8 @@
         "exact_match": true
       }
     },
-    "verdict": "Weight 500 renders BOLD. The crit reasoned from fontload.py:158-190 that the bold threshold is >=600; the live QFontInfo says the synthetic-bold flag is already set at 500. So status 11/500 and tag 12/500 have been rendering as Bold all along - 500 was never a distinct middle weight on this family, it was 700's face under another name. TYPE's ANSWER 1 (name WEIGHT_BOLD = 700 and move those roles to 400 | 700) is not a tidy-up: it makes the stylesheet say what the screen was already doing."
+    "verdict": "INCONCLUSIVE by this method. The crit's original reasoning (>=600 maps to setBold, so 500 is not a face the family ships) is neither confirmed nor refuted here, and stands as the better-supported reading.",
+    "_correction": "WITHDRAWN 2026-09-15 by adversarial audit. This entry claimed 'weight 500 renders BOLD' and it is not supported by the instrument used. QFontInfo::bold() is DEFINED as weight() > Normal(400) - so 'bold=true at 500' merely restates 500 > 400 and says nothing about which face renders. The same reading returned exact_match: true with resolved_weight == requested at 400/500/600/700, which is impossible for a family shipping only two faces (Regular 400, Bold 700): QFontInfo was echoing the request. The repo's own mapping (fontload.py) never calls setBold below 600, which supports the crit's ORIGINAL reasoning that the threshold is >=600. The claim that this measurement overturned a derivation is withdrawn. Answering it properly needs the resolved font FILE (QRawFont) or fontload's mapping, not QFontInfo."
   },
   "_still_unmeasured": [
     "Qt's substitute for a QSS font-weight: 600 on a 400/700 family - not attempted this leg",
