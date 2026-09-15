@@ -1,0 +1,99 @@
+#!/bin/sh
+# Gate C for the COMMIT half, enforced by capability rather than by command form.
+#
+# The pre-push hook fences master. It does not fence the files a human flips
+# to bump a release, arm a leg, or set the suite floor. The 2026-09-15 harness
+# review (harness/notes/harness-review-2026-09-15/REPORT.md) found two holes
+# there:
+#
+#   FENCE-1  In-session "read-only" conductors hold Bash, and the interactive
+#            profile already allows `python:*` and `git:*` - so a conductor can
+#            rewrite VERSION or harness/state/flywheel_queue.json and commit it
+#            with no prompt. The push half was fenced; the write+commit half
+#            was not.
+#   FENCE-4  Every headless profile denies Edit(VERSION) / Edit(harness/state/**)
+#            by FORM, and every one of them allows an interpreter or copy verb
+#            (hython, python, Copy-Item, cmd /c) that writes the same bytes
+#            without an Edit call. The deny never fires; `git commit -a` then
+#            ships it.
+#
+# Both are the class the pre-push header already rules on: a deny rule matches
+# the SHAPE of a command, and `python -c`, `Copy-Item`, `hython`, a shell
+# redirection, or `git -C <path>` all reach the file by another shape. No list
+# of patterns closes that. A hook runs on the CAPABILITY - what the commit
+# would actually record - and does not care how the bytes got into the index,
+# by whom, or from which working directory.
+#
+# Protected set (root-relative, as `git diff --cached --name-only` prints):
+#   VERSION                          one source of version; a human bumps it
+#   harness/state/**                 ratified flips, drop.json, queues - the
+#                                    state a human writes to arm a leg
+#   harness/verify/*_baseline.json   suite/perf floors; the bar a sprint must
+#                                    not lower for itself (any depth)
+#
+# Gate C is a POSITIVE ACT, not the absence of a prohibition: committing one of
+# these requires deliberately setting SYNAPSE_GATE_C=1 for that one command -
+# the same variable, with the same meaning, as the pre-push hook. An agent will
+# not do that by accident, and a human doing it has said so out loud.
+#
+#   SYNAPSE_GATE_C=1 git commit ...                                          (sh)
+#   $env:SYNAPSE_GATE_C=1; git commit ...; Remove-Item Env:SYNAPSE_GATE_C    (PowerShell)
+#
+# Edges, stated rather than hidden:
+#   - `git commit --no-verify` skips every pre-commit hook, this one included.
+#     Same posture as pre-push: this fences the accident and the unprompted
+#     agent, not a human who types the bypass out loud.
+#   - A `git merge` that auto-commits runs pre-merge-commit, not pre-commit.
+#     Merges to master are already human (Gate C on push).
+#   - Renames are diffed with --no-renames, so moving a protected path away
+#     shows as a delete of that path and is still caught.
+#   - `--amend` re-checks only what is newly staged against the old HEAD.
+#
+# Installed via core.hooksPath so it is versioned and survives a fresh clone -
+# .git/hooks is not in the tree and would be lost on the next checkout.
+
+staged=$(git diff --cached --name-only --no-renames) || {
+    echo "pre-commit: could not read the index (git diff --cached failed). Refusing rather than guessing." >&2
+    exit 1
+}
+
+hits=$(printf '%s\n' "$staged" | while IFS= read -r path; do
+    case "$path" in
+        VERSION|harness/state/*|harness/verify/*_baseline.json)
+            printf '%s\n' "$path"
+            ;;
+    esac
+done)
+
+[ -z "$hits" ] && exit 0
+
+if [ "$SYNAPSE_GATE_C" = "1" ]; then
+    echo "pre-commit: Gate C override present. Committing protected path(s):" >&2
+    printf '%s\n' "$hits" | while IFS= read -r path; do
+        echo "    $path" >&2
+    done
+    exit 0
+fi
+
+echo "" >&2
+echo "  pre-commit REFUSED: a staged change touches a Gate C path." >&2
+echo "" >&2
+printf '%s\n' "$hits" | while IFS= read -r path; do
+    echo "      $path" >&2
+done
+echo "" >&2
+echo "  VERSION, harness/state/** and harness/verify/*_baseline.json are the" >&2
+echo "  files a human flips to bump a release, arm a leg, or set the suite" >&2
+echo "  floor. They are not protected by a deny rule - deny rules match a" >&2
+echo "  command FORM and are bypassed by 'python -c', 'Copy-Item', 'hython'" >&2
+echo "  or 'git -C <path>' (FENCE-1, FENCE-4; harness review 2026-09-15)." >&2
+echo "" >&2
+echo "  To commit this deliberately:" >&2
+echo "      SYNAPSE_GATE_C=1 git commit ..." >&2
+echo "  PowerShell:" >&2
+echo "      \$env:SYNAPSE_GATE_C=1; git commit ...; Remove-Item Env:SYNAPSE_GATE_C" >&2
+echo "" >&2
+echo "  To keep the commit and leave the protected path out of it:" >&2
+echo "      git restore --staged <path>" >&2
+echo "" >&2
+exit 1
