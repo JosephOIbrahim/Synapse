@@ -137,6 +137,44 @@ was reading an inherited or host-scaled font, not the QSS-applied one, so it nev
 claim. A green verdict from an instrument that measures the wrong property is worth less than no
 verdict, because it stops the next person looking.
 
+### v5.72.1 was STARTED and DELIBERATELY ABANDONED
+
+The corrections it would have carried are **already live**: both published release bodies were
+edited in place to hold the measured numbers, master's copies of both notes are corrected, and the
+composer fix plus two new gates are committed. A v5.72.1 tag would have added a tag and nothing else.
+
+It was abandoned because an adversarial pass on the new safety code returned **PARTIAL on all
+three** pieces — and the thing to notice is that none of them was vacuous in the way the old guard
+was. They fail in new ways:
+
+1. **The placeholder gate is self-blocking.** Its regex is sound — fired at
+   `git show v5.72.0:docs/releases/v5.72.0.md` it returns all five tokens, so it *would* have
+   stopped that release. But as wired it halts every cut, for two independent reasons. Its second
+   target, `harness/notes/release-<V>/RELEASE_v<V>.md`, is written with placeholders by `step_notes`
+   and filled by nothing: `compose_assets.py` targets the FLAT `harness/notes/RELEASE_v<V>.md`,
+   which has not existed since v5.70.1. And its regex matches a generic uppercase-in-braces shape,
+   so it fires on the release note's own backticked prose *about* the placeholder bug.
+2. **The claim gate fires, but not on the claim it was written for.** It whitelists
+   `python/synapse/__init__.py` — and "byte-identical" was refuted *precisely because* `__init__.py`
+   differs. It encodes the corrected claim, not the wrong one. Its phrase detector also misses 11 of
+   12 plausible spellings of "docs only", including the hyphenated form used inside its own STOP
+   message; and because `step_compose` runs before `step_commit`, its diff cannot see the release's
+   own uncommitted bump.
+3. **The composer substitutes correctly and its guard now inspects the file it wrote** — the
+   original bug is genuinely gone. But the guard still looks for `{{` while the templates emit `{`,
+   so it passes only because the hand-maintained fills table happens to enumerate today's five
+   tokens. Add a sixth to a template and it publishes raw, guard green. Proven by execution.
+
+**The fix is a token-scheme change, not a patch:** give the fillable slots a delimiter that cannot
+occur in prose (`@@STOCK@@`), have the gate match KNOWN TOKEN NAMES rather than a generic shape, and
+point the composer at the dated subdirectory. That is tomorrow's work with a clear head, not tonight's
+at the end of a sixteen-hour session.
+
+**The lesson worth keeping.** Three guards were written today in response to a guard that passed
+vacuously. All three were themselves wrong on first writing, and only execution found it. Safety code
+is not safe because of the intent behind it; it is code, with the same defect rate as the code it
+guards, and it is the *least* exercised code in the tree.
+
 ### Mine, still queued
 
 - ~~Panel crit measurements **M1–M7**~~ — **DONE.** All seven landed with their producer scripts
