@@ -58,6 +58,44 @@ _PINNED_HEADLESS = {
     "TEXT_DISABLED": "#636363",
 }
 
+# READABILITY.md 2026-09-15, D3 ("the quiet ramp was never solved") raises one
+# _TEXT_CONTRAST target that this baseline captured at its pre-AA value:
+# tertiary 3.3 -> 4.5, because it shipped under the 4.5 AA floor on ACTIVE
+# caption/hint text (3.32:1 on SURFACE).
+#
+# Recorded as an EXACT amendment to the baseline rather than edited into the
+# dict above, the same way CRIT_20260915_QSS_AMENDMENTS is recorded in
+# tests/test_panel_sweep_a.py. Editing the dict would retire the pin for that
+# role forever; this way the baseline is still the baseline, every other hex
+# must still match byte-for-byte, any further drift on THIS one still reddens,
+# and a stale amendment (one whose `old` no longer matches) reddens too instead
+# of passing silently.
+#
+# D3b (2026-09-15): the companion TEXT_DISABLED amendment (#636363 -> #9E9E9E)
+# is GONE, not carved out -- disabled is back at the baseline value, so the
+# baseline pins it directly again and this tuple has one row fewer to except.
+# WCAG 2.1 SC 1.4.3 exempts inactive components from the contrast minimum, so
+# raising it bought nothing and made it the same ink as tertiary at every host
+# seed; see the D3b block in tokens.py and the D3b tests in
+# tests/test_panel_readability_defects.py.
+D3_20260915_RAMP_AMENDMENTS = (
+    ("TEXT_TERTIARY", "#868686", "#9E9E9E"),
+)
+
+
+def _pinned_headless():
+    """The baseline with the D3 amendments applied, each exactly once."""
+    pinned = dict(_PINNED_HEADLESS)
+    for name, old, new in D3_20260915_RAMP_AMENDMENTS:
+        assert name in pinned, (
+            "stale D3 amendment - %s is no longer in the baseline" % name)
+        assert pinned[name] == old, (
+            "stale D3 amendment - baseline %s is %s, not the %s this amendment "
+            "was written against" % (name, pinned[name], old))
+        pinned[name] = new
+    assert len(pinned) == len(_PINNED_HEADLESS)
+    return pinned
+
 
 class _FakeColor:
     """Quacks like the QtGui.QColor that ``hou.qt.color()`` returns — every common
@@ -250,13 +288,32 @@ def test_tokens_output_byte_identical_headless():
     # produce the SAME hexes it produced before the read moved to theme_source.
     mod, saved = _reload_tokens_with(None)
     try:
-        for name, expected in _PINNED_HEADLESS.items():
+        for name, expected in _pinned_headless().items():
             got = getattr(mod, name)
             assert got == expected, (
                 "tokens.%s changed: %s != pinned %s — the theme_source refactor "
                 "must be byte-identical" % (name, got, expected))
     finally:
         _restore(saved)
+
+
+def test_d3_amendment_reddens_when_it_goes_stale():
+    """The declared delta must not be able to rot into a silent pass."""
+    import pytest as _pytest
+
+    saved = globals()["D3_20260915_RAMP_AMENDMENTS"]
+    try:
+        globals()["D3_20260915_RAMP_AMENDMENTS"] = (
+            ("TEXT_TERTIARY", "#123456", "#9E9E9E"),)
+        with _pytest.raises(AssertionError, match="stale D3 amendment"):
+            _pinned_headless()
+        globals()["D3_20260915_RAMP_AMENDMENTS"] = (
+            ("TEXT_NOT_A_ROLE", "#868686", "#9E9E9E"),)
+        with _pytest.raises(AssertionError, match="stale D3 amendment"):
+            _pinned_headless()
+    finally:
+        globals()["D3_20260915_RAMP_AMENDMENTS"] = saved
+    assert _pinned_headless()["TEXT_TERTIARY"] == "#9E9E9E"
 
 
 def test_tokens_still_route_through_theme_source_when_seeded():

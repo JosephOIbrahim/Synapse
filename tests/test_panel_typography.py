@@ -12,8 +12,9 @@ Pins the rules this leg lands so a regression reddens:
      token_below_floor`` reddens.  (CRIT.md 2026-09-15 ranked change 1 deleted
      ``SIZE_MICRO`` and raised the floor 10 → 11, citing ``audit_panel.py:388``
      READABLE_FLOOR instead of the old circular "smallest size shipped".)
-  3. ``TYPE_ROLES`` weights are the three weight tokens (400/500/600), never bare
-     literals.
+  3. ``TYPE_ROLES`` weights are the weight tokens (400/500/600/700), never bare
+     literals.  Which of those a given family can actually DRAW is pinned
+     separately, in ``test_panel_readability_defects.py`` (D4).
 
 SCOPE (stated honestly).  The authority is ``designsystem/``.  The legacy
 stylesheet (``styles.py``) and the ~30 inline-styled feature modules
@@ -71,8 +72,15 @@ def test_qss_stylesheet_source_has_no_literal_typography():
 def test_type_roles_use_weight_tokens():
     from synapse.panel.designsystem import tokens as t
 
-    allowed = {t.WEIGHT_REGULAR, t.WEIGHT_MEDIUM, t.WEIGHT_SEMIBOLD}
-    assert allowed == {400, 500, 600}, "weight tokens must be 400/500/600"
+    # Read the weight tokens off the module rather than re-listing three of
+    # the four by hand: the old literal set predated WEIGHT_BOLD, so a role
+    # naming the weight it actually renders at (D4, READABILITY.md
+    # 2026-09-15) reddened here for being CORRECT. The pin is unchanged in
+    # strength - the legal values are still enumerated exactly, and a bare
+    # int outside them still fails.
+    allowed = {v for k, v in vars(t).items()
+               if k.startswith("WEIGHT_") and isinstance(v, int)}
+    assert allowed == {400, 500, 600, 700}, "weight tokens must be 400/500/600/700"
     for role, spec in t.TYPE_ROLES.items():
         assert spec[2] in allowed, (
             "TYPE_ROLES[%r] weight %r is not a WEIGHT_* token" % (role, spec[2])

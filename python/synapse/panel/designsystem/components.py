@@ -41,7 +41,24 @@ def apply_font_role(w, role="body", scale=1.0):
     f = QtGui.QFont(w.font())  # inherit host attrs (hinting, style strategy)
     fontload.apply_family(f, mono=(fam == t.FONT_MONO_CSS))
     f.setPixelSize(t.scaled(size, scale))
-    f.setBold(weight >= 600)
+    # D4 (READABILITY.md 2026-09-15): this used to be `setBold(weight >= 600)`
+    # and nothing else, so a role asking for 500 was silently drawn at 400 --
+    # `label` (sans 12/500) threw away a face the variable Space Grotesk really
+    # ships. Measured at pixelSize 24: sans 400 ink 184395, sans 500 ink 230308
+    # (+24.9%). fontload.tracked_font has carried this exact ladder since v9;
+    # this path just never grew it. Same ladder, one owner.
+    if weight >= 600:
+        f.setBold(True)
+    elif weight == 500:
+        try:
+            f.setWeight(QtGui.QFont.Weight.Medium)   # Qt6
+        except Exception:
+            try:
+                f.setWeight(QtGui.QFont.Medium)      # Qt5 / PySide2
+            except Exception:
+                pass
+    else:
+        f.setBold(False)
     if tracking:
         try:
             f.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, tracking)
@@ -322,6 +339,35 @@ def label(text="", role="body", scale=1.0, parent=None):
     lbl.setProperty("role", role if role in _LABEL_COLOR_ROLES else "body")
     apply_font_role(lbl, role if role in t.TYPE_ROLES else "body", scale)
     return lbl
+
+
+def apply_placeholder_palette(w, color=None):
+    """Put QPalette::PlaceholderText under the design system.
+
+    D3 (READABILITY.md 2026-09-15): nothing in ``designsystem/`` owned the input
+    placeholder. Qt paints it from ``QPalette::PlaceholderText``, whose default
+    is the text colour at 50% alpha -- composited over FIELD_INSET that landed
+    on #727272, 3.43:1, under the AA floor, and unreachable from any token.
+    Setting the role on a root propagates down the parent chain (dialogs
+    included), so one call at the panel root covers every DsInput / DsField.
+
+    Returns ``w`` so it chains; never raises -- a binding without the role (very
+    old Qt) leaves Qt's default rather than taking the panel down.
+    """
+    try:
+        role = QtGui.QPalette.ColorRole.PlaceholderText
+    except AttributeError:          # pragma: no cover - Qt < 5.12
+        try:
+            role = QtGui.QPalette.PlaceholderText
+        except AttributeError:
+            return w
+    try:
+        pal = w.palette()
+        pal.setColor(role, QtGui.QColor(color or t.TEXT_PLACEHOLDER))
+        w.setPalette(pal)
+    except Exception:               # pragma: no cover - defensive
+        pass
+    return w
 
 
 def divider(parent=None):

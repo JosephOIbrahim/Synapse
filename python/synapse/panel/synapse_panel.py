@@ -536,6 +536,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._chrome_scale = self._host_font_scale()
         self._font_scale = self._chrome_scale      # content scale (Aa-driven)
         self.setStyleSheet(qss.stylesheet(self._chrome_scale))  # rhythm-exempt: installs the sole designsystem sheet at the root; no local style
+        # D3 (READABILITY.md 2026-09-15): the placeholder is the first thing read
+        # in an empty panel and was the one text colour no token owned -- Qt's
+        # QPalette::PlaceholderText default (the text colour at half alpha)
+        # composited to 3.43:1 on FIELD_INSET, under AA, and unreachable from
+        # tokens.py. Set at the root so it propagates down the parent chain to
+        # every DsInput / DsField, dialogs included. Value: t.TEXT_PLACEHOLDER.
+        c.apply_placeholder_palette(self)
 
         # Session survival (R.2): restore this scene's prior conversation from
         # the process- and reopen-durable store so a reopen continues the SAME

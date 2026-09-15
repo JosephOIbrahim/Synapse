@@ -52,6 +52,7 @@ from synapse.panel.hda_views import DescribeView, BuildingView, ResultView
 from synapse.panel.gate_widget import GateWidget
 from synapse.panel.styles import animate_stack_transition
 from synapse.panel.designsystem import qss
+from synapse.panel.designsystem import components as _dscomp
 from synapse.panel.designsystem import tokens as _ds
 from synapse.panel import tokens as t   # panel-specific: CHAT_*, HOVER, FONT_SCALE_*
 
@@ -252,6 +253,8 @@ class SynapseChatPanel:
         )
 
         qss.install_sweep_a_root(self._root)
+        # D3: same placeholder-palette ownership as the main panel root.
+        _dscomp.apply_placeholder_palette(self._root)
         return self._root
 
     def onActivateInterface(self):

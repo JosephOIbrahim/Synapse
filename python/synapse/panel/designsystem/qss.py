@@ -175,12 +175,19 @@ QLabel#DsKHint {{
 }}
 /* prominence (L5-14 amends L5-13): hero takes the accent its role calls
    for -- the token meter is economic, so SIGNAL; the ⌘K chip is an
-   action affordance, so WARM. Quiet keeps the L5-13 rung below standard
-   (TEXT_DISABLED); the hint's box quiets to the HAIR rule. */
+   action affordance, so WARM. Quiet takes TEXT_TERTIARY -- the rung every
+   other quiet rule in this sheet already names; the hint's box quiets to
+   the HAIR rule.
+   D3b (2026-09-15): these two used to name TEXT_DISABLED, reading it as a
+   rung below tertiary. They are ACTIVE labels, so the SC 1.4.3 inactive
+   exemption that lets TEXT_DISABLED sit under the AA floor does not cover
+   them; borrowing the inactive ink was borrowing its exemption too. The
+   paint does not move -- since D3 both roles resolved to the same grey --
+   only the token they name, and the AA they now hold honestly. */
 QLabel#DsMeter[prominence="hero"]  {{ color: {t.SIGNAL}; }}
-QLabel#DsMeter[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; }}
+QLabel#DsMeter[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 QLabel#DsKHint[prominence="hero"]  {{ color: {t.WARM}; }}
-QLabel#DsKHint[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; border-color: {t.HAIR}; }}
+QLabel#DsKHint[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; border-color: {t.HAIR}; }}
 
 /* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
 /* Verbs read as type, not buttons: flat, mono, the chrome recedes. */
@@ -744,29 +751,38 @@ def _sweep_a_context_bar_stylesheet():
     rules.append(_sweep_a_rule("context_root", f"""
 QWidget#context_bar_v2 {{  background: transparent;}}
 """))
+    # D1 (READABILITY.md 2026-09-15): these five rules were the only ones in the
+    # sheet emitting `pt`. Measured offscreen under Houdini 22.0.400 at 96 DPI,
+    # QFontInfo(label.font()).pixelSize():
+    #     11pt  -> 15px   11px -> 11px      (SIZE_LABEL, the SMALLEST token,
+    #                                        was rendering at SIZE_TITLE)
+    #     9.0pt -> 12px   12px -> 12px      (SIZE_UI, unchanged on screen)
+    # `SIZE_UI * 3 / 4` was the px->pt conversion written into the value, so the
+    # intended token there was always SIZE_UI; it is now said in px. Only the
+    # breadcrumb moves, and it moves back to the token it always named.
     rules.append(_sweep_a_rule("context_breadcrumb", f"""
-color: {t.SIGNAL}; font-size: {t.SIZE_LABEL}pt;  background: transparent;
+color: {t.SIGNAL}; font-size: {t.SIZE_LABEL}px;  background: transparent;
 """))
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("context_memory", f"""
-color: {color}; font-size: {t.SIZE_UI * 3 / 4}pt;  background: transparent; padding: 0 4px;
+color: {color}; font-size: {t.SIZE_UI}px;  background: transparent; padding: 0 4px;
 """, color=color))
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("context_health", f"""
-color: {color}; font-size: {t.SIZE_UI * 3 / 4}pt;  background: transparent;
+color: {color}; font-size: {t.SIZE_UI}px;  background: transparent;
 """, color=color))
     rules.append(_sweep_a_rule("context_actions", f"""
 background: transparent;
 """))
     rules.append(_sweep_a_rule("context_action", f"""
-QPushButton {{  background: {t.NEAR_BLACK}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.CARBON};  border-radius: 4px; padding: 2px 8px;  font-size: {t.SIZE_UI * 3 / 4}pt; }}
+QPushButton {{  background: {t.NEAR_BLACK}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.CARBON};  border-radius: 4px; padding: 2px 8px;  font-size: {t.SIZE_UI}px; }}
 QPushButton:hover {{  background: {t.HOVER_BG}; border-color: {t.FIRE};}}
 QPushButton:pressed {{  background: {t.GRAPHITE};}}
 """))
     rules.append(_sweep_a_rule("context_frame", f"""
-color: {t.TEXT_SECONDARY}; font-size: {t.SIZE_UI * 3 / 4}pt;  background: transparent;
+color: {t.TEXT_SECONDARY}; font-size: {t.SIZE_UI}px;  background: transparent;
 """))
     return "\n".join(rules)
 
