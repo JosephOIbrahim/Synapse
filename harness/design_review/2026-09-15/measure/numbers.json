@@ -1,70 +1,526 @@
 {
-  "_what": "The measurement leg CRIT.md marks as pending (M1-M7). Three landed; four still need a constructed widget tree and are named with the method that would answer them.",
-  "_method": "Measured 2026-09-15 on the LIVE Houdini 22.0.400 GUI session over the SYNAPSE bridge, PySide6, read-only QFontMetricsF / QFontInfo. No widget was created or shown. The original leg was launched hython-offscreen and died on a model usage limit before landing.",
+  "_what": "The measurement leg CRIT.md marks as pending (M1-M7). All seven now landed: M2/M3/M7 from the live-bridge font-metrics pass, M1/M4/M5/M6 from a second pass that constructs the real widget tree offscreen.",
+  "_method": "M2/M3/M7 measured 2026-09-15 on the LIVE Houdini 22.0.400 GUI session over the SYNAPSE bridge, PySide6, read-only QFontMetricsF / QFontInfo. No widget was created or shown. The original leg was launched hython-offscreen and died on a model usage limit before landing. M1/M4/M5/M6 measured 2026-09-15 by a second leg under hython 22.0.400 with QT_QPA_PLATFORM=offscreen: a real SynapsePanel is composed per profile at 340x760 and driven to the CHAT face (the same recipe tests/panel/test_bc_wave.py::_panel uses); show() under the offscreen platform creates no on-screen window.",
   "_caveat": "Measured AFTER #99 and #100 merged. M7 asked 'what does weight 500 render as today'; 'today' is now post-change. The answer is a property of the font family, not of the changed code, so it is still the answer to the question asked.",
-
+  "_producers": {
+    "M1_M6_first_pass": "harness/design_review/2026-09-15/measure/producers/measure_leg.py -> producers/measure_out.txt",
+    "M4_M5_M6_counterfactual": "harness/design_review/2026-09-15/measure/producers/measure_leg2.py -> producers/m45_out.txt, producers/m6_out.txt",
+    "hython": "SYNAPSE_HYTHON=C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe",
+    "head": "716059a3 (master, v5.72.0)",
+    "_note": "The scripts and their raw output are committed beside this file. They were authored in an untracked scratch directory; citing that would have made every number here unreproducible the moment it was cleared (Law 2: a number carries a producer path, and the path has to resolve)."
+  },
+  "M1_rail_height": {
+    "status": "MEASURED",
+    "question": "rail height with/without the '#DsHeader' margin-bottom rule, and the DsVerb line box",
+    "blocks": "CRIT.md ranked #11, and A2's airy -13 which stood until measured",
+    "line_note": "the crit cites qss.py:344-346; at HEAD (716059a3) the three rules live at python/synapse/panel/designsystem/qss.py:375-377 (base + [density=airy] + [density=tight]). Same three rules, renumbered by the type/hue wave. The DsVerb margin rules are at :370-372.",
+    "method": "compose SynapsePanel per profile at 340x760, read DsHeader height/sizeHint and the y/height of every visible direct sibling; then strip all three 'QWidget#DsHeader { ... margin-bottom ... }' rules from the stylesheet that carries them, unpolish/polish every widget, processEvents, re-read the same numbers. 3 rules removed in every profile.",
+    "rail_height_px": {
+      "curious_airy": {
+        "with_rule": 126,
+        "without_rule": 134,
+        "sizeHint_with": 134,
+        "sizeHint_without": 134,
+        "delta": -8
+      },
+      "expert_standard": {
+        "with_rule": 110,
+        "without_rule": 110,
+        "sizeHint_with": 110,
+        "sizeHint_without": 110,
+        "delta": 0
+      },
+      "ml_tight": {
+        "with_rule": 102,
+        "without_rule": 98,
+        "sizeHint_with": 98,
+        "sizeHint_without": 98,
+        "delta": 4
+      }
+    },
+    "sibling_stack_y_px": {
+      "curious_airy": {
+        "with_rule": [
+          [
+            "DsHeader",
+            0,
+            126
+          ],
+          [
+            "DsSection",
+            126,
+            46
+          ],
+          [
+            "QStackedWidget",
+            172,
+            588
+          ]
+        ],
+        "without_rule": [
+          [
+            "DsHeader",
+            0,
+            134
+          ],
+          [
+            "DsSection",
+            134,
+            46
+          ],
+          [
+            "QStackedWidget",
+            180,
+            580
+          ]
+        ]
+      },
+      "expert_standard": {
+        "with_rule": [
+          [
+            "DsHeader",
+            0,
+            110
+          ],
+          [
+            "DsSection",
+            110,
+            46
+          ],
+          [
+            "QStackedWidget",
+            156,
+            604
+          ]
+        ],
+        "without_rule": [
+          [
+            "DsHeader",
+            0,
+            110
+          ],
+          [
+            "DsSection",
+            110,
+            46
+          ],
+          [
+            "QStackedWidget",
+            156,
+            604
+          ]
+        ]
+      },
+      "ml_tight": {
+        "with_rule": [
+          [
+            "DsHeader",
+            0,
+            102
+          ],
+          [
+            "DsSection",
+            102,
+            46
+          ],
+          [
+            "QStackedWidget",
+            148,
+            612
+          ]
+        ],
+        "without_rule": [
+          [
+            "DsHeader",
+            0,
+            98
+          ],
+          [
+            "DsSection",
+            98,
+            46
+          ],
+          [
+            "QStackedWidget",
+            144,
+            616
+          ]
+        ]
+      }
+    },
+    "gap_between_rail_and_next_section_px": {
+      "curious_airy": 0,
+      "expert_standard": 0,
+      "ml_tight": 0,
+      "with_and_without_the_rule": "0 in all six readings - DsSection.y() equals DsHeader.height() every time"
+    },
+    "DsVerb_line_box": {
+      "font_px": 11,
+      "QFontMetricsF": {
+        "height": 16.0,
+        "lineSpacing": 16.0,
+        "ascent": 12.0,
+        "descent": 4.0
+      },
+      "contentsMargins_top_bottom": [
+        0,
+        0
+      ],
+      "visible_verb_heights_px": {
+        "curious_airy": {
+          "Connect": 44,
+          "Doctor": 44,
+          "icon_verb": 46
+        },
+        "expert_standard": {
+          "Connect": 36,
+          "Doctor": 36,
+          "icon_verb": 38
+        },
+        "ml_tight": {
+          "Connect": 32,
+          "Doctor": 32,
+          "icon_verb": 34
+        }
+      },
+      "qss_margin_each_side_px": {
+        "curious_airy": 12,
+        "expert_standard": 8,
+        "ml_tight": 6,
+        "source": "t.gap(t.SPACE_SM=8, density) at qss.py:370-372"
+      },
+      "content_box_px": {
+        "curious_airy": 20,
+        "expert_standard": 20,
+        "ml_tight": 20,
+        "derivation": "height - 2 * margin; identical 20 at every density"
+      },
+      "delta_if_margins_become_min_height_26": {
+        "curious_airy": -18,
+        "expert_standard": -10,
+        "ml_tight": -6,
+        "per_verb": true
+      }
+    },
+    "verdict": "Two findings, one of them against the crit. (1) The #DsHeader margin-bottom rule buys NO air: in all six readings the next sibling's y equals the rail's height exactly, so the rule never opens a gap between the rail and the section below it. SPACE's round-2 self-correction ('DsHeader margin no-op') is confirmed as far as air is concerned. (2) But it is not inert - it perturbs the rail's own allotted height, and the sign is INCONSISTENT across densities: airy -8 (rail squeezed 8px below its own 134 sizeHint), standard 0 (exactly the hint), tight +4 (rail stretched 4px past its 98 hint). A rule that shrinks the airy rail and grows the tight one is doing the opposite of what the density lever intends, in both directions. #11's premise - that the rule is spendable - holds; its stated direction does not, because deleting it makes the airy rail TALLER by 8, not shorter. (3) The DsVerb line box is 20px of content at every density, wrapped in 2 x gap(SPACE_SM) of QSS margin (12/8/6). A min-height of 26 would give the 20px box 6px of breathing room and remove 44->26 / 36->26 / 32->26, i.e. -18 / -10 / -6 per verb. A2's derived 'airy -13' is not reproduced by any single reading here; the measured airy figures are -18 per verb from the min-height swap and +8 from deleting the header rule. The chair owns reconciling which total the -13 was summing over - it is not the per-verb number and it is not the rail number."
+  },
   "M2_rail_verb_width": {
     "status": "MEASURED",
     "question": "'Bridge' / 'Start bridge' width vs row-2 slack post-F1",
     "face": "Space Mono, 11px, LABEL tracking 0.15em",
     "advances_px": {
-      "Connect": {"cells": 7, "advance": 49.0, "with_tracking": 58.9},
-      "Bridge": {"cells": 6, "advance": 42.0, "with_tracking": 50.25},
-      "Start bridge": {"cells": 12, "advance": 84.0, "with_tracking": 102.15},
-      "Doctor": {"cells": 6, "advance": 42.0, "with_tracking": 50.25},
-      "Connect models": {"cells": 14, "advance": 98.0, "with_tracking": 119.45}
+      "Connect": {
+        "cells": 7,
+        "advance": 49.0,
+        "with_tracking": 58.9
+      },
+      "Bridge": {
+        "cells": 6,
+        "advance": 42.0,
+        "with_tracking": 50.25
+      },
+      "Start bridge": {
+        "cells": 12,
+        "advance": 84.0,
+        "with_tracking": 102.15
+      },
+      "Doctor": {
+        "cells": 6,
+        "advance": 42.0,
+        "with_tracking": 50.25
+      },
+      "Connect models": {
+        "cells": 14,
+        "advance": 98.0,
+        "with_tracking": 119.45
+      }
     },
     "delta_Bridge_minus_Connect_px": -8.65,
     "delta_StartBridge_minus_Connect_px": 43.25,
     "verdict": "'Bridge' BUYS 8.65px of row-2 width rather than costing any - the rename is free and then some. 'Start bridge' costs +43.25px, which D2's GUTTER 30->24 remedy (-12) cannot cover; the crit derived ~+41 and the sign and magnitude both hold. USE's withdrawal of 'Start bridge' on width grounds is confirmed by measurement, not just by derivation."
   },
-
   "M3_tag_width_at_700": {
     "status": "MEASURED",
     "question": "tag width at weight 700 in the (8,4) leaf",
     "face": "Space Mono, 12px, tag tracking 0.06em, sample '1 CHANGE'",
-    "advance_px": {"400": 56.0, "500": 56.0, "700": 56.0},
-    "with_tracking_px": {"400": 61.04, "500": 61.04, "700": 61.04},
+    "advance_px": {
+      "400": 56.0,
+      "500": 56.0,
+      "700": 56.0
+    },
+    "with_tracking_px": {
+      "400": 61.04,
+      "500": 61.04,
+      "700": 61.04
+    },
     "plus_leaf_8_4_px": 77.04,
     "line_height_px": 17.0,
     "pitch_identical_400_vs_700": true,
     "verdict": "Weight-independent, exactly as the HOLD claimed: a monospaced Bold keeps Regular's pitch and line box, so a 700 uppercase glyph does not outgrow the smaller leaf. The tag leaf (10,6) -> (8,4) is safe at any weight. HOLD resolves to CONCEDE."
   },
-
+  "M4_turn_beat_collapse": {
+    "status": "MEASURED",
+    "question": "rendered collapse of the 24+16 / 8+12 turn-beat sum - does Qt SUM or COLLAPSE?",
+    "blocks": "CRIT.md ranked #3 (one owner for the turn beat)",
+    "method": "compose the panel at profile expert (standard density), append two YOU turns and two SYNAPSE turns through ChatDisplay's own append_user_message / append_synapse_message, then walk every QTextBlock reading blockFormat().topMargin()/bottomMargin() and documentLayout().blockBoundingRect() y/h. 26 blocks in the resulting document.",
+    "constants_in_play": {
+      "message_formatter._GROUP_MARGIN_Y": 24,
+      "message_formatter._MSG_MARGIN_Y": 8,
+      "applied_at": "message_formatter.py:416 and :436 - `my = _MSG_MARGIN_Y if grouped else _GROUP_MARGIN_Y`",
+      "rhythm.ROLE_GAPS.group": 16,
+      "rhythm.ROLE_GAPS.row": 12,
+      "gap_group_by_density": {
+        "airy": 24,
+        "standard": 16,
+        "tight": 12
+      },
+      "gap_row_by_density": {
+        "airy": 18,
+        "standard": 12,
+        "tight": 9
+      },
+      "applied_at_2": "chat_display.py:190-191 - `bf.setTopMargin(t.gap(rhythm.ROLE_GAPS[role], density))`"
+    },
+    "rendered_topMargin_px_by_role": {
+      "group_blocks": 16.0,
+      "row_blocks": 12.0,
+      "roleless_body_blocks": [
+        0.0,
+        6.0
+      ],
+      "observed_block_numbers": {
+        "group": [
+          0,
+          5,
+          17
+        ],
+        "row": [
+          11,
+          23
+        ]
+      }
+    },
+    "values_24_or_8_found_anywhere_in_the_document": false,
+    "distinct_topMargin_values_in_the_whole_document": [
+      0.0,
+      6.0,
+      12.0,
+      16.0
+    ],
+    "distinct_bottomMargin_values_in_the_whole_document": [
+      0.0,
+      3.0,
+      6.0
+    ],
+    "verdict": "NEITHER. The question 'sum or collapse' has no answer because the two numbers never meet. `bf.setTopMargin()` at chat_display.py:190-191 writes the SAME QTextBlockFormat property that the formatter's HTML margin-top produced, on the same block, after it - so it OVERWRITES. Measured: every 'group' block renders topMargin 16.0 (ROLE_GAPS.group at standard) and every 'row' block 12.0 (ROLE_GAPS.row), and the values 24 and 8 appear NOWHERE in the 26-block document, in any margin, on any block. message_formatter._GROUP_MARGIN_Y and _MSG_MARGIN_Y are dead for exactly the blocks that carry a role - which is the first block of every message, i.e. every block the turn beat is about. This is stronger than #3's claim: the crit argued there are two owners and the rendered beat is ambiguous; the measurement says there is already exactly one owner (chat_display), and the other one's constants - carefully reasoned in a 15-line comment at message_formatter.py:60-69 about 'the air BETWEEN turns' - are silently discarded. #3 ships as a deletion of the dead constants plus a comment correction, not as a spacing retune: the rendered beat does not change."
+  },
+  "M5_transcript_body_x": {
+    "status": "MEASURED",
+    "question": "transcript body x with document margin 0 vs the default 4",
+    "blocks": "CRIT.md ranked #10 (one content edge at 46)",
+    "method": "same composed panel; set document().setDocumentMargin(0) vs leaving the Qt default 4, then read the first text block's absolute x as blockBoundingRect().x() + blockFormat().leftMargin() + layout().lineAt(0).x(), mapped into panel coordinates through viewport().mapTo(panel).",
+    "viewport_x_in_panel_px": 30,
+    "frameWidth_px": 0,
+    "document_margin_default": 4.0,
+    "block_x_in_document_px": {
+      "documentMargin_4": {
+        "system_preamble_block": 4.0,
+        "speaker_and_body_blocks": 20.0
+      },
+      "documentMargin_0": {
+        "system_preamble_block": 0.0,
+        "speaker_and_body_blocks": 16.0
+      }
+    },
+    "body_x_in_panel_px": {
+      "documentMargin_4": 50,
+      "documentMargin_0": 46,
+      "delta": -4
+    },
+    "preamble_x_in_panel_px": {
+      "documentMargin_4": 34,
+      "documentMargin_0": 30,
+      "delta": -4
+    },
+    "document_height_px": {
+      "documentMargin_4": 327.0,
+      "documentMargin_0": 319.0,
+      "delta": -8
+    },
+    "verdict": "#10's number is exact. setDocumentMargin(0) moves the transcript body from x=50 to x=46 in panel coordinates, and 46 = GUTTER 30 (the viewport's own x) + the formatter's 16px speaker indent - a content edge that is the sum of two named things instead of two named things plus Qt's unnamed 4. The document also loses 8px of height (4 top + 4 bottom), which is free vertical space in the transcript. Nothing else moved: the only delta anywhere in the two readings is the uniform -4 on x. '#10 one content edge at 46' is measured, not derived."
+  },
+  "M6_bucket_count": {
+    "status": "MEASURED",
+    "question": "boot-face chroma bucket count, against the CURRENT TEXT_ON_ACCENT",
+    "blocks": "CRIT.md ranked #4, and whether B1 is argued on principle or under a red pin",
+    "TEXT_ON_ACCENT_value_used": "#0F1F2B",
+    "TEXT_ON_ACCENT_provenance": "python/synapse/panel/designsystem/tokens.py:206 at HEAD 716059a3 - i.e. AFTER the type and hue wave (#99/#100) merged. It is unchanged by that wave; #4 proposes to neutralise it and has NOT shipped.",
+    "TEXT_ON_ACCENT_arithmetic": {
+      "rgb": [
+        15,
+        31,
+        43
+      ],
+      "chroma_max_minus_min": 28,
+      "chromatic_over_24": true,
+      "hue_deg": 205,
+      "bucket": 13,
+      "note": "28 clears the >24 chroma predicate by 4. It is a chromatic ink by the instrument's own definition."
+    },
+    "token_buckets": {
+      "WARM #FF7759": {
+        "chroma": 166,
+        "hue": 10,
+        "bucket": 0
+      },
+      "HOUDINI_TAB_YELLOW #B98620": {
+        "chroma": 153,
+        "hue": 40,
+        "bucket": 2
+      },
+      "CONIFEROUS #6E8F72": {
+        "chroma": 33,
+        "hue": 127,
+        "bucket": 8
+      },
+      "TEXT_ON_ACCENT #0F1F2B": {
+        "chroma": 28,
+        "hue": 205,
+        "bucket": 13
+      },
+      "SIGNAL #8FB3D9": {
+        "chroma": 74,
+        "hue": 210,
+        "bucket": 14
+      },
+      "SIGNAL_DEEP #627A93": {
+        "chroma": 49,
+        "hue": 210,
+        "bucket": 14
+      },
+      "TEXT_BRIGHT #DEDEDE": {
+        "chroma": 0,
+        "hue": 0,
+        "bucket": null,
+        "note": "achromatic, never counted"
+      }
+    },
+    "measured_live_boot_face": {
+      "instrument": "the pin's own _hue_buckets (tests/panel/test_bc_wave.py:269-282) run on widget.grab() of the composed panel at 340x760",
+      "curious": {
+        "count": 4,
+        "buckets": {
+          "0": 27,
+          "2": 63,
+          "13": 59,
+          "14": 34
+        }
+      },
+      "expert": {
+        "count": 4,
+        "buckets": {
+          "0": 27,
+          "2": 63,
+          "13": 59,
+          "14": 34
+        }
+      },
+      "ml": {
+        "count": 4,
+        "buckets": {
+          "0": 27,
+          "2": 63,
+          "13": 59,
+          "14": 34
+        }
+      },
+      "legend": "bucket -> number of distinct chromatic colours in that bucket. 0 = WARM mark, 2 = Doctor yellow, 13 = TEXT_ON_ACCENT ink and its antialias ramp, 14 = SIGNAL / SIGNAL_DEEP."
+    },
+    "counterfactual_TEXT_ON_ACCENT_neutral": {
+      "stand_in_used": "#1B1B1B",
+      "stand_in_caveat": "#4 names no replacement value, so a chroma-0 near-black was substituted. Any achromatic ink gives the same bucket arithmetic.",
+      "how": "patched on the tokens module in a FRESH hython process BEFORE qss was ever imported, so the generated stylesheet carries no #0F1F2B (verified: 'sheet_mentions_old_ink' == false). An in-process reload after the panel was built did NOT take - the first attempt showed no change and was discarded rather than reported.",
+      "curious": {
+        "count": 4,
+        "buckets": {
+          "0": 27,
+          "2": 63,
+          "13": 2,
+          "14": 49
+        }
+      },
+      "expert": {
+        "count": 4,
+        "buckets": {
+          "0": 27,
+          "2": 63,
+          "13": 2,
+          "14": 49
+        }
+      },
+      "ml": {
+        "count": 4,
+        "buckets": {
+          "0": 27,
+          "2": 63,
+          "13": 2,
+          "14": 49
+        }
+      },
+      "bucket_13_residue_after_neutralising": [
+        [
+          65,
+          79,
+          92
+        ],
+        [
+          71,
+          87,
+          102
+        ]
+      ]
+    },
+    "verdict": "The boot face holds FOUR buckets today, in all three profiles - so `test_bc_wave.py:329` (`assert len(rest) <= 3`) is RED at HEAD, and B1 is currently being argued under a red pin. And #4 does not clear it. Neutralising TEXT_ON_ACCENT strips 57 of bucket 13's 59 colours, but TWO survive - (65,79,92) and (71,87,102), which are antialias pixels on the SIGNAL fill's own edge, landing at hue 205-206 and falling into bucket 13 rather than SIGNAL's 14. One pixel pair on the wrong side of a 15-degree boundary keeps the bucket alive and the count at 4. So: the fourth bucket is not a fourth hue family, it is the instrument's bucket boundary cutting through one accent's antialias ramp. That is exactly what B1 option (1) ('count tokens not buckets') said was happening, and it is now measured rather than suspected. CRIT.md:179 - 'After #4 the boot face sits at 3 buckets with Doctor included' - is REFUTED as written: it sits at 4 before #4 and at 4 after. B1 cannot be argued free of a red pin on this evidence; either the pin re-baselines to <= 4, or the predicate changes to count token families instead of 15-degree buckets."
+  },
   "M7_mono_weight_500": {
     "status": "MEASURED",
     "question": "what mono weight 500 renders as today",
     "resolved": {
-      "400": {"resolved_weight": 400, "bold": false, "family": "Space Mono", "exact_match": true},
-      "500": {"resolved_weight": 500, "bold": true,  "family": "Space Mono", "exact_match": true},
-      "600": {"resolved_weight": 600, "bold": true,  "family": "Space Mono", "exact_match": true},
-      "700": {"resolved_weight": 700, "bold": true,  "family": "Space Mono", "exact_match": true}
+      "400": {
+        "resolved_weight": 400,
+        "bold": false,
+        "family": "Space Mono",
+        "exact_match": true
+      },
+      "500": {
+        "resolved_weight": 500,
+        "bold": true,
+        "family": "Space Mono",
+        "exact_match": true
+      },
+      "600": {
+        "resolved_weight": 600,
+        "bold": true,
+        "family": "Space Mono",
+        "exact_match": true
+      },
+      "700": {
+        "resolved_weight": 700,
+        "bold": true,
+        "family": "Space Mono",
+        "exact_match": true
+      }
     },
     "verdict": "Weight 500 renders BOLD. The crit reasoned from fontload.py:158-190 that the bold threshold is >=600; the live QFontInfo says the synthetic-bold flag is already set at 500. So status 11/500 and tag 12/500 have been rendering as Bold all along - 500 was never a distinct middle weight on this family, it was 700's face under another name. TYPE's ANSWER 1 (name WEIGHT_BOLD = 700 and move those roles to 400 | 700) is not a tidy-up: it makes the stylesheet say what the screen was already doing."
   },
-
-  "M1_rail_height": {
-    "status": "PENDING",
-    "question": "rail height with/without qss.py:344-346, and the DsVerb line box",
-    "blocks": "CRIT.md ranked #11, and A2's airy -13 which stands until measured",
-    "method": "needs a constructed DsHeader + DsVerb tree; hython offscreen with the panel's own QSS applied, sizeHint before and after deleting the #DsHeader margin-bottom rule. Not answerable from font metrics."
-  },
-  "M4_turn_beat_collapse": {
-    "status": "PENDING",
-    "question": "rendered collapse of the 24+16 / 8+12 turn-beat sum",
-    "blocks": "CRIT.md ranked #3 (one owner for the turn beat)",
-    "method": "needs a real QTextDocument with the two margin owners live; measure block bounding rects. Qt may collapse or sum them and the whole ranking of #3 depends on which."
-  },
-  "M5_transcript_body_x": {
-    "status": "PENDING",
-    "question": "transcript body x with document margin 0",
-    "blocks": "CRIT.md ranked #10 (one content edge at 46)",
-    "method": "needs ChatDisplay constructed; read the first block's layout x with setDocumentMargin(0) vs default 4."
-  },
-  "M6_bucket_count": {
-    "status": "PENDING",
-    "question": "boot-face chroma bucket count with TEXT_ON_ACCENT neutral",
-    "blocks": "CRIT.md ranked #4, and whether B1 is argued on principle or under a red pin",
-    "method": "pure palette arithmetic over the token table - no Qt needed - but it must be run against whatever TEXT_ON_ACCENT is after the type/hue wave, not against the pre-change value."
-  }
+  "_still_unmeasured": [
+    "Qt's substitute for a QSS font-weight: 600 on a 400/700 family - not attempted this leg",
+    "NO_SOFT consumer count - static, not a measurement",
+    "MUSHROOM chroma vs the >24 threshold - trivially computable but MUSHROOM was not sampled here",
+    "border-left rendering on a 999-radius pill (RESTRAINT's crescent HOLD) - needs a pixel diff of a DsChip vs a radius-999 tag, not attempted",
+    "R3-01's 393 post-F1",
+    "the wordmark's live 14 vs 15px",
+    "G3 strict at HEAD",
+    "HiDPI - every number here is at devicePixelRatio 1 under the offscreen platform"
+  ]
 }
