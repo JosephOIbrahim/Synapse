@@ -147,6 +147,10 @@ function sh(cmd: string, cmdArgs: string[], cwd = REPO) {
   return spawnSync(cmd, cmdArgs, { cwd, encoding: "utf8", shell: process.platform === "win32" });
 }
 
+// The fork-point marker a worktree carries from creation to close (gitignored). Written by
+// ensureWorktree here and by Start-Leg in orchestrate.ps1 - one convention, one file name.
+const CYCLE_BASE = ".cycle_base";
+
 function ensureWorktree(id: string): string {
   const wt = join(REPO, WORKTREE_DIR, `feature-${id}`);
   if (existsSync(wt)) return wt;
@@ -155,7 +159,71 @@ function ensureWorktree(id: string): string {
   // ADAPT: assumes a clean main and that you build off it. Adjust base ref if needed.
   const r = sh("git", ["worktree", "add", "-b", branch, wt, "HEAD"]);
   if (r.status !== 0) log(`${c.warn}  worktree note: ${(r.stderr || "").trim()}${c.off}`);
+  // 1h (harness-review 2026-09-15, FENCE-4): record the fork point. checkProtectedDiff runs
+  // `git diff --name-only <base>..HEAD` against THIS sha at cycle end, so a cycle is judged on
+  // what it changed, not on whatever HEAD happened to contain. Written once, at creation - a
+  // reused worktree keeps its base.
+  if (r.status === 0) {
+    const b = sh("git", ["rev-parse", "HEAD"], wt);
+    const sha = (b.stdout || "").trim();
+    if (b.status === 0 && sha) {
+      try { mkdirSync(join(wt, ".claude"), { recursive: true }); writeFileSync(join(wt, ".claude", CYCLE_BASE), sha + "\n"); }
+      catch (e) { log(`${c.warn}  could not record the cycle base in ${wt}: ${String(e)}${c.off}`); }
+    }
+  }
   return wt;
+}
+
+// ---------- post-cycle protected-path diff (1h · harness-review 2026-09-15 · FENCE-4) ----------
+// runAgent's docstring used to ASSERT "VERSION + harness untouched" on the strength of a deny
+// rule. A deny rule matches a command FORM (Edit(VERSION)); `Copy-Item x VERSION`, `git commit
+// -a`, a python one-liner all write around it. Same lesson as harness/githooks/pre-push: fence
+// the CAPABILITY. After the Evaluator says PASS, diff the worktree from its recorded fork point
+// to HEAD and refuse the PASS if any path is in harness/protected_paths.txt. The set lives in
+// that ONE file; harness/protected_paths.py is the one matcher (orchestrate.ps1 calls the same
+// one, so the two scripts cannot drift on glob semantics). A base that cannot be resolved is a
+// refusal too - "cannot prove untouched" is not "untouched".
+//
+// REPAIR ROUND. The first cut asked `git diff --name-only <base>..HEAD` right here, with
+// <base> read from .claude/.cycle_base - a gitignored file inside the agent's own writable
+// worktree - and looked at committed history only. That left four clean bypasses (rewrite the
+// marker to HEAD; `git mv VERSION VERSION.bak`, since --name-only reports only a rename's
+// destination; write VERSION without committing; stage it without committing). All four are
+// answered in ONE place now, harness/protected_diff.py, which orchestrate.ps1's close gate
+// shells out to as well - so the two consumers cannot drift on what "this cycle changed" means
+// any more than they can drift on the protected set. SCOPE, stated not implied: .gitignore'd
+// paths are invisible to git, so the ignored members of harness/state/** and anything written
+// to the MAIN checkout (run.ts writes harness/state/done.json there by design, see DONE below)
+// are outside this fence - see the module docstring.
+type ProtectedVerdict = { ok: boolean; base: string; hits: string[]; error: string };
+function checkProtectedDiff(wt: string): ProtectedVerdict {
+  const v: ProtectedVerdict = { ok: false, base: "", hits: [], error: "" };
+  // Display only. The checker resolves the REAL base itself and cross-checks this marker
+  // against merge-base(<ref>, HEAD), so a tampered marker cannot narrow the diff.
+  const baseFile = join(wt, ".claude", CYCLE_BASE);
+  try { if (existsSync(baseFile)) v.base = readFileSync(baseFile, "utf8").trim(); } catch {}
+  // The fork ref: this checkout's HEAD, which is what ensureWorktree cuts every worktree from.
+  const mainHead = (sh("git", ["rev-parse", "HEAD"]).stdout || "").trim();
+  // qp: quote+forward-slash both paths under win32 shell:true (sibling selectRedTask does the
+  // same) - an unquoted spaced worktree path would shred into argparse.
+  const q = (p: string) => (process.platform === "win32" ? `"${p.replace(/\\/g, "/")}"` : p);
+  const args = ["harness/protected_diff.py", "--worktree", q(wt)];
+  if (mainHead) args.push("--ref", mainHead);
+  const r = spawnSync(PYTHON, args, { cwd: REPO, encoding: "utf8", shell: process.platform === "win32" });
+  if (r.status === 0) { v.ok = true; return v; }
+  if (r.status === 1) {
+    v.hits = (r.stdout || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    // An UNLAUNCHABLE interpreter also exits 1 here, not null: under win32 shell:true the
+    // spawn succeeds (cmd.exe runs) and cmd.exe's "is not recognized" is exit 1 with empty
+    // stdout - measured, not assumed. Exit 1 with no hits is therefore "the check did not
+    // happen", never "clean". ok stays false either way, so this only makes the line honest.
+    if (!v.hits.length) v.error = `protected_diff.py exited 1 with no hits (interpreter '${PYTHON}' unlaunchable?): ${((r.stderr || "")).trim().slice(0, 300)}`;
+    return v;
+  }
+  // status null / 2 / anything else: the check could not be made. "Cannot prove untouched"
+  // is not "untouched".
+  v.error = `protected_diff.py exited ${r.status}: ${((r.stderr || "") + (r.stdout || "")).trim().slice(0, 300)}`;
+  return v;
 }
 
 // Red-driver (--drive): select the next blocking-red readiness finding and map it to its
@@ -221,7 +289,9 @@ function selectRedTask(): string | null {
  *
  * Verified on Claude Code 2.x: -p, --permission-mode acceptEdits, and --append-system-prompt-file
  * are all valid. acceptEdits lets the headless agent apply edits in the throwaway worktree; your
- * deny rules still hold (no push, no merge, VERSION + harness untouched).
+ * deny rules still hold for push and merge. VERSION + harness/state + the suite baselines are NOT
+ * assumed untouched on the strength of a deny rule (form-matched, bypassable - FENCE-4): they are
+ * CHECKED after the cycle by checkProtectedDiff, and a touch refuses the PASS (1h).
  */
 function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
   if (DRY) return "";
@@ -594,7 +664,20 @@ function runTask(task: any): "PASS" | "BLOCKED" | "GATED" {
     const s = verdict.scores ?? {};
     log(`  evaluator → ${verdict.gate_status === "PASS" ? c.ok : c.bad}${verdict.gate_status}${c.off} ${c.dim}${Object.entries(s).map(([k, v]) => `${k}:${v}`).join(" ")}${c.off}`);
 
-    if (verdict.gate_status === "PASS") { appendProgress(`${task.id} PASS — ${task.title}`); recordDone(task, wt); return "PASS"; }
+    if (verdict.gate_status === "PASS") {
+      // 1h: the Evaluator's PASS is not the last word - the protected-path diff is. A hit (or an
+      // unresolvable base) is BLOCKED, never a repair round: an agent that wrote VERSION or
+      // harness/state has already gone where no cycle may go, and a human decides what survives.
+      const pp = checkProtectedDiff(wt);
+      if (!pp.ok) {
+        const what = pp.hits.length ? pp.hits.join(", ") : pp.error;
+        log(`  ${c.bad}PROTECTED-PATH${c.off} ${pp.hits.length ? "touched" : "check impossible"}: ${what}  ${c.dim}(${pp.base ? pp.base.slice(0, 8) + "..HEAD" : "no base"} · harness/protected_paths.txt · 1h/FENCE-4)${c.off}`);
+        log(`  ${c.bad}refusing the PASS${c.off} — VERSION, harness/state/** and the suite baselines are human-only. Needs a human; nothing recorded as done.`);
+        appendProgress(`${task.id} BLOCKED — PROTECTED-PATH ${what} — needs a human — ${task.title}`);
+        return "BLOCKED";
+      }
+      appendProgress(`${task.id} PASS — ${task.title}`); recordDone(task, wt); return "PASS";
+    }
     writeTicket(wt, verdict.remediation_manifest ?? []);
   }
 
