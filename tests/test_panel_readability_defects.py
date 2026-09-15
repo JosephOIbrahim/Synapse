@@ -66,7 +66,12 @@ def test_wcag_helper_matches_published_reference_pairs():
 
 # -- D1 - one unit character inverted four rungs ---------------------------
 
-_FONT_SIZE_UNIT = re.compile(r"font-size\s*:\s*[^;}\n]*?\b(pt|em|ex|pc|in|cm|mm)\b")
+# NOTE the character class: it must NOT exclude `}`. Every font-size in this
+# sheet is written as a token interpolation - `font-size: {t.SIZE_LABEL}pt;` -
+# so a class that stops at `}` can never reach the unit, and the guard reads
+# green against the very source it was written to catch. Found by running this
+# test against master before trusting it.
+_FONT_SIZE_UNIT = re.compile(r"font-size\s*:\s*[^;\n]*?\b(pt|em|ex|pc|in|cm|mm)\b")
 
 
 def test_d1_no_font_size_in_the_design_system_uses_a_non_px_unit():
