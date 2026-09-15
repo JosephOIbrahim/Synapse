@@ -1,0 +1,70 @@
+{
+  "_what": "The measurement leg CRIT.md marks as pending (M1-M7). Three landed; four still need a constructed widget tree and are named with the method that would answer them.",
+  "_method": "Measured 2026-09-15 on the LIVE Houdini 22.0.400 GUI session over the SYNAPSE bridge, PySide6, read-only QFontMetricsF / QFontInfo. No widget was created or shown. The original leg was launched hython-offscreen and died on a model usage limit before landing.",
+  "_caveat": "Measured AFTER #99 and #100 merged. M7 asked 'what does weight 500 render as today'; 'today' is now post-change. The answer is a property of the font family, not of the changed code, so it is still the answer to the question asked.",
+
+  "M2_rail_verb_width": {
+    "status": "MEASURED",
+    "question": "'Bridge' / 'Start bridge' width vs row-2 slack post-F1",
+    "face": "Space Mono, 11px, LABEL tracking 0.15em",
+    "advances_px": {
+      "Connect": {"cells": 7, "advance": 49.0, "with_tracking": 58.9},
+      "Bridge": {"cells": 6, "advance": 42.0, "with_tracking": 50.25},
+      "Start bridge": {"cells": 12, "advance": 84.0, "with_tracking": 102.15},
+      "Doctor": {"cells": 6, "advance": 42.0, "with_tracking": 50.25},
+      "Connect models": {"cells": 14, "advance": 98.0, "with_tracking": 119.45}
+    },
+    "delta_Bridge_minus_Connect_px": -8.65,
+    "delta_StartBridge_minus_Connect_px": 43.25,
+    "verdict": "'Bridge' BUYS 8.65px of row-2 width rather than costing any - the rename is free and then some. 'Start bridge' costs +43.25px, which D2's GUTTER 30->24 remedy (-12) cannot cover; the crit derived ~+41 and the sign and magnitude both hold. USE's withdrawal of 'Start bridge' on width grounds is confirmed by measurement, not just by derivation."
+  },
+
+  "M3_tag_width_at_700": {
+    "status": "MEASURED",
+    "question": "tag width at weight 700 in the (8,4) leaf",
+    "face": "Space Mono, 12px, tag tracking 0.06em, sample '1 CHANGE'",
+    "advance_px": {"400": 56.0, "500": 56.0, "700": 56.0},
+    "with_tracking_px": {"400": 61.04, "500": 61.04, "700": 61.04},
+    "plus_leaf_8_4_px": 77.04,
+    "line_height_px": 17.0,
+    "pitch_identical_400_vs_700": true,
+    "verdict": "Weight-independent, exactly as the HOLD claimed: a monospaced Bold keeps Regular's pitch and line box, so a 700 uppercase glyph does not outgrow the smaller leaf. The tag leaf (10,6) -> (8,4) is safe at any weight. HOLD resolves to CONCEDE."
+  },
+
+  "M7_mono_weight_500": {
+    "status": "MEASURED",
+    "question": "what mono weight 500 renders as today",
+    "resolved": {
+      "400": {"resolved_weight": 400, "bold": false, "family": "Space Mono", "exact_match": true},
+      "500": {"resolved_weight": 500, "bold": true,  "family": "Space Mono", "exact_match": true},
+      "600": {"resolved_weight": 600, "bold": true,  "family": "Space Mono", "exact_match": true},
+      "700": {"resolved_weight": 700, "bold": true,  "family": "Space Mono", "exact_match": true}
+    },
+    "verdict": "Weight 500 renders BOLD. The crit reasoned from fontload.py:158-190 that the bold threshold is >=600; the live QFontInfo says the synthetic-bold flag is already set at 500. So status 11/500 and tag 12/500 have been rendering as Bold all along - 500 was never a distinct middle weight on this family, it was 700's face under another name. TYPE's ANSWER 1 (name WEIGHT_BOLD = 700 and move those roles to 400 | 700) is not a tidy-up: it makes the stylesheet say what the screen was already doing."
+  },
+
+  "M1_rail_height": {
+    "status": "PENDING",
+    "question": "rail height with/without qss.py:344-346, and the DsVerb line box",
+    "blocks": "CRIT.md ranked #11, and A2's airy -13 which stands until measured",
+    "method": "needs a constructed DsHeader + DsVerb tree; hython offscreen with the panel's own QSS applied, sizeHint before and after deleting the #DsHeader margin-bottom rule. Not answerable from font metrics."
+  },
+  "M4_turn_beat_collapse": {
+    "status": "PENDING",
+    "question": "rendered collapse of the 24+16 / 8+12 turn-beat sum",
+    "blocks": "CRIT.md ranked #3 (one owner for the turn beat)",
+    "method": "needs a real QTextDocument with the two margin owners live; measure block bounding rects. Qt may collapse or sum them and the whole ranking of #3 depends on which."
+  },
+  "M5_transcript_body_x": {
+    "status": "PENDING",
+    "question": "transcript body x with document margin 0",
+    "blocks": "CRIT.md ranked #10 (one content edge at 46)",
+    "method": "needs ChatDisplay constructed; read the first block's layout x with setDocumentMargin(0) vs default 4."
+  },
+  "M6_bucket_count": {
+    "status": "PENDING",
+    "question": "boot-face chroma bucket count with TEXT_ON_ACCENT neutral",
+    "blocks": "CRIT.md ranked #4, and whether B1 is argued on principle or under a red pin",
+    "method": "pure palette arithmetic over the token table - no Qt needed - but it must be run against whatever TEXT_ON_ACCENT is after the type/hue wave, not against the pre-change value."
+  }
+}

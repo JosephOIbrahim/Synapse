@@ -1,0 +1,114 @@
+# Closeout — 2026-09-15
+
+What was opened today, and where each thing ended. Written so nothing survives only in a chat
+transcript. Numbers are not restated here; each line names the producer that measured it (Law 2).
+
+---
+
+## Shipped
+
+| release | evidence |
+|---|---|
+| **v5.71.0** | `docs/releases/v5.71.0.md` · `harness/notes/release-5.71.0/` |
+| **v5.72.0** | `docs/releases/v5.72.0.md` · `harness/notes/release-5.72.0/` |
+
+Both verified the same way: `step_verify` downloads the installer GitHub is actually serving and
+compares its sha256 to the qualified build. "Published" means verified, not assumed.
+
+## Merged
+
+Ten PRs into v5.71.0 (#83–#92), seven into v5.72.0 (#94–#97, #99–#101).
+
+**Trap for whoever audits this:** every one was **squash**-merged, so
+`git merge-base --is-ancestor <branch> master` says **not merged** for all of them. The content is
+in master under a different sha. Use `git patch-id --stable` before calling any of that work
+orphaned — and before pruning a worktree because its branch "isn't merged".
+
+---
+
+## What the gates caught
+
+Recorded because each one is a class, not an incident.
+
+1. **The release script emptied three governing documents.** `cut.py` wrote `CLAUDE.md`,
+   `README.md` and `docs/getting-started/installation.md` to **0 bytes** via
+   `io.open(p,"w").write(read(p)...)` — Python evaluates the truncating `open()` first, so `read()`
+   returns `""`. Caught at `qual`, four steps before the push. `cut.py` now has a guarded
+   `write(path, text)` that computes the text before opening and asserts it is non-empty.
+
+2. **A release step that only logs a number gates nothing.** `step_suites` gated on the stock
+   suite and merely *printed* the seat number, while the notes asserted "the known five reds, none
+   new". The seat suite then reported six. Added `SEAT_KNOWN_REDS`, which stops the cut when the
+   count moves. The sixth red is named and diagnosed in `release-5.71.0/SEAT_REDS.md`.
+
+3. **"None is new" was never checkable.** Releases recorded a seat *count*, never the test names —
+   two releases could have five completely different reds and both print it truthfully. The names
+   and a re-measured v5.70.1 baseline now exist in `SEAT_REDS.md`. Promoting them to a ratcheted
+   baseline is a protected-path decision and is Joe's.
+
+4. **CodeRabbit can report `pass` because it is rate limited.** On a fresh PR it was the only
+   registered check. A merge gate written as "all registered checks are non-pending and none
+   failed" reports GREEN seconds after opening, before the CI matrix exists. Gate on the four
+   `test (os, py)` job names only.
+
+5. **A hook that passes `bash -n` here dies on every runner.** `harness/githooks/pre-commit` wrapped
+   a `case` in `$( ... )`; the pattern's closing paren ends the substitution in some POSIX shells.
+   Git for Windows' bash parses it, and so do local `bash -n` and `dash -n`. Only CI reproduced it.
+   Same family as the macOS `EPERM` vs Linux `ESRCH` fix in `native_driver.py` earlier the same day.
+
+6. **Two operator errors, both mine.** A `git commit -am … -F file` is refused by git and the commit
+   silently does not happen — verify with `git log --oneline -1`. And `$!` after `nohup … &` returns
+   the wrapper pid, so a kill hit nothing and a second release run started on top of the first,
+   putting two `pytest tests/` runs on the shared log at once. Resolve pids from the process table
+   by command line.
+
+---
+
+## Open — and who owns each
+
+### Joe's rulings
+
+| item | where |
+|---|---|
+| `_MCPLocalClient.available`: resilient (keep cached port) vs strict (clear it) | `release-5.71.0/SEAT_REDS.md` |
+| **PR #98** — composer copy edits a constructor pinned by `_PANEL_BASE`, which moves only under a written ruling. A crit is not a ruling. | PR #98 comment |
+| `DsStop:hover` is now identical to rest after `HOT_SOFT` was retired; hover feedback rides only `:pressed` | PR #100 body |
+| The 19 ranked changes from the panel crit | `harness/design_review/2026-09-15/CRIT.md` |
+| Promoting the six seat-red names to a ratcheted baseline | protected path |
+| **PR #93** (pgdrm) | — |
+
+### Structural, recommended
+
+**`master` has no branch protection.** `gh api …/branches/master/protection` returns 404 and
+`allow_auto_merge` is false, so there are zero required status checks — nothing prevents a red PR
+from being merged. The CI gate held all day because a human enforced it. Requiring the four
+`test (…)` contexts would make it structural. One settings change.
+
+### Recorded here because it exists nowhere else
+
+- **768 tracked files on master contain a hardcoded `C:\Users\User` path**, including
+  `.claude/settings.json` and several agent definitions, in a public repository. `harness/CLAUDE.md`
+  calls that "a bug, not a convenience". Pre-existing; introduced by none of today's branches.
+  Reproduce: `git grep -l -I "C:[\\/]Users[\\/]User" master -- . | wc -l`.
+- **31 git worktrees exist.** Three under OneDrive and several `bp*` ones carry uncommitted
+  changes (`bp3/probe`, `bp3/tidy`, `bp4/b7fix` — merged by ancestry but dirty). The
+  `.claude/worktrees/wf_*` set is left over from this session's workflows; two of them hold
+  *staged* mutation-test debris, including a staged delete of `tests/test_agent_roster.py` that is
+  **not** in any commit. Inventory before pruning; see the squash-merge trap above.
+
+### Mine, still queued
+
+- Panel crit measurements **M1–M7** — the workflow died on a model usage limit. Needs hython, so it
+  waits for the release seat suite. Resume with the run id in `.token-saver/closeout-state.md`.
+- Farm tools still need curated `activity.py` labels; they fall back to derived ones.
+
+---
+
+## Design record
+
+`harness/design_review/2026-09-15/` holds the crit (`CRIT.md`), the token map (`MAP.json`), the
+canvas sources, and `SECOND_LOOK.md` — 29 adversarial findings against the three artboards,
+recovered from the reviewing agent's transcript after it hit a usage limit mid-write.
+
+**Do not republish the canvas.** The published artifact carries Joe's own later edits; any update
+must read and extract the live page first and merge onto that.
