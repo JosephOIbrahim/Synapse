@@ -11,6 +11,11 @@
 # there is no CRLF-vs-LF checkout artifact - a real behavioural change is the only
 # thing that can make the diff non-empty. Isolated in $env:TEMP so Backup-Branches
 # has no remote and no dry-run worktree is ever created.
+#
+# SCOPE: the edited side ($editedOrch) is the WORKING-TREE harness\orchestrate.ps1, not a
+# pinned revision. This script is a true BP2-METER before/after proof ONLY when run at
+# 1c2b78fd; orchestrate.ps1 changed again at 882eec6b (Test-CloseGate S5 bus fix), so a
+# run on a later checkout compares 7fc09482 against 1c2b78fd+882eec6b, not BP2-METER alone.
 param([int]$RunSeconds = 8)
 $ErrorActionPreference = 'Continue'
 $here     = Split-Path -Parent $PSCommandPath
