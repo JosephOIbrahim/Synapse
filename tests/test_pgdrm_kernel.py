@@ -17,7 +17,9 @@ and the arithmetic is shown inline. Nothing here is read back from
 from __future__ import annotations
 
 import ast
+import math
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -427,3 +429,265 @@ def test_decay_utility_rejects_negative_lambda_and_age():
         pgdrm.decay_utility(-0.1, 1.0)
     with pytest.raises(ValueError):
         pgdrm.decay_utility(0.1, -1.0)
+
+
+# ===========================================================================
+# 9 - M2 FIX leg: order-independence, and the three guards the independent
+#     26-mutation crucible harness found uncovered.
+#
+#     Crucible verdict on e4730869: SOUND-WITH-NITS.
+#       nit 1 - `evaluate(task_context_tokens=<generator>)` answered ALLOW on
+#               the first call and DROP on the second, with the SAME argument.
+#       nit 2 - mutation X25 (delete the `str` guard in `_token_set`) survived
+#               the whole suite; lines 201 / 231 / 263 had no covering test.
+# ===========================================================================
+
+
+def test_the_same_one_shot_iterable_answers_identically_on_every_call():
+    """A pure function may not answer differently on its second call with the
+    same argument. On e4730869 this returned ALLOW then DROP, because the
+    generator was exhausted by call 1 and call 2 saw an EMPTY task context -
+    and an empty task context makes every tagged record foreign.
+
+    Materializing at entry cannot repair that: call 2 never sees the tokens at
+    all. Refusal is the only reproducible answer, so both calls raise.
+
+    Mutation that turns this red: X17 - delete the `_reiterable(name, tokens)`
+    call from `_token_set` (the ALLOW/DROP split comes straight back).
+    """
+    r = _rec(tokens=frozenset({"shot_A"}))
+    gen = (t for t in ["shot_A"])
+
+    outcomes = []
+    for _ in range(2):
+        try:
+            outcomes.append(("verdict", _eval(r, task_context_tokens=gen).decision))
+        except TypeError as exc:
+            outcomes.append(("TypeError", str(exc)))
+
+    assert outcomes[0] == outcomes[1], (
+        f"call order changed the answer: {outcomes[0]} then {outcomes[1]}")
+    assert outcomes[0][0] == "TypeError"
+    assert "re-iterable collection" in outcomes[0][1]
+
+    # ...and the collection form of the very same tokens is stable and ALLOWs.
+    assert _eval(r, task_context_tokens={"shot_A"}).decision == pgdrm.ALLOW
+    assert _eval(r, task_context_tokens={"shot_A"}) == _eval(
+        r, task_context_tokens={"shot_A"})
+
+
+def test_filter_records_refuses_a_one_shot_iterable_on_both_iterable_arguments():
+    """`filter_records` has TWO iterable parameters and the crucible exercised
+    only one. On e4730869 a generator of records returned ('a',) kept on the
+    first call and () on the second.
+
+    Mutation that turns this red: X18 - drop the `_reiterable("records", ...)`
+    call in `filter_records` (the records generator silently empties). X17
+    covers the `task_context_tokens` half.
+    """
+    records = (_rec(key="a"),)
+
+    gen_records = (r for r in records)
+    with pytest.raises(TypeError, match="re-iterable collection"):
+        pgdrm.filter_records(gen_records, task_context_tokens={"shot_A"},
+                             decay_lambda=LN2, utility_threshold=0.0)
+    with pytest.raises(TypeError, match="re-iterable collection"):
+        pgdrm.filter_records(gen_records, task_context_tokens={"shot_A"},
+                             decay_lambda=LN2, utility_threshold=0.0)
+
+    gen_tokens = (t for t in ["shot_A"])
+    with pytest.raises(TypeError, match="re-iterable collection"):
+        pgdrm.filter_records(records, task_context_tokens=gen_tokens,
+                             decay_lambda=LN2, utility_threshold=0.0)
+    with pytest.raises(TypeError, match="re-iterable collection"):
+        pgdrm.filter_records(records, task_context_tokens=gen_tokens,
+                             decay_lambda=LN2, utility_threshold=0.0)
+
+    # the collection form of both arguments is accepted and repeatable
+    kw = dict(task_context_tokens={"shot_A"}, decay_lambda=LN2,
+              utility_threshold=0.0)
+    assert pgdrm.filter_records(records, **kw) == pgdrm.filter_records(records, **kw)
+
+
+def test_a_record_is_a_stable_value_the_moment_it_exists():
+    """`MemoryRecord.tokens` is materialized exactly once, AT CONSTRUCTION.
+
+    This is the composed case AGENTS.md warns about - the bug is on the second
+    action. On e4730869 the SAME record evaluated twice inside ONE
+    `filter_records` call returned DROP then ALLOW, because evaluating it the
+    first time consumed its token generator.
+
+    Mutation that turns this red: X19 - delete `MemoryRecord.__post_init__`.
+    """
+    # a one-shot iterator is refused outright, at construction, not later
+    with pytest.raises(TypeError, match="re-iterable collection"):
+        pgdrm.MemoryRecord(key="g", tokens=(t for t in ["shot_B"]),
+                           age_seconds=0.0)
+
+    # any re-iterable collection is FROZEN once: the record is a value, and
+    # equal records are equal whatever container the caller handed in
+    from_list = pgdrm.MemoryRecord(key="k", tokens=["shot_A", "shot_A"],
+                                   age_seconds=0.0)
+    assert from_list.tokens == frozenset({"shot_A"})
+    assert isinstance(from_list.tokens, frozenset)
+    assert from_list == pgdrm.MemoryRecord(key="k", tokens={"shot_A"},
+                                           age_seconds=0.0)
+    assert hash(from_list) == hash(pgdrm.MemoryRecord(
+        key="k", tokens=frozenset({"shot_A"}), age_seconds=0.0))
+
+    # the same record twice in one call gets the same verdict twice
+    contaminated = pgdrm.MemoryRecord(key="dup", tokens=["shot_B"],
+                                      age_seconds=0.0)
+    res = pgdrm.filter_records((contaminated, contaminated),
+                               task_context_tokens={"shot_A"},
+                               decay_lambda=LN2, utility_threshold=0.0)
+    assert res.verdicts[0] == res.verdicts[1]
+    assert res.dropped == ("dup", "dup")
+
+
+def test_a_str_task_context_is_refused_never_shredded_into_characters():
+    """THE X25 KILLER.
+
+    A str IS Iterable, so without the guard in `_token_set` the task context
+    'shot_A' silently becomes frozenset({'s', 'h', 'o', 't', '_', 'A'}). The
+    caller's single real token is then foreign against its own six characters
+    and a correct record comes back DROP/CONTAMINATED - a silently WRONG filter
+    decision from a plausible caller mistake, with nothing raised anywhere.
+
+    Mutation that turns this red: X25 - delete
+    `if isinstance(tokens, str) or not isinstance(tokens, Iterable): raise`.
+    Under X25 the `pytest.raises` below never fires (a Verdict is returned) and
+    the shredding assertion records exactly what would have been returned.
+    """
+    r = _rec(tokens=frozenset({"shot_A"}))
+
+    with pytest.raises(TypeError, match="must be an iterable of str"):
+        _eval(r, task_context_tokens="shot_A")
+
+    # the behaviour the guard protects: ONE token, passed as a collection,
+    # ALLOWs - while the shredded reading the guard forbids would have DROPped
+    assert _eval(r, task_context_tokens={"shot_A"}).decision == pgdrm.ALLOW
+    assert frozenset("shot_A") == frozenset({"s", "h", "o", "t", "_", "A"})
+    assert _eval(r, task_context_tokens=frozenset("shot_A")).decision == pgdrm.DROP
+
+
+def test_a_str_record_token_set_is_refused_at_construction():
+    """Same guard, record side. `tokens="shot_A"` must not become six tokens.
+
+    Mutation that turns this red: X25 (the guard is shared).
+    """
+    with pytest.raises(TypeError, match="must be an iterable of str"):
+        pgdrm.MemoryRecord(key="k", tokens="shot_A", age_seconds=0.0)
+
+
+@pytest.mark.parametrize("not_iterable", [123, 4.5, None, object()])
+def test_a_non_iterable_task_context_is_refused(not_iterable):
+    """The other half of the same condition. An int is not a token set, and
+    coercing one would be a guess about what the caller meant.
+
+    Mutation that turns this red: X20 - drop the
+    `not isinstance(tokens, Iterable)` half of the guard. A TypeError still
+    escapes from `frozenset(123)`, but it reads `'int' object is not iterable`
+    and never names the parameter, so the `match=` below goes red.
+    """
+    with pytest.raises(TypeError,
+                       match="task_context_tokens must be an iterable of str"):
+        _eval(_rec(), task_context_tokens=not_iterable)
+
+
+# --- the infinity branch ---------------------------------------------------
+#
+# Hand-derived from the DOCUMENTED law, not read back from the implementation:
+#   U(t) = e^(-lambda*t), lambda >= 0, t >= 0
+#     lambda -> inf with t > 0   =>  e^(-inf) = 0    (decayed out)
+#     t -> inf with lambda > 0   =>  e^(-inf) = 0    (decayed out)
+#     lambda = 0                 =>  decay is OFF, U = 1 at EVERY age
+#     t = 0                      =>  no time has passed, U = 1
+# The last two are the indeterminate form 0 * inf, which IEEE 754 evaluates to
+# NaN - and math.exp(NaN) is NaN. NaN compares False against every threshold,
+# so an unguarded NaN utility would be reported ALLOW while not being a number.
+
+@pytest.mark.parametrize("lam,age,expected,derivation", [
+    (math.inf, 10.0, 0.0, "lambda -> inf, t = 10 > 0: e^(-inf) = 0"),
+    (2.0, math.inf, 0.0, "t -> inf, lambda = 2 > 0: e^(-inf) = 0"),
+    (math.inf, math.inf, 0.0, "both -> inf: e^(-inf) = 0"),
+    (0.0, math.inf, 1.0, "lambda = 0 disables decay: U = 1 at every age"),
+    (math.inf, 0.0, 1.0, "t = 0: no time has passed, U = 1"),
+])
+def test_infinity_yields_a_limit_never_a_nan(lam, age, expected, derivation):
+    """Mutation that turns this red: X21 - delete the
+    `if math.isinf(lam) or math.isinf(age):` branch. The two 0*inf rows then
+    return NaN out of math.exp(NaN).
+    """
+    u = pgdrm.decay_utility(lam, age)
+    assert not math.isnan(u), f"utility is NaN for lambda={lam}, age={age}"
+    assert u == expected, derivation
+
+
+def test_an_infinite_parameter_still_produces_a_real_verdict():
+    """The behaviour the infinity guard protects: a NaN utility would slide
+    past `utility < utility_threshold` (NaN compares False against everything)
+    and be reported ALLOW carrying a utility that is not a number.
+
+    Mutation that turns this red: X21 - the utility assertions below read NaN.
+    """
+    never_decays = _rec(key="pinned", age_seconds=math.inf)
+    v = _eval(never_decays, decay_lambda=0.0, utility_threshold=1.0)
+    assert v.decision == pgdrm.ALLOW
+    assert v.utility == 1.0
+
+    fresh = _rec(key="fresh", age_seconds=0.0)
+    v = _eval(fresh, decay_lambda=math.inf, utility_threshold=1.0)
+    assert v.decision == pgdrm.ALLOW
+    assert v.utility == 1.0
+
+    gone = _rec(key="gone", age_seconds=10.0)
+    v = _eval(gone, decay_lambda=math.inf, utility_threshold=0.5)
+    assert v.decision == pgdrm.DROP
+    assert v.reason == pgdrm.REASON_DECAYED
+    assert v.utility == 0.0
+
+    # a protected deposit stays protected even at infinite age
+    protected = _rec(key="deposit", age_seconds=math.inf, protected_floor=0.5)
+    v = _eval(protected, decay_lambda=LN2, utility_threshold=0.5)
+    assert v.decision == pgdrm.ALLOW
+    assert v.utility == 0.5
+
+
+def test_a_lookalike_object_cannot_buy_a_filter_verdict():
+    """`evaluate` type-checks its record instead of duck-typing it. The guard
+    is what stops an arbitrary object carrying the right attribute names - a
+    namespace, a mock, a decoded payload - from being filtered as though it
+    were a measured record.
+
+    Mutation that turns this red: X22 - delete
+    `if not isinstance(record, MemoryRecord): raise TypeError`. The namespace
+    below then evaluates cleanly and returns ALLOW, so `pytest.raises` fails.
+    """
+    lookalike = types.SimpleNamespace(
+        key="impostor", tokens=frozenset({"shot_A"}), age_seconds=0.0,
+        distance=None, protected_floor=0.0)
+    with pytest.raises(TypeError, match="must be a MemoryRecord"):
+        _eval(lookalike)
+
+    for junk in ("not a record", None, 42, {"key": "d", "tokens": frozenset()}):
+        with pytest.raises(TypeError, match="must be a MemoryRecord"):
+            _eval(junk)
+
+    # the real record with the identical field values IS evaluated
+    real = _rec(key="impostor", tokens=frozenset({"shot_A"}))
+    assert _eval(real).decision == pgdrm.ALLOW
+
+
+@pytest.mark.parametrize("not_iterable", [123, 4.5, None, object()])
+def test_a_non_iterable_records_argument_is_refused(not_iterable):
+    """`filter_records` names its own bad argument rather than letting a bare
+    `'int' object is not iterable` escape from the materialization.
+
+    Mutation that turns this red: X23 - delete the
+    `if not isinstance(records, Iterable): raise` guard in `filter_records`;
+    the TypeError that then escapes never names `records`, so `match=` fails.
+    """
+    with pytest.raises(TypeError, match="records must be an iterable"):
+        pgdrm.filter_records(not_iterable, task_context_tokens={"shot_A"},
+                             decay_lambda=LN2, utility_threshold=0.0)
