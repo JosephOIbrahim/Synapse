@@ -1,0 +1,21 @@
+# harness/protected_paths.txt - the protected set. ONE place.
+#
+# Paths an autonomous cycle may never change:
+#   VERSION                          bumped by the release ritual (a human)
+#   harness/state/**                 the ledger the harness reads to decide what is done -
+#                                    a cycle that edits it grades its own homework
+#   harness/verify/*_baseline.json   the suite floor a sprint must not lower (ratchet guardrail)
+#
+# Consumers (harness-review 2026-09-15, upgrade path 1h / finding FENCE-4):
+#   harness/run.ts              post-cycle `git diff --name-only <base>..HEAD`; a hit refuses the PASS (BLOCKED)
+#   harness/orchestrate.ps1     Test-CloseGate -> Test-ProtectedDiff; a hit holds the leg at 'closing'
+#   harness/protected_paths.py  the one parser + matcher both call (`--check -` reads paths on stdin)
+#   harness/githooks/pre-commit (1b, separate branch) - consume this same file, do not copy the list
+#
+# Format: one glob per line, repo-relative, forward slashes. `#` starts a comment,
+# blank lines are ignored. Patterns match the WHOLE path: `*` and `?` never cross
+# a `/`, `**` matches any depth (`a/**/b` also matches `a/b`). A bare name such as
+# VERSION therefore matches only the root file, never docs/VERSION.
+VERSION
+harness/state/**
+harness/verify/*_baseline.json

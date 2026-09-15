@@ -267,6 +267,67 @@ function Release-LegLock([string]$legId) {
 
 function Short8([string]$s) { if ($s -and $s.Length -ge 8) { $s.Substring(0, 8) } else { $s } }
 
+# 1h - POST-CYCLE PROTECTED-PATH DIFF (harness-review 2026-09-15, finding FENCE-4).
+#
+# Every agent profile denies Edit(VERSION) / Edit(harness/state/**) by command
+# FORM, and every profile also allows an interpreter or copy verb that writes
+# around the form (Copy-Item x VERSION, git commit -a, python -c). The pre-push
+# hook's lesson applies here too: fence the CAPABILITY, not the spelling. This
+# asks git what the leg's branch actually changed between its recorded fork
+# point and HEAD, and refuses to close green if any of it is listed in
+# harness/protected_paths.txt. The set lives in that ONE file and
+# harness/protected_paths.py is the one matcher (run.ts calls the same one, so
+# the two scripts cannot drift on glob semantics). An unresolvable base is a
+# refusal too: "cannot prove untouched" is not "untouched". The human escape
+# valve is the existing manifest-pinned state:done in Get-LegState - a human
+# word, never a flag an agent can set.
+function Get-CycleBase([string]$wt, [object]$leg) {
+    # Start-Leg records the resolved base sha at dispatch (.claude/.cycle_base).
+    $f = Join-Path $wt '.claude\.cycle_base'
+    if (Test-Path $f) {
+        $s = Get-Content $f -Raw -EA SilentlyContinue
+        if ($s -and ([string]$s).Trim()) { return ([string]$s).Trim() }
+    }
+    # Legacy worktree (cut before the base was recorded): the fork point from the
+    # ref the leg declared, else master. NOT the manifest-level "base" - Start-Leg
+    # never read that field either.
+    $ref = if ($leg.base) { $leg.base } else { 'master' }
+    $mb = (& git -C $wt merge-base $ref HEAD 2>$null)
+    if ($LASTEXITCODE -eq 0 -and $mb) { return ([string]$mb).Trim() }
+    return $null
+}
+
+function Test-ProtectedDiff([string]$wt, [object]$leg) {
+    $base = Get-CycleBase $wt $leg
+    if (-not $base) {
+        return @{ ok = $false; reason =
+            "PROTECTED-PATH check impossible - no cycle base at $($leg.worktree)/.claude/.cycle_base and no fork point resolvable; cannot prove VERSION/harness untouched (1h/FENCE-4)" }
+    }
+    $changed = @(& git -C $wt diff --name-only "$($base)..HEAD" 2>$null)
+    if ($LASTEXITCODE -ne 0) {
+        return @{ ok = $false; reason =
+            "PROTECTED-PATH check impossible - git diff $(Short8 $base)..HEAD failed in $($leg.worktree) (1h/FENCE-4)" }
+    }
+    $changed = @($changed | ForEach-Object { ([string]$_).Trim() } | Where-Object { $_ })
+    if ($changed.Count -eq 0) { return @{ ok = $true; reason = '' } }
+    $ppy = Join-Path $repo 'harness\protected_paths.py'
+    if (-not (Test-Path $ppy)) {
+        return @{ ok = $false; reason = "PROTECTED-PATH check impossible - $ppy not found (1h/FENCE-4)" }
+    }
+    # Paths go in on STDIN, one per line - never argv, where a spaced path would split.
+    $out  = @((($changed -join "`n") + "`n") | & python $ppy --check - 2>&1)
+    $code = $LASTEXITCODE
+    if ($code -eq 0) { return @{ ok = $true; reason = '' } }
+    if ($code -eq 1) {
+        $hits = @($out | ForEach-Object { ([string]$_).Trim() } | Where-Object { $_ }) -join ', '
+        Say "  PROTECTED-PATH: $($leg.id) changed $hits between $(Short8 $base) and HEAD - refusing to close green (harness/protected_paths.txt; 1h/FENCE-4)" 'Red'
+        return @{ ok = $false; reason =
+            "PROTECTED-PATH: $hits changed in $(Short8 $base)..HEAD - VERSION, harness/state/** and the suite baselines are human-only; the leg cannot close green (1h/FENCE-4)" }
+    }
+    return @{ ok = $false; reason =
+        "PROTECTED-PATH check errored - protected_paths.py exit $code`: $(@($out | ForEach-Object { [string]$_ }) -join ' ') (1h/FENCE-4)" }
+}
+
 # W6-GATE CLOSE GATE (HARDENING-SPEC Part A, S4 + S5).
 #
 # A receipt FILE existing is not completion. Four waves of receipts asserted
@@ -291,6 +352,14 @@ function Test-CloseGate([object]$leg) {
     # harvested. Presence is 'done', exactly as before the gate (R135, M20).
     if (-not $leg.worktree) { return @{ done = $true; reason = '' } }
     $wt        = Join-Path $repo $leg.worktree
+    # 1h (FENCE-4): the protected-path diff runs whenever the worktree is a checkout on
+    # disk - BEFORE the receipt bookkeeping and regardless of where the receipt lives. An
+    # operator-harvested receipt (R135) greens the RECEIPT question; it does not launder a
+    # VERSION bump sitting on the branch. Manifest-pinned state:done remains the human valve.
+    if (Test-Path (Join-Path $wt '.git')) {
+        $pd = Test-ProtectedDiff $wt $leg
+        if (-not $pd.ok) { return @{ done = $false; reason = $pd.reason } }
+    }
     $wtReceipt = Join-Path $wt "harness\notes\receipts\$($leg.receipt)"
     if (-not (Test-Path $wtReceipt)) { return @{ done = $true; reason = '' } }
 
@@ -571,6 +640,17 @@ Write-Host '  LEG $safeId TERMINATED' -ForegroundColor Cyan
             Say "  REFUSED - git worktree add failed (exit $addCode)" 'Red'
             Notify "$($leg.id) NOT dispatched" "git worktree add failed with exit $addCode. Nothing was launched and no directory was left behind. Check whether branch $($leg.branch) already exists."
             return
+        }
+        # 1h (FENCE-4): record the fork point for Test-ProtectedDiff. Right after
+        # `worktree add ... $base` the worktree HEAD IS the resolved base sha. Same
+        # file name run.ts writes (.claude/.cycle_base, gitignored).
+        $baseSha = (& git -C $wt rev-parse HEAD 2>$null)
+        if ($baseSha) {
+            New-Item -ItemType Directory -Force (Join-Path $wt '.claude') | Out-Null
+            Set-Content -Path (Join-Path $wt '.claude\.cycle_base') -Value ([string]$baseSha).Trim() -Encoding ascii
+            Say "  base: recorded $(Short8 ([string]$baseSha).Trim()) as the cycle base (.claude/.cycle_base) for the close gate's protected-path diff" 'DarkGray'
+        } else {
+            Say "  WARNING: could not record the cycle base - the close gate will fall back to merge-base($base, HEAD) or refuse" 'Yellow'
         }
     }
     else {

@@ -215,6 +215,7 @@ harness/rope/PROGRESS.md
 harness/rope/.runner.lock
 # orchestrator launch marker - runtime junk, never history
 .claude/.orch_launched
+.claude/.cycle_base
 
 # --- TIDY 2026-08-07: data / generated-asset dirs (ruled 2026-08-09) ---
 # Downloaded ONNX embedder (MiniLM-L6-v2) — model asset, not source.
