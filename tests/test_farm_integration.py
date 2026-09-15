@@ -167,17 +167,26 @@ def test_dirty_source_file_alias_is_refused(monkeypatch, tmp_path):
     service.prepare.assert_not_called()
 
 
-def _local_client_class():
+def _local_client_namespace():
     # Run the actual stdlib-only class without importing Qt into stock Python.
+    # The typed outcomes it raises (MCPUnavailable, MCPOutcomeUnknown) travel
+    # with it, and the adapter peek in _detect_port needs sys.
     import http.client
+    import sys
     import time
     from typing import Optional
     path = Path(__file__).parents[1] / "python/synapse/panel/tool_executor.py"
     tree = ast.parse(path.read_text(encoding="utf-8"))
-    node = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "_MCPLocalClient")
-    ns = {"Optional": Optional, "threading": threading, "json": json, "http": http, "time": time}
-    exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), "exec"), ns)
-    return ns["_MCPLocalClient"]
+    wanted = {"MCPUnavailable", "MCPOutcomeUnknown", "_MCPLocalClient"}
+    nodes = [node for node in tree.body if isinstance(node, ast.ClassDef) and node.name in wanted]
+    assert {node.name for node in nodes} == wanted
+    ns = {"Optional": Optional, "threading": threading, "json": json, "http": http, "time": time, "sys": sys}
+    exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), ns)
+    return ns
+
+
+def _local_client_class():
+    return _local_client_namespace()["_MCPLocalClient"]
 
 
 def test_local_client_authenticates_to_loopback(monkeypatch):
@@ -185,7 +194,7 @@ def test_local_client_authenticates_to_loopback(monkeypatch):
     from synapse.server import auth
     monkeypatch.setattr(auth, "get_auth_key", lambda: "test-only-key")
     response = SimpleNamespace(read=lambda: b'{"result": {}}', getheader=lambda _: None)
-    connection = SimpleNamespace(request=Mock(), getresponse=lambda: response, close=Mock())
+    connection = SimpleNamespace(connect=Mock(), request=Mock(), getresponse=lambda: response, close=Mock())
     constructor = Mock(return_value=connection)
     monkeypatch.setattr(http.client, "HTTPConnection", constructor)
     client = _local_client_class()()
@@ -200,10 +209,14 @@ def test_local_client_reconnects_only_on_a_later_request(monkeypatch):
     from synapse.server import auth
     monkeypatch.setattr(auth, "get_auth_key", lambda: None)
     request = Mock(side_effect=ConnectionError("connection lost"))
-    monkeypatch.setattr(http.client, "HTTPConnection", lambda *a, **k: SimpleNamespace(request=request, close=lambda: None))
-    client = _local_client_class()()
+    monkeypatch.setattr(http.client, "HTTPConnection",
+                        lambda *a, **k: SimpleNamespace(connect=lambda: None, request=request, close=lambda: None))
+    ns = _local_client_namespace()
+    client = ns["_MCPLocalClient"]()
     client._port, client._session_id = 12345, "old-session"
-    with pytest.raises(ConnectionError):
+    # The connect succeeded, so a reply lost after dispatch is an unknown
+    # outcome (the typed contract from master), never a replay.
+    with pytest.raises(ns["MCPOutcomeUnknown"]):
         client._post({"method": "tools/call", "params": {"name": "synapse_farm_submit"}})
     assert request.call_count == 1
     assert client._port is None and client._session_id is None
