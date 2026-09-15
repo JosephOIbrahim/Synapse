@@ -209,6 +209,13 @@ fills = {"{{STOCK_SUMMARY}}": STOCK, "{{SEAT_SUMMARY}}": SEAT, "{{INSTALLER_UNIT
 # keys, so every substitution was a no-op that reported success. Accept both spellings.
 fills.update({k.replace("{{", "{").replace("}}", "}"): v for k, v in list(fills.items())})
 fills.update({"{STOCK}": STOCK, "{SEAT}": SEAT, "{INST}": INST, "{QUAL}": QUAL, "{PAYLOAD}": PAYLOAD})
+# @@TOKEN@@ is the spelling a note TEMPLATE should use for a fillable slot, and the one
+# the cut script gates on. Braces cannot do that job: a release note that DOCUMENTS the
+# placeholder bug has to write {STOCK} in prose, and no gate can tell that apart from a
+# slot by shape alone. Proven both ways - stripping code spans misses a real slot (v5.72.0
+# wrote one as `{PAYLOAD}` inside backticks); not stripping fires on the prose. A delimiter
+# prose never contains ends the argument. Brace keys stay filled for older templates.
+fills.update({("@@%s@@" % k.strip("{}")): v for k, v in list(fills.items()) if k.startswith("{")})
 # The file list is derived from VERSION, never hardcoded. Copying this script forward and
 # string-replacing "release-X" left this tuple pointing at the PREVIOUS release for both
 # v5.71.0 and v5.72.0, so both shipped raw {PLACEHOLDER} text to a public release page.
