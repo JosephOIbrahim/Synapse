@@ -24,8 +24,9 @@ Anything you don't name stays open. **You are not expected to clear all sixteen.
 
 ## If you only do one thing
 
-**Rule A1.** It is the only item other items are waiting on. Answering it collapses A2,
-A3 and B2 from open questions into bookkeeping with a number attached.
+**Rule A1.** It is the head of the chain: A1 gates B2, B2 gates A2, and A3 is a
+conditional guard on A1. Answering it does not close them, but nothing downstream can
+move until it is answered.
 
 ---
 
@@ -50,7 +51,8 @@ Sorted by what the item costs *you*, not by importance.
 | **B1** | Doctor yellow vs monochrome + one accent | two of your own rulings |
 | **B2** | J5's edge air vs BC-5's airy share | two of your own rulings, 13px apart |
 | **C1** | BORDER == SURFACE | record it, or rule it |
-| **C2** | The per-turn receipt line | ships an audit texture that can't be turned off |
+| **C2a** | The per-turn receipt line — ship it? | ships an audit texture that can't be turned off |
+| **C2b** | Where the receipt lives — scroll content or widget? | the tree pulls toward the answer that costs 73–87px |
 | **C3** | Square the receipt's corner | a card that stops reading as *waiting for you* |
 | **C4** | The turn ordinal | 22–26px of a 264px column, or 0px and no scannability |
 
@@ -314,7 +316,7 @@ also changes C3's stakes — see there.
 
 ---
 
-## C2 — The per-turn receipt line **[FORK]** · *and one placement ruling that must be explicit*
+## C2a — The per-turn receipt line **[FORK]** · *ship / don't ship*
 
 One line appended to the tail of every turn that **mutated the scene**. Read-only turns
 get nothing.
@@ -337,8 +339,9 @@ session-scoped, both branches. `face_work.set_tool_status` does a bare `setText`
 > **SYNAPSE's differentiator is per-action receipts, and the panel shows a session mean.**
 > The data is recorded. The surface throws it away.
 
-**The placement ruling — this one needs your word either way, because the tree pulls the
-wrong direction.** R4's zero is purchased *entirely* by living in scroll content. The
+## C2b — Where the receipt lives **[FORK]** · *scroll content / widget*
+
+**This one needs your word either way, because the tree pulls the wrong direction.** R4's zero is purchased *entirely* by living in scroll content. The
 nearest pattern in the tree (`GateWidget`, in the same layout) pulls an implementer toward
 the expensive answer:
 
