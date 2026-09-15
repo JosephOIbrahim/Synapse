@@ -305,6 +305,18 @@ def _qt():
     QtGui = pytest.importorskip("PySide6.QtGui")
     QtWidgets = pytest.importorskip("PySide6.QtWidgets")
     QtCore = pytest.importorskip("PySide6.QtCore")
+    # importorskip is not enough on its own here. Fourteen files in this suite
+    # install a MagicMock at sys.modules["PySide6"] to exercise panel code with
+    # no Qt present, and a MagicMock imports perfectly - so in a full-suite run
+    # these three lines SUCCEED on a machine that has no Qt at all, and the
+    # raster proof then rasterises nothing. That is exactly what reddened CI on
+    # all four matrix jobs: AttributeError, type object 'MagicMock' has no
+    # attribute 'instance'. A real extension module has a str __file__; a
+    # MagicMock answers with another MagicMock.
+    for mod in (QtGui, QtWidgets, QtCore):
+        if not isinstance(getattr(mod, "__file__", None), str):
+            pytest.skip("PySide6 is stubbed in this process - the raster proof "
+                        "needs real Qt; run this file alone or under hython")
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(["t"])
     return app, QtGui, QtWidgets, QtCore
