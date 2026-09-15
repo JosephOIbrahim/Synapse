@@ -68,7 +68,16 @@ def test_no_new_structure_and_every_residual_is_reasoned(filename):
     elif filename == "face_work.py":
         # Approved first-session activity copy changes the existing row's text,
         # while preserving constructors, placement, and signal wiring.
-        assert _structure(source.replace("tool_label(name)", "name")) == _structure(_base(path))
+        # CRIT.md 2026-09-15 #17 (P8 · Work face resting phrases) retires the
+        # cookline's resting phrase. Recorded the way the merged type-ramp
+        # branch recorded this same crit on master's append-only sheet guard
+        # (CRIT_20260915_QSS_AMENDMENTS, which lands in this file on merge) -
+        # an EXACT delta applied to the BASELINE, asserted to occur exactly once
+        # there - so the structural freeze keeps full strength: face_work must
+        # still equal baseline-plus-exactly-this-delta, and a stale amendment
+        # reddens instead of silently no-opping.
+        assert _structure(source.replace("tool_label(name)", "name")) == _structure(
+            _amend(_base(path), CRIT_20260915_FACE_WORK_AMENDMENTS))
     else:
         assert _structure(source) == _structure(_base(path))
     for key, line, exempt in _scan(source, path):
@@ -234,7 +243,24 @@ CRIT_20260915_QSS_AMENDMENTS = (
      'QWidget#DsCard[tone="critical"] {{ border-color: {t.ERROR}; }}' + _NL, ""),
 )
 
+# CRIT.md 2026-09-15 #17 (P8): the Work face cookline rests blank - "Standing
+# by" one row above already says the face is idle, once. A delta, not a
+# carve-out - see _amend below for what that keeps.
+CRIT_20260915_FACE_WORK_AMENDMENTS = (
+    ('self._cook_lbl = c.label("waiting for work", role="caption")',
+     'self._cook_lbl = c.label("", role="caption")'),
+)
 
+
+def _amend(original, amendments):
+    """Baseline + exactly the ruled deltas, each asserted to be live."""
+    for old, new in amendments:
+        assert original.count(old) == 1, (
+            "stale CRIT.md 2026-09-15 amendment - the baseline no longer "
+            "contains it exactly once: " + old
+        )
+        original = original.replace(old, new, 1)
+    return original
 def _assert_upstream_qss_unchanged(prefix, original):
     for old, new in CRIT_20260915_QSS_AMENDMENTS:
         assert original.count(old) == 1, (
