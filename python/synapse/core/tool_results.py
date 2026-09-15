@@ -67,3 +67,27 @@ def unpack_tool_result(value):
         except (ValueError, TypeError):
             return text, is_error
     return value, is_error
+
+
+#: The opening words of every artist-facing undo receipt. Minted by
+#: ``synapse.server.handler_helpers.undo_receipt``; read back by the panel
+#: (``synapse.panel.activity``). One spelling, shared, so the two never drift.
+UNDO_RECEIPT_PREFIX = "One Ctrl+Z reverses: "
+
+
+def undo_receipt_line(result):
+    """The artist-facing undo sentence a handler result carries, or ``""``.
+
+    Only a receipt minted by ``undo_receipt`` (prefix intact) counts: a
+    hand-built or truncated ``undo`` block renders nothing rather than a
+    promise nobody computed.
+    """
+    if not isinstance(result, dict):
+        return ""
+    undo = result.get("undo")
+    if not isinstance(undo, dict):
+        return ""
+    artist = undo.get("artist")
+    if isinstance(artist, str) and artist.startswith(UNDO_RECEIPT_PREFIX):
+        return artist
+    return ""

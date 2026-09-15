@@ -20,7 +20,7 @@ import logging
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.mtlx_types import MTLX_STANDARD_SURFACE, MTLX_GEOMPROPVALUE
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError
-from .handler_helpers import _HOUDINI_UNAVAILABLE
+from .handler_helpers import _HOUDINI_UNAVAILABLE, undo_receipt
 
 _log = logging.getLogger(__name__)
 
@@ -120,6 +120,8 @@ class NodeHandlerMixin:
                     if session:
                         session.nodes_created.append(new_node.path())
 
+            # TRUST-2: the receipt names the group above; it never opens one.
+            result.update(undo_receipt("synapse_node_create"))
             return result
 
         return run_on_main(_on_main, label="node:_handle_create_node")
@@ -144,7 +146,8 @@ class NodeHandlerMixin:
             with hou.undos.group("synapse_node_delete"):
                 node.destroy()
 
-            return {"deleted": node_path, "name": node_name}
+            return {"deleted": node_path, "name": node_name,
+                    **undo_receipt("synapse_node_delete")}
 
         return run_on_main(_on_main, label="node:_handle_delete_node")
 
@@ -179,6 +182,7 @@ class NodeHandlerMixin:
                 "target": target_path,
                 "source_output": source_output,
                 "target_input": target_input,
+                **undo_receipt("synapse_node_connect"),
             }
 
         return run_on_main(_on_main, label="node:_handle_connect_nodes")

@@ -163,8 +163,10 @@ def test_create_node_enters_exactly_one_group(env):
     assert rec.mutations, "expected at least the createNode mutation"
     assert all(depth == 1 for _op, depth in rec.mutations)
     assert {op for op, _ in rec.mutations} == {"createNode", "moveToGoodPosition"}
-    # Return shape unchanged (grouping only).
-    assert set(result) == {"path", "type", "name"}
+    # Return shape: the W5-UNDO keys plus the TRUST-2 undo receipt, whose
+    # label is the group the recorder actually saw entered.
+    assert set(result) == {"path", "type", "name", "undo"}
+    assert result["undo"]["label"] == rec.groups[0]
 
 
 def test_create_materiallibrary_scaffold_shares_one_group(env):
@@ -199,7 +201,8 @@ def test_delete_node_enters_exactly_one_group(env):
     assert rec.groups == ["synapse_node_delete"]
     assert rec.depth == 0
     assert rec.mutations == [("destroy", 1)]
-    assert set(result) == {"deleted", "name"}
+    assert set(result) == {"deleted", "name", "undo"}
+    assert result["undo"]["label"] == rec.groups[0]  # TRUST-2 receipt
 
 
 # ── connect_nodes ──────────────────────────────────────────────────
@@ -215,7 +218,8 @@ def test_connect_nodes_enters_exactly_one_group(env):
     assert rec.groups == ["synapse_node_connect"]
     assert rec.depth == 0
     assert rec.mutations == [("setInput", 1)]
-    assert set(result) == {"source", "target", "source_output", "target_input"}
+    assert set(result) == {"source", "target", "source_output", "target_input", "undo"}
+    assert result["undo"]["label"] == rec.groups[0]  # TRUST-2 receipt
 
 
 # ── exception path: grouping is NOT rollback, error routing unchanged ─

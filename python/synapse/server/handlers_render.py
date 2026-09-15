@@ -51,7 +51,7 @@ from ..core.render_presets import (
 )
 from .handler_helpers import (
     _suggest_parms, _HOUDINI_UNAVAILABLE, _expand_frame_tokens, _path_warnings,
-    _convert_preview,
+    _convert_preview, undo_receipt,
 )
 
 # Bounded-wait budget (seconds) for the WS/bridge thread on a tool-level
@@ -1182,6 +1182,7 @@ class RenderHandlerMixin:
                 "parm": parm_name,
                 "value": float(value),
                 "frame": float(frame) if frame is not None else float(hou.frame()),
+                **undo_receipt("synapse_set_keyframe"),
             }
 
         return run_on_main(_on_main, label="render:_handle_set_keyframe")

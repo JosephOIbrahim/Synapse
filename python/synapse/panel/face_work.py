@@ -263,7 +263,7 @@ class FaceWork(QtWidgets.QWidget):
     def set_tool_status(self, name, phase, detail=None):
         """A live tool event → update the status line + the plan-with-progress."""
         from synapse.panel.activity import tool_status
-        self._status.setText(tool_status(name, phase))
+        self._status.setText(tool_status(name, phase, detail))
         self._status.setToolTip(str(name))
         # update-or-append this tool as a plan step
         for step in self._steps:

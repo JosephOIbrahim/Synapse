@@ -73,7 +73,7 @@ from . import integrity_envelope as _envelope
 # Coaching-tone message helpers
 # ---------------------------------------------------------------------------
 
-from .handler_helpers import _suggest_parms, _HOUDINI_UNAVAILABLE  # noqa: F401
+from .handler_helpers import _suggest_parms, _HOUDINI_UNAVAILABLE, undo_receipt  # noqa: F401
 # Reuse 2 threads for fire-and-forget memory logging (avoids Thread() per command)
 _log_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="synapse-log")
 
@@ -1162,10 +1162,12 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     if parm_tuple is not None and len(parm_tuple) > 1:
                         with hou.undos.group("synapse_set_parm"):
                             parm_tuple.set(value)
-                        return {"node": node_path, "parm": parm_name, "value": value}
+                        return {"node": node_path, "parm": parm_name, "value": value,
+                                **undo_receipt("synapse_set_parm")}
                 with hou.undos.group("synapse_set_parm"):
                     parm.set(value)
-                result = {"node": node_path, "parm": parm_name, "value": value}
+                result = {"node": node_path, "parm": parm_name, "value": value,
+                          **undo_receipt("synapse_set_parm")}
                 # Lighting Law: soft warning when intensity > 1.0 on light nodes
                 if ("intensity" in parm_name.lower()
                         and isinstance(value, (int, float)) and value > 1.0):
@@ -1194,7 +1196,8 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                         parm_tuple.set(value)
                     else:
                         parm_tuple.set([value] * len(parm_tuple))
-                result = {"node": node_path, "parm": parm_name, "value": value}
+                result = {"node": node_path, "parm": parm_name, "value": value,
+                          **undo_receipt("synapse_set_parm")}
                 # Lighting Law: soft warning when intensity > 1.0 on light nodes
                 if ("intensity" in parm_name.lower()
                         and isinstance(value, (int, float)) and value > 1.0):

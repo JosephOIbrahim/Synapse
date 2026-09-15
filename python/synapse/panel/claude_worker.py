@@ -26,6 +26,7 @@ from .providers.registry import (
     ANTHROPIC_MAX_TOKENS as _MAX_TOKENS,
     build_provider as _build_provider,
 )
+from .activity import with_undo_receipt
 from .retry_breaker import ABANDON_THRESHOLD, breaker_message
 from .tool_bridge import get_anthropic_tools_for_worker
 from .tool_executor import ToolRequest, try_mcp_tool_call
@@ -446,7 +447,8 @@ class ClaudeWorker(QThread):
                 # thread (this IS the worker thread — correct place for the
                 # manifest + EXR-header file I/O).
                 self._emit_render_receipt(tool_name, mcp_result)
-                self.tool_status.emit(tool_name, "done", summary)
+                self.tool_status.emit(tool_name, "done",
+                                      with_undo_receipt(summary, mcp_result))
                 content_str = json.dumps(mcp_result, default=str)
                 result = {
                     "type": "tool_result",
@@ -567,7 +569,8 @@ class ClaudeWorker(QThread):
             content_str = request.error
             is_error = True
         else:
-            self.tool_status.emit(tool_name, "done", summary)
+            self.tool_status.emit(tool_name, "done",
+                                  with_undo_receipt(summary, request.result))
             self._retry_abandons.pop(cmd_key, None)  # F2: success clears
             if isinstance(request.result, dict):
                 self._track_integrity(request.result)
