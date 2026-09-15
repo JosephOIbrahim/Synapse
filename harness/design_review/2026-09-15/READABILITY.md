@@ -108,8 +108,10 @@ state mark, and at 4.44:1 a contrast question too. That is B1, and it is Joe's.
 
 ## Proposal — three levels, not four
 
-Keep **12** as the body anchor (Houdini-native 9pt; `_host_font_scale` resolves it to exactly the
-host's 27px). Keep **15** and **19** at their existing 1.25 ratio. **Retire 11 as a size rung** by
+Keep **12** as the body anchor — it is Houdini's native 9pt, and it is the largest rung the panel
+actually uses for reading. (An earlier draft justified this by claiming `_host_font_scale` resolved
+it to the host's 27px. No such function exists and nothing resolves it; 12px renders as 12px. The
+rung is right for a different reason, so the recommendation stands and its stated reason does not.) Keep **15** and **19** at their existing 1.25 ratio. **Retire 11 as a size rung** by
 aliasing `SIZE_SMALL` → `SIZE_BODY`, preserving its ~30 legacy consumers. Caption and status then
 differentiate by **form** using signals the system already owns and is not spending: the EYEBROW
 tracking entry at +0.22em, caps, and the mono family.
@@ -118,7 +120,9 @@ The off-token **14 and 18 are deliberate** — glyph sizes for status dots and c
 inline as `SIZE_UI*3//2` and `SIZE_UI*7//6`. They should be named `GLYPH_MD` / `GLYPH_SM` and taken
 **off the type scale explicitly**, not folded into it.
 
-**The cost that makes this decidable: +1px at scale 1, +2.25px live — 0.3% of the 760px column.**
+**The cost that makes this decidable: +1px — 0.13% of the 760px column.**
+(An earlier draft said "+2.25px live", derived from a host scale that does not exist. With
+`scale` at 1.0 there is no live multiplier: the cost is one pixel, full stop.)
 Eleven of twelve 11px widgets carry 12–22px of slack; only the "Enter sends" hint grows, by one
 pixel. *"A 340px panel cannot afford larger type" does not survive measurement.*
 
