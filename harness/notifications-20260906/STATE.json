@@ -1,0 +1,11 @@
+{
+  "branch": "ux/notifications-20260906",
+  "commit": "34f5f4c4a340d367dda8776ead8117a3e1818cd4",
+  "dashboard": "http://127.0.0.1:54919/",
+  "handoff": "HANDOFF.md",
+  "milestone": "notifications",
+  "receipt": "bus/receipts.jsonl",
+  "status": "qualified_with_limits",
+  "stop_condition": "Continue through the authorized roadmap, reporting after each milestone. Stop when all scoped local milestones are qualified and recorded, or when a concrete unresolved blocker or a separate merge/release/deployment authorization is required.",
+  "worktree": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\notifications"
+}

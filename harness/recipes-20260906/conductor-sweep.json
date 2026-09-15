@@ -1,0 +1,89 @@
+{
+  "board_exists": false,
+  "bus_mtimes": {},
+  "conclusion": "Exclusive new board; existing board or competing board worktree refuses publication.",
+  "created_utc": "2026-09-06T22:50:08.822605+00:00",
+  "processes": [
+    {
+      "Id": 13568,
+      "ProcessName": "houdini"
+    },
+    {
+      "Id": 68228,
+      "ProcessName": "houdini"
+    },
+    {
+      "Id": 80432,
+      "ProcessName": "houdini"
+    },
+    {
+      "Id": 91232,
+      "ProcessName": "houdini"
+    },
+    {
+      "Id": 35708,
+      "ProcessName": "powershell"
+    },
+    {
+      "Id": 86748,
+      "ProcessName": "powershell"
+    },
+    {
+      "Id": 96728,
+      "ProcessName": "powershell"
+    },
+    {
+      "Id": 70172,
+      "ProcessName": "pwsh"
+    },
+    {
+      "Id": 28804,
+      "ProcessName": "python"
+    },
+    {
+      "Id": 34908,
+      "ProcessName": "python"
+    },
+    {
+      "Id": 47512,
+      "ProcessName": "python"
+    },
+    {
+      "Id": 73752,
+      "ProcessName": "python"
+    },
+    {
+      "Id": 90356,
+      "ProcessName": "python"
+    },
+    {
+      "Id": 91904,
+      "ProcessName": "python"
+    },
+    {
+      "Id": 97348,
+      "ProcessName": "python"
+    },
+    {
+      "Id": 44996,
+      "ProcessName": "python3.13"
+    },
+    {
+      "Id": 61280,
+      "ProcessName": "python3.13"
+    },
+    {
+      "Id": 76400,
+      "ProcessName": "python3.13"
+    },
+    {
+      "Id": 87544,
+      "ProcessName": "python3.13"
+    },
+    {
+      "Id": 98820,
+      "ProcessName": "python3.13"
+    }
+  ],
+  "worktrees": "worktree C:/Users/User/SYNAPSE\nHEAD b1ec9a8d58836ebf401ad66f520e1d3cd15d9116\nbranch refs/heads/master\n\nworktree C:/Users/User/OneDrive/Documents/ChatGPT/SYNAPSE_Refactor/worktrees/first-session\nHEAD 6ea5e923cb628f490e5b100a0fe058cdd3557465\nbranch refs/heads/ux/first-session-20260906\n\nworktree C:/Users/User/OneDrive/Documents/ChatGPT/SYNAPSE_Refactor/worktrees/networks\nHEAD 1fad9032d6dbb5210185e7d3c12ef2f4b1588eb4\nbranch refs/heads/ux/networks-20260906\n\nworktree C:/Users/User/OneDrive/Documents/ChatGPT/SYNAPSE_Refactor/worktrees/recipes\nHEAD 7ab00a9ccb2359d392dc4e82f548155569fb6dff\nbranch refs/heads/ux/recipes-20260906\n\nworktree C:/Users/User/rope-beacon-wt\nHEAD 6854c72c9a880224c7c278fad531ab409a089a47\nbranch refs/heads/rope/beacon\n\nworktree C:/Users/User/SYNAPSE/.claude/worktrees/bc-wave\nHEAD fd67562d0d60d5ac8cf3533b9931bfc7f18f3b38\nbranch refs/heads/design/bc-wave\n\nworktree C:/Users/User/SYNAPSE/.claude/worktrees/bp2-nits\nHEAD 0dd5451eeb1a89d9813dfdbd75a78273ebd029c3\nbranch refs/heads/bp2/nits\n\nworktree C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe\nHEAD df15ec3325ea770645c014d0d4d784ff52e43f17\nbranch refs/heads/bp3/probe\n\nworktree C:/Users/User/SYNAPSE/.claude/worktrees/bp3-tidy\nHEAD e3475d30555c2a98cab3476254b9d6605e90a24b\nbranch refs/heads/bp3/tidy\n\nworktree C:/Users/User/SYNAPSE/.claude/worktrees/bp4-b7fix\nHEAD 88ab1184649c1eff9aea94ee65abd8d4796339ca\nbranch refs/heads/bp4/b7fix\n\nworktree C:/Users/User/synapse-m2-pgdrm-wt\nHEAD e47308690b5ec0e5fbfdb97425eafa39e5ff3da2\nbranch refs/heads/mem/m2-pgdrm"
+}

@@ -1,0 +1,153 @@
+{
+  "artifacts": [
+    "artifacts/full-final.log",
+    "artifacts/affected-final-03.log",
+    "artifacts/qt-final.log",
+    "artifacts/base-known-failures.log",
+    "artifacts/final-review-red.log",
+    "artifacts/source-final.json",
+    "artifacts/connection-setup.png",
+    "artifacts/first-session-panel.png",
+    "artifacts/first-session-handoff.md"
+  ],
+  "base_revision": "b1ec9a8d58836ebf401ad66f520e1d3cd15d9116",
+  "branch": "ux/first-session-20260906",
+  "claim": "Isolated first-session implementation and focused Qt/behavior validation only. Full suite remains FAIL; live qualification NOT_RUN.",
+  "commands": [
+    "python -B -m pytest tests/ -q -p no:cacheprovider --basetemp \"C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\checks\\full-final\"",
+    "python -B -m pytest tests/test_first_session_panel.py tests/test_first_session_connections.py tests/test_first_session_readability.py tests/test_model_picker.py tests/test_panel_settings.py tests/test_provider_cache_and_usage.py tests/test_bp2_paneltruth_token_refresh.py tests/test_j2_token_wire.py tests/test_m3_egress_docs.py tests/test_chat_panel.py tests/test_j3_panel_formatter.py tests/test_panel_camera_rhythm.py tests/test_panel_sweep_a.py tests/test_panel_rhythm_owner.py tests/test_panel_sweep_b_widgets.py tests/test_w2s2_format_offmain.py -q -p no:cacheprovider --basetemp \"C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\checks\\affected-final-03\"",
+    "& \"C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe\" -B harness/check_first_session_qt.py \"C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\checks\\preview-final\"",
+    "python -B -m pytest tests/test_orchestrate_close_gate.py tests/test_orchestrate_liveness.py tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence tests/test_write_plane_health.py::test_probe_bounded_on_real_acl_denied_dir -v -p no:cacheprovider --basetemp \"C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\checks\\base-known-failures\" (cwd C:/Users/User/SYNAPSE)",
+    "git -c core.symlinks=false diff --check"
+  ],
+  "could_not_verify": [
+    "No successful model generation, billing validation, live tool execution, or real scene edits were attempted.",
+    "Offscreen Qt and simulated model output are not live Houdini qualification or performance measurements.",
+    "Full suite is not green: nine failure cases also fail at baseline; the nested baseline failure is only partially characterized.",
+    "Panel permission does not enforce egress for external MCP clients or independent background services.",
+    "Local Ollama classification is time-limited service-reported evidence, not independent attestation.",
+    "Existing environment-owned keys are not erased by panel session cleanup; an already running task may retain its captured key until completion."
+  ],
+  "created_utc": "2026-09-06T19:22:07.265893+00:00",
+  "independent_review": {
+    "resolved": [
+      "server-error credential disclosure",
+      "cancelled tool-result pairing",
+      "safe links preserve transcript",
+      "overlapping panel usage attribution",
+      "stale location tooltips",
+      "task identity on partial error",
+      "custom address credential binding after reopening",
+      "HDA and Revert draft/view preservation",
+      "connection scale propagation"
+    ],
+    "reviewer": "/root/spec_review (Parfit)",
+    "verdict": "Approved for isolated changes; no remaining findings"
+  },
+  "leg": "first-session-20260906:implementation:root",
+  "needs_human": [
+    "Anything touching the live Houdini GUI (AGENTS.md Law 7); intended next act is a separate disposable Houdini test session using this reviewed source."
+  ],
+  "proved_it_bites": [
+    "Four readability regressions failed before formatter correction (raw markup, code links, unsafe HTML, trusted HTML distinction).",
+    "final-review-red.log records three actual-method failures before correction: changed-address credential reuse, HDA draft loss, and premature Revert announcement.",
+    "Independent review reproduced credential-error, cancellation-pairing, tooltip, link navigation, and model-attribution faults before correction.",
+    "Real Qt wide-panel check reproduced native resize recursion before the guard; final 360/480/720px checks pass."
+  ],
+  "sha256": {
+    "docs/studio/EGRESS.md": "78fc4ec3ef796b23220614987603e6a774cd0e5dd6bc7b95f84a7e11bd42c6c4",
+    "docs/superpowers/first-session-handoff.md": "3902aa456b0219466a8f8bbffd059125ae41acc86aa43aa4686b4677df6db4db",
+    "docs/superpowers/specs/2026-09-06-first-session.md": "9302dcf723789ecd276ed74df3511114837f48b563e7f92e2e948715d90ac9e2",
+    "harness/check_first_session_qt.py": "3455a1351dfb04661aba39ecee35b6bf10add27fbec4f5abdb01db7c8b741de2",
+    "python/synapse/panel/activity.py": "075152e6ae6f3a7ffad6b9ea3d7ad11b4d8e5a3554789584368dcc847b4645ea",
+    "python/synapse/panel/chat_display.py": "7d59b6580f2dcd64132e4186edc9905bd6238591792b1e3f70065f659830b44c",
+    "python/synapse/panel/claude_worker.py": "bc0bc01a884a611750ed6e43a924a5ace4f0a5dca99b9a609183abfa217142c4",
+    "python/synapse/panel/connection_dialog.py": "9c2e94703f99b9496d342d871b83c1f5a5ca516674d19003cfff1b2e93b6e1d6",
+    "python/synapse/panel/connections.py": "850b617b2abd1c7bd46f44ba72a68c7f3e5323ccd2feb2ee5e44e500ef94ff59",
+    "python/synapse/panel/designsystem/qss.py": "8f5168037b74da9e95e64be03a0cff5eb146b0fd048cb488ca614156b858e0ee",
+    "python/synapse/panel/face_token.py": "a48dedcbde37738b8dae8bd225129a288a9667cd6880fef83b82c131ba7d6d89",
+    "python/synapse/panel/face_work.py": "0c446ba8b8065bfc38f8b406cfdc8976dda2da0739981570a92309a6cadf5525",
+    "python/synapse/panel/message_formatter.py": "0c907998ffc51e5401eb53e39d5d93395d0292842739def9dee7760d6c1d0c78",
+    "python/synapse/panel/providers/anthropic_provider.py": "38a8c4de3d7520f85d355a079dc86196fcc6de3d4a60ec2c599726d8c6809ffd",
+    "python/synapse/panel/providers/gemini_provider.py": "5024a0468bc9f685f12b261bfa336bc63c73cc57a0b690619417af815b8bf2c8",
+    "python/synapse/panel/providers/model_facts.py": "96727dd710f2cd982b2c9a4686c609f94a3043842ad7d24a9fb1ae65d034619f",
+    "python/synapse/panel/providers/nemotron_provider.py": "b578674354abc7b1c88c8dcb6fc8f8cb7e78153358af0df7ad7c28d8cbc73b5f",
+    "python/synapse/panel/providers/ollama_provider.py": "e28252cf267823e6f33f626a8c6db805a0aed09829d2878857235b406a075d4f",
+    "python/synapse/panel/synapse_panel.py": "282b7425ea009d4c1cd8f68c4abdc23dc3a55e99f54f8221241fbe6a9247b8bc",
+    "tests/test_bp2_paneltruth_token_refresh.py": "e9a5b815d870cd567dd08dadf15846eb1d17cd076dded35129353a31c8ec02ac",
+    "tests/test_first_session_connections.py": "ecc5491c7ed116ffd5a72866b2682ff87310ad146e486bdb2268bdec250daec4",
+    "tests/test_first_session_panel.py": "f846c329f435713e2d0875d865940d5014501246b5d79e9365b0ad36b64d361c",
+    "tests/test_first_session_readability.py": "32629ef73c7ad1bb5ff2cc3c13d92201d34c387984293d9a30747ee1803c92ba",
+    "tests/test_j2_token_wire.py": "6d27d4d65c3731615762fb6cc6e920464ff4b31a23dc0054167f47f23656863f",
+    "tests/test_panel_camera_rhythm.py": "0b4496b04a6dd589d4196884c77565e4fc09c337c010a196978dea55a3cde7fa",
+    "tests/test_panel_sweep_a.py": "d2c52d126c38cb69148abc0ff8fd6033fd3a598a2a28e8cfd33c1e13d675a931",
+    "tests/test_panel_sweep_b_widgets.py": "2762593edc0c4e3bb4bd1707bd6ae96eb5ccce5c543fed18630e58afb388a9ca"
+  },
+  "tests": {
+    "baseline": {
+      "fully_reproduced_failures": 9,
+      "nested_check": "Scene-memory errors appeared, then the baseline child stalled and was stopped after over 12 minutes (837.72s total). Not a clean reproduction of the final nested failure.",
+      "verdict": "PARTIAL"
+    },
+    "focused": {
+      "passed": 265,
+      "skipped": 61,
+      "verdict": "PASS"
+    },
+    "full_suite": {
+      "failed": 10,
+      "failures": [
+        "tests/test_orchestrate_close_gate.py::test_receipt_uncommitted_holds_at_closing",
+        "tests/test_orchestrate_close_gate.py::test_receipt_not_head_holds_at_closing",
+        "tests/test_orchestrate_close_gate.py::test_receipt_head_but_no_release_holds_at_closing",
+        "tests/test_orchestrate_close_gate.py::test_clean_leg_passes_end_to_end_in_dry_run",
+        "tests/test_orchestrate_close_gate.py::test_operator_harvested_main_tree_receipt_is_done",
+        "tests/test_orchestrate_close_gate.py::test_manifest_pinned_done_bypasses_gate",
+        "tests/test_orchestrate_liveness.py::test_subagent_workflow_write_moves_last_write",
+        "tests/test_orchestrate_liveness.py::test_fresh_subagent_beats_stale_main_transcript",
+        "tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence",
+        "tests/test_write_plane_health.py::test_probe_bounded_on_real_acl_denied_dir"
+      ],
+      "passed": 7593,
+      "skipped": 391,
+      "summary": "10 failed, 7593 passed, 391 skipped, 84 warnings in 251.69s (0:04:11)",
+      "verdict": "FAIL"
+    },
+    "real_qt": {
+      "live_houdini": "not loaded",
+      "network": "blocked by harness",
+      "runtime": "Houdini 22.0.400 plain Python 3.13 + PySide6",
+      "verdict": "PASS"
+    }
+  },
+  "touched": [
+    "docs/studio/EGRESS.md",
+    "docs/superpowers/first-session-handoff.md",
+    "docs/superpowers/specs/2026-09-06-first-session.md",
+    "harness/check_first_session_qt.py",
+    "python/synapse/panel/activity.py",
+    "python/synapse/panel/chat_display.py",
+    "python/synapse/panel/claude_worker.py",
+    "python/synapse/panel/connection_dialog.py",
+    "python/synapse/panel/connections.py",
+    "python/synapse/panel/designsystem/qss.py",
+    "python/synapse/panel/face_token.py",
+    "python/synapse/panel/face_work.py",
+    "python/synapse/panel/message_formatter.py",
+    "python/synapse/panel/providers/anthropic_provider.py",
+    "python/synapse/panel/providers/gemini_provider.py",
+    "python/synapse/panel/providers/model_facts.py",
+    "python/synapse/panel/providers/nemotron_provider.py",
+    "python/synapse/panel/providers/ollama_provider.py",
+    "python/synapse/panel/synapse_panel.py",
+    "tests/test_bp2_paneltruth_token_refresh.py",
+    "tests/test_first_session_connections.py",
+    "tests/test_first_session_panel.py",
+    "tests/test_first_session_readability.py",
+    "tests/test_j2_token_wire.py",
+    "tests/test_panel_camera_rhythm.py",
+    "tests/test_panel_sweep_a.py",
+    "tests/test_panel_sweep_b_widgets.py"
+  ],
+  "verdict": "PASS"
+}

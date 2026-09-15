@@ -1,0 +1,59 @@
+{
+  "leg": "first-session-20260906:live-source-commit:root",
+  "verdict": "PASS",
+  "created_utc": "2026-09-06T20:32:23.798498+00:00",
+  "commit": "6ea5e923cb628f490e5b100a0fe058cdd3557465",
+  "branch": "ux/first-session-20260906",
+  "files": [
+    "docs/superpowers/first-session-handoff.md",
+    "harness/check_first_session_qt.py",
+    "python/synapse/panel/claude_worker.py",
+    "python/synapse/panel/connection_dialog.py",
+    "python/synapse/panel/synapse_panel.py",
+    "tests/test_first_session_panel.py"
+  ],
+  "touched": [
+    "docs/superpowers/first-session-handoff.md",
+    "harness/check_first_session_qt.py",
+    "python/synapse/panel/claude_worker.py",
+    "python/synapse/panel/connection_dialog.py",
+    "python/synapse/panel/synapse_panel.py",
+    "tests/test_first_session_panel.py"
+  ],
+  "commands": [
+    "git diff --check",
+    "git commit -m 'Fix first-session issues found in Houdini trial'",
+    "git status --porcelain",
+    "git diff-tree --no-commit-id --name-only -r HEAD",
+    "python -B checks/record_live_commit.py"
+  ],
+  "artifacts": [
+    "live-qualification.json",
+    "artifacts/live/board-sweep-live-commit.json",
+    "artifacts/live/houdini-trial/history-final-method-note.json"
+  ],
+  "sha256": {
+    "python/synapse/panel/connection_dialog.py": "1bace27698d6915ab7062fcb56f628dc12815d85eea126e81dbcb029887b7e0a",
+    "python/synapse/panel/synapse_panel.py": "9efb3edd3a31dbfece72699b411bc7ef59810d26602197da1f216d2c7d7e59a8",
+    "python/synapse/panel/claude_worker.py": "37d01878b5dacf7238cd263402dd3434abef1f7f0cc879518c0617a6fa80aec5",
+    "harness/check_first_session_qt.py": "b7bb5d302174c12129c314eba033c8fa73303dbb9e767cff89c47923b7c2c61b",
+    "tests/test_first_session_panel.py": "6c9b3447f52e0d852a891e4af130a7cdb320eb2a964080bbc3028aa2028908d7",
+    "docs/superpowers/first-session-handoff.md": "13430a2ce8b4a1e3753030a95ce152d9125e82acf778d9d89ea342199eec4644"
+  },
+  "proved_it_bites": [
+    "Labels were 12px beside 27px controls; scaling regression fails before fix.",
+    "A weak callback receiver is collected before finished; actual-wiring ownership regression fails before strong capture. Native and Python crash stacks agree with the invalid receiver path.",
+    "Two history regressions lose completed answers before the fix; a third catches an unpaired truncated tool call before the filter."
+  ],
+  "could_not_verify": [
+    "Qualification covers the bounded first-session panel flow in a disposable Houdini 22.0.400 session; not sustained production stability, scene construction, rendering, simulation, or USD memory writes.",
+    "Cloud generation, billing, and a real entered cloud credential were not tested. Locality remains recent Ollama-reported evidence, not independent attestation.",
+    "Panel permission does not enforce egress for external MCP clients or independent background services.",
+    "The earlier full-suite run at f57ef5e2 remains FAIL (7593 passed, 10 failed, 391 skipped). Nine failures reproduce at baseline; one nested baseline case is only partially characterized. The full suite was not rerun after these narrow corrections.",
+    "The wider final worker suite has one failure reproduced at unchanged b1ec9a8d, due to missing hdefereval in standalone Python; it is not represented as green.",
+    "One polling measurement crossed two task boundaries and is excluded; the final sequential capture verifies each provider receipt before the next send.",
+    "The original Houdini session and deployed installation were not replaced; use feedback and any later merge/deployment are separate steps."
+  ],
+  "needs_human": [],
+  "scope": "Saves the already reviewed and qualified corrections as a local checkpoint. No tests are counted again, and no merge, push, release, or deployment was performed."
+}

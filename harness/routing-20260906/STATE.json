@@ -1,0 +1,11 @@
+{
+  "branch": "ux/routing-20260906",
+  "commit": "8fd3b9f1e0c6833fc43350f72a8120c6a8d6060b",
+  "dashboard": "http://127.0.0.1:54919/",
+  "handoff": "HANDOFF.md",
+  "milestone": "routing",
+  "receipt": "bus/receipts.jsonl",
+  "status": "qualified_with_limits",
+  "stop_condition": "Continue through the authorized roadmap, reporting after each milestone. Stop when all scoped local milestones are qualified and recorded, or when a concrete unresolved blocker or a separate merge/release/deployment authorization is required.",
+  "worktree": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\routing"
+}

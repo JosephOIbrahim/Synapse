@@ -1,0 +1,146 @@
+{
+  "leg": "first-session-20260906:live-qualification:root",
+  "verdict": "PASS",
+  "created_utc": "2026-09-06T20:28:41.348098+00:00",
+  "claim": "Bounded first-session live qualification and three evidence-driven corrections. Broader suite failures and remaining production scope are explicitly excluded.",
+  "base_revision": "f57ef5e27b1860ff125d96861b78a6f35c1ad13b",
+  "branch": "ux/first-session-20260906",
+  "touched": [
+    "python/synapse/panel/connection_dialog.py",
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/claude_worker.py",
+    "harness/check_first_session_qt.py",
+    "tests/test_first_session_panel.py",
+    "docs/superpowers/first-session-handoff.md"
+  ],
+  "sha256": {
+    "python/synapse/panel/connection_dialog.py": "1bace27698d6915ab7062fcb56f628dc12815d85eea126e81dbcb029887b7e0a",
+    "python/synapse/panel/synapse_panel.py": "9efb3edd3a31dbfece72699b411bc7ef59810d26602197da1f216d2c7d7e59a8",
+    "python/synapse/panel/claude_worker.py": "37d01878b5dacf7238cd263402dd3434abef1f7f0cc879518c0617a6fa80aec5",
+    "harness/check_first_session_qt.py": "b7bb5d302174c12129c314eba033c8fa73303dbb9e767cff89c47923b7c2c61b",
+    "tests/test_first_session_panel.py": "6c9b3447f52e0d852a891e4af130a7cdb320eb2a964080bbc3028aa2028908d7",
+    "docs/superpowers/first-session-handoff.md": "13430a2ce8b4a1e3753030a95ce152d9125e82acf778d9d89ea342199eec4644"
+  },
+  "commands": [
+    "Houdini 22.0.400/python313/python.exe -B harness/check_first_session_qt.py <checks/qt-lifetime-green>",
+    "python -B -m pytest tests/test_first_session_panel.py tests/test_first_session_connections.py tests/test_chat_panel.py tests/test_bp2_paneltruth_token_refresh.py tests/test_j2_token_wire.py -q -p no:cacheprovider --basetemp <checks/history-final>",
+    "python -B -m pytest <files returned by rg -l 'claude_worker|_conversation_loop' tests -g '*.py'> -q -p no:cacheprovider --basetemp <checks/worker-composed>",
+    "python -B -m pytest tests/test_offmain_fallback.py -q -p no:cacheprovider --basetemp <checks/worker-baseline> (cwd C:/Users/User/SYNAPSE at b1ec9a8d)",
+    "python -B checks/trial_command.py checks/trial_connection_checks.py",
+    "python -B checks/trial_command.py checks/trial_stop_sequence.py",
+    "python -B checks/trial_command.py checks/trial_history_sequence.py",
+    "python -B checks/trial_command.py checks/trial_decline.py",
+    "git diff --check (six changed files, reviewed feature worktree)"
+  ],
+  "artifacts": [
+    "artifacts/live/qt-live-scale-red-03.log",
+    "artifacts/live/qt-live-scale-green.log",
+    "artifacts/live/scale-focused.log",
+    "artifacts/live/qt-lifetime-red.log",
+    "artifacts/live/qt-lifetime-green.log",
+    "artifacts/live/lifetime-focused.log",
+    "artifacts/live/history-red.log",
+    "artifacts/live/history-edge-red.log",
+    "artifacts/live/history-final.log",
+    "artifacts/live/worker-composed.log",
+    "artifacts/live/worker-baseline.log",
+    "artifacts/live/board-sweep-live.json",
+    "artifacts/live/houdini-trial/connection-checks.json",
+    "artifacts/live/houdini-trial/commands-check.json",
+    "artifacts/live/houdini-trial/stop-check.json",
+    "artifacts/live/houdini-trial/history-check.json",
+    "artifacts/live/houdini-trial/history-check-final.json",
+    "artifacts/live/houdini-trial/decline-check.json",
+    "artifacts/live/houdini-trial/final-live-state.json",
+    "artifacts/live/houdini-trial/provenance.json",
+    "artifacts/live/houdini-trial/history-source-update.json",
+    "artifacts/live/houdini-trial/isolation.json",
+    "artifacts/live/houdini-trial/measurement-notes.json",
+    "artifacts/live/houdini-trial/reply-checks.json",
+    "artifacts/live/houdini-trial/connection-setup-live.png",
+    "artifacts/live/houdini-trial/commands-draft-preserved.png",
+    "artifacts/live/houdini-trial/history-followup-live.png",
+    "artifacts/live/houdini-trial/token-face-live.png",
+    "artifacts/live/houdini-trial/sharing-disclosure-live.png",
+    "artifacts/live/houdini-trial/process.log",
+    "artifacts/live/houdini-trial/attempt-03-crash/receipt.json",
+    "artifacts/live/houdini-trial/attempt-03-crash/post-crash-inspection.json",
+    "artifacts/live/houdini-trial/attempt-03-crash/temp/crash.SYNAPSE_first_session_trial.User_92832_log.txt"
+  ],
+  "proved_it_bites": [
+    "Labels were 12px beside 27px controls; scaling regression fails before fix.",
+    "A weak callback receiver is collected before finished; actual-wiring ownership regression fails before strong capture. Native and Python crash stacks agree with the invalid receiver path.",
+    "Two history regressions lose completed answers before the fix; a third catches an unpaired truncated tool call before the filter."
+  ],
+  "independent_review": {
+    "reviewer": "/root/spec_review (Parfit)",
+    "verdict": "Approved all three corrections; independent Qt lifecycle and history checks passed.",
+    "live_limit": "Reviewer reproduced a callback exception, not the native segfault; corrected native completion was verified in the fresh host."
+  },
+  "tests": {
+    "focused": {
+      "verdict": "PASS",
+      "passed": 127,
+      "skipped": 19
+    },
+    "previous_focused": {
+      "passed": 265,
+      "skipped": 61,
+      "verdict": "PASS"
+    },
+    "full_suite": {
+      "failed": 10,
+      "failures": [
+        "tests/test_orchestrate_close_gate.py::test_receipt_uncommitted_holds_at_closing",
+        "tests/test_orchestrate_close_gate.py::test_receipt_not_head_holds_at_closing",
+        "tests/test_orchestrate_close_gate.py::test_receipt_head_but_no_release_holds_at_closing",
+        "tests/test_orchestrate_close_gate.py::test_clean_leg_passes_end_to_end_in_dry_run",
+        "tests/test_orchestrate_close_gate.py::test_operator_harvested_main_tree_receipt_is_done",
+        "tests/test_orchestrate_close_gate.py::test_manifest_pinned_done_bypasses_gate",
+        "tests/test_orchestrate_liveness.py::test_subagent_workflow_write_moves_last_write",
+        "tests/test_orchestrate_liveness.py::test_fresh_subagent_beats_stale_main_transcript",
+        "tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence",
+        "tests/test_write_plane_health.py::test_probe_bounded_on_real_acl_denied_dir"
+      ],
+      "passed": 7593,
+      "skipped": 391,
+      "summary": "10 failed, 7593 passed, 391 skipped, 84 warnings in 251.69s (0:04:11)",
+      "verdict": "FAIL"
+    },
+    "baseline": {
+      "fully_reproduced_failures": 9,
+      "nested_check": "Scene-memory errors appeared, then the baseline child stalled and was stopped after over 12 minutes (837.72s total). Not a clean reproduction of the final nested failure.",
+      "verdict": "PARTIAL"
+    },
+    "real_qt": {
+      "verdict": "PASS",
+      "runtime": "Houdini 22.0.400 plain Python + PySide6",
+      "live_houdini": "Separately qualified in PID 68228"
+    },
+    "worker_composed": {
+      "verdict": "FAIL",
+      "passed": 185,
+      "skipped": 6,
+      "failed": 1,
+      "baseline_reproduced": true
+    },
+    "live_houdini": {
+      "verdict": "PASS",
+      "pid": 68228,
+      "version": "22.0.400",
+      "model": "ollama/qwen3.5:4b",
+      "generation": "Local",
+      "cloud_generation": "NOT_RUN"
+    }
+  },
+  "could_not_verify": [
+    "Qualification covers the bounded first-session panel flow in a disposable Houdini 22.0.400 session; not sustained production stability, scene construction, rendering, simulation, or USD memory writes.",
+    "Cloud generation, billing, and a real entered cloud credential were not tested. Locality remains recent Ollama-reported evidence, not independent attestation.",
+    "Panel permission does not enforce egress for external MCP clients or independent background services.",
+    "The earlier full-suite run at f57ef5e2 remains FAIL (7593 passed, 10 failed, 391 skipped). Nine failures reproduce at baseline; one nested baseline case is only partially characterized. The full suite was not rerun after these narrow corrections.",
+    "The wider final worker suite has one failure reproduced at unchanged b1ec9a8d, due to missing hdefereval in standalone Python; it is not represented as green.",
+    "One polling measurement crossed two task boundaries and is excluded; the final sequential capture verifies each provider receipt before the next send.",
+    "The original Houdini session and deployed installation were not replaced; use feedback and any later merge/deployment are separate steps."
+  ],
+  "needs_human": []
+}

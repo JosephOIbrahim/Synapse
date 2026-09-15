@@ -1,0 +1,41 @@
+{
+  "leg": "first-session-20260906:dashboard-live-handoff:root",
+  "verdict": "PASS",
+  "created_utc": "2026-09-06T20:34:49.567189+00:00",
+  "touched": [
+    "progress-dashboard/app.js",
+    "progress-dashboard/project.json",
+    "progress-dashboard/README.md"
+  ],
+  "sha256": {
+    "progress-dashboard/app.js": "2e026299c0ee32f308eb6e3a8e175b25616e9a064aec89f731d2a2075bc4e2ea",
+    "progress-dashboard/project.json": "c178dfa2bea3b80ec6b6cd8611104956c7cd7102f0797175c92e21b778c963d5",
+    "progress-dashboard/README.md": "c4969b66a8f334620324c593ef5194f9e8819325a480c9b90d6cc2e174d96e8e"
+  },
+  "commands": [
+    "Computer Use: reload http://127.0.0.1:54919/, open first-use instructions, close, open evidence and limits, close, inspect the final screenshot, markDeliverable.",
+    "python -B checks/record_dashboard_handoff.py"
+  ],
+  "browser_observations": {
+    "method": "Direct inspection through Computer Use; assertions below summarize the displayed accessibility text and final screenshot.",
+    "main": "First session verified. Ready for your hands. 127 focused checks, 19 skipped; bounded Houdini 22.0.400 trial passed; complete suite 10 failures.",
+    "trial": "The separate trial is available; instructions point to SYNAPSE_first_session_trial. No stale request for already-granted permission.",
+    "evidence": "Separate Qt and live results, wider worker 185 passed / 1 failed / 6 skipped, full-suite failure and baseline limits visible; Build 6ea5e923 footer.",
+    "layout": "Final desktop screenshot inspected; main content readable and no overlapping panels observed."
+  },
+  "independent_review": "Parfit found no misleading dashboard claim. Both metadata notes were resolved: new commit pointer and separately preserved history-method correction.",
+  "artifacts": [
+    "artifacts/live/dashboard-handoff/dashboard-live-status.json",
+    "artifacts/live/dashboard-handoff/board-sweep-dashboard-handoff.json",
+    "artifacts/live/dashboard-handoff/progress-dashboard/app.js",
+    "artifacts/live/dashboard-handoff/progress-dashboard/project.json",
+    "artifacts/live/dashboard-handoff/progress-dashboard/README.md"
+  ],
+  "proved_it_bites": "Before reloading updated code the browser retained the old PID-oriented label. After reload it displayed the bounded trial result; the trial and evidence dialogs showed the corrected current text.",
+  "could_not_verify": [
+    "This verifies displayed local records and their source consistency, not a live Houdini monitor or the full production roadmap.",
+    "No new model generation or broader test rerun occurred during this handoff."
+  ],
+  "needs_human": [],
+  "stop_condition": "Reached: bounded first-session checks have recorded results, the corrections are reviewed, and the dashboard is updated. Stop before the next product milestone for Joe's hands-on feedback."
+}

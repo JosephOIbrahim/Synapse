@@ -1,0 +1,11 @@
+{
+  "branch": "ux/recipes-20260906",
+  "commit": "7ab00a9ccb2359d392dc4e82f548155569fb6dff",
+  "dashboard": "http://127.0.0.1:54919/",
+  "handoff": "HANDOFF.md",
+  "milestone": "recipes",
+  "receipt": "bus/receipts.jsonl",
+  "status": "qualified_with_limits",
+  "stop_condition": "Continue through the authorized roadmap, reporting after each milestone. Stop when all scoped local milestones are qualified and recorded, or when a concrete unresolved blocker or a separate merge/release/deployment authorization is required.",
+  "worktree": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\recipes"
+}

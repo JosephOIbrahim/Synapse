@@ -1,0 +1,70 @@
+{
+  "milestone": "networks",
+  "status": "ready_for_feedback",
+  "created_utc": "2026-09-06T21:25:19.682222+00:00",
+  "commit": "1fad9032d6dbb5210185e7d3c12ef2f4b1588eb4",
+  "branch": "ux/networks-20260906",
+  "worktree": "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\worktrees\\networks",
+  "dashboard": "http://127.0.0.1:54919/",
+  "tests": {
+    "focused": {
+      "passed": 252,
+      "failed": 0,
+      "skipped": 0,
+      "verdict": "PASS"
+    },
+    "network_composed": {
+      "passed": 19,
+      "verdict": "PASS"
+    },
+    "independent_composed": {
+      "passed": 22,
+      "verdict": "PASS"
+    },
+    "live_houdini": {
+      "verdict": "PASS",
+      "version": "22.0.400",
+      "pid": 13568,
+      "nodes": 14,
+      "wires": 13,
+      "sections": 3
+    },
+    "live_battery": {
+      "passed": 7,
+      "blocked": 1,
+      "companions_passed": 2,
+      "verdict": "FAIL",
+      "note": "G1 targets the original memory store and remains unrun; strict runner is not green."
+    },
+    "full_suite": {
+      "passed": 7616,
+      "failed": 10,
+      "skipped": 391,
+      "verdict": "FAIL",
+      "failures": [
+        "tests/test_orchestrate_close_gate.py::test_receipt_uncommitted_holds_at_closing",
+        "tests/test_orchestrate_close_gate.py::test_receipt_not_head_holds_at_closing",
+        "tests/test_orchestrate_close_gate.py::test_receipt_head_but_no_release_holds_at_closing",
+        "tests/test_orchestrate_close_gate.py::test_clean_leg_passes_end_to_end_in_dry_run",
+        "tests/test_orchestrate_close_gate.py::test_operator_harvested_main_tree_receipt_is_done",
+        "tests/test_orchestrate_close_gate.py::test_manifest_pinned_done_bypasses_gate",
+        "tests/test_orchestrate_liveness.py::test_subagent_workflow_write_moves_last_write",
+        "tests/test_orchestrate_liveness.py::test_fresh_subagent_beats_stale_main_transcript",
+        "tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence",
+        "tests/test_write_plane_health.py::test_probe_bounded_on_real_acl_denied_dir"
+      ]
+    },
+    "baseline": {
+      "fully_reproduced_failures": 9,
+      "verdict": "PARTIAL",
+      "nested_check": "Same ten failing names as the prior full run. Nine baseline reproductions are saved in checks/base-known-failures.log; the nested baseline child stalled and that comparison remains incomplete."
+    }
+  },
+  "receipt": "bus/receipts.jsonl",
+  "handoff": "HANDOFF.md",
+  "stop_condition": "Reached: the network changes are reviewed and saved locally, results and limits are recorded, and the dashboard plus both disposable layout examples are ready. Pause before recipes for Joe's use feedback.",
+  "visual_tryout": [
+    "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\checks\\networks\\gui\\scene\\SYNAPSE_network_vertical.hiplc",
+    "C:\\Users\\User\\OneDrive\\Documents\\ChatGPT\\SYNAPSE_Refactor\\checks\\networks\\gui\\scene\\SYNAPSE_network_horizontal.hiplc"
+  ]
+}
