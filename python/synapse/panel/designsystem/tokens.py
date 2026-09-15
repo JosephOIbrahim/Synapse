@@ -112,12 +112,27 @@ def _grey_for_contrast(bg_hex, ratio, lighter):
 # input, never a scattered literal (the comp hexes land HERE only).
 _FALLBACK_RGB = (42, 42, 42)   # #2A2A2A — the host pane grey when no scheme reads
 
-# Contrast targets for the solved text ramp. body=primary is held a hair above
-# AA (4.5); bright is AAA-crisp; tertiary stays above the dark-DCC pragmatic
-# line; disabled is intentionally low (it reads as inactive, not as body).
+# Contrast targets for the solved text ramp, against the WORST-CASE landing
+# surface (see _derive_palette's anchor). body=primary is held a hair above AA
+# (4.5); bright is AAA-crisp.
+#
+# D3 (READABILITY.md 2026-09-15, recomputed here): tertiary 3.3 and disabled 2.0
+# were below AA and the module comment claimed "AA holds at every host grey",
+# which was true of primary/secondary only. Both now sit AT the 4.5 floor.
+# Measured on the headless seed (#2A2A2A host):
+#   tertiary  #868686 -> #9E9E9E   panel 3.94 -> 5.36 · surface 3.32 -> 4.51
+#   disabled  #636363 -> #9E9E9E   on DISABLED_BG 2.01 -> 4.51
+#
+# CONSEQUENCE, stated rather than hidden: with secondary frozen at 4.6 and the
+# floor at 4.5, the quiet end of the ramp has no room left. tertiary #9E9E9E and
+# secondary #A0A0A0 are two levels apart, and disabled is now the SAME grey as
+# tertiary. Value can no longer carry the quiet rung at this host grey -- form
+# (tracking / caps / the mono family) has to, and disabled state is carried by
+# DISABLED_BG, not by illegible ink. That is a design call for the next pass;
+# what is NOT negotiable is that no role ships below AA.
 _TEXT_CONTRAST = {
-    "primary": 7.0, "secondary": 4.6, "tertiary": 3.3, "bright": 9.0,
-    "disabled": 2.0,
+    "primary": 7.0, "secondary": 4.6, "tertiary": 4.5, "bright": 9.0,
+    "disabled": 4.5,
 }
 
 def _derive_palette(r, g, b):
@@ -203,7 +218,20 @@ TEXT_TERTIARY  = _TXT["tertiary"]   # captions / hints
 TEXT_BRIGHT    = _TXT["bright"]     # emphasis / headings
 TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
 TEXT_DISABLED  = _TXT["disabled"]
-TEXT_ON_ACCENT = "#0F1F2B"  # text on a SIGNAL fill (comp --signal-ink; AA-safe)
+# D2 (READABILITY.md 2026-09-15, recomputed here): the old "#0F1F2B ... AA-safe"
+# was true of the fill this ink is NEVER filled with. On SIGNAL #8FB3D9 (the
+# :hover fill) it measured 7.69:1; on SIGNAL_DEEP #627A93 -- the fill SEND and
+# every hero button actually rest on -- it measured 3.78:1, under the 4.5 AA
+# floor for text this size. Options computed against SIGNAL_DEEP:
+#   fill  #627A93 -> #6D87A3 (lighten to 4.51)  -- moves the whole button face
+#   ink   #0F1F2B -> #04090C (4.5014)           -- clears the bar by 0.0014
+#   ink   #0F1F2B -> #000000 (4.7245)           -- CHOSEN
+# The ink is the smaller visual delta (thin strokes, not the button face), and
+# black clears with margin instead of sitting on the line. It cannot introduce a
+# hue -- it removes 28 points of chroma from an ink the restraint instrument was
+# counting as chromatic. Every other TEXT_ON_ACCENT fill only gains:
+#   SIGNAL 7.69 -> 9.62 · SIGNAL_PRESS 5.57 -> 6.96 · WARM 6.42 -> 8.03
+TEXT_ON_ACCENT = "#000000"  # knockout ink on a filled action (4.72:1 on SIGNAL_DEEP)
 
 
 def _warm_bias(hex_str, amount=12):
@@ -225,6 +253,15 @@ def _warm_bias(hex_str, amount=12):
 # without becoming a third accent (SIGNAL + WARM remain the two-accent ceiling).
 # Derived, never a literal, so it tracks the host seed like the rest of the ramp.
 MUSHROOM = _warm_bias(_TXT["tertiary"])
+
+# D3 (READABILITY.md 2026-09-15): the input placeholder was never a design-system
+# colour at all -- Qt paints QPalette::PlaceholderText, which defaults to the
+# text colour at 50% alpha. Composited over FIELD_INSET that measured #727272 at
+# 3.43:1, under AA, and no token in this file could have moved it. Naming it here
+# puts it back under the system; components.apply_placeholder_palette() installs
+# it on the palette role. It is the hint/caption role, which is what a
+# placeholder is: #9E9E9E at 6.15:1 on FIELD_INSET #1F1F1F.
+TEXT_PLACEHOLDER = TEXT_TERTIARY
 
 # WCAG note: SIGNAL (#8FB3D9) on PANEL passes AA for >=14px / bold, but FAILS
 # for small body text. Use TEXT_ACCENT for labels/links/icons only; never for
@@ -384,14 +421,29 @@ WEIGHT_MEDIUM   = 500   # label / status  (Qt QFont.Weight.Medium)
 WEIGHT_SEMIBOLD = 600   # display / title / buttons / badges
 # WEIGHT_BOLD is the weight the mono face actually HAS. designsystem/fonts/
 # ships SpaceMono-Regular (400) + SpaceMono-Bold (700) and nothing between, and
-# fontload.py:158-190 maps any weight >= 600 to setBold — so 500 and 600 on mono
-# are not weights the family owns, they are Qt's synthetic guess at a DemiBold
-# that does not exist in the file. Filed by TYPE as ANSWER 1 of CRIT.md
-# 2026-09-15 (ranked change 19). THIS BRANCH ONLY ADDS THE TOKEN: retoning the
-# roles that currently ask for 500/600 on mono (status 11/500 at TYPE_ROLES
-# below, tag 12/500 at qss.py) is pending M7 — what mono weight 500 renders as
-# today is unmeasured.
-WEIGHT_BOLD     = 700   # mono's real bold (SpaceMono-Bold); see M7 note above
+# fontload.py maps any weight >= 600 to setBold — so 500 and 600 on mono are not
+# weights the family owns. Filed by TYPE as ANSWER 1 of CRIT.md 2026-09-15
+# (ranked change 19), where it was left pending M7.
+#
+# D4 (READABILITY.md 2026-09-15) — M7 IS NOW MEASURED. Raster ink counts of
+# "Handgloves 8" at pixelSize 24, offscreen under Houdini 22.0.400, drawn through
+# the same QFont ladder components.apply_font_role uses:
+#     sans  400 -> 184395   sans  500 -> 230308   sans 600/700 -> 271953
+#     mono  400 -> 188033   mono  500 -> 188033   mono 600/700 -> 275518
+# So: mono 500 is BYTE-IDENTICAL to mono 400 (188033 = 188033) — the number was
+# a request the family cannot fill. Sans 600 is BYTE-IDENTICAL to sans 700 on
+# this path (271953 = 271953) — setBold resolves it to 700, QFontInfo agrees.
+# And sans 500 is REAL: +24.9% ink over 400 (READABILITY.md says +14.6%; my own
+# raster disagrees on the magnitude, not on the fact — see the branch report).
+# TYPE_ROLES below now names the weight each role actually gets.
+WEIGHT_BOLD     = 700   # sans setBold + mono's real bold (SpaceMono-Bold)
+
+# The weights each bundled family can actually deliver, measured (see above).
+# apply_font_role must never hand a family a weight outside its own set.
+FAMILY_WEIGHTS = {
+    "sans": (WEIGHT_REGULAR, WEIGHT_MEDIUM, WEIGHT_BOLD),
+    "mono": (WEIGHT_REGULAR, WEIGHT_BOLD),
+}
 
 # Roles: (family_css, size_px, weight, letter_spacing_px) — components read these.
 #
@@ -403,13 +455,18 @@ WEIGHT_BOLD     = 700   # mono's real bold (SpaceMono-Bold); see M7 note above
 # terminal emulator rather than a tool. So `title` and `label` move to sans;
 # `code` and `status` stay mono, unchanged.
 TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
-    "display": (FONT_SANS_CSS, SIZE_HERO,  WEIGHT_SEMIBOLD, 0.5),
-    "title":   (FONT_SANS_CSS, SIZE_TITLE, WEIGHT_SEMIBOLD, 1.0),
+    # D4: display/title asked SEMIBOLD 600 and the screen has always drawn 700
+    # (setBold); status asked MEDIUM 500 on mono and the screen has always drawn
+    # 400. Writing what renders changes nothing on screen — it stops the sheet
+    # describing faces that never shipped. `label` keeps MEDIUM because sans 500
+    # is a face the variable file really has; apply_font_role now delivers it.
+    "display": (FONT_SANS_CSS, SIZE_HERO,  WEIGHT_BOLD,    0.5),
+    "title":   (FONT_SANS_CSS, SIZE_TITLE, WEIGHT_BOLD,    1.0),
     "body":    (FONT_SANS_CSS, SIZE_BODY,  WEIGHT_REGULAR,  0.0),
     "label":   (FONT_SANS_CSS, SIZE_UI,    WEIGHT_MEDIUM,   0.5),
     "code":    (FONT_MONO_CSS, SIZE_BODY,  WEIGHT_REGULAR,  0.0),
     "caption": (FONT_SANS_CSS, SIZE_SMALL, WEIGHT_REGULAR,  0.0),
-    "status":  (FONT_MONO_CSS, SIZE_SMALL, WEIGHT_MEDIUM,   0.5),
+    "status":  (FONT_MONO_CSS, SIZE_SMALL, WEIGHT_REGULAR,  0.5),
 }
 
 # v9 tracking map — em per role, RESTORED to the ratified comp values (the
