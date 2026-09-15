@@ -281,51 +281,47 @@ function Short8([string]$s) { if ($s -and $s.Length -ge 8) { $s.Substring(0, 8) 
 # refusal too: "cannot prove untouched" is not "untouched". The human escape
 # valve is the existing manifest-pinned state:done in Get-LegState - a human
 # word, never a flag an agent can set.
-function Get-CycleBase([string]$wt, [object]$leg) {
-    # Start-Leg records the resolved base sha at dispatch (.claude/.cycle_base).
-    $f = Join-Path $wt '.claude\.cycle_base'
-    if (Test-Path $f) {
-        $s = Get-Content $f -Raw -EA SilentlyContinue
-        if ($s -and ([string]$s).Trim()) { return ([string]$s).Trim() }
-    }
-    # Legacy worktree (cut before the base was recorded): the fork point from the
-    # ref the leg declared, else master. NOT the manifest-level "base" - Start-Leg
-    # never read that field either.
-    $ref = if ($leg.base) { $leg.base } else { 'master' }
-    $mb = (& git -C $wt merge-base $ref HEAD 2>$null)
-    if ($LASTEXITCODE -eq 0 -and $mb) { return ([string]$mb).Trim() }
-    return $null
-}
-
+# REPAIR ROUND (1h, same review). The first cut resolved the base HERE, from
+# .claude/.cycle_base alone - an untracked, gitignored file inside the agent's
+# own writable worktree - and diffed committed history only. Four clean bypasses
+# followed (marker rewritten to HEAD; `git mv VERSION VERSION.bak`, since
+# --name-only reports a rename's destination only; an uncommitted write; a staged
+# write). All four now live in ONE place, harness/protected_diff.py, which both
+# this gate and run.ts shell out to, so the two cannot drift on what "changed"
+# means any more than they can drift on the protected set. Get-CycleBase is gone:
+# the marker is a hint the module cross-checks against merge-base(<ref>, HEAD),
+# and the merge-base wins when they disagree.
 function Test-ProtectedDiff([string]$wt, [object]$leg) {
-    $base = Get-CycleBase $wt $leg
-    if (-not $base) {
+    $pdy = Join-Path $repo 'harness\protected_diff.py'
+    if (-not (Test-Path $pdy)) {
+        return @{ ok = $false; reason = "PROTECTED-PATH check impossible - $pdy not found (1h/FENCE-4)" }
+    }
+    # FAIL CLOSED on the interpreter. $ErrorActionPreference is SilentlyContinue
+    # for this whole script, so a CommandNotFoundException from `& python` is
+    # swallowed and $LASTEXITCODE keeps whatever the PREVIOUS call left there -
+    # 0, i.e. "clean" - which closed the leg green with an empty reason. Resolve
+    # the interpreter first (honouring $env:PYTHON exactly as run.ts does, for a
+    # host carrying only `py`), and treat any exit code that is not one the
+    # module itself returns as a refusal.
+    $py = if ($env:PYTHON) { $env:PYTHON } else { 'python' }
+    if (-not (Get-Command $py -EA SilentlyContinue)) {
         return @{ ok = $false; reason =
-            "PROTECTED-PATH check impossible - no cycle base at $($leg.worktree)/.claude/.cycle_base and no fork point resolvable; cannot prove VERSION/harness untouched (1h/FENCE-4)" }
+            "PROTECTED-PATH check impossible - interpreter '$py' is not resolvable; cannot prove VERSION/harness untouched (1h/FENCE-4)" }
     }
-    $changed = @(& git -C $wt diff --name-only "$($base)..HEAD" 2>$null)
-    if ($LASTEXITCODE -ne 0) {
-        return @{ ok = $false; reason =
-            "PROTECTED-PATH check impossible - git diff $(Short8 $base)..HEAD failed in $($leg.worktree) (1h/FENCE-4)" }
-    }
-    $changed = @($changed | ForEach-Object { ([string]$_).Trim() } | Where-Object { $_ })
-    if ($changed.Count -eq 0) { return @{ ok = $true; reason = '' } }
-    $ppy = Join-Path $repo 'harness\protected_paths.py'
-    if (-not (Test-Path $ppy)) {
-        return @{ ok = $false; reason = "PROTECTED-PATH check impossible - $ppy not found (1h/FENCE-4)" }
-    }
-    # Paths go in on STDIN, one per line - never argv, where a spaced path would split.
-    $out  = @((($changed -join "`n") + "`n") | & python $ppy --check - 2>&1)
+    $ref = if ($leg.base) { $leg.base } else { 'master' }
+    $global:LASTEXITCODE = 99   # sentinel: never inherit the previous call's 0
+    $out  = @(& $py $pdy --worktree $wt --ref $ref 2>&1)
     $code = $LASTEXITCODE
+    $lines = @($out | ForEach-Object { ([string]$_).Trim() } | Where-Object { $_ })
     if ($code -eq 0) { return @{ ok = $true; reason = '' } }
     if ($code -eq 1) {
-        $hits = @($out | ForEach-Object { ([string]$_).Trim() } | Where-Object { $_ }) -join ', '
-        Say "  PROTECTED-PATH: $($leg.id) changed $hits between $(Short8 $base) and HEAD - refusing to close green (harness/protected_paths.txt; 1h/FENCE-4)" 'Red'
+        $hits = $lines -join ', '
+        Say "  PROTECTED-PATH: $($leg.id) changed $hits since its fork point - refusing to close green (harness/protected_paths.txt; 1h/FENCE-4)" 'Red'
         return @{ ok = $false; reason =
-            "PROTECTED-PATH: $hits changed in $(Short8 $base)..HEAD - VERSION, harness/state/** and the suite baselines are human-only; the leg cannot close green (1h/FENCE-4)" }
+            "PROTECTED-PATH: $hits changed in $($leg.worktree) since its fork point - VERSION, harness/state/** and the suite baselines are human-only; the leg cannot close green (1h/FENCE-4)" }
     }
     return @{ ok = $false; reason =
-        "PROTECTED-PATH check errored - protected_paths.py exit $code`: $(@($out | ForEach-Object { [string]$_ }) -join ' ') (1h/FENCE-4)" }
+        "PROTECTED-PATH check impossible - protected_diff.py exit $code`: $($lines -join ' ') (1h/FENCE-4)" }
 }
 
 # W6-GATE CLOSE GATE (HARDENING-SPEC Part A, S4 + S5).

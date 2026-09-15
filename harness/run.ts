@@ -183,30 +183,46 @@ function ensureWorktree(id: string): string {
 // that ONE file; harness/protected_paths.py is the one matcher (orchestrate.ps1 calls the same
 // one, so the two scripts cannot drift on glob semantics). A base that cannot be resolved is a
 // refusal too - "cannot prove untouched" is not "untouched".
+//
+// REPAIR ROUND. The first cut asked `git diff --name-only <base>..HEAD` right here, with
+// <base> read from .claude/.cycle_base - a gitignored file inside the agent's own writable
+// worktree - and looked at committed history only. That left four clean bypasses (rewrite the
+// marker to HEAD; `git mv VERSION VERSION.bak`, since --name-only reports only a rename's
+// destination; write VERSION without committing; stage it without committing). All four are
+// answered in ONE place now, harness/protected_diff.py, which orchestrate.ps1's close gate
+// shells out to as well - so the two consumers cannot drift on what "this cycle changed" means
+// any more than they can drift on the protected set. SCOPE, stated not implied: .gitignore'd
+// paths are invisible to git, so the ignored members of harness/state/** and anything written
+// to the MAIN checkout (run.ts writes harness/state/done.json there by design, see DONE below)
+// are outside this fence - see the module docstring.
 type ProtectedVerdict = { ok: boolean; base: string; hits: string[]; error: string };
 function checkProtectedDiff(wt: string): ProtectedVerdict {
   const v: ProtectedVerdict = { ok: false, base: "", hits: [], error: "" };
+  // Display only. The checker resolves the REAL base itself and cross-checks this marker
+  // against merge-base(<ref>, HEAD), so a tampered marker cannot narrow the diff.
   const baseFile = join(wt, ".claude", CYCLE_BASE);
   try { if (existsSync(baseFile)) v.base = readFileSync(baseFile, "utf8").trim(); } catch {}
-  if (!v.base) {
-    // Legacy worktree (cut before the base was recorded): fall back to the fork point from this
-    // checkout's HEAD - ensureWorktree cuts every worktree from it.
-    const mainHead = (sh("git", ["rev-parse", "HEAD"]).stdout || "").trim();
-    const mb = mainHead ? sh("git", ["merge-base", mainHead, "HEAD"], wt) : null;
-    if (mb && mb.status === 0) v.base = (mb.stdout || "").trim();
-  }
-  if (!v.base) { v.error = `no cycle base at ${baseFile} and no fork point resolvable`; return v; }
-  const d = sh("git", ["diff", "--name-only", `${v.base}..HEAD`], wt);
-  if (d.status !== 0) { v.error = `git diff ${v.base.slice(0, 8)}..HEAD failed: ${(d.stderr || "").trim().slice(0, 200)}`; return v; }
-  const changed = (d.stdout || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-  if (!changed.length) { v.ok = true; return v; }
-  // Paths go in on STDIN, never argv: shell:true (win32) would split a spaced path.
-  const r = spawnSync(PYTHON, ["harness/protected_paths.py", "--check", "-"], {
-    cwd: REPO, encoding: "utf8", shell: process.platform === "win32", input: changed.join("\n") + "\n",
-  });
+  // The fork ref: this checkout's HEAD, which is what ensureWorktree cuts every worktree from.
+  const mainHead = (sh("git", ["rev-parse", "HEAD"]).stdout || "").trim();
+  // qp: quote+forward-slash both paths under win32 shell:true (sibling selectRedTask does the
+  // same) - an unquoted spaced worktree path would shred into argparse.
+  const q = (p: string) => (process.platform === "win32" ? `"${p.replace(/\\/g, "/")}"` : p);
+  const args = ["harness/protected_diff.py", "--worktree", q(wt)];
+  if (mainHead) args.push("--ref", mainHead);
+  const r = spawnSync(PYTHON, args, { cwd: REPO, encoding: "utf8", shell: process.platform === "win32" });
   if (r.status === 0) { v.ok = true; return v; }
-  if (r.status === 1) { v.hits = (r.stdout || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean); return v; }
-  v.error = `protected_paths.py exited ${r.status}: ${((r.stderr || "") + (r.stdout || "")).trim().slice(0, 300)}`;
+  if (r.status === 1) {
+    v.hits = (r.stdout || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    // An UNLAUNCHABLE interpreter also exits 1 here, not null: under win32 shell:true the
+    // spawn succeeds (cmd.exe runs) and cmd.exe's "is not recognized" is exit 1 with empty
+    // stdout - measured, not assumed. Exit 1 with no hits is therefore "the check did not
+    // happen", never "clean". ok stays false either way, so this only makes the line honest.
+    if (!v.hits.length) v.error = `protected_diff.py exited 1 with no hits (interpreter '${PYTHON}' unlaunchable?): ${((r.stderr || "")).trim().slice(0, 300)}`;
+    return v;
+  }
+  // status null / 2 / anything else: the check could not be made. "Cannot prove untouched"
+  // is not "untouched".
+  v.error = `protected_diff.py exited ${r.status}: ${((r.stderr || "") + (r.stdout || "")).trim().slice(0, 300)}`;
   return v;
 }
 

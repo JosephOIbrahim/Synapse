@@ -3,13 +3,24 @@
 # Paths an autonomous cycle may never change:
 #   VERSION                          bumped by the release ritual (a human)
 #   harness/state/**                 the ledger the harness reads to decide what is done -
-#                                    a cycle that edits it grades its own homework
+#                                    a cycle that edits it grades its own homework.
+#                                    SCOPE: the fences below see git, so they cover the
+#                                    committed/staged/unstaged/untracked surface of a leg's
+#                                    OWN worktree. The .gitignore'd members (drop.json,
+#                                    posture.json, suite_stamp.json, the readiness verdicts,
+#                                    DECISIONS.md) and anything written to the MAIN checkout
+#                                    - run.ts writes harness/state/done.json there by design
+#                                    (run.ts:64) - are NOT fenced by them. Said plainly here
+#                                    rather than left for a reader to discover.
 #   harness/verify/*_baseline.json   the suite floor a sprint must not lower (ratchet guardrail)
 #
 # Consumers (harness-review 2026-09-15, upgrade path 1h / finding FENCE-4):
-#   harness/run.ts              post-cycle `git diff --name-only <base>..HEAD`; a hit refuses the PASS (BLOCKED)
+#   harness/protected_diff.py   the one "what did this cycle change?" checker - resolves the fork
+#                               point (cross-checking the agent-writable .cycle_base marker against
+#                               merge-base) and unions committed + staged + unstaged + untracked
+#   harness/run.ts              runs it after the Evaluator's PASS; a hit refuses the PASS (BLOCKED)
 #   harness/orchestrate.ps1     Test-CloseGate -> Test-ProtectedDiff; a hit holds the leg at 'closing'
-#   harness/protected_paths.py  the one parser + matcher both call (`--check -` reads paths on stdin)
+#   harness/protected_paths.py  the one parser + matcher (`--check -` reads paths on stdin)
 #   harness/githooks/pre-commit (1b, separate branch) - consume this same file, do not copy the list
 #
 # Format: one glob per line, repo-relative, forward slashes. `#` starts a comment,
