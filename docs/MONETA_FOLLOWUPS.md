@@ -48,6 +48,12 @@ change unconditionally.
 **Risk.** Low. Touches shared `models.py`; warrants a focused PR + the test
 inversion. Land **before/with** the production cutover.
 
+**Status: DONE (3c4f07f9, BP2-STORE).** `Memory.__post_init__` reordered to default
+`created_at` before id generation. Test `test_moneta_crucible.py::test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone`
+pinned by BP2-STORE verification (MonetaBackedStore count()==len(all()) assertion at
+`tests/test_moneta_crucible.py:257`; id-generation order pinned by
+`tests/test_memory_models.py::test_defaulted_created_at_participates_in_id`). Verified against runtime 2026-09-01.
+
 ---
 
 ## FU-2 — AP6: gate the one destructive memory op (`run_sleep_pass`)
@@ -78,6 +84,12 @@ Do NOT claim "every mutation is gated."
 **Risk.** Low–moderate. The single failure mode is wiring the handler without
 routing it through the bridge — verify in review. Test: gate consulted on
 `sleep_pass`, auto-approves standalone, rejection blocks the prune.
+
+**Status: DONE (3c4f07f9, BP2-STORE).** `run_sleep_pass` gated at APPROVE via
+`_handle_sleep_pass` routed through `execute_through_bridge`. Test pins: `OPERATION_GATES["sleep_pass"]`,
+`bridge_adapter` map confirmation, gate rejection blocks prune (pinned by
+`tests/test_sleep_pass_gate.py::test_sleep_pass_constant_is_approve`,
+`::test_tool_maps_to_sleep_pass_operation`, `::test_rejecting_gate_blocks_the_prune`). Verified against runtime 2026-09-01.
 
 ---
 
@@ -133,8 +145,8 @@ remaining step is Joe creating the secret**, which activates everything:
 ---
 
 ### Status
-| Follow-up | Risk | Blocked on | Ship as |
+| Follow-up | Status | Commit | Test Pins |
 |---|---|---|---|
-| FU-1 Memory.id | Low | — | focused PR (invert tripwire) |
-| FU-2 AP6 gating | Low–mod | — (wire when a tool calls it) | PR when sleep_pass is exposed |
-| FU-3 CI Moneta | Low | `MONETA_DEPLOY_KEY` secret (workflow already wired conditionally) | DONE — activates on the secret |
+| FU-1 Memory.id | DONE | 3c4f07f9 | test_moneta_crucible.py::test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone |
+| FU-2 AP6 gating | DONE | 3c4f07f9 | test_sleep_pass_gate.py::test_rejecting_gate_blocks_the_prune |
+| FU-3 CI Moneta | OPEN | — | Requires `MONETA_DEPLOY_KEY` secret provisioning (workflow staged) |

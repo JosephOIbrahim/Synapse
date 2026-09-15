@@ -3,7 +3,7 @@
 # The -DryRun control (NO -Budget) must be byte-identical after BP2-METER's
 # additive edits to orchestrate.ps1 (T1 settle, T2 tier resolve, T3 drift - all
 # gated behind -Budget or a leg.tier). This captures a bounded dry run against
-# BOTH the pre-edit orchestrate.ps1 (git show HEAD:..., before my BP2-METER edits)
+# BOTH the pre-edit orchestrate.ps1 (git show 7fc09482:..., the parent of BP2-METER 1c2b78fd - pinned, not HEAD-relative)
 # AND the edited working copy, over the SAME throwaway repo + manifest, normalizes
 # only the wall-clock fields, and Compare-Objects the two. An EMPTY diff is PASS.
 #
@@ -11,6 +11,11 @@
 # there is no CRLF-vs-LF checkout artifact - a real behavioural change is the only
 # thing that can make the diff non-empty. Isolated in $env:TEMP so Backup-Branches
 # has no remote and no dry-run worktree is ever created.
+#
+# SCOPE: the edited side ($editedOrch) is the WORKING-TREE harness\orchestrate.ps1, not a
+# pinned revision. This script is a true BP2-METER before/after proof ONLY when run at
+# 1c2b78fd; orchestrate.ps1 changed again at 882eec6b (Test-CloseGate S5 bus fix), so a
+# run on a later checkout compares 7fc09482 against 1c2b78fd+882eec6b, not BP2-METER alone.
 param([int]$RunSeconds = 8)
 $ErrorActionPreference = 'Continue'
 $here     = Split-Path -Parent $PSCommandPath
@@ -70,7 +75,7 @@ function Capture([string]$orch, [string]$label) {
 # real one under a temp name, run, then removed (never committed / git-tracked).
 $baseOrch = Join-Path $repoRoot 'harness\_orch_base_bp2meter_tmp.ps1'
 try {
-    (& git -C $repoRoot show HEAD:harness/orchestrate.ps1) | Set-Content -Path $baseOrch -Encoding utf8
+    (& git -C $repoRoot show '7fc09482:harness/orchestrate.ps1') | Set-Content -Path $baseOrch -Encoding utf8
     $before = Capture $baseOrch 'baseline'
     $after  = Capture $editedOrch 'edited'
 } finally {
