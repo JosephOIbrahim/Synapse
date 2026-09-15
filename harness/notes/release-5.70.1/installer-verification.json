@@ -1,0 +1,165 @@
+{
+  "build_revision": "1d8baae24568aeb3e4d280cdfd804aae8d6d2b93",
+  "ci": {
+    "conclusion": "PENDING_AT_PUBLICATION",
+    "headSha": "36d66baf79c593cd22722e4f0c702f60bf1c191e",
+    "run_id": null,
+    "scope": "GitHub Actions CI on the tagged commit. Stock Python on Linux and macOS; not a Houdini or Windows-installer check."
+  },
+  "compiled_installer": {
+    "checks": [
+      {
+        "name": "Missing required dependency blocks compiled setup",
+        "result": "PASS"
+      },
+      {
+        "name": "Failure explains the missing dependency in readable text",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows write-denied destination is rejected",
+        "result": "PASS"
+      },
+      {
+        "name": "Fresh installation through compiled Setup",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows uninstall registration and shortcuts exist",
+        "result": "PASS"
+      },
+      {
+        "name": "Repeat installation",
+        "result": "PASS"
+      },
+      {
+        "name": "Upgrade switches active payload",
+        "result": "PASS"
+      },
+      {
+        "name": "One registration points at installed files",
+        "result": "PASS"
+      },
+      {
+        "name": "Bundled maintenance runtime verifies installation",
+        "result": "PASS"
+      },
+      {
+        "name": "No user-data changes during upgrade",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows uninstaller preserves changed registration",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows uninstaller preserves changed maintenance file",
+        "result": "PASS"
+      },
+      {
+        "name": "Generated Windows uninstaller",
+        "result": "PASS"
+      },
+      {
+        "name": "Uninstall preserves projects, memory, credentials and custom files",
+        "result": "PASS"
+      },
+      {
+        "name": "Uninstall removes unchanged payload and maintenance files",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows uninstall registration and shortcuts removed",
+        "result": "PASS"
+      },
+      {
+        "name": "Reinstall after uninstall with retained data",
+        "result": "PASS"
+      },
+      {
+        "name": "Runtime uninstall can finish before Windows cleanup",
+        "result": "PASS"
+      },
+      {
+        "name": "Windows cleanup resumes after runtime uninstall completed",
+        "result": "PASS"
+      }
+    ],
+    "expected_version": "5.70.1",
+    "scope": "Compiled isolated TestSetup in a sandbox root the harness created itself; synthetic prior payload, never a historical release. The TestSetup carries the SAME payload sha256 as the published Setup (e603cfb3386579710fa5735c26ba69ca220fbbcc10de15929b5b4ebf2d186406), which is what binds this qualification to the shipped artifact.",
+    "summary": "19 of 19 PASS, exit 0",
+    "testsetup_sha256": "4006f53d2adbcef9d9373ef48139a8ee3e1144ae5c38496c021b3f39ae183389"
+  },
+  "installed_houdini": {
+    "build": "22.0.400",
+    "failed": [
+      "test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks",
+      "test_bc_wave.py::test_profile_row_retired",
+      "test_failure_trail.py::test_dead_verb_hidden",
+      "test_j1_token_liveness.py::test_connected_keyed_engine_is_live_then_working_then_live",
+      "test_j2_token_face.py::test_face_counts_an_ollama_task"
+    ],
+    "known_failures": [
+      "test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks",
+      "test_bc_wave.py::test_profile_row_retired",
+      "test_failure_trail.py::test_dead_verb_hidden",
+      "test_j1_token_liveness.py::test_connected_keyed_engine_is_live_then_working_then_live",
+      "test_j2_token_face.py::test_face_counts_an_ollama_task"
+    ],
+    "new_failures": [],
+    "note": "The first two known reds are recorded design conflicts awaiting a ruling; the other three are named and undiagnosed.",
+    "scope": "Separate headless Houdini process with offscreen Qt (SYNAPSE_HYTHON pinned), not the artist's session. Run alone, after the stock suite.",
+    "status": "PASS",
+    "summary": "5 failed, 201 passed, 38 warnings in 75.63s (0:01:15)"
+  },
+  "installer_unit_checks": {
+    "scope": "installer/tests lifecycle and adversarial engine, unchanged in this release.",
+    "summary": "37 passed, 1 warning in 7.92s"
+  },
+  "live_houdini": {
+    "reason": "No module changed in this release; there is nothing new for a live process to load. The 5.70.0 live check remains the last one.",
+    "status": "NOT_RUN"
+  },
+  "local_stock_suite": {
+    "scope": "Local Windows, stock Python 3.14, vendored SDK inactive. Run alone.",
+    "summary": "8920 passed, 430 skipped, 625 warnings in 346.60s (0:05:46)"
+  },
+  "payload_audit": {
+    "builds": [
+      {
+        "bytes": 31829848,
+        "name": "SYNAPSE-5.70.1-Setup.exe",
+        "sha256": "b3dbb2e2b66905a0310a2190338e6dd8c526193434a027cb6184fbb9b0de27c8"
+      },
+      {
+        "name": "SYNAPSE-5.70.1-TestSetup.exe",
+        "sha256": "4006f53d2adbcef9d9373ef48139a8ee3e1144ae5c38496c021b3f39ae183389"
+      }
+    ],
+    "moneta": {
+      "archive_sha256": "81a3d8735c7da49ca81302725acab6a3324311091e850c34afcea92e87ea31f7",
+      "note": "Byte-identical to the reviewed, previously authorized 1.2.0rc1 bundle. Verified BEFORE the build."
+    },
+    "payload_id": "5.70.1-325d5be06597f1f8",
+    "payload_sha256": "e603cfb3386579710fa5735c26ba69ca220fbbcc10de15929b5b4ebf2d186406",
+    "product_change_since_v5.70.0": {
+      "check": "git diff --stat v5.70.0 HEAD -- python installer",
+      "note": "Expected: only python/synapse/__init__.py, the version string. The payload was built from the bumped working tree, so payload and tag agree; the pre-bump HEAD at build time was 1d8baae24568.",
+      "result": "python/synapse/__init__.py | 4 ++--\n 1 file changed, 2 insertions(+), 2 deletions(-)"
+    },
+    "status": "PASS"
+  },
+  "remaining_qualification": [
+    "Unsigned installer; code signing remains outstanding.",
+    "No clean Windows machine and no native wizard visual qualification in this run.",
+    "Synthetic prior payload covers the upgrade path; not a historical released installer.",
+    "The local suite's skip population is not stable (harness/notes/SUITE_FLOOR_IS_NOT_STABLE.md).",
+    "Five panel seat tests remain red; two are recorded design conflicts awaiting a ruling.",
+    "docs/ in the payload is one edit behind the tag (release notes and changelog were written after the build from measured numbers); python/ and installer/ match the tag, see payload_audit.",
+    "Bridge-down send queue (FR-1, harness/notes/closeout-2026-09-15/) is disclosed in the release notes, not fixed."
+  ],
+  "schema": "synapse-release-verification-1",
+  "source_revision": "36d66baf79c593cd22722e4f0c702f60bf1c191e",
+  "status": "PASS",
+  "version": "5.70.1"
+}
