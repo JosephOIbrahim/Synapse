@@ -211,15 +211,15 @@ class FaceWork(QtWidgets.QWidget):
         self._cook.setRange(0, 1)
         self._cook.setValue(0)
         col.addWidget(self._cook)
-        # — cookline (comp): 10px mono DATA, e.g. "cooked 30/30 · 41s · karma_xpu"
+        # — cookline (comp): SIZE_SMALL mono DATA, e.g. "cooked 30/30 · 41s · karma_xpu"
         self._cook_lbl = c.label("waiting for work", role="caption")
-        self._cook_lbl.setFont(fontload.tracked_font("DATA", 10, mono=True))
+        self._cook_lbl.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))
         qss.sweep_a_style(self._cook_lbl, "work_note")
         col.addWidget(self._cook_lbl)
 
         # — plan-with-progress (driven by the live tool stream + routing_log) —
         self._plan_title = c.label("PLAN", role="label")
-        self._plan_title.setFont(fontload.tracked_font("EYEBROW", 10, mono=True))
+        self._plan_title.setFont(fontload.tracked_font("EYEBROW", t.SIZE_SMALL, mono=True))
         qss.sweep_a_style(self._plan_title, "work_note")
         col.addWidget(self._plan_title)
         self._plan_box = QtWidgets.QVBoxLayout()

@@ -167,7 +167,11 @@ def probe(density):
             footer = card.findChild(QtWidgets.QWidget, "DsCardFooter")
             assert footer.height() == 40
             ink = card.status.palette().color(QtGui.QPalette.WindowText)
-            assert ink == QtGui.QColor(t.HOT_SOFT if status == "BLOCKED" else t.TEXT_SECONDARY)
+            # Pin carried for CRIT.md 2026-09-15 ranked change 5: BLOCKED is the
+            # top of the grey ladder (TEXT_BRIGHT), not a hue (qss.py, the
+            # [rhythm_role="tag"][status="BLOCKED"] rule). Still asserts an exact
+            # colour per status -- the assertion is not loosened.
+            assert ink == QtGui.QColor(t.TEXT_BRIGHT if status == "BLOCKED" else t.TEXT_SECONDARY)
         deposit = "<b>literal deposit</b>\n" * 50
         card.set_result({"found": True, "matches": [{"content": deposit}]})
         assert card.body.toPlainText() == deposit

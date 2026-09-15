@@ -8,8 +8,10 @@ Pins the rules this leg lands so a regression reddens:
      hardcoded ``font-size: 13px`` or ``font-weight: 600`` → ``test_qss_*`` reddens.
   2. No size token sits below ``tokens.FONT_FLOOR_PX`` (the type floor), and the
      floor carries a provenance string opening with ``measured|DOC-STATED|
-     UNKNOWN``.  Lower ``SIZE_MICRO`` under the floor → ``test_no_size_token_below_
-     floor`` reddens.
+     UNKNOWN``.  Lower any ``SIZE_*`` token under the floor → ``test_no_size_
+     token_below_floor`` reddens.  (CRIT.md 2026-09-15 ranked change 1 deleted
+     ``SIZE_MICRO`` and raised the floor 10 → 11, citing ``audit_panel.py:388``
+     READABLE_FLOOR instead of the old circular "smallest size shipped".)
   3. ``TYPE_ROLES`` weights are the three weight tokens (400/500/600), never bare
      literals.
 

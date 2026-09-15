@@ -440,14 +440,14 @@ class FaceReview(QtWidgets.QWidget):
 
     def set_flags(self, flags):
         """flags: list of (status, text). status in ok/pass/warn/fail/no.
-        v9: muted dot hues (CONIFEROUS/NO_SOFT/HOT_SOFT) + 10px mono secondary text."""
+        v9: muted dot hues (CONIFEROUS/NO_SOFT/HOT_SOFT) + SIZE_SMALL mono secondary text."""
         self._clear(self._flags_box)
         for status, text in flags or []:
             color = _FLAG_COLOR.get(status, t.TEXT_SECONDARY)
             row = QtWidgets.QLabel()
             row.setTextFormat(Qt.TextFormat.RichText)
             row.setWordWrap(True)
-            row.setFont(fontload.tracked_font("DATA", 10, mono=True))
+            row.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))
             row.setText(
                 '<span style="color:%s;">&#9679;</span> '
                 '<span style="color:%s;">%s</span>' % (color, t.TEXT_SECONDARY, text)
@@ -487,7 +487,7 @@ class FaceReview(QtWidgets.QWidget):
         row = QtWidgets.QLabel()
         row.setTextFormat(Qt.TextFormat.RichText)
         row.setWordWrap(True)
-        row.setFont(fontload.tracked_font("LABEL_SM", 10, mono=True))
+        row.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, mono=True))
         row.setText(
             '<span style="color:%s; letter-spacing:1px;">RECEIPT </span>'
             '<span style="color:%s;">%s</span>  '
@@ -499,11 +499,11 @@ class FaceReview(QtWidgets.QWidget):
 
     def _receipt_row(self, color, text):
         """One receipt dot-row — the same RichText dot idiom as the quality
-        flags (10px mono, TEXT_SECONDARY body)."""
+        flags (SIZE_SMALL mono, TEXT_SECONDARY body)."""
         row = QtWidgets.QLabel()
         row.setTextFormat(Qt.TextFormat.RichText)
         row.setWordWrap(True)
-        row.setFont(fontload.tracked_font("DATA", 10, mono=True))
+        row.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))
         row.setText(
             '<span style="color:%s;">&#9679;</span> '
             '<span style="color:%s;">%s</span>' % (color, t.TEXT_SECONDARY, text)

@@ -21,7 +21,10 @@ def test_body_size_is_houdini_native():
 
 
 def test_type_scale_monotonic_and_distinct():
-    sizes = [t.SIZE_MICRO, t.SIZE_SMALL, t.SIZE_UI, t.SIZE_BODY, t.SIZE_TITLE, t.SIZE_HERO]
+    # Pin carried for CRIT.md 2026-09-15 ranked change 1: SIZE_MICRO (10) is
+    # deleted and the ramp is 11/12/15/19. The assertions below are UNCHANGED --
+    # still monotonic, still >= 4 distinct steps (11/12/15/19 = exactly 4).
+    sizes = [t.SIZE_SMALL, t.SIZE_UI, t.SIZE_BODY, t.SIZE_TITLE, t.SIZE_HERO]
     assert sizes == sorted(sizes), "type sizes must be non-decreasing"
     assert len(set(sizes)) >= 4, "need a real hierarchy (>=4 distinct steps)"
 

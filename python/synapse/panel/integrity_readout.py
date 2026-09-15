@@ -95,21 +95,21 @@ class IntegrityReadout(QtWidgets.QWidget):
                                       _fidelity_text(summary)))
 
     def _eyebrow(self):
-        """The 'INTEGRITY' section label — LABEL_SM mono, tertiary, tracked."""
+        """The 'INTEGRITY' section label — LABEL_SM mono at SIZE_SMALL, tertiary, tracked."""
         row = QtWidgets.QLabel()
         row.setTextFormat(Qt.TextFormat.RichText)
-        row.setFont(fontload.tracked_font("LABEL_SM", 10, mono=True))
+        row.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, mono=True))
         row.setText('<span style="color:%s; letter-spacing:1px;">INTEGRITY</span>'
                     % t.TEXT_TERTIARY)
         return row
 
     def _row(self, color, text):
         """One dot-row — the same RichText dot idiom as the render receipt
-        (10px mono DATA, coloured dot + TEXT_SECONDARY body)."""
+        (SIZE_SMALL mono DATA, coloured dot + TEXT_SECONDARY body)."""
         row = QtWidgets.QLabel()
         row.setTextFormat(Qt.TextFormat.RichText)
         row.setWordWrap(True)
-        row.setFont(fontload.tracked_font("DATA", 10, mono=True))
+        row.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))
         row.setText(
             '<span style="color:%s;">&#9679;</span> '
             '<span style="color:%s;">%s</span>' % (color, t.TEXT_SECONDARY, text)

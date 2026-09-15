@@ -130,14 +130,17 @@ def _dsstop_rules(qss: str) -> list[str]:
 
 
 def test_stop_is_a_warm_knockout():
-    """L5-20 as amended at the seat: the #DsStop rest rule paints HOT_SOFT
-    (the muted warm) + TEXT_ON_ACCENT ink -- still the mark's warm family,
-    resting quieter; full WARM is the hover."""
+    """L5-20 as amended at the seat, then amended again by CRIT.md 2026-09-15
+    ranked change 5 (one action family): the #DsStop rest rule paints WARM
+    + TEXT_ON_ACCENT ink -- the knockout the qss.py comment always described.
+    HOT_SOFT is retired from the action family; rest is now the full WARM the
+    hover already used. Pin carried, not weakened: the rest rule must still be
+    a knockout (ink asserted unchanged) and must still be in the warm family."""
     rules = _dsstop_rules(stylesheet())
     assert rules, "no QPushButton#DsStop rule -- Stop still rides the danger variant"
     base = [r for r in rules if ":" not in r.split("{", 1)[0]]
     assert base, "no rest-state QPushButton#DsStop rule"
-    assert _hexes(t.HOT_SOFT) & _hexes(base[0]), "DsStop rest fill is not HOT_SOFT"
+    assert _hexes(t.WARM) & _hexes(base[0]), "DsStop rest fill is not WARM"
     assert _hexes(t.TEXT_ON_ACCENT) & _hexes(base[0]), (
         "DsStop ink is not TEXT_ON_ACCENT -- not a knockout"
     )
@@ -169,7 +172,7 @@ def test_stop_paints_only_sanctioned_tokens():
     """L5-20: no new hex -- every hex in the DsStop rules is one of the
     tokens the task sanctions (all pre-existing in tokens.py)."""
     sanctioned = (
-        _hexes(t.HOT_SOFT) | _hexes(t.WARM) | _hexes(t.WARM_PRESS)
+        _hexes(t.WARM) | _hexes(t.WARM_PRESS)
         | _hexes(t.TEXT_ON_ACCENT) | _hexes(t.DISABLED_BG) | _hexes(t.TEXT_DISABLED)
     )
     rogue = _hexes("\n".join(_dsstop_rules(stylesheet()))) - sanctioned
