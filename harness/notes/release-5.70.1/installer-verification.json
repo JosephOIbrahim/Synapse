@@ -1,5 +1,5 @@
 {
-  "amended": "2026-09-15: CI was still running when this release was published, and this report was uploaded saying so rather than guessing. It concluded success on all four matrix jobs and the report was amended in place.",
+  "amended": "2026-09-15: CI was still running when this release was published, and this report was uploaded saying so rather than guessing. It concluded success on all four matrix jobs and the report was amended in place. | 2026-09-15 (2): real_machine_install section added after a successful install/verify/uninstall round trip on the build machine.",
   "build_revision": "1d8baae24568aeb3e4d280cdfd804aae8d6d2b93",
   "ci": {
     "conclusion": "success",
@@ -125,6 +125,7 @@
     "summary": "37 passed, 1 warning in 7.92s"
   },
   "live_houdini": {
+    "note_2026_09_15": "Real-machine Setup round trip added after publication; see real_machine_install.",
     "reason": "No module changed in this release; there is nothing new for a live process to load. The 5.70.0 live check remains the last one.",
     "status": "NOT_RUN"
   },
@@ -156,6 +157,33 @@
       "result": "python/synapse/__init__.py | 4 ++--\n 1 file changed, 2 insertions(+), 2 deletions(-)"
     },
     "status": "PASS"
+  },
+  "real_machine_install": {
+    "after_uninstall": "installation.json absent; package registration absent",
+    "install_exit": 0,
+    "installation_json": {
+      "active_payload_id": "5.70.1-325d5be06597f1f8",
+      "version": "5.70.1"
+    },
+    "maintenance_verify": {
+      "files_checked": 1817,
+      "memory": "Moneta bundled",
+      "registrations_checked": 1,
+      "status": "PASS",
+      "version": "5.70.1",
+      "xml": "PASS"
+    },
+    "not_covered": [
+      "Package loading inside a launched Houdini and the Synapse pane -- the maintenance report's own manual list; done via Doctor on the developer's session, which loads the source tree, not this install."
+    ],
+    "refusals_before_success": [
+      "Houdini is running (houdini.exe) -- Setup never closes it.",
+      "External/studio SYNAPSE registration also loads for this Houdini (preferences package file, then the user HOUDINI_PACKAGE_DIR).",
+      "Choose the Houdini application folder containing bin/houdini.exe and bin/hconfig.exe (an operator quoting error, not the installer's)."
+    ],
+    "scope": "Production SYNAPSE-5.70.1-Setup.exe installed silently on the build machine into the default application folder with a scratch preferences folder, verified by the bundled maintenance runtime, then uninstalled silently. Houdini 22.0.400 was closed. The machine develops SYNAPSE from its source tree, so its own registrations (a preferences package file and a user HOUDINI_PACKAGE_DIR) were parked for the duration and restored afterwards; neither was modified.",
+    "status": "PASS",
+    "uninstall_exit": 0
   },
   "remaining_qualification": [
     "Unsigned installer; code signing remains outstanding.",

@@ -1,0 +1,27 @@
+process env HOUDINI_PACKAGE_DIR cleared (was [C:\Users\User\SYNAPSE\packages]); user env untouched: [C:\Users\User\SYNAPSE\packages]
+dev package parked: True
+install exit=0
+installation.json: version=5.70.1 active=C:\Users\User\AppData\Local\Programs\SYNAPSE\versions\5.70.1-325d5be06597f1f8
+scratch package hpath=C:/Users/User/AppData/Local/Programs/SYNAPSE/versions/5.70.1-325d5be06597f1f8/houdini
+verify exit=0
+verify report: {
+  "checks": {
+    "files_checked": 1817,
+    "status": "PASS",
+    "xml": "PASS"
+  },
+  "manual": [
+    "Launch Houdini to verify package loading and open New Pane Tab > Synapse.",
+    "Use Doctor for live components and USD schema diagnostics.",
+    "Connect models is a separate step; no model or credentials were tested."
+  ],
+  "memory": "Moneta bundled",
+  "registrations_checked": 1,
+  "runtime": "C:\\Users\\User\\AppData\\Local\\Programs\\SYNAPSE\\versions\\5.70.1-325d5be06597f1f8",
+  "status": "PASS",
+  "version": "5.70.1"
+}
+
+uninstall exit=0
+app-after: removed | scratch-package-after: removed | app dir exists: True
+dev package restored: True (parked gone: True) | user env HOUDINI_PACKAGE_DIR still: [C:\Users\User\SYNAPSE\packages]

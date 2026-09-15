@@ -1,0 +1,17 @@
+{
+  "checks": {
+    "files_checked": 1817,
+    "status": "PASS",
+    "xml": "PASS"
+  },
+  "manual": [
+    "Launch Houdini to verify package loading and open New Pane Tab > Synapse.",
+    "Use Doctor for live components and USD schema diagnostics.",
+    "Connect models is a separate step; no model or credentials were tested."
+  ],
+  "memory": "Moneta bundled",
+  "registrations_checked": 1,
+  "runtime": "C:\\Users\\User\\AppData\\Local\\Programs\\SYNAPSE\\versions\\5.70.1-325d5be06597f1f8",
+  "status": "PASS",
+  "version": "5.70.1"
+}
