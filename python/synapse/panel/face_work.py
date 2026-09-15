@@ -212,7 +212,10 @@ class FaceWork(QtWidgets.QWidget):
         self._cook.setValue(0)
         col.addWidget(self._cook)
         # — cookline (comp): SIZE_SMALL mono DATA, e.g. "cooked 30/30 · 41s · karma_xpu"
-        self._cook_lbl = c.label("waiting for work", role="caption")
+        # CRIT.md 2026-09-15 #17 (P8): no resting phrase - the cookline is
+        # blank until there is a cook to report. "Standing by" above already
+        # says the face is idle, once.
+        self._cook_lbl = c.label("", role="caption")
         self._cook_lbl.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))
         qss.sweep_a_style(self._cook_lbl, "work_note")
         col.addWidget(self._cook_lbl)
@@ -300,7 +303,7 @@ class FaceWork(QtWidgets.QWidget):
         self._steps = []
         self._cook.setRange(0, 1)
         self._cook.setValue(0)
-        self._cook_lbl.setText("waiting for work")
+        self._cook_lbl.setText("")   # CRIT.md 2026-09-15 #17: rest is blank
         self._render_plan()
 
     # -- plan rendering --------------------------------------------------
@@ -331,11 +334,13 @@ class FaceWork(QtWidgets.QWidget):
 
     def _render_plan(self):
         self._clear_plan()
-        routed = self._routing_summary()
-        if routed:
-            self._plan_title.setText("PLAN · routed %s" % routed)
-        else:
-            self._plan_title.setText("PLAN")
+        # CRIT.md 2026-09-15 #17 (P8 · Work face resting phrases): the title
+        # is the word and nothing else. "· routed %s" named the router, and
+        # CLAUDE.md §2 rules the six specialists Claude-level personae, not
+        # live-path processes (live dispatch is TieredRouter). And the eyebrow
+        # earns its place only once there are steps under it to label.
+        self._plan_title.setText("PLAN")
+        self._plan_title.setVisible(bool(self._steps))
         if not self._steps:
             row = c.label("no steps yet", role="caption")
             qss.sweep_a_style(row, "work_note")
