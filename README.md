@@ -126,7 +126,7 @@ The optional observation loop connects Moneta, Octavius and Hanish. Three things
 <details>
 <summary><strong>For developers: policy, evidence and source setup</strong></summary>
 
-**129 tools, two paths.** The count is `len(TOOL_DEFS)` in `python/synapse/mcp/_tool_registry.py`, pinned by `tests/test_phase0c_doc1_toolcount.py`.
+**130 tools, two paths.** The count is `len(TOOL_DEFS)` in `python/synapse/mcp/_tool_registry.py`, pinned by `tests/test_phase0c_doc1_toolcount.py`.
 
 - The **external MCP bridge** and the **live WebSocket handlers** have different consent and integrity boundaries.
 - **Panel workers** add their own tool restrictions on top.
