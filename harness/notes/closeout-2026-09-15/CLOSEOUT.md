@@ -96,6 +96,30 @@ from being merged. The CI gate held all day because a human enforced it. Requiri
   *staged* mutation-test debris, including a staged delete of `tests/test_agent_roster.py` that is
   **not** in any commit. Inventory before pruning; see the squash-merge trap above.
 
+### Found after the fact, by checking a claim v5.72.0 published
+
+**"One type scale: 11 / 12 / 15 / 19" is not complete yet.** The safety half is verified — the
+token scale really is `{11, 12, 15, 19}` (`SIZE_LABEL`/`SIZE_SMALL` 11, `SIZE_BODY`/`SIZE_UI` 12,
+`SIZE_TITLE` 15, `SIZE_HERO` 19), `SIZE_MICRO` no longer exists, `FONT_FLOOR_PX` is 11, and the
+generated stylesheet emits nothing below 11px. But the sheet also emits **14px and 18px**, which
+are on no token, and `DENSITY_GAP_SCALE` governs gaps rather than type so density does not explain
+them. #100 deleted the 10px size and raised the floor; two off-scale literals survived it.
+
+Reproduce:
+
+    PYTHONPATH=python python -c "import re;from synapse.panel.designsystem import qss;    print(sorted({int(m) for m in re.findall(r'font-size:\s*(\d+)px', qss.stylesheet())}))"
+
+Not a defect and not a blocker — nothing is under the readable floor, which was the claim that
+mattered. But "one scale" should mean one scale, and this is the remainder. It belongs with the
+crit's type work rather than as a hotfix.
+
+**A note on how this was found, because the first attempt failed.** A live census of
+`widget.font().pixelSize()` across 129 design-system widgets on the running panel reported two
+sizes, 25 and 27, and a verdict of HOLDS. Those values are on no scale in this codebase: the census
+was reading an inherited or host-scaled font, not the QSS-applied one, so it never touched the
+claim. A green verdict from an instrument that measures the wrong property is worth less than no
+verdict, because it stops the next person looking.
+
 ### Mine, still queued
 
 - Panel crit measurements **M1–M7** — the workflow died on a model usage limit. Needs hython, so it
