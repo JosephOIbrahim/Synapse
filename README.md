@@ -4,13 +4,13 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.73.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.73.0 is Latest</sub></p>
+<p align="center"><sub>v5.74.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.74.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.73.0/SYNAPSE-5.73.0-Setup.exe)** · [What's new](docs/releases/v5.73.0.md) · [Help](#when-you-get-stuck)
+**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.74.0/SYNAPSE-5.74.0-Setup.exe)** · [What's new](docs/releases/v5.74.0.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
@@ -27,7 +27,7 @@ Then:
 - Cloud model? It needs your API key.
 - Ollama? Start Ollama first, then choose an installed model.
 
-The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.73.0/SHA256SUMS.txt).
+The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.74.0/SHA256SUMS.txt).
 
 [Full setup guide](docs/getting-started/installation.md) · [Source installation](docs/getting-started/installation.md#source-installation)
 
@@ -41,7 +41,11 @@ make a box
 
 Inspect the nodes. Change a parameter. Then try **Undo**.
 
-Undo reverses one recorded operation. It does not reverse a whole conversation, and it does not reverse files written to disk.
+```
+Undo reverses one recorded operation.
+It does not reverse a whole conversation.
+It does not reverse files written to disk.
+```
 
 ### What happens when you send that
 
@@ -54,14 +58,15 @@ flowchart LR
     E --> D
     D --> F["Houdini's main thread<br/>inside one undo group"]
     F --> G["Receipt: what one<br/>Ctrl+Z reverses"]
+    classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF
+    class A,B,C,D,E,F,G dark
 ```
 
-The receipt is the part worth knowing. Every handler already worked out what a single
-**Ctrl+Z** would take back — it just used to throw that away. Now it tells you, before
-you need it.
+The receipt is the part worth knowing.
 
-**One honest limit:** the undo group *groups*. It does not roll back. If a build fails
-halfway, the part that was already made stays in your scene until you undo it deliberately.
+Every handler already worked out what a single **Ctrl+Z** would take back. It just used to throw that away. Now it tells you, before you need it.
+
+**One honest limit:** the undo group *groups*. It does not roll back. If a build fails halfway, the part that was already made stays in your scene until you undo it deliberately.
 
 ### Three controls to know
 
@@ -79,7 +84,9 @@ halfway, the part that was already made stays in your scene until you undo it de
 | **Cancel cook** *(overflow menu)* | The one cooking node it names. | Only offered when SYNAPSE knows the node — it says so when it doesn't. |
 | **Emergency halt** *(overflow menu)* | PDG cooks under `/obj` (cancelled) and a session report (captured). | Doesn't stop background renders. They are reported back so you can stop them deliberately. |
 
-They are not the same. Three verbs, three consequences, kept apart on purpose. The one you want when a build is running away is not the one you want when a model is rambling.
+They are not the same.
+
+Three verbs, three consequences, kept apart on purpose. The one you want when a build is running away is not the one you want when a model is rambling.
 
 ```mermaid
 flowchart TB
@@ -89,6 +96,8 @@ flowchart TB
     H --> H2["Writes a session report"]
     H -.->|"does not reach"| R["Background renders"]
     R --> R1["Reported back so you<br/>can stop them yourself"]
+    classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF
+    class S,S1,C,C1,H,H1,H2,R,R1 dark
 ```
 
 [First-session walkthrough →](docs/getting-started/quickstart.md)
@@ -101,14 +110,13 @@ flowchart TB
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 - **Apply a saved scene setup** (`synapse_apply_fixture`, shipped since 5.43.0). A fixture is a setup stored as data, not a prompt: applying it twice is a no-op, and a name clash refuses instead of renaming. Details and what is proven: [BLOCKS in the changelog](CHANGELOG.md).
 
-**New in 5.73.0** — the quiet text is legible, and three fences hold.
+**New in 5.74.0** — the diagrams read on either GitHub theme, and the page is built to skim.
 
-- Captions, hints and metadata clear AA; the empty panel's placeholder goes 3.43:1 to 6.15:1.
-- UI labels finally draw the Medium the bundled face ships — about 25% more ink.
-- The context breadcrumb drops 15px to 11px: five rules were emitting points, not pixels.
-- Three repository fences were repaired, each one caught failing in use.
+- **Three diagrams restyled.** Dark grey fill, white text, and an outline so they hold up on a dark background. They carry the parts of SYNAPSE that are easiest to get wrong.
+- **The README is rebuilt to the project's own ADHD convention** — short blocks, one idea each, anchors you can find without reading the parts you didn't come for. Nothing was cut to make it shorter; the length moved into whitespace.
+- **A receipt guards the page.** One command checks the diagrams resolve to the right colors, and that the counts and version strings on this page still match the code that produces them. It also carries two deliberately bad diagrams it must reject — a check that cannot fail proves nothing.
 
-[Release details and limits →](docs/releases/v5.73.0.md)
+**Also:** eight tests now guard the memory seam. Four fail on purpose until the defect is fixed, one race probe cannot be made strict, and three pin facts two agents disagreed about — one of the four had been failing a rung early. [Release details and limits →](docs/releases/v5.74.0.md)
 
 **Still development work:** predictive creation, product-level Computer Use controls, recursive self-improvement. The attended operator checks in this release do not make them complete. [Artist-first intent →](INTENT.md)
 
@@ -171,17 +179,15 @@ flowchart TB
     end
     M2 --> H["Houdini"]
     L2 --> H
+    classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF
+    class M1,M2,L1,L2,H dark
 ```
 
-The two paths are drawn apart because they **are** apart. The bridge is the audited road:
-consent gates, composition validation, a fidelity verdict per operation. The live handler
-path reaches the same `hou` API by its own wiring — main-thread safe and RBAC-guarded, but
-it does not escalate consent, and `execute_python` / `execute_vex` run there ungated. That
-is the deliberate posture for a single user on localhost, and a real handler-layer gate is
-a prerequisite before any multi-user deployment.
+The two paths are drawn apart because they **are** apart.
 
-Anything that claims otherwise is drift. Path-qualified `IntegrityBlock`s record which road
-an operation took and mark the anchors that did not apply as not-applicable, never as true.
+The bridge is the audited road: consent gates, composition validation, a fidelity verdict per operation. The live handler path reaches the same `hou` API by its own wiring — main-thread safe and RBAC-guarded, but it does not escalate consent, and `execute_python` / `execute_vex` run there ungated. That is the deliberate posture for a single user on localhost, and a real handler-layer gate is a prerequisite before any multi-user deployment.
+
+Anything that claims otherwise is drift. Path-qualified `IntegrityBlock`s record which road an operation took and mark the anchors that did not apply as not-applicable, never as true.
 
 **The new `proposal` worker mode** is opt-in; the default remains `standard`. It:
 
@@ -196,7 +202,7 @@ an operation took and mark the anchors that did not apply as not-applicable, nev
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.73.0.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.74.0.md) · [Changelog](CHANGELOG.md)
 
 **What the CI badge proves.** GitHub CI tests stock Python on Linux and macOS.
 

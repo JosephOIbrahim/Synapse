@@ -1,0 +1,102 @@
+{
+ "probe": "synapse-readme-render-1",
+ "mermaid_pin": "11.4.1 (cdn.jsdelivr.net)",
+ "themes": [
+  "dark",
+  "default"
+ ],
+ "blocks_per_theme": 3,
+ "block_renders_attempted": 6,
+ "block_renders_parsed": 6,
+ "error_boxes": 0,
+ "node_observations": 42,
+ "nodes_at_declared_fill": 42,
+ "nodes_at_declared_ink": 42,
+ "declared_fill": "rgb(51, 51, 51)",
+ "declared_ink": "rgb(255, 255, 255)",
+ "cluster_fills": [
+  "rgb(71, 73, 73)",
+  "rgb(255, 255, 222)"
+ ],
+ "not_proven": "GitHub pins its own mermaid version and theme. This measures mermaid in a real browser, not GitHub specifically.",
+ "blocks": [
+  {
+   "theme": "dark",
+   "block": 1,
+   "parsed": true,
+   "error_box": false,
+   "nodes": 7,
+   "fill_ok": 7,
+   "ink_ok": 7,
+   "off_fill": [],
+   "off_ink": [],
+   "clusters": []
+  },
+  {
+   "theme": "dark",
+   "block": 2,
+   "parsed": true,
+   "error_box": false,
+   "nodes": 9,
+   "fill_ok": 9,
+   "ink_ok": 9,
+   "off_fill": [],
+   "off_ink": [],
+   "clusters": []
+  },
+  {
+   "theme": "dark",
+   "block": 3,
+   "parsed": true,
+   "error_box": false,
+   "nodes": 5,
+   "fill_ok": 5,
+   "ink_ok": 5,
+   "off_fill": [],
+   "off_ink": [],
+   "clusters": [
+    "rgb(71, 73, 73)",
+    "rgb(71, 73, 73)"
+   ]
+  },
+  {
+   "theme": "default",
+   "block": 1,
+   "parsed": true,
+   "error_box": false,
+   "nodes": 7,
+   "fill_ok": 7,
+   "ink_ok": 7,
+   "off_fill": [],
+   "off_ink": [],
+   "clusters": []
+  },
+  {
+   "theme": "default",
+   "block": 2,
+   "parsed": true,
+   "error_box": false,
+   "nodes": 9,
+   "fill_ok": 9,
+   "ink_ok": 9,
+   "off_fill": [],
+   "off_ink": [],
+   "clusters": []
+  },
+  {
+   "theme": "default",
+   "block": 3,
+   "parsed": true,
+   "error_box": false,
+   "nodes": 5,
+   "fill_ok": 5,
+   "ink_ok": 5,
+   "off_fill": [],
+   "off_ink": [],
+   "clusters": [
+    "rgb(255, 255, 222)",
+    "rgb(255, 255, 222)"
+   ]
+  }
+ ]
+}

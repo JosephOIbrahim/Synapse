@@ -1,0 +1,81 @@
+<!doctype html><html><head><meta charset="utf-8"><title>SYNAPSE README diagram render probe</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</head><body>
+<h3 style="font:13px monospace">SYNAPSE v5.74.0 - README diagram render probe</h3>
+<div id="out" style="font:11px monospace;white-space:pre">running...</div>
+<div id="render"></div>
+<script>
+var OUT = function (t) { document.getElementById('out').textContent = t; };
+window.onerror = function (m, s, l, c) { OUT('ONERROR: ' + m + ' @' + l + ':' + c); };
+window.addEventListener('unhandledrejection', function (ev) {
+  OUT('UNHANDLED REJECTION: ' + (ev.reason && (ev.reason.stack || ev.reason.message) || ev.reason));
+});
+// The three mermaid blocks are INLINED from README.md by the generator beside this file,
+// so the probe measures the shipped source rather than a copy someone has to maintain.
+const SRC = ["flowchart LR\n    A[\"You type<br/>make a box\"] --> B[\"Model picks a tool\"]\n    B --> C{\"Is it destructive?\"}\n    C -->|\"no\"| D[\"Runs\"]\n    C -->|\"yes\"| E[\"Asks you first\"]\n    E --> D\n    D --> F[\"Houdini's main thread<br/>inside one undo group\"]\n    F --> G[\"Receipt: what one<br/>Ctrl+Z reverses\"]\n    classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF\n    class A,B,C,D,E,F,G dark\n", "flowchart TB\n    S[\"Stop\"] --> S1[\"The panel's current turn\"]\n    C[\"Cancel cook\"] --> C1[\"One named cooking node\"]\n    H[\"Emergency halt\"] --> H1[\"PDG cooks under /obj\"]\n    H --> H2[\"Writes a session report\"]\n    H -.->|\"does not reach\"| R[\"Background renders\"]\n    R --> R1[\"Reported back so you<br/>can stop them yourself\"]\n    classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF\n    class S,S1,C,C1,H,H1,H2,R,R1 dark\n", "flowchart TB\n    subgraph mcp[\"External MCP client, /mcp\"]\n        M1[\"LosslessExecutionBridge\"] --> M2[\"undo group \u00b7 main thread<br/>consent gate \u00b7 composition check<br/>IntegrityBlock every op\"]\n    end\n    subgraph live[\"Panel and live clients, /synapse WebSocket\"]\n        L1[\"server.handlers, called directly\"] --> L2[\"undo group on tracked handlers<br/>main thread \u00b7 RBAC<br/>observe-only IntegrityBlock\"]\n    end\n    M2 --> H[\"Houdini\"]\n    L2 --> H\n    classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF\n    class M1,M2,L1,L2,H dark\n"];
+const DECLARED_FILL = 'rgb(51, 51, 51)';    // #333333 == readme_check.py WANT_FILL
+const DECLARED_INK  = 'rgb(255, 255, 255)'; // #FFFFFF == readme_check.py WANT_INK
+(async () => {
+  if (typeof mermaid === 'undefined') { OUT('MERMAID DID NOT LOAD (cdn blocked?)'); return; }
+  OUT('mermaid loaded, rendering...');
+  const blocks = [];
+  for (const theme of ['dark', 'default']) {
+    for (let i = 0; i < SRC.length; i++) {
+      mermaid.initialize({ startOnLoad: false, theme: theme, securityLevel: 'loose' });
+      try {
+        const out = await mermaid.render('g_' + theme + '_' + i, SRC[i]);
+        const host = document.createElement('div');
+        host.innerHTML = out.svg;
+        document.getElementById('render').appendChild(host);
+        let nodes = 0, fillOk = 0, inkOk = 0;
+        const offFill = [], offInk = [];
+        host.querySelectorAll('g.node').forEach(function (n) {
+          nodes++;
+          // The VISIBLE shape only. Mermaid also emits a zero-size placeholder rect per
+          // node that keeps the theme default; it paints nothing, and counting it is what
+          // made the first pass of this probe report a false mismatch.
+          const shape = Array.from(n.querySelectorAll('rect,polygon,circle,ellipse'))
+            .find(function (s) { return s.getBoundingClientRect().width > 0; });
+          const label = n.querySelector('.nodeLabel, foreignObject div, text');
+          const f = shape ? getComputedStyle(shape).fill : '(none)';
+          const k = label ? (getComputedStyle(label).color || getComputedStyle(label).fill) : '(none)';
+          if (f === DECLARED_FILL) { fillOk++; } else { offFill.push({ node: n.id, fill: f }); }
+          if (k === DECLARED_INK) { inkOk++; } else { offInk.push({ node: n.id, ink: k }); }
+        });
+        const clusters = Array.from(host.querySelectorAll('g.cluster rect'))
+          .map(function (s) { return getComputedStyle(s).fill; });
+        blocks.push({ theme: theme, block: i + 1, parsed: true, error_box: false,
+                      nodes: nodes, fill_ok: fillOk, ink_ok: inkOk,
+                      off_fill: offFill, off_ink: offInk, clusters: clusters });
+      } catch (e) {
+        blocks.push({ theme: theme, block: i + 1, parsed: false, error_box: true,
+                      error: String(e).slice(0, 300) });
+      }
+    }
+  }
+  const sum = function (f) { return blocks.reduce(function (a, b) { return a + (f(b) || 0); }, 0); };
+  const result = {
+    probe: 'synapse-readme-render-1',
+    mermaid_pin: '11.4.1 (cdn.jsdelivr.net)',
+    themes: ['dark', 'default'],
+    blocks_per_theme: SRC.length,
+    block_renders_attempted: blocks.length,
+    block_renders_parsed: blocks.filter(function (b) { return b.parsed; }).length,
+    error_boxes: blocks.filter(function (b) { return b.error_box; }).length,
+    node_observations: sum(function (b) { return b.nodes; }),
+    nodes_at_declared_fill: sum(function (b) { return b.fill_ok; }),
+    nodes_at_declared_ink: sum(function (b) { return b.ink_ok; }),
+    declared_fill: DECLARED_FILL,
+    declared_ink: DECLARED_INK,
+    cluster_fills: Array.from(new Set([].concat.apply([], blocks.map(function (b) { return b.clusters || []; })))),
+    not_proven: 'GitHub pins its own mermaid version and theme. This measures mermaid in a real browser, not GitHub specifically.',
+    blocks: blocks
+  };
+  OUT(JSON.stringify(result, null, 1));
+  try {
+    await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                       body: JSON.stringify(result, null, 1) });
+    OUT('POSTED to render-probe-5.74.0.json' + String.fromCharCode(10) + JSON.stringify(result, null, 1));
+  } catch (e) { OUT('POST FAILED: ' + e); }
+})();
+</script></body></html>

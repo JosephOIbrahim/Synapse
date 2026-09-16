@@ -1,0 +1,103 @@
+.......F....F....................................................F..F... [ 34%]
+................................................F.F..................... [ 69%]
+...............................................................          [100%]
+================================== FAILURES ===================================
+____________ test_chat_face_monochrome_one_accent_plus_state_marks ____________
+tests\panel\test_bc_wave.py:329: in test_chat_face_monochrome_one_accent_plus_state_marks
+    assert len(rest) <= 3, (profile, sorted(rest))
+E   AssertionError: ('curious', [0, 2, 13, 14])
+E   assert 4 <= 3
+E    +  where 4 = len({0, 2, 13, 14})
+------------------------------ Captured log call ------------------------------
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.resilience:resilience.py:575 Watchdog started monitoring main thread
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.runtime_beat:runtime_beat.py:196 runtime beat: panel detached deliberately; process-lifetime beat still running=True (detach #10)
+---------------------------- Captured log teardown ----------------------------
+INFO     synapse.resilience:resilience.py:562 Watchdog stopped
+__________________________ test_profile_row_retired ___________________________
+tests\panel\test_bc_wave.py:642: in test_profile_row_retired
+    assert share >= 0.5, (profile, p._chat.height(), share)
+E   AssertionError: ('curious', 367, 0.48289473684210527)
+E   assert 0.48289473684210527 >= 0.5
+------------------------------ Captured log call ------------------------------
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.resilience:resilience.py:575 Watchdog started monitoring main thread
+INFO     synapse.runtime_beat:runtime_beat.py:196 runtime beat: panel detached deliberately; process-lifetime beat still running=True (detach #20)
+---------------------------- Captured log teardown ----------------------------
+INFO     synapse.resilience:resilience.py:562 Watchdog stopped
+___ test_transport_discovers_only_the_running_owner_and_tracks_reconnection ___
+tests\panel\test_doctor_button.py:187: in test_transport_discovers_only_the_running_owner_and_tracks_reconnection
+    assert client.available is False and client._session_id is None
+E   assert (True is False)
+E    +  where True = <synapse.panel.tool_executor._MCPLocalClient object at 0x000000017760E710>.available
+____________________________ test_dead_verb_hidden ____________________________
+tests\panel\test_failure_trail.py:175: in test_dead_verb_hidden
+    assert not shown, (
+E   AssertionError: the 'open in render view' verb is present and shown while the render bridge is absent — a visible no-op (Design §2.5). Hide it (or omit it) until the confirmed hou.ui render-view chain is wired.
+E   assert not [<PySide6.QtWidgets.QPushButton(0x5a595000, name="DsVerb") at 0x0000000177A38D40>]
+_________ test_connected_keyed_engine_is_live_then_working_then_live __________
+tests\panel\test_j1_token_liveness.py:127: in test_connected_keyed_engine_is_live_then_working_then_live
+    assert tok.toolTip() == "Engine & model - click to switch", tok.toolTip()
+E   AssertionError: Engine & model - click to switch
+E     
+E     Cloud relay
+E     Requested model: ollama/glm-5:cloud
+E     Service: http://localhost:11434/v1/chat/completions
+E     A provider may resolve model aliases internally.
+E     Reported capabilities: unknown
+E     Reported context: unknown
+E   assert 'Engine & mod...text: unknown' == 'Engine & mod...ick to switch'
+E     
+E     - Engine & model - click to switch
+E     + Engine & model - click to switch
+E     ?                                 +
+E     + 
+E     + Cloud relay
+E     + Requested model: ollama/glm-5:cloud...
+E     
+E     ...Full output truncated (4 lines hidden), use '-vv' to show
+------------------------------ Captured log call ------------------------------
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.resilience:resilience.py:575 Watchdog started monitoring main thread
+INFO     synapse.host.auth:auth.py:184 Anthropic API key loaded from ANTHROPIC_API_KEY env var
+INFO     synapse.runtime_beat:runtime_beat.py:196 runtime beat: panel detached deliberately; process-lifetime beat still running=True (detach #35)
+---------------------------- Captured log teardown ----------------------------
+INFO     synapse.resilience:resilience.py:562 Watchdog stopped
+_______________________ test_face_counts_an_ollama_task _______________________
+tests\panel\test_j2_token_face.py:100: in test_face_counts_an_ollama_task
+    assert rows["session cost"] == "$0"
+E   AssertionError: assert 'UNKNOWN' == '$0'
+E     
+E     - $0
+E     + UNKNOWN
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+
+tests/panel/test_bc_wave.py: 13 warnings
+tests/panel/test_consent_revert_seat.py: 12 warnings
+tests/panel/test_docking.py: 2 warnings
+tests/panel/test_doctor_button.py: 2 warnings
+tests/panel/test_gate_widget_type.py: 3 warnings
+tests/panel/test_j1_token_liveness.py: 3 warnings
+tests/panel/test_j3_speakers.py: 1 warning
+tests/panel/test_j4_profiles_retired.py: 2 warnings
+tests/panel/test_j5_rail_air.py: 2 warnings
+tests/panel/test_single_window.py: 2 warnings
+  C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py:1014: RuntimeWarning: process-wide FreezeChain left ARMED by this test and shut down by the conftest net (R310a zombie class) -- add shutdown_freeze_chain() to the test's teardown
+    next(it)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks
+FAILED tests/panel/test_bc_wave.py::test_profile_row_retired - AssertionError...
+FAILED tests/panel/test_doctor_button.py::test_transport_discovers_only_the_running_owner_and_tracks_reconnection
+FAILED tests/panel/test_failure_trail.py::test_dead_verb_hidden - AssertionEr...
+FAILED tests/panel/test_j1_token_liveness.py::test_connected_keyed_engine_is_live_then_working_then_live
+FAILED tests/panel/test_j2_token_face.py::test_face_counts_an_ollama_task - A...
+6 failed, 201 passed, 43 warnings in 72.68s (0:01:12)
+hytest: C:\Program Files\Side Effects Software\Houdini 22.0.400\bin\hython.exe (SYNAPSE_HYTHON pin)
