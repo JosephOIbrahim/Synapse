@@ -47,14 +47,16 @@ phrase it already owned rather than an enum tag over it. On the repository side 
 fence lands: `VERSION`, `harness/state/**` and `harness/verify/*_baseline.json` refuse a commit
 without `SYNAPSE_GATE_C=1`, because deny rules match a command's form and `python -c` walks
 around them; every cycle now diffs what it really changed against that set in both `run.ts` and
-`orchestrate.ps1`. Measured alone, in order: stock {STOCK}; seat {SEAT} (six, none new, named in
-`harness/notes/release-5.71.0/SEAT_REDS.md`); installer units {INST}; qualification {QUAL}. Known
+`orchestrate.ps1`. Measured alone, in order: stock 9558 passed, 430 skipped, 625 warnings in 392.28s (0:06:32);
+seat 6 failed, 200 passed, 47 warnings in 72.39s (0:01:12) (six, none new, named in
+`harness/notes/release-5.71.0/SEAT_REDS.md`); installer units 37 passed, 1 warning in 6.62s;
+qualification 19/19 PASS, exit 0. Known
 and stated: the commit fence cannot see `git cherry-pick` or `git revert` - git runs no hook
 there - so that hole is closed at push instead. Full notes: `docs/releases/v5.72.0.md`.*
 
 ## v5.71.0 — The farm, the receipt, and a bridge that says no
 
-*2026-09-15.* Published as **Latest** with a qualified Windows Setup ({QUAL}). Ten
+*2026-09-15.* Published as **Latest** with a qualified Windows Setup (19/19 PASS, exit 0). Ten
 branches merged; the registry goes 128 -> 137 tools.
 
 **Artist-facing.** Durable TOPs render jobs with an artist render workspace (seven farm
@@ -74,9 +76,10 @@ nothing. An `AuditLog` session-id collision after GC is fixed, with the failing-
 test the original branch never had. The 2026-09-15 branch triage, harness review,
 first-principles audit and panel design crit are in the tree.
 
-**Measured alone, in order:** stock {STOCK}; seat suite {SEAT} (five known + ONE NEW, diagnosed in
+**Measured alone, in order:** stock 9369 passed, 430 skipped, 625 warnings in 337.48s (0:05:37);
+seat suite 6 failed, 200 passed, 45 warnings in 71.97s (0:01:11) (five known + ONE NEW, diagnosed in
 `harness/notes/release-5.71.0/SEAT_REDS.md`);
-installer unit {INST}; qualification {QUAL}. See the
+installer unit 37 passed, 1 warning in 6.36s; qualification 19/19 PASS, exit 0. See the
 [release notes](docs/releases/v5.71.0.md).
 
 ## v5.70.1 — The front door, made readable

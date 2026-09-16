@@ -14,10 +14,10 @@ Seven branches merged through a CI-gated train, then the standard ritual.
 
 ## Measured
 
-- Stock suite: {STOCK}
-- Seat suite (hython 22.0.400, `SYNAPSE_HYTHON` pinned, alone): {SEAT}
-- Installer unit checks: {INST}
-- Installer qualification: {QUAL}
+- Stock suite: 9558 passed, 430 skipped, 625 warnings in 392.28s (0:06:32)
+- Seat suite (hython 22.0.400, `SYNAPSE_HYTHON` pinned, alone): 6 failed, 200 passed, 47 warnings in 72.39s (0:01:12)
+- Installer unit checks: 37 passed, 1 warning in 6.62s
+- Installer qualification: 19/19 PASS, exit 0
 
 The seat suite and the stock suite share `~/.synapse/logs/synapse.log` and must not run at the
 same time; they ran alone, in that order.

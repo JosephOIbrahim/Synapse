@@ -20,11 +20,12 @@ handler mix-in line, plus both count lines).
 
 ## Measured
 
-- Stock suite: {STOCK}
-- Seat suite (hython 22.0.400, `SYNAPSE_HYTHON` pinned, alone): {SEAT}
-- Installer unit checks: {INST}
-- Installer qualification: {QUAL}
-- Payload sha256 {PAYLOAD}; payload_id {PAYLOAD_ID}
+- Stock suite: 9369 passed, 430 skipped, 625 warnings in 337.48s (0:05:37)
+- Seat suite (hython 22.0.400, `SYNAPSE_HYTHON` pinned, alone): 6 failed, 200 passed, 45 warnings in 71.97s (0:01:11)
+- Installer unit checks: 37 passed, 1 warning in 6.36s
+- Installer qualification: 19/19 PASS, exit 0
+- Payload sha256 bc959b26b00b (the 12-hex form the published release doc quotes; this pack
+  retains no fuller digest); payload_id 5.71.0-8bf8cf9c275ae547
 - Tool count 137 (`len(TOOL_DEFS)`, written by script)
 
 ## Traps that still hold
