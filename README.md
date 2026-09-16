@@ -4,13 +4,13 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.72.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.72.0 is Latest</sub></p>
+<p align="center"><sub>v5.73.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.73.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.72.0/SYNAPSE-5.72.0-Setup.exe)** · [What's new](docs/releases/v5.72.0.md) · [Help](#when-you-get-stuck)
+**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.73.0/SYNAPSE-5.73.0-Setup.exe)** · [What's new](docs/releases/v5.73.0.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
@@ -27,7 +27,7 @@ Then:
 - Cloud model? It needs your API key.
 - Ollama? Start Ollama first, then choose an installed model.
 
-The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.72.0/SHA256SUMS.txt).
+The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.73.0/SHA256SUMS.txt).
 
 [Full setup guide](docs/getting-started/installation.md) · [Source installation](docs/getting-started/installation.md#source-installation)
 
@@ -101,14 +101,14 @@ flowchart TB
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 - **Apply a saved scene setup** (`synapse_apply_fixture`, shipped since 5.43.0). A fixture is a setup stored as data, not a prompt: applying it twice is a no-op, and a name clash refuses instead of renaming. Details and what is proven: [BLOCKS in the changelog](CHANGELOG.md).
 
-**New in 5.72.0** — one scale, one family, and fences that hold.
+**New in 5.73.0** — the quiet text is legible, and three fences hold.
 
-- The panel's type is one scale: 11/12/15/19, and nothing smaller.
-- Verbs are told apart by weight, not by hue — one action family.
-- The consent card says the phrase it already owned, not an enum tag.
-- The README has diagrams: the prompt flow, the three stops, the two paths.
+- Captions, hints and metadata clear AA; the empty panel's placeholder goes 3.43:1 to 6.15:1.
+- UI labels finally draw the Medium the bundled face ships — about 25% more ink.
+- The context breadcrumb drops 15px to 11px: five rules were emitting points, not pixels.
+- Three repository fences were repaired, each one caught failing in use.
 
-[Release details and limits →](docs/releases/v5.72.0.md)
+[Release details and limits →](docs/releases/v5.73.0.md)
 
 **Still development work:** predictive creation, product-level Computer Use controls, recursive self-improvement. The attended operator checks in this release do not make them complete. [Artist-first intent →](INTENT.md)
 
@@ -196,7 +196,7 @@ an operation took and mark the anchors that did not apply as not-applicable, nev
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.72.0.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.73.0.md) · [Changelog](CHANGELOG.md)
 
 **What the CI badge proves.** GitHub CI tests stock Python on Linux and macOS.
 

@@ -233,16 +233,31 @@ class _ShortcutLayout(QtWidgets.QLayout):
         super().setGeometry(rect)
         self._arrange(rect, place=True)
 
+    def _row_gap(self, rect):
+        """The gap this width can afford - the declared one, or less.
+
+        The links keep their natural width (that is the class's whole job);
+        the gap is the only give. It never goes below the ladder's XS rung,
+        the same 4 the composer column stacks its own children with.
+        """
+        gap = self._horizontal_gap
+        slack = len(self._items) - 1
+        if slack < 1:
+            return gap
+        room = rect.width() - sum(item.sizeHint().width() for item in self._items)
+        return min(gap, max(t.SPACE_XS, room // slack))
+
     def _arrange(self, rect, place):
+        gap = self._row_gap(rect)
         rows, row, row_width = [], [], 0
         for item in self._items:
             size = item.sizeHint()
-            gap = self._horizontal_gap if row else 0
-            if row and row_width + gap + size.width() > rect.width():
+            step = gap if row else 0
+            if row and row_width + step + size.width() > rect.width():
                 rows.append((row, row_width))
-                row, row_width, gap = [], 0, 0
+                row, row_width, step = [], 0, 0
             row.append((item, size))
-            row_width += gap + size.width()
+            row_width += step + size.width()
         if row:
             rows.append((row, row_width))
         heights = [max(size.height() for _, size in row) for row, _ in rows]
@@ -254,7 +269,7 @@ class _ShortcutLayout(QtWidgets.QLayout):
                 for item, size in row:
                     item.setGeometry(QtCore.QRect(
                         QtCore.QPoint(x, y + (row_height - size.height()) // 2), size))
-                    x += size.width() + self._horizontal_gap
+                    x += size.width() + gap
                 y += row_height + self._vertical_gap
         return height
 
@@ -2565,8 +2580,23 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _build_shortcut_footer(self):
         """Center the four local links with the same light type as Ready."""
+        # Four links in a line are a row, so they take the grid's row-breath
+        # rung (SPACE_12), not SPACE_LG (24) - a gap no rhythm role declares
+        # (rhythm.ROLE_GAPS tops out at SPACE_MD) and 6x the `stack` gap of the
+        # composer column they sit in. #98 renamed Recipes->Saved networks and
+        # Events->Updates, taking the strip to 229px + 3x24 = 301 in a 280px
+        # host (GUTTER sides at the 340 pref dock width): _ShortcutLayout wrapped
+        # the fourth link onto a second row and the composer grew 36px upward,
+        # paid for out of the conversation's share of the pane (0.5355 -> 0.4882
+        # at 340x760, hython offscreen). 12 clears that (229 + 36 = 265 in 280),
+        # but the strip is not always 229 wide: `_refresh_events` owns the
+        # fourth label after boot, and the states it writes measure 58/39/87/61
+        # (`Updates (1)`) and 58/39/87/82 (`Updates · quiet`) - 245 and 266,
+        # needing 281 and 290 at a fixed 12. A fixed rung does not hold the
+        # strip; _ShortcutLayout._row_gap gives the gap back only under that
+        # pressure (never below SPACE_XS), so every state stays one row.
         footer = _ShortcutLayout(
-            t.scaled(t.SPACE_LG, self._chrome_scale),
+            t.scaled(t.SPACE_12, self._chrome_scale),
             t.scaled(t.SPACE_XS, self._chrome_scale))
         for button in (self._commands_btn, self._render_btn, self._recipes_btn, self._events_btn):
             button.setObjectName("DsFooterLink")

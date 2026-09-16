@@ -22,6 +22,22 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.73.0 - Readable, and the fences that failed
+
+*Six branches. The quiet end of the text ramp is legible for the first time - captions, hints,
+metadata, disabled labels and the input placeholder all clear AA on every surface they can land on,
+with the placeholder going 3.43:1 to 6.15:1. UI labels finally draw the Medium the bundled face
+ships, which the code was discarding for want of a branch. The context breadcrumb drops 15px to
+11px, a four-rung inversion caused by five rules emitting points where the sheet uses pixels. On the
+repository side three fences were repaired, each found by running it: pre-push swept upstream
+release commits into every rebased branch's range; the asset composer read a hardcoded version,
+wrote to a path dead since v5.70.1, and guarded with a spelling its templates never emit; and
+fillable slots now use a delimiter prose cannot contain. Measured alone, in order: stock 9585 passed, 434 skipped, 625 warnings in 396.48s (0:06:36);
+seat 6 failed, 202 passed, 46 warnings in 72.54s (0:01:12); installer units 37 passed, 1 warning in 6.26s; qualification 19 of 19 PASS, exit 0. Stated and unresolved: raising the
+quiet end left secondary and tertiary 1.0245:1 apart, so form rather than value has to carry that
+rung from here, while disabled was deliberately returned below the floor under WCAG's
+inactive-component exemption after the raise collapsed four live state marks to 1.000:1. Full notes: `docs/releases/v5.73.0.md`.*
+
 ## v5.72.0 - One scale, one family, and fences that hold
 
 *Seven branches. The panel's type becomes one scale (11/12/15/19, the 10px size deleted and the
