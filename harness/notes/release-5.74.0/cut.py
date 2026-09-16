@@ -305,7 +305,16 @@ def step_gates():
         raise SystemExit("STOP: the seat summary says %d failed but %d FAILED lines were parsed "
                          "(%s). The log and its own summary disagree." % (nfail, len(measured), seat))
     log("  gate seat:  %d red(s), all named in the baseline, none newly passing" % len(measured))
-    log("  gate inst:  " + summary(os.path.join(N, "installer-tests-%s.txt" % V)))
+    # The installer suite was measured and only LOGGED -- the stock suite got a gate, this
+    # got a print. A red installer suite would ship inside an asset whose own
+    # installer_unit_checks field quotes the red summary while status says PASS. Same test
+    # the stock gate uses, applied to the log it was already reading.
+    inst = summary(os.path.join(N, "installer-tests-%s.txt" % V))
+    log("  gate inst:  " + inst)
+    _if = re.search(r"(\d+) failed", inst)
+    _ie = re.search(r"(\d+) errors?", inst)
+    if (_if and int(_if.group(1))) or (_ie and int(_ie.group(1))):
+        raise SystemExit("STOP: installer unit suite has failures or errors: " + inst)
     rr = read(os.path.join(N, "readme-receipt-%s.txt" % V))
     if not re.search(r"^RESULT: PASS\b", rr, re.M):
         raise SystemExit("STOP: the README receipt did not pass")
@@ -518,7 +527,29 @@ def step_verify():
         raise SystemExit("STOP: served installer does not match the qualified build")
     # The defect this whole cut opened with: a release published with no assets, whose
     # README button 404s. Check the button, not just the API.
-    for asset in ("SYNAPSE-%s-Setup.exe" % V, "SHA256SUMS.txt"):
+    # Every asset, not two. RELEASE_CARD.md says "every asset 200"; checking the two most
+    # obvious ones is how a release ships three good files and one that 404s.
+    for a in d["assets"]:
+        if a.get("state") != "uploaded" or not a.get("size"):
+            raise SystemExit("STOP: asset %s is state=%s size=%s -- present in the API listing "
+                             "is not the same as downloadable."
+                             % (a["name"], a.get("state"), a.get("size")))
+    log("  all %d assets report state=uploaded with non-zero size" % len(d["assets"]))
+
+    # Read back the BODY that was published. v5.71.0's public body carries six double-encoded
+    # em dashes that its source file does not -- introduced in transit, by a tool, and never
+    # noticed because nothing after publish ever read what publish produced. This release's
+    # body carries four em dashes, so it has the same vector.
+    _local = read(os.path.join(N, "release-body.md"))
+    _remote = d.get("body") or ""
+    if _remote.strip() != _local.strip():
+        _bad = sum(1 for ch in _remote if ch in "Ãâ€")
+        raise SystemExit("STOP: the published body is not byte-identical to release-body.md "
+                         "(%d local chars vs %d remote, %d suspicious encoding chars). "
+                         "Do not leave a mangled body public." % (len(_local), len(_remote), _bad))
+    log("  published body is byte-identical to release-body.md (%d chars)" % len(_local))
+
+    for asset in [a["name"] for a in d["assets"]]:
         u = "https://github.com/JosephOIbrahim/Synapse/releases/download/v%s/%s" % (V, asset)
         code = run(["curl", "-sI", "-L", "-o", os.devnull, "-w", "%{http_code}", u],
                    timeout=600).stdout.strip()

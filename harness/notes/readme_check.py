@@ -34,10 +34,20 @@ Why it reads TOOL_DEFS by import rather than by parse: the page names
 is reading that producer. If the import fails the count is unmeasured, and an
 unmeasured number cannot pass a receipt - so it fails, loudly, with the reason.
 
-Previous version: the "ASSERTED vs ACTUAL" section printed the corpus count and
-the VERSION line but never let either affect ``ok`` or the exit code, and it
-asserted a README claim ("README says 603") that the README does not make. It was
-a check that could not fail. This replaces it.
+Previous version, stated precisely, because a looser version of this note was
+laundered into a public release note and had to be corrected there:
+
+The script DID have one failure channel - ``ok`` came from the per-block quote and
+bracket balance above and gated ``SystemExit(0 if ok else 1)``, so an unbalanced
+block did exit 1. What could not fail was everything under its "ASSERTED vs
+ACTUAL" heading: the corpus count and the ``VERSION`` line printed and stopped
+there, reaching neither ``ok`` nor the exit code. The label "README says 603" was
+true when it and that README line landed together, and went stale when the line
+was later dropped - the check kept printing True against a constant, because the
+corpus count really is still 603. Drift, not fabrication.
+
+So: one live channel, no numbers on it, no colour check at all, and nothing in the
+tree invoked it. Not "a check that could not fail" - half a check that could.
 """
 from __future__ import annotations
 

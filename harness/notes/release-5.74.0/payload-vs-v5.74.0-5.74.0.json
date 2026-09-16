@@ -1,0 +1,17 @@
+{
+ "probe": "synapse-payload-vs-tag-1",
+ "version": "5.74.0",
+ "compared_against": "v5.74.0",
+ "payload_sha256": "9efc739d2e12e6e53ff634141373a1ed199e638673759c3405c7eaca344b0ad4",
+ "payload_members_total": 1834,
+ "installer_members_in_payload": 0,
+ "non_vendor_python_files_compared": 415,
+ "vendor_files_excluded_payload": 1175,
+ "vendor_files_excluded_tree": 1121,
+ "only_in_payload": [],
+ "only_in_tree": [],
+ "content_differs": [],
+ "verdict": "MATCH",
+ "scope": "Byte identity over non-_vendor files under python/synapse/ only. _vendor/ is excluded because the builder vendors it at build time and RELEASE_CARD.md lists it as not a surface.",
+ "not_proven": "Anything about installer/. It has 0 members in the payload, so a claim that installer/ matches the tag has no subject."
+}

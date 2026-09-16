@@ -1,0 +1,54 @@
+fix(release): the claims a hostile audit refuted, and three gates it found
+
+A 207-agent adversarial pass over the v5.74.0 release surface ran while the cut
+was in flight: five readers extracted 40 falsifiable claims, three independent
+lenses attacked each one, an advocate answered the refuters and a judge ruled.
+Thirty-nine were contested; ten blocked. Eight were corrected before the tag, so
+the published notes are right. This commit carries the two that could not be, plus
+the gate repairs made after tagging.
+
+THE CLAIM THIS FIXES, AND WHERE IT CAME FROM
+
+readme_check.py's own docstring said the version it replaced "was a check that
+could not fail." That is false, and it is the sentence the public release note was
+written from. The old script did have one failure channel: `ok` came from per-block
+quote and bracket balance and gated SystemExit(0 if ok else 1), so an unbalanced
+mermaid block did exit 1. What could not fail was everything under its "ASSERTED vs
+ACTUAL" heading. It also never printed a tool count -- that was a corpus node-type
+count -- and its "README says 603" label was true when written and went stale when
+the README line was later dropped. Drift, not fabrication.
+
+The failure worth naming is not the wrong sentence. It is that a docstring claim
+was restated in a public release note as an independently established fact. The
+note was corrected before the tag; this corrects the source it was taken from, so
+the next reader does not launder it again.
+
+THREE GATES, FOUND BY A MARSHAL RUNNING OUTSIDE THE CUT
+
+The installer unit suite was measured and only logged -- the stock suite got a
+gate, this got a print, so a red installer suite would have shipped inside an asset
+quoting the red summary while status said PASS. It is gated now, with the same test
+the stock suite uses.
+
+step_verify checked two of four assets, never observed upload state or size, and
+never read back the body it had just published. v5.71.0's public body carries six
+double-encoded em dashes that its source file does not: introduced in transit, by a
+tool, and never noticed because nothing after publish ever read what publish
+produced. All four assets are checked now, and the body is compared byte for byte
+against release-body.md. On this release it matched at 10,923 characters, which
+also locates the v5.71.0 corruption in an edit rather than in the create.
+
+The xpassed guard raised with a message naming a case it cannot see: pytest reports
+a STRICT xfail that passes as `failed`, not `xpassed`, so that case is caught by the
+failure gate and never by this one. The message now names the non-strict race probe,
+which is the only thing it can actually catch, and says so.
+
+PAYLOAD VS TAG, POST-TAG PASS
+
+payload-vs-v5.74.0-5.74.0.json is the comparison re-run against the tag after the
+tag existed -- 415 non-_vendor files under python/synapse/ byte-identical, read out
+of payload.zip rather than inferred from a git diff. It is necessarily not inside
+the tag it names, which is why it is named for its target rather than overwriting
+the pre-commit run.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>

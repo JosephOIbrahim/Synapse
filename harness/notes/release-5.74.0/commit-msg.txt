@@ -1,0 +1,41 @@
+release: v5.74.0 -- the page, and the receipt that guards it
+
+Documentation and tests only; the registry holds 137. The one file that
+differs under python/ since v5.73.0 is the version string, and this cut's claim
+gate verifies that against the real diff before it will allow a tag.
+
+The three README diagrams were drawn with unstyled nodes, which inherit the
+host theme -- so their ink and fill were whatever the visitor's GitHub was
+set to, and on one of the two settings they were hard to read. Every node
+now declares a dark fill, white text and an outline. The page itself is
+rebuilt to the ADHD convention CLAUDE.md has required of it all along:
+nothing was cut, the length moved into whitespace.
+
+The page now has a receipt that can fail. readme_check.py resolves every
+diagram node against the declared colours, checks the version strings
+against VERSION and the tool count against the module the page names as its
+producer, and carries two deliberately bad diagrams it must reject. The
+version it replaces could not fail: it printed the numbers without letting
+either reach the exit code, and asserted a README claim the README does not
+make. It proves the SOURCE declares those colours -- no browser is invoked,
+so the render stays UNKNOWN rather than verified.
+
+tests/test_memory_seam_defects.py converts a review's predictions into
+claims that execute. Four strict xfails pin reproduced defects and turn the
+suite red if one is fixed without deleting its marker; one race probe cannot
+honestly be strict; three permanent guards pin facts two agents disagreed
+about. Pinned is not fixed -- none of the four is repaired here.
+
+This cut also finished the previous one. v5.73.0 was published and marked
+Latest with zero assets attached, so the README download button returned 404
+while all four assets sat qualified on the build machine. They are attached
+now, after three provenance fields that named the pre-bump commit and a
+baseline copied forward from v5.70.0 were corrected against evidence: the
+repair re-proves the shipped payload byte-identical to the tag before it
+will write anything.
+
+Measured alone, in order -- README receipt, stock, seat, installer unit,
+19/19 qualification; numbers in docs/releases/v5.74.0.md and
+harness/notes/release-5.74.0/.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
