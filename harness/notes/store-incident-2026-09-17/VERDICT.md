@@ -1,169 +1,206 @@
-# Completion audit — is the store problem actually solved?
+# Completion audit -- is the store problem actually solved?
 
-Produced 2026-09-17 by a 6-agent offline audit (`synapse-completion-audit`), measured
-against the stated bar: *"the store is the vehicle and the core of SYNAPSE. It needs to
-work as intended"* — not against "the file parses".
+Produced 2026-09-17 by a 6-agent offline audit (`synapse-completion-audit`), measured against the
+stated bar: *"the store is the vehicle and the core of SYNAPSE. It needs to work as intended"* --
+not against "the file parses". Offline by construction: no lane was permitted a live bridge call.
 
-Every claim below carries a path:line or a re-runnable command.
+Every claim carries a path:line or a re-runnable command.
 
 ---
 
-{
-  "summary": "Meta-scout: is the store problem actually being solved to the stated bar, or only to the bar of \"the file parses\"? Hunts post-fix gaps, store divergence, volatility, recurrence, and blind spots in the investigation design itself",
-  "agentCount": 6,
-  "logs": [
-    "Five completion lanes — offline by design; the bridge belongs to another agent.",
-    "5/5 lanes returned; 19 gaps marked as blocking completion."
-  ],
-  "result": {
-    "verdict": "## Verdict\n\n**NOT SOLVED.** The repair fixed a backup file that no read path consults, left the primary store carrying all five poisoned ids, and did not backfill the 253 records that exist in exactly one copy — and while it was doing that, the primary's automatic, **ungated** prune crossed its arming threshold. The substrate is closer to irreversible data loss now than it was on 15 Sep, not further from it.\n\nOne correction to the lane reports before anything else, because it changes the top of the ranking:\n\n**`run_sleep_pass` is not behind an APPROVE gate on the path that matters.** M2-R5 called it \"a hazard sitting behind a single approval.\" It is not. `python/synapse/memory/moneta_store.py:729-731`:\n\n```\nself._add_count += 1\nif not require_durable and self._add_count % 100 == 0 and self._handle.ecs.n > 1000:\n    audit = self.run_sleep_pass()\n```\n\n`add()` defaults to `require_durable: bool = False` (`moneta_store.py:687`), and the live scene-memory writers call it bare — `scene_memory.py:729` and `:775` are `syn.store.add(Memory(...))` with no keyword. `ecs.n` is 1119 and rising ~111/day; the threshold is 1000. `grep -c \"Consolidation pruned\" ~/.synapse/logs/synapse.log` → **0**, so it has never fired. It fires on the 100th ordinary non-durable write of a session. The APPROVE gate on `synapse_sleep_pass` guards the manual call only; this branch never reaches the gate, and the `_tool_registry.py` description calling it a \"No-op under the default jsonl backend\" is false on this seat.\n\n---\n\n## Sub-problem ledger\n\n| Sub-problem | Status | Evidence | Owns it now |\n|---|---|---|---|\n| JSONL mirror parses and accepts writes | **SOLVED** | M4-1 replayed `_load`'s predicate read-only: `lines_parsed=862 distinct_ids=862 unreadable=0 conflicts=0`. Fresh process loads clean. | — done |\n| Dual-write resumed after the repair | **SOLVED** (derived) | M1 read Moneta 1111 distinct / JSONL 862; M3 read 1114 / 865 an hour later. Only-in-Moneta stayed exactly 253 and only-in-JSONL exactly 4 across both reads, so all 3 new records landed in **both**. | — done |\n| 5 duplicate ids removed from the **primary** | **NOT SOLVED** | Re-measured by me at snapshot mtime 16:16 (newer than every lane's read): each of `mem_596cf755cfbf / mem_d8486c1c0ee0 / mem_ae38a9b2736d / mem_adf58a52df9a / mem_d42816c8963c` returns **2** from `grep -o <id> .moneta/snapshot.json \\| wc -l`. | **Nobody** |\n| 253 Moneta-only records backfilled to the mirror | **NOT SOLVED** | M1/M2/M3 independently: 253 only-in-Moneta, 245 inside the outage window, 0 before it. No Moneta→JSONL tool exists (`grep -n \"def \" python/synapse/memory/backfill.py` → JSONL→Moneta only). | **Nobody** |\n| 4 mirror-only records (incl. the binding DECISION) deposited to the primary | **NOT SOLVED** | M1-2: `mem_e2e9749cb3c3` — *\"Create a Solaris Network\" AND \"Basic Studio Lighting Setup\" now both = v4 recipe* — present in JSONL, absent from Moneta. `grep -c \"CANONICAL STUDIO LOOKDEV RIG RECIPE\" .moneta/cortex_root.usda` → 0. | **Nobody** |\n| Producer that plants the poison line | **NOT SOLVED** | `MemoryStore.add()` (`store.py:529-553`) appends on a conflicting id with no check; M5-1 reproduced the full outage in two `add()` calls plus one restart. | **Nobody** |\n| Detection of a degraded store | **NOT SOLVED** | `_degraded_load` read at exactly 2 sites in `store.py` (`:247`, `:455`) plus `memory_lifecycle.py:169`. `write_plane.store_health()` (`write_plane.py:344-430`) never reads it. `_memory_binding_error`: 2 sites, **both writes** (verified: `memory_lifecycle.py:117`, `:387`). | **Nobody** |\n| Auto-prune hazard over single-copy records | **NOT SOLVED — newly armed** | `moneta_store.py:730`; prune rule `utility<0.1 AND attended_count<3` (`Moneta/src/moneta/consolidation.py:105-113`); 6h half-life (`decay.py:31`) puts every unprotected record past ~20h below 0.1. M2 measured 560 rows qualifying, 230 note / 178 action / 152 summary, zero feedback, zero decision. | **Nobody** |\n| Memory reaches the panel's chat turn | **NOT SOLVED** | Verified both defects myself: `grep -rn \"TieredRouter(\" python/` → one site, `handlers.py:1756`, no `memory=`. `knowledge.py:795` calls `self._memory.search(text=query, limit=3)`; real signature is `search(self, query, limit=20, memory_types=None, tier=None)` (`store.py:1509-1515`) — no `text` param. Both swallowed. | **Nobody** |\n| Retrieval returns the artist's memory | **NOT SOLVED** | Ranking is `max(cos_sim,0.0) * memory.utility` (`Moneta/src/moneta/api.py:413`, verified); 588 unprotected rows at floor 0.0, 528 pinned at 0.9 of which 525 are RSI handler telemetry. | **Nobody** |\n| Save-transition can move the store out of temp | **NOT SOLVED** | `memory_lifecycle.py:174-175` raises `\"Source memory has duplicate identities\"`; the 5 dups are still resident (row 3 above). Swallowed at `:116-121`. | **Nobody** |\n| Vector index is \"write-only\" (prior review's claim) | **REFUTED** | 24 `Vector recall:` INFO lines in the production log, e.g. `synapse.log:9793` and `:10364`; call site `moneta_store.py:930`. M1-5's grep looked for `recall_from_store\\|vector_recall`, which are the doctor's helper names, not the live `self._handle.query(...)`. | — settled |\n| Houdini/Storage Sense purges the temp tree | **REFUTED** | M3: tree persists since 2026-07-10 across 10+ crashes; Storage Sense cadence `2048=0` = low-disk only, C: 43.6% free. | — settled |\n| Test coverage for the cause | **NOT SOLVED** | `grep -rn \"conflicting duplicate memory identity\" --include=*.py tests/` → zero hits. `grep -rln _match_memory tests/` → empty. | **Nobody** |\n| Repair has an INTENT §6 record | **NOT SOLVED** | `grep -l 'repair\\|memory.jsonl\\|degraded' .synapse/provenance/*.json` → 0 of 5012. Repair script untracked under `Claude outputs/`. | **Nobody** |\n| Should the 11 quarantine copies be deleted / second degraded store / outage invisibility | — | out of lane | **Team 1** |\n| Machine-wide store census / competing writer processes | — | out of lane | **Team 2** |\n\nFifteen rows. **Twelve are owned by nobody.** That is the finding.\n\n---\n\n## Blocking gaps, ranked\n\n### B1 — An ungated automatic prune is armed over 253 records that exist in one copy\n\n**Broken:** `moneta_store.py:729-731` fires `run_sleep_pass()` every 100th non-durable `add` once `ecs.n > 1000`. It is 1119. The rule deletes `utility < 0.1 AND attended_count < 3`; with a 6-hour half-life from 1.0, that is every unprotected record older than ~20 hours. `attended_count` is 0 on all 1119 rows and no `wal.log` exists, so nothing has ever earned attention — and M2-R3 shows unprotected rows can never enter a search result, so they cannot earn it. 560 rows qualify: 230 note, 178 action, 152 summary. Zero feedback. Zero decision.\n\n**Evidence it has not fired yet:** `grep -c \"Consolidation pruned\" ~/.synapse/logs/synapse.log` → 0.\n\n**What breaks for the artist:** 253 of those rows have no copy in the mirror. A prune of a mirrored record is recoverable (`backfill.py` runs JSONL→Moneta). A prune of one of the 253 is permanent. The mirror is precisely the thing that makes a prune survivable, and the 253 are precisely the records that lack it. The artist sees one INFO line.\n\n**Cheapest next step:** before anything else, copy `.moneta/snapshot.json` (7.8 MB) to a tracked location. Then either raise the `ecs.n` guard above the current count or set `require_durable=True` on the scene-memory writers until the backfill lands. One condition, one file.\n\n### B2 — The primary still holds all five duplicate ids, which blocks its own repair\n\n**Broken:** re-verified by me just now — all five return 2 rows from the live snapshot. Three consequences chain off it: (a) `memory_lifecycle._records()` raises `\"Source memory has duplicate identities\"` (`:174-175`), so the save-transition is broken **today**; (b) `add_durable_if_absent` raises on those ids (`moneta_store.py:665-670`, `len(matches)==2`); (c) any Moneta→JSONL backfill re-emits the conflicting pair and re-degrades the mirror on next load.\n\n**Cause, unchanged:** `models.py:158-162` hashes only `content:created_at:memory_type` — whole-second clock, no metadata. The hardened full-identity hash exists at `store.py:1411-1419` but is behind `if require_durable:`.\n\n**What breaks for the artist:** he saves the scene, believes memory followed, and it did not — the exception is swallowed at `memory_lifecycle.py:116-121` into an attribute nothing reads. And B1's backfill cannot be written until this is cleared.\n\n**Cheapest next step:** drop the five `source='auto'` rows from `.moneta/snapshot.json` the same way the JSONL was repaired, with Houdini closed (the snapshot is rewritten on every `save()`). Back up first.\n\n### B3 — The producer is still armed; the threshold is one write\n\n**Broken:** `MemoryStore.add()` (`store.py:529-553`) replaces in-memory and appends a line with no id-collision check. `_load` (`store.py:355-362`) raises on the second differing canonical, and `store.py:396-401` degrades on a non-empty list — `len == 1` is enough. M5 reproduced it: two `add()` calls, writer sees no error, next process is `AFTER RESTART degraded? : True / write : REFUSED`.\n\n**Correction to M5-1's proposed fix.** Flipping `_dual_write_jsonl`'s `only_if_missing` default to `True` does **not** close this. I read the branch (`moneta_store.py:768-780`): with `only_if_missing=True` it still executes `net.add(memory)` whenever `existing.to_json() != memory.to_json()` — the differing-payload case, which is the poisoning case. That flip only suppresses byte-identical re-adds, i.e. exactly the duplicate-count axis the 2026-09-16 seam review measured before downgrading the finding to medium. The fix has to be on `add()` itself (M4-2's), which closes M5-1 and M4-2 together.\n\n**Pair it or it backfires:** a guarded `add()` raises inside `_dual_write_jsonl`, whose `except Exception` at `:784-785` exists so \"the safety net must never break the caller.\" So the guard converts a loud-but-late outage into a silent permanent divergence. It must ship with B6.\n\n### B4 — Memory cannot reach a panel turn at all\n\n**Broken, both verified by me:**\n1. `grep -rn \"TieredRouter(\" python/` returns exactly one site — `handlers.py:1756`, `TieredRouter(config=config)`, no `memory=`. So `self._memory is None` and `_match_memory` returns at its first guard (`knowledge.py:791`).\n2. Even wired, `knowledge.py:795` calls `self._memory.search(text=query, limit=3)` against a signature of `search(self, query, limit=20, memory_types=None, tier=None)` (`store.py:1509-1515`). TypeError, eaten by `except Exception: return None` at `:796-797`.\n\nNothing else injects memory: the per-turn payload is `{selected_nodes, current_network, scene_file, frame}` (`ws_bridge.py:72-101`) and `build_system_prompt` has no memory section (`system_prompt.py:332-364`).\n\n**What breaks for the artist:** memory only influences a turn if the model volunteers a `synapse_context`/`search`/`recall` call. The tier built to answer from memory without one is dead in two independent places, and `grep -rln _match_memory tests/` is empty, which is why.\n\n**Cheapest next step:** two edits and one test that asserts `_match_memory` returns a hit for a known stored memory.\n\n### B5 — When memory *is* retrieved, the artist's own records are outranked, and the binding decision isn't in the primary at all\n\n**Broken:** ranking is `max(cos_sim, 0.0) * memory.utility` (`api.py:413`, verified). SYNAPSE pins DECISION / SHOW-tier / `source=='gate'` at 0.9; measured distribution on 1116 rows is `{0.0: 588, 0.9: 528}`, and 525 of the 528 are `memory_type='feedback'` RSI telemetry (`set_parm: HIT` ×205, `create_node: HIT` ×115, `execute_python: HIT` ×94). Over-fetch is `max(limit*3, 50)` = 60. 416 unprotected rows sit below 1e-6 utility, so at a perfect cosine of 1.0 they still cannot enter the pool.\n\nThen the vector stage is nullified anyway: candidates must pass a literal keyword gate — `if score > 0` (`moneta_store.py:150-152`) over substring/word overlap (`:118-128`) — and the exception path runs the *same* scorer over all 1111 (`:945-948`). So the vector stage can only lose keyword-reachable memories; it cannot add semantic ones. The 384-dim embedder loads on every store init and buys negative recall.\n\n**And the specific record that matters is missing:** `mem_e2e9749cb3c3` (2026-09-06T14:00:50Z) binds *\"Create a Solaris Network\"* and *\"Basic Studio Lighting Setup\"* to the v4 recipe. In JSONL: yes. In Moneta: no. In `cortex_root.usda`: no. Recall defaults to DECISION-only, limit 5 (`store.py:1560-1562`), and the primary holds 3 decisions — none of them that one. The canonical recipe text itself is 3 records, all mirror-only.\n\n**What breaks for the artist:** he types the trigger phrase tomorrow and gets nothing, with no outage required. This predates 15 Sep and the repair does not touch it.\n\n### B6 — Nothing detects any of this\n\n`_degraded_load` has two readers in `store.py` and one in `memory_lifecycle.py`. No health, panel, doctor or MCP surface reads it. `write_plane.store_health()` (`write_plane.py:344-430`) derives its verdict from serving class name + `count()` not raising + `durability is not None` — all three were true for two days. `count()` looked normal too, because `_load` keeps the *first* occurrence and only the second raises. Panel dot: `health_strip.py:236` returns `Verdict.OK, \"moneta\"` whenever Moneta is live. The doctor counts the quarantine litter (`doctor.py:322-325`) and never surfaces it in `detail`. No doctor check compares the two stores — that part of M1-5 stands.\n\n**Cheapest next step, one edit, three surfaces:** in `write_plane.store_health()` after the count check, `if getattr(store, \"_degraded_load\", False): broken.append(store._degraded_reason)`. `synapse_health`, the doctor's `write_plane_store` row and the panel strip all consume that verdict already. Add the divergence count `|moneta_ids Δ jsonl_ids|` as a second fact.\n\n### B7 — The data cannot leave temp, and the window is ~8 days\n\n`_MAX_RECORDS = 2000` / `_MAX_BYTES = 8MB` (`memory_lifecycle.py:25-26`, verified), enforced at `:171-172` and `:295-296`. Store is at 1119 = 56% of the record cap, growing ~111/day → ~8 days. `grep -rn \"_MAX_RECORDS\" tests/test_memory_lifecycle.py` → nothing; the only carry test uses two records. And when it does run, `_copy_records` loops `add_durable_if_absent`, which re-deserializes all 1119 rows per record and rewrites the full snapshot per record (`moneta_store.py:666`, `:722-724`) — ~4.4 GB of snapshot writes on the main thread inside the AfterSave callback, holding the global lock. Fixing B2 without fixing this converts a silent no-op into a multi-minute freeze at Ctrl+S.\n\n**Cheapest next step:** run the migration once, deliberately, Houdini idle, via `host.memory_loop.rebind_project_memory(path, carry_records=True)`, and time it before anything is wired to the save event.\n\n### B8 — Nothing on the way to master would catch a recurrence\n\n`grep -rn \"conflicting duplicate memory identity\" --include=*.py tests/` → zero. The one test that touches the class (`test_demo_memory_scope.py:141-170`) plants the poison by hand and asserts the outage is *correct* — it pins the consumer, not the producer. `test_w3_store_contract.py:197-209`, whose docstring says a memory landing only in Moneta is a BLOCK, adds 5 distinct ids so it cannot exercise a re-add; M5 ran its assertion against a poisoned store and it read True while `_degraded_load` was True. And the defect was filed twice before it fired — `harness/cto/BACKLOG.json:76-77` on 2026-09-05 (fixed for `backfill.py` only, \"left untouched to stay inside the item's scope\"), and again in `Claude outputs/memory-seam-review-2026-09-16.md:251` **during the outage**, then downgraded at `:583` because it reasoned about count inflation instead of write refusal.\n\n---\n\n## Divergence\n\n**Measured, triangulated three times independently:**\n\n| Read | Moneta rows / distinct | JSONL | Only in Moneta | Only in JSONL | Intersection |\n|---|---|---|---|---|---|\n| M1 | 1116 / 1111 | 862 | 253 | 4 | 858 |\n| M2 | 1116 / 1111 | 862 | 253 | 4 | 858 |\n| M3 | 1119 / 1114 | 865 | 253 | 4 | 861 |\n\nBoth rows are internally consistent (1111−253 = 862−4 = 858; 1114−253 = 865−4 = 861), and the +3 landed in *both* stores — which is the one piece of good news: **dual-write is functioning post-repair.** The repair restored the mirror's ability to accept new writes. It did not backfill.\n\n**The 253:** 245 created inside the outage window (2026-09-15T19:09Z–2026-09-17T19:53Z), 0 before it, 8 after. By kind: 219 `loop_*` feedback, 18 note, 16 action. Control against the \"loop records just don't mirror\" explanation: `loop_*` in JSONL = 305, spanning 08 Sep → 17 Sep. They normally do mirror. These are stranded.\n\n**Why it was guaranteed:** `moneta_store.py:744-751` commits the deposit and `self.save()` *first*, then attempts the mirror; `:784-785` swallows the failure with no retry and no queue. Every write during those two days diverged by construction.\n\n**What remains UNKNOWN:**\n- Whether the 4 mirror-only records were pruned out of the primary or never deposited. All 1116 snapshot rows carry `state=0` / `consolidated_into=None` and no `PruneAudit` is persisted anywhere on disk — consistent with never-deposited, not proof. It changes the fix: a prune means the archive is load-bearing today; a never-deposited means a write path silently skipped the primary.\n- The 8 post-repair non-mirrored records (19:53:01Z–19:53:56Z). Disk cannot distinguish a second process from a second in-process store object still carrying `_degraded_load`.\n- Live counts. The snapshot is a point-in-time write; `cortex_root.usda` already shows 1112 distinct prims against 1111. Every number here is snapshot-accurate, not live-accurate.\n- A third substrate nobody owns: `.moneta/cortex_root.usda` is 1.7 MB and being written, while `.moneta/usd/cortex_root.usda` is 11 bytes — the `SdfLayer::_CreateNew ... a layer already exists` retry loop, unhealed, with its own consistency story.\n\n**What would settle it:** the backfill script is the settlement — write it, dry-run it, and its dry-run output *is* the answer. It needs B2 cleared first or it re-poisons the mirror.\n\n---\n\n## Does memory actually work\n\n**It is retrieved. It is then discarded, outranked, or never asked for.** And the store that was repaired is not the store that is read.\n\nThree separate failures, in order of how much they hurt:\n\n1. **The repaired file is read by nothing at runtime.** `grep -n \"_jsonl_net\" moneta_store.py` → `189` docstring, `193` assign, `772` write, `798` write, `1062-1064` flush. **Zero read sites.** Moneta rehydrates from `.moneta/snapshot.json` (`:261-267`), not from `memory.jsonl`. Nobody lost read access during the outage — the primary served throughout. What was lost is the archive, which is the only thing standing between B1's prune and real deletion.\n\n2. **The read path is reached only if the model volunteers a tool call.** The automatic tier is dead twice over (B4).\n\n3. **When it is reached, it returns telemetry.** 525 RSI handler receipts pinned at 0.9 versus 588 artist records at 0.0, a 60-candidate pool, then a literal keyword gate that discards paraphrases (B5). Search always returns *something*, which is why it looks like it works.\n\nAgainst the bar — written, retained, retrievable, improving the product across sessions: **written yes. Retained yes, in one copy, under an armed prune. Retrievable no for the records that matter. Improving the product across sessions, no.**\n\nThis does not supersede the other findings in the way the brief anticipated. The store being repaired genuinely is not the core of anything — but the store it mirrors *is*, and it is diverged, duplicated, unmonitored and armed.\n\n---\n\n## Will it recur\n\n**Yes. One bad write, and nobody would notice.**\n\n- **Threshold: one.** `store.py:396-401` degrades on a non-empty `unreadable` list; `len == 1` qualifies. Reproduced end to end by M5.\n- **The producer is untouched.** `git log --oneline -6 -- python/synapse/memory/scene_memory.py` → newest touch `ef690e50` (2026-09-15 15:33), whose diff hits only `moneta_store.py`. The two writers that emit the metadata-stripped shape (`scene_memory.py:729-735`, `:773-779`) are unchanged, and both go through the unguarded `store.add()`.\n- **Detection: none.** Every surface reported green for two days (B6).\n- **Recovery: a Houdini restart.** `_load` assigns the flag inside `if degraded_reason:` (`store.py:396-408`), so a clean re-load of a repaired file cannot clear a set flag. Today's in-process fix was a manual attribute patch — not a procedure anyone can repeat or document. The one-character fix is `self._degraded_load = bool(degraded_reason)`.\n- **One genuinely clean result:** no degraded state is persisted anywhere. `_degraded_load` / `_degraded_reason` are plain instance attributes (`store.py:190-192`), no `index.json` exists, the 11 quarantine copies are never re-read, and the key fingerprint matches (`6aa8f313` == sidecar). Tomorrow morning's launch starts clean. That much survives the night.\n\n---\n\n## Drift check\n\n**The repair was necessary. The investigation has become the work.**\n\nNecessary: a store refusing all writes is a real defect; 253 single-copy records under an armed prune is a worse defect than the one that triggered the search; and B1 would not have been found any other way. That is a real return on the day.\n\nBut memory is not on the path from a prompt to a Solaris network. `grep -icn \"memory\" python/synapse/server/handlers_solaris_graph.py python/synapse/cognitive/tools/propose_graph.py` → **0** and **0**, across 896 and 97 lines. Recall never broke — Moneta served throughout and the repaired mirror is read by nothing. Today's provenance trail is diagnostics: `propose_graph`/`instantiate_graph` last fired at 00:31 and 00:38 UTC in millisecond-apart ok/error pairs, then `doctor` ×7 from 13:38 to 20:03 plus one `memory_write` and one `memory_status`. Constitutional rule 9: ship the product, not the system.\n\n**The honest line:** three teams and a day have produced a correct and valuable map of a substrate whose degradation the artist could not feel, while the thing he asked for has not been attempted since midnight. Do B1's backup and B2's dedupe — call it an hour with Houdini closed — then go straight back to the Solaris prompt and let it fail on its own terms. If it fails for a reason unrelated to memory, that settles whether this detour was on the critical path.\n\n---\n\n## Owed live probes\n\nOne run clears all of it. Eight facts, no writes:\n\n1. **`_degraded_load` on the live store** — `type(synapse.memory.store._global_synapse.store).__name__`, `.storage_dir`, `._degraded_load`, `._degraded_reason`. Confirms the backend actually resolved to `MonetaBackedStore` (the env var is set in the shell, not proven in PID 54668) and that the manual flag clear held.\n2. **Any second store instance still degraded** — enumerate live SYNAPSE processes and their store objects; read `_degraded_load` on each. Settles the 8 post-repair non-mirrored records.\n3. **`synapse_memory_status`** — `store.count()` against the snapshot's 1119, and confirm the five duplicate `entity_id`s are still resident in the in-RAM ECS, not just on disk.\n4. **`synapse_health` write_plane** — expected `ok`. That green light against a store carrying 253 single-copy records is the cleanest possible proof of B6.\n5. **`synapse_recall(\"Create a Solaris Network\")`** — does `mem_e2e9749cb3c3` come back? Predicted no. This is the acceptance bar, executed.\n6. **`synapse_search` on one of the five duplicate ids' content** — does the tag-less `source='auto'` copy surface in a user-visible result? Predicted yes.\n7. **Is the AfterSave callback armed** — `synapse.host.memory_lifecycle._callback is not None`. If it is not, B2 understates the problem: even a dedup'd store never migrates on save.\n8. **`_handle.durability is not None`, and whether `signal_attention` has ever journaled** — `attended_count` is 0 on all 1119 rows and no `wal.log` exists. If durability is None, attention is simply not being recorded and B1's prune predicate can never be escaped by any record, ever.\n\nAdd one measurement that needs no bridge, only a copy of the snapshot: embed 3–5 real artist queries with the same `SemanticEmbedder` and print the `memory_type` composition of the top 60. That converts B5's bound into a number.",
-    "lanes": 5,
-    "blockers": 19
-  },
-  "workflowProgress": [
-    {
-      "type": "workflow_phase",
-      "index": 1,
-      "title": "Scout"
-    },
-    {
-      "type": "workflow_phase",
-      "index": 2,
-      "title": "Verdict"
-    },
-    {
-      "type": "workflow_agent",
-      "index": 1,
-      "label": "scout:divergence",
-      "phaseIndex": 1,
-      "phaseTitle": "Scout",
-      "agentId": "a1e7e4be74f1eb1f6",
-      "model": "claude-opus-5[1m]",
-      "state": "done",
-      "startedAt": 1789675573341,
-      "queuedAt": 1789675573317,
-      "attempt": 1,
-      "lastToolName": "StructuredOutput",
-      "lastToolSummary": "M1 — Store divergence (Moneta primary vs JSONL mirror)",
-      "promptPreview": "THE ACCEPTANCE BAR — judge everything against THIS, not against a lower one.\nThe human (architect of SYNAPSE) said, verbatim:\n    \"fix the store the store is vehicle and the core of SYNAPSE. It needs to work as intended.\"\nSo the bar is NOT \"the file parses\" and NOT \"the store accepts writes\". The bar is: DOES THE MEMORY SUBSTRATE\nWORK AS INTENDED — written, retained, retrievable, and actually impr…",
-      "promptFramed": true,
-      "lastProgressAt": 1789675752666,
-      "tokens": 139553,
-      "toolCalls": 26,
-      "durationMs": 179318,
-      "resultPreview": "{\"lane\":\"M1 — Store divergence (Moneta primary vs JSONL mirror)\",\"verdict\":\"not-solved\",\"summary\":\"The JSONL repair fixed a file that nothing reads: `_jsonl_net` is referenced only by writers and a close-flush, and Moneta rehydrates from `.moneta/snapshot.json`, so the mirror is write-only by construction. Divergence is confirmed and large — 253 records live in Moneta and never reached the mirror …"
-    },
-    {
-      "type": "workflow_agent",
-      "index": 2,
-      "label": "scout:readpath",
-      "phaseIndex": 1,
-      "phaseTitle": "Scout",
-      "agentId": "a620912b6327b0d50",
-      "model": "claude-opus-5[1m]",
-      "state": "done",
-      "startedAt": 1789675573343,
-      "queuedAt": 1789675573317,
-      "attempt": 1,
-      "lastToolName": "StructuredOutput",
-      "lastToolSummary": "M2 — THE READ PATH",
-      "promptPreview": "THE ACCEPTANCE BAR — judge everything against THIS, not against a lower one.\nThe human (architect of SYNAPSE) said, verbatim:\n    \"fix the store the store is vehicle and the core of SYNAPSE. It needs to work as intended.\"\nSo the bar is NOT \"the file parses\" and NOT \"the store accepts writes\". The bar is: DOES THE MEMORY SUBSTRATE\nWORK AS INTENDED — written, retained, retrievable, and actually impr…",
-      "promptFramed": true,
-      "lastProgressAt": 1789675911889,
-      "tokens": 200522,
-      "toolCalls": 68,
-      "durationMs": 337404,
-      "resultPreview": "{\"lane\":\"M2 — THE READ PATH\",\"verdict\":\"not-solved\",\"summary\":\"The repair fixed the JSONL *mirror*; the Moneta *primary* was never touched — it still holds both copies of all 5 conflicting ids plus 253 memories that exist nowhere else, and 4 that exist only in the mirror. Worse for the stated bar: the vector index is NOT write-only (production log proves it is queried), but retrieval is ranked cos…"
-    },
-    {
-      "type": "workflow_agent",
-      "index": 3,
-      "label": "scout:volatility",
-      "phaseIndex": 1,
-      "phaseTitle": "Scout",
-      "agentId": "af3cc5c87720c53cb",
-      "model": "claude-opus-5[1m]",
-      "state": "done",
-      "startedAt": 1789675573344,
-      "queuedAt": 1789675573317,
-      "attempt": 1,
-      "lastToolName": "StructuredOutput",
-      "lastToolSummary": "M3 — where the core memory actually lives (volatility, the …",
-      "promptPreview": "THE ACCEPTANCE BAR — judge everything against THIS, not against a lower one.\nThe human (architect of SYNAPSE) said, verbatim:\n    \"fix the store the store is vehicle and the core of SYNAPSE. It needs to work as intended.\"\nSo the bar is NOT \"the file parses\" and NOT \"the store accepts writes\". The bar is: DOES THE MEMORY SUBSTRATE\nWORK AS INTENDED — written, retained, retrievable, and actually impr…",
-      "promptFramed": true,
-      "lastProgressAt": 1789676327204,
-      "tokens": 156451,
-      "toolCalls": 40,
-      "durationMs": 752719,
-      "resultPreview": "{\"lane\":\"M3 — where the core memory actually lives (volatility, the save transition, fragmentation)\",\"verdict\":\"not-solved\",\"summary\":\"The JSONL repair fixed the MIRROR and left the PRIMARY poisoned: the same 5 duplicate ids are still live in the Moneta snapshot, and that is the exact condition `memory_lifecycle._records()` raises on — so the save-transition, the only mechanism that can ever move …"
-    },
-    {
-      "type": "workflow_agent",
-      "index": 4,
-      "label": "scout:recurrence",
-      "phaseIndex": 1,
-      "phaseTitle": "Scout",
-      "agentId": "a5567ed5aa61295e1",
-      "model": "claude-opus-5[1m]",
-      "state": "done",
-      "startedAt": 1789675573346,
-      "queuedAt": 1789675573318,
-      "attempt": 1,
-      "lastToolName": "StructuredOutput",
-      "lastToolSummary": "M4 — Will it come back, and does the fix survive the night?",
-      "promptPreview": "THE ACCEPTANCE BAR — judge everything against THIS, not against a lower one.\nThe human (architect of SYNAPSE) said, verbatim:\n    \"fix the store the store is vehicle and the core of SYNAPSE. It needs to work as intended.\"\nSo the bar is NOT \"the file parses\" and NOT \"the store accepts writes\". The bar is: DOES THE MEMORY SUBSTRATE\nWORK AS INTENDED — written, retained, retrievable, and actually impr…",
-      "promptFramed": true,
-      "lastProgressAt": 1789675774049,
-      "tokens": 164479,
-      "toolCalls": 44,
-      "durationMs": 199564,
-      "resultPreview": "{\"lane\":\"M4 — Will it come back, and does the fix survive the night?\",\"verdict\":\"partially-solved\",\"summary\":\"The file repair is real and it does survive a restart — I verified the repaired store loads clean (862 records / 862 distinct ids / 0 unreadable) and that no degraded state is persisted anywhere. But the substrate does not work as intended: the producer that wrote the poison line is untouc…"
-    },
-    {
-      "type": "workflow_agent",
-      "index": 5,
-      "label": "scout:framing",
-      "phaseIndex": 1,
-      "phaseTitle": "Scout",
-      "agentId": "a03ccaf5aad19cd9d",
-      "model": "claude-opus-5[1m]",
-      "state": "done",
-      "startedAt": 1789675573347,
-      "queuedAt": 1789675573318,
-      "attempt": 1,
-      "lastToolName": "StructuredOutput",
-      "lastToolSummary": "M5 — is the investigation itself asking the right questions",
-      "promptPreview": "THE ACCEPTANCE BAR — judge everything against THIS, not against a lower one.\nThe human (architect of SYNAPSE) said, verbatim:\n    \"fix the store the store is vehicle and the core of SYNAPSE. It needs to work as intended.\"\nSo the bar is NOT \"the file parses\" and NOT \"the store accepts writes\". The bar is: DOES THE MEMORY SUBSTRATE\nWORK AS INTENDED — written, retained, retrievable, and actually impr…",
-      "promptFramed": true,
-      "lastProgressAt": 1789675781446,
-      "tokens": 165915,
-      "toolCalls": 42,
-      "durationMs": 206960,
-      "resultPreview": "{\"lane\":\"M5 — is the investigation itself asking the right questions\",\"verdict\":\"not-solved\",\"summary\":\"The repair removed five poisoned lines from what is structurally a write-only backup mirror and left the mechanism that plants them fully intact — I reproduced a permanent store-wide write outage in two ordinary `add()` calls plus one restart. Measured against \\\"written, retained, retrievable, a…"
-    },
-    {
-      "type": "workflow_agent",
-      "index": 6,
-      "label": "verdict:completion",
-      "phaseIndex": 2,
-      "phaseTitle": "Verdict",
-      "agentId": "a7d15ed2b799449b8",
-      "model": "claude-opus-5[1m]",
-      "state": "done",
-      "startedAt": 1789676328278,
-      "queuedAt": 1789676328275,
-      "attempt": 1,
-      "lastToolName": "Bash",
-      "lastToolSummary": "cd /c/Users/User && echo \"=== half-life ===\" && grep -n \"HA…",
-      "promptPreview": "THE ACCEPTANCE BAR — judge everything against THIS, not against a lower one.\nThe human (architect of SYNAPSE) said, verbatim:\n    \"fix the store the store is vehicle and the core of SYNAPSE. It needs to work as intended.\"\nSo the bar is NOT \"the file parses\" and NOT \"the store accepts writes\". The bar is: DOES THE MEMORY SUBSTRATE\nWORK AS INTENDED — written, retained, retrievable, and actually impr…",
-      "promptFramed": true,
-      "lastProgressAt": 1789676438110,
-      "tokens": 129997,
-      "toolCalls": 11,
-      "durationMs": 109832,
-      "resultPreview": "## Verdict\n\n**NOT SOLVED.** The repair fixed a backup file that no read path consults, left the primary store carrying all five poisoned ids, and did not backfill the 253 records that exist in exactly one copy — and while it was doing that, the primary's automatic, **ungated** prune crossed its arming threshold. The substrate is closer to irreversible data loss now than it was on 15 Sep, not furth…"
-    }
-  ],
-  "totalTokens": 956917,
-  "totalToolCalls": 231
-}
+## Verdict
+
+**NOT SOLVED.** The repair fixed a backup file that no read path consults, left the primary store carrying all five poisoned ids, and did not backfill the 253 records that exist in exactly one copy — and while it was doing that, the primary's automatic, **ungated** prune crossed its arming threshold. The substrate is closer to irreversible data loss now than it was on 15 Sep, not further from it.
+
+One correction to the lane reports before anything else, because it changes the top of the ranking:
+
+**`run_sleep_pass` is not behind an APPROVE gate on the path that matters.** M2-R5 called it "a hazard sitting behind a single approval." It is not. `python/synapse/memory/moneta_store.py:729-731`:
+
+```
+self._add_count += 1
+if not require_durable and self._add_count % 100 == 0 and self._handle.ecs.n > 1000:
+    audit = self.run_sleep_pass()
+```
+
+`add()` defaults to `require_durable: bool = False` (`moneta_store.py:687`), and the live scene-memory writers call it bare — `scene_memory.py:729` and `:775` are `syn.store.add(Memory(...))` with no keyword. `ecs.n` is 1119 and rising ~111/day; the threshold is 1000. `grep -c "Consolidation pruned" ~/.synapse/logs/synapse.log` → **0**, so it has never fired. It fires on the 100th ordinary non-durable write of a session. The APPROVE gate on `synapse_sleep_pass` guards the manual call only; this branch never reaches the gate, and the `_tool_registry.py` description calling it a "No-op under the default jsonl backend" is false on this seat.
+
+---
+
+## Sub-problem ledger
+
+| Sub-problem | Status | Evidence | Owns it now |
+|---|---|---|---|
+| JSONL mirror parses and accepts writes | **SOLVED** | M4-1 replayed `_load`'s predicate read-only: `lines_parsed=862 distinct_ids=862 unreadable=0 conflicts=0`. Fresh process loads clean. | — done |
+| Dual-write resumed after the repair | **SOLVED** (derived) | M1 read Moneta 1111 distinct / JSONL 862; M3 read 1114 / 865 an hour later. Only-in-Moneta stayed exactly 253 and only-in-JSONL exactly 4 across both reads, so all 3 new records landed in **both**. | — done |
+| 5 duplicate ids removed from the **primary** | **NOT SOLVED** | Re-measured by me at snapshot mtime 16:16 (newer than every lane's read): each of `mem_596cf755cfbf / mem_d8486c1c0ee0 / mem_ae38a9b2736d / mem_adf58a52df9a / mem_d42816c8963c` returns **2** from `grep -o <id> .moneta/snapshot.json \| wc -l`. | **Nobody** |
+| 253 Moneta-only records backfilled to the mirror | **NOT SOLVED** | M1/M2/M3 independently: 253 only-in-Moneta, 245 inside the outage window, 0 before it. No Moneta→JSONL tool exists (`grep -n "def " python/synapse/memory/backfill.py` → JSONL→Moneta only). | **Nobody** |
+| 4 mirror-only records (incl. the binding DECISION) deposited to the primary | **NOT SOLVED** | M1-2: `mem_e2e9749cb3c3` — *"Create a Solaris Network" AND "Basic Studio Lighting Setup" now both = v4 recipe* — present in JSONL, absent from Moneta. `grep -c "CANONICAL STUDIO LOOKDEV RIG RECIPE" .moneta/cortex_root.usda` → 0. | **Nobody** |
+| Producer that plants the poison line | **NOT SOLVED** | `MemoryStore.add()` (`store.py:529-553`) appends on a conflicting id with no check; M5-1 reproduced the full outage in two `add()` calls plus one restart. | **Nobody** |
+| Detection of a degraded store | **NOT SOLVED** | `_degraded_load` read at exactly 2 sites in `store.py` (`:247`, `:455`) plus `memory_lifecycle.py:169`. `write_plane.store_health()` (`write_plane.py:344-430`) never reads it. `_memory_binding_error`: 2 sites, **both writes** (verified: `memory_lifecycle.py:117`, `:387`). | **Nobody** |
+| Auto-prune hazard over single-copy records | **NOT SOLVED — newly armed** | `moneta_store.py:730`; prune rule `utility<0.1 AND attended_count<3` (`Moneta/src/moneta/consolidation.py:105-113`); 6h half-life (`decay.py:31`) puts every unprotected record past ~20h below 0.1. M2 measured 560 rows qualifying, 230 note / 178 action / 152 summary, zero feedback, zero decision. | **Nobody** |
+| Memory reaches the panel's chat turn | **NOT SOLVED** | Verified both defects myself: `grep -rn "TieredRouter(" python/` → one site, `handlers.py:1756`, no `memory=`. `knowledge.py:795` calls `self._memory.search(text=query, limit=3)`; real signature is `search(self, query, limit=20, memory_types=None, tier=None)` (`store.py:1509-1515`) — no `text` param. Both swallowed. | **Nobody** |
+| Retrieval returns the artist's memory | **NOT SOLVED** | Ranking is `max(cos_sim,0.0) * memory.utility` (`Moneta/src/moneta/api.py:413`, verified); 588 unprotected rows at floor 0.0, 528 pinned at 0.9 of which 525 are RSI handler telemetry. | **Nobody** |
+| Save-transition can move the store out of temp | **NOT SOLVED** | `memory_lifecycle.py:174-175` raises `"Source memory has duplicate identities"`; the 5 dups are still resident (row 3 above). Swallowed at `:116-121`. | **Nobody** |
+| Vector index is "write-only" (prior review's claim) | **REFUTED** | 24 `Vector recall:` INFO lines in the production log, e.g. `synapse.log:9793` and `:10364`; call site `moneta_store.py:930`. M1-5's grep looked for `recall_from_store\|vector_recall`, which are the doctor's helper names, not the live `self._handle.query(...)`. | — settled |
+| Houdini/Storage Sense purges the temp tree | **REFUTED** | M3: tree persists since 2026-07-10 across 10+ crashes; Storage Sense cadence `2048=0` = low-disk only, C: 43.6% free. | — settled |
+| Test coverage for the cause | **NOT SOLVED** | `grep -rn "conflicting duplicate memory identity" --include=*.py tests/` → zero hits. `grep -rln _match_memory tests/` → empty. | **Nobody** |
+| Repair has an INTENT §6 record | **NOT SOLVED** | `grep -l 'repair\|memory.jsonl\|degraded' .synapse/provenance/*.json` → 0 of 5012. Repair script untracked under `Claude outputs/`. | **Nobody** |
+| Should the 11 quarantine copies be deleted / second degraded store / outage invisibility | — | out of lane | **Team 1** |
+| Machine-wide store census / competing writer processes | — | out of lane | **Team 2** |
+
+Fifteen rows. **Twelve are owned by nobody.** That is the finding.
+
+---
+
+## Blocking gaps, ranked
+
+### B1 — An ungated automatic prune is armed over 253 records that exist in one copy
+
+**Broken:** `moneta_store.py:729-731` fires `run_sleep_pass()` every 100th non-durable `add` once `ecs.n > 1000`. It is 1119. The rule deletes `utility < 0.1 AND attended_count < 3`; with a 6-hour half-life from 1.0, that is every unprotected record older than ~20 hours. `attended_count` is 0 on all 1119 rows and no `wal.log` exists, so nothing has ever earned attention — and M2-R3 shows unprotected rows can never enter a search result, so they cannot earn it. 560 rows qualify: 230 note, 178 action, 152 summary. Zero feedback. Zero decision.
+
+**Evidence it has not fired yet:** `grep -c "Consolidation pruned" ~/.synapse/logs/synapse.log` → 0.
+
+**What breaks for the artist:** 253 of those rows have no copy in the mirror. A prune of a mirrored record is recoverable (`backfill.py` runs JSONL→Moneta). A prune of one of the 253 is permanent. The mirror is precisely the thing that makes a prune survivable, and the 253 are precisely the records that lack it. The artist sees one INFO line.
+
+**Cheapest next step:** before anything else, copy `.moneta/snapshot.json` (7.8 MB) to a tracked location. Then either raise the `ecs.n` guard above the current count or set `require_durable=True` on the scene-memory writers until the backfill lands. One condition, one file.
+
+### B2 — The primary still holds all five duplicate ids, which blocks its own repair
+
+**Broken:** re-verified by me just now — all five return 2 rows from the live snapshot. Three consequences chain off it: (a) `memory_lifecycle._records()` raises `"Source memory has duplicate identities"` (`:174-175`), so the save-transition is broken **today**; (b) `add_durable_if_absent` raises on those ids (`moneta_store.py:665-670`, `len(matches)==2`); (c) any Moneta→JSONL backfill re-emits the conflicting pair and re-degrades the mirror on next load.
+
+**Cause, unchanged:** `models.py:158-162` hashes only `content:created_at:memory_type` — whole-second clock, no metadata. The hardened full-identity hash exists at `store.py:1411-1419` but is behind `if require_durable:`.
+
+**What breaks for the artist:** he saves the scene, believes memory followed, and it did not — the exception is swallowed at `memory_lifecycle.py:116-121` into an attribute nothing reads. And B1's backfill cannot be written until this is cleared.
+
+**Cheapest next step:** drop the five `source='auto'` rows from `.moneta/snapshot.json` the same way the JSONL was repaired, with Houdini closed (the snapshot is rewritten on every `save()`). Back up first.
+
+### B3 — The producer is still armed; the threshold is one write
+
+**Broken:** `MemoryStore.add()` (`store.py:529-553`) replaces in-memory and appends a line with no id-collision check. `_load` (`store.py:355-362`) raises on the second differing canonical, and `store.py:396-401` degrades on a non-empty list — `len == 1` is enough. M5 reproduced it: two `add()` calls, writer sees no error, next process is `AFTER RESTART degraded? : True / write : REFUSED`.
+
+**Correction to M5-1's proposed fix.** Flipping `_dual_write_jsonl`'s `only_if_missing` default to `True` does **not** close this. I read the branch (`moneta_store.py:768-780`): with `only_if_missing=True` it still executes `net.add(memory)` whenever `existing.to_json() != memory.to_json()` — the differing-payload case, which is the poisoning case. That flip only suppresses byte-identical re-adds, i.e. exactly the duplicate-count axis the 2026-09-16 seam review measured before downgrading the finding to medium. The fix has to be on `add()` itself (M4-2's), which closes M5-1 and M4-2 together.
+
+**Pair it or it backfires:** a guarded `add()` raises inside `_dual_write_jsonl`, whose `except Exception` at `:784-785` exists so "the safety net must never break the caller." So the guard converts a loud-but-late outage into a silent permanent divergence. It must ship with B6.
+
+### B4 — Memory cannot reach a panel turn at all
+
+**Broken, both verified by me:**
+1. `grep -rn "TieredRouter(" python/` returns exactly one site — `handlers.py:1756`, `TieredRouter(config=config)`, no `memory=`. So `self._memory is None` and `_match_memory` returns at its first guard (`knowledge.py:791`).
+2. Even wired, `knowledge.py:795` calls `self._memory.search(text=query, limit=3)` against a signature of `search(self, query, limit=20, memory_types=None, tier=None)` (`store.py:1509-1515`). TypeError, eaten by `except Exception: return None` at `:796-797`.
+
+Nothing else injects memory: the per-turn payload is `{selected_nodes, current_network, scene_file, frame}` (`ws_bridge.py:72-101`) and `build_system_prompt` has no memory section (`system_prompt.py:332-364`).
+
+**What breaks for the artist:** memory only influences a turn if the model volunteers a `synapse_context`/`search`/`recall` call. The tier built to answer from memory without one is dead in two independent places, and `grep -rln _match_memory tests/` is empty, which is why.
+
+**Cheapest next step:** two edits and one test that asserts `_match_memory` returns a hit for a known stored memory.
+
+### B5 — When memory *is* retrieved, the artist's own records are outranked, and the binding decision isn't in the primary at all
+
+**Broken:** ranking is `max(cos_sim, 0.0) * memory.utility` (`api.py:413`, verified). SYNAPSE pins DECISION / SHOW-tier / `source=='gate'` at 0.9; measured distribution on 1116 rows is `{0.0: 588, 0.9: 528}`, and 525 of the 528 are `memory_type='feedback'` RSI telemetry (`set_parm: HIT` ×205, `create_node: HIT` ×115, `execute_python: HIT` ×94). Over-fetch is `max(limit*3, 50)` = 60. 416 unprotected rows sit below 1e-6 utility, so at a perfect cosine of 1.0 they still cannot enter the pool.
+
+Then the vector stage is nullified anyway: candidates must pass a literal keyword gate — `if score > 0` (`moneta_store.py:150-152`) over substring/word overlap (`:118-128`) — and the exception path runs the *same* scorer over all 1111 (`:945-948`). So the vector stage can only lose keyword-reachable memories; it cannot add semantic ones. The 384-dim embedder loads on every store init and buys negative recall.
+
+**And the specific record that matters is missing:** `mem_e2e9749cb3c3` (2026-09-06T14:00:50Z) binds *"Create a Solaris Network"* and *"Basic Studio Lighting Setup"* to the v4 recipe. In JSONL: yes. In Moneta: no. In `cortex_root.usda`: no. Recall defaults to DECISION-only, limit 5 (`store.py:1560-1562`), and the primary holds 3 decisions — none of them that one. The canonical recipe text itself is 3 records, all mirror-only.
+
+**What breaks for the artist:** he types the trigger phrase tomorrow and gets nothing, with no outage required. This predates 15 Sep and the repair does not touch it.
+
+### B6 — Nothing detects any of this
+
+`_degraded_load` has two readers in `store.py` and one in `memory_lifecycle.py`. No health, panel, doctor or MCP surface reads it. `write_plane.store_health()` (`write_plane.py:344-430`) derives its verdict from serving class name + `count()` not raising + `durability is not None` — all three were true for two days. `count()` looked normal too, because `_load` keeps the *first* occurrence and only the second raises. Panel dot: `health_strip.py:236` returns `Verdict.OK, "moneta"` whenever Moneta is live. The doctor counts the quarantine litter (`doctor.py:322-325`) and never surfaces it in `detail`. No doctor check compares the two stores — that part of M1-5 stands.
+
+**Cheapest next step, one edit, three surfaces:** in `write_plane.store_health()` after the count check, `if getattr(store, "_degraded_load", False): broken.append(store._degraded_reason)`. `synapse_health`, the doctor's `write_plane_store` row and the panel strip all consume that verdict already. Add the divergence count `|moneta_ids Δ jsonl_ids|` as a second fact.
+
+### B7 — The data cannot leave temp, and the window is ~8 days
+
+`_MAX_RECORDS = 2000` / `_MAX_BYTES = 8MB` (`memory_lifecycle.py:25-26`, verified), enforced at `:171-172` and `:295-296`. Store is at 1119 = 56% of the record cap, growing ~111/day → ~8 days. `grep -rn "_MAX_RECORDS" tests/test_memory_lifecycle.py` → nothing; the only carry test uses two records. And when it does run, `_copy_records` loops `add_durable_if_absent`, which re-deserializes all 1119 rows per record and rewrites the full snapshot per record (`moneta_store.py:666`, `:722-724`) — ~4.4 GB of snapshot writes on the main thread inside the AfterSave callback, holding the global lock. Fixing B2 without fixing this converts a silent no-op into a multi-minute freeze at Ctrl+S.
+
+**Cheapest next step:** run the migration once, deliberately, Houdini idle, via `host.memory_loop.rebind_project_memory(path, carry_records=True)`, and time it before anything is wired to the save event.
+
+### B8 — Nothing on the way to master would catch a recurrence
+
+`grep -rn "conflicting duplicate memory identity" --include=*.py tests/` → zero. The one test that touches the class (`test_demo_memory_scope.py:141-170`) plants the poison by hand and asserts the outage is *correct* — it pins the consumer, not the producer. `test_w3_store_contract.py:197-209`, whose docstring says a memory landing only in Moneta is a BLOCK, adds 5 distinct ids so it cannot exercise a re-add; M5 ran its assertion against a poisoned store and it read True while `_degraded_load` was True. And the defect was filed twice before it fired — `harness/cto/BACKLOG.json:76-77` on 2026-09-05 (fixed for `backfill.py` only, "left untouched to stay inside the item's scope"), and again in `Claude outputs/memory-seam-review-2026-09-16.md:251` **during the outage**, then downgraded at `:583` because it reasoned about count inflation instead of write refusal.
+
+---
+
+## Divergence
+
+**Measured, triangulated three times independently:**
+
+| Read | Moneta rows / distinct | JSONL | Only in Moneta | Only in JSONL | Intersection |
+|---|---|---|---|---|---|
+| M1 | 1116 / 1111 | 862 | 253 | 4 | 858 |
+| M2 | 1116 / 1111 | 862 | 253 | 4 | 858 |
+| M3 | 1119 / 1114 | 865 | 253 | 4 | 861 |
+
+Both rows are internally consistent (1111−253 = 862−4 = 858; 1114−253 = 865−4 = 861), and the +3 landed in *both* stores — which is the one piece of good news: **dual-write is functioning post-repair.** The repair restored the mirror's ability to accept new writes. It did not backfill.
+
+**The 253:** 245 created inside the outage window (2026-09-15T19:09Z–2026-09-17T19:53Z), 0 before it, 8 after. By kind: 219 `loop_*` feedback, 18 note, 16 action. Control against the "loop records just don't mirror" explanation: `loop_*` in JSONL = 305, spanning 08 Sep → 17 Sep. They normally do mirror. These are stranded.
+
+**Why it was guaranteed:** `moneta_store.py:744-751` commits the deposit and `self.save()` *first*, then attempts the mirror; `:784-785` swallows the failure with no retry and no queue. Every write during those two days diverged by construction.
+
+**What remains UNKNOWN:**
+- Whether the 4 mirror-only records were pruned out of the primary or never deposited. All 1116 snapshot rows carry `state=0` / `consolidated_into=None` and no `PruneAudit` is persisted anywhere on disk — consistent with never-deposited, not proof. It changes the fix: a prune means the archive is load-bearing today; a never-deposited means a write path silently skipped the primary.
+- The 8 post-repair non-mirrored records (19:53:01Z–19:53:56Z). Disk cannot distinguish a second process from a second in-process store object still carrying `_degraded_load`.
+- Live counts. The snapshot is a point-in-time write; `cortex_root.usda` already shows 1112 distinct prims against 1111. Every number here is snapshot-accurate, not live-accurate.
+- A third substrate nobody owns: `.moneta/cortex_root.usda` is 1.7 MB and being written, while `.moneta/usd/cortex_root.usda` is 11 bytes — the `SdfLayer::_CreateNew ... a layer already exists` retry loop, unhealed, with its own consistency story.
+
+**What would settle it:** the backfill script is the settlement — write it, dry-run it, and its dry-run output *is* the answer. It needs B2 cleared first or it re-poisons the mirror.
+
+---
+
+## Does memory actually work
+
+**It is retrieved. It is then discarded, outranked, or never asked for.** And the store that was repaired is not the store that is read.
+
+Three separate failures, in order of how much they hurt:
+
+1. **The repaired file is read by nothing at runtime.** `grep -n "_jsonl_net" moneta_store.py` → `189` docstring, `193` assign, `772` write, `798` write, `1062-1064` flush. **Zero read sites.** Moneta rehydrates from `.moneta/snapshot.json` (`:261-267`), not from `memory.jsonl`. Nobody lost read access during the outage — the primary served throughout. What was lost is the archive, which is the only thing standing between B1's prune and real deletion.
+
+2. **The read path is reached only if the model volunteers a tool call.** The automatic tier is dead twice over (B4).
+
+3. **When it is reached, it returns telemetry.** 525 RSI handler receipts pinned at 0.9 versus 588 artist records at 0.0, a 60-candidate pool, then a literal keyword gate that discards paraphrases (B5). Search always returns *something*, which is why it looks like it works.
+
+Against the bar — written, retained, retrievable, improving the product across sessions: **written yes. Retained yes, in one copy, under an armed prune. Retrievable no for the records that matter. Improving the product across sessions, no.**
+
+This does not supersede the other findings in the way the brief anticipated. The store being repaired genuinely is not the core of anything — but the store it mirrors *is*, and it is diverged, duplicated, unmonitored and armed.
+
+---
+
+## Will it recur
+
+**Yes. One bad write, and nobody would notice.**
+
+- **Threshold: one.** `store.py:396-401` degrades on a non-empty `unreadable` list; `len == 1` qualifies. Reproduced end to end by M5.
+- **The producer is untouched.** `git log --oneline -6 -- python/synapse/memory/scene_memory.py` → newest touch `ef690e50` (2026-09-15 15:33), whose diff hits only `moneta_store.py`. The two writers that emit the metadata-stripped shape (`scene_memory.py:729-735`, `:773-779`) are unchanged, and both go through the unguarded `store.add()`.
+- **Detection: none.** Every surface reported green for two days (B6).
+- **Recovery: a Houdini restart.** `_load` assigns the flag inside `if degraded_reason:` (`store.py:396-408`), so a clean re-load of a repaired file cannot clear a set flag. Today's in-process fix was a manual attribute patch — not a procedure anyone can repeat or document. The one-character fix is `self._degraded_load = bool(degraded_reason)`.
+- **One genuinely clean result:** no degraded state is persisted anywhere. `_degraded_load` / `_degraded_reason` are plain instance attributes (`store.py:190-192`), no `index.json` exists, the 11 quarantine copies are never re-read, and the key fingerprint matches (`6aa8f313` == sidecar). Tomorrow morning's launch starts clean. That much survives the night.
+
+---
+
+## Drift check
+
+**The repair was necessary. The investigation has become the work.**
+
+Necessary: a store refusing all writes is a real defect; 253 single-copy records under an armed prune is a worse defect than the one that triggered the search; and B1 would not have been found any other way. That is a real return on the day.
+
+But memory is not on the path from a prompt to a Solaris network. `grep -icn "memory" python/synapse/server/handlers_solaris_graph.py python/synapse/cognitive/tools/propose_graph.py` → **0** and **0**, across 896 and 97 lines. Recall never broke — Moneta served throughout and the repaired mirror is read by nothing. Today's provenance trail is diagnostics: `propose_graph`/`instantiate_graph` last fired at 00:31 and 00:38 UTC in millisecond-apart ok/error pairs, then `doctor` ×7 from 13:38 to 20:03 plus one `memory_write` and one `memory_status`. Constitutional rule 9: ship the product, not the system.
+
+**The honest line:** three teams and a day have produced a correct and valuable map of a substrate whose degradation the artist could not feel, while the thing he asked for has not been attempted since midnight. Do B1's backup and B2's dedupe — call it an hour with Houdini closed — then go straight back to the Solaris prompt and let it fail on its own terms. If it fails for a reason unrelated to memory, that settles whether this detour was on the critical path.
+
+---
+
+## Owed live probes
+
+One run clears all of it. Eight facts, no writes:
+
+1. **`_degraded_load` on the live store** — `type(synapse.memory.store._global_synapse.store).__name__`, `.storage_dir`, `._degraded_load`, `._degraded_reason`. Confirms the backend actually resolved to `MonetaBackedStore` (the env var is set in the shell, not proven in PID 54668) and that the manual flag clear held.
+2. **Any second store instance still degraded** — enumerate live SYNAPSE processes and their store objects; read `_degraded_load` on each. Settles the 8 post-repair non-mirrored records.
+3. **`synapse_memory_status`** — `store.count()` against the snapshot's 1119, and confirm the five duplicate `entity_id`s are still resident in the in-RAM ECS, not just on disk.
+4. **`synapse_health` write_plane** — expected `ok`. That green light against a store carrying 253 single-copy records is the cleanest possible proof of B6.
+5. **`synapse_recall("Create a Solaris Network")`** — does `mem_e2e9749cb3c3` come back? Predicted no. This is the acceptance bar, executed.
+6. **`synapse_search` on one of the five duplicate ids' content** — does the tag-less `source='auto'` copy surface in a user-visible result? Predicted yes.
+7. **Is the AfterSave callback armed** — `synapse.host.memory_lifecycle._callback is not None`. If it is not, B2 understates the problem: even a dedup'd store never migrates on save.
+8. **`_handle.durability is not None`, and whether `signal_attention` has ever journaled** — `attended_count` is 0 on all 1119 rows and no `wal.log` exists. If durability is None, attention is simply not being recorded and B1's prune predicate can never be escaped by any record, ever.
+
+Add one measurement that needs no bridge, only a copy of the snapshot: embed 3–5 real artist queries with the same `SemanticEmbedder` and print the `memory_type` composition of the top 60. That converts B5's bound into a number.
