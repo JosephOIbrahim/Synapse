@@ -504,7 +504,16 @@ class SynapseBridge:
                 hip_path = hou.hipFile.path()
                 job_path = hou.getenv("JOB", os.path.dirname(hip_path))
                 paths = ensure_scene_structure(hip_path, job_path)
-                write_memory_entry(paths["scene_dir"], {"content": content}, "note")
+                write_memory_entry(
+                    paths["scene_dir"], {"content": content}, "note",
+                    # The rich record went into Moneta ~15 lines up, at
+                    # self._synapse.add(..., source="ai"). Letting scene_memory
+                    # deposit it again would write the same content in the same
+                    # second with tags/hip_file/frame at defaults -- same id,
+                    # different payload -- which is the exact write that degraded
+                    # the store for two days on 2026-09-15.
+                    deposit_to_moneta=False,
+                )
         except Exception as e:
             logger.warning("Scene memory dual-write failed: %s", e)
 

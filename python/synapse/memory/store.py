@@ -155,6 +155,42 @@ from .models import (
 # MEMORY STORE
 # =============================================================================
 
+def _metadata_richness(memory) -> tuple:
+    """How much artist metadata a record carries, as a sortable tuple.
+
+    Used by :meth:`MemoryStore.add` to decide which of two colliding records
+    survives. NOT a quality judgement about content -- the colliding pair always
+    share identical ``content``; only the metadata around it differs.
+
+    The ordering is the one the manual repair of the 2026-09-15 corruption used,
+    kept identical on purpose so the automatic path and the recovery tool can
+    never disagree about which twin is authoritative:
+
+        (tag count, hip_file present, source is not 'auto', frame set, hip_version)
+
+    ``source='auto'`` ranks LAST deliberately: it is the signature of the lossy
+    deposit at ``scene_memory.py:729``, which constructs its Memory with tags,
+    hip_file, hip_version and frame left at dataclass defaults. Every one of the
+    five records that degraded the store carried it.
+
+    Total and never raises -- a record missing an attribute simply scores lower,
+    because a health-critical write path must not fail on an unexpected shape.
+    """
+    g = lambda name, default=None: getattr(memory, name, default)
+    try:
+        tags = g("tags") or ()
+        tag_count = len(tags)
+    except TypeError:
+        tag_count = 0
+    return (
+        tag_count,
+        1 if (g("hip_file") or "") else 0,
+        0 if (g("source") or "") == "auto" else 1,
+        1 if g("frame") is not None else 0,
+        1 if (g("hip_version") or 0) else 0,
+    )
+
+
 class MemoryStore:
     """
     Low-level memory storage and retrieval.
@@ -190,6 +226,16 @@ class MemoryStore:
         # recoverable plaintext, ciphertext, or conflicting identities.
         self._degraded_load = False
         self._degraded_reason = ""
+        # B6: every refused or downgraded write is COUNTED, not merely raised.
+        # The 2026-09-15 15:09 -> 2026-09-17 15:53 outage (this store DEGRADED,
+        # refusing every write for ~2 days) was invisible because the only
+        # evidence was one ERROR line at load time. A raise is not evidence
+        # either: the JSONL safety net (moneta_store._dual_write_jsonl) wraps
+        # its call to this store in a bare `except Exception` so the net can
+        # never break its caller, which swallows anything we throw. The counter
+        # is what survives that swallow and reaches health().
+        self._rejected_writes = 0
+        self._rejection_lock = threading.Lock()
         self._loaded = threading.Event()
 
         # Write buffer — defers disk I/O to background thread (saves 1-5ms per add)
@@ -447,17 +493,118 @@ class MemoryStore:
             return  # Fast path — already loaded
         self._loaded.wait(timeout=timeout)
 
-    def _require_writable_load(self):
-        """No write may acknowledge or replace an incomplete source read."""
-        self._wait_loaded()
+    def _write_refusal_reason(self) -> str:
+        """The ONE predicate behind both ``_require_writable_load()`` and
+        ``health()["writable"]`` — they cannot disagree, because they read it here.
+
+        Returns ``""`` when a write would be accepted right now, otherwise the
+        operator-readable reason it would be refused. Deliberately does NOT wait
+        on the loader: ``health()`` may be polled by the panel and must never
+        block behind a 2s load. ``_require_writable_load()`` does the waiting
+        itself, then asks this.
+        """
         if not self._loaded.is_set():
-            raise RuntimeError("Refusing to write: memory source is still loading")
+            return "memory source is still loading"
         if self._degraded_load:
-            raise RuntimeError(
-                "Refusing to write: the store loaded in DEGRADED mode. "
+            return (
+                "the store loaded in DEGRADED mode. "
                 "Original bytes are preserved; recover the source or encryption "
                 f"key, then reopen. {self._degraded_reason}"
             )
+        return ""
+
+    def _note_rejected_write(self, reason: str):
+        """Record a refused or downgraded write in durable, readable state.
+
+        Correct behaviour here has to be OBSERVABLE, not thrown. The JSONL
+        safety net (``moneta_store._dual_write_jsonl``, ``except Exception``
+        by design so the net never breaks its caller) swallows anything this
+        store raises, so a raise alone leaves no trace anyone can find two days
+        later. This counter does — ``health()["rejected_writes"]`` reads it, and
+        the WARNING gives the log reader the specific reason.
+        """
+        with self._rejection_lock:
+            self._rejected_writes += 1
+            total = self._rejected_writes
+        logger.warning(
+            "Memory write refused or downgraded (%d so far in this store): %s",
+            total, reason,
+        )
+
+    def _require_writable_load(self):
+        """No write may acknowledge or replace an incomplete source read."""
+        self._wait_loaded()
+        reason = self._write_refusal_reason()
+        if reason:
+            self._note_rejected_write(reason)
+            raise RuntimeError(f"Refusing to write: {reason}")
+
+    # -- health surface (B6) --------------------------------------------------
+    # ``_degraded_load`` used to be read at exactly three internal sites and by
+    # NO health, doctor, panel or MCP surface. That is precisely why a two-day
+    # write outage was visible only as a log line nobody reads. These three
+    # members are the missing surface. Keep them cheap — a panel may poll them.
+
+    @property
+    def is_degraded(self) -> bool:
+        """True when the store failed its load integrity check and is refusing writes."""
+        return bool(self._degraded_load)
+
+    @property
+    def degraded_reason(self) -> str:
+        """Why the load was degraded. ``""`` when healthy — never None, so a
+        caller can print it unconditionally."""
+        return self._degraded_reason or ""
+
+    def health(self) -> Dict[str, Any]:
+        """Operator-readable verdict on this store. ALWAYS five keys, NEVER raises.
+
+        ``{"degraded": bool, "reason": str, "writable": bool,
+           "records": int, "rejected_writes": int}``
+
+        - ``writable`` is derived from ``_write_refusal_reason()`` — the same
+          predicate ``_require_writable_load()`` enforces — so "health says
+          writable" and "a write is actually accepted" can never drift apart.
+        - ``rejected_writes`` is monotonic for the life of the store object and
+          counts every write this store refused or downgraded, including
+          collision downgrades in ``add()`` that never reached the caller
+          because the dual-write net swallowed them.
+        - A health check that throws is not a health check: any failure returns
+          the fail-closed defaults below (degraded, unwritable) rather than a
+          green answer or an exception.
+        """
+        report: Dict[str, Any] = {
+            # Fail-closed defaults. If the probe cannot complete, the honest
+            # answer is "sick and unwritable", never a reassuring blank.
+            "degraded": True,
+            "reason": "health probe did not complete",
+            "writable": False,
+            "records": -1,
+            "rejected_writes": -1,
+        }
+        try:
+            degraded = bool(self._degraded_load)
+            reason = self._degraded_reason or ""
+            writable = not self._write_refusal_reason()
+            # Read the dict length WITHOUT the read lock on purpose: a health
+            # probe that queues behind a writer is a health probe that freezes
+            # the panel. A count one record stale is still an honest count.
+            records = len(self._memories)
+            with self._rejection_lock:
+                rejected = self._rejected_writes
+        except Exception as exc:  # noqa: BLE001 -- a health check that throws is not a health check
+            report["reason"] = f"health probe failed: {exc}"
+            logger.warning("MemoryStore.health() probe failed: %s", exc)
+            return report
+
+        report.update(
+            degraded=degraded,
+            reason=reason,
+            writable=writable,
+            records=records,
+            rejected_writes=rejected,
+        )
+        return report
 
     def save(self):
         """Persist all memories to disk."""
@@ -515,6 +662,13 @@ class MemoryStore:
         with self._lock.write_lock():
             previous = self._memories.get(memory.id)
             if previous is not None and previous.to_json() != memory.to_json():
+                # A refused write, same class of event as the add() collision —
+                # count it so health() reflects every rejection, not just the
+                # ones that happen to reach a caller who checks.
+                self._note_rejected_write(
+                    f"add_durable_if_absent() refused id {memory.id!r}: the "
+                    "identity already holds different data"
+                )
                 raise ValueError("Memory identity already contains different data")
             inserted = previous is None
             if inserted:
@@ -531,12 +685,82 @@ class MemoryStore:
 
         Buffers disk write for background flush (saves 1-5ms per call).
         In-memory state is updated immediately for read consistency.
+
+        B3 — the id-collision guard. Without it, ``add()`` replaced the record
+        in ``_memories`` and ALSO appended a fresh line, so an id that already
+        existed with different content left the file holding two differing
+        lines for one identity. The next process to open it hits ``_load``'s
+        "conflicting duplicate memory identity", which degrades the WHOLE store
+        and refuses EVERY write until a human intervenes. One bad line is
+        enough; two ``add()`` calls and one restart reproduce the full two-day
+        outage of 2026-09-15 -> 2026-09-17. So this method must never be able to
+        plant that line:
+
+        - **new id** — the original fast path, untouched. This is hot: no extra
+          file read, no second lock round-trip for the normal case.
+        - **same id, byte-identical payload** — a harmless re-add. No-op; the
+          append would be legal but pointless.
+        - **same id, different payload** — this was never an add, it is an
+          UPDATE. Append-only JSONL cannot express a mutation, and the class
+          already knows that: ``update()`` sets ``_needs_rewrite`` so the next
+          flush does a full ``save()``. Routed there rather than duplicated.
+
+        The divergent case deliberately does NOT raise. Its only production
+        caller is ``moneta_store._dual_write_jsonl``, whose bare
+        ``except Exception`` exists so the safety net can never break the
+        caller — a raise here would be swallowed, trading a loud-but-late
+        outage for a silent permanent divergence between Moneta (the primary)
+        and the JSONL mirror. It is recorded instead: counted into
+        ``health()["rejected_writes"]`` and logged at WARNING.
         """
         self._require_writable_load()
         with self._lock.write_lock():
-            self._memories[memory.id] = memory
-            self._index_memory(memory)
-            self._dirty = True
+            existing = self._memories.get(memory.id)
+            if existing is None:
+                self._memories[memory.id] = memory
+                self._index_memory(memory)
+                self._dirty = True
+                diverged = False
+            else:
+                # Compare the exact bytes that would hit the file. ``to_json()``
+                # is sort_keys=True — the same canonical form ``_load`` computes
+                # per line — so "differs here" is precisely "conflicts there".
+                diverged = existing.to_json() != memory.to_json()
+
+        if existing is not None:
+            if not diverged:
+                return memory.id  # byte-identical re-add: nothing to write
+            # WHY THIS ROUTES AND NEVER DROPS.
+            #
+            # An intermediate version of this guard kept whichever record carried
+            # more metadata and DISCARDED the other, while still returning
+            # memory.id. An adversarial review measured the consequence: a caller
+            # cannot tell. ledger.py:486 sets status["deposited"]=True off this
+            # return, seed_corpus.py:179 counts it as written, vex_capture.py:112
+            # hands it back as the id -- all three would report success over a
+            # write that never landed. That is the SAME silent-failure class this
+            # whole incident is about, so it was removed. A write is routed or it
+            # is loud; it is never quietly dropped.
+            #
+            # Losing metadata is not the risk it looks like, because CONTENT
+            # PARTICIPATES IN THE ID (models.py:157-162 hashes
+            # content:created_at:memory_type). Two records sharing an id
+            # therefore share their content: a collision is always a
+            # METADATA-only difference, never a lost edit. And the producer that
+            # generated those differing-metadata pairs is fixed at source --
+            # scene_memory.py's deposit is now suppressed for callers that
+            # already deposited (see tracker.py:507). This guard is the backstop
+            # behind that fix, not the fix itself.
+            self._note_rejected_write(
+                f"add() for existing id {memory.id!r} carries different content; "
+                "appending it would plant a conflicting duplicate identity and "
+                "degrade the whole store on next load; routed to update() "
+                "(full rewrite) instead"
+            )
+            # Outside the writer lock: ReadWriteLock is NOT reentrant and
+            # update() takes it again.
+            self.update(memory)
+            return memory.id
 
         # Buffer the disk write — flushed by background thread
         crypto = _get_crypto()

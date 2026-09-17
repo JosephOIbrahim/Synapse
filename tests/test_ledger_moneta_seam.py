@@ -711,5 +711,19 @@ class TestProvenanceReachesTheDeposit:
         # Exactly ONE record file, not one per substrate revision. (write_report
         # keeps a .bak.N of the overwritten copy — that is the backup policy,
         # not a second record.)
-        records = [f for f in os.listdir(seam_tmp) if f.endswith(".json")]
+        #
+        # The listing excludes the store's own housekeeping artifacts, which are
+        # not records. index.json is written by MemoryStore.save() beside
+        # memory.jsonl, and began landing here when the B3 add() collision guard
+        # started routing a divergent same-id write to update() — which schedules
+        # a full save rather than appending a line that would degrade the store.
+        #
+        # Deliberately an explicit denylist rather than a stem glob: a genuine
+        # SECOND record file, which is the regression this test exists to catch,
+        # must still fail the assertion below.
+        _STORE_ARTIFACTS = {"index.json"}
+        records = [
+            f for f in os.listdir(seam_tmp)
+            if f.endswith(".json") and f not in _STORE_ARTIFACTS
+        ]
         assert records == [f"{first['stem']}.json"]

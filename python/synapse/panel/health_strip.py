@@ -29,7 +29,11 @@ Producer paths (one per cell — a green cell without one is a BLOCK):
   - memory backend← ``synapse.memory.store.backend_fallback()`` (a process-global
                     read, never a store construction) + a non-constructing peek
                     at the ``_global_synapse`` singleton for the "moneta is live"
-                    positive. NEVER ``synapse_health.healthy`` — that field is a
+                    positive, PLUS (B6) that same store object's own write-health
+                    contract (``is_degraded`` / ``degraded_reason``, falling back
+                    to ``health()``) — because a backend identity cannot report a
+                    backend failure, and for two days in 2026-09 it did not.
+                    NEVER ``synapse_health.healthy`` — that field is a
                     hardcoded ``True`` liveness echo (handlers.py) and would pin
                     the cell green forever.
   - project       ← the current hip / show name the panel already reads.
@@ -176,7 +180,15 @@ class StripSnapshot:
                    ("ok" = hou reachable + gate fresh; "warning" = gate stale)
       memory     : UNMEASURED | {"fallback": <dict|None>,
                                   "backend": <str|None>,
-                                  "moneta_live": <bool|None>}
+                                  "moneta_live": <bool|None>,
+                                  "write_health": <dict|None>}
+                   ``write_health`` is ``{"sick": bool, "reason": str}`` when a
+                   store could answer, and None when a store is live but none
+                   could — which renders UNKNOWN, never OK. It is a SEPARATE
+                   fact from ``backend``/``moneta_live``: those name which
+                   backend is serving, this one says whether it still accepts
+                   writes, and for two days in 2026-09 the first was green while
+                   the second was false.
       project    : UNMEASURED | <str name> | None  (None = measured "untitled")
       active_job : UNMEASURED | <dict>            | None  (None = measured "idle")
     """
@@ -209,14 +221,38 @@ def cell_connection(connection: Any) -> StripCell:
 def cell_memory(memory: Any) -> StripCell:
     """memory-backend cell — the heart of the leg.
 
-    A recorded fallback (moneta → jsonl) is loud: RED with the doctor's one-line
-    reason, which carries the ``384 vs 256`` mismatch text when that is the
-    cause. A confirmed live Moneta store is OK. Everything we could NOT read —
-    including the ambiguous "no fallback recorded but no live store confirmed" —
-    is UNKNOWN, never a default green.
+    A store that is refusing writes is the loudest thing this cell can say: RED,
+    with a sentence an artist can act on. A recorded fallback (moneta → jsonl)
+    is next, also RED, carrying the doctor's one-line reason — which holds the
+    ``384 vs 256`` mismatch text when that is the cause. A live backend that
+    ALSO confirmed it is accepting writes is OK. Everything we could NOT read —
+    including "a store is live but could not report its write health" — is
+    UNKNOWN, never a default green.
+
+    B6 ORDERING, and why write-health goes first. On 2026-09-15 this cell
+    returned OK for two days while the store refused every write, because
+    ``moneta_live is True`` short-circuited to green before anything asked the
+    store how it was doing. The write verdict is therefore evaluated BEFORE the
+    identity positives, not after them: a backend being live is not evidence
+    that it works, and the cell must not be able to reach a green return while
+    holding a sick reading. It is also ranked above the fallback case, because
+    "writes are being discarded right now" is more urgent and more actionable
+    than "we are serving a different backend than you asked for".
     """
     if not isinstance(memory, dict):
         return StripCell("memory", "mem", Verdict.UNKNOWN, "unknown")
+
+    # Measured and sick: the loudest state, and the one this lane exists for.
+    write_health = memory.get("write_health")
+    if isinstance(write_health, dict) and write_health.get("sick"):
+        detail = str(write_health.get("reason") or "").strip()
+        reason = (
+            "memory is not accepting writes — anything you ask to be remembered "
+            "is being discarded. Recover the store file, then reopen the scene."
+        )
+        if detail:
+            reason += " (%s)" % detail
+        return StripCell("memory", "mem", Verdict.RED, "not saving", reason=reason)
 
     fallback = memory.get("fallback")
     if isinstance(fallback, dict):
@@ -232,10 +268,38 @@ def cell_memory(memory: Any) -> StripCell:
         )
 
     moneta_live = memory.get("moneta_live")
+    backend = memory.get("backend")
+
+    # A store is live, but nothing could tell us whether it is accepting writes
+    # (no health contract on the object, or the reading was uninterpretable).
+    # That is rule 1 of this module applied to the fact that actually matters:
+    # a producer for "which backend" is NOT a producer for "does it work", so
+    # the cell cannot go green on the identity alone. It renders grey and keeps
+    # the backend name in the value, so the artist still sees WHAT is serving
+    # alongside the honest admission that we cannot vouch for it.
+    #
+    # This is a reachable, clearable state, not a permanent amber: a MemoryStore
+    # carrying Lane B3's contract answers, and a Moneta store answers through
+    # its `_jsonl_net` safety net whenever dual-write is on (the default when
+    # SYNAPSE_MEMORY_BACKEND == "moneta"). It fires for a store object that
+    # predates the contract, a stub, or a backend that never grew one — exactly
+    # the cases where reporting OK would be a lie.
+    #
+    # The test is "not a dict", not "is None": a write_health of some other
+    # shape is a reading we cannot interpret, and an uninterpretable reading is
+    # UNKNOWN. Letting it fall through to the OK returns below would rebuild the
+    # exact collapse this lane removes.
+    if (moneta_live is not None or backend) and not isinstance(write_health, dict):
+        return StripCell(
+            "memory", "mem", Verdict.UNKNOWN,
+            str(backend) if backend else "unknown",
+            reason="a memory store is live but could not report whether it is "
+                   "accepting writes — treat saved memories as unconfirmed",
+        )
+
     if moneta_live is True:
         return StripCell("memory", "mem", Verdict.OK, "moneta")
     if moneta_live is False:
-        backend = memory.get("backend")
         if backend:
             # A measured, live, non-fallen-back backend (e.g. jsonl by config):
             # real and not a degradation, so shown plainly — not alarmed, not
@@ -285,6 +349,110 @@ def build_cells(snapshot: StripSnapshot) -> List[StripCell]:
 # 4. Non-blocking gather  (lazy, guarded, O(1) in-process reads only)
 # ======================================================================
 
+# ── Store write-health (B6) ──────────────────────────────────────────────
+#
+# The 2026-09-15 incident in one line: a store sat DEGRADED and refused EVERY
+# write for ~2 days, and THIS CELL stayed green the whole time, because
+# ``cell_memory`` returned OK on ``moneta_live is True`` without ever asking the
+# store whether it was working. "Moneta is the live class" and "memory is
+# accepting writes" are different facts, and only the first was being read.
+#
+# Rule 1 of this module ("FACT-sourced or UNKNOWN") was never violated — the
+# cell did have a producer. The bug is narrower and meaner: it had a producer
+# for the WRONG FACT. A backend identity cannot report a backend failure.
+#
+# WHY THE PROPERTIES FIRST, AND ``health()`` ONLY AS FALLBACK
+# -----------------------------------------------------------
+# Lane B3's contract gives the store all three of ``is_degraded``,
+# ``degraded_reason`` and ``health()``, and all three are cheap by design
+# (``health()`` deliberately reads ``len(self._memories)`` WITHOUT the read
+# lock, precisely so a health probe cannot queue behind a writer and freeze this
+# panel). So this ordering is not a latency rescue — it is the smallest read
+# that answers the question, on a surface whose stated contract is O(1)
+# in-process reads on a 2 s tick that "must never become the next
+# synapse_doctor 648 ms main-thread hold".
+#
+# The ``health()`` fallback is what makes the check portable: it catches any
+# object that implements the dict form without the properties. Both report the
+# same degradation, so preferring the cheaper one costs no fidelity. An object
+# with NEITHER stays unanswered, which is UNKNOWN — never OK.
+#
+# Wrappers: the serving object is usually a facade. ``MonetaBackedStore``
+# carries the JSONL dual-write safety net at ``_jsonl_net`` (the object that
+# actually died in the incident) and ``ShadowMemoryStore`` carries ``primary`` /
+# ``shadow``. We ask the facade and those members, one level deep over a fixed
+# name list.
+_WRITE_HEALTH_MEMBERS = ("_jsonl_net", "primary", "shadow")
+
+
+def _read_write_health(live_store: Any) -> Any:
+    """Ask the live store, and the stores it wraps, if writes are landing.
+
+    Returns ``None`` when nothing could answer — a *measured* "we asked and got
+    no answer", which ``cell_memory`` must render UNKNOWN rather than OK. That
+    distinction is the whole fix: "we could not determine health" and "healthy"
+    are different answers, and collapsing them is what produced the outage.
+
+    Returns ``{"sick": bool, "reason": str}`` when something did answer. Never
+    raises and never blocks: property reads first, ``health()`` only as the
+    fallback for an object that lacks them.
+    """
+    candidates = [live_store]
+    for member in _WRITE_HEALTH_MEMBERS:
+        try:
+            inner = getattr(live_store, member, None)
+        except Exception:
+            continue
+        if inner is not None and not any(inner is c for c in candidates):
+            candidates.append(inner)
+
+    answered = False
+    sick = False
+    sick_reason = ""
+    for obj in candidates:
+        try:
+            degraded = getattr(obj, "is_degraded", None)
+            if isinstance(degraded, bool):
+                answered = True
+                if degraded:
+                    # SICKNESS IS THE BOOLEAN, NEVER THE TEXT. An earlier version
+                    # returned {"sick": bool(sick_reason)}, so a store reporting
+                    # is_degraded=True with an EMPTY degraded_reason rendered
+                    # green -- the cell inferring health from whether anyone had
+                    # written a sentence about it. Adversarially measured.
+                    sick = True
+                    if not sick_reason:
+                        sick_reason = str(getattr(obj, "degraded_reason", "") or "")
+                continue
+            # No properties: fall back to the contract's dict form. An older
+            # store, a stub or a different backend has neither, and stays
+            # unanswered — which is UNKNOWN, never OK.
+            health = getattr(obj, "health", None)
+            if not callable(health):
+                continue
+            reading = health()
+            if not isinstance(reading, dict):
+                continue
+            degraded = reading.get("degraded")
+            writable = reading.get("writable")
+            if not isinstance(degraded, bool) or not isinstance(writable, bool):
+                continue  # a reading we cannot interpret is not an answer
+            answered = True
+            if degraded or not writable:
+                # Covers the non-degraded-but-unwritable state too: a store
+                # still loading reports degraded=False, writable=False. Not
+                # sick for the incident's reason, but definitively NOT green.
+                sick = True
+                if not sick_reason:
+                    sick_reason = str(reading.get("reason") or "")
+        except Exception:
+            continue  # one unreadable object never decides the cell
+
+    if not answered:
+        return None
+    return {"sick": sick, "reason": sick_reason}
+
+
 def _gather_memory() -> Any:
     """Read the memory-backend fact without constructing anything or blocking.
 
@@ -293,6 +461,10 @@ def _gather_memory() -> Any:
     ``get_synapse_memory()``, which would build the store (the very act that can
     fall back / block). Returns UNMEASURED if the store module is not importable,
     which renders UNKNOWN rather than a fabricated green.
+
+    B6: also reads ``write_health`` from that same already-resolved store object
+    — whether it is still ACCEPTING writes, which the backend identity above
+    cannot report. ``None`` means nothing could answer, and renders UNKNOWN.
     """
     try:
         from synapse.memory import store as _store
@@ -307,6 +479,7 @@ def _gather_memory() -> Any:
 
     moneta_live: Optional[bool] = None
     backend: Optional[str] = None
+    write_health: Any = None
     try:
         singleton = getattr(_store, "_global_synapse", None)
         if singleton is not None:
@@ -315,11 +488,14 @@ def _gather_memory() -> Any:
                 cls = type(live_store).__name__
                 backend = cls
                 moneta_live = (cls == "MonetaBackedStore")
+                write_health = _read_write_health(live_store)
     except Exception:
         moneta_live = None
         backend = None
+        write_health = None
 
-    return {"fallback": fallback, "backend": backend, "moneta_live": moneta_live}
+    return {"fallback": fallback, "backend": backend, "moneta_live": moneta_live,
+            "write_health": write_health}
 
 
 def _gather_active_job() -> Any:

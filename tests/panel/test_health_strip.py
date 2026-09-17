@@ -49,7 +49,12 @@ def test_build_cells_returns_four_keyed_cells():
 def test_cells_reflect_supplied_live_facts():
     snap = hs.StripSnapshot(
         connection="ok",
-        memory={"fallback": None, "backend": "MonetaBackedStore", "moneta_live": True},
+        # write_health is REQUIRED for a green memory cell. "moneta is live" was
+        # true for the whole of the 2026-09-15 outage while every write was
+        # refused, so liveness alone is no longer evidence of health -- a
+        # health-silent snapshot reads UNKNOWN (pinned by the test below).
+        memory={"fallback": None, "backend": "MonetaBackedStore", "moneta_live": True,
+                "write_health": {"sick": False, "reason": ""}},
         project="shot_010_lighting.hip",
         active_job={"label": "karma_beauty"},
     )
@@ -214,3 +219,38 @@ def test_widget_update_in_place_flips_verdict():
         widget, hs.build_cells(hs.StripSnapshot(memory={"fallback": _FALLBACK_384_256})))
     mem = widget.findChild(_QtW.QLabel, "hs_memory")
     assert t.ERROR in mem.text()
+
+
+def test_live_backend_without_a_write_health_reading_is_unknown_not_green():
+    """B6 regression: liveness is not health.
+
+    This is the incident, reduced. For two days the memory cell rendered OK
+    because ``moneta_live`` was True, while the store refused every write. A
+    snapshot that reports a live backend but carries NO write_health reading is
+    a store that was never asked -- which is UNKNOWN. It must not be green, and
+    it must not be red either: nothing measured says it is sick.
+    """
+    snap = hs.StripSnapshot(
+        connection="ok",
+        memory={"fallback": None, "backend": "MonetaBackedStore", "moneta_live": True},
+    )
+    cell = {c.key: c for c in hs.build_cells(snap)}["memory"]
+    assert cell.verdict == hs.Verdict.UNKNOWN
+    assert cell.color != t.GROW, "a store nobody asked about must never render green"
+
+
+def test_degraded_store_with_an_empty_reason_still_reads_sick():
+    """The sick verdict comes from the boolean, never from the reason text.
+
+    An earlier implementation returned ``{"sick": bool(sick_reason)}``, so a
+    store reporting ``is_degraded=True`` with an empty ``degraded_reason``
+    rendered GREEN -- the panel inferring health from whether anyone had
+    bothered to write a sentence about it. Found adversarially.
+    """
+    class _Degraded:
+        is_degraded = True
+        degraded_reason = ""          # deliberately empty
+
+    reading = hs._read_write_health(_Degraded())
+    assert reading is not None, "the store answered; this is not UNKNOWN"
+    assert reading["sick"] is True, "degraded=True must be sick regardless of reason text"

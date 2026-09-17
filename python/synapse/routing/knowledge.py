@@ -12,11 +12,14 @@ Degrades gracefully:
 """
 
 import json
+import logging
 import os
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
+
+logger = logging.getLogger(__name__)
 
 # W4-KNOW Target 3: default result count for the node/disambiguation path. Mirrors
 # the MCP tool schema default so lookup(query, k=...) and the tool agree.
@@ -787,13 +790,45 @@ class KnowledgeIndex:
         )
 
     def _match_memory(self, query: str) -> Optional[KnowledgeLookupResult]:
-        """Search memory as final fallback."""
+        """Search memory as final fallback -- the artist's own store, last tier.
+
+        B4 defect 2: this called ``self._memory.search(text=query, limit=3)``.
+        There is no ``text`` parameter. The bound method is
+        ``SynapseMemory.search(query, limit=20, memory_types=None, tier=None)``
+        (python/synapse/memory/store.py) -- ``text`` is a field of the
+        ``MemoryQuery`` that method BUILDS internally, never a keyword of the
+        call. So every invocation raised TypeError before touching the store,
+        the bare ``except Exception: return None`` below ate it, and this tier
+        returned "no match" for its entire life while looking exactly like an
+        empty store. The sibling caller got it right
+        (routing/context_enrichment.py: ``memory.search(query=message,
+        limit=memory_limit)``), which is why Tier 2 enrichment was merely
+        starved of a handle while Tier 1 was broken outright.
+
+        The narrowed except is the other half of the fix. A miss is an empty
+        list; an EXCEPTION here means the call does not match the store or the
+        store itself is failing, and that is a wiring fault, not a retrieval
+        result. It is logged loudly so the next signature drift names itself in
+        the log within one turn instead of costing days of silent memory loss.
+        """
         if not self._memory:
             return None
 
         try:
-            results = self._memory.search(text=query, limit=3)
-        except Exception:
+            results = self._memory.search(query=query, limit=3)
+        except Exception as exc:
+            # Still caught, not raised: a knowledge lookup must never take down
+            # the chat turn that asked for it. But never again silent -- the
+            # exception TYPE and the call shape both go in the record, so the
+            # reader can tell a broken signature (TypeError) from a degraded
+            # store (its own error) without a debugger.
+            logger.warning(
+                "Memory search failed -- %s: %s. Call was "
+                "%s.search(query=<%d chars>, limit=3). The Tier 1 memory "
+                "fallback is returning nothing for EVERY query until this is "
+                "fixed.",
+                type(exc).__name__, exc, type(self._memory).__name__, len(query),
+            )
             return None
 
         if not results:

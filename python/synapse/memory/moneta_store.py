@@ -23,6 +23,7 @@ a durable handle; tests inject an ephemeral one.
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -35,6 +36,25 @@ logger = logging.getLogger(__name__)
 
 # Importance -> protected_floor. Pinned memories resist Moneta's decay.
 _DEFAULT_PROTECTED_FLOOR = 0.9
+
+# B1 -- the switch that arms the opportunistic prune inside ``add()``.
+# Default OFF. The measured case for defaulting it OFF is recorded in full on
+# the branch itself (see ``MonetaBackedStore.add``); do not re-arm it from here
+# without reading that block first.
+AUTO_CONSOLIDATE_ENV = "SYNAPSE_AUTO_CONSOLIDATE"
+_TRUTHY = ("1", "true", "yes", "on")
+
+
+def _auto_consolidate_env_armed() -> bool:
+    """True only when ``$SYNAPSE_AUTO_CONSOLIDATE`` is explicitly truthy.
+
+    Same shape as ``core.floor_gate._fsync_is_synchronous`` and ``core.logfile``
+    -- absent, empty, or unparseable all read as OFF, so a typo in the launching
+    shell disarms a destructive path rather than arming one. The asymmetry is
+    deliberate: the cost of a missed prune is disk, the cost of an unwanted
+    prune is user memory that nothing can give back.
+    """
+    return os.environ.get(AUTO_CONSOLIDATE_ENV, "").strip().lower() in _TRUTHY
 
 
 @dataclass(frozen=True)
@@ -208,12 +228,25 @@ class MonetaBackedStore:
         self._add_count: int = 0
         self._load_issue: Optional[str] = None
         self._strict_deposit_failed = False
+        # B1: the "consolidation is due and is being skipped" warning is latched
+        # to ONE line per store. The condition it reports stays true on every
+        # hundredth add for the rest of the process's life; logging it each time
+        # would bury the signal in the log nobody reads -- which is exactly how
+        # a DEGRADED store went unnoticed for two days.
+        self._auto_consolidate_skip_logged = False
 
     # Protected memories (decisions / show-tier / gate) are exactly the
     # keep-forever set, so the per-handle protected quota is set high: Moneta's
     # default 100 is a backstop that would silently demote the 101st pin to
     # prunable (CRUCIBLE finding). We never want that for SYNAPSE.
     _PROTECTED_QUOTA = 100_000
+
+    # B1: the opportunistic prune in ``add()`` is OPT-IN and defaults OFF.
+    # ``None`` means "no opinion here, defer to $SYNAPSE_AUTO_CONSOLIDATE"; a
+    # test or an operator pins it per-instance
+    # (``store.auto_consolidate = True``/``False``) without mutating the process
+    # environment, which no test can do safely while it shares an interpreter.
+    auto_consolidate: Optional[bool] = None
 
     @classmethod
     def from_storage_dir(
@@ -725,21 +758,38 @@ class MonetaBackedStore:
             else:
                 self.save()  # legacy best-effort acknowledgement
             # Opportunistic consolidation: every 100 adds, if the engine has
-            # more than 1000 entities, run a sleep pass to keep memory bounded.
+            # more than 1000 entities, CONSIDER a sleep pass to keep memory
+            # bounded.
+            #
+            # B1 (2026-09-17) -- THIS BRANCH IS NOW OPT-IN AND DEFAULTS OFF.
+            # Do not re-arm it by deleting the switch. What was measured before
+            # it was disarmed:
+            #
+            #   * add() defaults to require_durable=False and the live
+            #     scene-memory writers call it bare, so this branch was LIVE on
+            #     the PRIMARY substrate -- not a test-only path.
+            #   * the engine held 1119 entities, rising ~111/day. The threshold
+            #     is >1000, so the size condition was already crossed: this was
+            #     armed and waiting on an add counter, not theoretical.
+            #   * Moneta's prune rule deletes utility < 0.1 AND
+            #     attended_count < 3. Against the 6-hour utility half-life that
+            #     is every unprotected record older than roughly 20 hours. An
+            #     audit measured 560 live rows qualifying.
+            #   * 253 of those 560 existed in Moneta ONLY -- no JSONL mirror, no
+            #     cortex copy. Pruning them is PERMANENT, unrecoverable loss of
+            #     the artist's own memory.
+            #   * it had never once fired: `grep -c "Consolidation pruned"` over
+            #     the production log returned 0. Nothing in the product depends
+            #     on this branch having run, so disarming it breaks nothing.
+            #
+            # The APPROVE consent gate on the synapse_sleep_pass tool guards the
+            # MANUAL call only. This branch reached the same destructive prune
+            # without ever passing that gate -- an automatic destructive
+            # operation the artist never asked for. run_sleep_pass() itself is
+            # deliberately untouched: the capability is intact, the ambush is not.
             self._add_count += 1
             if not require_durable and self._add_count % 100 == 0 and self._handle.ecs.n > 1000:
-                try:
-                    audit = self.run_sleep_pass()
-                    if audit.pruned > 0:
-                        logger.info(
-                            "Consolidation pruned %d memories (before=%d, after=%d)",
-                            audit.pruned, audit.count_before, audit.count_after,
-                        )
-                except Exception as exc:
-                    logger.warning(
-                        "Periodic consolidation failed (%s: %s); continuing",
-                        type(exc).__name__, exc,
-                    )
+                self._maybe_auto_consolidate()
 
             # W3-STORE secondary sinks (still under the lock so the cortex stage
             # mutation is serialized against reads). The moneta deposit +
@@ -750,6 +800,165 @@ class MonetaBackedStore:
             self._write_cortex(memory, payload)
             self._dual_write_jsonl(memory)
         return memory.id
+
+    # -- B1: the automatic-prune switch + its mirror-safety precondition ----
+
+    def _auto_consolidate_armed(self) -> bool:
+        """Is the UNASKED prune inside ``add()`` allowed to run at all?
+
+        The instance/class attribute wins over the environment, so a caller that
+        has deliberately armed (or disarmed) THIS store is never overridden by a
+        stray ``SYNAPSE_AUTO_CONSOLIDATE`` inherited from the launching shell.
+        ``None`` (the default) falls through to the environment, which itself
+        defaults to OFF.
+        """
+        override = self.auto_consolidate
+        if override is not None:
+            return bool(override)
+        return _auto_consolidate_env_armed()
+
+    def _mirror_gap_blocking_prune(self) -> Optional[str]:
+        """Reason to REFUSE an automatic prune, or ``None`` when every live
+        record demonstrably has a second copy.
+
+        The exact prune set is not knowable from here in advance. Moneta decides
+        it inside its own ``run_sleep_pass`` (utility < 0.1 AND
+        attended_count < 3), and :class:`PruneAudit` can only recover it by
+        diffing survivors AFTER the deletion has already happened. So this
+        checks the conservative SUPERSET -- every live record -- and refuses if
+        any single one of them exists in Moneta only. Over-refusing costs a
+        skipped prune and some disk; under-refusing costs memories no mirror can
+        give back. The audit that produced this guard found 253 such single-copy
+        rows out of 1119, so the gap is measured, not hypothetical.
+
+        A second copy is a row in the JSONL safety net (``_jsonl_net``) or a
+        cortex prim carrying a NON-EMPTY payload. An id-only cortex prim is not
+        a recovery source, so it does not count as one.
+
+        Protected records are deliberately NOT excluded from the superset:
+        ``add()`` falls back to an UNPROTECTED deposit when the protected quota
+        rejects one, so ``_is_protected(memory)`` states our intent, not what the
+        ECS will actually spare.
+
+        Any failure to read a mirror is itself a refusal. "I could not check"
+        and "it is safe" are different answers, and only one of them is honest.
+        """
+        try:
+            live_ids = {m.id for m in self._iter_memories()}
+        except Exception as exc:  # noqa: BLE001 -- cannot enumerate => cannot clear
+            return ("the live Moneta rows could not be enumerated "
+                    f"({type(exc).__name__}: {exc})")
+        if not live_ids:
+            return None  # nothing on the table to lose
+
+        mirrored = set()
+        sinks_read = 0
+
+        net = self._jsonl_net
+        if net is not None:
+            try:
+                # Lock order (this store's _lock -> the JSONL net's own lock) is
+                # the SAME order _dual_write_jsonl already takes on every add(),
+                # so this read introduces no new inversion. A DEGRADED net whose
+                # all() comes back short simply widens the gap and refuses --
+                # the safe direction.
+                mirrored.update(m.id for m in net.all())
+                sinks_read += 1
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Mirror-safety check could not read the JSONL safety net "
+                    "(%s: %s); counting its coverage as zero",
+                    type(exc).__name__, exc,
+                )
+
+        cortex = self._cortex
+        if cortex is not None and getattr(cortex, "available", False):
+            try:
+                mirrored.update(
+                    str(row.get("id"))
+                    for row in cortex.query()
+                    if row.get("id") and row.get("payload")
+                )
+                sinks_read += 1
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Mirror-safety check could not read the cortex stage "
+                    "(%s: %s); counting its coverage as zero",
+                    type(exc).__name__, exc,
+                )
+
+        if sinks_read == 0:
+            return ("no readable mirror is attached -- the JSONL safety net and "
+                    "the cortex stage are both absent or unreadable -- so all "
+                    f"{len(live_ids)} live records are single-copy")
+
+        gap = live_ids - mirrored
+        if gap:
+            return (f"{len(gap)} of {len(live_ids)} live records exist in Moneta "
+                    f"only, with no mirror copy (e.g. {sorted(gap)[:5]})")
+        return None
+
+    def _maybe_auto_consolidate(self) -> None:
+        """Run the opportunistic prune only if ARMED and provably RECOVERABLE.
+
+        Called from ``add()`` with ``self._lock`` already held; the lock is an
+        RLock, so ``run_sleep_pass`` re-entering it is fine. Two independent
+        refusals, checked in this order:
+
+        1. the switch (``auto_consolidate`` / ``$SYNAPSE_AUTO_CONSOLIDATE``),
+           which defaults OFF -- a destructive operation the artist never asked
+           for needs an explicit yes;
+        2. the mirror-safety precondition, which applies EVEN WHEN ARMED,
+           because "the operator armed consolidation" is not the same claim as
+           "everything this prune would delete can be recovered afterwards".
+
+        Never raises. A consolidation problem must not fail the caller's add() --
+        the memory the caller just deposited is already durable by this point.
+        """
+        n = self._handle.ecs.n
+
+        if not self._auto_consolidate_armed():
+            if not self._auto_consolidate_skip_logged:
+                self._auto_consolidate_skip_logged = True
+                logger.warning(
+                    "Consolidation is due (%d entities) and is being SKIPPED: "
+                    "the automatic prune is opt-in and currently disabled. Run "
+                    "it deliberately through the APPROVE-gated "
+                    "synapse_sleep_pass tool, or arm the automatic path with "
+                    "%s=1. This warning is latched -- one line per store, not "
+                    "one per hundred adds.",
+                    n, AUTO_CONSOLIDATE_ENV,
+                )
+            return
+
+        refusal = self._mirror_gap_blocking_prune()
+        if refusal is not None:
+            # Deliberately NOT latched. The disabled case is a steady state
+            # worth exactly one line; an ARMED prune blocked by missing mirrors
+            # is an operator who asked for something they are not getting, and
+            # they should keep hearing it until the mirror is repaired. Above
+            # the >1000-entity threshold that is at most one line per 100 adds.
+            logger.warning(
+                "Automatic consolidation is ARMED and due (%d entities) but "
+                "REFUSED: %s. Pruning here would be unrecoverable. Repair the "
+                "mirror, or prune deliberately through the APPROVE-gated "
+                "synapse_sleep_pass tool, which hands you the audit.",
+                n, refusal,
+            )
+            return
+
+        try:
+            audit = self.run_sleep_pass()
+            if audit.pruned > 0:
+                logger.info(
+                    "Consolidation pruned %d memories (before=%d, after=%d)",
+                    audit.pruned, audit.count_before, audit.count_after,
+                )
+        except Exception as exc:  # noqa: BLE001 -- never fail the caller's add()
+            logger.warning(
+                "Periodic consolidation failed (%s: %s); continuing",
+                type(exc).__name__, exc,
+            )
 
     # -- W3-STORE secondary sinks (isolated; never break the primary write) --
 
