@@ -411,40 +411,54 @@ def _read_write_health(live_store: Any) -> Any:
     sick_reason = ""
     for obj in candidates:
         try:
+            # health() IS THE CONTRACT, so it is asked FIRST -- not as a fallback.
+            # An earlier version read the is_degraded property first and `continue`d
+            # on it, which made the dict branch unreachable for every real
+            # MemoryStore (it has the property). Signals that live only in the dict
+            # -- writable, overwrote_prior -- could therefore never reach a verdict,
+            # and a store that had overwritten stored data still rendered green.
+            # A guard the real object cannot reach is not a guard.
+            reading = None
+            probe = getattr(obj, "health", None)
+            if callable(probe):
+                candidate = probe()
+                if isinstance(candidate, dict):
+                    reading = candidate
+
+            if reading is not None:
+                degraded = reading.get("degraded")
+                writable = reading.get("writable")
+                overwrote = reading.get("overwrote_prior") or 0
+                if not isinstance(degraded, bool) or not isinstance(writable, bool):
+                    continue  # a reading we cannot interpret is not an answer
+                answered = True
+                overwrote_n = overwrote if isinstance(overwrote, int) and overwrote > 0 else 0
+                if degraded or not writable or overwrote_n:
+                    # SICKNESS IS THE BOOLEAN, NEVER THE TEXT. An earlier version
+                    # returned {"sick": bool(sick_reason)}, so a store reporting
+                    # degraded with an EMPTY reason rendered green -- the cell
+                    # inferring health from whether anyone had written a sentence
+                    # about it. Also covers non-degraded-but-unwritable (a store
+                    # still loading): not sick for the incident's reason, but
+                    # definitively not green.
+                    sick = True
+                    if not sick_reason:
+                        sick_reason = str(reading.get("reason") or "")
+                    if not sick_reason and overwrote_n:
+                        sick_reason = ("%d write(s) overwrote data already stored -- "
+                                       "tags and scene context were replaced" % overwrote_n)
+                continue
+
+            # No health(): an older store, a stub or a different backend. The
+            # property form is the fallback, and an object with neither stays
+            # UNANSWERED -- which is UNKNOWN, never OK.
             degraded = getattr(obj, "is_degraded", None)
             if isinstance(degraded, bool):
                 answered = True
                 if degraded:
-                    # SICKNESS IS THE BOOLEAN, NEVER THE TEXT. An earlier version
-                    # returned {"sick": bool(sick_reason)}, so a store reporting
-                    # is_degraded=True with an EMPTY degraded_reason rendered
-                    # green -- the cell inferring health from whether anyone had
-                    # written a sentence about it. Adversarially measured.
                     sick = True
                     if not sick_reason:
                         sick_reason = str(getattr(obj, "degraded_reason", "") or "")
-                continue
-            # No properties: fall back to the contract's dict form. An older
-            # store, a stub or a different backend has neither, and stays
-            # unanswered — which is UNKNOWN, never OK.
-            health = getattr(obj, "health", None)
-            if not callable(health):
-                continue
-            reading = health()
-            if not isinstance(reading, dict):
-                continue
-            degraded = reading.get("degraded")
-            writable = reading.get("writable")
-            if not isinstance(degraded, bool) or not isinstance(writable, bool):
-                continue  # a reading we cannot interpret is not an answer
-            answered = True
-            if degraded or not writable:
-                # Covers the non-degraded-but-unwritable state too: a store
-                # still loading reports degraded=False, writable=False. Not
-                # sick for the incident's reason, but definitively NOT green.
-                sick = True
-                if not sick_reason:
-                    sick_reason = str(reading.get("reason") or "")
         except Exception:
             continue  # one unreadable object never decides the cell
 
