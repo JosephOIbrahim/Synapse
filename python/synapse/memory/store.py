@@ -235,6 +235,11 @@ class MemoryStore:
         # never break its caller, which swallows anything we throw. The counter
         # is what survives that swallow and reaches health().
         self._rejected_writes = 0
+        # Counted SEPARATELY from _rejected_writes. That counter also rises on
+        # add_durable_if_absent's CORRECT idempotency refusal, so it cannot be
+        # promoted to a health signal without false-positiving every deposit.
+        # This one rises only where prior data was actually overwritten.
+        self._overwrote_prior = 0
         self._rejection_lock = threading.Lock()
         self._loaded = threading.Event()
 
@@ -560,7 +565,8 @@ class MemoryStore:
         """Operator-readable verdict on this store. ALWAYS five keys, NEVER raises.
 
         ``{"degraded": bool, "reason": str, "writable": bool,
-           "records": int, "rejected_writes": int}``
+           "records": int, "rejected_writes": int,
+           "overwrote_prior": int}``
 
         - ``writable`` is derived from ``_write_refusal_reason()`` — the same
           predicate ``_require_writable_load()`` enforces — so "health says
@@ -569,6 +575,11 @@ class MemoryStore:
           counts every write this store refused or downgraded, including
           collision downgrades in ``add()`` that never reached the caller
           because the dual-write net swallowed them.
+        - ``overwrote_prior`` counts ONLY writes that replaced data already in the
+          store -- the add() collision downgrade. It is deliberately separate from
+          ``rejected_writes``, which also rises on ``add_durable_if_absent``'s
+          CORRECT idempotency refusal and so cannot be read as a fault on its own.
+          A non-zero value here means metadata was lost and nothing raised.
         - A health check that throws is not a health check: any failure returns
           the fail-closed defaults below (degraded, unwritable) rather than a
           green answer or an exception.
@@ -581,6 +592,7 @@ class MemoryStore:
             "writable": False,
             "records": -1,
             "rejected_writes": -1,
+            "overwrote_prior": -1,
         }
         try:
             degraded = bool(self._degraded_load)
@@ -592,6 +604,7 @@ class MemoryStore:
             records = len(self._memories)
             with self._rejection_lock:
                 rejected = self._rejected_writes
+                overwrote = self._overwrote_prior
         except Exception as exc:  # noqa: BLE001 -- a health check that throws is not a health check
             report["reason"] = f"health probe failed: {exc}"
             logger.warning("MemoryStore.health() probe failed: %s", exc)
@@ -603,6 +616,7 @@ class MemoryStore:
             writable=writable,
             records=records,
             rejected_writes=rejected,
+            overwrote_prior=overwrote,
         )
         return report
 
@@ -739,8 +753,18 @@ class MemoryStore:
             # return, seed_corpus.py:179 counts it as written, vex_capture.py:112
             # hands it back as the id -- all three would report success over a
             # write that never landed. That is the SAME silent-failure class this
-            # whole incident is about, so it was removed. A write is routed or it
-            # is loud; it is never quietly dropped.
+            # whole incident is about, so it was removed. The WRITE is always
+            # routed -- never discarded while reporting success.
+            #
+            # BUT BE PRECISE ABOUT WHAT IS LOST. update() makes the INCOMING record
+            # win, and in the incident's own shape the incoming record is the
+            # metadata-stripped twin. So the prior record's tags, hip_file and frame
+            # ARE replaced, and add() returns success. Pre-fix that was loud, late
+            # and recoverable (the line stayed on disk and the next load screamed);
+            # here it is quiet and immediate. Bounded, not absent -- content
+            # participates in the id, so a collision is metadata-only and never a
+            # lost edit. It is counted into health()["overwrote_prior"], which the
+            # health surfaces read as NOT-green precisely so it cannot pass as fine.
             #
             # Losing metadata is not the risk it looks like, because CONTENT
             # PARTICIPATES IN THE ID (models.py:157-162 hashes
@@ -751,6 +775,8 @@ class MemoryStore:
             # scene_memory.py's deposit is now suppressed for callers that
             # already deposited (see tracker.py:507). This guard is the backstop
             # behind that fix, not the fix itself.
+            with self._write_lock:
+                self._overwrote_prior += 1
             self._note_rejected_write(
                 f"add() for existing id {memory.id!r} carries different content; "
                 "appending it would plant a conflicting duplicate identity and "

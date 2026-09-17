@@ -411,7 +411,8 @@ def _ask_one_store_health(label: str, obj: Any) -> Dict[str, Any]:
                 % (label, type(reading).__name__)}
 
     row: Dict[str, Any] = {"answered": True}
-    for key in ("degraded", "reason", "writable", "records", "rejected_writes"):
+    for key in ("degraded", "reason", "writable", "records", "rejected_writes",
+                "overwrote_prior"):
         row[key] = reading.get(key)
 
     degraded = row.get("degraded")
@@ -426,7 +427,7 @@ def _ask_one_store_health(label: str, obj: Any) -> Dict[str, Any]:
             "(degraded=%r, writable=%r)" % (label, degraded, writable))
         return row
 
-    row["sick"] = bool(degraded) or not writable
+    row["sick"] = bool(degraded) or not writable or bool(row.get("overwrote_prior"))
     return row
 
 
@@ -457,6 +458,13 @@ def read_store_write_health(store: Any) -> Dict[str, Any]:
        a store refuse writes for two days behind a green light.
     3. else -> ``ok``, and it is a real ok: at least one contract-bearing store
        affirmatively said it is accepting writes.
+
+    ``overwrote_prior`` DOES set the verdict. It counts only writes that replaced
+    data already in the store -- the add() collision downgrade, where the incoming
+    record wins and the prior record's tags, hip_file and frame are lost while
+    add() returns success. Nothing raises on that path (the dual-write net swallows
+    it), so if this counter did not reach a verdict the loss would be invisible,
+    which is the exact failure this whole module exists to end.
 
     ``rejected_writes`` is REPORTED but does not by itself set the verdict. It
     is a lifetime counter, and when it is non-zero the cause is already carried
