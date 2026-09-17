@@ -71,12 +71,45 @@ green — the gate would pass on a store that could not fail.
 
 | Artifact | Path |
 |---|---|
-| Pre-repair backup (mirror) | `.synapse/memory.jsonl.pre-repair-1789674797` |
+| Pre-repair snapshot (mirror) | `.synapse/memory.jsonl.pre-repair-1789674797` |
 | Primary store backup | `~/.synapse/backups/moneta-2026-09-17-preprune/` (9.1 MB, sha `f914a51c18e4b45b10b8984d`) |
-| Auto-quarantine copies | 11 × byte-identical `.degraded-load-*`, one distinct state |
+| Auto-quarantine copies | 11 × `.degraded-load-*` |
 | Producer scripts | `analyze.py` / `repair.py`, this directory |
 
-Fully reversible: restore the pre-repair backup over `memory.jsonl`.
+### Correction — the pre-repair snapshot is NOT a restore point
+
+An earlier draft of this record said *"fully reversible: restore the pre-repair backup over
+`memory.jsonl`."* **That was wrong, and acting on it would re-break the store.**
+
+That file still contains the five conflicting duplicate pairs. Copying it back over `memory.jsonl`
+re-enters DEGRADED mode on the next load, refuses every write again, and restarts the quarantine
+copy spray. It is also 253+ records behind the live store. It is **forensic evidence**, not a
+rollback.
+
+There is no clean rollback to the pre-repair state, and there does not need to be: the repair is
+additive-safe — it only removed lines whose ids survive, verified field-by-field across all 841.
+
+Two further facts established by the adjudication pass, both of which matter more than the copies:
+
+- **All twelve files are byte-identical** — the 11 `.degraded-load-*` *and* the `pre-repair-*`
+  snapshot share sha `2d8cc01b70b265fcbab7ec86a11683bf82d2ba3b50ad422aae3083b29f5ff120`. The
+  "clean backup" is the twelfth copy of one state, not a distinct one.
+- **`~/.synapse/encryption.key` is a single point of failure.** 44 bytes, fingerprint `6aa8f313`,
+  one copy on the machine, gitignored (`*.key`). Every line of every store file is Fernet
+  ciphertext. Without that key all of the above are dead bytes, and it sits in a directory nobody
+  looks at during a store cleanup.
+
+### The store is not scratch
+
+It resolves to `%LOCALAPPDATA%/Temp/houdini_temp/untitled/` only because the scene is unsaved. Its
+contents are not scratch: 20 distinct `hip_file` values spanning `D:/HOUDINI_PROJECTS_2025`
+(Alien_Invasion_Western, Alien_Spaceship_Saucer v075B/v076/v077), `D:/HOUDINI_PROJECTS_2026`,
+`D:/MODEL_COLLECTION`, and eight OneDrive revisions — months of cross-project memory living in the
+directory Windows Storage Sense and Disk Cleanup target by policy.
+
+Saving the scene does **not** move it. `scene_memory.py:259` resolves an unsaved hip to
+`unsaved_memory_base()` and a saved hip to the `.hip`'s own folder — a different, empty store. No
+migration code exists in the tree.
 
 ---
 
