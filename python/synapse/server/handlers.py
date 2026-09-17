@@ -1750,10 +1750,40 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         message = resolve_param(payload, "content")
         context = payload.get("context", {})
 
+        # Borrow the current memory owner once per turn. This is the handle the
+        # memory handlers themselves write to -- see _memory_owner() -- so the
+        # chat cascade reads the same store synapse_add_memory/synapse_decide
+        # write into, not a private second one.
+        owner = self._memory_owner()
+
         if not hasattr(self, "_router"):
             api_key = os.environ.get("ANTHROPIC_API_KEY")
             config = RoutingConfig(llm_api_key=api_key) if api_key else None
-            self._router = TieredRouter(config=config)
+            # B4 defect 1: this read `TieredRouter(config=config)` -- no memory=.
+            # TieredRouter._memory therefore stayed None for the life of the
+            # process, which killed the memory tier in TWO places at once:
+            #   * the router built its KnowledgeIndex with memory=None
+            #     (router.py: KnowledgeIndex(rag_root=..., memory=memory)), so
+            #     KnowledgeIndex._match_memory returned at its `if not
+            #     self._memory` guard on every chat turn -- Tier 1's memory
+            #     fallback was unreachable, not merely empty;
+            #   * Tier 2 called enrich_context(memory=None), so the LLM prompt
+            #     carried no <memory> block.
+            # Net effect: memory reached a chat turn only when the model chose
+            # to volunteer a recall tool call. A validated recipe could sit in
+            # the store while the agent that needed it never saw it.
+            # None is still legal here (no host, CI, bridge not up): both
+            # consumers guard on it. What must not happen is never passing it.
+            self._router = TieredRouter(config=config, memory=owner)
+
+        # The router is constructed once and cached for the life of this handler,
+        # but the memory owner is REPLACED on every scene rebind. Re-point it per
+        # turn -- the same correction _get_knowledge_index() applies to the shared
+        # index -- or the rest of the session answers from the closed scene's
+        # store. Runs on the construction turn too, so the path is exercised from
+        # the first message rather than only after a rebind.
+        self._repoint_router_memory(owner)
+
         result = self._router.route(message, context=context)
 
         return {
@@ -1797,6 +1827,58 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
         from .live_metrics import snapshot_to_dict
         return snapshot_to_dict(snapshot)
+
+    def _memory_owner(self):
+        """Borrow the SynapseMemory the memory handlers themselves write to.
+
+        One authority, not a second one: this goes through ``_memory_on_main``
+        -- the exact hop ``_handle_memory_add`` / ``_handle_memory_recall`` use
+        -- so ``refresh_memory_owner()`` runs first and the handle returned is
+        the CURRENT scene's store, never a retained closed one. Reading memory
+        off a privately cached handle is how a rebind starts answering from the
+        previous scene.
+
+        Never raises. Returns None when there is no host, no bridge, or the main
+        thread did not answer inside the marshal timeout. Every consumer already
+        guards on None (``KnowledgeIndex._match_memory`` returns at its first
+        line; ``enrich_context`` skips its <memory> block), so None costs that
+        turn its memory tier -- while a stale handle would cost correctness.
+        The failure is logged at WARNING, not swallowed: a memory tier that goes
+        quiet is exactly the fault that hid for two days here.
+        """
+        try:
+            return self._memory_on_main(
+                lambda bridge: getattr(bridge, "_synapse", None)
+            )
+        except Exception as exc:
+            _log.warning(
+                "Chat router could not borrow the memory owner (%s: %s); this "
+                "turn answers without the memory tier.",
+                type(exc).__name__, exc,
+            )
+            return None
+
+    def _repoint_router_memory(self, owner) -> None:
+        """Point the cached chat router -- and its Tier 1 index -- at *owner*.
+
+        ``TieredRouter`` keeps the handle it was built with in two places:
+        ``router._memory`` (read by Tier 2's ``enrich_context``) and
+        ``router._knowledge._memory`` (read by ``KnowledgeIndex._match_memory``).
+        Both are re-pointed, because fixing only one leaves half the memory tier
+        aimed at the previous scene.
+
+        Defensive on purpose: a router that does not carry those attributes (an
+        older object, a test double) is left untouched rather than failing a
+        chat turn over a private-attribute assumption.
+        """
+        router = getattr(self, "_router", None)
+        if router is None:
+            return
+        if hasattr(router, "_memory"):
+            router._memory = owner
+        knowledge = getattr(router, "_knowledge", None)
+        if knowledge is not None and hasattr(knowledge, "_memory"):
+            knowledge._memory = owner
 
     def _get_knowledge_index(self):
         """Lazy-init and return the shared RAG KnowledgeIndex (or None).

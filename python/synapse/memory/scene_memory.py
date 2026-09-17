@@ -699,9 +699,32 @@ def compact_memory(scene_dir: str, dry_run: bool = True, backup: bool = True) ->
     return report
 
 
-def write_memory_entry(scene_dir: str, entry: Dict[str, Any], entry_type: str) -> None:
+class _SkipMonetaDeposit(Exception):
+    """Internal control-flow sentinel: the caller already deposited this content."""
+
+
+def write_memory_entry(scene_dir: str, entry: Dict[str, Any], entry_type: str,
+                       deposit_to_moneta: bool = True) -> None:
     """
     Write a memory entry to the scene's memory file.
+
+    ``deposit_to_moneta`` exists because this function is called from two kinds of
+    place. Most callers write scene memory and nothing else, and want the Moneta
+    deposit below so the entry is recallable. But ``session/tracker.py:507`` calls
+    it immediately after ``tracker.py:492`` has ALREADY deposited the same content
+    into the same Moneta store as a RICH record (source="ai", tags, hip_file,
+    frame). The deposit below would then write the same content a SECOND time with
+    every one of those fields at its dataclass default.
+
+    That second write is the measured root cause of the 2026-09-15 outage. Both
+    records hash to the same id -- ``models.py:157-162`` hashes only
+    ``content:created_at:memory_type`` at WHOLE-SECOND granularity -- so one
+    logical add produced two lines with one identity and different payloads, which
+    is exactly the condition ``store.py:353-358`` degrades the entire store on.
+    It refused every write for two days.
+
+    Callers that have already deposited pass ``deposit_to_moneta=False``. The
+    ``add()`` collision guard is the backstop; this is the fix.
 
     entry_type: session_start, session_end, decision, parameter_experiment,
                 blocker, blocker_resolved, asset_reference, wedge_result, note
@@ -721,8 +744,13 @@ def write_memory_entry(scene_dir: str, entry: Dict[str, Any], entry_type: str) -
     if writer:
         writer()
 
-        # Also deposit into the Moneta store for unified recall
+        # Also deposit into the Moneta store for unified recall -- unless the
+        # caller already deposited this content (see the docstring: a second
+        # deposit of the same content in the same second collides by id and
+        # degrades the store).
         try:
+            if not deposit_to_moneta:
+                raise _SkipMonetaDeposit
             from .store import get_synapse_memory, MemoryStore
             syn = get_synapse_memory()
             if hasattr(syn.store, 'add') and not isinstance(syn.store, MemoryStore):
@@ -736,6 +764,11 @@ def write_memory_entry(scene_dir: str, entry: Dict[str, Any], entry_type: str) -
                     "Moneta deposit from scene_memory succeeded: type=%s, tags=%s",
                     entry_type, entry.get("tags", []),
                 )
+        except _SkipMonetaDeposit:
+            logger.debug(
+                "Moneta deposit skipped: the caller already deposited this content "
+                "(entry_type=%s). A second deposit would collide by id.", entry_type,
+            )
         except Exception as exc:
             logger.debug("Moneta deposit from scene_memory failed (non-critical): %s", exc)
 

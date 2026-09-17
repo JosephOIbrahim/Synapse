@@ -26,7 +26,11 @@ CONTRACT
     LIVE store itself is degraded — the serving store class is jsonl while
     moneta/shadow was selected, ``store.count()`` cannot enumerate it, or a
     Moneta store has no durability layer (``store_health()``, W3-HARDEN target
-    3). ``reason`` names what and why; the ``store`` field carries the evidence.
+    3), or the store ITSELF reports that it is refusing writes (B6 -- the
+    authoritative check, added after a store refused every write for two days
+    while the other three read green; a store that cannot answer reads
+    ``unknown``, never ``ok``). ``reason`` names what and why; the ``store``
+    field carries the evidence.
 ``unknown``
     The check could not run. This is a legitimate value and it is NOT ``ok`` —
     a false ``ok`` is the exact bug this module exists to remove.
@@ -104,6 +108,7 @@ __all__ = [
     "resolve_reports_base_dir",
     "resolve_memory_target_dir",
     "probe_dir_writable",
+    "read_store_write_health",
 ]
 
 # Bounded so an absurd/unresolvable path can never spin the health call.
@@ -299,6 +304,230 @@ _JSONL_STORE_CLASSES = {"MemoryStore"}
 _MONETA_STORE_CLASSES = {"MonetaBackedStore"}
 
 
+# ---------------------------------------------------------------------------
+# B6 — the store's OWN write-health verdict (the 2026-09-15 blind spot)
+# ---------------------------------------------------------------------------
+#
+# WHY THIS EXISTS, MEASURED
+# -------------------------
+# Between 2026-09-15 15:09 and 2026-09-17 15:53 a MemoryStore sat DEGRADED and
+# refused EVERY write for ~2 days, and every health surface in this repo kept
+# reporting ok. One bad line did it: ``MemoryStore.add`` appended a second JSONL
+# line for an id that already existed with different content; ``_load``
+# (store.py:355-362) raises "conflicting duplicate memory identity" on the second
+# differing canonical, and store.py:396-401 degrades the WHOLE store on a
+# non-empty unreadable list. Thereafter ``_require_writable_load`` refused every
+# write. The only trace was a log line nobody reads.
+#
+# ``store_health()``'s three existing checks were ALL TRUE throughout:
+#   1. the serving class matched the requested backend,
+#   2. ``store.count()`` did not raise -- and worse, it returned a NORMAL number,
+#      because ``_load`` keeps the FIRST occurrence of a duplicated id and only
+#      the second raises, so the record count is not evidence of health,
+#   3. durability was not None.
+# Three green facts about a store that had not accepted a write in two days.
+#
+# The missing fact was never derivable from outside the store: only the store
+# knows it degraded its own load. Lane B3 makes it askable -- ``is_degraded`` /
+# ``degraded_reason`` / ``health()`` on ``MemoryStore`` -- and this reader is the
+# consumer. It is the AUTHORITATIVE signal of the four: a store that says it is
+# refusing writes is degraded no matter how healthy its class, count and
+# durability look.
+#
+# WHERE THE CONTRACT ACTUALLY LIVES (why we do not just ask the serving object)
+# ----------------------------------------------------------------------------
+# The pinned contract puts ``health()`` on ``MemoryStore`` -- the jsonl class.
+# But the store SERVING this process is usually not a bare ``MemoryStore``:
+#
+#   ``MonetaBackedStore._jsonl_net`` -- the JSONL dual-write safety net, built
+#       whenever ``SYNAPSE_MEMORY_BACKEND == "moneta"`` (moneta_store.py:348-357).
+#       THIS is the object that died in the incident: Moneta is the primary, and
+#       a mirror refusing every write is exactly the failure that leaves no mark
+#       on a Moneta-shaped health surface.
+#   ``ShadowMemoryStore.primary`` / ``.shadow`` -- shadow mode wraps two stores
+#       and serves the primary.
+#
+# So "is memory accepting writes" is asked of the serving object AND of the
+# contract-bearing stores it wraps. Asking only the facade would have reported
+# this incident as healthy a second time.
+_HEALTH_CONTRACT_MEMBERS = ("_jsonl_net", "primary", "shadow")
+
+
+def _health_contract_candidates(store: Any) -> list:
+    """The objects that can answer "are you accepting writes", nearest first.
+
+    The serving object itself, then the known contract-bearing stores it wraps
+    (see ``_HEALTH_CONTRACT_MEMBERS``). One level deep only and over a FIXED
+    name list -- no recursion, no ``__dict__`` walk. A health read must stay
+    O(1) and must not be able to spin on a cyclic wrapper.
+
+    Duplicates are collapsed by identity, so a facade exposing the same inner
+    store under two names is asked once.
+    """
+    out: list = []
+    seen_ids: set = set()
+
+    def _offer(label: str, obj: Any) -> None:
+        if obj is None or id(obj) in seen_ids:
+            return
+        seen_ids.add(id(obj))
+        out.append((label, obj))
+
+    _offer(type(store).__name__, store)
+    for member in _HEALTH_CONTRACT_MEMBERS:
+        try:
+            inner = getattr(store, member, None)
+        except Exception:  # noqa: BLE001 -- a property that raises is not an answer
+            continue
+        if inner is not None:
+            _offer("%s.%s" % (type(store).__name__, member), inner)
+    return out
+
+
+def _ask_one_store_health(label: str, obj: Any) -> Dict[str, Any]:
+    """Ask ONE object for its write-health. Never raises.
+
+    ``answered`` is the load-bearing field, and it is why this returns a dict
+    rather than a bool: "this store says it is healthy" and "this object could
+    not tell us" are different answers, and collapsing them into one green is
+    the exact failure that produced the two-day outage. An object with no
+    ``health()`` returns ``answered=False``, which the caller must resolve to
+    UNKNOWN -- never to ok.
+    """
+    health = getattr(obj, "health", None)
+    if not callable(health):
+        return {"answered": False, "detail":
+                "%s exposes no health() -- the store write-health contract "
+                "(is_degraded / degraded_reason / health) is absent on this "
+                "object, so its write state is unknown, not healthy" % label}
+    try:
+        reading = health()
+    except Exception as exc:  # noqa: BLE001 -- a health read must never raise
+        return {"answered": False, "detail":
+                "%s.health() raised (%s: %s)" % (label, type(exc).__name__, exc)}
+    if not isinstance(reading, dict):
+        return {"answered": False, "detail":
+                "%s.health() returned %s, not the contracted dict"
+                % (label, type(reading).__name__)}
+
+    row: Dict[str, Any] = {"answered": True}
+    for key in ("degraded", "reason", "writable", "records", "rejected_writes"):
+        row[key] = reading.get(key)
+
+    degraded = row.get("degraded")
+    writable = row.get("writable")
+    # A malformed answer is not an ok. The contract promises all five keys; when
+    # the two verdict-bearing ones are not the booleans it promises we hold a
+    # reading we cannot interpret, and an uninterpretable reading is UNKNOWN.
+    if not isinstance(degraded, bool) or not isinstance(writable, bool):
+        row["answered"] = False
+        row["detail"] = (
+            "%s.health() did not return bool degraded/writable "
+            "(degraded=%r, writable=%r)" % (label, degraded, writable))
+        return row
+
+    row["sick"] = bool(degraded) or not writable
+    return row
+
+
+def read_store_write_health(store: Any) -> Dict[str, Any]:
+    """Is this store accepting writes? The one honest answer, for all surfaces.
+
+    Consumed by ``store_health()`` below and by
+    ``handlers_memory._handle_memory_status``. The panel health strip asks the
+    same question through its own cheaper path -- see
+    ``health_strip._gather_memory`` for why it deliberately does not import this
+    module.
+
+    Returns::
+
+        {"status": "ok" | "degraded" | "unknown",
+         "accepting_writes": True | False | None,   # None == could not tell
+         "reason": "<operator sentence>",           # "" only when status is ok
+         "rejected_writes": <int|None>,             # refused writes, if counted
+         "sources": {<label>: <per-object row>}}    # the evidence, always
+
+    RESOLUTION ORDER, and it is deliberate:
+
+    1. ANY candidate reporting sick -> ``degraded``. A dead safety net is a dead
+       safety net even when the primary in front of it is fine -- that is the
+       incident, exactly.
+    2. else NO candidate answered -> ``unknown``. "We could not determine
+       health" and "healthy" are different answers; collapsing them is what let
+       a store refuse writes for two days behind a green light.
+    3. else -> ``ok``, and it is a real ok: at least one contract-bearing store
+       affirmatively said it is accepting writes.
+
+    ``rejected_writes`` is REPORTED but does not by itself set the verdict. It
+    is a lifetime counter, and when it is non-zero the cause is already carried
+    by ``degraded``/``writable`` on the same reading -- promoting it to a
+    verdict would add no new information while making the verdict unclearable
+    short of a restart. It is surfaced because "N writes were refused" is the
+    number an artist needs in order to know what to re-enter.
+
+    Never raises; never constructs a store; never writes.
+    """
+    sources: Dict[str, Any] = {}
+    sick: list = []
+    silent: list = []
+    healthy: list = []
+    rejected_total: Optional[int] = None
+
+    if store is None:
+        return {"status": "unknown", "accepting_writes": None,
+                "reason": "no memory store is loaded in this process, so "
+                          "whether memory would accept a write is unknown",
+                "rejected_writes": None, "sources": sources}
+
+    try:
+        candidates = _health_contract_candidates(store)
+    except Exception as exc:  # noqa: BLE001 -- a health read must never raise
+        return {"status": "unknown", "accepting_writes": None,
+                "reason": "could not inspect the live store (%s: %s), so memory "
+                          "write state is unknown" % (type(exc).__name__, exc),
+                "rejected_writes": None, "sources": sources}
+
+    for label, obj in candidates:
+        row = _ask_one_store_health(label, obj)
+        sources[label] = row
+        if not row.get("answered"):
+            silent.append(row.get("detail") or ("%s did not answer" % label))
+            continue
+        count = row.get("rejected_writes")
+        # NEGATIVE IS A SENTINEL, NOT A COUNT. ``MemoryStore.health()``
+        # fail-closes with ``rejected_writes: -1`` when its own probe could not
+        # complete (store.py's "health probe did not complete" defaults). Adding
+        # that to a total would render "-1 write(s) have been refused" — a
+        # fabricated number in the one sentence the artist is meant to act on.
+        # An uncounted rejection stays uncounted; the store is still reported
+        # sick by ``degraded``/``writable`` on the same fail-closed reading.
+        if isinstance(count, int) and not isinstance(count, bool) and count >= 0:
+            rejected_total = (rejected_total or 0) + count
+        if row.get("sick"):
+            sick.append("%s is not accepting writes: %s"
+                        % (label, row.get("reason") or "no reason given"))
+        else:
+            healthy.append(label)
+
+    if sick:
+        reason = "memory is not accepting writes -- " + "; ".join(sick)
+        if rejected_total and rejected_total > 0:
+            reason += (" (%d write(s) have been refused and were NOT saved)"
+                       % rejected_total)
+        return {"status": "degraded", "accepting_writes": False,
+                "reason": reason, "rejected_writes": rejected_total,
+                "sources": sources}
+
+    if not healthy:
+        return {"status": "unknown", "accepting_writes": None,
+                "reason": "could not determine whether memory is accepting "
+                          "writes -- " + "; ".join(silent),
+                "rejected_writes": rejected_total, "sources": sources}
+
+    return {"status": "ok", "accepting_writes": True, "reason": "",
+            "rejected_writes": rejected_total, "sources": sources}
+
+
 def _live_store() -> Any:
     """The backend store object ALREADY instantiated in this process, or None.
 
@@ -323,7 +552,7 @@ def store_health() -> Dict[str, Any]:
 
     Returns ``evaluated=False`` (contributes NOTHING to the verdict) when no
     store has been instantiated in this process. Otherwise ``status`` is
-    ``ok`` / ``degraded`` / ``unknown`` derived from three store-scoped facts:
+    ``ok`` / ``degraded`` / ``unknown`` derived from four store-scoped facts:
 
     1. **Serving identity** — the live store's CLASS vs the requested backend.
        A jsonl ``MemoryStore`` serving while ``moneta``/``shadow`` was selected
@@ -334,6 +563,13 @@ def store_health() -> Dict[str, Any]:
     3. **Durable persistence** (Moneta only) — a Moneta handle with
        ``durability=None`` keeps deposits in RAM; a restart loses them. That is
        a degraded WRITE plane even when the directory probes writable.
+    4. **The store's own write verdict** (B6) — ``read_store_write_health()``
+       asks the live store, and the contract-bearing stores it wraps, whether
+       they are still accepting writes. This is the AUTHORITATIVE check and it
+       DOMINATES: facts 1-3 were all green for the two days a degraded store
+       refused every write (see the B6 block above), so a sick verdict here is a
+       degradation regardless of what they say. When no object can answer, the
+       row is ``unknown`` — never ``ok``. It lands under ``write_health``.
 
     Additive (BP2-HEALTHWIRE, T1): on the evaluated path this row also carries
     ``embedder_id`` and ``embedding_dim`` (the two W1 operator fields it lacked)
@@ -393,6 +629,26 @@ def store_health() -> Dict[str, Any]:
             broken.append(
                 "moneta store has no durability layer — deposits are RAM-only "
                 "and will not survive a restart")
+
+    # (4) B6 — the store's OWN answer, and the only one that could have caught
+    # the 2026-09-15 outage. Checks 1-3 above were all TRUE for two days while
+    # every write was refused, so this one DOMINATES them: it goes into the same
+    # `broken` list (degraded wins outright), and a store that cannot tell us
+    # goes into `unclear` (unknown), never silently into the ok branch. That
+    # unknown is load-bearing, not noise -- it is what a store object predating
+    # the health contract, a stub, or a backend that never grew one looks like,
+    # and reporting those as healthy is the failure this whole lane exists for.
+    write_health = read_store_write_health(store)
+    info["write_health"] = write_health
+    # Lift the two operator-facing numbers to the top of the row so a consumer
+    # that only renders a flat dict still shows them.
+    info["accepting_writes"] = write_health.get("accepting_writes")
+    info["rejected_writes"] = write_health.get("rejected_writes")
+    if write_health.get("status") == "degraded":
+        broken.append(write_health.get("reason") or "the live store is not accepting writes")
+    elif write_health.get("status") == "unknown":
+        unclear.append(write_health.get("reason")
+                       or "the live store could not report its write health")
 
     # BP2-HEALTHWIRE (T1): ride the ratified backend verdict + the two W1
     # operator fields this row lacked (embedder id + embedding dim) ALONGSIDE the

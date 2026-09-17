@@ -313,26 +313,89 @@ class MemoryHandlerMixin:
         }
 
     def _handle_memory_status(self, payload: Dict) -> Dict:
-        """Get memory system status."""
+        """Get memory system status -- including whether memory ACCEPTS WRITES.
+
+        B6 / the 2026-09-15 incident. Measured live DURING a two-day outage in
+        which the store refused every single write, this handler returned::
+
+            {"entries_total": 1117, "project": {...}, "scene": {...},
+             "agent": {...}}
+
+        A dead store and a healthy store returned the IDENTICAL shape. There was
+        no degraded field and no write-health field, so neither the artist nor an
+        agent could ask "is memory working" and get a true answer -- a direct
+        breach of INTENT.md section 9, which requires that for a failed action
+        "the actual limit, partial result, and recovery options are visible".
+
+        Note what ``entries_total`` did during that outage: it looked NORMAL.
+        ``MemoryStore._load`` keeps the FIRST occurrence of a duplicated id and
+        raises only on the second differing one, so the count survived intact
+        while the store refused writes. A record count is not evidence of
+        health, and this handler used to report nothing else.
+
+        The ``health`` block below is therefore ALWAYS present, on every path
+        including the failure paths. It is seeded with an explicit unknown
+        BEFORE anything is attempted, so a raise, a marshal timeout or a store
+        that predates the health contract downgrades the answer to "unknown"
+        rather than omitting the key -- and an omitted key reads as "fine",
+        which is how two days of discarded memories stayed invisible.
+        """
         from ..memory.scene_memory import get_memory_status
+        from .write_plane import read_store_write_health
 
         sp = self._scene_paths()
         status = get_memory_status(sp["hip_dir"], sp["job_path"])
+
+        # Seeded unknown, never absent. Overwritten only by a real reading.
+        status["health"] = {
+            "status": "unknown",
+            "accepting_writes": None,
+            "reason": "memory write health was not read on this call",
+            "rejected_writes": None,
+            "sources": {},
+        }
 
         # Single source of truth (Contract 1): the live entry store (Store A,
         # the JSONL-backed SynapseMemory) is the authority for "how many
         # entries", not the markdown file stats. Surface it here so status no
         # longer contradicts synapse_context -- which read 176 from the live
         # store while status reported 0 from a near-empty markdown file.
+        #
+        # The count and the health verdict are read in ONE main-thread hop off
+        # the SAME store object: two hops could straddle a store swap and pair a
+        # count from one store with a verdict from another, and a health answer
+        # about a store that is no longer serving is worse than none.
         try:
-            def count(bridge):
+            def read(bridge):
                 memory = getattr(bridge, "_synapse", None)
-                return memory.store.count() if memory is not None else None
-            entries = self._memory_on_main(count)
+                if memory is None:
+                    # We looked and there is nothing there. Report THAT, rather
+                    # than leaving the seeded "was not read" reason standing —
+                    # "no store is loaded" is a different (and answerable) fact
+                    # from "we never checked".
+                    return None, read_store_write_health(None)
+                store = getattr(memory, "store", None)
+                count = store.count() if store is not None else None
+                return count, read_store_write_health(store)
+            entries, health = self._memory_on_main(read)
             if entries is not None:
                 status["entries_total"] = entries
-        except Exception:
-            pass
+            if health is not None:
+                status["health"] = health
+        except Exception as exc:  # noqa: BLE001 -- status must not raise
+            # Do NOT swallow this into silence the way the old bare `pass` did.
+            # A status call that could not reach the store must SAY so, because
+            # the alternative is reporting a stale markdown count next to an
+            # implied-healthy memory system.
+            status["health"] = {
+                "status": "unknown",
+                "accepting_writes": None,
+                "reason": ("could not reach the live memory store (%s: %s), so "
+                           "whether memory is accepting writes is unknown"
+                           % (type(exc).__name__, exc)),
+                "rejected_writes": None,
+                "sources": {},
+            }
 
         return status
 
