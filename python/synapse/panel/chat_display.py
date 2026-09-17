@@ -120,6 +120,21 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setObjectName("DsChatTranscript")
         self.setProperty("rhythm_role", "group")
+        # Qt's QTextDocument ships a 4px margin nobody in this design system
+        # authored, on all four sides. Setting it to 0 returns 8px of vertical
+        # space (4 top + 4 bottom) to the surface the panel exists to show, and
+        # takes the left content edge off an anonymous constant and onto the
+        # design system's own GUTTER. Nothing else moves: the margin lives
+        # inside the document, not the widget, so no layout, gutter or rhythm
+        # role is touched.
+        #
+        # VERIFIED HERE: Qt's default is 4 and tokens.GUTTER is 30. NOT verified
+        # here: READABILITY.md 2026-09-15 reports the resulting edge as 50 -> 46
+        # via a 16px speaker indent, and no such indent could be found in
+        # message_formatter.py when this landed. The vertical 8px does not
+        # depend on that figure; the exact horizontal edge does. Cite the 46
+        # only after an offscreen re-measure confirms it.
+        self.document().setDocumentMargin(0)
         self._document_density = None
         self._set_document_font(self._font_scale)
 

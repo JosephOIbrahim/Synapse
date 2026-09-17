@@ -19,14 +19,17 @@ def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
    repaint-ghosting cause (transparent widgets never erase their backing store,
    so Houdini composites stale pixels). Every container is opaque instead.
    No font-family: inherit Houdini's app-level UI font (native). */
-/* Atmosphere, never dominant: the root is a gradient FIELD rather than a flat
-   fill -- PANEL +/- ATMOSPHERE_DELTA (4 of 255) top to bottom. At that
-   amplitude it is not a shape and not information; it just stops a tall pane
-   reading as dead vinyl, and it gives the content something to sit ON. Text
-   contrast moves by well under 1%, so the WCAG sweep still governs the ramp.
-   Sections stay flat so the field reads once, at the back, and never stacks. */
+/* The root is FLAT. It used to carry a gradient field of PANEL +/-
+   ATMOSPHERE_DELTA -- 8 levels out of 255 spread over 760px, which is a
+   sub-perceptual ramp: roughly one level per 95 pixels. The argument for it was
+   that a tall pane should not read as dead vinyl, but an effect that cannot be
+   seen cannot do that job either, and it still cost a gradient on the widget
+   that repaints most. Removing it is the one subtraction BOTH rendered
+   directions agreed on (CRIT.md 2026-09-15), so it carries no design ruling.
+   atmosphere() stays in tokens.py -- it is a sound utility with no consumer
+   today, and deleting a function to prove a point is not a cleanup. */
 QWidget#DsRoot {{
-    background: {t.atmosphere(t.PANEL)};
+    background: {t.PANEL};
     color: {t.TEXT_PRIMARY};
     font-size: {s(t.SIZE_BODY)}px;
 }}
@@ -378,7 +381,21 @@ QPushButton#DsVerb {{ margin-top: {t.SPACE_SM}px; margin-bottom: {t.SPACE_SM}px;
 #DsRoot[density="airy"] QPushButton#DsVerb {{ margin-top: {t.gap(t.SPACE_SM, "airy")}px; margin-bottom: {t.gap(t.SPACE_SM, "airy")}px; }}
 #DsRoot[density="tight"] QPushButton#DsVerb {{ margin-top: {t.gap(t.SPACE_SM, "tight")}px; margin-bottom: {t.gap(t.SPACE_SM, "tight")}px; }}
 
-/* Region 5 — .hip ribbon + header status: the header group gap below its rule. */
+/* Region 5 — .hip ribbon + header status: the header group gap below its rule.
+   DEFERRED 2026-09-16, not kept on merit. These three rules are dead: Qt does
+   not paint margin on a bare QWidget selector, so they draw nothing, and they
+   perturb the rail's measured height with an inconsistent sign across densities
+   (airy -8, standard 0, tight +4) -- a rule that shrinks airy and grows tight
+   inverts the density lever. They should go.
+   What stopped it: removing the bare rule requires listing QWidget#DsHeader in
+   test_panel_sweep_a's BC_WAVE_RULED_SELECTORS, and that list strips a whole
+   rule by selector from the append-only comparison. QWidget#DsHeader also names
+   the LIVE background/hairline rule forty lines up, so the entry would stop
+   guarding a rule that is still shipping. Trading a real guard on a live rule
+   for the deletion of one that paints nothing is a bad trade. Nothing visible
+   changes either way: expert is the only composable profile, so the airy and
+   tight branches cannot fire for an artist today. Needs a by-declaration
+   exemption, not a by-selector one. */
 QWidget#DsHeader {{ margin-bottom: {t.SPACE_SM}px; }}
 #DsRoot[density="airy"] QWidget#DsHeader {{ margin-bottom: {t.gap(t.SPACE_SM, "airy")}px; }}
 #DsRoot[density="tight"] QWidget#DsHeader {{ margin-bottom: {t.gap(t.SPACE_SM, "tight")}px; }}
@@ -648,7 +665,7 @@ QWidget#connection_frame {{  background: {t.CARBON};  border-top: 1px solid {t.G
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("chat_dot", f"""
-color: {color}; font-size: {t.SIZE_UI * 3 // 2}px; border: none;
+color: {color}; font-size: {t.GLYPH_MD}px; border: none;
 """, color=color))
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
@@ -728,7 +745,7 @@ color: {color};  font-size: {t.SIZE_LABEL}px; border: none;
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("gate_fidelity_dot", f"""
-color: {color}; font-size: {t.SIZE_UI * 7 // 6}px; border: none;
+color: {color}; font-size: {t.GLYPH_SM}px; border: none;
 """, color=color))
     return "\n".join(rules)
 
@@ -810,7 +827,7 @@ _sweep_a_builders.append(_sweep_a_face_work_stylesheet)
 def _sweep_a_quick_actions_stylesheet():
     rules = []
     rules.append(_sweep_a_rule("quick_chevron", f"""
-QPushButton {{  background: transparent; border: none; color: {t.TEXT_SECONDARY}; font-size: {t.SIZE_UI * 7 // 6}px; }}
+QPushButton {{  background: transparent; border: none; color: {t.TEXT_SECONDARY}; font-size: {t.GLYPH_SM}px; }}
 QPushButton:hover {{  color: {t.SIGNAL}; }}
 """))
     rules.append(_sweep_a_rule("quick_pill", f"""

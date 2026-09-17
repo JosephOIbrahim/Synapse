@@ -399,6 +399,22 @@ SIZE_HERO   = 19   # panel title — present, not shouting
 # context_bar.py, the legacy sheet in qss.py) step 10 -> 11 with it.
 SIZE_LABEL = SIZE_SMALL
 
+# ── glyph sizes: deliberately NOT on the type scale ──────────────────────────
+# 14 and 18 are not type. They are the em-box a status dot and a chevron need in
+# order to draw at the right optical weight beside 12px text, and they were
+# computed inline in qss.py as `SIZE_UI * 7 // 6` and `SIZE_UI * 3 // 2` -- two
+# bare arithmetic expressions that a type census reads as two more sizes on the
+# ramp. That is how a four-size scale gets counted as six.
+#
+# Naming them does not change a pixel. It states that they scale WITH the UI
+# size (a glyph must stay proportional to the text it sits beside) while being
+# off the hierarchy, so the next person measuring the type scale counts four
+# rungs and finds these two already accounted for. READABILITY.md 2026-09-15:
+# "they should be named GLYPH_MD / GLYPH_SM and taken off the type scale
+# explicitly, not folded into it."
+GLYPH_MD = SIZE_UI * 3 // 2   # 18 — status dots and other filled marks
+GLYPH_SM = SIZE_UI * 7 // 6   # 14 — chevrons and disclosure arrows
+
 # ── the type FLOOR (BP4-PANELFONT) ────────────────────────────
 # Joe's law: "panel fonts consistent and no smaller than the Houdini default."
 # The default UI font size is a MEASURED, GUI-only fact — QApplication.font()
@@ -433,11 +449,25 @@ SIZE_LABEL = SIZE_SMALL
 # "no size below the floor" test unable to catch a size token being lowered.
 FONT_FLOOR_PX = 11
 FONT_FLOOR_PROVENANCE = (
-    "UNKNOWN — the local H22.0.400 help cache states no default UI font size "
-    "(…/houdini22.0/config/Help/cache, ref+basics+hom searched 2026-09-03); "
-    "awaiting the scripts/probe_ui_font.py GUI paste. Until it lands the floor "
-    "is pinned to audit_panel.py:388 READABLE_FLOOR = 11, the repo's own "
-    "readability bar, per CRIT.md 2026-09-15 ranked change 1 — NOT to the "
+    # The first word is a controlled vocabulary -- measured | DOC-STATED | UNKNOWN --
+    # pinned by tests/test_panel_typography.py::test_floor_constant_has_provenance.
+    # This string opened UNKNOWN for months; it is the transition that guard exists
+    # for, so it uses the guard's own word rather than a louder one.
+    "measured 2026-09-15, live, twice independently: QFontInfo(QApplication.font()) "
+    "on Houdini 22.0.400 reports family 'SideFX Source Sans Pro', pixelSize 27, "
+    "pointSize 10; screen logical DPI 192.0, physical 218.66, devicePixelRatio 1.0. "
+    "Probe: python/synapse/panel/scripts/probe_ui_font.py. "
+    "This string previously read UNKNOWN and said it was awaiting that paste — the "
+    "paste had been taken, and it also cited the probe at a repo-root path where the "
+    "file has never existed. Both corrected here; no value changed. "
+    "THE FLOOR IS STILL 11 AND IS STILL ABSOLUTE, which is now a stated position "
+    "rather than an absence of data: nothing in the panel scales to the host "
+    "(tokens.scaled() is max(8, round(size*scale)) with scale defaulting to 1.0), so "
+    "an authored 11px is eleven actual pixels beside host chrome of twenty-seven — "
+    "about 41% of it. Whether an absolute constant can be a floor against a host "
+    "that moves is a DESIGN RULING and is open; see READABILITY.md 2026-09-15 "
+    "'The floor is below the host'. Until it is ruled the floor stays pinned to "
+    "audit_panel.py READABLE_FLOOR = 11, the repo's own readability bar — NOT to the "
     "smallest size shipped, which was circular."
 )
 

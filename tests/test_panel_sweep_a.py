@@ -159,6 +159,20 @@ def _outside_rhythm_block(text):
 BC_WAVE_RULED_SELECTORS = (
     "QWidget#DsTabRow", "QPushButton#DsAuthor", "QListWidget#DsList::item",
     "QWidget#DsRailMeter",
+    # 2026-09-16, CTO-ruled: the root drops its atmosphere gradient for a flat
+    # PANEL fill. The gradient spanned 8 levels of 255 over 760px -- about one
+    # level per 95 pixels -- and it was the one subtraction BOTH rendered
+    # directions in CRIT.md agreed on, so it carries no contested design call.
+    #
+    # This entry is safe to make BY SELECTOR because QWidget#DsRoot names
+    # exactly one rule block in the sheet. QWidget#DsHeader does NOT -- it names
+    # four, including the live background/hairline rule -- which is why the
+    # three dead #DsHeader margin rules were left in place rather than deleted:
+    # exempting them here would have stopped guarding a rule that still ships.
+    # Verify before adding any entry: the stripper removes whole rule blocks,
+    # so a selector that matches more than its ruled rule silently widens the
+    # hole. Measured, not assumed.
+    "QWidget#DsRoot",
 )
 
 

@@ -1,0 +1,101 @@
+design(panel): the four subtractions that needed no ruling, and a ranked backlog
+
+Three design review rounds (2026-09-05, -09-14, -09-15) were each internally
+ordered and never ranked against each other, so the newest findings sat behind
+two older rounds that were themselves waiting. harness/design_review/RANKED.md
+is that cross-round order. The headline it carries: of 28 open items, 22 need a
+word from the Creative Director and 6 need hands. This is a decision backlog,
+not a build backlog, and nothing at any priority in the first group can be
+started by anyone until it is ruled.
+
+This commit applies the four from the newest round that carry no design call.
+
+FLAT ROOT. The root painted a gradient of PANEL +/- ATMOSPHERE_DELTA -- 8 levels
+out of 255 spread over 760px, about one level per 95 pixels. The argument for it
+was that a tall pane should not read as dead vinyl, but an effect below the
+perceptual floor cannot do that job, and it still cost a gradient on the widget
+that repaints most. It is the one subtraction BOTH rendered directions agreed
+on, which is why it needs no ruling. atmosphere() stays in tokens.py: it is a
+sound utility with no consumer today, and deleting a function to prove a point
+is not a cleanup.
+
+TRANSCRIPT DOCUMENT MARGIN. Qt's QTextDocument ships a 4px margin on all four
+sides that nobody in this design system authored. At 0 the document returns 8px
+of vertical space to the surface the panel exists to show, and the left content
+edge moves off an anonymous Qt constant onto the design system's own GUTTER.
+The margin is inside the document, not the widget, so no layout, gutter or
+rhythm role moves.
+
+GLYPH_MD / GLYPH_SM. 18 and 14 are not type -- they are the em-box a status dot
+and a chevron need to sit at the right optical weight beside 12px text -- but
+they were bare arithmetic in the stylesheet (SIZE_UI * 3 // 2 and * 7 // 6),
+which a type census reads as two more rungs on the ramp. That is how a four-size
+scale gets counted as six. Naming them changes zero pixels and states that they
+scale with the UI size while sitting off the hierarchy.
+
+FONT_FLOOR_PROVENANCE. The string said UNKNOWN and "awaiting the GUI paste" for
+a measurement that had been taken -- SideFX Source Sans Pro, pixelSize 27,
+pointSize 10, 192 DPI, read live and twice -- and cited the probe at a repo-root
+path where the file has never existed. Both corrected; no value changed. The
+floor stays 11 and stays absolute, which is now a stated position rather than an
+absence of data, with the open ruling named.
+
+DEFERRED, AND WHY IT IS NOT A KEPT ITEM
+
+The three dead QWidget#DsHeader margin rules should go: Qt does not honour
+margin on a bare QWidget selector so they paint nothing, and they perturb the
+rail's measured height with an inconsistent sign across densities (airy -8,
+standard 0, tight +4), which inverts the density lever.
+
+Removing them requires listing QWidget#DsHeader in test_panel_sweep_a's
+BC_WAVE_RULED_SELECTORS, and that list strips whole rule blocks BY SELECTOR from
+the append-only comparison. Measured against the guard's own pattern:
+QWidget#DsRoot matches 1 block, QWidget#DsHeader matches 4 -- including the live
+background/hairline rule forty lines up. The exemption would have stopped
+guarding a rule that still ships. Trading a real guard on a live rule for the
+deletion of one that paints nothing is a bad trade; it needs a by-declaration
+exemption, not a by-selector one. Nothing visible either way, since expert is
+the only composable profile and the density branches cannot fire.
+
+A GUARD CAUGHT THE PROVENANCE EDIT, CORRECTLY
+
+test_panel_typography::test_floor_constant_has_provenance pins the first word of
+that string to a controlled vocabulary -- measured | DOC-STATED | UNKNOWN -- so
+the floor always declares its epistemic status in one of three known states. The
+first draft of this change opened it "MEASURED", which is outside the vocabulary,
+and the suite refused it. The string now uses the guard's own word rather than a
+louder one. Worth recording because it is the counter-example to the rest of
+today: a guard whose width exactly matched what it meant to catch, and which
+therefore caught a real thing on its first exposure to it.
+
+WHAT GUARDS THIS
+
+QWidget#DsRoot is added to BC_WAVE_RULED_SELECTORS -- the mechanism that exists
+for exactly this, a ruled change to an upstream rule -- and no further. Proven
+with a negative control: an unruled upstream edit planted in the same sheet
+still fails the append-only guard.
+
+Seat suite under Houdini 22.0.400: 6 failed, 201 passed, identical to the
+pre-change baseline by name, not just by count. No new red, none newly passing.
+
+TWO CLAIMS WITHDRAWN FROM MY OWN WRITING
+
+Both are the same failure the v5.74.0 audit caught six times today -- a claim
+read out of a document and restated as an independent measurement -- and both
+were caught by going to look rather than by review.
+
+The chat_display comment said the content edge moves 50 -> 46 "via the
+formatter's 16px speaker indent", taken from READABILITY.md. No such indent
+could be found in message_formatter.py. The vertical 8px does not depend on that
+figure and is verified here; the exact horizontal edge does, and is now marked
+unverified in both the comment and RANKED.md.
+
+RANKED.md opened "of 28 open items, 22 need a word from the Creative Director",
+taken from a synthesis pass. The raw per-item verdicts say 40 calls checked: 31
+OPEN, 6 SHIPPED, 2 PARTIAL, 1 SUPERSEDED. The 28/22 is that pass consolidating
+cross-document duplicates, which is a reasonable thing to do and is not a thing
+I checked. The file now states the verified 31-of-40 and attributes the
+consolidation as unverified. The shape of the finding does not change; its
+provenance does.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
