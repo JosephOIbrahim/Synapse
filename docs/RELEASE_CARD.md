@@ -127,12 +127,33 @@ README banner version
 "New in X.Y.Z" block · README `tags:` channel line · developer release-notes link ·
 CHANGELOG heading
 
-**Not surfaces:** `_vendor/*` · forge/retina/inspector · rope baseline strings ·
-install stamp (conforms at next install)
+**Not VERSION surfaces:** `_vendor/*` · forge/retina/inspector · rope baseline
+strings · install stamp (conforms at next install)
+
+**The product surface — one definition, `scripts/product_surface.py`.** The
+*product unchanged* sentence every release makes is proved with
+
+```
+python scripts/product_surface.py --diff v<prev> HEAD --expect-empty
+```
+
+not with a hand-typed `-- python installer`. That pathspec is blind to the
+nineteen tracked `.py` files at the repo root, seven of which are the shipped
+MCP surface. Measured: `c6221f3b` moved 65 lines of `mcp_server.py` — the file
+`.mcp.json` launches — and returns EMPTY under `-- python installer`, so the
+ritual would have reported the product unchanged over it. The script refuses a
+pathspec term that matches nothing (an empty diff from a dead term is an
+abstention printed as a pass) and reports the command it actually ran.
+
+*Not a VERSION surface ≠ not product.* `_vendor/*` is correctly skipped by
+version sync — upstream packages carry no SYNAPSE version — and is correctly
+**inside** the product surface, because it ships in the payload.
 
 Invariants: `tests/test_phase0c_doc1_version_conformance.py` (a published tag may
 never outrun the tree) · `tests/test_phase0c_doc1_toolcount.py::_assert_release_tags`
-(the README channel banner is real).
+(the README channel banner is real) · `tests/test_product_surface.py` (the product
+pathspec cannot be narrowed back past the entry points, nor widened into
+`harness/`/`tools/` until it stops meaning anything).
 
 ---
 
