@@ -4,13 +4,13 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.75.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.75.1 is Latest</sub></p>
+<p align="center"><sub>v5.75.2 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.75.2 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.1/SYNAPSE-5.75.1-Setup.exe)** · [What's new](docs/releases/v5.75.1.md) · [Help](#when-you-get-stuck)
+**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SYNAPSE-5.75.2-Setup.exe)** · [What's new](docs/releases/v5.75.2.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
@@ -27,7 +27,7 @@ Then:
 - Cloud model? It needs your API key.
 - Ollama? Start Ollama first, then choose an installed model.
 
-The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.1/SHA256SUMS.txt).
+The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SHA256SUMS.txt).
 
 [Full setup guide](docs/getting-started/installation.md) · [Source installation](docs/getting-started/installation.md#source-installation)
 
@@ -112,13 +112,15 @@ flowchart TB
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 - **Apply a saved scene setup** (`synapse_apply_fixture`, shipped since 5.43.0). A fixture is a setup stored as data, not a prompt: applying it twice is a no-op, and a name clash refuses instead of renaming. Details and what is proven: [BLOCKS in the changelog](CHANGELOG.md).
 
-**New in 5.75.1** — a memory store refused every write for two days while every health surface reported OK. This release fixes the write that caused it.
+**New in 5.75.2** — no product change. The gates around releasing got honest.
+
+A release check compared file timestamps git does not preserve, so it would have failed on any machine but the one that wrote it. A second check proved "the product did not change" using a path list blind to `mcp_server.py` — the file this repo launches as its MCP entry point. Both are fixed, and both are now demonstrated failing on purpose, because a check that cannot lose is not a check.
 
 - **The duplicate deposit is gone at source.** One logical memory-add was emitting two records — a rich one, then the same content again with its tags, scene file and frame blank. They collided under one id and degraded the whole store. The second write no longer happens, and a collision guard sits behind it.
 - **A store that is refusing writes now says so.** `MemoryStore.health()` reports whether writes are landing, and the write plane, the panel health strip and `synapse_memory_status` all read it. A store that *cannot* answer reads UNKNOWN — never OK, because "we could not tell" and "healthy" are different answers.
 - **The automatic memory prune no longer runs unasked.** It is opt-in and defaults off. It had never fired, but it was armed over records that existed in only one place, where deletion is permanent.
 
-**Also:** installing this release does not repair a store that is already degraded — it stops the cause and ships the recovery tools. [Release details and limits →](docs/releases/v5.75.1.md)
+**Also:** installing this release does not repair a store that is already degraded — it stops the cause and ships the recovery tools. [Release details and limits →](docs/releases/v5.75.2.md)
 
 **Still development work:** predictive creation, product-level Computer Use controls, recursive self-improvement. The attended operator checks in this release do not make them complete. [Artist-first intent →](INTENT.md)
 
@@ -166,13 +168,13 @@ The optional observation loop connects Moneta, Octavius and Hanish. Three things
 <details>
 <summary><strong>For developers: policy, evidence and source setup</strong></summary>
 
-**137 tools, two roads.** The count is `len(TOOL_DEFS)` in `python/synapse/mcp/_tool_registry.py`, pinned by `tests/test_phase0c_doc1_toolcount.py`.
+**137 tools, two paths.** The count is `len(TOOL_DEFS)` in `python/synapse/mcp/_tool_registry.py`, pinned by `tests/test_phase0c_doc1_toolcount.py`.
 
-Which road a call takes is decided by **how the client connected**, not by what the tool is called.
+Which path a call takes is decided by **how the client connected**, not by what the tool is called.
 
 - The **in-Houdini `/mcp` HTTP endpoint** routes mutating tools through `LosslessExecutionBridge` — `python/synapse/mcp/tools.py`, `dispatch_tool`. Reads skip it; farm-control calls and the doctor are routed separately and say so in their own path field.
 - The **`/synapse` WebSocket** calls `server.handlers` directly — no bridge routing. Mutations there still leave an observe-only, path-qualified `IntegrityBlock` in the shared trail (`python/synapse/server/integrity_envelope.py`).
-- The **panel's own tool calls take the bridge road** — its executor POSTs to that local `/mcp` endpoint (`python/synapse/panel/tool_executor.py`).
+- The **panel's own tool calls take the bridge path** — its executor POSTs to that local `/mcp` endpoint (`python/synapse/panel/tool_executor.py`).
 - The **stdio MCP server this repo configures** (`.mcp.json` → `mcp_server.py`) forwards over WebSocket to the live handlers. It is *not* bridge-routed, despite the name.
 - **Panel workers** add their own tool restrictions on top of whichever road they are on.
 
@@ -212,7 +214,7 @@ Anything that claims otherwise is drift. Path-qualified `IntegrityBlock`s record
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.75.1.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.75.2.md) · [Changelog](CHANGELOG.md)
 
 **What the CI badge proves.** GitHub CI tests stock Python on Linux and macOS.
 

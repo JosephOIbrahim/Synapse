@@ -116,16 +116,29 @@ def resolve() -> list:
     return [(t, len(tracked(t))) for t in PRODUCT_PATHSPEC]
 
 
-def command(a: str, b: str) -> str:
+def command(a: str, b=None) -> str:
     """The exact command `delta` runs, as a string. Reported verbatim so a
-    recorded check can never name a different one than it ran."""
-    return "git diff --stat %s %s -- %s" % (a, b, " ".join(PRODUCT_PATHSPEC))
+    recorded check can never name a different one than it ran.
+
+    ``b=None`` means the WORKING TREE, and the command string omits a second ref
+    accordingly. The release ritual needs that form: on the pre-commit pass the
+    version bump is unstaged, so ``PREV..HEAD`` cannot see it and reports an
+    empty delta -- which reads as "product unchanged" when it actually means
+    "wrong pair of trees". Writing "PREV HEAD" here while running one ref is the
+    same defect from the other side: a check string naming a command nobody ran.
+    """
+    refs = a if b is None else "%s %s" % (a, b)
+    return "git diff --stat %s -- %s" % (refs, " ".join(PRODUCT_PATHSPEC))
 
 
-def delta(a: str, b: str):
-    """(command, stat, changed_files) for the product surface between two refs."""
-    stat = _git("diff", "--stat", a, b, "--", *PRODUCT_PATHSPEC).rstrip()
-    names = [ln for ln in _git("diff", "--name-only", a, b, "--", *PRODUCT_PATHSPEC).splitlines() if ln.strip()]
+def delta(a: str, b=None):
+    """(command, stat, changed_files) for the product surface.
+
+    Two refs compares those trees; ``b=None`` compares *a* to the working tree.
+    """
+    refs = [a] if b is None else [a, b]
+    stat = _git("diff", "--stat", *refs, "--", *PRODUCT_PATHSPEC).rstrip()
+    names = [ln for ln in _git("diff", "--name-only", *refs, "--", *PRODUCT_PATHSPEC).splitlines() if ln.strip()]
     return command(a, b), stat, names
 
 
