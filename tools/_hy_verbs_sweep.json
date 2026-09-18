@@ -12,67 +12,67 @@
       "verb": "assess_render_ready",
       "status": "error",
       "error": "StageUnavailableError: /stage is empty",
-      "ms": 3.1
+      "ms": 3.4
     },
     {
       "verb": "capture_viewport",
       "status": "headless_fail",
       "error": "AttributeError: module 'hou' has no attribute 'ui'",
-      "ms": 1.5
+      "ms": 1.7
     },
     {
       "verb": "context",
       "status": "ok",
-      "preview": "{\"format\": \"json\", \"context\": {\"project\": {\"overview\": \"\", \"goals\": \"\", \"constraints\": \"\", \"assets\": [], \"client_notes\": [\"\", \"*Last updated: 2026-08-31 17:18*\"]}, \"recent_decisions\": [{\"date\": \"2026-09-06\", \"summary\": \"",
-      "ms": 498.1
+      "preview": "{\"format\": \"json\", \"context\": {\"project\": {\"overview\": \"\", \"goals\": \"\", \"constraints\": \"\", \"assets\": [], \"client_notes\": [\"\", \"*Last updated: 2026-09-18 14:39*\"]}, \"recent_decisions\": [], \"recent_activity\": [], \"current_",
+      "ms": 191.0
     },
     {
       "verb": "cops_analyze_render",
       "status": "needs_params",
       "error": "ValueError: Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
-      "ms": 0.9
+      "ms": 1.2
     },
     {
       "verb": "cops_read_layer_info",
       "status": "needs_params",
       "error": "ValueError: Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
-      "ms": 0.4
+      "ms": 0.5
     },
     {
       "verb": "emergency_halt",
       "status": "ok",
       "preview": "{\"status\": \"halted\", \"reason\": \"Artist triggered emergency halt\", \"bridge_halt\": {\"session_report\": {\"operations_total\": 0, \"operations_verified\": 0, \"anchor_violations\": 0, \"session_fidelity\": 1.0, \"operation_log_length",
-      "ms": 2.6
+      "ms": 4.7
     },
     {
       "verb": "farm_capabilities",
       "status": "ok",
       "preview": "{\"build\": \"22.0.400\", \"profiles\": [{\"id\": \"local\", \"label\": \"This computer\", \"available\": true, \"reason\": \"Houdini 22.0.400 files found. Preparation checks the runtime, license, and portable scene. Karma CPU; per job: 2 ",
-      "ms": 3.3
+      "ms": 3.7
     },
     {
       "verb": "farm_inspect",
       "status": "ok",
       "preview": "{\"status\": \"needs_attention\", \"source_hip\": \"\", \"unsaved\": true, \"source_node\": \"\", \"source_nodes\": [], \"frames\": [1, 240, 1], \"note\": \"Save the scene before preparing this render.\"}",
-      "ms": 0.2
+      "ms": 0.3
     },
     {
       "verb": "farm_job",
       "status": "needs_params",
       "error": "ValueError: No render history exists here yet. Prepare a render first.",
-      "ms": 1.1
+      "ms": 0.8
     },
     {
       "verb": "farm_jobs",
       "status": "ok",
       "preview": "{\"jobs\": []}",
-      "ms": 0.6
+      "ms": 0.3
     },
     {
       "verb": "get_health",
       "status": "ok",
-      "preview": "{\"healthy\": true, \"houdini_available\": true, \"protocol_version\": \"4.0.0\", \"write_plane\": {\"status\": \"ok\", \"reason\": null, \"targets\": {\"memory\": {\"path\": \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\houdini_temp\\\\untitled\\\\.sy",
-      "ms": 2.5
+      "preview": "{\"healthy\": true, \"houdini_available\": true, \"protocol_version\": \"4.0.0\", \"write_plane\": {\"status\": \"ok\", \"reason\": null, \"targets\": {\"memory\": {\"path\": \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-SYNAP",
+      "ms": 3.0
     },
     {
       "verb": "get_help",
@@ -90,13 +90,13 @@
       "verb": "get_metrics",
       "status": "ok",
       "preview": "{\"format\": \"prometheus\", \"text\": \"\\n# HELP synapse_circuit_breaker_state Current circuit breaker state (0=closed, 1=open, 2=half_open)\\n# TYPE synapse_circuit_breaker_state gauge\\nsynapse_circuit_breaker_state 0\\n\\n# HEL",
-      "ms": 5.6
+      "ms": 6.7
     },
     {
       "verb": "get_parm",
       "status": "needs_params",
       "error": "ValueError: Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
-      "ms": 0.5
+      "ms": 0.6
     },
     {
       "verb": "get_scene_info",
@@ -114,31 +114,31 @@
       "verb": "get_stage_info",
       "status": "needs_params",
       "error": "ValueError: No USD stage found -- select a LOP node or pass a node path so I know which stage to look at",
-      "ms": 0.8
+      "ms": 1.0
     },
     {
       "verb": "get_usd_attribute",
       "status": "needs_params",
       "error": "ValueError: Missing required parameter. Expected one of: 'prim_path', 'primPath'\nHINT: Common names are 'prim_path' or 'primPath'",
-      "ms": 0.4
+      "ms": 0.5
     },
     {
       "verb": "inspect_node",
       "status": "needs_params",
       "error": "ValueError: Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
-      "ms": 1.1
+      "ms": 1.3
     },
     {
       "verb": "inspect_scene",
       "status": "ok",
       "preview": "{\"overview\": {\"node_count\": 10, \"contexts\": {\"Director\": 1, \"Manager\": 9}}, \"network_tree\": [{\"path\": \"/\", \"name\": \"/\", \"type\": \"root\", \"category\": \"Director\", \"children\": [{\"path\": \"/obj\", \"name\": \"obj\", \"type\": \"obj\", ",
-      "ms": 1.2
+      "ms": 1.3
     },
     {
       "verb": "inspect_selection",
       "status": "ok",
       "preview": "{\"count\": 0, \"nodes\": [], \"topology\": []}",
-      "ms": 0.0
+      "ms": 0.1
     },
     {
       "verb": "knowledge_lookup",
@@ -150,37 +150,37 @@
       "verb": "list_recipes",
       "status": "ok",
       "preview": "{\"count\": 62, \"recipes\": [{\"name\": \"area_light_panel\", \"description\": \"Create a rectangular area light panel (RectLight) with configurable width and height. Large area = soft shadows. Lighting Law: intensity always 1.0, ",
-      "ms": 34.2
+      "ms": 36.1
     },
     {
       "verb": "network_explain",
       "status": "needs_params",
       "error": "ValueError: Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
-      "ms": 0.8
+      "ms": 0.9
     },
     {
       "verb": "ping",
       "status": "ok",
-      "preview": "{\"pong\": true, \"timestamp\": 1789752043.0911229, \"protocol_version\": \"4.0.0\"}",
+      "preview": "{\"pong\": true, \"timestamp\": 1789756769.0367007, \"protocol_version\": \"4.0.0\"}",
       "ms": 0.0
     },
     {
       "verb": "read_material",
       "status": "needs_params",
       "error": "ValueError: Missing required parameter. Expected one of: 'prim_path', 'primPath'\nHINT: Common names are 'prim_path' or 'primPath'",
-      "ms": 0.6
+      "ms": 0.8
     },
     {
       "verb": "recall",
       "status": "ok",
-      "preview": "{\"query\": \"\", \"found\": true, \"count\": 3, \"matches\": [{\"id\": \"mem_9e0826890122\", \"summary\": \"**Decision:** \\\"Create a Solaris Network\\\" now = v3 recipe: GEO_sphere(sopcreate with embedded polygon...\", \"content\": \"**Decisi",
-      "ms": 18.2
+      "preview": "{\"query\": \"\", \"found\": false, \"count\": 0, \"matches\": []}",
+      "ms": 1.6
     },
     {
       "verb": "render_farm_cancel",
       "status": "ok",
       "preview": "{\"farm_cancel_requested\": false, \"farm_was_running\": false, \"driver_cancel_requested\": false, \"note\": \"Cancel signal sent -- the in-flight frame finishes before the loop stops; poll render_farm_status to confirm.\"}",
-      "ms": 222.0
+      "ms": 312.3
     },
     {
       "verb": "render_farm_status",
@@ -215,50 +215,50 @@
     {
       "verb": "search",
       "status": "ok",
-      "preview": "{\"query\": \"\", \"count\": 20, \"results\": [{\"id\": \"mem_6e3aa5a2ce14\", \"type\": \"action\", \"summary\": \"Executed: execute_python\", \"content\": \"Executed: execute_python\", \"score\": 0.5, \"tags\": [\"action\", \"ai\"], \"created_at\": \"202",
-      "ms": 19.1
+      "preview": "{\"query\": \"\", \"count\": 0, \"results\": []}",
+      "ms": 0.7
     },
     {
       "verb": "solaris_validate_ordering",
       "status": "needs_params",
       "error": "ValueError: Couldn't find a render node to start from -- pass a node path or make sure /stage has a display node",
-      "ms": 0.9
+      "ms": 0.7
     },
     {
       "verb": "tops_diagnose",
       "status": "headless_fail",
       "error": "ImportError: hdefereval is only available in a graphical Houdini",
-      "ms": 2.4
+      "ms": 2.2
     },
     {
       "verb": "tops_get_cook_stats",
       "status": "headless_fail",
       "error": "ImportError: hdefereval is only available in a graphical Houdini",
-      "ms": 2.1
+      "ms": 1.8
     },
     {
       "verb": "tops_get_dependency_graph",
       "status": "headless_fail",
       "error": "ImportError: hdefereval is only available in a graphical Houdini",
-      "ms": 1.8
+      "ms": 1.6
     },
     {
       "verb": "tops_get_work_items",
       "status": "headless_fail",
       "error": "ImportError: hdefereval is only available in a graphical Houdini",
-      "ms": 1.7
+      "ms": 1.6
     },
     {
       "verb": "tops_pipeline_status",
       "status": "headless_fail",
       "error": "ImportError: hdefereval is only available in a graphical Houdini",
-      "ms": 1.8
+      "ms": 1.6
     },
     {
       "verb": "tops_query_items",
       "status": "headless_fail",
       "error": "ImportError: hdefereval is only available in a graphical Houdini",
-      "ms": 1.7
+      "ms": 1.6
     },
     {
       "verb": "validate_frame",
@@ -268,6 +268,7 @@
     }
   ],
   "complete": true,
+  "sweep_src_sha256": "8d9c12117114d3da397baffc2c6bc746f7db8ae7483706e506df456190cb5e64",
   "python": "3.13.10",
   "ui_available": false,
   "counts": {

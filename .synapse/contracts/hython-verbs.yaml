@@ -19,7 +19,7 @@ do_not_touch:
 features:
   # Every goalpost is PURE-PYTHON against the artifact. Stock `python` runs them
   # as REAL assertions -- no hou, no hython spawn, no skip-counted-as-pass.
-  - description: "Artifact is fresh: complete, ui_available false, build stamp == the build tools/hy.ps1 pins, and not older than the sweep script (the apex_probes H21-stamp class)"
+  - description: "Artifact is fresh: complete, ui_available false, build stamp == the build tools/hy.ps1 pins, and produced by the CURRENT tools/hy_verbs_sweep.py -- the artifact carries a sha256 of that script's source and the verifier re-hashes it (content, not mtime: git does not preserve mtimes, so the old timestamp rule was checkout-order roulette in CI). An artifact with no stamp is unverifiable and FAILS. (The apex_probes H21-stamp class.)"
     verify: "python harness/verify/hython_verbs.py --check freshness"
     passing: false
   - description: "The 22 headless-working verbs still return ok; any regression names the verb"

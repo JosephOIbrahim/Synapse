@@ -11,6 +11,13 @@ Safety, stated once:
   * A scene fingerprint is taken before and after. A "read-only" verb that
     moves it is reported as a finding, not swallowed.
 
+Provenance: the artifact carries sweep_src_sha256 -- the sha256 of THIS file as
+it was when the sweep ran. harness/verify/hython_verbs.py compares that stamp
+against the current file, so an artifact produced by an older version of this
+script fails freshness on any machine. It deliberately does not use mtimes: git
+does not preserve them, so on a clean clone or in CI the file order is
+checkout-order roulette.
+
 Crash-safety: run_on_main fast path 2 cannot be interrupted from inside Python,
 so a hanging verb can only be ended by the hy.ps1 watchdog killing the process.
 The report is therefore rewritten after EVERY verb, and an in_flight marker is
@@ -20,15 +27,45 @@ that hung. That attribution is the whole point.
 Run:  powershell.exe -File tools\\hy.ps1 tools\\hy_verbs_sweep.py
 """
 
+import hashlib
 import json
 import os
 import sys
 import time
 import traceback
 
+SRC = os.path.abspath(__file__)
 OUT = os.environ.get("HY_OUT") or os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "_hy_verbs_sweep.json")
-REPORT = {"build": None, "in_flight": None, "results": [], "complete": False}
+    os.path.dirname(SRC), "_hy_verbs_sweep.json")
+
+
+# Line endings are representation, not content -- see _src_sha256. Spelled as
+# byte values so no escape survives a copy/paste round trip.
+_CRLF = bytes((13, 10))
+_LF = bytes((10,))
+
+
+def _src_sha256():
+    """sha256 of THIS file's CONTENT, stamped into the artifact it writes.
+
+    The stamp goes in the artifact, never in the source, so there is no
+    self-reference problem.
+
+    CRLF is normalized to LF before hashing, and harness/verify/hython_verbs.py
+    normalizes identically. .gitattributes pins `*.py text eol=lf`, but a
+    working tree can still hold CRLF for a file committed before that took
+    effect -- `git ls-files --eol harness/verify/hython_verbs.py` reports
+    `i/lf w/crlf` in this very repo. Hashing raw bytes would then stamp CRLF
+    here and compare against an LF checkout in CI: the same false failure this
+    stamp exists to kill. Line endings are representation; the gate is about
+    content.
+    """
+    with open(SRC, "rb") as f:
+        return hashlib.sha256(f.read().replace(_CRLF, _LF)).hexdigest()
+
+
+REPORT = {"build": None, "in_flight": None, "results": [], "complete": False,
+          "sweep_src_sha256": _src_sha256()}
 
 
 def flush():

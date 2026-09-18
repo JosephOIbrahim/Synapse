@@ -9,8 +9,16 @@ drifted from the frozen baseline.
 
 Staleness is the failure class this guards hardest. An artifact that is
 complete and internally consistent but was produced against a DIFFERENT build,
-or before the sweep script last changed, is exactly the apex_probes.py
+or by an OLDER version of the sweep script, is exactly the apex_probes.py
 H21-stamp defect wearing new clothes. --check freshness fails on both.
+
+Script drift is detected by CONTENT, not mtime. tools/hy_verbs_sweep.py stamps
+a sha256 of its own source into the artifact; this file re-hashes the source on
+disk and compares. Git does not preserve mtimes, so the old timestamp
+comparison was checkout-order roulette on a clean clone and in CI -- a gate
+that fails for a reason unrelated to what it guards. An artifact carrying no
+stamp is UNVERIFIABLE and therefore FAILS: a gate that cannot see is not an
+open gate.
 
 Usage:
     python harness/verify/hython_verbs.py --check all
@@ -19,6 +27,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -32,6 +41,11 @@ LAUNCHER = os.path.join(REPO, "tools", "hy.ps1")
 BASELINE = os.path.join(REPO, "tools", "hy_verbs_baseline.json")
 
 UI_BOUND = "capture_viewport"
+
+# Must match tools/hy_verbs_sweep.py. Spelled as byte values so no escape
+# survives a copy/paste round trip.
+_CRLF = bytes((13, 10))
+_LF = bytes((10,))
 
 
 FAILURES = []
@@ -56,6 +70,19 @@ def pinned_build():
     return m.group(1) if m else None
 
 
+def sweep_src_sha256():
+    """sha256 of the sweep script's CONTENT as it exists on disk right now.
+
+    Normalizes CRLF to LF exactly as tools/hy_verbs_sweep.py does when it
+    stamps itself. Both sides must agree or the gate false-fails on a working
+    tree whose line endings drifted from the .gitattributes `eol=lf` pin --
+    which has already happened to this very file (`git ls-files --eol` reports
+    `i/lf w/crlf` for it).
+    """
+    with open(SWEEP_SRC, "rb") as f:
+        return hashlib.sha256(f.read().replace(_CRLF, _LF)).hexdigest()
+
+
 def statuses(sweep):
     return {r["verb"]: r["status"] for r in sweep.get("results", [])}
 
@@ -70,8 +97,17 @@ def check_freshness(sweep, base):
              % (sweep.get("build"), pin))
     if sweep.get("ui_available"):
         fail("freshness", "artifact was produced WITH a UI; it is not a headless result")
-    if os.path.getmtime(SWEEP) < os.path.getmtime(SWEEP_SRC):
-        fail("freshness", "hy_verbs_sweep.py is newer than its artifact -- re-run the sweep")
+    stamped = sweep.get("sweep_src_sha256")
+    if not stamped:
+        fail("freshness", "artifact carries no sweep_src_sha256 stamp -- WHICH script "
+                          "produced it is UNVERIFIABLE, and unverifiable is not a pass; "
+                          "re-run the sweep")
+    else:
+        current = sweep_src_sha256()
+        if stamped != current:
+            fail("freshness", "hy_verbs_sweep.py CHANGED since it produced this artifact "
+                              "-- sha256 mismatch: artifact stamped %s, source on disk "
+                              "is %s; re-run the sweep" % (stamped, current))
 
 
 def check_ok(sweep, base):
