@@ -1,0 +1,107 @@
+{
+  "stages": {
+    "runtime": {
+      "status": "ok",
+      "data": {
+        "hou_build": "22.0.417",
+        "python": "3.13.10",
+        "ui_available": false,
+        "pid": 56448,
+        "pref_dir": "C:/Users/User/OneDrive/Documents/houdini22.0"
+      },
+      "ms": 0.0
+    },
+    "dispatch": {
+      "status": "ok",
+      "data": {
+        "result": 42,
+        "ran_on_thread": "MainThread",
+        "hdefereval_before": false,
+        "hdefereval_after": false,
+        "fast_path_2_confirmed": true
+      },
+      "ms": 302.4
+    },
+    "verbs": {
+      "status": "ok",
+      "data": {
+        "total": 144,
+        "clean_count": 143,
+        "ui_risk_count": 1,
+        "unreadable_count": 0,
+        "ui_risk": [
+          {
+            "verb": "capture_viewport",
+            "tokens": [
+              "SceneViewer",
+              "curDesktop",
+              "flipbook",
+              "hou.ui",
+              "paneTabOfType"
+            ]
+          }
+        ],
+        "sample_clean": [
+          "add_memory",
+          "assess_cache",
+          "assess_render_ready",
+          "assign_material",
+          "autonomous_render",
+          "batch_commands",
+          "configure_light_linking",
+          "configure_render_passes",
+          "connect_nodes",
+          "context",
+          "cops_analyze_render",
+          "cops_bake_textures",
+          "cops_batch_cook",
+          "cops_composite_aovs",
+          "cops_connect",
+          "cops_create_copnet",
+          "cops_create_network",
+          "cops_create_node",
+          "cops_create_solver",
+          "cops_growth_propagation",
+          "cops_pixel_sort",
+          "cops_procedural_texture",
+          "cops_reaction_diffusion",
+          "cops_read_layer_info",
+          "cops_set_opencl",
+          "cops_slap_comp",
+          "cops_stamp_scatter",
+          "cops_stylize",
+          "cops_temporal_analysis",
+          "cops_to_materialx",
+          "cops_wetmap",
+          "create_material",
+          "create_node",
+          "create_point_instancer",
+          "create_textured_material",
+          "create_usd_prim",
+          "decide",
+          "delete_node",
+          "doctor",
+          "emergency_halt"
+        ],
+        "note": "ui_risk is a STATIC scan of handler source, not a proven failure"
+      },
+      "ms": 64.5
+    },
+    "live_call": {
+      "status": "ok",
+      "data": {
+        "executed": "get_scene_info",
+        "attempts": [
+          {
+            "verb": "get_scene_info",
+            "status": "ok",
+            "preview": "{\"hip_file\": \"untitled.hip\", \"frame\": 1, \"fps\": 24.0, \"frame_range\": [1, 240]}"
+          }
+        ]
+      },
+      "ms": 0.2
+    }
+  },
+  "ok": true,
+  "total_ms": 367.1
+}

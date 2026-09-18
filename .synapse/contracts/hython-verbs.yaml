@@ -1,0 +1,40 @@
+# HY-VERBS -- headless verb surface, PROBED. GREEN -- probe + artifact + pure-python
+# verifier. Records the TOPS defect; does NOT fix it (blueprint sec.3 doctrine:
+# knowledge artifacts are in scope, changes to the defective surface are not).
+id: hython-verbs
+goal: "Freeze the headless verb surface of SYNAPSE under hython as a build-stamped evidence artifact and gate it. tools/hy_verbs_sweep.py executes every verb in _READ_ONLY_COMMANDS under tools/hy.ps1 (pinned build + process watchdog) and writes tools/_hy_verbs_sweep.json; harness/verify/hython_verbs.py asserts the table against tools/hy_verbs_baseline.json. Three classes are asserted SEPARATELY and must not be collapsed: 22 verbs that work headless, capture_viewport as permanently UI-bound correct behaviour, and six tops_* verbs as a LIVE DEFECT with cause pinned to file:line. Staleness is a hard fail, never a silent pass."
+model: sonnet
+autonomy: green
+owns:
+  - "tools/hy.ps1"
+  - "tools/hy_verbs.py"
+  - "tools/hy_verbs_sweep.py"
+  - "tools/hy_verbs_baseline.json"
+  - "harness/verify/hython_verbs.py"
+do_not_touch:
+  - "python/synapse/server/handlers_tops/**"   # the recorded defect -- record, do not fix
+  - "python/synapse/server/main_thread.py"     # C4/F3/H3/C6 incident surface
+  - "python/synapse/panel/**"
+  - "python/synapse/cognitive/**"
+features:
+  # Every goalpost is PURE-PYTHON against the artifact. Stock `python` runs them
+  # as REAL assertions -- no hou, no hython spawn, no skip-counted-as-pass.
+  - description: "Artifact is fresh: complete, ui_available false, build stamp == the build tools/hy.ps1 pins, and not older than the sweep script (the apex_probes H21-stamp class)"
+    verify: "python harness/verify/hython_verbs.py --check freshness"
+    passing: false
+  - description: "The 22 headless-working verbs still return ok; any regression names the verb"
+    verify: "python harness/verify/hython_verbs.py --check ok"
+    passing: false
+  - description: "capture_viewport stays headless_fail -- UI-bound by design, expected-absent permanently, never scored as a defect"
+    verify: "python harness/verify/hython_verbs.py --check ui-bound"
+    passing: false
+  - description: "The six tops_* verbs remain the exact known-defect set (set equality both ways); cause recorded as bare `import hdefereval` in the handler body at diagnostics.py:248 / work_items.py:40"
+    verify: "python harness/verify/hython_verbs.py --check tops-defect"
+    passing: false
+  - description: "Read-only taxonomy held: scene fingerprint did not move across the sweep"
+    verify: "python harness/verify/hython_verbs.py --check no-mutation"
+    passing: false
+  - description: "Suite still green"
+    verify: "pytest -q"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached"

@@ -1,0 +1,48 @@
+{
+  "frozen_from_build": "22.0.417",
+  "python": "3.13.10",
+  "ok_verbs": [
+    "assess_cache",
+    "context",
+    "emergency_halt",
+    "farm_capabilities",
+    "farm_inspect",
+    "farm_jobs",
+    "get_health",
+    "get_help",
+    "get_live_metrics",
+    "get_metrics",
+    "get_scene_info",
+    "get_selection",
+    "inspect_scene",
+    "inspect_selection",
+    "list_recipes",
+    "ping",
+    "recall",
+    "render_farm_cancel",
+    "render_farm_status",
+    "render_processes",
+    "router_stats",
+    "search"
+  ],
+  "ui_bound": [
+    "capture_viewport"
+  ],
+  "tops_defect": [
+    "tops_diagnose",
+    "tops_get_cook_stats",
+    "tops_get_dependency_graph",
+    "tops_get_work_items",
+    "tops_pipeline_status",
+    "tops_query_items"
+  ],
+  "defect_note": {
+    "cause": "bare `import hdefereval` in the handler body raises at import outside a graphical Houdini, before run_on_main is reached",
+    "sites": [
+      "python/synapse/server/handlers_tops/diagnostics.py:248",
+      "python/synapse/server/handlers_tops/work_items.py:40"
+    ],
+    "marshal": "python/synapse/server/handlers_tops/_common.py \u2014 wraps hdefereval.executeInMainThreadWithResult, the pre-migration pattern main_thread.py replaced; no timeout, no stall detector, no C4 zombie-kill, no C6 telemetry",
+    "status": "RECORDED, not fixed \u2014 this contract does not touch handlers_tops"
+  }
+}

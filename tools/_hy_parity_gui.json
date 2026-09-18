@@ -1,0 +1,338 @@
+{
+  "endpoint": "ws://localhost:9999/synapse",
+  "sidecar": {
+    "host": "localhost",
+    "pid": 65084,
+    "port": 9999,
+    "protocol": "4.0.0",
+    "ts": "2026-09-18T14:26:35.016260+00:00"
+  },
+  "headless_build": "22.0.417",
+  "results": [
+    {
+      "verb": "assess_cache",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"message\": \"Cache advisor is disabled (Phase 1, feature-flagged off by default).\\nSet SYNAPSE_CACHE_ADVISOR_ENABLED=1 to enable read-only cache assessment.\\nNo node was inspected and no cook was triggered.\", \"status\": \"",
+      "ms": 53.0
+    },
+    {
+      "verb": "assess_render_ready",
+      "gui": "ok",
+      "headless": "error",
+      "detail": "{\"clauses\": {\"aovs\": \"pass\", \"camera\": \"pass\", \"composition_errors\": \"pass\", \"materials_bound\": \"pass\", \"output_path\": \"fail\", \"rendersettings\": \"pass\", \"xpu_compatible\": \"n/a\"}, \"details\": {\"aovs\": {\"rendervars\": [\"/Ren",
+      "ms": 75.1
+    },
+    {
+      "verb": "capture_viewport",
+      "gui": "ok",
+      "headless": "headless_fail",
+      "detail": "{\"format\": \"jpeg\", \"height\": 600, \"image_path\": \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\houdini_temp\\\\synapse_cap_1789752304455.0001.jpg\", \"width\": 800}",
+      "ms": 169.3
+    },
+    {
+      "verb": "context",
+      "gui": "error",
+      "headless": "ok",
+      "detail": "Hit a snag processing that request: Source memory has duplicate identities",
+      "ms": 170.5
+    },
+    {
+      "verb": "cops_analyze_render",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
+      "ms": 0.5
+    },
+    {
+      "verb": "cops_read_layer_info",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
+      "ms": 0.4
+    },
+    {
+      "verb": "emergency_halt",
+      "gui": "excluded",
+      "headless": "ok"
+    },
+    {
+      "verb": "farm_capabilities",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"build\": \"22.0.400\", \"license_entitlement\": \"checked when a detached process starts; farm concurrency unknown\", \"profiles\": [{\"available\": true, \"id\": \"local\", \"label\": \"This computer\", \"limits\": {\"concurrent_tasks\": 1,",
+      "ms": 3.8
+    },
+    {
+      "verb": "farm_inspect",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"frames\": [1, 40, 1], \"note\": \"Save the scene before preparing this render.\", \"source_hip\": \"D:/MODEL_COLLECTION/Astra_Saucer_Sept2026/newProject/scripts/DISC18_RevB_Procedural.hiplc\", \"source_node\": \"/stage/OUTPUT\", \"s",
+      "ms": 1.1
+    },
+    {
+      "verb": "farm_job",
+      "gui": "error",
+      "headless": "needs_params",
+      "detail": "No render history exists here yet. Prepare a render first.",
+      "ms": 0.7
+    },
+    {
+      "verb": "farm_jobs",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"jobs\": []}",
+      "ms": 0.6
+    },
+    {
+      "verb": "get_health",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"healthy\": true, \"houdini_available\": true, \"protocol_version\": \"4.0.0\", \"write_plane\": {\"backend_fallback\": null, \"reason\": null, \"status\": \"ok\", \"store\": {\"accepting_writes\": true, \"backend_health\": {\"active_backend\":",
+      "ms": 2.0
+    },
+    {
+      "verb": "get_help",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"commands\": [\"ping\", \"get_health\", \"doctor\", \"get_help\", \"create_node\", \"delete_node\", \"connect_nodes\", \"network_explain\", \"get_parm\", \"set_parm\", \"get_scene_info\", \"get_selection\", \"execute_python\", \"execute_vex\", \"wri",
+      "ms": 0.7
+    },
+    {
+      "verb": "get_live_metrics",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"resilience\": {\"circuit_state\": null, \"circuit_trip_count\": 0, \"health_status\": null, \"measured\": false, \"rate_limit_rejects\": 0, \"rate_limiter_active\": false, \"uptime_seconds\": 0.0}, \"routing\": {\"avg_latency_ms\": null,",
+      "ms": 0.4
+    },
+    {
+      "verb": "get_metrics",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"format\": \"prometheus\", \"text\": \"\\n# HELP synapse_circuit_breaker_state Current circuit breaker state (0=closed, 1=open, 2=half_open)\\n# TYPE synapse_circuit_breaker_state gauge\\nsynapse_circuit_breaker_state 0\\n\\n# HEL",
+      "ms": 1.5
+    },
+    {
+      "verb": "get_parm",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
+      "ms": 0.4
+    },
+    {
+      "verb": "get_scene_info",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"fps\": 24.0, \"frame\": 1, \"frame_range\": [1, 40], \"hip_file\": \"D:\\\\MODEL_COLLECTION\\\\Astra_Saucer_Sept2026\\\\newProject\\\\scripts\\\\DISC18_RevB_Procedural.hiplc\"}",
+      "ms": 0.4
+    },
+    {
+      "verb": "get_selection",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"count\": 144, \"nodes\": [{\"name\": \"transform16\", \"path\": \"/stage/sopcreate1/sopnet/create/transform16\", \"type\": \"xform\"}, {\"name\": \"subdivide8\", \"path\": \"/stage/sopcreate1/sopnet/create/subdivide8\", \"type\": \"subdivide\"},",
+      "ms": 0.7
+    },
+    {
+      "verb": "get_stage_info",
+      "gui": "error",
+      "headless": "needs_params",
+      "detail": "No USD stage found -- select a LOP node or pass a node path so I know which stage to look at",
+      "ms": 0.5
+    },
+    {
+      "verb": "get_usd_attribute",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'prim_path', 'primPath'\nHINT: Common names are 'prim_path' or 'primPath'",
+      "ms": 0.3
+    },
+    {
+      "verb": "inspect_node",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
+      "ms": 0.3
+    },
+    {
+      "verb": "inspect_scene",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"artist_notes\": [{\"path\": \"/obj\", \"text\": \"GEOMETRY\", \"type\": \"sticky\"}, {\"path\": \"/mat/disc18_metal\", \"text\": \"This network does not display VOP nodes because it is using cached VEX code from the HDA definition. Thus, ",
+      "ms": 1.7
+    },
+    {
+      "verb": "inspect_selection",
+      "gui": "error",
+      "headless": "ok",
+      "detail": "Hit a snag processing that request: 'NoneType' object has no attribute 'path'",
+      "ms": 7.6
+    },
+    {
+      "verb": "knowledge_lookup",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'query', 'q', 'search'\nHINT: Common names are 'query' or 'q'",
+      "ms": 0.4
+    },
+    {
+      "verb": "list_recipes",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"count\": 62, \"recipes\": [{\"category\": \"lighting\", \"description\": \"Create a rectangular area light panel (RectLight) with configurable width and height. Large area = soft shadows. Lighting Law: intensity always 1.0, brig",
+      "ms": 37.5
+    },
+    {
+      "verb": "network_explain",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
+      "ms": 0.5
+    },
+    {
+      "verb": "ping",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"pong\": true, \"protocol_version\": \"4.0.0\", \"timestamp\": 1789752304.8569505}",
+      "ms": 0.3
+    },
+    {
+      "verb": "read_material",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'prim_path', 'primPath'\nHINT: Common names are 'prim_path' or 'primPath'",
+      "ms": 0.4
+    },
+    {
+      "verb": "recall",
+      "gui": "error",
+      "headless": "ok",
+      "detail": "Hit a snag processing that request: Source memory has duplicate identities",
+      "ms": 87.0
+    },
+    {
+      "verb": "render_farm_cancel",
+      "gui": "excluded",
+      "headless": "ok"
+    },
+    {
+      "verb": "render_farm_status",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"cancelled\": false, \"running\": false, \"scene_tags\": []}",
+      "ms": 0.9
+    },
+    {
+      "verb": "render_processes",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"live_count\": 0, \"mappable_count\": 0, \"note\": \"Rows with pid -1 are renders that have already ended -- Houdini's render manager keeps the slot; they are not killable. Only usdrender_rop (Karma/husk) rows carry node iden",
+      "ms": 1.0
+    },
+    {
+      "verb": "render_stop",
+      "gui": "error",
+      "headless": "needs_params",
+      "detail": "render_stop needs either a node (ROP path) or a pid. Call render_processes first to see what is actually running.",
+      "ms": 0.3
+    },
+    {
+      "verb": "route_chat",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "ms": 0.8
+    },
+    {
+      "verb": "router_stats",
+      "gui": "ok",
+      "headless": "ok",
+      "detail": "{\"error\": \"Router not initialized\"}",
+      "ms": 0.3
+    },
+    {
+      "verb": "search",
+      "gui": "error",
+      "headless": "ok",
+      "detail": "Hit a snag processing that request: Source memory has duplicate identities",
+      "ms": 58.5
+    },
+    {
+      "verb": "solaris_validate_ordering",
+      "gui": "ok",
+      "headless": "needs_params",
+      "detail": "{\"clean\": true, \"issues\": [], \"nodes_visited\": 11, \"start_node\": \"/stage/OUTPUT\"}",
+      "ms": 2.3
+    },
+    {
+      "verb": "tops_diagnose",
+      "gui": "needs_params",
+      "headless": "headless_fail",
+      "detail": "Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
+      "ms": 0.4
+    },
+    {
+      "verb": "tops_get_cook_stats",
+      "gui": "needs_params",
+      "headless": "headless_fail",
+      "detail": "Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
+      "ms": 0.3
+    },
+    {
+      "verb": "tops_get_dependency_graph",
+      "gui": "needs_params",
+      "headless": "headless_fail",
+      "detail": "Missing required parameter. Expected one of: 'topnet_path', 'topnet', 'network_path'\nHINT: Common names are 'topnet_path' or 'topnet'",
+      "ms": 0.4
+    },
+    {
+      "verb": "tops_get_work_items",
+      "gui": "needs_params",
+      "headless": "headless_fail",
+      "detail": "Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
+      "ms": 0.3
+    },
+    {
+      "verb": "tops_pipeline_status",
+      "gui": "needs_params",
+      "headless": "headless_fail",
+      "detail": "Missing required parameter. Expected one of: 'topnet_path', 'topnet', 'network_path'\nHINT: Common names are 'topnet_path' or 'topnet'",
+      "ms": 0.3
+    },
+    {
+      "verb": "tops_query_items",
+      "gui": "needs_params",
+      "headless": "headless_fail",
+      "detail": "Missing required parameter. Expected one of: 'node', 'path', 'node_path'\nHINT: Common names are 'node' or 'path'",
+      "ms": 0.3
+    },
+    {
+      "verb": "validate_frame",
+      "gui": "needs_params",
+      "headless": "needs_params",
+      "detail": "Missing required parameter. Expected one of: 'image_path', 'image', 'frame_path'\nHINT: Common names are 'image_path' or 'image'",
+      "ms": 0.3
+    }
+  ],
+  "excluded": [
+    "emergency_halt",
+    "render_farm_cancel"
+  ],
+  "summary": {
+    "compared": 42,
+    "excluded": 2,
+    "agree": 26,
+    "diff": 16,
+    "gui_ok_headless_not": [
+      "assess_render_ready",
+      "capture_viewport",
+      "solaris_validate_ordering"
+    ],
+    "headless_ok_gui_not": [
+      "context",
+      "inspect_selection",
+      "recall",
+      "search"
+    ]
+  }
+}
