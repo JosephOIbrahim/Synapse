@@ -19,7 +19,9 @@ cp311; the embedded version is whatever the live interpreter reports.
   live-introspected op. Never hardcode an H21-era constant the probe flagged.
 - **One source of UI truth:** `panel/`. The legacy `ui/` tree is dead — never add to it.
 - **One source of version.** `VERSION` is canonical; `pyproject.toml` and the demo script
-  follow it. Don't edit `VERSION` from an agent.
+  follow it. Never edit `VERSION` on your own initiative, and never by hand. The one
+  exception is an operator-directed release cut, where `scripts/sync_version.py --write`
+  is the only writer and the human supplies `SYNAPSE_GATE_C=1`.
 - **Reach tools by verb × context** (texture, scatter) × (COP, LOP) — palette, not buried menus.
 - **No hardcoded user paths.** Install must work via the package on a clean machine. The
   `C:\Users\User\SYNAPSE` fallback is a bug, not a convenience.
@@ -77,7 +79,10 @@ Nothing machine-specific belongs in this file.
 
 ## Commits
 One atomic commit per sprint. `feat(area): <id> <what>` / `fix(area): <id> <what>`. Never
-squash unrelated work. Never `git push` or `git merge` — promotion to main is human.
+squash unrelated work. Never `git push` or `git merge` on your own initiative — promotion
+to main is human. One exception, and it is narrow: an operator-directed release cut, where
+the human supplies `SYNAPSE_GATE_C=1` and the push follows `scripts/tag_release.py` and
+`scripts/release_ci_gate.py`. A bare `git push` is never in scope, gate override or not.
 
 ## When stuck
 Write the blocker to `.claude/remediation_ticket.md` and stop. A clean stop beats a broken

@@ -278,6 +278,8 @@ mutation â€” a real per-op cost floor on large production stages.
 | **lead** | Everything artist can + manage users, list sessions | Configure server |
 | **admin** | Unrestricted access | Nothing restricted |
 
+**What "execute code" grants.** `execute_python` and `execute_vex` are role-gated (`server/rbac.py:63,120`) — a viewer cannot call them. What the role check does *not* do is sandbox the payload: code that passes it runs in the Houdini process with full `__builtins__`, no import filter and no length cap. Granting `artist` is therefore granting arbitrary local code execution on the host, and should be scoped like that rather than like a scene-editing permission.
+
 ## Firewall Rules
 
 For `studio-lan` or `studio-vpn` mode, open the WebSocket port:
