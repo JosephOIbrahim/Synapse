@@ -7,10 +7,14 @@ Houdini runs SYNAPSE with its own Python.
 
 ## Windows installer
 
-**[Download SYNAPSE-5.74.0-Setup.exe](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.74.0/SYNAPSE-5.74.0-Setup.exe)**
+**[Download the latest Setup.exe](https://github.com/JosephOIbrahim/Synapse/releases/latest)**
 
-[Release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.74.0) ·
-[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.74.0/SHA256SUMS.txt)
+The release page carries one installer, named for its own version:
+`SYNAPSE-<version>-Setup.exe`. Every link on this page follows `latest`, so it
+cannot hand you a superseded build.
+
+[Release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/latest) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/latest/download/SHA256SUMS.txt)
 
 1. Save your scene and close Houdini.
 2. Open Setup. This installer is unsigned, so Windows may show an unknown publisher.
@@ -21,9 +25,15 @@ Houdini runs SYNAPSE with its own Python.
 
 Setup includes required Python dependencies and the separately licensed Moneta
 bundle; it needs no terminal, Git or system Python. Model credentials and optional
-external services are separate. Read the release notes for the tested scope:
-native wizard visual inspection, clean-machine testing, live model/scene behavior
-and active Moneta memory persistence remain unverified.
+external services are separate.
+
+**What was tested lives in that release's own notes, not on this page.** Read its
+asset table before you install. As of v5.75.1 (2026-09-17) the release carries
+three assets and `installer-verification.json` is not one of them: the installer
+is built from pinned, hash-verified inputs, but it has not been qualified against
+a running Houdini. Native wizard inspection, clean-machine testing, live
+model/scene behavior and active Moneta persistence are each verified per release
+— never by this page.
 
 The source installation steps below are an alternative route. Avoid running
 the source scripts over a registration managed by the Setup wizard.

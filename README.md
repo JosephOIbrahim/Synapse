@@ -50,21 +50,23 @@ It does not reverse files written to disk.
 ### What happens when you send that
 
 ```mermaid
-flowchart LR
-    A["You type<br/>make a box"] --> B["Model picks a tool"]
-    B --> C{"Is it destructive?"}
-    C -->|"no"| D["Runs"]
-    C -->|"yes"| E["Asks you first"]
-    E --> D
-    D --> F["Houdini's main thread<br/>inside one undo group"]
-    F --> G["Receipt: what one<br/>Ctrl+Z reverses"]
+flowchart TD
+    A["You type<br/>make a box"] --> B["Model picks<br/>a tool"]
+    B --> C{"What kind?"}
+    C -->|"a read"| R["Runs.<br/>Nothing to undo"]
+    C -->|"a change it<br/>may make"| D["Runs on the main<br/>thread, in one<br/>undo group"]
+    C -->|"a change it<br/>may not"| X["Refused,<br/>with a reason"]
+    D --> G["Receipt: what one<br/>Ctrl+Z reverses"]
+    X --> P["You do it in Houdini,<br/>where you can see it"]
     classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF
-    class A,B,C,D,E,F,G dark
+    class A,B,C,R,D,X,G,P dark
 ```
 
 The receipt is the part worth knowing.
 
 Every handler already worked out what a single **Ctrl+Z** would take back. It just used to throw that away. Now it tells you, before you need it.
+
+**What it will not do by itself.** Deleting a node, running Python or VEX, rendering, exporting and cooking a PDG graph are off the panel worker's list. It is told so in the tool result and re-plans; those you do in Houdini. Unknown tools fail closed. The list is derived from gate levels, not hand-maintained — `python/synapse/panel/worker_policy.py`.
 
 **One honest limit:** the undo group *groups*. It does not roll back. If a build fails halfway, the part that was already made stays in your scene until you undo it deliberately.
 
@@ -82,7 +84,7 @@ Every handler already worked out what a single **Ctrl+Z** would take back. It ju
 |---|---|---|
 | **Stop** | The panel's current turn. | Doesn't prove a cook or render already running has finished. |
 | **Cancel cook** *(overflow menu)* | The one cooking node it names. | Only offered when SYNAPSE knows the node — it says so when it doesn't. |
-| **Emergency halt** *(overflow menu)* | PDG cooks under `/obj` (cancelled) and a session report (captured). | Doesn't stop background renders. They are reported back so you can stop them deliberately. |
+| **Emergency halt** *(overflow menu)* | Cooking TOP networks under `/tasks`, `/obj`, `/stage` and `/out` (cancelled) and a session report (captured). | Doesn't stop background renders. They are reported back so you can stop them deliberately. |
 
 They are not the same.
 
@@ -90,10 +92,10 @@ Three verbs, three consequences, kept apart on purpose. The one you want when a 
 
 ```mermaid
 flowchart TB
-    S["Stop"] --> S1["The panel's current turn"]
-    C["Cancel cook"] --> C1["One named cooking node"]
-    H["Emergency halt"] --> H1["PDG cooks under /obj"]
-    H --> H2["Writes a session report"]
+    S["Stop"] --> S1["The panel's<br/>current turn"]
+    C["Cancel cook"] --> C1["One named<br/>cooking node"]
+    H["Emergency halt"] --> H1["Cooking TOP networks in<br/>/tasks /obj /stage /out"]
+    H --> H2["Writes a<br/>session report"]
     H -.->|"does not reach"| R["Background renders"]
     R --> R1["Reported back so you<br/>can stop them yourself"]
     classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF
@@ -164,28 +166,36 @@ The optional observation loop connects Moneta, Octavius and Hanish. Three things
 <details>
 <summary><strong>For developers: policy, evidence and source setup</strong></summary>
 
-**137 tools, two paths.** The count is `len(TOOL_DEFS)` in `python/synapse/mcp/_tool_registry.py`, pinned by `tests/test_phase0c_doc1_toolcount.py`.
+**137 tools, two roads.** The count is `len(TOOL_DEFS)` in `python/synapse/mcp/_tool_registry.py`, pinned by `tests/test_phase0c_doc1_toolcount.py`.
 
-- The **external MCP bridge** and the **live WebSocket handlers** have different consent and integrity boundaries.
-- **Panel workers** add their own tool restrictions on top.
+Which road a call takes is decided by **how the client connected**, not by what the tool is called.
+
+- The **in-Houdini `/mcp` HTTP endpoint** routes mutating tools through `LosslessExecutionBridge` — `python/synapse/mcp/tools.py`, `dispatch_tool`. Reads skip it; farm-control calls and the doctor are routed separately and say so in their own path field.
+- The **`/synapse` WebSocket** calls `server.handlers` directly — no bridge routing. Mutations there still leave an observe-only, path-qualified `IntegrityBlock` in the shared trail (`python/synapse/server/integrity_envelope.py`).
+- The **panel's own tool calls take the bridge road** — its executor POSTs to that local `/mcp` endpoint (`python/synapse/panel/tool_executor.py`).
+- The **stdio MCP server this repo configures** (`.mcp.json` → `mcp_server.py`) forwards over WebSocket to the live handlers. It is *not* bridge-routed, despite the name.
+- **Panel workers** add their own tool restrictions on top of whichever road they are on.
 
 ```mermaid
 flowchart TB
-    subgraph mcp["External MCP client, /mcp"]
-        M1["LosslessExecutionBridge"] --> M2["undo group · main thread<br/>consent gate · composition check<br/>IntegrityBlock every op"]
-    end
-    subgraph live["Panel and live clients, /synapse WebSocket"]
-        L1["server.handlers, called directly"] --> L2["undo group on tracked handlers<br/>main thread · RBAC<br/>observe-only IntegrityBlock"]
-    end
-    M2 --> H["Houdini"]
-    L2 --> H
+    P["Panel"] --> E["In-Houdini /mcp<br/>HTTP endpoint"]
+    M["MCP client<br/>.mcp.json stdio"] --> W["/synapse<br/>WebSocket"]
+    C["WebSocket client"] --> W
+    E --> B["LosslessExecutionBridge<br/>undo group · main thread<br/>composition check<br/>IntegrityBlock per op"]
+    W --> L["server.handlers, direct<br/>undo group on tracked handlers<br/>main thread · RBAC<br/>observe-only IntegrityBlock"]
+    B --> H["Houdini"]
+    L --> H
     classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF
-    class M1,M2,L1,L2,H dark
+    class P,M,C,E,W,B,L,H dark
 ```
 
-The two paths are drawn apart because they **are** apart.
+The two roads are drawn apart because they **are** apart.
 
-The bridge is the audited road: consent gates, composition validation, a fidelity verdict per operation. The live handler path reaches the same `hou` API by its own wiring — main-thread safe and RBAC-guarded, but it does not escalate consent, and `execute_python` / `execute_vex` run there ungated. That is the deliberate posture for a single user on localhost, and a real handler-layer gate is a prerequisite before any multi-user deployment.
+The bridge is the audited road: undo grouping, composition validation, a fidelity verdict per operation. Its gate levels are real code — and **no shipped path arms them.** There is one bridge per process, built gate-less with an auto-approve callback (`shared/bridge.py`, `get_process_bridge`), and the panel re-asserts that posture on first use (`python/synapse/panel/bridge_adapter.py`). That is deliberate: the blocking approval poll sleeps on the GUI thread, and the only thread that can draw the approval card is the one it would be sleeping on. Wiring a real gate there re-arms a confirmed Houdini deadlock. Pinned by `tests/test_panel_consent_no_freeze.py`.
+
+The live handler path reaches the same `hou` API by its own wiring — main-thread safe and RBAC-guarded, but it does not escalate consent either, and `execute_python` / `execute_vex` run there ungated.
+
+So consent today is **structural, not interactive**: the panel worker is refused the gated tools outright rather than asked about them. That is the posture for a single user on localhost. A real gate — one that asks without freezing — is a prerequisite before any multi-user deployment.
 
 Anything that claims otherwise is drift. Path-qualified `IntegrityBlock`s record which road an operation took and mark the anchors that did not apply as not-applicable, never as true.
 
