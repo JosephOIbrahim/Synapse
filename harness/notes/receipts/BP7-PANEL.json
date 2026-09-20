@@ -1,0 +1,34 @@
+{
+  "leg": "BP7-PANEL",
+  "status": "green_with_findings",
+  "acceptance": [
+    {
+      "predicate": "note exists with a VERDICT header and all four sections",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/bp7_scout_H1.md has VERDICT: UNKNOWN, Mechanism, Evidence (T1/T2/T3), Reproduction, Smallest fix shape"
+    },
+    {
+      "predicate": "every cited file:line exists and contains the quoted snippet",
+      "verdict": "pass",
+      "evidence": "All claims verified by grep: chat_panel.py:141,891-892,903-904,914-915; ws_bridge.py:338-341,343-344; gate_widget.py zero refs to waiting state"
+    },
+    {
+      "predicate": "bus finding posted with the verdict",
+      "verdict": "pass",
+      "evidence": "Finding posted 2026-09-20 09:55:16 UTC with H1 UNKNOWN verdict and anchor to bp7_scout_H1.md"
+    }
+  ],
+  "findings": [
+    {
+      "hypothesis": "H1",
+      "verdict": "UNKNOWN",
+      "claim": "The panel's typing indicator and waiting state fail to clear after turn 1 because the route_chat response is silently dropped (lacks 'response'/'tier' keys)",
+      "evidence_anchor": "harness/battleplan/notes/bp7_scout_H1.md",
+      "requires": "GUI reproduction in Houdini H22; the silent-drop path at ws_bridge.py:343-344 is reachable but untraced to a server condition that omits those fields"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": [],
+  "head_sha": "cad9489503537a4e63c23892606ad119e0aa0042",
+  "turns": 5
+}
