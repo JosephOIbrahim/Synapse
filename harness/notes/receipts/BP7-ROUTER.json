@@ -1,0 +1,53 @@
+{
+  "leg": "BP7-ROUTER",
+  "status": "green_with_findings",
+  "head_sha": "e8857febbf92ef02d1d2cf6b01852fbc661f3143",
+  "acceptance": [
+    {
+      "predicate": "note exists with VERDICT header and all four sections",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/bp7_scout_H4.md contains VERDICT: UNKNOWN header + Mechanism + Evidence + Reproduction + Smallest Fix Shape sections"
+    },
+    {
+      "predicate": "every cited file:line exists and contains quoted snippet",
+      "verdict": "pass",
+      "evidence": "All file:line citations verified: router.py:968 (_get_llm_client), handlers.py:1759-1787 (caching), aliases.py:44 (mapping), router.py:124-125 (timeout config), router.py:685,893 (guarded_create without timeout)"
+    },
+    {
+      "predicate": "bus finding posted with verdict",
+      "verdict": "pass",
+      "evidence": "Bus finding posted 2026-09-20T09:54:24 with claim 'H4 UNKNOWN: cached TieredRouter carries persistent state...'"
+    }
+  ],
+  "findings": [
+    {
+      "id": "H4-router-state-persistence",
+      "claim": "H4 UNKNOWN: Cached TieredRouter carries persistent state that survives across turns",
+      "severity": "medium",
+      "evidence": "TieredRouter._llm_client (router.py:968), TieredRouter._cache (router.py:1008), TieredRouter._tier_pins (router.py:637), TieredRouter._async_results (router.py:845,856) all written during route() calls and reused on next turn",
+      "anchor": "harness/battleplan/notes/bp7_scout_H4.md"
+    },
+    {
+      "id": "H4-timeout-config-unenforced",
+      "claim": "H4 mechanism: Tier timeouts defined (router.py:124-125) but never enforced in route() method",
+      "severity": "high",
+      "evidence": "tier2_timeout and tier3_timeout configured in RoutingConfig but never read/passed to guarded_create() calls (router.py:685, 893). If LLM call hangs on turn 2, route() blocks indefinitely until server 30s slow-op timeout",
+      "anchor": "harness/battleplan/notes/bp7_scout_H4.md"
+    },
+    {
+      "id": "H4-verification-requires-runtime",
+      "claim": "Blocking mechanism is plausible but unconfirmed — requires live Houdini GUI testing",
+      "severity": "info",
+      "evidence": "Route() method has no explicit timeout mechanism and code inspection alone cannot determine if turn 2 blocks. Reproduction requires sending turn 1 chat message, then turn 2, and observing panel response or logs for timeout/block",
+      "anchor": "harness/battleplan/notes/bp7_scout_H4.md"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "tier-timeout-enforcement-needed",
+      "claim": "If H4 is CONFIRMED by runtime testing, tier timeouts must be enforced at either guarded_create() call site or handler-level wrapper",
+      "context": "Tier2/3 LLM calls currently have no timeout enforcement despite config values. A stalled LLM call on turn 2 would block route() until server kill-timeout."
+    }
+  ],
+  "spawn": []
+}
