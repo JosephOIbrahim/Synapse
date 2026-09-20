@@ -1802,10 +1802,16 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         # slow-op kill (which emits nothing, and ws_bridge.py:339 drops a reply
         # that lacks response/tier).
         #
-        # Safe to run route() off this thread: this handler wires no command_fn
-        # into the router (see the TieredRouter(...) construction above), so
-        # route() touches no hou.* API. If a hou-touching command_fn is ever
-        # wired here, this offload must be revisited.
+        # Safe to run route() off this thread, for two reasons (BP8-CRUX finding 3,
+        # 2026-09-20 - the earlier comment claimed route() "touches no hou.* API",
+        # which is false): (1) this handler wires no command_fn into the router
+        # (see the TieredRouter(...) construction above), so no scene edit runs
+        # here; (2) the one hou-touching path route() DOES reach - SynapseMemory
+        # .search via enrich_context() and KnowledgeIndex._match_memory - is
+        # @_on_memory_main (memory/store.py) and marshals itself to the main
+        # thread through run_on_main when hou is present. The off-thread call is
+        # safe because the store marshals, not because nothing touches hou. If a
+        # hou-touching command_fn is ever wired here, this offload must be revisited.
         deadline = getattr(self, "_route_deadline_s", _ROUTE_OVERALL_TIMEOUT_S)
         try:
             _future = _route_pool.submit(
