@@ -1,0 +1,98 @@
+{
+  "leg": "BP7-SYNTH",
+  "status": "green_with_findings",
+  "product_head": "250cb1f34a5d530805c0104626f8c993e1afc764",
+  "base": "29adc6e904b54918b11f082aeaccd6a089f092ea",
+  "acceptance": [
+    {
+      "predicate": "BP7_VERDICT.md has the five sections and one paragraph per hypothesis",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP7_VERDICT.md: paragraphs H1/H2/H4/H6 + H3/H5 not-scouted; sections '## Most likely cause', '## Reproduce in the GUI', '## Smallest fix', '## What only Joe can observe' (plus '## Screen pre-read')"
+    },
+    {
+      "predicate": "Screen pre-read section quotes bp7 screen lines",
+      "verdict": "pass",
+      "evidence": "BP7_VERDICT.md '## Screen pre-read' quotes the jev_screen table verbatim + the ledger brief_line 'screen BP7-MEMORY: REFEREE - full read; weak rows [0, 1, 2]; crux_need 1.03' from harness/jev/ledger/bp7.shadow.screen.jsonl"
+    },
+    {
+      "predicate": "bus finding posted with the one-line cause",
+      "verdict": "pass",
+      "evidence": "bus post n=18d70cdf76b93a50 (bp7, BP7-SYNTH, finding) anchor harness/battleplan/notes/BP7_VERDICT.md"
+    }
+  ],
+  "crucible_criteria": [
+    {
+      "criterion": "every hypothesis paragraph's verdict word matches its scout note's VERDICT header",
+      "verdict": "fail",
+      "evidence": "H1/H4/H6 match (UNKNOWN/UNKNOWN/CONFIRMED). H2 intentionally diverges: paragraph=REFUTED, scout header=CONFIRMED. Overturned on traced line ws_bridge.py:283-284 (finally: self._ws=None) which the scout's confirming quote omitted. Surfaced in doc '## Scout-header reconciliation' and for_ruling below (brief: 'traced line wins over an argument'; Constitution: 'runtime is truth')."
+    },
+    {
+      "criterion": "the Most likely cause is one of the CONFIRMED hypotheses, or the doc says none was confirmed",
+      "verdict": "pass",
+      "evidence": "Doc states plainly: 'No hypothesis is reproduced-confirmed as the sole cause' (the second branch), then names the H4->H1 traced chain with its one UNKNOWN link."
+    },
+    {
+      "criterion": "no product file changed",
+      "verdict": "pass",
+      "evidence": "commit 250cb1f3 = 1 file changed (harness/battleplan/notes/BP7_VERDICT.md); receipt under harness/notes/receipts/. No python/ or product file touched."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "H2 (transport) scout header CONFIRMED overturned to REFUTED. connected (ws_bridge.py:212) does NOT stay true on a dead socket: _connect_and_listen wraps the socket in try/finally and finally:self._ws=None runs on every exit (ws_bridge.py:246,277-284). The scout's confirming quote was truncated before the finally. Next send is correctly refused with BRIDGE_DOWN_LINE.",
+      "anchor": "harness/battleplan/notes/BP7_VERDICT.md (H2)"
+    },
+    {
+      "claim": "H1 (panel) no-recovery half is traced-confirmed even though the scout header (kept) is UNKNOWN: the waiting spinner clears ONLY at chat_panel.py:903-904 (immediate send-fail) and 912-915 (_on_response); _on_connection_error (964) and _on_status_changed (944) do not clear it, and no response-watchdog QTimer exists (234/239 are context/integrity). ws_bridge.py:339-344 silently drops any inner dict lacking response/tier. UNKNOWN = why turn 2 yields no message (needs GUI).",
+      "anchor": "harness/battleplan/notes/BP7_VERDICT.md (H1)"
+    },
+    {
+      "claim": "H4 (router) UNKNOWN but traced defects real: TieredRouter cached once (handlers.py:1759-1777), route() called with no try/except and no timeout (handlers.py:1787-1805); tier2_timeout/tier3_timeout defined (router.py:124-125) but never passed to guarded_create LLM calls (router.py:685,893) - only tier0/1 pass timeout=2.0 (334,340). Alias message->content verified (aliases.py:44). Whether the LLM actually blocks on turn 2 needs a live run.",
+      "anchor": "harness/battleplan/notes/BP7_VERDICT.md (H4)"
+    },
+    {
+      "claim": "H6 (memory) CONFIRMED narrowed: the 'raises' half is refuted (handlers.py:1853-1858 catches _memory_owner exceptions and returns None; context_enrichment.py:91-92 swallows memory.search errors). Confirmed mechanism = main-thread synchronous degraded-store load (memory_lifecycle.py:338-341 background_load=False; store.py:379-389 sync write-lock) on a scene rebind, which can exceed the 30s slow-op contract. Conditional match for the plain symptom (needs a Save-As between turns).",
+      "anchor": "harness/battleplan/notes/BP7_VERDICT.md (H6)"
+    },
+    {
+      "claim": "Most likely cause = H4->H1 chain; the single UNKNOWN link is whether turn-2 route() truly blocks (needs GUI). Smallest fix is a panel watchdog + disconnect/error wiring in python/synapse/panel/chat_panel.py; root fix is enforcing router tier timeouts. SYNTH fixes nothing (one document only).",
+      "anchor": "harness/battleplan/notes/BP7_VERDICT.md (Most likely cause / Smallest fix)"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "Crucible criterion #1 is intentionally unmet for H2: scout header CONFIRMED overturned to REFUTED on traced line ws_bridge.py:283-284. Ruling requested: accept the trace-based override (recommended - runtime is truth), or restore CONFIRMED and re-open the transport claim.",
+      "anchor": "harness/battleplan/notes/BP7_VERDICT.md (Scout-header reconciliation)"
+    },
+    {
+      "item": "Wave-mechanics gap: the PANEL/ROUTER/TRANSPORT scout receipts never landed on bp7/synth - jev_screen printed 'no receipt' for all three, so SYNTH could not screen them and re-derived them from peer worktrees via the bus. If the design expects merged (or receipt-copied) scout receipts before SYNTH runs, that merge/copy step is missing from the bp7 dispatch.",
+      "anchor": "harness/jev/ledger/bp7.shadow.screen.jsonl (only BP7-MEMORY present)"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP7-FIX-PANELWATCHDOG",
+      "band": "BUILD",
+      "class": "fix",
+      "tier": "auto",
+      "name": "Panel watchdog + disconnect/error clear for the chat waiting-state",
+      "note": "Smallest fix for the BP7 verdict (H1 amplifier). In python/synapse/panel/chat_panel.py: arm a QTimer on send that, past the 30s slow-op budget, clears _waiting_for_response, hides the typing indicator, and appends a 'no response - try again' system line; and wire _on_connection_error (:964) and _on_status_changed(False) (:944) to clear the same waiting-state. Converts every silent turn-2 hang into a visible, recoverable failure regardless of trigger.",
+      "touches": ["python/synapse/panel/chat_panel.py"],
+      "readonly": false,
+      "deps": ["BP7-SYNTH"],
+      "held_reason": "SYNTH spawn_classes is empty; fix legs land held for Joe. SYNTH fixes nothing."
+    },
+    {
+      "id": "BP7-FIX-ROUTERTIMEOUT",
+      "band": "BUILD",
+      "class": "fix",
+      "tier": "auto",
+      "name": "Enforce router tier timeouts on the LLM calls (root fix)",
+      "note": "Root fix for the H4 trigger so turn 2 cannot block indefinitely. Pass tier2_timeout/tier3_timeout (router.py:124-125) into the guarded_create LLM calls (router.py:685,893), or wrap route() at handlers.py:1787 in a handler-level timeout. Secondary to the panel watchdog, which restores reportability even if this persists.",
+      "touches": ["python/synapse/routing/router.py", "python/synapse/server/handlers.py"],
+      "readonly": false,
+      "deps": ["BP7-SYNTH"],
+      "held_reason": "SYNTH spawn_classes is empty; fix legs land held for Joe."
+    }
+  ]
+}
