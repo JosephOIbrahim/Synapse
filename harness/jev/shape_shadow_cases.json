@@ -1,0 +1,26 @@
+{
+  "_comment": "Objectives of past hand-authored waves, written as they stood BEFORE the wave was authored, paraphrased from each author_bp<n>.py header and its SRC doc. The authored shape is NOT stored here: jev_shape.derive_shape() computes it from the mission files, so nobody labels the answer by hand. Caveat: these paraphrases were written by the CTO seat (Fable 5.1, 2026-09-20) after the fact; Joe should reword any that do not sound like what he asked for. n=4 is a smoke test, not a calibration.",
+  "_schema": "jev-shape-cases/v1",
+  "cases": [
+    {
+      "wave": "bp3",
+      "objective": "Execute the H22 Solaris + World Labs blueprint in docs/intake/blueprint-h22-worldlabs-intent.md. That means recon of the H22 environment, a hython probe, a knowledge corpus, stubs, a panel audit, and a spatial lane for Marble worlds. Several of these change product code that artists will run."
+    },
+    {
+      "wave": "bp4",
+      "objective": "Close out what BP3 left open and add Joe's two new asks: tokenize panel typography across the panel modules, and add USD composition knowledge for World Labs assets. Also record banked rulings, take in dropped files, fix the B7 regression, and land the spatial lane. Product files change and the result is released."
+    },
+    {
+      "wave": "bp6",
+      "objective": "Harden the Jev guard seam under harness/jev: add tests that bite for every policy branch, carry the screen verdict as one line in the CRUX brief, and write the README. One module, harness only, nothing an artist runs."
+    },
+    {
+      "wave": "bp7",
+      "objective": "Chat in the panel stalls after turn 1: the spinner shows and no reply arrives. The cause is not known. Find out why and name the smallest fix. Fix nothing yet.",
+      "evidence": [
+        "Six hypotheses were written down; JEV-RANK kept four: panel waiting state, router, transport, memory store.",
+        "No live Houdini GUI is available to agent legs."
+      ]
+    }
+  ]
+}

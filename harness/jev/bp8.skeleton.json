@@ -1,0 +1,88 @@
+[
+ {
+  "id": "BP8-BUILD1",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "auto",
+  "readonly": false,
+  "deps": [],
+  "_skeleton": true,
+  "_todo": [
+   "name",
+   "note",
+   "targets",
+   "acceptance",
+   "touches"
+  ]
+ },
+ {
+  "id": "BP8-BUILD2",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "auto",
+  "readonly": false,
+  "deps": [],
+  "_skeleton": true,
+  "_todo": [
+   "name",
+   "note",
+   "targets",
+   "acceptance",
+   "touches"
+  ]
+ },
+ {
+  "id": "BP8-BUILD3",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "auto",
+  "readonly": false,
+  "deps": [],
+  "_skeleton": true,
+  "_todo": [
+   "name",
+   "note",
+   "targets",
+   "acceptance",
+   "touches"
+  ]
+ },
+ {
+  "id": "BP8-CRUX",
+  "band": "TRUST",
+  "class": "crucible",
+  "tier": "referee",
+  "readonly": true,
+  "deps": [
+   "BP8-BUILD1",
+   "BP8-BUILD2",
+   "BP8-BUILD3"
+  ],
+  "_skeleton": true,
+  "_todo": [
+   "name",
+   "note",
+   "targets",
+   "acceptance",
+   "touches"
+  ]
+ },
+ {
+  "id": "BP8-TIDY",
+  "band": "TIDY",
+  "class": "tidy",
+  "tier": "mechanical",
+  "readonly": false,
+  "deps": [
+   "BP8-CRUX"
+  ],
+  "_skeleton": true,
+  "_todo": [
+   "name",
+   "note",
+   "targets",
+   "acceptance",
+   "touches"
+  ]
+ }
+]

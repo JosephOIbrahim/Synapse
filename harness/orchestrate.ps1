@@ -895,6 +895,22 @@ while ((Get-Date) -lt $deadline) {
                 # transcript is final, so MEASURE this leg's real token spend into
                 # the run ledger. Inert unless -Budget; never delays a dispatch.
                 Rails-Settle $leg
+
+                # JEV-EDGE (2026-09-20, battleplan/notes/JEV_HELM.md mile 3): INERT unless
+                # $env:SYNAPSE_JEV_EDGE is 'on' or 'shadow' - absent, no line below runs and this
+                # path is byte-identical in behaviour to before. The guard screens the receipt
+                # that just closed; on FLAG it may insert ONE bounded repair leg into THIS
+                # manifest (atomic replace), which the re-read at the top of the loop picks up.
+                # 'shadow' ledgers the decision and writes nothing. A guard failure never stops
+                # the wave, and an inserted leg is charged through Rails-Charge like any other.
+                if ($env:SYNAPSE_JEV_EDGE -in @('on', 'shadow')) {
+                    try {
+                        $edgeArgs = @((Join-Path $repo 'harness\jev\jev_edge.py'), '--manifest', $manifestPath,
+                                      '--leg', $leg.id, '--receipt', (Get-ReceiptPath $leg))
+                        if ($env:SYNAPSE_JEV_EDGE -eq 'on') { $edgeArgs += '--apply' }
+                        & python @edgeArgs 2>&1 | ForEach-Object { Say "  EDGE: $_" 'Cyan' }
+                    } catch { Say "  EDGE: skipped ($($_.Exception.Message))" 'DarkGray' }
+                }
             }
         }
 
@@ -940,6 +956,19 @@ while ((Get-Date) -lt $deadline) {
     if ($backed.Count) { Say "backed up  $($backed -join ' ')" 'DarkGray' }
 
     Drift-Check   # BP2-METER T3: bus-driven refocus/halt (inert unless -Budget)
+
+    # JEV-DRIFT (2026-09-20, battleplan/notes/JEV_HELM.md mile 4): SHADOW ONLY, and INERT unless
+    # $env:SYNAPSE_JEV_DRIFT -eq 'shadow'. It ledgers whether each open leg looks like it is
+    # looping; it posts NOTHING to the bus - drift.py above keeps the refocus/halt authority.
+    # The guard self-limits: a leg is judged only after 3+ new bus events, so polling is free.
+    if ($env:SYNAPSE_JEV_DRIFT -eq 'shadow' -and $manifest.legs.Count) {
+        try {
+            $jw = (($manifest.legs[0].id -split '-', 2)[0]).ToLower() -replace '^w', 'wave'
+            & python (Join-Path $repo 'harness\jev\jev_drift.py') --wave $jw 2>&1 |
+                Where-Object { $_ -notmatch '^nothing to judge' } |
+                ForEach-Object { Say "  JEV-DRIFT: $_" 'DarkGray' }
+        } catch { }
+    }
 
     $last = Get-LastProgress
     $mins = if ($last) { [int]((Get-Date) - $last).TotalMinutes } else { 999 }

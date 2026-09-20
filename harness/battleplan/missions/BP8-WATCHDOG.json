@@ -1,0 +1,54 @@
+{
+ "id": "BP8-WATCHDOG",
+ "band": "BUILD",
+ "class": "build",
+ "tier": "reasoning",
+ "readonly": false,
+ "deps": [],
+ "name": "Panel response watchdog: a silent turn-2 hang becomes a visible, recoverable failure",
+ "note": "Tier: reasoning. Self-cap: 20 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Token-saver: Select-String / grep for symbols, read 40-line windows around the cited lines, never whole files. Line numbers below come from BP7_VERDICT.md at 29adc6e9 - confirm each with a grep before editing; if a line has moved, follow the symbol, not the number. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. Minimal diff: touch only the files in `touches`. Verdict facts: the waiting state is armed at chat_panel.py:891-892 and cleared ONLY at :903-904 (send failed) and :914-915 (_on_response). _on_connection_error (:964) and _on_status_changed (:944) do not clear it, and the only QTimers (:234,:239) are the context and integrity timers. Panel styling rule: no hardcoded px or off-palette hex - use the existing system-line helper and tokens.",
+ "targets": [
+  "T1) python/synapse/panel/chat_panel.py: a single-shot QTimer armed in _send_message after the waiting state is set, stopped in _on_response and in the send-failure path. On fire: clear _waiting_for_response, hide the typing indicator, append ONE system line saying no response arrived and the artist can send again. Budget = the server slow-op budget (30 s) plus a small margin, as a named constant, not a literal at the call site.",
+  "T2) Same file: _on_connection_error and _on_status_changed(False) clear the same waiting state through ONE shared helper (no third copy of the two clearing lines).",
+  "T3) tests: a headless test (no Houdini, QTimer driven by the test or a fake clock) that sends, never responds, and asserts the state clears and exactly one system line appears; one test that a normal response stops the timer so no late line appears. Name the mutation that reddens each in the receipt (proved_it_bites)."
+ ],
+ "touches": [
+  "python/synapse/panel/chat_panel.py",
+  "tests/"
+ ],
+ "acceptance": [
+  {
+   "predicate": "after a send with no reply, waiting state is False and the typing indicator is hidden once the watchdog fires",
+   "evidence": "test"
+  },
+  {
+   "predicate": "a delivered response stops the watchdog; no 'no response' line appears afterwards",
+   "evidence": "test"
+  },
+  {
+   "predicate": "connection error and status->disconnected both clear the waiting state via the shared helper",
+   "evidence": "test"
+  },
+  {
+   "predicate": "diff touches only chat_panel.py and tests; no hardcoded px or hex added",
+   "evidence": "check"
+  },
+  {
+   "predicate": "in a live H22 panel a hung turn 2 shows the system line and the input works again",
+   "evidence": "gui_probe",
+   "gui_required": true
+  }
+ ],
+ "crucible_criteria": [
+  "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+  "every verdict row carries the crucible's own anchor",
+  "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+  "the crucible flips no contract feature and edits no product file",
+  "the crucible deletes the timer stop in _on_response and shows the second test reddens"
+ ],
+ "spawn_classes": [],
+ "source": {
+  "doc": "harness/battleplan/notes/BP7_VERDICT.md",
+  "anchor": "sec. 'Smallest fix' (panel watchdog); sec. H1 traced no-recovery path"
+ }
+}

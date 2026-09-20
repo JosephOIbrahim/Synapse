@@ -1,0 +1,44 @@
+{
+  "_comment": "JEV-SHAPE template catalog. A LOOKUP TABLE of wave graph shapes, the same way rails_exec.json is a lookup table of tiers. Shape NAMES come from here at runtime; their descriptions (the criteria Jev reads) live in questions.json guards.shape. jev_shape.expand() turns a template into mission SKELETONS: id/band/class/tier/deps/readonly only. Note, targets and acceptance are still authored by the CTO seat. 'manual' is not a template: it is the fail-closed outcome (author the wave by hand, as before Jev). Source: harness/battleplan/notes/JEV_HELM.md.",
+  "_schema": "jev-workflows/v1",
+  "caps": {
+    "max_legs_per_wave": 8,
+    "max_inserted_legs": 2
+  },
+  "shapes": {
+    "solo": {
+      "why": "one coherent piece of work; one builder leg, no referee leg",
+      "legs": [
+        {"role": "BUILD", "band": "BUILD", "class": "build", "tier": "auto", "readonly": false, "count": [1, 1], "deps_on": []}
+      ]
+    },
+    "fix-crux": {
+      "why": "ONE known fix that ships to artists; one builder leg, then the referee, no fan-out and no tidy (added 2026-09-20 after the H6 objective returned manual, split crux 0.56 / solo 0.44)",
+      "legs": [
+        {"role": "FIX", "band": "BUILD", "class": "build", "tier": "auto", "readonly": false, "count": [1, 1], "deps_on": []},
+        {"role": "CRUX", "band": "TRUST", "class": "crucible", "tier": "referee", "readonly": true, "count": [1, 1], "deps_on": ["FIX"]}
+      ]
+    },
+    "scout-synth": {
+      "why": "cause unknown; N read-only scouts in parallel, one synth leg that reads their receipts (BP7's shape)",
+      "legs": [
+        {"role": "SCOUT", "band": "TRUTH", "class": "truth", "tier": "auto", "readonly": true, "count": [2, 4], "deps_on": []},
+        {"role": "SYNTH", "band": "BUILD", "class": "build", "tier": "auto", "readonly": false, "count": [1, 1], "deps_on": ["SCOUT"]}
+      ]
+    },
+    "build-screen-crux": {
+      "why": "several deliverables that ship; builders, then JEV-SCREEN, then the crucible, then tidy (BP3/BP4's shape)",
+      "legs": [
+        {"role": "BUILD", "band": "BUILD", "class": "build", "tier": "auto", "readonly": false, "count": [2, 5], "deps_on": []},
+        {"role": "CRUX", "band": "TRUST", "class": "crucible", "tier": "referee", "readonly": true, "count": [1, 1], "deps_on": ["BUILD"]},
+        {"role": "TIDY", "band": "TRUST", "class": "tidy", "tier": "mechanical", "readonly": true, "count": [1, 1], "deps_on": ["CRUX"]}
+      ]
+    },
+    "probe-only": {
+      "why": "every deliverable is the output of a deterministic script or hython probe; zero model legs, wall-clock only",
+      "legs": [
+        {"role": "PROBE", "band": "TRUTH", "class": "truth", "tier": "none", "readonly": true, "count": [1, 4], "deps_on": []}
+      ]
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+ "id": "BP8-TIDY",
+ "band": "TRUST",
+ "class": "tidy",
+ "tier": "mechanical",
+ "readonly": true,
+ "deps": [
+  "BP8-CRUX"
+ ],
+ "name": "TIDY: census of BP8 worktrees, receipts and ledgers; one table with a count line",
+ "note": "Tier: mechanical. Self-cap: 8 turns. Read-only: list, count, report. Fix nothing, delete nothing.",
+ "targets": [
+  "T1) harness/battleplan/notes/BP8_TIDY.md: a table of BP8 worktrees (branch, HEAD, clean?), receipts (leg, status) and harness/jev/ledger/bp8.*.jsonl row counts, ending in a count line per table."
+ ],
+ "touches": [],
+ "acceptance": [
+  {
+   "predicate": "every table ends with a count line that equals its row count",
+   "evidence": "check"
+  }
+ ],
+ "crucible_criteria": [
+  "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+  "every verdict row carries the crucible's own anchor",
+  "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+  "the crucible flips no contract feature and edits no product file"
+ ],
+ "spawn_classes": [],
+ "source": {
+  "doc": "harness/battleplan/notes/BP7_VERDICT.md",
+  "anchor": "wave hygiene; same shape as BP4-TIDY"
+ }
+}
