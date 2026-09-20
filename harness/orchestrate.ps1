@@ -957,6 +957,19 @@ while ((Get-Date) -lt $deadline) {
 
     Drift-Check   # BP2-METER T3: bus-driven refocus/halt (inert unless -Budget)
 
+    # JEV-DRIFT (2026-09-20, battleplan/notes/JEV_HELM.md mile 4): SHADOW ONLY, and INERT unless
+    # $env:SYNAPSE_JEV_DRIFT -eq 'shadow'. It ledgers whether each open leg looks like it is
+    # looping; it posts NOTHING to the bus - drift.py above keeps the refocus/halt authority.
+    # The guard self-limits: a leg is judged only after 3+ new bus events, so polling is free.
+    if ($env:SYNAPSE_JEV_DRIFT -eq 'shadow' -and $manifest.legs.Count) {
+        try {
+            $jw = (($manifest.legs[0].id -split '-', 2)[0]).ToLower() -replace '^w', 'wave'
+            & python (Join-Path $repo 'harness\jev\jev_drift.py') --wave $jw 2>&1 |
+                Where-Object { $_ -notmatch '^nothing to judge' } |
+                ForEach-Object { Say "  JEV-DRIFT: $_" 'DarkGray' }
+        } catch { }
+    }
+
     $last = Get-LastProgress
     $mins = if ($last) { [int]((Get-Date) - $last).TotalMinutes } else { 999 }
     if ($mins -ge $StaleMinutes -and -not $staleAnnounced) {

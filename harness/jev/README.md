@@ -45,3 +45,7 @@ the product path. Full design: `harness/battleplan/notes/JEV_BLUEPRINT.md`.
    package imports `harness/jev`. Jev is a build instrument, like the crucible.
 6. **Questions are data.** `harness/jev/questions.json` is the whole "prompt". Editing a
    criterion is a text edit with a diff, not a code change.
+
+## Helm guards (2026-09-20)
+
+SHAPE, TEAM, EDGE and DRIFT - `jev_shape.py`, `jev_team.py`, `jev_edge.py`, `jev_drift.py`, templates in `workflows.json`. Card: `harness/battleplan/notes/JEV_HELM.md`. EDGE and DRIFT are inert unless `SYNAPSE_JEV_EDGE` / `SYNAPSE_JEV_DRIFT` are set.

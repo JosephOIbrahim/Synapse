@@ -111,6 +111,30 @@ Dry run on real BP4 receipts, 2026-09-20 (n=2):
   self_contradiction >= 0.6 AND crux_need >= 1.5 -> FLAG. Until then EDGE stays in shadow, and
   BP8's edge ledger (harness/jev/ledger/bp8.edge.jsonl) beside CRUX's verdicts is the evidence.
 
+## Mile 4 - JEV-DRIFT (built 2026-09-20; SHADOW ONLY by construction)
+
+    harness/jev/jev_drift.py               decide() pure policy, cadence, closed-leg guards, replay CLI; no bus writer exists
+    harness/orchestrate.ps1                ONE hook after Drift-Check; inert unless SYNAPSE_JEV_DRIFT = shadow
+    harness/jev/tests/test_jev_drift.py    7 biting tests (incl. one that fails if this file ever gains a bus.post)
+
+    set SYNAPSE_JEV_DRIFT=shadow                                                     <- run BP8 like this
+    python harness/jev/jev_drift.py --wave bp7 --bus-root <main>\harness\battleplan\bus --ignore-closed   (replay a finished wave)
+
+harness/battleplan/drift.py (regex, zero model) KEEPS the refocus/halt authority and the rails keep
+the hard stop. JEV-DRIFT answers only what a regex cannot - retrying the same step, claiming files
+outside `touches` - and ledgers what it WOULD have warned: looping >= 0.80 AND advancing <= 0.20 on
+two judgments in a row. A missing answer is UNKNOWN, never 0. Cadence is code: a leg is judged only
+after 3+ new bus events and never once closed, so cost follows bus traffic, not poll frequency.
+State is capped at 12 events x 400 chars.
+
+Replay of the real BP7 bus, 2026-09-20 (4 legs judged; TRANSPORT had < 3 events once its DONE was stripped):
+    MEMORY advancing 0.89 looping 0.11 · ROUTER 0.77 / 0.20 · SYNTH 0.84 / 0.12 · PANEL 0.52 / 0.71
+No would-warn on any leg. The regex drift.py, live, posted 2 refocus + 1 HALT to BP7-PANEL - the leg
+that went on to land a valid receipt (verdict UNKNOWN, e0fdcca2). On this one case the semantic read
+("half advancing, somewhat repetitive, not a loop") fits the outcome better than the halt did. n=1:
+recorded, not a ruling. If BP8's drift ledger keeps disagreeing with drift.py's halts, THAT is the
+evidence for loosening the regex or handing the warning to Jev.
+
 ## Open rulings
 
 1. ~~Fifth template `fix-crux`~~ - added 2026-09-20.
@@ -122,5 +146,5 @@ Dry run on real BP4 receipts, 2026-09-20 (n=2):
     M1  SHAPE guard + shadow                                            done
     M2  TEAM guard + `team` field + compile hook + shadow                   done
     M3  EDGE guard + orchestrator hook, behind a flag; max 2 inserted legs      built, SHADOW until BP8 evidence
-    M4  DRIFT wired to the orchestrator poll, shadow only
+    M4  DRIFT guard + orchestrator hook                                         built, shadow only by construction
     M5  first real wave on the helm: BP8, the BP7 verdict's three fixes (skeleton ready, not armed)
