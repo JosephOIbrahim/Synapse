@@ -39,6 +39,18 @@ def leg_row(m: dict) -> dict:
         sys.path.insert(0, str(REPO / "harness" / "jev"))
         import jev_route
         row["tier"] = jev_route.resolve_tier(m, wave)
+    # JEV-TEAM (2026-09-20, notes/JEV_HELM.md mile 2): an OPTIONAL "team". "auto" asks Jev how
+    # parallelizable the leg is and code maps that to 0/2/4 subagents, rounding DOWN on doubt;
+    # a literal {max_subagents, subagent_tier} passes through. No team field -> no key on the
+    # row and no section in the prompt, so such a leg is byte-identical to before.
+    if m.get("team"):
+        team = m["team"]
+        if team == "auto":
+            sys.path.insert(0, str(REPO / "harness" / "jev"))
+            import jev_team
+            d = jev_team.resolve_team(m, wave)
+            team = {"max_subagents": d["max_subagents"], "subagent_tier": d["subagent_tier"]}
+        row["team"] = team
     return row
 
 def screen_lines(m: dict, wave: str) -> str:
@@ -73,12 +85,16 @@ def screen_lines(m: dict, wave: str) -> str:
 def fill_prompt(m: dict, row: dict) -> str:
     tpl = (HERE / "prompts" / "_template.md").read_text(encoding="utf-8")
     wave = m["id"].split("-", 1)[0].lower().replace("w", "wave")
-    body = json.dumps(m, indent=2, ensure_ascii=False)
+    body = json.dumps({**m, "team": row["team"]} if "team" in row else m, indent=2, ensure_ascii=False)
     for k, v in {"{ID}": m["id"], "{NAME}": m["name"], "{BRANCH}": row["branch"],
                  "{WORKTREE}": row["worktree"], "{MISSION_JSON}": body,
                  "{WAVE}": wave, "{RECEIPT}": row["receipt"],
                  "{SCREEN_LINES}": screen_lines(m, wave)}.items():
         tpl = tpl.replace(k, v)
+    if "team" in row:  # JEV-TEAM: appended, never templated, so a team-less prompt cannot change
+        sys.path.insert(0, str(REPO / "harness" / "jev"))
+        import jev_team
+        tpl += jev_team.team_lines(row["team"])
     return tpl
 
 def main(wave_arg: str = "") -> int:

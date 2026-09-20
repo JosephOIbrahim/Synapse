@@ -9,7 +9,7 @@ from pathlib import Path
 
 REQUIRED = ["id", "name", "band", "source", "targets", "acceptance",
             "deps", "readonly", "touches", "crucible_criteria"]
-OPTIONAL = ["spawn_classes", "note", "receipt", "branch", "worktree", "class", "tier"]
+OPTIONAL = ["spawn_classes", "note", "receipt", "branch", "worktree", "class", "tier", "team"]
 BANDS = {"BUILD", "TRUST", "TRUTH", "PAPER"}
 ID_RE = re.compile(r"^BP\d+-[A-Z0-9]{2,12}$")
 
@@ -65,6 +65,22 @@ def validate_mission(m: dict) -> list:
             tiers = set()
         if tiers and m["tier"] not in tiers | {"auto"}:
             _err(errors, mid, f"tier must be one of {sorted(tiers)} or 'auto'")
+    # JEV-TEAM (2026-09-20, notes/JEV_HELM.md mile 2): OPTIONAL. 'auto' is resolved at compile
+    # time; a literal is {max_subagents: 0..4, subagent_tier: <rails tier>}. Absent = a plain
+    # single-session leg, byte-identical to before. Referee and tidy legs work alone.
+    if "team" in m and m["team"] != "auto":
+        t = m["team"]
+        if not (isinstance(t, dict) and isinstance(t.get("max_subagents"), int) and 0 <= t["max_subagents"] <= 4):
+            _err(errors, mid, "team must be 'auto' or {max_subagents: 0..4, subagent_tier}")
+        else:
+            try:
+                tiers = set(json.loads((REPO / "harness" / "rails_exec.json").read_text(encoding="utf-8")).get("tiers", {}))
+            except Exception:
+                tiers = set()
+            if t["max_subagents"] > 0 and tiers and t.get("subagent_tier") not in tiers:
+                _err(errors, mid, f"team.subagent_tier must be one of {sorted(tiers)}")
+            if t["max_subagents"] > 0 and m.get("class") in ("crucible", "tidy"):
+                _err(errors, mid, "referee and tidy legs work alone: team.max_subagents must be 0")
     if not isinstance(m.get("crucible_criteria"), list) or not m["crucible_criteria"]:
         _err(errors, mid, "crucible_criteria must be a non-empty list")
     return errors

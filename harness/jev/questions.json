@@ -302,6 +302,33 @@
         "solo_max_breadth": 1.0,
         "fallback_shape": "manual"
       }
+    },
+    "team": {
+      "edge": "mission -> row (compile_wave.py), only for a mission carrying \"team\": \"auto\". Decides how many subagents ONE leg may spawn. A literal team object, or no team field, never reaches Jev.",
+      "state_fields": ["id", "class", "name", "note", "targets", "touches", "readonly"],
+      "questions": {
+        "parallelizable": {
+          "type": "score",
+          "instructions": "Inside this ONE leg, how much of the work in `mission.targets` splits into pieces that separate workers could do at the same time without reading each other's results? Judge the targets, not the wave.",
+          "criteria": [
+            "Serial: the targets form one chain; each step needs the result of the one before, or it is a single change in one place.",
+            "Some: two or three pieces are independent (separate files or separate searches), the rest is a chain.",
+            "Wide: most of the work is the same operation over many independent items (many files, many modules, many hypotheses), and the results only meet at the end."
+          ]
+        },
+        "shared_files": {
+          "type": "noul",
+          "instructions": "Would the independent pieces of `mission.targets` need to EDIT the same file as each other? Reading the same file is fine; two workers writing one file is a collision. If `mission.readonly` is true the answer is no."
+        }
+      },
+      "policy": {
+        "bands": [[1.0, 0], [1.7, 2], [9.9, 4]],
+        "min_confidence": 0.6,
+        "shared_files_max": 0.5,
+        "subagent_tier": "mechanical",
+        "hard_cap": 4,
+        "fallback_subagents": 0
+      }
     }
   }
 }
