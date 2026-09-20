@@ -1,0 +1,55 @@
+# JEV HELM — Jev picks the graph, code builds it
+
+Status: mile 1 of 5 landed on branch `bp8/helm` · 2026-09-20 · CTO seat (Fable 5.1) on Joe's word
+Extends `JEV_BLUEPRINT.md`. All six invariants there still hold. Update this card; don't multiply it.
+
+## One paragraph
+
+Until now a person chose each wave's shape by hand. The helm makes that a judgment. Jev cannot
+plan, so code lists the possible moves and Jev picks among them: which graph template fits an
+objective (SHAPE, mile 1), how many subagents a leg may spawn (TEAM, mile 2), and which edge to
+take after each receipt (EDGE, mile 3). Code owns every decision. Doubt never spends: an unsure
+SHAPE returns `manual` (author by hand, as before), and an unsure TEAM rounds down to zero.
+
+## Mile 1 — JEV-SHAPE (done)
+
+    harness/jev/workflows.json             template catalog: solo, scout-synth, build-screen-crux, probe-only; caps
+    harness/jev/questions.json             + guards.shape (shape Choice, cause_known, deterministic, breadth, policy)
+    harness/jev/jev_shape.py               decide() policy, expand() skeletons, derive_shape(), shadow CLI
+    harness/jev/shape_shadow_cases.json    past-wave objectives (answer key is computed, never hand-labelled)
+    harness/jev/tests/test_jev_shape.py    11 biting tests, one per policy branch
+
+Run it:
+
+    python harness/jev/jev_shape.py --shadow
+    python harness/jev/jev_shape.py --wave bp8 --objective "..." --expand
+
+Policy: the Choice must clear 0.60 AND a second independent judgment must agree with it
+(scout-synth needs cause unknown; build shapes need cause known; probe-only needs deterministic
+>= 0.70; solo needs breadth <= 1.0). Any disagreement returns `manual`. `expand()` writes mission
+skeletons to stdout or `--out`, never into `missions/`.
+
+## Shadow result, 2026-09-20 (n=4, a smoke test, not a calibration)
+
+bp3, bp4 -> build-screen-crux; bp6 -> solo; bp7 -> scout-synth. 4/4 against shapes derived from the
+mission files. Caveat: the objectives were paraphrased after the fact by the seat that knew the
+answers. Two criteria examples leaked BP6 and BP7 and were replaced before the recorded run.
+
+Unseen objective (the H6 memory-store fix): `manual`, shape confidence 0.41. Jev split
+build-screen-crux 0.56 / solo 0.44 with cause_known 0.98 and breadth 0.92. Reading: the catalog
+has no shape for ONE fix that ships to artists. Open ruling for Joe: add a fifth template
+(`fix-crux`: one builder, then the referee, no fan-out), or keep such work `manual`.
+
+## Open rulings
+
+1. Fifth template `fix-crux`, per the H6 result above.
+2. `probe-only` legs carry `tier: none`, which is not a rails tier. Either rails gains a no-model
+   entry or probe-only waves run outside the orchestrator.
+
+## Miles
+
+    M1  SHAPE guard + shadow                                            done
+    M2  `team` field in mission_schema (max_subagents, subagent_tier); doubt rounds DOWN; tests
+    M3  EDGE: recompile between legs on the SCREEN verdict, behind a flag; max 2 inserted legs
+    M4  DRIFT wired to the orchestrator poll, shadow only
+    M5  first real wave on the helm: the H6 memory-store fix

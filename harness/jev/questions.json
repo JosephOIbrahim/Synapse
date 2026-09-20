@@ -229,6 +229,74 @@
         "supported_min": 0.75,
         "unsupported_min": 0.6
       }
+    },
+    "shape": {
+      "edge": "objective -> wave graph template (author time, before any mission exists). Shape NAMES come from harness/jev/workflows.json at runtime; this block only supplies their descriptions.",
+      "state_fields": {
+        "objective": "one paragraph: what Joe asked for, in his words or the CTO seat's summary",
+        "evidence": "optional list of short lines already known (symptoms, file names, prior receipts)",
+        "shapes": "the template descriptions below, keyed by the names in workflows.json"
+      },
+      "questions": {
+        "shape": {
+          "type": "choice",
+          "instructions": {
+            "task": "Choose the wave graph shape that fits `objective`. A wave is a set of legs; each leg is one agent session with one brief. Judge what the objective needs, not what would be most thorough.",
+            "consider": [
+              "Whether `objective` already names what to change, or asks to find out why something happens.",
+              "Whether the work is one coherent piece or several deliverables that do not depend on each other.",
+              "Whether a bad result would ship to an artist (product code, contracts, a release) or stay inside the harness and its notes.",
+              "More legs cost more tokens. Prefer the smallest shape that fits; `shapes` holds the harness's own definitions."
+            ]
+          },
+          "criteria_by_shape": {
+            "solo": {
+              "what": "One coherent piece of work with a known target: one builder leg, its own tests, no separate referee leg.",
+              "not_for": "Unknown causes, several independent deliverables, or anything where a wrong result ships unreviewed to artists.",
+              "examples": ["rewrite one importer script to stream instead of loading whole files", "write one design record from named sources"]
+            },
+            "scout-synth": {
+              "what": "The cause or the right approach is NOT known. Several read-only scouts each chase one hypothesis or one area in parallel, then one synth leg reads their receipts and names the cause and the smallest fix. Scouts fix nothing.",
+              "not_for": "Work where the change to make is already named; building or shipping anything.",
+              "examples": ["why do farm jobs drop overnight with no error", "which of five modules leaks the handle"]
+            },
+            "build-screen-crux": {
+              "what": "Several deliverables, at least one of which changes product code, contracts, or a release. Builder legs, then a screen of their receipts, then an adversarial referee leg, then tidy.",
+              "not_for": "A single small change, pure investigation, or notes-only work that no artist runs.",
+              "examples": ["execute a blueprint with five product and harness deliverables", "close a release wave with a regression fix plus panel changes"]
+            },
+            "probe-only": {
+              "what": "Every deliverable is the recorded output of a deterministic script, test suite, or hython probe that already exists or is fully specified. No leg needs a model's judgment.",
+              "not_for": "Anything that requires writing new code, choosing between designs, or interpreting results.",
+              "examples": ["re-stamp a truth catalog on the running build", "run the wire matrix mission and record the artifact"]
+            }
+          }
+        },
+        "cause_known": {
+          "type": "noul",
+          "instructions": "Does `objective` (with `evidence`) already name the specific change to make or thing to build - a file, a mechanism, a design - as opposed to asking to discover why something happens or which approach is right?"
+        },
+        "deterministic": {
+          "type": "noul",
+          "instructions": "Could every deliverable in `objective` be produced by running scripts, tests, or probes that already exist or are fully specified, with no step that needs a model to write new code, choose a design, or interpret a result?"
+        },
+        "breadth": {
+          "type": "score",
+          "instructions": "How many separately deliverable pieces does `objective` contain? Count pieces that could be handed to different people without them needing to talk.",
+          "criteria": [
+            "One: a single coherent piece of work; splitting it would create coordination cost.",
+            "Few: two or three pieces that share context but can proceed in parallel.",
+            "Many: four or more independent pieces, or one unknown with four or more distinct hypotheses to chase."
+          ]
+        }
+      },
+      "policy": {
+        "min_shape_confidence": 0.6,
+        "cause_known_split": 0.5,
+        "probe_only_min_deterministic": 0.7,
+        "solo_max_breadth": 1.0,
+        "fallback_shape": "manual"
+      }
     }
   }
 }
