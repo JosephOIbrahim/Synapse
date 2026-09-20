@@ -1,0 +1,668 @@
+{
+  "leg": "watchdog",
+  "tree": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77\\scratchpad\\wm",
+  "head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+  "interpreter": "C:\\Python314\\python.exe",
+  "interpreter_label": "cpython",
+  "selector": [
+    "tests/test_response_watchdog.py"
+  ],
+  "started": "2026-09-20T14:06:46",
+  "baseline_before": {
+    "cmd": "C:\\Python314\\python.exe -m pytest -p no:cacheprovider -vv -rA tests/test_response_watchdog.py",
+    "returncode": 0,
+    "rows": {
+      "test_budget_is_slow_op_plus_margin_named_not_literal": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_watchdog_hang_clears_state_and_shows_one_line": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_delivered_response_stops_watchdog_and_no_late_line": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_connection_error_clears_waiting_via_shared_helper": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_disconnect_status_clears_waiting_via_shared_helper": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_failed_send_stops_watchdog_no_zombie_timer": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "_skipped": {
+        "status": "SKIPPED",
+        "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+      }
+    },
+    "summary": "6 passed, 1 skipped, 2 warnings in 0.34s",
+    "elapsed_s": 3.87,
+    "tail": "y:1216: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16\n    return asyncio.get_event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\n================== 6 passed, 1 skipped, 2 warnings in 0.34s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+  },
+  "mutations": [
+    {
+      "id": "W-M1",
+      "title": "delete the timer stop on the REPLY path only (mandated crucible mutation)",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_delivered_response_stops_watchdog_and_no_late_line",
+        "test_real_qtimer_fires_and_stop_prevents_it"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.40s",
+        "returncode": 1,
+        "elapsed_s": 3.91,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'stop' to have been called once. Called 0 times."
+          }
+        },
+        "output_tail": "d slated for removal in Python 3.16\n    return asyncio.get_event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\nFAILED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line - AssertionError: Expected 'stop' to have been called once. Called 0 times.\n============= 1 failed, 5 passed, 1 skipped, 2 warnings in 0.40s ==============\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_delivered_response_stops_watchdog_and_no_late_line"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [
+        "test_real_qtimer_fires_and_stop_prevents_it"
+      ],
+      "right_reason": {
+        "test_delivered_response_stops_watchdog_and_no_late_line": "AssertionError: Expected 'stop' to have been called once. Called 0 times."
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M2",
+      "title": "the shared helper no longer hides the typing indicator",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_watchdog_hang_clears_state_and_shows_one_line",
+        "test_connection_error_clears_waiting_via_shared_helper",
+        "test_disconnect_status_clears_waiting_via_shared_helper"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "3 failed, 3 passed, 1 skipped, 2 warnings in 0.50s",
+        "returncode": 1,
+        "elapsed_s": 4.08,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'hide_typing_indicator' to have been called once. Called 0 times."
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'hide_typing_indicator' to have been called."
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'hide_typing_indicator' to have been called."
+          }
+        },
+        "output_tail": "========================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\nFAILED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line - AssertionError: Expected 'hide_typing_indicator' to have been called once. Called 0 times.\nFAILED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper - AssertionError: Expected 'hide_typing_indicator' to have been called.\nFAILED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper - AssertionError: Expected 'hide_typing_indicator' to have been called.\n============= 3 failed, 3 passed, 1 skipped, 2 warnings in 0.50s ==============\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_connection_error_clears_waiting_via_shared_helper",
+        "test_disconnect_status_clears_waiting_via_shared_helper",
+        "test_watchdog_hang_clears_state_and_shows_one_line"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_connection_error_clears_waiting_via_shared_helper": "AssertionError: Expected 'hide_typing_indicator' to have been called.",
+        "test_disconnect_status_clears_waiting_via_shared_helper": "AssertionError: Expected 'hide_typing_indicator' to have been called.",
+        "test_watchdog_hang_clears_state_and_shows_one_line": "AssertionError: Expected 'hide_typing_indicator' to have been called once. Called 0 times."
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M3",
+      "title": "_on_connection_error no longer clears the waiting state",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_connection_error_clears_waiting_via_shared_helper"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.44s",
+        "returncode": 1,
+        "elapsed_s": 4.16,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "FAILED",
+            "reason": "assert True is False"
+          }
+        },
+        "output_tail": "event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\nFAILED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper - assert True is False\n +  where True = <synapse.panel.chat_panel.SynapseChatPanel object at 0x00000176C1A22270>._waiting_for_response\n============= 1 failed, 5 passed, 1 skipped, 2 warnings in 0.44s ==============\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_connection_error_clears_waiting_via_shared_helper"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_connection_error_clears_waiting_via_shared_helper": "assert True is False"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M4",
+      "title": "_on_status_changed(False) no longer clears the waiting state",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_disconnect_status_clears_waiting_via_shared_helper"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.40s",
+        "returncode": 1,
+        "elapsed_s": 4.06,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "FAILED",
+            "reason": "assert True is False"
+          }
+        },
+        "output_tail": "event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\nFAILED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper - assert True is False\n +  where True = <synapse.panel.chat_panel.SynapseChatPanel object at 0x0000015F43656270>._waiting_for_response\n============= 1 failed, 5 passed, 1 skipped, 2 warnings in 0.40s ==============\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_disconnect_status_clears_waiting_via_shared_helper"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_disconnect_status_clears_waiting_via_shared_helper": "assert True is False"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M5",
+      "title": "the watchdog fire appends the line but never clears the waiting state",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_watchdog_hang_clears_state_and_shows_one_line",
+        "test_real_qtimer_fires_and_stop_prevents_it"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.38s",
+        "returncode": 1,
+        "elapsed_s": 3.83,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "FAILED",
+            "reason": "assert True is False"
+          }
+        },
+        "output_tail": "event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\nFAILED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line - assert True is False\n +  where True = <synapse.panel.chat_panel.SynapseChatPanel object at 0x000001E4360B6270>._waiting_for_response\n============= 1 failed, 5 passed, 1 skipped, 2 warnings in 0.38s ==============\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_watchdog_hang_clears_state_and_shows_one_line"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [
+        "test_real_qtimer_fires_and_stop_prevents_it"
+      ],
+      "right_reason": {
+        "test_watchdog_hang_clears_state_and_shows_one_line": "assert True is False"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M6",
+      "title": "GUARD-HOLE PROBE: delete the production `timeout.connect` line in createInterface",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [],
+      "expect_survivor": true,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "6 passed, 1 skipped, 2 warnings in 0.33s",
+        "returncode": 0,
+        "elapsed_s": 3.77,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          }
+        },
+        "output_tail": "y:1216: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16\n    return asyncio.get_event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\n================== 6 passed, 1 skipped, 2 warnings in 0.33s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "SURVIVED",
+      "reddened_tests": [],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {},
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M7",
+      "title": "GUARD-HOLE PROBE: production timer made repeating (setSingleShot False)",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [],
+      "expect_survivor": true,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "6 passed, 1 skipped, 2 warnings in 0.38s",
+        "returncode": 0,
+        "elapsed_s": 3.87,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          }
+        },
+        "output_tail": "y:1216: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16\n    return asyncio.get_event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\n================== 6 passed, 1 skipped, 2 warnings in 0.38s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "SURVIVED",
+      "reddened_tests": [],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {},
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M8",
+      "title": "GUARD-HOLE PROBE: production interval set to 1 ms instead of WATCHDOG_TIMEOUT_MS",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [],
+      "expect_survivor": true,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "6 passed, 1 skipped, 2 warnings in 0.35s",
+        "returncode": 0,
+        "elapsed_s": 3.82,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          }
+        },
+        "output_tail": "y:1216: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16\n    return asyncio.get_event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\n================== 6 passed, 1 skipped, 2 warnings in 0.35s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "SURVIVED",
+      "reddened_tests": [],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {},
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M9",
+      "title": "margin dropped: budget equals the 30 s slow-op budget exactly",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_budget_is_slow_op_plus_margin_named_not_literal"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.37s",
+        "returncode": 1,
+        "elapsed_s": 3.79,
+        "rows": {
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          },
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "FAILED",
+            "reason": "assert 30000 > 30000"
+          }
+        },
+        "output_tail": "ing: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16\n    return asyncio.get_event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\nFAILED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal - assert 30000 > 30000\n============= 1 failed, 5 passed, 1 skipped, 2 warnings in 0.37s ==============\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_budget_is_slow_op_plus_margin_named_not_literal"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_budget_is_slow_op_plus_margin_named_not_literal": "assert 30000 > 30000"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M10",
+      "title": "the send path never arms the watchdog",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_watchdog_hang_clears_state_and_shows_one_line",
+        "test_delivered_response_stops_watchdog_and_no_late_line",
+        "test_failed_send_stops_watchdog_no_zombie_timer"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "3 failed, 3 passed, 1 skipped, 2 warnings in 0.50s",
+        "returncode": 1,
+        "elapsed_s": 4.19,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "_skipped": {
+            "status": "SKIPPED",
+            "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+          }
+        },
+        "output_tail": "================================ PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\nFAILED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line - AssertionError: Expected 'start' to have been called once. Called 0 times.\nFAILED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line - AssertionError: Expected 'start' to have been called once. Called 0 times.\nFAILED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer - AssertionError: Expected 'start' to have been called once. Called 0 times.\n============= 3 failed, 3 passed, 1 skipped, 2 warnings in 0.50s ==============\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_delivered_response_stops_watchdog_and_no_late_line",
+        "test_failed_send_stops_watchdog_no_zombie_timer",
+        "test_watchdog_hang_clears_state_and_shows_one_line"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_delivered_response_stops_watchdog_and_no_late_line": "AssertionError: Expected 'start' to have been called once. Called 0 times.",
+        "test_failed_send_stops_watchdog_no_zombie_timer": "AssertionError: Expected 'start' to have been called once. Called 0 times.",
+        "test_watchdog_hang_clears_state_and_shows_one_line": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+      },
+      "verdict_vs_expectation": "as expected"
+    }
+  ],
+  "baseline_after": {
+    "cmd": "C:\\Python314\\python.exe -m pytest -p no:cacheprovider -vv -rA tests/test_response_watchdog.py",
+    "returncode": 0,
+    "rows": {
+      "test_budget_is_slow_op_plus_margin_named_not_literal": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_watchdog_hang_clears_state_and_shows_one_line": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_delivered_response_stops_watchdog_and_no_late_line": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_connection_error_clears_waiting_via_shared_helper": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_disconnect_status_clears_waiting_via_shared_helper": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_failed_send_stops_watchdog_no_zombie_timer": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "_skipped": {
+        "status": "SKIPPED",
+        "reason": "SKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer"
+      }
+    },
+    "summary": "6 passed, 1 skipped, 2 warnings in 0.36s",
+    "elapsed_s": 3.99,
+    "tail": "y:1216: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16\n    return asyncio.get_event_loop_policy()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nSKIPPED [1] tests\\test_response_watchdog.py:281: needs a real PySide (run under hython); Layer 1 covers the logic against a mock timer\n================== 6 passed, 1 skipped, 2 warnings in 0.36s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+  },
+  "finished": "2026-09-20T14:07:34"
+}

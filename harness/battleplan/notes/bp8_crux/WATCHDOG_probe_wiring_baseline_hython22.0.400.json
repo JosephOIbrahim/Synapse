@@ -1,0 +1,21 @@
+{
+  "tree": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77\\scratchpad\\wp",
+  "delete_connect": false,
+  "python": "3.13.10",
+  "chat_panel_file": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77\\scratchpad\\wp\\python\\synapse\\panel\\chat_panel.py",
+  "WATCHDOG_TIMEOUT_MS": 35000,
+  "created_widget": "QWidget",
+  "timer_type": "QTimer",
+  "isSingleShot": true,
+  "interval_ms": 35000,
+  "interval_equals_WATCHDOG_TIMEOUT_MS": true,
+  "armed_after_createInterface": false,
+  "parent_is_root": true,
+  "fired": true,
+  "waiting_cleared": true,
+  "no_response_lines": 1,
+  "hide_typing_indicator_calls": 1,
+  "production_connect_live": true,
+  "still_inactive_after_pump": true,
+  "restored": true
+}

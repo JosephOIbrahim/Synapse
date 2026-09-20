@@ -1,0 +1,157 @@
+{
+  "leg": "BP8-CRUX",
+  "status": "green_with_findings",
+  "head": "9dcbb58bac73a1c85e244eb7077ac76b2d1a63b5",
+  "base": "7ceec3cb38ad660ae4437e2b0ceff3c59f48f558",
+  "branch": "bp8/crux",
+  "tier": "referee",
+  "readonly": true,
+  "summary": "Both builder legs adversarially re-verified in fresh --shared scratch clones (never the builders' worktrees, never the main tree) with the crucible's own anchors: BP8-WATCHDOG SOUND-WITH-NITS (four headless rows pass, the gui_required row is UNKNOWN by rule, and the production createInterface timer wiring is untested by the committed suite), BP8-TIMEOUTS SOUND-WITH-NITS (all five rows pass; the SDK-side timeout kwarg and the failure metric on timeout are unpinned; the handler's off-thread safety comment states a false premise for a true conclusion). 18 self-authored mutations: 13 reddened right-reason on the named test, 5 predicted guard-hole probes survived. JEV-SCREEN said REFEREE for both legs; REFEREE beside SOUND-WITH-NITS is agreement on both. No product file edited, no contract feature flipped, no GUI predicate measured.",
+  "verdicts": {
+    "BP8-WATCHDOG": "SOUND-WITH-NITS",
+    "BP8-TIMEOUTS": "SOUND-WITH-NITS"
+  },
+  "screen_lines": {
+    "BP8-WATCHDOG": "screen BP8-WATCHDOG: REFEREE - full read; weak rows [1, 2, 4]; self_contradiction 0.22; crux_need 0.76",
+    "BP8-TIMEOUTS": "screen BP8-TIMEOUTS: REFEREE - full read; weak rows [1, 2]; crux_need 0.80",
+    "agreement": "REFEREE beside SOUND-WITH-NITS on both legs = agreement (jev_screen read rule); ledgers harness/jev/ledger/bp8.screen.jsonl + bp8.shadow.screen.jsonl committed at 9dcbb58b"
+  },
+  "acceptance": [
+    {
+      "predicate": "one verdict per builder leg (two) with independently re-run rows and the crucible's own anchors",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP8-CRUX_verdicts.md: per-leg verdict tables with a crucible anchor per row. WATCHDOG rows 0-3 pass (fresh clone c194d8a2: tests/test_response_watchdog.py 6 passed/1 skipped under CPython 3.14.2, 7 passed under pinned hython 22.0.400 offscreen via .synapse/hytest.py; grep of the clearing lines at chat_panel.py:160/:900/:901; git diff --stat 79dbbfd9 07f32f80 = 2 files, 0 hex/px added lines), row 4 UNKNOWN (gui_required). TIMEOUTS rows 0-4 pass (fresh clone 69687216: tests/test_bp8_timeouts.py 6 passed with 1.03 s/1.00 s/0.50 s timeout calls; routing suite 312 passed on master 64ccea8a and 312 on the leg; broader set 45/45; model_access.py:584/:600/:650 verified; vendored anthropic 0.96.0 under hython 22.0.400 has Messages.create(timeout=...)). Logs: harness/battleplan/notes/bp8_crux/T1_probes.txt + the per-leg pytest logs in the same directory."
+    },
+    {
+      "predicate": ">= 2 self-authored mutations per builder leg, each named with the check it reddens",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP8-CRUX_mutations.json: 10 WATCHDOG mutations (run under CPython AND hython 22.0.400; W-M1 = the mandated reply-path stop deletion, reddens test_delivered_response_stops_watchdog_and_no_late_line with 'Expected stop to have been called once. Called 0 times.') and 8 TIMEOUTS mutations (T-M1/T-M2 = the mandated timeout-argument removals, redden the sleep tests with 'took 3.01s' / 'took 3.00s'). Each entry names its target test; the 5 survivors (W-M6/7/8, T-M6, T-M7) were declared guard-hole probes before running and are reported as such. Every run restored the original bytes (restored_clean true) and the baseline was green before and after. Runner: bp8_crux/mutate.py; logs: bp8_crux/*_mutations_*.json."
+    },
+    {
+      "predicate": "screen-vs-CRUX agreement line present for both legs",
+      "verdict": "pass",
+      "evidence": "BP8-CRUX_verdicts.md top table and the closing line of each leg section: 'Screen vs CRUX: screen REFEREE, CRUX SOUND-WITH-NITS - agreement' for BP8-WATCHDOG and for BP8-TIMEOUTS. The screen was run by the crucible with the two receipts staged (harness/jev/ledger/bp8.screen.jsonl rows 13:49:43-44)."
+    }
+  ],
+  "crucible_criteria_held": [
+    "trusted no builder proved_it_bites - all 18 mutations self-authored; the builder's NAMED-not-executed rows were executed here (W-M3, W-M4, W-M9, W-M10) and all redden",
+    "every verdict row carries the crucible's own anchor",
+    "WATCHDOG has an UNKNOWN acceptance -> at best SOUND-WITH-NITS, applied",
+    "no contract feature flipped, no product file edited (git show --stat 9dcbb58b: notes, ledgers, probes only)",
+    "WATCHDOG-specific: deleted the timer stop in _on_response (W-M1) and showed the second test reddens",
+    "TIMEOUTS-specific: removed the timeout argument (T-M1/T-M2) and showed the sleep tests redden; grepped router.py on 69687216 - two guarded_create sites (:705, :939), each on _llm_pool with .result(timeout=) at :715/:949, no bare messages.create"
+  ],
+  "findings": [
+    {
+      "leg": "BP8-WATCHDOG",
+      "claim": "Guard hole: the production watchdog wiring in createInterface (chat_panel.py:269-272 - parent, setSingleShot, setInterval, timeout.connect) is exercised by no committed test. Layer 1 hand-injects a MagicMock timer; Layer 2 rebuilds its own QTimer in _wire_real_watchdog. Mutations W-M6 (connect line deleted), W-M7 (repeating timer), W-M8 (1 ms interval) survive under CPython and under hython 22.0.400. The crucible's probe builds the real interface offscreen and fires the production timer: wiring is correct today (single-shot, 35000 ms == WATCHDOG_TIMEOUT_MS, not armed until a send, fires into _on_response_timeout, stays inactive after firing); its negative control with the connect line deleted reports fired=true, waiting_cleared=false, 0 lines - the probe catches W-M6 where the suite does not.",
+      "anchor": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json (W-M6/W-M7/W-M8); bp8_crux/WATCHDOG_probe_wiring_baseline_hython22.0.400.json; bp8_crux/WATCHDOG_probe_wiring_deleteconnect_hython22.0.400.json; bp8_crux/probe_watchdog_wiring.py"
+    },
+    {
+      "leg": "BP8-WATCHDOG",
+      "claim": "Evidence provenance: the receipt's rows 0-1 cite an 'offscreen hython real-QTimer probe (RESULT ALL PASS)' whose script is not on the branch (git diff --stat 79dbbfd9 c194d8a2 = product file, test file, receipt). The claim is true - the crucible re-established it through .synapse/hytest.py pinned to 22.0.400 (7 passed) - but it was not reproducible from the branch alone.",
+      "anchor": "harness/battleplan/notes/bp8_crux/WATCHDOG_hython22.0.400_offscreen_c194d8a2.txt; T1_probes.txt (commit file lists)"
+    },
+    {
+      "leg": "BP8-TIMEOUTS",
+      "claim": "Guard hole: T-M6 (drop timeout=_t2 from the tier-2 guarded_create kwargs) survives - both fakes in tests/test_bp8_timeouts.py accept and ignore **kwargs, so nothing pins that the tier timeout reaches guarded_create and therefore the SDK (model_access.py:600). That kwarg is the row-4 mechanism and the load-bearing half of the receipt's finding 3 (abandoned workers bounded at the tier deadline); without it abandoned workers on the 4-worker _llm_pool run to the client-level 60 s ceiling (model_access.py:650) with a green suite.",
+      "anchor": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json (T-M6); tests/test_bp8_timeouts.py::_make_slow_guarded_create on 69687216"
+    },
+    {
+      "leg": "BP8-TIMEOUTS",
+      "claim": "Guard hole: T-M7 (drop _record_metric(RoutingTier.STANDARD, ..., False) from the tier-2 timeout branch) survives - target T1's clause 'record the metric as a failure for that tier' is untested on the timeout path (the tier-3 branch by construction likewise).",
+      "anchor": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json (T-M7); router.py:716-719 on 69687216"
+    },
+    {
+      "leg": "BP8-TIMEOUTS",
+      "claim": "The handler's off-thread safety comment states a false premise for a true conclusion. It says route() 'touches no hou.* API'; route() reaches SynapseMemory.search, which is @_on_memory_main (store.py:1758-1759) and marshals through _read_on_main -> run_on_main whenever hou is present (store.py:1326-1341, :1218-1241), via enrich_context(memory=self._memory) (router.py:689-693 -> context_enrichment.py:82) and KnowledgeIndex._match_memory (knowledge.py:818); the memory passed is the real owner (handlers.py:1875). The offload is safe for a reason the comment does not name: route_chat is in _READ_ONLY_COMMANDS (handlers.py:237) and the websockets.sync server (websocket.py:365-380) calls handler.handle() directly on the per-client thread (websocket.py:566, :695-700), so the handler never runs on Houdini's main thread and a worker-to-main marshal behaves the same from the client thread and from _route_pool. The '28 s sits just under the 30 s slow-op kill' premise is also off: the read-only fast path has no per-command kill (websocket.py:700 has no timeout); the 30 s is run_on_main's _SLOW_TIMEOUT (main_thread.py:22) for hou marshals inside handlers. Before the leg a hung route() blocked that client's server thread with no bound; 28 s is a new ceiling by design. If route_chat were ever dispatched on the main thread, this offload would stall each memory-enriched turn until run_on_main's 10 s timeout and count toward is_main_thread_stalled(). Behaviour today unaffected; documentation nit with a sharp edge.",
+      "anchor": "python/synapse/server/handlers.py _handle_route_chat comment on 69687216 (lines 1797-1808); websocket.py:365,372,566,695-700; handlers.py:237; store.py:1758,1326-1341,1218-1241; knowledge.py:818; context_enrichment.py:82; main_thread.py:21-22"
+    },
+    {
+      "leg": "BP8-TIMEOUTS",
+      "claim": "Context, not a nit: the wave's pre-leg server-side repro (harness/battleplan/notes/bp8_repro_ws.out.json, 13:15:23 on master) shows both verdict turns answered in 3.05 s / 2.05 s with tier 'standard' and the model-access denial text - the turn-2 server hang was not reproduced by that probe. The leg fixes the traced unbounded path, not a reproduced hang. The ModelAccessDenied path is preserved on the leg (raised in the _llm_pool worker, re-raised by .result(), caught at router.py:792). The .out.json is UTF-16 from a PowerShell redirect (TIDY-class hygiene).",
+      "anchor": "harness/battleplan/notes/bp8_repro_ws.out.json; router.py:792 on 69687216"
+    },
+    {
+      "leg": "BP8-WATCHDOG",
+      "claim": "Observation, out of scope: _on_response(response) carries no turn id, so a late reply for turn N stops turn N+1's watchdog and a turn-(N+1) hang would then go unguarded. Pre-existing panel protocol shape, not introduced by the leg.",
+      "anchor": "python/synapse/panel/chat_panel.py _on_response on c194d8a2"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "BP8-WATCHDOG acceptance row 4 (live H22 panel: a hung turn 2 shows the system line and the input works again) is UNKNOWN to the crucible by the brief; it needs Joe's click. The builder's for_ruling says the same.",
+      "owner": "human"
+    },
+    {
+      "item": "Merge words for bp8/watchdog and bp8/timeouts. The crucible's read: both SOUND-WITH-NITS, mergeable, with the two spawns below ridden as follow-ups rather than blockers - Joe's call.",
+      "owner": "human"
+    },
+    {
+      "item": "Whether the BP8-TIMEOUTS handler safety comment (false premise, true conclusion) is edited before merge. It changes no behaviour.",
+      "owner": "human"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP8-WATCHDOG-WIRING-TEST",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "mechanical",
+      "readonly": false,
+      "deps": ["BP8-WATCHDOG"],
+      "name": "Pin the production createInterface watchdog wiring with an offscreen hython test",
+      "note": "Tier: mechanical. Self-cap: 10 turns. Template: harness/battleplan/notes/bp8_crux/probe_watchdog_wiring.py (already proves the wiring and its negative control under hython 22.0.400 offscreen). Runs only under a real PySide; skips under stock CPython (skip != pass). Minimal diff: tests/ only.",
+      "targets": [
+        "T1) tests/: an offscreen test that builds SynapseChatPanel().createInterface(), asserts the production timer is single-shot, interval == WATCHDOG_TIMEOUT_MS, not active before a send, parent is _root; then shrinks the interval to 1 ms, starts it, pumps, and asserts the production timeout.connect delivered _on_response_timeout (waiting cleared, exactly one NO_RESPONSE_LINE).",
+        "T2) receipt names the mutation each assertion reddens (W-M6 connect deleted, W-M7 repeating, W-M8 interval)."
+      ],
+      "touches": ["tests/"],
+      "acceptance": [
+        {"predicate": "under hython 22.0.400 offscreen the new test passes and W-M6/W-M7/W-M8 from BP8-CRUX_mutations.json each redden it", "evidence": "test"},
+        {"predicate": "under stock CPython the test skips with a reason, never passes vacuously", "evidence": "test"}
+      ],
+      "crucible_criteria": ["the crucible re-runs W-M6/W-M7/W-M8 against the new test", "no product file touched"],
+      "spawn_classes": [],
+      "source": {"doc": "harness/battleplan/notes/BP8-CRUX_verdicts.md", "anchor": "BP8-WATCHDOG nit 1; bp8_crux/probe_watchdog_wiring.py"}
+    },
+    {
+      "id": "BP8-TIMEOUTS-PINS",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "mechanical",
+      "readonly": false,
+      "deps": ["BP8-TIMEOUTS"],
+      "name": "Pin the SDK-side tier timeout kwarg and the failure metric on timeout; state the real off-thread invariant in the handler comment",
+      "note": "Tier: mechanical. Self-cap: 10 turns. Minimal diff. The comment edit is words only: route_chat runs on the websockets.sync per-client thread (handlers.py _READ_ONLY_COMMANDS, websocket.py:695-700), never on Houdini's main thread; SynapseMemory.search self-marshals via @_on_memory_main; the 28 s ceiling is a design bound, not a fit under a transport kill.",
+      "targets": [
+        "T1) tests/test_bp8_timeouts.py: the fake guarded_create records its kwargs; assert timeout == tier2_timeout for the tier-2 call and == tier3_timeout for the tier-3 call (reddens T-M6).",
+        "T2) tests/: assert that a tier-2 timeout records one STANDARD failure sample and a tier-3 timeout one DEEP failure sample via the router's metrics accessor (reddens T-M7 and its tier-3 twin).",
+        "T3) python/synapse/server/handlers.py: reword the _handle_route_chat safety comment to the invariant above; no code change."
+      ],
+      "touches": ["tests/", "python/synapse/server/handlers.py"],
+      "acceptance": [
+        {"predicate": "T-M6 and T-M7 from BP8-CRUX_mutations.json each redden a named test", "evidence": "test"},
+        {"predicate": "the handlers.py diff is comment-only (git diff -w shows no code token change)", "evidence": "check"},
+        {"predicate": "routing suite count unchanged (312) and tests/test_bp8_timeouts.py green", "evidence": "test"}
+      ],
+      "crucible_criteria": ["the crucible re-runs T-M6/T-M7 against the new tests", "the crucible diffs handlers.py with -w to confirm comment-only"],
+      "spawn_classes": [],
+      "source": {"doc": "harness/battleplan/notes/BP8-CRUX_verdicts.md", "anchor": "BP8-TIMEOUTS nits 1-3"}
+    }
+  ],
+  "unknowns": [
+    "BP8-WATCHDOG acceptance row 4 (gui_required) - not measured, recorded UNKNOWN as the brief instructs."
+  ],
+  "artifacts": [
+    "harness/battleplan/notes/BP8-CRUX_verdicts.md",
+    "harness/battleplan/notes/BP8-CRUX_mutations.json",
+    "harness/battleplan/notes/bp8_crux/ (mutate.py, build_ledger.py, probe_watchdog_wiring.py, T1_probes.txt, mutation logs, probe outputs, pytest logs)",
+    "harness/jev/ledger/bp8.screen.jsonl",
+    "harness/jev/ledger/bp8.shadow.screen.jsonl"
+  ],
+  "commits": {
+    "product": "9dcbb58bac73a1c85e244eb7077ac76b2d1a63b5",
+    "receipt": "this file's own closing commit (W5H rule)"
+  }
+}
