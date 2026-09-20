@@ -1,0 +1,858 @@
+{
+  "leg": "BP8-CRUX",
+  "date": "2026-09-20",
+  "authored_by": "BP8-CRUX crucible (referee tier, Fable 5.1). Every mutation self-authored from a full read of both legs; none replays a builder's proved_it_bites row verbatim. W-M1 and T-M1/T-M2 are the mutations the two missions' crucible_criteria mandate; the rest are the crucible's own, including five deliberate guard-hole probes.",
+  "sandbox": "git clone --shared -c core.longpaths=true of each leg branch under the session scratchpad (wm + w for WATCHDOG, tm for TIMEOUTS, wp for the wiring probe); never the builder worktrees, never the main tree. The runner (bp8_crux/mutate.py) asserts the old text occurs exactly once, mutates, runs the leg's own test file, restores the ORIGINAL BYTES, and checks `git diff --quiet` per file; the baseline is proven green before the first mutation and again after the last one, in every run.",
+  "environment_notes": [
+    "Binding proof: the leg symbols exist only on the branch (router._llm_pool / handlers._ROUTE_OVERALL_TIMEOUT_S hasattr True on the leg clone, False on the master clone; the watchdog test file run against the master package fails at import on NO_RESPONSE_LINE). See bp8_crux/T1_probes.txt.",
+    "Watchdog mutations ran under BOTH stock CPython 3.14.2 (Layer 1, mock timer; Layer 2 skips) and pinned hython 22.0.400 / Python 3.13.10 with QT_QPA_PLATFORM=offscreen (Layer 2 real QTimer runs). A test that skips under an interpreter is listed under expected_test_absent_under_interpreter, never counted as reddened.",
+    "pytest -vv -rA so the short-summary failure reason is not width-truncated; right_reason carries it per reddened test.",
+    "Timeouts mutations ran under stock CPython only: the leg's tests are pure-Python (fake clients, no Qt, no hou). The SDK signature check for row 5 was done separately on the production interpreter (hython 22.0.400, vendored anthropic 0.96.0: Messages.create has a `timeout` parameter) -- see T1_probes.txt."
+  ],
+  "screen_lines_pre_read": {
+    "BP8-WATCHDOG": "screen BP8-WATCHDOG: REFEREE - full read; weak rows [1, 2, 4]; self_contradiction 0.22; crux_need 0.76",
+    "BP8-TIMEOUTS": "screen BP8-TIMEOUTS: REFEREE - full read; weak rows [1, 2]; crux_need 0.80",
+    "ledger": "harness/jev/ledger/bp8.screen.jsonl (per-leg lines) and bp8.shadow.screen.jsonl (shadow table; the shadow run scored crux_need 0.74 / 0.76 and self_contradiction 0.21 -- Jev is not bit-deterministic across runs)"
+  },
+  "totals": {
+    "mutations": 18,
+    "reddened": 13,
+    "survived": 5,
+    "survived_breakdown": {
+      "guard_holes_predicted_and_confirmed": 5
+    },
+    "per_leg": {
+      "BP8-WATCHDOG": 10,
+      "BP8-TIMEOUTS": 8
+    },
+    "baselines": {
+      "WATCHDOG_cpython": [
+        "6 passed, 1 skipped, 2 warnings in 0.34s",
+        "6 passed, 1 skipped, 2 warnings in 0.36s"
+      ],
+      "WATCHDOG_hython22.0.400": [
+        "7 passed, 1 warning in 0.41s",
+        "7 passed, 1 warning in 0.44s"
+      ],
+      "TIMEOUTS_cpython": [
+        "6 passed, 2 warnings in 3.06s",
+        "6 passed, 2 warnings in 2.99s"
+      ]
+    }
+  },
+  "mutations": [
+    {
+      "id": "W-M1",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "delete the timer stop on the REPLY path only (mandated crucible mutation)",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "    def _on_response(self, response):\n        \"\"\"Handle server response from route_chat.\"\"\"\n        self._clear_waiting_state()\n",
+      "mutation_new": "    def _on_response(self, response):\n        \"\"\"Handle server response from route_chat.\"\"\"\n        self._waiting_for_response = False\n        self._chat.hide_typing_indicator()\n",
+      "check_reddened": [
+        "test_delivered_response_stops_watchdog_and_no_late_line",
+        "test_real_qtimer_fires_and_stop_prevents_it"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.40s",
+          "reddened_tests": [
+            "test_delivered_response_stops_watchdog_and_no_late_line"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [
+            "test_real_qtimer_fires_and_stop_prevents_it"
+          ],
+          "right_reason": {
+            "test_delivered_response_stops_watchdog_and_no_late_line": "AssertionError: Expected 'stop' to have been called once. Called 0 times."
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "2 failed, 5 passed, 1 warning in 0.54s",
+          "reddened_tests": [
+            "test_delivered_response_stops_watchdog_and_no_late_line",
+            "test_real_qtimer_fires_and_stop_prevents_it"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_delivered_response_stops_watchdog_and_no_late_line": "AssertionError: Expected 'stop' to have been called once. Called 0 times.",
+            "test_real_qtimer_fires_and_stop_prevents_it": "assert True is False"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "W-M2",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "the shared helper no longer hides the typing indicator",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "        self._waiting_for_response = False\n        self._chat.hide_typing_indicator()\n\n    def _send_message(self):\n",
+      "mutation_new": "        self._waiting_for_response = False\n\n    def _send_message(self):\n",
+      "check_reddened": [
+        "test_watchdog_hang_clears_state_and_shows_one_line",
+        "test_connection_error_clears_waiting_via_shared_helper",
+        "test_disconnect_status_clears_waiting_via_shared_helper"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "3 failed, 3 passed, 1 skipped, 2 warnings in 0.50s",
+          "reddened_tests": [
+            "test_connection_error_clears_waiting_via_shared_helper",
+            "test_disconnect_status_clears_waiting_via_shared_helper",
+            "test_watchdog_hang_clears_state_and_shows_one_line"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_connection_error_clears_waiting_via_shared_helper": "AssertionError: Expected 'hide_typing_indicator' to have been called.",
+            "test_disconnect_status_clears_waiting_via_shared_helper": "AssertionError: Expected 'hide_typing_indicator' to have been called.",
+            "test_watchdog_hang_clears_state_and_shows_one_line": "AssertionError: Expected 'hide_typing_indicator' to have been called once. Called 0 times."
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "3 failed, 4 passed, 1 warning in 0.68s",
+          "reddened_tests": [
+            "test_connection_error_clears_waiting_via_shared_helper",
+            "test_disconnect_status_clears_waiting_via_shared_helper",
+            "test_watchdog_hang_clears_state_and_shows_one_line"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_connection_error_clears_waiting_via_shared_helper": "AssertionError: Expected 'hide_typing_indicator' to have been called.",
+            "test_disconnect_status_clears_waiting_via_shared_helper": "AssertionError: Expected 'hide_typing_indicator' to have been called.",
+            "test_watchdog_hang_clears_state_and_shows_one_line": "AssertionError: Expected 'hide_typing_indicator' to have been called once. Called 0 times."
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "W-M3",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "_on_connection_error no longer clears the waiting state",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "        self._clear_waiting_state()\n        self._chat.append_system_message(error_msg)\n",
+      "mutation_new": "        self._chat.append_system_message(error_msg)\n",
+      "check_reddened": [
+        "test_connection_error_clears_waiting_via_shared_helper"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.44s",
+          "reddened_tests": [
+            "test_connection_error_clears_waiting_via_shared_helper"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_connection_error_clears_waiting_via_shared_helper": "assert True is False"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 6 passed, 1 warning in 0.60s",
+          "reddened_tests": [
+            "test_connection_error_clears_waiting_via_shared_helper"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_connection_error_clears_waiting_via_shared_helper": "assert True is False"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "W-M4",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "_on_status_changed(False) no longer clears the waiting state",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "            self._clear_waiting_state()\n            _sc = _ERROR_COLOR\n",
+      "mutation_new": "            _sc = _ERROR_COLOR\n",
+      "check_reddened": [
+        "test_disconnect_status_clears_waiting_via_shared_helper"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.40s",
+          "reddened_tests": [
+            "test_disconnect_status_clears_waiting_via_shared_helper"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_disconnect_status_clears_waiting_via_shared_helper": "assert True is False"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 6 passed, 1 warning in 0.64s",
+          "reddened_tests": [
+            "test_disconnect_status_clears_waiting_via_shared_helper"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_disconnect_status_clears_waiting_via_shared_helper": "assert True is False"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "W-M5",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "the watchdog fire appends the line but never clears the waiting state",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "        self._clear_waiting_state()\n        self._chat.append_system_message(NO_RESPONSE_LINE)\n",
+      "mutation_new": "        self._chat.append_system_message(NO_RESPONSE_LINE)\n",
+      "check_reddened": [
+        "test_watchdog_hang_clears_state_and_shows_one_line",
+        "test_real_qtimer_fires_and_stop_prevents_it"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.38s",
+          "reddened_tests": [
+            "test_watchdog_hang_clears_state_and_shows_one_line"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [
+            "test_real_qtimer_fires_and_stop_prevents_it"
+          ],
+          "right_reason": {
+            "test_watchdog_hang_clears_state_and_shows_one_line": "assert True is False"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "2 failed, 5 passed, 1 warning in 0.49s",
+          "reddened_tests": [
+            "test_real_qtimer_fires_and_stop_prevents_it",
+            "test_watchdog_hang_clears_state_and_shows_one_line"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_real_qtimer_fires_and_stop_prevents_it": "assert True is False",
+            "test_watchdog_hang_clears_state_and_shows_one_line": "assert True is False"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "W-M6",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "GUARD-HOLE PROBE: delete the production `timeout.connect` line in createInterface",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "        self._response_watchdog.timeout.connect(self._on_response_timeout)\n",
+      "mutation_new": "",
+      "check_reddened": "(guard-hole probe: expected to survive the committed suite)",
+      "expected_survivor": true,
+      "result": "SURVIVED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "SURVIVED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "6 passed, 1 skipped, 2 warnings in 0.33s",
+          "reddened_tests": [],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {},
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "SURVIVED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "7 passed, 1 warning in 0.43s",
+          "reddened_tests": [],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {},
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "W-M7",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "GUARD-HOLE PROBE: production timer made repeating (setSingleShot False)",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "        self._response_watchdog.setSingleShot(True)\n",
+      "mutation_new": "        self._response_watchdog.setSingleShot(False)\n",
+      "check_reddened": "(guard-hole probe: expected to survive the committed suite)",
+      "expected_survivor": true,
+      "result": "SURVIVED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "SURVIVED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "6 passed, 1 skipped, 2 warnings in 0.38s",
+          "reddened_tests": [],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {},
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "SURVIVED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "7 passed, 1 warning in 0.43s",
+          "reddened_tests": [],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {},
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "W-M8",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "GUARD-HOLE PROBE: production interval set to 1 ms instead of WATCHDOG_TIMEOUT_MS",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "        self._response_watchdog.setInterval(WATCHDOG_TIMEOUT_MS)\n",
+      "mutation_new": "        self._response_watchdog.setInterval(1)\n",
+      "check_reddened": "(guard-hole probe: expected to survive the committed suite)",
+      "expected_survivor": true,
+      "result": "SURVIVED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "SURVIVED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "6 passed, 1 skipped, 2 warnings in 0.35s",
+          "reddened_tests": [],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {},
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "SURVIVED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "7 passed, 1 warning in 0.41s",
+          "reddened_tests": [],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {},
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "W-M9",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "margin dropped: budget equals the 30 s slow-op budget exactly",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "_WATCHDOG_MARGIN_MS = 5000\n",
+      "mutation_new": "_WATCHDOG_MARGIN_MS = 0\n",
+      "check_reddened": [
+        "test_budget_is_slow_op_plus_margin_named_not_literal"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 1 skipped, 2 warnings in 0.37s",
+          "reddened_tests": [
+            "test_budget_is_slow_op_plus_margin_named_not_literal"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_budget_is_slow_op_plus_margin_named_not_literal": "assert 30000 > 30000"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 6 passed, 1 warning in 0.60s",
+          "reddened_tests": [
+            "test_budget_is_slow_op_plus_margin_named_not_literal"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_budget_is_slow_op_plus_margin_named_not_literal": "assert 30000 > 30000"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "W-M10",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "the send path never arms the watchdog",
+      "file": "python/synapse/panel/chat_panel.py",
+      "mutation_old": "        if self._response_watchdog is not None:\n            self._response_watchdog.start()\n        ctx = self._gather_context_if_stale()\n",
+      "mutation_new": "        ctx = self._gather_context_if_stale()\n",
+      "check_reddened": [
+        "test_watchdog_hang_clears_state_and_shows_one_line",
+        "test_delivered_response_stops_watchdog_and_no_late_line",
+        "test_failed_send_stops_watchdog_no_zombie_timer"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "3 failed, 3 passed, 1 skipped, 2 warnings in 0.50s",
+          "reddened_tests": [
+            "test_delivered_response_stops_watchdog_and_no_late_line",
+            "test_failed_send_stops_watchdog_no_zombie_timer",
+            "test_watchdog_hang_clears_state_and_shows_one_line"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_delivered_response_stops_watchdog_and_no_late_line": "AssertionError: Expected 'start' to have been called once. Called 0 times.",
+            "test_failed_send_stops_watchdog_no_zombie_timer": "AssertionError: Expected 'start' to have been called once. Called 0 times.",
+            "test_watchdog_hang_clears_state_and_shows_one_line": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_cpython.json"
+        },
+        "hython_22.0.400_offscreen": {
+          "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+          "tree_head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "3 failed, 4 passed, 1 warning in 0.72s",
+          "reddened_tests": [
+            "test_delivered_response_stops_watchdog_and_no_late_line",
+            "test_failed_send_stops_watchdog_no_zombie_timer",
+            "test_watchdog_hang_clears_state_and_shows_one_line"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_delivered_response_stops_watchdog_and_no_late_line": "AssertionError: Expected 'start' to have been called once. Called 0 times.",
+            "test_failed_send_stops_watchdog_no_zombie_timer": "AssertionError: Expected 'start' to have been called once. Called 0 times.",
+            "test_watchdog_hang_clears_state_and_shows_one_line": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/WATCHDOG_mutations_hython22.0.400.json"
+        }
+      }
+    },
+    {
+      "id": "T-M1",
+      "builder_leg": "BP8-TIMEOUTS",
+      "description": "remove the wall-clock timeout from the tier-2 future (mandated crucible mutation)",
+      "file": "python/synapse/routing/router.py",
+      "mutation_old": "                response = _future.result(timeout=_t2)\n",
+      "mutation_new": "                response = _future.result()\n",
+      "check_reddened": [
+        "test_try_tier2_returns_within_timeout"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "69687216c66546762f149a27cdebed7475e7f915",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 2 warnings in 5.10s",
+          "reddened_tests": [
+            "test_try_tier2_returns_within_timeout"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_try_tier2_returns_within_timeout": "AssertionError: took 3.01s"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json"
+        }
+      }
+    },
+    {
+      "id": "T-M2",
+      "builder_leg": "BP8-TIMEOUTS",
+      "description": "remove the wall-clock timeout from the tier-3 future (mandated crucible mutation)",
+      "file": "python/synapse/routing/router.py",
+      "mutation_old": "                response = _future.result(timeout=_t3)\n",
+      "mutation_new": "                response = _future.result()\n",
+      "check_reddened": [
+        "test_tier3_sync_returns_within_timeout"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "69687216c66546762f149a27cdebed7475e7f915",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 2 warnings in 5.11s",
+          "reddened_tests": [
+            "test_tier3_sync_returns_within_timeout"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_tier3_sync_returns_within_timeout": "AssertionError: took 3.00s"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json"
+        }
+      }
+    },
+    {
+      "id": "T-M3",
+      "builder_leg": "BP8-TIMEOUTS",
+      "description": "delete the handler's `except Exception` arm (a raising route() propagates)",
+      "file": "python/synapse/server/handlers.py",
+      "mutation_old": "        except Exception as exc:\n            _log.warning(\"route() failed: %s\", exc)\n            return {\n                \"response\": f\"The request could not be completed: {exc}\",\n                \"tier\": \"error\",\n                \"success\": False,\n                \"error\": str(exc),\n            }\n",
+      "mutation_new": "",
+      "check_reddened": [
+        "test_handler_raising_route_replies_with_response_and_tier"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "69687216c66546762f149a27cdebed7475e7f915",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 2 warnings in 3.12s",
+          "reddened_tests": [
+            "test_handler_raising_route_replies_with_response_and_tier"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_handler_raising_route_replies_with_response_and_tier": "RuntimeError: router blew up"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json"
+        }
+      }
+    },
+    {
+      "id": "T-M4",
+      "builder_leg": "BP8-TIMEOUTS",
+      "description": "remove the overall deadline from the handler's route() future",
+      "file": "python/synapse/server/handlers.py",
+      "mutation_old": "            result = _future.result(timeout=deadline)\n",
+      "mutation_new": "            result = _future.result()\n",
+      "check_reddened": [
+        "test_handler_timed_out_route_replies_with_response_and_tier"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "69687216c66546762f149a27cdebed7475e7f915",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 2 warnings in 5.65s",
+          "reddened_tests": [
+            "test_handler_timed_out_route_replies_with_response_and_tier"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_handler_timed_out_route_replies_with_response_and_tier": "AssertionError: took 3.02s"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json"
+        }
+      }
+    },
+    {
+      "id": "T-M5",
+      "builder_leg": "BP8-TIMEOUTS",
+      "description": "the timeout reply loses its `tier` key (ws_bridge.py:339 would drop it)",
+      "file": "python/synapse/server/handlers.py",
+      "mutation_old": "                \"response\": \"The request timed out before it could be answered. Please try again.\",\n                \"tier\": \"timeout\",\n",
+      "mutation_new": "                \"response\": \"The request timed out before it could be answered. Please try again.\",\n",
+      "check_reddened": [
+        "test_handler_timed_out_route_replies_with_response_and_tier"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "69687216c66546762f149a27cdebed7475e7f915",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 2 warnings in 3.06s",
+          "reddened_tests": [
+            "test_handler_timed_out_route_replies_with_response_and_tier"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_handler_timed_out_route_replies_with_response_and_tier": "AssertionError: assert ('response' in {'response': 'The request timed out before it could be answered. Please try again.', 'success': False, 'timeout': True, 'latency_ms': 500.0} and 'tier' in {'response': 'The request timed out before it could be answered. Please try again.', 'success': False, 'tim"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json"
+        }
+      }
+    },
+    {
+      "id": "T-M6",
+      "builder_leg": "BP8-TIMEOUTS",
+      "description": "GUARD-HOLE PROBE: drop the transport-layer `timeout=_t2` kwarg that reaches the SDK",
+      "file": "python/synapse/routing/router.py",
+      "mutation_old": "                    messages=[{\"role\": \"user\", \"content\": user_message}],\n                    timeout=_t2,\n                )\n",
+      "mutation_new": "                    messages=[{\"role\": \"user\", \"content\": user_message}],\n                )\n",
+      "check_reddened": "(guard-hole probe: expected to survive the committed suite)",
+      "expected_survivor": true,
+      "result": "SURVIVED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "69687216c66546762f149a27cdebed7475e7f915",
+          "result": "SURVIVED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "6 passed, 2 warnings in 3.01s",
+          "reddened_tests": [],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {},
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json"
+        }
+      }
+    },
+    {
+      "id": "T-M7",
+      "builder_leg": "BP8-TIMEOUTS",
+      "description": "GUARD-HOLE PROBE: the tier-2 timeout branch no longer records the STANDARD failure metric",
+      "file": "python/synapse/routing/router.py",
+      "mutation_old": "                latency_ms = (time.monotonic() - start) * 1000\n                self._record_metric(RoutingTier.STANDARD, latency_ms, False)\n                logger.warning(\"Tier 2 timed out after %.1fs\", _t2)\n",
+      "mutation_new": "                latency_ms = (time.monotonic() - start) * 1000\n                logger.warning(\"Tier 2 timed out after %.1fs\", _t2)\n",
+      "check_reddened": "(guard-hole probe: expected to survive the committed suite)",
+      "expected_survivor": true,
+      "result": "SURVIVED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "69687216c66546762f149a27cdebed7475e7f915",
+          "result": "SURVIVED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "6 passed, 2 warnings in 3.04s",
+          "reddened_tests": [],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {},
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json"
+        }
+      }
+    },
+    {
+      "id": "T-M8",
+      "builder_leg": "BP8-TIMEOUTS",
+      "description": "the tier-2 timeout result carries an EMPTY answer (a silent turn)",
+      "file": "python/synapse/routing/router.py",
+      "mutation_old": "                    answer=\"The request timed out before the standard tier could respond.\",\n",
+      "mutation_new": "                    answer=\"\",\n",
+      "check_reddened": [
+        "test_try_tier2_returns_within_timeout"
+      ],
+      "expected_survivor": false,
+      "result": "REDDENED",
+      "runs": {
+        "cpython_3.14.2": {
+          "interpreter": "C:\\Python314\\python.exe",
+          "tree_head": "69687216c66546762f149a27cdebed7475e7f915",
+          "result": "REDDENED",
+          "verdict_vs_expectation": "as expected",
+          "pytest_summary": "1 failed, 5 passed, 2 warnings in 3.07s",
+          "reddened_tests": [
+            "test_try_tier2_returns_within_timeout"
+          ],
+          "collateral_failures": [],
+          "expected_but_not_reddened": [],
+          "expected_test_absent_under_interpreter": [],
+          "right_reason": {
+            "test_try_tier2_returns_within_timeout": "AssertionError: assert ''"
+          },
+          "restored_clean": true,
+          "log": "harness/battleplan/notes/bp8_crux/TIMEOUTS_mutations_cpython.json"
+        }
+      }
+    }
+  ],
+  "crucible_probes": [
+    {
+      "id": "W-P1",
+      "builder_leg": "BP8-WATCHDOG",
+      "description": "Production createInterface watchdog wiring under real Qt (hython 22.0.400 offscreen): build the real interface, read the production timer back, then fire IT (interval shrunk to 1 ms) so the production `timeout.connect` line is what delivers the slot.",
+      "script": "harness/battleplan/notes/bp8_crux/probe_watchdog_wiring.py",
+      "baseline": {
+        "tree": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77\\scratchpad\\wp",
+        "delete_connect": false,
+        "python": "3.13.10",
+        "chat_panel_file": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77\\scratchpad\\wp\\python\\synapse\\panel\\chat_panel.py",
+        "WATCHDOG_TIMEOUT_MS": 35000,
+        "created_widget": "QWidget",
+        "timer_type": "QTimer",
+        "isSingleShot": true,
+        "interval_ms": 35000,
+        "interval_equals_WATCHDOG_TIMEOUT_MS": true,
+        "armed_after_createInterface": false,
+        "parent_is_root": true,
+        "fired": true,
+        "waiting_cleared": true,
+        "no_response_lines": 1,
+        "hide_typing_indicator_calls": 1,
+        "production_connect_live": true,
+        "still_inactive_after_pump": true,
+        "restored": true
+      },
+      "negative_control_delete_connect": {
+        "tree": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77\\scratchpad\\wp",
+        "delete_connect": true,
+        "python": "3.13.10",
+        "chat_panel_file": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77\\scratchpad\\wp\\python\\synapse\\panel\\chat_panel.py",
+        "WATCHDOG_TIMEOUT_MS": 35000,
+        "created_widget": "QWidget",
+        "timer_type": "QTimer",
+        "isSingleShot": true,
+        "interval_ms": 35000,
+        "interval_equals_WATCHDOG_TIMEOUT_MS": true,
+        "armed_after_createInterface": false,
+        "parent_is_root": true,
+        "fired": true,
+        "waiting_cleared": false,
+        "no_response_lines": 0,
+        "hide_typing_indicator_calls": 0,
+        "production_connect_live": false,
+        "still_inactive_after_pump": true,
+        "restored": true
+      },
+      "reading": "Baseline: single-shot True, interval 35000 == WATCHDOG_TIMEOUT_MS, not armed after createInterface, parent is _root, fired -> waiting cleared, exactly one NO_RESPONSE line, production_connect_live True. Negative control with the connect line deleted: fired but waiting NOT cleared and 0 lines -> the probe catches W-M6 where the committed suite does not."
+    }
+  ]
+}

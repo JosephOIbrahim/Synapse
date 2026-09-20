@@ -1,0 +1,668 @@
+{
+  "leg": "watchdog",
+  "tree": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77\\scratchpad\\w",
+  "head": "c194d8a2e44d07992e3d5cdd1a1f59668b92facc",
+  "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+  "interpreter_label": "hython",
+  "selector": [
+    "tests/test_response_watchdog.py"
+  ],
+  "started": "2026-09-20T14:07:38",
+  "baseline_before": {
+    "cmd": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe -m pytest -p no:cacheprovider -vv -rA tests/test_response_watchdog.py",
+    "returncode": 0,
+    "rows": {
+      "test_budget_is_slow_op_plus_margin_named_not_literal": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_watchdog_hang_clears_state_and_shows_one_line": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_delivered_response_stops_watchdog_and_no_late_line": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_connection_error_clears_waiting_via_shared_helper": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_disconnect_status_clears_waiting_via_shared_helper": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_failed_send_stops_watchdog_no_zombie_timer": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_real_qtimer_fires_and_stop_prevents_it": {
+        "status": "PASSED",
+        "reason": ""
+      }
+    },
+    "summary": "7 passed, 1 warning in 0.41s",
+    "elapsed_s": 2.84,
+    "tail": "_clears_waiting_via_shared_helper PASSED [ 71%]\ntests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer PASSED [ 85%]\ntests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it PASSED [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\n======================== 7 passed, 1 warning in 0.41s =========================\n"
+  },
+  "mutations": [
+    {
+      "id": "W-M1",
+      "title": "delete the timer stop on the REPLY path only (mandated crucible mutation)",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_delivered_response_stops_watchdog_and_no_late_line",
+        "test_real_qtimer_fires_and_stop_prevents_it"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "2 failed, 5 passed, 1 warning in 0.54s",
+        "returncode": 1,
+        "elapsed_s": 3.13,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'stop' to have been called once. Called 0 times."
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "FAILED",
+            "reason": "assert True is False"
+          }
+        },
+        "output_tail": "L configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nFAILED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line - AssertionError: Expected 'stop' to have been called once. Called 0 times.\nFAILED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it - assert True is False\n +  where True = <built-in method isActive of PySide6.QtCore.QTimer object at 0x0000000175A2DB00>()\n +    where <built-in method isActive of PySide6.QtCore.QTimer object at 0x0000000175A2DB00> = <PySide6.QtCore.QTimer(0x4418c420) at 0x0000000175A2DB00>.isActive\n +      where <PySide6.QtCore.QTimer(0x4418c420) at 0x0000000175A2DB00> = <synapse.panel.chat_panel.SynapseChatPanel object at 0x0000000175C32690>._response_watchdog\n=================== 2 failed, 5 passed, 1 warning in 0.54s ====================\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_delivered_response_stops_watchdog_and_no_late_line",
+        "test_real_qtimer_fires_and_stop_prevents_it"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_delivered_response_stops_watchdog_and_no_late_line": "AssertionError: Expected 'stop' to have been called once. Called 0 times.",
+        "test_real_qtimer_fires_and_stop_prevents_it": "assert True is False"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M2",
+      "title": "the shared helper no longer hides the typing indicator",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_watchdog_hang_clears_state_and_shows_one_line",
+        "test_connection_error_clears_waiting_via_shared_helper",
+        "test_disconnect_status_clears_waiting_via_shared_helper"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "3 failed, 4 passed, 1 warning in 0.68s",
+        "returncode": 1,
+        "elapsed_s": 3.25,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'hide_typing_indicator' to have been called once. Called 0 times."
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'hide_typing_indicator' to have been called."
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'hide_typing_indicator' to have been called."
+          }
+        },
+        "output_tail": "============================ warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\nFAILED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line - AssertionError: Expected 'hide_typing_indicator' to have been called once. Called 0 times.\nFAILED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper - AssertionError: Expected 'hide_typing_indicator' to have been called.\nFAILED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper - AssertionError: Expected 'hide_typing_indicator' to have been called.\n=================== 3 failed, 4 passed, 1 warning in 0.68s ====================\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_connection_error_clears_waiting_via_shared_helper",
+        "test_disconnect_status_clears_waiting_via_shared_helper",
+        "test_watchdog_hang_clears_state_and_shows_one_line"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_connection_error_clears_waiting_via_shared_helper": "AssertionError: Expected 'hide_typing_indicator' to have been called.",
+        "test_disconnect_status_clears_waiting_via_shared_helper": "AssertionError: Expected 'hide_typing_indicator' to have been called.",
+        "test_watchdog_hang_clears_state_and_shows_one_line": "AssertionError: Expected 'hide_typing_indicator' to have been called once. Called 0 times."
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M3",
+      "title": "_on_connection_error no longer clears the waiting state",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_connection_error_clears_waiting_via_shared_helper"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 6 passed, 1 warning in 0.60s",
+        "returncode": 1,
+        "elapsed_s": 2.99,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "FAILED",
+            "reason": "assert True is False"
+          }
+        },
+        "output_tail": "ue = <synapse.panel.chat_panel.SynapseChatPanel object at 0x00000001758DA710>._waiting_for_response\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\nFAILED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper - assert True is False\n +  where True = <synapse.panel.chat_panel.SynapseChatPanel object at 0x00000001758DA710>._waiting_for_response\n=================== 1 failed, 6 passed, 1 warning in 0.60s ====================\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_connection_error_clears_waiting_via_shared_helper"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_connection_error_clears_waiting_via_shared_helper": "assert True is False"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M4",
+      "title": "_on_status_changed(False) no longer clears the waiting state",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_disconnect_status_clears_waiting_via_shared_helper"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 6 passed, 1 warning in 0.64s",
+        "returncode": 1,
+        "elapsed_s": 3.12,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "FAILED",
+            "reason": "assert True is False"
+          }
+        },
+        "output_tail": "ue = <synapse.panel.chat_panel.SynapseChatPanel object at 0x00000001754D2520>._waiting_for_response\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\nFAILED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper - assert True is False\n +  where True = <synapse.panel.chat_panel.SynapseChatPanel object at 0x00000001754D2520>._waiting_for_response\n=================== 1 failed, 6 passed, 1 warning in 0.64s ====================\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_disconnect_status_clears_waiting_via_shared_helper"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_disconnect_status_clears_waiting_via_shared_helper": "assert True is False"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M5",
+      "title": "the watchdog fire appends the line but never clears the waiting state",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_watchdog_hang_clears_state_and_shows_one_line",
+        "test_real_qtimer_fires_and_stop_prevents_it"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "2 failed, 5 passed, 1 warning in 0.49s",
+        "returncode": 1,
+        "elapsed_s": 3.03,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "FAILED",
+            "reason": "assert True is False"
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "FAILED",
+            "reason": "assert True is False"
+          }
+        },
+        "output_tail": "ings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nFAILED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line - assert True is False\n +  where True = <synapse.panel.chat_panel.SynapseChatPanel object at 0x000000017582ABA0>._waiting_for_response\nFAILED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it - assert True is False\n +  where True = <synapse.panel.chat_panel.SynapseChatPanel object at 0x0000000175996330>._waiting_for_response\n=================== 2 failed, 5 passed, 1 warning in 0.49s ====================\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_real_qtimer_fires_and_stop_prevents_it",
+        "test_watchdog_hang_clears_state_and_shows_one_line"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_real_qtimer_fires_and_stop_prevents_it": "assert True is False",
+        "test_watchdog_hang_clears_state_and_shows_one_line": "assert True is False"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M6",
+      "title": "GUARD-HOLE PROBE: delete the production `timeout.connect` line in createInterface",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [],
+      "expect_survivor": true,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "7 passed, 1 warning in 0.43s",
+        "returncode": 0,
+        "elapsed_s": 2.99,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "PASSED",
+            "reason": ""
+          }
+        },
+        "output_tail": "_clears_waiting_via_shared_helper PASSED [ 71%]\ntests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer PASSED [ 85%]\ntests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it PASSED [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\n======================== 7 passed, 1 warning in 0.43s =========================\n"
+      },
+      "result": "SURVIVED",
+      "reddened_tests": [],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {},
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M7",
+      "title": "GUARD-HOLE PROBE: production timer made repeating (setSingleShot False)",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [],
+      "expect_survivor": true,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "7 passed, 1 warning in 0.43s",
+        "returncode": 0,
+        "elapsed_s": 2.92,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "PASSED",
+            "reason": ""
+          }
+        },
+        "output_tail": "_clears_waiting_via_shared_helper PASSED [ 71%]\ntests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer PASSED [ 85%]\ntests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it PASSED [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\n======================== 7 passed, 1 warning in 0.43s =========================\n"
+      },
+      "result": "SURVIVED",
+      "reddened_tests": [],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {},
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M8",
+      "title": "GUARD-HOLE PROBE: production interval set to 1 ms instead of WATCHDOG_TIMEOUT_MS",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [],
+      "expect_survivor": true,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "7 passed, 1 warning in 0.41s",
+        "returncode": 0,
+        "elapsed_s": 2.84,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "PASSED",
+            "reason": ""
+          }
+        },
+        "output_tail": "_clears_waiting_via_shared_helper PASSED [ 71%]\ntests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer PASSED [ 85%]\ntests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it PASSED [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\n======================== 7 passed, 1 warning in 0.41s =========================\n"
+      },
+      "result": "SURVIVED",
+      "reddened_tests": [],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {},
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M9",
+      "title": "margin dropped: budget equals the 30 s slow-op budget exactly",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_budget_is_slow_op_plus_margin_named_not_literal"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 6 passed, 1 warning in 0.60s",
+        "returncode": 1,
+        "elapsed_s": 2.97,
+        "rows": {
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "FAILED",
+            "reason": "assert 30000 > 30000"
+          }
+        },
+        "output_tail": "is_slow_op_plus_margin_named_not_literal _____________\ntests\\test_response_watchdog.py:122: in test_budget_is_slow_op_plus_margin_named_not_literal\n    assert WATCHDOG_TIMEOUT_MS > 30000\nE   assert 30000 > 30000\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\nFAILED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal - assert 30000 > 30000\n=================== 1 failed, 6 passed, 1 warning in 0.60s ====================\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_budget_is_slow_op_plus_margin_named_not_literal"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_budget_is_slow_op_plus_margin_named_not_literal": "assert 30000 > 30000"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "W-M10",
+      "title": "the send path never arms the watchdog",
+      "file": "python/synapse/panel/chat_panel.py",
+      "expect_red": [
+        "test_watchdog_hang_clears_state_and_shows_one_line",
+        "test_delivered_response_stops_watchdog_and_no_late_line",
+        "test_failed_send_stops_watchdog_no_zombie_timer"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "3 failed, 4 passed, 1 warning in 0.72s",
+        "returncode": 1,
+        "elapsed_s": 3.2,
+        "rows": {
+          "test_budget_is_slow_op_plus_margin_named_not_literal": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_connection_error_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_disconnect_status_clears_waiting_via_shared_helper": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_real_qtimer_fires_and_stop_prevents_it": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_watchdog_hang_clears_state_and_shows_one_line": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+          },
+          "test_delivered_response_stops_watchdog_and_no_late_line": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+          },
+          "test_failed_send_stops_watchdog_no_zombie_timer": {
+            "status": "FAILED",
+            "reason": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+          }
+        },
+        "output_tail": "es.\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\nFAILED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line - AssertionError: Expected 'start' to have been called once. Called 0 times.\nFAILED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line - AssertionError: Expected 'start' to have been called once. Called 0 times.\nFAILED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer - AssertionError: Expected 'start' to have been called once. Called 0 times.\n=================== 3 failed, 4 passed, 1 warning in 0.72s ====================\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_delivered_response_stops_watchdog_and_no_late_line",
+        "test_failed_send_stops_watchdog_no_zombie_timer",
+        "test_watchdog_hang_clears_state_and_shows_one_line"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_delivered_response_stops_watchdog_and_no_late_line": "AssertionError: Expected 'start' to have been called once. Called 0 times.",
+        "test_failed_send_stops_watchdog_no_zombie_timer": "AssertionError: Expected 'start' to have been called once. Called 0 times.",
+        "test_watchdog_hang_clears_state_and_shows_one_line": "AssertionError: Expected 'start' to have been called once. Called 0 times."
+      },
+      "verdict_vs_expectation": "as expected"
+    }
+  ],
+  "baseline_after": {
+    "cmd": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe -m pytest -p no:cacheprovider -vv -rA tests/test_response_watchdog.py",
+    "returncode": 0,
+    "rows": {
+      "test_budget_is_slow_op_plus_margin_named_not_literal": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_watchdog_hang_clears_state_and_shows_one_line": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_delivered_response_stops_watchdog_and_no_late_line": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_connection_error_clears_waiting_via_shared_helper": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_disconnect_status_clears_waiting_via_shared_helper": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_failed_send_stops_watchdog_no_zombie_timer": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_real_qtimer_fires_and_stop_prevents_it": {
+        "status": "PASSED",
+        "reason": ""
+      }
+    },
+    "summary": "7 passed, 1 warning in 0.44s",
+    "elapsed_s": 2.97,
+    "tail": "_clears_waiting_via_shared_helper PASSED [ 71%]\ntests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer PASSED [ 85%]\ntests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it PASSED [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=================================== PASSES ====================================\n=========================== short test summary info ===========================\nPASSED tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal\nPASSED tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line\nPASSED tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line\nPASSED tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper\nPASSED tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer\nPASSED tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it\n======================== 7 passed, 1 warning in 0.44s =========================\n"
+  },
+  "finished": "2026-09-20T14:08:15"
+}

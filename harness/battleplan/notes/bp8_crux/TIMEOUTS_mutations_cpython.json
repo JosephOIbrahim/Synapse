@@ -1,0 +1,500 @@
+{
+  "leg": "timeouts",
+  "tree": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77\\scratchpad\\tm",
+  "head": "69687216c66546762f149a27cdebed7475e7f915",
+  "interpreter": "C:\\Python314\\python.exe",
+  "interpreter_label": "cpython",
+  "selector": [
+    "tests/test_bp8_timeouts.py"
+  ],
+  "started": "2026-09-20T14:08:20",
+  "baseline_before": {
+    "cmd": "C:\\Python314\\python.exe -m pytest -p no:cacheprovider -vv -rA tests/test_bp8_timeouts.py",
+    "returncode": 0,
+    "rows": {
+      "test_try_tier2_returns_within_timeout": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_tier3_sync_returns_within_timeout": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_try_tier2_success_passthrough": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_handler_raising_route_replies_with_response_and_tier": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_handler_timed_out_route_replies_with_response_and_tier": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_handler_success_route_still_replies_normally": {
+        "status": "PASSED",
+        "reason": ""
+      }
+    },
+    "summary": "6 passed, 2 warnings in 3.06s",
+    "elapsed_s": 6.97,
+    "tail": "med out after 1.0s\n__________ test_handler_raising_route_replies_with_response_and_tier __________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1825 route() failed: router blew up\n_________ test_handler_timed_out_route_replies_with_response_and_tier _________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1816 route() exceeded overall deadline of 0.5s\n=========================== short test summary info ===========================\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_success_passthrough\nPASSED tests/test_bp8_timeouts.py::test_handler_raising_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_timed_out_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_success_route_still_replies_normally\n======================== 6 passed, 2 warnings in 3.06s ========================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+  },
+  "mutations": [
+    {
+      "id": "T-M1",
+      "title": "remove the wall-clock timeout from the tier-2 future (mandated crucible mutation)",
+      "file": "python/synapse/routing/router.py",
+      "expect_red": [
+        "test_try_tier2_returns_within_timeout"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 2 warnings in 5.10s",
+        "returncode": 1,
+        "elapsed_s": 8.91,
+        "rows": {
+          "test_tier3_sync_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_success_passthrough": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_raising_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_timed_out_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_success_route_still_replies_normally": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_returns_within_timeout": {
+            "status": "FAILED",
+            "reason": "AssertionError: took 3.01s"
+          }
+        },
+        "output_tail": "es_normally\nFAILED tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout - AssertionError: took 3.01s\nassert 3.006764799996745 < (1.0 + 1.0)\n +  where 1.0 = RoutingConfig(enable_tier0=True, enable_tier1=True, enable_tier2=True, enable_tier3=True, enable_recipes=True, enable_cache=True, rag_root=None, tier0_confidence=0.8, tier1_confidence=0.5, llm_api_key='test-key', llm_model_fast='claude-haiku-4-5-20251001', llm_model_deep='claude-sonnet-4-6', tier2_timeout=1.0, tier3_timeout=1.0, tier3_async=False, cache_max_size=500, cache_ttl=3600, float_precision=6).tier2_timeout\n +    where RoutingConfig(enable_tier0=True, enable_tier1=True, enable_tier2=True, enable_tier3=True, enable_recipes=True, enable_cache=True, rag_root=None, tier0_confidence=0.8, tier1_confidence=0.5, llm_api_key='test-key', llm_model_fast='claude-haiku-4-5-20251001', llm_model_deep='claude-sonnet-4-6', tier2_timeout=1.0, tier3_timeout=1.0, tier3_async=False, cache_max_size=500, cache_ttl=3600, float_precision=6) = <synapse.routing.router.TieredRouter object at 0x0000026831C497F0>._config\n=================== 1 failed, 5 passed, 2 warnings in 5.10s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_try_tier2_returns_within_timeout"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_try_tier2_returns_within_timeout": "AssertionError: took 3.01s"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "T-M2",
+      "title": "remove the wall-clock timeout from the tier-3 future (mandated crucible mutation)",
+      "file": "python/synapse/routing/router.py",
+      "expect_red": [
+        "test_tier3_sync_returns_within_timeout"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 2 warnings in 5.11s",
+        "returncode": 1,
+        "elapsed_s": 8.77,
+        "rows": {
+          "test_try_tier2_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_success_passthrough": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_raising_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_timed_out_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_success_route_still_replies_normally": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_tier3_sync_returns_within_timeout": {
+            "status": "FAILED",
+            "reason": "AssertionError: took 3.00s"
+          }
+        },
+        "output_tail": "s_normally\nFAILED tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout - AssertionError: took 3.00s\nassert 3.004432700050529 < (1.0 + 1.0)\n +  where 1.0 = RoutingConfig(enable_tier0=True, enable_tier1=True, enable_tier2=True, enable_tier3=True, enable_recipes=True, enable_cache=True, rag_root=None, tier0_confidence=0.8, tier1_confidence=0.5, llm_api_key='test-key', llm_model_fast='claude-haiku-4-5-20251001', llm_model_deep='claude-sonnet-4-6', tier2_timeout=1.0, tier3_timeout=1.0, tier3_async=False, cache_max_size=500, cache_ttl=3600, float_precision=6).tier3_timeout\n +    where RoutingConfig(enable_tier0=True, enable_tier1=True, enable_tier2=True, enable_tier3=True, enable_recipes=True, enable_cache=True, rag_root=None, tier0_confidence=0.8, tier1_confidence=0.5, llm_api_key='test-key', llm_model_fast='claude-haiku-4-5-20251001', llm_model_deep='claude-sonnet-4-6', tier2_timeout=1.0, tier3_timeout=1.0, tier3_async=False, cache_max_size=500, cache_ttl=3600, float_precision=6) = <synapse.routing.router.TieredRouter object at 0x000001BC1B8E6AD0>._config\n=================== 1 failed, 5 passed, 2 warnings in 5.11s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_tier3_sync_returns_within_timeout"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_tier3_sync_returns_within_timeout": "AssertionError: took 3.00s"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "T-M3",
+      "title": "delete the handler's `except Exception` arm (a raising route() propagates)",
+      "file": "python/synapse/server/handlers.py",
+      "expect_red": [
+        "test_handler_raising_route_replies_with_response_and_tier"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 2 warnings in 3.12s",
+        "returncode": 1,
+        "elapsed_s": 6.78,
+        "rows": {
+          "test_try_tier2_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_tier3_sync_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_success_passthrough": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_timed_out_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_success_route_still_replies_normally": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_raising_route_replies_with_response_and_tier": {
+            "status": "FAILED",
+            "reason": "RuntimeError: router blew up"
+          }
+        },
+        "output_tail": "______________ test_tier3_sync_returns_within_timeout ____________________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.routing.router:router.py:957 Tier 3 timed out after 1.0s\n_________ test_handler_timed_out_route_replies_with_response_and_tier _________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1816 route() exceeded overall deadline of 0.5s\n=========================== short test summary info ===========================\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_success_passthrough\nPASSED tests/test_bp8_timeouts.py::test_handler_timed_out_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_success_route_still_replies_normally\nFAILED tests/test_bp8_timeouts.py::test_handler_raising_route_replies_with_response_and_tier - RuntimeError: router blew up\n=================== 1 failed, 5 passed, 2 warnings in 3.12s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_handler_raising_route_replies_with_response_and_tier"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_handler_raising_route_replies_with_response_and_tier": "RuntimeError: router blew up"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "T-M4",
+      "title": "remove the overall deadline from the handler's route() future",
+      "file": "python/synapse/server/handlers.py",
+      "expect_red": [
+        "test_handler_timed_out_route_replies_with_response_and_tier"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 2 warnings in 5.65s",
+        "returncode": 1,
+        "elapsed_s": 9.36,
+        "rows": {
+          "test_try_tier2_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_tier3_sync_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_success_passthrough": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_raising_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_success_route_still_replies_normally": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_timed_out_route_replies_with_response_and_tier": {
+            "status": "FAILED",
+            "reason": "AssertionError: took 3.02s"
+          }
+        },
+        "output_tail": "sync_returns_within_timeout ____________________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.routing.router:router.py:957 Tier 3 timed out after 1.0s\n__________ test_handler_raising_route_replies_with_response_and_tier __________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1825 route() failed: router blew up\n=========================== short test summary info ===========================\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_success_passthrough\nPASSED tests/test_bp8_timeouts.py::test_handler_raising_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_success_route_still_replies_normally\nFAILED tests/test_bp8_timeouts.py::test_handler_timed_out_route_replies_with_response_and_tier - AssertionError: took 3.02s\nassert 3.017136999987997 < (0.5 + 1.0)\n=================== 1 failed, 5 passed, 2 warnings in 5.65s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_handler_timed_out_route_replies_with_response_and_tier"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_handler_timed_out_route_replies_with_response_and_tier": "AssertionError: took 3.02s"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "T-M5",
+      "title": "the timeout reply loses its `tier` key (ws_bridge.py:339 would drop it)",
+      "file": "python/synapse/server/handlers.py",
+      "expect_red": [
+        "test_handler_timed_out_route_replies_with_response_and_tier"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 2 warnings in 3.06s",
+        "returncode": 1,
+        "elapsed_s": 6.6,
+        "rows": {
+          "test_try_tier2_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_tier3_sync_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_success_passthrough": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_raising_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_success_route_still_replies_normally": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_timed_out_route_replies_with_response_and_tier": {
+            "status": "FAILED",
+            "reason": "AssertionError: assert ('response' in {'response': 'The request timed out before it could be answered. Please try again.', 'success': False, 'timeout': True, 'latency_ms': 500.0} and 'tier' in {'response': 'The request timed out before it could be answered. Please try again.', 'success': False, 'tim"
+          }
+        },
+        "output_tail": "er __________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1824 route() failed: router blew up\n=========================== short test summary info ===========================\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_success_passthrough\nPASSED tests/test_bp8_timeouts.py::test_handler_raising_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_success_route_still_replies_normally\nFAILED tests/test_bp8_timeouts.py::test_handler_timed_out_route_replies_with_response_and_tier - AssertionError: assert ('response' in {'response': 'The request timed out before it could be answered. Please try again.', 'success': False, 'timeout': True, 'latency_ms': 500.0} and 'tier' in {'response': 'The request timed out before it could be answered. Please try again.', 'success': False, 'timeout': True, 'latency_ms': 500.0})\n=================== 1 failed, 5 passed, 2 warnings in 3.06s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_handler_timed_out_route_replies_with_response_and_tier"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_handler_timed_out_route_replies_with_response_and_tier": "AssertionError: assert ('response' in {'response': 'The request timed out before it could be answered. Please try again.', 'success': False, 'timeout': True, 'latency_ms': 500.0} and 'tier' in {'response': 'The request timed out before it could be answered. Please try again.', 'success': False, 'tim"
+      },
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "T-M6",
+      "title": "GUARD-HOLE PROBE: drop the transport-layer `timeout=_t2` kwarg that reaches the SDK",
+      "file": "python/synapse/routing/router.py",
+      "expect_red": [],
+      "expect_survivor": true,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "6 passed, 2 warnings in 3.01s",
+        "returncode": 0,
+        "elapsed_s": 6.48,
+        "rows": {
+          "test_try_tier2_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_tier3_sync_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_success_passthrough": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_raising_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_timed_out_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_success_route_still_replies_normally": {
+            "status": "PASSED",
+            "reason": ""
+          }
+        },
+        "output_tail": "med out after 1.0s\n__________ test_handler_raising_route_replies_with_response_and_tier __________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1825 route() failed: router blew up\n_________ test_handler_timed_out_route_replies_with_response_and_tier _________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1816 route() exceeded overall deadline of 0.5s\n=========================== short test summary info ===========================\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_success_passthrough\nPASSED tests/test_bp8_timeouts.py::test_handler_raising_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_timed_out_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_success_route_still_replies_normally\n======================== 6 passed, 2 warnings in 3.01s ========================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "SURVIVED",
+      "reddened_tests": [],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {},
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "T-M7",
+      "title": "GUARD-HOLE PROBE: the tier-2 timeout branch no longer records the STANDARD failure metric",
+      "file": "python/synapse/routing/router.py",
+      "expect_red": [],
+      "expect_survivor": true,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "6 passed, 2 warnings in 3.04s",
+        "returncode": 0,
+        "elapsed_s": 6.83,
+        "rows": {
+          "test_try_tier2_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_tier3_sync_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_success_passthrough": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_raising_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_timed_out_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_success_route_still_replies_normally": {
+            "status": "PASSED",
+            "reason": ""
+          }
+        },
+        "output_tail": "med out after 1.0s\n__________ test_handler_raising_route_replies_with_response_and_tier __________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1825 route() failed: router blew up\n_________ test_handler_timed_out_route_replies_with_response_and_tier _________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1816 route() exceeded overall deadline of 0.5s\n=========================== short test summary info ===========================\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_success_passthrough\nPASSED tests/test_bp8_timeouts.py::test_handler_raising_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_timed_out_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_success_route_still_replies_normally\n======================== 6 passed, 2 warnings in 3.04s ========================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "SURVIVED",
+      "reddened_tests": [],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {},
+      "verdict_vs_expectation": "as expected"
+    },
+    {
+      "id": "T-M8",
+      "title": "the tier-2 timeout result carries an EMPTY answer (a silent turn)",
+      "file": "python/synapse/routing/router.py",
+      "expect_red": [
+        "test_try_tier2_returns_within_timeout"
+      ],
+      "expect_survivor": false,
+      "old_occurrences": 1,
+      "restored_clean": true,
+      "run": {
+        "summary": "1 failed, 5 passed, 2 warnings in 3.07s",
+        "returncode": 1,
+        "elapsed_s": 6.79,
+        "rows": {
+          "test_tier3_sync_returns_within_timeout": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_success_passthrough": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_raising_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_timed_out_route_replies_with_response_and_tier": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_handler_success_route_still_replies_normally": {
+            "status": "PASSED",
+            "reason": ""
+          },
+          "test_try_tier2_returns_within_timeout": {
+            "status": "FAILED",
+            "reason": "AssertionError: assert ''"
+          }
+        },
+        "output_tail": "es_with_response_and_tier _________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1816 route() exceeded overall deadline of 0.5s\n=========================== short test summary info ===========================\nPASSED tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_success_passthrough\nPASSED tests/test_bp8_timeouts.py::test_handler_raising_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_timed_out_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_success_route_still_replies_normally\nFAILED tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout - AssertionError: assert ''\n +  where '' = RoutingResult(success=False, tier=<RoutingTier.STANDARD: 'standard'>, answer='', commands=[], responses=[], confidence=0.0, latency_ms=1000.7135999621823, cached=False, async_handle=None, metadata={'timeout': True, 'tier': 'standard', 'timeout_s': 1.0}).answer\n=================== 1 failed, 5 passed, 2 warnings in 3.07s ===================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+      },
+      "result": "REDDENED",
+      "reddened_tests": [
+        "test_try_tier2_returns_within_timeout"
+      ],
+      "collateral": [],
+      "expected_not_reddened": [],
+      "expected_absent_under_interpreter": [],
+      "right_reason": {
+        "test_try_tier2_returns_within_timeout": "AssertionError: assert ''"
+      },
+      "verdict_vs_expectation": "as expected"
+    }
+  ],
+  "baseline_after": {
+    "cmd": "C:\\Python314\\python.exe -m pytest -p no:cacheprovider -vv -rA tests/test_bp8_timeouts.py",
+    "returncode": 0,
+    "rows": {
+      "test_try_tier2_returns_within_timeout": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_tier3_sync_returns_within_timeout": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_try_tier2_success_passthrough": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_handler_raising_route_replies_with_response_and_tier": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_handler_timed_out_route_replies_with_response_and_tier": {
+        "status": "PASSED",
+        "reason": ""
+      },
+      "test_handler_success_route_still_replies_normally": {
+        "status": "PASSED",
+        "reason": ""
+      }
+    },
+    "summary": "6 passed, 2 warnings in 2.99s",
+    "elapsed_s": 6.44,
+    "tail": "med out after 1.0s\n__________ test_handler_raising_route_replies_with_response_and_tier __________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1825 route() failed: router blew up\n_________ test_handler_timed_out_route_replies_with_response_and_tier _________\n------------------------------ Captured log call ------------------------------\nWARNING  synapse.server.handlers:handlers.py:1816 route() exceeded overall deadline of 0.5s\n=========================== short test summary info ===========================\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout\nPASSED tests/test_bp8_timeouts.py::test_try_tier2_success_passthrough\nPASSED tests/test_bp8_timeouts.py::test_handler_raising_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_timed_out_route_replies_with_response_and_tier\nPASSED tests/test_bp8_timeouts.py::test_handler_success_route_still_replies_normally\n======================== 6 passed, 2 warnings in 2.99s ========================\nC:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\cuda\\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+  },
+  "finished": "2026-09-20T14:09:34"
+}

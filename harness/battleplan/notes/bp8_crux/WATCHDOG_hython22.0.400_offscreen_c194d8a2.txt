@@ -1,0 +1,23 @@
+hytest: C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe (SYNAPSE_HYTHON pin)
+============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0 -- C:\Program Files\Side Effects Software\Houdini 22.0.400\bin\hython.exe
+rootdir: C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\35b25b46-34f2-46fa-8512-63350dc0cd77\scratchpad\w
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+tests/test_response_watchdog.py::test_budget_is_slow_op_plus_margin_named_not_literal PASSED [ 14%]
+tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line PASSED [ 28%]
+tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line PASSED [ 42%]
+tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper PASSED [ 57%]
+tests/test_response_watchdog.py::test_disconnect_status_clears_waiting_via_shared_helper PASSED [ 71%]
+tests/test_response_watchdog.py::test_failed_send_stops_watchdog_no_zombie_timer PASSED [ 85%]
+tests/test_response_watchdog.py::test_real_qtimer_fires_and_stop_prevents_it PASSED [100%]
+
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 7 passed, 1 warning in 0.51s =========================

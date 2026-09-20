@@ -1,0 +1,66 @@
+# BP8-CRUX T1 probes (crucible-authored anchors), 2026-09-20T17:59:47Z
+
+## scratch clones (git clone --shared -c core.longpaths=true)
+w -> c194d8a2e44d07992e3d5cdd1a1f59668b92facc bp8/watchdog
+t -> 69687216c66546762f149a27cdebed7475e7f915 bp8/timeouts
+m -> 64ccea8a062949d46dd3ef2784326646d84e3462 master
+wm -> c194d8a2e44d07992e3d5cdd1a1f59668b92facc bp8/watchdog
+tm -> 69687216c66546762f149a27cdebed7475e7f915 bp8/timeouts
+
+## binding proof (timeouts): symbols that exist only on the leg
+t: C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\35b25b46-34f2-46fa-8512-63350dc0cd77\scratchpad\t\python\synapse\routing\router.py has _llm_pool: True
+t: C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\35b25b46-34f2-46fa-8512-63350dc0cd77\scratchpad\t\python\synapse\server\handlers.py has _ROUTE_OVERALL_TIMEOUT_S: True
+m: C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\35b25b46-34f2-46fa-8512-63350dc0cd77\scratchpad\m\python\synapse\routing\router.py has _llm_pool: False
+m: C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\35b25b46-34f2-46fa-8512-63350dc0cd77\scratchpad\m\python\synapse\server\handlers.py has _ROUTE_OVERALL_TIMEOUT_S: False
+
+## binding proof (watchdog): leg test file run against the MASTER package must fail on import
+collected 0 items / 1 error
+ImportError while importing test module 'C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\35b25b46-34f2-46fa-8512-63350dc0cd77\scratchpad\m\tests\test_response_watchdog.py'.
+E   ImportError: cannot import name 'NO_RESPONSE_LINE' from 'synapse.panel.chat_panel' (C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\35b25b46-34f2-46fa-8512-63350dc0cd77\scratchpad\m\python\synapse\panel\chat_panel.py)
+  C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\35b25b46-34f2-46fa-8512-63350dc0cd77\scratchpad\m\tests\conftest.py:507: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\35b25b46-34f2-46fa-8512-63350dc0cd77\scratchpad\m\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+
+## row 5 (timeouts): mechanism lines in model_access.py on the leg
+584:def guarded_create(client, *, lane, **kwargs):
+600:            response = client.messages.create(**kwargs)
+650:                              timeout=60.0, event_hooks={"request": [before_send]})
+
+## row 5 (timeouts): SDK signature on the production interpreter (hython 22.0.400, vendored) and on CPython (pip)
+hython 3.13.10 anthropic 0.96.0 C:\Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp8-crux/35b25b46-34f2-46fa-8512-63350dc0cd77/scratchpad/t/python\synapse\_vendor\anthropic\__init__.py
+Messages.create has timeout param: True -> timeout: 'float | httpx.Timeout | None | NotGiven' = NOT_GIVEN
+cpython 3.14.2 anthropic 0.75.0 timeout param: True
+
+## grep criterion (timeouts): every LLM call site in router.py on the leg
+344:                t0_result = t0_future.result(timeout=2.0)
+350:                tier1_hint = t1_lookup_future.result(timeout=2.0)
+697:            #     .result(timeout=...), so the tier returns even if the client
+705:                return guarded_create(client, lane="router-standard",
+713:            _future = _llm_pool.submit(copy_context().run, _call_tier2)
+715:                response = _future.result(timeout=_t2)
+934:            # .result(timeout=...), transport via the timeout= kwarg forwarded to
+939:                return guarded_create(client, lane="router-deep",
+947:            _future = _llm_pool.submit(copy_context().run, _call_tier3)
+949:                response = _future.result(timeout=_t3)
+
+## row 3 anchor (watchdog): occurrences of the two clearing lines in chat_panel.py on the leg
+160:        self._waiting_for_response = False
+900:        self._waiting_for_response = False
+901:        self._chat.hide_typing_indicator()
+
+## row 4 anchor (watchdog): product commit 07f32f80 file list; added lines matching hex/px
+ python/synapse/panel/chat_panel.py |  76 ++++++++-
+ tests/test_response_watchdog.py    | 306 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 378 insertions(+), 4 deletions(-)
+hex-or-px added lines: 0
+closing commit c194d8a2 files:
+ harness/notes/receipts/BP8-WATCHDOG.json | 85 ++++++++++++++++++++++++++++++++
+ 1 file changed, 85 insertions(+)
+
+## createInterface watchdog wiring on the leg (production lines)
+254:        self._context_timer = QTimer(self._root)
+259:        self._integrity_timer = QTimer(self._root)
+269:        self._response_watchdog = QTimer(self._root)
+270:        self._response_watchdog.setSingleShot(True)
+271:        self._response_watchdog.setInterval(WATCHDOG_TIMEOUT_MS)
+272:        self._response_watchdog.timeout.connect(self._on_response_timeout)
+899:            self._response_watchdog.stop()
+943:            self._response_watchdog.start()
