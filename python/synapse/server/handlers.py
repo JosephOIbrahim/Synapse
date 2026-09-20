@@ -11,10 +11,20 @@ import math
 import os
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as _FutureTimeout
 from typing import Dict, Any, Callable, Optional
 
 _log = logging.getLogger(__name__)
+
+# Overall wall-clock ceiling for a single route_chat turn (T2). Sits just under
+# the /synapse path's 30s slow-op kill so the HANDLER, not the transport, is what
+# ends a hung turn -- the slow-op kill emits nothing, and ws_bridge.py:339 drops
+# any reply lacking a response/tier key. Each LLM tier self-bounds well below
+# this (tier2_timeout + tier3_timeout default to 5 + 15s), so this only fires for
+# a hang OUTSIDE the tiers. Overridable per-instance via _route_deadline_s (tests
+# set it small).
+_ROUTE_OVERALL_TIMEOUT_S = 28.0
+_route_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="synapse-routechat")
 
 # Prometheus histogram bucket boundaries (milliseconds) for per-tool call
 # duration. Cumulative "le" semantics: an observation counts toward every
@@ -1784,7 +1794,41 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         # the first message rather than only after a rebind.
         self._repoint_router_memory(owner)
 
-        result = self._router.route(message, context=context)
+        # Bound the whole route() call (T2). Every LLM tier already self-bounds
+        # (tier2_timeout / tier3_timeout), so route() returns well inside this
+        # deadline; the deadline is the last-resort net for a hang OUTSIDE the
+        # tiers or an unexpected raise. It guarantees the turn ALWAYS answers with
+        # a well-formed {response, tier} rather than going silent until the 30s
+        # slow-op kill (which emits nothing, and ws_bridge.py:339 drops a reply
+        # that lacks response/tier).
+        #
+        # Safe to run route() off this thread: this handler wires no command_fn
+        # into the router (see the TieredRouter(...) construction above), so
+        # route() touches no hou.* API. If a hou-touching command_fn is ever
+        # wired here, this offload must be revisited.
+        deadline = getattr(self, "_route_deadline_s", _ROUTE_OVERALL_TIMEOUT_S)
+        try:
+            _future = _route_pool.submit(
+                lambda: self._router.route(message, context=context)
+            )
+            result = _future.result(timeout=deadline)
+        except _FutureTimeout:
+            _log.warning("route() exceeded overall deadline of %.1fs", deadline)
+            return {
+                "response": "The request timed out before it could be answered. Please try again.",
+                "tier": "timeout",
+                "success": False,
+                "timeout": True,
+                "latency_ms": deadline * 1000,
+            }
+        except Exception as exc:
+            _log.warning("route() failed: %s", exc)
+            return {
+                "response": f"The request could not be completed: {exc}",
+                "tier": "error",
+                "success": False,
+                "error": str(exc),
+            }
 
         return {
             "response": result.answer,
