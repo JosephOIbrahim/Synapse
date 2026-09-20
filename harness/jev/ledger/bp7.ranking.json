@@ -1,0 +1,56 @@
+[
+ {
+  "id": "H1",
+  "name": "panel-state",
+  "text": "The panel believes it is still waiting: `_waiting_for_response` / typing indicator never cleared because the reply to turn 1 did not arrive as a `route_chat` response (different command name, error filtered, or a proposal card left the input in a settled-pending state). Sends still go out; the artist sees a spinner and no answer.",
+  "score": 2.54,
+  "refuted": 0.18,
+  "spawn": true,
+  "why": "plausibility 2.54 refuted 0.18"
+ },
+ {
+  "id": "H4",
+  "name": "router",
+  "text": "The cached TieredRouter carries state (cache, planner, LLM tier) that makes turn 2 block past the 30 s timeout or raise inside `route()`; the error response is swallowed or filtered on the panel side.",
+  "score": 2.5,
+  "refuted": 0.12,
+  "spawn": true,
+  "why": "plausibility 2.50 refuted 0.12"
+ },
+ {
+  "id": "H2",
+  "name": "transport",
+  "text": "The socket drops after the first reply (server-side close on slow-op timeout, or reconnect loop not restoring `connected`); FR-1 then refuses every later send with BRIDGE_DOWN_LINE. Artist reads \"not responding\".",
+  "score": 2.49,
+  "refuted": 0.17,
+  "spawn": true,
+  "why": "plausibility 2.49 refuted 0.17"
+ },
+ {
+  "id": "H6",
+  "name": "memory",
+  "text": "`_repoint_router_memory(owner)` on turn 2 hits a degraded store (refusing writes / health UNKNOWN) and blocks or raises inside the memory tier before the LLM tier is reached.",
+  "score": 2.32,
+  "refuted": 0.14,
+  "spawn": true,
+  "why": "plausibility 2.32 refuted 0.14"
+ },
+ {
+  "id": "H3",
+  "name": "lock",
+  "text": "Turn 1 executed commands (recipe / undo group / render) that hold the C5 mutation lock or an open undo group; turn 2's follow-on commands queue behind it. route_chat itself returns, but nothing it proposes lands.",
+  "score": 0.71,
+  "refuted": 0.67,
+  "spawn": false,
+  "why": "plausibility 0.71 refuted 0.67"
+ },
+ {
+  "id": "H5",
+  "name": "sidecar",
+  "text": "The brain's out-of-process interpreter (sidecar) or its stdio pipe deadlocks after the first response (buffer full, thread not draining).",
+  "score": 0.67,
+  "refuted": 0.12,
+  "spawn": false,
+  "why": "plausibility 0.67 refuted 0.12"
+ }
+]

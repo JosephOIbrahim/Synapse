@@ -1,0 +1,43 @@
+{
+  "id": "BP7-PANEL",
+  "band": "TRUTH",
+  "class": "truth",
+  "tier": "mechanical",
+  "name": "SCOUT H1 panel-state: does the panel stay in a waiting state after turn 1",
+  "note": "Tier: mechanical (Haiku 4.5) - CTO override 2026-09-20 of the JEV-ROUTE round-up (Jev leaned mechanical 0.44-0.62 under the 0.60 floor; ledger bp7.route.jsonl). Hypothesis H1 (panel-state), Jev plausibility 2.54. Mechanism under test: The panel believes it is still waiting: `_waiting_for_response` / typing indicator never cleared because the reply to turn 1 did not arrive as a `route_chat` response (different command name, error filtered, or a proposal card left the input in a settled-pending state). Sends still go out; the artist sees a spinner and no answer. Read harness/battleplan/notes/SCOUT_CHAT_STALL.md first (sec. First principles + Evidence). Trace python/synapse/panel/chat_panel.py: _send_message sets _waiting_for_response + show_typing_indicator; find EVERY path that clears them (grep _waiting_for_response, hide_typing_indicator). Trace ws_bridge.py: how a server reply is matched to the route_chat request (command name? request id? signal?) and what happens to a reply whose command name differs or whose status is error. Check the consent/proposal card flow (tests/panel/test_consent_way_back.py names it): can a card left unsettled block or swallow the next reply? Run `python -m pytest tests/test_chat_panel.py tests/test_send_guard.py -q` and note any test that pins a second-turn path. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit the note BEFORE the receipt; the receipt is your final write. Self-cap: 10 turns (progress every 3). You are a SCOUT: read-only on product code, you gather evidence and write ONE note; you fix nothing. Verdict vocabulary: CONFIRMED (you reproduced or traced the mechanism to a line), REFUTED (you showed the mechanism cannot occur, with the line), UNKNOWN (needs the GUI / a live Houdini you do not have - say exactly what Joe should click). Never upgrade UNKNOWN to a guess. Token-saver: Select-String / grep for symbols, read 40-line windows, never whole files. Houdini is NOT available to you; hython is at the SYNAPSE_HYTHON pin only if harness/state/drop.json names it - otherwise everything runtime is UNKNOWN.",
+  "targets": [
+    "T1) A table of every writer of _waiting_for_response / typing indicator with file:line and the condition.",
+    "T2) The reply-matching mechanism in ws_bridge.py, quoted, and whether a second route_chat reply can be dropped or mis-routed.",
+    "T3) Whether an unsettled proposal/consent card changes the send or receive path (file:line or 'no such coupling').",
+    "T-last) harness/battleplan/notes/bp7_scout_H1.md: header line `VERDICT: CONFIRMED|REFUTED|UNKNOWN`, then Mechanism (2-4 sentences), Evidence (file:line per claim, verbatim snippets <= 6 lines each), Reproduction (exact steps Joe runs in the Houdini GUI, < 2 minutes, with the observable that distinguishes this hypothesis from the others), Smallest fix shape (one paragraph, no code). Post one bus finding to *: {\"claim\": \"H1 <VERDICT>: <one line>\", \"anchor\": \"harness/battleplan/notes/bp7_scout_H1.md\"}."
+  ],
+  "touches": [
+    "harness/battleplan/notes/bp7_scout_H1.md"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "every Evidence line greps verbatim at the cited file:line",
+    "the verdict word matches the evidence (a CONFIRMED with no reproduction or traced line is BROKEN)",
+    "no product file changed (git diff --stat master -- panel python/synapse == empty)"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "harness/battleplan/notes/SCOUT_CHAT_STALL.md",
+    "anchor": "Hypotheses H1"
+  },
+  "acceptance": [
+    {
+      "predicate": "note exists with a VERDICT header and all four sections",
+      "evidence": "check"
+    },
+    {
+      "predicate": "every cited file:line exists and contains the quoted snippet",
+      "evidence": "check"
+    },
+    {
+      "predicate": "bus finding posted with the verdict",
+      "evidence": "receipt"
+    }
+  ]
+}

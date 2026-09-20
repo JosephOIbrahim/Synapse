@@ -1,0 +1,92 @@
+[
+  {
+    "id": "BP7-MEMORY",
+    "name": "SCOUT H6 memory: does a degraded memory store block or raise inside turn 2",
+    "state": "ready",
+    "receipt": "BP7-MEMORY.json",
+    "branch": "bp7/memory",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp7-memory",
+    "prompt": "harness/battleplan/prompts/BP7-MEMORY.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/notes/bp7_scout_H6.md"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/SCOUT_CHAT_STALL.md :: Hypotheses H6. Tier: mechanical (Haiku 4.5) - CTO override 2026-09-20 of the JEV-ROUTE round-up (Jev leaned mechanical 0.44-0.62 under the 0.60 floor; ledger bp7.route.jsonl). Hypothesis H6 (memory), Jev plausibility 2.32. Mechanism under test: `_repoint_router_memory(owner)` on turn 2 hits a degraded store (refusing writes / health UNKNOWN) and blocks or raises inside the memory tier before the LLM tier is reached. Read harness/battleplan/notes/SCOUT_CHAT_STALL.md first (sec. First principles + Evidence). Trace python/synapse/server/handlers.py _repoint_router_memory and _memory_owner; then the memory tier inside TieredRouter.route() (KnowledgeIndex._match_memory, enrich_context): which calls WRITE to the store during a chat turn, which can block (locks, file I/O, health()), and what happens when MemoryStore.health() reports not-writing or UNKNOWN (ae34ed96, 5.75.2). Is any exception from the memory tier caught, or does it escape route()? Run `python -m pytest tests/test_demo_memory_recall.py -q` and any test named for the store health. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit the note BEFORE the receipt; the receipt is your final write. Self-cap: 10 turns (progress every 3). You are a SCOUT: read-only on product code, you gather evidence and write ONE note; you fix nothing. Verdict vocabulary: CONFIRMED (you reproduced or traced the mechanism to a line), REFUTED (you showed the mechanism cannot occur, with the line), UNKNOWN (needs the GUI / a live Houdini you do not have - say exactly what Joe should click). Never upgrade UNKNOWN to a guess. Token-saver: Select-String / grep for symbols, read 40-line windows, never whole files. Houdini is NOT available to you; hython is at the SYNAPSE_HYTHON pin only if harness/state/drop.json names it - otherwise everything runtime is UNKNOWN.",
+    "tier": "mechanical"
+  },
+  {
+    "id": "BP7-PANEL",
+    "name": "SCOUT H1 panel-state: does the panel stay in a waiting state after turn 1",
+    "state": "ready",
+    "receipt": "BP7-PANEL.json",
+    "branch": "bp7/panel",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp7-panel",
+    "prompt": "harness/battleplan/prompts/BP7-PANEL.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/notes/bp7_scout_H1.md"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/SCOUT_CHAT_STALL.md :: Hypotheses H1. Tier: mechanical (Haiku 4.5) - CTO override 2026-09-20 of the JEV-ROUTE round-up (Jev leaned mechanical 0.44-0.62 under the 0.60 floor; ledger bp7.route.jsonl). Hypothesis H1 (panel-state), Jev plausibility 2.54. Mechanism under test: The panel believes it is still waiting: `_waiting_for_response` / typing indicator never cleared because the reply to turn 1 did not arrive as a `route_chat` response (different command name, error filtered, or a proposal card left the input in a settled-pending state). Sends still go out; the artist sees a spinner and no answer. Read harness/battleplan/notes/SCOUT_CHAT_STALL.md first (sec. First principles + Evidence). Trace python/synapse/panel/chat_panel.py: _send_message sets _waiting_for_response + show_typing_indicator; find EVERY path that clears them (grep _waiting_for_response, hide_typing_indicator). Trace ws_bridge.py: how a server reply is matched to the route_chat request (command name? request id? signal?) and what happens to a reply whose command name differs or whose status is error. Check the consent/proposal card flow (tests/panel/test_consent_way_back.py names it): can a card left unsettled block or swallow the next reply? Run `python -m pytest tests/test_chat_panel.py tests/test_send_guard.py -q` and note any test that pins a second-turn path. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit the note BEFORE the receipt; the receipt is your final write. Self-cap: 10 turns (progress every 3). You are a SCOUT: read-only on product code, you gather evidence and write ONE note; you fix nothing. Verdict vocabulary: CONFIRMED (you reproduced or traced the mechanism to a line), REFUTED (you showed the mechanism cannot occur, with the line), UNKNOWN (needs the GUI / a live Houdini you do not have - say exactly what Joe should click). Never upgrade UNKNOWN to a guess. Token-saver: Select-String / grep for symbols, read 40-line windows, never whole files. Houdini is NOT available to you; hython is at the SYNAPSE_HYTHON pin only if harness/state/drop.json names it - otherwise everything runtime is UNKNOWN.",
+    "tier": "mechanical"
+  },
+  {
+    "id": "BP7-ROUTER",
+    "name": "SCOUT H4 router: does the cached TieredRouter carry state that blocks or raises on turn 2",
+    "state": "ready",
+    "receipt": "BP7-ROUTER.json",
+    "branch": "bp7/router",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp7-router",
+    "prompt": "harness/battleplan/prompts/BP7-ROUTER.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/notes/bp7_scout_H4.md"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/SCOUT_CHAT_STALL.md :: Hypotheses H4. Tier: mechanical (Haiku 4.5) - CTO override 2026-09-20 of the JEV-ROUTE round-up (Jev leaned mechanical 0.44-0.62 under the 0.60 floor; ledger bp7.route.jsonl). Hypothesis H4 (router), Jev plausibility 2.50. Mechanism under test: The cached TieredRouter carries state (cache, planner, LLM tier) that makes turn 2 block past the 30 s timeout or raise inside `route()`; the error response is swallowed or filtered on the panel side. Read harness/battleplan/notes/SCOUT_CHAT_STALL.md first (sec. First principles + Evidence). Trace python/synapse/routing/router.py TieredRouter.route(): every attribute written during a call that survives to the next call (cache, planner state, LLM client, conversation/history). Find the timeout on the LLM tier and on the live path (30 s slow-op, harness/CLAUDE.md Identity): what does the SERVER return when route() exceeds it, and does chat_panel._on_response render that error or filter it? Confirm resolve_param(payload, 'content') maps the panel's 'message' key (python/synapse/core/aliases.py). Run `python -m pytest tests/test_router_internals.py -q`. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit the note BEFORE the receipt; the receipt is your final write. Self-cap: 10 turns (progress every 3). You are a SCOUT: read-only on product code, you gather evidence and write ONE note; you fix nothing. Verdict vocabulary: CONFIRMED (you reproduced or traced the mechanism to a line), REFUTED (you showed the mechanism cannot occur, with the line), UNKNOWN (needs the GUI / a live Houdini you do not have - say exactly what Joe should click). Never upgrade UNKNOWN to a guess. Token-saver: Select-String / grep for symbols, read 40-line windows, never whole files. Houdini is NOT available to you; hython is at the SYNAPSE_HYTHON pin only if harness/state/drop.json names it - otherwise everything runtime is UNKNOWN.",
+    "tier": "mechanical"
+  },
+  {
+    "id": "BP7-SYNTH",
+    "name": "SYNTH: read the four scout receipts through the JEV screen pre-read and write the verdict on why chat stalls after turn 1",
+    "state": "ready",
+    "receipt": "BP7-SYNTH.json",
+    "branch": "bp7/synth",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp7-synth",
+    "prompt": "harness/battleplan/prompts/BP7-SYNTH.md",
+    "deps": [
+      "BP7-PANEL",
+      "BP7-ROUTER",
+      "BP7-TRANSPORT",
+      "BP7-MEMORY"
+    ],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/notes/BP7_VERDICT.md"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/SCOUT_CHAT_STALL.md :: Verdict shape (SYNTH). Read harness/battleplan/notes/SCOUT_CHAT_STALL.md (Verdict shape). FIRST run `python harness/jev/jev_screen.py --wave bp7` and read the brief lines it prints: CLEAR scouts you spot-check, REFEREE/FLAG scouts you re-derive from their cited lines yourself. Then read each harness/battleplan/notes/bp7_scout_H*.md. Do not re-scout; you may open a cited file:line to confirm a quote. Where two scouts disagree, the one with a traced line wins over the one with an argument. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit the note BEFORE the receipt; the receipt is your final write. Self-cap: 10 turns (progress every 3). You write ONE document; you fix nothing. Verdict vocabulary: CONFIRMED (you reproduced or traced the mechanism to a line), REFUTED (you showed the mechanism cannot occur, with the line), UNKNOWN (needs the GUI / a live Houdini you do not have - say exactly what Joe should click). Never upgrade UNKNOWN to a guess. Token-saver: Select-String / grep for symbols, read 40-line windows, never whole files. Houdini is NOT available to you; hython is at the SYNAPSE_HYTHON pin only if harness/state/drop.json names it - otherwise everything runtime is UNKNOWN.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP7-TRANSPORT",
+    "name": "SCOUT H2 transport: does the WS socket drop after the first reply and stay down",
+    "state": "ready",
+    "receipt": "BP7-TRANSPORT.json",
+    "branch": "bp7/transport",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp7-transport",
+    "prompt": "harness/battleplan/prompts/BP7-TRANSPORT.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/notes/bp7_scout_H2.md"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/SCOUT_CHAT_STALL.md :: Hypotheses H2. Tier: mechanical (Haiku 4.5) - CTO override 2026-09-20 of the JEV-ROUTE round-up (Jev leaned mechanical 0.44-0.62 under the 0.60 floor; ledger bp7.route.jsonl). Hypothesis H2 (transport), Jev plausibility 2.49. Mechanism under test: The socket drops after the first reply (server-side close on slow-op timeout, or reconnect loop not restoring `connected`); FR-1 then refuses every later send with BRIDGE_DOWN_LINE. Artist reads \"not responding\". Read harness/battleplan/notes/SCOUT_CHAT_STALL.md first (sec. First principles + Evidence). Trace python/synapse/panel/ws_bridge.py: the reconnect loop, what sets `connected` False, what sets it True again, and whether a server-side close (after a slow op, after a large reply, on an exception in the handler) is detected and recovered. Trace the server side: python/synapse/server/*.py websocket send path - any per-message size limit, any close-on-error. Then answer: after a drop, does FR-1 (send_guard) refuse with BRIDGE_DOWN_LINE, and would the artist SEE that line (chat_panel appends it as a system message - confirm the widget shows system messages). Run `python -m pytest tests/test_hda_panel.py tests/test_send_guard.py -q`. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit the note BEFORE the receipt; the receipt is your final write. Self-cap: 10 turns (progress every 3). You are a SCOUT: read-only on product code, you gather evidence and write ONE note; you fix nothing. Verdict vocabulary: CONFIRMED (you reproduced or traced the mechanism to a line), REFUTED (you showed the mechanism cannot occur, with the line), UNKNOWN (needs the GUI / a live Houdini you do not have - say exactly what Joe should click). Never upgrade UNKNOWN to a guess. Token-saver: Select-String / grep for symbols, read 40-line windows, never whole files. Houdini is NOT available to you; hython is at the SYNAPSE_HYTHON pin only if harness/state/drop.json names it - otherwise everything runtime is UNKNOWN.",
+    "tier": "mechanical"
+  }
+]
