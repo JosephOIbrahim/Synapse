@@ -5,7 +5,19 @@
   "guards": {
     "route": {
       "edge": "mission -> row (compile_wave.py, once per wave)",
-      "state_fields": ["id", "band", "class", "name", "note", "targets", "acceptance", "crucible_criteria", "touches", "readonly", "deps"],
+      "state_fields": [
+        "id",
+        "band",
+        "class",
+        "name",
+        "note",
+        "targets",
+        "acceptance",
+        "crucible_criteria",
+        "touches",
+        "readonly",
+        "deps"
+      ],
       "questions": {
         "tier": {
           "type": "choice",
@@ -22,17 +34,27 @@
             "mechanical": {
               "what": "Extraction, counting, compiling tables from named sources, renaming, moving files, running a named command and recording its output. Every step is spelled out in the note; the leg follows instructions and reports numbers.",
               "not_for": "Anything that requires choosing between designs, writing new product code, or deciding what a vague acceptance predicate means.",
-              "examples": ["compile the for_ruling entries from seven receipts into one table with a count line", "census worktrees and list merged+clean ones", "hash four dropped files and link them from a header"]
+              "examples": [
+                "compile the for_ruling entries from seven receipts into one table with a count line",
+                "census worktrees and list merged+clean ones",
+                "hash four dropped files and link them from a header"
+              ]
             },
             "reasoning": {
               "what": "Design and build work: new product code, tests that must bite, USD composition decisions, panel changes, contract-sensitive edits, or any leg whose acceptance predicates need judgment to satisfy.",
               "not_for": "Pure extraction or bookkeeping that a checklist fully specifies; adversarial re-verification of other legs (that is the referee).",
-              "examples": ["fix a Karma light-binding regression and prove the mutation goes black", "author a USD composition decision record with LIVRPS reasoning", "tokenize panel typography across 22 modules"]
+              "examples": [
+                "fix a Karma light-binding regression and prove the mutation goes black",
+                "author a USD composition decision record with LIVRPS reasoning",
+                "tokenize panel typography across 22 modules"
+              ]
             },
             "referee": {
               "what": "Adversarial re-verification of other legs' receipts: the crucible seat. Trusts no builder's proof, authors its own mutations, writes verdicts.",
               "not_for": "Building anything. A referee leg edits no product file.",
-              "examples": ["CRUX: re-run every builder's probe, author mutations, verdict per leg"]
+              "examples": [
+                "CRUX: re-run every builder's probe, author mutations, verdict per leg"
+              ]
             }
           }
         },
@@ -57,7 +79,7 @@
       },
       "policy": {
         "crucible_is_referee": true,
-        "min_tier_confidence": 0.60,
+        "min_tier_confidence": 0.6,
         "mechanical_max_novelty": 1.5,
         "mechanical_max_blast_radius": 1.5,
         "fallback_tier": "reasoning"
@@ -66,8 +88,21 @@
     "screen": {
       "edge": "builder receipts -> CRUX brief (after receipts land, before CRUX flips ready)",
       "state_fields": {
-        "mission": ["id", "name", "note", "acceptance", "crucible_criteria", "targets"],
-        "receipt": ["leg", "status", "acceptance", "findings", "for_ruling"]
+        "mission": [
+          "id",
+          "name",
+          "note",
+          "acceptance",
+          "crucible_criteria",
+          "targets"
+        ],
+        "receipt": [
+          "leg",
+          "status",
+          "acceptance",
+          "findings",
+          "for_ruling"
+        ]
       },
       "questions": {
         "acceptance_row": {
@@ -104,17 +139,21 @@
         }
       },
       "policy": {
-        "flag_does_not_support_min": 0.60,
-        "clear_min_support_confidence": 0.80,
-        "clear_max_self_contradiction": 0.20,
-        "clear_max_crux_need": 0.50,
+        "flag_does_not_support_min": 0.6,
+        "clear_min_support_confidence": 0.8,
+        "clear_max_self_contradiction": 0.2,
+        "clear_max_crux_need": 0.5,
         "fallback_verdict": "REFEREE"
       }
     },
     "drift": {
       "edge": "bus events -> orchestrator poll (mile 2, questions defined, not wired)",
       "state_fields": {
-        "mission": ["id", "targets", "touches"],
+        "mission": [
+          "id",
+          "targets",
+          "touches"
+        ],
         "events": "last 12 bus events from this leg: {ts, type, body}",
         "elapsed_minutes": "wall time since dispatch"
       },
@@ -133,9 +172,62 @@
         }
       },
       "policy": {
-        "warn_looping_min": 0.80,
-        "warn_advancing_max": 0.20,
+        "warn_looping_min": 0.8,
+        "warn_advancing_max": 0.2,
         "consecutive_polls": 2
+      }
+    },
+    "release": {
+      "edge": "release ritual: docs/releases notes -> tree (triple-check leg 3); failing CI test -> failure kind",
+      "questions": {
+        "claim": {
+          "type": "choice",
+          "_comment": "instantiated once per claim as c<i>",
+          "instructions": {
+            "task": "Read `claims[{i}]`, one paragraph or bullet from the release notes. Using only `evidence` (files changed since the previous tag, commit subjects, newly added files), is the claim supported?",
+            "rules": [
+              "A claim naming a file, directory, test count, or script that appears in the evidence is supported.",
+              "A claim about behaviour that the evidence cannot show either way (a measured number, a runtime effect) is partial, not unsupported.",
+              "Text that describes what is NOT in the release, or explains history, is not_a_claim.",
+              "A claim naming something the evidence contradicts (a file that does not appear, a component the diff never touched) is unsupported."
+            ]
+          },
+          "criteria": {
+            "supported": "The evidence names the files or commits the claim describes.",
+            "partial": "On topic, but the diff stat cannot show the specific effect claimed.",
+            "unsupported": "The evidence contradicts the claim or shows nothing related.",
+            "not_a_claim": "Scope notes, history, caveats: nothing to verify against the tree."
+          }
+        },
+        "failure_kind": {
+          "type": "choice",
+          "instructions": "A CI test failed. From `assertion` (the pytest failure text), `file_read_by_test`, and `file_recent_commits`, what kind of failure is this? Whether it pre-exists is decided elsewhere; judge only the kind.",
+          "criteria": {
+            "phrasing_drift": {
+              "what": "The test pins a literal sentence from a doc, and the doc was rewritten while the fact it stated survives.",
+              "examples": [
+                "assert 'synced by X' in CLAUDE.md after a docs rewrite commit"
+              ]
+            },
+            "claim_drift": {
+              "what": "A doc or banner carries a version, count, or tag that a bump elsewhere did not propagate.",
+              "examples": [
+                "README 'v5.75.2 is Latest' vs VERSION 5.76.0"
+              ]
+            },
+            "behavior_regression": {
+              "what": "Code under test returns a different value or raises; the assertion is about runtime behaviour, not text."
+            },
+            "environment": {
+              "what": "Import error, missing binary, path or platform difference, timeout."
+            },
+            "unknown": "The assertion text does not say enough to classify."
+          }
+        }
+      },
+      "policy": {
+        "supported_min": 0.75,
+        "unsupported_min": 0.6
       }
     }
   }
