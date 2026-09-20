@@ -1,0 +1,2 @@
+{"ts": "2026-09-20T13:07:37", "guard": "edge", "leg": "BP4-B7FIX", "result": "decision", "mode": "shadow", "decision": {"action": "continue", "reason": "screen REFEREE: no edge change", "applied": false, "inserted": null, "dependents": []}}
+{"ts": "2026-09-20T13:07:56", "guard": "edge", "leg": "BP4-RULINGS", "result": "decision", "mode": "shadow", "decision": {"action": "continue", "reason": "screen REFEREE: no edge change", "applied": false, "inserted": null, "dependents": []}}

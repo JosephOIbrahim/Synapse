@@ -83,6 +83,34 @@ and BP4-PANELFONT (0.91, 22 modules, shared_files 0.68). The thresholds were NOT
 teams appear. Expect teams only on a deliberately wide leg (one scout over many modules).
 
 
+## Mile 3 - JEV-EDGE (built 2026-09-20; recommended mode: SHADOW)
+
+    harness/jev/jev_edge.py                plan_edge() pure planner, repair_mission(), atomic apply(), dry run by default
+    harness/orchestrate.ps1                ONE hook after Rails-Settle; inert unless SYNAPSE_JEV_EDGE = on | shadow
+    harness/jev/tests/test_jev_edge.py     6 biting tests (pure planner, cap, no chains, dry run never raises)
+
+    set SYNAPSE_JEV_EDGE=shadow            ledger what EDGE would do; write nothing   <- run BP8 like this
+    set SYNAPSE_JEV_EDGE=on                FLAG inserts one repair leg into the live manifest
+
+The orchestrator already re-reads its manifest every poll, so a dynamic edge is a bounded manifest
+edit between polls. CLEAR / REFEREE -> continue (the screen line already sets CRUX's depth). FLAG ->
+one repair leg, BASED ON THE FLAGGED LEG'S BRANCH, scoped to the flagged acceptance rows only; every
+dependent of the flagged leg (CRUX) waits for it and its brief gains an 'Inserted leg' note. Bounds
+are code: caps.max_inserted_legs (2) per wave, a repair never spawns a repair, one repair per leg,
+referee/tidy receipts never rewrite the graph, a repair is charged through Rails-Charge like any leg,
+any guard error -> continue.
+
+Dry run on real BP4 receipts, 2026-09-20 (n=2):
+- BP4-B7FIX (CRUX: sound)  -> REFEREE -> continue. Correct.
+- BP4-RULINGS (CRUX: BROKEN) -> REFEREE -> continue. EDGE would NOT have inserted a repair.
+  Jev smelled it - self_contradiction 0.69, crux_need 1.56, rows 0 and 1 weak - but row 0's
+  does_not_support was 0.25 against a FLAG threshold of 0.60. So SCREEN did its job (it sent CRUX
+  to a full read) and the FLAG trigger did not fire on the one known-BROKEN leg. JEV_BLUEPRINT.md
+  sec.3.2 predicted a high-probability FLAG here; measured, it was not.
+- The thresholds were NOT tuned on n=1. Candidate rule for Joe's ruling once more receipts exist:
+  self_contradiction >= 0.6 AND crux_need >= 1.5 -> FLAG. Until then EDGE stays in shadow, and
+  BP8's edge ledger (harness/jev/ledger/bp8.edge.jsonl) beside CRUX's verdicts is the evidence.
+
 ## Open rulings
 
 1. ~~Fifth template `fix-crux`~~ - added 2026-09-20.
@@ -93,6 +121,6 @@ teams appear. Expect teams only on a deliberately wide leg (one scout over many 
 
     M1  SHAPE guard + shadow                                            done
     M2  TEAM guard + `team` field + compile hook + shadow                   done
-    M3  EDGE: recompile between legs on the SCREEN verdict, behind a flag; max 2 inserted legs
+    M3  EDGE guard + orchestrator hook, behind a flag; max 2 inserted legs      built, SHADOW until BP8 evidence
     M4  DRIFT wired to the orchestrator poll, shadow only
     M5  first real wave on the helm: BP8, the BP7 verdict's three fixes (skeleton ready, not armed)
