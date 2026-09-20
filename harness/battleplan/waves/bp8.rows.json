@@ -1,0 +1,74 @@
+[
+  {
+    "id": "BP8-CRUX",
+    "name": "CRUX: adversarial re-verification of BP8-WATCHDOG and BP8-TIMEOUTS",
+    "state": "ready",
+    "receipt": "BP8-CRUX.json",
+    "branch": "bp8/crux",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp8-crux",
+    "prompt": "harness/battleplan/prompts/BP8-CRUX.md",
+    "deps": [
+      "BP8-WATCHDOG",
+      "BP8-TIMEOUTS"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "BATTLEPLAN harness/battleplan/notes/BP7_VERDICT.md :: whole verdict; harness/battleplan/notes/JEV_BLUEPRINT.md sec.3.2 (screen line in the CRUX brief). Tier: referee. Start from the JEV-SCREEN line for each leg (run `python harness/jev/jev_screen.py --wave bp8`): CLEAR = spot-check two rows, REFEREE = full read, FLAG = begin at the flagged row. The screen sets depth only; it never replaces your own mutations. gui_required predicates are UNKNOWN to you - say so.",
+    "tier": "referee"
+  },
+  {
+    "id": "BP8-TIDY",
+    "name": "TIDY: census of BP8 worktrees, receipts and ledgers; one table with a count line",
+    "state": "ready",
+    "receipt": "BP8-TIDY.json",
+    "branch": "bp8/tidy",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp8-tidy",
+    "prompt": "harness/battleplan/prompts/BP8-TIDY.md",
+    "deps": [
+      "BP8-CRUX"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "BATTLEPLAN harness/battleplan/notes/BP7_VERDICT.md :: wave hygiene; same shape as BP4-TIDY. Tier: mechanical. Self-cap: 8 turns. Read-only: list, count, report. Fix nothing, delete nothing.",
+    "tier": "mechanical"
+  },
+  {
+    "id": "BP8-TIMEOUTS",
+    "name": "Enforce the router tier timeouts that are defined but never applied, and bound route() in the handler",
+    "state": "ready",
+    "receipt": "BP8-TIMEOUTS.json",
+    "branch": "bp8/timeouts",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp8-timeouts",
+    "prompt": "harness/battleplan/prompts/BP8-TIMEOUTS.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/routing/router.py",
+      "python/synapse/server/handlers.py",
+      "tests/"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/BP7_VERDICT.md :: sec. H4 router (traced defects); sec. 'Smallest fix' upstream root fix. Tier: reasoning. Self-cap: 25 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Token-saver: Select-String / grep for symbols, read 40-line windows around the cited lines, never whole files. Line numbers below come from BP7_VERDICT.md at 29adc6e9 - confirm each with a grep before editing; if a line has moved, follow the symbol, not the number. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. Minimal diff: touch only the files in `touches`. Verdict facts: RoutingConfig defines tier2_timeout=5.0 / tier3_timeout=15.0 (router.py:124-125) but the guarded_create calls (router.py:685,:893) are made without them; only the Tier 0/1 futures pass timeout=2.0 (:334,:340). handlers.py:1787-1805 calls route() with no try/except and no timeout, so a hung LLM call blocks until the 30 s slow-op kill and emits nothing. First find out how guarded_create / the client accepts a timeout (python/synapse/model_access.py) - do not guess a kwarg. A timed-out tier must fall through the cascade or return a well-formed failure carrying `response` and `tier` keys, because ws_bridge.py:339-344 silently drops any dict without them.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP8-WATCHDOG",
+    "name": "Panel response watchdog: a silent turn-2 hang becomes a visible, recoverable failure",
+    "state": "ready",
+    "receipt": "BP8-WATCHDOG.json",
+    "branch": "bp8/watchdog",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp8-watchdog",
+    "prompt": "harness/battleplan/prompts/BP8-WATCHDOG.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/panel/chat_panel.py",
+      "tests/"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/BP7_VERDICT.md :: sec. 'Smallest fix' (panel watchdog); sec. H1 traced no-recovery path. Tier: reasoning. Self-cap: 20 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Token-saver: Select-String / grep for symbols, read 40-line windows around the cited lines, never whole files. Line numbers below come from BP7_VERDICT.md at 29adc6e9 - confirm each with a grep before editing; if a line has moved, follow the symbol, not the number. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. Minimal diff: touch only the files in `touches`. Verdict facts: the waiting state is armed at chat_panel.py:891-892 and cleared ONLY at :903-904 (send failed) and :914-915 (_on_response). _on_connection_error (:964) and _on_status_changed (:944) do not clear it, and the only QTimers (:234,:239) are the context and integrity timers. Panel styling rule: no hardcoded px or off-palette hex - use the existing system-line helper and tokens.",
+    "tier": "reasoning"
+  }
+]
