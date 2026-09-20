@@ -14,7 +14,7 @@ Features:
 Storage: $HIP/.synapse/
 
 Author: Joseph Ibrahim
-Version: 5.75.2
+Version: 5.76.0
 """
 
 # ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ if _VENDOR_ABI_RISK:
 
 
 __title__ = "Synapse"
-__version__ = "5.75.2"
+__version__ = "5.76.0"
 __author__ = "Joseph Ibrahim"
 __license__ = "MIT"
 __product__ = "Synapse - AI-Houdini Bridge"

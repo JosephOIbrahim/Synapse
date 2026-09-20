@@ -1,0 +1,19 @@
+release: v5.76.0 -- the harness learns to judge before it spends
+
+Jev (TypeSafe System One) joins the BATTLEPLAN harness as typed guard nodes on
+the wave graph. JEV-ROUTE: "tier": "auto" resolves to a rails_exec.json tier
+name at compile time (shadow on BP4: 8/8 agreement with authored tiers).
+JEV-SCREEN: per-predicate evidence judgment, one line per builder in the CRUX
+brief; prompts without a screen ledger stay byte-identical. Fail closed to
+reasoning / full read, every call ledgered. 14 biting tests. First mission
+routed by Jev (BP6-JEV) shipped on the tier Jev chose. Jev is never on the
+product path: nothing under panel/ or synapse/ imports it.
+
+Also: .env.example documents TYPESAFE_API_KEY as a Windows USER env var on
+the dev box (one source, not .env).
+
+Blueprint: harness/battleplan/notes/JEV_BLUEPRINT.md
+Receipt:   harness/notes/receipts/BP6-JEV.json (green_with_findings, 1 for_ruling)
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01LLWUfx2NN6fEWYad7yj4hJ
