@@ -13,7 +13,7 @@ import json
 import time
 import threading
 import logging
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as _FutureTimeout
 from contextvars import copy_context
 from synapse.model_access import guarded_create, make_anthropic_client, scoped_request, ModelAccessDenied, sdk_receipt
 from dataclasses import dataclass, field
@@ -152,6 +152,16 @@ _MAX_TIER_PINS = 1000
 
 # Shared pool for speculative T0+T1 parallelism (avoids per-call thread creation)
 _tier_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="synapse-tier")
+
+# Separate pool for the blocking LLM tier calls (Tier 2 / Tier 3). Kept off
+# _tier_pool on purpose: a model call that times out abandons its future but the
+# worker keeps running until the SDK per-request timeout unwinds it, and letting
+# that linger on the 2-worker _tier_pool would starve the T0 + knowledge-lookup
+# concurrency every route() opens with. The abandoned worker is bounded because
+# the same tier_timeout is ALSO passed through guarded_create to
+# client.messages.create (model_access.py:600 forwards **kwargs), so a real hung
+# socket unwinds at the deadline rather than at the client-level 60s ceiling.
+_llm_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="synapse-llm")
 
 
 class TieredRouter:
@@ -682,12 +692,42 @@ class TieredRouter:
                 memory=self._memory,
             )
 
-            response = guarded_create(client, lane="router-standard",
-                model=self._config.llm_model_fast,
-                max_tokens=1024,
-                system=_TIER2_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}],
-            )
+            # Bound the Haiku call by tier2_timeout. Two enforcement layers:
+            #   * wall-clock: run guarded_create on _llm_pool and block on
+            #     .result(timeout=...), so the tier returns even if the client
+            #     ignores its own deadline (a hung socket, a stubbed client).
+            #   * transport: pass timeout= through guarded_create, which forwards
+            #     **kwargs to client.messages.create (model_access.py:600), so the
+            #     real SDK call also unwinds at the same deadline.
+            _t2 = self._config.tier2_timeout
+
+            def _call_tier2():
+                return guarded_create(client, lane="router-standard",
+                    model=self._config.llm_model_fast,
+                    max_tokens=1024,
+                    system=_TIER2_SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": user_message}],
+                    timeout=_t2,
+                )
+
+            _future = _llm_pool.submit(copy_context().run, _call_tier2)
+            try:
+                response = _future.result(timeout=_t2)
+            except _FutureTimeout:
+                latency_ms = (time.monotonic() - start) * 1000
+                self._record_metric(RoutingTier.STANDARD, latency_ms, False)
+                logger.warning("Tier 2 timed out after %.1fs", _t2)
+                # Well-formed failure the cascade can act on: carries an answer
+                # (-> handler `response`) and tier (-> `tier`), so the turn is
+                # never silent. Returned rather than None so a slow standard tier
+                # does not fall through into an even slower deep tier.
+                return RoutingResult(
+                    success=False,
+                    tier=RoutingTier.STANDARD,
+                    answer="The request timed out before the standard tier could respond.",
+                    latency_ms=latency_ms,
+                    metadata={"timeout": True, "tier": "standard", "timeout_s": _t2},
+                )
 
             # Parse structured response
             raw_text = response.content[0].text
@@ -889,13 +929,39 @@ class TieredRouter:
                 tier1_hint=tier1_hint,
             )
 
-            # Use deeper model for planning
-            response = guarded_create(client, lane="router-deep",
-                model=self._config.llm_model_deep,
-                max_tokens=4096,
-                system=_TIER2_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}],
-            )
+            # Use deeper model for planning. Bound by tier3_timeout the same way
+            # _try_tier2 bounds tier2_timeout: wall-clock via _llm_pool +
+            # .result(timeout=...), transport via the timeout= kwarg forwarded to
+            # client.messages.create (model_access.py:600).
+            _t3 = self._config.tier3_timeout
+
+            def _call_tier3():
+                return guarded_create(client, lane="router-deep",
+                    model=self._config.llm_model_deep,
+                    max_tokens=4096,
+                    system=_TIER2_SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": user_message}],
+                    timeout=_t3,
+                )
+
+            _future = _llm_pool.submit(copy_context().run, _call_tier3)
+            try:
+                response = _future.result(timeout=_t3)
+            except _FutureTimeout:
+                # Record False here and return a truthy failure result, matching
+                # the ModelAccessDenied path below: in async mode _tier3_worker
+                # sees a truthy result and does NOT re-record (no double count);
+                # in sync mode route() returns this result directly.
+                latency_ms = (time.monotonic() - start) * 1000
+                self._record_metric(RoutingTier.DEEP, latency_ms, False)
+                logger.warning("Tier 3 timed out after %.1fs", _t3)
+                return RoutingResult(
+                    success=False,
+                    tier=RoutingTier.DEEP,
+                    answer="The request timed out before the deep tier could respond.",
+                    latency_ms=latency_ms,
+                    metadata={"timeout": True, "tier": "deep", "timeout_s": _t3},
+                )
 
             raw_text = response.content[0].text
             parsed = self._parse_llm_response(raw_text)
