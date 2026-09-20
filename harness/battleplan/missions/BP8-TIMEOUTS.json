@@ -1,0 +1,55 @@
+{
+ "id": "BP8-TIMEOUTS",
+ "band": "BUILD",
+ "class": "build",
+ "tier": "reasoning",
+ "readonly": false,
+ "deps": [],
+ "name": "Enforce the router tier timeouts that are defined but never applied, and bound route() in the handler",
+ "note": "Tier: reasoning. Self-cap: 25 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Token-saver: Select-String / grep for symbols, read 40-line windows around the cited lines, never whole files. Line numbers below come from BP7_VERDICT.md at 29adc6e9 - confirm each with a grep before editing; if a line has moved, follow the symbol, not the number. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. Minimal diff: touch only the files in `touches`. Verdict facts: RoutingConfig defines tier2_timeout=5.0 / tier3_timeout=15.0 (router.py:124-125) but the guarded_create calls (router.py:685,:893) are made without them; only the Tier 0/1 futures pass timeout=2.0 (:334,:340). handlers.py:1787-1805 calls route() with no try/except and no timeout, so a hung LLM call blocks until the 30 s slow-op kill and emits nothing. First find out how guarded_create / the client accepts a timeout (python/synapse/model_access.py) - do not guess a kwarg. A timed-out tier must fall through the cascade or return a well-formed failure carrying `response` and `tier` keys, because ws_bridge.py:339-344 silently drops any dict without them.",
+ "targets": [
+  "T1) python/synapse/routing/router.py: _try_tier2 and _tier3_sync/_tier3_worker apply self._config.tier2_timeout / tier3_timeout to the LLM call by the mechanism model_access actually supports. On timeout: record the metric as a failure for that tier and return a RoutingResult the cascade can act on. No new config fields.",
+  "T2) python/synapse/server/handlers.py (~:1787): route() is wrapped so ANY exception or overall timeout yields a well-formed chat reply (`response` + `tier`) that says the request timed out - never silence.",
+  "T3) tests: a fake LLM client that sleeps past the tier timeout -> the tier returns within timeout + margin and the handler's reply carries `response` and `tier`; a raising router -> same shape. Name the mutation that reddens each."
+ ],
+ "touches": [
+  "python/synapse/routing/router.py",
+  "python/synapse/server/handlers.py",
+  "tests/"
+ ],
+ "acceptance": [
+  {
+   "predicate": "with a fake client sleeping 3x tier2_timeout, _try_tier2 returns in under tier2_timeout + 1 s",
+   "evidence": "test"
+  },
+  {
+   "predicate": "same for the deep tier against tier3_timeout",
+   "evidence": "test"
+  },
+  {
+   "predicate": "a raising or timed-out route() produces a handler reply containing both `response` and `tier`",
+   "evidence": "test"
+  },
+  {
+   "predicate": "the existing routing test suite is green; count before and after stated in the receipt",
+   "evidence": "test"
+  },
+  {
+   "predicate": "the mechanism used to pass the timeout is quoted from model_access.py with file:line",
+   "evidence": "check"
+  }
+ ],
+ "crucible_criteria": [
+  "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+  "every verdict row carries the crucible's own anchor",
+  "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+  "the crucible flips no contract feature and edits no product file",
+  "the crucible removes the timeout argument and shows the sleep test reddens",
+  "the crucible greps that no LLM call site in router.py is left without a timeout"
+ ],
+ "spawn_classes": [],
+ "source": {
+  "doc": "harness/battleplan/notes/BP7_VERDICT.md",
+  "anchor": "sec. H4 router (traced defects); sec. 'Smallest fix' upstream root fix"
+ }
+}

@@ -124,3 +124,17 @@ def test_few_means_three_not_four_regression():
     assert js.leg_count(2, 5, 1.01, legs=2) == 2   # the author's count wins ...
     assert js.leg_count(2, 5, 0.0, legs=9) == 5    # ... but never past the template's bounds
     assert len([m for m in js.expand("build-screen-crux", "bp9", 1.01) if m["class"] == "build"]) == 3
+
+
+def test_templates_obey_the_mission_schema():
+    """Regression, 2026-09-20: the first catalog gave TIDY a band the schema does not have and
+    readonly:false under TRUST. Mutation: put any band outside mission_schema.BANDS in a template."""
+    bp = str(js.REPO / "harness" / "battleplan")
+    if bp not in sys.path:
+        sys.path.insert(0, bp)
+    import mission_schema as ms
+    for shape in SHAPES:
+        for m in js.expand(shape, "bp9", 2.0):
+            assert m["band"] in ms.BANDS, (shape, m["id"], m["band"])
+            assert m["band"] != "TRUST" or m["readonly"] is True, (shape, m["id"])
+            assert ms.ID_RE.match(m["id"]), m["id"]

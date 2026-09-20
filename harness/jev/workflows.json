@@ -31,7 +31,7 @@
       "legs": [
         {"role": "BUILD", "band": "BUILD", "class": "build", "tier": "auto", "readonly": false, "count": [2, 5], "deps_on": []},
         {"role": "CRUX", "band": "TRUST", "class": "crucible", "tier": "referee", "readonly": true, "count": [1, 1], "deps_on": ["BUILD"]},
-        {"role": "TIDY", "band": "TIDY", "class": "tidy", "tier": "mechanical", "readonly": false, "count": [1, 1], "deps_on": ["CRUX"]}
+        {"role": "TIDY", "band": "TRUST", "class": "tidy", "tier": "mechanical", "readonly": true, "count": [1, 1], "deps_on": ["CRUX"]}
       ]
     },
     "probe-only": {

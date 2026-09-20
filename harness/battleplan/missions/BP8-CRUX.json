@@ -1,0 +1,44 @@
+{
+ "id": "BP8-CRUX",
+ "band": "TRUST",
+ "class": "crucible",
+ "tier": "referee",
+ "readonly": true,
+ "deps": [
+  "BP8-WATCHDOG",
+  "BP8-TIMEOUTS"
+ ],
+ "name": "CRUX: adversarial re-verification of BP8-WATCHDOG and BP8-TIMEOUTS",
+ "note": "Tier: referee. Start from the JEV-SCREEN line for each leg (run `python harness/jev/jev_screen.py --wave bp8`): CLEAR = spot-check two rows, REFEREE = full read, FLAG = begin at the flagged row. The screen sets depth only; it never replaces your own mutations. gui_required predicates are UNKNOWN to you - say so.",
+ "targets": [
+  "T1) Per builder receipt: re-run every non-GUI acceptance predicate in a fresh checkout of the leg branch; verdict rows pass|fail|UNKNOWN with your own anchors.",
+  "T2) >= 2 self-authored mutations per leg, each named with the test it reddens -> harness/battleplan/notes/BP8-CRUX_mutations.json",
+  "T3) harness/battleplan/notes/BP8-CRUX_verdicts.md: one verdict per leg (SOUND | SOUND-WITH-NITS | BROKEN), plus one line comparing your verdict with the JEV-SCREEN line for that leg."
+ ],
+ "touches": [],
+ "acceptance": [
+  {
+   "predicate": "one verdict per builder leg (two) with independently re-run rows and the crucible's own anchors",
+   "evidence": "receipt"
+  },
+  {
+   "predicate": ">= 2 self-authored mutations per builder leg, each named with the check it reddens",
+   "evidence": "test"
+  },
+  {
+   "predicate": "screen-vs-CRUX agreement line present for both legs",
+   "evidence": "receipt"
+  }
+ ],
+ "crucible_criteria": [
+  "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+  "every verdict row carries the crucible's own anchor",
+  "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+  "the crucible flips no contract feature and edits no product file"
+ ],
+ "spawn_classes": [],
+ "source": {
+  "doc": "harness/battleplan/notes/BP7_VERDICT.md",
+  "anchor": "whole verdict; harness/battleplan/notes/JEV_BLUEPRINT.md sec.3.2 (screen line in the CRUX brief)"
+ }
+}
