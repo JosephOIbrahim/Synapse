@@ -41,13 +41,43 @@ def leg_row(m: dict) -> dict:
         row["tier"] = jev_route.resolve_tier(m, wave)
     return row
 
+def screen_lines(m: dict, wave: str) -> str:
+    """JEV-SCREEN pre-read for the CRUX brief (BP6-JEV T2, notes/JEV_BLUEPRINT.md sec.3.2).
+    Only a crucible leg gets a block; every other leg gets an empty string, so a non-crucible
+    prompt - and any prompt for a wave with no screen ledger - is byte-identical to a pre-JEV
+    compile. The block is one brief_line per screened builder from
+    harness/jev/ledger/<wave>.screen.jsonl. An ABSENT ledger renders empty (the byte-identical
+    case the crucible diffs against master); a PRESENT ledger with no decision rows renders the
+    'screen not run' sentinel rather than a silent blank."""
+    if m.get("class") != "crucible":
+        return ""
+    led = REPO / "harness" / "jev" / "ledger" / f"{wave}.screen.jsonl"
+    if not led.exists():
+        return ""
+    lines = []
+    for raw in led.read_text(encoding="utf-8").splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            entry = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if entry.get("result") == "decision":
+            bl = (entry.get("decision") or {}).get("brief_line")
+            if bl:
+                lines.append(bl)
+    body = "\n".join(lines) if lines else "screen: none - JEV screen not run"
+    return f"\n## JEV screen pre-read\n\n{body}\n"
+
 def fill_prompt(m: dict, row: dict) -> str:
     tpl = (HERE / "prompts" / "_template.md").read_text(encoding="utf-8")
     wave = m["id"].split("-", 1)[0].lower().replace("w", "wave")
     body = json.dumps(m, indent=2, ensure_ascii=False)
     for k, v in {"{ID}": m["id"], "{NAME}": m["name"], "{BRANCH}": row["branch"],
                  "{WORKTREE}": row["worktree"], "{MISSION_JSON}": body,
-                 "{WAVE}": wave, "{RECEIPT}": row["receipt"]}.items():
+                 "{WAVE}": wave, "{RECEIPT}": row["receipt"],
+                 "{SCREEN_LINES}": screen_lines(m, wave)}.items():
         tpl = tpl.replace(k, v)
     return tpl
 
