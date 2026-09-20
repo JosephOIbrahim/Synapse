@@ -154,10 +154,48 @@ each a one-line text diff in questions.json, each with zero misses on this set:
   (b) clear_min_support_confidence 0.8 -> 0.7                    - lets one SOUND-WITH-NITS leg CLEAR.
 n=6. Joe's ruling, after BP8's two verdicts join the set: adopt (a), (b), both, or wait for n>=12.
 
+## Docs read (2026-09-20 13:56, on Joe's word) - what changed and what was confirmed
+
+Read: confidence.md, primitives/score.md, model-jaggedness/jev-1.13.md (reviewed 2026-09-17),
+cookbooks/citation_check.md, llms.txt index.
+
+CONFIRMED, no change needed:
+- Score = probability-weighted mean over 0-indexed levels ("0x0.0 + 1x0.70 + 2x0.30 = 1.30"). Every
+  Score threshold in questions.json (novelty 1.5, crux_need 0.5, breadth bands, parallelizable bands)
+  reads that number correctly. Levels must describe concrete situations, not degrees - ours do.
+- Confidence is a concentration statistic of the distribution, formula unspecified, "you are never
+  locked into our definition". jev_client's max(probs) stand-in is a fair reading. Docs' own example
+  floors: 0.5 general, 0.9 high-stakes; ours are 0.6 (route/shape/team) and 0.8 (screen clear).
+- citation_check cookbook is SCREEN's exact shape: one Choice per claim/evidence pair, supports /
+  contradicts / says_nothing, AUTO_ACCEPT 0.8. Ours adds `partial` and `claims_unknown` (UNKNOWN is
+  a first-class answer here) and uses the same 0.8.
+- "P(noul) != 1 - P(not noul)": DRIFT already asks advancing and looping as two Nouls and requires
+  both, never derives one from the other.
+
+CHANGED (jev_screen.py + tests/test_jev_screen_count.py, 5 tests):
+- Jaggedness page: "Jev is not a calculator ... does not count reliably"; workaround "move
+  arithmetic, counting ... to code". SCREEN rule 2 delegated the expected-vs-reported count
+  comparison to Jev. That is the BP4-RULINGS miss: 22 expected, 21 reported, CRUX BROKEN, Jev put
+  0.25 on does_not_support. count_mismatch_rows() now does it in code: '<n> <count-noun>' in the
+  evidence that matches no count named in the mission note or predicates -> FLAG on that row, code
+  reason first, Jev's reason kept beside it. Proven on the real a62267f9 receipt; BP8's two green
+  receipts do not trip it. Turn caps and line windows are not count nouns.
+- Consequence for the SCREEN ruling above: candidate (a) is no longer needed to catch RULINGS - the
+  code check catches it with no threshold change. (a) stays listed only as a Jev-side backstop.
+
+NOTED, no change yet:
+- "Accuracy falls as the state grows with content unrelated to the decision": DRIFT is capped at
+  12 events x 400 chars; SCREEN sends only named mission/receipt fields. Keep it that way.
+- "The model doesn't treat state as hostile": receipts are written by builder agents. SCREEN can
+  be gamed by evidence prose; CRUX exists for exactly that. Never let SCREEN CLEAR replace CRUX.
+- SHAPE's `breadth` Score asks "how many pieces" - a counting question. Its levels are situations
+  (One / Few / Many), the docs-recommended form, and leg_count() plus `--legs` keep the actual
+  number in code. Watch it; if breadth drifts on real objectives, split it into Nouls.
+
 ## Open rulings
 
 1. ~~Fifth template `fix-crux`~~ - added 2026-09-20.
-2. SCREEN policy: adopt candidate (a) and/or (b) above, or keep collecting (see jev_grade.py).
+2. SCREEN policy: the code count check now covers RULINGS; ruling narrows to (b) clear-conf 0.7 or keep collecting.
 3. `probe-only` legs carry `tier: none`, which is not a rails tier. Either rails gains a no-model
    entry or probe-only waves run outside the orchestrator.
 

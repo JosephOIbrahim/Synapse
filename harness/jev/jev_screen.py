@@ -81,6 +81,28 @@ def brief_line(leg: str, d: dict, n_rows: int) -> str:
     return f"screen {leg}: REFEREE - full read; {d['reason']}"
 
 
+# Count check in CODE (2026-09-20, docs.typesafe.ai/model-jaggedness/jev-1.13: "Jev is not a calculator
+# ... does not count reliably"; workaround: "move arithmetic, counting ... to code"). Screen rule 2 asked
+# Jev to notice a reported count differing from the expected one; on BP4-RULINGS (22 expected, 21
+# reported, CRUX: BROKEN) it put only 0.25 on does_not_support. Code does this exactly.
+_COUNT_NOUNS = r"(?:rows?|items?|entries|receipts?|files?|legs?|tests?|records?|hypotheses|missions?|verdicts?|mutations?)"
+_COUNT_RE = re.compile(r"\b(\d{1,5})\s+" + _COUNT_NOUNS + r"\b", re.IGNORECASE)
+
+
+def count_mismatch_rows(m: dict, r: dict) -> list[dict]:
+    """Rows whose evidence reports a '<n> <count-noun>' that matches NO count named in the mission
+    note or predicates. Turn caps, line windows and the like never match the noun list. Pure code."""
+    expected = set(_COUNT_RE.findall(str(m.get("note", "")) + " " + " ".join(a.get("predicate", "") for a in m.get("acceptance", []))))
+    if not expected:
+        return []
+    out = []
+    for i, a in enumerate(r.get("acceptance") or []):
+        reported = set(_COUNT_RE.findall(str((a or {}).get("evidence", ""))))
+        if reported and reported.isdisjoint(expected):
+            out.append({"i": i, "reported": sorted(reported), "expected": sorted(expected)})
+    return out
+
+
 def screen_leg(m: dict, r: dict, wave: str) -> dict:
     g = jc.load_questions()["guards"]["screen"]
     n = len(m.get("acceptance") or [])
@@ -90,6 +112,11 @@ def screen_leg(m: dict, r: dict, wave: str) -> dict:
         state = screen_state(m, r, g["state_fields"])
         answers = jc.ask(state, screen_spec(n), wave=wave, guard="screen", leg=m["id"])
         d = decide(n, answers, g["policy"])
+        cm = count_mismatch_rows(m, r)
+        if cm:  # code outranks judgment here: a count is a fact, and the referee re-counts anyway
+            rows = sorted(set(d["rows"]) | {c["i"] for c in cm}) if d["verdict"] == "FLAG" else [c["i"] for c in cm]
+            why = "; ".join(f"row {c['i']} reports {'/'.join(c['reported'])} but the mission expects {'/'.join(c['expected'])}" for c in cm)
+            d = {**d, "verdict": "FLAG", "rows": rows, "reason": f"code: count mismatch - {why}" + (f" | jev: {d['reason']}" if d.get("jev") else ""), "code_flags": cm}
     d["brief_line"] = brief_line(m["id"], d, n)
     jc.ledger(wave, "screen", {"leg": m["id"], "result": "decision", "decision": d})
     return d
