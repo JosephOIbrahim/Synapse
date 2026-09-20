@@ -1,0 +1,62 @@
+{
+  "leg": "BP8-TIMEOUTS",
+  "status": "green",
+  "head": "03cf187294190c3f5bb7027c4fc57561da7df21a",
+  "base": "79dbbfd9",
+  "touched": [
+    "python/synapse/routing/router.py",
+    "python/synapse/server/handlers.py",
+    "tests/test_bp8_timeouts.py"
+  ],
+  "acceptance": [
+    {
+      "predicate": "with a fake client sleeping 3x tier2_timeout, _try_tier2 returns in under tier2_timeout + 1 s",
+      "verdict": "pass",
+      "evidence": "tests/test_bp8_timeouts.py::test_try_tier2_returns_within_timeout PASSED. _try_tier2 runs guarded_create on _llm_pool and blocks on .result(timeout=tier2_timeout); on _FutureTimeout it records STANDARD failure and returns RoutingResult(success=False, answer, tier=STANDARD). Mutation proof: replacing .result(timeout=_t2) with .result() reddened the test (blocked ~3.6s, FAILED), then reverted."
+    },
+    {
+      "predicate": "same for the deep tier against tier3_timeout",
+      "verdict": "pass",
+      "evidence": "tests/test_bp8_timeouts.py::test_tier3_sync_returns_within_timeout PASSED. _tier3_sync bounds guarded_create by tier3_timeout via _llm_pool + .result(timeout=_t3); on timeout records DEEP failure and returns a truthy RoutingResult so _tier3_worker does not double-record (matches the existing ModelAccessDenied precedent at router.py)."
+    },
+    {
+      "predicate": "a raising or timed-out route() produces a handler reply containing both response and tier",
+      "verdict": "pass",
+      "evidence": "tests/test_bp8_timeouts.py::test_handler_raising_route_replies_with_response_and_tier and ::test_handler_timed_out_route_replies_with_response_and_tier both PASSED. handlers._handle_route_chat runs route() on _route_pool with .result(timeout=_route_deadline_s|_ROUTE_OVERALL_TIMEOUT_S); except _FutureTimeout -> {response, tier:'timeout'}; except Exception -> {response, tier:'error'}. Both dicts carry response+tier so ws_bridge.py:339 emits them."
+    },
+    {
+      "predicate": "the existing routing test suite is green; count before and after stated in the receipt",
+      "verdict": "pass",
+      "evidence": "BEFORE=312 passed, AFTER=312 passed for tests/test_routing.py + tests/test_router_internals.py + tests/test_routing_metadata.py (no regression). Plus 6 new tests in tests/test_bp8_timeouts.py. Broader regression tests/test_handler_edge.py + test_handler_mutation_lock.py + test_model_lanes.py + test_model_routing_plan.py = 45 passed."
+    },
+    {
+      "predicate": "the mechanism used to pass the timeout is quoted from model_access.py with file:line",
+      "verdict": "pass",
+      "evidence": "guarded_create(client, *, lane, **kwargs) at model_access.py:584 forwards **kwargs verbatim to `response = client.messages.create(**kwargs)` at model_access.py:600. Passing timeout=tier2_timeout/tier3_timeout into guarded_create therefore reaches the Anthropic SDK as a per-request timeout, overriding the client-level http timeout=60.0 set at model_access.py:650. Wall-clock enforcement (the .result(timeout=) future) is what guarantees return even against a client that ignores the kwarg; the kwarg bounds the real SDK call so the abandoned worker unwinds at the same deadline."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "Two LLM call sites exist in router.py (tier2 at the router-standard lane, tier3 at the router-deep lane); both are now timeout-bounded. Grep of router.py shows no guarded_create/messages.create call left without a paired .result(timeout=).",
+      "anchor": "python/synapse/routing/router.py (guarded_create at :705 and :939; .result(timeout=_t2)/(timeout=_t3) at :715/:949)"
+    },
+    {
+      "claim": "Design choice: a tier2 timeout returns a well-formed failure immediately rather than falling through to tier3, so a slow standard tier cannot stack tier2_timeout + tier3_timeout (5s + 15s) of latency onto one turn. The note permits either fall-through or a well-formed failure; the failure was chosen for latency.",
+      "anchor": "python/synapse/routing/router.py _try_tier2 timeout branch"
+    },
+    {
+      "claim": "LLM calls run on a dedicated _llm_pool (max_workers=4), not the 2-worker _tier_pool that every route() opens with for T0+knowledge concurrency, so a timed-out model call cannot starve that concurrency. An abandoned worker is bounded by the timeout= kwarg forwarded to the real SDK (model_access.py:600); a client that ignores its own deadline keeps a worker only until it self-completes.",
+      "anchor": "python/synapse/routing/router.py:_llm_pool"
+    },
+    {
+      "claim": "The handler runs route() off the caller thread. Verified SAFE here because _handle_route_chat wires no command_fn into the TieredRouter (so route() executes no SynapseCommands and touches no hou.* API). A guarding comment records the invariant: if a hou-touching command_fn is ever wired here, the offload must be revisited.",
+      "anchor": "python/synapse/server/handlers.py _handle_route_chat"
+    },
+    {
+      "claim": "Runtime is Python 3.14.2 on this host (CLAUDE.md header says 3.13). concurrent.futures.TimeoutError is the builtin TimeoutError on 3.11+, so the _FutureTimeout alias catches both; no version-specific behaviour.",
+      "anchor": "tests/conftest.py:507 ABI-mismatch warning names the interpreter"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": []
+}
