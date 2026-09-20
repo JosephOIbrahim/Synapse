@@ -1,0 +1,51 @@
+{
+  "id": "BP6-JEV",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "auto",
+  "name": "Harden the JEV guard seam: pin the SDK response contract with a recorded fixture, make the screen line reach the CRUX brief through the prompt template, and prove every fail-closed path with a test that bites",
+  "note": "Tier: auto - this mission is the first one routed by JEV-ROUTE; the ledger row for BP6-JEV is itself evidence for T4. Self-cap: 14 turns (progress every 4). The seam already exists on master: harness/jev/{questions.json, jev_client.py, jev_route.py, jev_screen.py}, compile_wave.py resolves tier:auto, mission_schema.py accepts it. Read harness/battleplan/notes/JEV_BLUEPRINT.md first (sec.3 guards, sec.4 invariants); the invariants are your acceptance. Do NOT add a fourth guard, do NOT wire DRIFT (mile 3), do NOT touch rails_exec.json or orchestrate.ps1 beyond the one prompt-template line in T2. Key: TYPESAFE_API_KEY is at Windows User scope; jev_client.api_key() reads it via winreg when the process env lacks it - keep that path. Token-saver: the SDK response shape is in harness/jev/ledger/bp4.shadow.route.jsonl (answers field) - read one row, never the whole file. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C`. Commit product files BEFORE the receipt; the receipt is your final write.",
+  "targets": [
+    "T1) harness/jev/tests/test_jev_guards.py: (a) decide() for route and screen is exercised with hand-built answer dicts covering every policy branch in questions.json (round-up on low confidence, round-up on novelty, round-up on blast_radius, unknown tier, crucible rule, FLAG, CLEAR, REFEREE, None->fallback); (b) a recorded fixture harness/jev/tests/fixtures/route_answer.json captured from one real ledger row drives _answers_to_dict; (c) monkeypatched TypeSafeClient raising -> ask() returns None AND writes a fallback ledger row; (d) SYNAPSE_JEV=off -> ask() returns None without importing the SDK. Every test must fail when its guard is broken - state the mutation you used per test in the receipt.",
+    "T2) harness/battleplan/prompts/_template.md gains one placeholder {SCREEN_LINES}; compile_wave.py fills it from harness/jev/ledger/<wave>.screen.jsonl for legs whose class is crucible (one brief_line per screened builder, or 'screen: none - JEV screen not run' when the ledger is absent). A non-crucible prompt gets an empty string. Byte-identical prompts for waves with no screen ledger - prove with a diff on bp4.",
+    "T3) harness/jev/README.md (<= 60 lines): what each file is, the two shadow commands, the three env knobs (TYPESAFE_API_KEY, SYNAPSE_JEV, model in questions.json), and the invariant list copied verbatim from the blueprint sec.4.",
+    "T4) Post one bus finding to *: {\"claim\": \"BP6-JEV routed by jev: <tier> @ <conf>\", \"anchor\": \"harness/jev/ledger/bp6.route.jsonl\"} quoting the ledger row for this mission's own routing. If that row reads fallback, the claim says so verbatim - never a guessed tier."
+  ],
+  "touches": [
+    "harness/jev/",
+    "harness/battleplan/prompts/_template.md",
+    "harness/battleplan/compile_wave.py"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "the crucible breaks each guard (delete a policy key, return a tier not in rails_exec, empty the answers dict) and confirms the named test reddens",
+    "the crucible compiles bp4 with and without a screen ledger and diffs prompts/BP4-CRUX.md: without = byte-identical to master",
+    "the crucible greps panel/, synapse/, and pyproject for 'jev' - zero hits (invariant 5)",
+    "the crucible confirms rails_exec.json and orchestrate.ps1 are unchanged (invariant 1)",
+    "every verdict row carries the crucible's own anchor"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "harness/battleplan/notes/JEV_BLUEPRINT.md",
+    "anchor": "sec.6 miles - M2 (one mission on tier:auto; CRUX brief carries the screen line)"
+  },
+  "acceptance": [
+    {
+      "predicate": "pytest harness/jev/tests exits 0; each test named in the receipt with the mutation that reddens it",
+      "evidence": "test"
+    },
+    {
+      "predicate": "prompts/BP4-CRUX.md compiled without a screen ledger is byte-identical to master; with the bp4.shadow ledger it carries one screen line per builder",
+      "evidence": "check"
+    },
+    {
+      "predicate": "harness/jev/README.md exists, <= 60 lines, invariants verbatim",
+      "evidence": "check"
+    },
+    {
+      "predicate": "bus finding posted quoting this mission's own route ledger row",
+      "evidence": "receipt"
+    }
+  ]
+}

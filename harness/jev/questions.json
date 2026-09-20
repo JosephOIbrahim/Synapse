@@ -1,0 +1,142 @@
+{
+  "_comment": "JEV question graph for the BATTLEPLAN harness. This file IS the prompt. Each guard names the state fields it sends and the questions it asks; policy thresholds live here too so a tuning pass is a text diff. Tier NAMES for the route guard come from harness/rails_exec.json at runtime; this file only supplies their descriptions. Source: harness/battleplan/notes/JEV_BLUEPRINT.md.",
+  "_schema": "jev-questions/v1",
+  "model": "jev-latest",
+  "guards": {
+    "route": {
+      "edge": "mission -> row (compile_wave.py, once per wave)",
+      "state_fields": ["id", "band", "class", "name", "note", "targets", "acceptance", "crucible_criteria", "touches", "readonly", "deps"],
+      "questions": {
+        "tier": {
+          "type": "choice",
+          "instructions": {
+            "task": "Choose which execution tier should run this BATTLEPLAN leg. The leg is a single Claude Code session that reads `mission` as its complete brief and must produce every item in `mission.targets` and satisfy every `mission.acceptance` predicate, then write a receipt.",
+            "consider": [
+              "How much of the work is already specified by name in `mission.note` and `mission.targets` (files, counts, commands) versus left for the leg to design.",
+              "Whether a wrong or shallow result would be caught cheaply (a count mismatch) or expensively (a broken product file or contract).",
+              "`mission.readonly` legs that only read, count and report are usually mechanical; legs that write product code, tests, or contracts usually need reasoning.",
+              "The tier descriptions in `tiers` are the harness's own definitions; prefer them over general intuition."
+            ]
+          },
+          "criteria_by_tier": {
+            "mechanical": {
+              "what": "Extraction, counting, compiling tables from named sources, renaming, moving files, running a named command and recording its output. Every step is spelled out in the note; the leg follows instructions and reports numbers.",
+              "not_for": "Anything that requires choosing between designs, writing new product code, or deciding what a vague acceptance predicate means.",
+              "examples": ["compile the for_ruling entries from seven receipts into one table with a count line", "census worktrees and list merged+clean ones", "hash four dropped files and link them from a header"]
+            },
+            "reasoning": {
+              "what": "Design and build work: new product code, tests that must bite, USD composition decisions, panel changes, contract-sensitive edits, or any leg whose acceptance predicates need judgment to satisfy.",
+              "not_for": "Pure extraction or bookkeeping that a checklist fully specifies; adversarial re-verification of other legs (that is the referee).",
+              "examples": ["fix a Karma light-binding regression and prove the mutation goes black", "author a USD composition decision record with LIVRPS reasoning", "tokenize panel typography across 22 modules"]
+            },
+            "referee": {
+              "what": "Adversarial re-verification of other legs' receipts: the crucible seat. Trusts no builder's proof, authors its own mutations, writes verdicts.",
+              "not_for": "Building anything. A referee leg edits no product file.",
+              "examples": ["CRUX: re-run every builder's probe, author mutations, verdict per leg"]
+            }
+          }
+        },
+        "novelty": {
+          "type": "score",
+          "instructions": "How much of this leg's work must be invented by the leg rather than reproduced from sources the mission names? Judge from `mission.note` and `mission.targets`.",
+          "criteria": [
+            "Reproduce: every output is a transformation of named source files or command output; the note states the expected shape and count.",
+            "Apply: a known pattern (an existing script, a prior wave's file) is adapted, with a few judgment calls about scope or naming.",
+            "Design: the structure of the output is not given; the leg must decide what to build and how to prove it."
+          ]
+        },
+        "blast_radius": {
+          "type": "score",
+          "instructions": "If this leg does its job badly, what does it break? Judge from `mission.touches`, `mission.targets`, and `mission.readonly`.",
+          "criteria": [
+            "Notes and docs: the leg writes only under harness/notes, harness/battleplan/notes, or docs/; a bad result is a wrong table.",
+            "Harness and tests: the leg edits harness scripts, tests, or fixtures; a bad result mis-measures or mis-dispatches later legs.",
+            "Product and contracts: the leg edits panel/, synapse/, .synapse/contracts/, or anything the artist runs; a bad result ships."
+          ]
+        }
+      },
+      "policy": {
+        "crucible_is_referee": true,
+        "min_tier_confidence": 0.60,
+        "mechanical_max_novelty": 1.5,
+        "mechanical_max_blast_radius": 1.5,
+        "fallback_tier": "reasoning"
+      }
+    },
+    "screen": {
+      "edge": "builder receipts -> CRUX brief (after receipts land, before CRUX flips ready)",
+      "state_fields": {
+        "mission": ["id", "name", "note", "acceptance", "crucible_criteria", "targets"],
+        "receipt": ["leg", "status", "acceptance", "findings", "for_ruling"]
+      },
+      "questions": {
+        "acceptance_row": {
+          "type": "choice",
+          "_comment": "Instantiated once per acceptance row as acc_<i>; {i} is substituted at runtime.",
+          "instructions": {
+            "task": "Read `mission.acceptance[{i}].predicate` and the builder's own `receipt.acceptance[{i}]` (its `verdict` and its `evidence` text). Does the evidence text, taken at face value, establish the predicate?",
+            "rules": [
+              "Judge the evidence TEXT, not the verdict label. A `pass` verdict with evidence that names no file, no number, or no command is `partial` at best.",
+              "If `mission.note` states an expected number (a count, a row total) and the evidence reports a different number without explaining the delta as a finding, that is `does_not_support`.",
+              "If the evidence says UNKNOWN, blocked, or headless-unavailable, that is `claims_unknown` — an honest non-answer, not a failure.",
+              "Evidence that cites a file path plus a line, hash, or reproduced number is the strongest form of `supports`."
+            ]
+          },
+          "criteria": {
+            "supports": "The evidence names concrete artifacts (paths, counts, hashes, command exit codes) that, if true, satisfy the predicate as written.",
+            "partial": "The evidence is on topic but incomplete: it asserts success without a reproducible detail, or covers only part of a multi-part predicate.",
+            "does_not_support": "The evidence contradicts the predicate, reports a number that conflicts with a stated expectation, or describes work on a different predicate.",
+            "claims_unknown": "The evidence explicitly reports UNKNOWN, blocked, or unavailable rather than a result."
+          }
+        },
+        "self_contradiction": {
+          "type": "noul",
+          "instructions": "Does anything in `receipt.findings` or `receipt.for_ruling` contradict a `pass` verdict in `receipt.acceptance`? For example a finding that admits a count is off, a fixture was hardcoded, or a check was deselected, while the matching acceptance row still reads pass."
+        },
+        "crux_need": {
+          "type": "score",
+          "instructions": "How much referee attention does this receipt need? The referee (CRUX) will read it regardless; this sets the depth. Judge the receipt as a whole.",
+          "criteria": [
+            "Clear: every pass carries reproducible evidence (file + number or hash), findings are consistent with verdicts, nothing is asserted without a trail. A referee can spot-check two rows.",
+            "Thin: passes are asserted but at least one rests on vague or partial evidence; a referee must re-run the checks for those rows.",
+            "Contested: evidence contradicts a verdict, a stated expectation is missed, or the receipt's own findings undercut it. A referee must do a full read and author mutations."
+          ]
+        }
+      },
+      "policy": {
+        "flag_does_not_support_min": 0.60,
+        "clear_min_support_confidence": 0.80,
+        "clear_max_self_contradiction": 0.20,
+        "clear_max_crux_need": 0.50,
+        "fallback_verdict": "REFEREE"
+      }
+    },
+    "drift": {
+      "edge": "bus events -> orchestrator poll (mile 2, questions defined, not wired)",
+      "state_fields": {
+        "mission": ["id", "targets", "touches"],
+        "events": "last 12 bus events from this leg: {ts, type, body}",
+        "elapsed_minutes": "wall time since dispatch"
+      },
+      "questions": {
+        "advancing": {
+          "type": "noul",
+          "instructions": "Do the most recent `events` show the leg moving to a target it has not yet reported progress on, or landing evidence for one? Compare `body.target` values across events against `mission.targets`."
+        },
+        "looping": {
+          "type": "noul",
+          "instructions": "Do the recent `events` repeat the same target or the same evidence path without a new finding between them, suggesting the leg is retrying the same step?"
+        },
+        "out_of_scope": {
+          "type": "noul",
+          "instructions": "Do any `claim` events name files outside `mission.touches` that are not explained by a finding? Coarse touches are fine; a claim on panel/ from a notes-only leg is not."
+        }
+      },
+      "policy": {
+        "warn_looping_min": 0.80,
+        "warn_advancing_max": 0.20,
+        "consecutive_polls": 2
+      }
+    }
+  }
+}

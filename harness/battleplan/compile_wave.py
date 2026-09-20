@@ -32,6 +32,13 @@ def leg_row(m: dict) -> dict:
     # mission has none, so a tier-less row is byte-identical to before.
     if m.get("tier"):
         row["tier"] = m["tier"]
+    # JEV-ROUTE (2026-09-19, notes/JEV_BLUEPRINT.md sec.3.1): "tier": "auto" asks Jev to
+    # choose among rails_exec.json's tier NAMES; any failure resolves to reasoning and is
+    # ledgered under harness/jev/ledger/. A literal tier never enters this branch.
+    if row.get("tier") == "auto":
+        sys.path.insert(0, str(REPO / "harness" / "jev"))
+        import jev_route
+        row["tier"] = jev_route.resolve_tier(m, wave)
     return row
 
 def fill_prompt(m: dict, row: dict) -> str:

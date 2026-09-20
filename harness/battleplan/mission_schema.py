@@ -56,6 +56,15 @@ def validate_mission(m: dict) -> list:
             _err(errors, mid, f"acceptance[{i}] evidence gui_probe requires gui_required:true")
     if not isinstance(m.get("touches"), list):
         _err(errors, mid, "touches must be a list (coarse is fine; discovery is recorded)")
+    # JEV-ROUTE (2026-09-19): tier must be a rails_exec.json tier name or 'auto'. rails_exec
+    # stays the only source of names; 'auto' is resolved to one of them at compile time.
+    if "tier" in m:
+        try:
+            tiers = set(json.loads((REPO / "harness" / "rails_exec.json").read_text(encoding="utf-8")).get("tiers", {}))
+        except Exception:
+            tiers = set()
+        if tiers and m["tier"] not in tiers | {"auto"}:
+            _err(errors, mid, f"tier must be one of {sorted(tiers)} or 'auto'")
     if not isinstance(m.get("crucible_criteria"), list) or not m["crucible_criteria"]:
         _err(errors, mid, "crucible_criteria must be a non-empty list")
     return errors

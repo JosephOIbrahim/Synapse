@@ -1,0 +1,21 @@
+[
+  {
+    "id": "BP6-JEV",
+    "name": "Harden the JEV guard seam: pin the SDK response contract with a recorded fixture, make the screen line reach the CRUX brief through the prompt template, and prove every fail-closed path with a test that bites",
+    "state": "ready",
+    "receipt": "BP6-JEV.json",
+    "branch": "bp6/jev",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp6-jev",
+    "prompt": "harness/battleplan/prompts/BP6-JEV.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/jev/",
+      "harness/battleplan/prompts/_template.md",
+      "harness/battleplan/compile_wave.py"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/JEV_BLUEPRINT.md :: sec.6 miles - M2 (one mission on tier:auto; CRUX brief carries the screen line). Tier: auto - this mission is the first one routed by JEV-ROUTE; the ledger row for BP6-JEV is itself evidence for T4. Self-cap: 14 turns (progress every 4). The seam already exists on master: harness/jev/{questions.json, jev_client.py, jev_route.py, jev_screen.py}, compile_wave.py resolves tier:auto, mission_schema.py accepts it. Read harness/battleplan/notes/JEV_BLUEPRINT.md first (sec.3 guards, sec.4 invariants); the invariants are your acceptance. Do NOT add a fourth guard, do NOT wire DRIFT (mile 3), do NOT touch rails_exec.json or orchestrate.ps1 beyond the one prompt-template line in T2. Key: TYPESAFE_API_KEY is at Windows User scope; jev_client.api_key() reads it via winreg when the process env lacks it - keep that path. Token-saver: the SDK response shape is in harness/jev/ledger/bp4.shadow.route.jsonl (answers field) - read one row, never the whole file. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C`. Commit product files BEFORE the receipt; the receipt is your final write.",
+    "tier": "reasoning"
+  }
+]
