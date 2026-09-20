@@ -64,6 +64,25 @@ _ERROR_COLOR = _ds.ERROR
 # Max age before context is re-gathered on send (ms)
 _CONTEXT_MAX_AGE_MS = 5000
 
+# Response watchdog budget (ms). The server bounds a single slow op at 30 s
+# (``synapse.server.main_thread._SLOW_TIMEOUT``); a reply cannot honestly take
+# longer than that budget plus transit. The watchdog waits the budget plus a
+# margin before it calls a turn hung, so a reply landing right at the budget is
+# never pre-empted. Named here, never a call-site literal (BP8-WATCHDOG T1).
+_SLOW_OP_BUDGET_MS = 30000
+_WATCHDOG_MARGIN_MS = 5000
+WATCHDOG_TIMEOUT_MS = _SLOW_OP_BUDGET_MS + _WATCHDOG_MARGIN_MS
+
+#: Appended when the watchdog fires: the turn produced no reply within the
+#: budget, so the waiting state is torn down and the input is the artist's
+#: again. Same "wasn't delivered / send again" wording family as the
+#: ``send_guard`` lines, kept in this module because that one is out of scope
+#: for this change.
+NO_RESPONSE_LINE = (
+    "No response from SYNAPSE within the expected time -- the turn timed "
+    "out. You can send that message again."
+)
+
 
 def _get_server_class():
     """Lazily import SynapseServer to avoid import-time issues."""
@@ -139,6 +158,7 @@ class SynapseChatPanel:
         self._project_initialized = False
         self._last_sent_message = ""
         self._waiting_for_response = False
+        self._response_watchdog = None
         self._font_scale = t.FONT_SCALE_DEFAULT
         self._font_scale_index = t.FONT_SCALE_STEPS.index(t.FONT_SCALE_DEFAULT)
 
@@ -239,6 +259,17 @@ class SynapseChatPanel:
         self._integrity_timer = QTimer(self._root)
         self._integrity_timer.timeout.connect(self._poll_integrity)
         self._integrity_timer.setInterval(5000)
+
+        # -- Response watchdog: a hung turn (no reply within the slow-op
+        #    budget) must not spin the typing indicator forever. Single-shot,
+        #    armed per send in ``_send_message`` and stopped the moment the
+        #    wait ends -- reply, failed send, disconnect, or connection error
+        #    -- via ``_clear_waiting_state``. On fire it clears the waiting
+        #    state and tells the artist to send again (BP8-WATCHDOG T1).
+        self._response_watchdog = QTimer(self._root)
+        self._response_watchdog.setSingleShot(True)
+        self._response_watchdog.setInterval(WATCHDOG_TIMEOUT_MS)
+        self._response_watchdog.timeout.connect(self._on_response_timeout)
 
         # -- Keyboard shortcuts -------------------------------------------
         self._install_shortcuts()
@@ -855,6 +886,20 @@ class SynapseChatPanel:
             self._refresh_context_off_main()
         return self._last_context
 
+    def _clear_waiting_state(self):
+        """Tear down the 'waiting for a reply' UI in one place.
+
+        Stops the response watchdog, drops the waiting flag, and hides the
+        typing indicator. Every path that ends the wait -- a reply, a failed
+        send, a dropped socket, or a connection error -- routes through here,
+        so the watchdog can never outlive the wait it guards and fire a stray
+        'no response' line (BP8-WATCHDOG T2).
+        """
+        if self._response_watchdog is not None:
+            self._response_watchdog.stop()
+        self._waiting_for_response = False
+        self._chat.hide_typing_indicator()
+
     def _send_message(self):
         """Read the input box and send it via the WS bridge -- if it can go now.
 
@@ -890,6 +935,12 @@ class SynapseChatPanel:
         self._ensure_project_initialized()
         self._waiting_for_response = True
         self._chat.show_typing_indicator()
+        # Arm the watchdog now the wait is on; a reply, failed send, or drop
+        # stops it, and if none happen it fires (BP8-WATCHDOG T1). Guarded so a
+        # unit test that drives the send path without building the timer (no
+        # ``createInterface``) still runs.
+        if self._response_watchdog is not None:
+            self._response_watchdog.start()
         ctx = self._gather_context_if_stale()
         sent = self._bridge.send_command(
             "route_chat",
@@ -900,8 +951,7 @@ class SynapseChatPanel:
             # The socket died between the check and the send. Nothing was
             # queued, so nothing can replay later: hand the text back and
             # stop the spinner.
-            self._waiting_for_response = False
-            self._chat.hide_typing_indicator()
+            self._clear_waiting_state()
             self._input.setPlainText(text)
             cursor = self._input.textCursor()
             cursor.movePosition(QtGui.QTextCursor.End)
@@ -911,8 +961,7 @@ class SynapseChatPanel:
     @Slot(dict)
     def _on_response(self, response):
         """Handle server response from route_chat."""
-        self._waiting_for_response = False
-        self._chat.hide_typing_indicator()
+        self._clear_waiting_state()
 
         status = response.get("status", "")
 
@@ -940,6 +989,19 @@ class SynapseChatPanel:
                     )
                 )
 
+    def _on_response_timeout(self):
+        """The response watchdog fired: no reply arrived within the budget.
+
+        Reaching here means nothing tore down the wait -- not a reply, a
+        disconnect, a connection error, or a failed send (a stopped
+        single-shot timer never delivers this). So the turn is genuinely
+        hung: clear the waiting state (which also stops the now-spent timer)
+        and append ONE line handing the input back to the artist
+        (BP8-WATCHDOG T1).
+        """
+        self._clear_waiting_state()
+        self._chat.append_system_message(NO_RESPONSE_LINE)
+
     @Slot(bool)
     def _on_status_changed(self, connected):
         """Handle connection status change."""
@@ -954,6 +1016,9 @@ class SynapseChatPanel:
             self._conn_btn.setText("Disconnect")
             self._chat.append_system_message("Connected to SYNAPSE server.")
         else:
+            # A disconnect ends any in-flight wait: clear it through the one
+            # shared teardown so no stray watchdog line fires (BP8-WATCHDOG T2).
+            self._clear_waiting_state()
             _sc = _ERROR_COLOR
             qss.sweep_a_style(self._conn_dot, "chat_dot", _sc)
             self._conn_label.setText("Disconnected")
@@ -963,6 +1028,9 @@ class SynapseChatPanel:
     @Slot(str)
     def _on_connection_error(self, error_msg):
         """Surface connection errors in the chat."""
+        # A connection error ends any in-flight wait: clear it through the one
+        # shared teardown so no stray watchdog line fires (BP8-WATCHDOG T2).
+        self._clear_waiting_state()
         self._chat.append_system_message(error_msg)
 
     @Slot(dict)

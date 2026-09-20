@@ -1,0 +1,85 @@
+{
+  "leg": "BP8-WATCHDOG",
+  "status": "green_with_findings",
+  "head": "07f32f8099d6bc4729298956d2e1b30251aee8af",
+  "summary": "A silent turn-2 hang (send, no reply) now becomes a visible, recoverable failure. A single-shot QTimer armed per send fires after the 30s server slow-op budget + 5s margin, clears the waiting state, hides the typing indicator, and appends ONE 'send again' line. One shared _clear_waiting_state() teardown stops the watchdog on every wait-ending path (reply, failed send, connection error, disconnect), so it can never outlive its wait and fire a stray line. All headless-measurable acceptances pass under stock CPython AND on the live H22.0.400 runtime via an offscreen hython real-QTimer probe. Only the live-GUI seat (acceptance 5) is UNKNOWN — no Houdini GUI is available to this agent.",
+  "acceptance": [
+    {
+      "predicate": "after a send with no reply, waiting state is False and the typing indicator is hidden once the watchdog fires",
+      "verdict": "pass",
+      "evidence": "tests/test_response_watchdog.py::test_watchdog_hang_clears_state_and_shows_one_line (CPython, mock timer, 6 passed/1 skipped); hython 22.0.400 offscreen real-QTimer probe -> 'armed: isActive True' -> 'fired: isActive False' -> 'fired: waiting cleared' -> 'fired: exactly one NO_RESPONSE line' (RESULT ALL PASS). chat_panel.py:_on_response_timeout (append) + _clear_waiting_state (flag/spinner)."
+    },
+    {
+      "predicate": "a delivered response stops the watchdog; no 'no response' line appears afterwards",
+      "verdict": "pass",
+      "evidence": "tests/test_response_watchdog.py::test_delivered_response_stops_watchdog_and_no_late_line (asserts stop.assert_called_once + no NO_RESPONSE line); hython probe -> 'reply stopped it: isActive False' + 'reply: no late NO_RESPONSE line'. chat_panel.py:_on_response -> _clear_waiting_state -> watchdog.stop()."
+    },
+    {
+      "predicate": "connection error and status->disconnected both clear the waiting state via the shared helper",
+      "verdict": "pass",
+      "evidence": "tests/test_response_watchdog.py::test_connection_error_clears_waiting_via_shared_helper and ::test_disconnect_status_clears_waiting_via_shared_helper. chat_panel.py:_on_connection_error and _on_status_changed(False) both call _clear_waiting_state; grep confirms the two clearing lines exist in exactly ONE place (init + helper) — no third copy."
+    },
+    {
+      "predicate": "diff touches only chat_panel.py and tests; no hardcoded px or hex added",
+      "verdict": "pass",
+      "evidence": "git status: 'M python/synapse/panel/chat_panel.py' + '?? tests/test_response_watchdog.py' only. `git diff chat_panel.py | grep '+' | grep -EI '#[0-9a-f]{3,6}|[0-9]+px'` -> none. NO_RESPONSE_LINE uses the existing append_system_message helper; WATCHDOG_TIMEOUT_MS is a named ms constant (no px, no hex)."
+    },
+    {
+      "predicate": "in a live H22 panel a hung turn 2 shows the system line and the input works again",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required: true and no Houdini GUI is available to this agent. The timer+handler logic IS proven on the live H22.0.400 runtime (offscreen hython probe: a real single-shot QTimer fires -> _on_response_timeout -> clear+hide+one line; a real stop() prevents the fire), but a live GUI panel driven against a real server-side hang was NOT exercised. Per constitution: unobtainable renders UNKNOWN, never a pass."
+    }
+  ],
+  "proved_it_bites": [
+    {
+      "test": "test_watchdog_hang_clears_state_and_shows_one_line",
+      "mutation": "delete `self._chat.append_system_message(NO_RESPONSE_LINE)` in _on_response_timeout",
+      "result": "RAN RED 2026-09-20 (pytest -k 'hang' -> FAILED on append_system_message.assert_called_once_with(NO_RESPONSE_LINE))"
+    },
+    {
+      "test": "test_delivered_response_stops_watchdog_and_no_late_line",
+      "mutation": "delete the timer stop on the reply path (`self._response_watchdog.stop()` in _clear_waiting_state, which _on_response invokes)",
+      "result": "RAN RED 2026-09-20 (pytest -k 'delivered_response' -> FAILED on stop.assert_called_once). This is the crucible's named mutation."
+    },
+    {
+      "test": "test_connection_error_clears_waiting_via_shared_helper / test_disconnect_status_clears_waiting_via_shared_helper",
+      "mutation": "remove `self._clear_waiting_state()` from _on_connection_error / the _on_status_changed disconnect branch",
+      "result": "NAMED (the same stop-removal mutation above also reddens these via stop.assert_called_once; not separately executed)"
+    },
+    {
+      "test": "test_failed_send_stops_watchdog_no_zombie_timer",
+      "mutation": "make the send-failure branch skip _clear_waiting_state()",
+      "result": "NAMED (waiting-False and stop.assert_called_once would redden)"
+    },
+    {
+      "test": "test_budget_is_slow_op_plus_margin_named_not_literal",
+      "mutation": "set WATCHDOG_TIMEOUT_MS <= 30000 (drop the margin)",
+      "result": "NAMED (the >30000 / ==35000 assertions would redden)"
+    }
+  ],
+  "findings": [
+    {
+      "claim": "The watchdog budget is a named constant WATCHDOG_TIMEOUT_MS = 30000 (server slow-op budget) + 5000 (margin) = 35000 ms. It is NOT imported from server.main_thread._SLOW_TIMEOUT on purpose: the panel keeps server imports lazy (chat_panel._get_server_class) to avoid import-time coupling, so the 30s is cited in a comment as the producer path instead. Drift risk: if _SLOW_TIMEOUT changes, this constant must be re-checked.",
+      "anchor": "python/synapse/panel/chat_panel.py (constants block near _CONTEXT_MAX_AGE_MS); server budget at python/synapse/server/main_thread.py:22 (_SLOW_TIMEOUT = 30.0)"
+    },
+    {
+      "claim": "The arm and the helper's stop are guarded by `if self._response_watchdog is not None`. This keeps pre-existing tests that drive _send_message / _on_response WITHOUT building the timer (no createInterface) green — the timer is only None before createInterface, which never happens in production. Regression confirmed: tests/test_chat_panel.py 85 passed/17 skipped, tests/panel/ 117 passed/89 skipped, 0 failed.",
+      "anchor": "python/synapse/panel/chat_panel.py:_send_message (arm) and _clear_waiting_state (stop)"
+    },
+    {
+      "claim": "The headless test has two layers. Layer 1 (mock timer) runs under stock CPython and is the always-run acceptance evidence; it drives the fire slot as a fake clock and asserts start/stop calls + panel state. Layer 2 is a REAL single-shot QTimer that only runs under a genuine PySide (hython) — it skips under the MagicMock stub via an isActive()-is-bool discriminator (skip != pass). Runtime truth was obtained by running the same logic under hython 22.0.400 (RESULT ALL PASS).",
+      "anchor": "tests/test_response_watchdog.py (Layer 1 + test_real_qtimer_fires_and_stop_prevents_it + _real_qt)"
+    },
+    {
+      "claim": "NO_RESPONSE_LINE lives in chat_panel.py rather than send_guard.py (where the sibling *_LINE constants live) because send_guard.py is outside this mission's `touches`. Minimal-diff was kept; if a future change unifies the panel's system lines, this constant should move to send_guard.py with the family.",
+      "anchor": "python/synapse/panel/chat_panel.py (NO_RESPONSE_LINE); siblings at python/synapse/panel/send_guard.py:52-77"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "Live-GUI confirmation (acceptance 5) is UNKNOWN and needs a human: open a real H22 panel, send a turn 2 that the server never answers (e.g. bridge stalled), and confirm the 'No response ... send that message again' line appears and the input is usable again. The headless + hython evidence proves the logic; only the live seat is unobtained.",
+      "owner": "human"
+    }
+  ],
+  "spawn": []
+}
