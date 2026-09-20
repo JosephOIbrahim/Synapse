@@ -3,7 +3,7 @@
 You are a SYNAPSE BATTLEPLAN wave agent on branch `{BRANCH}` in worktree
 `{WORKTREE}`. Model: resolved per mission tier by harness/rails_exec.json (mechanical Haiku 4.5 / reasoning Opus 4.8 / referee Fable 5.1), dispatched by harness/orchestrate.ps1. This
 brief is complete; if any part reads truncated, STOP and say so.
-
+{SCREEN_LINES}
 ## Mission (validated work order)
 
 ```json

@@ -1,0 +1,57 @@
+{
+  "leg": "BP6-JEV",
+  "status": "green_with_findings",
+  "product_head": "f2d8febd0b2ac6e14588a70ae244a7f24a5857eb",
+  "acceptance": [
+    {
+      "predicate": "pytest harness/jev/tests exits 0; each test named in the receipt with the mutation that reddens it",
+      "verdict": "pass",
+      "evidence": "python -m pytest harness/jev/tests -q => 14 passed (exit 0) at HEAD f2d8febd. Every test verified to redden under its named mutation by an isolated source/policy mutation sweep (14/14 BITES; test 14's bite confirmed via the ledger-result signal 'disabled'->'fallback' because ask()'s broad except swallows the stub error). See t1_bite_matrix below."
+    },
+    {
+      "predicate": "prompts/BP4-CRUX.md compiled without a screen ledger is byte-identical to master; with the bp4.shadow ledger it carries one screen line per builder",
+      "verdict": "pass",
+      "evidence": "In-memory compile_wave.fill_prompt(BP4-CRUX) with bp4.screen.jsonl ABSENT == prompts/BP4-CRUX.md (which git diff master reports identical): 11891 == 11891 bytes, exact string match. With bp4.shadow.screen.jsonl copied to bp4.screen.jsonl: renders '## JEV screen pre-read' + all 7 builder brief_lines (B7FIX, INTAKE, PANELFONT, SPATIAL, TIDY, USDKNOW, RULINGS), 7 screen-lines, differs from master. Non-crucible leg -> ''. git diff master --stat -- harness/battleplan/prompts/ shows only _template.md (no collateral). anchor: harness/battleplan/compile_wave.py:screen_lines"
+    },
+    {
+      "predicate": "harness/jev/README.md exists, <= 60 lines, invariants verbatim",
+      "verdict": "pass",
+      "evidence": "harness/jev/README.md = 47 lines (<= 60). Invariant block (12 lines, all six) is a character-for-character match to JEV_BLUEPRINT.md sec.4 (difflib: no diff). Covers each file, the two shadow commands, and the three env knobs (TYPESAFE_API_KEY, SYNAPSE_JEV, model in questions.json)."
+    },
+    {
+      "predicate": "bus finding posted quoting this mission's own route ledger row",
+      "verdict": "pass",
+      "evidence": "Posted to bp6 bus (n=18d6e554da95ac64): {\"claim\": \"BP6-JEV routed by jev: reasoning @ 1.00\", \"anchor\": \"harness/jev/ledger/bp6.route.jsonl\"}. Quoted verbatim from the decision row in bp6.route.jsonl (result=ok, author_tier=auto, decision.reason='jev: reasoning @ 1.00') - a real Jev route, NOT a fallback row."
+    }
+  ],
+  "t1_bite_matrix": [
+    {"test": "test_route_crucible_rule", "mutation": "jev_route.decide: m.get(\"class\")==\"crucible\" -> ==\"cricket\" (or delete crucible_is_referee)", "observed": "tier 'reasoning' not 'referee'", "reddened": true},
+    {"test": "test_route_none_answer_falls_back", "mutation": "jev_route.decide: 'if answers is None:' -> 'if answers is not None:'", "observed": "raises on None input", "reddened": true},
+    {"test": "test_route_unknown_tier_falls_back", "mutation": "jev_route.decide: 'if choice not in jc.rails_tiers():' -> 'if False:'", "observed": "returns 'quantum'", "reddened": true},
+    {"test": "test_route_low_confidence_rounds_up", "mutation": "delete 'min_tier_confidence' from questions.json route.policy", "observed": "KeyError", "reddened": true},
+    {"test": "test_route_high_novelty_rounds_up", "mutation": "jev_route.decide: nov >= policy[\"mechanical_max_novelty\"] -> nov >= 99", "observed": "returns 'mechanical'", "reddened": true},
+    {"test": "test_route_high_blast_radius_rounds_up", "mutation": "jev_route.decide: br >= policy[\"mechanical_max_blast_radius\"] -> br >= 99", "observed": "returns 'mechanical'", "reddened": true},
+    {"test": "test_route_honours_confident_low_risk_choice", "mutation": "jev_route.decide: final 'return {\"tier\": choice ...}' -> '\"tier\": fb'", "observed": "returns 'reasoning' not 'mechanical'", "reddened": true},
+    {"test": "test_screen_flag_on_does_not_support", "mutation": "jev_screen.decide: '>= policy[\"flag_does_not_support_min\"]' -> '>= 2.0'", "observed": "verdict 'REFEREE' not 'FLAG'", "reddened": true},
+    {"test": "test_screen_clear_when_all_supported", "mutation": "delete 'clear_max_crux_need' from questions.json screen.policy", "observed": "KeyError", "reddened": true},
+    {"test": "test_screen_referee_on_weak_row", "mutation": "set clear_min_support_confidence = 0.0", "observed": "verdict 'CLEAR' not 'REFEREE'", "reddened": true},
+    {"test": "test_screen_none_answer_falls_back_to_referee", "mutation": "jev_screen.decide: 'if answers is None:' -> 'if answers is not None:'", "observed": "raises on None input", "reddened": true},
+    {"test": "test_recorded_fixture_drives_answers_to_dict", "mutation": "jev_client._answers_to_dict: _get(a, \"choice\") -> _get(a, \"value\")", "observed": "flattened tier choice becomes None", "reddened": true},
+    {"test": "test_ask_sdk_raises_returns_none_and_ledgers_fallback", "mutation": "jev_client.ask except-branch: '\"result\": \"fallback\"' -> '\"result\": \"ok\"' (or remove the try/except so it raises)", "observed": "ledger row result 'ok' not 'fallback'", "reddened": true},
+    {"test": "test_ask_disabled_returns_none_without_importing_sdk", "mutation": "jev_client.ask: 'if not enabled():' -> 'if enabled():'", "observed": "SDK reached under SYNAPSE_JEV=off; ledger row 'fallback' not 'disabled'", "reddened": true}
+  ],
+  "findings": [
+    {
+      "claim": "The brief is internally contradictory on the absent-ledger case. T2 prose says a crucible leg whose <wave>.screen.jsonl is absent renders 'screen: none - JEV screen not run', but the acceptance predicate AND crucible criterion require prompts/BP4-CRUX.md compiled WITHOUT a screen ledger to be byte-identical to master - and master (150 lines) has no screen text. Both cannot hold.",
+      "resolution": "Resolved in favor of the testable gate: absent ledger -> empty string (byte-identical to master, verified 11891==11891). The 'screen: none - JEV screen not run' sentinel is preserved but now renders when the ledger is PRESENT but has zero decision rows (verified). This keeps the sentinel reachable without breaking the byte-identical acceptance the crucible diffs.",
+      "anchor": "harness/battleplan/compile_wave.py:screen_lines; harness/battleplan/prompts/BP4-CRUX.md (master == working tree)"
+    }
+  ],
+  "for_ruling": [
+    {
+      "question": "Confirm the absent-ledger reconciliation: absent -> empty (byte-identical), present-but-empty -> 'screen: none - JEV screen not run'. If instead the sentinel must render on an ABSENT ledger for a crucible leg, the 'byte-identical to master' acceptance/crucible criterion must be relaxed, since master carries no screen text. Only one of the two can be true.",
+      "anchor": "BP6-JEV mission targets[T2] vs acceptance[1]/crucible_criteria[1]"
+    }
+  ],
+  "spawn": []
+}

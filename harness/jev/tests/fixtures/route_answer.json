@@ -1,0 +1,15 @@
+{
+  "choices": {
+    "tier": {
+      "choice": "reasoning",
+      "probabilities": {"reasoning": 1.0, "referee": 0.0, "mechanical": 0.0},
+      "confidence": 0.99
+    }
+  },
+  "scores": {
+    "novelty": {"score": 0.93, "confidence": 0.82, "probabilities": {"0": 0.1, "1": 0.88, "2": 0.02}},
+    "blast_radius": {"score": 1.02, "confidence": 0.95, "probabilities": {"0": 0.01, "1": 0.97, "2": 0.02}}
+  },
+  "nouls": {},
+  "request_id": "req_01a0bc716e3d7dba9423fdccde3d5bf1"
+}
