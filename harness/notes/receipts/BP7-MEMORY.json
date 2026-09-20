@@ -1,0 +1,33 @@
+{
+  "leg": "BP7-MEMORY",
+  "status": "green_with_findings",
+  "head_sha": "b9025a1b368ee06dcd7172c5028133d2eee7ffa6",
+  "acceptance": [
+    {
+      "predicate": "note exists with a VERDICT header and all four sections",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/bp7_scout_H6.md contains VERDICT header and Mechanism/Evidence/Reproduction/Smallest fix shape sections"
+    },
+    {
+      "predicate": "every cited file:line exists and contains the quoted snippet",
+      "verdict": "pass",
+      "evidence": "All 13 file:line citations verified via grep and Read: handlers.py (1757, 1850, 1853-1858), handlers_memory.py (128), memory_lifecycle.py (378-379, 338-341, 386), store.py (227-228, 501-519, 379-389), context_enrichment.py (82, 91-92), router.py (679-682)"
+    },
+    {
+      "predicate": "bus finding posted with the verdict",
+      "verdict": "pass",
+      "evidence": "Finding posted at 2026-09-20T09:54:37 claiming H6 CONFIRMED with anchor to bp7_scout_H6.md"
+    }
+  ],
+  "findings": [
+    {
+      "id": "H6",
+      "claim": "Memory store degradation on turn 2 blocks handler past 30s timeout",
+      "verdict": "CONFIRMED",
+      "mechanism": "ensure_current_memory() may call _adopt_scene_store() which creates MemoryStore(..., background_load=False). Synchronous _load() acquires write lock while parsing JSONL. Degraded store from ae34ed96 fix returns refusal reason from _write_refusal_reason().",
+      "evidence_anchor": "harness/battleplan/notes/bp7_scout_H6.md"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": []
+}
