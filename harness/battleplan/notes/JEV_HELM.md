@@ -135,10 +135,30 @@ that went on to land a valid receipt (verdict UNKNOWN, e0fdcca2). On this one ca
 recorded, not a ruling. If BP8's drift ledger keeps disagreeing with drift.py's halts, THAT is the
 evidence for loosening the regex or handing the warning to Jev.
 
+## SCREEN graded against CRUX, zero new Jev calls (2026-09-20, during BP8)
+
+    python harness/jev/jev_grade.py        replays ledgered raw answers under candidate policies vs CRUX verdicts
+
+BP4, six legs with both a screen answer and a CRUX verdict (1 BROKEN, 5 SOUND-WITH-NITS):
+
+    policy                  BROKEN->FLAG  BROKEN->CLEAR(miss)  SOUND->CLEAR  SOUND->REFEREE
+    current                     0               0                 0              5
+    flag-on-contradiction       1               0                 0              5
+    clear-conf-0.7              0               0                 1              4
+
+Reading: the CURRENT policy is safe (no miss) but inert - REFEREE on every real receipt, so CRUX
+always does a full read and the screen line has saved the referee nothing yet. Two candidate rules,
+each a one-line text diff in questions.json, each with zero misses on this set:
+  (a) FLAG when self_contradiction >= 0.6 AND crux_need >= 1.5  - catches the one BROKEN leg (RULINGS).
+      This is the rule EDGE would need to ever insert a repair.
+  (b) clear_min_support_confidence 0.8 -> 0.7                    - lets one SOUND-WITH-NITS leg CLEAR.
+n=6. Joe's ruling, after BP8's two verdicts join the set: adopt (a), (b), both, or wait for n>=12.
+
 ## Open rulings
 
 1. ~~Fifth template `fix-crux`~~ - added 2026-09-20.
-2. `probe-only` legs carry `tier: none`, which is not a rails tier. Either rails gains a no-model
+2. SCREEN policy: adopt candidate (a) and/or (b) above, or keep collecting (see jev_grade.py).
+3. `probe-only` legs carry `tier: none`, which is not a rails tier. Either rails gains a no-model
    entry or probe-only waves run outside the orchestrator.
 
 ## Miles
