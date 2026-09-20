@@ -69,12 +69,12 @@ def decide(answers: dict | None, policy: dict, shapes: dict) -> dict:
     split = policy["cause_known_split"]
     if choice == "scout-synth" and known is not None and known > split:
         return {"shape": fb, "reason": f"manual: scout-synth but cause_known {known:.2f} > {split}", "jev": jev}
-    if choice in ("solo", "build-screen-crux") and known is not None and known < split:
+    if choice in ("solo", "fix-crux", "build-screen-crux") and known is not None and known < split:
         return {"shape": fb, "reason": f"manual: {choice} but cause_known {known:.2f} < {split}", "jev": jev}
     if choice == "probe-only" and (det is None or det < policy["probe_only_min_deterministic"]):
         return {"shape": fb, "reason": f"manual: probe-only but deterministic {det} < {policy['probe_only_min_deterministic']}", "jev": jev}
-    if choice == "solo" and br is not None and br > policy["solo_max_breadth"]:
-        return {"shape": fb, "reason": f"manual: solo but breadth {br:.2f} > {policy['solo_max_breadth']}", "jev": jev}
+    if choice in ("solo", "fix-crux") and br is not None and br > policy["solo_max_breadth"]:
+        return {"shape": fb, "reason": f"manual: {choice} but breadth {br:.2f} > {policy['solo_max_breadth']}", "jev": jev}
     return {"shape": choice, "reason": f"jev: {choice} @ {conf:.2f}", "jev": jev}
 
 
@@ -87,15 +87,21 @@ def choose(objective: str, wave: str, evidence: list[str] | None = None) -> dict
     return d
 
 
-def leg_count(lo: int, hi: int, breadth: float | None) -> int:
-    """Breadth score (0..2) picks a count inside the template's bounds. Unknown breadth -> the
-    minimum: more legs cost more tokens, so doubt rounds DOWN here (the opposite of tier routing)."""
-    if breadth is None or hi <= lo:
+def leg_count(lo: int, hi: int, breadth: float | None, legs: int | None = None) -> int:
+    """How many legs of a fan-out role. An explicit author count wins (clamped to the template's
+    bounds): Jev judges breadth, it does not count. Otherwise the breadth LEVEL picks a band:
+    One -> lo, Few -> lo+1, Many -> hi. Unknown breadth -> lo: more legs cost more tokens, so
+    doubt rounds DOWN here (the opposite of tier routing)."""
+    if hi <= lo:
         return lo
-    return max(lo, min(hi, lo + round(max(0.0, min(2.0, breadth)) / 2.0 * (hi - lo))))
+    if legs is not None:
+        return max(lo, min(hi, legs))
+    if breadth is None or breadth < 0.5:
+        return lo
+    return min(hi, lo + 1) if breadth < 1.5 else hi
 
 
-def expand(shape: str, wave: str, breadth: float | None = None) -> list[dict]:
+def expand(shape: str, wave: str, breadth: float | None = None, legs: int | None = None) -> list[dict]:
     """Template -> mission skeletons. Bounded by workflows.json caps. Never writes missions/."""
     wf = load_workflows()
     if shape == MANUAL or shape not in wf["shapes"]:
@@ -105,7 +111,7 @@ def expand(shape: str, wave: str, breadth: float | None = None) -> list[dict]:
     out: list[dict] = []
     for leg in wf["shapes"][shape]["legs"]:
         lo, hi = leg["count"]
-        n = leg_count(lo, hi, breadth)
+        n = leg_count(lo, hi, breadth, legs)
         ids[leg["role"]] = []
         for i in range(n):
             if len(out) >= cap:
@@ -124,7 +130,7 @@ def derive_shape(missions: list[dict]) -> str:
     if len(missions) == 1:
         return "solo"
     if any(m.get("class") == "crucible" for m in missions):
-        return "build-screen-crux"
+        return "fix-crux" if len(missions) == 2 else "build-screen-crux"
     roots = [m for m in missions if not m.get("deps")]
     sinks = [m for m in missions if m.get("deps")]
     if len(sinks) == 1 and len(roots) >= 2 and set(sinks[0]["deps"]) == {m["id"] for m in roots}:
@@ -164,6 +170,7 @@ if __name__ == "__main__":
     ap.add_argument("--objective", help="choose a shape for this objective text")
     ap.add_argument("--wave", default="adhoc")
     ap.add_argument("--expand", action="store_true", help="print mission skeletons for the chosen shape")
+    ap.add_argument("--legs", type=int, help="author's count for the fan-out role (clamped to template bounds)")
     ap.add_argument("--out", help="write skeletons here (never missions/)")
     a = ap.parse_args()
     if a.shadow:
@@ -173,7 +180,7 @@ if __name__ == "__main__":
     d = choose(a.objective, a.wave)
     print(f"shape: {d['shape']}  ({d['reason']})")
     if a.expand:
-        sk = expand(d["shape"], a.wave, (d.get("jev") or {}).get("breadth"))
+        sk = expand(d["shape"], a.wave, (d.get("jev") or {}).get("breadth"), a.legs)
         txt = json.dumps(sk, indent=1)
         if a.out:
             Path(a.out).write_text(txt, encoding="utf-8")

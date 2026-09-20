@@ -104,3 +104,23 @@ def test_derive_shape_on_real_waves():
     assert js.derive_shape(wave("BP4")) == "build-screen-crux"
     assert js.derive_shape(wave("BP6")) == "solo"
     assert js.derive_shape(wave("BP7")) == "scout-synth"
+
+
+def test_fix_crux_needs_known_cause_and_one_piece():
+    """Mutation: leave fix-crux out of the cross-checks -> a referee'd single leg aimed at an
+    undiagnosed bug, or at five deliverables."""
+    assert js.decide(_a("fix-crux", 0.9, known=0.2), POLICY, SHAPES)["shape"] == "manual"
+    assert js.decide(_a("fix-crux", 0.9, known=0.9, breadth=1.7), POLICY, SHAPES)["shape"] == "manual"
+    assert js.decide(_a("fix-crux", 0.9, known=0.9, breadth=0.6), POLICY, SHAPES)["shape"] == "fix-crux"
+    sk = js.expand("fix-crux", "bp9")
+    assert [m["class"] for m in sk] == ["build", "crucible"] and sk[1]["deps"] == [sk[0]["id"]]
+
+
+def test_few_means_three_not_four_regression():
+    """Regression, 2026-09-20: the BP8 objective named THREE changes, Jev scored breadth 1.01
+    ('Few') and the old linear map produced FOUR builders. Mutation: restore the linear map."""
+    assert js.leg_count(2, 5, 1.01) == 3
+    assert js.leg_count(2, 4, 1.84) == 4           # BP7: 'Many' -> the four scouts it really had
+    assert js.leg_count(2, 5, 1.01, legs=2) == 2   # the author's count wins ...
+    assert js.leg_count(2, 5, 0.0, legs=9) == 5    # ... but never past the template's bounds
+    assert len([m for m in js.expand("build-screen-crux", "bp9", 1.01) if m["class"] == "build"]) == 3

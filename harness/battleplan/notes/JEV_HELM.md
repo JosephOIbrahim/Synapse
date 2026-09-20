@@ -35,14 +35,36 @@ bp3, bp4 -> build-screen-crux; bp6 -> solo; bp7 -> scout-synth. 4/4 against shap
 mission files. Caveat: the objectives were paraphrased after the fact by the seat that knew the
 answers. Two criteria examples leaked BP6 and BP7 and were replaced before the recorded run.
 
-Unseen objective (the H6 memory-store fix): `manual`, shape confidence 0.41. Jev split
-build-screen-crux 0.56 / solo 0.44 with cause_known 0.98 and breadth 0.92. Reading: the catalog
-has no shape for ONE fix that ships to artists. Open ruling for Joe: add a fifth template
-(`fix-crux`: one builder, then the referee, no fan-out), or keep such work `manual`.
+Unseen objective (the H6 memory-store fix, bundled with a panel safety net): `manual`, shape
+confidence 0.41. Jev split build-screen-crux 0.56 / solo 0.44 with cause_known 0.98 and breadth
+0.92. Reading: the catalog had no shape for ONE fix that ships to artists. Joe's word
+("execute this setup") -> fifth template `fix-crux` added. Re-run, still bundled: `manual` at
+0.54 (crux 0.64 / fix-crux 0.35) - Jev was right, the objective held two deliverables. Scoped to
+H6 alone: `fix-crux` @ 0.99.
+
+## BP8 - the first wave shaped by the helm (skeleton only, NOT armed)
+
+BP7-SYNTH landed (`harness/battleplan/notes/BP7_VERDICT.md`, branch bp7/synth @ 8d49e790) and
+overruled the H6-first plan: H6 is confirmed only under a Save-As rebind the symptom does not
+mention; the most likely chain is H4 -> H1 (router tier timeouts defined at router.py:124-125 but
+never passed to guarded_create at :685,893; no panel watchdog). Objective rewritten from the
+verdict's three named changes -> `build-screen-crux` @ 0.99, breadth 1.01 ("Few").
+
+    harness/jev/bp8.skeleton.json    BUILD1 watchdog (panel) · BUILD2 tier timeouts (router+handlers)
+                                     BUILD3 _adopt_scene_store (memory) · CRUX referee · TIDY mechanical
+
+Bug caught on this run: the linear breadth map turned "Few" (1.01) into FOUR builders for THREE
+named changes. leg_count() now uses level bands (One -> lo, Few -> lo+1, Many -> hi) and takes an
+explicit author count (`--legs`), clamped to the template. Jev judges breadth; it does not count.
+Regression test: test_few_means_three_not_four_regression.
+
+Before arming: Joe's 2-minute GUI repro in BP7_VERDICT.md ("Reproduce in the GUI") decides whether
+BUILD3 belongs in this wave. If the hang appears without a Save-As, H6 is not the symptom and
+BUILD3 can wait. Notes, targets and acceptance for each skeleton are still to be authored.
 
 ## Open rulings
 
-1. Fifth template `fix-crux`, per the H6 result above.
+1. ~~Fifth template `fix-crux`~~ - added 2026-09-20.
 2. `probe-only` legs carry `tier: none`, which is not a rails tier. Either rails gains a no-model
    entry or probe-only waves run outside the orchestrator.
 
@@ -52,4 +74,4 @@ has no shape for ONE fix that ships to artists. Open ruling for Joe: add a fifth
     M2  `team` field in mission_schema (max_subagents, subagent_tier); doubt rounds DOWN; tests
     M3  EDGE: recompile between legs on the SCREEN verdict, behind a flag; max 2 inserted legs
     M4  DRIFT wired to the orchestrator poll, shadow only
-    M5  first real wave on the helm: the H6 memory-store fix
+    M5  first real wave on the helm: BP8, the BP7 verdict's three fixes (skeleton ready, not armed)

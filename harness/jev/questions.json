@@ -255,6 +255,11 @@
               "not_for": "Unknown causes, several independent deliverables, or anything where a wrong result ships unreviewed to artists.",
               "examples": ["rewrite one importer script to stream instead of loading whole files", "write one design record from named sources"]
             },
+            "fix-crux": {
+              "what": "ONE known change, small enough for a single builder, that lands in product code, a contract, or anything an artist runs. One builder leg makes the change with a test that bites, then one adversarial referee leg re-verifies it. No fan-out.",
+              "not_for": "Several independent deliverables; unknown causes; harness-only or notes-only work that nobody ships.",
+              "examples": ["fix one confirmed regression in a product module and prove the test bites", "change one contract field and its single consumer"]
+            },
             "scout-synth": {
               "what": "The cause or the right approach is NOT known. Several read-only scouts each chase one hypothesis or one area in parallel, then one synth leg reads their receipts and names the cause and the smallest fix. Scouts fix nothing.",
               "not_for": "Work where the change to make is already named; building or shipping anything.",

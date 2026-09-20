@@ -12,6 +12,13 @@
         {"role": "BUILD", "band": "BUILD", "class": "build", "tier": "auto", "readonly": false, "count": [1, 1], "deps_on": []}
       ]
     },
+    "fix-crux": {
+      "why": "ONE known fix that ships to artists; one builder leg, then the referee, no fan-out and no tidy (added 2026-09-20 after the H6 objective returned manual, split crux 0.56 / solo 0.44)",
+      "legs": [
+        {"role": "FIX", "band": "BUILD", "class": "build", "tier": "auto", "readonly": false, "count": [1, 1], "deps_on": []},
+        {"role": "CRUX", "band": "TRUST", "class": "crucible", "tier": "referee", "readonly": true, "count": [1, 1], "deps_on": ["FIX"]}
+      ]
+    },
     "scout-synth": {
       "why": "cause unknown; N read-only scouts in parallel, one synth leg that reads their receipts (BP7's shape)",
       "legs": [
