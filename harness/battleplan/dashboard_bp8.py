@@ -164,8 +164,18 @@ def render():
     tot = (led or {}).get("totals", {})
     turns = f"{tot.get('turns', UNKNOWN)} / {cap.get('turns', UNKNOWN)}"
     tin, tout = tot.get("tokens_in", UNKNOWN), tot.get("tokens_out", UNKNOWN)
-    tok = UNKNOWN if UNKNOWN in (tin, tout) else f"{(tin + tout) / 1e6:.1f}M"
-    tok_pct = 0 if tok == UNKNOWN or not cap.get("tokens") else min(100, round((tin + tout) / cap["tokens"] * 100))
+    # The rails total stays UNKNOWN while ANY dispatched leg is unmeasured (correct: no estimates).
+    # The per-leg numbers that ARE measured can still be summed, as long as it is labelled partial.
+    rl = (led or {}).get("legs", [])
+    settled = [l for l in rl if isinstance(l.get("tokens_in"), int) and isinstance(l.get("tokens_out"), int)]
+    measured = sum(l["tokens_in"] + l["tokens_out"] for l in settled)
+    if UNKNOWN not in (tin, tout):
+        tok, measured = f"{(tin + tout) / 1e6:.1f}M", tin + tout
+    elif settled:
+        tok = f"{measured / 1e6:.1f}M so far ({len(settled)} of {len(rl)} dispatched legs measured)"
+    else:
+        tok = UNKNOWN
+    tok_pct = 0 if not measured or not cap.get("tokens") else min(100, round(measured / cap["tokens"] * 100))
     headline = f"{done} of {n} legs done, {running} running. Budget: {turns} dispatches, {tok} of {cap.get('tokens', 0) / 1e6:.0f}M tokens measured."
     text = f"[{datetime.now():%H:%M:%S}] BP8  " + "  ".join(f"{l['id'].split('-')[1]}:{l['state']}" for l in legs) + f"  | turns {turns} | tokens {tok} | orch {'alive' if alive else 'DOWN'}"
 
