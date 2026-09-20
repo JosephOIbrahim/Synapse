@@ -19,6 +19,7 @@ are methods that never touch ``self`` (module-level hou / run_on_main only), so
 each is invoked unbound with a throwaway ``self``.
 """
 
+import re
 import sys
 import types
 from pathlib import Path
@@ -338,6 +339,12 @@ def test_claude_md_section1_records_wrapped_state():
     text = _repo_file("CLAUDE.md").read_text(encoding="utf-8")
 
     assert "is UNWRAPPED still" not in text, "stale one-hole set_parm claim survives"
-    assert "synced by W5-UNDOB" in text
-    assert "_handle_set_parm" in text
-    assert "_handle_set_keyframe" in text
+    # 2026-09-20 (v5.76.1): the 2026-09-18 doc rewrite ("the three places the
+    # instructions contradicted the code", 5646271d) restated this paragraph in
+    # prose. The FACTS are pinned, not the old phrasing: both handlers named as
+    # wrapped, and the W5-UNDOB lineage cited.
+    assert "W5-UNDOB" in text, "W5-UNDOB lineage no longer cited in CLAUDE.md"
+    assert "`set_parm`" in text and "`set_keyframe`" in text, "wrapped handlers no longer named"
+    assert re.search(r"`set_parm` and `set_keyframe` wrap in `hou\.undos\.group`", text), (
+        "CLAUDE.md no longer records set_parm + set_keyframe as undo-wrapped"
+    )

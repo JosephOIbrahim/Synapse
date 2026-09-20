@@ -1,0 +1,19 @@
+release: v5.76.1 -- the harness learns to judge before it spends
+
+Supersedes v5.76.0, whose tag landed on a red commit and was refused by the
+release gate. Two fixes on top of it:
+
+- README release-tag line and notes link now follow VERSION (sync_version.py
+  does not touch them; ritual gap recorded). Download links stay on the 5.75.2
+  installer - no product change in this release.
+- tests/test_undob_live_undo_grouping.py pins the FACTS (set_parm + set_keyframe
+  wrapped, W5-UNDOB lineage) instead of a phrase the 2026-09-18 CLAUDE.md
+  rewrite (5646271d) restated in prose. That failure predates this release.
+
+Verified: full non-Houdini suite locally, the CI command verbatim:
+9529 passed, 416 skipped, 5 xfailed, 0 failed (harness/notes/release-5.76.1/pytest-full.log).
+
+Release notes: docs/releases/v5.76.1.md
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01LLWUfx2NN6fEWYad7yj4hJ
