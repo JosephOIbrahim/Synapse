@@ -1,0 +1,30 @@
+{
+  "leg": "BP7-TRANSPORT",
+  "status": "green",
+  "product_head_sha": "8f2e4cba6c5dd260c2710338eb8c5d2a54cab96c",
+  "acceptance": [
+    {
+      "predicate": "note exists with a VERDICT header and all four sections",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/bp7_scout_H2.md — VERDICT: CONFIRMED header present; Mechanism (2 sentences), Evidence (file:line + verbatim snippets), Reproduction (exact GUI steps < 2 min), Smallest fix shape (one paragraph) all present."
+    },
+    {
+      "predicate": "every cited file:line exists and contains the quoted snippet",
+      "verdict": "pass",
+      "evidence": "ws_bridge.py:210-212 ✓ (connected property), ws_bridge.py:254 ✓ (self._ws = ws), ws_bridge.py:253 ✓ (with block), send_guard.py:120-123 ✓ (bridge_connected guard), chat_panel.py:884 ✓ (append_system_message)"
+    },
+    {
+      "predicate": "bus finding posted with the verdict",
+      "verdict": "pass",
+      "evidence": "posted via bus.py post bp7 BP7-TRANSPORT finding"
+    }
+  ],
+  "findings": [
+    {
+      "claim": "H2 CONFIRMED: socket closes after first reply but connected property never reflects it; send attempts fail silently with no BRIDGE_DOWN_LINE shown to artist",
+      "anchor": "harness/battleplan/notes/bp7_scout_H2.md"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": []
+}
