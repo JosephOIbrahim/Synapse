@@ -220,11 +220,13 @@ class FaceReview(QtWidgets.QWidget):
         self._hero = RenderHero()
         col.addWidget(self._hero)
 
-        # — taut benefit verdict (comp .verdict: 21px/500, ~360px measure) —
+        # — taut benefit verdict (comp .verdict: SIZE_HERO/500, ~360px measure) —
         self._verdict = c.label("", role="title")
         self._verdict.setWordWrap(True)
         qss.sweep_a_style(self._verdict, "review_verdict")
-        self._verdict.setFont(fontload.tracked_font("DISPLAY", 21, weight=500))
+        # PNL-L4: 21 was a fifth rung invented at the call site. The verdict
+        # IS the display rung, so it names it: t.SIZE_HERO (19).
+        self._verdict.setFont(fontload.tracked_font("DISPLAY", t.SIZE_HERO, weight=500))
         self._verdict.setMaximumWidth(360)
         col.addWidget(self._verdict, 0, Qt.AlignmentFlag.AlignLeft)
 
@@ -323,7 +325,7 @@ class FaceReview(QtWidgets.QWidget):
         acts = QtWidgets.QHBoxLayout(acts_wrap)
         acts_wrap.setProperty("rhythm_role", "group")  # QSS padding can't move children
 
-        _acts_font = fontload.tracked_font("LABEL_SM", 11, mono=True)
+        _acts_font = fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, mono=True)  # PNL-L4
         for verb in (
             _verb("ACCEPT", lambda _=False: self.accepted.emit(), tone="ok"),
             _verb("↶ REVERT", lambda _=False: self.reverted.emit()),
@@ -365,9 +367,9 @@ class FaceReview(QtWidgets.QWidget):
         self._rebuild_credit()
 
     def _credit_key(self, label):
-        """Col-0 key: 11px mono LABEL_SM, tertiary, pre-uppercased."""
+        """Col-0 key: SIZE_SMALL mono LABEL_SM, tertiary, pre-uppercased."""
         key = QtWidgets.QLabel(str(label).upper())
-        key.setFont(fontload.tracked_font("LABEL_SM", 11, mono=True))
+        key.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, mono=True))  # PNL-L4
         qss.sweep_a_style(key, "review_key")
         key.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         return key
@@ -377,7 +379,7 @@ class FaceReview(QtWidgets.QWidget):
         row = QtWidgets.QLabel()
         row.setTextFormat(Qt.TextFormat.RichText)
         row.setWordWrap(True)
-        row.setFont(fontload.tracked_font("DATA", 11, mono=True))
+        row.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))  # PNL-L4
         row.setText(
             '<span style="color:%s;">%s</span>'
             '<span style="color:%s;">%s</span>' % (

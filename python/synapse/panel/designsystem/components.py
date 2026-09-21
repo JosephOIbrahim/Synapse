@@ -64,6 +64,18 @@ def apply_font_role(w, role="body", scale=1.0):
             f.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, tracking)
         except Exception:
             pass
+    # PNL-L4 (ruling R3-B): a role in tokens.ROLE_CAPS is quiet by CASE, not by
+    # size. Set on the QFont rather than by rewriting the string so the widget's
+    # text() still returns what the caller passed — every test and tooltip that
+    # reads it back keeps working, and nothing double-uppercases.
+    if role in getattr(t, "ROLE_CAPS", ()):
+        try:
+            f.setCapitalization(QtGui.QFont.Capitalization.AllUppercase)  # Qt6
+        except Exception:
+            try:
+                f.setCapitalization(QtGui.QFont.AllUppercase)             # Qt5
+            except Exception:
+                pass
     w.setFont(f)
     return w
 
@@ -378,3 +390,24 @@ def divider(parent=None):
     line.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
     line.setStyleSheet(f"background:{t.BORDER};")  # token, not a raw literal
     return line
+
+
+def apply_stylesheet(widget, scale: float = t.FONT_SCALE_DEFAULT) -> None:
+    """Put the generated sheet on a widget, from inside the design system.
+
+    PNL-L5 (2026-09-21). tests/test_panel_rhythm_owner.py counts every raw
+    setStyleSheet / setContentsMargins under python/synapse/panel as a RHYTHM
+    OWNER, excludes designsystem/ because that is where ownership is meant to
+    live, and caps the residual with a ratchet whose own policy reads "ceilings
+    may only decrease". A probe that applied the sheet itself added an owner,
+    and neither answer available to it was honest: tagging spends the residual,
+    and raising the cap is the one move the policy forbids. Applying through the
+    design system is the move the ratchet exists to encourage.
+
+    It lives here rather than in qss.py because qss.py's generator is pinned
+    byte-for-byte and its file must end on its own marker; components.py is
+    already where the apply_* helpers live.
+    """
+    from synapse.panel.designsystem import qss
+    widget.setStyleSheet(qss.stylesheet(scale))
+

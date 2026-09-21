@@ -21,12 +21,17 @@ def test_body_size_is_houdini_native():
 
 
 def test_type_scale_monotonic_and_distinct():
-    # Pin carried for CRIT.md 2026-09-15 ranked change 1: SIZE_MICRO (10) is
-    # deleted and the ramp is 11/12/15/19. The assertions below are UNCHANGED --
-    # still monotonic, still >= 4 distinct steps (11/12/15/19 = exactly 4).
+    # AMENDED BY DECLARATION -- PNL-L4, ruling R3-A (2026-09-21). The floor was
+    # >= 4 for the 11/12/15/19 ramp. R3-A folds SIZE_SMALL into SIZE_BODY: an
+    # 11-vs-12 step is a rung no eye can read, so it was never hierarchy, and
+    # counting it as one is what let a four-rung claim describe a three-rung
+    # scale. The ramp is now 12 / 15 / 19 and the floor moves to >= 3. The
+    # monotonic pin is UNCHANGED, and the <= 5 ceiling in
+    # tests/test_panel_typography.py::test_type_scale_is_at_most_five_sizes is
+    # untouched -- this leg lowers the floor, it does not raise the ceiling.
     sizes = [t.SIZE_SMALL, t.SIZE_UI, t.SIZE_BODY, t.SIZE_TITLE, t.SIZE_HERO]
     assert sizes == sorted(sizes), "type sizes must be non-decreasing"
-    assert len(set(sizes)) >= 4, "need a real hierarchy (>=4 distinct steps)"
+    assert len(set(sizes)) >= 3, "need a real hierarchy (>=3 distinct steps, R3-A)"
 
 
 def test_default_scale_at_least_native():

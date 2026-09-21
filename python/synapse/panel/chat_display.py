@@ -203,7 +203,13 @@ class ChatDisplay(QtWidgets.QTextBrowser):
                 first = False
             role = bf.property(QtGui.QTextFormat.UserProperty)
             if role in ("group", "row"):
-                bf.setTopMargin(t.gap(rhythm.ROLE_GAPS[role], density))
+                # PNL-L5 (R3-E): the transcript reads its OWN rhythm names.
+                # "group"/"row" are shared with six other surfaces (cards,
+                # parameter rows, the rail); a transcript tune must not move
+                # them. Same pixels as before - turn = 24, turn_same = 8.
+                bf.setTopMargin(t.gap(
+                    rhythm.ROLE_GAPS["turn_same"] if role == "row"
+                    else rhythm.ROLE_GAPS["turn"], density))
                 cursor.setBlockFormat(bf)
             # The formatter already produces speaker labels. Only their block
             # receives label typography; off-main rendering stays Qt-free.
@@ -216,9 +222,18 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             # charFormat, so there is nothing for this pass to paint.
             if bf.property(QtGui.QTextFormat.UserProperty + 1) in ("SYNAPSE", "YOU"):
                 cursor.select(QtGui.QTextCursor.BlockUnderCursor)
-                font = fontload.tracked_font("LABEL", t.SIZE_BODY,
-                                             scale=self._font_scale, mono=True,
+                # PNL-L5 (R3-D): sans 500, ALL CAPS, LABEL_SM tracking. This
+                # asked MONO for weight 500 — Space Mono ships Regular and
+                # Bold only, so Qt had to synthesise or ignore the Medium and
+                # the row never drew the weight it declared. The bundled sans
+                # has a real 500. Tracking lives here, in the ONE tracked
+                # font, so the formatter's inline tracking could go.
+                font = fontload.tracked_font("LABEL_SM", t.SIZE_SMALL,
+                                             scale=self._font_scale, mono=False,
                                              weight=t.WEIGHT_MEDIUM)
+                # Same idiom rhythm._apply_type uses: the enum off the
+                # instance's own class, so PySide2 seats resolve it too.
+                font.setCapitalization(type(font).AllUppercase)
                 fmt = QtGui.QTextCharFormat()
                 fmt.setFont(font)
                 cursor.mergeCharFormat(fmt)
@@ -295,13 +310,24 @@ class ChatDisplay(QtWidgets.QTextBrowser):
     #     empty and read as a bug rather than a decision
     #
     # Measured from the live font, clamped, so it holds at every Aa step.
-    _MEASURE_CHARS = 90          # upper end of the comfortable band
+    # PNL-L5 (R3-D): 66, the middle of the 45-75 band typography has measured
+    # for prose, not 90 — 90 was the band's upper EDGE and it read as a wall in
+    # a wide dock. The clamp either side is unchanged. Verified by rendering,
+    # not by this arithmetic: panel/scripts/probe_measure.py lays out a real
+    # paragraph at 340 and 1100 px, at Aa 1.0 and 1.6, and fails outside 45-75.
+    # The prose the advance is measured against. English letter frequency matters: a
+    # sample of capitals or symbols measures a font nobody reads. This is ordinary
+    # lowercase prose with its spaces, which is what the transcript mostly is.
+    _MEASURE_SAMPLE = ("the artist asked for a wider dock and the transcript held its "
+                       "measure so the line did not run on past where the eye returns")
+
+    _MEASURE_CHARS = 66          # middle of the comfortable band
     _MEASURE_MIN_PX = 460        # never narrower than the old rule
     _MEASURE_MAX_PX = 1100       # never a full-bleed wall of text
 
     def _reading_measure(self):
-        """The document width that keeps ~90 characters per line at the CURRENT
-        text size.
+        """The document width that keeps ~66 characters per line at the CURRENT
+        text size (PNL-L5; it was 90, the band's upper edge).
 
         The size is NOT on ``self.font()``. It is applied through the stylesheet
         built from ``self._font_scale`` (line 78), and a Qt stylesheet overrides
@@ -322,7 +348,18 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             from PySide6.QtGui import QFont, QFontMetricsF
             f = QFont(self.font())
             f.setPixelSize(int(px))
-            adv = QFontMetricsF(f).averageCharWidth()
+            fm = QFontMetricsF(f)
+            # NOT averageCharWidth(). That averages the WHOLE glyph set, capitals and
+            # symbols prose barely uses included, so it overstates the advance of real
+            # text and the column ends up holding far more than _MEASURE_CHARS. Caught
+            # on the integrated tree, where PNL-L6's type scale moved the metrics:
+            # averageCharWidth produced a 630px column that rendered 75.2 characters per
+            # line -- outside the very band this constant exists to hold. Measuring a
+            # prose sample and dividing gives the advance a reader actually gets, so the
+            # ruled 66 stays ruled instead of being quietly retuned.
+            adv = fm.horizontalAdvance(self._MEASURE_SAMPLE) / len(self._MEASURE_SAMPLE)
+            if not adv or adv <= 0:
+                adv = fm.averageCharWidth()
         except Exception:
             pass
         if not adv or adv <= 0:
@@ -339,8 +376,8 @@ class ChatDisplay(QtWidgets.QTextBrowser):
 
         The fix is the one every reading surface uses: keep the measure, centre
         the column, and let the leftover become symmetric margin. Widening the
-        column instead would trade legibility for coverage, and ~90 characters
-        is already the upper end of the comfortable band.
+        column instead would trade legibility for coverage: ~66 characters sits
+        mid-band, and 75 is where tracking a line starts to cost the reader.
 
         Best-effort: if the cap ever fights QTextBrowser's relayout, the
         fallback is dropping it (long lines, no breakage)."""
@@ -729,8 +766,12 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         dots = "." * (self._typing_phase + 1)
         html_str = (
             '<div style="margin:{my}px 0; padding:{py}px {px}px;">'
-            '<span style="color:{who}; font-family:{mono}; '
-            'font-size:{sz}px; letter-spacing:1px; font-weight:{weight};">'
+            # PNL-L5 (R3-D): the indicator's SYNAPSE speaks in the speaker
+            # row's voice — sans, no inline tracking. Tracking has one owner
+            # now (the tracked font in _apply_turn_rhythm); an inline 1px on
+            # top of it double-tracked the word.
+            '<span style="color:{who}; font-family:{sans}; '
+            'font-size:{sz}px; font-weight:{weight};">'
             'SYNAPSE</span> '
             '<span style="color:{dim}; font-style:italic; '
             'font-size:{sz}px;">is thinking'
@@ -743,7 +784,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             dots=dots,
             my=_BUBBLE_MARGIN_Y,
             py=t.SPACE_12 // 2, px=t.SPACE_SM + t.SPACE_XS // 2,
-            mono=t.FONT_MONO_CSS, weight=t.WEIGHT_SEMIBOLD,
+            sans=t.FONT_SANS_CSS, weight=t.WEIGHT_MEDIUM,
         )
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)

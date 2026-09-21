@@ -1140,8 +1140,10 @@ class SynapsePanel(QtWidgets.QWidget):
         # byte-for-byte; no rhythm_role="label" on top of it.
         for control in (self._doctor_btn, self._connect_btn, self._corpus_btn, self._help_btn, overflow):
             control.setObjectName("DsVerb")
-            control.setFont(fontload.tracked_font(
-                "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+            # PNL-L4 (ruling R2-A1): quiet by FORM. This read as words in a
+            # typewriter face; mono is for data the eye aligns character by
+            # character, and a verb is not that. Sans at the label rung.
+            c.apply_font_role(control, "label", self._chrome_scale)
         # Match the host's chrome scale so the bolt and its click target
         # stay readable alongside Houdini's enlarged text.
         overflow.setFixedWidth(max(t.SPACE_32, t.scaled(t.SPACE_32, self._chrome_scale)))
@@ -1335,8 +1337,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # "direct"/"work" - the invariants key on those, not the label.
         self._face_pills = {}
         pill = c.Pill("CHAT")
-        pill.setFont(fontload.tracked_font(
-            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        # PNL-L4 (ruling R2-A1): a pill reading a WORD takes the sans label
+        # role; mono stays with the data read-outs (author, meter, khint).
+        c.apply_font_role(pill, "label", self._chrome_scale)
         pill.clicked.connect(lambda _=False: self._set_face("direct"))
         self._face_pills["direct"] = pill      # the idle default marks it active
         lay.addWidget(pill)
@@ -1345,8 +1348,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # a click; token economics is DIAGNOSTIC, and a thing you go looking
         # for is what a tab is for.
         tok = c.Pill("TOKEN")
-        tok.setFont(fontload.tracked_font(
-            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        c.apply_font_role(tok, "label", self._chrome_scale)   # PNL-L4: sans, as CHAT
         tok.clicked.connect(lambda _=False: self._show_token_face())
         self._face_pills["token"] = tok
         lay.addWidget(tok)
@@ -2491,8 +2493,10 @@ class SynapsePanel(QtWidgets.QWidget):
         # One type applier per widget (RULING-4c): no rhythm_role="label" here.
         # L5-17: verbs carry the tab pills' tracking (same LABEL role, mono)
         # so they read as chrome siblings of CHAT/TOKEN, not body text.
-        btn.setFont(fontload.tracked_font(
-            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        # PNL-L4 (ruling R2-A1): verbs are words (Commands, Render, Doctor), so
+        # they follow CHAT/TOKEN onto sans at the label rung. Still one applier
+        # per widget, still the same LABEL tracking - only the face changes.
+        c.apply_font_role(btn, "label", self._chrome_scale)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         btn.setFlat(True)
         if tone:
@@ -2603,7 +2607,28 @@ class SynapsePanel(QtWidgets.QWidget):
             t.scaled(t.SPACE_XS, self._chrome_scale))
         for button in (self._commands_btn, self._render_btn, self._recipes_btn, self._events_btn):
             button.setObjectName("DsFooterLink")
-            c.apply_font_role(button, "caption", scale=self._chrome_scale)
+            # PNL-L4 (ruling R2-A1): these four read as WORDS (Commands,
+            # Render, Recipes, Events), so they take the sans LABEL role with
+            # the pills and the verbs. `caption` is the metadata voice; a
+            # button is not metadata, and on the new 12px caption its wider
+            # LABEL_SM tracking pushed this strip onto the second row the
+            # comment above was written to prevent.
+            c.apply_font_role(button, "label", scale=self._chrome_scale)
+            # ...with its tracking taken back OFF, and the number is why.
+            # Widest live state, measured on this branch at 340x760 offscreen:
+            # Commands 67 + Render 45 + Saved networks 99 + Updates (1) 74 =
+            # 285 against a 280px strip. That is over budget before a single
+            # gap is drawn, so _row_gap cannot rescue it and the strip takes a
+            # second row - the exact 36px the comment above was written to
+            # prevent. The label role's 0.5px is display air; on a strip that
+            # is already width-bound it buys nothing and costs a row (39
+            # tracked gaps = the 20px that puts 285 over the line).
+            _f = button.font()
+            try:
+                _f.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 0.0)
+            except Exception:
+                pass
+            button.setFont(_f)
             button.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
             footer.addWidget(button)
         return footer

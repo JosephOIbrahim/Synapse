@@ -1,10 +1,6 @@
 {
- "_why": "Panel seat-suite tests failing at this commit under hython offscreen, measured on THIS tree with a key present. Refuse anything new; delete a row in the commit that fixes it.",
+ "_why": "Panel seat-suite tests failing at this commit under hython offscreen, measured on THIS tree with a key present. Refuse anything new; delete a row in the commit that fixes it. PNL-L4 (2026-09-21) deleted tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks: it now passes. It was expected to fall to PNL-L7 and fell earlier, to this leg. Reproduced both ways, that test alone under hython offscreen -- upstream (worktree-wf_27091aaa-db8-1) RED with ('curious', [0, 2, 13, 14]) against a limit of 3 buckets, this branch GREEN. The guard grabs the composed face and buckets every chromatic pixel, so it reads ANTI-ALIASED GLYPH pixels too; bucket 2 was fringe off the curious profile's chrome. Moving the pills, verbs and header controls off mono onto the sans label role changed those sub-pixel fringes and the extra bucket went with them. Honest reading: the row is green, and the hue it was really guarding (the Doctor yellow, R2-B1) is still PNL-L7's to remove.",
  "failures": [
-  {
-   "check": "tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks",
-   "owner": "PNL-L7 (R2-B1 drops the Doctor yellow; the hue-bucket guard goes green with it)"
-  },
   {
    "check": "tests/panel/test_bc_wave.py::test_profile_row_retired",
    "owner": "unassigned"

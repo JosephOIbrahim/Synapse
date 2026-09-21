@@ -395,7 +395,8 @@ def _speaker_label(who, timestamp, font_scale):
     QTextDocument's HTML subset drops background-colour and border-radius on
     inline spans, so a coloured bullet is the shape that actually survives.
 
-    Rendered as chrome, not content: mono, small, letterspaced — so it reads
+    Rendered as chrome, not content: small, and tracked ALL CAPS sans by the
+    display's one tracked font (PNL-L5 — not inline here) — so it reads
     as a label and never competes with what was said. Callers pass "" for a
     grouped message, which is what makes it Slack rather than a chat log.
     """
@@ -409,9 +410,15 @@ def _speaker_label(who, timestamp, font_scale):
     colour = _speaker_colour(who)
     dot = ('<span style="color:{c}; font-size:{s}px;">&#9679;</span>&#160;&#160;'
            .format(c=colour, s=sz))
-    return ('<div style="font-family:{m}; font-size:{s}px; letter-spacing:1.2px; '
+    # PNL-L5 (R3-D): no family and no inline tracking here. The label's
+    # typography has ONE owner — the tracked sans/500/caps font ChatDisplay
+    # merges onto this block (_apply_turn_rhythm). Declaring mono + 1.2px
+    # inline meant two owners disagreeing: the display's font won on the
+    # widget, the inline pair won anywhere else the HTML was rendered.
+    # Colour and size stay here (J3: the formatter is the colour owner).
+    return ('<div style="font-size:{s}px; '
             'color:{c}; margin-bottom:3px;">{dot}{who}{ts}</div>').format(
-        m=_MONO, s=sz, c=colour, dot=dot, who=html.escape(who), ts=ts)
+        s=sz, c=colour, dot=dot, who=html.escape(who), ts=ts)
 
 
 def _speaker_colour(who):
@@ -466,7 +473,10 @@ def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.
     note = ""
     if signed and not grouped and not chip_signed:
         note = (
-            '<div style="color:{dim}; font-size:{sz}px; letter-spacing:1px; '
+            # PNL-L5: inline tracking left the file with the speaker row's.
+            # This note is quiet body-voice chrome; it never needed a second
+            # tracking owner of its own.
+            '<div style="color:{dim}; font-size:{sz}px; '
             'margin-top:2px;">signed {who}</div>'
         ).format(dim=_TEXT_DIM, sz=_scale(_SMALL_PX, font_scale),
                  who=html.escape(str(signed)))

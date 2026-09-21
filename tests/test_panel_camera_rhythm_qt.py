@@ -191,7 +191,15 @@ def probe(density):
             first = first.next()
         assert first.isValid()
         assert first.blockFormat().lineHeight() == t.chat_leading_px()
-        assert first.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["group"], density)
+        # Amended by declaration, PNL-L5 (2026-09-21). The transcript now reads its OWN
+        # rhythm names instead of borrowing the shared "group" key: chat_display sets
+        # ROLE_GAPS["turn_same"] between messages from one speaker and ROLE_GAPS["turn"]
+        # between turns. The shared keys were deliberately left untouched so cards,
+        # parameter rows and the rail did not move with the transcript. The first block
+        # starts a turn, so "turn" is the key this assertion belongs to. Caught by the
+        # composed gate, not by the leg: a leg runs only the tests its acceptance names,
+        # and this pin lives in a file the leg never touched.
+        assert first.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["turn"], density)
         label_cursor = QtGui.QTextCursor(first)
         label_cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
         # J3 (RULING_JOE_FIVE, 2026-09-05): the SYNAPSE label is CONIFEROUS, not
@@ -202,7 +210,10 @@ def probe(density):
         grouped = chat.document().find("YOUR shader")
         assert not grouped.isNull()
         assert not grouped.blockFormat().property(QtGui.QTextFormat.UserProperty + 1)
-        assert grouped.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["row"], density)
+        # Amended by declaration, PNL-L5 (2026-09-21), same change as the block above:
+        # a grouped message continues one speaker's turn, so it takes the transcript's
+        # own "turn_same" key rather than the shared "row" key it used to borrow.
+        assert grouped.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["turn_same"], density)
         # J3 twin: the artist's label is SIGNAL (the accent already means "the
         # artist"); searched from the end so "YOUR shader" above is never it.
         you_start = chat.document().characterCount() - 1
@@ -218,7 +229,10 @@ def probe(density):
         for target in ("tight", "airy", density):
             panel._recompose({"airy": "curious", "standard": "expert", "tight": "ml"}[target])
             assert chat.toPlainText() == content
-            assert first.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["group"], target)
+            # Amended by declaration, PNL-L5 (2026-09-21): the density re-apply path reads
+        # the same transcript key as the first block above, "turn", not the shared
+        # "group". Same one change, third site.
+        assert first.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["turn"], target)
         chat.font_scale = 1.5
         chat.begin_stream()
         chat.stream_chunk("live words")
