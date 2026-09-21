@@ -216,8 +216,15 @@ QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
 QPushButton#DsVerb[prominence="hero"]  {{ color: {t.WARM}; }}
 QPushButton#DsVerb[prominence="hero"]:hover {{ color: {t.WARM_HOVER}; }}
 QPushButton#DsVerb[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
-QPushButton#DsVerb[tone="doctor"] {{ color: {t.HOUDINI_TAB_YELLOW}; }}
-QPushButton#DsVerb[tone="doctor"]:hover {{ color: {t.HOUDINI_TAB_YELLOW_HOVER}; }}
+/* PNL-L7 (ruling R2-B1): the Doctor verb's two HOUDINI_TAB_YELLOW rows are
+   gone. Doctor is an action, so it takes the shipped action family with every
+   other verb -- TEXT_SECONDARY at rest, TEXT_ACCENT (SIGNAL) on hover, from the
+   base #DsVerb rules above. No new tint was added and no existing accent tint
+   was unified (the cyan/blue three-source token trap stays untouched); the
+   yellow simply left the action family, which is what "one family, SIGNAL,
+   any count" already said. HOUDINI_TAB_YELLOW itself stays defined in tokens
+   -- it is the Houdini tab chrome sample, not a status colour, and no status
+   yellow anywhere else is touched by this leg. */
 
 /* Quiet, centered local navigation uses Ready's caption family and weight. */
 QPushButton#DsFooterLink {{
