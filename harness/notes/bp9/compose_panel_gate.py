@@ -138,7 +138,12 @@ def plan(res: dict) -> list[tuple[str, str, str]]:
 # branch and are merged FIRST, before any leaf. They are an ancestor of every leaf, so this only
 # ever adds instrument commits made after the leaves branched -- and it guarantees the gate that
 # judges the integration is the current one, not whatever version a leaf happened to inherit.
-INSTRUMENT_BRANCH = "pnl/gate-fix"
+# pnl/release-prep carries the rulings record, the Jev routing ledgers, the design spec and the
+# one test repair the record forced (tests/test_ingest_rulings.py seeds from the REAL
+# resolved.json, so ruling on A1 for real reddened it). Merged with the instruments so the
+# stock-suite row actually exercises the record + the repair together, rather than meeting
+# them for the first time in CI after the tag is cut.
+INSTRUMENT_BRANCHES = ["pnl/gate-fix", "pnl/release-prep"]
 
 RATCHET_BASELINES = {"harness/notes/bp9/audit_baseline.json", "harness/notes/bp9/seat_baseline.json"}
 
@@ -181,7 +186,8 @@ def merge(leaves) -> int:
     if r.returncode:
         print(r.stdout, r.stderr)
         return 1
-    for leg, branch, verdict in [("instruments", INSTRUMENT_BRANCH, "gate")] + list(leaves):
+    pre = [("instruments", b, "gate") for b in INSTRUMENT_BRANCHES]
+    for leg, branch, verdict in pre + list(leaves):
         m = sh(["git", "merge", "--no-edit", "--no-ff", branch, "-m", f"merge(pnl): {leg} {branch} [{verdict}]"], cwd=INT_DIR)
         if m.returncode:
             conflicts = sh(["git", "diff", "--name-only", "--diff-filter=U"], cwd=INT_DIR).stdout.split()
