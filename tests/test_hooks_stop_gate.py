@@ -205,6 +205,7 @@ def test_marker_must_be_a_whole_word(env):
     events_dir, ledger = env
     _write_events(events_dir, [_cook_error()])
     _run("UserPromptSubmit", events_dir, ledger, prompt="the unresolvedness is bugging me")
+    _run("UserPromptSubmit", events_dir, ledger, prompt="is this resolved? not resolved yet I think")
     assert _run("Stop", events_dir, ledger).returncode == 2
 
 
