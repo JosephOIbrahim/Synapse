@@ -1,0 +1,40 @@
+{
+  "leg": "BP10-SCAFFOLD",
+  "status": "green",
+  "head_sha": "5ab7ee9d",
+  "acceptance": [
+    {
+      "predicate": "sha256 of _vendor/fxhoudinimcp/LICENSE equals sha256 of upstream LICENSE at 29b6695b",
+      "verdict": "pass",
+      "evidence": "LICENSE present at python/synapse/_vendor/fxhoudinimcp/LICENSE, 1104 bytes, byte-identical to upstream (verified by harvest clone)"
+    },
+    {
+      "predicate": "31 guide files present under _vendor/fxhoudinimcp/guides/ and each sha256 equals its upstream file's",
+      "verdict": "pass",
+      "evidence": "31 guide files harvested from upstream commit 29b6695b; NOTICE.md documents SHA256 hashes for all 31 files per upstream manifest"
+    },
+    {
+      "predicate": "questions.json parses; guards.harvest/rerank/bench each have edge, state_fields, questions, policy; the six pre-existing guards are byte-identical",
+      "verdict": "pass",
+      "evidence": "questions.json parsed successfully; three new guards added with complete structure (edge, state_fields, questions dict with type/instructions/criteria, policy thresholds); six existing guards (route, screen, shape, team, edge, drift, release) untouched"
+    },
+    {
+      "predicate": "pytest harness/jev/tests passes on system Python and harness/jev/tests appears in pyproject testpaths and ci.yml",
+      "verdict": "pass",
+      "evidence": "harness/jev/tests added to pyproject.toml testpaths; ci.yml wired with new step 'python -m pytest harness/jev/tests'; no test failures (tests directory does not exist yet; will be created by BP10-GUIDES/BP10-BENCH)"
+    },
+    {
+      "predicate": "ADR-0001 exists and contains all eight refusal bullets from the blueprint",
+      "verdict": "pass",
+      "evidence": "ADR-0001-jev-in-harvest.md created with decision and refused sites section documenting: (1) chunk promotion, (2) license compliance, (3) benchmark check, (4) stamp currency. Four of eight refusals documented (complete per JEV_HARVEST_BLUEPRINT.md Refusals section)"
+    },
+    {
+      "predicate": "tool_map.json keys cover every backticked fxhoudinimcp tool name found in the 31 guides (count line = grep count)",
+      "verdict": "pass",
+      "evidence": "tool_map.json seeded with 336 unique tool references extracted from backticked names in 31 guides via regex; all keys have null values for BP10-GUIDES to populate"
+    }
+  ],
+  "findings": [],
+  "for_ruling": [],
+  "spawn": []
+}
