@@ -55,7 +55,18 @@ all-skipped pytest run counts as a FAIL, not a pass. Logs land in `harness/notes
 
 ## 3. Master
 
+    python harness/notes/release-5.79.0/preflight_ff.py           # report
+    python harness/notes/release-5.79.0/preflight_ff.py --clear   # then clear
     git merge --ff-only pnl/integration        # fast-forward only; a non-ff means re-integrate
+
+**Why the pre-flight.** Several files started as untracked working copies in the main tree
+and were later committed on a branch: the panel spec, the composed gate, the mission file,
+this directory. Git refuses the fast-forward over an untracked file it would overwrite. The
+pre-flight removes one **only** when it is byte-identical to the integration's version, and
+exits non-zero on any difference -- a difference means the main-tree copy carries an edit the
+branch never received, and deleting it would silently drop that edit. `compose_panel_gate.py`
+is exactly that case: it is edited here and hand-synced to `pnl/gate-fix`. Re-run the
+pre-flight after the FINAL `--merge`, not before; each rebuild can add new collisions.
 
 ## 4. Version and documents
 
