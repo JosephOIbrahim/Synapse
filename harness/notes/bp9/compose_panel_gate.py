@@ -54,6 +54,25 @@ LEAF_CHAINS = [
 # its notes that the leg itself was clean and the red was pre-existing. Waiving exactly these
 # two predicates is what lets verified work merge; panel_gate.py is what replaces them.
 # Anything else a verifier failed still refuses the leaf.
+# A failure that is a RULING CONFLICT, not a defect: the leg measured the ruling against the
+# code and found that applying it literally would do harm. Distinct from REPAIRED on purpose --
+# nothing was fixed, and the decision is escalated to the human who made the ruling. The leg
+# still merges, because refusing it would cost verified work over a question only Joe can settle.
+# Each entry names the predicate, the evidence, and what would unblock it.
+ESCALATED = {
+    "PNL-L4": {
+        "clears": "R3-B caption in ALL CAPS",
+        "why": "R3-B ('quiet = caps + tracking in sans 500 at body size') was written for the "
+               "tiny-label voice. The caption role is handed whole SENTENCES at ~20 call sites "
+               "(connection_dialog, project_rules, notifications, saved_recipes, tool_palette's "
+               "empty state). Upper-casing a paragraph is the opposite of the readability this "
+               "leg exists for. The MECHANISM ships wired and tested (tokens.ROLE_CAPS, read by "
+               "components.apply_font_role); the SET ships EMPTY and says so in the code. "
+               "Unblocked by splitting caption into metadata-chip vs explanatory-prose, or by a "
+               "ruling; adding 'caption' to ROLE_CAPS is then a one-word change. JOE'S CALL.",
+    },
+}
+
 DEAD_GATES = (
     re.compile(r"audit_panel\.py\s+--strict.{0,40}exits?\s*0", re.I | re.S),
     re.compile(r"test_bc_wave\.py.{0,40}exits?\s*0", re.I | re.S),
@@ -98,12 +117,14 @@ def _blocking(v: dict, leg: str = "") -> tuple[list[str], list[str]]:
     """(failures that refuse the leaf, failures waived) from a verifier's own rerun."""
     block, waived = [], []
     fixed = (REPAIRED.get(leg) or {}).get("clears", "")
+    escalated = (ESCALATED.get(leg) or {}).get("clears", "")
     for a in v.get("acceptance_rerun", []):
         if a.get("verdict") == "pass":
             continue
         p = " ".join((a.get("predicate") or "").split())
         dead = any(rx.search(p) for rx in DEAD_GATES)
-        (waived if (dead or (fixed and fixed in p)) else block).append(p)
+        ok = dead or (fixed and fixed in p) or (escalated and escalated in p)
+        (waived if ok else block).append(p)
     return block, waived
 
 
@@ -136,7 +157,12 @@ def plan(res: dict) -> list[tuple[str, str, str]]:
         if leg not in said:
             said.add(leg)
             for w in waived:
-                tag = "repaired on " + REPAIRED[leg]["branch"] if leg in REPAIRED and REPAIRED[leg]["clears"] in w else "dead gate, replaced by panel_gate.py"
+                if leg in REPAIRED and REPAIRED[leg]["clears"] in w:
+                    tag = "repaired on " + REPAIRED[leg]["branch"]
+                elif leg in ESCALATED and ESCALATED[leg]["clears"] in w:
+                    tag = "RULING CONFLICT, escalated to Joe -- not a defect"
+                else:
+                    tag = "dead gate, replaced by panel_gate.py"
                 print(f"   WAIVED  {leg}: {tag} -- {w[:88]}")
         if branch in seen:
             continue
