@@ -6,9 +6,14 @@ grey for both. That is confusing for the user."
 Root cause of "grey for both": message_formatter already painted a coloured
 dot, but ``ChatDisplay._apply_turn_rhythm`` merged ``TEXT_SECONDARY`` over the
 WHOLE label block, flattening dot + name to one grey - and the SYNAPSE turn
-had no rule at all. After J3 the label block keeps its LABEL typography (mono,
-tracked, MEDIUM) but its foreground is the SPEAKER's colour, read from the
-speaker the block already carries in ``UserProperty + 1``:
+had no rule at all. After J3 the label block keeps its label typography but
+its foreground is the SPEAKER's colour, read from the speaker the block
+already carries in ``UserProperty + 1``:
+
+PNL-L5 (2026-09-21) moved that typography from mono/LABEL to sans/LABEL_SM,
+ALL CAPS - mono has no 500, so the MEDIUM this file asserts was a weight the
+face could not draw. The assertion below is unchanged and now measures a
+weight that is really there; no colour pin moved.
 
   YOU     -> SIGNAL      (the accent that already means "the artist")
   SYNAPSE -> CONIFEROUS  (4.58:1 on GROUND, >= 4.5 AA; the warden's pick)
@@ -160,7 +165,8 @@ def test_label_foreground_is_the_speaker_colour():
         assert syn_ink == QtGui.QColor(t.CONIFEROUS), syn_ink.name()
         # Neither speaker is the grey that flattened both before J3.
         assert QtGui.QColor(t.TEXT_SECONDARY) not in (you_ink, syn_ink)
-        # The label typography survives the colour: mono, medium, tracked.
+        # The label typography survives the colour: sans, medium, tracked,
+        # ALL CAPS (PNL-L5; it was mono before, which could not draw 500).
         c = QtGui.QTextCursor(syn)
         c.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
         font = c.charFormat().font()

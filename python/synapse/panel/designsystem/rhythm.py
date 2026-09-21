@@ -23,8 +23,18 @@ logger = logging.getLogger(__name__)
 #           parm_row is reserved for real label/value grids.
 #   band  - chrome bands that own their own hairlines (the panel root,
 #           act + divider + input): gap 0, margins 0.
+#   turn / turn_same - the TRANSCRIPT's own rhythm (PNL-L5, spec R3-E): air
+#           above a new speaker's turn (SPACE_LG 24) and above a continuation
+#           from the same speaker (SPACE_SM 8). The transcript used to read
+#           `group` / `row`, which six other surfaces also read - so tuning the
+#           transcript moved cards and parameter rows with it. These are the
+#           values message_formatter already passes into _ruled_turn
+#           (_GROUP_MARGIN_Y / _MSG_MARGIN_Y), now named once. group/row are
+#           unchanged, and no other surface reads these two.
 ROLE_GAPS = {
     "label": tokens.SPACE_GRID[2],
+    "turn": tokens.SPACE_GRID[4],
+    "turn_same": tokens.SPACE_GRID[1],
     "row": tokens.SPACE_GRID[2],
     "tag": tokens.SPACE_GRID[3],
     "card": tokens.SPACE_GRID[3],
