@@ -1,0 +1,35 @@
+release: v5.79.1 -- the transcript stopped shouting
+
+v5.79.0 shipped a chat transcript that rendered EVERY message in capitals at
+weight 500. The speaker-label pass selected BlockUnderCursor and merged its label
+font across the whole block, and the label, the timestamp and the message body
+share one block. Six of six fragments came back AllUppercase, measured.
+
+Joe found it in the live panel: "the chat text in SYNAPSE is all caps and tightly
+spaced. That makes it hard for neurodivergent users to read."
+
+Product: the label format reaches the speaker run only and the caps transform is
+gone, which also un-bolds the body (it keeps WEIGHT_REGULAR instead of inheriting
+the label's 500); CHAT_LEADING_PT 0.75 -> 1.50, taking the line step from 17px to
+18px, a ratio of 1.42x -> exactly the 1.50x WCAG 1.4.12 asks; the transcript's own
+turn gaps 24 -> 48 and 8 -> 16, shared keys untouched; _MEASURE_CHARS 66 -> 73 so
+the column goes 462px -> 511px; stranded ** markers stripped; and the model's
+system prompt now asks for sentence case with no em dashes.
+
+Pinned by tests/panel/test_transcript_readability.py, which asserts the RENDERED
+document because that is where the defect lived. No test had ever done so, which
+is why it shipped. Four of five redden under a deliberate break.
+
+Both open panel rulings closed. The caps fix largely dissolved the cpl-band
+problem: the column had been calibrated against capitals, and the narrow dock now
+reads 53.7 cpl IN BAND where it was 44.4 and unreachable. Ceiling ruled 75 -> 85,
+hard red unchanged at 90.
+
+Two bugs introduced while fixing this, both caught and named in the notes: a lazy
+import that deadlocked the seat suite against the ws_bridge thread, and a test
+that segfaulted Shiboken by reading QTextLayout after other tests walked the doc.
+
+Verified: stock suite 9624 passed / 0 failed; panel gate GREEN on master with both
+ratchets holding; measure probe exits 0 with 3 of 4 corners in band.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>

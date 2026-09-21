@@ -22,6 +22,26 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.79.1 - The transcript stopped shouting
+
+*Product change in `python/synapse/panel/` (chat_display, message_formatter, system_prompt, designsystem/tokens, designsystem/rhythm, designsystem/components) plus the measure probe. Product-surface diff v5.79.0..v5.79.1: {{PRODUCT_DIFF}}.*
+
+**A REGRESSION SHIPPED IN v5.79.0, FOUND IN THE LIVE PANEL.** The chat transcript rendered every message in capitals at weight 500. The speaker-label pass ran `cursor.select(BlockUnderCursor)` and merged its label font across the whole block, and the label, the timestamp and the message body share one block. Measured on the shipped build: six of six fragments came back `AllUppercase`. Joe, reading it: *"the chat text in SYNAPSE is all caps and tightly spaced. That makes it hard for neurodivergent users to read."* The format now reaches the speaker-label run only, via `ChatDisplay._format_speaker_label_only`, and the uppercase transform is gone. Body text keeps the formatter's `WEIGHT_REGULAR` instead of inheriting the label's 500, so the same fix un-bolds it.
+
+**NO TEST HAD EVER ASSERTED WHAT A RENDERED MESSAGE LOOKS LIKE.** That is why it shipped: the formatter's HTML was correct and the defect lived downstream in a Qt format merge. `tests/panel/test_transcript_readability.py` now pins the rendered document -- body never uppercase, body never heavier than regular, the label keeps its own weight, line height at or above 1.5x, gaps doubled while the shared keys hold. Four of five redden under a deliberate break; files restored byte-identical.
+
+**LINE SPACING DOUBLED, ONTO THE ACCESSIBILITY MINIMUM.** `CHAT_LEADING_PT` 0.75 -> 1.50. Measured at `SIZE_BODY` 12: the line step was 17.00px, a ratio of 1.42x, under the 1.5x WCAG 1.4.12 asks of body text; it is 18px and exactly 1.50x now. The transcript's own `ROLE_GAPS["turn"]` 24 -> 48 and `["turn_same"]` 8 -> 16, both still on `SPACE_GRID`. The shared `"group"`/`"row"` keys are untouched, so cards, parameter rows and the rail did not move with the chat.
+
+**THE READING COLUMN IS 10% WIDER.** `_MEASURE_CHARS` 66 -> 73, taking the column from 462px to 511px at a 1100px dock.
+
+**STRAY `**` MARKERS REMOVED.** `**/stage/lookdev**` printed literal asterisks: the node path between the markers becomes an atom, so neither `**` meets its partner. Stripped rather than promoted to `<strong>` -- the ask was to un-bold, and the chip's colour already carries the emphasis.
+
+**THE MODEL IS TOLD TO WRITE READABLY.** `system_prompt._IDENTITY` gains sentence case, no em dashes, short paragraphs, and a list when naming more than two things. The chat text is written by the model, so the instruction lives there.
+
+**BOTH OPEN PANEL RULINGS CLOSED** (`harness/notes/bp9/RULINGS.md`). Sentence case settles the caps question the type leg escalated. The band's ceiling moves 75 -> 85 with the hard red left at 90, because the widening and the narrower lowercase glyphs compound. The caps fix largely dissolved the band problem it had nothing to do with: the column had been calibrated against capitals, and the narrow dock now reads 53.7 cpl **in band** where it was 44.4 and arithmetically unreachable. Three of four corners are inside the band; the fourth says pane-limited by name.
+
+**TWO BUGS INTRODUCED WHILE FIXING THIS, BOTH CAUGHT.** A lazy `from . import qss` inside `components.apply_stylesheet` ran while the panel's `ws_bridge` off-main thread held the import lock, and the seat suite died with a Windows access violation in `importlib._bootstrap.acquire`; `qss` imports only `tokens`, so the import is module level now. And the new line-height test read `QTextLayout.lineAt()` and segfaulted Shiboken once earlier tests had walked the document; it computes from the block format and font metrics instead.
+
 ## v5.79.0 - One Commands list, and six dead gates
 
 *Product change in `python/synapse/panel/` (tool_palette, command_palette, synapse_panel, designsystem/qss, designsystem/tokens, designsystem/rhythm, message_formatter) plus a new first-click probe under `panel/scripts/`. Product-surface diff v5.78.0..v5.79.0: 47 files, +3181/-158 -- but 33 of those files are BP10's vendored third-party guides (+1931, documentation, no code). The panel work itself is **14 files, +1250/-158**.*
