@@ -1,0 +1,374 @@
+[
+ {
+  "leg": "BP9-WORKER",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_abd0dbec-e89-1",
+   "commit_sha": "474454ea1c0216143c38dcc3d6a334149fd75ccd",
+   "files_changed": [
+    "python/synapse/panel/claude_worker.py",
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/activity.py",
+    "python/synapse/panel/face_work.py",
+    "tests/test_worker_tool_policy.py",
+    "tests/test_turn_usage_ledger.py",
+    "tests/test_tool_failure_reason.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "python -m pytest tests/test_worker_tool_policy.py tests/test_turn_usage_ledger.py tests/test_tool_failure_reason.py tests/test_h3b_panel_cancel.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "68 passed, 1 skipped, 2 warnings in 1.05s; rc=0 (the skip is the Qt-gated face_work tooltip test, PySide6 absent in stock Python)"
+    },
+    {
+     "predicate": "grep -n 'tools=get_anthropic_tools()' python/synapse/panel/synapse_panel.py returns nothing",
+     "verdict": "pass",
+     "evidence": "grep printed no lines, rc=1. Both former sites changed: the ClaudeWorker ctor now passes tools=None (worker resolves get_anthropic_tools_for_worker); the choose_route call is fed get_anthropic_tools_for_worker() (only used as a truthy 'tools' capability signal there)"
+    },
+    {
+     "predicate": "grep -c 'translate_tool_error(' python/synapse/panel/claude_worker.py >= 4",
+     "verdict": "pass",
+     "evidence": "count=4 (MCP is_error branch, RuntimeError branch, unreadable-outcome branch, off-main request.error branch; the import line is 'import translate_tool_error' without a paren so it is not counted)"
+    },
+    {
+     "predicate": "grep -n 'turns.jsonl' python/synapse/panel/claude_worker.py returns at least one line and the append is inside a try/except inside a finally",
+     "verdict": "pass",
+     "evidence": "lines 55 (_USAGE_LEDGER_NAME = \"turns.jsonl\"), 59, 259. Structure: _conversation_loop -> try: ledger[\"outcome\"] = _run_turns() / finally: try: ...open(path,'a').write(json row)... except Exception: pass. Pinned by tests/test_turn_usage_ledger.py::test_append_is_in_a_try_except_inside_the_finally (AST check) and ::test_disk_error_never_reaches_the_artist (bad path -> stream_done still emitted, stream_error never)"
+    },
+    {
+     "predicate": "python -m pytest tests/test_jev_product_boundary.py -q exits 0",
+     "verdict": "pass",
+     "evidence": "2 passed, 2 warnings in 0.60s; rc=0"
+    }
+   ],
+   "tests_run": "Acceptance set: 68 passed, 1 skipped, 2 warnings in 1.05s (rc=0). Jev boundary: 2 passed, 2 warnings in 0.60s (rc=0). Wider regression over every suite that pins the touched shapes (the four acceptance files + test_jev_product_boundary, test_first_session_panel, test_activity_labels, test_panel_stop_honest, test_undo_receipt, solaris/test_live_wiring, test_offmain_fallback, test_retry_breaker, test_cto_mcp_contract, test_token_tab_usage, test_phase0b_consent_posture, test_panel_consent_no_freeze): 162 passed, 33 skipped, 2 warnings in 3.54s (rc=0).",
+   "notes": "Referee items: (a) row on every exit path - ledger tests cover abort-before-stream (stopped), abort-after-stream (stopped), end_turn (completed), cap-hit at _MAX_TOOL_ITERATIONS (cap_hit), and a raising stream (error, exception still propagates); per-tool is_error recorded for executed, denied, aborted and raised dispatches. (b) disk error cannot surface - append fenced try/except: pass inside the finally; test drives run() with an unwritable path and asserts stream_done emitted / stream_error not. (c) roster test builds ClaudeWorker(messages, system_prompt='', tools=None, parent=None, enforce_worker_policy=True, provider=None) under all five SYNAPSE_WORKER_TOOL_MODE values and asserts the name set equals {t for t in get_anthropic_tools() if is_tool_allowed_for_worker(t)[0]}; a second test pins that synapse_panel.py's ctor literally passes tools=None. (d) error detail never equals json.dumps(tool_input)[:120] - asserted per branch, plus a source pin that 'self.tool_status.emit(tool_name, \"error\", summary)' no longer exists; running-phase detail unchanged and test_h3b_panel_cancel green. (e) no edits outside the seven targets. One design note worth the referee's eye: tests/test_first_session_panel.py execs _conversation_loop's AST alone with only USAGE_SINK/_MAX_TOOL_ITERATIONS/logger bound, so the loop body is a nested closure (not a self._run_turns method) and the perf_counter is fetched via globals().get('time') - in that AST-only context stream_ms entries are None and the ledger append silently no-ops (json/os unbound -> swallowed), which is exactly the fail-safe the mission asked for. The ledger path honours SYNAPSE_USAGE_LEDGER as a test/override hook; default remains ~/.synapse/usage/turns.jsonl. Face tooltip test is Qt-gated (skips in stock Python; runs under hython)."
+  },
+  "verdict": {
+   "leg": "BP9-WORKER",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "python -m pytest tests/test_worker_tool_policy.py tests/test_turn_usage_ledger.py tests/test_tool_failure_reason.py tests/test_h3b_panel_cancel.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "My rerun at 474454ea in a detached throwaway worktree: 68 passed, 1 skipped, 2 warnings in 1.35s; rc=0"
+    },
+    {
+     "predicate": "grep -n 'tools=get_anthropic_tools()' python/synapse/panel/synapse_panel.py returns nothing",
+     "verdict": "pass",
+     "evidence": "grep printed nothing, rc=1. Diff shows ctor now passes tools=None (synapse_panel.py ~:3426) and choose_route is fed get_anthropic_tools_for_worker() (~:2187); model_routing.py:103-104 accepts tools=None"
+    },
+    {
+     "predicate": "grep -c 'translate_tool_error(' python/synapse/panel/claude_worker.py >= 4",
+     "verdict": "pass",
+     "evidence": "count=4: MCP is_error branch (~:524), RuntimeError branch (~:598), unreadable-outcome branch (~:612), off-main request.error branch (~:661). error_translator.py:387 returns str"
+    },
+    {
+     "predicate": "grep -n 'turns.jsonl' python/synapse/panel/claude_worker.py returns at least one line and the append is inside a try/except inside a finally",
+     "verdict": "pass",
+     "evidence": "Lines 55, 59, 259. Code: try: ledger['outcome'] = _run_turns() / finally: try: ... open(path,'a').write(json.dumps(row)) ... except Exception: pass. Deliberate break (except -> raise) turned test_disk_error_never_reaches_the_artist and the AST pin red; restored"
+    },
+    {
+     "predicate": "python -m pytest tests/test_jev_product_boundary.py -q exits 0",
+     "verdict": "pass",
+     "evidence": "2 passed, 2 warnings in 0.54s; rc=0"
+    }
+   ],
+   "findings": [
+    "Criterion 'row on every exit path' holds structurally: python/synapse/panel/claude_worker.py:253-462 - the loop body is closure _run_turns returning 'stopped' (both abort returns), 'completed' (end_turn), 'cap_hit' (fallthrough); the outer try/finally writes the row with outcome defaulting to 'error' when _run_turns raises. Pinned by tests/test_turn_usage_ledger.py:122-175",
+    "Criterion 'disk error cannot surface' holds: claude_worker.py finally wraps makedirs+open+write in try/except Exception: pass; tests/test_turn_usage_ledger.py:175 drives an unwritable path and asserts stream_done emitted, stream_error not. Changing pass->raise made both pins red (BREAK2 rc=1)",
+    "Criterion 'roster test builds worker with tools=None as send path does' holds: tests/test_worker_tool_policy.py:386-397 constructs ClaudeWorker(messages, system_prompt='', tools=None, parent=None, enforce_worker_policy=True, provider=None) under all 5 modes and compares against get_anthropic_tools() filtered by is_tool_allowed_for_worker; :404-413 source-pins the ctor literal",
+    "Criterion 'error detail never equals input json' holds: claude_worker.py:488/:504-505 keep summary=json.dumps(tool_input)[:120] for the running phase only; all four error emits pass translate_tool_error(...)[:120] whose inputs are mcp_result/str(exc)/fixed text/request.error, never tool_input. Reverting one branch to summary made test_tool_failure_reason go red (BREAK1: 2 failed)",
+    "Criterion 'no edit under VERSION/pyproject/harness' holds: git diff master...HEAD --name-only is exactly the 7 receipt files; forbidden-path grep empty",
+    "NIT (bounded weakness): mission text said face_work tooltip 'carries the input json for the error phase'; shipped face_work.py:270-274 sets tooltip to name + the translated detail instead. The tool_status signal no longer carries tool_input, so the literal ask is unreachable without a signal change; intent (hover shows why) is met but tooltip == status-line content, both already sliced to 120 chars at the worker, so hover adds nothing beyond the line",
+    "NIT (bounded weakness): translate_tool_error's generic fallback (error_translator.py:405) prefixes 'The <tool> tool returned an error: ' (~45 chars) before the [:120] slice, so for unmatched errors the artist sees ~70 chars of actual reason; consider slicing after stripping the prefix or lifting the cap for the tooltip",
+    "Ledger 'usage' keys (input_tokens, output_tokens, cache_read, cache_creation, runs) match UsageSink._view vocabulary (usage_sink.py:51-54), so None-vs-number is honest; wider regression I ran (test_first_session_panel, activity_labels, panel_stop_honest, undo_receipt, offmain_fallback, retry_breaker, cto_mcp_contract, token_tab_usage, phase0b_consent_posture, panel_consent_no_freeze, solaris/test_live_wiring): 92 passed, 32 skipped, rc=0"
+   ],
+   "merge_ready": true,
+   "notes": "Verified at commit 474454ea1c0216143c38dcc3d6a334149fd75ccd in a detached throwaway worktree (branch name was already checked out by the harness worktree, so I added by SHA); worktree removed afterward, main tree untouched (git diff --quiet on python/ tests/ clean). All five acceptance lines passed in my own rerun; every crucible criterion checked against code. Two deliberate breaks each turned the intended pins red and were restored. The two nits are documentation/UX-fidelity items (tooltip carries reason not input json; 120-char cap after a ~45-char generic prefix), neither violates a stated criterion. Note for the referee: the roster-at-send log line (synapse_panel.py ~:3431) reads worker._tools via getattr, a private attribute; fine today, brittle if the worker renames it."
+  }
+ },
+ {
+  "leg": "BP9-ADAPTER",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_abd0dbec-e89-2",
+   "commit_sha": "04fb23d0d8ccafbb828b8edf2fcd365ed6714d2e",
+   "files_changed": [
+    "python/synapse/jev/__init__.py",
+    "python/synapse/jev/adapter.py",
+    "tests/test_jev_adapter.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "python -m pytest tests/test_jev_adapter.py tests/test_jev_product_boundary.py -q -p no:cacheprovider exits 0 with at least 8 tests in test_jev_adapter.py",
+     "verdict": "pass",
+     "evidence": "22 passed, 2 warnings in 1.57s -- tests\\test_jev_adapter.py 20 dots (15 test functions, one parametrized x5), tests\\test_jev_product_boundary.py 2 dots"
+    },
+    {
+     "predicate": "grep -rn 'harness' python/synapse/jev/ returns nothing",
+     "verdict": "pass",
+     "evidence": "grep printed no lines; grep-exit=1 (no match). Also self-pinned by test_adapter_module_never_mentions_the_build_time_tooling"
+    },
+    {
+     "predicate": "a test proves a 5 s sleeping fake client returns None within 1.0 s wall time",
+     "verdict": "pass",
+     "evidence": "test_sleeping_client_returns_none_within_one_second: fake system_one sleeps 5.0s; asserts out is None, wall < 1.0 via time.perf_counter(), ledger result == 'timeout', worker thread 'synapse-jev-judge' is daemon. Passed in the 22-test run."
+    },
+    {
+     "predicate": "a test proves the key string never appears in the ledger file",
+     "verdict": "pass",
+     "evidence": "test_key_never_appears_in_ledger: one ok call + one call whose client raises ValueError(FAKE_KEY); reads the lane .jsonl text and asserts FAKE_KEY not in text (exception reason is redacted in adapter). test_raising_client_returns_none_never_raises also asserts FAKE_KEY not in row['reason']."
+    },
+    {
+     "predicate": "a test proves SYNAPSE_JEV unset returns None without importing the SDK",
+     "verdict": "pass",
+     "evidence": "test_unset_env_returns_none_without_importing_sdk: delenv SYNAPSE_JEV, _load_sdk seam patched to raise AssertionError, asserts judge() is None, 'typesafe_sdk' not in sys.modules, and no .jsonl written under the ledger override dir. Plus parametrized off/0/false/OFF/False."
+    }
+   ],
+   "tests_run": "22 passed, 2 warnings in 1.57s",
+   "notes": "Worktree verified: toplevel == cwd, branch worktree-wf_abd0dbec-e89-2. Only the three target files were created; nothing else touched.\n\nReferee points: (1) timeout is real wall clock -- judge() runs the SDK call on a plain threading.Thread(daemon=True) feeding a concurrent.futures.Future, then future.result(timeout=TIMEOUT_S=0.8); the test measures time.perf_counter() around the call against a 5 s sleeping fake. (2) No path raises out of judge(): inner try/except covers TimeoutError + concurrent.futures.TimeoutError + Exception; an outer try/except Exception wraps the whole body (covers non-dict questions, bad mode, ledger failure). Ledger writes themselves swallow all errors. (3) Ledger path: ~/.synapse/jev/<lane>.jsonl by default (lane sanitized to [A-Za-z0-9-_.]); SYNAPSE_JEV_LEDGER_DIR env overrides the root; test_default_ledger_root_is_under_home_synapse_jev pins the default. (4) Boundary: python/synapse/jev contains no 'harness', 'jev_client', etc.; the docstring cites 'invariant 5 of the Jev README' and 'the build-time question builder' by description rather than path, since the boundary regex and the acceptance grep both forbid the literal.\n\nDesign notes: SDK access is one module-level seam, _load_sdk(), so tests inject a fake TypeSafeClient + Choice/Score/Noul classes with zero network; call shape mirrors the harness client (client.system_one(state=, questions=, model=) with TypeError fallback for older SDKs). Disabled short-circuits before the ledger too, so an OFF product writes nothing anywhere. The main-thread check uses sys.modules.get('hou') so the adapter never imports hou itself. Environment note: this box runs Python 3.14.2 (conftest warns the vendored cp311/cp313 wheels are inactive); that warning is pre-existing and unrelated to this leg. No callers were added, per the mission."
+  },
+  "verdict": {
+   "leg": "BP9-ADAPTER",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "python -m pytest tests/test_jev_adapter.py tests/test_jev_product_boundary.py -q -p no:cacheprovider exits 0 with at least 8 tests in test_jev_adapter.py",
+     "verdict": "pass",
+     "evidence": "Own rerun in detached worktree at 04fb23d0: '22 passed, 2 warnings in 1.51s', EXIT=0; -v count of PASSED in test_jev_adapter.py alone = 20 (15 functions, one parametrized x5)."
+    },
+    {
+     "predicate": "grep -rn 'harness' python/synapse/jev/ returns nothing",
+     "verdict": "pass",
+     "evidence": "grep printed no lines, grep-exit=1. Boundary regex test (tests/test_jev_product_boundary.py:14) also green across python/synapse + shared."
+    },
+    {
+     "predicate": "a test proves a 5 s sleeping fake client returns None within 1.0 s wall time",
+     "verdict": "pass",
+     "evidence": "tests/test_jev_adapter.py:146-160 sleeps 5.0s in the fake, brackets judge() with time.perf_counter(), asserts wall < 1.0 and ledger result=='timeout'. Real clock: adapter.py:193 fut.result(timeout=timeout) on a daemon thread (adapter.py:192). BREAK 1 (fut.result() unbounded) -> 1 failed in 5.31s, i.e. the test genuinely waited the full sleep. Reran 3x, 2 passed each ~1.1s, no flake."
+    },
+    {
+     "predicate": "a test proves the key string never appears in the ledger file",
+     "verdict": "pass",
+     "evidence": "tests/test_jev_adapter.py:191-199 reads the lane .jsonl text and asserts FAKE_KEY not in text after one ok call and one ValueError(FAKE_KEY) call. Redaction at adapter.py:258. BREAK 2 (drop .replace(key,'<redacted>')) -> 2 failed."
+    },
+    {
+     "predicate": "a test proves SYNAPSE_JEV unset returns None without importing the SDK",
+     "verdict": "pass",
+     "evidence": "tests/test_jev_adapter.py:85-97 delenv SYNAPSE_JEV, _load_sdk seam raises AssertionError, asserts None, 'typesafe_sdk' not in sys.modules, no .jsonl under tmp ledger root. Short-circuit at adapter.py:211 precedes the base row build and every ledger call. BREAK 3 (remove enabled() check) -> 6 failed (unset + 5 parametrized off values)."
+    }
+   ],
+   "findings": [
+    "BOUNDED WEAKNESS: adapter.py:70-89 resolve_key adds a Windows HKCU\\Environment winreg fallback that python/synapse/panel/providers/base.py:76 / anthropic_provider.py:203 do not model (they are hou.secure -> env only); the registry branch has no test (tests/test_jev_adapter.py:205 patches sys.platform='linux' to skip it). Guarded by except Exception so it cannot raise, but it is an untested code path and a second key source the mission did not ask for.",
+    "BOUNDED WEAKNESS: adapter.py:182-193 leaks one daemon thread per timeout; the thread keeps running the SDK call after judge() returned None. Bounded in practice by TypeSafeClient(timeout=TIMEOUT_S) at adapter.py:244, but a fake/misbehaving SDK ignoring its timeout would accumulate threads. Acceptable for a no-caller shadow adapter; note for whoever wires the first caller.",
+    "BOUNDED WEAKNESS: adapter.py:266-267 outer except Exception returns None with no ledger row, so a failure between the enabled() check and the first _ledger call (e.g. questions with unhashable/unsortable keys at :218) is silent. No-raise criterion holds; evidence trail has one blind spot.",
+    "NIT: tests/test_jev_adapter.py:199 'assert _FakeClient.calls and all(True for _ in _FakeClient.calls)' -- the all() clause is vacuous; harmless.",
+    "NIT: adapter.py:157-160 _answers_to_dict returns a dict SDK response verbatim into the 'answers' ledger field with no redaction pass; the key can only get there if the SDK echoes it, which is out of scope, but the row-level guarantee is 'reason is redacted', not 'row is scanned'.",
+    "VERIFIED: main-thread refusal (e) at adapter.py:112-120 uses sys.modules.get('hou') and never imports hou; BREAK 4 (remove the check) -> test_houdini_main_thread_is_refused_without_calling_out fails. Worker-thread and headless (isUIAvailable False) paths both call out, pinned at tests:239-256.",
+    "VERIFIED: mode (f) recorded on every row at adapter.py:217 including the invalid-mode fallback row (:223) and main_thread_refused row (:228); default 'shadow' pinned at tests:119 and :236.",
+    "VERIFIED: README precondition for test_readme_states_the_amended_invariant already exists on master (harness/jev/README.md:44-46), so the boundary test does not depend on this branch touching harness/."
+   ],
+   "merge_ready": true,
+   "notes": "Method: builder branch was already checked out at .claude/worktrees/wf_abd0dbec-e89-2, so I used `git worktree add --detach ../bp9-verify-BP9-ADAPTER 04fb23d0` instead; diff is exactly the three receipt files (+541/-0), one commit over master. All five acceptance lines pass in my own rerun. All four crucible criteria hold against the code, not the receipt: wall-clock timeout (Future.result on a daemon thread, proven by a 5.31s red when unbounded), no path raises (nested try/except, garbage-input test :184), ledger under ~/.synapse/jev/ with SYNAPSE_JEV_LEDGER_DIR override (adapter.py:93-97, default pinned at tests:137-142), nothing under python/synapse imports harness. Four deliberate breaks each turned the pinning test(s) red; tree restored clean. The findings are bounded weaknesses for the eventual caller-wiring leg, none invalidates invariant 5 conditions a-f. Worktree removed and pruned; main tree untouched. Environment: Python 3.14.2 (conftest wheel warning pre-existing, unrelated)."
+  }
+ },
+ {
+  "leg": "BP9-HOOKS",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_abd0dbec-e89-3",
+   "commit_sha": "4fb0026f147086b4c6aa6213aef1f390954eee1c",
+   "files_changed": [
+    ".claude/hooks/guard-edit-targets.py",
+    ".claude/hooks/_ledger.py",
+    ".claude/hooks/synapse_hooks_bridge.py",
+    ".claude/hooks/check-python.sh",
+    "tests/test_hooks_guard_edit.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "python -m pytest tests/test_hooks_guard_edit.py -q -p no:cacheprovider exits 0 with at least 5 tests",
+     "verdict": "pass",
+     "evidence": "tests/test_hooks_guard_edit.py: 21 passed (23 passed including tests/test_jev_product_boundary.py, 2 warnings in 1.79s), exit 0"
+    },
+    {
+     "predicate": "grep -n 'houdini22.0' .claude/hooks/guard-edit-targets.py returns at least one line",
+     "verdict": "pass",
+     "evidence": "39:    \"houdini22.0\\\\\",  40:    \"houdini22.0/\",  54: BLOCKED_REASONS entry"
+    },
+    {
+     "predicate": "grep -n 'worktrees' .claude/hooks/guard-edit-targets.py returns at least one line",
+     "verdict": "pass",
+     "evidence": "30:WORKTREES_MARKER = \"/.claude/worktrees/\"  (plus lines 14 and 72)"
+    },
+    {
+     "predicate": "echo '{}' | python .claude/hooks/guard-edit-targets.py exits with the deny code and prints a reason",
+     "verdict": "pass",
+     "evidence": "stderr: 'guard-edit-targets fail-closed: ValueError: hook input has no tool_input object'; stdout: JSON permissionDecision=deny with same reason; [exit=2]"
+    },
+    {
+     "predicate": "grep -n 'sys.exit(2)\\|exit 2' .claude/hooks/synapse_hooks_bridge.py returns nothing new (Stop stays advisory)",
+     "verdict": "pass",
+     "evidence": "Only match: 209: sys.exit(2) (the pre-existing TaskCompleted line, shifted by the additive diff). git diff -U0 shows no +/- line touching sys.exit(1)/sys.exit(2); _run() re-raises SystemExit verbatim. Live: Stop exit=0 and TaskCompleted exit=0 with no pending events, as before."
+    }
+   ],
+   "tests_run": "======================= 23 passed, 2 warnings in 1.79s ======================== (tests/test_hooks_guard_edit.py + tests/test_jev_product_boundary.py, -p no:cacheprovider)",
+   "notes": "Design choices worth a referee's eye:\n1. Decision protocol in guard-edit-targets.py: allow = exit 0 + zero bytes (verified with od -c: byte-identical to the original); policy deny = exit 0 + JSON permissionDecision=deny (unchanged protocol); fail-closed = exit 2 (DENY_EXIT) + reason on stderr + JSON deny on stdout. Exit 2 is Claude Code's blocking code, so a broken/malformed fire is refused even if the JSON is ignored. Fail-closed is a real try/except around the whole main() with decision defaulting to deny; pinned by 6 malformed-input shapes plus a test that a broken ledger path cannot flip the decision either way.\n2. Worktree fence is checked BEFORE the pattern list, so a worktree cwd gets the specific 'Worktree fence' reason even when the path would also hit AppData/houdini prefs. Main-tree cwd behaviour is unchanged. Fence uses JSON `cwd` when present, else os.getcwd(); relative paths resolve against cwd; sibling worktrees count as outside.\n3. _ledger.py has zero decisions (test scans the code body for sys.exit / permissionDecision / synapse.log / harness). It is force-added: .gitignore:75 (`_*.py`) would hide it; .gitignore was outside my targets so I did not edit it -- someone may want a `!.claude/hooks/_ledger.py` exception. Ledger path override: SYNAPSE_HOOKS_LEDGER env; session from hook JSON session_id, else CLAUDE_SESSION_ID env.\n4. check-python.sh stays bash with an inline `python -c` shim (stdin passed via herestring); exit stays 0; decisions recorded: ok / syntax_error / skip / error:<Type>. Smoke-tested live on a real syntax-error file: message printed, exit 0, ledger row syntax_error.\n5. Bridge: additive _run() wrapper + _LAST_HOOK bookkeeping in main(); no bridge fire removed, no exit code changed.\n6. Not done / caveats: settings.json still points at the MAIN-tree copy of the hooks (python C:/Users/User/SYNAPSE/.claude/hooks/...), so the new behaviour goes live only once this branch merges into master. The worktree fence is exercised by subprocess tests with fictional paths because pytest's tmp_path is under AppData on Windows (already denied by the pattern list). ~/.synapse/hooks.jsonl was never written by tests (env override throughout)."
+  },
+  "verdict": {
+   "leg": "BP9-HOOKS",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "python -m pytest tests/test_hooks_guard_edit.py -q -p no:cacheprovider exits 0 with at least 5 tests",
+     "verdict": "pass",
+     "evidence": "Detached worktree at 4fb0026f: '21 passed, 2 warnings in 1.43s', exit=0. tests/test_jev_product_boundary.py also 2 passed."
+    },
+    {
+     "predicate": "grep -n 'houdini22.0' .claude/hooks/guard-edit-targets.py returns at least one line",
+     "verdict": "pass",
+     "evidence": "Lines 39, 40 (BLOCKED_PATTERNS) and 54, 55 (BLOCKED_REASONS)."
+    },
+    {
+     "predicate": "grep -n 'worktrees' .claude/hooks/guard-edit-targets.py returns at least one line",
+     "verdict": "pass",
+     "evidence": "Lines 14 (docstring), 30 (WORKTREES_MARKER = \"/.claude/worktrees/\"), 72 (worktree_root docstring)."
+    },
+    {
+     "predicate": "echo '{}' | python .claude/hooks/guard-edit-targets.py exits with the deny code and prints a reason",
+     "verdict": "pass",
+     "evidence": "stderr 'guard-edit-targets fail-closed: ValueError: hook input has no tool_input object'; stdout JSON permissionDecision=deny with same reason; exit=2. Also verified for '[1]' (exit 2), empty stdin (JSONDecodeError, exit 2), {\"tool_input\":{\"file_path\":5}} (exit 2)."
+    },
+    {
+     "predicate": "grep -n 'sys.exit(2)\\|exit 2' .claude/hooks/synapse_hooks_bridge.py returns nothing new (Stop stays advisory)",
+     "verdict": "pass",
+     "evidence": "Only match: line 209 sys.exit(2) inside the pre-existing TaskCompleted branch; master has the same two exits at 190/202, branch at 197/209 (pure line shift). Live Stop fire with no events: exit=0, ledger row decision=ok."
+    }
+   ],
+   "findings": [
+    "Fail-closed is real, not a comment: main() starts with decision='deny', exit_code=DENY_EXIT and only flips to 0 after decide() returns (.claude/hooks/guard-edit-targets.py:139-152); deliberate break DENY_EXIT=0 turned 8 tests red, restored.",
+    "Ordinary main-tree allow is byte-identical: master vs branch stdout+stderr both 0 bytes, exit 0 (cmp IDENTICAL); policy deny (houdini21.0 path) output also byte-identical to master.",
+    "Deliberate break of houdini22.0 patterns (sed-stripped lines 39-40) turned test_houdini_prefs_path_denied[houdini22.0] red (2 failed / 19 passed); restored via git checkout.",
+    "Ledger never raises and never touches synapse.log: .claude/hooks/_ledger.py:47-68 is a single try/except pass; record() with ledger path = a directory and with non-numeric ms both returned without raising; grep for 'synapse.log'/'jev' hits only the docstring at :11.",
+    "Fence holds against relative escape (../../../../CLAUDE.md), sibling worktree (wt10 vs wt1), backslash+mixed-case paths (allowed when inside, denied when outside) -- _norm at guard-edit-targets.py:63-68 normcases + forward-slashes both sides.",
+    "NIT (bounded weakness, as-specified): fence denies ANY out-of-worktree write, including the auto-memory file C:/Users/User/.claude/projects/.../memory/MEMORY.md and global ~/.claude files -- worktree-dispatched agents can no longer save memory; verified deny at guard-edit-targets.py:91-97.",
+    "NIT (latent): settings.json matcher is 'Edit|Write' (.claude/settings.json:10) so NotebookEdit is not matched today; if the matcher is ever widened, its notebook_path-only payload now fail-closed denies with exit 2 (verified) where master silently allowed.",
+    "NIT (not a code defect): .claude/hooks/_ledger.py is tracked only because it was force-added past .gitignore:75 (_*.py); a future `git add -A` will not re-pick modifications after a delete, and settings.json still points at the MAIN-tree hooks, so nothing here is live until merge. ~/.synapse/hooks.jsonl already exists on this machine from the builder's live smoke test."
+   ],
+   "merge_ready": true,
+   "notes": "Method: git worktree add --detach ../bp9-verify-BP9-HOOKS 4fb0026f (branch was already checked out in .claude/worktrees/wf_abd0dbec-e89-3, so detached at the receipt SHA); diff stat matched the receipt exactly (5 files, +547/-24). All five acceptance lines rerun and passed in my own run. All four crucible criteria hold against the code: (1) fail-closed is structural (deny/exit-2 defaults set before the try, mutated only on success; the broken-ledger test proves the ledger cannot flip it), (2) allow path byte-identical vs master (cmp on captured stdout+stderr, 0 bytes, exit 0), (3) _ledger.record is one try/except-pass, no sys.exit / permissionDecision / synapse.log in the body, error paths exercised live, (4) bridge diff is purely additive (_LAST_HOOK bookkeeping + _run wrapper re-raising SystemExit verbatim; sys.exit(1)/sys.exit(2) lines only shifted, Stop live exit 0). check-python.sh shim: syntax-error file prints the SyntaxError + 'SYNTAX ERROR in <path>' and exits 0 with ledger decision=syntax_error; two apparent failures in my run (`python: command not found` from a python-spawned bash, and /tmp not resolving under Windows python) were my harness environment, re-verified clean from bash with a Windows path. Two deliberate breaks both went red and were restored; final `git status` on the hook paths in the throwaway tree was clean before `git worktree remove --force`. The NITs are policy consequences of the mission's own spec (deny anything outside the worktree), not bugs -- worth a one-line ruling on whether worktree agents should be able to write the global memory dir, and a `!.claude/hooks/_ledger.py` .gitignore exception in a follow-up. Main tree untouched; the bp9-verify-BP9-RESTAMP worktree in `git worktree list` is another leg's, not mine."
+  }
+ },
+ {
+  "leg": "BP9-RESTAMP",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_abd0dbec-e89-4",
+   "commit_sha": "15160782cd029e32075dc9fe55696c031e698e74",
+   "files_changed": [
+    "scripts/h22_probe_candidates.py",
+    ".claude/workflows/h22-doc-scout.js",
+    ".claude/workflows/h22-probe-adjudicate.js",
+    ".claude/workflows/phantom-sweep.js",
+    "harness/verify/checks.py",
+    "tests/test_h22_stamp_sources.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "python -m pytest tests/test_h22_stamp_sources.py -q -p no:cacheprovider exits 0 with at least 4 tests",
+     "verdict": "pass",
+     "evidence": "11 passed, 2 warnings in 0.68s (run together with tests/test_jev_product_boundary.py; the new file alone contributes 9 tests: 3 probe-runner, 3 parametrized workflow, 3 checks-verb)"
+    },
+    {
+     "predicate": "grep -n \"'22.0.368'\" scripts/h22_probe_candidates.py returns nothing",
+     "verdict": "pass",
+     "evidence": "grep produced no output, rc=1 (no match); no 22.0.368 literal of any quoting remains in the file"
+    },
+    {
+     "predicate": "grep -c 35903 over the three workflows totals 0",
+     "verdict": "pass",
+     "evidence": "h22-doc-scout.js:0  h22-probe-adjudicate.js:0  phantom-sweep.js:0 (22.0.368 also removed from all three)"
+    },
+    {
+     "predicate": "python harness/verify/checks.py --help exits 0 and lists the new verb",
+     "verdict": "pass",
+     "evidence": "rc=0; --help epilog now lists every DISPATCH verb, `lop_knowledge_stamp_current` present (grep -c = 1, help line 52)"
+    },
+    {
+     "predicate": "node --check on the three workflows exits 0",
+     "verdict": "pass",
+     "evidence": "node --check all three -> rc=0 (NODE_OK)"
+    },
+    {
+     "predicate": "REFEREE: checks verb is RED at HEAD, proven",
+     "verdict": "pass",
+     "evidence": "Run with _drop_path pointed at the machine's harness/state/drop.json (the orchestrator's runtime; drop.json is untracked and lives only in the main tree, read-only): {'ok': False, 'detail': 'lop_solaris_knowledge_22.json houdini_version=22.0.368 != drop.json houdini_build=22.0.400 -- re-author under the dropped build: hython scripts/author_lop_knowledge_22.py (then commit artifact + packaged copy)'}. From inside the worktree (no drop.json) it abstains ok=None, never PASS."
+    },
+    {
+     "predicate": "REFEREE: no knowledge file re-authored, no hython run",
+     "verdict": "pass",
+     "evidence": "git show --stat HEAD touches only the six target files; lop_solaris_knowledge_22.json unchanged; no hython invoked (tests use tmp copies + monkeypatched seams)"
+    }
+   ],
+   "tests_run": "tests/test_h22_stamp_sources.py + tests/test_jev_product_boundary.py: \"11 passed, 2 warnings in 0.68s\"; sibling checks.py track tests (test_ctx_track, test_d_track, test_r_track, test_s_track, test_v6_track, test_port_wave_scene1): \"164 passed, 2 warnings in 4.99s\"",
+   "notes": "Design decisions the referee should know: (1) Workflow scripts have NO filesystem API (confirmed via the workflow-authoring reference: \"No filesystem or Node.js API access\"), so the \"small inline helper\" readSymtabStamp() is one low-effort agent() call with a strict schema that reads the symbol-table header (head -c 600) and returns houdini_version + symbol_count; STAMP.build / STAMP.count are interpolated where the literals stood, and a null return yields the explicit string 'UNKNOWN (symbol-table header unreadable)' -- never a guessed build. phantom-sweep.js gained a SYMTAB const it lacked. (2) Probe runner: resolve_against_build() tries hou.applicationVersionString() then drop.json houdini_build (older key `houdini` accepted) and RAISES if neither is readable; results now also persist candidates_against_build (the candidates file's own stamp) so drift is visible rather than overwritten, and source_report derives from the candidates' generated date instead of a stale 2026-07-15 literal. (3) checks.py verb lop_knowledge_stamp_current picks the highest-major packaged lop_solaris_knowledge_<major>.json, compares to _drop_path() (the existing module seam), RED with the author_lop_knowledge_22.py remediation, ok=None abstention when no drop.json exists (mode A). Registered in DISPATCH under the U.5 block; NOT added to any tasks.json verify list or guardrails (guardrails are frozen per test_d_track). --help gained an epilog listing sorted DISPATCH verbs. (4) Git emitted CRLF->LF warnings on the touched files (pre-existing line-ending state, .gitattributes-driven), harmless. (5) A `find /` I launched early timed out to background (task b9flip10f); it was read-only and irrelevant to the result."
+  },
+  "verdict": {
+   "leg": "BP9-RESTAMP",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "python -m pytest tests/test_h22_stamp_sources.py -q -p no:cacheprovider exits 0 with at least 4 tests",
+     "verdict": "pass",
+     "evidence": "9 passed, 2 warnings in 0.36s, rc=0 (throwaway worktree at 15160782)"
+    },
+    {
+     "predicate": "grep -n \"'22.0.368'\" scripts/h22_probe_candidates.py returns nothing",
+     "verdict": "pass",
+     "evidence": "no output, rc=1; a wider grep for 22.0.368|35903|2026-07-15 in the file also returned nothing"
+    },
+    {
+     "predicate": "grep -c 35903 over the three workflows totals 0",
+     "verdict": "pass",
+     "evidence": "h22-doc-scout.js:0 h22-probe-adjudicate.js:0 phantom-sweep.js:0; same 0/0/0 for 22\\.0\\.368"
+    },
+    {
+     "predicate": "python harness/verify/checks.py --help exits 0 and lists the new verb",
+     "verdict": "pass",
+     "evidence": "rc=0; help line 52 = lop_knowledge_stamp_current (epilog lists sorted DISPATCH verbs, checks.py:3229-3231)"
+    },
+    {
+     "predicate": "node --check on the three workflows exits 0",
+     "verdict": "pass",
+     "evidence": "all three -> NODE_OK"
+    },
+    {
+     "predicate": "CRUCIBLE: checks verb is RED at HEAD, proven",
+     "verdict": "pass",
+     "evidence": "Loaded checks.py by path, pointed _drop_path at C:/Users/User/SYNAPSE/harness/state/drop.json (houdini_build 22.0.400): {'ok': False, 'detail': 'lop_solaris_knowledge_22.json houdini_version=22.0.368 != drop.json houdini_build=22.0.400 -- re-author under the dropped build: hython scripts/author_lop_knowledge_22.py ...'}; with no drop.json it abstains ok=None (never PASS). scripts/author_lop_knowledge_22.py exists."
+    },
+    {
+     "predicate": "CRUCIBLE: no knowledge file re-authored, no hython run",
+     "verdict": "pass",
+     "evidence": "git diff master...HEAD --stat = exactly the 6 target files (272+/10-); lop_solaris_knowledge_22.json still stamped 22.0.368; tests monkeypatch DROP/_drop_path seams and use tmp copies"
+    },
+    {
+     "predicate": "CRUCIBLE: deliberate breaks turn the new tests red",
+     "verdict": "pass",
+     "evidence": "(1) reinstating '35903 symbols' in h22-probe-adjudicate.js -> 1 failed/8 passed; (2) neutering `if stamp != dropped:` in checks.py -> 1 failed/8 passed; (3) restoring data.get('against_build','22.0.368') in the probe runner -> 2 failed/7 passed. All restored via git checkout; worktree clean before removal."
+    }
+   ],
+   "findings": [
+    "BOUNDED WEAKNESS (dormant guard): harness/verify/checks.py:3163 registers lop_knowledge_stamp_current in DISPATCH but no tasks.json verify list or guardrail names it (repo-wide grep: only checks.py + the test); main() resolves --task against tasks.json ids (checks.py:3249-3252), so `checks.py --task lop_knowledge_stamp_current --worktree .` prints {\"verdict\":\"ERROR\",\"detail\":\"unknown task ...\"}. The RED is real but nothing in the harness runs it. Builder disclosed this (guardrails frozen per test_d_track); follow-up = add it to the U.5 task's verify list.",
+    "VERIFIED (not a finding): python/synapse/cognitive/tools/data/h22_symbol_table.json header carries houdini_version=22.0.400 and symbol_count=36472 inside the first ~280 bytes, so the workflows' `head -c 600` read (h22-doc-scout.js:25, h22-probe-adjudicate.js:83, phantom-sweep.js:126) resolves real values today; len(symbols) == symbol_count.",
+    "NIT (design, accepted): readSymtabStamp() is an LLM agent() call with a strict schema, not a byte read -- the stamp is whatever the agent reports. `effort:` and null-return (`.filter(Boolean)`) are existing conventions in cto-review.js / flow-sprint.js / adjudicate.js:109, so the pattern is consistent with the runtime's no-filesystem constraint.",
+    "NIT: phantom-sweep.js:20 SYMTAB is a repo-relative path ('python/synapse/...') while the other two workflows use the absolute REPO prefix; the head -c 600 depends on the stamp agent's cwd. Consistent with the file's pre-existing relative path at :149, so not a regression.",
+    "OK: scripts/h22_probe_candidates.py:37-51 resolve_against_build() tries hou.applicationVersionString() then drop.json houdini_build/houdini and raises RuntimeError otherwise; results persist both against_build and candidates_against_build (:181-186) so drift is visible; source_report derived from the candidates' generated date, stale 2026-07-15 literal gone.",
+    "OK: ok=None abstention is the established checks.py convention (e.g. :369, :640; main() buckets None as 'unwired' at :3266), so mode-A abstention is honest, not a fake green."
+   ],
+   "merge_ready": true,
+   "notes": "Method: `git worktree add --detach ../bp9-verify-BP9-RESTAMP 15160782` (branch name was already checked out at .claude/worktrees/wf_abd0dbec-e89-4, so detached by SHA); reran all five acceptance lines plus the three crucible criteria there; three deliberate breaks each went red and were restored; worktree confirmed clean and removed with `git worktree remove --force`. Main tree not edited. Merge-ready on the acceptance as written; the one substantive nit is that the new verb is dormant until a tasks.json verify list references it -- worth a one-line follow-up in the U.5 task rather than a loop back to the builder."
+  }
+ }
+]

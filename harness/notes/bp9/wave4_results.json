@@ -1,0 +1,184 @@
+[
+ {
+  "leg": "BP9-RETIRE-FIX",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_5caaa3b9-090-1",
+   "commit_sha": "48954a0f6802230f181512d4e572c0d7954fdab0",
+   "files_changed": [
+    "python/synapse/server/handlers.py",
+    "tests/test_bp8_timeouts.py",
+    "harness/panel_pd/RESIDUAL.json",
+    "python/synapse/panel/__init__.py",
+    "tests/test_r_track.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "grep -rn 'route_chat' python/synapse/server/handlers.py returns nothing",
+     "verdict": "pass",
+     "evidence": "grep printed no lines; exit code 1 (no match). Also gone from handlers.py: _ROUTE_OVERALL_TIMEOUT_S, _route_pool, _FutureTimeout alias, _memory_owner, _repoint_router_memory (all existed only for the deleted method)."
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_rhythm_owner.py tests/test_single_pypanel.py tests/test_bp8_timeouts.py tests/test_worker_tool_policy.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "64 passed, 2 warnings in 3.39s; exit 0"
+    },
+    {
+     "predicate": "full stock suite summary line shows 0 failed",
+     "verdict": "pass",
+     "evidence": "= 9482 passed, 375 skipped, 142 deselected, 5 xfailed, 625 warnings in 354.33s (0:05:54) = (no 'failed' token in the line). First run on the merged tree showed 1 failed (tests/test_r_track.py::test_live_tree_gates_read_red_now) -- see notes."
+    },
+    {
+     "predicate": "git merge-base --is-ancestor worktree-wf_42f40752-0fd-2 HEAD exits 0",
+     "verdict": "pass",
+     "evidence": "acc4_exit=0 (merge of 76731a82 is in HEAD's history)"
+    },
+    {
+     "predicate": "grep -n 'chat_panel' python/synapse/panel/__init__.py returns nothing",
+     "verdict": "pass",
+     "evidence": "grep printed no lines; exit code 1. Line 7 now reads `#   from synapse.panel.synapse_panel import SynapsePanel`"
+    },
+    {
+     "predicate": "python -c 'import synapse.panel.synapse_panel' (implicit; from mission text)",
+     "verdict": "unknown",
+     "evidence": "Not run: plain Python 3.14 on this box has no PySide wheel (same on master), per the leg brief."
+    }
+   ],
+   "tests_run": "= 9482 passed, 375 skipped, 142 deselected, 5 xfailed, 625 warnings in 354.33s (0:05:54) =  (python -m pytest tests/ -q -p no:cacheprovider -m 'not needs_houdini' --deselect tests/test_phase0c_doc1_toolcount.py). Also: tests/test_panel_rhythm_owner.py tests/test_single_pypanel.py tests/test_bp8_timeouts.py tests/test_worker_tool_policy.py -> 64 passed; tests/test_r_track.py -> 44 passed; touched+related set incl. tests/test_jev_product_boundary.py tests/test_routing.py tests/test_hda_panel.py tests/test_chat_panel.py -> 363 passed, 18 skipped.",
+   "notes": "Referee: two things to know up front.\n\n(A) CONSTRAINT CONFLICT, resolved deliberately. The brief said both \"delete _handle_route_chat and whatever test still references it\" and \"do NOT touch tests/test_bp8_timeouts.py\", while acceptance 2 requires that file to pass. Those cannot all hold: tests/test_bp8_timeouts.py called `SynapseHandler._handle_route_chat` unbound in its three T2 tests, so deleting the method reddens it. I chose the reading that serves the mission line (drop the handler, suite green) and the brief's own \"retarget/delete a test only when it pins something shared\" rule: the T2 half (three handler tests, _FakeHandlerSelf, _RaisingRouter, _SleepingRouter, the SynapseHandler import, the matching docstring lines) pinned only the deleted method, so it was removed. The T1 half (Tier 2/3 timeout tests: test_try_tier2_returns_within_timeout, test_tier3_sync_returns_within_timeout, test_try_tier2_success_passthrough) is byte-identical, and python/synapse/routing/router.py was not touched (git shows no diff there). If the referee's \"test_bp8_timeouts.py untouched\" check is literal, it fails by design; the alternative was leaving the handler in place, which is exactly the BROKEN verdict this leg exists to fix.\n\n(B) One pre-existing red on the merged BP9-RETIRE tree, not caused by my edits: tests/test_r_track.py::test_live_tree_gates_read_red_now asserted the hot_reload_gated gate still reads RED. On master the RED came solely from python/synapse/panel/synapse_chat.pypanel's ungated `del sys.modules[...]` purge (verified via git show master:...). BP9-RETIRE deleted that file, and harness/verify/checks.py::check_hot_reload_gated is explicitly gate-or-delete (\"a loader that no longer ships auto-greens its leg\"), so the gate is now honestly GREEN. I moved hot_reload_gated into the test's RESOLVED set (asserts GREEN with the BP9-RETIRE reason in the docstring and the assertion message). tests/ is in the target list; harness/verify was not touched. Note the shipped houdini/python_panels/synapse_panel.pypanel still does a scoped synapse.panel.* pop on open, which the check's fingerprint does not classify as the R.3 defect (it targets the full synapse.* purge / `del sys.modules[`); harness/cto/BACKLOG.json R.3 already tracks that framing question, and I did not widen the check.\n\nTest-retargeting decisions for the remaining route_chat hits: tests/test_routing.py TestRouteChat -- calls TieredRouter.route directly and pins that route_chat is NOT in the registry; shared, kept. tests/test_hda_panel.py:817/828 -- uses \"route_chat\" as an arbitrary command string in a send_command queue test; shared, kept. tests/test_chat_panel.py:8 -- docstring only; kept. python/synapse/core/protocol.py CommandType.ROUTE_CHAT, panel/send_guard.py and panel/ws_bridge.py comments -- not in handlers.py, out of this leg's scope (step B).\n\nRhythm ratchet: tests/test_panel_rhythm_owner.py already derives the residual by scanning python/synapse/panel/**/*.py (excluding designsystem), so no test edit was needed; the cap lives in harness/panel_pd/RESIDUAL.json and moved 13 -> 9 with a `ratchet_note` key naming BP9-RETIRE (JSON cannot carry a comment). seed_counts and the census pointer are unchanged; test_residual_cannot_increase_against_git_history passes (decrease only).\n\nUntracked scratch: \"Claude outputs/bp9-retire-fix-commit-msg.txt\" (the commit message file) is untracked and not committed. Line-ending warnings from git are the repo's existing CRLF state; the diffs are content-only (275 deletions / 23 insertions)."
+  },
+  "verdict": {
+   "leg": "BP9-RETIRE-FIX",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "grep -rn 'route_chat' python/synapse/server/handlers.py returns nothing",
+     "verdict": "pass",
+     "evidence": "Detached worktree at 48954a0f: grep printed nothing, exit 1. Diff 76731a82..HEAD removes _handle_route_chat, _memory_owner, _repoint_router_memory, _route_pool, _ROUTE_OVERALL_TIMEOUT_S, _FutureTimeout import. ThreadPoolExecutor import retained and still used (handlers.py:79 _log_executor) -- no dead import."
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_rhythm_owner.py tests/test_single_pypanel.py tests/test_bp8_timeouts.py tests/test_worker_tool_policy.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "64 passed, 2 warnings in 3.76s; exit 0"
+    },
+    {
+     "predicate": "full stock suite summary line shows 0 failed",
+     "verdict": "pass",
+     "evidence": "= 9480 passed, 377 skipped, 142 deselected, 5 xfailed, 625 warnings in 366.09s (0:06:06) =  exit=0. (Builder saw 9482/375; two tests skip rather than pass on my run -- environment-dependent, no failures either way.)"
+    },
+    {
+     "predicate": "git merge-base --is-ancestor worktree-wf_42f40752-0fd-2 HEAD exits 0",
+     "verdict": "pass",
+     "evidence": "exit=0"
+    },
+    {
+     "predicate": "grep -n 'chat_panel' python/synapse/panel/__init__.py returns nothing",
+     "verdict": "pass",
+     "evidence": "grep printed nothing, exit 1; line 7 now `#   from synapse.panel.synapse_panel import SynapsePanel`"
+    },
+    {
+     "predicate": "python -c 'import synapse.panel.synapse_panel' exits 0",
+     "verdict": "unknown",
+     "evidence": "Not rerun: prior crucible established plain Python 3.14 on this box lacks a PySide wheel (fails identically on master) and hython 22.0.400 imports it OK. Not leg-caused."
+    }
+   ],
+   "findings": [
+    "Criterion 'no shipped module or test references the deleted handler' holds: tree grep for _handle_route_chat/_repoint_router_memory/_route_pool hits only tests/test_bp8_timeouts.py:6 (docstring history) and comments; tests/test_routing.py:1656-1736 route_chat tests call self.router.route() directly, never the handler; tests/test_hda_panel.py:817/828 use 'route_chat' as an arbitrary command string.",
+    "Criterion 'Tier 2/3 and tests/test_bp8_timeouts.py untouched' is HALF violated by design: `git diff master...HEAD --stat -- python/synapse/routing/router.py` is empty, but tests/test_bp8_timeouts.py lost 94 lines (the T2 handler tests, _FakeHandlerSelf/_RaisingRouter/_SleepingRouter, SynapseHandler import). Those tests called SynapseHandler._handle_route_chat unbound, so the brief's 'delete the method' and 'do not touch that file' cannot both hold; T1 router tests are byte-identical. The builder named the conflict; I concur with the resolution. BOUNDED WEAKNESS -- referee must accept this reading or the leg is definitionally unsatisfiable.",
+    "Ratchet criterion holds: harness/panel_pd/RESIDUAL.json allowed_residual 13 -> 9 with ratchet_note naming BP9-RETIRE; tests/test_panel_rhythm_owner.py:125 derives sites from PANEL.rglob('*.py') with exact=True (line 105). Deliberate break (cap back to 13) reddened test_panel_rhythm_owner_ratchet AND test_residual_cannot_increase_against_git_history; restored.",
+    "NIT: tests/test_panel_rhythm_owner.py:106 comment says 'the ceiling moves only by a re-seed that commits the new census', and RESIDUAL.json policy says the same, but this cap move kept the 2026-09-05 census (seed_counts still 13, 4 identities now point at deleted files). Harmless -- identities are path-keyed so deleted sites cannot be re-spent (test_new_owner_cannot_spend_a_deleted_site) -- but the policy text and the recorded practice now disagree. Suggest a one-line policy amendment or a re-seed in a follow-up.",
+    "hot_reload_gated move to RESOLVED is honest by the check's own rule: harness/verify/checks.py:2096-2097 says a loader that no longer ships auto-greens, and the fingerprint is `del sys.modules[` (checks.py:2108). Deliberate break (appending `del sys.modules[\"synapse.panel\"]` to houdini/python_panels/synapse_panel.pypanel) reddened tests/test_r_track.py::test_live_tree_gates_read_red_now with the new assertion message; restored.",
+    "OUT OF SCOPE (known limitation): houdini/python_panels/synapse_panel.pypanel:39-41 still does a scoped `sys.modules.pop(` over synapse.panel.* on every open, which the check's `del sys.modules[` fingerprint does not classify; harness/cto/BACKLOG.json R.3 tracks the framing question. The GREEN is per the check's definition, not a claim that no purge exists.",
+    "OUT OF SCOPE (carried from BP9-RETIRE verdict, not this leg's brief): four tracked harness scripts still import the deleted modules (harness/notes/panel_whatisloaded.py:51, harness/notes/_sizecontrol_control.py:19, harness/notes/_quickactions_control.py:19, harness/battleplan/notes/bp8_crux/probe_watchdog_wiring.py:55); python/synapse/core/protocol.py:158 CommandType.ROUTE_CHAT and panel/send_guard.py:68 / ws_bridge.py:306,338 comments still name route_chat (step B).",
+    "Method note: a third break (re-adding a `_handle_route_chat` stub at EOF of handlers.py) failed test_routing::test_route_chat_not_registered_in_handler but only via IndentationError (file ends with module-level imports) -- not evidence; the prior crucible already proved the registry guard bites when the handler is re-registered properly."
+   ],
+   "merge_ready": true,
+   "notes": "Verified in a detached worktree at 48954a0f (the branch was already checked out under .claude/worktrees, so `--detach` was used); worktree removed afterward, main tree has no tracked changes. All five rerunnable acceptance lines passed in my own rerun; the sixth (plain-Python PySide import) is unknown for the same pre-existing reason on master. All three gaps from the BP9-RETIRE BROKEN verdict are closed on the code (handler gone, ratchet at measured 9 derived from the tree, __init__ docstring fixed). merge_ready=true is conditional on the referee accepting the builder's documented resolution of the brief's self-contradiction on tests/test_bp8_timeouts.py: the T2 half of that file pinned only the deleted method and was removed; router.py and the T1 tests are untouched. If the referee reads 'test_bp8_timeouts.py untouched' literally, the leg fails by definition rather than by defect. Two nits worth a follow-up: RESIDUAL.json policy text now disagrees with practice (cap lowered without re-seeding the census), and the shipped pypanel's scoped sys.modules.pop remains outside the hot_reload check's fingerprint (BACKLOG R.3)."
+  }
+ },
+ {
+  "leg": "BP9-NONETIER-FIX",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_5caaa3b9-090-2",
+   "commit_sha": "568eeeca13b28626b417b840d5f42862afd3b116",
+   "files_changed": [
+    "harness/orchestrate.ps1",
+    "harness/battleplan/compile_wave.py",
+    "harness/battleplan/probe_receipt.py",
+    "tests/test_rails_none_tier.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "python -m pytest tests/test_rails_none_tier.py harness/jev/tests/test_jev_guards.py -q -p no:cacheprovider exits 0 with at least 16 tests in the new file",
+     "verdict": "pass",
+     "evidence": "33 passed, 2 warnings in 31.24s / exit=0; tests/test_rails_none_tier.py contributes 19 (13 inherited + 6 new)"
+    },
+    {
+     "predicate": "grep -n 'cmd-file' harness/orchestrate.ps1 harness/battleplan/probe_receipt.py returns at least one line each",
+     "verdict": "pass",
+     "evidence": "orchestrate.ps1:530,537,546 (537 is the live launch line: `& python $runner run --leg $leg.id --cmd-file $cmdFile ...`); probe_receipt.py:12,16,143,154"
+    },
+    {
+     "predicate": "a test proves a probe_cmd containing double quotes round-trips through the file and produces its ACCEPT row",
+     "verdict": "pass",
+     "evidence": "test_probe_quoted_cmd_round_trips_through_cmd_file_and_yields_accept_row: in-process AND real-CLI subprocess; receipt probe_cmd == cmd byte-identical, acceptance == [{x, pass, ok}]. Also verified live on Windows PowerShell 5.1: --cmd-file -> 'pass LIVE51 acceptance=1' exit 0; the old --cmd form on the same shell -> 'error: unrecognized arguments: x :: pass :: ok')' exit 2 (the crucible's failure reproduced)"
+    },
+    {
+     "predicate": "a test proves exit 0 with zero ACCEPT lines yields status fail",
+     "verdict": "pass",
+     "evidence": "test_probe_exit_zero_with_no_accept_lines_is_fail: exit_code 0, acceptance [], status fail, findings[0] starts 'probe printed no ACCEPT lines', CLI returns 1; an explicit 'ACCEPT: x :: fail :: nope' still passes with the row parsed"
+    },
+    {
+     "predicate": "git merge-base --is-ancestor worktree-wf_42f40752-0fd-1 HEAD exits 0",
+     "verdict": "pass",
+     "evidence": "ancestor exit=0 (checked after the commit, at 568eeeca)"
+    }
+   ],
+   "tests_run": "python -m pytest tests/test_rails_none_tier.py harness/jev/tests/test_jev_guards.py tests/test_jev_product_boundary.py -q -p no:cacheprovider -> \"35 passed, 2 warnings in 32.04s\"; acceptance-1 subset -> \"33 passed, 2 warnings in 31.24s\" exit 0 (includes test_ps1_parses_clean, so the ps1 still parses)",
+   "notes": "Merged worktree-wf_42f40752-0fd-1 (5a2779f2) first. harness/notes/bp9/wave2_results.json does not exist in the worktree (harness/notes is untracked in the main tree), so the fix was built from the mission's statement of the two findings; both were then reproduced live. Fix 1: compile_wave.py gains probe_cmd_path()/write_probe_cmd_file() - a tier-none mission writes prompts/<ID>.probe.cmd as raw UTF-8 bytes (no BOM, no added newline) and the row carries probe_cmd_file; other tiers write nothing and get no key (pinned: no probe_cmd_file on mechanical/reasoning/referee/tier-less rows, write_probe_cmd_file returns None). probe_receipt.py: `run` takes a required mutually-exclusive --cmd | --cmd-file (read_cmd_file = bytes -> utf-8, no strip), records probe_cmd_file on the receipt; new `runner-failed --leg --exit --stderr-file --cmd-file --out` writes a distinct receipt whose finding is 'probe runner failed with exit N ... stderr head: ...' plus runner_stderr_head, never the 'no probe_cmd' text. orchestrate.ps1 Run-ProbeLeg: resolves $leg.probe_cmd_file under $repo; a probe_cmd-only row gets the file written via new Write-Utf8NoBom into the receipts dir; launch line passes --cmd-file; output captured into $lines; on exit-without-receipt writes <id>.runner.stderr (first 20 lines) and calls runner-failed. The 'missing' path is now only for rows with neither file nor probe_cmd. Fix 2: build_receipt flips exit-0-with-empty-acceptance to status fail, status_note 'exit 0 but no ACCEPT lines - silent green refused', finding NO_ACCEPT_FINDING inserted first; missing_receipt/timeout paths unaffected. Not changed: mission_schema (probe_cmd_file is a compiled row field, not a mission field). The ps1 dry-run line now shows --cmd-file too. The --cmd argument remains for tests/POSIX; the static ps1 test asserts the live launch line uses --cmd-file and no `--cmd $leg.probe_cmd` exists in the function."
+  },
+  "verdict": {
+   "leg": "BP9-NONETIER-FIX",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "python -m pytest tests/test_rails_none_tier.py harness/jev/tests/test_jev_guards.py -q -p no:cacheprovider exits 0 with at least 16 tests in the new file",
+     "verdict": "pass",
+     "evidence": "33 passed, 2 warnings in 31.31s, exit=0; tests/test_rails_none_tier.py alone: 19 passed (19 test_ defs at lines 69-335)"
+    },
+    {
+     "predicate": "grep -n 'cmd-file' harness/orchestrate.ps1 harness/battleplan/probe_receipt.py returns at least one line each",
+     "verdict": "pass",
+     "evidence": "orchestrate.ps1:530,537,546 (537 is the live launch: `$lines = @(& python $runner run --leg $leg.id --cmd-file $cmdFile ...)`); probe_receipt.py:12,16,143,154"
+    },
+    {
+     "predicate": "a test proves a probe_cmd containing double quotes round-trips through the file and produces its ACCEPT row",
+     "verdict": "pass",
+     "evidence": "tests/test_rails_none_tier.py:262 test_probe_quoted_cmd_round_trips_through_cmd_file_and_yields_accept_row (in-process + real CLI subprocess; asserts r['probe_cmd'] == cmd and acceptance row). Independently reproduced live on PowerShell 5.1.26100: a command with nested escaped quotes (python -c \"print('ACCEPT: q \\\"quoted\\\" :: pass :: ok')\") via --cmd-file -> 'pass LIVE acceptance=1', receipt probe_cmd bytes == file bytes (True), acceptance predicate 'q \"quoted\"'"
+    },
+    {
+     "predicate": "a test proves exit 0 with zero ACCEPT lines yields status fail",
+     "verdict": "pass",
+     "evidence": "tests/test_rails_none_tier.py:288 test_probe_exit_zero_with_no_accept_lines_is_fail; deliberate break (guard at probe_receipt.py:66 -> `if False:`) turned it red: 1 failed; restored"
+    },
+    {
+     "predicate": "git merge-base --is-ancestor worktree-wf_42f40752-0fd-1 HEAD exits 0",
+     "verdict": "pass",
+     "evidence": "ancestor exit=0 at 568eeeca; commit touches exactly the 4 receipted files (git show --stat HEAD)"
+    }
+   ],
+   "findings": [
+    "BOUNDED WEAKNESS (sev 3): the 'runner failed' receipt's stderr head is always <empty> in the live orchestrator. harness/orchestrate.ps1:20 sets $ErrorActionPreference='SilentlyContinue', and under that preference `$lines = @(& python ... 2>&1)` (orchestrate.ps1:537) captures 0 lines when python writes only to stderr - measured live on PS 5.1: Continue -> n=2 lines, SilentlyContinue -> n=0, and `2> file` -> 0 lines too. The receipt is still distinct and correct on cause (exit code recorded, finding 'probe runner failed with exit N', never 'no probe_cmd'), so the misreport the mission targeted is fixed; only the diagnostic head is lost. Mitigation: set $ErrorActionPreference='Continue' locally around the launch (or run through `cmd /c \"python ... 2>&1\"`), and add a live-ps1 test since test_runner_failed_receipt_carries_stderr_head_not_missing_text (tests/test_rails_none_tier.py:311) only exercises the python side with a pre-written stderr file.",
+    "Criterion 'command reaches subprocess byte-identical': HOLDS. compile_wave.py:76-80 write_bytes(utf-8, no BOM, no newline); probe_receipt.py:112 read_bytes().decode('utf-8') with no strip; live PS 5.1 receipt probe_cmd bytes == file bytes.",
+    "Criterion 'silent green fails': HOLDS. probe_receipt.py:66-70 flips exit-0/empty-acceptance to fail with NO_ACCEPT_FINDING first; an explicit 'ACCEPT: x :: fail :: nope' still yields status pass with the row parsed (test line 303-308). Break test went red.",
+    "Criterion 'non-none tiers compile byte-identical': HOLDS. compile_wave.py:74-75 returns None for tier != none, leg_row adds probe_cmd_file only inside the tier=='none' branch (compile_wave.py:52); deliberate removal of the tier guard turned test_compile_wave_other_literal_tiers_unchanged_and_no_probe_key red (1 failed); restored.",
+    "Criterion 'ps1 still parses': HOLDS. test_ps1_parses_clean passed in my rerun (Parser::ParseFile -> PARSE-OK); static test at line 210 pins --cmd-file on the single launch line and went red when I reverted line 537 to `--cmd $leg.probe_cmd`.",
+    "NIT (sev 1): an existing but empty/whitespace .probe.cmd routes to missing_receipt whose finding says 'no probe_cmd' (probe_receipt.py:164-166) - accurate enough (the command is empty) but the row did carry a file; consider a distinct note.",
+    "NIT (sev 1): prompts/<ID>.probe.cmd is not gitignored (git check-ignore exit 1) and prompts/*.md are tracked, so the cmd files will be committed beside prompts - consistent with design, just noting it is a new tracked artifact class. No rows in harness/legs.json or waves/*.rows.json currently carry probe_cmd/probe_cmd_file, so no stale pointer risk today."
+   ],
+   "merge_ready": true,
+   "notes": "Method: detached throwaway worktree at ../bp9-verify-BP9-NONETIER-FIX on 568eeeca (branch was already checked out in .claude/worktrees so `worktree add <branch>` refused; used --detach on the SHA), reran all 5 acceptance lines, three deliberate breaks (silent-green guard, ps1 launch flag, compile tier guard) each turned exactly the pinning test red and were restored via git checkout; worktree removed with --force, `git worktree list` shows 0 bp9-verify entries. Main tree untouched. The one substantive finding (stderr head empty under the ps1's SilentlyContinue) does not violate a crucible criterion or acceptance line and does not reintroduce the misreport; it is a follow-up nit for the runner-failed diagnostic path."
+  }
+ }
+]

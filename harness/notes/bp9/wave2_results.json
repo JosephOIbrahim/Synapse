@@ -1,0 +1,306 @@
+[
+ {
+  "leg": "BP9-NONETIER",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_42f40752-0fd-1",
+   "commit_sha": "5a2779f22bfa2d56be6295c2be674641c520afc3",
+   "files_changed": [
+    "harness/rails_exec.json",
+    "harness/battleplan/mission_schema.py",
+    "harness/battleplan/compile_wave.py",
+    "harness/battleplan/probe_receipt.py",
+    "harness/orchestrate.ps1",
+    "harness/jev/jev_route.py",
+    "tests/test_rails_none_tier.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "python -m pytest tests/test_rails_none_tier.py harness/jev/tests/test_jev_guards.py -q -p no:cacheprovider exits 0 with at least 5 tests in the new file",
+     "verdict": "pass",
+     "evidence": "======================= 27 passed, 2 warnings in 30.86s ======================= (13 in tests/test_rails_none_tier.py, 14 in test_jev_guards.py)"
+    },
+    {
+     "predicate": "python -c \"import json;t=json.load(open('harness/rails_exec.json'))['tiers'];assert 'none' in t and t['none'].get('routable') is False\" exits 0",
+     "verdict": "pass",
+     "evidence": "ACC2 exit=0"
+    },
+    {
+     "predicate": "grep -n \"'none'\" harness/orchestrate.ps1 harness/battleplan/compile_wave.py returns at least one line each",
+     "verdict": "pass",
+     "evidence": "harness/orchestrate.ps1:531:    if ($leg.tier -eq 'none') { Run-ProbeLeg $leg; return }  /  harness/battleplan/compile_wave.py:46:    if row.get(\"tier\") == 'none':  (plus comment lines 486/498/501/530 and 42/44)"
+    },
+    {
+     "predicate": "python harness/jev/jev_route.py --wave bp4 --shadow output never lists none as a Jev choice",
+     "verdict": "pass",
+     "evidence": "Run with SYNAPSE_JEV=off PYTHONIOENCODING=utf-8: 8 rows, jev column = reasoning x7 / referee x1, '-- agreement 5/8 on authored tiers'; grep -c none on the output = 0. Structural guarantee pinned by test_jev_route_tier_criteria_exclude_none + test_jev_route_decide_refuses_none_even_if_jev_names_it. Caveat: with Jev off the CLI exercises the fallback path, not a live Jev answer; and without PYTHONIOENCODING the CLI crashes on cp1252 stdout printing the '\u2260' glyph (pre-existing, line 123, not touched)."
+    }
+   ],
+   "tests_run": "tests/test_rails_none_tier.py + harness/jev/tests/test_jev_guards.py: \"27 passed, 2 warnings in 30.86s\"; neighbours tests/test_jev_product_boundary.py tests/test_bp2_meter_tier.py tests/test_rails.py harness/jev/tests/test_jev_team.py harness/jev/tests/test_jev_shape.py: \"74 passed, 2 warnings in 2.54s\"",
+   "notes": "What landed. rails_exec.json: tier 'none' {engine none, model null, routable false, why says it launches NO model}. mission_schema: OPTIONAL gains probe_cmd + probe_timeout; tier none requires a non-empty probe_cmd; probe_cmd on any other tier (or no tier) is refused; team.subagent_tier may not be none. compile_wave: literal none passes through the existing tier branch untouched and copies probe_cmd (+ probe_timeout) onto the row; mechanical/reasoning/referee rows are byte-identical to before and carry no probe keys (test pins it). jev_route: new routable_tiers() filters rails entries with routable:false; _tier_descriptions builds the Choice criteria from it, and decide() checks it, so a Jev answer of 'none' falls back to reasoning with reason \"unknown tier 'none'\". probe_receipt.py: pure Python - parse_accept_lines / parse_findings / build_receipt / missing_receipt / run_probe (subprocess shell=True with timeout) / CLI `run` and `missing`; receipt has status pass|fail (exit 0 and no timeout = pass), acceptance [{predicate,verdict,evidence}], findings (stderr lines; timeout adds one), for_ruling [], stdout/stderr/exit_code/timed_out. orchestrate.ps1: Run-ProbeLeg defined before Start-Leg; Start-Leg returns into it when $leg.tier -eq 'none' BEFORE worktree creation, brief checks, runner and the claude launch line; missing/blank probe_cmd => `probe_receipt.py missing` FAIL receipt + Notify, no session; otherwise takes/releases the leg lock around `probe_receipt.py run --cwd $repo`, receipt written to $rdir (main-tree harness/notes/receipts/<leg.receipt>) so Get-ReceiptPath finds it and Test-CloseGate greens it without a worktree; DryRun prints the probe line and marks DryDispatched. ps1 parses clean (test_ps1_parses_clean runs the PowerShell parser). Referee checks: literal non-none tiers byte-identical (test_compile_wave_other_literal_tiers_unchanged_and_no_probe_key); ROUTE cannot emit none (two tests); parser pure + tested (three probe tests incl. real subprocess, nonzero exit, timeout, CLI --out); ps1 guard static-tested (guard precedes launch line, function contains no `claude --`/Start-Process). Caveats: (1) with -Budget, Rails-Charge/Rails-Settle still pass --tier none to rails.py, whose resolve_model returns None for the null model - not exercised here, rails.py is outside the targets; (2) jev_route shadow CLI crashes on cp1252 consoles printing '\u2260' (pre-existing, unrelated, left alone); (3) running the shadow CLI appended to the tracked harness/jev/ledger/bp4.shadow.route.jsonl - restored with git checkout so the ledger is untouched in the commit. The relayed user request said \"update dashboard\"; nothing in the computed leg names a dashboard file, so no dashboard was edited - flagging in case that was a separate ask."
+  },
+  "verdict": {
+   "leg": "BP9-NONETIER",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "python -m pytest tests/test_rails_none_tier.py harness/jev/tests/test_jev_guards.py -q -p no:cacheprovider exits 0 with at least 5 tests in the new file",
+     "verdict": "pass",
+     "evidence": "Rerun in detached worktree at 5a2779f2: '27 passed, 2 warnings in 30.89s', exit 0; tests/test_rails_none_tier.py alone: '13 passed'."
+    },
+    {
+     "predicate": "python -c \"import json;t=json.load(open('harness/rails_exec.json'))['tiers'];assert 'none' in t and t['none'].get('routable') is False\" exits 0",
+     "verdict": "pass",
+     "evidence": "ACC2 exit=0 (rails_exec.json:20-25 carries none {engine none, model null, routable false})."
+    },
+    {
+     "predicate": "grep -n \"'none'\" harness/orchestrate.ps1 harness/battleplan/compile_wave.py returns at least one line each",
+     "verdict": "pass",
+     "evidence": "orchestrate.ps1:498,501,531 (531 is the guard `if ($leg.tier -eq 'none') { Run-ProbeLeg $leg; return }`); compile_wave.py:46 `if row.get(\"tier\") == 'none':`."
+    },
+    {
+     "predicate": "python harness/jev/jev_route.py --wave bp4 --shadow output never lists none as a Jev choice",
+     "verdict": "pass",
+     "evidence": "SYNAPSE_JEV=off PYTHONIOENCODING=utf-8: 8 rows, jev column reasoning x7 / referee x1, `grep -c -w none` on output = 0. Fallback path only (Jev off); the CLI appended to the tracked bp4.shadow.route.jsonl ledger in my worktree (restored via git checkout, worktree removed)."
+    }
+   ],
+   "findings": [
+    "BOUNDED WEAKNESS - probe_cmd with embedded double quotes is unusable from the orchestrator: harness/orchestrate.ps1:512 passes `--cmd $leg.probe_cmd` to `& python` under Windows PowerShell 5.1 (orchestrate.ps1:746 spawns `powershell`), which re-tokenises embedded quotes. Live repro: probe_cmd `python -c \"print('ACCEPT: quoted :: pass :: ok')\"` -> `probe_receipt.py: error: unrecognized arguments: quoted :: pass :: ok')`, exit 2, no receipt; ps1 then writes the `missing` receipt (orchestrate.ps1:516-518) whose finding says 'row carries no probe_cmd' - fails closed, but the receipt misreports the cause. A quote-free probe (`python -m pytest tests/test_rails.py -q`) ran fine: status pass, exit 0. Mitigation: pass the command via --cmd-file/stdin or base64, and let the ps1's 'runner wrote no receipt' branch write its own distinct finding.",
+    "NIT - byte-identity is proven stronger than the test claims: compiling all 30 tiered missions with branch code vs master code (checkout master -- compile_wave.py mission_schema.py) gave IDENTICAL rows.json; tests/test_rails_none_tier.py:106-114 only checks the tier string and absence of probe keys, not the whole row. Fine, but the test name overclaims.",
+    "NIT - compile_wave still emits branch/worktree/prompt for a none row (compile_wave.py:16-24) and writes prompts/<ID>.md for it; harmless because Get-LegState (orchestrate.ps1 ~452-481) falls through to 'ready' when the worktree is absent and Test-CloseGate (orchestrate.ps1:330-338) greens on no worktree receipt, but a probe leg therefore never posts a RELEASE bus line and any downstream merge-train reading `branch` will look for a branch that never existed.",
+    "NIT (builder-flagged, confirmed) - with -Budget, Rails-Charge (orchestrate.ps1:113-114) sends `--tier none` to rails.py; `python harness/rails.py resolve none` prints `None` exit 0. Not exercised on the launch path since the guard returns before line 557, but the charge/settle ledger row for a probe leg will carry model None; rails.py is outside the targets.",
+    "NIT - a probe that prints zero ACCEPT lines still yields status pass with acceptance [] (probe_receipt.py:59-60); jev_screen.py:108-109 treats empty acceptance as a non-verdict, so a silent-but-green probe passes the close gate and only SCREEN notices. Consider failing (or flagging) a receipt with exit 0 and no acceptance rows.",
+    "VERIFIED - ROUTE cannot emit none: jev_route.py:25-30 routable_tiers() filters routable:false; _tier_descriptions (line 38) builds criteria from it; decide() line 64 refuses it. Deliberate break (decide reverted to jc.rails_tiers()) -> test_jev_route_decide_refuses_none_even_if_jev_names_it FAILED with `assert 'none' == 'reasoning'`; restored.",
+    "VERIFIED - ps1 guard: removing orchestrate.ps1:531 -> test_ps1_branches_on_none_before_launch_and_guards_probe_cmd FAILED (1 failed, 12 deselected); restored. Run-ProbeLeg (486-524) contains no `claude --`/Start-Process; blank probe_cmd -> `probe_receipt.py missing` FAIL receipt + Notify, no session. test_ps1_parses_clean runs the real PowerShell parser.",
+    "VERIFIED - receipt parser is pure Python (probe_receipt.py:29-75, stdlib only) and tested with a real subprocess, nonzero exit, timeout and CLI --out; status pass only on exit 0 and not timed_out (line 59)."
+   ],
+   "merge_ready": true,
+   "notes": "All four acceptance lines passed in my own rerun and no crucible criterion is violated. Ship-blocking? No: the quoting weakness fails closed (a FAIL receipt, never a model), so the safety property holds; it is a usability + receipt-honesty gap worth a follow-up leg (pass probe_cmd via file/stdin; distinct finding when the runner exits without writing). Method notes: the builder's branch was already checked out at .claude/worktrees/wf_42f40752-0fd-1 so I used a detached worktree at 5a2779f2 (same commit); my stash from the byte-identity experiment was dropped and the worktree removed; the leftover bp9-verify-BP9-RETIRE worktree belongs to a sibling crucible, not to this run. Main tree not edited. The relayed 'update dashboard' request names nothing in this leg; no dashboard touched by builder or me."
+  }
+ },
+ {
+  "leg": "BP9-RETIRE",
+  "receipt": {
+   "status": "partial",
+   "branch": "worktree-wf_42f40752-0fd-2",
+   "commit_sha": "76731a8265bcd0c96176225ce7658a4e7ee85f99",
+   "files_changed": [
+    "python/synapse/panel/chat_panel.py (deleted)",
+    "python/synapse/panel/quick_actions.py (deleted)",
+    "python/synapse/panel/synapse_chat.pypanel (deleted; the legacy loader lived here, not under houdini/python_panels/)",
+    "python/synapse/server/handlers.py",
+    "tests/test_response_watchdog.py (deleted)",
+    "tests/test_single_pypanel.py (new)",
+    "tests/test_chat_panel.py",
+    "tests/test_e2e_sprint.py",
+    "tests/test_panel_alt_entry_unshipped.py",
+    "tests/test_panel_camera_rhythm.py",
+    "tests/test_panel_rhythm_docking.py",
+    "tests/test_panel_sweep_a.py",
+    "tests/test_routing.py",
+    "docs/studio/DEPLOYMENT.md",
+    "docs/PANEL_REGION_MAP.md",
+    "docs/design/SYNAPSE_PANEL_REDESIGN.md"
+   ],
+   "acceptance": [
+    {
+     "predicate": "git ls-files python/synapse/panel/chat_panel.py python/synapse/panel/quick_actions.py houdini/python_panels/synapse_chat.pypanel returns nothing on the branch",
+     "verdict": "pass",
+     "evidence": "git ls-files (also including python/synapse/panel/synapse_chat.pypanel) | wc -l -> 0. Note: houdini/python_panels/synapse_chat.pypanel was NEVER tracked; the legacy loader was python/synapse/panel/synapse_chat.pypanel, which is what got deleted."
+    },
+    {
+     "predicate": "grep -rn 'route_chat' python/synapse/server/handlers.py returns nothing",
+     "verdict": "fail",
+     "evidence": "grep returns exactly one line: `1743:    def _handle_route_chat(self, payload: Dict) -> Dict:`. Registration (reg.register), the AuditCategory map entry and the read-only-set entry are all removed, so a route_chat WS message now gets the standard unknown-command error (pinned by tests/test_routing.py::test_route_chat_not_registered_in_handler). The method body was kept deliberately: tests/test_bp8_timeouts.py (untouchable per the leg, required green by predicate 3) calls SynapseHandler._handle_route_chat unbound in three tests; deleting the method makes that file fail with AttributeError. Predicates 2 and 3 are mutually exclusive as written; I chose 3 (suite green) and documented the retention in the docstring for step B."
+    },
+    {
+     "predicate": "python -m pytest tests/test_single_pypanel.py tests/test_bp8_timeouts.py tests/test_worker_tool_policy.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "33 passed, 2 warnings in 3.25s; EXIT3=0"
+    },
+    {
+     "predicate": "python -m pytest tests/ -q -p no:cacheprovider -m 'not needs_houdini' -x --deselect tests/test_phase0c_doc1_toolcount.py exits 0",
+     "verdict": "unknown",
+     "evidence": "Run launched in background and was at 25% (tests/test_freeze_chain.py) with zero failures when the harness forced this report (-x would have stopped at the first red). Output file: scratchpad/fullsuite.txt; final line will read EXIT4=<code>. Every touched test file plus tests/test_hda_panel.py and tests/test_jev_product_boundary.py passed in a separate run: 397 passed, 130 skipped."
+    },
+    {
+     "predicate": "python -c 'import synapse.panel.synapse_panel' exits 0",
+     "verdict": "pass",
+     "evidence": "Under hython 22.0.400 (the only Qt-capable interpreter here): 'hython import ok', HY_EXIT=0. Under plain python 3.14 it fails with ModuleNotFoundError: No module named 'PySide6' at synapse_panel.py:17 - a pre-existing environment gap (no PySide6 wheel for 3.14), not caused by this leg; the module does not import chat_panel/quick_actions (reachability pinned by test_panel_alt_entry_unshipped.py)."
+    }
+   ],
+   "tests_run": "Touched-file run: `python -m pytest tests/test_jev_product_boundary.py tests/test_chat_panel.py tests/test_e2e_sprint.py tests/test_panel_alt_entry_unshipped.py tests/test_panel_camera_rhythm.py tests/test_panel_rhythm_docking.py tests/test_panel_sweep_a.py tests/test_routing.py tests/test_hda_panel.py -q -p no:cacheprovider` -> \"397 passed, 130 skipped, 2 warnings in 10.35s\". Predicate 3 run -> \"33 passed, 2 warnings in 3.25s\". Full stock suite: still running at report time (25%, no failures yet); no summary line available.",
+   "notes": "Test decisions (each named): DELETED tests/test_response_watchdog.py - imported NO_RESPONSE_LINE/WATCHDOG_TIMEOUT_MS/SynapseChatPanel from chat_panel; the watchdog existed only in the legacy panel (grep ResponseWatchdog in python/ hit chat_panel.py only). RETARGETED tests/test_chat_panel.py - removed the QUICK_ACTIONS import, TestQuickActions, the three route_chat protocol JSON tests, TestStaleContextGather, TestRouteChatResponse, TestProjectAutoInit, TestChatPanelSource, TestKeyboardShortcuts, TestTypingIndicator, TestCSSConsolidation (all instantiate SynapseChatPanel or inspect its source); kept message_formatter, styles, ws_bridge context, ContextBar, ChatDisplay tests (re-added the Qt skipif on TestContextBarProjectContext that the cut dropped). RETARGETED tests/test_e2e_sprint.py - removed the quick_actions.py disk load + TestQuickActionHandlerMapping. RETARGETED tests/test_panel_sweep_a.py - dropped chat_panel/quick_actions from FILES, FACTORIES and the dynamic-states parametrize, removed the chat_panel elif and BP8_WATCHDOG_CHAT_PANEL_AMENDMENTS; the SWEEP_A qss block in qss.py is untouched (append-only fence still asserts). RETARGETED tests/test_panel_camera_rhythm.py - dropped the two filenames from the parm_row scan. RETARGETED tests/test_panel_rhythm_docking.py - DOCKING_EXEMPT_UNSHIPPED = () with the mechanism kept; removed the SynapseChatPanel branch. RETARGETED tests/test_panel_alt_entry_unshipped.py - dropped the 'exemption list non-empty' assertion, added test_legacy_alternate_entry_is_retired (modules absent on disk, list empty, no synapse_chat.pypanel). RETARGETED tests/test_routing.py - test_route_chat_registered_in_handler inverted to test_route_chat_not_registered_in_handler; Tier 0/1 router tests untouched; CommandType.ROUTE_CHAT in core/protocol.py left in place (not a target). tests/test_hda_panel.py uses \"route_chat\" only as an arbitrary command string in ws_bridge queue tests - left as is. NEW tests/test_single_pypanel.py: exactly one .pypanel under houdini/python_panels, no stray .pypanel under python/ or houdini/, and the shelf (houdini/scripts/python/synapse_shelf.py - the mission's python/synapse/panel/synapse_shelf.py path does not exist) names/installs only python_panels/synapse_panel.pypanel. Untouched by design: python/synapse/routing/router.py Tier 2/3, tests/test_bp8_timeouts.py (git diff --stat on both = empty), CHANGELOG, README (no legacy references), VERSION/pyproject, harness/notes, harness/jev/ledger. Residual comment-only mentions of chat_panel/quick_actions remain in non-target shipped files (panel/__init__.py:7, tokens.py, send_guard.py, ws_bridge.py, designsystem/qss.py markers, synapse_shelf.py docstring, harness/verify/checks.py's tolerant loader check) - none is an import; the referee's 'nothing shipped still imports the deleted modules' grep for import lines returns nothing. Blocker for 'done': predicate 2 cannot be satisfied without breaking predicate 3 (see acceptance row), and the full-suite summary line was not yet available when the report was forced."
+  },
+  "verdict": {
+   "leg": "BP9-RETIRE",
+   "verdict": "BROKEN",
+   "acceptance_rerun": [
+    {
+     "predicate": "git ls-files python/synapse/panel/chat_panel.py python/synapse/panel/quick_actions.py houdini/python_panels/synapse_chat.pypanel returns nothing on the branch",
+     "verdict": "pass",
+     "evidence": "At 76731a82: `git ls-files <3 paths + python/synapse/panel/synapse_chat.pypanel> | wc -l` -> 0. `git ls-tree -r master` confirms the three deleted files existed on master and houdini/python_panels/synapse_chat.pypanel never did; only houdini/python_panels/synapse_panel.pypanel remains in the tree."
+    },
+    {
+     "predicate": "grep -rn 'route_chat' python/synapse/server/handlers.py returns nothing",
+     "verdict": "fail",
+     "evidence": "grep returns one line: `1743:    def _handle_route_chat(self, payload: Dict) -> Dict:`. Registration, _CMD_CATEGORY and _READ_ONLY_COMMANDS entries are removed (diff verified). Retention is real: tests/test_bp8_timeouts.py (must stay untouched) calls the method unbound. Predicate 2 vs. 3 conflict is genuine, not a builder excuse."
+    },
+    {
+     "predicate": "python -m pytest tests/test_single_pypanel.py tests/test_bp8_timeouts.py tests/test_worker_tool_policy.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "33 passed, 2 warnings in 3.29s; EXIT3=0"
+    },
+    {
+     "predicate": "python -m pytest tests/ -q -p no:cacheprovider -m 'not needs_houdini' -x --deselect tests/test_phase0c_doc1_toolcount.py exits 0",
+     "verdict": "fail",
+     "evidence": "Summary line: `1 failed, 4776 passed, 306 skipped, 142 deselected, 5 xfailed in 227.28s`, EXIT4=1 (stopped at tests/test_panel_rhythm_owner.py::test_panel_rhythm_owner_ratchet: `residual 9 != cap 13 (zero slack)`). Rerun without -x: `2 failed, 9481 passed, 377 skipped` -- second red is tests/test_r_track.py::test_live_tree_gates_read_red_now (`hot_reload_gated reads GREEN on the live tree`). Both tests pass on master in the main tree (34 passed / 1 passed), so both reds are caused by this leg."
+    },
+    {
+     "predicate": "python -c 'import synapse.panel.synapse_panel' exits 0",
+     "verdict": "fail",
+     "evidence": "Plain python 3.14: `ModuleNotFoundError: No module named 'PySide2'` (the receipt says PySide6; the final error is PySide2 after the fallback). Identical failure on master in the main tree, so pre-existing and not leg-caused. Under hython 22.0.400: `hython import ok`."
+    }
+   ],
+   "findings": [
+    "SHOWSTOPPER: tests/test_panel_rhythm_owner.py:105 zero-slack ratchet fails on the branch (`residual 9 != cap 13`) because deleting chat_panel.py/quick_actions.py removed 4 census-seeded spacing sites; harness/panel_pd/RESIDUAL.json still says allowed_residual=13 pointing at the 2026-09-05 census. Fix per the test's own policy: re-seed the census and lower the cap in the same commit (test_panel_rhythm_owner.py:100-103). Green on master, red on branch.",
+    "SHOWSTOPPER: tests/test_r_track.py:314-331 (`test_live_tree_gates_read_red_now`) expects harness/verify/checks.py:2091 `check_hot_reload_gated` to read RED on the live tree; it went GREEN because the RED evidence was the deleted python/synapse/panel/synapse_chat.pypanel (checks.py:2101 skips a missing loader). Either the R-track fixture list drops hot_reload_gated from its 'still red' set or the check is retired; leg must decide and pin. Green on master, red on branch.",
+    "Receipt claim 'the referee's grep for import lines returns nothing' is false for the mission's stated grep scope (harness included): four TRACKED harness scripts still import the deleted modules -- harness/notes/panel_whatisloaded.py:51, harness/notes/_sizecontrol_control.py:19, harness/notes/_quickactions_control.py:19, harness/battleplan/notes/bp8_crux/probe_watchdog_wiring.py:55. Not product surface (nothing under python/ or houdini/ imports them), so BOUNDED WEAKNESS, but undocumented in the receipt notes.",
+    "Predicate 4 was reported 'unknown' at 25%; the builder never obtained the summary line. Crucible criterion 'full stock suite green, proven by the summary line' is violated: actual line is `2 failed, 9481 passed`.",
+    "Guards are real: re-registering route_chat in handlers.py turns tests/test_routing.py::test_route_chat_not_registered_in_handler red; a stray python/synapse/panel/synapse_chat.pypanel turns test_single_pypanel.py::test_no_pypanel_anywhere_else_in_the_shipped_tree red; renaming the shelf's pypanel turns test_shelf_installs_only_the_shipped_pypanel red. All restored, tree clean.",
+    "Tier 2/3 and test_bp8_timeouts untouched: `git diff master...HEAD --stat -- python/synapse/routing/router.py tests/test_bp8_timeouts.py` is empty. CommandType.ROUTE_CHAT (core/protocol.py:158) intentionally kept; test_routing.py:1597-1599 still pins it.",
+    "Nit: python/synapse/panel/__init__.py:7 still shows `from synapse.panel.chat_panel import ChatPanel` as the usage example in the package docstring -- a misleading comment now that the module is gone (comment only, not an import).",
+    "Nit: predicate 5 under plain python fails on master too (no PySide wheel for 3.14); the receipt's 'hython only' qualification is accurate but the predicate as written cannot pass on this box in either tree."
+   ],
+   "merge_ready": false,
+   "notes": "Verification done in a detached worktree at 76731a82 (the named branch was already checked out under .claude/worktrees, so `--detach` at the receipt SHA was used); removed afterwards, main tree untouched. The deletion itself is clean and the new guards bite, but the leg is not mergeable: the full stock suite is red on the branch with two leg-caused failures (rhythm-owner zero-slack ratchet at cap 13 vs measured 9; R-track fixture expecting hot_reload_gated to still read RED now that the second loader is gone). Both are consequences the builder's touched-file grep could not see because neither test names chat_panel/quick_actions -- they measure the panel tree and the harness checks. Loop the builder to: (1) re-seed harness/panel_pd/RESIDUAL.json + census per RULING-1e, (2) resolve test_r_track hot_reload_gated expectation, (3) either delete or annotate the four tracked harness/notes importers and name them in the receipt, (4) run the full suite to the summary line. Predicate 2 remains unsatisfiable while test_bp8_timeouts.py is off-limits; SCOUTMASTER should amend predicate 2 to 'route_chat not registered / not in _CMD_CATEGORY / not in _READ_ONLY_COMMANDS' rather than a bare grep, since step B owns the method body."
+  }
+ },
+ {
+  "leg": "BP9-CAPBASIS",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_42f40752-0fd-3",
+   "commit_sha": "961ea52dc24065f0a366553edfa3d6631d427132",
+   "files_changed": [
+    "harness/rails.py",
+    "harness/rails_exec.json",
+    "harness/battleplan/meter_transcript.py",
+    "harness/battleplan/dashboard_bp8.py",
+    "harness/jev/jev_client.py",
+    "tests/test_cap_cost_basis.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "1. python -m pytest tests/test_cap_cost_basis.py harness/jev/tests/test_jev_guards.py -q -p no:cacheprovider exits 0 with at least 4 tests in the new file",
+     "verdict": "pass",
+     "evidence": "24 passed, 1 skipped, 2 warnings in 0.63s; exit=0. The new file holds 11 tests (10 ran, 1 skipped in-worktree: the BP8 replay, because harness/battleplan/runs/2026-09-20/ is untracked and absent from this worktree)."
+    },
+    {
+     "predicate": "2. python -c \"import json;print(json.load(open('harness/rails_exec.json'))['cost_weights'])\" prints the four weights",
+     "verdict": "pass",
+     "evidence": "{'_comment': '...', 'input': 1.0, 'cache_create': 1.25, 'cache_read': 0.1, 'output': 5.0}"
+    },
+    {
+     "predicate": "3. grep -n 'cost_weighted' harness/battleplan/meter_transcript.py harness/battleplan/rails.py returns at least one line each",
+     "verdict": "pass",
+     "evidence": "meter_transcript.py: lines 5,21,26,35,40,... ; harness/battleplan/rails.py does NOT exist in this repo - the 70M ceiling is compared in harness/rails.py (the brief's parenthetical 'or wherever the 70M ceiling is compared'), which greps cost_weighted on many lines (DEFAULT_COST_WEIGHTS, cost_weighted(), cost_spent enforcement in charge/settle, totals)."
+    },
+    {
+     "predicate": "4. grep -n 'input_tokens' harness/jev/jev_client.py returns at least one line",
+     "verdict": "pass",
+     "evidence": "150:        # (resp.usage.input_tokens per the TypeSafe SDK). None stays None - never 0. / 153: \"input_tokens\": _get(usage, \"input_tokens\"),"
+    },
+    {
+     "predicate": "Referee: rails total unchanged for BP8 (regression pin)",
+     "verdict": "pass",
+     "evidence": "Replayed the three BP8 transcripts from the main-tree ledger (read-only, SYNAPSE_BP8_RUNS_DIR override): rails 22,191,520 + 26,702,947 + 30,923,734 = 79,818,201, identical to ledger_orch_20260920-131709.json totals (78,178,289 + 1,639,912). test_bp8_replay: 1 passed."
+    },
+    {
+     "predicate": "Referee: cap enforced on cost_weighted, proven by a test that would halt on rails and not on cost",
+     "verdict": "pass",
+     "evidence": "test_settle_halts_on_cost_weighted_not_on_rails (rails 2000 > cap 1000 stays open; cost 535, second leg 1070 halts, blocked_on=tokens, note 'cost-weighted spend 1070'), test_charge_refuses_on_cost_weighted_even_when_rails_is_under (rails 310 < cap, cost 1510 refused), test_cli_settle_halts_on_cost_not_rails (exit 0, status open, stdout 'cost_weighted=535 rails_total=2000')."
+    },
+    {
+     "predicate": "Brief figure: BP8 cost_weighted between 10M and 14M",
+     "verdict": "fail",
+     "evidence": "Measured under the stated weights: input 4,354 x 1.0 + cache_creation 3,562,469 x 1.25 + cache_read 74,611,466 x 0.1 + output 1,639,912 x 5.0 = 20,118,147 (max_ctx 373,507). The band is refuted; the test pins the measured value +/- 1% instead of the band so it cannot pass only while skipping (control-pinned-to-brief-figure trap). Cap consequence still holds: rails 79.8M > 70M would have halted, cost 20.1M < 70M does not."
+    },
+    {
+     "predicate": "Referee: jev ledger rows carry usage without breaking existing tests",
+     "verdict": "pass",
+     "evidence": "harness/jev/tests (all 6 files) + tests/test_jev_product_boundary.py green in the 116-passed run; test_jev_ask_records_prompt_tokens_when_exposed[2 params] asserts input_tokens=120 and None-stays-None."
+    },
+    {
+     "predicate": "Referee: no model named anywhere new (invariant 1)",
+     "verdict": "pass",
+     "evidence": "grep -i '^+.*(claude-|opus|haiku|sonnet|fable)' over git diff + the new test file: no hits (exit 1). The only model strings in touched files are the pre-existing tier table entries in rails_exec.json, untouched."
+    }
+   ],
+   "tests_run": "116 passed, 1 skipped, 2 warnings in 3.14s  (tests/test_cap_cost_basis.py harness/jev/tests tests/test_rails.py tests/test_bp2_meter_tier.py tests/test_jev_product_boundary.py); acceptance-1 command alone: 24 passed, 1 skipped, 2 warnings in 0.63s; BP8 replay with SYNAPSE_BP8_RUNS_DIR pointed at the main tree: 1 passed, 10 deselected",
+   "notes": "Design: harness/rails.py (not harness/battleplan/rails.py, which does not exist) now keeps two meters - tokens_spent (rails, 1x, comparison only, pinned by the untouched tests/test_rails.py) and cost_spent (the enforced meter). charge()/settle() take usage + max_ctx; the CLI --transcript path measures the raw fields via new measure_transcript_usage(); measure_transcript_tokens() is unchanged in contract. Every leg row and totals carry usage, cost_weighted, cost_basis ('weighted' when raw fields were measured, 'rails' when only --tokens-in/out were given, UNKNOWN otherwise), max_ctx; remaining gains cost_weighted + enforced_on='cost_weighted' while remaining.tokens stays the rails remainder (kept so test_rails.py's pins hold - I was not allowed to edit that file). Ledgers written before ruling 5 load fine: _entry_cost falls back to the rails sum. dashboard_bp8 prints 'cost-weighted X of 70M (the enforced cap); rails total Y (1x, comparison only); max_ctx Z' and fills the bar on cost. Skip caveat: the BP8 replay skips inside this worktree (runs/2026-09-20 is untracked in the main tree only); I verified it against the real transcripts via the env override and it passes. The brief's 10M-14M band is wrong for the stated weights (measured 20.1M); the commit message and the test docstring record the decomposition - the human should decide whether the weights or the band was the intent."
+  },
+  "verdict": {
+   "leg": "BP9-CAPBASIS",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "1. pytest tests/test_cap_cost_basis.py harness/jev/tests/test_jev_guards.py exits 0 with >=4 tests in new file",
+     "verdict": "pass",
+     "evidence": "Own rerun in detached worktree at 961ea52d: 24 passed, 1 skipped, exit 0. New file holds 11 tests; the skip is the BP8 replay (runs/2026-09-20 untracked in main tree, absent in worktree). With SYNAPSE_BP8_RUNS_DIR pointed at the main tree: 1 passed, 10 deselected."
+    },
+    {
+     "predicate": "2. rails_exec.json['cost_weights'] prints the four weights",
+     "verdict": "pass",
+     "evidence": "{'_comment': ..., 'input': 1.0, 'cache_create': 1.25, 'cache_read': 0.1, 'output': 5.0}"
+    },
+    {
+     "predicate": "3. grep cost_weighted in meter_transcript.py and harness/battleplan/rails.py returns >=1 line each",
+     "verdict": "pass",
+     "evidence": "meter_transcript.py: lines 5,21,26,35,40 (+more). harness/battleplan/rails.py DOES NOT EXIST (ls: No such file) on master or the branch; the brief's own parenthetical 'or wherever the 70M ceiling is compared' points to harness/rails.py, which is where charge()/settle() compare cost_spent (harness/rails.py:447, :608). Passing on the parenthetical; literal path is unsatisfiable."
+    },
+    {
+     "predicate": "4. grep input_tokens in harness/jev/jev_client.py returns >=1 line",
+     "verdict": "pass",
+     "evidence": "jev_client.py:150 (comment), :153 \"input_tokens\": _get(usage, \"input_tokens\"); _get defined at :85."
+    },
+    {
+     "predicate": "Criterion: rails total unchanged for BP8 (regression pin)",
+     "verdict": "pass",
+     "evidence": "Independent from-scratch recompute (own script, not rails.py) over the three BP8 transcripts in ledger_orch_20260920-131709.json: rails 79,818,201 == ledger 78,178,289 + 1,639,912. test_bp8_replay asserts per-leg raw['rails_total'] == ledger tokens_in+tokens_out (:214) and ties to totals (:219). tests/test_rails.py untouched and green (106 passed across test_rails/test_bp2_meter_tier/test_jev_product_boundary/harness/jev/tests)."
+    },
+    {
+     "predicate": "Criterion: cap enforced on cost_weighted, proven by a test that halts on rails not on cost",
+     "verdict": "pass",
+     "evidence": "Break 1 (charge compares tokens_spent+ti+to instead of cost_spent+cost, rails.py:447): 1 failed. Break 2 (settle compares tokens_spent instead of cost_spent, rails.py:608): 2 failed. Both restored via git checkout. Tests bite in both directions (rails 2000>1000 stays open at :114; rails 310<1000 refused on cost 1510 at :136)."
+    },
+    {
+     "predicate": "Criterion: jev ledger rows carry usage without breaking existing tests",
+     "verdict": "pass",
+     "evidence": "Break 3 (default input_tokens to 0 at jev_client.py:153): 1 failed (None-stays-None param). harness/jev/tests all green in the 106-passed run."
+    },
+    {
+     "predicate": "Criterion: no model named anywhere new (invariant 1)",
+     "verdict": "pass",
+     "evidence": "git diff master...HEAD | grep -iE '^\\+.*(claude-|opus|haiku|sonnet|fable)' -> no hits, exit 1."
+    },
+    {
+     "predicate": "Mission text: BP8 cost_weighted between 10M and 14M",
+     "verdict": "fail",
+     "evidence": "My independent recompute: input 4,354 + cache_creation 3,562,469*1.25 + cache_read 74,611,466*0.1 + output 1,639,912*5.0 = 20,118,146.85 -> 20,118,147; max_ctx 373,507. Band refuted under the stated weights; the brief's figure is wrong, not the code. Test pins measured value +/-1% (test_cap_cost_basis.py:220) instead of the band. Ruling's consequence still holds (rails 79.8M > 70M halts; cost 20.1M < 70M does not, :223)."
+    }
+   ],
+   "findings": [
+    "BOUNDED WEAKNESS - brief band refuted: the 10M..14M cost_weighted band is arithmetically impossible under the stated weights (cache_read alone is 7.46M; output alone is 8.2M). Builder pinned 20,118,147 (tests/test_cap_cost_basis.py:195-220) and my independent recompute agrees to the token. Human must decide: weights are intent (band was a guess) or band is intent (weights need ~2.5x lower output weight). Not a code defect.",
+    "BOUNDED WEAKNESS - acceptance 3 literal path: harness/battleplan/rails.py does not exist anywhere in the repo; the cap comparison lives in harness/rails.py:447 (charge) and :608 (settle). Satisfied only via the brief's parenthetical.",
+    "OUT OF SCOPE / known limitation: the BP8 replay test skips in any worktree because harness/battleplan/runs/2026-09-20/ is untracked in the main tree (test_cap_cost_basis.py:203). It passes only with SYNAPSE_BP8_RUNS_DIR set. CI will always skip it; the regression pin is effectively local-only until those ledgers are committed.",
+    "Verified production path feeds the weighted basis: harness/orchestrate.ps1:153 passes --transcript to settle, and _measure_or_explicit (rails.py:794-812) returns raw usage from a transcript, so live ledgers get cost_basis='weighted', not 'rails'.",
+    "Nit: Rails.charge/settle accept usage without validating it against tokens_in/tokens_out (rails.py:_leg_cost); a caller passing inconsistent pairs gets a ledger whose rails row and usage row disagree silently. CLI path cannot do this; API path can.",
+    "Nit: remaining.tokens (rails remainder, rails.py:393) is kept beside remaining.cost_weighted only so tests/test_rails.py pins hold; a reader of the ledger sees two 'remaining' numbers with different bases - labelled via enforced_on, but easy to misread.",
+    "Dashboard: dashboard_bp8.py imports clean; headline now prints cost-weighted as the enforced figure and rails as '1x, comparison only'; bar fill moved to cost basis (:191). Pre-ruling-5 ledgers show UNKNOWN for cost, no estimate."
+   ],
+   "merge_ready": true,
+   "notes": "Verified at 961ea52d in a detached throwaway worktree (branch was already checked out under .claude/worktrees, so used --detach with -2 suffix; removed afterward, main tree untouched). All four acceptance lines pass in my own rerun, with acceptance 3 passing only on the brief's parenthetical because its literal path does not exist. All four crucible criteria hold against the code; three deliberate mutations (charge basis, settle basis, jev usage default-0) each went red and were restored. The one 'fail' is the mission's own 10M-14M figure, which I independently refuted (20,118,147 under the stated weights) - a brief error the human must rule on (weights vs band), not a blocker to merge. Recommend: commit or fixture the BP8 ledgers so the replay pin stops skipping in CI."
+  }
+ }
+]

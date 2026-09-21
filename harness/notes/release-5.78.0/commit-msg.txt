@@ -1,0 +1,16 @@
+release: v5.78.0 -- the artist sees why, and Jev routes the work
+
+Product: a failed tool shows its translated reason, not its input; the send path passes
+the worker's own filtered roster (143 -> 103 schemas, 23,970 -> 15,290 prompt tokens per
+cold call); one usage row per task at ~/.synapse/usage/turns.jsonl; the fenced Jev
+adapter python/synapse/jev/adapter.py (no callers, SYNAPSE_JEV off by default); the
+legacy chat surface and route_chat deleted. No new installer.
+Harness: BP9 was Jev-routed (ROUTE/TEAM + pick guards, ledger bp9.*), ten legs built in
+worktrees and crucible-verified; rails none tier + probe receipts; cost-weighted cap;
+hooks fail closed + fire ledger + Stop exit 2 on cook errors; codebase-transition skill;
+H22 stamps read at run time. Rulings in harness/notes/bp9/RULINGS.md.
+Version pinned in VERSION, pyproject, __init__, README, CLAUDE.md; CHANGELOG entry.
+Stock suite on bp9/integration (= master e4e710d0) before the bump: 9604 passed, 412 skipped,
+0 failed (harness/notes/bp9/integration-suite-2.log); 39 conformance tests re-run after the bump.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>

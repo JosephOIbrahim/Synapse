@@ -1,0 +1,86 @@
+[
+  {
+    "id": "BP9-WORKER",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "Panel worker trio: turn-usage ledger, worker roster at send, tool failure reason reaches the artist",
+    "note": "Three code-only changes that all touch python/synapse/panel/claude_worker.py, so they ship as one leg. (1) USAGE LEDGER: wrap the body of ClaudeWorker._conversation_loop in try/finally; in the finally, on the worker thread, append ONE JSON row to ~/.synapse/usage/turns.jsonl with provider id, model identity, turns (iteration+1), tool_calls_total, per-tool name + is_error, UsageSink.snapshot() task fields (None stays None), per-stream wall ms measured with perf_counter around the provider.stream() call, stop_reason, outcome in {completed, stopped, error, cap_hit}. The whole append sits inside try/except: pass so a disk error can never reach the artist as stream_error. Never synapse.log, never the Qt thread. There are five loop exits (abort returns, end_turn, cap-hit fallthrough, raises), which is why it must be a finally. (2) WORKER ROSTER: synapse_panel.py near line 3410 passes tools=get_anthropic_tools() (all 143 schemas) into ClaudeWorker, overriding the worker's own default (claude_worker.py:119-121 already resolves get_anthropic_tools_for_worker() when tools is None). Stop passing the full roster: delete the kwarg or route through the filtered getter; update the FRZ comment near :3396; log len(tools) once per send. Add a test that constructs the worker the way the send path does and asserts the roster equals {t for t in full roster if is_tool_allowed_for_worker(t)[0]} under all five SYNAPSE_WORKER_TOOL_MODE values. (3) FAILURE REASON: at the four error branches that emit json.dumps(tool_input)[:120] as the detail (claude_worker.py near :436, :509, :520, :568) emit tool_status(tool, 'error', translate_tool_error(tool, err_text)[:120]) instead; keep :405/:412 as they are. In activity.py tool_status render the detail for phase error/failed ('Failed: <label> - <detail>'), receipts unchanged. In face_work.py near :266 the tooltip carries the input json for the error phase. Pin: error detail never equals json.dumps(tool_input)[:120]; running-phase detail unchanged (test_h3b_panel_cancel depends on it). translate_tool_error lives in python/synapse/panel/error_translator.py and has zero callers today.",
+    "targets": ["python/synapse/panel/claude_worker.py", "python/synapse/panel/synapse_panel.py", "python/synapse/panel/activity.py", "python/synapse/panel/face_work.py", "tests/test_worker_tool_policy.py", "tests/test_turn_usage_ledger.py", "tests/test_tool_failure_reason.py"],
+    "acceptance": [
+      "python -m pytest tests/test_worker_tool_policy.py tests/test_turn_usage_ledger.py tests/test_tool_failure_reason.py tests/test_h3b_panel_cancel.py -q -p no:cacheprovider exits 0",
+      "grep -n 'tools=get_anthropic_tools()' python/synapse/panel/synapse_panel.py returns nothing",
+      "grep -c 'translate_tool_error(' python/synapse/panel/claude_worker.py >= 4",
+      "grep -n 'turns.jsonl' python/synapse/panel/claude_worker.py returns at least one line and the append is inside a try/except inside a finally",
+      "python -m pytest tests/test_jev_product_boundary.py -q exits 0"
+    ],
+    "crucible_criteria": ["the row is written on every exit path including abort and cap_hit", "a disk error in the append cannot surface to the artist", "the roster test builds the worker with tools=None exactly as the send path does", "error detail never equals the input json", "no edit under VERSION, pyproject, or harness/"],
+    "touches": ["panel"],
+    "readonly": false,
+    "deps": []
+  },
+  {
+    "id": "BP9-ADAPTER",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "The fenced Jev adapter under python/synapse/jev/ (invariant 5 conditions a-f), no callers yet",
+    "note": "Create python/synapse/jev/__init__.py and python/synapse/jev/adapter.py exposing judge(state, questions, *, lane) -> dict | None. Conditions, each pinned by a test in tests/test_jev_adapter.py using a mocked client (no network): (a) hard timeout: the call runs on a daemon thread and future.result(timeout=0.8) bounds it; on timeout return None; every exception returns None; never raises. (b) SYNAPSE_JEV env: off/0/false OR unset means disabled (default OFF in-product), short-circuit before any I/O or SDK import. (c) TYPESAFE_API_KEY resolved once through a resolve_key-style helper modelled on python/synapse/panel/providers/base.py (env first), never written to any log or ledger row. (d) JSONL ledger under ~/.synapse/jev/<lane>.jsonl (create dirs) with request hash, question ids, raw answers, latency ms, mode in {shadow, on}; never synapse.log; never harness/jev/ledger. (e) if called on the Houdini main thread (hou present and hou.isUIAvailable() and threading.current_thread() is threading.main_thread()), return None and ledger 'main_thread_refused' without calling out. (f) a mode argument defaulting to 'shadow' is recorded on every row; the adapter itself never decides anything, it returns answers or None. Do NOT import harness/jev anywhere (tests/test_jev_product_boundary.py pins this). Use the typesafe-sdk client the harness already uses (see harness/jev/jev_client.py for the call shape: client.system_one(state=..., questions=..., model=...)) but import it lazily inside the call. Question spec shape: {id: {type: choice|noul|score, instructions, criteria}} mirroring harness/jev/jev_client.build_questions. Docstring names all six conditions and the README invariant.",
+    "targets": ["python/synapse/jev/__init__.py", "python/synapse/jev/adapter.py", "tests/test_jev_adapter.py"],
+    "acceptance": [
+      "python -m pytest tests/test_jev_adapter.py tests/test_jev_product_boundary.py -q -p no:cacheprovider exits 0 with at least 8 tests in test_jev_adapter.py",
+      "grep -rn 'harness' python/synapse/jev/ returns nothing",
+      "a test proves a 5 s sleeping fake client returns None within 1.0 s wall time",
+      "a test proves the key string never appears in the ledger file",
+      "a test proves SYNAPSE_JEV unset returns None without importing the SDK"
+    ],
+    "crucible_criteria": ["timeout is real wall-clock, not a mocked clock", "no code path can raise out of judge()", "ledger path is under ~/.synapse/jev/ and honours an env override for tests", "nothing under python/synapse imports harness"],
+    "touches": ["package"],
+    "readonly": false,
+    "deps": []
+  },
+  {
+    "id": "BP9-HOOKS",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "Claude Code hooks: guard-edit fail-closed + houdini22.0 + worktree path fence, plus a hook-fire ledger",
+    "note": "Two hook changes that need no ruling. (1) .claude/hooks/guard-edit-targets.py: add the ~/houdini22.0 prefs tree to the guarded paths alongside houdini21.0; when the current working directory is under a .claude/worktrees/ path, DENY any Edit/Write whose file_path resolves outside that worktree (the worktree-absolute-path-hits-main-tree trap); on any parse error or exception DENY (fail-closed) with a one-line reason instead of allowing. Keep existing allow behaviour byte-identical for ordinary main-tree edits. (2) New .claude/hooks/_ledger.py with a record(event, script, decision, ms, extra=None) helper that appends {ts, event, script, decision, ms, session, extra} to ~/.synapse/hooks.jsonl (never synapse.log, never harness/jev/ledger), swallowing every error; wrap guard-edit-targets.py, check-python.sh (via a tiny python shim or a python rewrite if simpler) and synapse_hooks_bridge.py main() so every fire records its decision and duration. Zero decisions in the ledger helper. Do NOT change exit codes of Stop/TaskCompleted or remove any bridge fires (those await a ruling). Tests in tests/test_hooks_guard_edit.py run the hook script as a subprocess with crafted JSON on stdin and assert: main-tree edit allowed; worktree cwd + outside path denied; houdini22.0 path denied; malformed JSON denied; ledger row written to a temp path via env override.",
+    "targets": [".claude/hooks/guard-edit-targets.py", ".claude/hooks/_ledger.py", ".claude/hooks/synapse_hooks_bridge.py", ".claude/hooks/check-python.sh", "tests/test_hooks_guard_edit.py"],
+    "acceptance": [
+      "python -m pytest tests/test_hooks_guard_edit.py -q -p no:cacheprovider exits 0 with at least 5 tests",
+      "grep -n 'houdini22.0' .claude/hooks/guard-edit-targets.py returns at least one line",
+      "grep -n 'worktrees' .claude/hooks/guard-edit-targets.py returns at least one line",
+      "echo '{}' | python .claude/hooks/guard-edit-targets.py exits with the deny code and prints a reason",
+      "grep -n 'sys.exit(2)\\|exit 2' .claude/hooks/synapse_hooks_bridge.py returns nothing new (Stop stays advisory)"
+    ],
+    "crucible_criteria": ["fail-closed on exception is real, not a comment", "ordinary main-tree edits still allowed byte-identical", "ledger helper never raises and never writes to synapse.log", "no exit-code change on Stop or TaskCompleted"],
+    "touches": ["harness"],
+    "readonly": false,
+    "deps": []
+  },
+  {
+    "id": "BP9-RESTAMP",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "H22 truth restamp: probe runner and doc-scout workflows read the live build and symbol count instead of 22.0.368 literals",
+    "note": "Every H22 doc-intel artifact is pinned to 22.0.368 / 35,903 while harness/state/drop.json says 22.0.400 and python/synapse/cognitive/tools/data/h22_symbol_table.json has 36,472 symbols. (1) scripts/h22_probe_candidates.py near line 156: stamp against_build from hou.applicationVersionString() when running under hython, else from drop.json houdini_build; never default to a literal. Persist it in the results file. (2) .claude/workflows/h22-doc-scout.js (near lines 95, 108, 115), .claude/workflows/h22-probe-adjudicate.js (near :52) and .claude/workflows/phantom-sweep.js (near :142): replace the '35903 symbols, stamp 22.0.368' literals with values read at run time from the symbol table header (its JSON has a houdini_version / count field; read them with a small inline helper and interpolate). (3) harness/verify/checks.py: add a verb (name it per the file's conventions) asserting the newest packaged lop_solaris_knowledge_22.json houdini_version equals drop.json houdini_build, RED today, with a one-line remediation naming scripts/author_lop_knowledge_22.py. Do NOT re-author the knowledge file and do NOT run hython in this leg. (4) Test tests/test_h22_stamp_sources.py: the probe runner has no literal '22.0.368' default; each of the three workflows contains no literal '35903'; the checks verb goes RED when the stamps differ (use a temp copy).",
+    "targets": ["scripts/h22_probe_candidates.py", ".claude/workflows/h22-doc-scout.js", ".claude/workflows/h22-probe-adjudicate.js", ".claude/workflows/phantom-sweep.js", "harness/verify/checks.py", "tests/test_h22_stamp_sources.py"],
+    "acceptance": [
+      "python -m pytest tests/test_h22_stamp_sources.py -q -p no:cacheprovider exits 0 with at least 4 tests",
+      "grep -n \"'22.0.368'\" scripts/h22_probe_candidates.py returns nothing",
+      "grep -c 35903 .claude/workflows/h22-doc-scout.js .claude/workflows/h22-probe-adjudicate.js .claude/workflows/phantom-sweep.js totals 0",
+      "python harness/verify/checks.py --help still exits 0 and lists the new verb",
+      "node --check .claude/workflows/h22-doc-scout.js .claude/workflows/h22-probe-adjudicate.js .claude/workflows/phantom-sweep.js all exit 0 (or the workflow files parse per their existing test)"
+    ],
+    "crucible_criteria": ["no literal build or count remains where a runtime read was specified", "the checks verb is RED at HEAD, proven", "no knowledge file re-authored, no hython run", "workflow scripts still parse"],
+    "touches": ["harness", "scripts"],
+    "readonly": false,
+    "deps": []
+  }
+]

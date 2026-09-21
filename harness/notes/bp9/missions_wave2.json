@@ -1,0 +1,84 @@
+[
+  {
+    "id": "BP9-NONETIER",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "Rails gains a none tier: probe legs run inside the orchestrator with no model (ruling 2)",
+    "note": "Add a tier named 'none' to harness/rails_exec.json with a 'why' that says it launches no model. harness/battleplan/mission_schema.py must accept tier 'none' and, for such a mission, require a 'probe_cmd' string (the command the orchestrator runs). harness/battleplan/compile_wave.py must pass tier none and probe_cmd through to the row untouched (a literal tier is byte-identical, per JEV invariant 2; ROUTE must never choose 'none': keep it out of the Choice criteria the route guard builds from rails by giving it 'routable': false and honouring that flag in harness/jev/jev_route._tier_descriptions). harness/orchestrate.ps1: where a leg is launched, if the row's tier is 'none', run probe_cmd via the shell with a timeout, capture stdout and stderr and the exit code into the leg's receipt file (same receipt shape the SCREEN guard reads: status pass/fail from exit code, acceptance rows from lines matching 'ACCEPT: <predicate> :: <pass|fail> :: <evidence>' in stdout, findings from stderr), and mark the leg done; never spawn claude for it. Tests: tests/test_rails_none_tier.py: schema accepts tier none only with probe_cmd; compile_wave passes it through byte-identical; jev_route's tier criteria exclude 'none'; a fake probe command producing two ACCEPT lines yields a receipt with two acceptance rows (drive the receipt parser as a python function you factor out of the ps1 into harness/battleplan/probe_receipt.py so it is testable, and call it from the ps1).",
+    "targets": ["harness/rails_exec.json", "harness/battleplan/mission_schema.py", "harness/battleplan/compile_wave.py", "harness/battleplan/probe_receipt.py", "harness/orchestrate.ps1", "harness/jev/jev_route.py", "tests/test_rails_none_tier.py"],
+    "acceptance": [
+      "python -m pytest tests/test_rails_none_tier.py harness/jev/tests/test_jev_guards.py -q -p no:cacheprovider exits 0 with at least 5 tests in the new file",
+      "python -c \"import json;t=json.load(open('harness/rails_exec.json'))['tiers'];assert 'none' in t and t['none'].get('routable') is False\" exits 0",
+      "grep -n \"'none'\" harness/orchestrate.ps1 harness/battleplan/compile_wave.py returns at least one line each",
+      "python harness/jev/jev_route.py --wave bp4 --shadow output never lists none as a Jev choice"
+    ],
+    "crucible_criteria": ["a literal tier other than none compiles byte-identical to before", "ROUTE cannot emit none", "the receipt parser is pure python and tested", "the ps1 change is guarded so a missing probe_cmd fails the leg, never spawns claude"],
+    "touches": ["harness"],
+    "readonly": false,
+    "deps": []
+  },
+  {
+    "id": "BP9-RETIRE",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "Retire the legacy chat surface, step A: chat_panel.py, quick_actions.py, synapse_chat.pypanel, route_chat (ruling 3)",
+    "note": "Delete python/synapse/panel/chat_panel.py, python/synapse/panel/quick_actions.py and houdini/python_panels/synapse_chat.pypanel (confirm each exists first with git ls-files). Remove the 'route_chat' command handler registration and its handler function from python/synapse/server/handlers.py (search _handle_route_chat and the dispatch table near lines 1749 and 1818) so a route_chat message returns the standard unknown-command error. Do NOT touch python/synapse/routing/router.py Tier 2/3 (step B is a later leg, after the prefilter lands) and do NOT touch tests/test_bp8_timeouts.py. Find every test and module that imports the deleted files (grep -rn 'chat_panel\\|quick_actions\\|route_chat' python tests harness scripts docs --include=*.py --include=*.md) and either delete the test file when it tests only the legacy surface, or retarget it when it tests something shared; list every decision in the receipt notes. Add tests/test_single_pypanel.py asserting exactly one .pypanel under houdini/python_panels/ and that python/synapse/panel/synapse_shelf.py installs only it. Update docs that reference the legacy panel (grep docs/ README.md) with a one-line 'retired in BP9' note where they are user-facing; do not rewrite README structure. Keep the reference in CHANGELOG untouched (release notes are a release act).",
+    "targets": ["python/synapse/panel/chat_panel.py", "python/synapse/panel/quick_actions.py", "houdini/python_panels/synapse_chat.pypanel", "python/synapse/server/handlers.py", "tests/", "docs/", "tests/test_single_pypanel.py"],
+    "acceptance": [
+      "git ls-files python/synapse/panel/chat_panel.py python/synapse/panel/quick_actions.py houdini/python_panels/synapse_chat.pypanel returns nothing on the branch",
+      "grep -rn 'route_chat' python/synapse/server/handlers.py returns nothing",
+      "python -m pytest tests/test_single_pypanel.py tests/test_bp8_timeouts.py tests/test_worker_tool_policy.py -q -p no:cacheprovider exits 0",
+      "python -m pytest tests/ -q -p no:cacheprovider -m 'not needs_houdini' -x --deselect tests/test_phase0c_doc1_toolcount.py exits 0 (full stock suite green, run it once at the end)",
+      "python -c 'import synapse.panel.synapse_panel' exits 0"
+    ],
+    "crucible_criteria": ["nothing shipped still imports the deleted modules", "Tier 2/3 and their tests untouched", "the full stock suite is green on the branch, proven by the summary line", "every deleted test is one that tested only the legacy surface, named in the receipt"],
+    "touches": ["panel", "server", "tests", "docs"],
+    "readonly": false,
+    "deps": []
+  },
+  {
+    "id": "BP9-STOPGATE",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "Stop and TaskCompleted hooks exit 2 on an unresolved cook error, and the codebase-transition skill exists (ruling 4)",
+    "note": "Two changes. (1) .claude/hooks/synapse_hooks_bridge.py: replace the consume-on-prompt watermark for CookError with an 'unresolved' set persisted beside the events file (JSON, one entry per cook error with node path and message, cleared when a later event for the same node reports a successful cook or when the artist prompt contains an explicit 'resolved' marker); on the Stop and TaskCompleted events, if the unresolved set is non-empty, print the one-line list to stderr and exit 2 (the blocking code) instead of exit 1; every other event keeps its current exit code. Keep the hook fast (<= 100 ms) and fail-open ONLY when the events file cannot be read (a missing file means no cook errors, exit 0). This leg starts AFTER BP9-HOOKS merged or from its branch: check git log for a commit mentioning BP9-HOOKS and, if the _ledger.py helper exists, record each fire through it. (2) Write ~/.claude/skills/codebase-transition/SKILL.md (outside the repo; the global CLAUDE.md names it on nine lines and nothing installs it). Frontmatter: name codebase-transition, description covering the triggers (new repo, install or setup language, .md blueprints, moving work to Claude Code, Desktop-to-Code handoff). Body, in the CLAUDE.md house style: the startup-cost ramp (announce the ramp, no steps until orientation), 'you are here' markers with directory, file, step X of Y, handoff formatting for Code (double-spaced numbered steps, one concept per step), the transition-moment beat (slow down at altitude plus tool change), post-handoff silence. Source the wording from the global CLAUDE.md sections 'Transitions', 'Altitude System' and 'Stuck Taxonomy' (read C:/Users/User/.claude/CLAUDE.md); do not invent behaviour it does not describe. Also copy the skill into the repo at .claude/skills/codebase-transition/SKILL.md so the repo carries it. Tests: tests/test_hooks_stop_gate.py drives the bridge hook as a subprocess with a crafted events file: unresolved cook error + Stop event -> exit 2 and stderr names the node; resolved -> exit 0; missing events file -> exit 0; UserPromptSubmit never exits 2.",
+    "targets": [".claude/hooks/synapse_hooks_bridge.py", ".claude/skills/codebase-transition/SKILL.md", "tests/test_hooks_stop_gate.py"],
+    "acceptance": [
+      "python -m pytest tests/test_hooks_stop_gate.py tests/test_hooks_guard_edit.py -q -p no:cacheprovider exits 0 with at least 4 tests in the new file",
+      "grep -n 'sys.exit(2)' .claude/hooks/synapse_hooks_bridge.py returns at least one line inside the Stop/TaskCompleted branch",
+      "test -f .claude/skills/codebase-transition/SKILL.md and the file has frontmatter with name: codebase-transition",
+      "test -f C:/Users/User/.claude/skills/codebase-transition/SKILL.md",
+      "echo '{\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"hi\"}' | python .claude/hooks/synapse_hooks_bridge.py exits 0"
+    ],
+    "crucible_criteria": ["exit 2 only on Stop/TaskCompleted with a non-empty unresolved set", "missing events file is exit 0, never a false block", "the skill text traces to the global CLAUDE.md sections, no invented protocol", "hook stays under 100 ms on the no-error path"],
+    "touches": ["harness", "skills"],
+    "readonly": false,
+    "deps": ["BP9-HOOKS"]
+  },
+  {
+    "id": "BP9-CAPBASIS",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "The 70M wave cap is enforced cost-weighted; the ledger shows raw fields, rails total, cost-weighted total and max_ctx (ruling 5)",
+    "note": "harness/battleplan/meter_transcript.py currently sums usage with cache reads at 1x. Change it to return the four raw fields (input_tokens, cache_creation_input_tokens, cache_read_input_tokens, output_tokens), the rails total (all at 1x, unchanged, kept for comparison), a cost_weighted total using weights from a new table in harness/rails_exec.json under 'cost_weights' (default input 1.0, cache_create 1.25, cache_read 0.1, output 5.0) and max_ctx (the largest single-call input including cache fields). harness/battleplan/rails.py (or wherever the 70M ceiling is compared) enforces the cap on cost_weighted; the orch ledger row (see harness/battleplan/runs/2026-09-20/ledger_orch_*.json for the shape) gains the new fields; any dashboard that prints the total prints both totals labelled. harness/jev/jev_client.ask records prompt token count into its ledger row when the SDK response exposes usage (resp.usage.input_tokens per the TypeSafe SDK; None stays None). Tests: tests/test_cap_cost_basis.py replays the three BP8 transcripts if present under harness/battleplan/runs/2026-09-20/ (skip with a reason if absent) and asserts rails total 79.8M plus or minus 1 percent and cost_weighted between 10M and 14M; a synthetic transcript with known counts asserts the exact weighted arithmetic; the cap check halts at 70M cost-weighted and not at 70M rails.",
+    "targets": ["harness/battleplan/meter_transcript.py", "harness/battleplan/rails.py", "harness/rails_exec.json", "harness/jev/jev_client.py", "harness/battleplan/dashboard_bp8.py", "tests/test_cap_cost_basis.py"],
+    "acceptance": [
+      "python -m pytest tests/test_cap_cost_basis.py harness/jev/tests/test_jev_guards.py -q -p no:cacheprovider exits 0 with at least 4 tests in the new file",
+      "python -c \"import json;print(json.load(open('harness/rails_exec.json'))['cost_weights'])\" prints the four weights",
+      "grep -n 'cost_weighted' harness/battleplan/meter_transcript.py harness/battleplan/rails.py returns at least one line each",
+      "grep -n 'input_tokens' harness/jev/jev_client.py returns at least one line"
+    ],
+    "crucible_criteria": ["rails total unchanged for BP8 (regression pin)", "cap enforced on cost_weighted, proven by a test that would halt on rails and not on cost", "jev ledger rows carry usage without breaking existing tests", "no model named anywhere new (invariant 1)"],
+    "touches": ["harness"],
+    "readonly": false,
+    "deps": []
+  }
+]

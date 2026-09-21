@@ -1,0 +1,100 @@
+[
+ {
+  "leg": "BP9-STOPGATE",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_1d659a8f-341-1",
+   "commit_sha": "8e82f2181c297ee1656329bdb4675a5a87d8d335",
+   "files_changed": [
+    ".claude/hooks/guard-edit-targets.py",
+    ".claude/hooks/synapse_hooks_bridge.py",
+    ".claude/skills/codebase-transition/SKILL.md",
+    "tests/test_hooks_guard_edit.py",
+    "tests/test_hooks_stop_gate.py",
+    "C:/Users/User/.claude/skills/codebase-transition/SKILL.md (outside repo, byte-identical copy, cmp verified)"
+   ],
+   "acceptance": [
+    {
+     "predicate": "python -m pytest tests/test_hooks_stop_gate.py tests/test_hooks_guard_edit.py tests/test_jev_product_boundary.py -q -p no:cacheprovider exits 0 with >=5 tests in test_hooks_stop_gate.py",
+     "verdict": "pass",
+     "evidence": "47 passed, 2 warnings in 3.81s; EXIT=0; test_hooks_stop_gate.py contributed 19 tests (dots line 'tests\\test_hooks_stop_gate.py ................... [ 40%]')"
+    },
+    {
+     "predicate": "grep -n 'sys.exit(2)' .claude/hooks/synapse_hooks_bridge.py returns >=1 line inside the Stop/TaskCompleted branch",
+     "verdict": "pass",
+     "evidence": "288:            sys.exit(2) (Stop branch) and 296:            sys.exit(2) (TaskCompleted branch); no sys.exit(1) remains; pinned by test_source_pins_exit_2_inside_stop_and_task_branches"
+    },
+    {
+     "predicate": "test -f .claude/skills/codebase-transition/SKILL.md with frontmatter name: codebase-transition",
+     "verdict": "pass",
+     "evidence": "head -3 shows '---' / 'name: codebase-transition' / 'description: Load at every codebase transition - ...'; the harness also registered it as an available skill mid-session"
+    },
+    {
+     "predicate": "test -f C:/Users/User/.claude/skills/codebase-transition/SKILL.md",
+     "verdict": "pass",
+     "evidence": "'ACC4: global copy present' + 'copies identical' (cmp against the repo file)"
+    },
+    {
+     "predicate": "a test proves a memory-file path under C:/Users/User/.claude/projects is ALLOWED from a worktree cwd while a main-checkout path is DENIED",
+     "verdict": "pass",
+     "evidence": "tests/test_hooks_guard_edit.py::test_narrowed_fence_allows_auto_memory_file_from_worktree_cwd (C:/Users/User/.claude/projects/C--Users-User-SYNAPSE/memory/MEMORY.md -> exit 0, empty stdout) and ::test_narrowed_fence_denies_main_checkout_from_worktree_cwd (reason contains 'Worktree fence' and 'main checkout'); both green in the 47-pass run"
+    },
+    {
+     "predicate": "git merge-base --is-ancestor worktree-wf_abd0dbec-e89-3 HEAD exits 0",
+     "verdict": "pass",
+     "evidence": "'ancestor: yes (exit 0)'; git log --oneline -1 worktree-wf_abd0dbec-e89-3 = 4fb0026f feat(hooks): BP9-HOOKS guard-edit fail-closed + houdini22.0 + worktree fence + hook-fire ledger; merge was conflict-free"
+    }
+   ],
+   "tests_run": "47 passed, 2 warnings in 3.81s  (python -m pytest tests/test_hooks_stop_gate.py tests/test_hooks_guard_edit.py tests/test_jev_product_boundary.py -q -p no:cacheprovider; 19 + 26 + 2)",
+   "notes": "Referee checks, with evidence:\n- exit 2 only on Stop/TaskCompleted with a non-empty unresolved set: test_other_events_keep_exit_zero_with_unresolved_errors (PreCompact/SessionEnd/PostToolUse exit 0 with an error pending), test_user_prompt_submit_never_exits_2_even_with_errors, test_task_completed_behaves_like_stop (identical stderr, both exit 2).\n- missing events file is exit 0: test_missing_events_file_exits_zero over 4 events; test_stale_unresolved_file_without_events_file_is_cleared covers a leftover unresolved file with no events file (set emptied, exit 0) - the events file is the source of truth.\n- fence both directions: 5 new tests; <main>/.claude/settings.json from a worktree is still denied (inside main checkout), ~/.claude/skills allowed, and the pattern list still runs after the fence (a ~/Documents/houdini22.0 path from a worktree cwd is still 'Houdini prefs' denied). Main checkout is derived from the path prefix before /.claude/worktrees/ (no git subprocess, so the guard stays fast and the FAKE_MAIN pure-path tests need no filesystem); that prefix is the parent of git-common-dir by construction.\n- speed: test_no_error_path_is_fast asserts the ledger-measured ms <= 100 for Stop and TaskCompleted; a manual wall-clock run INCLUDING interpreter start was 56.9 ms on the no-error Stop path.\n- skill text: every section cites the CLAUDE.md section it came from (Constitutional 11-12, Transitions - Pointer, Momentum cold_start, Domain Expertise 'Disorientation > Difficulty', Stuck Taxonomy disoriented/startup cost, Altitude System, Progress Indicators, Sea Level relationship note). One honest caveat: 'post-handoff silence' is only NAMED in the global CLAUDE.md pointer, not described; the skill renders it minimally (the handoff block ends the turn, no trailing commentary) rather than inventing mechanics.\nDesign notes: the 'resolved' marker is whole-word, case-insensitive (\\bresolved\\b), so 'unresolvedness' does not clear (test_marker_must_be_a_whole_word). Successful-cook detection matches types containing CookComplete/Cooked/CookDone with the same node path in `detail` (the shape synapse/hooks/synapse_hooks_houdini.py writes: pdg_CookError / pdg_CookComplete with detail = topnet path). Added SYNAPSE_HOOKS_EVENTS_DIR env override (falls back to the existing TEMP-based dir). The ledger row now carries extra.unresolved. The pre-existing pin test_bridge_stop_and_taskcompleted_exit_codes_unchanged was renamed/rewritten to expect exit 2 in both branches since ruling 4 supersedes it. Commit-message file was written under an untracked 'Claude outputs/' dir in the worktree (the guard hook fences AppData/scratchpad) and removed after the commit; git status is clean."
+  },
+  "verdict": {
+   "leg": "BP9-STOPGATE",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "python -m pytest tests/test_hooks_stop_gate.py tests/test_hooks_guard_edit.py tests/test_jev_product_boundary.py -q -p no:cacheprovider exits 0 with >=5 tests in test_hooks_stop_gate.py",
+     "verdict": "pass",
+     "evidence": "My rerun in detached worktree at 8e82f218: '47 passed, 2 warnings in 3.95s', EXIT=0; test_hooks_stop_gate.py alone: '19 passed'"
+    },
+    {
+     "predicate": "grep -n 'sys.exit(2)' .claude/hooks/synapse_hooks_bridge.py returns >=1 line inside the Stop/TaskCompleted branch",
+     "verdict": "pass",
+     "evidence": "grep: 288 (Stop branch, after 'elif hook_event == \"Stop\":' at 283) and 296 (TaskCompleted branch); zero sys.exit(1) in file"
+    },
+    {
+     "predicate": "test -f .claude/skills/codebase-transition/SKILL.md with frontmatter name: codebase-transition",
+     "verdict": "pass",
+     "evidence": "head -3: '---' / 'name: codebase-transition' / 'description: Load at every codebase transition - ...'"
+    },
+    {
+     "predicate": "test -f C:/Users/User/.claude/skills/codebase-transition/SKILL.md",
+     "verdict": "pass",
+     "evidence": "'present'; cmp against repo copy printed 'identical'"
+    },
+    {
+     "predicate": "a test proves a memory-file path under C:/Users/User/.claude/projects is ALLOWED from a worktree cwd while a main-checkout path is DENIED",
+     "verdict": "pass",
+     "evidence": "tests/test_hooks_guard_edit.py:156 test_narrowed_fence_allows_auto_memory_file_from_worktree_cwd (C:/Users/User/.claude/projects/C--Users-User-SYNAPSE/memory/MEMORY.md -> exit 0, stdout '' , stderr '') and :146 test_narrowed_fence_denies_main_checkout_from_worktree_cwd (reason contains 'Worktree fence' + 'main checkout'); both green; reverting the fence line to wave-one form turned 3 tests red (allows_auto_memory, allows_global_skills, pattern_list_still_applies)"
+    },
+    {
+     "predicate": "git merge-base --is-ancestor worktree-wf_abd0dbec-e89-3 HEAD exits 0",
+     "verdict": "pass",
+     "evidence": "EXIT=0; git log shows 8e82f218 -> 4fb0026f (BP9-HOOKS) -> b24ee20b (master)"
+    }
+   ],
+   "findings": [
+    "BOUNDED WEAKNESS: RESOLVED_MARKER (.claude/hooks/synapse_hooks_bridge.py:35, applied at :229-230) clears the ENTIRE unresolved set on any UserPromptSubmit containing the whole word 'resolved' - 'is this resolved?' or 'not resolved yet' also unblocks; mission asked for an explicit marker, this is a broad one.",
+    "BOUNDED WEAKNESS: the 100 ms criterion is met only by the hook's own clock - ledger ms=0.145 on the no-error Stop path (synapse_hooks_bridge.py:344-356 perf_counter around main()); my wall-clock via git-bash including interpreter start was 142-168 ms x5. Python launch, not hook code, is the cost; tests/test_hooks_stop_gate.py:230-239 pins only the ledger figure.",
+    "BOUNDED WEAKNESS (inherited): read_new_events drops events older than MAX_EVENT_AGE=300 (synapse_hooks_bridge.py:103), so a CookError that is >5 min old at the first hook fire is never folded into the set and never blocks; pre-existing watermark behaviour, not introduced here.",
+    "BOUNDED WEAKNESS (by design, pinned): a missing events file empties the persisted set (synapse_hooks_bridge.py:218-220, tests/test_hooks_stop_gate.py:98) - a Houdini restart that removes %TEMP%/synapse_hooks/houdini_events.jsonl silently drops the gate.",
+    "OUT OF SCOPE / nit: SKILL.md section 5 'Post-Handoff Silence' (lines 119-127) is only NAMED in the global CLAUDE.md pointer; the three bullets ('no trailing commentary', 'no re-explanation', 'next words come when Joe reports back') are the builder's minimal rendering - disclosed in the receipt, mild invention.",
+    "VERIFIED: success-clears-error keying matches production shape - synapse/hooks/synapse_hooks_houdini.py:254 writes detail=topnet_path for both pdg_CookComplete and pdg_CookError, and _event_node (bridge.py:178-181) keys on detail.",
+    "VERIFIED: deliberate break 1 - sed line 288 sys.exit(2)->sys.exit(1): test_hooks_stop_gate.py went 9 failed / 10 passed (incl. test_source_pins_exit_2_inside_stop_and_task_branches); restored via git checkout.",
+    "VERIFIED: fence narrowing is main-checkout-scoped (guard-edit-targets.py:88-104 main_checkout + _inside; :122-129 deny only when inside main AND not inside worktree); _norm (:67-72) normcase-folds so Windows drive-letter case cannot dodge it; <main>/.claude/settings.json from a worktree still denied (test :176)."
+   ],
+   "merge_ready": true,
+   "notes": "All six acceptance lines pass in my own rerun; every crucible criterion holds against the code, not the receipt. Exit 2 is confined to Stop/TaskCompleted with a non-empty set (PreCompact/SessionEnd/PostToolUse/UserPromptSubmit pinned exit 0 with an error pending). Missing events file -> exit 0 across 4 events. Fence proven both directions and the pattern list still runs after the fence. Skill body traces to the named CLAUDE.md sections; the only soft spot is the post-handoff-silence section, which the builder flagged. Two deliberate breaks both turned tests red and were restored. Method deviation: the builder's branch was already checked out in .claude/worktrees/wf_1d659a8f-341-1, so I used `git worktree add --detach ../bp9-verify-BP9-STOPGATE 8e82f218`; removed with --force afterwards and confirmed gone (the surviving bp9-verify-BP9-RETIRE entry is a sibling run's). Main tree untouched. Suggested follow-ups (not blockers): tighten RESOLVED_MARKER to a node-scoped or prefixed token (e.g. 'resolved /obj/topnet1' or 'cook resolved'), and state in the docstring that the 100 ms figure excludes interpreter start."
+  }
+ }
+]

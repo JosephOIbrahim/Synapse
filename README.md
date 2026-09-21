@@ -4,7 +4,7 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.77.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.77.1 is Latest</sub></p>
+<p align="center"><sub>v5.78.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.78.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
@@ -51,15 +51,18 @@ It does not reverse files written to disk.
 
 ```mermaid
 flowchart TD
-    A["You type<br/>make a box"] --> B["Model picks<br/>a tool"]
+    A["You type<br/>make a box"] --> B["Model picks a tool<br/>from the ones it<br/>is allowed to use"]
     B --> C{"What kind?"}
     C -->|"a read"| R["Runs.<br/>Nothing to undo"]
     C -->|"a change it<br/>may make"| D["Runs on the main<br/>thread, in one<br/>undo group"]
     C -->|"a change it<br/>may not"| X["Refused,<br/>with a reason"]
     D --> G["Receipt: what one<br/>Ctrl+Z reverses"]
+    D -->|"if it fails"| F["You read why it failed,<br/>in plain words"]
     X --> P["You do it in Houdini,<br/>where you can see it"]
+    G --> L["One row per task in<br/>your usage ledger"]
+    F --> L
     classDef dark fill:#333333,stroke:#8C8C8C,stroke-width:1px,color:#FFFFFF
-    class A,B,C,R,D,X,G,P dark
+    class A,B,C,R,D,X,G,F,P,L dark
 ```
 
 The receipt is the part worth knowing.
@@ -69,6 +72,10 @@ Every handler already worked out what a single **Ctrl+Z** would take back. It ju
 **What it will not do by itself.** Deleting a node, running Python or VEX, rendering, exporting and cooking a PDG graph are off the panel worker's list. It is told so in the tool result and re-plans; those you do in Houdini. Unknown tools fail closed. The list is derived from gate levels, not hand-maintained — `python/synapse/panel/worker_policy.py`.
 
 **One honest limit:** the undo group *groups*. It does not roll back. If a build fails halfway, the part that was already made stays in your scene until you undo it deliberately.
+
+**When a tool fails, you see why.** The panel used to show you the tool's input. Now it shows the reason in plain words (no model chosen, nothing selected, bridge down, node locked). The raw input stays in the tooltip.
+
+**Every task leaves one row** in `~/.synapse/usage/turns.jsonl`: model, turns, tool calls, tokens, how it ended. That file is the answer key for every routing decision that comes later. Nothing reads it yet.
 
 ### Three controls to know
 
@@ -111,6 +118,16 @@ flowchart TB
 - **Recall project decisions** when the memory store is configured.
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 - **Apply a saved scene setup** (`synapse_apply_fixture`, shipped since 5.43.0). A fixture is a setup stored as data, not a prompt: applying it twice is a no-op, and a name clash refuses instead of renaming. Details and what is proven: [BLOCKS in the changelog](CHANGELOG.md).
+
+**New in 5.78.0** — the artist sees why, and Jev routes the work.
+
+Three things you will notice in the panel. A failed tool now tells you *why* in plain words instead of echoing its input. Each API call carries only the tools the worker may actually use (103 instead of 143, about a third fewer prompt tokens on a cold send). Every task writes one row to a usage ledger so the next routing decisions are measured, not guessed.
+
+Two things you will not notice yet. A fenced door for Jev exists inside the package (`python/synapse/jev/adapter.py`), off by default, with no callers. The old chat panel and its `route_chat` command are gone; the shipped panel is the only one now.
+
+On the build side, Jev routed this very release: ten legs, each given a tier, a team size, a builder and a referee by the shipped guards, every call ledgered, every leg attacked by a crucible before merge. Rails gained a `none` tier for probe legs, the wave cap is cost-weighted, the Claude Code hooks fail closed, and Stop blocks on an unresolved cook error. Full notes in [docs/releases/v5.78.0.md](docs/releases/v5.78.0.md).
+
+**No new installer.** The 5.75.2 Setup.exe does not carry these changes.
 
 **New in 5.77.1** — no product change. A governance amendment: Jev (TypeSafe's System One model) may now run inside the artist-facing product, but only through one fenced adapter that meets six written conditions (hard timeout, off switch, key never logged, ledger away from the production log, never on Houdini's main thread, shadow-first grading). The build-time Jev harness stays build-only, and a new test pins that boundary. The ruling comes from a 30-agent scouting report on where a typed judgment earns its call in this repo; full notes in [docs/releases/v5.77.1.md](docs/releases/v5.77.1.md).
 
@@ -222,7 +239,7 @@ Anything that claims otherwise is drift. Path-qualified `IntegrityBlock`s record
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.77.1.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.78.0.md) · [Changelog](CHANGELOG.md)
 
 **What the CI badge proves.** GitHub CI tests stock Python on Linux and macOS.
 

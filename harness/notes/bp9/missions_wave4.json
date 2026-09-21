@@ -1,0 +1,44 @@
+[
+  {
+    "id": "BP9-RETIRE-FIX",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "Finish the legacy retirement (step A): drop the retained _handle_route_chat, settle the rhythm ratchet, full suite green",
+    "note": "FIRST: in your worktree run `git merge --no-edit worktree-wf_42f40752-0fd-2` (the BP9-RETIRE branch, commit 76731a82, verdict BROKEN/partial) and read harness/notes/bp9/wave2_results.json entry BP9-RETIRE for the crucible's findings. Then close the three gaps. (1) python/synapse/server/handlers.py still defines `_handle_route_chat` (near line 1743) although its registration, _CMD_CATEGORY and _READ_ONLY_COMMANDS entries are gone; delete the method and whatever test still references it (grep -rn '_handle_route_chat\\|route_chat' python tests harness scripts), retargeting a test only when it pins something shared; name each decision in the receipt. Do NOT touch python/synapse/routing/router.py Tier 2/3 or tests/test_bp8_timeouts.py. (2) tests/test_panel_rhythm_owner.py::test_panel_rhythm_owner_ratchet failed with 'residual 9 != cap 13' because deleting the legacy panel lowered the residual; a ratchet only moves down: set the cap to the new measured residual (9) with a one-line comment naming BP9-RETIRE as the reason, never raise it, and make sure the test computes the residual from the tree rather than a hand-typed list if it does not already. (3) python/synapse/panel/__init__.py:7 docstring still shows `from synapse.panel.chat_panel import ChatPanel` as the usage example; replace it with the shipped SynapsePanel import. Then run the full stock suite once: `python -m pytest tests/ -q -p no:cacheprovider -m 'not needs_houdini' --deselect tests/test_phase0c_doc1_toolcount.py` and report the summary line verbatim; it must read 0 failed. The `python -c 'import synapse.panel.synapse_panel'` predicate cannot pass on plain Python 3.14 on this box (no PySide wheel, same on master); report it as unknown with that reason, do not chase it.",
+    "targets": ["python/synapse/server/handlers.py", "python/synapse/panel/__init__.py", "tests/test_panel_rhythm_owner.py", "tests/"],
+    "acceptance": [
+      "grep -rn 'route_chat' python/synapse/server/handlers.py returns nothing",
+      "python -m pytest tests/test_panel_rhythm_owner.py tests/test_single_pypanel.py tests/test_bp8_timeouts.py tests/test_worker_tool_policy.py -q -p no:cacheprovider exits 0",
+      "python -m pytest tests/ -q -p no:cacheprovider -m 'not needs_houdini' --deselect tests/test_phase0c_doc1_toolcount.py summary line shows 0 failed (paste the line)",
+      "git merge-base --is-ancestor worktree-wf_42f40752-0fd-2 HEAD exits 0",
+      "grep -n 'chat_panel' python/synapse/panel/__init__.py returns nothing"
+    ],
+    "crucible_criteria": ["no shipped module or test references the deleted handler", "the ratchet cap moved DOWN to the measured residual and the test derives the residual from the tree", "the full stock suite summary line shows 0 failed on the branch, rerun by the referee", "Tier 2/3 and tests/test_bp8_timeouts.py untouched"],
+    "touches": ["server", "panel", "tests"],
+    "readonly": false,
+    "deps": ["BP9-RETIRE"]
+  },
+  {
+    "id": "BP9-NONETIER-FIX",
+    "band": "BUILD",
+    "class": "build",
+    "tier": "auto",
+    "team": "auto",
+    "name": "Probe legs: pass probe_cmd through a file so quotes survive PowerShell 5.1, and a silent green probe is not a pass",
+    "note": "FIRST: in your worktree run `git merge --no-edit worktree-wf_42f40752-0fd-1` (the BP9-NONETIER branch, commit 5a2779f2, verdict SOUND-WITH-NITS) and read harness/notes/bp9/wave2_results.json entry BP9-NONETIER for the crucible's findings. Two fixes. (1) harness/orchestrate.ps1 near line 512 passes `--cmd $leg.probe_cmd` to python under Windows PowerShell 5.1, which re-tokenises embedded double quotes, so a probe like `python -c \"print('ACCEPT: x :: pass :: ok')\"` dies with 'unrecognized arguments' and the fallback writes a `missing` receipt that misreports the cause as 'row carries no probe_cmd'. Fix: compile_wave.py writes the probe command to a file beside the prompt (prompts/<ID>.probe.cmd, UTF-8, verbatim) and the row carries probe_cmd_file; probe_receipt.py gains `run --cmd-file <path>` (reads the command verbatim, no shell re-tokenising on the way in); the ps1 passes --cmd-file; when the runner exits non-zero without writing a receipt, the ps1 writes a distinct 'runner failed' receipt whose finding carries the runner's stderr head, not the 'no probe_cmd' text. (2) probe_receipt.py: a probe that exits 0 but prints zero ACCEPT lines must yield status fail with a finding 'probe printed no ACCEPT lines' (a silent green is not a pass; SCREEN treats empty acceptance as a non-verdict). Extend tests/test_rails_none_tier.py: a quoted command round-trips through --cmd-file and yields the ACCEPT row; exit 0 with no ACCEPT lines is status fail; the ps1 static test asserts --cmd-file is what the launch line passes.",
+    "targets": ["harness/orchestrate.ps1", "harness/battleplan/compile_wave.py", "harness/battleplan/probe_receipt.py", "tests/test_rails_none_tier.py"],
+    "acceptance": [
+      "python -m pytest tests/test_rails_none_tier.py harness/jev/tests/test_jev_guards.py -q -p no:cacheprovider exits 0 with at least 16 tests in the new file",
+      "grep -n 'cmd-file' harness/orchestrate.ps1 harness/battleplan/probe_receipt.py returns at least one line each",
+      "a test proves a probe_cmd containing double quotes round-trips through the file and produces its ACCEPT row",
+      "a test proves exit 0 with zero ACCEPT lines yields status fail",
+      "git merge-base --is-ancestor worktree-wf_42f40752-0fd-1 HEAD exits 0"
+    ],
+    "crucible_criteria": ["the command reaches the subprocess byte-identical (prove with a quoted command)", "a silent green probe fails", "literal non-none tiers still compile byte-identical", "the ps1 still parses"],
+    "touches": ["harness"],
+    "readonly": false,
+    "deps": ["BP9-NONETIER"]
+  }
+]
