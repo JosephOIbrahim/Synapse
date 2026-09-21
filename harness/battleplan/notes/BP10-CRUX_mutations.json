@@ -1,0 +1,361 @@
+{
+ "leg": "BP10-CRUX",
+ "date": "2026-09-21",
+ "method": "fresh `git clone --shared -c core.longpaths=true` per leg into the session scratchpad (scaffold via --revision 357bf1e7); baseline check green FIRST, mutate with an exact-count string edit, re-run, restore from HEAD, prove `git diff --ignore-cr-at-eol` clean; hython = C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe (22.0.400); system python 3.14.2",
+ "driver": "harness/battleplan/artifacts/mutate.py (gitignored artifacts dir; the crucible's own checks, never a product edit)",
+ "floor": ">= 2 self-authored mutations per builder leg, each named with the check it reddens",
+ "legs": {
+  "BP10-SCAFFOLD": {
+   "checkout": "357bf1e7 (product 5ab7ee9d; NOTE: branch ref bp10/scaffold points at 845da18e, pre-product)",
+   "mutations": [
+    {
+     "id": "S-M1",
+     "leg": "BP10-SCAFFOLD",
+     "file": "python/synapse/_vendor/fxhoudinimcp/LICENSE",
+     "mutation": "'MIT License' -> 'MIT Licence' (one byte of the vendored licence)",
+     "check": "CRUX-S1 sha256(LF) == upstream 29b6695b:LICENSE",
+     "baseline": {
+      "rc": 0,
+      "out": "sha256(LF)=79a2891ba34d73cb upstream=79a2891ba34d73cb"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "sha256(LF)=00ec30af07cad40a upstream=79a2891ba34d73cb"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    },
+    {
+     "id": "S-M2",
+     "leg": "BP10-SCAFFOLD",
+     "file": "harness/jev/questions.json",
+     "mutation": "delete guards.bench.policy",
+     "check": "CRUX-S3 each new guard has edge/state_fields/questions/policy",
+     "baseline": {
+      "rc": 0,
+      "out": "missing=[]"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "missing=[('bench', 'policy')]"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    },
+    {
+     "id": "S-M3",
+     "leg": "BP10-SCAFFOLD",
+     "file": "docs/decisions/ADR-0001-jev-in-harvest.md",
+     "mutation": "REVERSE: append the 4 missing blueprint refusals (probe / which-model / instant-tier / run_on_main) after bullet 4",
+     "check": "CRUX-S5 >=8 numbered refusals + all 8 blueprint refusal topics present",
+     "baseline": {
+      "rc": 1,
+      "out": "bullets=4 topics_present=4/8 missing=['probe', 'model', 'instant', 'run_on_main']"
+     },
+     "mutated": {
+      "rc": 0,
+      "out": "bullets=8 topics_present=8/8 missing=[]"
+     },
+     "restored_clean": true,
+     "verdict": "SPECIFIC",
+     "right_reason": true,
+     "note": "reverse mutation: the check is RED on the real ADR (4 of 8) and turns green only when the 4 missing blueprint refusals are added -- proves CRUX-S5 is specific, not stuck"
+    },
+    {
+     "id": "S-M4",
+     "leg": "BP10-SCAFFOLD",
+     "file": "rag/ingest/tool_map.json",
+     "mutation": "delete key 'capture_screenshot' (a real upstream tool the guides reference)",
+     "check": "CRUX-S6 every backticked upstream tool name is a tool_map key",
+     "baseline": {
+      "rc": 0,
+      "out": "tool_refs=40 uncovered=[]"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "tool_refs=40 uncovered=['capture_screenshot']"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    }
+   ],
+   "bites_right_reason": [
+    "S-M1",
+    "S-M2",
+    "S-M4"
+   ],
+   "count_right_reason": 3,
+   "floor_met": true,
+   "other": {
+    "S-M3": "SPECIFIC"
+   }
+  },
+  "BP10-CORPUS": {
+   "checkout": "b32a877c (product fa00652a)",
+   "mutations": [
+    {
+     "id": "C-M1",
+     "leg": "BP10-CORPUS",
+     "file": "rag/ingest/help_archive.py",
+     "mutation": "phantom_hits() returns [] (gate never quarantines)",
+     "check": "tests/test_help_archive.py::test_phantom_hits_catches_absent_type",
+     "baseline": {
+      "rc": 0,
+      "out": "======================== 1 passed, 2 warnings in 0.48s ========================"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "E   AssertionError: assert [] == ['sop/frobnicator'] | E      | E     Right contains one more item: 'sop/frobnicator' | E     Use -v to get more diff"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    },
+    {
+     "id": "C-M2",
+     "leg": "BP10-CORPUS",
+     "file": "rag/ingest/help_archive.py",
+     "mutation": "_status() always returns CURRENT",
+     "check": "tests/test_help_archive.py::test_status_current_stale_unknown + CRUX-C4 live hython --status on a 22.0.368 stamp -> STALE",
+     "baseline": {
+      "rc": 0,
+      "out": "======================== 1 passed, 2 warnings in 0.42s ======================== || hython --status on 22.0.368 stamp -> STALE"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "E   AssertionError: assert 'CURRENT' == 'STALE' | E      | E     - STALE | E     + CURRENT || hython --status on 22.0.368 stamp -> CURRENT"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true,
+     "note": "two checks reddened together: the unit test and the live hython --status on a 22.0.368 stamp (CRUX-C4)"
+    },
+    {
+     "id": "C-M3",
+     "leg": "BP10-CORPUS",
+     "file": "rag/retrieval/scope_weights.py",
+     "mutation": "h21 base 10 -> 110 (H21 outranks h22_prose)",
+     "check": "tests/test_scope_weights.py (test_h22_prose_always_outranks_h21 / test_base_order_h22_over_guide_over_h21)",
+     "baseline": {
+      "rc": 0,
+      "out": "======================= 11 passed, 2 warnings in 0.33s ========================"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "E   AssertionError: assert 90 > 110 | E    +  where 90 = <function scope_weight at 0x000001E3DA76D170>('guide', 'scatter') | E    +    where <function scope_weight at 0x000001E3DA76D170> = sw.scope_weight | E    +  and   110 = <function scope_weight at 0x000001E3DA76D170>('h21', 'scatter')"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    }
+   ],
+   "bites_right_reason": [
+    "C-M1",
+    "C-M2",
+    "C-M3"
+   ],
+   "count_right_reason": 3,
+   "floor_met": true,
+   "other": {}
+  },
+  "BP10-GUIDES": {
+   "checkout": "b84bf8e5 (product 02028f63)",
+   "mutations": [
+    {
+     "id": "G-M1",
+     "leg": "BP10-GUIDES",
+     "file": "rag/ingest/guides.py",
+     "mutation": "resolve() returns True for every token (gate never quarantines)",
+     "check": "tests/test_guides_ingest.py::test_gate_quarantines_planted_fake_node",
+     "baseline": {
+      "rc": 0,
+      "out": "======================== 1 passed, 2 warnings in 0.34s ========================"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "E   TypeError: cannot unpack non-iterable bool object | FAILED tests/test_guides_ingest.py::test_gate_quarantines_planted_fake_node | ======================== 1 failed, 2 warnings in 0.36s ========================"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": false,
+     "note": "reddened by TypeError (resolve() contract is a tuple, the mutant returned a bool) -- a crash-red, NOT the quarantine assertion; right_reason=false; not counted toward the >=2 floor"
+    },
+    {
+     "id": "G-M2",
+     "leg": "BP10-GUIDES",
+     "file": "rag/ingest/guides.py",
+     "mutation": "_record writes licence=None instead of 'mit'",
+     "check": "tests/test_guides_ingest.py::test_chunks_carry_name_title_origin_licence",
+     "baseline": {
+      "rc": 0,
+      "out": "======================== 1 passed, 2 warnings in 0.32s ========================"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "E   assert False | E    +  where False = all(<generator object test_chunks_carry_name_title_origin_licence.<locals>.<genexpr> at 0x00000224F3D53C60>) | FAILED tests/test_guides_ingest.py::test_chunks_carry_name_title_origin_licence | ======================== 1 failed, 2 warnings in 0.38s ========================"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    },
+    {
+     "id": "G-M3",
+     "leg": "BP10-GUIDES",
+     "file": "rag/retrieval/scope_weights.py",
+     "mutation": "guide slot active True -> False",
+     "check": "tests/test_scope_weights.py::test_guide_slot_active_after_bp10_guides",
+     "baseline": {
+      "rc": 0,
+      "out": "======================= 12 passed, 2 warnings in 0.35s ========================"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "E   AssertionError: assert False is True | E    +  where False = <function is_active at 0x0000022302911010>('guide') | E    +    where <function is_active at 0x0000022302911010> = sw.is_active | E   AssertionError: assert ['h22_prose', 'h21'] == ['h22_prose', 'guide', 'h21']"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    },
+    {
+     "id": "G-M4",
+     "leg": "BP10-GUIDES",
+     "file": "python/synapse/_vendor/fxhoudinimcp/guides/anim.md",
+     "mutation": "plant a fake node `frobnicator_zzz` into the vendored anim.md",
+     "check": "CRUX-G2 hython guides.py --dry-run quarantine set == committed {assets,heightfields,io,model,render}",
+     "baseline": {
+      "rc": 0,
+      "out": "dry-run quarantine=['assets', 'heightfields', 'io', 'model', 'render'] committed=['assets', 'heightfields', 'io', 'model', 'render']"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "dry-run quarantine=['anim', 'assets', 'heightfields', 'io', 'model', 'render'] committed=['assets', 'heightfields', 'io', 'model', 'render']"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    }
+   ],
+   "bites_right_reason": [
+    "G-M2",
+    "G-M3",
+    "G-M4"
+   ],
+   "count_right_reason": 3,
+   "floor_met": true,
+   "other": {
+    "G-M1": "BITES"
+   }
+  },
+  "BP10-BENCH": {
+   "checkout": "cededc17 (product cb1cd0de)",
+   "mutations": [
+    {
+     "id": "B-M1",
+     "leg": "BP10-BENCH",
+     "file": "harness/outside_in/verify.py",
+     "mutation": "verify.py imports an arm module (from arms import synapse)",
+     "check": "harness/jev/tests/test_outside_in_verify.py::test_verify_reads_no_arm_text_code_inspection",
+     "baseline": {
+      "rc": 0,
+      "out": "======================== 1 passed, 1 warning in 0.22s ========================="
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "E   AssertionError: verify imports arms | E   assert not True | E    +  where True = <built-in method startswith of str object at 0x0000028C4DC76010>(('arms', '_agent')) | E    +    where <built-in method startswith of str object at 0x0000028C4DC76010> = ('arms').startswith"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    },
+    {
+     "id": "B-M2",
+     "leg": "BP10-BENCH",
+     "file": "harness/outside_in/run.py",
+     "mutation": "spend_gate never refuses (if scene != large or confirm -> if True)",
+     "check": "harness/jev/tests/test_outside_in_verify.py::test_run_large_gate_refuses_and_estimates",
+     "baseline": {
+      "rc": 0,
+      "out": "======================== 1 passed, 1 warning in 0.21s ========================="
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "E   assert None == 2 | FAILED harness/jev/tests/test_outside_in_verify.py::test_run_large_gate_refuses_and_estimates | ======================== 1 failed, 1 warning in 0.24s ========================="
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    },
+    {
+     "id": "B-M3",
+     "leg": "BP10-BENCH",
+     "file": "harness/outside_in/verify.py",
+     "mutation": "nodes check ok = got >= need -> ok = True",
+     "check": "harness/jev/tests/test_outside_in_verify.py::test_fail_when_node_missing_even_if_arm_claims_success + CRUX-B4 live third-hython box check on the sphere scene -> FAIL",
+     "baseline": {
+      "rc": 0,
+      "out": "======================== 1 passed, 1 warning in 0.22s ========================= || verify.py box-check on sphere scene -> FAIL (expected FAIL)"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "E   AssertionError: assert 'PASS' == 'FAIL' | E      | E     - FAIL | E     + PASS || verify.py box-check on sphere scene -> PASS (expected FAIL)"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true,
+     "note": "two checks reddened together: the unit test and the live third-hython box check on the sphere scene (CRUX-B4)"
+    },
+    {
+     "id": "B-M4",
+     "leg": "BP10-BENCH",
+     "file": "harness/outside_in/prompts.jsonl",
+     "mutation": "drop the last prompt row (23 rows, one domain at 3)",
+     "check": "CRUX-B1 prompts.jsonl == 24 rows, 6 domains x 4, non-empty check",
+     "baseline": {
+      "rc": 0,
+      "out": "rows=24 per_domain={'SOP': 4, 'Pyro': 4, 'Vellum': 4, 'Solaris/LOP': 4, 'Copernicus': 4, 'VEX': 4}"
+     },
+     "mutated": {
+      "rc": 1,
+      "out": "rows=23 per_domain={'SOP': 4, 'Pyro': 4, 'Vellum': 4, 'Solaris/LOP': 4, 'Copernicus': 4, 'VEX': 3}"
+     },
+     "restored_clean": true,
+     "verdict": "BITES",
+     "right_reason": true
+    },
+    {
+     "id": "B-M5",
+     "leg": "BP10-BENCH",
+     "file": "harness/jev/questions.json",
+     "mutation": "delete guards.bench.policy (cross-leg: does the bench test pin the scaffold's guard shape?)",
+     "check": "harness/jev/tests/test_jev_bench.py::test_bench_spec_reads_questions_json",
+     "baseline": {
+      "rc": 0,
+      "out": "======================== 1 passed, 1 warning in 0.19s ========================="
+     },
+     "mutated": {
+      "rc": 0,
+      "out": "======================== 1 passed, 1 warning in 0.20s ========================="
+     },
+     "restored_clean": true,
+     "verdict": "SURVIVED",
+     "right_reason": false,
+     "note": "SURVIVED: test_bench_spec_reads_questions_json does not pin guards.bench.policy; the scaffold's policy thresholds are pinned by no test on any bp10 branch (only by CRUX-S3)"
+    }
+   ],
+   "bites_right_reason": [
+    "B-M1",
+    "B-M2",
+    "B-M3",
+    "B-M4"
+   ],
+   "count_right_reason": 4,
+   "floor_met": true,
+   "other": {
+    "B-M5": "SURVIVED"
+   }
+  }
+ }
+}
