@@ -483,9 +483,52 @@ function Get-LegState([object]$leg) {
     return 'ready'
 }
 
+# BP9-NONETIER (ruling 2): a tier-'none' leg is a PROBE the orchestrator runs ITSELF.
+# No worktree, no runner, no claude. The row's probe_cmd runs through the shell with a
+# timeout (harness/battleplan/probe_receipt.py does the run + the parse, so the receipt
+# logic is plain tested Python) and the receipt lands in the MAIN tree's
+# harness/notes/receipts/<leg.receipt> - the Get-ReceiptPath fallback, which
+# Test-CloseGate greens without a worktree - so the next poll reads the leg 'done'.
+# Guarded: a none row with NO probe_cmd gets a FAIL receipt and never a session.
+function Run-ProbeLeg([object]$leg) {
+    $out     = Join-Path $rdir $leg.receipt
+    $timeout = if ($leg.probe_timeout) { [int]$leg.probe_timeout } else { 600 }
+    $runner  = Join-Path $repo 'harness\battleplan\probe_receipt.py'
+    if (-not $leg.probe_cmd -or -not ([string]$leg.probe_cmd).Trim()) {
+        Say "  REFUSED - tier 'none' row has no probe_cmd; writing a FAIL receipt, launching nothing" 'Red'
+        if ($DryRun) { Say "  (dry run) would write: $out (status fail)" 'DarkGray'; $script:DryDispatched[$leg.id] = $true; return }
+        & python $runner missing --leg $leg.id --out $out 2>&1 | ForEach-Object { Say "  probe: $_" 'DarkGray' }
+        Notify "$($leg.id) probe FAILED" "tier 'none' row has no probe_cmd. Fail receipt written; no model launched."
+        return
+    }
+    Say "  tier: none -> probe (no model): $($leg.probe_cmd)   timeout ${timeout}s" 'DarkGray'
+    if ($DryRun) {
+        Say "  (dry run - not running the probe)" 'DarkGray'
+        Say "  (dry run) probe:    python probe_receipt.py run --leg $($leg.id) --timeout $timeout --out $out" 'DarkGray'
+        $script:DryDispatched[$leg.id] = $true
+        return
+    }
+    if (-not (Take-LegLock $leg.id)) { return }
+    try {
+        & python $runner run --leg $leg.id --cmd $leg.probe_cmd --timeout $timeout --cwd $repo --out $out 2>&1 |
+            ForEach-Object { Say "  probe: $_" 'DarkGray' }
+        $code = $LASTEXITCODE
+    } finally { Release-LegLock $leg.id }
+    if (-not (Test-Path $out)) {
+        Say "  probe runner wrote no receipt (exit $code) - writing a FAIL receipt" 'Red'
+        & python $runner missing --leg $leg.id --out $out 2>&1 | Out-Null
+    }
+    $status = if ($code -eq 0) { 'pass' } else { 'fail' }
+    Say "  probe done: $status  receipt $out" $(if ($status -eq 'pass') { 'Green' } else { 'Yellow' })
+    Notify "$($leg.id) probe $status" "tier none: probe_cmd ran in the orchestrator (exit $code). Receipt: $($leg.receipt). No model launched."
+}
+
 function Start-Leg([object]$leg) {
     $wt = Join-Path $repo $leg.worktree
     Say "DISPATCH $($leg.id) $($leg.name)  ->  $($leg.branch)" 'Cyan'
+
+    # BP9-NONETIER: tier 'none' never reaches the worktree/runner/claude path below.
+    if ($leg.tier -eq 'none') { Run-ProbeLeg $leg; return }
 
     # WRONG-BASE DISPATCH. A leg may declare the ref its worktree is cut from.
     # The field already existed in the data - M5b carries

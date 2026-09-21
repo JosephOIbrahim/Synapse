@@ -39,6 +39,14 @@ def leg_row(m: dict) -> dict:
         sys.path.insert(0, str(REPO / "harness" / "jev"))
         import jev_route
         row["tier"] = jev_route.resolve_tier(m, wave)
+    # BP9-NONETIER (ruling 2): a literal tier 'none' passes through UNTOUCHED (JEV invariant 2:
+    # a literal tier is byte-identical) together with its probe_cmd - the command
+    # orchestrate.ps1 runs in place of spawning claude. Jev can never emit 'none' (rails marks
+    # it routable:false and jev_route honours the flag), so only an author puts it here.
+    if row.get("tier") == 'none':
+        row["probe_cmd"] = m["probe_cmd"]
+        if m.get("probe_timeout"):
+            row["probe_timeout"] = m["probe_timeout"]
     # JEV-TEAM (2026-09-20, notes/JEV_HELM.md mile 2): an OPTIONAL "team". "auto" asks Jev how
     # parallelizable the leg is and code maps that to 0/2/4 subagents, rounding DOWN on doubt;
     # a literal {max_subagents, subagent_tier} passes through. No team field -> no key on the
