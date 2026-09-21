@@ -77,13 +77,33 @@ class PaletteEntry:
     score: float = 0.0   # fuzzy match score (higher = better match)
     verb: str = "build"          # two-axis (Mile 6): what the artist wants done
     context: Optional[str] = None  # two-axis (Mile 6): where they are
+    # PNL-L3A: True when the PANEL answers this pick locally (no model turn).
+    panel_answered: bool = False
 
 
 # ===================================================================
 # 2. Palette entry builder
 # ===================================================================
 
-# Hardcoded slash commands with descriptions
+# PNL-L3A (spec leg L3a, ruling R2-misc — "one registry, one name"):
+# these five commands are answered by the PANEL ITSELF. A pick never reaches
+# the model: synapse_panel._send intercepts the literal and opens a local view
+# (pinned by tests/test_panel_finesse.py and tests/test_first_session_panel.py,
+# and the '/render' send by tests/native_render_workspace.py +
+# tests/test_farm_integration.py). They are marked HERE, at the one place rows
+# are built, so tool_palette._load_entries — the single row source — carries
+# the fact forward instead of the palette merging this list blindly.
+PANEL_ANSWERED_COMMANDS: frozenset[str] = frozenset({
+    "/render",
+    "/events",
+    "/saved-recipes",
+    "/lookdev-suggestion",
+    "/restore-session",
+})
+
+# Hardcoded slash commands with descriptions. NOT a second registry: this is
+# DATA, and build_palette_entries below is the only path that turns it into
+# rows (L3b decides these row by row).
 _SLASH_COMMANDS: list[tuple[str, str]] = [
     ("/help", "Show help and available commands"),
     ("/diagnose", "Scene health audit and diagnostics"),
@@ -181,6 +201,7 @@ def build_palette_entries(*, force_rebuild: bool = False) -> list[PaletteEntry]:
             command=cmd,
             category="command",
             description=desc,
+            panel_answered=cmd in PANEL_ANSWERED_COMMANDS,
         ))
 
     # -- b) Recipes from recipe_book.RECIPES ------------------------------
@@ -331,6 +352,50 @@ def fuzzy_match(query: str, text: str) -> float:
         score = min(score + 0.1, 1.0)
 
     return score
+
+
+# ===================================================================
+# 3b. Row ranking (pure) — PNL-L3A
+# ===================================================================
+
+# The fields a palette row is ranked over, in the order the spec names them.
+RANK_FIELDS: tuple[str, ...] = ("title", "desc", "send")
+
+
+def rank_row(query: str, title: str = "", desc: str = "", send: str = "") -> float:
+    """Score ONE palette row against *query*. Pure python, no Qt, no state.
+
+    PNL-L3A (spec leg L3a): the ranking used to live inside
+    ``CommandPaletteWidget`` while the slash palette that artists actually open
+    did a flat substring filter, so 'the good row' was wherever the sort had
+    left it. Same scoring rules as :func:`fuzzy_match` (substring 1.0 /
+    subsequence length-ratio / all-words 0.8, +0.2 prefix, +0.1 word
+    boundary); a row scores the BEST of its three fields, and 0.0 means the row
+    does not match at all.
+    """
+    return max(fuzzy_match(query, title or ""),
+               fuzzy_match(query, desc or ""),
+               fuzzy_match(query, send or ""))
+
+
+def rank_rows(query: str, rows):
+    """Rank ``rows`` (dicts with title/desc/send) best-first, dropping 0.0.
+
+    Ties keep the order they arrived in — the palette's own grouping
+    (context, verb, title) stays the tiebreak, so ranking only ever lifts a
+    better match above a worse one. An empty query returns ``rows`` untouched.
+    """
+    rows = list(rows)
+    if not query:
+        return rows
+    scored = []
+    for index, row in enumerate(rows):
+        score = rank_row(query, row.get("title", ""), row.get("desc", ""),
+                         row.get("send", ""))
+        if score > 0.0:
+            scored.append((score, index, row))
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    return [row for _score, _index, row in scored]
 
 
 # ===================================================================

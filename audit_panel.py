@@ -31,8 +31,14 @@ def _find_root(start):
 
 ROOT  = _find_root(__file__)
 PYDIR = os.path.join(ROOT, "python")
-if PYDIR not in sys.path:
-    sys.path.insert(0, PYDIR)
+# PNL-L3A: being ON sys.path is not enough - it has to be FIRST. The deployed
+# Houdini package PREPENDS the main checkout's python/ ahead of $PYTHONPATH, so
+# a worktree run with PYTHONPATH=<worktree>/python found PYDIR already present,
+# skipped the insert, and audited the MAIN tree's unmodified panel - a green (or
+# a red) about code nobody had changed. The audit always audits ITS OWN repo.
+while PYDIR in sys.path:
+    sys.path.remove(PYDIR)
+sys.path.insert(0, PYDIR)
 
 from synapse.panel.designsystem import tokens as t
 
