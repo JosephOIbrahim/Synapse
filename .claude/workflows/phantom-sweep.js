@@ -17,6 +17,19 @@ if (!A.date || !/^\d{4}-\d{2}-\d{2}$/.test(A.date)) {
 }
 const SURFACES = A.surfaces || ['source', 'docs', 'corpus']
 const MAX_HIT_GROUPS = A.maxHits || 30
+const SYMTAB = 'python/synapse/cognitive/tools/data/h22_symbol_table.json'
+
+// BP9-RESTAMP: the symbol-table stamp (houdini_version / symbol_count) is READ AT RUN TIME from the
+// table header, never a literal. Workflow scripts have no filesystem API, so the read is one cheap
+// low-effort agent call; an unreadable header yields an explicit UNKNOWN, never a guessed build.
+const STAMP_SCHEMA = { type: 'object', required: ['houdini_version', 'symbol_count'],
+  properties: { houdini_version: { type: 'string' }, symbol_count: { type: 'integer' } } }
+async function readSymtabStamp(path, phaseTitle) {
+  const r = await agent(`Read ONLY the header of ${path} (Bash: head -c 600 "${path}") and return its houdini_version (string) and symbol_count (integer) fields verbatim. Do NOT load the full symbols array.`,
+    { label: 'stamp:symtab', phase: phaseTitle, schema: STAMP_SCHEMA, effort: 'low' })
+  return r ? { build: String(r.houdini_version), count: String(r.symbol_count) }
+           : { build: 'UNKNOWN (symbol-table header unreadable)', count: 'UNKNOWN' }
+}
 
 // The known-quarantine signature set (SYNAPSE's documented phantoms; SPEC.md is canonical).
 const SEED = [
@@ -110,6 +123,8 @@ const ATTACK_SCHEMA = {
 
 // ---------- Phase: Inventory (one cartographer per surface, blind to each other) ----------
 phase('Inventory')
+const STAMP = await readSymtabStamp(SYMTAB, 'Inventory')
+log(`symbol table stamp ${STAMP.build} (${STAMP.count} symbols)`)
 const inventories = await parallel(SURFACES.map(s => () =>
   agent(
     `Map every mention of SYNAPSE's known-quarantined phantom symbols on the "${s}" surface.\n` +
@@ -139,7 +154,7 @@ const batches = []
 for (let i = 0; i < symbols.length; i += BATCH) batches.push(symbols.slice(i, i + BATCH))
 const assays = await parallel(batches.map(b => () =>
   agent(
-    `Assay these Houdini API symbols against the H22.0.368 runtime membership AUTHORITY: ` +
+    `Assay these Houdini API symbols against the H${STAMP.build} runtime membership AUTHORITY (${STAMP.count} symbols): ` +
     `python/synapse/cognitive/tools/data/h22_symbol_table.json. Read the table ONCE via Bash or Read, establish ` +
     `its format, then verdict each symbol.\nSYMBOLS: ${b.join(', ')}\n` +
     `Verdict rules: present = the table proves membership | absent = the table proves non-membership (a genuine ` +

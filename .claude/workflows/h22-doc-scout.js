@@ -20,6 +20,18 @@ const DATE = A.date || 'undated'
 const REPO = 'C:/Users/User/SYNAPSE'
 const SYMTAB = REPO + '/python/synapse/cognitive/tools/data/h22_symbol_table.json'
 
+// BP9-RESTAMP: the symbol-table stamp (houdini_version / symbol_count) is READ AT RUN TIME from the
+// table header, never a literal. Workflow scripts have no filesystem API, so the read is one cheap
+// low-effort agent call; an unreadable header yields an explicit UNKNOWN, never a guessed build.
+const STAMP_SCHEMA = { type: 'object', required: ['houdini_version', 'symbol_count'],
+  properties: { houdini_version: { type: 'string' }, symbol_count: { type: 'integer' } } }
+async function readSymtabStamp(path, phaseTitle) {
+  const r = await agent(`Read ONLY the header of ${path} (Bash: head -c 600 "${path}") and return its houdini_version (string) and symbol_count (integer) fields verbatim. Do NOT load the full symbols array.`,
+    { label: 'stamp:symtab', phase: phaseTitle, schema: STAMP_SCHEMA, effort: 'low' })
+  return r ? { build: String(r.houdini_version), count: String(r.symbol_count) }
+           : { build: 'UNKNOWN (symbol-table header unreadable)', count: 'UNKNOWN' }
+}
+
 const LENS = `You are scouting SideFX Houdini 22 documentation for SYNAPSE — an agentic Houdini plugin exposing ~115 MCP tools (Solaris/USD set-dressing, COPs/Copernicus networks, Karma renders, PDG/TOPs), every action reversible + recorded. SYNAPSE's #1 failure mode is PHANTOM APIs (calling hou/pxr/pdg symbols that do not exist). HARD RULE: docs describe INTENT, the runtime is TRUTH — NEVER assert a doc claim as verified fact. Classify every finding into exactly one bucket: NEW_MCP_TOOL (a capability SYNAPSE could expose as a new tool), RECIPE_CHANGE (a node/param SYNAPSE's Solaris/COP recipes use that H22 changed/renamed), API_MIGRATION (a hou/pxr/pdg call H22 changed/deprecated), CAPABILITY_GAP (something the docs show is possible SYNAPSE should support), CORPUS_SEED (H22 prose worth adding to a houdini22-reference RAG skill). For each finding give: the exact doc URL + section heading, the bucket, a one-line SYNAPSE relevance, tier (default DOC-CLAIM), the list of concrete hou./pxr./pdg. symbols it cites (if any), and a CONCRETE runtime probe (the exact dir()/hasattr/hou call that would verify it). SCOPE: Solaris, COPs/Copernicus, HOM/scripting/automation only. REJECT anything rigging/KineFX/APEX (declared non-goal) — do not report it. Flag any version-bump / breaking change as needing ESCALATE.`
 
 const DEFAULT_DOMAINS = [
@@ -67,6 +79,8 @@ const VERIFY_SCHEMA = {
 
 // Phase Map — discover the SYNAPSE-relevant sub-pages per domain (barrier).
 phase('Map')
+const STAMP = await readSymtabStamp(SYMTAB, 'Map')
+log(`symbol table stamp ${STAMP.build} (${STAMP.count} symbols)`)
 const maps = await parallel(DOMAINS.map(d => () =>
   agent(`${LENS}\n\nDOMAIN: ${d.key}. Focus: ${d.focus}. Start at ${d.seed} — WebFetch it (if it redirects, follow the returned URL once), read its table of contents, and return the 7 MOST SYNAPSE-relevant sub-page URLs to scout in depth (absolute URLs). Prefer pages about nodes/APIs SYNAPSE would actually call. Return {domain, urls}.`,
     { label: `map:${d.key}`, phase: 'Map', agentType: 'general-purpose', schema: MAP_SCHEMA })
@@ -92,7 +106,7 @@ const handlerHint = { solaris: 'server/handlers_solaris_*.py + server/solaris_gr
 const verifiedBatches = await parallel(Object.entries(byDomain).map(([domain, findings]) => () =>
   agent(`You adversarially verify H22 doc-scout findings for SYNAPSE (domain: ${domain}). For EACH finding:
 (a) CROSS-REFERENCE the real SYNAPSE surface — Grep ${REPO}/python/synapse/mcp/_tool_registry.py and ${REPO}/python/synapse/${handlerHint[domain] || 'server/handlers*.py'} and (for prose) ${REPO}/rag/skills/houdini21-reference/ — set gap = "GAP" (not covered), "COVERED" (already a tool/handler), or "PARTIAL".
-(b) PHANTOM-GUARD — for every hou./pxr./pdg. symbol the finding lists, Grep ${SYMTAB} (the committed H22 symbol table, 35903 symbols, stamp 22.0.368) for the EXACT dotted symbol. Set tier = VERIFIED (symbol present), PHANTOM (a concrete symbol is cited but ABSENT — do NOT implement), or DOC-ONLY (prose, no concrete symbol). A finding with no symbols stays DOC-CLAIM. CRITICAL inverse-trap: hou.lop.* / hou.ui.* / hou.qt.* / hou.hipFile.* submodules introspect to 0 children in the headless table — a symbol under them reading ABSENT is a COVERAGE GAP, not a phantom; tag those DOC-ONLY with a "blind-spot" note, never PHANTOM.
+(b) PHANTOM-GUARD — for every hou./pxr./pdg. symbol the finding lists, Grep ${SYMTAB} (the committed H22 symbol table, ${STAMP.count} symbols, stamp ${STAMP.build}) for the EXACT dotted symbol. Set tier = VERIFIED (symbol present), PHANTOM (a concrete symbol is cited but ABSENT — do NOT implement), or DOC-ONLY (prose, no concrete symbol). A finding with no symbols stays DOC-CLAIM. CRITICAL inverse-trap: hou.lop.* / hou.ui.* / hou.qt.* / hou.hipFile.* submodules introspect to 0 children in the headless table — a symbol under them reading ABSENT is a COVERAGE GAP, not a phantom; tag those DOC-ONLY with a "blind-spot" note, never PHANTOM.
 (c) keep the runtime probe; drop anything rigging/KineFX/APEX; preserve escalate flags.
 Return {domain, verified} with each item carrying title, bucket, tier, doc_url, relevance, probe, symbols, gap, escalate. Findings:\n${JSON.stringify(findings).slice(0, 12000)}`,
     { label: `verify:${domain}`, phase: 'Cross-verify', agentType: 'general-purpose', schema: VERIFY_SCHEMA })
@@ -105,14 +119,14 @@ phase('Synthesize')
 const summary = await agent(`You are the SYNAPSE H22 doc-intel synthesizer. From the ${all.length} cross-verified findings below, WRITE TWO FILES with the Write tool:
 
 1. ${REPO}/docs/reviews/h22-doc-intel-${DATE}.md — a prioritized report for SYNAPSE development. Structure:
-   - Title + provenance line (fetch-date ${DATE}, symbol-table stamp 22.0.368, doc source sidefx.com/docs/houdini22.0).
+   - Title + provenance line (fetch-date ${DATE}, symbol-table stamp ${STAMP.build}, doc source sidefx.com/docs/houdini22.0).
    - Executive summary + a TOP 10 HIGHEST-LEVERAGE table (rank, domain, bucket, item, tier, gap).
    - Per domain (Solaris, COPs/Copernicus, MCP/HOM), grouped by bucket (NEW_MCP_TOOL, RECIPE_CHANGE, API_MIGRATION, CAPABILITY_GAP, CORPUS_SEED). Each item: doc URL, tier, one-line relevance, the runtime probe, gap-vs-covered.
    - A dedicated ## PHANTOM WATCH section: Tier A confirmed-absent dotted symbols (do NOT emit), Tier B node-type-name strings (never table-verifiable — probe before createNode), Tier C coverage blind-spots (ABSENT but REAL — do NOT auto-reject; allowlist like hou.ui/hou.qt).
    - A ## ESCALATE section (breaking changes / version-bump smells).
    - A closing ## How to use this (candidates are DOC-CLAIM until their probe runs under H22 hython; feed to flywheel ratified:false; this report never mutates code).
 
-2. ${REPO}/harness/notes/h22_doc_candidates.json — {"generated":"${DATE}","against_build":"22.0.368","source":"sidefx docs houdini22.0","candidates":[{id, domain, bucket, tier, doc_url, relevance, probe, gap, escalate}]} — every actionable finding, ready to seed flywheel ratified:false entries.
+2. ${REPO}/harness/notes/h22_doc_candidates.json — {"generated":"${DATE}","against_build":"${STAMP.build}","source":"sidefx docs houdini22.0","candidates":[{id, domain, bucket, tier, doc_url, relevance, probe, gap, escalate}]} — every actionable finding, ready to seed flywheel ratified:false entries.
 
 Both must be valid + written via Write. Return a concise text summary: counts per bucket, per tier (esp. how many PHANTOM), and the top 5 items. Findings:\n${JSON.stringify(all).slice(0, 60000)}`,
   { label: 'synthesize:report', phase: 'Synthesize', agentType: 'general-purpose' })

@@ -30,6 +30,34 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CAND = ROOT / "harness" / "notes" / "h22_doc_candidates.json"
 OUT = ROOT / "harness" / "notes" / "h22_probe_results.json"
+# Fallback stamp source when not under hython: the human-written drop declaration.
+DROP = ROOT / "harness" / "state" / "drop.json"
+
+
+def resolve_against_build() -> str:
+    """The build this run executes against -- read at run time, never a literal.
+
+    Under hython the running build is the truth (``hou.applicationVersionString()``);
+    otherwise ``harness/state/drop.json`` ``houdini_build`` (the drop declaration,
+    ``houdini`` accepted as its older key). If neither is readable the run refuses
+    to stamp rather than invent a build (BP9-RESTAMP: every H22 doc-intel artifact
+    had been pinned to a stale literal).
+    """
+    try:
+        import hou  # noqa: F401 -- only importable under hython
+        return str(hou.applicationVersionString())
+    except Exception:  # noqa: BLE001 -- not under hython, fall through
+        pass
+    try:
+        drop = json.loads(DROP.read_text(encoding="utf-8"))
+        build = drop.get("houdini_build") or drop.get("houdini")
+        if build:
+            return str(build)
+    except Exception:  # noqa: BLE001 -- surfaced below with one message
+        pass
+    raise RuntimeError(
+        "cannot stamp against_build: no hou runtime and no readable "
+        f"{DROP.relative_to(ROOT)} houdini_build -- run under hython or write drop.json")
 
 # Refuse to auto-exec anything with a disk/process side effect.
 DENY = re.compile(
@@ -151,15 +179,17 @@ def main() -> int:
             "doc_url": c.get("doc_url"), "relevance": c.get("relevance"),
             "probe": c.get("probe", ""), "hint": hint, "probe_run": r,
         })
+    against_build = resolve_against_build()
     OUT.write_text(json.dumps({
         "generated_by": "scripts/h22_probe_candidates.py",
-        "against_build": data.get("against_build", "22.0.368"),
-        "source_report": "docs/reviews/h22-doc-intel-2026-07-15.md",
+        "against_build": against_build,
+        # the candidates file's own stamp, kept beside the live one so drift is visible
+        "candidates_against_build": data.get("against_build"),
+        "source_report": f"docs/reviews/h22-doc-intel-{data.get('generated', 'undated')}.md",
         "counts": counts,
         "results": results,
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    import hou
-    print(f"PROBED {len(results)} candidates on {hou.applicationVersionString()} -> {OUT.name}")
+    print(f"PROBED {len(results)} candidates on {against_build} -> {OUT.name}")
     print("HINTS:", json.dumps(counts))
     return 0
 

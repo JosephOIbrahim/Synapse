@@ -853,6 +853,40 @@ def check_lop_knowledge_fresh(ctx):
     return {"ok": True, "detail": f"{len(pkgs)} LOP catalog(s) sound + byte-matched "
                                   f"(schema v1, stamps {', '.join(stamps)})"}
 
+def check_lop_knowledge_stamp_current(ctx):
+    # BP9-RESTAMP: the NEWEST packaged LOP/Solaris knowledge catalog (highest <major> in
+    # lop_solaris_knowledge_<major>.json) must carry the houdini_version the drop declares
+    # (harness/state/drop.json `houdini_build`; `houdini` accepted as the older key).
+    # lop_knowledge_fresh proves the file is sound + byte-matched to its OWN stamp; it cannot
+    # see that the stamp itself is a build behind the drop. This verb can. RED as of
+    # 2026-09-21 (22.0.368 stamped vs 22.0.400 dropped) until the file is re-authored.
+    wt = Path(ctx["wt"])
+    pkgs = sorted((wt / "python/synapse/cognitive/tools/data").glob(
+        "lop_solaris_knowledge_*.json"),
+        key=lambda fp: int("".join(ch for ch in fp.stem if ch.isdigit()) or 0))
+    if not pkgs:
+        return {"ok": False, "detail": "no packaged lop_solaris_knowledge_<major>.json found"}
+    pkg = pkgs[-1]
+    try:
+        stamp = str(json.loads(pkg.read_text(encoding="utf-8")).get("houdini_version") or "")
+    except Exception as e:
+        return {"ok": False, "detail": f"{pkg.name} unreadable: {str(e)[:300]}"}
+    drop_fp = _drop_path()
+    try:
+        _d = json.loads(drop_fp.read_text(encoding="utf-8"))
+        dropped = str(_d.get("houdini_build") or _d.get("houdini") or "")
+    except Exception:
+        return {"ok": None, "detail": f"{drop_fp.name} absent/unreadable (mode A: no drop to compare "
+                                      f"against; {pkg.name} stamped {stamp or '?'})"}
+    if not dropped:
+        return {"ok": False, "detail": f"{drop_fp.name} has no houdini_build/houdini field"}
+    if stamp != dropped:
+        return {"ok": False,
+                "detail": f"{pkg.name} houdini_version={stamp or '?'} != drop.json houdini_build="
+                          f"{dropped} -- re-author under the dropped build: hython "
+                          f"scripts/author_lop_knowledge_22.py (then commit artifact + packaged copy)"}
+    return {"ok": True, "detail": f"{pkg.name} houdini_version={stamp} == drop.json houdini_build"}
+
 def check_lop_catalog_fresh(ctx):
     # The full-surface LOP recognition artifact (scripts/harvest_lop_catalog.py ->
     # harness/notes/h<major>_lop_catalog_live_<build>.json). Every LOP type the build
@@ -3126,6 +3160,7 @@ DISPATCH = {
     "validator_catches_miswire": check_validator_catches_miswire,
     # U.5 — utility flywheel: LOP/Solaris knowledge (context truth)
     "lop_knowledge_fresh": check_lop_knowledge_fresh,
+    "lop_knowledge_stamp_current": check_lop_knowledge_stamp_current,
     "lop_catalog_fresh": check_lop_catalog_fresh,
     "lop_review_clean": check_lop_review_clean,
     "validator_lop_conformance": check_validator_lop_conformance,
@@ -3191,7 +3226,9 @@ DISPATCH = {
 }
 
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="verbs (tasks.json verify/guardrail names):\n  " + "\n  ".join(sorted(DISPATCH)))
     ap.add_argument("--task", required=True)
     ap.add_argument("--worktree", required=True)
     ap.add_argument("--hython", default="")
