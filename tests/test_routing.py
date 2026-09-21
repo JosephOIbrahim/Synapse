@@ -1598,8 +1598,12 @@ class TestRouteChatHandler:
         assert hasattr(CommandType, "ROUTE_CHAT")
         assert CommandType.ROUTE_CHAT.value == "route_chat"
 
-    def test_route_chat_registered_in_handler(self):
-        """route_chat is registered in the handler registry."""
+    def test_route_chat_not_registered_in_handler(self):
+        """BP9-RETIRE (ruling 3): route_chat is NOT in the handler registry.
+
+        The legacy chat surface that sent it is deleted; a route_chat message
+        now gets the standard unknown-command error. The router itself (Tier
+        0/1 tests below) is untouched - step B retires Tier 2/3 later."""
         import types
 
         from conftest import HOUDINI_BUILD_TUPLE
@@ -1625,7 +1629,8 @@ class TestRouteChatHandler:
         try:
             from synapse.server.handlers import SynapseHandler
             handler = SynapseHandler()
-            assert handler._registry.has("route_chat"), "route_chat not registered"
+            assert not handler._registry.has("route_chat"), (
+                "route_chat re-registered; it was retired in BP9")
         finally:
             # Restore everything.
             # R310: `sys.modules.update(_cached)` restored only the sys.modules

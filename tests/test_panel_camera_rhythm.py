@@ -452,8 +452,8 @@ def test_shell_role_consumes_the_gutter_token_and_ratios_are_gone():
     assert 'setProperty("rhythm_role", "band")' in panel_source
     qss_source = (ROOT / "python/synapse/panel/designsystem/qss.py").read_text(encoding="utf-8")
     assert "role_size" not in qss_source
-    for name in ("chat_panel.py", "gate_widget.py", "context_bar.py", "face_review.py",
-                 "hda_views.py", "quick_actions.py", "tool_palette.py",
+    for name in ("gate_widget.py", "context_bar.py", "face_review.py",
+                 "hda_views.py", "tool_palette.py",
                  "working_indicator.py", "command_palette.py", "recall_card.py"):
         assert '"rhythm_role", "parm_row"' not in _source(name), name
 

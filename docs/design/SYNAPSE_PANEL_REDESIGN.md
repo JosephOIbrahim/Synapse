@@ -17,7 +17,7 @@
 | Family | File | Status | Has | Lacks |
 |---|---|---|---|---|
 | **Legacy monolith** | `houdini/python_panels/synapse_panel.pypanel` (3032-line CDATA) | **the one that actually ships** (install.py + shelf) | rich features: slash commands, Ctrl+K palette, activity log, agent-health, image attach, direct-Claude streaming | **no gate UI** (consent shown only as passive log lines — a constitutional safety gap), untestable, unmaintainable |
-| **Modular chat** | `python/synapse/panel/chat_panel.py` via `synapse_chat.pypanel` | **the only tested one** — but *not installed* | clean modules, the full **GateWidget**, HDA wizard, WS-bridge | functionally thinner: no palette, no activity, no agent-health, no image attach |
+| **Modular chat** | `python/synapse/panel/chat_panel.py` via `synapse_chat.pypanel` — **retired in BP9** (ruling 3; both files deleted) | **the only tested one** — but *not installed* | clean modules, the full **GateWidget**, HDA wizard, WS-bridge | functionally thinner: no palette, no activity, no agent-health, no image attach |
 | **Orphaned admin** | `python/synapse/ui/panel.py` | registered by nothing | 5 memory/server tabs | unreachable; duplicates connection/health |
 
 So the **shipped panel ≠ the tested panel ≠ a third orphan**, on two *incompatible* LLM architectures (panel-side `ClaudeWorker` vs server-side `route_chat`), with **two installers**, **three divergent design-token sources**, and an **orphaned custom icon set** that never renders.

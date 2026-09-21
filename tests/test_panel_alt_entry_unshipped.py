@@ -1,12 +1,11 @@
 """The docking exemption's premise, pinned (landing r3, CTO RULING-2B, 2026-09-05).
 
-quick_actions.QuickActionPills and chat_panel.SynapseChatPanel are the legacy
-Chat/HDA alternate entry. They are exempt from the 380px docking bound ONLY
-while no artist can dock them: no .pypanel under houdini/python_panels builds
-them, and the shipped panel (synapse.panel.synapse_panel) never imports them,
-directly or transitively. The day either premise breaks, this file goes red
-and test_panel_rhythm_docking.py returns both regions to its list on its own
-(it reads DOCKING_EXEMPT_UNSHIPPED through reachable_panel_modules()).
+quick_actions.QuickActionPills and chat_panel.SynapseChatPanel were the legacy
+Chat/HDA alternate entry, exempt from the 380px docking bound ONLY while no
+artist could dock them. BP9-RETIRE (ruling 3) deleted both modules; this file
+now pins that they stay gone (no source on disk, unreachable from the shipped
+panel, the exemption list empty) and that the one .pypanel under
+houdini/python_panels builds synapse.panel.synapse_panel and nothing else.
 
 Source-only: no Qt, no host.
 """
@@ -185,11 +184,20 @@ def test_every_docking_exempt_module_is_unreachable_from_the_shipped_panel():
 
     reachable = reachable_panel_modules()
     exempt = {region.split(".")[0] for region, _ in DOCKING_EXEMPT_UNSHIPPED}
-    assert exempt, "the exemption list is empty; nothing to pin"
     leaked = sorted(exempt & reachable)
     assert not leaked, (
         "exemption premise broken: %r is reachable from the shipped panel, so "
         "the docking test must measure it again" % leaked)
+
+
+def test_legacy_alternate_entry_is_retired():
+    """BP9-RETIRE: the legacy modules are gone from disk and off the exemption list."""
+    from test_panel_rhythm_docking import DOCKING_EXEMPT_UNSHIPPED
+
+    assert DOCKING_EXEMPT_UNSHIPPED == (), DOCKING_EXEMPT_UNSHIPPED
+    for name in ("chat_panel", "quick_actions"):
+        assert _module_path(name) is None, "%s came back; it was retired in BP9" % name
+    assert not (PANEL / "synapse_chat.pypanel").exists()
 
 
 def test_import_walker_sees_nested_and_relative_imports(tmp_path):
