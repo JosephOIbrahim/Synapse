@@ -1167,19 +1167,3 @@ def prepare_render_dialog(root, scale=t.FONT_SCALE_DEFAULT):
 #DsRoot[panel_popup="render"] QScrollArea#DsRenderScroll {{ background: {t.PANEL}; border: none; }}
 """)
 # --- END RENDER_WORKSPACE
-
-
-def apply_to(widget, scale: float = t.FONT_SCALE_DEFAULT) -> None:
-    """Put the generated sheet on a widget, from inside the design system.
-
-    PNL-L5 (2026-09-21). tests/test_panel_rhythm_owner.py counts every raw
-    setStyleSheet / setContentsMargins call under python/synapse/panel as a
-    RHYTHM OWNER, excludes designsystem/ because that is where ownership is
-    supposed to live, and caps the residual with a ratchet whose own policy says
-    "ceilings may only decrease". A probe that applied the sheet itself added an
-    owner, and neither tagging it nor raising the cap was the honest answer:
-    tagging spends the residual, and raising the cap is the one move the policy
-    forbids. Applying the sheet through the design system is the move the
-    ratchet was built to encourage.
-    """
-    widget.setStyleSheet(stylesheet(scale))

@@ -118,7 +118,7 @@ def probe():
     os.environ.setdefault("SYNAPSE_REDUCED_MOTION", "1")
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from synapse.panel.designsystem import fontload, qss, rhythm
+    from synapse.panel.designsystem import components, fontload, qss, rhythm
     from synapse.panel.chat_display import ChatDisplay
     fontload.load_application_fonts()
 
@@ -134,7 +134,7 @@ def probe():
             root = QtWidgets.QWidget()
             root.setObjectName("DsRoot")
             root.setProperty("density", "standard")
-            qss.apply_to(root)          # via the design system: see qss.apply_to
+            components.apply_stylesheet(root)   # via the design system: see its docstring
             lay = QtWidgets.QVBoxLayout(root)
             rhythm.apply_layout_margins(lay, "band")   # the sanctioned zero-margin role
             chat = ChatDisplay(root)
