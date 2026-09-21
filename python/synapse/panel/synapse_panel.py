@@ -175,10 +175,18 @@ def _houdini_build_label():
         return "Houdini"
 
 
+# The ASK rows (bc-wave BC-1 moved them off the retired verb rail into the
+# Commands list; PNL-L3B gave them their sends). Every one states its own
+# empty-scene fallback: an artist opening Commands on a scene with nothing
+# selected -- the first-click case the probe walks -- must not pick a row
+# that can only answer "nothing is selected".
 _QUICK_ACTIONS = [
-    ("Explain", "Explain what the selected nodes do and how they connect."),
-    ("Fix", "Diagnose any problems with the current scene and propose fixes."),
-    ("Optimize", "Suggest performance optimizations for the current network."),
+    ("Explain", "Explain the selected nodes and how they connect, or the "
+                "whole scene if nothing is selected."),
+    ("Fix", "Diagnose problems in the selected nodes, or in the whole scene "
+            "if nothing is selected, and propose fixes."),
+    ("Optimize", "Suggest performance improvements for the selected network, "
+                 "or for the whole scene if nothing is selected."),
 ]
 
 

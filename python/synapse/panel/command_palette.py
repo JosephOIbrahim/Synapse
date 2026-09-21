@@ -103,7 +103,14 @@ PANEL_ANSWERED_COMMANDS: frozenset[str] = frozenset({
 
 # Hardcoded slash commands with descriptions. NOT a second registry: this is
 # DATA, and build_palette_entries below is the only path that turns it into
-# rows (L3b decides these row by row).
+# rows. PNL-L3B decided every one of them; the three tables underneath carry
+# the decisions.
+#
+# PNL-L3B correction to its own brief: the brief says "the 20 rows that have
+# no panel handler". The list held 25 rows of which only FOUR were
+# panel-answered -- "/restore-session" had never been listed at all, though
+# the panel has intercepted it since W7-SESSCOPE. It is added here, which is
+# what makes the panel group five rows, and leaves 21 rows to decide.
 _SLASH_COMMANDS: list[tuple[str, str]] = [
     ("/help", "Show help and available commands"),
     ("/diagnose", "Scene health audit and diagnostics"),
@@ -118,6 +125,7 @@ _SLASH_COMMANDS: list[tuple[str, str]] = [
     ("/saved-recipes", "Save, tag and reuse local Solaris networks"),
     ("/lookdev-suggestion", "Ask for a saved lookdev setup and prepare an editable prompt"),
     ("/events", "See local work updates and watch selected render or cache outputs"),
+    ("/restore-session", "Bring back the conversation parked by the last fresh boot"),
     ("/hda", "Create HDA from selection or description"),
     ("/login", "Shot login and context setup"),
     ("/apex", "APEX rigging overview"),
@@ -131,6 +139,115 @@ _SLASH_COMMANDS: list[tuple[str, str]] = [
     ("/inspect", "Inspect geometry or node details"),
     ("/search", "Search nodes, parameters, or assets"),
 ]
+
+# PNL-L3B (1): the five panel rows are TITLED BY OUTCOME and read in this
+# order at the top of the list. The send stays the literal the panel
+# intercepts -- unchanged, and after this leg the only sends in the whole
+# palette that begin with "/".
+PANEL_ROW_ORDER: tuple[str, ...] = (
+    "/render",
+    "/events",
+    "/saved-recipes",
+    "/lookdev-suggestion",
+    "/restore-session",
+)
+PANEL_ROW_TITLES: dict[str, str] = {
+    "/render": "Open the render workspace",
+    "/events": "Show updates",
+    "/saved-recipes": "Saved networks",
+    "/lookdev-suggestion": "Saved lookdev suggestion",
+    "/restore-session": "Restore last session",
+}
+
+# PNL-L3B (2a): the rows that survive as a REAL PROMPT --
+# ``command -> (row title, the sentence the pick sends)``. Every prompt is
+# actionable with nothing selected: each names its own empty-scene or
+# empty-selection fallback, the same rule the ASK rows follow.
+COMMAND_PROMPTS: dict[str, tuple[str, str]] = {
+    "/diagnose": (
+        "Check the scene for problems",
+        "Audit the current scene for problems -- node errors and warnings, "
+        "broken file paths, missing inputs -- and report what you find, "
+        "worst first.",
+    ),
+    "/preflight": (
+        "Pre-render check",
+        "Run a pre-render check on the current scene: camera, render "
+        "settings, output paths, lights and materials. List anything that "
+        "would break or spoil the render.",
+    ),
+    "/journal": (
+        "Recap this session",
+        "Recap what we have done in this session so far, and what is still "
+        "open.",
+    ),
+    "/trace": (
+        "Trace what feeds this node",
+        "Trace the dependencies and data flow into the selected node, or "
+        "into the display node of the current network if nothing is "
+        "selected.",
+    ),
+    "/hda": (
+        "Make a digital asset",
+        "Build a digital asset from the selected nodes, promoting the "
+        "parameters that matter. If nothing is selected, ask me what the "
+        "asset should do before you build anything.",
+    ),
+    "/apex explain": (
+        "Explain this APEX graph",
+        "Explain the structure of the selected APEX graph, or of the rig in "
+        "the scene if nothing is selected.",
+    ),
+    "/apex trace": (
+        "Trace APEX evaluation order",
+        "Trace the evaluation order of the selected APEX graph, or of the "
+        "rig in the scene if nothing is selected.",
+    ),
+    "/apex overview": (
+        "How APEX rigging works",
+        "Give me a high-level overview of how APEX rigging fits together in "
+        "Houdini 22, and where it replaces KineFX.",
+    ),
+    "/apex migrate": (
+        "Move a KineFX rig to APEX",
+        "Walk me through migrating a KineFX rig to APEX, step by step, using "
+        "the rig in this scene if there is one.",
+    ),
+    "/scene": (
+        "Summarize the scene",
+        "Summarize the current scene: contexts, object and node counts, "
+        "cameras, renderers, and anything unusual.",
+    ),
+    "/inspect": (
+        "Inspect the selected node",
+        "Inspect the selected node -- its geometry, attributes and the "
+        "parameters that are off their defaults. If nothing is selected, "
+        "inspect the display node of the current network.",
+    ),
+}
+
+# PNL-L3B (2b): DROPPED. A row is dropped when its send could only ever have
+# been the bare literal: no panel handler behind it, and no sentence a model
+# can act on that some other row does not already carry better. The reasons
+# are the rows' own, not one reason repeated.
+DROPPED_COMMANDS: dict[str, str] = {
+    "/help": "the palette IS the help surface; '/help' reached a model that "
+             "cannot enumerate the panel's own affordances",
+    "/fix": "duplicate of the ASK row 'Fix', which carries the real prompt",
+    "/explain": "duplicate of the ASK row 'Explain', which carries the real "
+                "prompt",
+    "/vex": "bare verb with no object; the '/vex help <function>' rows are "
+            "the reachable form and they stay",
+    "/recipes": "the RECIPES group is the browse surface; the bare row "
+                "opened nothing",
+    "/login": "shot login / context setup was never implemented anywhere -- "
+              "a dead row, not a prompt",
+    "/apex": "bare overview, superseded by the 'How APEX rigging works' row",
+    "/apex recipes": "the APEX rig rows in RECIPES are the browse surface",
+    "/apex build": "the per-recipe '/apex build <name>' rows are the real "
+                   "thing",
+    "/search": "searching is what the palette's own search field does",
+}
 
 _cached_entries: Optional[list[PaletteEntry]] = None
 
@@ -195,13 +312,32 @@ def build_palette_entries(*, force_rebuild: bool = False) -> list[PaletteEntry]:
     entries: list[PaletteEntry] = []
 
     # -- a) Slash commands (hardcoded) ------------------------------------
+    # PNL-L3B: a listed command is exactly one of three things -- a PANEL row
+    # (outcome title, literal send), a PROMPT row (outcome title, sentence
+    # send), or DROPPED. A command that somehow matches none of the three is
+    # dropped rather than shipped as a bare literal, so "exactly five sends
+    # begin with '/'" cannot rot the next time a row is added to the data.
     for cmd, desc in _SLASH_COMMANDS:
+        if cmd in DROPPED_COMMANDS:
+            continue
+        if cmd in PANEL_ANSWERED_COMMANDS:
+            entries.append(PaletteEntry(
+                label=PANEL_ROW_TITLES.get(cmd, cmd),
+                command=cmd,
+                category="command",
+                description=desc,
+                panel_answered=True,
+            ))
+            continue
+        decided = COMMAND_PROMPTS.get(cmd)
+        if decided is None:
+            continue
+        title, prompt = decided
         entries.append(PaletteEntry(
-            label=cmd,
-            command=cmd,
+            label=title,
+            command=prompt,
             category="command",
             description=desc,
-            panel_answered=cmd in PANEL_ANSWERED_COMMANDS,
         ))
 
     # -- b) Recipes from recipe_book.RECIPES ------------------------------
