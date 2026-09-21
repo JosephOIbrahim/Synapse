@@ -155,7 +155,12 @@ def _load_entries():
     except Exception:
         pass
 
-    # b) legacy knowledge: slash-commands + recipes + APEX + VEX (pre-tagged)
+    # b) legacy knowledge: slash-commands + recipes + APEX + VEX (pre-tagged).
+    #    PNL-L3A: command_palette owns the DATA; this is the one build path
+    #    that turns it into rows. The five panel-answered commands arrive
+    #    already marked (command_palette.PANEL_ANSWERED_COMMANDS) and the mark
+    #    rides the row, so nothing downstream has to re-derive it from a
+    #    second copy of the literals.
     try:
         from synapse.panel.command_palette import build_palette_entries
         for e in build_palette_entries():
@@ -165,7 +170,8 @@ def _load_entries():
                                 title=e.label, desc=e.description or "", send=send,
                                 destructive=False,
                                 verb=getattr(e, "verb", "build"),
-                                context=getattr(e, "context", None)))
+                                context=getattr(e, "context", None),
+                                panel_answered=bool(getattr(e, "panel_answered", False))))
     except Exception:
         pass
 
@@ -239,7 +245,9 @@ class ToolPalette(QtWidgets.QWidget):
 
         self._search = QtWidgets.QLineEdit()
         self._search.setObjectName("DsField")
-        self._search.setPlaceholderText("Search %d tools, recipes & commands…" % len(self._rows))
+        # PNL-L3A: one name for the surface. The count told the artist how big
+        # the registry is, which is the palette's problem, not theirs.
+        self._search.setPlaceholderText("Search commands…")
         self._search.textChanged.connect(self._refilter)
         self._search.installEventFilter(self)
         lay.addWidget(self._search)
@@ -403,14 +411,18 @@ class ToolPalette(QtWidgets.QWidget):
             rows = [e for e in rows if e.get("context") == self._context]
         return rows
 
-    def _populate(self, rows):
+    def _populate(self, rows, grouped=True):
+        # PNL-L3A: group heads describe the BROWSING order (context, then verb,
+        # then title). A ranked result set is not in that order, so under a
+        # typed query the heads would alternate row by row and say nothing.
+        # They are drawn when the list is browsed, not when it is searched.
         self._list.clear()
         self._empty.setVisible(not rows)
         self._reset.setVisible(not rows)
         last_domain = None
         for e in rows:
             group = _ctx_label(e.get("context"))
-            if group != last_domain:
+            if grouped and group != last_domain:
                 self._list.addItem(group_head_item(group, self._scale))
                 last_domain = group
             label = ("  ⚠ " if e["destructive"] else "  ") + e["title"]
@@ -434,13 +446,22 @@ class ToolPalette(QtWidgets.QWidget):
                 break
 
     def _refilter(self, text):
+        # PNL-L3A: the DO × WHERE chips narrow first (they are the artist's
+        # explicit answer), then the typed query RANKS what is left instead of
+        # flat-filtering it - shared scoring, one implementation, pure python
+        # (command_palette.rank_rows). Ties keep the grouped order.
         q = text.strip().lower()
         rows = self._visible()              # apply the verb × context axes first
         if q:
-            rows = [e for e in rows
-                    if q in e["title"].lower() or q in e["desc"].lower()
-                    or q in e["send"].lower()]
-        self._populate(rows)
+            try:
+                from synapse.panel.command_palette import rank_rows
+            except Exception:
+                rows = [e for e in rows
+                        if q in e["title"].lower() or q in e["desc"].lower()
+                        or q in e["send"].lower()]
+            else:
+                rows = rank_rows(q, rows)
+        self._populate(rows, grouped=not q)
 
     def _choose(self, item):
         if not self.isVisible():

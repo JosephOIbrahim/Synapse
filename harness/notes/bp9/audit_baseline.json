@@ -4,10 +4,6 @@
   {
    "check": "no bundled font in QSS",
    "owner": "PNL-L2 (qss.py is its territory)"
-  },
-  {
-   "check": "⌘K folded into input",
-   "owner": "PNL-L3A (the Commands surface owns the composer telling)"
   }
  ]
 }
