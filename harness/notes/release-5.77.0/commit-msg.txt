@@ -1,0 +1,11 @@
+release: v5.77.0 -- turn two answers, and the harness picks its own graph
+
+Product: router tier timeouts enforced + route() bounded (BP8-TIMEOUTS); panel response
+watchdog + shared teardown (BP8-WATCHDOG). Both SOUND-WITH-NITS by BP8-CRUX. No new
+installer; the 5.75.2 Setup.exe does not carry these fixes (stated in the notes).
+Harness: JEV helm (SHAPE, TEAM live; EDGE, DRIFT shadow), SCREEN count check in code,
+jev_grade.py, 55 biting tests. Version pinned in VERSION, pyproject, __init__, README,
+CLAUDE.md; CHANGELOG entries for 5.77.0 and the missing 5.76.1.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01XbmYx3v7GF36fWwCCwPRM9

@@ -78,6 +78,10 @@ def test_no_new_structure_and_every_residual_is_reasoned(filename):
         # reddens instead of silently no-opping.
         assert _structure(source.replace("tool_label(name)", "name")) == _structure(
             _amend(_base(path), CRIT_20260915_FACE_WORK_AMENDMENTS))
+    elif filename == "chat_panel.py":
+        # BP8-WATCHDOG: one declared `.connect` (see BP8_WATCHDOG_CHAT_PANEL_AMENDMENTS).
+        assert _structure(source) == _structure(
+            _amend(_base(path), BP8_WATCHDOG_CHAT_PANEL_AMENDMENTS, label="BP8-WATCHDOG 2026-09-20"))
     else:
         assert _structure(source) == _structure(_base(path))
     for key, line, exempt in _scan(source, path):
@@ -263,6 +267,23 @@ CRIT_20260915_QSS_AMENDMENTS = (
 CRIT_20260915_FACE_WORK_AMENDMENTS = (
     ('self._cook_lbl = c.label("waiting for work", role="caption")',
      'self._cook_lbl = c.label("", role="caption")'),
+)
+
+# BP8-WATCHDOG (2026-09-20; CRUX: SOUND-WITH-NITS, BP8-CRUX_verdicts.md) adds ONE
+# piece of signal wiring to chat_panel.py: the response watchdog QTimer's
+# `timeout.connect`. It is the only structural addition the fix makes (the
+# constructor is a QTimer, not a widget, so the inventory does not see it; the
+# start/stop calls are not wiring). Recorded the same way as face_work: an EXACT
+# insertion applied to the BASELINE, asserted to occur exactly once, so the
+# structural freeze keeps full strength - chat_panel must still equal
+# baseline-plus-exactly-this-delta, and any other drift still reddens.
+BP8_WATCHDOG_CHAT_PANEL_AMENDMENTS = (
+    ('        # -- Keyboard shortcuts -------------------------------------------\n'
+     '        self._install_shortcuts()',
+     '        self._response_watchdog.timeout.connect(self._on_response_timeout)\n'
+     '\n'
+     '        # -- Keyboard shortcuts -------------------------------------------\n'
+     '        self._install_shortcuts()'),
 )
 
 # READABILITY.md 2026-09-15 D3b edits two more rules inside the protected
