@@ -139,8 +139,34 @@ def _domain(name):
 
 
 def _load_entries():
-    """All palette entries as dicts {domain, title, desc, send, destructive}."""
+    """All palette entries as dicts {domain, title, desc, send, destructive}.
+
+    PNL-L3B (1) -- THE ORDER. The list opens on what the panel can answer
+    itself and descends toward what needs a model and a scene:
+
+        PANEL     the five rows the panel answers locally, in the order the
+                  spec names them (render workspace, updates, saved networks,
+                  saved lookdev, restore) -- a first click cannot dead-end
+        ASK       Explain / Fix / Optimize, each safe with nothing selected
+        RECIPES   network + APEX + VEX knowledge, pinned prefix intact
+        TOOLS     the registry and the prompt rows, by context
+                  SOP / LOP / COP / Karma / USD (destructive keep the warn
+                  prefix in _populate)
+        PRESETS   ten materials, three render tiers
+
+    Every name this function needs beyond the module's own constants is
+    resolved LOCALLY on purpose: tests/test_panel_finesse.py extracts this
+    function by AST and execs it in a hand-built namespace, so a new
+    module-level helper called on the command path would break a pin that has
+    nothing to do with this leg.
+    """
     entries = []
+    # Group order, and the within-group order for the two hand-ordered groups.
+    group_rank = {"PANEL": 0, "ASK": 1, "RECIPES": 2, "TOOLS": 3, "PRESETS": 4}
+    try:
+        from synapse.panel.command_palette import PANEL_ROW_ORDER as panel_order
+    except Exception:
+        panel_order = ()
 
     # a) the 110 registry tools — classified on both axes (verb × context)
     try:
@@ -151,21 +177,41 @@ def _load_entries():
             verb, ctx = _classify(name, title, desc)
             entries.append(dict(domain=_domain(name), title=title, desc=desc,
                                 send="Use the `%s` tool." % name, destructive=destr,
-                                verb=verb, context=ctx))
+                                verb=verb, context=ctx,
+                                group="TOOLS", head=None, order=0))
     except Exception:
         pass
 
-    # b) legacy knowledge: slash-commands + recipes + APEX + VEX (pre-tagged)
+    # b) legacy knowledge: slash-commands + recipes + APEX + VEX (pre-tagged).
+    #    PNL-L3A: command_palette owns the DATA; this is the one build path
+    #    that turns it into rows. The five panel-answered commands arrive
+    #    already marked (command_palette.PANEL_ANSWERED_COMMANDS) and the mark
+    #    rides the row, so nothing downstream has to re-derive it from a
+    #    second copy of the literals.
     try:
         from synapse.panel.command_palette import build_palette_entries
         for e in build_palette_entries():
             send = (e.command if e.category == "command" else
                     (_CATEGORY_PREFIX.get(e.category, "") + (e.description or e.label)).strip())
+            answered = bool(getattr(e, "panel_answered", False))
+            if answered:
+                # PNL-L3B: the PANEL group, in the spec's order.
+                group, head = "PANEL", "Panel"
+                order = (list(panel_order).index(e.command)
+                         if e.command in panel_order else len(panel_order))
+            elif e.category == "command":
+                # A prompt row (PNL-L3B rewrote or dropped every one of these)
+                # is an ordinary tool row: it needs a model and a scene.
+                group, head, order = "TOOLS", None, 0
+            else:
+                group, head, order = "RECIPES", "Recipes", 0
             entries.append(dict(domain=_CATEGORY_DOMAIN.get(e.category, "Commands"),
                                 title=e.label, desc=e.description or "", send=send,
                                 destructive=False,
                                 verb=getattr(e, "verb", "build"),
-                                context=getattr(e, "context", None)))
+                                context=getattr(e, "context", None),
+                                panel_answered=answered,
+                                group=group, head=head, order=order))
     except Exception:
         pass
 
@@ -176,12 +222,14 @@ def _load_entries():
                             desc="Create a %s material and assign it" % pretty.lower(),
                             send="Create a %s material (houdini_create_material) and assign it "
                                  "to the selected geometry." % m,
-                            destructive=False, verb="build", context="Karma"))
+                            destructive=False, verb="build", context="Karma",
+                            group="PRESETS", head="Presets", order=0))
     for tier in _RENDER_TIERS:
         entries.append(dict(domain="Render", title="Render: %s" % tier.title(),
                             desc="Render at %s quality" % tier,
                             send="Render the current scene at %s quality (render_progressively)." % tier,
-                            destructive=False, verb="render", context="Karma"))
+                            destructive=False, verb="render", context="Karma",
+                            group="PRESETS", head="Presets", order=0))
 
     # d) the quick actions (bc-wave BC-1): EXPLAIN / FIX / OPTIMIZE left the
     #    retired verb rail and live here as rows. synapse_panel._QUICK_ACTIONS
@@ -189,16 +237,21 @@ def _load_entries():
     #    panel is already loaded whenever the palette opens).
     try:
         from synapse.panel.synapse_panel import _QUICK_ACTIONS
-        for label, prompt in _QUICK_ACTIONS:
+        for index, (label, prompt) in enumerate(_QUICK_ACTIONS):
             verb, ctx = _classify(label.lower(), label, prompt)
             entries.append(dict(domain="Commands", title=label, desc=prompt,
                                 send=prompt, destructive=False,
-                                verb=verb, context=ctx))
+                                verb=verb, context=ctx,
+                                group="ASK", head="Ask", order=index))
     except Exception:
         pass
 
-    # grouped by context (where), then verb (what), then title
-    entries.sort(key=lambda e: (_ctx_rank(e["context"]), e["verb"], e["title"]))
+    # PNL-L3B: group first (PANEL, ASK, RECIPES, TOOLS, PRESETS), then the
+    # hand-ordered rank inside the two groups that have one, and only then the
+    # old browsing order -- context (where), verb (what), title.
+    entries.sort(key=lambda e: (group_rank.get(e.get("group") or "TOOLS", 3),
+                                e.get("order") or 0,
+                                _ctx_rank(e["context"]), e["verb"], e["title"]))
     return entries
 
 
@@ -239,7 +292,9 @@ class ToolPalette(QtWidgets.QWidget):
 
         self._search = QtWidgets.QLineEdit()
         self._search.setObjectName("DsField")
-        self._search.setPlaceholderText("Search %d tools, recipes & commands…" % len(self._rows))
+        # PNL-L3A: one name for the surface. The count told the artist how big
+        # the registry is, which is the palette's problem, not theirs.
+        self._search.setPlaceholderText("Search commands…")
         self._search.textChanged.connect(self._refilter)
         self._search.installEventFilter(self)
         lay.addWidget(self._search)
@@ -403,14 +458,21 @@ class ToolPalette(QtWidgets.QWidget):
             rows = [e for e in rows if e.get("context") == self._context]
         return rows
 
-    def _populate(self, rows):
+    def _populate(self, rows, grouped=True):
+        # PNL-L3A: group heads describe the BROWSING order (context, then verb,
+        # then title). A ranked result set is not in that order, so under a
+        # typed query the heads would alternate row by row and say nothing.
+        # They are drawn when the list is browsed, not when it is searched.
         self._list.clear()
         self._empty.setVisible(not rows)
         self._reset.setVisible(not rows)
         last_domain = None
         for e in rows:
-            group = _ctx_label(e.get("context"))
-            if group != last_domain:
+            # PNL-L3B: PANEL / ASK / RECIPES / PRESETS name themselves; the
+            # TOOLS band still heads by context (SOP / LOP / COP / Karma /
+            # USD). Same SPACE_48 eyebrow cell either way (BC-3).
+            group = e.get("head") or _ctx_label(e.get("context"))
+            if grouped and group != last_domain:
                 self._list.addItem(group_head_item(group, self._scale))
                 last_domain = group
             label = ("  ⚠ " if e["destructive"] else "  ") + e["title"]
@@ -434,13 +496,22 @@ class ToolPalette(QtWidgets.QWidget):
                 break
 
     def _refilter(self, text):
+        # PNL-L3A: the DO × WHERE chips narrow first (they are the artist's
+        # explicit answer), then the typed query RANKS what is left instead of
+        # flat-filtering it - shared scoring, one implementation, pure python
+        # (command_palette.rank_rows). Ties keep the grouped order.
         q = text.strip().lower()
         rows = self._visible()              # apply the verb × context axes first
         if q:
-            rows = [e for e in rows
-                    if q in e["title"].lower() or q in e["desc"].lower()
-                    or q in e["send"].lower()]
-        self._populate(rows)
+            try:
+                from synapse.panel.command_palette import rank_rows
+            except Exception:
+                rows = [e for e in rows
+                        if q in e["title"].lower() or q in e["desc"].lower()
+                        or q in e["send"].lower()]
+            else:
+                rows = rank_rows(q, rows)
+        self._populate(rows, grouped=not q)
 
     def _choose(self, item):
         if not self.isVisible():

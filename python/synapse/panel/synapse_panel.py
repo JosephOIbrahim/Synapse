@@ -175,10 +175,18 @@ def _houdini_build_label():
         return "Houdini"
 
 
+# The ASK rows (bc-wave BC-1 moved them off the retired verb rail into the
+# Commands list; PNL-L3B gave them their sends). Every one states its own
+# empty-scene fallback: an artist opening Commands on a scene with nothing
+# selected -- the first-click case the probe walks -- must not pick a row
+# that can only answer "nothing is selected".
 _QUICK_ACTIONS = [
-    ("Explain", "Explain what the selected nodes do and how they connect."),
-    ("Fix", "Diagnose any problems with the current scene and propose fixes."),
-    ("Optimize", "Suggest performance optimizations for the current network."),
+    ("Explain", "Explain the selected nodes and how they connect, or the "
+                "whole scene if nothing is selected."),
+    ("Fix", "Diagnose problems in the selected nodes, or in the whole scene "
+            "if nothing is selected, and propose fixes."),
+    ("Optimize", "Suggest performance improvements for the selected network, "
+                 "or for the whole scene if nothing is selected."),
 ]
 
 
@@ -287,19 +295,23 @@ class _GrowingInput(QtWidgets.QTextEdit):
         super().__init__(parent)
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
-        # One name for the palette (CRIT.md 2026-09-15 #16): the placeholder
-        # says what the composer is for and stops. The palette is already
-        # named twice below the prompt - 'Commands' in the footer and
-        # 'Commands {key}' in the overflow - so the '/' telling moves onto the
-        # Commands tooltip rather than riding here a third time.
+        # PNL-L3A (spec leg L3a, "a control says what happens"): the composer
+        # is a control, so it tells what it does ON ITSELF. The '/' telling
+        # comes back OFF the Commands tooltip and onto the prompt - a hint the
+        # artist only sees after hovering a button they have to find first is
+        # not a telling. One name for the palette (CRIT.md 2026-09-15 #16)
+        # still holds: the word is 'commands', the same word the footer button
+        # and the overflow action use, so the surface is named once.
         # History kept: bc-wave repair (CRUX 2026-09-05) - it has to read
         # WHOLE at 340, where the viewport paints a placeholder in ~182px and
         # the old 'Ask SYNAPSE…    ·    / for commands' advanced 245 and
         # wrapped behind the send margin as 'Ask SYNAPSE…  ·  / for'.
-        # Still pinned by tests/panel/test_bc_wave.py::
-        # test_composer_telling_reads_whole_at_340 - the no-wrap predicate is
-        # unchanged; the '/' count moved to the tooltip with the copy.
-        self.setPlaceholderText("Ask SYNAPSE…")
+        # This copy measures 168px in every density profile (measured under
+        # hython offscreen at 340x760), so it reads whole. Pinned by
+        # tests/panel/test_bc_wave.py::test_composer_telling_reads_whole_at_340
+        # (the no-wrap predicate is unchanged) and by audit_panel.py's
+        # "⌘K folded into input" check, which requires the '/' to ride HERE.
+        self.setPlaceholderText("Ask SYNAPSE · / commands")
         # L5-22: no constant first-run height (the v9 132 landed the divider
         # above centre in every tall pane — Joe re-dragged it each session).
         # The height settles exactly once, via settle_height: the artist's
@@ -2553,7 +2565,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._khint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         col.addWidget(self._khint)
         self._commands_btn = c.Button("Commands", variant="ghost")
-        self._commands_btn.setToolTip("Browse commands · / on empty input · Ctrl+K")
+        # PNL-L3A: the '/' telling moved back to the placeholder (the
+        # control that answers it), so the tooltip names the key only -
+        # the composer still tells '/' exactly once (BC-4).
+        self._commands_btn.setToolTip("Browse commands · Ctrl+K")
         self._commands_btn.clicked.connect(self._open_palette)
         self._render_btn = c.Button("Render", variant="ghost")
         self._render_btn.setToolTip("Prepare a saved scene, render with TOPs and return to recent jobs")
@@ -2789,12 +2804,17 @@ class SynapsePanel(QtWidgets.QWidget):
         # Build HDA: the form is unchanged; only the way in moved (BC-1).
         menu.addAction("Build HDA…", lambda: self._set_direct_view("hda"))
         menu.addAction("Saved lookdev suggestion…", self._open_lookdev_suggestion)
-        # BC-2: the rail's chrome reads here. Palette names the ACTUAL bound
+        # BC-2: the rail's chrome reads here. Commands names the ACTUAL bound
         # key (the hidden owner's text is set from the QShortcut, never a
         # guess); Ground the corpus is checked once the store is built.
+        # PNL-L3A (ruling R2-misc, "one registry, one name"): the surface is
+        # called Commands everywhere - the footer button, the placeholder and
+        # this action. 'Palette' was a third name for the same thing.
+        # _palette_hint stays: it is this action's reader (its text comes from
+        # the ACTUAL bound QShortcut, never a guess).
         key = getattr(self, "_palette_hint", None)
         key_txt = key.text() if key is not None else ""
-        menu.addAction("Palette   %s" % key_txt if key_txt else "Palette",
+        menu.addAction("Commands   %s" % key_txt if key_txt else "Commands",
                        self._open_palette)
         try:
             self._refresh_corpus_state()

@@ -206,7 +206,12 @@ def test_rail_one_state_sentence_never_elides():
                 profile, rail.minimumSizeHint().width())
             # The chrome that left the rail is read through the overflow.
             texts = [a.text() for a in p._build_overflow_menu().actions()]
-            for want in ("Palette", "Ground the corpus", "Health", "Help"):
+            # PNL-L3A (ruling R2-misc, "one registry, one name"): the overflow
+            # action was renamed Palette -> Commands so the surface carries one
+            # name across the footer button, the placeholder and this menu.
+            # Amended by declaration; the predicate (the chrome that left the
+            # rail is reachable here) is unchanged.
+            for want in ("Commands", "Ground the corpus", "Health", "Help"):
                 assert any(x.startswith(want) for x in texts), (want, texts)
             # Hidden owners: constructed for their writers, in no layout.
             # (Joe's Addendum 2: the model token is NOT one of them - it
@@ -508,8 +513,9 @@ def test_one_signal_per_fact_at_boot():
     """Ruling item 5 (ADHD spacing, light touch): outside the transcript the
     CHAT face says its idle state ONCE (the rail sentence) - the ribbon is
     absence, not 'no scene context'; the composer tells '/' exactly once
-    (the Commands tooltip since CRIT.md 2026-09-15 #16; the placeholder
-    before it - G3 pins the telling, not the site) and its legend sits at
+    (back in the placeholder since PNL-L3A - the composer is the control that
+    answers '/', so it is the control that says so; G3 pins the telling, not
+    the site) and its legend sits at
     the chrome floor; the
     composer is a `stack` (grip / input / legend at 4/6/3); the recall card
     is a `band` through the applier, with no exemption lines left."""
@@ -526,11 +532,11 @@ def test_one_signal_per_fact_at_boot():
             khint = p._khint
             assert QtGui.QFontInfo(khint.font()).pixelSize() >= t.scaled(t.SIZE_SMALL, p._chrome_scale), (
                 profile, QtGui.QFontInfo(khint.font()).pixelSize())
-            # CRIT.md 2026-09-15 #16 ("one name for the palette") MOVED this
-            # telling rather than weakening it: the placeholder dropped
-            # "· / commands" because the palette is already named twice below
-            # the prompt, so the '/' now rides the Commands tooltip. Still
-            # exactly one '/' across the composer's surfaces at boot.
+            # The telling has MOVED twice and was never weakened: CRIT.md
+            # 2026-09-15 #16 sent it to the Commands tooltip, PNL-L3A brought
+            # it back to the placeholder (a hint behind a hover is not a
+            # telling) in copy that still reads whole at 340. Still exactly one
+            # '/' across the composer's surfaces at boot - that is the pin.
             tellings = (p._input.placeholderText().count("/")
                         + khint.text().count("/")
                         + p._commands_btn.toolTip().count("/"))
@@ -555,8 +561,8 @@ def test_one_signal_per_fact_at_boot():
 
 def test_composer_telling_reads_whole_at_340():
     """CRUX repair (2026-09-05, "the only '/' telling is cut mid-sentence"):
-    the composer's one '/' telling (the placeholder until CRIT.md 2026-09-15
-    #16 moved it onto the Commands tooltip; G3 pins the telling, not the site),
+    the composer's one '/' telling (the placeholder, off it only between
+    CRIT.md 2026-09-15 #16 and PNL-L3A; G3 pins the telling, not the site),
     and a QTextEdit placeholder sits outside the labels no-elide predicate,
     so this pins it directly. Held constant: nothing on screen the artist
     cannot read at 340. In every profile at 340x760 the placeholder's advance
@@ -573,8 +579,8 @@ def test_composer_telling_reads_whole_at_340():
             avail = inp.viewport().width() - 2 * margin
             assert fm.horizontalAdvance(text) <= avail, (
                 profile, text, fm.horizontalAdvance(text), avail)
-            # Telling carried to the Commands tooltip (CRIT.md 2026-09-15
-            # #16); the no-wrap predicate above is untouched.
+            # Telling carried by the placeholder again (PNL-L3A); the
+            # no-wrap predicate above is untouched and still the point.
             assert (text.count("/") + p._khint.text().count("/")
                     + p._commands_btn.toolTip().count("/")) == 1, (
                 text, p._khint.text(), p._commands_btn.toolTip())
