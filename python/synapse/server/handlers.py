@@ -11,20 +11,10 @@ import math
 import os
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as _FutureTimeout
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any, Callable, Optional
 
 _log = logging.getLogger(__name__)
-
-# Overall wall-clock ceiling for a single chat-routing turn (T2). Sits just under
-# the /synapse path's 30s slow-op kill so the HANDLER, not the transport, is what
-# ends a hung turn -- the slow-op kill emits nothing, and ws_bridge.py:339 drops
-# any reply lacking a response/tier key. Each LLM tier self-bounds well below
-# this (tier2_timeout + tier3_timeout default to 5 + 15s), so this only fires for
-# a hang OUTSIDE the tiers. Overridable per-instance via _route_deadline_s (tests
-# set it small).
-_ROUTE_OVERALL_TIMEOUT_S = 28.0
-_route_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="synapse-routechat")
 
 # Prometheus histogram bucket boundaries (milliseconds) for per-tool call
 # duration. Cumulative "le" semantics: an observation counts toward every
@@ -1740,123 +1730,6 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             "recipes": sorted(recipes, key=lambda r: r["name"]),
         }
 
-    def _handle_route_chat(self, payload: Dict) -> Dict:
-        """Route a natural language message through the tiered routing cascade.
-
-        BP9-RETIRE (ruling 3): UNREGISTERED. The legacy chat surface that sent
-        this command (chat_panel.py / synapse_chat.pypanel) is gone, so the WS
-        command name is no longer in the registry and a message carrying it
-        gets the standard unknown-command error. The shipped panel chats
-        through ClaudeWorker and never sent it. The method body stays only
-        because tests/test_bp8_timeouts.py pins its T2 deadline contract
-        (bounded route(), never-silent {response, tier}) by calling it unbound;
-        step B retires Tier 2/3 and this body with them.
-
-        Messages go through:
-        Cache -> Recipe -> Planner -> Regex -> Knowledge -> LLM -> Agent
-
-        NOT execute_python. Never execute_python for chat.
-        """
-        import os
-        from ..routing.router import TieredRouter, RoutingConfig
-
-        message = resolve_param(payload, "content")
-        context = payload.get("context", {})
-
-        # Borrow the current memory owner once per turn. This is the handle the
-        # memory handlers themselves write to -- see _memory_owner() -- so the
-        # chat cascade reads the same store synapse_add_memory/synapse_decide
-        # write into, not a private second one.
-        owner = self._memory_owner()
-
-        if not hasattr(self, "_router"):
-            api_key = os.environ.get("ANTHROPIC_API_KEY")
-            config = RoutingConfig(llm_api_key=api_key) if api_key else None
-            # B4 defect 1: this read `TieredRouter(config=config)` -- no memory=.
-            # TieredRouter._memory therefore stayed None for the life of the
-            # process, which killed the memory tier in TWO places at once:
-            #   * the router built its KnowledgeIndex with memory=None
-            #     (router.py: KnowledgeIndex(rag_root=..., memory=memory)), so
-            #     KnowledgeIndex._match_memory returned at its `if not
-            #     self._memory` guard on every chat turn -- Tier 1's memory
-            #     fallback was unreachable, not merely empty;
-            #   * Tier 2 called enrich_context(memory=None), so the LLM prompt
-            #     carried no <memory> block.
-            # Net effect: memory reached a chat turn only when the model chose
-            # to volunteer a recall tool call. A validated recipe could sit in
-            # the store while the agent that needed it never saw it.
-            # None is still legal here (no host, CI, bridge not up): both
-            # consumers guard on it. What must not happen is never passing it.
-            self._router = TieredRouter(config=config, memory=owner)
-
-        # The router is constructed once and cached for the life of this handler,
-        # but the memory owner is REPLACED on every scene rebind. Re-point it per
-        # turn -- the same correction _get_knowledge_index() applies to the shared
-        # index -- or the rest of the session answers from the closed scene's
-        # store. Runs on the construction turn too, so the path is exercised from
-        # the first message rather than only after a rebind.
-        self._repoint_router_memory(owner)
-
-        # Bound the whole route() call (T2). Every LLM tier already self-bounds
-        # (tier2_timeout / tier3_timeout), so route() returns well inside this
-        # deadline; the deadline is the last-resort net for a hang OUTSIDE the
-        # tiers or an unexpected raise. It guarantees the turn ALWAYS answers with
-        # a well-formed {response, tier} rather than going silent until the 30s
-        # slow-op kill (which emits nothing, and ws_bridge.py:339 drops a reply
-        # that lacks response/tier).
-        #
-        # Safe to run route() off this thread, for two reasons (BP8-CRUX finding 3,
-        # 2026-09-20 - the earlier comment claimed route() "touches no hou.* API",
-        # which is false): (1) this handler wires no command_fn into the router
-        # (see the TieredRouter(...) construction above), so no scene edit runs
-        # here; (2) the one hou-touching path route() DOES reach - SynapseMemory
-        # .search via enrich_context() and KnowledgeIndex._match_memory - is
-        # @_on_memory_main (memory/store.py) and marshals itself to the main
-        # thread through run_on_main when hou is present. The off-thread call is
-        # safe because the store marshals, not because nothing touches hou. If a
-        # hou-touching command_fn is ever wired here, this offload must be revisited.
-        deadline = getattr(self, "_route_deadline_s", _ROUTE_OVERALL_TIMEOUT_S)
-        try:
-            _future = _route_pool.submit(
-                lambda: self._router.route(message, context=context)
-            )
-            result = _future.result(timeout=deadline)
-        except _FutureTimeout:
-            _log.warning("route() exceeded overall deadline of %.1fs", deadline)
-            return {
-                "response": "The request timed out before it could be answered. Please try again.",
-                "tier": "timeout",
-                "success": False,
-                "timeout": True,
-                "latency_ms": deadline * 1000,
-            }
-        except Exception as exc:
-            _log.warning("route() failed: %s", exc)
-            return {
-                "response": f"The request could not be completed: {exc}",
-                "tier": "error",
-                "success": False,
-                "error": str(exc),
-            }
-
-        return {
-            "response": result.answer,
-            "tier": result.tier.value,
-            # Truth contract: surface routing success + whether commands were
-            # actually executed (None for non-recipe tiers, False = proposal).
-            "success": result.success,
-            "executed": result.metadata.get("executed"),
-            "commands": [
-                {"type": cmd.type, "id": cmd.id, "payload": cmd.payload}
-                for cmd in result.commands
-            ] if result.commands else [],
-            "confidence": result.confidence,
-            "cached": result.cached,
-            "latency_ms": result.latency_ms,
-            "model_request": result.metadata.get("model_request"),
-            "model_access": result.metadata.get("model_access"),
-        }
-
     # ------------------------------------------------------------------
     # Live Metrics (Sprint E)
     # ------------------------------------------------------------------
@@ -1880,58 +1753,6 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
         from .live_metrics import snapshot_to_dict
         return snapshot_to_dict(snapshot)
-
-    def _memory_owner(self):
-        """Borrow the SynapseMemory the memory handlers themselves write to.
-
-        One authority, not a second one: this goes through ``_memory_on_main``
-        -- the exact hop ``_handle_memory_add`` / ``_handle_memory_recall`` use
-        -- so ``refresh_memory_owner()`` runs first and the handle returned is
-        the CURRENT scene's store, never a retained closed one. Reading memory
-        off a privately cached handle is how a rebind starts answering from the
-        previous scene.
-
-        Never raises. Returns None when there is no host, no bridge, or the main
-        thread did not answer inside the marshal timeout. Every consumer already
-        guards on None (``KnowledgeIndex._match_memory`` returns at its first
-        line; ``enrich_context`` skips its <memory> block), so None costs that
-        turn its memory tier -- while a stale handle would cost correctness.
-        The failure is logged at WARNING, not swallowed: a memory tier that goes
-        quiet is exactly the fault that hid for two days here.
-        """
-        try:
-            return self._memory_on_main(
-                lambda bridge: getattr(bridge, "_synapse", None)
-            )
-        except Exception as exc:
-            _log.warning(
-                "Chat router could not borrow the memory owner (%s: %s); this "
-                "turn answers without the memory tier.",
-                type(exc).__name__, exc,
-            )
-            return None
-
-    def _repoint_router_memory(self, owner) -> None:
-        """Point the cached chat router -- and its Tier 1 index -- at *owner*.
-
-        ``TieredRouter`` keeps the handle it was built with in two places:
-        ``router._memory`` (read by Tier 2's ``enrich_context``) and
-        ``router._knowledge._memory`` (read by ``KnowledgeIndex._match_memory``).
-        Both are re-pointed, because fixing only one leaves half the memory tier
-        aimed at the previous scene.
-
-        Defensive on purpose: a router that does not carry those attributes (an
-        older object, a test double) is left untouched rather than failing a
-        chat turn over a private-attribute assumption.
-        """
-        router = getattr(self, "_router", None)
-        if router is None:
-            return
-        if hasattr(router, "_memory"):
-            router._memory = owner
-        knowledge = getattr(router, "_knowledge", None)
-        if knowledge is not None and hasattr(knowledge, "_memory"):
-            knowledge._memory = owner
 
     def _get_knowledge_index(self):
         """Lazy-init and return the shared RAG KnowledgeIndex (or None).

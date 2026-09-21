@@ -663,9 +663,15 @@ def test_live_tree_gates_read_red_now():
       constructs the timer.
     - shelf_current (R.7 / P1-shelf), 2026-08-16 W5-SHELF: the clipboard helper
       is PySide6-first with the PySide2 fallback KEPT and the missing-panel
-      message names scripts/install_synapse_package.py."""
+      message names scripts/install_synapse_package.py.
+    - hot_reload_gated (R.3 / P0.4), 2026-09-21 BP9-RETIRE: the only loader
+      with the ungated `del sys.modules[...]` purge was
+      python/synapse/panel/synapse_chat.pypanel, deleted with the legacy chat
+      panel. The shipped houdini/python_panels/synapse_panel.pypanel refreshes
+      the synapse.panel.* subtree only (documented in place); the check's
+      gate-or-delete rule is satisfied by deletion."""
     ctx = _ctx(_REPO)
-    for name in ("mutation_fail_closed", "hot_reload_gated",
+    for name in ("mutation_fail_closed",
                  "installer_host_targeted", "ci_covers_shipping_surface",
                  "tool_metadata_single_source", "process_bridge_armed",
                  "auth_fail_closed", "packaging_self_contained"):
@@ -689,4 +695,12 @@ def test_live_tree_gates_read_red_now():
         "shelf_current should read GREEN — W5-SHELF made the clipboard PySide6-first "
         "and pointed the installer message at scripts/install_synapse_package.py "
         "(R.7/P1-shelf). If this reads RED the shelf fix regressed."
+    )
+    # hot_reload_gated resolved by BP9-RETIRE -- the ungated purge lived only in
+    # the deleted synapse_chat.pypanel; the shipped loader's purge is scoped to
+    # synapse.panel.* (R.3/P0.4, gate-or-delete satisfied by delete).
+    assert _run("hot_reload_gated", ctx)["ok"] is True, (
+        "hot_reload_gated should read GREEN -- BP9-RETIRE deleted the only loader "
+        "with an ungated sys.modules purge. RED means a loader re-grew an "
+        "unconditional synapse.* purge or synapse_chat.pypanel came back."
     )
