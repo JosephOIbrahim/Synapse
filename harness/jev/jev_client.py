@@ -146,7 +146,13 @@ def ask(state, spec: dict, *, wave: str, guard: str, leg: str, model: str | None
                 resp = client.system_one(state=state, questions=qs)
         ms = int((time.perf_counter() - t0) * 1000)
         answers = _answers_to_dict(resp)
-        ledger(wave, guard, {**base, "result": "ok", "model": model, "latency_ms": ms, "answers": answers})
+        # BP9-CAPBASIS: the prompt token count, when the SDK response exposes usage
+        # (resp.usage.input_tokens per the TypeSafe SDK). None stays None - never 0.
+        usage = _get(resp, "usage")
+        ledger(wave, guard, {**base, "result": "ok", "model": model, "latency_ms": ms,
+                             "input_tokens": _get(usage, "input_tokens"),
+                             "output_tokens": _get(usage, "output_tokens"),
+                             "answers": answers})
         return answers
     except Exception as e:  # noqa: BLE001 - fail closed on anything
         ledger(wave, guard, {**base, "result": "fallback", "reason": f"{type(e).__name__}: {e}"[:400]})

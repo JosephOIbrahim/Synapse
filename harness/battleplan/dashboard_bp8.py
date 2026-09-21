@@ -169,15 +169,30 @@ def render():
     rl = (led or {}).get("legs", [])
     settled = [l for l in rl if isinstance(l.get("tokens_in"), int) and isinstance(l.get("tokens_out"), int)]
     measured = sum(l["tokens_in"] + l["tokens_out"] for l in settled)
+    # BP9-CAPBASIS (ruling 5): the cap is enforced COST-WEIGHTED; the rails total (1x)
+    # is printed beside it, labelled, never alone. A ledger from before ruling 5 has no
+    # cost_weighted field and reads UNKNOWN on that basis - no estimate.
+    cost_tot = tot.get("cost_weighted", UNKNOWN)
+    cost_settled = [l for l in settled if isinstance(l.get("cost_weighted"), int)]
+    cost_measured = sum(l["cost_weighted"] for l in cost_settled)
+    max_ctx = tot.get("max_ctx", UNKNOWN)
     if UNKNOWN not in (tin, tout):
         tok, measured = f"{(tin + tout) / 1e6:.1f}M", tin + tout
     elif settled:
         tok = f"{measured / 1e6:.1f}M so far ({len(settled)} of {len(rl)} dispatched legs measured)"
     else:
         tok = UNKNOWN
-    tok_pct = 0 if not measured or not cap.get("tokens") else min(100, round(measured / cap["tokens"] * 100))
-    headline = f"{done} of {n} legs done, {running} running. Budget: {turns} dispatches, {tok} of {cap.get('tokens', 0) / 1e6:.0f}M tokens measured."
-    text = f"[{datetime.now():%H:%M:%S}] BP8  " + "  ".join(f"{l['id'].split('-')[1]}:{l['state']}" for l in legs) + f"  | turns {turns} | tokens {tok} | orch {'alive' if alive else 'DOWN'}"
+    if isinstance(cost_tot, int):
+        cost, cost_measured = f"{cost_tot / 1e6:.1f}M", cost_tot
+    elif cost_settled:
+        cost = f"{cost_measured / 1e6:.1f}M so far ({len(cost_settled)} of {len(rl)} dispatched legs measured)"
+    else:
+        cost = UNKNOWN
+    tok_pct = 0 if not cost_measured or not cap.get("tokens") else min(100, round(cost_measured / cap["tokens"] * 100))
+    headline = (f"{done} of {n} legs done, {running} running. Budget: {turns} dispatches; "
+                f"cost-weighted {cost} of {cap.get('tokens', 0) / 1e6:.0f}M (the enforced cap); "
+                f"rails total {tok} (1x, comparison only); max_ctx {max_ctx if max_ctx == UNKNOWN else f'{max_ctx / 1e3:.0f}k'}.")
+    text = f"[{datetime.now():%H:%M:%S}] BP8  " + "  ".join(f"{l['id'].split('-')[1]}:{l['state']}" for l in legs) + f"  | turns {turns} | cost-weighted {cost} | rails {tok} | orch {'alive' if alive else 'DOWN'}"
 
     def table(head, rows):
         return "<table><thead><tr>" + "".join(f"<th>{E(h)}</th>" for h in head) + "</tr></thead><tbody>" + "".join(rows) + "</tbody></table>"
