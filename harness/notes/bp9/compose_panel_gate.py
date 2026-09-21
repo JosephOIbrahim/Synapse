@@ -421,11 +421,25 @@ def gate() -> int:
     if not INT_DIR.exists():
         sys.exit(f"{INT_DIR} does not exist: run --merge first")
     LOGDIR.mkdir(parents=True, exist_ok=True)
+    # HOUDINI_PACKAGE_DIR and PYTHONPATH are NOT optional here. Houdini prepends the
+    # package tree in-process and it BEATS PYTHONPATH, so a hython row left at the global
+    # value imports synapse from the MAIN checkout and reports on code the integration does
+    # not contain. That is the same lying gate panel_gate.py exists to kill, and it was still
+    # live in these three probe rows: the measure probe only revealed it by calling a helper
+    # that exists on the branch and not on master (AttributeError: qss has no apply_to), which
+    # means the two rows that "passed" before were passing against the wrong tree.
     env = {"SYNAPSE_HYTHON": HYTHON, "QT_QPA_PLATFORM": "offscreen",
-           "SYNAPSE_LOG_DIR": str(INT_DIR / ".scratch" / "logs")}
+           "SYNAPSE_LOG_DIR": str(INT_DIR / ".scratch" / "logs"),
+           "HOUDINI_PACKAGE_DIR": str(INT_DIR / "packages"),
+           "PYTHONPATH": str(INT_DIR / "python")}
     (INT_DIR / ".scratch" / "logs").mkdir(parents=True, exist_ok=True)
 
     gates = [
+        # FIRST, because every hython row below is worthless if this one is wrong. It prints
+        # the path hython actually imports synapse from and fails unless that is the tree
+        # under test. panel_gate.py has always done this for its own runs; the probe rows
+        # here did not, and were quietly measuring the main checkout.
+        ("hython imports THIS tree", [HYTHON, "-c", "import synapse; print(synapse.__file__)"], "tree"),
         ("no test deleted", ["git", "diff", "--diff-filter=D", "--name-only", "master", "--", "tests/"], "empty"),
         ("ratchet baselines only shrank", None, "baselines"),
         ("stock suite (alone)", [sys.executable, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider",
@@ -467,7 +481,16 @@ def gate() -> int:
         r = sh(cmd, cwd=INT_DIR, env=env, timeout=3600)
         out = (r.stdout or "") + (r.stderr or "")
         (LOGDIR / (re.sub(r"[^a-z0-9]+", "-", name.lower()) + ".log")).write_text(out, encoding="utf-8")
-        if kind == "empty":
+        if kind == "tree":
+            want = (INT_DIR / "python" / "synapse" / "__init__.py").resolve()
+            got = next((l.strip() for l in reversed(out.splitlines())
+                        if l.strip().endswith("__init__.py")), "")
+            try:
+                ok = bool(got) and Path(got).resolve() == want
+            except OSError:
+                ok = False
+            ev = (got or "(could not determine)") + ("" if ok else "   <- WRONG TREE, wanted " + str(want))
+        elif kind == "empty":
             ok, ev = (not out.strip()), (out.strip() or "no test file deleted")
         elif kind == "pytest":
             ok, ev = _verdict(out)
