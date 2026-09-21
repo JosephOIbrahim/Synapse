@@ -1,0 +1,15 @@
+release: v5.77.1 -- Jev may cross into the product, through one fenced door
+
+Governance: invariant 5 amended and ratified 2026-09-21 in harness/jev/README.md and
+JEV_BLUEPRINT.md sec.4 (v0.2). Jev is off the product path by default and on it only
+through a package-side adapter meeting six conditions (timeout/None, SYNAPSE_JEV=off,
+key never logged, ledger under ~/.synapse/, never in a run_on_main closure,
+shadow-first). tests/test_jev_product_boundary.py pins that nothing under the product
+package imports harness/jev. Report: docs/reviews/jev-opportunities-2026-09-20.md
+(30-agent workflow, 38 candidates, 8 survivors) plus the leak-free ROUTE probe ledgers.
+No product code changed; no new installer. Version pinned in VERSION, pyproject,
+__init__, README, CLAUDE.md; CHANGELOG entry for 5.77.1. Stock suite alone: 9542 passed, 1 failed
+(README 'is Latest' line not yet bumped); line fixed, pinned test re-run green
+(harness/notes/release-5.77.1/pytest-full.log).
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>

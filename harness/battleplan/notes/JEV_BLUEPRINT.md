@@ -1,6 +1,6 @@
 # JEV BLUEPRINT — typed guard nodes on the wave graph
 
-Status: DRAFT v0.1 · 2026-09-19 · authored by the CTO seat (Fable 5.1) on Joe's word
+Status: DRAFT v0.2 · 2026-09-19, invariant 5 amended 2026-09-21 · authored by the CTO seat (Fable 5.1) on Joe's word
 Source of truth for the mission `BP6-JEV`. Update this card; don't multiply it.
 
 ## 0. One paragraph
@@ -145,8 +145,23 @@ the token cap.
 4. **Every call is ledgered.** `harness/jev/ledger/<wave>.route.jsonl`,
    `<wave>.screen.jsonl`: state hash, question ids, raw probabilities, decision, reason.
    UNKNOWN stays UNKNOWN: a fallback row never carries a fabricated probability.
-5. **Jev is never on the product path.** Nothing under `panel/`, `synapse/`, or the
-   package imports `harness/jev`. Jev is a build instrument, like the crucible.
+5. **Jev is off the product path by default, and on it only through a fenced adapter.**
+   Nothing under `panel/`, `synapse/`, or the package imports `harness/jev` (unchanged; pinned
+   by `tests/test_jev_product_boundary.py`). Build-time guards stay build instruments, like the
+   crucible. A product-path judgment may exist only through a package-side adapter under
+   `python/synapse/` that meets ALL of:
+   (a) hard timeout of at most 800 ms, never raises, returns None on any failure, so the
+       offline behaviour is byte-identical to today's;
+   (b) `SYNAPSE_JEV=off` honoured in-product;
+   (c) `TYPESAFE_API_KEY` resolved once through the providers' `resolve_key` pattern, never logged;
+   (d) its ledger lives under `~/.synapse/`, never in `synapse.log` and never in `harness/jev/ledger`;
+   (e) it is never called inside a `run_on_main` / `main_thread_exec` closure; it runs on the
+       worker or daemon thread after the marshal returns (memory: marshal-deadlock class);
+   (f) it ships shadow-first: the judgment is ledgered beside today's decision and graded
+       against a named answer key before any threshold is allowed to change behaviour.
+   A Jev answer never grants consent, never names a model, never writes a scene.
+   Amended and ratified by Joe 2026-09-21; rationale in
+   `docs/reviews/jev-opportunities-2026-09-20.md` (rank 0).
 6. **Questions are data.** `harness/jev/questions.json` is the whole "prompt". Editing a
    criterion is a text edit with a diff, not a code change.
 
