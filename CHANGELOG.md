@@ -24,7 +24,7 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.80.0 - The corpus arrives, and the referee reads it
 
-*No product change (`python scripts/product_surface.py --diff v5.79.1 HEAD` -> `no product change`). Knowledge and instruments only: `rag/`, `harness/`, `docs/`, and one README line. The last built installer, `SYNAPSE-5.75.2-Setup.exe`, does not carry these files.*
+*No product change beyond the version string (`python scripts/product_surface.py --diff v5.79.1 HEAD`, measured after the release commit: 1 file, +2/-2, both lines `__version__` in `python/synapse/__init__.py`). Knowledge and instruments only: `rag/`, `harness/`, `docs/`, and one README line. The last built installer, `SYNAPSE-5.75.2-Setup.exe`, does not carry these files.*
 
 **AN H22 PROSE CORPUS, BEHIND A PHANTOM GATE (BP10-CORPUS).** `rag/ingest/help_archive.py` (379 lines) reads the SideFX help archive into `rag/corpus/h22_prose/` and refuses any page naming a node type absent from the live catalog; every chunk carries its scope. Fixtures under `tests/fixtures/help/pages/` (15), `tests/test_help_archive.py` (15 tests). `rag/retrieval/scope_weights.py` is the ONE ranking table: `h22_prose` 100 > `guide` 90 > `h21` 10, `HOWTO_BONUS` 20 lifts the guide scope for how-to phrasing; the guide slot landed inert here and was armed by GUIDES. `harness/jev/jev_rerank.py` shadows the ranking and ledgers to `bp10.rerank.jsonl`.
 
