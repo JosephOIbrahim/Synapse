@@ -64,6 +64,18 @@ def apply_font_role(w, role="body", scale=1.0):
             f.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, tracking)
         except Exception:
             pass
+    # PNL-L4 (ruling R3-B): a role in tokens.ROLE_CAPS is quiet by CASE, not by
+    # size. Set on the QFont rather than by rewriting the string so the widget's
+    # text() still returns what the caller passed — every test and tooltip that
+    # reads it back keeps working, and nothing double-uppercases.
+    if role in getattr(t, "ROLE_CAPS", ()):
+        try:
+            f.setCapitalization(QtGui.QFont.Capitalization.AllUppercase)  # Qt6
+        except Exception:
+            try:
+                f.setCapitalization(QtGui.QFont.AllUppercase)             # Qt5
+            except Exception:
+                pass
     w.setFont(f)
     return w
 

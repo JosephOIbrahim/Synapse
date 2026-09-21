@@ -387,16 +387,25 @@ FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 # Pentagram character is preserved by TYPE_ROLES + TRACKING_EM below (families,
 # tracking, hierarchy); only the absolute sizes shrink. The Aa control
 # (FONT_SCALE_STEPS) scales the whole set up for the artist.
-SIZE_SMALL  = 11   # captions, metadata
 SIZE_UI     = 12   # buttons, pills, menu items, labels — Houdini-native; scalable via Aa
 SIZE_BODY   = 12   # chat body — Houdini-native default (9pt ≈ 12px)
 SIZE_TITLE  = 15   # section headers — gentle step above native
 SIZE_HERO   = 19   # panel title — present, not shouting
 
+# PNL-L4 (rulings R2-A1 / R3-A / R3-B, 2026-09-21): THREE sizes, not four.
+# SIZE_SMALL was 11 — one pixel below SIZE_BODY, a rung nobody can see and the
+# only reason the ramp counted four. A difference the eye cannot read is not
+# hierarchy, it is noise in the token table, and it cost every caption and
+# status line a pixel of legibility for nothing. Small is now BODY, and the
+# quiet of a caption is carried by FORM (family, weight, caps, tracking) rather
+# than by size. The ramp is 12 / 15 / 19.
+SIZE_SMALL  = SIZE_BODY   # captions, metadata — quiet by form, not by size
+
 # Back-compat alias (design/tokens.py name). Aliased to SIZE_SMALL since
-# CRIT.md 2026-09-15 ranked change 1 deleted SIZE_MICRO: the ramp is 11/12/15/19
-# and SIZE_LABEL's ~30 legacy consumers (styles.py, message_formatter.py,
-# context_bar.py, the legacy sheet in qss.py) step 10 -> 11 with it.
+# CRIT.md 2026-09-15 ranked change 1 deleted SIZE_MICRO; PNL-L4 then folded
+# SIZE_SMALL into SIZE_BODY, so SIZE_LABEL's ~30 legacy consumers (styles.py,
+# message_formatter.py, context_bar.py, the legacy sheet in qss.py) step
+# 10 -> 11 -> 12 with it. It stays strictly below SIZE_TITLE.
 SIZE_LABEL = SIZE_SMALL
 
 # ── glyph sizes: deliberately NOT on the type scale ──────────────────────────
@@ -511,30 +520,6 @@ FAMILY_WEIGHTS = {
     "mono": (WEIGHT_REGULAR, WEIGHT_BOLD),
 }
 
-# Roles: (family_css, size_px, weight, letter_spacing_px) — components read these.
-#
-# Mono is for CODE, sans is for everything else. Mono earns its place where the
-# glyphs are data the eye has to align or scan character by character — node
-# paths, tool names, versions, token counts, VEX, the `code` and `status` roles.
-# It does NOT belong on prose-shaped chrome: a title and a UI label are read as
-# words, and setting them in a typewriter face made the panel read like a
-# terminal emulator rather than a tool. So `title` and `label` move to sans;
-# `code` and `status` stay mono, unchanged.
-TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
-    # D4: display/title asked SEMIBOLD 600 and the screen has always drawn 700
-    # (setBold); status asked MEDIUM 500 on mono and the screen has always drawn
-    # 400. Writing what renders changes nothing on screen — it stops the sheet
-    # describing faces that never shipped. `label` keeps MEDIUM because sans 500
-    # is a face the variable file really has; apply_font_role now delivers it.
-    "display": (FONT_SANS_CSS, SIZE_HERO,  WEIGHT_BOLD,    0.5),
-    "title":   (FONT_SANS_CSS, SIZE_TITLE, WEIGHT_BOLD,    1.0),
-    "body":    (FONT_SANS_CSS, SIZE_BODY,  WEIGHT_REGULAR,  0.0),
-    "label":   (FONT_SANS_CSS, SIZE_UI,    WEIGHT_MEDIUM,   0.5),
-    "code":    (FONT_MONO_CSS, SIZE_BODY,  WEIGHT_REGULAR,  0.0),
-    "caption": (FONT_SANS_CSS, SIZE_SMALL, WEIGHT_REGULAR,  0.0),
-    "status":  (FONT_MONO_CSS, SIZE_SMALL, WEIGHT_REGULAR,  0.5),
-}
-
 # v9 tracking map — em per role, RESTORED to the ratified comp values (the
 # near-flat "match Houdini" dial was superseded by the ratified v9 comp).
 # Tracking lives on QFont (PercentageSpacing = 100 + em×100), NEVER in QSS
@@ -570,6 +555,61 @@ def tracking_px(role: str, px: float) -> float:
     """AbsoluteSpacing pixels for a role at a given px size (em × px). Pure —
     the QFont application lives in fontload.tracked_font()."""
     return TRACKING_EM.get(role, 0.0) * px
+
+
+# Roles: (family_css, size_px, weight, letter_spacing_px) — components read these.
+#
+# Mono is for CODE, sans is for everything else. Mono earns its place where the
+# glyphs are data the eye has to align or scan character by character — node
+# paths, tool names, versions, token counts, VEX, the `code` and `status` roles.
+# It does NOT belong on prose-shaped chrome: a title and a UI label are read as
+# words, and setting them in a typewriter face made the panel read like a
+# terminal emulator rather than a tool. So `title` and `label` move to sans;
+# `code` and `status` stay mono, unchanged.
+TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
+    # D4: display/title asked SEMIBOLD 600 and the screen has always drawn 700
+    # (setBold); status asked MEDIUM 500 on mono and the screen has always drawn
+    # 400. Writing what renders changes nothing on screen — it stops the sheet
+    # describing faces that never shipped. `label` keeps MEDIUM because sans 500
+    # is a face the variable file really has; apply_font_role now delivers it.
+    "display": (FONT_SANS_CSS, SIZE_HERO,  WEIGHT_BOLD,    0.5),
+    "title":   (FONT_SANS_CSS, SIZE_TITLE, WEIGHT_BOLD,    1.0),
+    "body":    (FONT_SANS_CSS, SIZE_BODY,  WEIGHT_REGULAR,  0.0),
+    "label":   (FONT_SANS_CSS, SIZE_UI,    WEIGHT_MEDIUM,   0.5),
+    "code":    (FONT_MONO_CSS, SIZE_BODY,  WEIGHT_REGULAR,  0.0),
+    # PNL-L4 (ruling R3-B, 2026-09-21): caption and status used to be quiet
+    # BY SIZE — 11px, one pixel under body, a difference no eye reads. They are
+    # now quiet BY FORM at the body size. `caption` is sans 500 in ALL CAPS on
+    # LABEL_SM tracking (the tiny-label voice the panel already speaks);
+    # `status` is mono 400 on DATA tracking (it is data, and mono ships no 500 —
+    # FAMILY_WEIGHTS). The two hand-picked 0.0 / 0.5 px values are gone: both
+    # roles now derive their tracking from TRACKING_EM at their own size, so a
+    # tracking change has ONE owner instead of two.
+    "caption": (FONT_SANS_CSS, SIZE_SMALL, WEIGHT_MEDIUM,
+                tracking_px("LABEL_SM", SIZE_SMALL)),
+    "status":  (FONT_MONO_CSS, SIZE_SMALL, WEIGHT_REGULAR,
+                tracking_px("DATA", SIZE_SMALL)),
+}
+
+# PNL-L4 (ruling R3-B): the roles whose quiet is carried by CASE. Kept out of
+# the TYPE_ROLES tuple on purpose — three call sites unpack that tuple by
+# arity (components.apply_font_role, components.label, recipe_card), and
+# widening it to five would have been a refactor pretending to be a type note.
+# apply_font_role reads this set; nothing else upper-cases text in Python.
+#
+# IT SHIPS EMPTY, AND THAT IS THE FINDING. R3-B asks for caption in ALL CAPS.
+# Measured before writing it: `caption` is not the tiny-label role the ruling
+# describes. Twenty-odd call sites hand it whole SENTENCES — connection_dialog
+# "The check sends credentials and asks for model metadata only…",
+# project_rules "Allowed background requests may send prompts, conversation,
+# scene context…", notifications, saved_recipes, tool_palette's empty state.
+# Upper-casing a paragraph is the opposite of the readability this leg is for,
+# and it would have been done silently under a ruling written for chips.
+# So the MECHANISM lands, wired and tested, and the SET stays empty until the
+# caption role is split (metadata chip vs. explanatory prose) or a ruling says
+# otherwise. Adding "caption" here is then a one-word change.
+ROLE_CAPS: frozenset = frozenset()
+
 
 
 # The user font-scale drives CONTENT ONLY — the chat dialogue + the prompt
