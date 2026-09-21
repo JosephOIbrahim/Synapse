@@ -1,0 +1,31 @@
+release: v5.79.0 -- one Commands list, and five dead gates
+
+Product: the slash list is called Commands everywhere and is ordered by group/head/order
+instead of by the alphabet; the five panel-answered commands are one frozen registry with
+a panel_answered field, and /restore-session joins them after being intercepted-but-unlisted
+since W7-SESSCOPE; a first-click probe asserts the top eight rows all lead somewhere on an
+empty scene; qss.stylesheet() threads the scale into all six SWEEP_A builders so ~25 sizes
+including the GLYPH_* dots and chevrons stop being frozen pixels; five letter-spacing
+declarations gone and five arithmetic 700s named; the bundled-font audit row was a code
+comment shipping inside the generated stylesheet; FONT_FLOOR_PROVENANCE stops claiming the
+panel does not scale to the host when synapse_panel.py:552 seeds the chrome scale from it.
+No new installer.
+Harness: five dead gates found and replaced by one instrument. Two could not pass on any
+branch (audit_panel.py --strict crashed on a token deleted 2026-09-15; test_bc_wave is 2
+failed/11 passed on master), two LIED green from a worktree because HOUDINI_PACKAGE_DIR
+beats PYTHONPATH and a seat test needs a gitignored .env key, and one could not recognise
+success. harness/notes/bp9/panel_gate.py prints the tree it measured, supplies the key in
+memory, and ratchets both instruments against committed baselines. Rehearsing the composed
+gate on a partial integration found the fifth, a ratchet-baseline merge with one correct
+answer, and a READ-ONLY probe that was parking and destroying the artist's previous
+conversation (server/session_store.py:250); repaired and pinned by
+tests/test_probe_first_click_is_read_only.py.
+Also: the A1/B1 design rulings recorded in harness/state/resolved.json with the four bp9
+Jev routing ledgers, and tests/test_ingest_rulings.py amended by declaration because it
+seeded from the real record and assumed A1 would never be ruled.
+BP10's harvest scaffold is in this release base by Joe's pre-approval; its bench, corpus,
+guides and crux legs are not.
+Version pinned in VERSION, pyproject, __init__, README, CLAUDE.md; CHANGELOG entry.
+{{SUITE_LINE}}
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
