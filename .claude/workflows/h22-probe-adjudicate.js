@@ -16,6 +16,18 @@ const CAND = REPO + '/harness/notes/h22_doc_candidates.json'
 const REPORT = REPO + '/docs/reviews/h22-doc-intel-' + DATE + '.md'
 const SYMTAB = REPO + '/python/synapse/cognitive/tools/data/h22_symbol_table.json'
 
+// BP9-RESTAMP: the symbol-table stamp (houdini_version / symbol_count) is READ AT RUN TIME from the
+// table header, never a literal. Workflow scripts have no filesystem API, so the read is one cheap
+// low-effort agent call; an unreadable header yields an explicit UNKNOWN, never a guessed build.
+const STAMP_SCHEMA = { type: 'object', required: ['houdini_version', 'symbol_count'],
+  properties: { houdini_version: { type: 'string' }, symbol_count: { type: 'integer' } } }
+async function readSymtabStamp(path, phaseTitle) {
+  const r = await agent(`Read ONLY the header of ${path} (Bash: head -c 600 "${path}") and return its houdini_version (string) and symbol_count (integer) fields verbatim. Do NOT load the full symbols array.`,
+    { label: 'stamp:symtab', phase: phaseTitle, schema: STAMP_SCHEMA, effort: 'low' })
+  return r ? { build: String(r.houdini_version), count: String(r.symbol_count) }
+           : { build: 'UNKNOWN (symbol-table header unreadable)', count: 'UNKNOWN' }
+}
+
 const VERDICT_SCHEMA = {
   type: 'object', required: ['domain', 'verdicts'],
   properties: {
@@ -42,6 +54,8 @@ const DOMAINS = [
 ]
 
 phase('Adjudicate')
+const STAMP = await readSymtabStamp(SYMTAB, 'Adjudicate')
+log(`symbol table stamp ${STAMP.build} (${STAMP.count} symbols)`)
 const batches = await parallel(DOMAINS.map(d => () =>
   agent(`You adjudicate H22 doc-scout probe results for the ${d.name} domain. Read ${RESULTS} and take ONLY the candidates whose id starts with "${d.key}-". For EACH, using its probe_run facts (hint, mode, value, stdout, error) assign a FINAL verdict:
 - VERIFIED — the runtime confirms the symbol/type/method exists & the claim holds (e.g. eval value True, a non-empty list of node-type names, stdout showing True/True, asserts passed).
@@ -49,7 +63,7 @@ const batches = await parallel(DOMAINS.map(d => () =>
 - NEEDS_LIVE_NODE — the probe needs a real node or a cook (placeholder path like /stage/<a_lop>, an undefined node var n/node, or "needs createNode + parm read"); can only be settled interactively.
 - NOT_RUNNABLE — the probe is prose (English instruction) or JS/Qt (window.Python) — no hython verdict possible.
 - INCONCLUSIVE — genuinely ambiguous after reading the facts.
-RULES: read the stdout to decide RAN probes. A SyntaxError on an English sentence = NOT_RUNNABLE (prose), not REFUTED. For any symbol you are unsure about, Grep ${SYMTAB} (the committed H22 table, 35903 symbols) for the exact dotted symbol — present = evidence toward VERIFIED, absent-and-not-a-hou.lop/ui/qt/hipFile-blindspot = toward REFUTED. Honor the Tier C blind-spot: hou.lop.* / hou.ui.* / hou.qt.* / hou.hipFile.* read absent in the table but are REAL → NEEDS_LIVE_NODE, never REFUTED. Return {domain:"${d.name}", verdicts:[{id, verdict, evidence, note}]}.`,
+RULES: read the stdout to decide RAN probes. A SyntaxError on an English sentence = NOT_RUNNABLE (prose), not REFUTED. For any symbol you are unsure about, Grep ${SYMTAB} (the committed H22 table, ${STAMP.count} symbols, stamp ${STAMP.build}) for the exact dotted symbol — present = evidence toward VERIFIED, absent-and-not-a-hou.lop/ui/qt/hipFile-blindspot = toward REFUTED. Honor the Tier C blind-spot: hou.lop.* / hou.ui.* / hou.qt.* / hou.hipFile.* read absent in the table but are REAL → NEEDS_LIVE_NODE, never REFUTED. Return {domain:"${d.name}", verdicts:[{id, verdict, evidence, note}]}.`,
     { label: `adjudicate:${d.key}`, phase: 'Adjudicate', agentType: 'general-purpose', schema: VERDICT_SCHEMA })
 ))
 const verdicts = batches.filter(Boolean).flatMap(b => b.verdicts || [])
