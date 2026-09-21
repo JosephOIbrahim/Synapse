@@ -108,7 +108,7 @@ where = ["python"]
 # tree — Constitution Law 1, a check that cannot see what it claims to check.
 # pytest prepends these to sys.path, so the local tree wins.
 pythonpath = ["python"]
-testpaths = ["tests"]
+testpaths = ["tests", "harness/jev/tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
 markers = [

@@ -113,7 +113,7 @@
             "rules": [
               "Judge the evidence TEXT, not the verdict label. A `pass` verdict with evidence that names no file, no number, or no command is `partial` at best.",
               "If `mission.note` states an expected number (a count, a row total) and the evidence reports a different number without explaining the delta as a finding, that is `does_not_support`.",
-              "If the evidence says UNKNOWN, blocked, or headless-unavailable, that is `claims_unknown` — an honest non-answer, not a failure.",
+              "If the evidence says UNKNOWN, blocked, or headless-unavailable, that is `claims_unknown` \u00e2\u20ac\u201d an honest non-answer, not a failure.",
               "Evidence that cites a file path plus a line, hash, or reproduced number is the strongest form of `supports`."
             ]
           },
@@ -253,27 +253,42 @@
             "solo": {
               "what": "One coherent piece of work with a known target: one builder leg, its own tests, no separate referee leg.",
               "not_for": "Unknown causes, several independent deliverables, or anything where a wrong result ships unreviewed to artists.",
-              "examples": ["rewrite one importer script to stream instead of loading whole files", "write one design record from named sources"]
+              "examples": [
+                "rewrite one importer script to stream instead of loading whole files",
+                "write one design record from named sources"
+              ]
             },
             "fix-crux": {
               "what": "ONE known change, small enough for a single builder, that lands in product code, a contract, or anything an artist runs. One builder leg makes the change with a test that bites, then one adversarial referee leg re-verifies it. No fan-out.",
               "not_for": "Several independent deliverables; unknown causes; harness-only or notes-only work that nobody ships.",
-              "examples": ["fix one confirmed regression in a product module and prove the test bites", "change one contract field and its single consumer"]
+              "examples": [
+                "fix one confirmed regression in a product module and prove the test bites",
+                "change one contract field and its single consumer"
+              ]
             },
             "scout-synth": {
               "what": "The cause or the right approach is NOT known. Several read-only scouts each chase one hypothesis or one area in parallel, then one synth leg reads their receipts and names the cause and the smallest fix. Scouts fix nothing.",
               "not_for": "Work where the change to make is already named; building or shipping anything.",
-              "examples": ["why do farm jobs drop overnight with no error", "which of five modules leaks the handle"]
+              "examples": [
+                "why do farm jobs drop overnight with no error",
+                "which of five modules leaks the handle"
+              ]
             },
             "build-screen-crux": {
               "what": "Several deliverables, at least one of which changes product code, contracts, or a release. Builder legs, then a screen of their receipts, then an adversarial referee leg, then tidy.",
               "not_for": "A single small change, pure investigation, or notes-only work that no artist runs.",
-              "examples": ["execute a blueprint with five product and harness deliverables", "close a release wave with a regression fix plus panel changes"]
+              "examples": [
+                "execute a blueprint with five product and harness deliverables",
+                "close a release wave with a regression fix plus panel changes"
+              ]
             },
             "probe-only": {
               "what": "Every deliverable is the recorded output of a deterministic script, test suite, or hython probe that already exists or is fully specified. No leg needs a model's judgment.",
               "not_for": "Anything that requires writing new code, choosing between designs, or interpreting results.",
-              "examples": ["re-stamp a truth catalog on the running build", "run the wire matrix mission and record the artifact"]
+              "examples": [
+                "re-stamp a truth catalog on the running build",
+                "run the wire matrix mission and record the artifact"
+              ]
             }
           }
         },
@@ -305,7 +320,15 @@
     },
     "team": {
       "edge": "mission -> row (compile_wave.py), only for a mission carrying \"team\": \"auto\". Decides how many subagents ONE leg may spawn. A literal team object, or no team field, never reaches Jev.",
-      "state_fields": ["id", "class", "name", "note", "targets", "touches", "readonly"],
+      "state_fields": [
+        "id",
+        "class",
+        "name",
+        "note",
+        "targets",
+        "touches",
+        "readonly"
+      ],
       "questions": {
         "parallelizable": {
           "type": "score",
@@ -322,12 +345,178 @@
         }
       },
       "policy": {
-        "bands": [[1.0, 0], [1.7, 2], [9.9, 4]],
+        "bands": [
+          [
+            1.0,
+            0
+          ],
+          [
+            1.7,
+            2
+          ],
+          [
+            9.9,
+            4
+          ]
+        ],
         "min_confidence": 0.6,
         "shared_files_max": 0.5,
         "subagent_tier": "mechanical",
         "hard_cap": 4,
         "fallback_subagents": 0
+      }
+    },
+    "harvest": {
+      "edge": "rag/ingest/guides.py -> harness/notes/harvest/triage.md",
+      "state_fields": [
+        "token",
+        "sentence",
+        "guide_name",
+        "section_title",
+        "nearest_symbols"
+      ],
+      "questions": {
+        "token_kind": {
+          "type": "choice",
+          "instructions": "Classify token: node, parameter, attribute, VEX, generic, or unclear?",
+          "criteria": {
+            "node_type_renamed": {
+              "what": "Node name",
+              "not_for": "Parameter"
+            },
+            "parameter_name": {
+              "what": "Parameter",
+              "not_for": "Attribute"
+            },
+            "attribute_name": {
+              "what": "Attribute",
+              "not_for": "Parameter"
+            },
+            "vex_or_expression_function": {
+              "what": "VEX function",
+              "not_for": "Node"
+            },
+            "generic_word": {
+              "what": "Generic word",
+              "not_for": "Houdini name"
+            },
+            "cannot_tell": {
+              "what": "Unclear",
+              "not_for": "Clear"
+            }
+          }
+        },
+        "rename_target_0": {
+          "type": "noul",
+          "instructions": "Is nearest_symbols[0] the current name?"
+        },
+        "rename_target_1": {
+          "type": "noul",
+          "instructions": "Is nearest_symbols[1] the current name?"
+        },
+        "rename_target_2": {
+          "type": "noul",
+          "instructions": "Is nearest_symbols[2] the current name?"
+        },
+        "equivalent_does_the_job": {
+          "type": "noul",
+          "instructions": "Would SYNAPSE tool work?"
+        }
+      },
+      "policy": {
+        "group_min_confidence": 0.7,
+        "suggest_min": 0.8,
+        "tool_read_first_below": 0.4
+      }
+    },
+    "rerank": {
+      "edge": "retrieval_probes -> rerank_shadow.md",
+      "state_fields": [
+        "query",
+        "hit_i",
+        "scope",
+        "title",
+        "snippet"
+      ],
+      "questions": {
+        "rel_quality": {
+          "type": "choice",
+          "instructions": "Does hit answer, address topically, share words, or miss?",
+          "criteria": {
+            "answers": {
+              "what": "Answers directly",
+              "not_for": "Related"
+            },
+            "on_topic": {
+              "what": "Same subject",
+              "not_for": "Answers"
+            },
+            "shared_words_only": {
+              "what": "Words in common",
+              "not_for": "Topic"
+            },
+            "unrelated": {
+              "what": "Not related",
+              "not_for": "Any connection"
+            },
+            "cannot_tell": {
+              "what": "Unclear",
+              "not_for": "Clear"
+            }
+          }
+        }
+      },
+      "policy": {
+        "answers_min": 0.6,
+        "top_k": 12,
+        "probes_count": 25
+      }
+    },
+    "bench": {
+      "edge": "verify.py not-pass -> LEDGER outcome",
+      "state_fields": [
+        "prompt_text",
+        "final_text_tail",
+        "last_tools",
+        "check_summary"
+      ],
+      "questions": {
+        "failure_kind": {
+          "type": "choice",
+          "instructions": "Why failed? Refused, attempted, claimed success, asked for clarification?",
+          "criteria": {
+            "refused_unsupported": {
+              "what": "Cannot do",
+              "not_for": "Attempted"
+            },
+            "attempted_and_failed": {
+              "what": "Tried but failed",
+              "not_for": "Refused"
+            },
+            "claimed_success": {
+              "what": "Says done but failed",
+              "not_for": "Refused"
+            },
+            "asked_clarification": {
+              "what": "Asked for info",
+              "not_for": "Refused"
+            },
+            "cannot_tell": {
+              "what": "Unclear",
+              "not_for": "Clear"
+            }
+          }
+        },
+        "named_a_limitation": {
+          "type": "noul",
+          "instructions": "Named specific limitation?"
+        }
+      },
+      "policy": {
+        "refused_unsupported_min": 0.7,
+        "unknown_verdict": "UNKNOWN",
+        "other_verdict": "FAIL",
+        "confidence_floor": 0.6
       }
     }
   }

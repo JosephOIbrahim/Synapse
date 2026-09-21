@@ -171,6 +171,9 @@ the token cap.
     harness/jev/jev_client.py          key, SDK call, fail-closed wrapper, ledger writer
     harness/jev/jev_route.py           ROUTE guard + shadow CLI
     harness/jev/jev_screen.py          SCREEN guard + shadow CLI
+    harness/jev/jev_harvest.py         HARVEST guard (harvest quarantine triage)
+    harness/jev/jev_rerank.py          RERANK guard (retrieval scope scoring)
+    harness/jev/jev_bench.py           BENCH guard (benchmark failure classification)
     harness/jev/ledger/                append-only judgment ledger, per wave
     harness/jev/mission.BP6-JEV.json   the mission that hardens this (move into
                                        battleplan/missions/ on Joe's word)
