@@ -222,15 +222,21 @@ def test_translate_tool_error_has_four_worker_callers():
 # ---------------------------------------------------------------------------
 
 def _have_real_qt():
+    """Decided at CALL time: another test may have installed a MagicMock PySide6 stub."""
     try:
+        from unittest import mock
         from PySide6 import QtWidgets
-        return isinstance(getattr(QtWidgets, "QWidget", None), type)
+        if isinstance(QtWidgets, mock.NonCallableMock) or isinstance(getattr(QtWidgets, "QApplication", None), mock.NonCallableMock):
+            return False
+        app = getattr(QtWidgets, "QApplication", None)
+        return isinstance(getattr(QtWidgets, "QWidget", None), type) and isinstance(app, type) and callable(getattr(app, "instance", None))
     except Exception:
         return False
 
 
-@pytest.mark.skipif(not _have_real_qt(), reason="PySide6 unavailable — run via hython")
 def test_face_work_tooltip_carries_reason_on_error():
+    if not _have_real_qt():
+        pytest.skip("real PySide6 unavailable in this process (stub or absent); run via hython")
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])

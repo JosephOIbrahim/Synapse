@@ -500,9 +500,7 @@ function Get-LegState([object]$leg) {
 # verbatim. And when the runner exits non-zero WITHOUT a receipt, the receipt written
 # here is a distinct 'runner failed' one carrying the runner's stderr head - not the
 # 'no probe_cmd' text.
-function Write-Utf8NoBom([string]$path, [string]$text) {
-    [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
-}
+# Write-Utf8NoBom comes from harness/lib/quote-safe.ps1 (pipeline form: text | Write-Utf8NoBom -Path).
 function Run-ProbeLeg([object]$leg) {
     $out     = Join-Path $rdir $leg.receipt
     $timeout = if ($leg.probe_timeout) { [int]$leg.probe_timeout } else { 600 }
@@ -521,7 +519,7 @@ function Run-ProbeLeg([object]$leg) {
         # a row that carries only probe_cmd: write the file ourselves so the bytes still
         # travel by file (the receipts dir exists whenever the orchestrator runs).
         $cmdFile = Join-Path $rdir "$($leg.id).probe.cmd"
-        if (-not $DryRun) { Write-Utf8NoBom $cmdFile ([string]$leg.probe_cmd) }
+        if (-not $DryRun) { ([string]$leg.probe_cmd) | Write-Utf8NoBom -Path $cmdFile }
     }
     $shown = if ($haveFile) { "file $($leg.probe_cmd_file)" } else { [string]$leg.probe_cmd }
     Say "  tier: none -> probe (no model): $shown   timeout ${timeout}s" 'DarkGray'
@@ -542,7 +540,7 @@ function Run-ProbeLeg([object]$leg) {
         Say "  probe runner wrote no receipt (exit $code) - writing a 'runner failed' receipt with its stderr head" 'Red'
         $errFile = Join-Path $rdir "$($leg.id).runner.stderr"
         $head = ($lines | ForEach-Object { "$_" } | Select-Object -First 20) -join "`n"
-        Write-Utf8NoBom $errFile $head
+        $head | Write-Utf8NoBom -Path $errFile
         & python $runner runner-failed --leg $leg.id --exit $code --stderr-file $errFile --cmd-file $cmdFile --out $out 2>&1 |
             ForEach-Object { Say "  probe: $_" 'DarkGray' }
     }

@@ -219,7 +219,10 @@ def test_ps1_launch_line_passes_cmd_file_never_cmd_argument():
     assert "--cmd-file $cmdFile" in launch[0]
     assert "--cmd $leg.probe_cmd" not in fn and "--cmd " not in launch[0].replace("--cmd-file", "")
     assert "runner-failed --leg" in fn and "--stderr-file $errFile" in fn
-    assert "Write-Utf8NoBom" in fn and "UTF8Encoding $false" in src   # verbatim, no BOM
+    assert "Write-Utf8NoBom -Path" in fn   # the library helper (harness/lib/quote-safe.ps1), pipeline form
+    lib = (ORCH.parent / "lib" / "quote-safe.ps1").read_text(encoding="utf-8")
+    assert "UTF8Encoding" in lib and "$false" in lib   # verbatim, no BOM, defined once
+    assert "function Write-Utf8NoBom" not in src   # never shadowed in the orchestrator
     # the row's probe_cmd_file is what the file path comes from; a probe_cmd-only row gets one written
     assert "$leg.probe_cmd_file" in fn and '"$($leg.id).probe.cmd"' in fn
 

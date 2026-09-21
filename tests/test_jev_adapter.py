@@ -77,7 +77,7 @@ def env(monkeypatch, tmp_path):
     monkeypatch.setenv("SYNAPSE_JEV_LEDGER_DIR", str(tmp_path / "ledger"))
     monkeypatch.setenv("SYNAPSE_JEV", "on")
     monkeypatch.setenv("TYPESAFE_API_KEY", FAKE_KEY)
-    monkeypatch.delitem(sys.modules, "hou", raising=False)
+    monkeypatch.setitem(sys.modules, "hou", None)  # absence, restored by object (test_hou_reimport_guard)
     return tmp_path
 
 
