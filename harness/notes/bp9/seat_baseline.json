@@ -20,6 +20,12 @@
   {
    "check": "tests/panel/test_j2_token_face.py::test_face_counts_an_ollama_task",
    "owner": "unassigned"
+  },
+  {
+   "check": "tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt",
+   "owner": "pre-existing on master (baseline correction)",
+   "flaky": true,
+   "why": "PRE-EXISTING on master, not introduced by any panel leg. Measured 2026-09-21 at 357bf1e7: the full seat suite ON THE MAIN TREE fails 7, including this row; the integration fails 6, the same set minus the one PNL-L4 fixed. It passes in isolation (2 runs out of 2) and fails under full-suite load -- 'Discovery did not settle' at test_ollama_discovery.py:37 -- so the original six-row baseline caught a lucky run. ROOT CAUSE, found independently by PNL-L5 with a control run (same tree, same env, its own three source files reverted to the merge-base -- still fails, so no leg causes it): the test's settle() helper allows 3s but the worker's release.wait(2) is the real ceiling, and the main thread misses it under full-suite load. NOT fixed by widening that budget -- the house rule is to anchor on real sync state, never to widen a sleep -- so it stays quarantined with its cause written down and deserves a proper fix on its own."
   }
  ]
 }
