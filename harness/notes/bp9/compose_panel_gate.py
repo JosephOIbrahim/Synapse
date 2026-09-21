@@ -71,6 +71,18 @@ ESCALATED = {
                "Unblocked by splitting caption into metadata-chip vs explanatory-prose, or by a "
                "ruling; adding 'caption' to ROLE_CAPS is then a one-word change. JOE'S CALL.",
     },
+    "PNL-L5": {
+        "clears": "four cpl values",
+        "why": "The brief asked for four characters-per-line corners all inside 45-75. At the "
+               "narrowest dock that is arithmetically unreachable, not merely unmet: the "
+               "transcript column IS the 340px dock, the probe measures 7.7px per character at "
+               "Aa 1.00, so 45 characters need 346px -- more than the dock is wide -- and 572px "
+               "at Aa 1.60. Both narrow corners are PANE-LIMITED and report so by name. The "
+               "probe itself is sound and exits 0: it measures rendered QTextLines and reds at "
+               "90, confirmed by the verifier's own run. What needs a ruling is the band: either "
+               "it applies only above some dock width, or the lower bound drops for a "
+               "pane-limited column. JOE'S CALL.",
+    },
 }
 
 # Predicates the COMPOSED GATE re-runs itself, on the merged tree, with the current
@@ -98,6 +110,12 @@ COVERED_BY_COMPOSED_GATE = (
 DEAD_GATES = (
     re.compile(r"audit_panel\.py\s+--strict.{0,40}exits?\s*0", re.I | re.S),
     re.compile(r"test_bc_wave\.py.{0,40}exits?\s*0", re.I | re.S),
+    # Any seat-file predicate demanding exit 0 is the same dead gate wearing a different
+    # filename. The seat suite carries baselined failures on master, so hytest over
+    # tests/panel can only exit 0 by accident -- which is the whole reason panel_gate.py
+    # ratchets instead. PNL-L5 hit it as test_j3_speakers.py, whose run failed solely on
+    # test_profile_row_retired, an existing baseline row.
+    re.compile(r"hytest\.py\s+tests/panel.{0,80}exits?\s*0", re.I | re.S),
 )
 
 # A leg whose verifier found a REAL failure that was then repaired outside the graph. The
