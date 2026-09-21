@@ -46,11 +46,17 @@
 
 Both were proven by deliberate break and both files restored byte-identical.
 
-## One ruling needs your word
+## Two rulings need your word
+
+Both are the same shape, and it is the shape I want: a leg measured the instruction against the code before applying it, found applying it literally would do harm, shipped the honest half, and said so. Neither is a leg falling short.
 
 **R3-B asked for the quiet voice in caps, and the leg refused with evidence.** R3-B reads "quiet = caps + tracking in sans 500 at body size". Measured against the code, the caption role is handed whole sentences at about twenty call sites, including consent copy in the connection dialog and the project-rules explanation. Upper-casing a paragraph is the opposite of the readability the leg exists for.
 
 So the mechanism ships wired and tested and the set ships empty, saying so in the code. It is unblocked either by splitting the caption role into a metadata chip and explanatory prose, or by your ruling. Adding one word to the set is then the whole change.
+
+**The measurement band cannot hold at the narrowest dock.** The brief asked for four characters-per-line corners all inside 45 to 75. At a 340 pixel dock the transcript column is the dock, and the probe measures 7.7 pixels per character, so 45 characters would need 346 pixels. More than the dock is wide, and 572 pixels at the larger text size.
+
+The probe ships sound: it measures rendered text lines, reds at 90, and reports both narrow corners as pane-limited by name instead of pretending they pass. The two wide corners already sit inside the band. What needs your word is the band itself: floor it by dock width, drop the lower bound for a pane-limited column, or change the panel rather than the band. All three are written up in the rulings file.
 
 ## Rulings that shaped this release
 
