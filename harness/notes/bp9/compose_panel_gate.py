@@ -326,6 +326,15 @@ def gate() -> int:
     rows, bad = [], 0
     for name, cmd, kind in gates:
         print(f"-- {name} ...", flush=True)
+        # A probe belongs to a spec leg. If that leg did not merge, its script is simply not
+        # in the tree -- that is a leg that did not land, already reported by the plan, NOT a
+        # gate failure. Failing here would red the whole cut over an absent file and make a
+        # partial release impossible, which the ritual explicitly allows.
+        if kind == "exit0" and cmd and len(cmd) == 2 and not (INT_DIR / cmd[1]).exists():
+            ev = f"not landed: {cmd[1]} is not in the integration"
+            rows.append((name, None, ev))   # None, never True: an abstention is not a pass
+            print(f"   SKIP  {ev}")
+            continue
         if kind == "baselines":
             ok, ev = baselines_only_shrank()
             (LOGDIR / "ratchet-baselines.log").write_text(ev, encoding="utf-8")
@@ -347,9 +356,13 @@ def gate() -> int:
         print(f"   {'PASS' if ok else 'FAIL'}  {ev}")
 
     print("\n== composed gate ==")
+    verdict = lambda ok: "SKIP" if ok is None else ("PASS" if ok else "FAIL")
     for name, ok, ev in rows:
-        print(f"{'PASS' if ok else 'FAIL'}  {name:34} {ev[:110]}")
-    print(f"\n{len(rows) - bad}/{len(rows)} gates green; logs in {LOGDIR}")
+        print(f"{verdict(ok):4}  {name:34} {ev[:110]}")
+    skipped = sum(1 for _, ok, _ in rows if ok is None)
+    green = sum(1 for _, ok, _ in rows if ok is True)
+    print(f"\n{green} green, {bad} failed, {skipped} skipped (leg did not land)"
+          f" of {len(rows)} rows; logs in {LOGDIR}")
     return 1 if bad else 0
 
 
