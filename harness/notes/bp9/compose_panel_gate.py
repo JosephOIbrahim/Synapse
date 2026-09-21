@@ -246,6 +246,28 @@ def _verdict(out: str) -> tuple[bool, str]:
     return True, line
 
 
+def baselines_only_shrank() -> tuple[bool, str]:
+    """A ratchet baseline may only LOSE rows. The ratchet itself refuses a failure that is not
+    baselined -- but nothing stopped a leg from ADDING its new failure to the baseline and
+    passing. Reference is the baseline as authored on the instrument branch, where each row was
+    measured on master. Rows may be deleted (the commit that fixes them); a row that appears
+    here and not there is a leg widening its own gate."""
+    bad, seen = [], []
+    for rel in sorted(RATCHET_BASELINES):
+        ref = sh(["git", "show", f"{INSTRUMENT_BRANCHES[0]}:{rel}"], cwd=ROOT)
+        now = (INT_DIR / rel)
+        if ref.returncode or not now.exists():
+            bad.append(f"{rel}: missing on {INSTRUMENT_BRANCHES[0]} or in the integration")
+            continue
+        was = {f["check"] for f in json.loads(ref.stdout).get("failures", [])}
+        has = {f["check"] for f in json.loads(now.read_text(encoding="utf-8")).get("failures", [])}
+        added = sorted(has - was)
+        if added:
+            bad.append(f"{rel}: {len(added)} row(s) ADDED: {added}")
+        seen.append(f"{Path(rel).stem} {len(was)}->{len(has)}")
+    return (not bad), ("; ".join(bad) if bad else "only shrank: " + ", ".join(seen))
+
+
 def gate() -> int:
     if not INT_DIR.exists():
         sys.exit(f"{INT_DIR} does not exist: run --merge first")
@@ -256,6 +278,7 @@ def gate() -> int:
 
     gates = [
         ("no test deleted", ["git", "diff", "--diff-filter=D", "--name-only", "master", "--", "tests/"], "empty"),
+        ("ratchet baselines only shrank", None, "baselines"),
         ("stock suite (alone)", [sys.executable, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider",
                                  "-m", "not needs_houdini", "--deselect", "tests/test_phase0c_doc1_toolcount.py"], "pytest"),
         # NOT "audit exits 0" and NOT "the seat suite is green": both were dead gates that could
@@ -277,6 +300,12 @@ def gate() -> int:
     rows, bad = [], 0
     for name, cmd, kind in gates:
         print(f"-- {name} ...", flush=True)
+        if kind == "baselines":
+            ok, ev = baselines_only_shrank()
+            (LOGDIR / "ratchet-baselines.log").write_text(ev, encoding="utf-8")
+            rows.append((name, ok, ev)); bad += 0 if ok else 1
+            print(f"   {'PASS' if ok else 'FAIL'}  {ev}")
+            continue
         r = sh(cmd, cwd=INT_DIR, env=env, timeout=3600)
         out = (r.stdout or "") + (r.stderr or "")
         (LOGDIR / (re.sub(r"[^a-z0-9]+", "-", name.lower()) + ".log")).write_text(out, encoding="utf-8")
