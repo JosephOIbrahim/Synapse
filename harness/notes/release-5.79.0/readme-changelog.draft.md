@@ -18,7 +18,7 @@ Exact edit points, measured 2026-09-21 on master at `357bf1e7`:
 
 ## README "New in" block (replacing 122-128)
 
-**New in 5.79.0** — one Commands list, and five dead gates.
+**New in 5.79.0** — one Commands list, and six dead gates.
 
 Type `/` into an empty composer and the list you get is called Commands everywhere, ordered by a decision rather than by the alphabet, and the first eight rows each lead somewhere on an empty scene. Before this, the top of that list was usually a registry row whose only honest answer was "nothing is selected".
 
@@ -34,7 +34,7 @@ On the build side, four of the gates guarding this work could not pass on any br
 
 ## CHANGELOG entry (insert above `## v5.78.0`)
 
-## v5.79.0 - One Commands list, and five dead gates
+## v5.79.0 - One Commands list, and six dead gates
 
 *Product change in `python/synapse/panel/` (tool_palette, command_palette, synapse_panel, designsystem/qss, designsystem/tokens, designsystem/rhythm, message_formatter) plus a new first-click probe under `panel/scripts/`. Product-surface diff v5.78.0..v5.79.0: {{PRODUCT_DIFF}}.*
 
@@ -48,7 +48,7 @@ On the build side, four of the gates guarding this work could not pass on any br
 
 **THE FONT FLOOR STOPPED LYING ABOUT ITSELF.** `FONT_FLOOR_PROVENANCE` said "nothing in the panel scales to the host" while `synapse_panel.py:552` seeds `_chrome_scale` from the host font.
 
-**FIVE DEAD GATES, ONE INSTRUMENT.** Every panel leg was handed an acceptance line that could not pass on any branch: `audit_panel.py --strict exits 0` (the audit read a deleted token and crashed on its first table, hiding two real FAIL rows) and `hytest tests/panel/test_bc_wave.py exits 0` (master is 2 failed, 11 passed). Both also **lied from a worktree** — `HOUDINI_PACKAGE_DIR` aims Houdini at the main checkout and beats `PYTHONPATH`, so hython imported `synapse` from the main tree whatever branch was out — and a seat test needing a gitignored `.env` key added a phantom third failure in every worktree. `harness/notes/bp9/panel_gate.py` replaces all of them: it prints the path hython imported from and refuses on the wrong tree, supplies the key in memory without writing it into a worktree, and ratchets both instruments against committed baselines that may only shrink.
+**SIX DEAD GATES, ONE INSTRUMENT.** Every panel leg was handed an acceptance line that could not pass on any branch: `audit_panel.py --strict exits 0` (the audit read a deleted token and crashed on its first table, hiding two real FAIL rows) and `hytest tests/panel/test_bc_wave.py exits 0` (master is 2 failed, 11 passed). Both also **lied from a worktree** — `HOUDINI_PACKAGE_DIR` aims Houdini at the main checkout and beats `PYTHONPATH`, so hython imported `synapse` from the main tree whatever branch was out — and a seat test needing a gitignored `.env` key added a phantom third failure in every worktree. `harness/notes/bp9/panel_gate.py` replaces all of them: it prints the path hython imported from and refuses on the wrong tree, supplies the key in memory without writing it into a worktree, and ratchets both instruments against committed baselines that may only shrink.
 
 **A FIFTH, FOUND BY REHEARSING.** Run on a trial integration before the graph finished, `panel_gate.py` matched only `G3 RESULT: <n> FAIL`; the audit prints `G3 RESULT: pass` when nothing fails, so a fully green audit parsed as a crash. A gate that cannot recognise success is as dead as one that cannot pass.
 

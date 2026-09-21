@@ -1,4 +1,4 @@
-# v5.79.0 -- one Commands list, and five dead gates
+# v5.79.0 -- one Commands list, and six dead gates
 
 **Product change.** {{PRODUCT_DIFF}} (`python scripts/product_surface.py --diff v5.78.0 HEAD`).
 
@@ -45,12 +45,15 @@ The rule that came out of it is now a gate row of its own, placed first: print t
 
 **Every verifier said no, and every verifier was right.** Three legs came back SOUND-WITH-NITS with `merge_ready` false, each writing in its notes that the leg itself was clean and the red was pre-existing -- one of them reproduced master's identical failures in an independent worktree to prove it. The composed gate now waives exactly the two proven-dead predicates, mechanically; anything else a verifier failed still refuses the leaf.
 
-**The composed gate found two reds no leg could see.** Each leg runs only the tests its acceptance names, so a leg cannot catch what it breaks elsewhere. Running the whole suite over the integrated leaves caught both:
+**The composed gate found five reds no leg could see.** Each leg runs only the tests its own acceptance names, so a leg cannot catch what it breaks elsewhere. Every leg was green alone. Running the whole suite over the merged tree, three times, caught all of these:
 
 - The new first-click probe emitted `print()` eleven times, which a pin forbids anywhere under the package. The convention already existed one directory over, where a sibling probe writes through a helper on stdout. The probe now does the same, so the pin stays intact rather than being widened.
-- Moving the slash telling into the composer changed a constructor that a *second* pin holds verbatim. The leg amended the first pin and missed this one. Declared through the mechanism that file already provides, with the entry generated from the real sources rather than hand-typed. The change is not optional: the audit check that the leg cleared requires the telling to ride there.
+- Moving the slash telling into the composer changed a constructor that a *second* pin holds verbatim. The leg amended the first pin and missed this one. Declared through the mechanism that file already provides, with the entry generated from the real sources rather than hand-typed. The change is not optional: the audit check that leg cleared requires the telling to ride there.
+- The transcript measure overshot its own 66-character constant. Sizing the column with Qt's average character width averages the whole glyph set, including capitals and symbols prose barely uses; once the type scale moved the metrics, a 630 pixel column rendered 75.2 characters per line, outside the very band the constant exists to hold. It now measures a prose sample, so the ruled 66 stays ruled rather than being quietly retuned.
+- That probe also added two rhythm owners, under a ratchet whose own policy says ceilings may only decrease. Tagging spends the residual and raising the cap is the one move the policy forbids, so the probe now applies its stylesheet and margins through the design system, which is where that ownership is supposed to live.
+- A third rhythm pin, in a file no leg touched, still named the shared keys the transcript had stopped borrowing. Amended by declaration at three sites.
 
-Both were proven by deliberate break and both files restored byte-identical.
+Every one was proven by deliberate break, and every file restored byte-identical.
 
 ## Two rulings need your word
 
