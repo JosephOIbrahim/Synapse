@@ -4,7 +4,7 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.78.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.78.0 is Latest</sub></p>
+<p align="center"><sub>v5.79.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.79.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
@@ -119,35 +119,13 @@ flowchart TB
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 - **Apply a saved scene setup** (`synapse_apply_fixture`, shipped since 5.43.0). A fixture is a setup stored as data, not a prompt: applying it twice is a no-op, and a name clash refuses instead of renaming. Details and what is proven: [BLOCKS in the changelog](CHANGELOG.md).
 
-**New in 5.78.0** — the artist sees why, and Jev routes the work.
+**New in 5.79.0** — one Commands list, and six dead gates.
 
-Three things you will notice in the panel. A failed tool now tells you *why* in plain words instead of echoing its input. Each API call carries only the tools the worker may actually use (103 instead of 143, about a third fewer prompt tokens on a cold send). Every task writes one row to a usage ledger so the next routing decisions are measured, not guessed.
+Type `/` into an empty composer and the list you get is called Commands everywhere, ordered by a decision rather than by the alphabet, and the first eight rows each lead somewhere on an empty scene. Before this, the top of that list was usually a registry row whose only honest answer was "nothing is selected".
 
-Two things you will not notice yet. A fenced door for Jev exists inside the package (`python/synapse/jev/adapter.py`), off by default, with no callers. The old chat panel and its `route_chat` command are gone; the shipped panel is the only one now.
+The panel also scales properly now. Roughly 25 sizes inside one stylesheet block were frozen pixels — status dots and chevrons among them — so on a high-DPI host the text grew and they did not.
 
-On the build side, Jev routed this very release: ten legs, each given a tier, a team size, a builder and a referee by the shipped guards, every call ledgered, every leg attacked by a crucible before merge. Rails gained a `none` tier for probe legs, the wave cap is cost-weighted, the Claude Code hooks fail closed, and Stop blocks on an unresolved cook error. Full notes in [docs/releases/v5.78.0.md](docs/releases/v5.78.0.md).
-
-**No new installer.** The 5.75.2 Setup.exe does not carry these changes.
-
-**New in 5.77.1** — no product change. A governance amendment: Jev (TypeSafe's System One model) may now run inside the artist-facing product, but only through one fenced adapter that meets six written conditions (hard timeout, off switch, key never logged, ledger away from the production log, never on Houdini's main thread, shadow-first grading). The build-time Jev harness stays build-only, and a new test pins that boundary. The ruling comes from a 30-agent scouting report on where a typed judgment earns its call in this repo; full notes in [docs/releases/v5.77.1.md](docs/releases/v5.77.1.md).
-
-**New in 5.77.0** — turn two answers. The router's tier timeouts (5 s / 15 s) are now actually enforced, and `route()` is bounded, so a slow model turn returns a well-formed reply instead of going silent until the 30 s kill. The panel has a response watchdog: a message with no reply clears the spinner after 35 s and says so, and you can send again. Both from the BP7 investigation into chat stalling after the first message; both re-verified by the referee (`harness/battleplan/notes/BP8-CRUX_verdicts.md`). The build harness gained the JEV helm — Jev picks the wave shape and caps subagent teams; full notes in [docs/releases/v5.77.0.md](docs/releases/v5.77.0.md).
-
-**5.76.1** — no product change. The build harness learned to judge before it spends.
-
-Jev (TypeSafe System One) now sits on the wave graph as typed guard nodes: it picks the execution tier for a harness mission and pre-reads builder receipts for the referee, every call ledgered, every failure falling closed to the previous behaviour. Nothing under `panel/` or `synapse/` imports it. [Release details →](docs/releases/v5.76.1.md)
-
-**New in 5.75.2** — no product change. The gates around releasing got honest.
-
-A release check compared file timestamps git does not preserve, so it would have failed on any machine but the one that wrote it. A second check proved "the product did not change" using a path list blind to `mcp_server.py` — the file this repo launches as its MCP entry point. Both are fixed, and both are now demonstrated failing on purpose, because a check that cannot lose is not a check.
-
-- **The duplicate deposit is gone at source.** One logical memory-add was emitting two records — a rich one, then the same content again with its tags, scene file and frame blank. They collided under one id and degraded the whole store. The second write no longer happens, and a collision guard sits behind it.
-- **A store that is refusing writes now says so.** `MemoryStore.health()` reports whether writes are landing, and the write plane, the panel health strip and `synapse_memory_status` all read it. A store that *cannot* answer reads UNKNOWN — never OK, because "we could not tell" and "healthy" are different answers.
-- **The automatic memory prune no longer runs unasked.** It is opt-in and defaults off. It had never fired, but it was armed over records that existed in only one place, where deletion is permanent.
-
-**Also:** installing this release does not repair a store that is already degraded — it stops the cause and ships the recovery tools. [Release details and limits →](docs/releases/v5.75.2.md)
-
-**Still development work:** predictive creation, product-level Computer Use controls, recursive self-improvement. The attended operator checks in this release do not make them complete. [Artist-first intent →](INTENT.md)
+On the build side, four of the gates guarding this work could not pass on any branch, master included, and two of them printed green from a worktree for code that branch did not contain. One instrument replaced them: it proves which tree it measured before it measures anything, and ratchets against committed baselines instead of demanding a green that does not exist. Rehearsing it caught a fifth dead gate and a "read-only" probe that was destroying the artist's parked session. Full notes in [docs/releases/v5.79.0.md](docs/releases/v5.79.0.md).
 
 ## Watch it work
 
@@ -239,7 +217,7 @@ Anything that claims otherwise is drift. Path-qualified `IntegrityBlock`s record
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.78.0.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.79.0.md) · [Changelog](CHANGELOG.md)
 
 **What the CI badge proves.** GitHub CI tests stock Python on Linux and macOS.
 
