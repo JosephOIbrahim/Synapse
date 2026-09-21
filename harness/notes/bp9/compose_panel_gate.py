@@ -124,6 +124,17 @@ DEAD_GATES = (
 # the branch carrying the repair, and how the repair was proven -- so the waiver is auditable
 # rather than a judgement call. A failure this registry does not name still refuses the leaf.
 REPAIRED = {
+    "PNL-L5": {
+        "branch": "pnl/l5-repair",
+        "clears": "",   # its verifier findings were already waived; this is a COMPOSED-gate repair
+        "proven": "Three reds the composed gate found and no per-leg run could: the measure "
+                  "overshot its own 66-character constant once L6's type scale moved the metrics "
+                  "(averageCharWidth averages the whole glyph set; a prose sample does not), the "
+                  "probe added two rhythm owners under a ratchet whose policy forbids raising the "
+                  "cap (now routed through qss.apply_to and rhythm.apply_layout_margins), and a "
+                  "second rhythm pin in a file the leg never touched still named the old keys "
+                  "(amended by declaration at three sites). Deliberate break reddens all three.",
+    },
     "PNL-L3B": {
         "branch": "pnl/l3b-repair",
         "clears": "crucible: the probe is read-only and fails on a dead end",
