@@ -1,5 +1,5 @@
 {
-  "_doc": "Resolution channel for the decisions board. Each entry retires ONE board item, identified by item_key() over (kind|source|leg|text). This file NEVER closes a flywheel item - those close only via the human ratified flip in flywheel_queue.json, and collect() refuses to subtract them no matter what this file says. Append via 'python harness/decisions.py --resolve KEY --reason ...' so every entry carries a snapshot and evidence.",
+  "_doc": "Resolution channel for the decisions board. Each entry retires ONE board item, identified by item_key() over (kind|source|leg|text). This file NEVER closes a flywheel item - those close only via the human ratified flip in flywheel_queue.json, and collect() refuses to subtract them no matter what this file says. Append via 'python harness/decisions.py --resolve KEY --reason ...' so every entry carries a snapshot and evidence. Design-roster rulings arrive through scripts/ingest_rulings.py - same channel, plus the verbatim word and roster evidence.",
   "resolutions": [
     {
       "key": "cab02af970f7",
@@ -35,6 +35,46 @@
         "source": "harness/notes/receipts/L3.json",
         "leg": "L3",
         "text": "Three panel affordances lie to the artist about safety-critical operations: COMMIT-to-/stage claims consent-gate routing that never happens, and gate Approve/Reject report decisions that may never have reached HumanGate. Who lands the fix, and when?"
+      }
+    },
+    {
+      "key": "7be55c1b8ee2",
+      "resolved_at": "2026-09-21 11:33",
+      "resolved_at_utc": "2026-09-21T15:33:20Z",
+      "by": "joe",
+      "reason": "A1 ratify - ruled against harness/design_review/2026-09-14/RULINGS-OPEN.md @ sha256 b47d781375f5",
+      "item_snapshot": {
+        "kind": "design",
+        "source": "harness/design_review/2026-09-14/RULINGS-OPEN.md",
+        "leg": "A1",
+        "text": "Airy is specification, not binding"
+      },
+      "word": "ratify",
+      "evidence": {
+        "roster": "harness/design_review/2026-09-14/RULINGS-OPEN.md",
+        "sha256": "b47d781375f547f9555e4b4b33a053dcfc4854ab5de3db077a40ececfb706f55",
+        "id": "A1",
+        "reply_line": 1
+      }
+    },
+    {
+      "key": "524b713b34c9",
+      "resolved_at": "2026-09-21 11:33",
+      "resolved_at_utc": "2026-09-21T15:33:20Z",
+      "by": "joe",
+      "reason": "B1 drop - ruled against harness/design_review/2026-09-14/RULINGS-OPEN.md @ sha256 b47d781375f5",
+      "item_snapshot": {
+        "kind": "design",
+        "source": "harness/design_review/2026-09-14/RULINGS-OPEN.md",
+        "leg": "B1",
+        "text": "The Doctor button's yellow vs \"monochrome + one accent\""
+      },
+      "word": "drop",
+      "evidence": {
+        "roster": "harness/design_review/2026-09-14/RULINGS-OPEN.md",
+        "sha256": "b47d781375f547f9555e4b4b33a053dcfc4854ab5de3db077a40ececfb706f55",
+        "id": "B1",
+        "reply_line": 2
       }
     }
   ]

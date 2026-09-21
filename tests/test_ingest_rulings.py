@@ -197,14 +197,25 @@ def test_dry_run_writes_nothing(board):
 def test_second_identical_ruling_is_refused_as_duplicate(board):
     """FAILS IF: the same ruling can be recorded twice - the record would then
     carry two answers for one question."""
+    # Amended by declaration, REL-INGEST-A1 (2026-09-21). The `board` fixture seeds its temp
+    # record by copying the REAL harness/state/resolved.json, so any leg id ruled for real
+    # leaks in -- Joe ruled A1 ("Airy is specification, not binding") on 2026-09-21 and this
+    # assertion went red counting 2. The invariant it exists to pin is that the SECOND ingest
+    # records nothing, which is true whatever the seeded record already holds. Counting from a
+    # measured baseline also pins the first ingest to exactly one new entry, so the amendment
+    # is stricter than the literal it replaces, not looser.
+    def n_a1():
+        return sum(1 for e in _entries(board.resolved) if e["item_snapshot"]["leg"] == "A1")
+
+    seeded = n_a1()
     assert _run(board, "A1 ratify\n")[0] == 0
+    assert n_a1() == seeded + 1
     r1, o1 = _bytes(board.resolved), _bytes(board.out)
     rc, text = _run(board, "A1 ratify\n")
     assert rc == 2
     assert "already" in text and "A1" in text
     assert _bytes(board.resolved) == r1 and _bytes(board.out) == o1
-    assert sum(1 for e in _entries(board.resolved)
-               if e["item_snapshot"]["leg"] == "A1") == 1
+    assert n_a1() == seeded + 1
 
 
 def test_repeated_id_inside_one_reply_is_refused(board):
