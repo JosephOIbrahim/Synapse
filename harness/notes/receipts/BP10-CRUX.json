@@ -1,0 +1,174 @@
+{
+  "leg": "BP10-CRUX",
+  "status": "green_with_findings",
+  "product_head": "04d5ae4cb5f47f3f905ba74e39691dee337f678a",
+  "base": "357bf1e7",
+  "summary": "Adversarial re-verification of the four BP10 builder legs in fresh `git clone --shared` checkouts (hython 22.0.400 for the headless gates). Verdicts: SCAFFOLD BROKEN (already on master; fix-forward), CORPUS SOUND-WITH-NITS, GUIDES BROKEN (one README line), BENCH SOUND-WITH-NITS. 16 self-authored mutations, 13 right-reason bites. No product file touched. Nothing merges on the two BROKEN legs until Joe rules on the one-line README fix and the scaffold fix-forward.",
+  "acceptance": [
+    {
+      "predicate": "one verdict per builder leg (four) with independently re-run rows and the crucible's own anchors",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP10-CRUX_verdicts.md: 4 verdict sections, 24 acceptance rows re-run (6 per leg) in fresh clones under the session scratchpad (scaffold via `git clone --shared --revision 357bf1e7` because the bp10/scaffold ref points at 845da18e, pre-product). Every row carries a crucible anchor (command + observed value). Headless gates re-run on hython 22.0.400: corpus G1 rebuild (55 scopes / 11460 pages / 36168 chunks / 0 empty source, 7 s), G4 CURRENT+STALE, guides G2 rebuild (26/5, content-identical to the committed tree), bench verify.py third-hython PASS/FAIL, node-type existence probe 45/45."
+    },
+    {
+      "predicate": ">= 2 self-authored mutations per builder leg, each named with the check it reddens",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP10-CRUX_mutations.json: right-reason bites SCAFFOLD 3 (S-M1 LICENSE byte -> CRUX-S1 sha; S-M2 drop guards.bench.policy -> CRUX-S3; S-M4 drop capture_screenshot -> CRUX-S6), CORPUS 3 (C-M1 -> test_phantom_hits_catches_absent_type; C-M2 -> test_status_current_stale_unknown + live hython STALE; C-M3 -> test_scope_weights), GUIDES 3 (G-M2 -> test_chunks_carry_name_title_origin_licence; G-M3 -> test_guide_slot_active_after_bp10_guides; G-M4 planted fake node -> CRUX-G2 dry-run quarantine set), BENCH 4 (B-M1 -> test_verify_reads_no_arm_text_code_inspection; B-M2 -> test_run_large_gate_refuses_and_estimates; B-M3 -> test_fail_when_node_missing_even_if_arm_claims_success + live box check; B-M4 -> CRUX-B1). Plus S-M3 reverse-specific (ADR check turns green only with the 4 missing refusals), G-M1 crash-red (TypeError, not counted), B-M5 SURVIVED (no test pins guards.bench.policy). Every mutation restored from HEAD and the clone proven content-clean (`git diff --ignore-cr-at-eol`). Driver: harness/battleplan/artifacts/mutate.py (gitignored)."
+    },
+    {
+      "predicate": "screen-vs-CRUX agreement line present for all four legs",
+      "verdict": "pass",
+      "evidence": "Read from harness/jev/ledger/bp10.screen.jsonl (4 decision rows). SCAFFOLD: SCREEN FLAG rows [4,5] vs CRUX -> PARTIAL (row 5 ADR FAIL agree; row 6 tool_map cleared; row 3 guards FAIL missed by SCREEN). CORPUS: SCREEN FLAG rows [2] vs CRUX -> AGREE (G3 fail-as-written). GUIDES: SCREEN REFEREE weak rows [2] vs CRUX -> PARTIAL (G3 agree; README overclaim is CRUX-only, SCREEN rated it supports 1.0). BENCH: SCREEN FLAG rows [2,5] (code count-mismatch) vs CRUX -> PARTIAL (row 3 UNKNOWN agree; row 6 pass, the code matcher paired the row count with the prompt count)."
+    },
+    {
+      "predicate": "licence audit row present: no EULA text tracked, LICENSE hash matches upstream",
+      "verdict": "pass",
+      "evidence": "verdicts.md 'Licence audit row': `git ls-files rag/corpus/h22_prose rag/quarantine/prose` on all three leg tips -> STAMP.json + README.md only (.gitignore +245 `rag/corpus/h22_prose/*.jsonl`, added in 5ab7ee9d); vendored LICENSE sha256 79a2891ba34d73cb07da165714464f3bb6a6c6a254ea7ad1bac2cf3f7aae5918 (1083 B) == upstream clone `git show 29b6695b:LICENSE`; 31/31 guide blobs sha256-identical to upstream. NIT: NOTICE.md's published hashes are CRLF working-tree hashes (0/31 match upstream; proven sha256(blob LF->CRLF) == NOTICE on anim.md); one sentence of tests/fixtures/help/pages/plain_prose.txt is verbatim from the live page basics/intro (de minimis; paraphrase)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "leg": "BP10-SCAFFOLD",
+      "verdict": "BROKEN",
+      "claim": "ADR-0001 'Refused Sites' has 4 numbered refusals; the blueprint lists 8 (probe passed, which model runs anything, instant tier, run_on_main closure absent). The receipt's own evidence says 'Four of eight' and marks pass.",
+      "anchor": "docs/decisions/ADR-0001-jev-in-harvest.md (## Refused Sites) vs harness/battleplan/notes/JEV_HARVEST_BLUEPRINT.md 'Risks and refusals' (8 bullets); mutation S-M3"
+    },
+    {
+      "id": "F2",
+      "leg": "BP10-SCAFFOLD",
+      "verdict": "BROKEN",
+      "claim": "The six pre-existing guards are not byte-identical: guards.screen's claims_unknown instruction had its em dash (U+2014) rewritten as the mojibake sequence U+00E2 U+20AC U+201D; five guards are object-identical but re-wrapped. The corruption is on master and jev_screen.py:35-38 sends that instruction text to Jev on every SCREEN call.",
+      "anchor": "git diff 845da18e 5ab7ee9d -- harness/jev/questions.json (hunk @@ -113); master:harness/jev/questions.json decoded, guards.screen offset 1067"
+    },
+    {
+      "id": "F3",
+      "leg": "BP10-SCAFFOLD",
+      "verdict": "evidence-false (row passes on re-run)",
+      "claim": "Receipt row 4 says 'tests directory does not exist yet'; harness/jev/tests existed with 7 files at 845da18e. Re-run: 55 passed at 357bf1e7. The leg asserted green without running the suite.",
+      "anchor": "git ls-tree 845da18e -- harness/jev/tests; scratch s: python -m pytest harness/jev/tests -q -> 55 passed"
+    },
+    {
+      "id": "F4",
+      "leg": "BP10-SCAFFOLD",
+      "verdict": "NIT",
+      "claim": "NOTICE.md's 31 SHA256 rows are hashes of the CRLF working-tree files, not of the upstream blobs (0/31 match upstream; the git blobs do match 31/31). The receipt's 1104-byte LICENSE is the CRLF size; the blob is 1083 B. tool_map.json has no 'count line'; 296 of its 336 keys are help-page paths/nodes, not tools (all 40 real tool references are covered).",
+      "anchor": "scratch vendored_guides.sha256 vs upstream_guides.sha256 vs notice_guides.sha256; sha256(anim.md blob LF->CRLF) == NOTICE value"
+    },
+    {
+      "id": "F5",
+      "leg": "BP10-CORPUS",
+      "verdict": "SOUND-WITH-NITS",
+      "claim": "G3 is vacuous as written: h22_prose is not in the runtime retrieval path (0 hits for scope_weights|h22_prose|corpus/guides under python/synapse; KnowledgeRouter reads documentation/_metadata/semantic_index.json and corpus/h22_nodes.json only). The 24/24 reproduces but cannot regress from a corpus it never sees. The receipt disclosed it (row 3 NIT + for_ruling) -- hence NITS. The '25 probes' has no producer; the suite collects 24. rerank_shadow.md line 8 blames a missing key while the ledger says SYNAPSE_JEV=off.",
+      "anchor": "python/synapse/routing/knowledge.py:439 (semantic_index.json) and the h22_nodes.json loader; tests/test_knowledge_retrieval_repair.py -> 24 passed; harness/jev/ledger/bp10.rerank.jsonl"
+    },
+    {
+      "id": "F6",
+      "leg": "BP10-GUIDES",
+      "verdict": "BROKEN",
+      "claim": "README.md:121, under '## What's ready' (README.md:114), lists 'How nodes go together: rag/corpus/guides -- 31 workflow guides ...' while nothing under python/synapse imports rag/retrieval/scope_weights.py or reads rag/corpus/guides on bp10/guides. A false readiness claim on the public README (owned surface). The G3 row's condition 'with the guide scope active' is likewise not exercised and, unlike CORPUS, the receipt does not say so. Everything else in the leg (G2 partition reproduced 26/5 content-identical, provenance 115/115, triage judged, 9/9 tests) is sound.",
+      "anchor": "git grep -l scope_weights bp10/guides -> ADR, jev_grade.py, receipt, tests only; git diff --numstat 357bf1e7 02028f63 -- README.md -> 1 0"
+    },
+    {
+      "id": "F7",
+      "leg": "BP10-GUIDES",
+      "verdict": "NIT",
+      "claim": "guides.py writes CRLF on Windows: every --build leaves 32 line-ending-dirty files (git diff --ignore-cr-at-eol is empty, so content is reproducible). The 'git diff proves no quarantine->corpus move' evidence is vacuous by construction (both dirs are new in one commit); the load-bearing proof is the dry-run reproducing the same 5-name quarantine (mutation G-M4 moves anim into it).",
+      "anchor": "scratch g: git status --short after `hython rag/ingest/guides.py --build` (32 M) vs git diff --ignore-cr-at-eol --stat (empty)"
+    },
+    {
+      "id": "F8",
+      "leg": "BP10-BENCH",
+      "verdict": "SOUND-WITH-NITS",
+      "claim": "All non-live rows reproduce (24 prompts / 4 per domain / 45 node types exist on 22.0.400; leak ledger run1 8 >= 0.50 then run2 0, and a CRUX live re-run of --leak-check measured 24/24 with max noul 0.27; spend gate exit 2 with the UNKNOWN-median estimate; verify.py third-hython PASS then FAIL on the same scene). Row 3 (live arm turn) stays UNKNOWN: port 9999 is the artist's live bridge this session and fxhoudinimcp is not installed. SCREEN's code count-mismatch on rows 3/6 is a false positive (row count 2 vs prompt count 24). B-M5 survived: no test pins guards.bench.policy.",
+      "anchor": "harness/notes/outside_in/results.jsonl (2 UNKNOWN rows, tokens null); scratch b leak_rerun.log; harness/outside_in/run.py:97,246"
+    },
+    {
+      "id": "X1",
+      "leg": "wave",
+      "verdict": "finding",
+      "claim": "The bp10/scaffold branch ref (845da18e) does not carry the scaffold product (5ab7ee9d/357bf1e7), which is already in master and under v5.79.0. The SCAFFOLD BROKEN is a fix-forward, not a merge gate.",
+      "anchor": "git branch --contains 5ab7ee9d -> bp10/bench bp10/corpus bp10/crux bp10/guides master pnl/integration pnl/release-prep (not bp10/scaffold)"
+    },
+    {
+      "id": "X2",
+      "leg": "wave",
+      "verdict": "finding",
+      "claim": "Neither the H22 prose corpus nor the guide chunks are served by the product on any bp10 tip; HARVEST_SPEC's 'Corpus done' criterion (h22 first, H21 fallback) is not met by M1+M2 as shipped. A serving leg is missing from the wave.",
+      "anchor": "verdicts.md X2; python/synapse/routing/knowledge.py loaders"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "R1",
+      "ask": "BP10-GUIDES is BROKEN on one line. Choose: (a) rewrite README.md:121 as a staged/not-yet-served statement (or move it out of '## What's ready') and re-verdict, or (b) hold GUIDES until a serving leg wires scope_weights + rag/corpus/guides into KnowledgeRouter so the line becomes true. CRUX recommends (a) now and (b) as its own leg.",
+      "owner": "Joe"
+    },
+    {
+      "id": "R2",
+      "ask": "BP10-SCAFFOLD is BROKEN but already on master. Approve a fix-forward leg (spawn BP10-SCAFFOLD-FIX): restore U+2014 in guards.screen, add the 4 missing ADR refusals, regenerate NOTICE.md hashes from git blobs, correct the receipt prose.",
+      "owner": "Joe"
+    },
+    {
+      "id": "R3",
+      "ask": "The '25-probe adversarial set' in HARVEST_SPEC and both mission briefs has no producer; the suite collects 24. Amend the figure to 24 (or add a 25th probe with a producer path) so future SCREEN/CRUX rows stop tripping on the denominator.",
+      "owner": "CTO seat / Joe"
+    },
+    {
+      "id": "R4",
+      "ask": "Who owns serving? HARVEST_SPEC assumed the retrieval layer takes h22_prose first and guides for how-to phrasing; neither M1 nor M2 wired it. Approve spawn BP10-SERVE (reasoning tier) with G3 re-run as its gate.",
+      "owner": "Joe"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP10-SCAFFOLD-FIX",
+      "band": "TRUST",
+      "class": "fix",
+      "tier": "mechanical",
+      "readonly": false,
+      "deps": ["BP10-CRUX"],
+      "name": "Fix-forward the four SCAFFOLD defects CRUX found on master",
+      "note": "Tier: mechanical. Touch only the four files. Verify the screen guard round-trips as UTF-8 (write with encoding='utf-8', no cp1252 hop). Hashes come from `git show <sha>:<path> | sha256sum`, never from the CRLF working tree.",
+      "targets": [
+        "T1) harness/jev/questions.json: restore U+2014 in guards.screen; diff against 845da18e shows the six pre-existing guards object-identical.",
+        "T2) docs/decisions/ADR-0001-jev-in-harvest.md: add the 4 missing refusals (probe passed, which model runs anything, instant tier, run_on_main closure).",
+        "T3) python/synapse/_vendor/fxhoudinimcp/NOTICE.md: regenerate the 31 hashes from git blobs (LF) and state the method.",
+        "T4) harness/notes/receipts/BP10-SCAFFOLD.json: correct the 1104-byte and 'tests directory does not exist' prose."
+      ],
+      "touches": ["harness/jev/questions.json", "docs/decisions/ADR-0001-jev-in-harvest.md", "python/synapse/_vendor/fxhoudinimcp/NOTICE.md", "harness/notes/receipts/BP10-SCAFFOLD.json"],
+      "acceptance": [
+        {"predicate": "json-decoded guards.screen at HEAD == guards.screen at 845da18e (object equality) and the file contains no U+00E2 U+20AC sequences", "evidence": "check"},
+        {"predicate": "ADR '## Refused Sites' has >= 8 numbered bullets covering all 8 blueprint refusal topics (CRUX-S5 check green)", "evidence": "check"},
+        {"predicate": "every NOTICE.md hash equals sha256 of the corresponding upstream blob at 29b6695b (31/31)", "evidence": "check"}
+      ],
+      "crucible_criteria": ["the crucible re-runs CRUX-S3/S5 and the NOTICE hash compare itself"],
+      "spawn_classes": [],
+      "source": {"doc": "harness/battleplan/notes/BP10-CRUX_verdicts.md", "anchor": "BP10-SCAFFOLD fix list"}
+    },
+    {
+      "id": "BP10-SERVE",
+      "band": "TRUST",
+      "class": "feature",
+      "tier": "reasoning",
+      "readonly": false,
+      "deps": ["BP10-CORPUS", "BP10-GUIDES"],
+      "name": "Serve the H22 prose corpus and the guide chunks through KnowledgeRouter behind scope_weights",
+      "note": "Tier: reasoning. HARVEST_SPEC 'Retiring H21' + 'Retrieval priority': h22_prose first, H21 on a miss, guide above prose for how-to phrasing; every answer names its scope. G3 (tests/test_knowledge_retrieval_repair.py, 24 collected) must stay 0 confident-wrong with the new scopes actually in the path -- that is the only thing that makes the README.md:121 line true. Corpus is gitignored: the server must degrade honestly (UNAVAILABLE with reason) when rag/corpus/h22_prose is absent.",
+      "targets": [
+        "T1) python/synapse/routing/knowledge.py consumes rag/retrieval/scope_weights.py and reads rag/corpus/h22_prose/*.jsonl + rag/corpus/guides/*.jsonl when present; every hit carries its scope.",
+        "T2) G3 re-run with the scopes live: 0 confident-wrong; a probe that the guide scope should win (how-to phrasing) is added with a producer path.",
+        "T3) README.md:121 stays true: either the line remains under 'What's ready' because it now is, or it is moved -- one diff, stated."
+      ],
+      "touches": ["python/synapse/routing/knowledge.py", "tests/test_knowledge_retrieval_repair.py", "README.md"],
+      "acceptance": [
+        {"predicate": "git grep scope_weights -- python/synapse returns >= 1 product file and a KnowledgeRouter answer for a how-to probe carries scope=guide", "evidence": "test"},
+        {"predicate": "tests/test_knowledge_retrieval_repair.py green with the scopes in the path; confident-wrong count 0", "evidence": "test"},
+        {"predicate": "with rag/corpus/h22_prose absent the lookup reports UNAVAILABLE with a reason, never an empty SUCCESS", "evidence": "test"}
+      ],
+      "crucible_criteria": ["the crucible mutates scope order and proves a probe flips", "no fabricated 25th probe"],
+      "spawn_classes": [],
+      "source": {"doc": "harness/battleplan/notes/HARVEST_SPEC.md", "anchor": "sec. 'Retiring H21'; sec. 'Retrieval priority'; Gates G3"}
+    }
+  ]
+}
