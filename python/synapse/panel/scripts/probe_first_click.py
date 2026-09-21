@@ -18,7 +18,7 @@ leads somewhere on an empty scene:
                empty-selection fallback, so the model can act with nothing
                selected.
 
-READ-ONLY. It builds the panel offscreen against a throwaway settings file
+READ-ONLY, and now actually. It builds the panel offscreen against a throwaway settings file
 (SYNAPSE_PANEL_SETTINGS in a temp dir, so the artist's real picks are never
 read or written), never touches the Houdini scene, and never sends anything
 to a model: rows 6-8 are INSPECTED, not fired. The four local-view openers of
@@ -48,6 +48,17 @@ def _prepare_env() -> None:
     root = os.path.dirname(os.path.dirname(os.path.dirname(here)))  # .../python
     if root not in sys.path:
         sys.path.insert(0, root)
+
+    # PNL-L3B repair. SYNAPSE_PANEL_SETTINGS isolates the panel's SETTINGS only. The
+    # conversation store resolves somewhere else entirely -- from the HIP directory, or from a
+    # SHARED temp dir when hou is absent (session_store.py:57). So merely constructing
+    # SynapsePanel() runs load_conversation_scoped(), which parks the live conversation with
+    # os.replace(target, prev) at session_store.py:250 and DESTROYS whatever was already parked
+    # there. A probe whose own docstring says READ-ONLY was eating an artist's previous session.
+    # Pin the store at a throwaway directory before any panel is built.
+    from synapse.server import session_store as _store
+    _scratch = tempfile.mkdtemp(prefix="synapse_probe_store_")
+    _store._resolve_store_dir = lambda _d=_scratch: _d
 
 
 class _Recorder:
