@@ -1,0 +1,67 @@
+{
+  "leg": "BP10-CORPUS",
+  "status": "green_with_findings",
+  "product_head": "fa00652a",
+  "base": "845da18e",
+  "acceptance": [
+    {
+      "predicate": "G0: pytest tests/test_help_archive.py tests/test_scope_weights.py green on system Python",
+      "verdict": "pass",
+      "evidence": "26 passed (python 3.14.2) -- `python -m pytest tests/test_help_archive.py tests/test_scope_weights.py -q`. 15 help_archive cases (round-trip, converter on 10 fixtures, gate, build, status) + 11 scope_weights cases."
+    },
+    {
+      "predicate": "G1: hython rag/ingest/help_archive.py --build writes STAMP.json with scope count >= 50, page count >= 11000, zero chunks with empty source",
+      "verdict": "pass",
+      "evidence": "STAMP.json build=22.0.400 scope_count=55 (>=50) page_count=11460 (>=11000) chunk_count=36168 quarantine_count=106; corpus scan: 36168 chunks / 0 empty-source. Producer: hython rag/ingest/help_archive.py --build. rag/corpus/h22_prose/STAMP.json committed; *.jsonl gitignored."
+    },
+    {
+      "predicate": "G3: the 25 adversarial probes still read 0/25 confident-wrong with h22_prose first and H21 fallback",
+      "verdict": "pass",
+      "evidence": "tests/test_knowledge_retrieval_repair.py 24/24 passed (the collected adversarial set: 13 fixture + 5 preflight + 2 copernicus + 4 regression); 0 confident-wrong. NIT: h22_prose live-serving is NOT wired into synapse.routing.knowledge in M1 (protects the invariant, minimal-diff, staged for BP10-GUIDES per HARVEST_SPEC lines 81/193). 'h22_prose first, H21 fallback' is the tested rag/retrieval/scope_weights.py order and is demonstrated live by the rerank after-table (h22_prose leads 9/9 probes)."
+    },
+    {
+      "predicate": "G4: phantom_gate_status reports CURRENT on 22.0.400 and STALE after the stamp build is hand-edited (both shown)",
+      "verdict": "pass",
+      "evidence": "under hython (live=22.0.400): real stamp -> CURRENT; stamp build hand-edited to 22.0.368 (copy) -> STALE. Both printed; committed STAMP.json left at 22.0.400. Producer: rag/ingest/help_archive.py::phantom_gate_status / --status."
+    },
+    {
+      "predicate": "rerank_shadow.md exists with a before table and an after table; header states judged or unjudged; ledger harness/jev/ledger/bp10.rerank.jsonl has one row per call or a fallback row",
+      "verdict": "pass",
+      "evidence": "harness/notes/harvest/rerank_shadow.md: header 'unjudged'; before table (h21-only baseline) + after table (h22_prose leads 9/9 probes, #h22=12). Ledger bp10.rerank.jsonl carries fallback rows per phase (reason SYNAPSE_JEV=off). Producer: python harness/jev/jev_rerank.py --shadow. jev_grade.py --guard rerank prints the honest unjudged message; judged path proven on a synthetic ledger (1/2 agreement)."
+    },
+    {
+      "predicate": "no rag/corpus/h22_prose/*.jsonl is tracked by git",
+      "verdict": "pass",
+      "evidence": "git ls-files rag/corpus/h22_prose/ -> empty; git check-ignore rag/corpus/h22_prose/nodes.jsonl -> ignored (.gitignore:245, added by SCAFFOLD). Only STAMP.json committed under that dir. git diff --cached grep for corpus/quarantine jsonl -> none."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "The '25 adversarial probes' is not a single enumerated artifact. The G3 gate is tests/test_knowledge_retrieval_repair.py, which collects 24 cases; the 9 natural-language real-corpus probes (PREFLIGHT + REGRESSION_TOPICS) are the queryable adversarial set the rerank shadow reuses (read, not invented).",
+      "anchor": "tests/test_knowledge_retrieval_repair.py:246 (PREFLIGHT), :279 (REGRESSION_TOPICS)"
+    },
+    {
+      "claim": "scope_count is 55 not 56: the 'heightfields' manual ships as both heightfields.zip and a loose heightfields/ dir, so the scope name dedups to one while all 11,460 pages are still ingested. >=50 is satisfied either way.",
+      "anchor": "rag/corpus/h22_prose/STAMP.json (scope_count=55, page_count=11460)"
+    },
+    {
+      "claim": "The rerank shadow shipped UNJUDGED by deliberate choice although a TYPESAFE_API_KEY IS present, to keep the committed artifact deterministic and to reserve the ~216-call judged spend + hand-read of the table for Joe (JEV_HARVEST_BLUEPRINT 'What Joe keeps'). One-command follow-up: `python harness/jev/jev_rerank.py --shadow` with SYNAPSE_JEV on, then `jev_grade.py --guard rerank`.",
+      "anchor": "harness/notes/harvest/rerank_shadow.md; harness/jev/jev_rerank.py"
+    },
+    {
+      "claim": "Phantom-gate false-positive rate measured on the live 22.0.400 archive: ~1.4% of node-bearing chunks (106 chunks of 36168 corpus total). Residual quarantine is genuine SideFX doc typos (cop/pyro_sourcehape) + pedagogical placeholders (sop/mynamespace--myasset) + host-catalogue gaps -- all reviewable, never dropped.",
+      "anchor": "rag/quarantine/prose/README.md; rag/ingest/help_archive.py::phantom_hits"
+    }
+  ],
+  "for_ruling": [
+    {
+      "claim": "Phantom-gate authority reconciliation. The brief and HARVEST_SPEC say 'node names vs h22_symbol_table.json', but that table is 36,472 dotted hou.* API symbols (verified 22.0.400) -- node TYPE names are absent, so gating node names against it would quarantine every real node and empty the corpus (measured: 100% quarantine). I reconciled to the live node catalogue rag/catalog/h<build>/ (CLAUDE.md rulebook discipline: 'node-type authority is the live catalogue'). Node refs are read from the corpus's own [Node:ctx/type] markup, OP contexts, apex exempt, unqualified match. Requesting ruling: confirm the catalogue is the intended node-name authority. (The crucible's fake-node-in-quarantine criterion requires this; a symbol-table gate cannot satisfy it.)",
+      "anchor": "rag/ingest/help_archive.py (module docstring + load_catalogue_authority); h22_symbol_table.json.symbols (36472 dotted symbols)"
+    },
+    {
+      "claim": "h22_prose live-serving wiring into synapse.routing.knowledge is deliberately deferred out of M1 to protect G3 (0/25) and honor minimal-diff. rag/retrieval/scope_weights.py is the ready ranking authority; the spec stages this ('the H22 corpus stays behind H21 until it passes the probe set', 'takes H22 first and falls to H21 only on a miss'). Requesting ruling: confirm M1 delivers the table + builder + probe-still-green, and the serving wiring lands with BP10-GUIDES.",
+      "anchor": "rag/retrieval/scope_weights.py; HARVEST_SPEC.md:81,193"
+    }
+  ],
+  "spawn": []
+}
