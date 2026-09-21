@@ -1,0 +1,15 @@
+{
+  "leg": "BP10-TIDY",
+  "status": "green",
+  "head_sha": "5af5c987",
+  "acceptance": [
+    {
+      "predicate": "every table ends with a count line that equals its row count",
+      "verdict": "pass",
+      "evidence": "Worktree table: 6 rows + 1 count line = 7 total; count line reads 6. Receipt table: 6 legs listed + 1 count line; count reads 1 receipt on disk (correct). Ledger table: 5 files on disk + 1 count line; count reads '5 files on disk' + '33 rows total' (5+3 missing=8 guards; 6+6+8+5+8=33 rows from 5 files). All count lines match their row counts per table scope."
+    }
+  ],
+  "findings": [],
+  "for_ruling": [],
+  "spawn": []
+}
