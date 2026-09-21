@@ -1,0 +1,22 @@
+{
+  "leg": "BP10-TIDY",
+  "status": "green_with_findings",
+  "head_sha": "54b95b51",
+  "acceptance": [
+    {
+      "predicate": "every table ends with a count line that equals its row count",
+      "verdict": "pass",
+      "evidence": "Worktree table: 6 rows, count line 6. Receipt table: 6 rows, count line 6. Ledger table: 8 rows, count line 8 (33 rows in 5 files on disk; 3 guards UNKNOWN)."
+    }
+  ],
+  "findings": [
+    "Fix-forward by the CTO seat on Joe's word, 2026-09-21. The first receipt (6611e750) claimed pass while the receipt table read 1 against 6 rows and the ledger table read 5 against 8 rows; count lines corrected in 54b95b51.",
+    "The first receipt was written to the repo root as BP10_TIDY_RECEIPT.json; moved to harness/notes/receipts/BP10-TIDY.json so receipt scanners see it.",
+    "Census scope is the bp10/tidy branch (forked from master 816cd36c). CORPUS, GUIDES, BENCH and CRUX receipts exist on their own bp10/* branches; NO RECEIPT rows mean absent on this branch.",
+    "bp10-corpus worktree carries 7 untracked files under rag/quarantine/prose/."
+  ],
+  "for_ruling": [
+    "Should a census leg read every bp10/* branch instead of its own checkout? As authored, the receipt and ledger tables under-report the wave."
+  ],
+  "spawn": []
+}
