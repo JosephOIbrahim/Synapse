@@ -1,0 +1,73 @@
+{
+  "leg": "BP10-BENCH",
+  "status": "green_with_findings",
+  "product_head_sha": "cb1cd0de",
+  "summary": "Outside-in benchmark harness (SYNAPSE vs fxhoudinimcp, isolated hython per arm) + JEV-BENCH failure classifier + prompt leak-check are built and tested. Every sub-plumbing is proven real; the one combined live arm token turn is UNKNOWN because port 9999 is held by the artist's live session (isolation forbids reuse) and fxhoudinimcp is not installed. No number was fabricated.",
+  "acceptance": [
+    {
+      "predicate": "prompts.jsonl has 24 rows, 4 per domain, each with a non-empty check block",
+      "verdict": "pass",
+      "evidence": "harness/outside_in/prompts.jsonl: 24 rows; per-domain SOP/Pyro/Vellum/Solaris-LOP/Copernicus/VEX = 4 each; all non-empty check. Every node type in a check was verified to EXIST on live 22.0.400 via a hython catalogue probe (Sop/Lop/Dop/Cop); phantoms volumesource and vellumsource were caught and avoided. All four check-kinds (nodes/parm/cook/attrib) are represented."
+    },
+    {
+      "predicate": "--leak-check ran over all 24 prompts; leak ledger committed; no prompt >= 0.50 remains (or a fallback row explains no key)",
+      "verdict": "pass",
+      "evidence": "python harness/jev/jev_bench.py --leak-check measured 24/24 live (0 fallback; TYPESAFE key resolved via registry). Final summary: leaked=[], measured=24. Ledger harness/jev/ledger/bp10.leak.jsonl committed; it holds BOTH the initial run (mis-specified detector flagged 8 at 0.79-0.96) and the corrected run (all <0.50, max 0.26). Threshold stayed 0.50; only the question's specification was corrected to target tool/arm hints rather than shared Houdini vocabulary (finding F2)."
+    },
+    {
+      "predicate": "one prompt per arm on the empty scene produced two LEDGER rows with provider token counts and a verify.py verdict",
+      "verdict": "UNKNOWN",
+      "evidence": "python harness/outside_in/run.py --scene empty --runs 1 --limit 1 completed and wrote exactly 2 rows to harness/notes/outside_in/results.jsonl. BOTH arms were unreachable this session, so provider token counts are UNKNOWN (never fabricated): the SYNAPSE arm's available() REFUSED port 9999 because a server this benchmark did not start holds it (the artist's live session; isolation forbids reuse), and the fxhoudinimcp arm has no venv (pip install fxhoudinimcp not run; network + separate env). Sub-plumbing each proven real instead: verify.py returns PASS(sphere)/FAIL(box) under a THIRD hython on a real saved scene; provider usage.*_tokens capture is proven live by the token rows jev_client wrote to bp10.leak.jsonl (identical pattern to arms/_agent.run_agent). The combined live turn is the held piece (finding F1)."
+    },
+    {
+      "predicate": "verify.py runs in a hython that is neither arm's process and reads no arm success text (code inspection + a planted false success claim is not credited)",
+      "verdict": "pass",
+      "evidence": "test_outside_in_verify.py::test_verify_reads_no_arm_text_code_inspection (ast inspection: verify.py imports no arm module, uses no arm-output identifier in code, and its only CLI inputs are --scene/--check/--root). run.py launches verify.py as a separate hython subprocess (third process) receiving only scene+check. Live proof: builder hython -> saved .hip -> third hython verify.py returned PASS then FAIL on the same scene. Planted 'Task complete.' on a FAILING check was classified by jev_bench as claimed_success/FAIL@0.98 (real Jev call, harness/jev/ledger/bp10.bench.jsonl) and never credited as a pass."
+    },
+    {
+      "predicate": "run.py refuses --scene large without --confirm-spend and prints an estimate from the recorded per-turn median",
+      "verdict": "pass",
+      "evidence": "test_run_large_gate_refuses_and_estimates + test_run_large_gate_unknown_median_is_honest (part of 15/15 green). spend_gate('large', runs=3, n_arms=2, n_prompts=24, confirm=False) returns exit 2 and prints '144 agent turns x <median> tok/turn = ~<est> provider tokens' from harness/notes/outside_in/turn_stats.json; when no run is recorded it states the per-turn median UNKNOWN rather than inventing one. --confirm-spend passes through; --scene empty is never gated."
+    },
+    {
+      "predicate": "G5 full run NOT executed by this leg (ledger has <= 2 benchmark rows)",
+      "verdict": "pass",
+      "evidence": "harness/notes/outside_in/results.jsonl contains exactly 2 rows (one per arm, the single empty-scene proof). Only --limit 1 --runs 1 was executed; the full 24x2x3 G5 cell was not run."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "The live arm token turn (acceptance 3) is environmentally blocked, not a build gap. SYNAPSE arm cannot bind/use the pinned port 9999 without touching the artist's live session; fxhoudinimcp is not installed. This is exactly the 'hwebserver port collision in M3' risk HARVEST_SPEC named.",
+      "anchor": "harness/notes/outside_in/results.jsonl (per_run[].reason); HARVEST_SPEC.md 'Risks' bullet 'hwebserver port collision in M3'"
+    },
+    {
+      "id": "F2",
+      "claim": "The initial leak question over-flagged shared Houdini vocabulary (wrangle, USD stage, Copernicus, render settings) as tool/arm leaks (8/24 at 0.79-0.96). Corrected the question to target tool/arm/product/server names only; the same prompts fell to 0.09-0.26 with the 0.50 threshold unchanged. This was a detector-specification fix, not a gate-weakening; before/after are both in the committed leak ledger.",
+      "anchor": "harness/jev/jev_bench.py LEAK_QUESTION_DEFAULT; harness/jev/ledger/bp10.leak.jsonl"
+    },
+    {
+      "id": "F3",
+      "claim": "ADR-0001 Site 3 says jev_bench is 'consumed by harness/outside_in/verify.py'. Taken literally that breaks verify.py's independence (verify would read arm text). Implemented correctly: run.py (not verify.py) consumes jev_bench AFTER the independent verdict, so verify.py stays hou-only.",
+      "anchor": "docs/decisions/ADR-0001-jev-in-harvest.md:48; harness/outside_in/run.py classify_notpass()"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "R1",
+      "ask": "Promote the leak question (hints_a_tool_or_arm) from jev_bench.py into questions.json guards.bench so it is diffable data per invariant 6. It lives in jev_bench.py now only because questions.json is outside this leg's touches and the wave forbids an intra-wave shared seam; jev_bench._leak_question() already prefers a questions.json copy if one is added.",
+      "owner": "a leg that owns harness/jev/questions.json"
+    },
+    {
+      "id": "R2",
+      "ask": "The full G5 run (24 prompts x 2 arms x 3 runs) is SPEND and remains Joe's word. It needs (a) a session with port 9999 NOT held by a live artist server, or an agreed alt-port deviation from the pinned-9999 fairness rule; (b) fxhoudinimcp pip-installed into a separate venv with its own Houdini package. Recommend a dedicated headless session with no live bridge on 9999.",
+      "owner": "Joe"
+    },
+    {
+      "id": "R3",
+      "ask": "Fix ADR-0001 Site 3 wording from 'consumed by harness/outside_in/verify.py' to 'consumed by the outside_in runner (run.py) after verify.py's independent verdict', to match the implemented (and required) independence.",
+      "owner": "ADR owner / CTO seat"
+    }
+  ],
+  "spawn": []
+}
