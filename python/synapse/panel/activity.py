@@ -110,11 +110,18 @@ def split_undo_receipt(detail):
 
 def tool_status(name, phase, detail=None):
     """The status line for a tool event; carries the undo receipt when the
-    detail leads with one (TRUST-2), otherwise exactly the old prefix + label."""
+    detail leads with one (TRUST-2), otherwise exactly the old prefix + label.
+
+    BP9-WORKER: on the error/failed phase the detail is the failure REASON
+    (``translate_tool_error`` output from the worker) and is rendered as
+    ``Failed: <label> - <detail>`` so the artist sees why. Receipts unchanged.
+    """
     prefix = {"running": "Running", "done": "Finished", "ok": "Finished",
               "error": "Failed", "failed": "Failed"}.get(phase, "Status")
     line = "%s: %s" % (prefix, tool_label(name))
-    receipt, _rest = split_undo_receipt(detail)
+    receipt, rest = split_undo_receipt(detail)
     if receipt:
         line = "%s \u2014 %s" % (line, receipt)
+    elif phase in ("error", "failed") and rest:
+        line = "%s - %s" % (line, rest)
     return line

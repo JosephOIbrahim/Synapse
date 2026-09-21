@@ -267,7 +267,12 @@ class FaceWork(QtWidgets.QWidget):
         """A live tool event → update the status line + the plan-with-progress."""
         from synapse.panel.activity import tool_status
         self._status.setText(tool_status(name, phase, detail))
-        self._status.setToolTip(str(name))
+        # BP9-WORKER: on the error phase the tooltip carries the full failure
+        # reason (the worker's translated detail), so a hover shows why.
+        if phase in ("error", "failed") and detail:
+            self._status.setToolTip("%s\n%s" % (name, detail))
+        else:
+            self._status.setToolTip(str(name))
         # update-or-append this tool as a plan step
         for step in self._steps:
             if step[0] == name:

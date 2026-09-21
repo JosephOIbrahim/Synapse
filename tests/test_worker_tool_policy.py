@@ -371,3 +371,46 @@ def test_denial_tool_result_shape():
     assert block["tool_use_id"] == "tu_9"
     assert block["is_error"] is True
     assert "houdini_render" in block["content"]
+
+
+# ===========================================================================
+# BP9-WORKER: the roster the SEND path hands the model. synapse_panel.py builds
+# ClaudeWorker(..., tools=None, enforce_worker_policy=True, ...) and the worker
+# resolves get_anthropic_tools_for_worker() itself -- so the LLM never sees a
+# schema the dispatch allowlist would deny. Pinned under every policy mode.
+# ===========================================================================
+
+_ALL_MODES = ("strict", "standard", "unrestricted", "demo", "proposal")
+
+
+@pytest.mark.parametrize("mode", _ALL_MODES)
+def test_send_path_worker_roster_is_the_filtered_roster(claude_worker_module, mode):
+    from synapse.panel import tool_bridge as tb
+    os.environ[_ENV_VAR] = mode
+    tb._WORKER_TOOLS_CACHE.clear()
+    try:
+        # Exactly the send-path construction (synapse_panel.py, FRZ probe 1).
+        worker = claude_worker_module.ClaudeWorker(
+            [{"role": "user", "content": "hi"}], system_prompt="",
+            tools=None, parent=None, enforce_worker_policy=True,
+            provider=None,
+        )
+        got = {t["name"] for t in worker._tools}
+        want = {t["name"] for t in get_anthropic_tools()
+                if is_tool_allowed_for_worker(t["name"])[0]}
+        assert got == want, mode
+        assert len(worker._tools) == len(want)
+    finally:
+        tb._WORKER_TOOLS_CACHE.clear()
+
+
+def test_send_path_never_passes_the_full_roster():
+    """The panel must not override the worker's filtered default with all schemas."""
+    import re
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    src = open(os.path.join(root, "python", "synapse", "panel", "synapse_panel.py"),
+               encoding="utf-8").read()
+    assert "tools=get_anthropic_tools()" not in src
+    ctor = re.search(r"ClaudeWorker\(self\._messages,.*?\)", src, re.S)
+    assert ctor is not None
+    assert "tools=None" in ctor.group(0)

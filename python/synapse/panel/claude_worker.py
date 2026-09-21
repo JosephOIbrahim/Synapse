@@ -14,7 +14,9 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import os
 import threading
+import time
 
 try:
     from PySide6.QtCore import QThread, Signal
@@ -27,6 +29,7 @@ from .providers.registry import (
     build_provider as _build_provider,
 )
 from .activity import with_undo_receipt
+from .error_translator import translate_tool_error
 from .retry_breaker import ABANDON_THRESHOLD, breaker_message
 from .tool_bridge import get_anthropic_tools_for_worker
 from .tool_executor import ToolRequest, try_mcp_tool_call
@@ -44,6 +47,20 @@ except Exception:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 _MAX_TOOL_ITERATIONS = 25
+
+# BP9-WORKER: per-turn usage ledger. One JSON row per conversation loop,
+# appended on the worker thread from the loop's ``finally`` so every exit
+# (abort return, end_turn, cap-hit fallthrough, raise) leaves a row. Disk
+# trouble is swallowed there -- a ledger can never become stream_error.
+_USAGE_LEDGER_NAME = "turns.jsonl"
+
+
+def _usage_ledger_path() -> str:
+    """``~/.synapse/usage/turns.jsonl`` (override: ``SYNAPSE_USAGE_LEDGER``)."""
+    override = os.environ.get("SYNAPSE_USAGE_LEDGER")
+    if override:
+        return override
+    return os.path.join(os.path.expanduser("~"), ".synapse", "usage", _USAGE_LEDGER_NAME)
 _TOOL_WAIT_TIMEOUT = 30.0   # floor; C7 raises per-tool via _wait_budget()
 
 
@@ -236,146 +253,213 @@ class ClaudeWorker(QThread):
           2. If stop_reason is "tool_use", execute all tool calls on the
              main thread, append results, and loop.
           3. If stop_reason is "end_turn" or "max_tokens", return.
+
+        BP9-WORKER: the loop body lives in ``_run_turns`` and reports into
+        ``ledger``; the ``finally`` below writes ONE row to the usage ledger
+        (``turns.jsonl``) no matter which of the loop's exits fired. The row
+        is written on this worker thread, never on the Qt thread, and never
+        through synapse.log. A disk error is swallowed: the ledger is
+        bookkeeping and must not surface to the artist as ``stream_error``.
         """
-        tool_calls_total = 0   # L9: tool calls across the whole turn-loop
-        # W5-PANEL item 3: open a fresh per-task usage receipt keyed to the
-        # SELECTED model, so the Token tab shows THIS task's spend, not a lifetime
-        # total. model_identity is the provider's own name for the engine; the
-        # provider id (J2) is what the face names in "not reported by <provider>"
-        # and what model_facts prices by. The sink's SESSION half keeps running.
-        if USAGE_SINK is not None:
-            try:
-                USAGE_SINK.begin_task(getattr(self._provider, "model_identity", None),
-                                      provider=getattr(self._provider, "id", None))
-            except Exception:
-                pass
-        context_recorded = False   # J2: the window is looked up once per task
-        for iteration in range(_MAX_TOOL_ITERATIONS):
-            if self._abort:
-                return
+        ledger = {
+            "provider": getattr(self._provider, "id", None),
+            "model": getattr(self._provider, "model_identity", None),
+            "turns": 0,
+            "tool_calls_total": 0,
+            "tools": [],            # [{"name", "is_error"}] in dispatch order
+            "stream_ms": [],        # perf_counter wall ms per provider.stream()
+            "stop_reason": None,
+            "outcome": "error",     # completed | stopped | error | cap_hit
+        }
+        # test_first_session_panel.py execs this method's AST ALONE with only
+        # USAGE_SINK / _MAX_TOOL_ITERATIONS / logger bound, so the loop body is a
+        # closure here (not a sibling method) and reads the clock through
+        # globals(): a missing ``time`` degrades to an unmeasured (None) stream
+        # wall time instead of a NameError inside the artist's turn.
+        _perf = getattr(globals().get("time"), "perf_counter", None)
 
-            self.activity_changed.emit("Waiting for model response…")
-            try:
-                stop_reason, content_blocks = self._provider.stream(
-                    messages=self._messages,
-                    tools=self._tools,
-                    system=self._system,
-                    api_key=api_key,
-                    emit_token=self.token_received.emit,
-                    should_abort=lambda: self._abort,
-                )
-            finally:
-                # A interrupted/failed stream can already have measured tokens.
-                if USAGE_SINK is not None:
-                    try:
-                        USAGE_SINK.add(getattr(self._provider, "last_usage", None))
-                        report = getattr(USAGE_SINK, "set_reported_model", None)
-                        if callable(report):
-                            report(getattr(self._provider, "reported_model", None))
-                    except Exception:
-                        pass  # A display meter must not mask a request failure.
-
-            # Fold this call's real usage into the task total BEFORE the abort
-            # check — those tokens were billed even if the turn is aborting, and
-            # the provider publishes last_usage on abort too (anthropic_provider
-            # finally). None (no usage reported) counts the run but invents no
-            # field, so a non-Anthropic engine stays honestly UNKNOWN.
+        def _run_turns() -> str:
+            """The conversation loop proper. Returns the outcome label; raises
+            propagate (the ledger row then keeps ``outcome="error"``)."""
+            tool_calls_total = 0   # L9: tool calls across the whole turn-loop
+            # W5-PANEL item 3: open a fresh per-task usage receipt keyed to the
+            # SELECTED model, so the Token tab shows THIS task's spend, not a lifetime
+            # total. model_identity is the provider's own name for the engine; the
+            # provider id (J2) is what the face names in "not reported by <provider>"
+            # and what model_facts prices by. The sink's SESSION half keeps running.
             if USAGE_SINK is not None:
                 try:
-                    if not context_recorded:
-                        # J2: the model's context window, from the provider
-                        # (Ollama /api/show, Gemini models.get, or the
-                        # documented model_facts table) — asked ONCE per task,
-                        # here on the worker thread so the Qt thread never
-                        # waits on it. None ⇒ the face says "context window
-                        # not reported by <provider>", never a guess.
-                        context_recorded = True
-                        window = getattr(self._provider, "context_window", None)
-                        source = getattr(self._provider, "context_window_source", None)
-                        USAGE_SINK.set_context_window(
-                            window() if callable(window) else None,
-                            source() if callable(source) else None)
+                    USAGE_SINK.begin_task(getattr(self._provider, "model_identity", None),
+                                          provider=getattr(self._provider, "id", None))
                 except Exception:
                     pass
+            context_recorded = False   # J2: the window is looked up once per task
+            for iteration in range(_MAX_TOOL_ITERATIONS):
+                ledger["turns"] = iteration + 1
+                if self._abort:
+                    return "stopped"
 
-            if self._abort:
-                return
-
-            if stop_reason == "tool_use":
-                # Append the assistant message with all content blocks
-                self._messages.append({
-                    "role": "assistant",
-                    "content": content_blocks,
-                })
-
-                # Process every tool_use block, collect results
-                tool_results: list[dict] = []
-                calls = [block for block in content_blocks if block.get("type") == "tool_use"]
+                self.activity_changed.emit("Waiting for model response…")
+                stream_t0 = _perf() if _perf is not None else None
                 try:
-                    for index, block in enumerate(calls):
-                        if self._abort:
-                            tool_results.append({
-                                "type": "tool_result", "tool_use_id": block.get("id", ""),
-                                "content": "Cancelled before execution because the artist stopped this task.",
-                                "is_error": True,
-                            })
-                            continue
-
-                        try:
-                            result_msg = self._execute_tool_block(block)
-                        except BaseException:
-                            # The dispatch boundary cannot infer whether a
-                            # failed call already changed Houdini. Keep prior
-                            # results and pair every remaining call truthfully.
-                            tool_results.append({
-                                "type": "tool_result", "tool_use_id": block.get("id", ""),
-                                "content": "Execution outcome unknown: no tool result was received. Inspect the scene before retrying.",
-                                "is_error": True,
-                            })
-                            tool_results.extend({
-                                "type": "tool_result", "tool_use_id": pending.get("id", ""),
-                                "content": "Not executed because an earlier tool call ended the task with an error.",
-                                "is_error": True,
-                            } for pending in calls[index + 1:])
-                            raise
-                        tool_results.append(result_msg)
-                        tool_calls_total += 1
+                    stop_reason, content_blocks = self._provider.stream(
+                        messages=self._messages,
+                        tools=self._tools,
+                        system=self._system,
+                        api_key=api_key,
+                        emit_token=self.token_received.emit,
+                        should_abort=lambda: self._abort,
+                    )
                 finally:
-                    # Also commit earlier results when a later dispatch raises.
-                    if tool_results:
-                        self._messages.append({
-                            "role": "user",
-                            "content": tool_results,
-                        })
+                    ledger["stream_ms"].append(
+                        round((_perf() - stream_t0) * 1000.0, 3)
+                        if stream_t0 is not None else None)
+                    # A interrupted/failed stream can already have measured tokens.
+                    if USAGE_SINK is not None:
+                        try:
+                            USAGE_SINK.add(getattr(self._provider, "last_usage", None))
+                            report = getattr(USAGE_SINK, "set_reported_model", None)
+                            if callable(report):
+                                report(getattr(self._provider, "reported_model", None))
+                        except Exception:
+                            pass  # A display meter must not mask a request failure.
 
-            else:
-                # end_turn, max_tokens, or anything else -- we're done.
-                # The panel syncs this history at completion. Keep the answer
-                # the artist saw so the next request can refer back to it.
-                # A token limit can leave an incomplete tool_use block. It was
-                # not executed, so do not replay an unpaired call next time.
-                completed = [block for block in content_blocks
-                             if block.get("type") != "tool_use"]
-                if completed:
+                # Fold this call's real usage into the task total BEFORE the abort
+                # check — those tokens were billed even if the turn is aborting, and
+                # the provider publishes last_usage on abort too (anthropic_provider
+                # finally). None (no usage reported) counts the run but invents no
+                # field, so a non-Anthropic engine stays honestly UNKNOWN.
+                if USAGE_SINK is not None:
+                    try:
+                        if not context_recorded:
+                            # J2: the model's context window, from the provider
+                            # (Ollama /api/show, Gemini models.get, or the
+                            # documented model_facts table) — asked ONCE per task,
+                            # here on the worker thread so the Qt thread never
+                            # waits on it. None ⇒ the face says "context window
+                            # not reported by <provider>", never a guess.
+                            context_recorded = True
+                            window = getattr(self._provider, "context_window", None)
+                            source = getattr(self._provider, "context_window_source", None)
+                            USAGE_SINK.set_context_window(
+                                window() if callable(window) else None,
+                                source() if callable(source) else None)
+                    except Exception:
+                        pass
+
+                ledger["stop_reason"] = stop_reason
+                if self._abort:
+                    return "stopped"
+
+                if stop_reason == "tool_use":
+                    # Append the assistant message with all content blocks
                     self._messages.append({
                         "role": "assistant",
-                        "content": completed,
+                        "content": content_blocks,
                     })
-                # L9: record the sequential-turn count (the dominant latency
-                # term) so an imperative build (many turns) vs a one-shot
-                # declarative call (1 turn) is measurable on disk.
-                logger.info(
-                    "Conversation complete: %d turns, %d tool calls",
-                    iteration + 1, tool_calls_total,
-                )
-                return
 
-        logger.warning(
-            "Hit max tool-use iterations (%d) with %d tool calls, stopping -- "
-            "likely an imperative build that should have been one declarative "
-            "synapse_solaris_build_graph call",
-            _MAX_TOOL_ITERATIONS, tool_calls_total,
-        )
+                    # Process every tool_use block, collect results
+                    tool_results: list[dict] = []
+                    calls = [block for block in content_blocks if block.get("type") == "tool_use"]
+                    try:
+                        for index, block in enumerate(calls):
+                            if self._abort:
+                                tool_results.append({
+                                    "type": "tool_result", "tool_use_id": block.get("id", ""),
+                                    "content": "Cancelled before execution because the artist stopped this task.",
+                                    "is_error": True,
+                                })
+                                ledger["tools"].append(
+                                    {"name": block.get("name"), "is_error": True})
+                                continue
+
+                            try:
+                                result_msg = self._execute_tool_block(block)
+                            except BaseException:
+                                ledger["tools"].append(
+                                    {"name": block.get("name"), "is_error": True})
+                                # The dispatch boundary cannot infer whether a
+                                # failed call already changed Houdini. Keep prior
+                                # results and pair every remaining call truthfully.
+                                tool_results.append({
+                                    "type": "tool_result", "tool_use_id": block.get("id", ""),
+                                    "content": "Execution outcome unknown: no tool result was received. Inspect the scene before retrying.",
+                                    "is_error": True,
+                                })
+                                tool_results.extend({
+                                    "type": "tool_result", "tool_use_id": pending.get("id", ""),
+                                    "content": "Not executed because an earlier tool call ended the task with an error.",
+                                    "is_error": True,
+                                } for pending in calls[index + 1:])
+                                raise
+                            tool_results.append(result_msg)
+                            tool_calls_total += 1
+                            ledger["tool_calls_total"] = tool_calls_total
+                            ledger["tools"].append({
+                                "name": block.get("name"),
+                                "is_error": bool(result_msg.get("is_error"))
+                                if isinstance(result_msg, dict) else None,
+                            })
+                    finally:
+                        # Also commit earlier results when a later dispatch raises.
+                        if tool_results:
+                            self._messages.append({
+                                "role": "user",
+                                "content": tool_results,
+                            })
+
+                else:
+                    # end_turn, max_tokens, or anything else -- we're done.
+                    # The panel syncs this history at completion. Keep the answer
+                    # the artist saw so the next request can refer back to it.
+                    # A token limit can leave an incomplete tool_use block. It was
+                    # not executed, so do not replay an unpaired call next time.
+                    completed = [block for block in content_blocks
+                                 if block.get("type") != "tool_use"]
+                    if completed:
+                        self._messages.append({
+                            "role": "assistant",
+                            "content": completed,
+                        })
+                    # L9: record the sequential-turn count (the dominant latency
+                    # term) so an imperative build (many turns) vs a one-shot
+                    # declarative call (1 turn) is measurable on disk.
+                    logger.info(
+                        "Conversation complete: %d turns, %d tool calls",
+                        iteration + 1, tool_calls_total,
+                    )
+                    return "completed"
+
+            logger.warning(
+                "Hit max tool-use iterations (%d) with %d tool calls, stopping -- "
+                "likely an imperative build that should have been one declarative "
+                "synapse_solaris_build_graph call",
+                _MAX_TOOL_ITERATIONS, tool_calls_total,
+            )
+            return "cap_hit"
+
+        try:
+            ledger["outcome"] = _run_turns()
+        finally:
+            try:
+                row = dict(ledger)
+                row["ts"] = time.time()
+                usage = None
+                if USAGE_SINK is not None:
+                    snap = USAGE_SINK.snapshot()
+                    if snap:
+                        # Task fields only; None stays None (UNKNOWN, never 0).
+                        usage = {k: snap.get(k) for k in (
+                            "input_tokens", "output_tokens",
+                            "cache_read", "cache_creation", "runs")}
+                row["usage"] = usage
+                path = _usage_ledger_path()
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "a", encoding="utf-8") as fh:
+                    fh.write(json.dumps(row, default=str) + "\n")
+            except Exception:
+                pass  # the ledger never reaches the artist
+
 
     # ------------------------------------------------------------------
     # Single tool execution
@@ -433,7 +517,12 @@ class ClaudeWorker(QThread):
             if mcp_result is not None:
                 mcp_result, is_error = unpack_tool_result(mcp_result)
                 if is_error:
-                    self.tool_status.emit(tool_name, "error", summary)
+                    # BP9-WORKER: the artist sees WHY, not the input echo.
+                    err_text = (mcp_result if isinstance(mcp_result, str)
+                                else json.dumps(mcp_result, sort_keys=True, default=str))
+                    self.tool_status.emit(
+                        tool_name, "error",
+                        translate_tool_error(tool_name, err_text)[:120])
                     return {
                         "type": "tool_result", "tool_use_id": tool_use_id,
                         "content": (mcp_result if isinstance(mcp_result, str)
@@ -506,7 +595,8 @@ class ClaudeWorker(QThread):
             # it counts toward the F2 retry circuit-breaker.
             if "STILL be running inside Houdini" in str(exc):
                 self._note_abandon(cmd_key)
-            self.tool_status.emit(tool_name, "error", summary)
+            self.tool_status.emit(
+                tool_name, "error", translate_tool_error(tool_name, str(exc))[:120])
             return {
                 "type": "tool_result",
                 "tool_use_id": tool_use_id,
@@ -517,7 +607,10 @@ class ClaudeWorker(QThread):
             # Result decoding or observation can fail after execution, too.
             # Only the explicit None above proves local fallback is safe.
             self._note_abandon(cmd_key)
-            self.tool_status.emit(tool_name, "error", summary)
+            _unreadable = ("The tool outcome could not be read. Do not retry; "
+                           "check the scene/cook state first.")
+            self.tool_status.emit(
+                tool_name, "error", translate_tool_error(tool_name, _unreadable)[:120])
             return {
                 "type": "tool_result", "tool_use_id": tool_use_id,
                 "content": "The tool outcome could not be read. Do not retry; check the scene/cook state first.",
@@ -565,7 +658,9 @@ class ClaudeWorker(QThread):
 
         # Determine status
         if request.error:
-            self.tool_status.emit(tool_name, "error", summary)
+            self.tool_status.emit(
+                tool_name, "error",
+                translate_tool_error(tool_name, str(request.error))[:120])
             content_str = request.error
             is_error = True
         else:
