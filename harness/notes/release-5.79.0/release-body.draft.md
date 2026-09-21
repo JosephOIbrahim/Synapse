@@ -35,6 +35,12 @@
 
 **A fifth dead gate, found by rehearsing.** Running the composed gate on a trial integration before the graph finished caught `panel_gate.py` matching only `G3 RESULT: <n> FAIL` -- the audit prints `G3 RESULT: pass` when nothing fails, so a fully green audit parsed as a crash. A gate that cannot recognise success is as dead as one that cannot pass.
 
+**And a sixth: the instrument that replaced the other five was lying the same way.** The composed gate's three hython probe rows never set `HOUDINI_PACKAGE_DIR`, so every one of them imported the panel from the main checkout and reported on code the integration does not contain. Two of those rows had been reading PASS. `panel_gate.py`, two rows above in the same script, was proving its own tree correctly the whole time.
+
+It surfaced by accident: a probe called a helper that exists on the branch and not on master, and the resulting attribute error gave it away. Without that accident this release would have been cut on three green rows measured against the wrong tree.
+
+The rule that came out of it is now a gate row of its own, placed first: print the path the interpreter actually imported from, and fail unless it is the tree under test. Every later row is void unless that one is green. A convention inside one helper was not enough, because the next row added did not copy it.
+
 **A read-only probe was eating the artist's parked session.** The first-click probe's own docstring claimed READ-ONLY. Its adversarial verifier disproved that half and proved it: `SYNAPSE_PANEL_SETTINGS` isolates the panel's settings only, while the conversation store resolves from the HIP directory, so merely constructing the panel parked the live conversation and destroyed whatever was already parked there. Seeded with a live conversation and an older parked one, the probe left the live slot empty and the older one gone. Repaired, both survive byte-intact. Pinned by a test that needs neither Qt nor hython.
 
 **Every verifier said no, and every verifier was right.** Three legs came back SOUND-WITH-NITS with `merge_ready` false, each writing in its notes that the leg itself was clean and the red was pre-existing -- one of them reproduced master's identical failures in an independent worktree to prove it. The composed gate now waives exactly the two proven-dead predicates, mechanically; anything else a verifier failed still refuses the leaf.
