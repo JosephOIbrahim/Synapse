@@ -1,0 +1,7 @@
+{
+  "_comment": "Empty hand-label template for the JEV-BENCH grader. A human labels the EXPECTED failure kind for each not-pass prompt after a benchmark run, then `python harness/jev/jev_bench.py --grade harness/notes/outside_in/bench_key.json` reports how often the guard's ledgered kind agreed. Evidence for a ruling, not a ruling.",
+  "_schema": "bench-key/v1",
+  "_expected_kinds": ["refused_unsupported", "attempted_and_failed", "claimed_success", "asked_clarification", "cannot_tell"],
+  "_how": "Add one entry per not-pass prompt, keyed by prompt id, e.g. \"pyro-01\": {\"expected_kind\": \"attempted_and_failed\", \"notes\": \"built the solver but the source was empty\"}. Keys beginning with _ are ignored by the grader. Leave this file with no prompt entries until a labelled run exists.",
+  "_example_disabled": {"pyro-01": {"expected_kind": "attempted_and_failed", "notes": "example only; remove the leading _ on the key to activate"}}
+}
