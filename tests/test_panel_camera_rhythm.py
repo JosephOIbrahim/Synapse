@@ -87,6 +87,15 @@ CRIT_20260915_CONSTRUCTOR_AMENDMENTS = (
     ("_GrowingInput",
      "        self.setPlaceholderText(\"Ask SYNAPSE… · / commands\")",
      "        self.setPlaceholderText(\"Ask SYNAPSE…\")"),
+    # PNL-L3A (spec leg L3a, 2026-09-21): the '/' telling comes back ONTO the
+    # composer. A control says what it does on itself, and audit_panel.py's
+    # "CMDK folded into input" check REQUIRES the "/" to ride here -- it is one of
+    # the two rows the audit ratchet's baseline carried, cleared by this leg. The
+    # leg amended the bc_wave pin and missed this one; the composed gate caught it,
+    # which is the thing a per-leg run structurally cannot do.
+    ("_GrowingInput",
+     '        # One name for the palette (CRIT.md 2026-09-15 #16): the placeholder\n        # says what the composer is for and stops. The palette is already\n        # named twice below the prompt - \'Commands\' in the footer and\n        # \'Commands {key}\' in the overflow - so the \'/\' telling moves onto the\n        # Commands tooltip rather than riding here a third time.\n        # History kept: bc-wave repair (CRUX 2026-09-05) - it has to read\n        # WHOLE at 340, where the viewport paints a placeholder in ~182px and\n        # the old \'Ask SYNAPSE…    ·    / for commands\' advanced 245 and\n        # wrapped behind the send margin as \'Ask SYNAPSE…  ·  / for\'.\n        # Still pinned by tests/panel/test_bc_wave.py::\n        # test_composer_telling_reads_whole_at_340 - the no-wrap predicate is\n        # unchanged; the \'/\' count moved to the tooltip with the copy.\n        self.setPlaceholderText("Ask SYNAPSE…")',
+     '        # PNL-L3A (spec leg L3a, "a control says what happens"): the composer\n        # is a control, so it tells what it does ON ITSELF. The \'/\' telling\n        # comes back OFF the Commands tooltip and onto the prompt - a hint the\n        # artist only sees after hovering a button they have to find first is\n        # not a telling. One name for the palette (CRIT.md 2026-09-15 #16)\n        # still holds: the word is \'commands\', the same word the footer button\n        # and the overflow action use, so the surface is named once.\n        # History kept: bc-wave repair (CRUX 2026-09-05) - it has to read\n        # WHOLE at 340, where the viewport paints a placeholder in ~182px and\n        # the old \'Ask SYNAPSE…    ·    / for commands\' advanced 245 and\n        # wrapped behind the send margin as \'Ask SYNAPSE…  ·  / for\'.\n        # This copy measures 168px in every density profile (measured under\n        # hython offscreen at 340x760), so it reads whole. Pinned by\n        # tests/panel/test_bc_wave.py::test_composer_telling_reads_whole_at_340\n        # (the no-wrap predicate is unchanged) and by audit_panel.py\'s\n        # "⌘K folded into input" check, which requires the \'/\' to ride HERE.\n        self.setPlaceholderText("Ask SYNAPSE · / commands")'),
 )
 
 

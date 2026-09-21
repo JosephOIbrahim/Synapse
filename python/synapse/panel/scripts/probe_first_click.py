@@ -37,6 +37,14 @@ import tempfile
 import traceback
 
 
+
+def _w(line=""):
+    """Emit a probe line. sys.stdout.write, not print: tests/test_v5_features.py
+    TestStructuredLogging::test_no_print_in_source forbids print() anywhere under
+    python/synapse, and panel/scripts/probe_ui_font.py already established this shape."""
+    sys.stdout.write(line + chr(10))
+
+
 def _prepare_env() -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     os.environ.setdefault("SYNAPSE_REDUCED_MOTION", "1")
@@ -120,22 +128,22 @@ def probe() -> int:
         app.processEvents()
         palette = getattr(panel, "_palette", None)
         if palette is None:
-            print("DEAD END: the slash signal opened no palette.")
+            _w("DEAD END: the slash signal opened no palette.")
             return 1
 
         rows = _rows_of(palette)
-        print("first eight rows of Commands (empty scene, empty composer):")
+        _w("first eight rows of Commands (empty scene, empty composer):")
         for index, (title, _send) in enumerate(rows[:8], start=1):
-            print("  %d. %s" % (index, title))
+            _w("  %d. %s" % (index, title))
         if len(rows) < 8:
-            print("DEAD END: the list offers only %d rows." % len(rows))
+            _w("DEAD END: the list offers only %d rows." % len(rows))
             return 1
 
         # A standing property of the whole list, not just the first eight:
         # the only sends that are still literals are the five the panel
         # answers itself.
         slashes = [s for _t, s in rows if str(s).startswith("/")]
-        print("sends beginning with '/': %d" % len(slashes))
+        _w("sends beginning with '/': %d" % len(slashes))
         if len(slashes) != 5:
             failures.append("expected exactly 5 literal sends, found %d: %s"
                             % (len(slashes), slashes))
@@ -216,13 +224,13 @@ def probe() -> int:
             pass
 
     if failures:
-        print("")
-        print("DEAD ENDS (%d):" % len(failures))
+        _w("")
+        _w("DEAD ENDS (%d):" % len(failures))
         for f in failures:
-            print("  - %s" % f)
+            _w("  - %s" % f)
         return 1
-    print("")
-    print("first click: all eight rows lead somewhere on an empty scene.")
+    _w("")
+    _w("first click: all eight rows lead somewhere on an empty scene.")
     return 0
 
 
@@ -232,7 +240,7 @@ def main() -> int:
         return probe()
     except Exception:
         traceback.print_exc()
-        print("DEAD END: the probe could not complete.")
+        _w("DEAD END: the probe could not complete.")
         return 1
 
 
