@@ -24,7 +24,7 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.77.1 - Jev may cross into the product, through one fenced door
 
-*Governance and documentation only; no product code changed (`python scripts/product_surface.py --diff v5.77.0 HEAD --expect-empty`). No new installer: the 5.75.2 Setup.exe remains the last built installer. Full notes: `docs/releases/v5.77.1.md`.*
+*Governance and documentation only; the product-surface diff against v5.77.0 is the version string in `python/synapse/__init__.py` and nothing else (`python scripts/product_surface.py --diff v5.77.0 HEAD`). No new installer: the 5.75.2 Setup.exe remains the last built installer. Full notes: `docs/releases/v5.77.1.md`.*
 
 **INVARIANT 5 AMENDED AND RATIFIED (2026-09-21).** `harness/jev/README.md` and `harness/battleplan/notes/JEV_BLUEPRINT.md` sec. 4 (now v0.2) no longer say "Jev is never on the product path". They say Jev is off the product path by default and on it only through a package-side adapter under `python/synapse/` that meets all six conditions: (a) hard timeout of at most 800 ms, never raises, returns None on any failure, offline byte-identical to today; (b) `SYNAPSE_JEV=off` honoured in-product; (c) the key resolved once through the providers' `resolve_key` pattern, never logged; (d) ledger under `~/.synapse/`, never `synapse.log`, never `harness/jev/ledger`; (e) never inside a `run_on_main` / `main_thread_exec` closure; (f) shadow-first against a named answer key before any threshold changes behaviour. A Jev answer never grants consent, never names a model, never writes a scene. The retained half, that nothing under the product package imports `harness/jev`, is pinned by the new `tests/test_jev_product_boundary.py` (2 tests).
 
