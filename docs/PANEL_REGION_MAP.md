@@ -1,5 +1,7 @@
 # Panel region map - PD-CENSUS, 2026-09-04
 
+> **Retired in BP9 (ruling 3):** `chat_panel.py` and `quick_actions.py` no longer exist; the rows citing them below are historical census evidence, not live regions.
+
 VERIFIED-STATIC against product sources at `6e3dd963`, carried by branch base
 `5e29bf9e`. Producer: `harness/notes/panel_rhythm_census.py`; site-by-site evidence:
 `harness/panel_pd/runs/2026-09-04/rhythm_census.json`. Roles below are targets from

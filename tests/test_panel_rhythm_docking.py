@@ -27,25 +27,13 @@ EXPECTED = {"label": (18, 12, 9), "row": (18, 12, 9),
             "parm_row": (6, 4, 3), "group": (24, 16, 12),
             # landing r3 roles (RULING-3 / RULING-4a): 16*..., 4*..., 0
             "shell": (24, 16, 12), "stack": (6, 4, 3), "band": (0, 0, 0)}
-# DOCKING EXEMPTION - unshipped alternate entry (CTO RULING-2B, 2026-09-05):
-# quick_actions.QuickActionPills and chat_panel.SynapseChatPanel are the legacy
-# Chat/HDA alternate entry. No .pypanel under houdini/python_panels builds them
-# (synapse_panel.pypanel builds synapse.panel.synapse_panel only) and
-# synapse.panel.synapse_panel does not import chat_panel or quick_actions;
-# tests/test_panel_alt_entry_unshipped.py pins that premise and this module
-# returns both regions to the docking list the day it fails (see
-# ALTERNATE_REGIONS below). Their width drivers (five full-label pills in one
-# row; a connection frame showing the raw ws:// URL, HALT and a 100px Connect)
-# are scheduled for the single-panel collapse and the voice rules
-# (SYNAPSE_PANEL_REDESIGN.md section 2 decision 1, section 3 Voice). This is
-# not a PD docking accept for those widgets; it is a statement that no artist
-# can dock them.
-DOCKING_EXEMPT_UNSHIPPED = (
-    ("quick_actions.QuickActionPills",
-     "five full-label pills in one row; unshipped alternate entry"),
-    ("chat_panel.SynapseChatPanel",
-     "connection frame shows the raw ws:// URL + HALT + 100px Connect; unshipped alternate entry"),
-)
+# DOCKING EXEMPTION (CTO RULING-2B, 2026-09-05) - RETIRED in BP9 (ruling 3):
+# the exempt regions were quick_actions.QuickActionPills and
+# chat_panel.SynapseChatPanel, the legacy Chat/HDA alternate entry. Both
+# modules are deleted, so the list is empty. The mechanism stays: a region
+# listed here is measured again the day its module becomes reachable from the
+# shipped panel (tests/test_panel_alt_entry_unshipped.py pins the premise).
+DOCKING_EXEMPT_UNSHIPPED = ()
 _ALWAYS_MEASURED = (
     "face_work.FaceWork", "face_review.FaceReview", "gate_widget.GateWidget",
     "context_bar.ContextChips",
@@ -362,9 +350,6 @@ def _alternate(widgets, density, region):
         child = constructor(source.build_cells(source.StripSnapshot()))
     elif region == "context_bar.build_context_bar_widget":
         child = constructor(source.ContextBarState())
-    elif region == "chat_panel.SynapseChatPanel":
-        controller = constructor()
-        child = controller.createInterface()
     else:
         child = constructor()
     assert isinstance(child, widgets.QWidget), "fallback object cannot prove QWidget geometry"

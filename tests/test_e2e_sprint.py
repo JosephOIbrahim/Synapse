@@ -108,11 +108,7 @@ _mcp_path = _base / "mcp"
 pkgbootstrap.ensure_package("synapse.mcp", _mcp_path)
 mcp_tools_mod = pkgbootstrap.load_module("synapse.mcp.tools", _mcp_path / "tools.py")
 
-# Load panel/quick_actions.py
 _panel_path = _base / "panel"
-quick_actions_mod = pkgbootstrap.load_module(
-    "synapse.panel.quick_actions", _panel_path / "quick_actions.py"
-)
 
 # Load panel/message_formatter.py
 formatter_mod = pkgbootstrap.load_module(
@@ -311,54 +307,6 @@ class TestExplainFeedsHdaInterface:
             })
         assert help_result["status"] == "ok"
         assert help_result["help_set"] is True
-
-
-# ===========================================================================
-# 2. Quick Action -> Handler Mapping
-# ===========================================================================
-
-
-class TestQuickActionHandlerMapping:
-    """Quick actions in the chat panel map to registered handler capabilities."""
-
-    def test_quick_action_explain_exists(self):
-        """The QUICK_ACTIONS list has an 'Explain' action."""
-        actions = quick_actions_mod.QUICK_ACTIONS
-        labels = [a["label"] for a in actions]
-        assert "Explain" in labels
-
-    def test_quick_action_explain_prompt_is_reasonable(self):
-        """The 'Explain' action's prompt contains language for network explanation."""
-        actions = quick_actions_mod.QUICK_ACTIONS
-        explain_action = next(a for a in actions if a["label"] == "Explain")
-        prompt = explain_action["prompt"].lower()
-        assert "explain" in prompt
-        assert "node" in prompt or "network" in prompt
-
-    def test_quick_action_make_hda_exists(self):
-        """The QUICK_ACTIONS list has a 'Make HDA' action."""
-        actions = quick_actions_mod.QUICK_ACTIONS
-        labels = [a["label"] for a in actions]
-        assert "Make HDA" in labels
-
-    def test_quick_action_make_hda_prompt_references_hda(self):
-        """The 'Make HDA' action's prompt references HDA packaging."""
-        actions = quick_actions_mod.QUICK_ACTIONS
-        hda_action = next(a for a in actions if a["label"] == "Make HDA")
-        prompt = hda_action["prompt"].lower()
-        assert "hda" in prompt
-
-    def test_all_quick_actions_have_required_fields(self):
-        """Every quick action has label, icon, prompt, and tooltip."""
-        actions = quick_actions_mod.QUICK_ACTIONS
-        for action in actions:
-            assert "label" in action, f"Missing 'label' in action: {action}"
-            assert "prompt" in action, f"Missing 'prompt' in {action['label']}"
-            assert "icon" in action, f"Missing 'icon' in {action['label']}"
-            assert "tooltip" in action, f"Missing 'tooltip' in {action['label']}"
-            assert len(action["prompt"]) > 10, (
-                f"Prompt too short for {action['label']}"
-            )
 
 
 # ===========================================================================

@@ -16,7 +16,7 @@ from typing import Dict, Any, Callable, Optional
 
 _log = logging.getLogger(__name__)
 
-# Overall wall-clock ceiling for a single route_chat turn (T2). Sits just under
+# Overall wall-clock ceiling for a single chat-routing turn (T2). Sits just under
 # the /synapse path's 30s slow-op kill so the HANDLER, not the transport, is what
 # ends a hung turn -- the slow-op kill emits nothing, and ws_bridge.py:339 drops
 # any reply lacking a response/tier key. Each LLM tier self-bounds well below
@@ -175,8 +175,6 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "render_processes": AuditCategory.RENDER,
     "render_stop": AuditCategory.RENDER,
     "emergency_halt": AuditCategory.RENDER,
-    # Chat routing
-    "route_chat": AuditCategory.SYNAPSE,
     # Undo / Redo
     "undo": AuditCategory.PIPELINE,
     "redo": AuditCategory.PIPELINE,
@@ -234,7 +232,6 @@ _READ_ONLY_COMMANDS = frozenset({
     "tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats",
     "tops_query_items",
     "tops_diagnose", "tops_pipeline_status",
-    "route_chat",
     "cops_read_layer_info",
     "cops_analyze_render",
     # render_farm_cancel is the control-plane kill switch: it mutates NO scene
@@ -835,9 +832,6 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
         # Batch
         reg.register("batch_commands", self._handle_batch_commands)
-
-        # Chat routing
-        reg.register("route_chat", self._handle_route_chat)
 
         # Metrics / Router stats / Recipes
         reg.register("get_metrics", self._handle_get_metrics)
@@ -1749,7 +1743,16 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
     def _handle_route_chat(self, payload: Dict) -> Dict:
         """Route a natural language message through the tiered routing cascade.
 
-        This is the PRIMARY entry point for the chat panel. Messages go through:
+        BP9-RETIRE (ruling 3): UNREGISTERED. The legacy chat surface that sent
+        this command (chat_panel.py / synapse_chat.pypanel) is gone, so the WS
+        command name is no longer in the registry and a message carrying it
+        gets the standard unknown-command error. The shipped panel chats
+        through ClaudeWorker and never sent it. The method body stays only
+        because tests/test_bp8_timeouts.py pins its T2 deadline contract
+        (bounded route(), never-silent {response, tier}) by calling it unbound;
+        step B retires Tier 2/3 and this body with them.
+
+        Messages go through:
         Cache -> Recipe -> Planner -> Regex -> Knowledge -> LLM -> Agent
 
         NOT execute_python. Never execute_python for chat.
