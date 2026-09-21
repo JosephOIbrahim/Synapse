@@ -110,9 +110,10 @@ try:
 except Exception:  # pragma: no cover
     ToolExecutor = None
 try:
-    from synapse.panel.tool_bridge import get_anthropic_tools
+    from synapse.panel.tool_bridge import get_anthropic_tools, get_anthropic_tools_for_worker
 except Exception:  # pragma: no cover
     get_anthropic_tools = None
+    get_anthropic_tools_for_worker = None
 # FRZ attribution: times the main-thread result-path slots. Measurement only — it
 # imposes no bound and changes no control flow. Degrades to a zero-cost no-op
 # context manager so an import failure can never break the panel's result path.
@@ -2182,7 +2183,9 @@ class SynapsePanel(QtWidgets.QWidget):
         decision = choose_route(connection.facts, tuple(self._connection_facts.values()),
             mode=settings.get("routing_mode", "chosen_model"),
             need=settings.get("task_need", "conversation"),
-            tools=get_anthropic_tools(),
+            # BP9-WORKER: route on the roster the worker will actually send.
+            tools=(get_anthropic_tools_for_worker()
+                   if get_anthropic_tools_for_worker else None),
             messages=self._messages + [{"role": "user", "content": text}])
         if not decision.ok:
             raise ValueError(decision.reason)
@@ -3394,9 +3397,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._set_thinking(True)
         self._set_busy(True)
         # FRZ probe 1 (SEND). All of this runs on the main thread the instant the
-        # artist presses send: get_anthropic_tools(), _build_system_prompt() (which
-        # does unmarshalled hou.* reads), _make_provider(), and ClaudeWorker.__init__
-        # — whose `copy.deepcopy(messages)` (claude_worker.py:99) deep-copies every
+        # artist presses send: _build_system_prompt() (which does unmarshalled
+        # hou.* reads), _make_provider(), and ClaudeWorker.__init__ — which
+        # resolves the worker's own filtered roster (get_anthropic_tools_for_worker,
+        # cached per policy mode; BP9-WORKER: the full 143-schema roster is no
+        # longer passed in from here) and whose `copy.deepcopy(messages)`
+        # (claude_worker.py) deep-copies every
         # prior tool_result payload of the session on THIS thread. Cost therefore
         # grows with conversation length, which is the scaling law payload_chars is
         # here to expose.
@@ -3407,7 +3413,6 @@ class SynapsePanel(QtWidgets.QWidget):
         # own reading. Turn count is O(1) and is the axis deepcopy cost scales on.
         with _timed_phase("send") as _frz_send:
             _frz_send.set_sizes(payload_chars=len(self._messages or ()))
-            tools = get_anthropic_tools() if get_anthropic_tools else None
             system = self._build_system_prompt()
             # Interactive panel — the artist is in the loop for creative intent,
             # but the WORKER (an LLM) may not self-authorize gated ops.
@@ -3417,10 +3422,15 @@ class SynapsePanel(QtWidgets.QWidget):
             # PDG cooks — fails closed on unknown tools) now binds this path too.
             # Gated ops happen in the native Houdini UI or via a bridge /mcp
             # consent-gated call, not through the panel worker.
+            # BP9-WORKER: tools=None → the worker resolves its own filtered
+            # roster (get_anthropic_tools_for_worker), so the LLM never sees a
+            # schema the allowlist would deny at dispatch.
             self._worker = ClaudeWorker(self._messages, system_prompt=system,
-                                        tools=tools, parent=None,
+                                        tools=None, parent=None,
                                         enforce_worker_policy=True,
                                         provider=connection.provider)
+            logger.info("Worker roster at send: %d tools",
+                        len(getattr(self._worker, "_tools", None) or ()))
         self._worker.token_received.connect(self._on_token)
         self._worker.stream_done.connect(self._on_done)
         self._worker.stream_error.connect(self._on_error)
