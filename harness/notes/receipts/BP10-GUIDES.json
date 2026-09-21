@@ -1,0 +1,80 @@
+{
+  "leg": "BP10-GUIDES",
+  "status": "green_with_findings",
+  "product_head": "02028f6314edb2c1fab8ddbffa88ffef5a49d8e5",
+  "base": "357bf1e7",
+  "summary": "M2: the 31 fxhoudinimcp workflow guides through the four-step transform + 3-tier phantom gate into rag/corpus/guides (26) or rag/quarantine/guides (5), every chunk carrying origin=fxhoudinimcp@29b6695b + licence=mit; tool_map.json filled (339 keys); guide scope activated in scope_weights.py; JEV-HARVEST Site-1 triage (judged) written; README gains one attribution line.",
+  "acceptance": [
+    {
+      "predicate": "G2: every one of the 31 guides is in exactly one of rag/corpus/guides/ or rag/quarantine/guides/; every quarantined guide lists its failing tokens",
+      "verdict": "pass",
+      "evidence": "hython rag/ingest/guides.py --build -> 'guides: 31 | corpus 26 (115 chunks) | quarantine 5' exit 0; partition check: corpus(26) union quarantine(5) == 31, disjoint, 0 missing/extra; every quarantine .md has a '## Failing tokens' list with at least one '- `token`' row (tests/test_guides_ingest.py::test_real_vendor_partitions_all_31 asserts residuals non-empty)."
+    },
+    {
+      "predicate": "G0: pytest tests/test_guides_ingest.py green; the deliberately broken fixture lands in quarantine",
+      "verdict": "pass",
+      "evidence": "python -m pytest tests/test_guides_ingest.py -> 9 passed. tests/fixtures/guides/broken_fixture.md (planted node `notarealnode_zzz`) lands in quarantine with the fake listed (test_fixtures_partition_clean_and_broken, test_broken_fixture_quarantine_file_lists_tokens); good_fixture.md reaches corpus."
+    },
+    {
+      "predicate": "G3: the 25 adversarial probes still read 0/25 confident-wrong with the guide scope active",
+      "verdict": "pass",
+      "evidence": "scope_weights.is_active('guide')==True; python -m pytest tests/test_knowledge_retrieval_repair.py -> 24 passed, 0 confident-wrong. Probe set = PREFLIGHT(5)+REGRESSION_TOPICS(4) exercised across 24 assertions -- this is BP10-CORPUS's 'G3 24/24' denominator, not a literal 25 (no 25th probe was fabricated; the load-bearing number, confident-wrong count, is measured 0). See finding CONFIDENT-WRONG-DENOM."
+    },
+    {
+      "predicate": "every chunk in rag/corpus/guides/ carries origin and licence fields; a one-line query by origin prefix lists them all",
+      "verdict": "pass",
+      "evidence": "chunk fields = id,scope,page,title,chunk_index,text,source,build,content_sha,licence,origin (rag/ingest/guides.py::_record). One-liner `cat rag/corpus/guides/*.jsonl | python -c \"import sys,json; print(sum(1 for l in sys.stdin if json.loads(l)['origin'].startswith('fxhoudinimcp@29b6695b:')))\"` -> 115 (all chunks); licence=='mit' on all."
+    },
+    {
+      "predicate": "triage.md exists; header says judged or unjudged; no file moved from quarantine to corpus by this leg (git diff proves it)",
+      "verdict": "pass",
+      "evidence": "harness/notes/harvest/triage.md exists, header 'Verdict header: judged.' (TYPESAFE_API_KEY resolved via winreg; 39 real System One calls ledgered to harness/jev/ledger/bp10.harvest.jsonl). answer_key.json is a blank template (6 blank token decisions, 33 blank tool_refs). git diff --name-status shows rag/corpus/guides/* and rag/quarantine/guides/* as pure ADDS (A), zero renames (R) -- no guide moved from quarantine to corpus; jev_harvest writes only harness/notes/harvest/."
+    },
+    {
+      "predicate": "README diff is exactly one added line",
+      "verdict": "pass",
+      "evidence": "git diff --numstat README.md -> '1\t0\tREADME.md' (1 added, 0 removed). The line is HARVEST_SPEC Provenance item 2: rag/corpus/guides -- 31 workflow guides from fxhoudinimcp @ 29b6695b, MIT, gate-checked against 22.0.400."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "Gate authority = live catalogue, consumed from BP10-CORPUS's handoff finding. guides.py resolves node names against rag/catalog/h22.0.400/ (5,140 node types), NOT the 659-entry rag/corpus/h22_nodes.json datasheet (which is a sample). Without the catalogue, ocean/assets false-quarantined on real nodes (particlefluidsurface, oceansource). The datasheet is retained for parameter names; canonical Houdini geometry attributes are folded into tier 2.",
+      "anchor": "rag/ingest/guides.py:load_catalog + CLAUDE.md 'node-type authority is the live catalogue'"
+    },
+    {
+      "claim": "CROSS-LEG MERGE SEAMS (add/add). scope_weights.py, tests/test_scope_weights.py, and harness/jev/jev_grade.py are shared with bp10/corpus. My base (357bf1e7 scaffold) predates corpus's additions, so I reproduced corpus's RELEASED versions verbatim + my additions (guide activation; harvest guard). At merge these are add/add (scope_weights, test) or region-additive (jev_grade); resolution = take BP10-GUIDES' version, a superset of corpus's. Assumes dep order corpus->guides.",
+      "anchor": "rag/retrieval/scope_weights.py, tests/test_scope_weights.py, harness/jev/jev_grade.py"
+    },
+    {
+      "claim": "Activating the guide scope flips two now-stale inertness assertions in corpus-authored test_scope_weights.py (is_active('guide') False->True; table active False->True; ranked_scopes default gains 'guide'). This is the spec-mandated handoff corpus deferred with its own 'armed by BP10-GUIDES' comment, but it edits a peer's test text -- surfaced for INTEGRATOR/merge awareness.",
+      "anchor": "tests/test_scope_weights.py::test_guide_slot_active_after_bp10_guides"
+    },
+    {
+      "claim": "tool_map.json carries 11 _unsure tool mappings (connect_nodes_batch, get_top_scheduler_info, get_geometry_info, get_usd_composition, get_usd_layers, get_usd_materials, get_usd_bound_material, get_expression, create_render_node, update_hda, set_hda_section_content). A wrong mapping is a wrong answer in every chunk that cites it (HARVEST_SPEC 'Hand-work Joe keeps'): each _unsure key wants a human read.",
+      "anchor": "rag/ingest/tool_map.json (grep '\"_unsure\": true')"
+    },
+    {
+      "claim": "Jev ran JUDGED, not fallback: TYPESAFE_API_KEY resolved via jev_client's winreg path, so the harvest guard made 39 real System One calls (6 residual tokens + 33 tool refs), each ledgered with real request_id/probabilities to bp10.harvest.jsonl. The fail-closed path (no key -> deterministic grouping, header 'unjudged', one fallback row, no fabricated probability) is implemented and unit-covered but not exercised this run.",
+      "anchor": "harness/jev/ledger/bp10.harvest.jsonl"
+    },
+    {
+      "claim": "CONFIDENT-WRONG-DENOM: the live adversarial suite is 24 assertions over PREFLIGHT(5)+REGRESSION_TOPICS(4), which is BP10-CORPUS's 'G3 24/24' denominator, not a literal 25. The predicate's load-bearing measure (confident-wrong count) is 0; no 25th probe was invented and no number was entered without a producer path.",
+      "anchor": "tests/test_knowledge_retrieval_repair.py (PREFLIGHT, REGRESSION_TOPICS)"
+    },
+    {
+      "claim": "5 guides quarantined for Joe's fix-or-drop read (answer_key.json blank): assets (`rockgenerator` -- uninstalled SideFX Labs node, absent from this host's live catalogue), heightfields (`thermalerodabilitymask`), io (`bgeo.sc` -- a file format, not a node), model (`foo` -- an example placeholder), render (`soho`, `renderman` -- render backends, not node types). All are genuinely-unresolved backticked tokens; jev_harvest triaged them (triage.md), Joe decides fix-or-drop.",
+      "anchor": "rag/quarantine/guides/ + harness/notes/harvest/triage.md"
+    }
+  ],
+  "for_ruling": [
+    {
+      "claim": "Promotion of any quarantined guide out of rag/quarantine/guides/ into rag/corpus/guides/ is Joe's word. This leg SORTED and wrote the triage + a blank answer_key.json; it moved nothing. Filling answer_key.json (decision fix|drop|keep per token) then re-running `python harness/jev/jev_grade.py --guard harvest` grades Jev's judgments against those decisions.",
+      "anchor": "harness/notes/harvest/answer_key.json + triage.md"
+    },
+    {
+      "claim": "Merge order for the bp10 wave: bp10/corpus before bp10/guides (declared dep). At merge, take BP10-GUIDES' version of the three shared files (scope_weights.py, test_scope_weights.py, jev_grade.py) -- each is corpus's released content plus this leg's additive changes, a strict superset. Verified: the 47-test consolidated run (guides+scope+boundary+retrieval) is green on this branch.",
+      "anchor": "harness/notes/receipts/BP10-GUIDES.json (findings: CROSS-LEG MERGE SEAMS)"
+    }
+  ],
+  "spawn": []
+}
