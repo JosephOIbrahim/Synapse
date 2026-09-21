@@ -24,7 +24,7 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.78.0 - The artist sees why, and Jev routes the work
 
-*Product change in `python/synapse/panel/` (claude_worker, synapse_panel, activity, face_work), `python/synapse/server/handlers.py`, and a new `python/synapse/jev/` package; the legacy chat surface is deleted. Product-surface diff v5.77.1..v5.78.0: 11 files, +535/-1702 (`python scripts/product_surface.py --diff v5.77.1 HEAD`). No new installer: the 5.75.2 Setup.exe does not carry these changes. Full notes: `docs/releases/v5.78.0.md`.*
+*Product change in `python/synapse/panel/` (claude_worker, synapse_panel, activity, face_work), `python/synapse/server/handlers.py`, and a new `python/synapse/jev/` package; the legacy chat surface is deleted. Product-surface diff v5.77.1..v5.78.0: 12 files, +537/-1704, eleven of them code and the twelfth the version string in `__init__.py` (`python scripts/product_surface.py --diff v5.77.1 HEAD`). No new installer: the 5.75.2 Setup.exe does not carry these changes. Full notes: `docs/releases/v5.78.0.md`.*
 
 **A FAILED TOOL TELLS THE ARTIST WHY.** Four error branches in `claude_worker.py` emitted `json.dumps(tool_input)[:120]` as the failure detail, and `translate_tool_error` had zero callers. They now emit the translated reason; `activity.py` renders it on the Work face; `face_work.py` keeps the raw input in the tooltip. Pinned: the error detail never equals the input, the running-phase detail is unchanged (`tests/test_tool_failure_reason.py`).
 
