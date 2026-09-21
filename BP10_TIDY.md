@@ -29,10 +29,12 @@
 | BP10-GUIDES | NO RECEIPT | receipt file absent at `harness/notes/receipts/BP10-GUIDES.json` |
 | BP10-BENCH | NO RECEIPT | receipt file absent at `harness/notes/receipts/BP10-BENCH.json` |
 | BP10-CRUX | NO RECEIPT | receipt file absent at `harness/notes/receipts/BP10-CRUX.json` |
-| BP10-TIDY | NO RECEIPT | receipt file absent at `harness/notes/receipts/BP10-TIDY.json` (in progress) |
-| **Count** | **1 receipt on disk** | — |
+| BP10-TIDY | green_with_findings | `harness/notes/receipts/BP10-TIDY.json` line 3 |
+| **Count** | **6** | 2 receipts on this branch (SCAFFOLD, TIDY) |
 
 **Producer path:** directory scan at `harness/notes/receipts/BP10-*.json`; status field read from each via grep `'"status"'`
+
+**Scope:** this scan reads the `bp10/tidy` branch, which forked from master at `816cd36c`. The CORPUS, GUIDES, BENCH and CRUX receipts exist on their own `bp10/*` branches and are not merged here, so NO RECEIPT means absent on this branch, not absent from the wave. The ledger scan has the same scope.
 
 ---
 
@@ -48,7 +50,7 @@
 | rerank | `harness/jev/ledger/bp10.rerank.jsonl` | UNKNOWN | ✗ file absent |
 | harvest | `harness/jev/ledger/bp10.harvest.jsonl` | UNKNOWN | ✗ file absent |
 | bench | `harness/jev/ledger/bp10.bench.jsonl` | UNKNOWN | ✗ file absent |
-| **Count** | **5 files on disk** | **33 rows total** | — |
+| **Count** | **8** | **33 rows in 5 files on disk; 3 UNKNOWN** | — |
 
 **Producer path:** directory scan at `harness/jev/ledger/bp10.*.jsonl`; row counts via `wc -l` on each file present. Missing files (rerank, harvest, bench) marked UNKNOWN per constitution rule: "Unobtainable renders UNKNOWN — never zero, never an estimate, never a pass."
 
@@ -57,7 +59,7 @@
 ## Validation
 
 - **Worktree table count line:** 6 worktrees listed, 6 rows before count line ✓
-- **Receipt table count line:** 1 receipt on disk listed, 6 legs total (count reports disk state only) ✓
-- **Ledger table count line:** 5 files on disk listed, 8 guards total; missing 3 marked UNKNOWN per constitution ✓
+- **Receipt table count line:** 6 legs listed, count line reads 6
+- **Ledger table count line:** 8 guards listed, count line reads 8; 3 of the 8 are UNKNOWN per constitution
 
 Every number carries a producer path. No UNKNOWN is a pass; three missing ledger files are recorded as unobtainable.
