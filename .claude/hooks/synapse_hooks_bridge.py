@@ -32,7 +32,7 @@ LAST_READ_FILE = os.path.join(EVENTS_DIR, ".last_read_ts")
 UNRESOLVED_FILE = os.path.join(EVENTS_DIR, ".unresolved_cook_errors.json")
 
 BLOCK_EXIT = 2  # Claude Code: exit 2 blocks Stop / TaskCompleted, stderr is shown
-RESOLVED_MARKER = re.compile(r"\bresolved\b", re.IGNORECASE)
+RESOLVED_MARKER = re.compile(r"\bcook(?:s|ing)?\s+(?:errors?\s+)?resolved\b|\bresolved\s*:", re.IGNORECASE)  # explicit phrase only: a question like "is this resolved?" must not clear the gate
 
 MAX_EVENT_AGE = 300  # 5 minutes
 
@@ -211,7 +211,7 @@ def update_unresolved(events, prompt=""):
 
     - CookError                                  -> add/refresh entry for that node
     - successful cook on a node already in the set -> clear that node
-    - explicit 'resolved' marker in the prompt    -> clear everything
+    - explicit marker in the prompt ('cook error(s) resolved' / 'resolved:') -> clear everything
     - events file missing                         -> no cook errors: set emptied
     Returns the resulting dict.
     """
