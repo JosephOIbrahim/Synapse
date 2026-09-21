@@ -97,8 +97,13 @@ print(f"  floors:  body >= {AA_BODY}:1   head/link >= {AA_LARGE}:1   any essenti
 
 # ---------- A2 · type scale ----------
 print("\n-- READABILITY · type scale (px @ scale " + f"{t.FONT_SCALE_DEFAULT}) " + "-" * 22)
+# MICRO was dropped here when CRIT.md 2026-09-15 ranked change 1 deleted
+# SIZE_MICRO from tokens.py. It was left behind for six days and killed this
+# audit on its first table -- every check below, including the A3 seeded-contrast
+# sweep, stopped running. tests/test_audit_panel_tokens_exist.py now pins that
+# every token named here exists, and that the whole ramp is named.
 sizes = [("HERO", t.SIZE_HERO), ("TITLE", t.SIZE_TITLE), ("UI", t.SIZE_UI),
-         ("SMALL", t.SIZE_SMALL), ("MICRO", t.SIZE_MICRO), ("BODY", t.SIZE_BODY)]
+         ("SMALL", t.SIZE_SMALL), ("BODY", t.SIZE_BODY)]
 for n, s in sizes:
     eff = t.scaled(s, t.FONT_SCALE_DEFAULT)
     note = ""

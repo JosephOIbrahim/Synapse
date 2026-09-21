@@ -461,14 +461,21 @@ FONT_FLOOR_PROVENANCE = (
     "paste had been taken, and it also cited the probe at a repo-root path where the "
     "file has never existed. Both corrected here; no value changed. "
     "THE FLOOR IS STILL 11 AND IS STILL ABSOLUTE, which is now a stated position "
-    "rather than an absence of data: nothing in the panel scales to the host "
-    "(tokens.scaled() is max(8, round(size*scale)) with scale defaulting to 1.0), so "
-    "an authored 11px is eleven actual pixels beside host chrome of twenty-seven — "
-    "about 41% of it. Whether an absolute constant can be a floor against a host "
-    "that moves is a DESIGN RULING and is open; see READABILITY.md 2026-09-15 "
-    "'The floor is below the host'. Until it is ruled the floor stays pinned to "
-    "audit_panel.py READABLE_FLOOR = 11, the repo's own readability bar — NOT to the "
-    "smallest size shipped, which was circular."
+    "rather than an absence of data. The panel DOES scale to the host (PNL-L1, "
+    "2026-09-21, correcting an earlier claim here that nothing scaled): "
+    "synapse_panel.py seeds _chrome_scale = _host_font_scale() = host pixel size / "
+    "SIZE_BODY (27 / 12 = 2.25 on the measured host) into qss.stylesheet(), so every "
+    "chrome font scales, and the transcript font scales from the same base "
+    "(chat_display floors it at FONT_FLOOR_PX). tokens.scaled() is "
+    "max(8, round(size*scale)) with scale defaulting to 1.0 only when no host is "
+    "read; in the live panel scale is the host ratio, so an authored 11px lands "
+    "near 25 actual pixels beside host chrome of twenty-seven. The floor is "
+    "therefore a pre-scale bar on the authored token, not a post-scale pixel "
+    "count. Whether an absolute constant can be a floor against a host that moves "
+    "is a DESIGN RULING and is open; see READABILITY.md 2026-09-15 'The floor is "
+    "below the host' (and its 2026-09-21 correction). Until it is ruled the floor "
+    "stays pinned to audit_panel.py READABLE_FLOOR = 11, the repo's own "
+    "readability bar — NOT to the smallest size shipped, which was circular."
 )
 
 # ── weight tokens (BP4-PANELFONT) ─────────────────────────────
@@ -551,6 +558,11 @@ TRACKING_EM: Dict[str, float] = {
     # its own value rather than bending BRAND, which other labels still use.
     "WORDMARK": 0.16,
     "DATA": 0.03, "SEND": 0.08, "DISPLAY": -0.015, "BODY": 0.0,
+    # PNL-L1 (2026-09-21): rhythm._apply_type's section-4 values, named. They
+    # used to borrow SEND (0.08) and DATA * 2 (0.06) by numeric coincidence;
+    # a tweak to the SEND button would have moved every rail label. Same
+    # numbers, zero pixel change.
+    "LABEL_RHYTHM": 0.08, "TAG_RHYTHM": 0.06,
 }
 
 

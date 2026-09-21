@@ -65,9 +65,19 @@ _LABEL_PX    = _t.SIZE_LABEL
 # means in a dialogue: the air BETWEEN turns, not between wrapped lines. So the
 # rhythm is bought where the mechanism is real rather than where the CSS
 # analogy suggested.
+# Both margins are LIVE inputs to the ruled-turn HTML (format_user_message /
+# format_synapse_message); chat_display._apply_turn_rhythm then overrides the
+# TOP margin per block from rhythm.ROLE_GAPS, so the bottom margin is theirs
+# and the top is the rhythm module's. (PNL-L1, 2026-09-21: not dead code.)
 _GROUP_MARGIN_Y = _t.SPACE_LG           # 24 - between speakers (was SPACE_MD 16)
 _MSG_MARGIN_Y   = _t.SPACE_SM           # 8  - between a speaker's own lines (was 4)
 _TIMESTAMP_SZ   = _t.SIZE_LABEL
+# Markdown heading levels -> (size token, weight token). PNL-L1 (2026-09-21).
+_HEADING_TYPE = {
+    1: (_t.SIZE_TITLE, _t.WEIGHT_BOLD),
+    2: (_t.SIZE_BODY,  _t.WEIGHT_BOLD),
+    3: (_t.SIZE_BODY,  _t.WEIGHT_MEDIUM),
+}
 
 # Monospace font stack for genuine code/paths — the panel's ONE mono: the
 # designed Space Mono chain the chrome already runs on. CRIT.md 2026-09-15 #13
@@ -92,8 +102,13 @@ _LIST_ITEM_RE = re.compile(r"^[\-\*]\s+(.+)$", re.MULTILINE)
 
 
 def _scale(px, font_scale=1.0):
-    """Scale a pixel value by font_scale, return int."""
-    return int(round(px * font_scale))
+    """Scale a TEXT pixel size by font_scale, return int.
+
+    Floored at ``tokens.FONT_FLOOR_PX``, the same floor
+    ``chat_display._set_document_font`` applies to the document font
+    (PNL-L1, 2026-09-21). Every call site is a font-size; margins and
+    padding never pass through here, so the floor touches text only."""
+    return max(_t.FONT_FLOOR_PX, int(round(px * font_scale)))
 
 
 def _status_prefix(status):
@@ -156,7 +171,7 @@ def _format_node_path(match, font_scale=1.0, signed=None):
         note = (
             '&#160;&#183;&#160;<span style="color:{dim}; '
             'font-size:{ssz}px;">signed {who}</span>'
-        ).format(dim=_TEXT_DIM, ssz=_scale(10, font_scale),
+        ).format(dim=_TEXT_DIM, ssz=_scale(_SMALL_PX, font_scale),
                  who=html.escape(str(signed)))
     return (
         '<a href="node:{path}" style="text-decoration:none;">'
@@ -275,8 +290,14 @@ def _markdown_blocks(raw, font_scale):
             if heading:
                 flush_paragraph()
                 n = len(heading.group(1))
-                out.append('<h{n} style="font-size:{sz}px; margin:10px 0 4px;">{text}</h{n}>'.format(
-                    n=n, sz=_scale(_BODY_PX + max(0, 4 - n), font_scale),
+                # PNL-L1 (2026-09-21): heading sizes come from the type scale,
+                # not from ``_BODY_PX + max(0, 4 - n)`` (15/14/13, two of which
+                # were sizes no token owns). h1 = title bold, h2 = body bold,
+                # h3 = body medium; deeper headings sit on h3.
+                hsz, hwt = _HEADING_TYPE.get(n, _HEADING_TYPE[3])
+                out.append(('<h{n} style="font-size:{sz}px; font-weight:{wt}; '
+                            'margin:10px 0 4px;">{text}</h{n}>').format(
+                    n=n, sz=_scale(hsz, font_scale), wt=hwt,
                     text=_inline_markdown(heading.group(2), font_scale)))
             elif not line.strip():
                 flush_paragraph()
