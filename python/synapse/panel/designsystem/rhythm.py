@@ -69,11 +69,11 @@ def _apply_type(widget, role):
     font = widget.font()
     fontload.apply_family(font, mono=True)
     font.setCapitalization(type(font).AllUppercase)
-    # Battleplan section 4 values: label +0.08 em, tag +0.06 em. No tracking
-    # token carries those names (tokens.py is frozen), so the numerically
-    # equal existing entries are borrowed: SEND == 0.08, DATA * 2 == 0.06.
-    em = (tokens.TRACKING_EM["SEND"] if role == "label"
-          else tokens.TRACKING_EM["DATA"] * 2)
+    # Battleplan section 4 values: label +0.08 em, tag +0.06 em. PNL-L1
+    # (2026-09-21): these now have their own tracking names; they used to
+    # borrow SEND and DATA * 2 by numeric coincidence. Zero pixel change.
+    em = (tokens.TRACKING_EM["LABEL_RHYTHM"] if role == "label"
+          else tokens.TRACKING_EM["TAG_RHYTHM"])
     font.setLetterSpacing(type(font).PercentageSpacing, 100.0 + em * 100.0)
     widget.setFont(font)
 

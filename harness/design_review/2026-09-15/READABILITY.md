@@ -83,6 +83,8 @@ that silently fixes itself cannot be audited:
   `python/synapse/panel/scripts/probe_ui_font.py`. It was looked for at the repo root and declared
   absent.
 
+> **CORRECTED AGAIN 2026-09-21 (PNL-L1).** The panel *does* scale to the host: `synapse_panel.py:552` seeds `_chrome_scale = _host_font_scale()` (host px / `SIZE_BODY`, 27/12 = 2.25 on this seat) into `qss.stylesheet()` and the transcript font, so the "nothing scales" claim below is false at HEAD; the section is left as written for the audit trail.
+
 **The correction makes the finding worse, not better.** Because nothing scales, an authored 11px is
 eleven actual pixels beside host chrome of twenty-seven. The body token at 12px is **44.4% of host
 size — 56% smaller**, not 12%. The floor is not slightly low; the whole panel is rendering at a

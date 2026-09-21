@@ -1,0 +1,29 @@
+{
+ "_why": "Panel seat-suite tests failing at this commit under hython offscreen, measured on THIS tree with a key present. Refuse anything new; delete a row in the commit that fixes it.",
+ "failures": [
+  {
+   "check": "tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks",
+   "owner": "PNL-L7 (R2-B1 drops the Doctor yellow; the hue-bucket guard goes green with it)"
+  },
+  {
+   "check": "tests/panel/test_bc_wave.py::test_profile_row_retired",
+   "owner": "unassigned"
+  },
+  {
+   "check": "tests/panel/test_doctor_button.py::test_transport_discovers_only_the_running_owner_and_tracks_reconnection",
+   "owner": "unassigned"
+  },
+  {
+   "check": "tests/panel/test_failure_trail.py::test_dead_verb_hidden",
+   "owner": "unassigned"
+  },
+  {
+   "check": "tests/panel/test_j1_token_liveness.py::test_connected_keyed_engine_is_live_then_working_then_live",
+   "owner": "unassigned"
+  },
+  {
+   "check": "tests/panel/test_j2_token_face.py::test_face_counts_an_ollama_task",
+   "owner": "unassigned"
+  }
+ ]
+}

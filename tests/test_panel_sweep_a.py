@@ -291,6 +291,101 @@ D3B_20260915_QSS_AMENDMENTS = (
 )
 
 
+# PNL-L2 (harness/notes/bp9/missions_panel.json, leg PNL-L2): the SWEEP_A block
+# came under ONE type scale. Its builders were invoked with no arguments, so the
+# scale function s() was not in scope there and ~25 rules emitted raw
+# {t.SIZE_*}px - 11-12 px beside 25-27 px chrome on the 2.25x host. The scale is
+# now THREADED: stylesheet() passes it to every _sweep_a_builders entry and each
+# builder binds its own floored s(). Also in this leg: the five rules spelling
+# 700 as WEIGHT_SEMIBOLD + WEIGHT_MEDIUM - WEIGHT_REGULAR now name WEIGHT_BOLD,
+# the five inert QSS letter-spacing declarations are deleted (Qt QSS has no
+# letter-spacing property), and one /* */ comment stopped naming the bundled
+# mono family - comments ship INSIDE the generated sheet, and that comment was
+# the entire cause of the strict audit's 'no bundled font in QSS' failure
+# (measured: qss.stylesheet(1.0).lower().find("space mono") == 10006, inside
+# that comment; get_chat_display_stylesheet(1.0) is clean).
+#
+# Its own tuple, never rows appended to the 2026-09-15 CRIT / D3B lists: those
+# are keyed to those documents and this is a different leg. It is deliberately
+# NOT in _DECLARED_QSS_AMENDMENTS either - that list is applied to the ce04dcb0
+# baseline, which predates the SWEEP_A block entirely (git show
+# ce04dcb0:...qss.py has zero SWEEP_A markers), so these deltas have no `old` to
+# match there. They are pinned against qss.py itself by the test below, at the
+# same strength: each `new` exactly once, each `old` exactly once on the way
+# back, through the same _amend helper.
+PNL_20260921_QSS_AMENDMENTS = (
+    ('   mono would request a DemiBold Space Mono does not ship (tokens.WEIGHT_BOLD',
+     '   mono would request a DemiBold the bundled mono face does not ship (tokens.WEIGHT_BOLD'),
+    ('        builder() for builder in _sweep_a_builders)',
+     '        builder(scale) for builder in _sweep_a_builders)'),
+    ('def _sweep_a_chat_panel_stylesheet():',
+     'def _sweep_a_chat_panel_stylesheet(scale=t.FONT_SCALE_DEFAULT):' + _NL + '    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731'),
+    ('QTextEdit#HdaPromptInput {{  background: {t.FIELD_INSET};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 12px; font-size: {t.SIZE_BODY}px;  selection-background-color: {_sweep_a_legacy_argb(t.SIGNAL, "40")} ;}}',
+     'QTextEdit#HdaPromptInput {{  background: {t.FIELD_INSET};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 12px; font-size: {s(t.SIZE_BODY)}px;  selection-background-color: {_sweep_a_legacy_argb(t.SIGNAL, "40")} ;}}'),
+    ('QComboBox#HdaContextSelector {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 6px 12px; font-size: {t.SIZE_LABEL}px;}}' + _NL + 'QPushButton#HdaGenerateBtn {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 4px;  padding: 10px 24px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  letter-spacing: 1px;}}',
+     'QComboBox#HdaContextSelector {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 6px 12px; font-size: {s(t.SIZE_LABEL)}px;}}' + _NL + 'QPushButton#HdaGenerateBtn {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 4px;  padding: 10px 24px; font-size: {s(t.SIZE_LABEL)}px;  font-weight: {t.WEIGHT_BOLD};}}'),
+    ('QLabel#StageLabel {{  font-size: {t.SIZE_LABEL}px;  letter-spacing: 0.5px;}}',
+     'QLabel#StageLabel {{  font-size: {s(t.SIZE_LABEL)}px;}}'),
+    ('QLabel#NodePathLabel {{  font-size: {t.SIZE_BODY}px;  color: {t.GROW};  padding: 8px 12px;  background: {_sweep_a_legacy_argb(t.GROW, "10")} ;  border-radius: 4px;}}' + _NL + 'QTableWidget#ParamTable {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  gridline-color: {t.GRAPHITE}; font-size: {t.SIZE_LABEL}px;}}',
+     'QLabel#NodePathLabel {{  font-size: {s(t.SIZE_BODY)}px;  color: {t.GROW};  padding: 8px 12px;  background: {_sweep_a_legacy_argb(t.GROW, "10")} ;  border-radius: 4px;}}' + _NL + 'QTableWidget#ParamTable {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  gridline-color: {t.GRAPHITE}; font-size: {s(t.SIZE_LABEL)}px;}}'),
+    ('QHeaderView::section {{  background: {t.GRAPHITE};  color: {t.BONE};  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  padding: 4px 8px;  border: none;}}' + _NL + 'QPushButton#ModeToggleActive {{  background: {_sweep_a_legacy_argb(t.SIGNAL, "26")} ;  border: 1px solid {_sweep_a_legacy_argb(t.SIGNAL, "66")} ;  color: {t.SIGNAL};  border-radius: 4px;  padding: 4px 12px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};}}' + _NL + 'QPushButton#ModeToggleInactive {{  background: transparent;  border: 1px solid {t.GRAPHITE};  color: {t.SLATE};  border-radius: 4px;  padding: 4px 12px; font-size: {t.SIZE_LABEL}px;}}',
+     'QHeaderView::section {{  background: {t.GRAPHITE};  color: {t.BONE};  font-weight: {t.WEIGHT_BOLD};  padding: 4px 8px;  border: none;}}' + _NL + 'QPushButton#ModeToggleActive {{  background: {_sweep_a_legacy_argb(t.SIGNAL, "26")} ;  border: 1px solid {_sweep_a_legacy_argb(t.SIGNAL, "66")} ;  color: {t.SIGNAL};  border-radius: 4px;  padding: 4px 12px; font-size: {s(t.SIZE_LABEL)}px;  font-weight: {t.WEIGHT_BOLD};}}' + _NL + 'QPushButton#ModeToggleInactive {{  background: transparent;  border: 1px solid {t.GRAPHITE};  color: {t.SLATE};  border-radius: 4px;  padding: 4px 12px; font-size: {s(t.SIZE_LABEL)}px;}}'),
+    ('QPushButton#HdaActionBtn {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {t.SIZE_LABEL}px;}}',
+     'QPushButton#HdaActionBtn {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {s(t.SIZE_LABEL)}px;}}'),
+    ('QPushButton#CancelBtn {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {t.SIZE_LABEL}px;}}',
+     'QPushButton#CancelBtn {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {s(t.SIZE_LABEL)}px;}}'),
+    ('QTextEdit {{  background: {t.VOID};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 6px;  padding: 8px 12px; font-size: {t.SIZE_UI}px;}}',
+     'QTextEdit {{  background: {t.VOID};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 6px;  padding: 8px 12px; font-size: {s(t.SIZE_UI)}px;}}'),
+    ('QPushButton {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 6px;  padding: 8px 20px; font-size: {t.SIZE_UI}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  letter-spacing: 1px;}}',
+     'QPushButton {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 6px;  padding: 8px 20px; font-size: {s(t.SIZE_UI)}px;  font-weight: {t.WEIGHT_BOLD};}}'),
+    ('color: {color}; font-size: {t.GLYPH_MD}px; border: none;',
+     'color: {color}; font-size: {s(t.GLYPH_MD)}px; border: none;'),
+    ('color: {color};  font-size: {t.SIZE_SMALL}px; letter-spacing: 1px; border: none;',
+     'color: {color};  font-size: {s(t.SIZE_SMALL)}px; border: none;'),
+    ('QPushButton {{  background: transparent;  color: {t.FIRE};  border: 1px solid {t.FIRE};  border-radius: 3px;  padding: 4px 10px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  letter-spacing: 1px;}}',
+     'QPushButton {{  background: transparent;  color: {t.FIRE};  border: 1px solid {t.FIRE};  border-radius: 3px;  padding: 4px 10px; font-size: {s(t.SIZE_LABEL)}px;  font-weight: {t.WEIGHT_BOLD};}}'),
+    ('QPushButton#connect_button {{  background: transparent;  color: {t.SIGNAL};  border: 1px solid {t.SIGNAL};  border-radius: 3px; font-size: {t.SIZE_SMALL}px;  padding: 4px 12px;  min-width: 100px;}}',
+     'QPushButton#connect_button {{  background: transparent;  color: {t.SIGNAL};  border: 1px solid {t.SIGNAL};  border-radius: 3px; font-size: {s(t.SIZE_SMALL)}px;  padding: 4px 12px;  min-width: 100px;}}'),
+    ('QPushButton#ws_path_button {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 3px; font-size: {t.SIZE_LABEL}px;  padding: 4px 8px;}}',
+     'QPushButton#ws_path_button {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 3px; font-size: {s(t.SIZE_LABEL)}px;  padding: 4px 8px;}}'),
+    ('def _sweep_a_face_review_stylesheet():',
+     'def _sweep_a_face_review_stylesheet(scale=t.FONT_SCALE_DEFAULT):' + _NL + '    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731'),
+    ('color:{t.TEXT_TERTIARY}; font-size: {t.SIZE_LABEL}px;',
+     'color:{t.TEXT_TERTIARY}; font-size: {s(t.SIZE_LABEL)}px;'),
+    ('def _sweep_a_gate_widget_stylesheet():',
+     'def _sweep_a_gate_widget_stylesheet(scale=t.FONT_SCALE_DEFAULT):' + _NL + '    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731'),
+    ('QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_SM}px;  font-size: {t.SIZE_LABEL}px; }}',
+     'QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_SM}px;  font-size: {s(t.SIZE_LABEL)}px; }}'),
+    ('color: {t.SILVER};  font-size: {t.SIZE_LABEL}px; border: none;',
+     'color: {t.SILVER};  font-size: {s(t.SIZE_LABEL)}px; border: none;'),
+    ('color: {t.SLATE};  font-size: {t.SIZE_LABEL}px; border: none;',
+     'color: {t.SLATE};  font-size: {s(t.SIZE_LABEL)}px; border: none;'),
+    ('color: {color};  font-size: {t.SIZE_LABEL}px; border: none;',
+     'color: {color};  font-size: {s(t.SIZE_LABEL)}px; border: none;'),
+    ('color: {color}; font-size: {t.GLYPH_SM}px; border: none;',
+     'color: {color}; font-size: {s(t.GLYPH_SM)}px; border: none;'),
+    ('def _sweep_a_context_bar_stylesheet():',
+     'def _sweep_a_context_bar_stylesheet(scale=t.FONT_SCALE_DEFAULT):' + _NL + '    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731'),
+    ('color: {t.SIGNAL}; font-size: {t.SIZE_LABEL}px;  background: transparent;',
+     'color: {t.SIGNAL}; font-size: {s(t.SIZE_LABEL)}px;  background: transparent;'),
+    ('color: {color}; font-size: {t.SIZE_UI}px;  background: transparent; padding: 0 4px;',
+     'color: {color}; font-size: {s(t.SIZE_UI)}px;  background: transparent; padding: 0 4px;'),
+    ('        rules.append(_sweep_a_rule("context_health", f"""' + _NL + 'color: {color}; font-size: {t.SIZE_UI}px;  background: transparent;',
+     '        rules.append(_sweep_a_rule("context_health", f"""' + _NL + 'color: {color}; font-size: {s(t.SIZE_UI)}px;  background: transparent;'),
+    ('QPushButton {{  background: {t.NEAR_BLACK}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.CARBON};  border-radius: 4px; padding: 2px 8px;  font-size: {t.SIZE_UI}px; }}',
+     'QPushButton {{  background: {t.NEAR_BLACK}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.CARBON};  border-radius: 4px; padding: 2px 8px;  font-size: {s(t.SIZE_UI)}px; }}'),
+    ('color: {t.TEXT_SECONDARY}; font-size: {t.SIZE_UI}px;  background: transparent;',
+     'color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_UI)}px;  background: transparent;'),
+    ('def _sweep_a_face_work_stylesheet():',
+     'def _sweep_a_face_work_stylesheet(scale=t.FONT_SCALE_DEFAULT):' + _NL + '    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731'),
+    ('def _sweep_a_quick_actions_stylesheet():',
+     'def _sweep_a_quick_actions_stylesheet(scale=t.FONT_SCALE_DEFAULT):' + _NL + '    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731'),
+    ('QPushButton {{  background: transparent; border: none; color: {t.TEXT_SECONDARY}; font-size: {t.GLYPH_SM}px; }}',
+     'QPushButton {{  background: transparent; border: none; color: {t.TEXT_SECONDARY}; font-size: {s(t.GLYPH_SM)}px; }}'),
+    ('QPushButton {{  background: {t.CARBON};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 14px;  padding: 7px 12px; font-size: {t.SIZE_LABEL}px;}}',
+     'QPushButton {{  background: {t.CARBON};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 14px;  padding: 7px 12px; font-size: {s(t.SIZE_LABEL)}px;}}'),
+)
+
 _DECLARED_QSS_AMENDMENTS = (
     ("CRIT.md 2026-09-15", CRIT_20260915_QSS_AMENDMENTS),
     ("READABILITY.md 2026-09-15 D3b", D3B_20260915_QSS_AMENDMENTS),
@@ -619,3 +714,59 @@ if __name__ == "__main__":
         if controller is not None:
             controller.onDestroyInterface()
         host.close()
+
+
+def test_pnl_l2_sweep_a_is_one_scale_and_the_delta_is_exactly_declared():
+    """PNL-L2's whole delta is the declared tuple - no more, no less.
+
+    Round-trips through _amend in both directions: reverting requires every
+    `new` to occur exactly once in the shipped file, and re-applying requires
+    every `old` to occur exactly once in the reverted text. A stale pair or an
+    undeclared edit reddens instead of passing.
+    """
+    source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
+    reverted = _amend(
+        source,
+        tuple((new, old) for old, new in PNL_20260921_QSS_AMENDMENTS),
+        label="PNL-L2 (reverse)")
+    assert reverted != source
+    assert _amend(reverted, PNL_20260921_QSS_AMENDMENTS,
+                  label="PNL-L2") == source
+    for old, _new in PNL_20260921_QSS_AMENDMENTS:
+        assert old not in source, "undone PNL-L2 amendment: " + old
+
+
+def test_sweep_a_block_carries_no_unscaled_size_and_no_inert_letter_spacing():
+    """The invariant PNL-L2 lands, stated independently of the delta above."""
+    source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
+    block = source[source.index("def _sweep_a_chat_panel_stylesheet"):
+                   source.index("# --- END SWEEP_A")]
+    assert not re.search(r"\{t\.(SIZE|GLYPH)_[A-Z_]+\}px", block)
+    assert "letter-spacing" not in block
+    assert "WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM" not in block
+    # every builder takes the scale; none closes over a module-level one
+    for match in re.finditer(r"^def (_sweep_a_\w*_stylesheet)\(([^)]*)\)",
+                             block, re.M):
+        assert "scale" in match.group(2), match.group(1)
+
+
+def test_sweep_a_rules_actually_move_with_the_user_font_scale():
+    from synapse.panel.designsystem import qss
+
+    key = '[sweep_a_style="chat_hda"]'
+    one = qss.stylesheet(1.0)
+    big = qss.stylesheet(2.25)
+    assert one[one.index(key):] != big[big.index(key):]
+    assert "font-size: 27px" in big[big.index(key):]
+
+
+def test_generated_sheet_names_no_bundled_font_family():
+    """audit_panel.py's 'no bundled font in QSS' row, pinned in the suite.
+
+    Comments ship inside the generated string, so a comment naming the family
+    fails this for the same reason a real font-family rule would.
+    """
+    from synapse.panel.designsystem import qss
+
+    text = qss.stylesheet(1.0).lower()
+    assert "space mono" not in text and "space grotesk" not in text
