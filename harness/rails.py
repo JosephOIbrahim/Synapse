@@ -30,6 +30,9 @@
 # exactly this reason.
 #
 # THE MEASUREMENT (Target 2, crucible criterion 1).
+# BP9-CAPBASIS (ruling 5): the tokens CEILING is compared on the COST-WEIGHTED
+# spend (rails_exec.json 'cost_weights'; see load_cost_weights/cost_weighted).
+# tokens_in / tokens_out below stay the 1x rails basis, recorded for comparison.
 # tokens_in / tokens_out are MEASURED from the transcript's message.usage
 # (input_tokens + cache_creation_input_tokens + cache_read_input_tokens, and
 # output_tokens) - the source of truth Claude Code already writes and that no
@@ -79,6 +82,62 @@ UNKNOWN = "UNKNOWN"
 EXIT_OK = 0
 EXIT_BLOCKED = 7
 EXIT_USAGE = 2
+
+# BP9-CAPBASIS (ruling 5): the wave cap is enforced COST-WEIGHTED. Each raw
+# usage field is multiplied by its weight and summed; the rails total (every
+# field at 1x) is recorded beside it, unchanged, for comparison. The weights
+# live in harness/rails_exec.json under 'cost_weights'; these defaults apply
+# only when that table is absent, so the seam stays a lookup.
+DEFAULT_COST_WEIGHTS = {"input": 1.0, "cache_create": 1.25, "cache_read": 0.1, "output": 5.0}
+RAW_USAGE_FIELDS = ("input_tokens", "cache_creation_input_tokens",
+                    "cache_read_input_tokens", "output_tokens")
+_WEIGHT_OF_FIELD = {"input_tokens": "input", "cache_creation_input_tokens": "cache_create",
+                    "cache_read_input_tokens": "cache_read", "output_tokens": "output"}
+
+
+def load_cost_weights(seam_path=None) -> dict:
+    """The four cost weights from rails_exec.json['cost_weights'] (a lookup).
+
+    A missing table or key falls back to DEFAULT_COST_WEIGHTS per key; the
+    returned dict always carries exactly the four weights as floats.
+    """
+    seam_path = Path(seam_path) if seam_path else (ROOT / "harness" / "rails_exec.json")
+    table = {}
+    try:
+        table = json.loads(seam_path.read_text(encoding="utf-8")).get("cost_weights", {}) or {}
+    except (OSError, ValueError):
+        table = {}
+    out = {}
+    for k, dflt in DEFAULT_COST_WEIGHTS.items():
+        v = table.get(k, dflt)
+        try:
+            out[k] = float(v)
+        except (TypeError, ValueError):
+            out[k] = float(dflt)
+    return out
+
+
+def cost_weighted(usage: dict, weights: dict | None = None) -> int:
+    """Sum the four raw usage fields under the cost weights -> an int.
+
+    usage: {input_tokens, cache_creation_input_tokens, cache_read_input_tokens,
+    output_tokens}; an absent field is 0. Rounded to the nearest token.
+    """
+    w = weights or DEFAULT_COST_WEIGHTS
+    total = 0.0
+    for f, wk in _WEIGHT_OF_FIELD.items():
+        total += _as_int(usage.get(f)) * float(w.get(wk, DEFAULT_COST_WEIGHTS[wk]))
+    return int(round(total))
+
+
+def _ctx_of(usage: dict) -> int:
+    """One call's context size: input + cache_creation + cache_read."""
+    return (_as_int(usage.get("input_tokens")) + _as_int(usage.get("cache_creation_input_tokens"))
+            + _as_int(usage.get("cache_read_input_tokens")))
+
+
+def _usage_measured(u) -> bool:
+    return isinstance(u, dict) and all(_measured(u.get(f)) for f in RAW_USAGE_FIELDS)
 
 
 class BudgetExceeded(Exception):
@@ -200,25 +259,23 @@ def _as_int(v) -> int:
         return 0
 
 
-def measure_transcript_tokens(path) -> tuple:
-    """MEASURE tokens_in / tokens_out from a Claude Code transcript JSONL.
+def measure_transcript_usage(path) -> dict | None:
+    """MEASURE the four raw usage fields from a Claude Code transcript JSONL.
 
-    Reuses the transcript-walk scaffold of econ_transcript_cost.py but reads the
-    REAL source of truth it does not: message.usage. tokens_in is the sum of all
-    input the model saw (input_tokens + cache_creation_input_tokens +
-    cache_read_input_tokens); tokens_out is output_tokens. These are measured
-    fields summed, never a chars/3.6 proxy.
-
-    Returns (tokens_in, tokens_out) as ints, or (UNKNOWN, UNKNOWN) when the file
-    is absent, unreadable, or carries no usage record at all. A partial file
-    (some lines usable) still measures what it can.
+    Returns {input_tokens, cache_creation_input_tokens, cache_read_input_tokens,
+    output_tokens, rails_total, max_ctx, messages_with_usage} - every value a
+    measured int summed from message.usage - or None when the file is absent,
+    unreadable, or carries no usage record at all (UNKNOWN, never 0). A partial
+    file (some lines usable) still measures what it can. rails_total is every
+    field at 1x (the pre-ruling-5 basis, kept for comparison); max_ctx is the
+    largest single call's input + cache_creation + cache_read.
     """
     p = Path(path)
     if not p.exists():
-        return UNKNOWN, UNKNOWN
-    t_in = 0
-    t_out = 0
-    saw = False
+        return None
+    raw = {f: 0 for f in RAW_USAGE_FIELDS}
+    max_ctx = 0
+    n = 0
     try:
         with p.open(encoding="utf-8", errors="replace") as fh:
             for line in fh:
@@ -239,16 +296,36 @@ def measure_transcript_tokens(path) -> tuple:
                 # (crucible #1: an absent token renders UNKNOWN, never 0).
                 if "input_tokens" not in usage and "output_tokens" not in usage:
                     continue
-                saw = True
-                t_in += _as_int(usage.get("input_tokens"))
-                t_in += _as_int(usage.get("cache_creation_input_tokens"))
-                t_in += _as_int(usage.get("cache_read_input_tokens"))
-                t_out += _as_int(usage.get("output_tokens"))
+                n += 1
+                for f in RAW_USAGE_FIELDS:
+                    raw[f] += _as_int(usage.get(f))
+                max_ctx = max(max_ctx, _ctx_of(usage))
     except OSError:
+        return None
+    if n == 0:
+        return None
+    raw["rails_total"] = sum(raw[f] for f in RAW_USAGE_FIELDS)
+    raw["max_ctx"] = max_ctx
+    raw["messages_with_usage"] = n
+    return raw
+
+
+def measure_transcript_tokens(path) -> tuple:
+    """MEASURE tokens_in / tokens_out from a Claude Code transcript JSONL.
+
+    The rails basis: tokens_in is the sum of all input the model saw
+    (input_tokens + cache_creation_input_tokens + cache_read_input_tokens);
+    tokens_out is output_tokens. Measured fields summed, never a chars/3.6 proxy.
+
+    Returns (tokens_in, tokens_out) as ints, or (UNKNOWN, UNKNOWN) when the file
+    is absent, unreadable, or carries no usage record at all.
+    """
+    raw = measure_transcript_usage(path)
+    if raw is None:
         return UNKNOWN, UNKNOWN
-    if not saw:
-        return UNKNOWN, UNKNOWN
-    return t_in, t_out
+    t_in = (raw["input_tokens"] + raw["cache_creation_input_tokens"]
+            + raw["cache_read_input_tokens"])
+    return t_in, raw["output_tokens"]
 
 
 def _measured(v) -> bool:
@@ -282,7 +359,9 @@ class Rails:
 
     # live state
     turns_spent: int = 0
-    tokens_spent: int = 0            # sum of MEASURED charges only
+    tokens_spent: int = 0            # rails basis (1x) sum of MEASURED charges - comparison only
+    cost_spent: int = 0              # COST-WEIGHTED sum of MEASURED charges - the ENFORCED meter
+    cost_weights: dict = field(default_factory=dict)
     token_meter: str = "measured"    # -> "UNKNOWN" the first time a charge is UNKNOWN
     status: str = "open"             # open (live) -> complete (finalised) | blocked
     reason: str | None = None
@@ -297,6 +376,8 @@ class Rails:
             self.runs_dir = Path(self.runs_dir)
         if self.seam_path is None:
             self.seam_path = ROOT / "harness" / "rails_exec.json"
+        if not self.cost_weights:
+            self.cost_weights = load_cost_weights(self.seam_path)
 
     # -- paths -------------------------------------------------------------- #
     def dir(self) -> Path:
@@ -309,13 +390,29 @@ class Rails:
     def _remaining(self) -> dict:
         rem_turns = self.cap.turns - self.turns_spent
         if self.cap.tokens is not None and self.token_meter == "measured":
-            rem_tokens = self.cap.tokens - self.tokens_spent
+            rem_tokens = self.cap.tokens - self.tokens_spent      # rails basis, comparison
+            rem_cost = self.cap.tokens - self.cost_spent          # the enforced basis
         else:
-            rem_tokens = UNKNOWN
-        return {"turns": rem_turns, "tokens": rem_tokens}
+            rem_tokens = rem_cost = UNKNOWN
+        return {"turns": rem_turns, "tokens": rem_tokens,
+                "cost_weighted": rem_cost, "enforced_on": "cost_weighted"}
+
+    def _leg_cost(self, ti, to, usage):
+        """(cost_weighted, cost_basis) for one leg's measured spend.
+
+        Raw usage present -> weighted under cost_weights ("weighted"). Only the
+        rails pair present (explicit --tokens-in/out, no transcript) -> the rails
+        sum at 1x, labelled "rails" so the ledger never hides which basis it is.
+        Nothing measured -> (UNKNOWN, UNKNOWN).
+        """
+        if _usage_measured(usage):
+            return cost_weighted(usage, self.cost_weights), "weighted"
+        if _measured(ti) and _measured(to):
+            return ti + to, "rails"
+        return UNKNOWN, UNKNOWN
 
     def charge(self, leg: str, model: str, tokens_in=None, tokens_out=None,
-               wall_ms=None) -> dict:
+               wall_ms=None, usage=None, max_ctx=None) -> dict:
         """Pre-admission gate for one leg/turn.
 
         Admitted -> append a ledger entry, advance the meters, return the entry.
@@ -331,6 +428,9 @@ class Rails:
         to = tokens_out if _measured(tokens_out) else UNKNOWN
         wm = wall_ms if _numeric(wall_ms) else UNKNOWN
         this_measured = ti is not UNKNOWN and to is not UNKNOWN
+        raw = dict(usage) if _usage_measured(usage) else UNKNOWN
+        mc = max_ctx if _measured(max_ctx) else UNKNOWN
+        cost, basis = self._leg_cost(ti, to, usage)
 
         # a single UNKNOWN token charge downgrades the run's token meter, so the
         # token ceiling can no longer be guaranteed and enforcement falls to the
@@ -341,9 +441,11 @@ class Rails:
         prospective_turns = self.turns_spent + 1
         turns_exceed = prospective_turns > self.cap.turns
 
+        # the ceiling is compared on the COST-WEIGHTED spend (ruling 5); the rails
+        # sum is recorded beside it but never decides the halt.
         tokens_exceed = False
         if will_meter:
-            prospective_tokens = self.tokens_spent + ti + to
+            prospective_tokens = self.cost_spent + cost
             tokens_exceed = prospective_tokens > self.cap.tokens
 
         if turns_exceed or tokens_exceed:
@@ -354,10 +456,11 @@ class Rails:
             self.legs.append({
                 "leg": leg, "model": model,
                 "tokens_in": ti, "tokens_out": to, "wall_ms": wm,
+                "usage": raw, "cost_weighted": cost, "cost_basis": basis, "max_ctx": mc,
                 "cap": self.cap.to_dict(), "remaining": self._remaining(),
                 "enforced_unit": enforced_unit, "admitted": False,
                 "note": f"REFUSED: dispatching would exceed the {which} cap "
-                        f"({'turn ' + str(prospective_turns) + ' > ' + str(self.cap.turns) if turns_exceed else str(self.tokens_spent + ti + to) + ' tokens > ' + str(self.cap.tokens)})",
+                        f"({'turn ' + str(prospective_turns) + ' > ' + str(self.cap.turns) if turns_exceed else str(self.cost_spent + cost) + ' cost-weighted tokens > ' + str(self.cap.tokens) + ' (rails ' + str(self.tokens_spent + ti + to) + ')'})",
             })
             ledger = self.close()  # write the receipt before we raise
             raise BudgetExceeded(
@@ -367,12 +470,14 @@ class Rails:
         self.turns_spent = prospective_turns
         if this_measured and self.token_meter == "measured":
             self.tokens_spent += ti + to
+            self.cost_spent += cost
         elif not this_measured:
             self.token_meter = UNKNOWN  # the run can no longer guarantee tokens
 
         entry = {
             "leg": leg, "model": model,
             "tokens_in": ti, "tokens_out": to, "wall_ms": wm,
+            "usage": raw, "cost_weighted": cost, "cost_basis": basis, "max_ctx": mc,
             "cap": self.cap.to_dict(), "remaining": self._remaining(),
             "enforced_unit": enforced_unit, "admitted": True,
         }
@@ -395,13 +500,24 @@ class Rails:
         self.tokens_spent = sum(
             e["tokens_in"] + e["tokens_out"] for e in admitted
             if _measured(e.get("tokens_in")) and _measured(e.get("tokens_out")))
+        self.cost_spent = sum(
+            self._entry_cost(e) for e in admitted
+            if _measured(e.get("tokens_in")) and _measured(e.get("tokens_out")))
         fully = bool(admitted) and all(
             _measured(e.get("tokens_in")) and _measured(e.get("tokens_out"))
             for e in admitted)
         self.token_meter = "measured" if fully else UNKNOWN
 
+    def _entry_cost(self, e: dict) -> int:
+        """A ledger entry's enforced (cost-weighted) spend; rails sum when the
+        entry predates ruling 5 or carried no raw usage."""
+        c = e.get("cost_weighted")
+        if _measured(c):
+            return c
+        return e["tokens_in"] + e["tokens_out"]
+
     def settle(self, leg: str, model: str = "", tokens_in=None, tokens_out=None,
-               wall_ms=None, transcript=None) -> dict:
+               wall_ms=None, transcript=None, usage=None, max_ctx=None) -> dict:
         """Resolve one leg's MEASURED token cost AFTER it finished (post-close).
 
         If a prior charge/reservation for <leg> exists, UPDATE that entry in
@@ -425,6 +541,9 @@ class Rails:
         ti = tokens_in if _measured(tokens_in) else UNKNOWN
         to = tokens_out if _measured(tokens_out) else UNKNOWN
         wm = wall_ms if _numeric(wall_ms) else UNKNOWN
+        raw = dict(usage) if _usage_measured(usage) else UNKNOWN
+        mc = max_ctx if _measured(max_ctx) else UNKNOWN
+        cost, basis = self._leg_cost(ti, to, usage)
 
         # find this leg's entry to fill IN PLACE (never a new turn): prefer an
         # un-settled reservation; else re-settle the newest already-settled entry
@@ -451,6 +570,7 @@ class Rails:
                 self.legs.append({
                     "leg": leg, "model": model,
                     "tokens_in": ti, "tokens_out": to, "wall_ms": wm,
+                    "usage": raw, "cost_weighted": cost, "cost_basis": basis, "max_ctx": mc,
                     "transcript": transcript, "cap": self.cap.to_dict(),
                     "remaining": self._remaining(), "enforced_unit": "turns",
                     "admitted": False, "settled": True,
@@ -469,6 +589,10 @@ class Rails:
         target["tokens_in"] = ti
         target["tokens_out"] = to
         target["wall_ms"] = wm
+        target["usage"] = raw
+        target["cost_weighted"] = cost
+        target["cost_basis"] = basis
+        target["max_ctx"] = mc
         if model:
             target["model"] = model
         if transcript is not None:
@@ -481,12 +605,13 @@ class Rails:
         # the token ceiling: a settle whose MEASURED spend crosses it halts the
         # run. The leg already ran (its tokens are real spend); nothing further
         # dispatches. This is the halt the orchestrator reads next poll.
-        if self.cap.tokens is not None and self.tokens_spent > self.cap.tokens:
+        if self.cap.tokens is not None and self.cost_spent > self.cap.tokens:
             self.status = "blocked"
             self.reason = "budget"
             self.blocked_on = "tokens"
-            target["note"] = (f"HALT: measured spend {self.tokens_spent} tokens crossed "
-                              f"the ceiling {self.cap.tokens} at settle - the dispatch "
+            target["note"] = (f"HALT: cost-weighted spend {self.cost_spent} tokens crossed "
+                              f"the ceiling {self.cap.tokens} at settle (rails total "
+                              f"{self.tokens_spent} at 1x, comparison only) - the dispatch "
                               f"already ran; nothing further dispatches")
 
         target["enforced_unit"] = self._run_enforced_unit()
@@ -527,6 +652,28 @@ class Rails:
                           sum(e["tokens_out"] for e in self.legs
                               if e.get("admitted") and _measured(e["tokens_out"])),
         }
+        # BP9-CAPBASIS (ruling 5): the raw fields, the rails total (1x, unchanged,
+        # comparison only), the COST-WEIGHTED total the cap is enforced on, and the
+        # largest single-call context seen. UNKNOWN whenever the meter is.
+        admitted = [e for e in self.legs if e.get("admitted")]
+        if self.token_meter == "measured" and admitted:
+            usage_tot = {f: 0 for f in RAW_USAGE_FIELDS}
+            all_raw = all(_usage_measured(e.get("usage")) for e in admitted)
+            for e in admitted:
+                if _usage_measured(e.get("usage")):
+                    for f in RAW_USAGE_FIELDS:
+                        usage_tot[f] += e["usage"][f]
+            ctxs = [e["max_ctx"] for e in admitted if _measured(e.get("max_ctx"))]
+            totals["usage"] = usage_tot if all_raw else UNKNOWN
+            totals["rails_total"] = totals["tokens_in"] + totals["tokens_out"]
+            totals["cost_weighted"] = self.cost_spent
+            totals["cost_basis"] = "weighted" if all_raw else "rails"
+            totals["max_ctx"] = max(ctxs) if ctxs else UNKNOWN
+        else:
+            totals["usage"] = totals["rails_total"] = totals["cost_weighted"] = UNKNOWN
+            totals["cost_basis"] = totals["max_ctx"] = UNKNOWN
+        totals["cost_weights"] = dict(self.cost_weights)
+        totals["enforced_on"] = "cost_weighted"
         return {
             "run": self.run,
             "date": self.date,
@@ -629,9 +776,10 @@ def _load_rails(run, date, runs_dir, seam_path) -> Rails | None:
     r.legs = d.get("legs", [])
     # rebuild tokens_spent from admitted measured entries
     if r.token_meter == "measured":
-        r.tokens_spent = sum(e["tokens_in"] + e["tokens_out"] for e in r.legs
-                             if e.get("admitted") and _measured(e.get("tokens_in"))
-                             and _measured(e.get("tokens_out")))
+        meas = [e for e in r.legs if e.get("admitted") and _measured(e.get("tokens_in"))
+                and _measured(e.get("tokens_out"))]
+        r.tokens_spent = sum(e["tokens_in"] + e["tokens_out"] for e in meas)
+        r.cost_spent = sum(r._entry_cost(e) for e in meas)
     return r
 
 
@@ -644,18 +792,24 @@ def _parse_wall(v):
 
 
 def _measure_or_explicit(transcript, tokens_in, tokens_out):
-    """Resolve (tokens_in, tokens_out) for a charge/settle CLI call.
+    """Resolve (tokens_in, tokens_out, usage, max_ctx) for a charge/settle CLI call.
 
-    A --transcript is MEASURED (the source of truth); otherwise the explicit
-    --tokens-in/out are used, and an absent/empty/UNKNOWN value stays None so the
-    field renders the literal UNKNOWN - never zero, never an estimate.
+    A --transcript is MEASURED (the source of truth) and yields the raw usage
+    fields the cost-weighted cap is enforced on; otherwise the explicit
+    --tokens-in/out are used (rails basis, no raw fields), and an absent/empty/
+    UNKNOWN value stays None so the field renders the literal UNKNOWN - never
+    zero, never an estimate.
     """
     if transcript:
+        raw = measure_transcript_usage(transcript)
+        if raw is None:
+            return None, None, None, None
         ti, to = measure_transcript_tokens(transcript)
-        return (None if ti is UNKNOWN else ti), (None if to is UNKNOWN else to)
+        usage = {f: raw[f] for f in RAW_USAGE_FIELDS}
+        return ti, to, usage, raw["max_ctx"]
     ti = None if tokens_in in (None, "", UNKNOWN) else int(tokens_in)
     to = None if tokens_out in (None, "", UNKNOWN) else int(tokens_out)
-    return ti, to
+    return ti, to, None, None
 
 
 def _cli(argv=None) -> int:
@@ -750,13 +904,14 @@ def _cli(argv=None) -> int:
         except (OSError, KeyError, ValueError) as e:
             print(f"rails {args.cmd} error resolving tier: {e}", file=sys.stderr)
             return EXIT_USAGE
-    ti, to = _measure_or_explicit(args.transcript, args.tokens_in, args.tokens_out)
+    ti, to, usage, max_ctx = _measure_or_explicit(args.transcript, args.tokens_in, args.tokens_out)
     wm = _parse_wall(args.wall_ms)
 
     if args.cmd == "settle":
         try:
             entry = r.settle(args.leg, model, tokens_in=ti, tokens_out=to,
-                             wall_ms=wm, transcript=args.transcript)
+                             wall_ms=wm, transcript=args.transcript,
+                             usage=usage, max_ctx=max_ctx)
         except BudgetExceeded as e:  # turns floor: settle opened a turn over cap
             print(f"BLOCKED:budget settle {args.leg} - receipt {r.ledger_path()}",
                   file=sys.stderr)
@@ -768,21 +923,27 @@ def _cli(argv=None) -> int:
             print(f"BLOCKED:budget settle {args.leg} crossed the token ceiling - "
                   f"receipt {r.ledger_path()}", file=sys.stderr)
             return EXIT_BLOCKED
+        rails_total = (entry['tokens_in'] + entry['tokens_out']
+                       if _measured(entry['tokens_in']) and _measured(entry['tokens_out']) else UNKNOWN)
         print(f"settled {args.leg} model={entry.get('model') or '(none)'} "
               f"tokens_in={entry['tokens_in']} tokens_out={entry['tokens_out']} "
+              f"rails_total={rails_total} cost_weighted={entry['cost_weighted']} "
+              f"max_ctx={entry['max_ctx']} "
               f"wall_ms={entry['wall_ms']} remaining={entry['remaining']} "
               f"enforced={entry['enforced_unit']}")
         return EXIT_OK
 
     # charge
     try:
-        entry = r.charge(args.leg, model, tokens_in=ti, tokens_out=to, wall_ms=wm)
+        entry = r.charge(args.leg, model, tokens_in=ti, tokens_out=to, wall_ms=wm,
+                         usage=usage, max_ctx=max_ctx)
     except BudgetExceeded as e:
         print(f"BLOCKED:budget {args.leg} - receipt {r.ledger_path()}", file=sys.stderr)
         print(json.dumps(e.ledger, indent=2, ensure_ascii=False))
         return EXIT_BLOCKED
     r._persist()  # persist the advanced meter after every admitted charge (stays open)
     print(f"admitted {args.leg} model={model or '(none)'} "
+          f"cost_weighted={entry['cost_weighted']} "
           f"remaining={entry['remaining']} enforced={entry['enforced_unit']}")
     return EXIT_OK
 

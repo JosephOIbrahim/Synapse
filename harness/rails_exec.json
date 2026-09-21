@@ -30,5 +30,12 @@
       "dispatch": "harness/rope/exec_ollama.py --task <id> --model <model> (contract-complete, exit 0=wrote / 3=none)",
       "note": "NOT built by BP1-RAILS. Documented so a future editor flips a tier's engine to 'ollama' and sets model to a local model name; runner.py::claude_cmd already branches on SYNAPSE_ROPE_ENGINE. Zero rails.py change - that is the point of a lookup seam."
     }
+  },
+  "cost_weights": {
+    "_comment": "BP9-CAPBASIS (ruling 5). The 70M wave cap is enforced COST-WEIGHTED: each raw usage field is multiplied by its weight and summed. rails.py::load_cost_weights reads this table; the rails total (every field at 1x) is still recorded beside it for comparison and regression-pins BP8 at 79.8M. A missing key falls back to rails.py::DEFAULT_COST_WEIGHTS.",
+    "input": 1.0,
+    "cache_create": 1.25,
+    "cache_read": 0.1,
+    "output": 5.0
   }
 }
