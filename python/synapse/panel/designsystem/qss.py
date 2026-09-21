@@ -205,7 +205,7 @@ QPushButton#DsVerb[tone="ok"]     {{ color: {t.CONIFEROUS}; }}
    steps UP the grey ladder to TEXT_PRIMARY at the verb's own weight, while the
    rest of the row sits at TEXT_SECONDARY. Emphasis by value, not by a second
    action family. No font-weight row here on purpose -- a QSS font-weight on
-   mono would request a DemiBold Space Mono does not ship (tokens.WEIGHT_BOLD
+   mono would request a DemiBold the bundled mono face does not ship (tokens.WEIGHT_BOLD
    note); weight belongs on QFont, where fontload maps >=600 to setBold. */
 QPushButton#DsVerb[tone="hot"]    {{ color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
@@ -554,7 +554,7 @@ _sweep_a_builders = []
 
 def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
     return _sweep_a_base_stylesheet(scale) + "\n" + "\n".join(
-        builder() for builder in _sweep_a_builders)
+        builder(scale) for builder in _sweep_a_builders)
 
 
 def _sweep_a_rule(name, css, color=None, descendants=False):
@@ -609,44 +609,45 @@ def install_sweep_a_root(root):
     rhythm.apply(root, root.property("density") or "standard")
 
 # --- SWEEP_A (chat_panel.py)
-def _sweep_a_chat_panel_stylesheet():
+def _sweep_a_chat_panel_stylesheet(scale=t.FONT_SCALE_DEFAULT):
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
     rules = []
     rules.append(_sweep_a_rule("chat_root", f"""
 QWidget {{  background: {t.NEAR_BLACK};  color: {t.BONE}; }}
 """, descendants=True))
     rules.append(_sweep_a_rule("chat_hda", f"""
 QWidget#HdaModeWidget {{  background: {t.VOID};}}
-QTextEdit#HdaPromptInput {{  background: {t.FIELD_INSET};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 12px; font-size: {t.SIZE_BODY}px;  selection-background-color: {_sweep_a_legacy_argb(t.SIGNAL, "40")} ;}}
+QTextEdit#HdaPromptInput {{  background: {t.FIELD_INSET};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 12px; font-size: {s(t.SIZE_BODY)}px;  selection-background-color: {_sweep_a_legacy_argb(t.SIGNAL, "40")} ;}}
 QTextEdit#HdaPromptInput:focus {{  border-color: {t.SIGNAL};}}
-QComboBox#HdaContextSelector {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 6px 12px; font-size: {t.SIZE_LABEL}px;}}
-QPushButton#HdaGenerateBtn {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 4px;  padding: 10px 24px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  letter-spacing: 1px;}}
+QComboBox#HdaContextSelector {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 6px 12px; font-size: {s(t.SIZE_LABEL)}px;}}
+QPushButton#HdaGenerateBtn {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 4px;  padding: 10px 24px; font-size: {s(t.SIZE_LABEL)}px;  font-weight: {t.WEIGHT_BOLD};}}
 QPushButton#HdaGenerateBtn:hover {{  background: {_sweep_a_legacy_argb(t.SIGNAL, "CC")} ;}}
 QPushButton#HdaGenerateBtn:pressed {{  background: {_sweep_a_legacy_argb(t.SIGNAL, "99")} ;}}
 QWidget#BuildingView {{  background: {t.CARBON};}}
-QLabel#StageLabel {{  font-size: {t.SIZE_LABEL}px;  letter-spacing: 0.5px;}}
+QLabel#StageLabel {{  font-size: {s(t.SIZE_LABEL)}px;}}
 QProgressBar#HdaProgressBar {{  background: {t.GRAPHITE};  border: none;  border-radius: 3px;  height: 6px;}}
 QProgressBar#HdaProgressBar::chunk {{  background: {t.FIRE};  border-radius: 3px;}}
-QLabel#NodePathLabel {{  font-size: {t.SIZE_BODY}px;  color: {t.GROW};  padding: 8px 12px;  background: {_sweep_a_legacy_argb(t.GROW, "10")} ;  border-radius: 4px;}}
-QTableWidget#ParamTable {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  gridline-color: {t.GRAPHITE}; font-size: {t.SIZE_LABEL}px;}}
+QLabel#NodePathLabel {{  font-size: {s(t.SIZE_BODY)}px;  color: {t.GROW};  padding: 8px 12px;  background: {_sweep_a_legacy_argb(t.GROW, "10")} ;  border-radius: 4px;}}
+QTableWidget#ParamTable {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  gridline-color: {t.GRAPHITE}; font-size: {s(t.SIZE_LABEL)}px;}}
 QTableWidget#ParamTable::item {{{{  padding: 4px 8px;}}}}
-QHeaderView::section {{  background: {t.GRAPHITE};  color: {t.BONE};  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  padding: 4px 8px;  border: none;}}
-QPushButton#ModeToggleActive {{  background: {_sweep_a_legacy_argb(t.SIGNAL, "26")} ;  border: 1px solid {_sweep_a_legacy_argb(t.SIGNAL, "66")} ;  color: {t.SIGNAL};  border-radius: 4px;  padding: 4px 12px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};}}
-QPushButton#ModeToggleInactive {{  background: transparent;  border: 1px solid {t.GRAPHITE};  color: {t.SLATE};  border-radius: 4px;  padding: 4px 12px; font-size: {t.SIZE_LABEL}px;}}
+QHeaderView::section {{  background: {t.GRAPHITE};  color: {t.BONE};  font-weight: {t.WEIGHT_BOLD};  padding: 4px 8px;  border: none;}}
+QPushButton#ModeToggleActive {{  background: {_sweep_a_legacy_argb(t.SIGNAL, "26")} ;  border: 1px solid {_sweep_a_legacy_argb(t.SIGNAL, "66")} ;  color: {t.SIGNAL};  border-radius: 4px;  padding: 4px 12px; font-size: {s(t.SIZE_LABEL)}px;  font-weight: {t.WEIGHT_BOLD};}}
+QPushButton#ModeToggleInactive {{  background: transparent;  border: 1px solid {t.GRAPHITE};  color: {t.SLATE};  border-radius: 4px;  padding: 4px 12px; font-size: {s(t.SIZE_LABEL)}px;}}
 QPushButton#ModeToggleInactive:hover {{  border-color: {t.SILVER};  color: {t.SILVER};}}
-QPushButton#HdaActionBtn {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {t.SIZE_LABEL}px;}}
+QPushButton#HdaActionBtn {{  background: {t.CARBON};  color: {t.SILVER};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {s(t.SIZE_LABEL)}px;}}
 QPushButton#HdaActionBtn:hover {{  border-color: {_sweep_a_legacy_argb(t.SIGNAL, "66")} ;  color: {t.BONE};}}
-QPushButton#CancelBtn {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {t.SIZE_LABEL}px;}}
+QPushButton#CancelBtn {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 4px;  padding: 8px 16px; font-size: {s(t.SIZE_LABEL)}px;}}
 QPushButton#CancelBtn:hover {{  color: {t.ERROR};  border-color: {_sweep_a_legacy_argb(t.ERROR, "66")} ;}}
 """, descendants=True))
     rules.append(_sweep_a_rule("chat_input_container", f"""
 background: transparent; border-top: 1px solid {t.GRAPHITE};
 """))
     rules.append(_sweep_a_rule("chat_input", f"""
-QTextEdit {{  background: {t.VOID};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 6px;  padding: 8px 12px; font-size: {t.SIZE_UI}px;}}
+QTextEdit {{  background: {t.VOID};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 6px;  padding: 8px 12px; font-size: {s(t.SIZE_UI)}px;}}
 QTextEdit:focus {{  border: 1px solid {t.SIGNAL};}}
 """))
     rules.append(_sweep_a_rule("chat_send", f"""
-QPushButton {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 6px;  padding: 8px 20px; font-size: {t.SIZE_UI}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  letter-spacing: 1px;}}
+QPushButton {{  background: {t.SIGNAL};  color: {t.VOID};  border: none;  border-radius: 6px;  padding: 8px 20px; font-size: {s(t.SIZE_UI)}px;  font-weight: {t.WEIGHT_BOLD};}}
 QPushButton:hover {{  background: {t.SIGNAL_HOVER};}}
 QPushButton:pressed {{  background: {t.SIGNAL_PRESS};}}
 """))
@@ -665,25 +666,25 @@ QWidget#connection_frame {{  background: {t.CARBON};  border-top: 1px solid {t.G
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("chat_dot", f"""
-color: {color}; font-size: {t.GLYPH_MD}px; border: none;
+color: {color}; font-size: {s(t.GLYPH_MD)}px; border: none;
 """, color=color))
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("chat_status", f"""
-color: {color};  font-size: {t.SIZE_SMALL}px; letter-spacing: 1px; border: none;
+color: {color};  font-size: {s(t.SIZE_SMALL)}px; border: none;
 """, color=color))
     rules.append(_sweep_a_rule("chat_halt", f"""
-QPushButton {{  background: transparent;  color: {t.FIRE};  border: 1px solid {t.FIRE};  border-radius: 3px;  padding: 4px 10px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  letter-spacing: 1px;}}
+QPushButton {{  background: transparent;  color: {t.FIRE};  border: 1px solid {t.FIRE};  border-radius: 3px;  padding: 4px 10px; font-size: {s(t.SIZE_LABEL)}px;  font-weight: {t.WEIGHT_BOLD};}}
 QPushButton:hover {{  background: {_sweep_a_legacy_argb(t.FIRE, "20")} ;}}
 QPushButton:pressed {{  background: {_sweep_a_legacy_argb(t.FIRE, "40")} ;}}
 """))
     rules.append(_sweep_a_rule("chat_connect", f"""
-QPushButton#connect_button {{  background: transparent;  color: {t.SIGNAL};  border: 1px solid {t.SIGNAL};  border-radius: 3px; font-size: {t.SIZE_SMALL}px;  padding: 4px 12px;  min-width: 100px;}}
+QPushButton#connect_button {{  background: transparent;  color: {t.SIGNAL};  border: 1px solid {t.SIGNAL};  border-radius: 3px; font-size: {s(t.SIZE_SMALL)}px;  padding: 4px 12px;  min-width: 100px;}}
 QPushButton#connect_button:hover {{  background: rgba(143, 179, 217, 0.1);}}
 QPushButton#connect_button:pressed {{  background: rgba(143, 179, 217, 0.2);}}
 """))
     rules.append(_sweep_a_rule("chat_url", f"""
-QPushButton#ws_path_button {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 3px; font-size: {t.SIZE_LABEL}px;  padding: 4px 8px;}}
+QPushButton#ws_path_button {{  background: transparent;  color: {t.SLATE};  border: 1px solid {t.GRAPHITE};  border-radius: 3px; font-size: {s(t.SIZE_LABEL)}px;  padding: 4px 8px;}}
 QPushButton#ws_path_button:hover {{  color: {t.SIGNAL};  border-color: {t.SIGNAL};  background: rgba(143, 179, 217, 0.1);}}
 QPushButton#ws_path_button:pressed {{  background: rgba(143, 179, 217, 0.2);}}
 """))
@@ -695,13 +696,14 @@ background: {t.CARBON}; border-bottom: 1px solid {t.GRAPHITE};
 _sweep_a_builders.append(_sweep_a_chat_panel_stylesheet)
 
 # --- SWEEP_A (face_review.py)
-def _sweep_a_face_review_stylesheet():
+def _sweep_a_face_review_stylesheet(scale=t.FONT_SCALE_DEFAULT):
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
     rules = []
     rules.append(_sweep_a_rule("review_verdict", f"""
 color:{t.TEXT_BRIGHT};
 """))
     rules.append(_sweep_a_rule("review_meta", f"""
-color:{t.TEXT_TERTIARY}; font-size: {t.SIZE_LABEL}px;
+color:{t.TEXT_TERTIARY}; font-size: {s(t.SIZE_LABEL)}px;
 """))
     rules.append(_sweep_a_rule("review_key", f"""
 color:{t.TEXT_TERTIARY};
@@ -711,7 +713,8 @@ color:{t.TEXT_TERTIARY};
 _sweep_a_builders.append(_sweep_a_face_review_stylesheet)
 
 # --- SWEEP_A (gate_widget.py)
-def _sweep_a_gate_widget_stylesheet():
+def _sweep_a_gate_widget_stylesheet(scale=t.FONT_SCALE_DEFAULT):
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
     # bc-wave BC-6a: the proposal CARD rules (badge / operation / agent /
     # description / critical / countdown / reject / approve / card /
     # unreachable / flash / decision countdown - twelve hue buckets, F4) are
@@ -719,7 +722,7 @@ def _sweep_a_gate_widget_stylesheet():
     # stays is the Work-face fold: header, body, integrity row.
     rules = []
     rules.append(_sweep_a_rule("gate_header", f"""
-QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_SM}px;  font-size: {t.SIZE_LABEL}px; }}
+QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_SM}px;  font-size: {s(t.SIZE_LABEL)}px; }}
 QPushButton:hover {{  color: {t.SIGNAL}; }}
 """))
     rules.append(_sweep_a_rule("gate_body", f"""
@@ -729,23 +732,23 @@ background: {t.GROUND}; border: 1px solid {t.GRAPHITE}; border-radius: 4px;
 background: {t.GROUND}; border-top: 1px solid {t.GRAPHITE};
 """))
     rules.append(_sweep_a_rule("gate_fidelity_label", f"""
-color: {t.SILVER};  font-size: {t.SIZE_LABEL}px; border: none;
+color: {t.SILVER};  font-size: {s(t.SIZE_LABEL)}px; border: none;
 """))
     rules.append(_sweep_a_rule("gate_separator", f"""
 color: {t.GRAPHITE}; border: none;
 """))
     rules.append(_sweep_a_rule("gate_counts", f"""
-color: {t.SLATE};  font-size: {t.SIZE_LABEL}px; border: none;
+color: {t.SLATE};  font-size: {s(t.SIZE_LABEL)}px; border: none;
 """))
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("gate_violations", f"""
-color: {color};  font-size: {t.SIZE_LABEL}px; border: none;
+color: {color};  font-size: {s(t.SIZE_LABEL)}px; border: none;
 """, color=color))
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("gate_fidelity_dot", f"""
-color: {color}; font-size: {t.GLYPH_SM}px; border: none;
+color: {color}; font-size: {s(t.GLYPH_SM)}px; border: none;
 """, color=color))
     return "\n".join(rules)
 
@@ -763,7 +766,8 @@ def sweep_a_refresh_rhythm(widget):
     rhythm.apply(widget, density or "standard")
 
 # --- SWEEP_A (context_bar.py)
-def _sweep_a_context_bar_stylesheet():
+def _sweep_a_context_bar_stylesheet(scale=t.FONT_SCALE_DEFAULT):
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
     rules = []
     rules.append(_sweep_a_rule("context_root", f"""
 QWidget#context_bar_v2 {{  background: transparent;}}
@@ -778,35 +782,36 @@ QWidget#context_bar_v2 {{  background: transparent;}}
     # intended token there was always SIZE_UI; it is now said in px. Only the
     # breadcrumb moves, and it moves back to the token it always named.
     rules.append(_sweep_a_rule("context_breadcrumb", f"""
-color: {t.SIGNAL}; font-size: {t.SIZE_LABEL}px;  background: transparent;
+color: {t.SIGNAL}; font-size: {s(t.SIZE_LABEL)}px;  background: transparent;
 """))
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("context_memory", f"""
-color: {color}; font-size: {t.SIZE_UI}px;  background: transparent; padding: 0 4px;
+color: {color}; font-size: {s(t.SIZE_UI)}px;  background: transparent; padding: 0 4px;
 """, color=color))
     for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
                   t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
         rules.append(_sweep_a_rule("context_health", f"""
-color: {color}; font-size: {t.SIZE_UI}px;  background: transparent;
+color: {color}; font-size: {s(t.SIZE_UI)}px;  background: transparent;
 """, color=color))
     rules.append(_sweep_a_rule("context_actions", f"""
 background: transparent;
 """))
     rules.append(_sweep_a_rule("context_action", f"""
-QPushButton {{  background: {t.NEAR_BLACK}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.CARBON};  border-radius: 4px; padding: 2px 8px;  font-size: {t.SIZE_UI}px; }}
+QPushButton {{  background: {t.NEAR_BLACK}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.CARBON};  border-radius: 4px; padding: 2px 8px;  font-size: {s(t.SIZE_UI)}px; }}
 QPushButton:hover {{  background: {t.HOVER_BG}; border-color: {t.FIRE};}}
 QPushButton:pressed {{  background: {t.GRAPHITE};}}
 """))
     rules.append(_sweep_a_rule("context_frame", f"""
-color: {t.TEXT_SECONDARY}; font-size: {t.SIZE_UI}px;  background: transparent;
+color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_UI)}px;  background: transparent;
 """))
     return "\n".join(rules)
 
 _sweep_a_builders.append(_sweep_a_context_bar_stylesheet)
 
 # --- SWEEP_A (face_work.py)
-def _sweep_a_face_work_stylesheet():
+def _sweep_a_face_work_stylesheet(scale=t.FONT_SCALE_DEFAULT):
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
     rules = []
     rules.append(_sweep_a_rule("work_status", f"""
 color:{t.TEXT_SECONDARY};
@@ -824,14 +829,15 @@ color:{color};
 _sweep_a_builders.append(_sweep_a_face_work_stylesheet)
 
 # --- SWEEP_A (quick_actions.py)
-def _sweep_a_quick_actions_stylesheet():
+def _sweep_a_quick_actions_stylesheet(scale=t.FONT_SCALE_DEFAULT):
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
     rules = []
     rules.append(_sweep_a_rule("quick_chevron", f"""
-QPushButton {{  background: transparent; border: none; color: {t.TEXT_SECONDARY}; font-size: {t.GLYPH_SM}px; }}
+QPushButton {{  background: transparent; border: none; color: {t.TEXT_SECONDARY}; font-size: {s(t.GLYPH_SM)}px; }}
 QPushButton:hover {{  color: {t.SIGNAL}; }}
 """))
     rules.append(_sweep_a_rule("quick_pill", f"""
-QPushButton {{  background: {t.CARBON};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 14px;  padding: 7px 12px; font-size: {t.SIZE_LABEL}px;}}
+QPushButton {{  background: {t.CARBON};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 14px;  padding: 7px 12px; font-size: {s(t.SIZE_LABEL)}px;}}
 QPushButton:hover {{  background: {t.HOVER_BG};  border-color: {t.SIGNAL};  color: {t.WHITE};}}
 QPushButton:pressed {{  background: rgba(0, 212, 255, 0.15);  border-color: {t.SIGNAL};  color: {t.SIGNAL};}}
 """))
