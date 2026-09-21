@@ -1,0 +1,3 @@
+{"ts": "2026-09-21T12:59:17", "guard": "rerank", "leg": "shadow", "result": "fallback", "reason": "SYNAPSE_JEV=off", "phase": "before", "probes": 9}
+{"ts": "2026-09-21T13:02:56", "guard": "rerank", "leg": "shadow", "result": "fallback", "reason": "SYNAPSE_JEV=off", "phase": "before", "probes": 9}
+{"ts": "2026-09-21T13:02:56", "guard": "rerank", "leg": "shadow", "result": "fallback", "reason": "SYNAPSE_JEV=off", "phase": "after", "probes": 9}

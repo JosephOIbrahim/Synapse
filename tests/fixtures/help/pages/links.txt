@@ -1,0 +1,5 @@
+= Links page =
+
+Create an adjacency [cable|/copernicus/cables] from geometry, or read the
+[compositing guide|/copernicus/compositing] first. The current node is
+[Node:cop/geotoadjacency].

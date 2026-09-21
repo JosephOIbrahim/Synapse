@@ -1,0 +1,4 @@
+= APEX exemption =
+
+The [Node:apex/TransformObject] and [Node:apex/Xor] are APEX graph nodes, a separate
+surface. Even absent from the OP catalogue they are never phantoms here.

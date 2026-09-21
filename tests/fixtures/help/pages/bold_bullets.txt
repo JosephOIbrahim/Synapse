@@ -1,0 +1,7 @@
+= Bold and bullets =
+
+This uses __strong emphasis__ and *light emphasis* inline.
+
+* first item
+* second item
+* third item

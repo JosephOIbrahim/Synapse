@@ -1,0 +1,12 @@
+#type: node
+#context: cop
+#internal: adjacency
+
+= Adjacency =
+
+"""Describes how to use adjacency nodes
+in your network over texture seams."""
+
+== Overview ==
+
+Adjacency COP nodes help with image processing over seams.
