@@ -166,3 +166,29 @@ def test_tracked_font_mono_branch_builds():
     from synapse.panel.designsystem import fontload
     f = fontload.tracked_font("DATA", 12, mono=True)
     assert f.pixelSize() == 12          # built without error; mono family resolved
+
+
+def test_no_chrome_font_renders_below_the_host_ui_font():
+    """PNL-L6 (ruling R3-C): the host floor, ASSERTED rather than printed.
+
+    The Aa ladder has been host-floored since W5-PANEL
+    (``tokens.host_floored_steps``, reached through ``tokens.next_font_scale``
+    and already wired at the panel's Aa cycle) — this leg adds no wiring, only
+    the missing check. It is the same assertion
+    ``python/synapse/panel/scripts/probe_ui_font.py`` makes at the command
+    line, running the probe's OWN collector so the two can never drift into
+    disagreeing about what "chrome" means.
+
+    Read off the BUILT widgets, never off the token module: token sizes are
+    authored PRE-scale numbers and the live panel multiplies them by the host
+    ratio, so only ``QFontInfo(widget.font()).pixelSize()`` answers "is any
+    chrome smaller than the host?".
+    """
+    app = _app()
+    from synapse.panel.scripts import probe_ui_font as probe
+    host_px = QtGui.QFontInfo(app.font()).pixelSize()
+    rows = probe.chrome_font_pixels(_panel(), QtGui)
+    assert rows, "no chrome widgets found on the built panel"
+    min_chrome_px = min(px for _n, px in rows)
+    assert min_chrome_px >= host_px, (
+        "chrome renders below the host UI font", host_px, rows)
