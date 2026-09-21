@@ -24,7 +24,7 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.79.1 - The transcript stopped shouting
 
-*Product change in `python/synapse/panel/` (chat_display, message_formatter, system_prompt, designsystem/tokens, designsystem/rhythm, designsystem/components) plus the measure probe. Product-surface diff v5.79.0..v5.79.1: {{PRODUCT_DIFF}}.*
+*Product change in `python/synapse/panel/` (chat_display, message_formatter, system_prompt, designsystem/tokens, designsystem/rhythm, designsystem/components) plus the measure probe. Product-surface diff v5.79.0..v5.79.1: 8 files, +99/-20, all of it panel code.*
 
 **A REGRESSION SHIPPED IN v5.79.0, FOUND IN THE LIVE PANEL.** The chat transcript rendered every message in capitals at weight 500. The speaker-label pass ran `cursor.select(BlockUnderCursor)` and merged its label font across the whole block, and the label, the timestamp and the message body share one block. Measured on the shipped build: six of six fragments came back `AllUppercase`. Joe, reading it: *"the chat text in SYNAPSE is all caps and tightly spaced. That makes it hard for neurodivergent users to read."* The format now reaches the speaker-label run only, via `ChatDisplay._format_speaker_label_only`, and the uppercase transform is gone. Body text keeps the formatter's `WEIGHT_REGULAR` instead of inheriting the label's 500, so the same fix un-bolds it.
 

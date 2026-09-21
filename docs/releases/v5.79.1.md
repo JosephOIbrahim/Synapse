@@ -1,6 +1,6 @@
 # v5.79.1 -- the transcript stopped shouting
 
-**Product change.** {{PRODUCT_DIFF}} (`python scripts/product_surface.py --diff v5.79.0 HEAD`).
+**Product change.** 8 files, +99/-20, all of it panel code (`python scripts/product_surface.py --diff v5.79.0 HEAD`).
 
 **No new installer in this release.** The `SYNAPSE-5.75.2-Setup.exe` the README links is the last built installer and does **not** carry these changes.
 
