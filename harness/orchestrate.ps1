@@ -490,33 +490,61 @@ function Get-LegState([object]$leg) {
 # harness/notes/receipts/<leg.receipt> - the Get-ReceiptPath fallback, which
 # Test-CloseGate greens without a worktree - so the next poll reads the leg 'done'.
 # Guarded: a none row with NO probe_cmd gets a FAIL receipt and never a session.
+#
+# BP9-NONETIER-FIX: the command reaches python BY FILE, never as an argument. Windows
+# PowerShell 5.1 re-tokenises embedded double quotes in `--cmd $leg.probe_cmd`, so a probe
+# like python -c "print('ACCEPT: x :: pass :: ok')" died with 'unrecognized arguments' and
+# the fallback wrote a 'missing' receipt that blamed a probe_cmd the row DID carry.
+# compile_wave.py writes prompts/<ID>.probe.cmd and the row carries probe_cmd_file; a row
+# with only probe_cmd (hand-appended) gets the same file written here, UTF-8 no BOM,
+# verbatim. And when the runner exits non-zero WITHOUT a receipt, the receipt written
+# here is a distinct 'runner failed' one carrying the runner's stderr head - not the
+# 'no probe_cmd' text.
+function Write-Utf8NoBom([string]$path, [string]$text) {
+    [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+}
 function Run-ProbeLeg([object]$leg) {
     $out     = Join-Path $rdir $leg.receipt
     $timeout = if ($leg.probe_timeout) { [int]$leg.probe_timeout } else { 600 }
     $runner  = Join-Path $repo 'harness\battleplan\probe_receipt.py'
-    if (-not $leg.probe_cmd -or -not ([string]$leg.probe_cmd).Trim()) {
-        Say "  REFUSED - tier 'none' row has no probe_cmd; writing a FAIL receipt, launching nothing" 'Red'
+    $cmdFile = if ($leg.probe_cmd_file) { Join-Path $repo ([string]$leg.probe_cmd_file) } else { $null }
+    $haveFile = $cmdFile -and (Test-Path $cmdFile)
+    $haveCmd  = $leg.probe_cmd -and ([string]$leg.probe_cmd).Trim()
+    if (-not $haveFile -and -not $haveCmd) {
+        Say "  REFUSED - tier 'none' row has no probe_cmd (and no probe_cmd_file on disk); writing a FAIL receipt, launching nothing" 'Red'
         if ($DryRun) { Say "  (dry run) would write: $out (status fail)" 'DarkGray'; $script:DryDispatched[$leg.id] = $true; return }
         & python $runner missing --leg $leg.id --out $out 2>&1 | ForEach-Object { Say "  probe: $_" 'DarkGray' }
         Notify "$($leg.id) probe FAILED" "tier 'none' row has no probe_cmd. Fail receipt written; no model launched."
         return
     }
-    Say "  tier: none -> probe (no model): $($leg.probe_cmd)   timeout ${timeout}s" 'DarkGray'
+    if (-not $haveFile) {
+        # a row that carries only probe_cmd: write the file ourselves so the bytes still
+        # travel by file (the receipts dir exists whenever the orchestrator runs).
+        $cmdFile = Join-Path $rdir "$($leg.id).probe.cmd"
+        if (-not $DryRun) { Write-Utf8NoBom $cmdFile ([string]$leg.probe_cmd) }
+    }
+    $shown = if ($haveFile) { "file $($leg.probe_cmd_file)" } else { [string]$leg.probe_cmd }
+    Say "  tier: none -> probe (no model): $shown   timeout ${timeout}s" 'DarkGray'
     if ($DryRun) {
         Say "  (dry run - not running the probe)" 'DarkGray'
-        Say "  (dry run) probe:    python probe_receipt.py run --leg $($leg.id) --timeout $timeout --out $out" 'DarkGray'
+        Say "  (dry run) probe:    python probe_receipt.py run --leg $($leg.id) --cmd-file $cmdFile --timeout $timeout --out $out" 'DarkGray'
         $script:DryDispatched[$leg.id] = $true
         return
     }
     if (-not (Take-LegLock $leg.id)) { return }
+    $lines = @()
     try {
-        & python $runner run --leg $leg.id --cmd $leg.probe_cmd --timeout $timeout --cwd $repo --out $out 2>&1 |
-            ForEach-Object { Say "  probe: $_" 'DarkGray' }
+        $lines = @(& python $runner run --leg $leg.id --cmd-file $cmdFile --timeout $timeout --cwd $repo --out $out 2>&1)
         $code = $LASTEXITCODE
     } finally { Release-LegLock $leg.id }
+    $lines | ForEach-Object { Say "  probe: $_" 'DarkGray' }
     if (-not (Test-Path $out)) {
-        Say "  probe runner wrote no receipt (exit $code) - writing a FAIL receipt" 'Red'
-        & python $runner missing --leg $leg.id --out $out 2>&1 | Out-Null
+        Say "  probe runner wrote no receipt (exit $code) - writing a 'runner failed' receipt with its stderr head" 'Red'
+        $errFile = Join-Path $rdir "$($leg.id).runner.stderr"
+        $head = ($lines | ForEach-Object { "$_" } | Select-Object -First 20) -join "`n"
+        Write-Utf8NoBom $errFile $head
+        & python $runner runner-failed --leg $leg.id --exit $code --stderr-file $errFile --cmd-file $cmdFile --out $out 2>&1 |
+            ForEach-Object { Say "  probe: $_" 'DarkGray' }
     }
     $status = if ($code -eq 0) { 'pass' } else { 'fail' }
     Say "  probe done: $status  receipt $out" $(if ($status -eq 'pass') { 'Green' } else { 'Yellow' })

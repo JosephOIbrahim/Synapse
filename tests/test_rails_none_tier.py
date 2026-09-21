@@ -9,6 +9,10 @@
 #   5. probe_receipt (the pure-Python parser orchestrate.ps1 calls) turns two ACCEPT lines
 #      into two acceptance rows; a missing probe_cmd is a fail receipt
 #   6. orchestrate.ps1 branches on 'none' before the claude launch line and guards probe_cmd
+#   7. BP9-NONETIER-FIX: the command travels BY FILE (prompts/<ID>.probe.cmd, --cmd-file) so
+#      Windows PowerShell 5.1 cannot re-tokenise its double quotes; exit 0 with zero ACCEPT
+#      lines is a FAIL (a silent green is not a pass); a runner that dies without a receipt
+#      gets a 'runner failed' receipt carrying its stderr head, not the 'no probe_cmd' text
 # Pure Python, stock pytest, zero hou, no network (jev_route is only asked for its table).
 import importlib.util
 import json
@@ -109,9 +113,11 @@ def test_compile_wave_other_literal_tiers_unchanged_and_no_probe_key():
     for tier in ("mechanical", "reasoning", "referee"):
         row = cw.leg_row({**BASE, "tier": tier})
         assert row["tier"] == tier
-        assert "probe_cmd" not in row and "probe_timeout" not in row
+        assert "probe_cmd" not in row and "probe_timeout" not in row and "probe_cmd_file" not in row
+        assert cw.write_probe_cmd_file({**BASE, "tier": tier}) is None   # nothing written either
     assert "tier" not in cw.leg_row(dict(BASE))
     assert "probe_cmd" not in cw.leg_row(dict(BASE))
+    assert "probe_cmd_file" not in cw.leg_row(dict(BASE))
 
 
 # --------------------------------------------------------------------------- #
@@ -196,9 +202,26 @@ def test_ps1_branches_on_none_before_launch_and_guards_probe_cmd():
     assert guard < launch                       # the branch precedes the only claude launch line
     fn = src[src.index("function Run-ProbeLeg"):src.index("function Start-Leg")]
     assert "probe_receipt.py" in fn
-    assert "-not $leg.probe_cmd" in fn          # missing probe_cmd is refused ...
+    assert "-not $haveFile -and -not $haveCmd" in fn   # no file AND no probe_cmd is refused ...
     assert "missing --leg" in fn                # ... with a fail receipt ...
     assert "claude --" not in fn and "Start-Process" not in fn  # ... and never a session
+
+
+def test_ps1_launch_line_passes_cmd_file_never_cmd_argument():
+    """BP9-NONETIER-FIX: the live launch line hands python --cmd-file <path>, and no line in the
+    probe function passes the command itself as an argument (PS 5.1 would re-tokenise it).
+    The no-receipt fallback is the distinct 'runner-failed' receipt with a stderr head file,
+    not a 'missing' receipt that blames a probe_cmd the row carried."""
+    src = ORCH.read_text(encoding="utf-8")
+    fn = src[src.index("function Run-ProbeLeg"):src.index("function Start-Leg")]
+    launch = [ln for ln in fn.splitlines() if "$runner run " in ln and "dry run" not in ln]
+    assert len(launch) == 1, launch
+    assert "--cmd-file $cmdFile" in launch[0]
+    assert "--cmd $leg.probe_cmd" not in fn and "--cmd " not in launch[0].replace("--cmd-file", "")
+    assert "runner-failed --leg" in fn and "--stderr-file $errFile" in fn
+    assert "Write-Utf8NoBom" in fn and "UTF8Encoding $false" in src   # verbatim, no BOM
+    # the row's probe_cmd_file is what the file path comes from; a probe_cmd-only row gets one written
+    assert "$leg.probe_cmd_file" in fn and '"$($leg.id).probe.cmd"' in fn
 
 
 def test_ps1_parses_clean():
@@ -214,3 +237,109 @@ def test_ps1_parses_clean():
         import pytest
         pytest.skip("powershell not available on this host")
     assert "PARSE-OK" in p.stdout, p.stdout + p.stderr
+
+
+# --------------------------------------------------------------------------- #
+# 7. BP9-NONETIER-FIX: by-file command, silent green, runner-failed receipt
+# --------------------------------------------------------------------------- #
+QUOTED = "python -c \"print('ACCEPT: x :: pass :: ok')\""   # the exact shape that died under PS 5.1
+
+
+def test_compile_wave_none_row_carries_probe_cmd_file_and_writes_it_verbatim(monkeypatch, tmp_path):
+    """The row carries probe_cmd_file beside the prompt, and the file on disk is the command
+    byte-for-byte: UTF-8, no BOM, no added newline. Other tiers write nothing (tested above)."""
+    monkeypatch.setattr(cw, "REPO", tmp_path)
+    m = {**BASE, "tier": "none", "probe_cmd": QUOTED}
+    row = cw.leg_row(m)
+    assert row["probe_cmd"] == QUOTED
+    assert row["probe_cmd_file"] == "harness/battleplan/prompts/BP9-PROBE.probe.cmd"
+    out = cw.write_probe_cmd_file(m)
+    assert out == tmp_path / row["probe_cmd_file"]
+    assert out.read_bytes() == QUOTED.encode("utf-8")          # verbatim: no BOM, no newline
+    assert pr.read_cmd_file(out) == QUOTED
+
+
+def test_probe_quoted_cmd_round_trips_through_cmd_file_and_yields_accept_row(tmp_path):
+    """The referee's case: a command with embedded double quotes reaches the subprocess
+    byte-identical. If any layer re-tokenised the quotes, python -c would not receive its
+    program and the ACCEPT line could not print. Driven both in-process and through the real
+    CLI (a fresh python, argv exactly as the ps1 builds it)."""
+    cmd = f'"{sys.executable}" -c "print(\'ACCEPT: x :: pass :: ok\')"'
+    cmd_file = tmp_path / "BP9-PROBE.probe.cmd"
+    cmd_file.write_bytes(cmd.encode("utf-8"))
+    out_path = tmp_path / "BP9-PROBE.json"
+    rc = pr.main(["run", "--leg", "BP9-PROBE", "--cmd-file", str(cmd_file), "--timeout", "60", "--out", str(out_path)])
+    assert rc == 0
+    r = json.loads(out_path.read_text(encoding="utf-8"))
+    assert r["status"] == "pass"
+    assert r["probe_cmd"] == cmd                                  # byte-identical on the receipt
+    assert r["probe_cmd_file"] == str(cmd_file)
+    assert r["acceptance"] == [{"predicate": "x", "verdict": "pass", "evidence": "ok"}]
+    # and through the real CLI as a subprocess (what orchestrate.ps1 invokes)
+    out2 = tmp_path / "BP9-PROBE.cli.json"
+    p = subprocess.run([sys.executable, str(REPO / "harness" / "battleplan" / "probe_receipt.py"), "run",
+                        "--leg", "BP9-PROBE", "--cmd-file", str(cmd_file), "--timeout", "60", "--out", str(out2)],
+                       capture_output=True, text=True, timeout=120)
+    assert p.returncode == 0, p.stdout + p.stderr
+    r2 = json.loads(out2.read_text(encoding="utf-8"))
+    assert r2["probe_cmd"] == cmd and r2["acceptance"][0]["evidence"] == "ok" and r2["status"] == "pass"
+
+
+def test_probe_exit_zero_with_no_accept_lines_is_fail(tmp_path):
+    """A silent green is not a pass: SCREEN treats empty acceptance as a non-verdict, so the
+    receipt says fail with the named finding instead of a clean pass with nothing to board."""
+    cmd = f'"{sys.executable}" -c "print(\'all good, nothing to report\')"'
+    code, out, err, to = pr.run_probe(cmd, timeout=60)
+    assert code == 0 and not to
+    r = pr.build_receipt("BP9-PROBE", cmd, code, out, err, timed_out=to)
+    assert r["status"] == "fail" and r["exit_code"] == 0 and r["acceptance"] == []
+    assert r["findings"][0].startswith("probe printed no ACCEPT lines")
+    assert "silent green" in r["status_note"]
+    # the CLI exits 1 for it (the ps1 reads $LASTEXITCODE as fail)
+    cmd_file = tmp_path / "c.cmd"; cmd_file.write_bytes(cmd.encode("utf-8"))
+    out_path = tmp_path / "r.json"
+    assert pr.main(["run", "--leg", "BP9-PROBE", "--cmd-file", str(cmd_file), "--timeout", "60", "--out", str(out_path)]) == 1
+    assert json.loads(out_path.read_text(encoding="utf-8"))["status"] == "fail"
+    # while an ACCEPT line that itself says fail still parses (status from the row, not silence)
+    cmd_f = f'"{sys.executable}" -c "print(\'ACCEPT: x :: fail :: nope\')"'
+    code, out, err, to = pr.run_probe(cmd_f, timeout=60)
+    r = pr.build_receipt("BP9-PROBE", cmd_f, code, out, err, timed_out=to)
+    assert r["status"] == "pass" and r["acceptance"][0]["verdict"] == "fail"
+    assert not any("no ACCEPT lines" in f for f in r["findings"])
+
+
+def test_runner_failed_receipt_carries_stderr_head_not_missing_text(tmp_path):
+    """When the runner itself dies before writing a receipt, the ps1 writes THIS receipt:
+    status fail, the finding carries the runner's stderr head, and it never says the row
+    carried no probe_cmd (the misreport the crucible caught)."""
+    err = tmp_path / "BP9-PROBE.runner.stderr"
+    err.write_text("usage: probe_receipt.py run [-h]\nprobe_receipt.py run: error: unrecognized arguments: x\n", encoding="utf-8")
+    cmd_file = tmp_path / "BP9-PROBE.probe.cmd"; cmd_file.write_bytes(QUOTED.encode("utf-8"))
+    out_path = tmp_path / "BP9-PROBE.json"
+    rc = pr.main(["runner-failed", "--leg", "BP9-PROBE", "--exit", "2", "--stderr-file", str(err),
+                  "--cmd-file", str(cmd_file), "--out", str(out_path)])
+    assert rc == 1
+    r = json.loads(out_path.read_text(encoding="utf-8"))
+    assert r["status"] == "fail" and r["exit_code"] == 2 and r["acceptance"] == []
+    assert r["probe_cmd"] == QUOTED
+    assert "unrecognized arguments: x" in r["findings"][0] and "runner failed" in r["findings"][0]
+    assert r["runner_stderr_head"][0].startswith("usage:")
+    assert not any("no probe_cmd" in f for f in r["findings"])
+    assert not any("no probe_cmd" in f for f in [r["status_note"]])
+    # pure form, empty stderr, still distinct from missing_receipt
+    r2 = pr.runner_failed_receipt("BP9-PROBE", None, "")
+    assert r2["status"] == "fail" and "<empty>" in r2["findings"][0]
+    assert r2["findings"] != pr.missing_receipt("BP9-PROBE")["findings"]
+
+
+def test_probe_cli_run_requires_exactly_one_command_source(tmp_path):
+    """--cmd and --cmd-file are mutually exclusive and one is required; an empty file is the
+    'missing' case (nothing ran), not a crash."""
+    import pytest
+    out_path = tmp_path / "r.json"
+    with pytest.raises(SystemExit):
+        pr.main(["run", "--leg", "BP9-PROBE", "--out", str(out_path)])
+    empty = tmp_path / "e.cmd"; empty.write_bytes(b"   ")
+    assert pr.main(["run", "--leg", "BP9-PROBE", "--cmd-file", str(empty), "--out", str(out_path)]) == 1
+    r = json.loads(out_path.read_text(encoding="utf-8"))
+    assert r["status"] == "fail" and r["exit_code"] is None and any("no probe_cmd" in f for f in r["findings"])
