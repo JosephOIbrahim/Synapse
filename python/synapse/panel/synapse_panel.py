@@ -1068,7 +1068,9 @@ class SynapsePanel(QtWidgets.QWidget):
         )
         self._connect_btn.clicked.connect(self._on_connect)
         self._doctor_btn = c.Button("Doctor", variant="ghost")
-        self._doctor_btn.setProperty("tone", "doctor")
+        # PNL-L7 (ruling R2-B1): no tone="doctor" here any more. Doctor is an
+        # action, so it rests in the shipped action family with Connect and the
+        # rest of the row rather than carrying its own yellow.
         self._doctor_btn.setAccessibleName("Check SYNAPSE")
         self._doctor_btn.setToolTip("Run synapse_doctor locally · no model request or scene changes")
         self._doctor_btn.clicked.connect(self._open_doctor)

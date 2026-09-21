@@ -195,12 +195,18 @@ def _outside_ruled_regions(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
-# The artist-approved Doctor accent and quiet local links add five rules to
-# the upstream sheet. Match their entire declarations, not just a selector:
-# changing a color, adding a property, or broadening a target must still fail.
+# The quiet local links add three rules to the upstream sheet. Match their
+# entire declarations, not just a selector: changing a color, adding a
+# property, or broadening a target must still fail.
+#
+# AMENDED BY PNL-L7 (ruling R2-B1, 2026-09-21): the two Doctor rows
+#   QPushButton#DsVerb[tone="doctor"] -> HOUDINI_TAB_YELLOW / _HOVER
+# left this tuple because they left the sheet. Doctor takes the shipped SIGNAL
+# action family off the base #DsVerb rules instead of carrying its own yellow,
+# so there is no longer a local addition here to approve. The guard does NOT
+# weaken: the sheet must still equal baseline-plus-exactly-these-additions, so
+# re-adding either row now reddens as unapproved drift.
 _APPROVED_LOCAL_RULES = (
-    'QPushButton#DsVerb[tone="doctor"] {{ color: {t.HOUDINI_TAB_YELLOW}; }}',
-    'QPushButton#DsVerb[tone="doctor"]:hover {{ color: {t.HOUDINI_TAB_YELLOW_HOVER}; }}',
     '''QPushButton#DsFooterLink {{
     background: transparent; border: none; padding: 2px 0;
     min-height: {t.SPACE_LG}px;
@@ -474,11 +480,18 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
     assert sheet.startswith(qss._sweep_a_base_stylesheet())
 
 
+# AMENDED BY PNL-L7 (ruling R2-B1, 2026-09-21): rows 1 and 3 probed the two
+# Doctor rules, which that ruling removed from the sheet, so their `before`
+# text no longer occurs and the rows would assert on absence instead of on
+# drift. Both are RE-AIMED, not dropped: same two drift shapes (a colour swap
+# on a local rule, and a local selector broadened onto a shared target), now
+# aimed at the surviving DsFooterLink local rules.
 @pytest.mark.parametrize("before,after", [
-    ("color: {t.HOUDINI_TAB_YELLOW};", "color: {t.ERROR};"),
+    ("QPushButton#DsFooterLink:hover {{ color: {t.TEXT_ACCENT}; }}",
+     "QPushButton#DsFooterLink:hover {{ color: {t.WARM}; }}"),
     ("    min-height: {t.SPACE_LG}px;\n    color: {t.TEXT_SECONDARY};",
      "    min-height: {t.SPACE_SM}px;\n    color: {t.TEXT_SECONDARY};"),
-    ('QPushButton#DsVerb[tone="doctor"]:hover', 'QPushButton#DsVerb:hover'),
+    ("QPushButton#DsFooterLink:disabled", "QPushButton#DsVerb:disabled"),
     ("color: {t.MUSHROOM};", "color: {t.TEXT_PRIMARY};"),
 ])
 def test_upstream_qss_guard_rejects_local_and_unrelated_style_drift(before, after):
