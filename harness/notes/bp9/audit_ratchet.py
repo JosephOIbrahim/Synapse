@@ -49,6 +49,12 @@ _RESULT = re.compile(r"G3 RESULT:\s*(\d+) FAIL")
 def run_audit() -> tuple[int, str]:
     env = {**os.environ, "QT_QPA_PLATFORM": "offscreen"}
     env.setdefault("SYNAPSE_LOG_DIR", str(ROOT / ".scratch" / "logs"))
+    # Houdini prepends $HOUDINI_PACKAGE_DIR's tree in-process and it BEATS PYTHONPATH, so a
+    # worktree left at the global value audits the MAIN tree: green for code this branch does
+    # not contain. Point it at our own packages dir. harness/notes/bp9/panel_gate.py is the
+    # fuller instrument and also proves which tree hython imported from.
+    env["HOUDINI_PACKAGE_DIR"] = str(ROOT / "packages")
+    env["PYTHONPATH"] = str(ROOT / "python")
     Path(env["SYNAPSE_LOG_DIR"]).mkdir(parents=True, exist_ok=True)
     r = subprocess.run([HYTHON, "audit_panel.py", "--strict"], cwd=str(ROOT), env=env,
                        capture_output=True, text=True, encoding="utf-8", errors="replace",
