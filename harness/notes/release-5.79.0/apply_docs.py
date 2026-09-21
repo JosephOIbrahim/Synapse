@@ -34,9 +34,19 @@ PLACEHOLDER = "{{PRODUCT_DIFF}}"
 NOT_LANDED = "{{NOT_LANDED}}"
 
 
-def _sub(path: Path, old: str, new: str, *, count: int = 1) -> None:
+def _sub(path: Path, old: str, new: str, *, count: int = 1, done: str | None = None) -> None:
+    """Replace, asserting the anchor count. With `done`, an already-applied edit is fine.
+
+    scripts/sync_version.py --write ALSO rewrites one of these lines -- the banner's version,
+    though not its "is Latest" tag -- so whichever of the two runs second must not blow up on
+    an anchor the other already consumed. Rehearsed in a throwaway worktree, which is where
+    this collision surfaced. Idempotent beats order-dependent.
+    """
     t = path.read_text(encoding="utf-8")
     n = t.count(old)
+    if n == 0 and done and done in t:
+        print("  %-14s %s   (already applied)" % (path.name, old[:52].replace("\n", " / ")))
+        return
     if n != count:
         raise SystemExit("%s: expected %d occurrence(s) of %r, found %d"
                          % (path.name, count, old[:70], n))
@@ -75,7 +85,8 @@ def apply_all(not_landed: str) -> int:
     rc_draft = HERE / "readme-changelog.draft.md"
 
     print("README.md")
-    _sub(readme, "v%s · Houdini" % OLD, "v%s · Houdini" % NEW)
+    _sub(readme, "v%s · Houdini" % OLD, "v%s · Houdini" % NEW,
+         done="v%s · Houdini" % NEW)   # sync_version.py --write may have done this one
     _sub(readme, "tags: v%s is Latest" % OLD, "tags: v%s is Latest" % NEW)
     _sub(readme, "docs/releases/v%s.md" % OLD, "docs/releases/v%s.md" % NEW,
          count=readme.read_text(encoding="utf-8").count("docs/releases/v%s.md" % OLD))
