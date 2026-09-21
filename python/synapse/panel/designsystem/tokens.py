@@ -484,7 +484,14 @@ FONT_FLOOR_PROVENANCE = (
     "is a DESIGN RULING and is open; see READABILITY.md 2026-09-15 'The floor is "
     "below the host' (and its 2026-09-21 correction). Until it is ruled the floor "
     "stays pinned to audit_panel.py READABLE_FLOOR = 11, the repo's own "
-    "readability bar — NOT to the smallest size shipped, which was circular."
+    "readability bar — NOT to the smallest size shipped, which was circular. "
+    "PNL-L6 (ruling R3-C, 2026-09-21) wires the assertion that was missing: "
+    "probe_ui_font.main() and tests/panel/test_font_scale.py::"
+    "test_no_chrome_font_renders_below_the_host_ui_font both read "
+    "QFontInfo(widget.font()).pixelSize() off the BUILT chrome (khint, rail "
+    "author and meter, footer links, pills) and fail when the smallest of them "
+    "falls under QFontInfo(QApplication.font()).pixelSize() — measured "
+    "12 host / 12 min chrome under hython 22.0.400 offscreen. No value changed."
 )
 
 # ── weight tokens (BP4-PANELFONT) ─────────────────────────────
