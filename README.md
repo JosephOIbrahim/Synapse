@@ -4,7 +4,7 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.79.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.79.1 is Latest</sub></p>
+<p align="center"><sub>v5.80.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.79.1 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
@@ -121,13 +121,11 @@ flowchart TB
 
 **Staged, not yet served:** `rag/corpus/guides` holds 31 workflow guides from [fxhoudinimcp](https://github.com/healkeiser/fxhoudinimcp) @ 29b6695b (MIT), gate-checked against 22.0.400. The product does not consult this directory yet; it is listed here so the provenance is public before the serving wiring lands.
 
-**New in 5.79.1** — the transcript stopped shouting.
+**New in 5.80.0** - the corpus arrives, and the referee reads it.
 
-v5.79.0 shipped a chat transcript that rendered every message in capitals at a semi-bold weight. The speaker-label pass merged its label font across the whole block, and the label, the timestamp and the message body share one block. Six of six text fragments came back uppercase when measured.
+No product change: the panel is v5.79.1's panel. What shipped is knowledge and instruments. An H22 prose corpus builder that refuses pages naming nodes the live catalog does not know; 31 workflow guides from fxhoudinimcp pulled through the same gate, five quarantined with their reasons listed; one scope-ranking table that puts H22 prose first, guides second for how-to questions, and H21 as the fallback; and an outside-in benchmark that runs the same prompt through SYNAPSE and fxhoudinimcp in isolated Houdini sessions and checks the scene, not the transcript.
 
-It is sentence case now, at a regular weight, with the line spacing doubled to exactly the 1.5x that WCAG asks of body text, the space between turns doubled, and the reading column 10% wider. Stray `**` markers that never became bold, because the node path between them was parsed first, are gone. The model is now told to write sentence case without em dashes.
-
-No test had ever asserted what a chat message looks like once rendered. There is one now. Full notes in [docs/releases/v5.79.1.md](docs/releases/v5.79.1.md).
+None of the new corpus is served to the panel yet. The line above says so. Full notes in [docs/releases/v5.80.0.md](docs/releases/v5.80.0.md).
 
 ## Watch it work
 

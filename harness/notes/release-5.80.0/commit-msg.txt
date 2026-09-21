@@ -1,0 +1,33 @@
+release: v5.80.0 -- the corpus arrives, and the referee reads it
+
+No product change (product_surface.py --diff v5.79.1 HEAD: no product change).
+This release ships knowledge and instruments: the BP10 wave plus PRs #109/#110.
+
+BP10-CORPUS: rag/ingest/help_archive.py builds an H22 prose corpus from the
+SideFX help archive behind a phantom gate; rag/retrieval/scope_weights.py is the
+one scope-ranking table (h22_prose > guide > h21, how-to phrasing lifts guides).
+
+BP10-GUIDES: rag/ingest/guides.py pulls 31 fxhoudinimcp guides (MIT, @29b6695b)
+into rag/corpus/guides/ through the same gate; five quarantined with their
+tokens listed; answer_key.json is the empty fix-or-drop template. The guide
+scope is switched on. README: the corpus is now stated as "Staged, not yet
+served" instead of listed under What's ready -- CRUX's one BROKEN item.
+
+BP10-BENCH: harness/outside_in/ runs one prompt through isolated SYNAPSE and
+fxhoudinimcp hython arms and verifies the scene, not the transcript; prompt
+leak check included; G5 (the full run) held for Joe.
+
+Three Jev guards in shadow (rerank, harvest, bench), ledgered and gradeable.
+PR #109 gate-table agreement lint (16 rows surfaced); PR #110 recall oracle.
+
+CRUX: CORPUS and BENCH SOUND-WITH-NITS; GUIDES BROKEN on README.md:121 only,
+fixed here, re-verdict pending; SCAFFOLD BROKEN, already on master, fix-forward
+open. TIDY receipt corrected to green_with_findings before merge.
+
+Merge: CORPUS and GUIDES both created scope_weights.py, its tests and the
+harvest grader from the same base; GUIDES's copies are strict evolutions, so the
+train took GUIDES's side. Train tested before master moved.
+
+Verified: full suite 9609 passed / 371 skipped / 5 xfailed / 0 failed (6m25s).
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
