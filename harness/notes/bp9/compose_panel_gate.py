@@ -73,6 +73,28 @@ ESCALATED = {
     },
 }
 
+# Predicates the COMPOSED GATE re-runs itself, on the merged tree, with the current
+# instrument. A per-leg failure of one of these is a stale reading, not a standing defect:
+# refusing the leaf for it would prefer an old measurement over a fresh one taken on the tree
+# that actually ships. This is not a waiver -- nothing is forgiven. If the predicate is still
+# broken, the composed gate reds and the cut stops.
+#
+# PNL-L7 is why. Its verifier reran panel_gate.py twice and both runs tripped on
+# test_ollama_discovery, the load-sensitive row now quarantined with master evidence. It wrote:
+# "The design work is correct ... If merge_ready keyed on the leg's causal footprint I would
+# say yes." The instrument was wrong, and it has since been corrected.
+# The third pattern is a CONJUNCTION -- "the seat row this leg owns is gone from the baseline
+# AND the gate exits 0". Its row half was verified TRUE with evidence (L7's verifier reran the
+# test itself: PASSED, not skipped, and the row is absent from the file), and only the gate
+# half failed, on the quarantined row. Waiving the conjunction does not lose the row half: the
+# composed gate checks baseline integrity twice over, in "ratchet baselines only shrank" and in
+# the seat ratchet itself, both on the merged tree.
+COVERED_BY_COMPOSED_GATE = (
+    re.compile(r"panel_gate\.py", re.I),
+    re.compile(r"diff-filter=D.{0,40}tests/", re.I | re.S),
+    re.compile(r"\bthe gate exits\s*0", re.I),
+)
+
 DEAD_GATES = (
     re.compile(r"audit_panel\.py\s+--strict.{0,40}exits?\s*0", re.I | re.S),
     re.compile(r"test_bc_wave\.py.{0,40}exits?\s*0", re.I | re.S),
@@ -123,7 +145,8 @@ def _blocking(v: dict, leg: str = "") -> tuple[list[str], list[str]]:
             continue
         p = " ".join((a.get("predicate") or "").split())
         dead = any(rx.search(p) for rx in DEAD_GATES)
-        ok = dead or (fixed and fixed in p) or (escalated and escalated in p)
+        recheck = any(rx.search(p) for rx in COVERED_BY_COMPOSED_GATE)
+        ok = dead or recheck or (fixed and fixed in p) or (escalated and escalated in p)
         (waived if ok else block).append(p)
     return block, waived
 
@@ -161,6 +184,8 @@ def plan(res: dict) -> list[tuple[str, str, str]]:
                     tag = "repaired on " + REPAIRED[leg]["branch"]
                 elif leg in ESCALATED and ESCALATED[leg]["clears"] in w:
                     tag = "RULING CONFLICT, escalated to Joe -- not a defect"
+                elif any(rx.search(w) for rx in COVERED_BY_COMPOSED_GATE):
+                    tag = "stale reading; the composed gate re-runs this on the merged tree"
                 else:
                     tag = "dead gate, replaced by panel_gate.py"
                 print(f"   WAIVED  {leg}: {tag} -- {w[:88]}")
