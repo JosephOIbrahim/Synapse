@@ -4,17 +4,35 @@ Reads Houdini events from a JSONL file and surfaces them as context
 to Claude Code via hook stdout. Supports all hook event types.
 
 Hook protocol: reads JSON from stdin, writes JSON or plain text to stdout.
+
+Cook-error stop gate (BP9-STOPGATE, ruling 4). Cook errors used to live only
+in the consume-on-prompt watermark: one UserPromptSubmit read them, moved the
+watermark, and the next Stop saw nothing. Now every CookError lands in an
+``unresolved`` set persisted beside the events file (UNRESOLVED_FILE, JSON,
+one entry per node path with its message). An entry clears when a later
+event reports a successful cook for the same node, or when the artist's
+prompt carries an explicit ``resolved`` marker. On Stop and TaskCompleted a
+non-empty set prints the one-line list to stderr and exits 2 (the blocking
+code). Every other event keeps its exit code. A missing events file means no
+cook errors: exit 0, never a false block.
 """
 
 import json
 import os
+import re
 import socket
 import sys
 import time
 
-EVENTS_DIR = os.path.join(os.environ.get("TEMP", "/tmp"), "synapse_hooks")
+EVENTS_DIR = os.environ.get("SYNAPSE_HOOKS_EVENTS_DIR", "").strip() or os.path.join(
+    os.environ.get("TEMP", "/tmp"), "synapse_hooks"
+)
 EVENTS_FILE = os.path.join(EVENTS_DIR, "houdini_events.jsonl")
 LAST_READ_FILE = os.path.join(EVENTS_DIR, ".last_read_ts")
+UNRESOLVED_FILE = os.path.join(EVENTS_DIR, ".unresolved_cook_errors.json")
+
+BLOCK_EXIT = 2  # Claude Code: exit 2 blocks Stop / TaskCompleted, stderr is shown
+RESOLVED_MARKER = re.compile(r"\bresolved\b", re.IGNORECASE)
 
 MAX_EVENT_AGE = 300  # 5 minutes
 
@@ -148,11 +166,84 @@ def get_hook_event(hook_input):
 
 
 def get_cook_errors(events):
-    """Extract unresolved cook errors from events."""
+    """Extract cook-error events from a batch of events."""
     return [e for e in events if "CookError" in e.get("type", "")]
 
 
-_LAST_HOOK = {"event": "unknown", "session": None}
+def _is_cook_success(event):
+    t = event.get("type", "")
+    return "CookError" not in t and ("CookComplete" in t or "Cooked" in t or "CookDone" in t)
+
+
+def _event_node(event):
+    detail = event.get("detail") or ""
+    data = event.get("data") or {}
+    return str(detail or data.get("node") or data.get("node_path") or "").strip()
+
+
+def read_unresolved():
+    """Load the persisted unresolved set: {node_path: {message, timestamp}}."""
+    try:
+        with open(UNRESOLVED_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, ValueError, OSError):
+        return {}
+
+
+def write_unresolved(unresolved):
+    try:
+        if not unresolved:
+            try:
+                os.remove(UNRESOLVED_FILE)
+            except FileNotFoundError:
+                pass
+            return
+        os.makedirs(EVENTS_DIR, exist_ok=True)
+        with open(UNRESOLVED_FILE, "w", encoding="utf-8") as f:
+            json.dump(unresolved, f, sort_keys=True)
+    except OSError:
+        pass
+
+
+def update_unresolved(events, prompt=""):
+    """Fold new events + the artist prompt into the persisted unresolved set.
+
+    - CookError                                  -> add/refresh entry for that node
+    - successful cook on a node already in the set -> clear that node
+    - explicit 'resolved' marker in the prompt    -> clear everything
+    - events file missing                         -> no cook errors: set emptied
+    Returns the resulting dict.
+    """
+    if not os.path.exists(EVENTS_FILE):
+        write_unresolved({})
+        return {}
+    unresolved = read_unresolved()
+    for e in events:
+        node = _event_node(e)
+        if "CookError" in e.get("type", ""):
+            msg = (e.get("data") or {}).get("message") or e.get("detail") or "unknown"
+            unresolved[node or "<unknown>"] = {
+                "message": str(msg),
+                "timestamp": e.get("timestamp", 0),
+            }
+        elif _is_cook_success(e) and node in unresolved:
+            del unresolved[node]
+    if prompt and RESOLVED_MARKER.search(prompt):
+        unresolved = {}
+    write_unresolved(unresolved)
+    return unresolved
+
+
+def format_unresolved(unresolved):
+    """One line: 'BLOCKED: N unresolved Houdini cook error(s): /a (msg); /b (msg)'."""
+    items = "; ".join(
+        f"{node} ({entry.get('message', 'unknown')})" for node, entry in sorted(unresolved.items())
+    )
+    return f"BLOCKED: {len(unresolved)} unresolved Houdini cook error(s): {items}"
+
+
+_LAST_HOOK = {"event": "unknown", "session": None, "unresolved": 0}
 
 
 def main():
@@ -164,6 +255,11 @@ def main():
         _LAST_HOOK["session"] = hook_input.get("session_id")
     events = read_new_events()
     context = format_events(events)
+    prompt = hook_input.get("prompt", "") if isinstance(hook_input, dict) else ""
+    unresolved = update_unresolved(
+        events, prompt if hook_event == "UserPromptSubmit" else ""
+    )
+    _LAST_HOOK["unresolved"] = len(unresolved)
 
     if hook_event in ("SessionStart", "startup", "resume"):
         # F6: ping BEFORE reporting connected. Only claim "connected" if the
@@ -185,27 +281,18 @@ def main():
             print(context)
 
     elif hook_event == "Stop":
-        # Quality gate: block if unresolved cook errors
-        errors = get_cook_errors(events)
-        if errors:
-            # Print to stderr so Claude sees the block reason
-            print(
-                f"BLOCKED: {len(errors)} unresolved Houdini cook error(s). "
-                f"Last: {errors[-1].get('data', {}).get('message', 'unknown')}",
-                file=sys.stderr,
-            )
-            sys.exit(1)
+        # Quality gate: block while the persisted unresolved set is non-empty.
+        if unresolved:
+            # stderr so Claude sees the block reason; exit 2 is the blocking code
+            print(format_unresolved(unresolved), file=sys.stderr)
+            sys.exit(2)
         if context:
             print(context)
 
     elif hook_event == "TaskCompleted":
-        # Quality gate: block task completion if cook errors pending
-        errors = get_cook_errors(events)
-        if errors:
-            print(
-                f"Task blocked: {len(errors)} unresolved cook error(s)",
-                file=sys.stderr,
-            )
+        # Same gate as Stop: task completion blocks on unresolved cook errors.
+        if unresolved:
+            print(format_unresolved(unresolved), file=sys.stderr)
             sys.exit(2)
 
     elif hook_event == "PreCompact":
@@ -241,6 +328,7 @@ def _ledger_record(decision, ms):
         import _ledger  # noqa: E402
         _ledger.record(
             _LAST_HOOK["event"], "synapse_hooks_bridge", decision, ms,
+            extra={"unresolved": _LAST_HOOK["unresolved"]},
             session=_LAST_HOOK["session"],
         )
     except Exception:
@@ -250,8 +338,8 @@ def _ledger_record(decision, ms):
 def _run():
     """Wrap main() so every fire records decision + duration.
 
-    Exit codes are passed through UNCHANGED: Stop stays exit 1 and
-    TaskCompleted stays its existing code (those await a ruling, BP9).
+    Exit codes pass through unchanged: Stop and TaskCompleted exit 2 on a
+    non-empty unresolved set (BP9-STOPGATE, ruling 4); everything else exit 0.
     """
     t0 = time.perf_counter()
     decision = "ok"

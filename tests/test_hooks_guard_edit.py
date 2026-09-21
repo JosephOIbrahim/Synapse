@@ -137,6 +137,59 @@ def test_worktree_absolute_path_inside_worktree_allowed(tmp_path):
 
 
 # --------------------------------------------------------------------------
+# narrowed fence (BP9-STOPGATE): deny the main checkout, allow ~/.claude
+# --------------------------------------------------------------------------
+
+FAKE_HOME = "C:/Users/User" if os.name == "nt" else "/home/user"
+
+
+def test_narrowed_fence_denies_main_checkout_from_worktree_cwd(tmp_path):
+    ledger = tmp_path / "hooks.jsonl"
+    wt = FAKE_MAIN + "/.claude/worktrees/wf_narrow-1"
+    main_path = FAKE_MAIN + "/python/synapse/server/handlers.py"
+    proc = _run(GUARD, _hook_json(main_path, cwd=wt), ledger)
+    assert proc.returncode == 0
+    reason = _deny_reason(proc)
+    assert "Worktree fence" in reason and "main checkout" in reason
+
+
+def test_narrowed_fence_allows_auto_memory_file_from_worktree_cwd(tmp_path):
+    """The wave-one fence denied ~/.claude/projects/*/memory/MEMORY.md from
+    every worktree agent (crucible finding). Outside both trees -> allowed."""
+    ledger = tmp_path / "hooks.jsonl"
+    wt = FAKE_MAIN + "/.claude/worktrees/wf_narrow-2"
+    memory = FAKE_HOME + "/.claude/projects/C--Users-User-SYNAPSE/memory/MEMORY.md"
+    proc = _run(GUARD, _hook_json(memory, cwd=wt), ledger)
+    assert proc.returncode == 0
+    assert proc.stdout == "", proc.stdout  # byte-identical allow
+    assert proc.stderr == ""
+
+
+def test_narrowed_fence_allows_global_skills_dir_from_worktree_cwd(tmp_path):
+    ledger = tmp_path / "hooks.jsonl"
+    wt = FAKE_MAIN + "/.claude/worktrees/wf_narrow-3"
+    skill = FAKE_HOME + "/.claude/skills/codebase-transition/SKILL.md"
+    proc = _run(GUARD, _hook_json(skill, cwd=wt), ledger)
+    assert proc.returncode == 0 and proc.stdout == ""
+
+
+def test_narrowed_fence_still_denies_main_checkout_dot_claude(tmp_path):
+    """<main>/.claude/settings.json is inside the main checkout: still fenced."""
+    ledger = tmp_path / "hooks.jsonl"
+    wt = FAKE_MAIN + "/.claude/worktrees/wf_narrow-4"
+    settings = FAKE_MAIN + "/.claude/settings.json"
+    assert "Worktree fence" in _deny_reason(_run(GUARD, _hook_json(settings, cwd=wt), ledger))
+
+
+def test_narrowed_fence_pattern_list_still_applies_outside_both_trees(tmp_path):
+    """Outside both trees is not a free pass: the pattern list runs next."""
+    ledger = tmp_path / "hooks.jsonl"
+    wt = FAKE_MAIN + "/.claude/worktrees/wf_narrow-5"
+    prefs = FAKE_HOME + "/Documents/houdini22.0/packages/synapse.json"
+    assert "Houdini prefs" in _deny_reason(_run(GUARD, _hook_json(prefs, cwd=wt), ledger))
+
+
+# --------------------------------------------------------------------------
 # houdini22.0 prefs tree
 # --------------------------------------------------------------------------
 
@@ -254,11 +307,14 @@ def test_bridge_records_fire_and_keeps_exit_code(tmp_path):
     assert rows[0]["session"] == "bridge-s"
 
 
-def test_bridge_stop_and_taskcompleted_exit_codes_unchanged():
+def test_bridge_stop_and_taskcompleted_both_block_with_exit_2():
+    """BP9-STOPGATE (ruling 4): Stop moved from exit 1 to the blocking exit 2,
+    TaskCompleted stays exit 2, and nothing else in the bridge exits non-zero.
+    Behaviour is driven end-to-end in tests/test_hooks_stop_gate.py."""
     src = BRIDGE.read_text(encoding="utf-8")
     stop = src.split('elif hook_event == "Stop":', 1)[1].split("elif", 1)[0]
     task = src.split('elif hook_event == "TaskCompleted":', 1)[1].split("elif", 1)[0]
-    assert "sys.exit(1)" in stop
+    assert "sys.exit(2)" in stop
     assert "sys.exit(2)" in task
-    assert src.count("sys.exit(2)") == 1
-    assert src.count("sys.exit(1)") == 1
+    assert src.count("sys.exit(2)") == 2
+    assert "sys.exit(1)" not in src

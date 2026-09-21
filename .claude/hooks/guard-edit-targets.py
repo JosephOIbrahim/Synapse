@@ -11,11 +11,15 @@ Fail-closed (BP9-HOOKS): malformed JSON, missing file_path, or ANY exception
 denies with a one-line reason. The old hook allowed on error; that let a
 broken hook silently wave through edits to deployed copies.
 
-Worktree fence (BP9-HOOKS): when the cwd is under a ``.claude/worktrees/``
-path, any Edit/Write whose file_path resolves outside that worktree is
-denied. This is the "worktree absolute path hits main tree" trap: an agent
-dispatched into a worktree edits ``C:/Users/User/SYNAPSE/...`` and lands the
-change in the main checkout instead.
+Worktree fence (BP9-HOOKS, narrowed BP9-STOPGATE): when the cwd is under a
+``.claude/worktrees/`` path, any Edit/Write whose file_path resolves INSIDE
+the main checkout (the path prefix before ``/.claude/worktrees/``) but NOT
+inside the current worktree is denied. This is the "worktree absolute path
+hits main tree" trap: an agent dispatched into a worktree edits
+``C:/Users/User/SYNAPSE/...`` and lands the change in the main checkout
+instead. Paths outside both trees (``~/.claude/projects/*/memory/MEMORY.md``,
+``~/.claude/skills``) stay allowed -- the wave-one fence denied those too,
+which starved the auto-memory file from every worktree agent.
 
 Every fire is recorded to the hook ledger (``_ledger.record``); the ledger
 never raises and never influences the decision.
@@ -81,6 +85,24 @@ def worktree_root(cwd):
     return norm[: idx + len(WORKTREES_MARKER)] + name
 
 
+def main_checkout(cwd):
+    """Return the main checkout root (prefix before /.claude/worktrees/), else None.
+
+    Path-derived, no git subprocess: the marker sits inside the main
+    checkout's own .claude/ dir, so the prefix IS the parent of
+    ``git rev-parse --git-common-dir``.
+    """
+    norm = _norm(cwd)
+    idx = norm.find(WORKTREES_MARKER)
+    if idx < 0:
+        return None
+    return norm[:idx]
+
+
+def _inside(target, root):
+    return target == root or target.startswith(root + "/")
+
+
 def decide(data, cwd):
     """Pure decision: (decision, reason). Raises on malformed input."""
     if not isinstance(data, dict):
@@ -93,14 +115,18 @@ def decide(data, cwd):
         raise ValueError("hook input has no file_path")
 
     # Fence first: the most specific reason wins when cwd is a worktree.
+    # Narrowed (BP9-STOPGATE): deny only main-checkout paths outside this
+    # worktree. ~/.claude/**, memory files and other trees stay allowed.
     root = worktree_root(cwd)
     if root is not None:
         target = _norm(file_path, base=cwd)
-        if target != root and not target.startswith(root + "/"):
+        main = main_checkout(cwd)
+        if main and _inside(target, main) and not _inside(target, root):
             return "deny", (
                 f"Worktree fence: cwd is inside worktree {root} but file_path "
-                f"resolves outside it ({target}). Use a relative path inside the worktree; "
-                f"absolute paths into the main tree edit a different checkout."
+                f"resolves into the main checkout {main} ({target}). Use a relative "
+                f"path inside the worktree; absolute paths into the main tree edit a "
+                f"different checkout."
             )
 
     for pattern in BLOCKED_PATTERNS:
