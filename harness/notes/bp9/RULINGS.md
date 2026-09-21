@@ -91,3 +91,21 @@ The tracking half of R3-B is already applied: both `caption` and `status` derive
 tracking from `TRACKING_EM` at their own size, so a tracking change now has one
 owner instead of two hand-picked values.
 
+### Second open question (raised 2026-09-21 by PNL-L5)
+
+| id | the brief as written | what the geometry says | what shipped |
+|---|---|---|---|
+| L5-CPL-BAND | the measurement probe must print four characters-per-line corners, all inside 45-75 | At the narrowest dock the lower bound is **unreachable, not merely unmet**. The transcript column IS the 340px dock, and the probe measures 7.7px per character at Aa 1.00, so 45 characters need 346px -- wider than the dock itself -- and 572px at Aa 1.60. | A sound probe. It measures rendered QTextLines, exits 0, reds at 90, and reports both narrow corners as PANE-LIMITED by name rather than pretending they pass. Measured corners: 44.4 and 26.9 cpl at 340px; 59.2 and 60.5 at 1100px. |
+
+**Three ways to close it, your call:**
+
+1. **Floor the band by width.** 45-75 applies only above some dock width; below it the
+   probe asserts PANE-LIMITED and nothing else. Keeps the band honest where it can hold.
+2. **Drop the lower bound for a pane-limited column.** The upper bound still bites at 90.
+3. **Change the panel, not the band.** A 340px dock cannot show 45 characters at this size;
+   only a smaller type size or a wider minimum dock would, and both are larger decisions.
+
+The two wide corners already sit inside the band, so this is a question about narrow docks
+only. Nothing in the probe was weakened to get here -- the verifier reproduced every number
+under hython within rounding.
+
