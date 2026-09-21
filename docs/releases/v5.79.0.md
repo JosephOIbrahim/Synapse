@@ -1,6 +1,6 @@
 # v5.79.0 -- one Commands list, and six dead gates
 
-**Product change.** {{PRODUCT_DIFF}} (`python scripts/product_surface.py --diff v5.78.0 HEAD`).
+**Product change.** 47 files, +3181/-158 -- but 33 of those files are BP10's vendored third-party guides (+1931, documentation, no code). The panel work itself is **14 files, +1250/-158** (`python scripts/product_surface.py --diff v5.78.0 HEAD`).
 
 **No new installer in this release.** The `SYNAPSE-5.75.2-Setup.exe` the README links is the last built installer and does **not** carry these changes. An installer build is a separate, later act.
 

@@ -24,7 +24,7 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.79.0 - One Commands list, and six dead gates
 
-*Product change in `python/synapse/panel/` (tool_palette, command_palette, synapse_panel, designsystem/qss, designsystem/tokens, designsystem/rhythm, message_formatter) plus a new first-click probe under `panel/scripts/`. Product-surface diff v5.78.0..v5.79.0: {{PRODUCT_DIFF}}.*
+*Product change in `python/synapse/panel/` (tool_palette, command_palette, synapse_panel, designsystem/qss, designsystem/tokens, designsystem/rhythm, message_formatter) plus a new first-click probe under `panel/scripts/`. Product-surface diff v5.78.0..v5.79.0: 47 files, +3181/-158 -- but 33 of those files are BP10's vendored third-party guides (+1931, documentation, no code). The panel work itself is **14 files, +1250/-158**.*
 
 **ONE COMMANDS LIST, ORDERED BY A DECISION.** The overflow action said "Palette" while the rest of the panel said something else, and rows arrived in alphabetical order. The name is now Commands everywhere; every row carries a group, a head and an order, and `tool_palette._load_entries` sorts on (group rank, hand order, context, verb, title). Adding a band means giving its rows a group, not re-sorting the list. The five commands the panel answers itself are a single frozen set (`command_palette.PANEL_ANSWERED_COMMANDS`) with a `panel_answered` field set at the one build path, so the list and the handler cannot drift. `/restore-session` had been intercepted by the panel since W7-SESSCOPE and never listed; adding it is what makes the panel group five, and it corrected the brief's "20 rows" to 21.
 
