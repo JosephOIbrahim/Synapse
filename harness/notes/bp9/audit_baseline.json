@@ -1,0 +1,13 @@
+{
+ "_why": "Failures the strict panel audit reports at this commit. The ratchet lets these stand and refuses anything new. Delete a row in the same commit that fixes it.",
+ "failures": [
+  {
+   "check": "no bundled font in QSS",
+   "owner": "PNL-L2 (qss.py is its territory)"
+  },
+  {
+   "check": "⌘K folded into input",
+   "owner": "PNL-L3A (the Commands surface owns the composer telling)"
+  }
+ ]
+}
