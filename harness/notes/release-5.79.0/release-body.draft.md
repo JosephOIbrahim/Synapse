@@ -1,4 +1,4 @@
-# v5.79.0 -- one Commands list, and five dead gates
+# v5.79.0 -- one Commands list, and six dead gates
 
 **Product change.** {{PRODUCT_DIFF}} (`python scripts/product_surface.py --diff v5.78.0 HEAD`).
 
@@ -35,22 +35,37 @@
 
 **A fifth dead gate, found by rehearsing.** Running the composed gate on a trial integration before the graph finished caught `panel_gate.py` matching only `G3 RESULT: <n> FAIL` -- the audit prints `G3 RESULT: pass` when nothing fails, so a fully green audit parsed as a crash. A gate that cannot recognise success is as dead as one that cannot pass.
 
+**And a sixth: the instrument that replaced the other five was lying the same way.** The composed gate's three hython probe rows never set `HOUDINI_PACKAGE_DIR`, so every one of them imported the panel from the main checkout and reported on code the integration does not contain. Two of those rows had been reading PASS. `panel_gate.py`, two rows above in the same script, was proving its own tree correctly the whole time.
+
+It surfaced by accident: a probe called a helper that exists on the branch and not on master, and the resulting attribute error gave it away. Without that accident this release would have been cut on three green rows measured against the wrong tree.
+
+The rule that came out of it is now a gate row of its own, placed first: print the path the interpreter actually imported from, and fail unless it is the tree under test. Every later row is void unless that one is green. A convention inside one helper was not enough, because the next row added did not copy it.
+
 **A read-only probe was eating the artist's parked session.** The first-click probe's own docstring claimed READ-ONLY. Its adversarial verifier disproved that half and proved it: `SYNAPSE_PANEL_SETTINGS` isolates the panel's settings only, while the conversation store resolves from the HIP directory, so merely constructing the panel parked the live conversation and destroyed whatever was already parked there. Seeded with a live conversation and an older parked one, the probe left the live slot empty and the older one gone. Repaired, both survive byte-intact. Pinned by a test that needs neither Qt nor hython.
 
 **Every verifier said no, and every verifier was right.** Three legs came back SOUND-WITH-NITS with `merge_ready` false, each writing in its notes that the leg itself was clean and the red was pre-existing -- one of them reproduced master's identical failures in an independent worktree to prove it. The composed gate now waives exactly the two proven-dead predicates, mechanically; anything else a verifier failed still refuses the leaf.
 
-**The composed gate found two reds no leg could see.** Each leg runs only the tests its acceptance names, so a leg cannot catch what it breaks elsewhere. Running the whole suite over the integrated leaves caught both:
+**The composed gate found five reds no leg could see.** Each leg runs only the tests its own acceptance names, so a leg cannot catch what it breaks elsewhere. Every leg was green alone. Running the whole suite over the merged tree, three times, caught all of these:
 
 - The new first-click probe emitted `print()` eleven times, which a pin forbids anywhere under the package. The convention already existed one directory over, where a sibling probe writes through a helper on stdout. The probe now does the same, so the pin stays intact rather than being widened.
-- Moving the slash telling into the composer changed a constructor that a *second* pin holds verbatim. The leg amended the first pin and missed this one. Declared through the mechanism that file already provides, with the entry generated from the real sources rather than hand-typed. The change is not optional: the audit check that the leg cleared requires the telling to ride there.
+- Moving the slash telling into the composer changed a constructor that a *second* pin holds verbatim. The leg amended the first pin and missed this one. Declared through the mechanism that file already provides, with the entry generated from the real sources rather than hand-typed. The change is not optional: the audit check that leg cleared requires the telling to ride there.
+- The transcript measure overshot its own 66-character constant. Sizing the column with Qt's average character width averages the whole glyph set, including capitals and symbols prose barely uses; once the type scale moved the metrics, a 630 pixel column rendered 75.2 characters per line, outside the very band the constant exists to hold. It now measures a prose sample, so the ruled 66 stays ruled rather than being quietly retuned.
+- That probe also added two rhythm owners, under a ratchet whose own policy says ceilings may only decrease. Tagging spends the residual and raising the cap is the one move the policy forbids, so the probe now applies its stylesheet and margins through the design system, which is where that ownership is supposed to live.
+- A third rhythm pin, in a file no leg touched, still named the shared keys the transcript had stopped borrowing. Amended by declaration at three sites.
 
-Both were proven by deliberate break and both files restored byte-identical.
+Every one was proven by deliberate break, and every file restored byte-identical.
 
-## One ruling needs your word
+## Two rulings need your word
+
+Both are the same shape, and it is the shape I want: a leg measured the instruction against the code before applying it, found applying it literally would do harm, shipped the honest half, and said so. Neither is a leg falling short.
 
 **R3-B asked for the quiet voice in caps, and the leg refused with evidence.** R3-B reads "quiet = caps + tracking in sans 500 at body size". Measured against the code, the caption role is handed whole sentences at about twenty call sites, including consent copy in the connection dialog and the project-rules explanation. Upper-casing a paragraph is the opposite of the readability the leg exists for.
 
 So the mechanism ships wired and tested and the set ships empty, saying so in the code. It is unblocked either by splitting the caption role into a metadata chip and explanatory prose, or by your ruling. Adding one word to the set is then the whole change.
+
+**The measurement band cannot hold at the narrowest dock.** The brief asked for four characters-per-line corners all inside 45 to 75. At a 340 pixel dock the transcript column is the dock, and the probe measures 7.7 pixels per character, so 45 characters would need 346 pixels. More than the dock is wide, and 572 pixels at the larger text size.
+
+The probe ships sound: it measures rendered text lines, reds at 90, and reports both narrow corners as pane-limited by name instead of pretending they pass. The two wide corners already sit inside the band. What needs your word is the band itself: floor it by dock width, drop the lower bound for a pane-limited column, or change the panel rather than the band. All three are written up in the rulings file.
 
 ## Rulings that shaped this release
 

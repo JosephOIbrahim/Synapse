@@ -72,10 +72,17 @@ pre-flight after the FINAL `--merge`, not before; each rebuild can add new colli
 
     edit VERSION -> 5.79.0
     python scripts/sync_version.py --write     # six surfaces
-    sed the README banner: "tags: v5.79.0 is Latest"
-    README "New in 5.79.0" block + the release-notes link
-    CHANGELOG entry
-    docs/releases/v5.79.0.md  with {{PRODUCT_DIFF}} left as a placeholder
+    python harness/notes/release-5.79.0/apply_docs.py --apply --not-landed "<md>"
+
+`apply_docs.py` does the README banner and "is Latest" tag, the "New in 5.79.0" block, the
+release-notes links, the CHANGELOG entry and docs/releases/v5.79.0.md, leaving
+`{{PRODUCT_DIFF}}` as a placeholder. It asserts every anchor, so a drifted README fails loud
+rather than writing nothing.
+
+**The two scripts overlap on one line and the rehearsal found it.** `sync_version.py --write`
+rewrites the banner's VERSION but not its `tags: ... is Latest`, so whichever runs second
+meets an anchor the other consumed. `apply_docs` is now idempotent on that line and either
+order works.
 
 Also stage the evidence this work produced and the main tree still holds untracked or modified:
 `docs/design/PANEL_TYPE_AND_COMMANDS_2026-09-21.md`, `harness/notes/bp9/RULINGS.md`,
