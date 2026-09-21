@@ -1,0 +1,11 @@
+= Auto Sleep =
+
+"""Puts inactive MPM particles to sleep for performance."""
+
+== Overview ==
+
+The MPM solver can put quiescent particles to sleep. Use the [Node:sop/mpmsource] to
+emit, then enable auto-sleep on the solver.
+
+NOTE:
+    Sleeping particles wake on collision.

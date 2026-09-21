@@ -1,0 +1,11 @@
+{
+  "build": "22.0.400",
+  "scope_count": 55,
+  "page_count": 11460,
+  "chunk_count": 36168,
+  "quarantine_count": 106,
+  "ingest_ts": "2026-09-21T16:59:43+00:00",
+  "help_archive_sha": "a7b990e642f4da965f8c6cece23754ede8dbbd1f40d25bfffa62b221f3d1e4f6",
+  "producer": "hython rag/ingest/help_archive.py --build",
+  "licence_note": "corpus chunks are SideFX-EULA and gitignored; this stamp is committed"
+}

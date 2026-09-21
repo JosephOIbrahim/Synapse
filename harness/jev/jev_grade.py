@@ -87,10 +87,82 @@ def grade(waves: list[str]) -> int:
     return 0
 
 
+# --------------------------------------------------------------------------- #
+#  --guard rerank: grade JEV-RERANK against the probes' expected outcomes       #
+# --------------------------------------------------------------------------- #
+def ledgered_rerank(wave):
+    """query-prefix -> {hit_i: rel choice} from ok rerank rows; plus (ok, fallback) counts.
+    Zero new Jev calls: it replays what jev_rerank already ledgered."""
+    out, ok, fb = {}, 0, 0
+    p = LEDGER / f"{wave}.rerank.jsonl"
+    if not p.exists():
+        return out, ok, fb
+    for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if r.get("guard") != "rerank":
+            continue
+        if r.get("result") == "ok" and r.get("answers"):
+            ok += 1
+            leg = r.get("leg", "")
+            if "#" in leg:
+                qpref, hi = leg.rsplit("#", 1)
+                rel = (r["answers"].get("choices", {}).get("rel_quality") or {}).get("choice")
+                out.setdefault(qpref, {})[hi] = rel
+        elif r.get("result") in ("fallback", "disabled"):
+            fb += 1
+    return out, ok, fb
+
+
+def grade_rerank(waves):
+    """Agreement of the ledgered rel judgments against each probe's expected outcome: a
+    no-answer probe must return NO hit judged `answers`; an answerable probe's top hit should
+    be `answers`/`on_topic`. Unjudged (no key) -> nothing to grade, reported honestly."""
+    import jev_rerank as jr  # local import: only needed for this guard
+    probes = jr.load_probes()
+    policy = jc.load_questions()["guards"]["rerank"].get("policy", {})
+    total_ok = total_fb = graded = agree = 0
+    header_printed = False
+    for w in waves:
+        rels, ok, fb = ledgered_rerank(w)
+        total_ok += ok
+        total_fb += fb
+        if not ok:
+            continue
+        if not header_printed:
+            print(f"{'probe':46} {'expect':11} {'top rel':14} verdict")
+            header_printed = True
+        for p in probes:
+            hits = rels.get(p["query"][:48])
+            if not hits:
+                continue
+            graded += 1
+            top = hits.get("0")
+            ok_probe = (not any(v == "answers" for v in hits.values())) \
+                if p["expect"] == "no_answer" else (top in ("answers", "on_topic"))
+            agree += bool(ok_probe)
+            print(f"{p['query'][:46]:46} {p['expect']:11} {str(top):14} {'agree' if ok_probe else 'MISS'}")
+    if total_ok == 0:
+        print(f"unjudged: {total_fb} fallback row(s), 0 judged answers in "
+              f"{','.join(waves)}.rerank.jsonl -- nothing to grade "
+              f"(run `python harness/jev/jev_rerank.py --shadow` with a TYPESAFE_API_KEY).")
+        return 0
+    print(f"\nagreement: {agree}/{graded} probes on their expected outcome "
+          f"(answers_min={policy.get('answers_min')}). Evidence for a scope_weights edit, not a ruling.")
+    return 0
+
+
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--wave", action="append", help="grade one wave (repeatable); default: every wave with a screen ledger")
+    ap.add_argument("--guard", default="screen", choices=["screen", "rerank"],
+                    help="which guard to grade (default: screen)")
+    ap.add_argument("--wave", action="append", help="grade one wave (repeatable); default: "
+                    "every wave with a screen ledger, or bp10 for rerank")
     a = ap.parse_args()
+    if a.guard == "rerank":
+        sys.exit(grade_rerank(a.wave or ["bp10"]))
     waves = a.wave or sorted({p.name.split(".")[0] for p in LEDGER.glob("*screen.jsonl")})
     sys.exit(grade(waves))

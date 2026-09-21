@@ -1,0 +1,10 @@
+= Callouts =
+
+NOTE:
+    This is a note callout.
+
+TIP:
+    This is a tip.
+
+WARNING:
+    Going below 0.01 can cause fireflies.

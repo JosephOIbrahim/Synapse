@@ -1,0 +1,11 @@
+#type:     node
+#context:  sop
+#internal: frobnicator
+
+= Frobnicator =
+
+"""Frobnicates the input (does not exist on this build)."""
+
+== Overview ==
+
+The [Node:sop/frobnicator] is a planted phantom reference used to prove the gate.

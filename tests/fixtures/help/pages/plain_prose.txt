@@ -1,0 +1,9 @@
+= Introduction to Houdini =
+
+== Overview ==
+
+Houdini is a procedural package. Working in Houdini involves creating networks of
+nodes connected together that describe the steps to accomplish a task.
+
+* You can go back and change earlier nodes.
+* Changes propagate through the network.

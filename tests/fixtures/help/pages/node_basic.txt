@@ -1,0 +1,21 @@
+#type:     node
+#context:  sop
+#internal: scatter
+#icon:     SOP/scatter
+#since: 12.0
+
+= Scatter =
+
+"""Scatters new points across a surface."""
+
+The Scatter SOP generates points on the surface of the input geometry.
+
+@parameters
+
+== Generation ==
+
+Force Total Count:
+    #id: usemaxpts
+    Use an exact number of output points.
+
+See also [Node:sop/scatter] for the current node.
