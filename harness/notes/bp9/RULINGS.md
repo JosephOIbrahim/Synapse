@@ -66,3 +66,28 @@ found three things a release-day run would have hit cold:
 3. **The instruments had to be merged first.** `pnl/gate-fix` is now merged ahead of any
    leaf, so the gate judging the integration is the current one rather than whatever
    version a leaf inherited when it branched.
+
+## OPEN — needs Joe's word (raised 2026-09-21 by PNL-L4)
+
+| id | the ruling as written | what the code says | what shipped |
+|---|---|---|---|
+| R3-B-CAPS | "quiet = caps + tracking in sans 500 at body size" | `caption` is not the tiny-label role the ruling describes. It is handed whole SENTENCES at about twenty call sites: the connection dialog's consent copy ("The check sends credentials and asks for model metadata only..."), project_rules ("Allowed background requests may send prompts, conversation, scene context..."), notifications, saved_recipes, and tool_palette's empty state. | The MECHANISM, wired and tested: `tokens.ROLE_CAPS`, read by `components.apply_font_role`, verified live to reach `QFont.Capitalization.AllUppercase` when armed. The SET ships **empty**, and the code says why. |
+
+**Why it was not just done.** Upper-casing a paragraph is the opposite of the
+readability this leg exists for, and doing it silently under a ruling written for
+chips would have been the wrong kind of obedience. The leg measured first and
+declared the gap instead of half-applying it.
+
+**Three ways to close it, your call:**
+
+1. **Split the role.** `caption` becomes a metadata chip (caps, tracking) and a
+   separate prose role for explanatory sentences. Most faithful to R3-B, most work.
+2. **Narrow the ruling.** R3-B applies to the chip voice only; prose captions stay
+   sentence case. Then `ROLE_CAPS` gains the chip role and nothing else.
+3. **Apply as written.** Add `"caption"` to `ROLE_CAPS` — a one-word change — and
+   accept ALL CAPS consent copy in the connection dialog.
+
+The tracking half of R3-B is already applied: both `caption` and `status` derive
+tracking from `TRACKING_EM` at their own size, so a tracking change now has one
+owner instead of two hand-picked values.
+
