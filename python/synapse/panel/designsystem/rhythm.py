@@ -33,8 +33,12 @@ logger = logging.getLogger(__name__)
 #           unchanged, and no other surface reads these two.
 ROLE_GAPS = {
     "label": tokens.SPACE_GRID[2],
-    "turn": tokens.SPACE_GRID[4],
-    "turn_same": tokens.SPACE_GRID[1],
+    # READABILITY (Joe, 2026-09-21): both doubled, and both stay ON the grid --
+    # 24 -> 48 is SPACE_GRID[4] -> [6], 8 -> 16 is [1] -> [3]. These two keys are
+    # the TRANSCRIPT's own (PNL-L5); the shared "group"/"row" keys are untouched, so
+    # cards, parameter rows and the rail do not move with the chat.
+    "turn": tokens.SPACE_GRID[6],
+    "turn_same": tokens.SPACE_GRID[3],
     "row": tokens.SPACE_GRID[2],
     "tag": tokens.SPACE_GRID[3],
     "card": tokens.SPACE_GRID[3],

@@ -221,24 +221,67 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             # its HTML colours survive insertHtml into each fragment's
             # charFormat, so there is nothing for this pass to paint.
             if bf.property(QtGui.QTextFormat.UserProperty + 1) in ("SYNAPSE", "YOU"):
-                cursor.select(QtGui.QTextCursor.BlockUnderCursor)
-                # PNL-L5 (R3-D): sans 500, ALL CAPS, LABEL_SM tracking. This
-                # asked MONO for weight 500 — Space Mono ships Regular and
-                # Bold only, so Qt had to synthesise or ignore the Medium and
-                # the row never drew the weight it declared. The bundled sans
-                # has a real 500. Tracking lives here, in the ONE tracked
-                # font, so the formatter's inline tracking could go.
+                # PNL-L5 (R3-D) gave the speaker label sans 500 on LABEL_SM
+                # tracking. It asked MONO for weight 500 -- Space Mono ships
+                # Regular and Bold only, so Qt had to synthesise or ignore the
+                # Medium and the row never drew the weight it declared. The
+                # bundled sans has a real 500. Tracking lives here, in the ONE
+                # tracked font, so the formatter's inline tracking could go.
+                #
+                # READABILITY FIX (Joe, 2026-09-21). Two things were wrong.
+                #
+                # 1. SCOPE. select(BlockUnderCursor) selected the WHOLE BLOCK
+                #    and merged this font across it. The speaker label, the
+                #    timestamp and the MESSAGE BODY share one block, so every
+                #    word of every message rendered ALL CAPS at weight 500.
+                #    Measured on the shipped v5.79.0: six of six fragments came
+                #    back AllUppercase. The format now reaches the label
+                #    fragment only, which is all it was ever for.
+                # 2. CASE. Joe: "use sentence-case". The caps came from R3-B's
+                #    "quiet = caps + tracking", written for tiny chips; applied
+                #    to a transcript it is the opposite of readable, and this
+                #    is the ruling that settles the question L4 escalated. The
+                #    label keeps its tracking and its 500 -- it is a label --
+                #    and loses the uppercase.
                 font = fontload.tracked_font("LABEL_SM", t.SIZE_SMALL,
                                              scale=self._font_scale, mono=False,
                                              weight=t.WEIGHT_MEDIUM)
-                # Same idiom rhythm._apply_type uses: the enum off the
-                # instance's own class, so PySide2 seats resolve it too.
-                font.setCapitalization(type(font).AllUppercase)
                 fmt = QtGui.QTextCharFormat()
                 fmt.setFont(font)
-                cursor.mergeCharFormat(fmt)
+                self._format_speaker_label_only(block, fmt)
             block = block.next()
         self._document_density = density
+
+    def _format_speaker_label_only(self, block, fmt):
+        """Apply *fmt* to the speaker-label run of *block*, never to the body.
+
+        The label, the timestamp and the message body live in ONE block, so a
+        BlockUnderCursor selection reaches all three. The label is the leading
+        run: the formatter emits the coloured dot and the speaker word first.
+        We walk fragments from the start and stop at the first one that is not
+        part of that run, so a body that happens to begin with the speaker's
+        name cannot pull the label format over itself either.
+        """
+        doc = self.document()
+        it = block.begin()
+        while not it.atEnd():
+            frag = it.fragment()
+            it += 1
+            if not frag.isValid():
+                continue
+            text = frag.text().strip()
+            if not text:
+                continue
+            # the label run is the dot and the speaker word, nothing after it
+            bare = text.lstrip("●• ").strip()
+            if bare.upper() not in ("SYNAPSE", "YOU"):
+                return
+            c = QtGui.QTextCursor(doc)
+            c.setPosition(frag.position())
+            c.setPosition(frag.position() + frag.length(),
+                          QtGui.QTextCursor.MoveMode.KeepAnchor)
+            c.mergeCharFormat(fmt)
+            return
 
     def event(self, event):
         result = super().event(event)
@@ -321,7 +364,9 @@ class ChatDisplay(QtWidgets.QTextBrowser):
     _MEASURE_SAMPLE = ("the artist asked for a wider dock and the transcript held its "
                        "measure so the line did not run on past where the eye returns")
 
-    _MEASURE_CHARS = 66          # middle of the comfortable band
+    # READABILITY (Joe, 2026-09-21): the centre column widened 10%, 66 -> 73
+    # characters. Still inside the 45-75 band the probe checks, with 2 to spare.
+    _MEASURE_CHARS = 73          # 66 + 10%, still mid-band
     _MEASURE_MIN_PX = 460        # never narrower than the old rule
     _MEASURE_MAX_PX = 1100       # never a full-bleed wall of text
 

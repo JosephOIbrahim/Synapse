@@ -17,6 +17,11 @@ except ImportError:  # pragma: no cover - Houdini ships PySide6
 
 from . import tokens as t
 from . import fontload
+# Module level, NOT inside apply_stylesheet. A lazy import there ran while the
+# panel's ws_bridge off-main thread held the import lock and the seat suite died
+# with a Windows access violation in importlib._bootstrap.acquire (2026-09-21).
+# qss imports only tokens, so there is no cycle to avoid here.
+from . import qss
 
 __all__ = [
     "Button", "Pill", "Card", "Badge", "StatusDot", "MarkDot", "ProgressBar",
@@ -408,6 +413,5 @@ def apply_stylesheet(widget, scale: float = t.FONT_SCALE_DEFAULT) -> None:
     byte-for-byte and its file must end on its own marker; components.py is
     already where the apply_* helpers live.
     """
-    from synapse.panel.designsystem import qss
     widget.setStyleSheet(qss.stylesheet(scale))
 

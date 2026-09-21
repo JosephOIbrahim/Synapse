@@ -236,6 +236,14 @@ def _inline_markdown(text, font_scale):
         value = re.sub(r"\*\*([^*\n]+)\*\*", r"<strong>\1</strong>", value)
         value = re.sub(r"(?<!\w)__([^_\n]+)__(?!\w)", r"<strong>\1</strong>", value)
         value = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", value)
+        # Any ** still standing here is UNPAIRED within this segment, and the usual
+        # reason is that whatever it wrapped became an atom: "**/stage/lookdev**"
+        # splits into "**", the node-path chip, "**", so neither half ever meets its
+        # partner and the artist reads literal asterisks. Seen in the live panel
+        # 2026-09-21 on "**/STAGE/LOOKDEV**" and "**GEOMETRY**".
+        # Joe asked to un-bold the transcript, so the stranded markers are REMOVED
+        # rather than promoted to <strong>: the chip's own colour is the emphasis.
+        value = value.replace("**", "")
         return value
 
     out, pos = [], 0

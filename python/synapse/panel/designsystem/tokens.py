@@ -728,7 +728,12 @@ def gap(base_px, density="standard"):
 # message_formatter.py:43). Expressed in POINTS to match the request; converted
 # to the device-independent px the QTextDocument lays out in at Qt's 96-DPI
 # logical default (1pt = 96/72 px), so +0.75pt = +1.0px of leading per line.
-CHAT_LEADING_PT = 0.75
+# READABILITY (Joe, 2026-09-21): doubled from 0.75pt. Measured on the shipped
+# v5.79.0 transcript at SIZE_BODY 12: the line-to-line step was 17.00px, a ratio of
+# 1.42x the font size, UNDER the 1.50x that WCAG 1.4.12 asks for body text. Doubling
+# the added distance takes the step to 18px and the ratio to exactly 1.50x. The
+# doubling and the standard happen to land on the same number; both are the reason.
+CHAT_LEADING_PT = 1.50
 
 
 def chat_leading_px(pt=None):

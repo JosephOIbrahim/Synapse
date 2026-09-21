@@ -33,12 +33,25 @@ from synapse.panel.designsystem import tokens as t
 # ----------------------------------------------------------------------
 
 def test_leading_token_is_075pt():
-    assert t.CHAT_LEADING_PT == 0.75
+    """Amended by declaration, READABILITY (Joe, 2026-09-21).
+
+    Was 0.75pt. Joe asked to double the transcript's vertical spacing after reading
+    the live panel: "tightly spaced ... hard for neurodivergent users to read."
+    Measured before the change at SIZE_BODY 12: a 17.00px line-to-line step, a ratio
+    of 1.42x the font size, UNDER the 1.50x WCAG 1.4.12 asks of body text. Doubling
+    the added distance takes the step to 18px and the ratio to exactly 1.50x, so the
+    doubling and the accessibility minimum land on the same number.
+
+    The name keeps its history rather than being renamed away from it.
+    """
+    assert t.CHAT_LEADING_PT == 1.50
 
 
 def test_leading_px_is_pt_at_96dpi_and_positive():
-    # 0.75pt at Qt's 96-DPI logical default = 1.0px exactly.
-    assert t.chat_leading_px() == pytest.approx(0.75 * 96.0 / 72.0)
+    # Amended by declaration, READABILITY (Joe, 2026-09-21): 0.75pt -> 1.50pt.
+    # 1.50pt at Qt's 96-DPI logical default = 2.0px exactly. The conversion is what
+    # this test pins; the token it reads is pinned above, with the measurement.
+    assert t.chat_leading_px() == pytest.approx(1.50 * 96.0 / 72.0)
     assert t.chat_leading_px() > 0
     # explicit pt argument scales linearly
     assert t.chat_leading_px(1.5) == pytest.approx(1.5 * 96.0 / 72.0)
