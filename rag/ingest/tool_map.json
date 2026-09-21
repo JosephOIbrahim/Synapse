@@ -1,339 +1,1719 @@
 {
-  "_comment": "fxhoudinimcp tool references extracted from 31 guide files (2026-09-21). Values are populated by BP10-GUIDES. Keys extracted via: grep -oh '\\`[a-z_][a-z0-9/_]*\\`' python/synapse/_vendor/fxhoudinimcp/guides/*.md",
-  "anim/anim_camera": null,
-  "anim/anim_styles": null,
-  "anim/animationtoolbar": null,
-  "anim/autokey": null,
-  "anim/basics": null,
-  "anim/bookmarks": null,
-  "anim/convert_keys": null,
-  "anim/cycling": null,
-  "anim/faq": null,
-  "anim/flipbook": null,
-  "anim/keying_strings": null,
-  "anim/playbar": null,
-  "assets/advanced_otl": null,
-  "assets/create": null,
-  "assets/namespaces": null,
-  "assets/versioning_systems": null,
-  "cancel_top_cook": null,
-  "capture_screenshot": null,
-  "character/": null,
-  "character/charpicker": null,
-  "character/index": null,
-  "character/kinefx/animationgraphs": null,
-  "character/kinefx/animationlayers": null,
-  "character/kinefx/animationworkflow": null,
-  "character/kinefx/apexgraphbasics": null,
-  "character/kinefx/apexgraphdebugger": null,
-  "character/kinefx/apexscriptbasics": null,
-  "character/kinefx/index": null,
-  "character/poselibrary": null,
-  "character/rigtreeview": null,
-  "composite/_old_cops_deprecated": null,
-  "composite/blur_sharpen": null,
-  "composite/color_correct": null,
-  "composite/comp_terms": null,
-  "composite/comp_vops": null,
-  "composite/distort": null,
-  "composite/export": null,
-  "composite/index": null,
-  "composite/keying": null,
-  "composite/layers": null,
-  "composite/lens_effects": null,
-  "composite/load": null,
-  "composite/luts": null,
-  "composite/masks": null,
-  "composite/mattes": null,
-  "composite/multi": null,
-  "composite/performance": null,
-  "composite/planes": null,
-  "composite/save": null,
-  "composite/tips": null,
-  "connect_nodes": null,
-  "connect_nodes_batch": null,
-  "cook_top_node": null,
-  "copernicus/glossary": null,
-  "copernicus/hatching": null,
-  "copernicus/intro": null,
-  "copernicus/normals": null,
-  "copernicus/reaction_diffusion": null,
-  "copernicus/slap_comp": null,
-  "copernicus/spaces": null,
-  "copernicus/texture_synthesis": null,
-  "copernicus/tips": null,
-  "copernicus/vdb": null,
-  "copernicus/working_with_cops": null,
-  "copy/copytopoints": null,
-  "copy/delayedload": null,
-  "copy/duplicate": null,
-  "copy/index": null,
-  "copy/instanceattrs": null,
-  "copy/instancing": null,
-  "copy/packed_and_soups": null,
-  "copy/tutorial_stamping": null,
-  "copy/varying": null,
-  "create_hda": null,
-  "create_render_node": null,
-  "crowds/agents": null,
-  "crowds/attributes": null,
-  "crowds/basics": null,
-  "crowds/caches": null,
-  "crowds/cloth": null,
-  "crowds/diversity": null,
-  "crowds/footplanting": null,
-  "crowds/fuzzy": null,
-  "crowds/interaction": null,
-  "crowds/layeranimation": null,
-  "crowds/obstacles": null,
-  "crowds/ragdoll": null,
-  "crowds/relationships": null,
-  "crowds/setup": null,
-  "crowds/sopcrowds": null,
-  "crowds/states": null,
-  "crowds/terrain": null,
-  "crowds/transitions": null,
-  "crowds/triggers": null,
-  "crowds/weights": null,
-  "destruction/concrete": null,
-  "destruction/constraints": null,
-  "destruction/glass": null,
-  "destruction/guidedsims": null,
-  "destruction/metal": null,
-  "destruction/overview": null,
-  "destruction/plasticity": null,
-  "destruction/wood": null,
-  "dirty_work_items": null,
-  "divergence": null,
-  "dopparticles/attributes": null,
-  "dopparticles/collisions": null,
-  "dopparticles/emitting": null,
-  "dopparticles/filaments": null,
-  "dopparticles/follow": null,
-  "dopparticles/forces": null,
-  "dopparticles/instancing": null,
-  "dopparticles/react": null,
-  "dopparticles/speedlimit": null,
-  "dopparticles/streams": null,
-  "dopparticles/tips": null,
-  "dopparticles/vexpressions": null,
-  "dopparticles/visualize": null,
-  "feathers/addgroomanim": null,
-  "feathers/addgroomrender": null,
-  "feathers/atlas": null,
-  "feathers/blending": null,
-  "feathers/brushing": null,
-  "feathers/clumping": null,
-  "feathers/concepts": null,
-  "feathers/down": null,
-  "feathers/drawing": null,
-  "feathers/exporting": null,
-  "feathers/feathertemplate": null,
-  "feathers/guiding": null,
-  "feathers/interpolating": null,
-  "feathers/naming": null,
-  "feathers/painting": null,
-  "feathers/randomizing": null,
-  "feathers/rendering": null,
-  "feathers/scattering": null,
-  "feathers/simulating": null,
-  "feathers/splitting": null,
-  "feathers/texturing": null,
-  "finiteelements/about": null,
-  "finiteelements/collisions": null,
-  "finiteelements/constraints": null,
-  "finiteelements/geometry": null,
-  "finiteelements/rendering": null,
-  "finiteelements/setup": null,
-  "finiteelements/solvemethod": null,
-  "finiteelements/whatis": null,
-  "fluid/flipviscosity": null,
-  "fluid/narrowband": null,
-  "fluid/oceans": null,
-  "fluid/sopconfigocean": null,
-  "fluid/sopwhitewater": null,
-  "fluid/surfacing": null,
-  "fluid/tips": null,
-  "fluid/whitewater": null,
-  "foo": null,
-  "fur/addgroom": null,
-  "fur/groom": null,
-  "fur/guidedeform": null,
-  "fur/haircards": null,
-  "fur/hairstyle_rasta": null,
-  "fur/masking": null,
-  "fur/shotsculpt": null,
-  "fur/teddybear": null,
-  "fur/workflow": null,
-  "generate_static_items": null,
-  "get_dop_object": null,
-  "get_expression": null,
-  "get_geometry_info": null,
-  "get_hda_info": null,
-  "get_hda_sections": null,
-  "get_node_info": null,
-  "get_parameter": null,
-  "get_parameter_schema": null,
-  "get_pdg_graph": null,
-  "get_scene_info": null,
-  "get_sim_memory_usage": null,
-  "get_simulation_info": null,
-  "get_stage_info": null,
-  "get_top_scheduler_info": null,
-  "get_usd_bound_material": null,
-  "get_usd_composition": null,
-  "get_usd_layers": null,
-  "get_usd_materials": null,
-  "get_work_item_info": null,
-  "get_work_item_states": null,
-  "grains/about": null,
-  "grains/change": null,
-  "grains/network": null,
-  "grains/stablepile": null,
-  "height": null,
-  "heightfields/": null,
-  "heightfields/erosion": null,
-  "heightfields/layers": null,
-  "heightfields/masking": null,
-  "heightfields/patterns": null,
-  "heightfields/scattersop": null,
-  "heightfields/shallowfields": null,
-  "heightfields/shallowintro": null,
-  "heightfields/shallowoutput": null,
-  "heightfields/shallowtrouble": null,
-  "heightfields/slump": null,
-  "heightfields/terracing": null,
-  "id": null,
-  "idattrib": null,
-  "ifd": null,
-  "io/ai": null,
-  "io/alembic": null,
-  "io/fbx": null,
-  "io/formats/channel_formats": null,
-  "io/formats/create_external_format": null,
-  "io/formats/geometry_formats": null,
-  "io/formats/image_formats": null,
-  "io/formats/index": null,
-  "io/geo": null,
-  "io/gltf": null,
-  "io/index": null,
-  "io/op_syntax": null,
-  "list_node_types": null,
-  "list_usd_prims": null,
-  "mask": null,
-  "ml/basic_utils/index": null,
-  "ml/building_blocks/datasetgeneration": null,
-  "ml/building_blocks/experimenting": null,
-  "ml/building_blocks/index": null,
-  "ml/index": null,
-  "ml/neural_nodes/index": null,
-  "ml/overview": null,
-  "ml/preprocessing": null,
-  "ml/stages": null,
-  "ml/train_solutions/index": null,
-  "model/attributes": null,
-  "model/box_up_modeling": null,
-  "model/curve_up_modeling": null,
-  "model/packed": null,
-  "mpm/destruction": null,
-  "mpm/mpmconfigsand": null,
-  "mpm/mpmvsothers": null,
-  "mpm/overview": null,
-  "mpm/sleep": null,
-  "mpm/sourcingdebris": null,
-  "mpm/surfacing": null,
-  "mpm/troubleshooting": null,
-  "mpm/workflow": null,
-  "muscles/": null,
-  "muscles/differences": null,
-  "muscles/fasciatissuesetup": null,
-  "muscles/forces": null,
-  "muscles/frankenmuscle": null,
-  "muscles/geopreparation": null,
-  "muscles/musclesetup": null,
-  "muscles/muscletransfer": null,
-  "muscles/otissimulation": null,
-  "muscles/overview": null,
-  "muscles/overviewvellum": null,
-  "muscles/propertyassignments": null,
-  "muscles/skinpostprocessing": null,
-  "muscles/tissues": null,
-  "muscles/troubleshooting": null,
-  "muscles/workflowvellum": null,
-  "nodes/sop/oceansource": null,
-  "nodes/sop/particlefluidmask": null,
-  "nodes/sop/particlefluidsurface": null,
-  "ocean/index": null,
-  "ocean/oceanspectra": null,
-  "ocean/ripples": null,
-  "ocean/ripplesolver": null,
-  "oceanevaluate": null,
-  "oceansource": null,
-  "oceanspectrum": null,
-  "output": null,
-  "particlefluidmask": null,
-  "particlefluidsurface": null,
-  "pause_top_cook": null,
-  "props/alembic": null,
-  "props/index": null,
-  "props/mantra": null,
-  "props/material": null,
-  "props/obj": null,
-  "props/viewport": null,
-  "props/vop": null,
-  "pscale": null,
-  "pyro/advanced": null,
-  "pyro/clustering": null,
-  "pyro/lookdev": null,
-  "pyro/sparsity": null,
-  "render/cameras": null,
-  "render/quality": null,
-  "render/renderingmanypolys": null,
-  "render/sampling": null,
-  "render/tips": null,
-  "render/understanding": null,
-  "render/volumes": null,
-  "renderman": null,
-  "reset_simulation": null,
-  "rockgenerator": null,
-  "set_current_network": null,
-  "set_hda_section_content": null,
-  "set_node_flags": null,
-  "set_viewport_renderer": null,
-  "shade/basics": null,
-  "shade/build": null,
-  "shade/convert": null,
-  "shade/layering": null,
-  "shade/modulate": null,
-  "shade/normalmaps": null,
-  "shade/overrides": null,
-  "shade/parms": null,
-  "shade/ptex": null,
-  "shade/stylesheets": null,
-  "shade/textures": null,
-  "shade/vops": null,
-  "shelf/guidedoceanlayer": null,
-  "soho": null,
-  "solaris/": null,
-  "solaris/about_lops": null,
-  "solaris/pattern": null,
-  "source": null,
-  "start_render": null,
-  "thermalerodabilitymask": null,
-  "topcook": null,
-  "tops/attributes": null,
-  "tops/intro": null,
-  "tops/partitioners_overview": null,
-  "tops/processors": null,
-  "tops/tips": null,
-  "update_hda": null,
-  "useidattrib": null,
-  "v": null,
-  "validate_vex": null,
-  "vel": null,
-  "vellum/collisions": null,
-  "vellum/lowreshighres": null,
-  "vellum/mass_thickness": null,
-  "vellum/paneling_draping": null,
-  "vellum/vellumtips": null
+  "_comment": "fxhoudinimcp tool references extracted from 31 guide files (2026-09-21). Filled by BP10-GUIDES. value.kind in {tool,help_page,symbol}; kind=tool with synapse!=null is rewritten in guides.py step 2, synapse=null+drop is removed & logged, help_page/symbol are left for step 3. _unsure marks a mapping that needs a human read. get_help_page/setup_pyro_sim/build_network are added (they appear as plain text, not backticks). Keys extracted via: grep -oh '`[a-z_][a-z0-9/_]*`' python/synapse/_vendor/fxhoudinimcp/guides/*.md",
+  "anim/anim_camera": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/anim_styles": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/animationtoolbar": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/autokey": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/basics": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/bookmarks": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/convert_keys": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/cycling": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/faq": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/flipbook": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/keying_strings": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "anim/playbar": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "assets/advanced_otl": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "assets/create": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "assets/namespaces": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "assets/versioning_systems": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "cancel_top_cook": {
+    "synapse": "tops_cancel_cook",
+    "doc": "cancel an in-flight PDG cook",
+    "kind": "tool"
+  },
+  "capture_screenshot": {
+    "synapse": "houdini_capture_viewport",
+    "doc": "capture the viewport to an image",
+    "kind": "tool"
+  },
+  "character/": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/charpicker": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/kinefx/animationgraphs": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/kinefx/animationlayers": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/kinefx/animationworkflow": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/kinefx/apexgraphbasics": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/kinefx/apexgraphdebugger": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/kinefx/apexscriptbasics": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/kinefx/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/poselibrary": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "character/rigtreeview": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/_old_cops_deprecated": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/blur_sharpen": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/color_correct": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/comp_terms": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/comp_vops": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/distort": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/export": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/keying": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/layers": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/lens_effects": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/load": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/luts": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/masks": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/mattes": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/multi": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/performance": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/planes": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/save": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "composite/tips": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "connect_nodes": {
+    "synapse": "houdini_connect_nodes",
+    "doc": "wire one node's output into another's input",
+    "kind": "tool"
+  },
+  "connect_nodes_batch": {
+    "synapse": "houdini_connect_nodes",
+    "doc": "wire nodes (SYNAPSE connects one pair per call)",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "cook_top_node": {
+    "synapse": "tops_cook_node",
+    "doc": "cook a TOP/PDG node",
+    "kind": "tool"
+  },
+  "copernicus/glossary": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/hatching": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/intro": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/normals": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/reaction_diffusion": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/slap_comp": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/spaces": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/texture_synthesis": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/tips": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/vdb": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copernicus/working_with_cops": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copy/copytopoints": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copy/delayedload": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copy/duplicate": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copy/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copy/instanceattrs": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copy/instancing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copy/packed_and_soups": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copy/tutorial_stamping": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "copy/varying": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "create_hda": {
+    "synapse": "houdini_hda_create",
+    "doc": "create a digital asset from a subnet",
+    "kind": "tool"
+  },
+  "create_render_node": {
+    "synapse": "houdini_create_node",
+    "doc": "create a render/ROP node",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "crowds/agents": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/attributes": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/basics": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/caches": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/cloth": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/diversity": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/footplanting": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/fuzzy": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/interaction": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/layeranimation": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/obstacles": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/ragdoll": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/relationships": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/setup": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/sopcrowds": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/states": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/terrain": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/transitions": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/triggers": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "crowds/weights": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "destruction/concrete": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "destruction/constraints": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "destruction/glass": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "destruction/guidedsims": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "destruction/metal": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "destruction/overview": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "destruction/plasticity": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "destruction/wood": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dirty_work_items": {
+    "synapse": "tops_dirty_node",
+    "doc": "dirty a TOP node so it recooks",
+    "kind": "tool"
+  },
+  "divergence": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "dopparticles/attributes": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/collisions": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/emitting": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/filaments": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/follow": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/forces": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/instancing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/react": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/speedlimit": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/streams": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/tips": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/vexpressions": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "dopparticles/visualize": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/addgroomanim": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/addgroomrender": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/atlas": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/blending": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/brushing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/clumping": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/concepts": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/down": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/drawing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/exporting": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/feathertemplate": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/guiding": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/interpolating": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/naming": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/painting": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/randomizing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/rendering": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/scattering": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/simulating": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/splitting": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "feathers/texturing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "finiteelements/about": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "finiteelements/collisions": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "finiteelements/constraints": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "finiteelements/geometry": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "finiteelements/rendering": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "finiteelements/setup": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "finiteelements/solvemethod": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "finiteelements/whatis": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fluid/flipviscosity": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fluid/narrowband": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fluid/oceans": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fluid/sopconfigocean": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fluid/sopwhitewater": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fluid/surfacing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fluid/tips": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fluid/whitewater": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "foo": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "fur/addgroom": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fur/groom": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fur/guidedeform": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fur/haircards": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fur/hairstyle_rasta": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fur/masking": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fur/shotsculpt": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fur/teddybear": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "fur/workflow": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "generate_static_items": {
+    "synapse": "tops_generate_items",
+    "doc": "generate PDG work items without cooking",
+    "kind": "tool"
+  },
+  "get_dop_object": {
+    "synapse": null,
+    "reason": "DOP object introspection not exposed as a SYNAPSE tool",
+    "kind": "tool",
+    "drop": true
+  },
+  "get_expression": {
+    "synapse": "houdini_get_parm",
+    "doc": "read a parm value (expression not separately exposed)",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "get_geometry_info": {
+    "synapse": "synapse_inspect_node",
+    "doc": "introspect a SOP node and its geometry",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "get_hda_info": {
+    "synapse": "houdini_hda_list",
+    "doc": "list installed HDA definitions",
+    "kind": "tool"
+  },
+  "get_hda_sections": {
+    "synapse": null,
+    "reason": "HDA section read not exposed as a SYNAPSE tool",
+    "kind": "tool",
+    "drop": true
+  },
+  "get_node_info": {
+    "synapse": "synapse_inspect_node",
+    "doc": "introspect a node (type, parms, connections)",
+    "kind": "tool"
+  },
+  "get_parameter": {
+    "synapse": "houdini_get_parm",
+    "doc": "read a node parameter value",
+    "kind": "tool"
+  },
+  "get_parameter_schema": {
+    "synapse": null,
+    "reason": "no parameter-schema dump tool in SYNAPSE",
+    "kind": "tool",
+    "drop": true
+  },
+  "get_pdg_graph": {
+    "synapse": "tops_get_dependency_graph",
+    "doc": "read the PDG dependency graph",
+    "kind": "tool"
+  },
+  "get_scene_info": {
+    "synapse": "houdini_scene_info",
+    "doc": "summarise the /obj scene",
+    "kind": "tool"
+  },
+  "get_sim_memory_usage": {
+    "synapse": null,
+    "reason": "sim memory not a SYNAPSE tool (see synapse_live_metrics for live stats)",
+    "kind": "tool",
+    "drop": true
+  },
+  "get_simulation_info": {
+    "synapse": null,
+    "reason": "DOP simulation introspection not a SYNAPSE tool",
+    "kind": "tool",
+    "drop": true
+  },
+  "get_stage_info": {
+    "synapse": "houdini_stage_info",
+    "doc": "summarise the USD stage",
+    "kind": "tool"
+  },
+  "get_top_scheduler_info": {
+    "synapse": "tops_pipeline_status",
+    "doc": "read the TOP pipeline/scheduler status",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "get_usd_bound_material": {
+    "synapse": "houdini_read_material",
+    "doc": "read the material bound to a prim",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "get_usd_composition": {
+    "synapse": "synapse_inspect_stage",
+    "doc": "inspect USD stage composition",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "get_usd_layers": {
+    "synapse": "houdini_stage_info",
+    "doc": "read USD stage/layer info",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "get_usd_materials": {
+    "synapse": "houdini_read_material",
+    "doc": "read USD materials",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "get_work_item_info": {
+    "synapse": "tops_get_work_items",
+    "doc": "read PDG work items",
+    "kind": "tool"
+  },
+  "get_work_item_states": {
+    "synapse": "tops_query_items",
+    "doc": "query PDG work-item states",
+    "kind": "tool"
+  },
+  "grains/about": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "grains/change": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "grains/network": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "grains/stablepile": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "height": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "heightfields/": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/erosion": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/layers": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/masking": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/patterns": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/scattersop": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/shallowfields": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/shallowintro": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/shallowoutput": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/shallowtrouble": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/slump": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "heightfields/terracing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "id": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "idattrib": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "ifd": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "io/ai": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/alembic": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/fbx": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/formats/channel_formats": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/formats/create_external_format": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/formats/geometry_formats": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/formats/image_formats": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/formats/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/geo": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/gltf": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "io/op_syntax": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "list_node_types": {
+    "synapse": "synapse_scout",
+    "doc": "ground/verify a node type name against the live catalogue",
+    "kind": "tool"
+  },
+  "list_usd_prims": {
+    "synapse": "houdini_query_prims",
+    "doc": "list USD prims on the stage",
+    "kind": "tool"
+  },
+  "mask": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "ml/basic_utils/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ml/building_blocks/datasetgeneration": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ml/building_blocks/experimenting": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ml/building_blocks/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ml/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ml/neural_nodes/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ml/overview": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ml/preprocessing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ml/stages": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ml/train_solutions/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "model/attributes": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "model/box_up_modeling": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "model/curve_up_modeling": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "model/packed": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "mpm/destruction": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "mpm/mpmconfigsand": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "mpm/mpmvsothers": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "mpm/overview": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "mpm/sleep": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "mpm/sourcingdebris": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "mpm/surfacing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "mpm/troubleshooting": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "mpm/workflow": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/differences": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/fasciatissuesetup": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/forces": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/frankenmuscle": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/geopreparation": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/musclesetup": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/muscletransfer": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/otissimulation": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/overview": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/overviewvellum": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/propertyassignments": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/skinpostprocessing": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/tissues": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/troubleshooting": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "muscles/workflowvellum": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "nodes/sop/oceansource": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "nodes/sop/particlefluidmask": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "nodes/sop/particlefluidsurface": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ocean/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ocean/oceanspectra": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ocean/ripples": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "ocean/ripplesolver": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "oceanevaluate": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "oceansource": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "oceanspectrum": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "output": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "particlefluidmask": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "particlefluidsurface": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "pause_top_cook": {
+    "synapse": "tops_pause_cook",
+    "doc": "pause a PDG cook",
+    "kind": "tool"
+  },
+  "props/alembic": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "props/index": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "props/mantra": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "props/material": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "props/obj": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "props/viewport": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "props/vop": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "pscale": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "pyro/advanced": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "pyro/clustering": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "pyro/lookdev": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "pyro/sparsity": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "render/cameras": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "render/quality": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "render/renderingmanypolys": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "render/sampling": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "render/tips": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "render/understanding": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "render/volumes": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "renderman": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "reset_simulation": {
+    "synapse": null,
+    "reason": "DOP reset not a SYNAPSE tool",
+    "kind": "tool",
+    "drop": true
+  },
+  "rockgenerator": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "set_current_network": {
+    "synapse": null,
+    "reason": "GUI network navigation; no SYNAPSE tool and none needed (paths are absolute)",
+    "kind": "tool",
+    "drop": true
+  },
+  "set_hda_section_content": {
+    "synapse": "houdini_hda_set_help",
+    "doc": "set an HDA help/section",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "set_node_flags": {
+    "synapse": null,
+    "reason": "display/render/bypass flags not exposed as a SYNAPSE tool",
+    "kind": "tool",
+    "drop": true
+  },
+  "set_viewport_renderer": {
+    "synapse": null,
+    "reason": "viewport renderer toggle is a GUI action, not a SYNAPSE tool",
+    "kind": "tool",
+    "drop": true
+  },
+  "shade/basics": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/build": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/convert": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/layering": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/modulate": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/normalmaps": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/overrides": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/parms": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/ptex": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/stylesheets": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/textures": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shade/vops": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "shelf/guidedoceanlayer": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "soho": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "solaris/": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "solaris/about_lops": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "solaris/pattern": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "source": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "start_render": {
+    "synapse": "houdini_render",
+    "doc": "start a render",
+    "kind": "tool"
+  },
+  "thermalerodabilitymask": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "topcook": {
+    "synapse": "tops_cook_node",
+    "doc": "cook a TOP/PDG node",
+    "kind": "tool"
+  },
+  "tops/attributes": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "tops/intro": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "tops/partitioners_overview": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "tops/processors": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "tops/tips": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "update_hda": {
+    "synapse": "houdini_hda_package",
+    "doc": "repackage/update an HDA",
+    "kind": "tool",
+    "_unsure": true
+  },
+  "useidattrib": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "v": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "validate_vex": {
+    "synapse": null,
+    "reason": "VEX validation is the compiler-feedback path (BRAINSTEM), not a standalone tool",
+    "kind": "tool",
+    "drop": true
+  },
+  "vel": {
+    "synapse": null,
+    "reason": "not a tool reference (node/attribute/literal); resolved against the symbol table in ingest step 3",
+    "kind": "symbol"
+  },
+  "vellum/collisions": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "vellum/lowreshighres": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "vellum/mass_thickness": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "vellum/paneling_draping": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "vellum/vellumtips": {
+    "synapse": null,
+    "reason": "SideFX help-page path, not a tool; preserved as knowledge",
+    "kind": "help_page"
+  },
+  "get_help_page": {
+    "synapse": "synapse_knowledge_lookup",
+    "doc": "H22 help/prose lookup by page path",
+    "kind": "tool"
+  },
+  "setup_pyro_sim": {
+    "synapse": "build the network",
+    "doc": "no single pyro recipe tool; build the DOP network (HARVEST_SPEC step 2)",
+    "kind": "tool"
+  },
+  "build_network": {
+    "synapse": "build the network by hand",
+    "doc": "no generic build-network tool; wire the nodes directly",
+    "kind": "tool"
+  }
 }

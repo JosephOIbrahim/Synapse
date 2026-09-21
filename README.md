@@ -119,6 +119,8 @@ flowchart TB
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 - **Apply a saved scene setup** (`synapse_apply_fixture`, shipped since 5.43.0). A fixture is a setup stored as data, not a prompt: applying it twice is a no-op, and a name clash refuses instead of renaming. Details and what is proven: [BLOCKS in the changelog](CHANGELOG.md).
 
+**Staged, not yet served:** `rag/corpus/guides` holds 31 workflow guides from [fxhoudinimcp](https://github.com/healkeiser/fxhoudinimcp) @ 29b6695b (MIT), gate-checked against 22.0.400. The product does not consult this directory yet; it is listed here so the provenance is public before the serving wiring lands.
+
 **New in 5.79.1** — the transcript stopped shouting.
 
 v5.79.0 shipped a chat transcript that rendered every message in capitals at a semi-bold weight. The speaker-label pass merged its label font across the whole block, and the label, the timestamp and the message body share one block. Six of six text fragments came back uppercase when measured.

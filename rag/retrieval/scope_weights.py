@@ -1,12 +1,14 @@
-"""BP10-CORPUS Target 3: the ONE scope-ranking table for SYNAPSE retrieval.
+"""The ONE scope-ranking table for SYNAPSE retrieval.
 
 Ranks ``h22_prose`` > ``guide`` > ``h21``. h22_prose (what a node is, what a setting does)
 is served first; H21 (``rag/skills/houdini21-reference``) is the fallback scope, taken only
-on a miss; every ordered hit carries which scope it came from. The ``guide`` slot is present
-but INERT until BP10-GUIDES lands ``rag/corpus/guides/`` -- ``is_active('guide')`` is False,
-so it never ranks yet, while the how-to rule that will govern it is already encoded and
-tested. For how-to phrasing ("set up", "how do I", "why does") the guide scope outranks
-prose; for reference phrasing (a bare node or parameter name) prose outranks guides.
+on a miss; every ordered hit carries which scope it came from. For how-to phrasing ("set up",
+"how do I", "why does") the guide scope outranks prose; for reference phrasing (a bare node or
+parameter name) prose outranks guides.
+
+The ``guide`` slot was landed INERT by BP10-CORPUS and is now **ACTIVE as of BP10-GUIDES**,
+which shipped ``rag/corpus/guides/`` -- ``is_active('guide')`` is True, so guide chunks now
+rank per the how-to rule already encoded and tested here.
 
 The rule lives here, as a table, not as a heuristic buried in code (HARVEST_SPEC
 "Retrieval priority"). Editing the ranking is a text diff in this one file.
@@ -24,7 +26,7 @@ REFERENCE, HOWTO, FALLBACK = "reference", "howto", "fallback"
 # the ranking is complete and reviewable, but contributing nothing until its corpus lands.
 SCOPES = {
     "h22_prose": {"base": 100, "active": True,  "role": REFERENCE},
-    "guide":     {"base":  90, "active": False, "role": HOWTO},      # armed by BP10-GUIDES
+    "guide":     {"base":  90, "active": True,  "role": HOWTO},      # armed by BP10-GUIDES
     "h21":       {"base":  10, "active": True,  "role": FALLBACK},   # rag/skills/houdini21-reference
 }
 HOWTO_BONUS = 20   # lifts a how-to-role scope above prose when the query is how-to phrased

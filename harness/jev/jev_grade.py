@@ -8,6 +8,8 @@
 #               SOUND  -> CLEAR is ideal, REFEREE is over-caution (a full read that was not needed).
 # Usage: python harness/jev/jev_grade.py                 (all waves with both a ledger and verdicts)
 #        python harness/jev/jev_grade.py --wave bp4
+#        python harness/jev/jev_grade.py --guard rerank  (grade JEV-RERANK against the probes)
+#        python harness/jev/jev_grade.py --guard harvest (grade JEV-HARVEST against Joe's answer key)
 from __future__ import annotations
 
 import json
@@ -154,15 +156,106 @@ def grade_rerank(waves):
     return 0
 
 
+# --------------------------------------------------------------------------- #
+#  --guard harvest: grade JEV-HARVEST against Joe's answer_key.json             #
+# --------------------------------------------------------------------------- #
+ANSWER_KEY = jc.REPO / "harness" / "notes" / "harvest" / "answer_key.json"
+# Jev's token_kind -> the fix-or-drop action it implies, for grading against Joe's decision.
+_KIND_ACTION = {
+    "node_type_renamed": "fix", "parameter_name": "fix", "attribute_name": "fix",
+    "vex_or_expression_function": "fix", "generic_word": "drop", "cannot_tell": "read",
+}
+
+
+def ledgered_harvest(wave):
+    """token -> {"kind": token_kind choice, "suggest_any": bool}; plus (ok, fallback) counts.
+    Zero new Jev calls: replays what jev_harvest already ledgered."""
+    out, ok, fb = {}, 0, 0
+    p = LEDGER / f"{wave}.harvest.jsonl"
+    if not p.exists():
+        return out, ok, fb
+    for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if r.get("guard") != "harvest":
+            continue
+        if r.get("result") == "ok" and r.get("answers"):
+            ok += 1
+            leg = r.get("leg", "")
+            if not leg.startswith("tok:"):
+                continue
+            tok = leg[4:]
+            ans = r["answers"]
+            kind = (ans.get("choices", {}).get("token_kind") or {}).get("choice")
+            suggest_any = any((ans.get("nouls", {}).get(k) or {}).get("noul", 0) and
+                              (ans["nouls"][k]["noul"] or 0) >= 0.5
+                              for k in ("rename_target_0", "rename_target_1", "rename_target_2"))
+            out[tok] = {"kind": kind, "suggest_any": suggest_any}
+        elif r.get("result") in ("fallback", "disabled"):
+            fb += 1
+    return out, ok, fb
+
+
+def grade_harvest(waves):
+    """Agreement of Jev's implied fix/drop action against Joe's decision in answer_key.json. The
+    key is an EMPTY template until Joe fills it: with no filled decision there is nothing to grade,
+    reported honestly (never a fabricated agreement)."""
+    key = {}
+    if ANSWER_KEY.exists():
+        try:
+            key = json.loads(ANSWER_KEY.read_text(encoding="utf-8"))
+        except ValueError:
+            key = {}
+    joe = {}  # token -> decision
+    for _guide, g in (key.get("quarantined_guides") or {}).items():
+        for tok, cell in (g.get("tokens") or {}).items():
+            if (cell.get("decision") or "").strip():
+                joe[tok] = cell["decision"].strip().lower()
+    total_ok = total_fb = graded = agree = 0
+    rows = []
+    for w in waves:
+        judged, ok, fb = ledgered_harvest(w)
+        total_ok += ok
+        total_fb += fb
+        for tok, j in judged.items():
+            implied = "fix" if j["suggest_any"] else _KIND_ACTION.get(j["kind"], "read")
+            if tok in joe:
+                graded += 1
+                ok_row = (implied == joe[tok]) or (implied == "fix" and joe[tok] in ("fix", "keep"))
+                agree += bool(ok_row)
+                rows.append((tok, j["kind"], implied, joe[tok], "agree" if ok_row else "MISS"))
+            else:
+                rows.append((tok, j["kind"], implied, "—", "(no decision)"))
+    if total_ok == 0:
+        print(f"unjudged: {total_fb} fallback row(s), 0 judged answers in "
+              f"{','.join(waves)}.harvest.jsonl -- nothing to grade "
+              f"(run `python harness/jev/jev_harvest.py --shadow` with a TYPESAFE_API_KEY).")
+        return 0
+    print(f"{'token':26} {'jev token_kind':30} {'implied':8} {'joe':6} verdict")
+    for tok, kind, implied, jd, v in sorted(rows):
+        print(f"{tok:26} {str(kind):30} {implied:8} {jd:6} {v}")
+    if graded == 0:
+        print(f"\n{total_ok} judged token(s); answer_key.json has 0 filled decisions -- nothing to "
+              f"grade yet. Fill `decision` per token in {ANSWER_KEY.name}, then re-run.")
+    else:
+        print(f"\nagreement: {agree}/{graded} tokens where Joe filled a decision. Evidence for a "
+              f"fix-or-drop pass, not a ruling; the guard never promotes a guide.")
+    return 0
+
+
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--guard", default="screen", choices=["screen", "rerank"],
+    ap.add_argument("--guard", default="screen", choices=["screen", "rerank", "harvest"],
                     help="which guard to grade (default: screen)")
     ap.add_argument("--wave", action="append", help="grade one wave (repeatable); default: "
-                    "every wave with a screen ledger, or bp10 for rerank")
+                    "every wave with a screen ledger, or bp10 for rerank/harvest")
     a = ap.parse_args()
     if a.guard == "rerank":
         sys.exit(grade_rerank(a.wave or ["bp10"]))
+    if a.guard == "harvest":
+        sys.exit(grade_harvest(a.wave or ["bp10"]))
     waves = a.wave or sorted({p.name.split(".")[0] for p in LEDGER.glob("*screen.jsonl")})
     sys.exit(grade(waves))

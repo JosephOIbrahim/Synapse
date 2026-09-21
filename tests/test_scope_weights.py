@@ -1,8 +1,9 @@
-"""BP10-CORPUS T4/G0: rag/retrieval/scope_weights.py -- the one ranking table.
+"""rag/retrieval/scope_weights.py -- the one ranking table.
 
 Pins the documented order (h22_prose > guide > h21), the how-to vs reference rule, the
-guide slot being present but INERT until BP10-GUIDES, h22_prose-first-with-h21-fallback
-ordering, and that every ordered hit carries its scope.
+guide slot being ACTIVE as of BP10-GUIDES (it was landed inert by BP10-CORPUS and armed here
+once ``rag/corpus/guides/`` shipped), h22_prose-first-with-h21-fallback ordering, and that
+every ordered hit carries its scope.
 """
 import sys
 from pathlib import Path
@@ -38,16 +39,19 @@ def test_phrasing_classifier():
     assert sw.phrasing("light intensity parameter name") == sw.REFERENCE
 
 
-def test_guide_slot_present_but_inert():
-    assert "guide" in sw.SCOPES                 # the slot is present...
-    assert sw.is_active("guide") is False       # ...and inert until BP10-GUIDES
+def test_guide_slot_active_after_bp10_guides():
+    # BP10-GUIDES armed the slot: it is present AND active now that rag/corpus/guides/ shipped.
+    assert "guide" in sw.SCOPES
+    assert sw.is_active("guide") is True
     assert sw.is_active("h22_prose") and sw.is_active("h21")
-    # inert guide never appears in a ranking, even when it has hits
-    assert "guide" not in sw.ranked_scopes("how do I set up pyro", available={"guide", "h21"})
+    # an active guide ranks on how-to phrasing (above prose, per the how-to bonus)
+    assert sw.ranked_scopes("how do I set up pyro")[0] == "guide"
+    assert "guide" in sw.ranked_scopes("how do I set up pyro", available={"guide", "h21"})
 
 
-def test_ranked_scopes_default_is_h22_then_h21():
-    assert sw.ranked_scopes("chromakey") == ["h22_prose", "h21"]
+def test_ranked_scopes_default_is_h22_then_guide_then_h21():
+    # reference phrasing, all three active: prose > guide > h21
+    assert sw.ranked_scopes("chromakey") == ["h22_prose", "guide", "h21"]
 
 
 def test_fallback_on_miss():
@@ -67,6 +71,13 @@ def test_order_hits_carries_scope_and_prioritises_h22():
     assert all("scope" in h for h in ordered)                       # every answer carries scope
 
 
+def test_order_hits_guide_leads_on_howto():
+    # the activation's whole point: a guide hit leads a how-to query
+    hits = {"h22_prose": [{"title": "Pyro"}], "guide": [{"title": "pyro guide"}]}
+    ordered = sw.order_hits(hits, "how do I set up pyro")
+    assert ordered[0]["scope"] == "guide"
+
+
 def test_order_hits_h21_only_when_h22_absent():
     ordered = sw.order_hits({"h21": [{"title": "x"}]}, "chromakey")
     assert len(ordered) == 1 and ordered[0]["scope"] == "h21"
@@ -79,4 +90,4 @@ def test_carry_scope_tags_non_dict_hit():
 def test_table_is_data():
     t = sw.table()
     assert t["h22_prose"]["base"] > t["h21"]["base"]
-    assert t["guide"]["active"] is False
+    assert t["guide"]["active"] is True
