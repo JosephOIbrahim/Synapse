@@ -261,8 +261,13 @@ BASELINE_CORRECTIONS = {
             "integration fails 6, the same set minus the one PNL-L4 fixed. It passes in "
             "isolation (2 runs out of 2) and fails under full-suite load -- 'Discovery did not "
             "settle' at test_ollama_discovery.py:37 -- so the original six-row baseline caught "
-            "a lucky run. Load-sensitive, and worth its own ticket; baselining it here records "
-            "the truth instead of blaming the legs for it.",
+            "a lucky run. ROOT CAUSE, found independently by PNL-L5 with a control run (same "
+            "tree, same env, its own three source files reverted to the merge-base -- still "
+            "fails, so no leg causes it): the test's settle() helper allows 3s but the worker's "
+            "release.wait(2) is the real ceiling, and the main thread misses it under full-suite "
+            "load. NOT fixed by widening that budget -- the house rule is to anchor on real sync "
+            "state, never to widen a sleep -- so it stays quarantined with its cause written "
+            "down and deserves a proper fix on its own.",
     },
 }
 
