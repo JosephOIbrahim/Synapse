@@ -1,0 +1,30 @@
+{
+  "_comment": "Ratchet floor for harness/verify/gate_table_agreement.py. missing_names lists every NON-read-only TOOL_DEFS tool that has NO _TOOL_TO_OPERATION row today (the risk-class gap the lint surfaces). The lint FAILS only when a tool appears missing that is NOT in this set -- a NEW un-mapped mutating tool -- or when the count rises above missing_count. It stays GREEN at today's gap and never reddens when a row is fixed (it prints a 'baseline can be tightened' advisory instead). These names are the ACCEPTED-TODAY ledger, NOT per-tool exemptions: closing them is a separate human/forge decision (CLAUDE.md sec 2.3 loop F; sec 3.1 'never a table edit'), and this lint never edits _TOOL_TO_OPERATION or OPERATION_GATES. Advance (tighten) this floor ONLY in a human-promoted commit; a worktree cannot lower its own bar because lowering requires editing this committed file. This floor is also self-defending: setting missing_count below the live gap makes the live count exceed the floor and reddens the lint at once, so the only unsound edit is RAISING it to accept a new un-mapped tool, which is a review-visible change to this file.",
+  "schema": "gate_table_agreement/count-v1",
+  "promoted": "2026-09-21",
+  "measured_commit": "82166574 (branch base of jev/gate-table-lint off master)",
+  "producer": "python harness/verify/gate_table_agreement.py  (cwd=repo root, sys.executable). Pinned live by tests/test_gate_table_agreement.py.",
+  "missing_count": 16,
+  "missing_names": [
+    "cops_create_copnet",
+    "houdini_create_point_instancer",
+    "houdini_set_payload_loadstate",
+    "houdini_set_usd_primvar",
+    "houdini_shot_render_ready",
+    "synapse_doctor",
+    "synapse_emergency_halt",
+    "synapse_render_farm_cancel",
+    "synapse_render_stop",
+    "synapse_solaris_component_builder",
+    "synapse_solaris_create_variants",
+    "synapse_solaris_import_megascans",
+    "synapse_solaris_scene_template",
+    "synapse_solaris_set_purpose",
+    "synapse_write_report",
+    "tops_monitor_stream"
+  ],
+  "ungated_ops_count": 0,
+  "declared_ops": {
+    "insert_cache": "intentionally not in OPERATION_GATES; Operation.gate_level resolves it to the REVIEW default (bridge_adapter.py; pinned by tests/test_cache_insert_gates.py)"
+  }
+}
