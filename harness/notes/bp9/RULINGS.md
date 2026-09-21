@@ -109,3 +109,37 @@ The two wide corners already sit inside the band, so this is a question about na
 only. Nothing in the probe was weakened to get here -- the verifier reproduced every number
 under hython within rounding.
 
+## Both open questions CLOSED by Joe, 2026-09-21
+
+He closed them not by answering the memos but by reading the live panel and saying
+what he wanted: *"the chat text in SYNAPSE is all caps and tightly spaced. That makes
+it hard for neurodivergent users to read. Can you un-bold the text and double the
+vertical spacing as well as use sentence-case with no em-dashes and expand the center
+column width by 10%."*
+
+| id | was open on | RULED | what shipped |
+|---|---|---|---|
+| R3-B-CAPS | whether the quiet voice takes caps | **Sentence case.** No caps in the transcript. | The Qt caps transform is gone from the transcript. `tokens.ROLE_CAPS` stays empty and now stays empty on purpose rather than pending. The speaker LABEL keeps its literal uppercase word, which is two words at label size, flagged to Joe as a one-line change if he wants it too. |
+| L5-CPL-BAND | 45-75 unreachable at a 340px dock | **Column +10%, band 45-85.** | `_MEASURE_CHARS` 66 -> 73, so the column goes 462px -> 511px. `MAX_CPL` 75 -> 85 in `probe_measure.py`, with the reasoning in the code and the hard red left at 90. |
+
+**The caps ruling largely dissolved the band problem it had nothing to do with.**
+The column had been calibrated against CAPITALS, which are wider, so it under-filled.
+With the transcript in sentence case the same measurement reads very differently:
+
+| corner | before | after |
+|---|---|---|
+| 340px, Aa 1.00 | 44.4 cpl, PANE-LIMITED | **53.7 cpl, in band** |
+| 340px, Aa 1.60 | 26.9 cpl, PANE-LIMITED | 33.7 cpl, still pane-limited |
+| 1100px, Aa 1.00 | 59.2 cpl | 84.2 cpl |
+| 1100px, Aa 1.60 | 60.5 cpl | 84.2 cpl |
+
+Three of four corners are now inside the band. The one that is not is the narrow dock
+at the largest text step, where 45 characters would need 728px in a 340px pane; that
+is arithmetic, not a defect, and the probe says PANE-LIMITED by name rather than
+pretending.
+
+**The caps themselves were a regression, not a design choice.** v5.79.0 shipped a
+transcript where the speaker-label pass merged its font across the whole block, so
+every message rendered ALL CAPS at weight 500. Six of six fragments, measured. No
+test had ever asserted what the message body looks like; there is one now.
+

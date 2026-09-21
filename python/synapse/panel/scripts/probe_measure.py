@@ -47,7 +47,18 @@ import sys
 
 # The transcript is a reading surface; these are the numbers it is judged on.
 MIN_CPL = 45
-MAX_CPL = 75
+# RULED (Joe, 2026-09-21): 75 -> 85. He asked for the centre column 10% wider after
+# reading the live panel, was told in the same breath that the widening plus the
+# un-capsing would put the wide-dock line near 84 characters against the 75 his brief
+# set, and said ship it. Two things compound: the 10% itself, and lowercase glyphs
+# being narrower than the capitals the column was calibrated against, so the same
+# column holds more of them. Un-capsing alone reached ~76.
+#
+# 85 is the new comfortable ceiling, NOT the measured 84.2 rounded up -- pinning a
+# band to the figure it is meant to judge is how a control passes green while
+# recording its own error. The probe still reds hard at 90, which is unchanged and is
+# where a line stops being trackable at all.
+MAX_CPL = 85
 
 # A 400-character paragraph of ordinary prose - ordinary because the letter mix
 # is what a proportional font's wrap depends on. Counted, not estimated: the
