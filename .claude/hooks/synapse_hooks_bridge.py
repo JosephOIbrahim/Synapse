@@ -152,9 +152,16 @@ def get_cook_errors(events):
     return [e for e in events if "CookError" in e.get("type", "")]
 
 
+_LAST_HOOK = {"event": "unknown", "session": None}
+
+
 def main():
     hook_input = read_hook_input()
     hook_event = get_hook_event(hook_input)
+    # Ledger bookkeeping only -- no decision lives here.
+    _LAST_HOOK["event"] = hook_event
+    if isinstance(hook_input, dict):
+        _LAST_HOOK["session"] = hook_input.get("session_id")
     events = read_new_events()
     context = format_events(events)
 
@@ -227,5 +234,39 @@ def main():
             print(context)
 
 
+def _ledger_record(decision, ms):
+    """Record this fire to the hook ledger. Never raises, never decides."""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import _ledger  # noqa: E402
+        _ledger.record(
+            _LAST_HOOK["event"], "synapse_hooks_bridge", decision, ms,
+            session=_LAST_HOOK["session"],
+        )
+    except Exception:
+        pass
+
+
+def _run():
+    """Wrap main() so every fire records decision + duration.
+
+    Exit codes are passed through UNCHANGED: Stop stays exit 1 and
+    TaskCompleted stays its existing code (those await a ruling, BP9).
+    """
+    t0 = time.perf_counter()
+    decision = "ok"
+    try:
+        main()
+    except SystemExit as exc:
+        code = exc.code if exc.code is not None else 0
+        decision = "exit:%s" % code
+        raise
+    except Exception as exc:
+        decision = "error:%s" % type(exc).__name__
+        raise
+    finally:
+        _ledger_record(decision, (time.perf_counter() - t0) * 1000.0)
+
+
 if __name__ == "__main__":
-    main()
+    _run()
