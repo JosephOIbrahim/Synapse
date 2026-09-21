@@ -9,7 +9,7 @@ from pathlib import Path
 
 REQUIRED = ["id", "name", "band", "source", "targets", "acceptance",
             "deps", "readonly", "touches", "crucible_criteria"]
-OPTIONAL = ["spawn_classes", "note", "receipt", "branch", "worktree", "class", "tier", "team"]
+OPTIONAL = ["spawn_classes", "note", "receipt", "branch", "worktree", "class", "tier", "team", "probe_cmd", "probe_timeout"]
 BANDS = {"BUILD", "TRUST", "TRUTH", "PAPER"}
 ID_RE = re.compile(r"^BP\d+-[A-Z0-9]{2,12}$")
 
@@ -65,6 +65,17 @@ def validate_mission(m: dict) -> list:
             tiers = set()
         if tiers and m["tier"] not in tiers | {"auto"}:
             _err(errors, mid, f"tier must be one of {sorted(tiers)} or 'auto'")
+    # BP9-NONETIER (ruling 2): tier 'none' launches no model. The orchestrator runs the
+    # mission's probe_cmd itself, so a none-tier mission MUST carry one (a non-empty string);
+    # a probe_cmd on any other tier is a contradiction and is refused rather than ignored.
+    if m.get("tier") == "none":
+        pc = m.get("probe_cmd")
+        if not (isinstance(pc, str) and pc.strip()):
+            _err(errors, mid, "tier 'none' requires probe_cmd: a non-empty string the orchestrator runs")
+    elif "probe_cmd" in m:
+        _err(errors, mid, "probe_cmd is only valid with tier 'none'")
+    if "probe_timeout" in m and not (isinstance(m["probe_timeout"], int) and m["probe_timeout"] > 0):
+        _err(errors, mid, "probe_timeout must be a positive int (seconds)")
     # JEV-TEAM (2026-09-20, notes/JEV_HELM.md mile 2): OPTIONAL. 'auto' is resolved at compile
     # time; a literal is {max_subagents: 0..4, subagent_tier: <rails tier>}. Absent = a plain
     # single-session leg, byte-identical to before. Referee and tidy legs work alone.
@@ -79,6 +90,8 @@ def validate_mission(m: dict) -> list:
                 tiers = set()
             if t["max_subagents"] > 0 and tiers and t.get("subagent_tier") not in tiers:
                 _err(errors, mid, f"team.subagent_tier must be one of {sorted(tiers)}")
+            elif t["max_subagents"] > 0 and t.get("subagent_tier") == "none":
+                _err(errors, mid, "team.subagent_tier cannot be 'none' (a subagent is a model)")
             if t["max_subagents"] > 0 and m.get("class") in ("crucible", "tidy"):
                 _err(errors, mid, "referee and tidy legs work alone: team.max_subagents must be 0")
     if not isinstance(m.get("crucible_criteria"), list) or not m["crucible_criteria"]:

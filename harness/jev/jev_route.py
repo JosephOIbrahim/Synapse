@@ -22,12 +22,20 @@ def route_state(m: dict, fields: list[str]) -> dict:
     return {"mission": {k: m[k] for k in fields if k in m}, "tiers": _tier_descriptions()}
 
 
+def routable_tiers() -> dict:
+    """rails tiers Jev may CHOOSE. BP9-NONETIER: a rails entry with "routable": false (the
+    'none' probe tier, which launches no model) is literal-only - it never enters the Choice
+    criteria, and a Jev answer naming it is treated as out-of-table by decide()."""
+    return {name: e for name, e in jc.rails_tiers().items()
+            if not (isinstance(e, dict) and e.get("routable") is False)}
+
+
 def _tier_descriptions() -> dict:
-    """rails_exec names x questions.json descriptions. A tier without a description falls
+    """routable rails names x questions.json descriptions. A tier without a description falls
     back to its rails `why`; a description without a tier is dropped. Names come from rails."""
     q = jc.load_questions()["guards"]["route"]["questions"]["tier"]["criteria_by_tier"]
     out = {}
-    for name, entry in jc.rails_tiers().items():
+    for name, entry in routable_tiers().items():
         out[name] = q.get(name) or {"what": entry.get("why", name)}
     return out
 
@@ -53,7 +61,7 @@ def decide(m: dict, answers: dict | None, policy: dict) -> dict:
     nov = (answers["scores"].get("novelty") or {}).get("score")
     br = (answers["scores"].get("blast_radius") or {}).get("score")
     jev = {"tier": choice, "confidence": conf, "probabilities": t.get("probabilities"), "novelty": nov, "blast_radius": br}
-    if choice not in jc.rails_tiers():
+    if choice not in routable_tiers():  # BP9-NONETIER: 'none' is in rails but never routable
         return {"tier": fb, "reason": f"fallback: Jev chose unknown tier {choice!r}", "jev": jev}
     if conf is None or conf < policy["min_tier_confidence"]:
         return {"tier": fb, "reason": f"round-up: tier confidence {conf} < {policy['min_tier_confidence']}", "jev": jev}

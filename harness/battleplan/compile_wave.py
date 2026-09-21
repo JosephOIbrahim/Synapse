@@ -39,6 +39,19 @@ def leg_row(m: dict) -> dict:
         sys.path.insert(0, str(REPO / "harness" / "jev"))
         import jev_route
         row["tier"] = jev_route.resolve_tier(m, wave)
+    # BP9-NONETIER (ruling 2): a literal tier 'none' passes through UNTOUCHED (JEV invariant 2:
+    # a literal tier is byte-identical) together with its probe_cmd - the command
+    # orchestrate.ps1 runs in place of spawning claude. Jev can never emit 'none' (rails marks
+    # it routable:false and jev_route honours the flag), so only an author puts it here.
+    if row.get("tier") == 'none':
+        row["probe_cmd"] = m["probe_cmd"]
+        # BP9-NONETIER-FIX: the command ALSO travels by file. Windows PowerShell 5.1 re-tokenises
+        # an argument's embedded double quotes, so `--cmd $leg.probe_cmd` mangled any probe
+        # like python -c "print('...')" into 'unrecognized arguments'. orchestrate.ps1 passes
+        # `--cmd-file <this path>` instead and probe_receipt.py reads the bytes verbatim.
+        row["probe_cmd_file"] = probe_cmd_path(m["id"])
+        if m.get("probe_timeout"):
+            row["probe_timeout"] = m["probe_timeout"]
     # JEV-TEAM (2026-09-20, notes/JEV_HELM.md mile 2): an OPTIONAL "team". "auto" asks Jev how
     # parallelizable the leg is and code maps that to 0/2/4 subagents, rounding DOWN on doubt;
     # a literal {max_subagents, subagent_tier} passes through. No team field -> no key on the
@@ -52,6 +65,21 @@ def leg_row(m: dict) -> dict:
             team = {"max_subagents": d["max_subagents"], "subagent_tier": d["subagent_tier"]}
         row["team"] = team
     return row
+
+def probe_cmd_path(mission_id: str) -> str:
+    """Repo-relative path of the probe command file that rides beside the prompt."""
+    return f"harness/battleplan/prompts/{mission_id}.probe.cmd"
+
+def write_probe_cmd_file(m: dict) -> Path | None:
+    """BP9-NONETIER-FIX: for a tier-none mission, write probe_cmd to prompts/<ID>.probe.cmd -
+    UTF-8, no BOM, no added newline, the string byte-for-byte. Any other mission writes nothing
+    and returns None, so a non-none compile is byte-identical to before."""
+    if m.get("tier") != "none":
+        return None
+    out = REPO / probe_cmd_path(m["id"])
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(m["probe_cmd"].encode("utf-8"))
+    return out
 
 def screen_lines(m: dict, wave: str) -> str:
     """JEV-SCREEN pre-read for the CRUX brief (BP6-JEV T2, notes/JEV_BLUEPRINT.md sec.3.2).
@@ -116,6 +144,8 @@ def main(wave_arg: str = "") -> int:
         wave = wave or m["id"].split("-", 1)[0].lower().replace("w", "wave")
         (HERE / "prompts" / f"{m['id']}.md").write_text(fill_prompt(m, row), encoding="utf-8")
         print(f"wrote prompts/{m['id']}.md")
+        if write_probe_cmd_file(m) is not None:
+            print(f"wrote prompts/{m['id']}.probe.cmd (probe_cmd, verbatim)")
     out = HERE / "waves" / f"{wave}.rows.json"
     out.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"wrote {out.relative_to(REPO)} ({len(rows)} rows) - append to harness/legs.json is a HUMAN-WORD act")
