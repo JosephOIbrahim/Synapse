@@ -315,6 +315,12 @@ class ChatDisplay(QtWidgets.QTextBrowser):
     # a wide dock. The clamp either side is unchanged. Verified by rendering,
     # not by this arithmetic: panel/scripts/probe_measure.py lays out a real
     # paragraph at 340 and 1100 px, at Aa 1.0 and 1.6, and fails outside 45-75.
+    # The prose the advance is measured against. English letter frequency matters: a
+    # sample of capitals or symbols measures a font nobody reads. This is ordinary
+    # lowercase prose with its spaces, which is what the transcript mostly is.
+    _MEASURE_SAMPLE = ("the artist asked for a wider dock and the transcript held its "
+                       "measure so the line did not run on past where the eye returns")
+
     _MEASURE_CHARS = 66          # middle of the comfortable band
     _MEASURE_MIN_PX = 460        # never narrower than the old rule
     _MEASURE_MAX_PX = 1100       # never a full-bleed wall of text
@@ -342,7 +348,18 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             from PySide6.QtGui import QFont, QFontMetricsF
             f = QFont(self.font())
             f.setPixelSize(int(px))
-            adv = QFontMetricsF(f).averageCharWidth()
+            fm = QFontMetricsF(f)
+            # NOT averageCharWidth(). That averages the WHOLE glyph set, capitals and
+            # symbols prose barely uses included, so it overstates the advance of real
+            # text and the column ends up holding far more than _MEASURE_CHARS. Caught
+            # on the integrated tree, where PNL-L6's type scale moved the metrics:
+            # averageCharWidth produced a 630px column that rendered 75.2 characters per
+            # line -- outside the very band this constant exists to hold. Measuring a
+            # prose sample and dividing gives the advance a reader actually gets, so the
+            # ruled 66 stays ruled instead of being quietly retuned.
+            adv = fm.horizontalAdvance(self._MEASURE_SAMPLE) / len(self._MEASURE_SAMPLE)
+            if not adv or adv <= 0:
+                adv = fm.averageCharWidth()
         except Exception:
             pass
         if not adv or adv <= 0:
