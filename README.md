@@ -4,7 +4,7 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.80.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.79.1 is Latest</sub></p>
+<p align="center"><sub>v5.80.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.80.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
@@ -217,7 +217,7 @@ Anything that claims otherwise is drift. Path-qualified `IntegrityBlock`s record
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.79.1.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.80.0.md) · [Changelog](CHANGELOG.md)
 
 **What the CI badge proves.** GitHub CI tests stock Python on Linux and macOS.
 
