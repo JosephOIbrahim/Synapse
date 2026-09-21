@@ -243,3 +243,10 @@ harness/battleplan/board*.html
 # harness run artifacts (XML dumps, .hiplc scenes, PNGs) - evidence lives in harness/notes summaries
 harness/*/artifacts/
 rag/corpus/h22_prose/*.jsonl
+
+# PNL-L0d 2026-09-21: every worktree builder is told to write under .scratch/ (the
+# house-rules block in the panel graph prompts), and it was never ignored, so a
+# `git add -A` during a release cut would have committed run logs, commit-message
+# drafts and probe output onto master. Ignored at every depth.
+.scratch/
+
