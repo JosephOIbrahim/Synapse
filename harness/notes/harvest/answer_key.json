@@ -1,0 +1,188 @@
+{
+  "_comment": "Joe's hand-decisions for the guide quarantine (HARVEST_SPEC 'Hand-work Joe keeps'). Empty template written by jev_harvest; fill decision in {fix,drop,keep} per token and equivalent_ok in {yes,no} per tool. `jev_grade.py --guard harvest` grades the ledgered Jev judgments against this. This leg NEVER promotes a guide.",
+  "quarantined_guides": {
+    "assets": {
+      "verdict": "",
+      "tokens": {
+        "rockgenerator": {
+          "decision": "",
+          "note": ""
+        }
+      }
+    },
+    "heightfields": {
+      "verdict": "",
+      "tokens": {
+        "thermalerodabilitymask": {
+          "decision": "",
+          "note": ""
+        }
+      }
+    },
+    "io": {
+      "verdict": "",
+      "tokens": {
+        "bgeo.sc": {
+          "decision": "",
+          "note": ""
+        }
+      }
+    },
+    "model": {
+      "verdict": "",
+      "tokens": {
+        "foo": {
+          "decision": "",
+          "note": ""
+        }
+      }
+    },
+    "render": {
+      "verdict": "",
+      "tokens": {
+        "soho": {
+          "decision": "",
+          "note": ""
+        },
+        "renderman": {
+          "decision": "",
+          "note": ""
+        }
+      }
+    }
+  },
+  "tool_refs": {
+    "get_scene_info": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_help_page": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "set_hda_section_content": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_geometry_info": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "list_node_types": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_stage_info": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_hda_info": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "create_hda": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "update_hda": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "capture_screenshot": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "setup_pyro_sim": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "connect_nodes_batch": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "start_render": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_usd_bound_material": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "create_render_node": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_usd_materials": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_usd_layers": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "list_usd_prims": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_top_scheduler_info": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "generate_static_items": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_work_item_states": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_work_item_info": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "dirty_work_items": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "cancel_top_cook": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "pause_top_cook": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "cook_top_node": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_pdg_graph": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "topcook": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_usd_composition": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_expression": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "connect_nodes": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_node_info": {
+      "equivalent_ok": "",
+      "note": ""
+    },
+    "get_parameter": {
+      "equivalent_ok": "",
+      "note": ""
+    }
+  }
+}

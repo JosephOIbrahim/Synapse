@@ -1,0 +1,1282 @@
+{
+ "build": "22.0.400",
+ "corpus": {
+  "anim": 3,
+  "character": 4,
+  "composite": 3,
+  "copernicus": 5,
+  "copy": 4,
+  "crowds": 3,
+  "destruction": 5,
+  "dopparticles": 4,
+  "dyno": 4,
+  "feathers": 3,
+  "finiteelements": 4,
+  "fluid": 9,
+  "fur": 3,
+  "grains": 3,
+  "heightfields_cop": 2,
+  "ml": 3,
+  "mpm": 6,
+  "muscles": 4,
+  "ocean": 4,
+  "props": 4,
+  "pyro": 6,
+  "shade": 2,
+  "solaris": 11,
+  "tops": 8,
+  "troubleshooting": 2,
+  "vellum": 6
+ },
+ "quarantine": {
+  "assets": [
+   {
+    "token": "rockgenerator",
+    "section_title": "Name it before you build it",
+    "sentence": "An asset called `rockgenerator` in a studio that later installs a",
+    "nearest_symbols": [
+     "genericgenerator",
+     "gen_integrator",
+     "rendervar"
+    ]
+   }
+  ],
+  "heightfields": [
+   {
+    "token": "thermalerodabilitymask",
+    "section_title": "The technique that separates working setups from fragile ones",
+    "sentence": "`thermalerodabilitymask` layer, and you are then free to overwrite `mask` with",
+    "nearest_symbols": [
+     "texturemateriallibrary",
+     "featherutility",
+     "neural_layertomask_sam2"
+    ]
+   }
+  ],
+  "io": [
+   {
+    "token": "bgeo.sc",
+    "section_title": "Choose the format from what has to survive the trip",
+    "sentence": "Prefer `bgeo.sc` for compression.",
+    "nearest_symbols": [
+     "geo",
+     "heatgeodesic",
+     "rbdglueobject"
+    ]
+   }
+  ],
+  "model": [
+   {
+    "token": "foo",
+    "section_title": "Select by attribute instead of writing a wrangle",
+    "sentence": "group names: `@foo>5` in a Group field selects every component whose `foo`",
+    "nearest_symbols": [
+     "floor",
+     "for",
+     "fog"
+    ]
+   }
+  ],
+  "render": [
+   {
+    "token": "soho",
+    "section_title": "",
+    "sentence": "`soho`, `renderman`). If the shot renders in **Karma**, the authority is",
+    "nearest_symbols": [
+     "shop",
+     "sopgeo",
+     "smooth"
+    ]
+   },
+   {
+    "token": "renderman",
+    "section_title": "",
+    "sentence": "`soho`, `renderman`). If the shot renders in **Karma**, the authority is",
+    "nearest_symbols": [
+     "render",
+     "rendervar",
+     "renderpass"
+    ]
+   }
+  ]
+ },
+ "tool_refs": [
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "anim",
+   "section_title": "Order of work",
+   "sentence": "get_scene_info, then set_frame_range and confirm FPS.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "anim",
+   "section_title": "",
+   "sentence": "get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "set_hda_section_content",
+   "synapse": "houdini_hda_set_help",
+   "doc": "set an HDA help/section",
+   "guide_name": "assets",
+   "section_title": "Inside the asset",
+   "sentence": "- Ship a help card via set_hda_section_content. An asset without one gets used wrongly rather than not at all.",
+   "_unsure": true
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "assets",
+   "section_title": "Order of work",
+   "sentence": "Build the logic in a subnet and test it against several inputs with `get_geometry_info` or `get_stage_info` BEFORE converting. Debugging inside a definition is harder than debugging outside one.",
+   "_unsure": true
+  },
+  {
+   "token": "list_node_types",
+   "synapse": "synapse_scout",
+   "doc": "ground/verify a node type name against the live catalogue",
+   "guide_name": "assets",
+   "section_title": "Order of work",
+   "sentence": "list_node_types first, to confirm the type name is free.",
+   "_unsure": false
+  },
+  {
+   "token": "get_stage_info",
+   "synapse": "houdini_stage_info",
+   "doc": "summarise the USD stage",
+   "guide_name": "assets",
+   "section_title": "Order of work",
+   "sentence": "Build the logic in a subnet and test it against several inputs with synapse_inspect_node or `get_stage_info` BEFORE converting. Debugging inside a definition is harder than debugging outside one.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "assets",
+   "section_title": "",
+   "sentence": "Read them with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "get_hda_info",
+   "synapse": "houdini_hda_list",
+   "doc": "list installed HDA definitions",
+   "guide_name": "assets",
+   "section_title": "Order of work",
+   "sentence": "`create_hda` with a namespace, then `get_hda_info` to verify the definition is what you think it is.",
+   "_unsure": false
+  },
+  {
+   "token": "create_hda",
+   "synapse": "houdini_hda_create",
+   "doc": "create a digital asset from a subnet",
+   "guide_name": "assets",
+   "section_title": "Order of work",
+   "sentence": "`create_hda` with a namespace, then houdini_hda_list to verify the definition is what you think it is.",
+   "_unsure": false
+  },
+  {
+   "token": "update_hda",
+   "synapse": "houdini_hda_package",
+   "doc": "repackage/update an HDA",
+   "guide_name": "assets",
+   "section_title": "Order of work",
+   "sentence": "`update_hda` for later changes, and bump the version only for a disruptive one.",
+   "_unsure": true
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "character",
+   "section_title": "Order of work",
+   "sentence": "Skeleton first, verified visually with `capture_screenshot`.",
+   "_unsure": false
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "character",
+   "section_title": "Order of work",
+   "sentence": "get_scene_info, and establish whether you are working in KineFX or maintaining an old object-level rig.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "composite",
+   "section_title": "Order of work",
+   "sentence": "Verify visually with capture_screenshot.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "copernicus",
+   "section_title": "Order of work",
+   "sentence": "Inspect real pixel values at each milestone rather than judging by the visualizer, and `capture_screenshot` to look.",
+   "_unsure": false
+  },
+  {
+   "token": "list_node_types",
+   "synapse": "synapse_scout",
+   "doc": "ground/verify a node type name against the live catalogue",
+   "guide_name": "copernicus",
+   "section_title": "COP node vocabulary",
+   "sentence": "Copernicus ships far more nodes than this, and `list_node_types(context='Cop',",
+   "_unsure": false
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "copernicus",
+   "section_title": "COP node vocabulary",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "copernicus",
+   "section_title": "",
+   "sentence": "Read with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "copy",
+   "section_title": "Order of work",
+   "sentence": "get_geometry_info to check the count is what you intended before anything downstream.",
+   "_unsure": true
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "copy",
+   "section_title": "",
+   "sentence": "Read with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "crowds",
+   "section_title": "Order of work",
+   "sentence": "Populate a small crowd, ten agents rather than a thousand, and `capture_screenshot`.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "destruction",
+   "section_title": "Order of work",
+   "sentence": "setup_rbd_sim, then `cook_frame_range(node_path, start, end)` over a short range and `capture_screenshot`. Check that pieces are held and released as intended before tuning anything.",
+   "_unsure": false
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "destruction",
+   "section_title": "Destruction node vocabulary",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "dopparticles",
+   "section_title": "Order of work",
+   "sentence": "`capture_screenshot` at each milestone, cache, then instance or render downstream of the cache.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "dopparticles",
+   "section_title": "",
+   "sentence": "get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "dyno",
+   "section_title": "Tips",
+   "sentence": "- get_geometry_info on the source before simulating; on heavy sims.",
+   "_unsure": true
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "dyno",
+   "section_title": "SOP-level solvers (modern workflow, preferred)",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "setup_pyro_sim",
+   "synapse": "build the network",
+   "doc": "no single pyro recipe tool; build the DOP network (HARVEST_SPEC step 2)",
+   "guide_name": "dyno",
+   "section_title": "",
+   "sentence": "setup_pyro_sim / setup_rbd_sim / setup_flip_sim / setup_vellum_sim build entire",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "feathers",
+   "section_title": "Order of work",
+   "sentence": "`capture_screenshot` at each stage; a groom is judged visually and nowhere else.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "finiteelements",
+   "section_title": "Order of work",
+   "sentence": "Short simulation, `capture_screenshot`, and only then consider the solve method.",
+   "_unsure": false
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "finiteelements",
+   "section_title": "Order of work",
+   "sentence": "Confirm with get_geometry_info before going further.",
+   "_unsure": true
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "finiteelements",
+   "section_title": "",
+   "sentence": "get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "fluid",
+   "section_title": "Order of work",
+   "sentence": "Then `capture_screenshot` to check bulk motion and collisions.",
+   "_unsure": false
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "fluid",
+   "section_title": "Order of work",
+   "sentence": "Build and inspect the source, then `get_geometry_info` on it.",
+   "_unsure": true
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "fluid",
+   "section_title": "FLIP node vocabulary",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "fluid",
+   "section_title": "",
+   "sentence": "Read the relevant page with get_help_page",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "fur",
+   "section_title": "Order of work",
+   "sentence": "Build and shape guides at low density, `capture_screenshot` often.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "fur",
+   "section_title": "",
+   "sentence": "get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "grains",
+   "section_title": "Order of work",
+   "sentence": "`capture_screenshot`, then cache before anything downstream.",
+   "_unsure": false
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "grains",
+   "section_title": "Order of work",
+   "sentence": "Build the container or ground and the volume to fill, and verify with get_geometry_info.",
+   "_unsure": true
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "grains",
+   "section_title": "",
+   "sentence": "Read with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "heightfields",
+   "section_title": "Order of work",
+   "sentence": "Visualise layers and `capture_screenshot` before raising resolution.",
+   "_unsure": false
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "heightfields",
+   "section_title": "Heightfield node vocabulary",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "heightfields",
+   "section_title": "",
+   "sentence": "get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "heightfields_cop",
+   "section_title": "Order of work",
+   "sentence": "Inspect real pixel values at milestones, and `capture_screenshot`.",
+   "_unsure": false
+  },
+  {
+   "token": "list_node_types",
+   "synapse": "synapse_scout",
+   "doc": "ground/verify a node type name against the live catalogue",
+   "guide_name": "heightfields_cop",
+   "section_title": "Order of work",
+   "sentence": "`list_node_types(context='Cop', filter='heightfield')` to see what the running version actually provides, rather than assuming parity with the SOP set.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "heightfields_cop",
+   "section_title": "",
+   "sentence": "Read the pages in this corpus with get_help_page, and for the SOP side use",
+   "_unsure": false
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "io",
+   "section_title": "Judgement",
+   "sentence": "get_geometry_info after a round trip, comparing counts and attribute names, is the only real verification.",
+   "_unsure": true
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "io",
+   "section_title": "",
+   "sentence": "Read with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "list_node_types",
+   "synapse": "synapse_scout",
+   "doc": "ground/verify a node type name against the live catalogue",
+   "guide_name": "ml",
+   "section_title": "What Houdini actually provides",
+   "sentence": "Note these ship as SideFX **recipes**, not as plain node types, so `list_node_types` will not show them under the names the help pages use. `ml/train_solutions/index` lists what exists. If one matches the task, use it rather than assembling",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "ml",
+   "section_title": "",
+   "sentence": "Read with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "connect_nodes_batch",
+   "synapse": "houdini_connect_nodes",
+   "doc": "wire nodes (SYNAPSE connects one pair per call)",
+   "guide_name": "model",
+   "section_title": "Efficiency",
+   "sentence": "- connect_nodes_batch wires multiple pairs at once; set_viewport_direction switches view.",
+   "_unsure": true
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "model",
+   "section_title": "Order of work",
+   "sentence": "get_geometry_info to verify counts, and check which attribute level your values landed on.",
+   "_unsure": true
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "model",
+   "section_title": "Core SOP vocabulary (type names, spelled as create_node takes them)",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "model",
+   "section_title": "",
+   "sentence": "Read them with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "mpm",
+   "section_title": "Order of work",
+   "sentence": "`cook_frame_range(node_path, start, end)` over a short range, then `capture_screenshot`. Fix penetration with the three-step escalation above, stepping with Global Substeps.",
+   "_unsure": false
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "mpm",
+   "section_title": "Order of work",
+   "sentence": "Build the source and colliders, then `get_geometry_info` to confirm they are not empty.",
+   "_unsure": true
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "mpm",
+   "section_title": "MPM node vocabulary",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "mpm",
+   "section_title": "",
+   "sentence": "with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "muscles",
+   "section_title": "Order of work",
+   "sentence": "Short-range Otis simulation, `capture_screenshot`, and check against anatomy rather than against expectation.",
+   "_unsure": false
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "muscles",
+   "section_title": "Order of work",
+   "sentence": "Verify each with get_geometry_info.",
+   "_unsure": true
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "muscles",
+   "section_title": "",
+   "sentence": "Read with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "ocean",
+   "section_title": "Order of work",
+   "sentence": "`capture_screenshot` against the camera, not a perspective view; oceans read entirely differently from a shot camera.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "ocean",
+   "section_title": "",
+   "sentence": "Read the relevant page with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "props",
+   "section_title": "",
+   "sentence": "Read with get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "pyro",
+   "section_title": "Order of work",
+   "sentence": "Then `capture_screenshot` and LOOK. Bulk motion only, no shaping yet.",
+   "_unsure": false
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "pyro",
+   "section_title": "Order of work",
+   "sentence": "`get_geometry_info` on it before simulating: a sim of empty geometry wastes the whole cook.",
+   "_unsure": true
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "pyro",
+   "section_title": "Pyro node vocabulary",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "setup_pyro_sim",
+   "synapse": "build the network",
+   "doc": "no single pyro recipe tool; build the DOP network (HARVEST_SPEC step 2)",
+   "guide_name": "pyro",
+   "section_title": "",
+   "sentence": "with get_help_page rather than improvising, and use setup_pyro_sim to build the",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "pyro",
+   "section_title": "",
+   "sentence": "with get_help_page rather than improvising, and use build the network to build the",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "render",
+   "section_title": "Judgement",
+   "sentence": "For look iteration, plus capture_screenshot is the loop.",
+   "_unsure": false
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "render",
+   "section_title": "Order of work",
+   "sentence": "get_render_settings and get_scene_info to establish what renderer and what settings exist. Do not assume Mantra or Karma.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "render",
+   "section_title": "",
+   "sentence": "get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "start_render",
+   "synapse": "houdini_render",
+   "doc": "start a render",
+   "guide_name": "render",
+   "section_title": "Order of work",
+   "sentence": "start_render with a written frame range and output path, and get_render_progress rather than guessing at completion.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "shade",
+   "section_title": "Order of work",
+   "sentence": "Create and **assign** with create_material and assign_material, then look at it with the viewport renderer and capture_screenshot.",
+   "_unsure": false
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "shade",
+   "section_title": "Order of work",
+   "sentence": "get_scene_info and get_render_settings to establish the renderer. This decides which toolset is even correct.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "shade",
+   "section_title": "",
+   "sentence": "get_help_page.",
+   "_unsure": false
+  },
+  {
+   "token": "get_usd_bound_material",
+   "synapse": "houdini_read_material",
+   "doc": "read the material bound to a prim",
+   "guide_name": "solaris",
+   "section_title": "Order of work",
+   "sentence": "A prim that renders with the wrong material (or none): `get_usd_bound_material` names what it resolves to and where the binding comes from.",
+   "_unsure": true
+  },
+  {
+   "token": "connect_nodes_batch",
+   "synapse": "houdini_connect_nodes",
+   "doc": "wire nodes (SYNAPSE connects one pair per call)",
+   "guide_name": "solaris",
+   "section_title": "Order of work",
+   "sentence": "Wire with `connect_nodes_batch`. LOP chains read top to bottom, and branch-then-merge is idiomatic.",
+   "_unsure": true
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "solaris",
+   "section_title": "Viewport-first lookdev",
+   "sentence": "(\"Karma XPU\") or (\"Karma CPU\") gives a live Hydra render in the viewport (\"GL\" for fast wireframe), and `capture_screenshot` is how you check materials, lighting and your own work. `start_render` / `create_render_node` are only for final re",
+   "_unsure": false
+  },
+  {
+   "token": "create_render_node",
+   "synapse": "houdini_create_node",
+   "doc": "create a render/ROP node",
+   "guide_name": "solaris",
+   "section_title": "Viewport-first lookdev",
+   "sentence": "`start_render` / `create_render_node` are only for final renders the user explicitly asks to be written to disk. The viewport holds its own copy of the display-flag node's stage, so looking at a node is not free but is far cheaper than a re",
+   "_unsure": true
+  },
+  {
+   "token": "get_usd_materials",
+   "synapse": "houdini_read_material",
+   "doc": "read USD materials",
+   "guide_name": "solaris",
+   "section_title": "Order of work",
+   "sentence": "`get_stage_info`, `list_usd_prims`, `get_usd_materials`, `get_usd_layers` to verify hierarchy, bindings and the layer stack. A prim that renders with the wrong material (or none): houdini_read_material names what it resolves to and where th",
+   "_unsure": true
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "solaris",
+   "section_title": "Order of work",
+   "sentence": "`get_scene_info`, then to /stage.",
+   "_unsure": false
+  },
+  {
+   "token": "get_stage_info",
+   "synapse": "houdini_stage_info",
+   "doc": "summarise the USD stage",
+   "guide_name": "solaris",
+   "section_title": "Order of work",
+   "sentence": "`get_stage_info`, `list_usd_prims`, houdini_read_material, `get_usd_layers` to verify hierarchy, bindings and the layer stack. A prim that renders with the wrong material (or none): houdini_read_material names what it resolves to and where ",
+   "_unsure": false
+  },
+  {
+   "token": "get_usd_layers",
+   "synapse": "houdini_stage_info",
+   "doc": "read USD stage/layer info",
+   "guide_name": "solaris",
+   "section_title": "Order of work",
+   "sentence": "houdini_stage_info, `list_usd_prims`, houdini_read_material, `get_usd_layers` to verify hierarchy, bindings and the layer stack. A prim that renders with the wrong material (or none): houdini_read_material names what it resolves to and wher",
+   "_unsure": true
+  },
+  {
+   "token": "list_usd_prims",
+   "synapse": "houdini_query_prims",
+   "doc": "list USD prims on the stage",
+   "guide_name": "solaris",
+   "section_title": "Order of work",
+   "sentence": "houdini_stage_info, `list_usd_prims`, houdini_read_material, houdini_stage_info to verify hierarchy, bindings and the layer stack. A prim that renders with the wrong material (or none): houdini_read_material names what it resolves to and wh",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "solaris",
+   "section_title": "",
+   "sentence": "model you need, from `solaris/about_lops` (read it with get_help_page when a",
+   "_unsure": false
+  },
+  {
+   "token": "start_render",
+   "synapse": "houdini_render",
+   "doc": "start a render",
+   "guide_name": "solaris",
+   "section_title": "Viewport-first lookdev",
+   "sentence": "`start_render` / houdini_create_node are only for final renders the user explicitly asks to be written to disk. The viewport holds its own copy of the display-flag node's stage, so looking at a node is not free but is far cheaper than a ren",
+   "_unsure": false
+  },
+  {
+   "token": "get_top_scheduler_info",
+   "synapse": "tops_pipeline_status",
+   "doc": "read the TOP pipeline/scheduler status",
+   "guide_name": "tops",
+   "section_title": "Order of work",
+   "sentence": "`get_top_scheduler_info` when work distribution rather than graph logic is the question.",
+   "_unsure": true
+  },
+  {
+   "token": "generate_static_items",
+   "synapse": "tops_generate_items",
+   "doc": "generate PDG work items without cooking",
+   "guide_name": "tops",
+   "section_title": "What cooks, and what \"cook\" even means here",
+   "sentence": "- `generate_static_items` first, always. It shows the work to be done before any of it runs, which is how you catch a wedge producing 4,000 items instead of 40 (`tops/tips`).",
+   "_unsure": false
+  },
+  {
+   "token": "get_work_item_states",
+   "synapse": "tops_query_items",
+   "doc": "query PDG work-item states",
+   "guide_name": "tops",
+   "section_title": "Order of work",
+   "sentence": "tops_generate_items, then `get_work_item_states` and `get_pdg_graph`. Read the item count and the dependencies BEFORE cooking. A wrong count here is cheap; a wrong count after a farm submission is not.",
+   "_unsure": false
+  },
+  {
+   "token": "connect_nodes_batch",
+   "synapse": "houdini_connect_nodes",
+   "doc": "wire nodes (SYNAPSE connects one pair per call)",
+   "guide_name": "tops",
+   "section_title": "Order of work",
+   "sentence": "Build the graph and wire it with `connect_nodes_batch`.",
+   "_unsure": true
+  },
+  {
+   "token": "get_work_item_info",
+   "synapse": "tops_get_work_items",
+   "doc": "read PDG work items",
+   "guide_name": "tops",
+   "section_title": "Order of work",
+   "sentence": "`cook_top_node`, monitoring with `get_work_item_info`. `pause_top_cook` and `cancel_top_cook` exist; use them rather than letting a wrong graph finish.",
+   "_unsure": false
+  },
+  {
+   "token": "dirty_work_items",
+   "synapse": "tops_dirty_node",
+   "doc": "dirty a TOP node so it recooks",
+   "guide_name": "tops",
+   "section_title": "What cooks, and what \"cook\" even means here",
+   "sentence": "`dirty_work_items` then `cook_top_node` is the force-recook pair, and dirtying is what you do after changing a parameter the graph already consumed.",
+   "_unsure": false
+  },
+  {
+   "token": "cancel_top_cook",
+   "synapse": "tops_cancel_cook",
+   "doc": "cancel an in-flight PDG cook",
+   "guide_name": "tops",
+   "section_title": "Order of work",
+   "sentence": "`pause_top_cook` and `cancel_top_cook` exist; use them rather than letting a wrong graph finish.",
+   "_unsure": false
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "tops",
+   "section_title": "Core TOP vocabulary",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "pause_top_cook",
+   "synapse": "tops_pause_cook",
+   "doc": "pause a PDG cook",
+   "guide_name": "tops",
+   "section_title": "Order of work",
+   "sentence": "`pause_top_cook` and tops_cancel_cook exist; use them rather than letting a wrong graph finish.",
+   "_unsure": false
+  },
+  {
+   "token": "cook_top_node",
+   "synapse": "tops_cook_node",
+   "doc": "cook a TOP/PDG node",
+   "guide_name": "tops",
+   "section_title": "What cooks, and what \"cook\" even means here",
+   "sentence": "tops_dirty_node then `cook_top_node` is the force-recook pair, and dirtying is what you do after changing a parameter the graph already consumed.",
+   "_unsure": false
+  },
+  {
+   "token": "get_pdg_graph",
+   "synapse": "tops_get_dependency_graph",
+   "doc": "read the PDG dependency graph",
+   "guide_name": "tops",
+   "section_title": "Order of work",
+   "sentence": "tops_generate_items, then tops_query_items and `get_pdg_graph`. Read the item count and the dependencies BEFORE cooking. A wrong count here is cheap; a wrong count after a farm submission is not.",
+   "_unsure": false
+  },
+  {
+   "token": "topcook",
+   "synapse": "tops_cook_node",
+   "doc": "cook a TOP/PDG node",
+   "guide_name": "tops",
+   "section_title": "What cooks, and what \"cook\" even means here",
+   "sentence": "- Non-interactive cooking is `hython $HHP/pdgjob/topcook.py --hip scene.hip --toppath /tasks/topnet1`, or the `topcook` hscript command under hbatch. Worth knowing before anyone builds a farm wrapper by hand.",
+   "_unsure": false
+  },
+  {
+   "token": "get_usd_composition",
+   "synapse": "synapse_inspect_stage",
+   "doc": "inspect USD stage composition",
+   "guide_name": "troubleshooting",
+   "section_title": "Common causes",
+   "sentence": "- USD composition: `get_usd_layers` and `get_usd_composition` for the layer stack.",
+   "_unsure": true
+  },
+  {
+   "token": "get_geometry_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a SOP node and its geometry",
+   "guide_name": "troubleshooting",
+   "section_title": "Systematic debug workflow",
+   "sentence": "Narrow by domain: `get_geometry_info` on the node and its inputs; `get_stage_info` and `list_usd_prims` for USD; and `get_dop_object` for sims.",
+   "_unsure": true
+  },
+  {
+   "token": "list_node_types",
+   "synapse": "synapse_scout",
+   "doc": "ground/verify a node type name against the live catalogue",
+   "guide_name": "troubleshooting",
+   "section_title": "Common causes",
+   "sentence": "- Node type not found: `list_node_types` to confirm the name exists in that context.",
+   "_unsure": false
+  },
+  {
+   "token": "get_expression",
+   "synapse": "houdini_get_parm",
+   "doc": "read a parm value (expression not separately exposed)",
+   "guide_name": "troubleshooting",
+   "section_title": "Systematic debug workflow",
+   "sentence": "`get_expression` on parameters whose references look broken.",
+   "_unsure": true
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "troubleshooting",
+   "section_title": "Systematic debug workflow",
+   "sentence": "`get_scene_info` for overall state, then find_error_nodes for everything erroring or warning.",
+   "_unsure": false
+  },
+  {
+   "token": "get_stage_info",
+   "synapse": "houdini_stage_info",
+   "doc": "summarise the USD stage",
+   "guide_name": "troubleshooting",
+   "section_title": "Systematic debug workflow",
+   "sentence": "Narrow by domain: synapse_inspect_node on the node and its inputs; `get_stage_info` and `list_usd_prims` for USD; and for sims.",
+   "_unsure": false
+  },
+  {
+   "token": "get_usd_layers",
+   "synapse": "houdini_stage_info",
+   "doc": "read USD stage/layer info",
+   "guide_name": "troubleshooting",
+   "section_title": "Systematic debug workflow",
+   "sentence": "- USD composition: `get_usd_layers` and synapse_inspect_stage for the layer stack.",
+   "_unsure": true
+  },
+  {
+   "token": "list_usd_prims",
+   "synapse": "houdini_query_prims",
+   "doc": "list USD prims on the stage",
+   "guide_name": "troubleshooting",
+   "section_title": "Systematic debug workflow",
+   "sentence": "Narrow by domain: synapse_inspect_node on the node and its inputs; houdini_stage_info and `list_usd_prims` for USD; and for sims.",
+   "_unsure": false
+  },
+  {
+   "token": "connect_nodes",
+   "synapse": "houdini_connect_nodes",
+   "doc": "wire one node's output into another's input",
+   "guide_name": "troubleshooting",
+   "section_title": "Common causes",
+   "sentence": "- Missing inputs: `connect_nodes`, or a wrong file path.",
+   "_unsure": false
+  },
+  {
+   "token": "get_node_info",
+   "synapse": "synapse_inspect_node",
+   "doc": "introspect a node (type, parms, connections)",
+   "guide_name": "troubleshooting",
+   "section_title": "Systematic debug workflow",
+   "sentence": "`get_node_info` on each error node: full message plus input connection state.",
+   "_unsure": false
+  },
+  {
+   "token": "get_parameter",
+   "synapse": "houdini_get_parm",
+   "doc": "read a node parameter value",
+   "guide_name": "troubleshooting",
+   "section_title": "Systematic debug workflow",
+   "sentence": "and `get_parameter` to compare values against defaults.",
+   "_unsure": false
+  },
+  {
+   "token": "capture_screenshot",
+   "synapse": "houdini_capture_viewport",
+   "doc": "capture the viewport to an image",
+   "guide_name": "vellum",
+   "section_title": "Order of work",
+   "sentence": "`cook_frame_range(node_path, start, end)` over a short range, watching per-frame cook time and point counts, then `capture_screenshot`. Fix stretch with iterations, penetration with substeps.",
+   "_unsure": false
+  },
+  {
+   "token": "get_scene_info",
+   "synapse": "houdini_scene_info",
+   "doc": "summarise the /obj scene",
+   "guide_name": "vellum",
+   "section_title": "Vellum node vocabulary",
+   "sentence": "Check `get_scene_info` before relying on an annotated name.",
+   "_unsure": false
+  },
+  {
+   "token": "get_help_page",
+   "synapse": "synapse_knowledge_lookup",
+   "doc": "H22 help/prose lookup by page path",
+   "guide_name": "vellum",
+   "section_title": "",
+   "sentence": "page with get_help_page, and use setup_vellum_sim to build the network.",
+   "_unsure": false
+  }
+ ],
+ "drops": [
+  {
+   "token": "get_hda_sections",
+   "file": "guides/assets.md",
+   "line": 48,
+   "reason": "HDA section read not exposed as a SYNAPSE tool"
+  },
+  {
+   "token": "set_current_network",
+   "file": "guides/copernicus.md",
+   "line": 38,
+   "reason": "GUI network navigation; no SYNAPSE tool and none needed (paths are absolute)"
+  },
+  {
+   "token": "get_sim_memory_usage",
+   "file": "guides/dyno.md",
+   "line": 66,
+   "reason": "sim memory not a SYNAPSE tool (see synapse_live_metrics for live stats)"
+  },
+  {
+   "token": "get_simulation_info",
+   "file": "guides/dyno.md",
+   "line": 61,
+   "reason": "DOP simulation introspection not a SYNAPSE tool"
+  },
+  {
+   "token": "reset_simulation",
+   "file": "guides/dyno.md",
+   "line": 62,
+   "reason": "DOP reset not a SYNAPSE tool"
+  },
+  {
+   "token": "get_dop_object",
+   "file": "guides/dyno.md",
+   "line": 61,
+   "reason": "DOP object introspection not exposed as a SYNAPSE tool"
+  },
+  {
+   "token": "get_sim_memory_usage",
+   "file": "guides/finiteelements.md",
+   "line": 40,
+   "reason": "sim memory not a SYNAPSE tool (see synapse_live_metrics for live stats)"
+  },
+  {
+   "token": "get_sim_memory_usage",
+   "file": "guides/fluid.md",
+   "line": 63,
+   "reason": "sim memory not a SYNAPSE tool (see synapse_live_metrics for live stats)"
+  },
+  {
+   "token": "set_node_flags",
+   "file": "guides/model.md",
+   "line": 103,
+   "reason": "display/render/bypass flags not exposed as a SYNAPSE tool"
+  },
+  {
+   "token": "validate_vex",
+   "file": "guides/model.md",
+   "line": 122,
+   "reason": "VEX validation is the compiler-feedback path (BRAINSTEM), not a standalone tool"
+  },
+  {
+   "token": "get_sim_memory_usage",
+   "file": "guides/mpm.md",
+   "line": 40,
+   "reason": "sim memory not a SYNAPSE tool (see synapse_live_metrics for live stats)"
+  },
+  {
+   "token": "get_parameter_schema",
+   "file": "guides/props.md",
+   "line": 32,
+   "reason": "no parameter-schema dump tool in SYNAPSE"
+  },
+  {
+   "token": "get_sim_memory_usage",
+   "file": "guides/pyro.md",
+   "line": 67,
+   "reason": "sim memory not a SYNAPSE tool (see synapse_live_metrics for live stats)"
+  },
+  {
+   "token": "reset_simulation",
+   "file": "guides/pyro.md",
+   "line": 67,
+   "reason": "DOP reset not a SYNAPSE tool"
+  },
+  {
+   "token": "set_viewport_renderer",
+   "file": "guides/render.md",
+   "line": 31,
+   "reason": "viewport renderer toggle is a GUI action, not a SYNAPSE tool"
+  },
+  {
+   "token": "set_viewport_renderer",
+   "file": "guides/solaris.md",
+   "line": 31,
+   "reason": "viewport renderer toggle is a GUI action, not a SYNAPSE tool"
+  },
+  {
+   "token": "get_parameter_schema",
+   "file": "guides/solaris.md",
+   "line": 69,
+   "reason": "no parameter-schema dump tool in SYNAPSE"
+  },
+  {
+   "token": "set_current_network",
+   "file": "guides/solaris.md",
+   "line": 35,
+   "reason": "GUI network navigation; no SYNAPSE tool and none needed (paths are absolute)"
+  },
+  {
+   "token": "set_current_network",
+   "file": "guides/tops.md",
+   "line": 48,
+   "reason": "GUI network navigation; no SYNAPSE tool and none needed (paths are absolute)"
+  },
+  {
+   "token": "get_parameter_schema",
+   "file": "guides/troubleshooting.md",
+   "line": 7,
+   "reason": "no parameter-schema dump tool in SYNAPSE"
+  },
+  {
+   "token": "get_sim_memory_usage",
+   "file": "guides/troubleshooting.md",
+   "line": 22,
+   "reason": "sim memory not a SYNAPSE tool (see synapse_live_metrics for live stats)"
+  },
+  {
+   "token": "get_simulation_info",
+   "file": "guides/troubleshooting.md",
+   "line": 8,
+   "reason": "DOP simulation introspection not a SYNAPSE tool"
+  },
+  {
+   "token": "get_dop_object",
+   "file": "guides/troubleshooting.md",
+   "line": 8,
+   "reason": "DOP object introspection not exposed as a SYNAPSE tool"
+  },
+  {
+   "token": "set_node_flags",
+   "file": "guides/troubleshooting.md",
+   "line": 9,
+   "reason": "display/render/bypass flags not exposed as a SYNAPSE tool"
+  },
+  {
+   "token": "validate_vex",
+   "file": "guides/troubleshooting.md",
+   "line": 17,
+   "reason": "VEX validation is the compiler-feedback path (BRAINSTEM), not a standalone tool"
+  }
+ ],
+ "counts": {
+  "total": 31,
+  "corpus": 26,
+  "quarantine": 5,
+  "chunks": 115,
+  "tool_rewrites": 113,
+  "tool_drops": 25
+ }
+}

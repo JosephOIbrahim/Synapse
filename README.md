@@ -118,6 +118,7 @@ flowchart TB
 - **Recall project decisions** when the memory store is configured.
 - **Use a saved lookdev suggestion** through the optional Stage 0 workflow.
 - **Apply a saved scene setup** (`synapse_apply_fixture`, shipped since 5.43.0). A fixture is a setup stored as data, not a prompt: applying it twice is a no-op, and a name clash refuses instead of renaming. Details and what is proven: [BLOCKS in the changelog](CHANGELOG.md).
+- **How nodes go together:** `rag/corpus/guides` — 31 workflow guides from [fxhoudinimcp](https://github.com/healkeiser/fxhoudinimcp) @ 29b6695b, MIT, gate-checked against 22.0.400.
 
 **New in 5.78.0** — the artist sees why, and Jev routes the work.
 
