@@ -43,7 +43,11 @@ BASELINE = Path(__file__).resolve().parent / "audit_baseline.json"
 HYTHON = os.environ.get("SYNAPSE_HYTHON") or r"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe"
 
 _FAIL = re.compile(r"^\s*(?P<check>.+?)\s*:\s*(?P<detail>.*?)\s*\[FAIL\]\s*$")
-_RESULT = re.compile(r"G3 RESULT:\s*(\d+) FAIL")
+# The audit prints TWO result lines: "G3 RESULT: <n> FAIL · <n> WARN" when something failed,
+# and "G3 RESULT: pass · <n> WARN" when nothing did (audit_panel.py:540,542). Matching only the
+# first made a fully green audit look like a CRASH -- a gate that cannot recognise success is as
+# dead as one that cannot pass. Match both; "pass" means zero failures.
+_RESULT = re.compile(r"G3 RESULT:\s*(?:(\d+) FAIL|pass)", re.I)
 
 
 def run_audit() -> tuple[int, str]:
@@ -66,7 +70,8 @@ def parse(out: str) -> tuple[list[str], int | None, bool]:
     """(failing check names, the audit's own FAIL count, ran_to_completion)."""
     names = [m.group("check").strip() for ln in out.splitlines() if (m := _FAIL.match(ln))]
     m = _RESULT.search(out)
-    return names, (int(m.group(1)) if m else None), m is not None
+    counted = None if m is None else (int(m.group(1)) if m.group(1) else 0)
+    return names, counted, m is not None
 
 
 def main() -> int:

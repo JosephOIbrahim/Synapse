@@ -51,7 +51,11 @@ MAIN_TREE = Path(r"C:/Users/User/SYNAPSE")
 HYTHON = os.environ.get("SYNAPSE_HYTHON") or r"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe"
 
 _FAIL = re.compile(r"^\s*(?P<check>.+?)\s*:\s*.*?\[FAIL\]\s*$")
-_RESULT = re.compile(r"G3 RESULT:\s*(\d+) FAIL")
+# The audit prints TWO result lines: "G3 RESULT: <n> FAIL · <n> WARN" when something failed,
+# and "G3 RESULT: pass · <n> WARN" when nothing did (audit_panel.py:540,542). Matching only the
+# first made a fully green audit look like a CRASH -- a gate that cannot recognise success is as
+# dead as one that cannot pass. Match both; "pass" means zero failures.
+_RESULT = re.compile(r"G3 RESULT:\s*(?:(\d+) FAIL|pass)", re.I)
 _PYFAIL = re.compile(r"^FAILED\s+(?P<nodeid>\S+)")
 _SUMMARY = re.compile(r"^=*\s*(?:\d+ \w+(?:, )?)+ in [\d.]+s")
 
