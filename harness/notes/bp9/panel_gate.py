@@ -115,6 +115,22 @@ def load(p: Path) -> set[str]:
     return {f["check"] for f in json.loads(p.read_text(encoding="utf-8")).get("failures", [])}
 
 
+def flaky(p: Path) -> set[str]:
+    """Rows marked flaky: QUARANTINED, not baselined.
+
+    A ratchet has two verdicts and a nondeterministic test fits neither. Baseline it and a
+    passing run reports RATCHET LOOSE (exit 2, "delete this row"); leave it out and a failing
+    run reports RATCHET BROKEN (exit 1, "a new failure"). Both are non-zero, so the gate can
+    never be green while such a row exists in either state, and the honest reading is that the
+    row carries no signal either way. A quarantined row is counted in NEITHER direction, and is
+    printed on every run with its evidence so the quarantine stays visible instead of silent.
+    """
+    if not p.exists():
+        return set()
+    return {f["check"] for f in json.loads(p.read_text(encoding="utf-8")).get("failures", [])
+            if f.get("flaky")}
+
+
 def save(p: Path, names, why: str, owners: dict[str, str] | None = None) -> None:
     owners = owners or {}
     p.write_text(json.dumps({
@@ -123,11 +139,16 @@ def save(p: Path, names, why: str, owners: dict[str, str] | None = None) -> None
     }, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def ratchet(label: str, now: set[str], base: set[str]) -> int:
-    new, fixed = sorted(now - base), sorted(base - now)
-    print(f"\n{label}: {len(now)} failing, {len(base)} baselined")
+def ratchet(label: str, now: set[str], base: set[str],
+            quarantined: set[str] = frozenset()) -> int:
+    new = sorted(now - base - quarantined)
+    fixed = sorted(base - now - quarantined)
+    print(f"\n{label}: {len(now)} failing, {len(base)} baselined, {len(quarantined)} quarantined")
     for n in sorted(now):
-        print(f"   {'NEW  ' if n in new else 'known'}  {n}")
+        tag = "FLAKY" if n in quarantined else ("NEW  " if n in new else "known")
+        print(f"   {tag}  {n}")
+    for n in sorted(quarantined - now):
+        print(f"   FLAKY  {n}  (passed this run; quarantined, so it counts neither way)")
     for n in fixed:
         print(f"   FIXED  {n}  <- delete this row from the baseline in this commit")
     if new:
@@ -153,7 +174,7 @@ def audit(e: dict, accept: bool) -> int:
              "that fixes it.")
         print(f"\naudit baseline rewritten with {len(names)} row(s)")
         return 0
-    return ratchet("audit", names, load(AUDIT_BASELINE))
+    return ratchet("audit", names, load(AUDIT_BASELINE), flaky(AUDIT_BASELINE))
 
 
 def seat(e: dict, accept: bool) -> int:
@@ -173,7 +194,7 @@ def seat(e: dict, accept: bool) -> int:
               "PNL-L7 (R2-B1 drops the Doctor yellow; the hue-bucket guard goes green with it)"})
         print(f"seat baseline rewritten with {len(names)} row(s)")
         return 0
-    return ratchet("seat suite", names, load(SEAT_BASELINE))
+    return ratchet("seat suite", names, load(SEAT_BASELINE), flaky(SEAT_BASELINE))
 
 
 def main() -> int:

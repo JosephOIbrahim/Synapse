@@ -256,7 +256,11 @@ def apply_baseline_corrections(cwd: Path) -> list[str]:
             continue
         d["failures"] = d.get("failures", []) + [
             {"check": c, "owner": "pre-existing on master (baseline correction)",
-             "why": rows[c]} for c in new]
+             # QUARANTINED, not baselined. It fails under full-suite load and passes on a
+             # luckier run, so a ratchet reports it either as a NEW failure (exit 1) or as a
+             # baseline row that now passes (exit 2). Both are non-zero: the row carries no
+             # signal in either direction, so it counts in neither and prints every run.
+             "flaky": True, "why": rows[c]} for c in new]
         d["failures"].sort(key=lambda f: f["check"])
         p.write_text(json.dumps(d, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         added += new
