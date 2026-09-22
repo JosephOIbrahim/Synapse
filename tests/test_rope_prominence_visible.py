@@ -16,12 +16,10 @@ hover, SIGNAL_PRESS pressed. WARM leaves hero BUTTON rules entirely;
 non-button hero rules (meters, labels, verbs) keep their L5-14 accents.
 SIGNAL_DEEP is a shade within SIGNAL (x0.85), not a third accent.
 
-L5-20: Stop is the mark's second surface (MarkDot.set_halt_handler fires
-the same _on_stop the rail button fires), so #DsStop takes the mark's one
-warm note as a knockout -- WARM fill, TEXT_ON_ACCENT ink, WARM_HOVER /
-WARM_PRESS on touch, the shared DISABLED_BG / TEXT_DISABLED grey when
-idle. Not a hero-button rule: the L5-16 no-WARM-on-hero-buttons pin is
-untouched, and no hex outside tokens.py may appear.
+Artist request 2026-09-22: Stop moves beneath Send and matches Send's
+styling. Its effective cascade now uses SIGNAL_DEEP, SIGNAL and SIGNAL_PRESS,
+with the shared disabled fill and ink. Historical base rules remain intact;
+the editorial override owns this change. Other prominence rules are unchanged.
 """
 
 import re
@@ -129,57 +127,47 @@ def _dsstop_rules(qss: str) -> list[str]:
     return [m.group(0) for m in re.finditer(r'QPushButton#DsStop[^{}]*\{[^{}]*\}', qss)]
 
 
-def test_stop_is_a_warm_knockout():
-    """L5-20 as amended at the seat, then amended again by CRIT.md 2026-09-15
-    ranked change 5 (one action family): the #DsStop rest rule paints WARM
-    + TEXT_ON_ACCENT ink -- the knockout the qss.py comment always described.
-    HOT_SOFT is retired from the action family; rest is now the full WARM the
-    hover already used. Pin carried, not weakened: the rest rule must still be
-    a knockout (ink asserted unchanged) and must still be in the warm family."""
-    rules = _dsstop_rules(stylesheet())
-    assert rules, "no QPushButton#DsStop rule -- Stop still rides the danger variant"
-    base = [r for r in rules if ":" not in r.split("{", 1)[0]]
-    assert base, "no rest-state QPushButton#DsStop rule"
-    assert _hexes(t.WARM) & _hexes(base[0]), "DsStop rest fill is not WARM"
-    assert _hexes(t.TEXT_ON_ACCENT) & _hexes(base[0]), (
-        "DsStop ink is not TEXT_ON_ACCENT -- not a knockout"
-    )
+def _button_properties(name, state=""):
+    """Resolve declarations in equal-specificity rules, including overrides."""
+    properties = {}
+    selector = re.escape("QPushButton#" + name + state)
+    for match in re.finditer(selector + r"\s*\{([^{}]*)\}", stylesheet()):
+        properties.update((key.strip(), value.strip()) for key, value in
+                          re.findall(r"([a-z-]+)\s*:\s*([^;]+);", match.group(1)))
+    assert properties, "no rule for " + name + state
+    return properties
+
+
+def test_stop_matches_send_knockout():
+    """The requested matching style replaces the former warm Stop fill."""
+    stop, send = _button_properties("DsStop"), _button_properties("DsSend")
+    assert stop["background"] == send["background"] == t.SIGNAL_DEEP
+    assert stop["color"] == send["color"] == t.TEXT_ON_ACCENT
+    assert stop["border"] == send["border"] == "none"
+    assert stop["border-radius"] == send["border-radius"]
 
 
 def test_stop_defines_hover_pressed_and_disabled():
-    """L5-20: the interaction ramp rides the WARM companions and the
-    disabled state matches the filled siblings (the button ships disabled
-    and hidden until work is in flight -- that state must exist)."""
-    qss = stylesheet()
+    """Stop carries Send's complete interaction ramp, not just its rest fill."""
     for state, token, label in (
-        # Hover moved off WARM when rest took it (crit 2026-09-15 rank 5
-        # close-out): WARM == rest made hover invisible. WARM_HOVER is the
-        # same ramp's hover stop, so the pin is carried, not weakened --
-        # still one exact token, still the warm family, still no new hue.
-        (":hover", t.WARM_HOVER, "WARM_HOVER"),
-        (":pressed", t.WARM_PRESS, "WARM_PRESS"),
+        (":hover", t.SIGNAL, "SIGNAL"),
+        (":pressed", t.SIGNAL_PRESS, "SIGNAL_PRESS"),
+        (":disabled", t.DISABLED_BG, "DISABLED_BG"),
     ):
-        rule = re.search(r'QPushButton#DsStop' + state + r'\s*\{[^{}]*\}', qss)
-        assert rule, f"no QPushButton#DsStop{state} rule"
-        assert _hexes(token) & _hexes(rule.group(0)), f"DsStop{state} is not {label}"
-    disabled = re.search(r'QPushButton#DsStop:disabled\s*\{[^{}]*\}', qss)
-    assert disabled, "no QPushButton#DsStop:disabled rule"
-    assert _hexes(t.DISABLED_BG) & _hexes(disabled.group(0)), (
-        "DsStop:disabled fill is not DISABLED_BG"
-    )
-    assert _hexes(t.TEXT_DISABLED) & _hexes(disabled.group(0)), (
-        "DsStop:disabled ink is not TEXT_DISABLED"
-    )
+        stop, send = _button_properties("DsStop", state), _button_properties("DsSend", state)
+        assert stop["background"] == send["background"] == token, label
+    assert _button_properties("DsStop", ":disabled")["color"] == t.TEXT_DISABLED
 
 
 def test_stop_paints_only_sanctioned_tokens():
-    """L5-20: no new hex -- every hex in the DsStop rules is one of the
-    tokens the task sanctions (all pre-existing in tokens.py)."""
+    """Every effective Stop color belongs to the existing Send token family."""
     sanctioned = (
-        _hexes(t.WARM) | _hexes(t.WARM_HOVER) | _hexes(t.WARM_PRESS)
+        _hexes(t.SIGNAL_DEEP) | _hexes(t.SIGNAL) | _hexes(t.SIGNAL_PRESS)
         | _hexes(t.TEXT_ON_ACCENT) | _hexes(t.DISABLED_BG) | _hexes(t.TEXT_DISABLED)
     )
-    rogue = _hexes("\n".join(_dsstop_rules(stylesheet()))) - sanctioned
+    effective = "\n".join(value for state in ("", ":hover", ":pressed", ":disabled")
+                          for value in _button_properties("DsStop", state).values())
+    rogue = _hexes(effective) - sanctioned
     assert not rogue, f"DsStop rules paint hexes outside the sanctioned tokens: {sorted(rogue)}"
 
 

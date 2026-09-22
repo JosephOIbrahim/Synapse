@@ -1255,12 +1255,17 @@ QPushButton#DsComposerAttach {{
 QPushButton#DsComposerAttach:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsComposerAttach:focus {{ border: 1px solid {t.SIGNAL}; }}
 QLabel#DsComposerHint {{ color: {t.TEXT_SECONDARY}; }}
-/* Artist-requested compact Stop; other interactive targets keep their floors. */
+/* Stop shares Send's type and blue states, retaining its compact height. */
 QPushButton#DsStop {{
+    background: {t.SIGNAL_DEEP}; color: {t.TEXT_ON_ACCENT};
+    font-size: {t.scaled(t.SIZE_SMALL, scale)}px; font-weight: {t.WEIGHT_MEDIUM};
     min-height: {t.scaled(t.SPACE_MD + t.SPACE_XS, scale)}px;
     max-height: {t.scaled(t.SPACE_MD + t.SPACE_XS, scale)}px;
     padding: 0 {t.scaled(t.SPACE_SM, scale)}px;
 }}
+QPushButton#DsStop:hover {{ background: {t.SIGNAL}; }}
+QPushButton#DsStop:pressed {{ background: {t.SIGNAL_PRESS}; }}
+QPushButton#DsStop:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
 QScrollArea#DsConnectionScroll, QWidget#DsConnectionViewport,
 QWidget#DsConnectionPage, QGroupBox#DsJevRouting {{
     background: {t.PANEL}; color: {t.TEXT_PRIMARY};

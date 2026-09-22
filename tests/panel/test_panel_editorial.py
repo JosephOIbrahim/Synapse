@@ -91,7 +91,13 @@ def test_stop_stays_on_right_and_tells_the_truth_through_second_task(make_panel,
     panel._set_busy(True)
     settle()
     assert panel._stop_btn.isVisible()
-    assert right(panel._stop_btn, panel) == right(panel._author_lbl, panel)
+    assert panel._stop_btn.parentWidget() is panel._input
+    assert right(panel._stop_btn, panel) == right(panel._send_btn, panel)
+    assert panel._stop_btn.width() == panel._send_btn.width()
+    assert panel._stop_btn.geometry().top() > panel._send_btn.geometry().bottom()
+    assert panel._input.viewport().geometry().bottom() < panel._send_btn.geometry().top()
+    assert panel._stop_btn.font() == panel._send_btn.font()
+    assert panel._stop_btn.text() == "STOP"
     assert panel._stop_btn.width() >= panel._stop_btn.sizeHint().width()
     assert panel._stop_btn.accessibleName() == "Stop current task"
     panel._stop_btn.click()
@@ -104,7 +110,42 @@ def test_stop_stays_on_right_and_tells_the_truth_through_second_task(make_panel,
     panel._regate_stop()
     settle()
     assert panel._stop_btn.isVisible() and panel._stop_btn.isEnabled()
-    assert right(panel._stop_btn, panel) == right(panel._author_lbl, panel)
+    assert right(panel._stop_btn, panel) == right(panel._send_btn, panel)
+    assert panel._stop_btn.geometry().top() > panel._send_btn.geometry().bottom()
+    panel._input.setPlainText("Keep this draft")
+    for profile in ("curious", "ml", "expert"):
+        panel._recompose(profile)
+        panel._input.set_user_height(64)
+        panel.resize(width, 760)
+        settle()
+        assert panel._stop_btn.isVisible() and panel._stop_btn.isEnabled()
+        assert panel._input.rect().contains(panel._stop_btn.geometry())
+        assert panel._input.viewport().geometry().bottom() < panel._send_btn.geometry().top()
+        assert panel._input.viewport().height() >= panel._input.fontMetrics().height()
+        assert right(panel._stop_btn, panel) == right(panel._send_btn, panel)
+        assert panel._stop_btn.geometry().top() > panel._send_btn.geometry().bottom()
+        assert panel._input.toPlainText() == "Keep this draft"
+    panel._set_busy(False)
+    settle()
+    assert not panel._stop_btn.isVisible() and panel._send_btn.isEnabled()
+    # Internal consent/work views hide the composer. The persistent mark
+    # must still stop the same worker, including on the following task.
+    for _ in range(2):
+        panel._set_busy(True)
+        panel._set_face("work")
+        panel._worker = SimpleNamespace(abort=lambda: aborts.append(True))
+        settle()
+        assert not panel._stop_btn.isVisible() and panel._mark.isVisible()
+        assert panel._mark.halt_available()
+        before = len(aborts)
+        QtTest.QTest.mouseClick(panel._mark, QtCore.Qt.LeftButton)
+        assert len(aborts) == before + 1
+        assert panel._was_busy and panel._header_status.text() == "Stopping…"
+        assert not panel._stop_btn.isEnabled() and not panel._mark.halt_available()
+        QtTest.QTest.mouseClick(panel._mark, QtCore.Qt.LeftButton)
+        assert len(aborts) == before + 1
+        panel._worker = None
+        panel._set_busy(False)
 
 
 @pytest.mark.parametrize("scale,width,min_height", [(1.0, 380, 40), (1.25, 480, 50), (2.25, 720, 90)])
@@ -340,7 +381,7 @@ def test_stop_uses_requested_compact_height_without_changing_other_targets(make_
     assert panel._stop_btn.height() == round(20 * scale)
     assert panel._stop_btn.fontMetrics().height() <= panel._stop_btn.height()
     assert box(panel._stop_btn, panel).contains(text_box(panel._stop_btn, panel))
-    assert right(panel._stop_btn, panel) == right(panel._input, panel)
+    assert right(panel._stop_btn, panel) == right(panel._send_btn, panel)
     assert panel._send_btn.height() >= 26 and panel._attach_btn.height() >= 26
 
 

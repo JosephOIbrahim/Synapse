@@ -338,9 +338,13 @@ class _GrowingInput(QtWidgets.QTextEdit):
 
     def _autosize(self):
         content = int(self.document().size().height()) + 18
-        h = max(self._user_h, min(self._max_h, content))
+        stop = getattr(self, "_stop_widget", None)
+        # The extra floor belongs to the active stack. Preserve the artist's
+        # existing idle divider position when only Send is present.
+        floor = self._readable_floor() if stop is not None and not stop.isHidden() else self._floor
+        h = max(floor, self._user_h, min(self._max_h, content))
         if self._cap is not None:
-            h = max(self._floor, min(h, self._cap))
+            h = max(floor, min(h, self._cap))
         self.setFixedHeight(h)
         owner = self.parentWidget()
         if owner is not None and owner.layout() is not None and owner.layout().indexOf(self) >= 0:
@@ -349,6 +353,12 @@ class _GrowingInput(QtWidgets.QTextEdit):
             required = owner.layout().totalHeightForWidth(owner.width())
             if required >= 0:
                 owner.setMinimumHeight(required)
+
+    def _readable_floor(self):
+        insets = self.contentsMargins()
+        return max(self._floor, self.viewportMargins().bottom()
+                   + insets.top() + insets.bottom() + self.fontMetrics().height()
+                   + round(2 * self.document().documentMargin()))
 
     def cap_height(self, cap):
         """Pane-imposed ceiling (CTO B4 ruling 2026-09-05). The artist's
@@ -361,9 +371,7 @@ class _GrowingInput(QtWidgets.QTextEdit):
         # placeholder. The cap's floor is one readable line above the Send
         # margin, whatever the scale - never the bare logical floor.
         if cap is not None:
-            line_floor = (self.viewportMargins().bottom()
-                          + self.fontMetrics().height() + 12)
-            cap = max(self._floor, line_floor, int(cap))
+            cap = max(self._readable_floor(), int(cap))
         if cap != self._cap:
             self._cap = cap
             self._autosize()
@@ -385,22 +393,19 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self._user_h = max(self._floor, min(self._max_h, int(h)))
         self._autosize()
 
-    # -- embedded Send (v9 comp: bottom-right INSIDE the field) -------------
-    def attach_send(self, btn, accessory=None):
-        """Parent the Send button to the field itself (NOT the viewport, so it
-        never scrolls) and reserve a bottom viewport margin so text never
-        flows under it."""
+    # -- composer actions: Send above Stop, Attach alongside Send ----------
+    def attach_send(self, btn, accessory=None, stop=None):
+        """Keep actions outside the scrolling viewport and reserve their band."""
         self._send_widget = btn
         self._attach_widget = accessory
+        self._stop_widget = stop
         btn.setParent(self)
         if accessory is not None:
             accessory.setParent(self)
             accessory.show()
-        try:
-            height = max(btn.sizeHint().height(), accessory.sizeHint().height() if accessory else 0)
-            self.setViewportMargins(0, 0, 0, height + t.SPACE_MD)
-        except Exception:
-            pass
+        if stop is not None:
+            stop.setParent(self)
+            stop.installEventFilter(self)
         btn.show()
         self._place_send()
 
@@ -411,12 +416,33 @@ class _GrowingInput(QtWidgets.QTextEdit):
         bs = btn.sizeHint()
         accessory = self._attach_widget
         height = max(bs.height(), accessory.sizeHint().height() if accessory else 0)
-        btn.resize(bs.width(), height)
-        bottom = self.height() - height - t.SPACE_SM
-        btn.move(self.width() - bs.width() - t.SPACE_12, bottom)
+        stop = getattr(self, "_stop_widget", None)
+        stop_height = stop.sizeHint().height() if stop is not None and not stop.isHidden() else 0
+        band = height + (stop_height + t.SPACE_XS if stop_height else 0)
+        # Qt already excludes the styled field's bottom inset. Reserve only
+        # the remaining action band plus the gap above it, not that inset twice.
+        margin = max(0, band + t.SPACE_SM + t.SPACE_XS - self.contentsMargins().bottom())
+        if self.viewportMargins().bottom() != margin:
+            self.setViewportMargins(0, 0, 0, margin)
+            self._autosize()
+        width = max(bs.width(), stop.sizeHint().width() if stop is not None else 0)
+        btn.resize(width, height)
+        top = self.height() - band - t.SPACE_SM
+        left = self.width() - width - t.SPACE_12
+        btn.move(left, top)
+        if stop_height:
+            stop.resize(width, stop_height)
+            stop.move(left, top + height + t.SPACE_XS)
         if accessory is not None:
             accessory.resize(accessory.sizeHint().width(), height)
-            accessory.move(t.SPACE_12, bottom)
+            accessory.move(t.SPACE_12, top)
+
+    def eventFilter(self, watched, event):
+        if watched is getattr(self, "_stop_widget", None) and event.type() in (
+                QtCore.QEvent.Type.ShowToParent, QtCore.QEvent.Type.HideToParent,
+                QtCore.QEvent.Type.StyleChange, QtCore.QEvent.Type.FontChange):
+            self._place_send()
+        return super().eventFilter(watched, event)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
@@ -943,7 +969,7 @@ class SynapsePanel(QtWidgets.QWidget):
         """Re-assert the Stop state gate after a compose.
 
         Stop is state-gated to working only (``_set_busy``). The manifests list
-        it as PRESENT in the rail and the compositor applies ``visible=True`` to
+        it as PRESENT and the compositor applies ``visible=True`` to
         every listed widget, which un-hid the disabled Stop at rest after every
         compose - pinned red by tests/test_panel_faces.py::
         test_stop_gated_to_working_state, and the 64px that pushed the header
@@ -970,8 +996,8 @@ class SynapsePanel(QtWidgets.QWidget):
         lose, so the token never elides and never folds into the overflow.
         Row 2 is STATE - one sentence of what the panel is doing (the STATUS
         phrases, given the wordmark's never-elide floor) left; the persistent
-        Connect / Doctor pair and overflow right. Stop has its own line while
-        working so narrow panes can keep every control readable.
+        Connect / Doctor pair and overflow right. Stop is constructed here for
+        the manifest, then placed beneath Send in the composer.
 
         Why two rows at rest: at PANEL_PREF_WIDTH the interior is 280 (340 - 2 x
         GUTTER). A never-eliding sentence (~83-90) and a never-eliding
@@ -1090,11 +1116,13 @@ class SynapsePanel(QtWidgets.QWidget):
         overflow.setToolTip(
             "Tools and settings — commands, saved suggestions, engine, health and help")
         overflow.clicked.connect(self._show_overflow)
-        self._stop_btn = c.Button("Stop", variant="danger")
-        # L5-20: the mark (MarkDot.set_halt_handler) and this button are two
-        # surfaces of ONE Stop -- #DsStop paints it in the mark's warm note,
-        # not the danger outline, so the pair reads as a single control.
+        self._stop_btn = QtWidgets.QPushButton("STOP", w)
+        # The composer reparents this manifest-owned control below Send.
+        # The persistent mark continues to invoke the same cancellation handler.
         self._stop_btn.setObjectName("DsStop")
+        self._stop_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._stop_btn.setFont(fontload.tracked_font(
+            "SEND", t.SIZE_SMALL, scale=self._chrome_scale, weight=500))
         self._stop_btn.setAccessibleName("Stop current task")
         self._stop_btn.setToolTip(
             "Stop this task. An operation already sent to Houdini may still be finishing.")
@@ -1128,9 +1156,6 @@ class SynapsePanel(QtWidgets.QWidget):
         bot.addWidget(self._doctor_btn, 0, 4)
         bot.addWidget(overflow, 0, 5)
         col.addWidget(row)
-        # A working-only line avoids compressing the state or action labels
-        # when the artist docks SYNAPSE in a narrow pane.
-        col.addWidget(self._stop_btn, 0, Qt.AlignmentFlag.AlignRight)
 
         # -- hidden owners: constructed, written to, read by the overflow;
         #    in NO layout, never shown. ----------------------------------
@@ -2627,8 +2652,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # L5-22: a released grip-drag is the artist's answer — remember it
         self._input.height_committed.connect(self._persist_composer_height)
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
-        # Both actions sit inside one full-width field. Text reserves their
-        # bottom band; neither control scrolls with the draft.
+        # Actions sit inside one full-width field. Text reserves the complete
+        # Send/Stop band; none of these controls scrolls with the draft.
         attach = c.Button("Attach", variant="ghost")
         attach.setObjectName("DsComposerAttach")
         c.apply_font_role(attach, "body", self._chrome_scale)
@@ -2647,7 +2672,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._send_btn.setFont(fontload.tracked_font(
             "SEND", t.SIZE_SMALL, scale=self._chrome_scale, weight=500))
         self._send_btn.clicked.connect(self._on_submit)
-        self._input.attach_send(self._send_btn, attach)
+        self._input.attach_send(self._send_btn, attach, self._stop_btn)
         col.addWidget(self._input)
         # The field owns the two visual anchors: send at its left edge,
         # newline at its right. One component stacks them when space is tight.
@@ -3971,7 +3996,12 @@ class SynapsePanel(QtWidgets.QWidget):
         ``phrase`` (default: the STATUS phrase for ``status``)."""
         if phrase is None:
             phrase = t.STATUS.get(status, ("", "", ""))[2]
+        can_stop = status == "working" and self._stop_btn.isEnabled()
+        if can_stop and not self._mark.halt_available():
+            self._mark.begin_cycle()
         self._mark.set_state(status)
+        self._mark.set_halt_handler(
+            self._stop_btn.click if can_stop else None)
         self._header_status.setText(phrase)
         if status != "working":
             self._header_status.setToolTip("")

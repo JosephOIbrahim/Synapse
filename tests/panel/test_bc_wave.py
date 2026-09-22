@@ -184,11 +184,11 @@ def test_rail_one_state_sentence_never_elides():
                 assert not p._connect_btn.isEnabled()
                 row = p._connect_btn.parentWidget().layout()
                 assert row.indexOf(p._connect_btn) < row.indexOf(p._doctor_btn)
-                assert p._stop_btn.parentWidget() is rail
-                stop_top = p._stop_btn.mapTo(rail, QtCore.QPoint(0, 0)).y()
-                row_bottom = p._connect_btn.parentWidget().mapTo(
-                    rail, p._connect_btn.parentWidget().rect().bottomLeft()).y()
-                assert stop_top > row_bottom
+                # Stop now belongs directly below Send in the composer.
+                assert p._stop_btn.parentWidget() is p._input
+                assert p._stop_btn.geometry().top() > p._send_btn.geometry().bottom()
+                assert p._stop_btn.geometry().right() == p._send_btn.geometry().right()
+                assert p._stop_btn.width() == p._send_btn.width()
                 assert p._stop_btn.width() >= p._stop_btn.sizeHint().width()
             assert sentence.text() == t.STATUS["working"][2]
             p._on_tool_status("houdini_render", "running", "")
