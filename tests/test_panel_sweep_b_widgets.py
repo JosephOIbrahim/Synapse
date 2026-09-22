@@ -115,15 +115,20 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     assert tail[:tail.index(render_start)].rstrip().endswith(events_end)
     editorial_start, editorial_end = "# --- EDITORIAL_PANEL (", "# --- END EDITORIAL_PANEL"
     assert tail[:tail.index(editorial_start)].rstrip().endswith(render_end)
-    assert tail.rstrip().endswith(editorial_end)
+    picker_start, picker_end = "# --- PROVIDER_MODEL_PICKER", "# --- END PROVIDER_MODEL_PICKER"
+    # Provider organization appends one scoped sheet. Preserve every previous
+    # fence and enforce the same token-only rules on the new extension.
+    assert tail[:tail.index(picker_start)].rstrip().endswith(editorial_end)
+    assert tail.rstrip().endswith(picker_end)
     block_b = tail[tail.index(start):tail.index(end) + len(end)]
     new_block = tail[tail.index(new_start):tail.index(new_end) + len(new_end)]
     recipe_block = tail[tail.index(recipe_start):tail.index(recipe_end) + len(recipe_end)]
     rules_block = tail[tail.index(rules_start):tail.index(rules_end) + len(rules_end)]
     events_block = tail[tail.index(events_start):tail.index(events_end) + len(events_end)]
     render_block = tail[tail.index(render_start):tail.index(editorial_start)]
-    editorial_block = tail[tail.index(editorial_start):]
-    for block in (block_b, new_block, recipe_block, rules_block, events_block, render_block, editorial_block):
+    editorial_block = tail[tail.index(editorial_start):tail.index(picker_start)]
+    picker_block = tail[tail.index(picker_start):]
+    for block in (block_b, new_block, recipe_block, rules_block, events_block, render_block, editorial_block, picker_block):
         assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", block)
         assert "font-family:" not in block
         for node in ast.walk(ast.parse(block)):

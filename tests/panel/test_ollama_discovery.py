@@ -62,9 +62,11 @@ def test_discovery_reaches_picker_and_dialog_without_switching(app, monkeypatch)
         assert not d.use.isEnabled()
         assert (p._provider_id, p._active_model(), p._messages, p._connection_facts) == before
         assert calls and all(thread is not threading.main_thread() for thread in calls)
-        menu = QtWidgets.QMenu()
-        p._fill_author_submenu(menu, "ollama")
-        assert [a.text() for a in menu.actions() if a.isCheckable()] == list(names)
+        from synapse.panel.model_picker import ROW
+        picker = p._build_model_picker()
+        actual = [picker.list.item(i).data(ROW) for i in range(picker.list.count())]
+        assert [row["model"] for row in actual if row["kind"] == "model" and row["provider"] == "ollama"] == list(names)
+        picker.close()
     finally:
         if d is not None:
             d.reject()
@@ -219,5 +221,7 @@ def test_menu_cleanup_survives_parent_deletion(app, monkeypatch, menu_method):
     QtCore.QTimer.singleShot(10, delete_parent)
     try:
         getattr(p, menu_method)()
+        from shiboken6 import isValid
+        settle(app, lambda: not isValid(p))
     finally:
         release.set()

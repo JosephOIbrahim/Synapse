@@ -1782,128 +1782,40 @@ class SynapsePanel(QtWidgets.QWidget):
             for pid in PROVIDER_IDS
         ]
 
-    def _fill_author_submenu(self, sub, pid):
-        """(Re)build one provider submenu from live rows. The Ollama submenu
-        re-fills on aboutToShow so the local tag list stays current; Custom
-        appends Configure… (and opens even while unconfigured)."""
-        sub.clear()
-        cur_pid = getattr(self, "_provider_id", "claude")
-        cur_mid = self._active_model()
-        for mid, lbl in self._provider_model_rows(pid):
-            act = sub.addAction(lbl)
-            act.setCheckable(True)
-            act.setChecked(pid == cur_pid and mid == cur_mid)
-            act.triggered.connect(
-                lambda _=False, p=pid, m=mid: self._pick_engine_model(p, m))
-        if pid == "custom":
-            if not sub.isEmpty():
-                sub.addSeparator()
-            sub.addAction("Configure…", self._configure_custom)
-        elif pid == "ollama":
-            self._add_ollama_discovery_actions(sub)
-
-    def _add_ollama_discovery_actions(self, menu):
-        discovery = self._get_ollama_discovery()
-        if not menu.isEmpty():
-            menu.addSeparator()
-        message = discovery.message()
-        if message:
-            menu.addAction(message).setEnabled(False)
-        refresh = menu.addAction("Refresh Ollama models", discovery.refresh)
-        refresh.setEnabled(not discovery.loading)
-
-    def _build_author_menu(self):
-        """Build the native picker independently of its popup event loop."""
-        try:
-            from synapse.panel.providers.registry import PROVIDER_IDS, PROVIDER_LABELS
-        except Exception:
-            return None, None
-        menu = c.ModelMenu(self, scale=self._chrome_scale)
-        menu.addAction("Connect models…", self._open_connections)
-        menu.addSeparator()
-        watcher = None
-        for pid in PROVIDER_IDS:
-            sub = c.ModelMenu(menu, title=PROVIDER_LABELS.get(pid, pid), scale=self._chrome_scale)
-            menu.addMenu(sub)
-            self._fill_author_submenu(sub, pid)
-            if pid == "ollama":
-                discovery = self._get_ollama_discovery()
-                from synapse.panel.model_discovery import MenuRefresh
-                watcher = MenuRefresh(menu, discovery,
-                                      lambda s=sub: self._fill_author_submenu(s, "ollama"))
-                sub.aboutToShow.connect(discovery.refresh)
-        return menu, watcher
+    def _build_model_picker(self):
+        """Build the provider-organized picker without opening a nested loop."""
+        from synapse.panel.model_picker import ModelPicker
+        picker = ModelPicker(self, self._author_menu_items,
+                             self._get_ollama_discovery(), self._chrome_scale)
+        picker.model_chosen.connect(self._pick_engine_model)
+        picker.connect_requested.connect(self._open_connections)
+        picker.configure_requested.connect(self._configure_custom)
+        return picker
 
     def _open_author_menu(self):
-        """The active generation model remains the single checked choice."""
-        menu, watcher = self._build_author_menu()
-        if menu is None:
-            return
-        btn = getattr(self, "_author_lbl", None)
-        anchor = btn if btn is not None else self
-        pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
-        try:
-            menu.exec(pos) if hasattr(menu, "exec") else menu.exec_(pos)
-        finally:
-            if watcher is not None:
-                watcher.close()
+        """Browse providers without changing a running task's bound model."""
+        previous = getattr(self, "_model_picker", None)
+        if previous is not None:
             try:
-                menu.deleteLater()
+                previous.close()
             except RuntimeError:
-                pass  # parent destruction can also end the menu's exec()
+                pass  # the last popup was deleted on dismissal
+        self._model_picker = self._build_model_picker()
+        self._model_picker.popup(getattr(self, "_author_lbl", None) or self)
 
     def _pick_engine_model(self, pid, mid):
-        """A row pick from the author menu: switch the engine if needed, then
-        the model — both existing persisted paths (effective on the NEXT
-        message; two chat announcements are acceptable)."""
+        """Commit one exact choice for the next task; setup owns its result."""
+        if pid == "custom" and not self._custom_configured():
+            self._configure_custom()
+            return
         if pid != getattr(self, "_provider_id", "claude"):
             self._set_provider(pid)
-        self._set_model(mid)
+        if getattr(self, "_provider_id", "claude") == pid:
+            self._set_model(mid)
 
     def _open_model_menu(self):
-        """Drop the model picker for the active engine — switching Anthropic
-        models (Opus/Sonnet/Haiku/Fable) is now apparent, not hidden. The
-        Custom engine's menu carries a Configure… action (and opens even
-        while unconfigured, when it has no model row yet)."""
-        items = self._model_menu_items()
-        pid = getattr(self, "_provider_id", "claude")
-        if not items and pid != "custom":
-            return
-        menu = c.ModelMenu(self, scale=self._chrome_scale)
-        self._fill_model_menu(menu, pid)
-        watcher = None
-        if pid == "ollama":
-            discovery = self._get_ollama_discovery()
-            from synapse.panel.model_discovery import MenuRefresh
-            watcher = MenuRefresh(menu, discovery, lambda: self._fill_model_menu(menu, pid))
-            menu.aboutToShow.connect(discovery.refresh)
-        chip = getattr(self, "_model_chip", None)
-        anchor = chip if chip is not None else self
-        pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
-        try:
-            menu.exec(pos) if hasattr(menu, "exec") else menu.exec_(pos)
-        finally:
-            if watcher is not None:
-                watcher.close()
-            try:
-                menu.deleteLater()
-            except RuntimeError:
-                pass
-
-    def _fill_model_menu(self, menu, pid):
-        menu.clear()
-        items = self._model_menu_items()
-        for mid, lbl, active in items:
-            act = menu.addAction("%s   %s" % (lbl, mid))
-            act.setCheckable(True)
-            act.setChecked(active)
-            act.triggered.connect(lambda _=False, m=mid: self._set_model(m))
-        if pid == "custom":
-            if items:
-                menu.addSeparator()
-            menu.addAction("Configure…", self._configure_custom)
-        elif pid == "ollama":
-            self._add_ollama_discovery_actions(menu)
+        """Legacy entry point uses the same provider-organized picker."""
+        self._open_author_menu()
 
     def _set_model(self, model_id):
         """Pick a model for the active engine. Takes effect on the NEXT message;
@@ -2149,7 +2061,7 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _configure_custom(self):
         """Use the guided setup for custom endpoints as well."""
-        self._open_connections()
+        self._open_connections(provider_id="custom")
 
     def _make_provider(self):
         """Panel requests fail closed; legacy registry fallback cannot send them."""
@@ -2171,11 +2083,11 @@ class SynapsePanel(QtWidgets.QWidget):
         return cn.bind_provider(provider, key=secret,
                                 facts=getattr(self, "_connection_facts", {}).get(spec))
 
-    def _open_connections(self):
+    def _open_connections(self, *, provider_id=None):
         from synapse.panel.connection_dialog import ConnectionDialog
         from synapse.panel import settings as pset
         settings = pset.load_settings()
-        dialog = ConnectionDialog(self, provider_id=self._provider_id,
+        dialog = ConnectionDialog(self, provider_id=provider_id or self._provider_id,
                                   models=self._model_by_provider,
                                   custom=settings.get("custom"),
                                   session_keys=getattr(self, "_session_keys", {}),
@@ -4177,6 +4089,12 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def closeEvent(self, event):
+        picker = getattr(self, "_model_picker", None)
+        if picker is not None:
+            try:
+                picker.close()
+            except RuntimeError:
+                pass
         inspector = getattr(self, "_selection_inspector", None)
         if inspector is not None:
             inspector.close()

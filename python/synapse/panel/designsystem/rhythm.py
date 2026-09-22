@@ -101,6 +101,15 @@ def apply_layout_margins(layout, role, density="standard", edge=None):
     layout.setContentsMargins(*margins)
 
 
+def model_picker_layout(outer, footer, scale):
+    """One owner for the provider picker's shell and action rhythm."""
+    inset = tokens.SPACE_MD
+    gap = tokens.scaled(tokens.SPACE_SM, scale)
+    outer.setContentsMargins(inset, inset, inset, inset)
+    outer.setSpacing(gap)
+    footer.setSpacing(gap)
+
+
 def apply(root, density="standard"):
     """Apply fixed margins and density-scaled base gaps to marked widgets.
 

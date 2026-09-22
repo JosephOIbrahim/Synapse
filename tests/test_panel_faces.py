@@ -565,12 +565,15 @@ def test_author_submenu_ollama_down_degrades_static():
 
     op.OllamaProvider.available_models = staticmethod(down)
     try:
-        menu = QtWidgets.QMenu()
-        sub = menu.addMenu("Ollama")
-        p._fill_author_submenu(sub, "ollama")          # initial fill
-        got1 = [a.text() for a in sub.actions() if not a.isSeparator()]
-        p._fill_author_submenu(sub, "ollama")          # the aboutToShow refresh
-        got2 = [a.text() for a in sub.actions() if not a.isSeparator()]
+        from synapse.panel.model_picker import ROW
+        picker = p._build_model_picker()
+        def labels():
+            rows = [picker.list.item(i).data(ROW) for i in range(picker.list.count())]
+            return [row["label"] for row in rows if row["kind"] == "model" and row["provider"] == "ollama"]
+        got1 = labels()
+        picker.refresh()
+        got2 = labels()
+        picker.close()
     finally:
         op.OllamaProvider.available_models = real
     want = [lbl for _, lbl in reg.models_for("ollama")]

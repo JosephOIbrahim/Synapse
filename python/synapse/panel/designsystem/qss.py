@@ -1281,3 +1281,29 @@ QGroupBox#DsJevRouting::title {{
 }}
 """
 # --- END EDITORIAL_PANEL
+
+# --- PROVIDER_MODEL_PICKER
+_model_picker_base_stylesheet = stylesheet
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _model_picker_base_stylesheet(scale) + f"""
+QWidget#DsModelPicker {{
+    background: {t.PANEL}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER};
+}}
+QWidget#DsModelPicker QLabel {{ background: transparent; border: none; }}
+QLabel#DsModelCurrent, QLabel#DsModelDiscovery {{ color: {t.TEXT_SECONDARY}; }}
+QLineEdit#DsModelSearch {{
+    background: {t.GROUND}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.scaled(t.SPACE_12, scale)}px {t.scaled(t.SPACE_MD, scale)}px;
+    selection-background-color: {t.SIGNAL}; selection-color: {t.TEXT_ON_ACCENT};
+}}
+QLineEdit#DsModelSearch:focus {{ border-color: {t.SIGNAL}; }}
+QListWidget#DsModelList {{
+    background: {t.PANEL}; color: {t.TEXT_PRIMARY};
+    border: none; outline: none;
+}}
+"""
+# --- END PROVIDER_MODEL_PICKER

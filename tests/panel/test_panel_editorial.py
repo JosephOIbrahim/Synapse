@@ -151,26 +151,22 @@ def test_stop_stays_on_right_and_tells_the_truth_through_second_task(make_panel,
 @pytest.mark.parametrize("scale,width,min_height", [(1.0, 380, 40), (1.25, 480, 50), (2.25, 720, 90)])
 def test_actual_model_rows_have_scaled_air_in_both_picker_paths(make_panel, scale, width, min_height):
     panel = make_panel(scale, width)
-    from synapse.panel.designsystem.components import ModelMenu
-    author, watcher = panel._build_author_menu()
-    try:
-        submenus = author.findChildren(ModelMenu)
-        assert submenus and all(menu.objectName() == "DsModelMenu" for menu in submenus)
-        claude = next(menu for menu in submenus if menu.title() == "Claude")
-        legacy = ModelMenu(panel, scale=scale)
-        panel._fill_model_menu(legacy, "claude")
-        for menu in (claude, legacy):
-            menu.ensurePolished()
-            menu.adjustSize()
-            boxes = [menu.actionGeometry(a) for a in menu.actions() if not a.isSeparator()]
-            assert boxes and min(box.height() for box in boxes) >= min_height
-            assert all(a.bottom() < b.top() for a, b in zip(boxes, boxes[1:]))
-        assert sum(a.isChecked() for menu in submenus for a in menu.actions()) == 1
-        legacy.deleteLater()
-    finally:
-        if watcher:
-            watcher.close()
-        author.deleteLater()
+    from synapse.panel.model_picker import ModelPicker, ROW
+    for entry in (panel._open_author_menu, panel._open_model_menu):
+        entry()
+        settle()
+        picker = panel._model_picker
+        assert isinstance(picker, ModelPicker)
+        rows = [picker.list.item(i) for i in range(picker.list.count())]
+        models = [item for item in rows if item.data(ROW)["kind"] == "model"]
+        boxes = [picker.list.visualItemRect(item) for item in models]
+        assert boxes and min(box.height() for box in boxes) >= min_height
+        assert all(a.bottom() < b.top() for a, b in zip(boxes, boxes[1:]))
+        assert sum(item.data(ROW).get("active", False) for item in models) == 1
+        assert [item.text() for item in rows if item.data(ROW)["kind"] == "provider"] == [
+            "Anthropic", "Google", "NVIDIA", "Ollama", "Custom"]
+        picker.close()
+        settle()
 
 
 def test_long_model_menu_is_one_scrollable_column_and_last_choice_works(make_panel):
@@ -204,23 +200,49 @@ def test_menu_selection_keeps_exact_saved_identity_and_other_provider_picks(make
     panel = make_panel()
     before = dict(panel._model_by_provider)
     panel._model_by_provider["claude"] = "artist-retained-model"
-    author, watcher = panel._build_author_menu()
-    try:
-        from synapse.panel.designsystem.components import ModelMenu
-        menu = next(m for m in author.findChildren(ModelMenu) if m.title() == "Claude")
-        active = [a for a in menu.actions() if a.isChecked()]
-        assert len(active) == 1 and active[0].text() == "artist-retained-model"
-        menu.popup(panel.mapToGlobal(QtCore.QPoint(30, 60)))
-        settle()
-        QtTest.QTest.keyClick(menu, QtCore.Qt.Key_Home)
-        QtTest.QTest.keyClick(menu, QtCore.Qt.Key_Return)
-        assert panel._active_model() == panel._provider_model_rows("claude")[0][0]
-        assert all(panel._model_by_provider[key] == value for key, value in before.items() if key != "claude")
-    finally:
-        if watcher:
-            watcher.close()
-        author.close()
-        author.deleteLater()
+    from synapse.panel.model_picker import ROW
+    picker = panel._build_model_picker()
+    picker.popup(panel._author_lbl)
+    settle()
+    active = [picker.list.item(i) for i in range(picker.list.count())
+              if picker.list.item(i).data(ROW).get("active")]
+    assert len(active) == 1 and active[0].data(ROW)["model"] == "artist-retained-model"
+    picker.search.setText("Opus 5")
+    settle()
+    assert panel._active_model() == "artist-retained-model"
+    QtTest.QTest.keyClick(picker.search, QtCore.Qt.Key_Return)
+    settle()
+    assert panel._active_model() == "claude-opus-5"
+    assert all(panel._model_by_provider[key] == value for key, value in before.items() if key != "claude")
+
+
+def test_custom_setup_cancellation_or_redirect_never_commits_an_old_row(make_panel, monkeypatch):
+    panel = make_panel()
+    before = (panel._provider_id, dict(panel._model_by_provider))
+    monkeypatch.setattr(panel, "_custom_configured", lambda: False)
+    calls = []
+    monkeypatch.setattr(panel, "_configure_custom", lambda: calls.append("setup"))
+    panel._pick_engine_model("custom", "obsolete-custom-id")
+    assert calls == ["setup"]
+    assert (panel._provider_id, panel._model_by_provider) == before
+    def redirected_setup():
+        panel._provider_id = "gemini"
+        panel._model_by_provider["gemini"] = "accepted-google-id"
+    monkeypatch.setattr(panel, "_configure_custom", redirected_setup)
+    panel._pick_engine_model("custom", "obsolete-custom-id")
+    assert panel._provider_id == "gemini"
+    assert panel._model_by_provider["gemini"] == "accepted-google-id"
+    assert panel._model_by_provider.get("custom") == before[1].get("custom")
+
+
+def test_configure_opens_custom_without_changing_next_model(make_panel, monkeypatch):
+    panel = make_panel()
+    before = (panel._provider_id, dict(panel._model_by_provider))
+    calls = []
+    monkeypatch.setattr(panel, "_open_connections", lambda **kw: calls.append(kw))
+    panel._configure_custom()
+    assert calls == [{"provider_id": "custom"}]
+    assert (panel._provider_id, panel._model_by_provider) == before
 
 
 def test_empty_state_has_hierarchy_then_yields_to_real_content(make_panel):
