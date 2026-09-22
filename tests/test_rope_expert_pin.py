@@ -58,18 +58,13 @@ V5420_EXPERT_RESOLVED = {
                  "prominence": "standard", "id": "connect"},
             ],
         },
-        {   # bc-wave BC-5: the CHAT / TOKEN pills ride the ribbon; the
-            # profile tab strip (mode_bar) folded into the overflow.
+        {   # Artist-requested 2026-09-22: the conversation has no switcher.
             "id": "context_ribbon", "builder": "_build_context_ribbon",
             "visible": True, "collapsed": False, "stretch": 0,
             "prominence": "standard",
             "widgets": [
                 {"visible": True, "collapsed": False, "stretch": 0,
                  "prominence": "standard", "id": "context_label"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "chat_pill"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "token_pill"},
             ],
         },
         {

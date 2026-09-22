@@ -291,3 +291,155 @@ def test_narrow_empty_invitation_and_busy_actions_never_paint_clipped(make_panel
     assert not box(panel._input, panel).intersects(box(panel._khint, panel))
     if invite.isVisible():
         assert invite.title.height() >= invite.title.heightForWidth(invite.title.width())
+
+
+def text_box(widget, root):
+    """Native font/style text bounds, not just the widget's outer rectangle."""
+    if isinstance(widget, QtWidgets.QAbstractButton):
+        option = QtWidgets.QStyleOptionButton()
+        widget.initStyleOption(option)
+        content = widget.style().subElementRect(QtWidgets.QStyle.SE_PushButtonContents, option, widget)
+        bounds = widget.style().itemTextRect(widget.fontMetrics(), content,
+                                            QtCore.Qt.AlignCenter, widget.isEnabled(), widget.text())
+    else:
+        bounds = widget.fontMetrics().boundingRect(widget.contentsRect(),
+                    int(widget.alignment() | QtCore.Qt.TextWordWrap), widget.text())
+    bounds.translate(widget.mapTo(root, QtCore.QPoint()))
+    return bounds
+
+
+@pytest.mark.parametrize("scale,width", [(1.0, 340), (1.0, 640), (1.25, 340),
+                                        (1.25, 640), (2.25, 340), (2.25, 900)])
+def test_composer_footer_text_anchors_to_both_field_edges(make_panel, scale, width):
+    panel = make_panel(scale, width, 1100)
+    panel._input.set_user_height(220)
+    settle()
+    field = box(panel._input, panel)
+    links = [button for button in (panel._commands_btn, panel._render_btn,
+                                  panel._recipes_btn, panel._events_btn) if button.isVisible()]
+    painted = [text_box(button, panel) for button in links]
+    assert abs(painted[0].left() - field.left()) <= 2
+    assert abs(painted[-1].right() - field.right()) <= 2
+    newline = getattr(panel, "_newline_hint", None)
+    assert newline is not None, "The two instructions need independent left/right anchors"
+    left, right_hint = text_box(panel._khint, panel), text_box(newline, panel)
+    assert abs(left.left() - field.left()) <= 2
+    assert abs(right_hint.right() - field.right()) <= 2
+    assert left.top() > field.bottom() and right_hint.top() > field.bottom()
+    assert not left.intersects(right_hint)
+    assert all(bounds.top() > max(left.bottom(), right_hint.bottom()) for bounds in painted)
+    assert all(not a.intersects(b) for i, a in enumerate(painted) for b in painted[i + 1:])
+    assert all(panel.rect().contains(bounds) for bounds in [left, right_hint] + painted)
+
+
+@pytest.mark.parametrize("scale,width", [(1.0, 340), (1.25, 480), (2.25, 720)])
+def test_stop_uses_requested_compact_height_without_changing_other_targets(make_panel, scale, width):
+    panel = make_panel(scale, width)
+    panel._set_busy(True)
+    settle()
+    assert panel._stop_btn.height() == round(20 * scale)
+    assert panel._stop_btn.fontMetrics().height() <= panel._stop_btn.height()
+    assert box(panel._stop_btn, panel).contains(text_box(panel._stop_btn, panel))
+    assert right(panel._stop_btn, panel) == right(panel._input, panel)
+    assert panel._send_btn.height() >= 26 and panel._attach_btn.height() >= 26
+
+
+@pytest.mark.parametrize("scale,width", [(1.0, 340), (1.0, 640), (1.25, 340),
+                                        (1.25, 640), (2.25, 340), (2.25, 900)])
+def test_connection_row_text_uses_the_prompt_edges_and_retains_evidence(make_panel, monkeypatch, scale, width):
+    from synapse.panel.synapse_panel import SynapsePanel
+    openings = []
+    monkeypatch.setattr(SynapsePanel, "_open_connections", lambda self: openings.append(True))
+    panel = make_panel(scale, width, 1100)
+    # Deliberately do not derive location from the model's name. The prepared
+    # connection owns it, including while the selected next model differs.
+    evidence = "Current task: ollama/cloud-sounding-name\nLocal: runtime evidence"
+    facts = SimpleNamespace(location="Local", description=evidence)
+    connection = SimpleNamespace(facts=facts, provider=SimpleNamespace(resolve_key=lambda: "test"),
+                                 release=lambda: None)
+    monkeypatch.setattr(panel, "_prepare_connection", lambda: connection)
+    monkeypatch.setattr(panel, "_refresh_session_permission", lambda _: None)
+    panel._refresh_engine_selector()
+    settle()
+    location = getattr(panel, "_connection_location", None)
+    assert location is not None, "Location and connection action need separate edge anchors"
+    assert location.text() == "Local"
+    assert location.toolTip() == evidence
+    assert location.accessibleDescription() == evidence
+    assert panel._connection_status.text() == "Connect models"
+    assert panel._connection_status.toolTip() == evidence
+    panel._connection_status.click()
+    assert openings == [True]
+    field = box(panel._input, panel)
+    first, last = text_box(location, panel), text_box(panel._connection_status, panel)
+    assert abs(first.left() - field.left()) <= 2
+    assert abs(last.right() - field.right()) <= 2
+    assert not first.intersects(last)
+    assert all(panel.rect().contains(bounds) for bounds in (first, last))
+    assert first.top() > field.bottom() and last.top() > field.bottom()
+    # A failed next selection clears stale locality, including accessibility.
+    monkeypatch.setattr(panel, "_prepare_connection", lambda: (_ for _ in ()).throw(ValueError("unavailable")))
+    panel._refresh_engine_selector()
+    settle()
+    assert location.text() == "Unverified"
+    assert "Location unverified" in location.toolTip()
+    assert location.accessibleDescription() == location.toolTip()
+    assert not text_box(location, panel).intersects(text_box(panel._connection_status, panel))
+
+
+@pytest.mark.parametrize("profile", ["expert", "curious", "ml"])
+def test_chat_is_the_only_home_without_token_construction_or_navigation(make_panel, monkeypatch, profile):
+    from synapse.panel.synapse_panel import SynapsePanel
+    built = []
+    original = SynapsePanel._build_token_face
+    def record_build(self):
+        built.append(True)
+        return original(self)
+    monkeypatch.setattr(SynapsePanel, "_build_token_face", record_build)
+    panel = make_panel()
+    panel._recompose(profile)
+    settle()
+    assert built == [], "An inaccessible diagnostic face must not be constructed or probed"
+    assert panel._faces.count() == 2  # conversation and retained internal work/consent state
+    assert panel._current_face == "direct" and panel._input.isVisible()
+    assert panel._face_pills == {}
+    assert not [b.text() for b in panel.findChildren(QtWidgets.QAbstractButton)
+                if b.text() in ("CHAT", "TOKEN")]
+    menu = panel._build_overflow_menu()
+    try:
+        actions = menu.actions() + [a for child in menu.findChildren(QtWidgets.QMenu)
+                                     for a in child.actions()]
+        assert not [a.text() for a in actions if "TOKEN" in a.text().upper()]
+    finally:
+        menu.deleteLater()
+    panel._input.setPlainText("Keep the draft")
+    panel._set_face("token")  # any legacy restoration request lands on the composer
+    probed = []
+    panel._token_face = SimpleNamespace(refresh_from_probe=lambda: probed.append(True))
+    panel._show_token_face()
+    assert probed == [], "Legacy navigation must not refresh an inaccessible face"
+    panel._token_face = None
+    assert panel._current_face == "direct" and panel._faces.currentIndex() == 0
+    assert panel._input.toPlainText() == "Keep the draft"
+
+
+def test_completion_keeps_real_usage_without_a_token_tab(make_panel):
+    from synapse.panel.usage_sink import USAGE_SINK
+    panel = make_panel()
+    USAGE_SINK.clear()
+    try:
+        USAGE_SINK.begin_task("kept-model:cloud", provider="ollama")
+        USAGE_SINK.add({"input_tokens": 11, "output_tokens": 4})
+        before = USAGE_SINK.snapshot()
+        panel._set_busy(True)
+        panel._stream_buf = ["The selected network was inspected."]
+        panel._on_done()
+        settle()
+        assert USAGE_SINK.snapshot() == before
+        assert panel._meter_lbl.text() == "15"
+        assert "selected network was inspected" in panel._chat.toPlainText()
+        assert panel._current_face == "direct" and panel._input.isVisible()
+        assert panel._send_btn.isEnabled() and not panel._stop_btn.isVisible()
+        assert getattr(panel, "_token_face", None) is None
+    finally:
+        USAGE_SINK.clear()

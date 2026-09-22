@@ -193,11 +193,14 @@ try:
           f"{len(under)} under {TARGET_FLOOR}px  " + tag(not under, warnable=True))
 
     texts = [b.text() for b in btns if b.text()]
-    # v9.1 (Option A): the DIRECT · WORK tabs are gone — one home surface, CHAT;
-    # consent surfaces inline on CHAT when actionable (invariant #2 below; direction C).
-    faces = [f for f in ("CHAT",) if f in texts]
-    print(f"   home label (CHAT)   : {faces} · WORK gone={'WORK' not in texts}  "
-          + tag(faces == ["CHAT"] and "WORK" not in texts))
+    # Artist-requested 2026-09-22 simplification retires TOKEN and the redundant
+    # CHAT switcher. The home invariant is a visible, usable conversation;
+    # consent still surfaces inline (invariant #2 below).
+    switches = [f for f in ("CHAT", "TOKEN", "WORK") if f in texts]
+    home = (panel._current_face == "direct" and panel._faces.currentIndex() == 0
+            and panel._input.isVisible() and panel._send_btn.isVisible())
+    print(f"   conversation home  : usable={home} · redundant switches={switches}  "
+          + tag(home and not switches))
     # v9: Review folded into Work's done sub-state. Assert its synthesis (the
     # consent gate) still lives in-tree, so the fold didn't silently drop the
     # gate — a stronger check than the old 3-tab name match.
@@ -286,7 +289,7 @@ try:
     BUNDLED = {"space grotesk", "space mono"}
     samples = {
         "wordmark": getattr(panel, "_wordmark", None),
-        "tab":      (getattr(panel, "_face_pills", {}) or {}).get("direct"),
+        "commands": getattr(panel, "_commands_btn", None),
         "author":   getattr(panel, "_author_lbl", None),
         "meter":    getattr(panel, "_meter_lbl", None),
     }

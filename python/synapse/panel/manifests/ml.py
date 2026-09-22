@@ -3,10 +3,9 @@
 Every region and widget from the expert manifest, same order, all visible —
 everything expert shows stays shown, and nothing is added that the widget
 registry does not already carry. What changes (L5-19): the economics come
-OUT of hiding behind the TOKEN tab — the rail's always-visible readout pair
-(author/token line and token meter) is pinned visible and promoted to hero,
-so the model and token numbers read from the rail without a click; the
-TOKEN pill goes hero as the standing invitation to the full breakdown.
+through the always-visible model identity, promoted to hero. TOKEN navigation
+and its redundant home switcher were retired across all profiles by the artist
+on 2026-09-22; the underlying usage accounting remains independent.
 Density is "tight" (L5-18: controls give back one rung of air off the
 existing spacing scale), and the system prompt asks for terse, technical
 replies with explicit model / token awareness.
@@ -18,7 +17,7 @@ TAB_LABEL = "ML"
 
 PICKER_COPY = (
     "The economist's read of the same panel. Token and model economics "
-    "step forward — the TOKEN pill and the rail meter go hero — and "
+    "shape the model choice and the explanation, and "
     "replies stay terse and technical. Nothing added, nothing removed; "
     "prominence and tone only."
 )
@@ -58,11 +57,7 @@ MANIFEST = {
         },
         {
             "id": "context_ribbon",
-            "widgets": [
-                "context_label",
-                "chat_pill",
-                {"id": "token_pill", "visible": True, "prominence": "hero"},
-            ],
+            "widgets": ["context_label"],
         },
         {"id": "faces", "stretch": 1, "widgets": ["faces_stack"]},
     ],

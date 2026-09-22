@@ -41,10 +41,9 @@ MANIFEST = {
                 "stop", "connect",
             ],
         },
-        {   # context + the CHAT / TOKEN pills (bc-wave BC-5: the profile
-            # tab strip folded into the overflow; the pills ride the ribbon)
+        {   # Context only: the artist's conversation needs no home switcher.
             "id": "context_ribbon",
-            "widgets": ["context_label", "chat_pill", "token_pill"],
+            "widgets": ["context_label"],
         },
         {   # dominant — the stacked faces
             "id": "faces",

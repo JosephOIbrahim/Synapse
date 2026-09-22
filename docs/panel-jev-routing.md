@@ -1,10 +1,17 @@
 # Panel layout and JEV routing measurements
 
 The native panel aligns the conversation invitation, composer, and actions on
-one grid. Model menus use font-scaled vertical padding and remain scrollable
-for long lists. The existing STOP control sits at the right of the work rail.
+one grid. Instructions and actions below the prompt share its left and right
+edges; narrow layouts wrap into separate rows without overlapping. Model menus
+use font-scaled vertical padding and remain scrollable for long lists. STOP sits
+at the right of the work rail, with a compact 20 px height at normal scale and
+corresponding host scaling.
 Stopping is cooperative: the panel stays busy until its worker ends. A stop
 does not promise to interrupt a Houdini cook or undo scene changes.
+
+The standalone TOKEN navigation tab has been removed. Provider-reported input
+and output usage still feeds the per-task accounting and receipts. Removing the
+tab does not disable that recording or substitute estimates for missing counts.
 
 ## Keep the chosen generation model
 

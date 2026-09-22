@@ -29,10 +29,9 @@ from synapse.panel.manifests import get_manifest, validate_manifest
 # token_meter as quiet alongside its L5-19 fold.
 # bc-wave BC-2: the rail's token meter and activity meter left the rail (they
 # read through the overflow in every profile), so curious carries no rail
-# delta any more; the TOKEN pill's quiet step is the whole diff.
-EXPECTED_PROMINENCE_DELTAS = {
-    ("context_ribbon", "token_pill"): ("standard", "quiet"),   # bc-wave BC-5: the pill rides the ribbon
-}
+# delta any more. Artist-requested 2026-09-22 removal also retires TOKEN's
+# quiet step; density and the prompt overlay still differ exactly as below.
+EXPECTED_PROMINENCE_DELTAS = {}
 
 # The complete allowed collapse diff vs expert (the L5-19 economics and
 # telemetry folds). Collapsed means present in the layout at zero height,

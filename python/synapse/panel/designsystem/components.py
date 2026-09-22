@@ -25,7 +25,7 @@ from . import qss
 
 __all__ = [
     "Button", "Pill", "Card", "Badge", "StatusDot", "MarkDot", "ProgressBar",
-    "ModelMenu", "ConversationInvitation", "label", "divider", "apply_font_role", "repolish",
+    "ModelMenu", "ConversationInvitation", "EdgeRow", "ComposerHints", "label", "divider", "apply_font_role", "repolish",
 ]
 
 
@@ -188,6 +188,85 @@ class ConversationInvitation(QtWidgets.QWidget):
         if needed <= height:
             self.setGeometry(0, 0, width, needed)
             layout.activate()
+
+
+class EdgeRow(QtWidgets.QWidget):
+    """Two natural-size widgets at opposite edges, stacking under pressure."""
+
+    def __init__(self, left, right, parent=None, scale=t.FONT_SCALE_DEFAULT):
+        super().__init__(parent)
+        self.setObjectName("DsEdgeRow")
+        self._gap = t.scaled(t.SPACE_XS, scale)
+        self.left, self.right = left, right
+        for item in (left, right):
+            item.setParent(self)
+        policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                       QtWidgets.QSizePolicy.Fixed)
+        policy.setHeightForWidth(True)
+        self.setSizePolicy(policy)
+
+    def _stacked(self, width):
+        return self.left.sizeHint().width() + self.right.sizeHint().width() + self._gap > width
+
+    def sizeHint(self):
+        return QtCore.QSize(self.left.sizeHint().width() + self.right.sizeHint().width() + self._gap,
+                            max(self.left.sizeHint().height(), self.right.sizeHint().height()))
+
+    def minimumSizeHint(self):
+        return QtCore.QSize(0, max(self.left.fontMetrics().height(), self.right.fontMetrics().height()))
+
+    def hasHeightForWidth(self):
+        return True
+
+    def heightForWidth(self, width):
+        if self._stacked(width):
+            return self._height(self.left, width) + self._gap + self._height(self.right, width)
+        return self.sizeHint().height()
+
+    @staticmethod
+    def _height(widget, width):
+        return max(widget.sizeHint().height(), widget.heightForWidth(width))
+
+    def fit_width(self, width):
+        """Reflow after a label update even when the row's size is unchanged."""
+        self.setMinimumHeight(self.heightForWidth(width))
+        self.updateGeometry()
+        self._arrange(self.width())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._arrange(self.width())
+
+    def _arrange(self, width):
+        if self._stacked(width):
+            first = self._height(self.left, width)
+            self.left.setGeometry(0, 0, width, first)
+            right_width = min(width, self.right.sizeHint().width())
+            self.right.setGeometry(width - right_width, first + self._gap,
+                                   right_width, self._height(self.right, right_width))
+        else:
+            left, right = self.left.sizeHint(), self.right.sizeHint()
+            height = max(left.height(), right.height())
+            self.left.setGeometry(0, (height - left.height()) // 2, left.width(), left.height())
+            self.right.setGeometry(width - right.width(), (height - right.height()) // 2,
+                                   right.width(), right.height())
+
+
+class ComposerHints(EdgeRow):
+    """Two instructions anchored to the field edges, stacking when needed."""
+
+    def __init__(self, parent=None, scale=t.FONT_SCALE_DEFAULT):
+        left = label("Enter sends", role="body", scale=scale)
+        right = label("Shift+Enter newline", role="body", scale=scale)
+        for item, alignment in ((left, Qt.AlignmentFlag.AlignLeft),
+                                (right, Qt.AlignmentFlag.AlignRight)):
+            item.setObjectName("DsComposerHint")
+            item.setTextFormat(Qt.TextFormat.PlainText)
+            item.setWordWrap(True)
+            item.setMargin(0)
+            item.setAlignment(alignment | Qt.AlignmentFlag.AlignTop)
+        super().__init__(left, right, parent, scale)
+        self.setObjectName("DsComposerHints")
 
 
 class Pill(QtWidgets.QPushButton):

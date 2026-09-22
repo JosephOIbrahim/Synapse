@@ -191,7 +191,7 @@ _QUICK_ACTIONS = [
 
 
 class _ShortcutLayout(QtWidgets.QLayout):
-    """Keep local links at their natural width, centered on every wrapped row."""
+    """Keep natural-width links on rows spanning the composer's two edges."""
 
     def __init__(self, horizontal_gap, vertical_gap):
         super().__init__()
@@ -277,12 +277,17 @@ class _ShortcutLayout(QtWidgets.QLayout):
         height = sum(heights) + self._vertical_gap * max(0, len(rows) - 1)
         if place:
             y = rect.y() + max(0, (rect.height() - height) // 2)
-            for (row, width), row_height in zip(rows, heights):
-                x = rect.x() + max(0, (rect.width() - width) // 2)
-                for item, size in row:
+            for row_index, ((row, width), row_height) in enumerate(zip(rows, heights)):
+                free = max(0, rect.width() - sum(size.width() for _, size in row))
+                used = 0
+                for index, (item, size) in enumerate(row):
+                    # Shared row geometry owns both anchors. Distribute only
+                    # the available air; do not widen a native button's text box.
+                    offset = round(free * index / (len(row) - 1)) if len(row) > 1 else (free if row_index else 0)
+                    x = rect.x() + used + offset
                     item.setGeometry(QtCore.QRect(
                         QtCore.QPoint(x, y + (row_height - size.height()) // 2), size))
-                    x += size.width() + gap
+                    used += size.width()
                 y += row_height + self._vertical_gap
         return height
 
@@ -1332,9 +1337,14 @@ class SynapsePanel(QtWidgets.QWidget):
                 lbl.setToolTip(detail)
             status = getattr(self, "_connection_status", None)
             if status is not None:
-                status.setText(shown.facts.location + " · Connect models")
-                status.setProperty("full_connection_label", status.text())
                 status.setToolTip(detail)
+                status.setAccessibleDescription(detail)
+            location = getattr(self, "_connection_location", None)
+            if location is not None:
+                location.setText(shown.facts.location)
+                location.setToolTip(detail)
+                location.setAccessibleName("Generation location: " + shown.facts.location)
+                location.setAccessibleDescription(detail)
             face = getattr(self, "_token_face", None)
             if face is not None and hasattr(face, "set_connection"):
                 face.set_connection(getattr(self, "_last_task_facts", None) or shown.facts)
@@ -1352,9 +1362,14 @@ class SynapsePanel(QtWidgets.QWidget):
                     getattr(self, "_provider_id", "unknown"), self._active_model())
             status = getattr(self, "_connection_status", None)
             if status is not None:
-                status.setText((task.facts.location if task else "Unverified") + " · Connect models")
-                status.setProperty("full_connection_label", status.text())
                 status.setToolTip(self._model_connection_detail)
+                status.setAccessibleDescription(self._model_connection_detail)
+            location = getattr(self, "_connection_location", None)
+            if location is not None:
+                location.setText(task.facts.location if task else "Unverified")
+                location.setToolTip(self._model_connection_detail)
+                location.setAccessibleName("Generation location: " + location.text())
+                location.setAccessibleDescription(self._model_connection_detail)
         self._render_token_state()      # getattr-guarded: no-op before the rail
         self._fit_panel_chrome()
 
@@ -1375,30 +1390,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._ctx_label.setObjectName("DsContextLabel")
         self._ctx_label.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
         lay.addWidget(self._ctx_label, 1)
-        # bc-wave BC-5: the ribbon is [context label, stretch][CHAT][TOKEN] -
-        # the two face pills ride the ribbon's right edge at the shell gap;
-        # the profile row they shared (DsTabRow) is gone, and J4 retired the
-        # profile choice from the UI altogether. v9.1 (Option A): there is one
-        # surface, CHAT, and consent/review auto-surfaces when actionable;
-        # clicking CHAT is the manual way back. The internal face keys stay
-        # "direct"/"work" - the invariants key on those, not the label.
+        # The conversation is the only home. Keep the mapping for callers
+        # that refresh optional token surfaces, without a redundant switcher.
         self._face_pills = {}
-        pill = c.Pill("CHAT")
-        # PNL-L4 (ruling R2-A1): a pill reading a WORD takes the sans label
-        # role; mono stays with the data read-outs (author, meter, khint).
-        c.apply_font_role(pill, "label", self._chrome_scale)
-        pill.clicked.connect(lambda _=False: self._set_face("direct"))
-        self._face_pills["direct"] = pill      # the idle default marks it active
-        lay.addWidget(pill)
-        # TOKEN - the economist read-out (R167). v9.1 removed DIRECT / WORK
-        # because actionable state should AUTO-SURFACE rather than wait for
-        # a click; token economics is DIAGNOSTIC, and a thing you go looking
-        # for is what a tab is for.
-        tok = c.Pill("TOKEN")
-        c.apply_font_role(tok, "label", self._chrome_scale)   # PNL-L4: sans, as CHAT
-        tok.clicked.connect(lambda _=False: self._show_token_face())
-        self._face_pills["token"] = tok
-        lay.addWidget(tok)
         self._region_cache["_build_context_ribbon"] = w
         return w
 
@@ -1441,22 +1435,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._converse_stack.setMinimumHeight(24)
         return self._converse_stack
 
-    # the two tabs, in switcher order (v9: Review folded into Work's done state)
-    _FACE_INDEX = {"direct": 0, "work": 1, "token": 2}
+    # Internal state pages; only the conversation is an artist-facing home.
+    _FACE_INDEX = {"direct": 0, "work": 1}
 
     def _show_token_face(self):
-        """Bring TOKEN forward and refresh it from the probe layer.
-
-        Refreshed on OPEN rather than on a timer: V3 was explicit that a probe
-        must never be the thing that trips the rate limit it reports on, and a
-        face nobody is looking at has no reason to poll."""
-        try:
-            face = getattr(self, "_token_face", None)
-            if face is not None and hasattr(face, "refresh_from_probe"):
-                face.refresh_from_probe()
-        except Exception:
-            pass
-        self._set_face("token")
+        """Legacy navigation returns to the conversation without a probe."""
+        self._set_face("direct")
 
     def _build_token_face(self):
         """The TOKEN face — the economist read-out (R167).
@@ -1492,7 +1476,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._faces = QtWidgets.QStackedWidget()
         self._faces.addWidget(self._build_direct_face())   # 0 · idle / converse
         self._faces.addWidget(self._build_work_face())     # 1 · glance → done payoff
-        self._faces.addWidget(self._build_token_face())    # 2 · the economist read-out
+        # The retired diagnostic is neither constructed nor polled. Usage
+        # accounting and completion refreshes remain independent of this view.
+        self._token_face = None
         self._faces.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding
         )
@@ -2066,16 +2052,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._doctor_btn.setVisible(not status_compact)
         self._compact_chrome = compact
         if hasattr(self, "_khint"):
-            self._khint.setText("Enter sends\nShift+Enter: new line" if compact else
-                                "Enter sends · Shift+Enter adds a line")
-            self._khint.setMinimumHeight(max(self._khint.fontMetrics().height(),
-                                             self._khint.heightForWidth(available)))
+            self._composer_hints.fit_width(available)
             self._recipes_btn.setVisible(not compact)
             self._events_btn.setVisible(not compact)
-            status = self._connection_status
-            full_status = status.property("full_connection_label") or status.text()
-            status.setText("Connect models" if status.fontMetrics().horizontalAdvance(full_status) + 2 * t.SPACE_MD > available else full_status)
-            status.setMinimumWidth(0)
+            self._connection_row.fit_width(available)
 
     def showEvent(self, e):
         super().showEvent(e)
@@ -2562,11 +2542,16 @@ class SynapsePanel(QtWidgets.QWidget):
 
     # ------------------------------------------------------- tab controller
     def _set_face(self, face, manual=True):
-        """Bring a face forward. Callers: a user click on the CHAT label, the idle
+        """Bring an internal face forward. Callers: compatibility navigation, the idle
         default, and the consent AUTO-SURFACE (a raised gate → Work, then
         accept/revert → back; v9.1). Quiet agent state (busy / tool status) never
         calls this — it drives the Work sub-state + rail mark. ``manual`` is
         accepted for call-site compatibility and otherwise unused."""
+        # An old integration restoring TOKEN must land on a usable composer.
+        # Panel settings have no persisted face key; this also covers legacy
+        # callers that retained their choice outside those settings.
+        if face == "token":
+            face = "direct"
         if not hasattr(self, "_faces") or face not in self._FACE_INDEX:
             return
         self._faces.setCurrentIndex(self._FACE_INDEX[face])
@@ -2664,16 +2649,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._send_btn.clicked.connect(self._on_submit)
         self._input.attach_send(self._send_btn, attach)
         col.addWidget(self._input)
-        # khint — the composer's quiet key legend (comp .khint). BC-4: it tells
-        # the two keys and nothing else - '/' is told once, in the placeholder
-        # (the telling G3 pins) - at the chrome floor (SIZE_SMALL, DATA mono,
-        # TEXT_SECONDARY via the label colour role), one signal per fact.
-        self._khint = c.label("Enter sends · Shift+Enter adds a line", role="label")
-        self._khint.setObjectName("DsComposerHint")
-        c.apply_font_role(self._khint, "body", self._chrome_scale)
-        self._khint.setWordWrap(True)
-        self._khint.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        col.addWidget(self._khint)
+        # The field owns the two visual anchors: send at its left edge,
+        # newline at its right. One component stacks them when space is tight.
+        self._composer_hints = c.ComposerHints(scale=self._chrome_scale)
+        self._khint = self._composer_hints.left
+        self._newline_hint = self._composer_hints.right
+        col.addWidget(self._composer_hints)
         self._commands_btn = c.Button("Commands", variant="ghost")
         # PNL-L3A: the '/' telling moved back to the placeholder (the
         # control that answers it), so the tooltip names the key only -
@@ -2694,9 +2675,19 @@ class SynapsePanel(QtWidgets.QWidget):
         self._events_btn.setToolTip("Local work and connection updates")
         self._events_btn.clicked.connect(self._open_notifications)
         col.addLayout(self._build_shortcut_footer())
+        self._connection_location = c.label("Unverified", role="body", scale=self._chrome_scale)
+        self._connection_location.setObjectName("DsComposerHint")
+        self._connection_location.setTextFormat(Qt.TextFormat.PlainText)
+        self._connection_location.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self._connection_location.setWordWrap(True)
+        self._connection_location.setMargin(0)
         self._connection_status = c.Button("Connect models", variant="ghost")
+        self._connection_status.setObjectName("DsFooterLink")
+        c.apply_font_role(self._connection_status, "body", self._chrome_scale)
         self._connection_status.clicked.connect(self._open_connections)
-        col.addWidget(self._connection_status)
+        self._connection_row = c.EdgeRow(self._connection_location, self._connection_status,
+                                         scale=self._chrome_scale)
+        col.addWidget(self._connection_row)
         # CRIT.md 2026-09-15 #18 (P8 · dead weight): the "Session · Revoke"
         # ghost is deleted. It was built hidden and duplicated the overflow's
         # "Revoke session model permissions" (:2702), which owns the action.
@@ -2713,7 +2704,7 @@ class SynapsePanel(QtWidgets.QWidget):
         return w
 
     def _build_shortcut_footer(self):
-        """Center the four local links with the same light type as Ready."""
+        """Span the field edges with local links in the existing label type."""
         # Four links in a line are a row, so they take the grid's row-breath
         # rung (SPACE_12), not SPACE_LG (24) - a gap no rhythm role declares
         # (rhythm.ROLE_GAPS tops out at SPACE_MD) and 6x the `stack` gap of the

@@ -205,6 +205,14 @@ def _method(source, name):
 
 
 def _assert_lifecycle_method(current, original, name):
+    if name == "_show_token_face":
+        # Artist-requested 2026-09-22 removal supersedes only this navigation
+        # method. Freeze the exact compatibility redirect, including no probe.
+        approved = ('    def _show_token_face(self):\n'
+                    '        """Legacy navigation returns to the conversation without a probe."""\n'
+                    '        self._set_face("direct")')
+        assert current == approved
+        return
     if name == "_on_stop":
         # M4 revokes permission before cooperative worker cancellation. Freeze
         # every other byte and require the exact additive call, once.
@@ -243,7 +251,7 @@ def test_lifecycle_and_token_completion_methods_byte_identical(name):
                              _method(_source("synapse_panel.py", _panel_base()), name), name)
 
 
-@pytest.mark.parametrize("name", ["_set_busy", "_on_token", "_update_context", "showEvent"])
+@pytest.mark.parametrize("name", ["_set_busy", "_on_token", "_update_context", "showEvent", "_show_token_face"])
 def test_lifecycle_pin_rejects_unrelated_work_even_in_an_amended_method(name):
     current = _method(_source("synapse_panel.py"), name)
     original = _method(_source("synapse_panel.py", _panel_base()), name)

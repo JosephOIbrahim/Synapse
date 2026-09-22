@@ -10,9 +10,8 @@ hero, the command-palette hint stands at full visibility — and the readouts
 a first-session artist cannot yet act on FOLD: the rail's token economics
 pair (author/token line, token meter) and the activity telemetry are
 collapsed=True — present in the layout at zero height, never withheld. The
-TOKEN pill stays visible (quiet), so the full numbers remain one click away
-behind it, and the profile switcher restores everything in one action. The
-overlay carries the behaviors that have no widget of their own — error
+retired TOKEN diagnostic and its home switcher are absent from every profile
+(artist request, 2026-09-22). The overlay carries behaviors with no widget — error
 translation always on, inline decision narration, expanded quick actions,
 promoted recipes, /explain suggested after builds, confirm-on-destructive,
 jargon defined on first use. Density is "airy" (L5-18): the one panel-wide
@@ -87,11 +86,7 @@ MANIFEST = {
         },
         {
             "id": "context_ribbon",
-            "widgets": [
-                "context_label",
-                "chat_pill",
-                {"id": "token_pill", "prominence": "quiet"},
-            ],
+            "widgets": ["context_label"],
         },
         {"id": "faces", "stretch": 1, "widgets": ["faces_stack"]},
     ],

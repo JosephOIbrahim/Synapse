@@ -1206,6 +1206,12 @@ QPushButton#DsComposerAttach {{
 QPushButton#DsComposerAttach:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsComposerAttach:focus {{ border: 1px solid {t.SIGNAL}; }}
 QLabel#DsComposerHint {{ color: {t.TEXT_SECONDARY}; }}
+/* Artist-requested compact Stop; other interactive targets keep their floors. */
+QPushButton#DsStop {{
+    min-height: {t.scaled(t.SPACE_MD + t.SPACE_XS, scale)}px;
+    max-height: {t.scaled(t.SPACE_MD + t.SPACE_XS, scale)}px;
+    padding: 0 {t.scaled(t.SPACE_SM, scale)}px;
+}}
 QScrollArea#DsConnectionScroll, QWidget#DsConnectionViewport,
 QWidget#DsConnectionPage, QGroupBox#DsJevRouting {{
     background: {t.PANEL}; color: {t.TEXT_PRIMARY};

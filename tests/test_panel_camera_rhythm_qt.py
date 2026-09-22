@@ -44,7 +44,7 @@ def probe(density):
     from synapse.panel import compositor
     from synapse.panel.designsystem import rhythm, tokens as t
     from synapse.panel.synapse_panel import SynapsePanel
-    from synapse.panel.face_token import UNKNOWN
+    from synapse.panel.face_token import FaceToken, UNKNOWN
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     panel = SynapsePanel()
     profile = {"airy": "curious", "standard": "expert", "tight": "ml"}[density]
@@ -58,7 +58,15 @@ def probe(density):
     try:
         # Existing layout owners, including nested anonymous rows, all inherit
         # their owner's spacing. These are geometry checks, not source guesses.
-        regions = [panel._region_cache["_build_context_ribbon"], panel._token_face]
+        # TOKEN is no longer built by the panel (artist request, 2026-09-22).
+        # Exercise the retained compatibility component explicitly so its
+        # measured row geometry and UNKNOWN semantics keep their coverage.
+        assert panel._token_face is None and panel._face_pills == {}
+        token_face = FaceToken(scale=panel._chrome_scale)
+        token_face.setParent(panel)
+        rhythm.apply(token_face, density)
+        token_face.hide()
+        regions = [panel._region_cache["_build_context_ribbon"], token_face]
         for region in regions:
             assert region.minimumSizeHint().width() <= 380, (region.objectName(), region.minimumSizeHint())
             layout = region.layout()
@@ -124,14 +132,13 @@ def probe(density):
         assert composer.parentWidget() is direct_face
         assert not direct_face.findChildren(QtWidgets.QWidget, "DsDivider")
         assert not hasattr(panel, "_font_btn")
-        # RULING-4c: one type applier per widget - CHAT, TOKEN and every rail
+        # RULING-4c: one type applier per widget - every rail
         # control (DsVerb) share pixel size and tracking byte-for-byte.
         # (FaceReview / RecallCard verbs keep their own ratified L5 type.)
-        chat_pill, token_pill = panel._face_pills["direct"], panel._face_pills["token"]
         verbs = header.findChildren(QtWidgets.QPushButton, "DsVerb")
         assert len(verbs) >= 2, [v.text() for v in verbs]
-        reference = (QtGui.QFontInfo(chat_pill.font()).pixelSize(), chat_pill.font().letterSpacing())
-        for widget in [token_pill, *verbs]:
+        reference = (QtGui.QFontInfo(panel._ctx_label.font()).pixelSize(), panel._ctx_label.font().letterSpacing())
+        for widget in verbs:
             assert (QtGui.QFontInfo(widget.font()).pixelSize(),
                     widget.font().letterSpacing()) == reference, widget.text()
         # RULING-4d: the context label is UI label text (sans); the recall
@@ -142,18 +149,17 @@ def probe(density):
         assert sans != mono
         assert QtGui.QFontInfo(panel._ctx_label.font()).family() == sans
         assert QtGui.QFontInfo(panel._recall_card.header.font()).family() == mono
-        chat_pill.setProperty("active", True)
         compositor._repolish_tree(panel)
         # The inherited active underline is SIGNAL. The sheet is the owner.
         assert t.SIGNAL in panel.styleSheet()
-        for value in panel._token_face._rows.values():
+        for value in token_face._rows.values():
             assert value.objectName() == "DsParmValue"
             assert value.parentWidget().property("rhythm_role") == "parm_row"
             assert value.width() == 64
-        panel._token_face.set_row("cost", None)
-        assert panel._token_face._rows["cost"].text() == UNKNOWN == "UNKNOWN"
-        panel._token_face.set_row("cost", 0)
-        assert panel._token_face._rows["cost"].text() == "0"
+        token_face.set_row("cost", None)
+        assert token_face._rows["cost"].text() == UNKNOWN == "UNKNOWN"
+        token_face.set_row("cost", 0)
+        assert token_face._rows["cost"].text() == "0"
 
         card = panel._recall_card
         for status, hit, expected in (("SUCCESS", True, "HIT"), ("BLOCKED", True, "BLOCKED"),

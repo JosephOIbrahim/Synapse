@@ -47,6 +47,9 @@ RAIL_OVERFLOW_OWNERS = frozenset({
     "token_meter", "palette_hint", "connection_dot", "connection_label",
     "corpus", "activity_meter",
 })
+# Compatibility IDs stay registered, but user-requested 2026-09-22 removal
+# excludes both the diagnostic and its redundant single-home switcher.
+RETIRED_HOME_SWITCHES = frozenset({"chat_pill", "token_pill"})
 
 
 class TestResolveCleanly:
@@ -66,7 +69,8 @@ class TestResolveCleanly:
         be exactly the compositor's registry, nothing dropped, nothing extra.
         """
         plan = _plan(PROFILES[name])
-        assert set(_widgets(plan)) == set(compositor.known_widget_ids()) - RAIL_OVERFLOW_OWNERS
+        assert set(_widgets(plan)) == (set(compositor.known_widget_ids())
+                                      - RAIL_OVERFLOW_OWNERS - RETIRED_HOME_SWITCHES)
 
 
 # ------------------------------------------------- capability invariant --
@@ -104,25 +108,22 @@ class TestCuriousFolds:
         """bc-wave BC-2: the readouts curious used to fold (token meter,
         activity meter) left the rail for the overflow in every profile, so
         there is nothing left to fold - and nothing may be smuggled back in
-        as a fold. The Curious diff is the quiet TOKEN pill alone."""
+        as a fold. TOKEN navigation was retired on 2026-09-22."""
         collapsed = {
             wid for wid, spec in _widgets(_plan(curious.MANIFEST)).items()
             if spec["collapsed"]
         }
         assert collapsed == set(), collapsed
-        assert _widgets(_plan(curious.MANIFEST))["token_pill"]["prominence"] == "quiet"
+        assert not RETIRED_HOME_SWITCHES.intersection(_widgets(_plan(curious.MANIFEST)))
 
     def test_collapsed_readouts_stay_present_and_reachable(self):
-        """Collapsed widgets remain in the plan (visible=True, height-folded)
-        and the TOKEN pill — the one-click path to the full numbers — is
-        itself neither collapsed nor hidden."""
+        """Collapsed widgets remain in the plan; retired navigation cannot
+        return disguised as a hidden or collapsed control."""
         widgets = _widgets(_plan(curious.MANIFEST))
         for wid, spec in widgets.items():
             if spec["collapsed"]:
                 assert spec["visible"] is True, wid
-        token_pill = widgets["token_pill"]
-        assert token_pill["visible"] is True
-        assert token_pill["collapsed"] is False
+        assert not RETIRED_HOME_SWITCHES.intersection(widgets)
 
 
 class TestMLEconomics:
@@ -139,8 +140,8 @@ class TestMLEconomics:
         surface: pinned visible, promoted hero (L5-19)."""
         widgets = _widgets(_plan(ml.MANIFEST))
         # bc-wave BC-2: the token meter left the rail (overflow); the model
-        # token (Addendum 2) and the TOKEN pill carry the economics.
-        for wid in ("author_token", "token_pill"):
+        # token (Addendum 2) retains its emphasis after TOKEN's retirement.
+        for wid in ("author_token",):
             assert widgets[wid]["visible"] is True, wid
             assert widgets[wid]["collapsed"] is False, wid
             assert widgets[wid]["prominence"] == "hero", wid

@@ -607,8 +607,8 @@ def test_profile_row_retired():
     the overflow carries no submenu titled 'Profile' and no profile action
     anywhere (retargeted from the 'Profile >' / three checkable actions /
     trigger-recomposes-live pins - moved with the ruling, not weakened).
-    Held from BC-5: no DsTabRow in the composed tree; the ribbon carries the
-    CHAT / TOKEN pills; and the measured goal chat.h / 760 >= 0.5 in every
+    Held from BC-5: no DsTabRow in the composed tree, and the measured goal
+    chat.h / 760 >= 0.5 in every
     density at 340x760 - still driven per density through _panel(profile)
     -> _recompose, which is machinery, not an artist-reachable switch."""
     from synapse.panel.synapse_panel import SynapsePanel
@@ -618,10 +618,11 @@ def test_profile_row_retired():
         p = _panel(profile)
         try:
             assert not p.findChildren(QtWidgets.QWidget, "DsTabRow"), profile
-            ribbon = p._region_cache["_build_context_ribbon"]
-            lay = ribbon.layout()
-            for key in ("direct", "token"):
-                assert lay.indexOf(p._face_pills[key]) != -1, key
+            # Artist-requested 2026-09-22: remove TOKEN and the now-redundant
+            # CHAT switcher in every density. The geometry goal is unchanged.
+            assert p._face_pills == {}
+            assert not [b for b in p.findChildren(QtWidgets.QAbstractButton)
+                        if b.text() in ("CHAT", "TOKEN")]
             menu = p._build_overflow_menu()
             # Reach submenus through the parent (findChildren keeps C++
             # ownership with the menu; a bare QAction.menu() wrapper does not).

@@ -241,7 +241,6 @@ _OVERLAY = {
 # bc-wave BC-2: the token meter left the rail (a hidden owner read through
 # the overflow, listed by no manifest); the model token (Addendum 2, always
 # visible top right) carries ML's hero step in its place.
-_TOKEN_PILL_PROM = {"curious": "quiet", "expert": "standard", "ml": "hero"}
 _AUTHOR_TOKEN_PROM = {"curious": "standard", "expert": "standard", "ml": "hero"}
 
 
@@ -262,7 +261,9 @@ def _assert_active(panel, profile):
     assert panel._density_stamp == _DENSITY[profile], "panel-wide density"
     assert panel._system_prompt_overlay == _OVERLAY[profile], "system-prompt overlay"
     assert panel._profile_state.profile == profile, "persisted selection"
-    assert panel.prominence("token_pill") == _TOKEN_PILL_PROM[profile], "token_pill prominence"
+    # Retired home switches are never styled/shown through any profile plan.
+    assert panel.prominence("token_pill") is None
+    assert panel.prominence("chat_pill") is None
     assert panel.prominence("author_token") == _AUTHOR_TOKEN_PROM[profile], "author_token prominence"
     assert panel._connect_btn.isVisible(), "Connect remains visible across recomposition"
     assert panel._connect_btn.isEnabled() is (not panel._was_busy), "Connect is enabled only while idle"
