@@ -17,12 +17,17 @@ import importlib.util
 import json
 from pathlib import Path
 
+import pytest
+
 from synapse.panel.compositor import known_widget_ids
 from synapse.panel.settings import PROFILES, SwitcherState, load_settings
 
 REPO = Path(__file__).resolve().parents[1]
 GEN = REPO / "harness" / "battleplan" / "notes" / "bp2_paneltruth_profile_diff.py"
 ART = REPO / "harness" / "battleplan" / "runs" / "2026-09-01" / "profile_diff.json"
+# The artist's 2026-09-22 removal retires only these home controls. Their
+# compatibility registry IDs remain; every surviving control is still required.
+RETIRED_HOME_SWITCHES = frozenset({"chat_pill", "token_pill"})
 
 
 def _load_gen():
@@ -56,14 +61,14 @@ def test_densities_are_airy_standard_tight():
 def test_capability_identical_widget_id_set_across_profiles():
     """L5: composition may reorder / fold / re-emphasise, never remove. The
     widget-id set (dropping the synthetic @region keys) is identical across the
-    three, and equals the compositor's registry."""
+    three, and equals the registry minus the two explicitly retired controls."""
     diff = _load_gen().build_diff()
     sets = {}
     for p, block in diff["profiles"].items():
         sets[p] = frozenset(
             wid for wid in block["widget_specs"] if not wid.startswith("@region:"))
     assert sets["curious"] == sets["expert"] == sets["ml"]
-    assert sets["expert"] == frozenset(known_widget_ids())
+    assert sets["expert"] == frozenset(known_widget_ids()) - RETIRED_HOME_SWITCHES
 
 
 def test_composed_prompt_differs_only_by_overlay():
@@ -100,9 +105,55 @@ def test_diff_vs_expert_moves_only_prominence_collapse_density_overlay():
     assert all_knobs <= {"collapsed", "prominence"}
     # bc-wave, direction B (2026-09-05): the telemetry chrome curious used to
     # FOLD is now a hidden owner in every profile (the overflow reads it), so
-    # curious no longer collapses anything - both profiles only re-emphasise.
-    assert dve["curious"]["widget_knobs_that_moved"] == ["prominence"]
+    # curious no longer collapses anything. The artist's 2026-09-22 TOKEN
+    # removal also retires its only prominence delta; ML keeps exactly the
+    # surviving author-token emphasis. All other knobs remain unchanged.
+    assert dve["curious"]["widget_knobs_that_moved"] == []
+    assert dve["curious"]["widget_deltas"] == {}
     assert dve["ml"]["widget_knobs_that_moved"] == ["prominence"]
+    assert dve["ml"]["widget_deltas"] == {
+        "author_token": {"prominence": {"expert": "standard", "ml": "hero"}}}
+
+
+@pytest.mark.parametrize("mutation", ["restore_chat", "restore_token", "drop_stop", "drop_one_connect"])
+def test_capability_pin_rejects_retired_controls_and_unrelated_losses(monkeypatch, mutation):
+    generator = _load_gen()
+    diff = generator.build_diff()
+    if mutation.startswith("restore_"):
+        widget_id = "chat_pill" if mutation == "restore_chat" else "token_pill"
+        for block in diff["profiles"].values():
+            block["widget_specs"][widget_id] = {
+                "visible": True, "collapsed": False, "stretch": 0, "prominence": "standard"}
+    elif mutation == "drop_stop":
+        for block in diff["profiles"].values():
+            del block["widget_specs"]["stop"]
+    else:
+        del diff["profiles"]["curious"]["widget_specs"]["connect"]
+    monkeypatch.setattr(generator, "build_diff", lambda: diff)
+    monkeypatch.setitem(globals(), "_load_gen", lambda: generator)
+    with pytest.raises(AssertionError):
+        test_capability_identical_widget_id_set_across_profiles()
+
+
+@pytest.mark.parametrize("mutation", ["visible", "stretch", "collapsed", "curious_token", "overlay"])
+def test_profile_difference_pin_rejects_unapproved_drift(monkeypatch, mutation):
+    generator = _load_gen()
+    diff = generator.build_diff()
+    if mutation == "curious_token":
+        curious = diff["diff_vs_expert"]["curious"]
+        curious["widget_knobs_that_moved"] = ["prominence"]
+        curious["widget_deltas"] = {
+            "token_pill": {"prominence": {"expert": "standard", "curious": "quiet"}}}
+    elif mutation == "overlay":
+        diff["diff_vs_expert"]["ml"]["system_prompt_overlay_changed"] = False
+    else:
+        ml = diff["diff_vs_expert"]["ml"]
+        ml["widget_knobs_that_moved"].append(mutation)
+        ml["widget_deltas"]["author_token"][mutation] = {"expert": 0, "ml": 1}
+    monkeypatch.setattr(generator, "build_diff", lambda: diff)
+    monkeypatch.setitem(globals(), "_load_gen", lambda: generator)
+    with pytest.raises(AssertionError):
+        test_diff_vs_expert_moves_only_prominence_collapse_density_overlay()
 
 
 # --------------------------------------------------------------------------- #
@@ -121,6 +172,16 @@ def test_committed_artifact_exists_and_matches_the_producer():
                 == fresh["profiles"][p]["system_prompt"]["overlay_text"])
         assert (committed["profiles"][p]["widget_specs"]
                 == fresh["profiles"][p]["widget_specs"])
+
+
+def test_artifact_pin_rejects_a_changed_surviving_control(monkeypatch, tmp_path):
+    changed = json.loads(ART.read_text(encoding="utf-8"))
+    changed["profiles"]["expert"]["widget_specs"]["stop"]["visible"] = False
+    path = tmp_path / "changed_profile_diff.json"
+    path.write_text(json.dumps(changed, sort_keys=True), encoding="utf-8")
+    monkeypatch.setitem(globals(), "ART", path)
+    with pytest.raises(AssertionError):
+        test_committed_artifact_exists_and_matches_the_producer()
 
 
 # --------------------------------------------------------------------------- #
