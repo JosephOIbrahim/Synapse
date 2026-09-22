@@ -70,6 +70,7 @@ _DEFAULTS = {
     "composer_height": None,    # None = never dragged → centred (L5-22)
     "routing_mode": "chosen_model",
     "jev_routing_mode": "off",  # Optional shadow measurement; never generation routing.
+    "jev_suggestions_enabled": False,  # Explicit action ranking; separate from measurement.
     "task_need": "conversation",
     "notifications": {"quiet": False, "desktop": False,
                       "completions": True, "connections": True},
@@ -180,6 +181,8 @@ def load_settings(path: Path | None = None) -> dict:
         out["routing_mode"] = data["routing_mode"]
     if data.get("jev_routing_mode") in ("off", "shadow"):
         out["jev_routing_mode"] = data["jev_routing_mode"]
+    if type(data.get("jev_suggestions_enabled")) is bool:
+        out["jev_suggestions_enabled"] = data["jev_suggestions_enabled"]
     if data.get("task_need") in ("conversation", "tools", "vision"):
         out["task_need"] = data["task_need"]
     notifications = data.get("notifications")

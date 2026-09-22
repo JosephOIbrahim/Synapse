@@ -2910,6 +2910,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # Build HDA: the form is unchanged; only the way in moved (BC-1).
         menu.addAction("Build HDA…", lambda: self._set_direct_view("hda"))
         menu.addAction("Saved lookdev suggestion…", self._open_lookdev_suggestion)
+        menu.addAction("Selected network…", self._open_selection_inspector)
         # BC-2: the rail's chrome reads here. Commands names the ACTUAL bound
         # key (the hidden owner's text is set from the QShortcut, never a
         # guess); Ground the corpus is checked once the store is built.
@@ -3224,6 +3225,23 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _prepare_lookdev_prompt(self, draft):
         """Prepare text only. Sending remains the artist's separate action."""
+        if not isinstance(draft, str) or not draft:
+            return
+        existing = self._input.toPlainText().rstrip()
+        self._input.setPlainText(existing + "\n\n" + draft if existing else draft)
+        self._input.setFocus()
+
+    def _open_selection_inspector(self):
+        from .selection_inspector import SelectionInspectorDialog
+        dialog = getattr(self, "_selection_inspector", None)
+        if dialog is None:
+            dialog = SelectionInspectorDialog(self, draft_reader=self._input.toPlainText)
+            dialog.draft_ready.connect(self._prepare_selection_prompt)
+            self._selection_inspector = dialog
+        dialog.open_inspection()
+
+    def _prepare_selection_prompt(self, draft):
+        """Append the inspected context for review; sending stays separate."""
         if not isinstance(draft, str) or not draft:
             return
         existing = self._input.toPlainText().rstrip()
@@ -4129,6 +4147,9 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def closeEvent(self, event):
+        inspector = getattr(self, "_selection_inspector", None)
+        if inspector is not None:
+            inspector.shutdown()
         discovery = getattr(self, "_ollama_discovery", None)
         if discovery is not None:
             discovery.close()

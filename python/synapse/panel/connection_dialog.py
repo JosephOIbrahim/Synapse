@@ -95,7 +95,7 @@ class ConnectionDialog(QtWidgets.QDialog):
         rules = c.Button("Project rules…", variant="secondary")
         rules.clicked.connect(self._project_rules)
         layout.addWidget(rules)
-        jev_group = QtWidgets.QGroupBox("JEV routing measurement")
+        jev_group = QtWidgets.QGroupBox("JEV assistance")
         jev_group.setObjectName("DsJevRouting")
         jev_layout = QtWidgets.QVBoxLayout(jev_group)
         self.jev_routing = QtWidgets.QComboBox()
@@ -104,16 +104,21 @@ class ConnectionDialog(QtWidgets.QDialog):
         self.jev_routing.addItem("Measure routing", "shadow")
         self.jev_routing.setCurrentIndex(max(0, self.jev_routing.findData(saved.get("jev_routing_mode", "off"))))
         jev_layout.addWidget(self.jev_routing)
+        self.jev_suggestions = QtWidgets.QCheckBox("Rank selected-network actions")
+        self.jev_suggestions.setChecked(saved.get("jev_suggestions_enabled") is True)
+        jev_layout.addWidget(self.jev_suggestions)
         jev_note = c.label(
-            "Measure suggested routes while your chosen model works. This does not change its answer or tools. "
-            "A separate TypeSafe permission covers your latest text request (up to 4,096 characters); "
-            "history and attachments are excluded. Requests resembling code or credentials are skipped. "
-            "Uses your configured TYPESAFE_API_KEY.", role="caption", scale=scale)
+            "Rank actions when you choose Suggest actions in Selected network. Choosing an action prepares "
+            "a draft for your selected model. Measure routing separately records suggestions during tasks. "
+            "Both require TypeSafe permission for your latest text request (up to 4,096 characters). "
+            "Ranking sends no selected nodes, wires, history, or attachments; requests resembling code, "
+            "credentials, or scene paths are skipped. Uses your configured TYPESAFE_API_KEY.",
+            role="caption", scale=scale)
         jev_note.setWordWrap(True)
         jev_layout.addWidget(jev_note)
         jev_buttons = QtWidgets.QHBoxLayout()
         self.jev_permissions = c.Button("JEV permissions…", variant="secondary")
-        self.jev_save = c.Button("Save routing preference", variant="ghost")
+        self.jev_save = c.Button("Save JEV preferences", variant="ghost")
         self.jev_permissions.clicked.connect(self._jev_project_rules)
         self.jev_save.clicked.connect(self._save_jev)
         jev_buttons.addWidget(self.jev_permissions)
@@ -296,7 +301,8 @@ class ConnectionDialog(QtWidgets.QDialog):
         from synapse.panel.settings import load_settings, save_settings
         settings = load_settings()
         settings.update(routing_mode=self.routing.currentData(), task_need=self.need.currentData(),
-                        jev_routing_mode=self.jev_routing.currentData())
+                        jev_routing_mode=self.jev_routing.currentData(),
+                        jev_suggestions_enabled=self.jev_suggestions.isChecked())
         if not save_settings(settings):
             self.status.setText("The model preferences could not be saved. Try again.")
             return
@@ -323,8 +329,9 @@ class ConnectionDialog(QtWidgets.QDialog):
         from synapse.panel.settings import load_settings, save_settings
         settings = load_settings()
         settings["jev_routing_mode"] = self.jev_routing.currentData()
+        settings["jev_suggestions_enabled"] = self.jev_suggestions.isChecked()
         if not save_settings(settings):
-            self.jev_status.setText("The routing preference could not be saved. Try again.")
+            self.jev_status.setText("The JEV preferences could not be saved. Try again.")
             return
         self._refresh_jev_status()
 
@@ -332,7 +339,10 @@ class ConnectionDialog(QtWidgets.QDialog):
         from synapse import model_access as access
         from synapse.jev import adapter
         from synapse.panel.settings import load_settings
-        if load_settings().get("jev_routing_mode") != "shadow":
+        saved = load_settings()
+        ranking = saved.get("jev_suggestions_enabled") is True
+        measuring = saved.get("jev_routing_mode") == "shadow"
+        if not (ranking or measuring):
             self.jev_status.setText("Off. No artist request is sent to JEV.")
             return
         if not adapter.enabled(opt_in=True):
@@ -347,7 +357,12 @@ class ConnectionDialog(QtWidgets.QDialog):
         except access.ModelAccessDenied as exc:
             self.jev_status.setText("Unavailable: " + str(exc))
             return
-        self.jev_status.setText("Ready to measure future tasks. Endpoint: " + adapter.ENDPOINT)
+        ready = []
+        if ranking:
+            ready.append("rank actions when you ask")
+        if measuring:
+            ready.append("measure future tasks")
+        self.jev_status.setText("Ready to " + " and ".join(ready) + ". Endpoint: " + adapter.ENDPOINT)
 
     def _jev_project_rules(self):
         from synapse.jev.adapter import connection_spec

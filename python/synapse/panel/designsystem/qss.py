@@ -1026,6 +1026,49 @@ def prepare_connection_dialog(root, scale=t.FONT_SCALE_DEFAULT):
     root.setStyleSheet(stylesheet(scale))
 
 
+def prepare_selection_inspector(root, scale=t.FONT_SCALE_DEFAULT):
+    """Scoped native inspector controls use the panel's current host palette."""
+    root.setStyleSheet(stylesheet(scale) + f"""
+#DsRoot[panel_popup="selection_inspector"] QWidget#DsSelectionPage,
+#DsRoot[panel_popup="selection_inspector"] QWidget#DsSelectionViewport,
+#DsRoot[panel_popup="selection_inspector"] QScrollArea#DsSelectionScroll {{
+    background: {t.PANEL}; border: none;
+}}
+#DsRoot[panel_popup="selection_inspector"] QPlainTextEdit,
+#DsRoot[panel_popup="selection_inspector"] QTreeWidget,
+#DsRoot[panel_popup="selection_inspector"] QComboBox,
+#DsRoot[panel_popup="selection_inspector"] QSpinBox {{
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.scaled(t.SPACE_XS, scale)}px;
+    font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+    selection-background-color: {t.SIGNAL_TINT_STRONG}; selection-color: {t.TEXT_PRIMARY};
+}}
+#DsRoot[panel_popup="selection_inspector"] QHeaderView::section {{
+    background: {t.SURFACE}; color: {t.TEXT_SECONDARY}; border: none;
+    padding: {t.scaled(t.SPACE_XS, scale)}px; font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+}}
+#DsRoot[panel_popup="selection_inspector"] QHeaderView {{ background: {t.SURFACE}; }}
+#DsRoot[panel_popup="selection_inspector"] QScrollBar:horizontal {{
+    background: {t.SURFACE}; border: none; height: {t.scaled(t.SIZE_BODY, scale)}px; margin: 0;
+}}
+#DsRoot[panel_popup="selection_inspector"] QScrollBar::handle:horizontal {{
+    background: {t.TEXT_TERTIARY}; min-width: {t.scaled(t.SPACE_LG, scale)}px;
+}}
+#DsRoot[panel_popup="selection_inspector"] QScrollBar::add-line:horizontal,
+#DsRoot[panel_popup="selection_inspector"] QScrollBar::sub-line:horizontal {{ width: 0; }}
+#DsRoot[panel_popup="selection_inspector"] QScrollBar::add-page:horizontal,
+#DsRoot[panel_popup="selection_inspector"] QScrollBar::sub-page:horizontal {{ background: {t.SURFACE}; }}
+#DsRoot[panel_popup="selection_inspector"] QTreeWidget::item {{
+    padding-top: {t.scaled(t.SPACE_XS, scale)}px; padding-bottom: {t.scaled(t.SPACE_XS, scale)}px;
+}}
+#DsRoot[panel_popup="selection_inspector"] QComboBox QAbstractItemView {{
+    background: {t.PANEL}; color: {t.TEXT_PRIMARY};
+    selection-background-color: {t.SIGNAL}; selection-color: {t.TEXT_ON_ACCENT};
+}}
+""")
+
+
 def _connection_stylesheet(scale=t.FONT_SCALE_DEFAULT):
     """First-session selectors extend the shared sheet without changing it."""
     return f"""
