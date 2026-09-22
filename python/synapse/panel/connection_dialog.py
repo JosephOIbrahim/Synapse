@@ -33,7 +33,19 @@ class ConnectionDialog(QtWidgets.QDialog):
         self._owns_discovery = discovery is None
         self._discovery = discovery if discovery is not None else OllamaDiscovery(self)
         self._discovery.changed.connect(self._discovery_changed)
-        layout = QtWidgets.QVBoxLayout(self)
+        outer = QtWidgets.QVBoxLayout(self)
+        self._content_scroll = QtWidgets.QScrollArea(self)
+        self._content_scroll.setObjectName("DsConnectionScroll")
+        self._content_scroll.viewport().setObjectName("DsConnectionViewport")
+        self._content_scroll.setWidgetResizable(True)
+        self._content_scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self._content_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        content = QtWidgets.QWidget()
+        content.setObjectName("DsConnectionPage")
+        content.setAttribute(QtCore.Qt.WA_StyledBackground, True)
+        layout = QtWidgets.QVBoxLayout(content)
+        self._content_scroll.setWidget(content)
+        outer.addWidget(self._content_scroll, 1)
         intro = c.label("Choose a model and where your work is allowed to go.", role="body", scale=scale)
         intro.setWordWrap(True)
         layout.addWidget(intro)
@@ -83,6 +95,36 @@ class ConnectionDialog(QtWidgets.QDialog):
         rules = c.Button("Project rules…", variant="secondary")
         rules.clicked.connect(self._project_rules)
         layout.addWidget(rules)
+        jev_group = QtWidgets.QGroupBox("JEV routing measurement")
+        jev_group.setObjectName("DsJevRouting")
+        jev_layout = QtWidgets.QVBoxLayout(jev_group)
+        self.jev_routing = QtWidgets.QComboBox()
+        self.jev_routing.setObjectName("DsConnectionSelect")
+        self.jev_routing.addItem("Off", "off")
+        self.jev_routing.addItem("Measure routing", "shadow")
+        self.jev_routing.setCurrentIndex(max(0, self.jev_routing.findData(saved.get("jev_routing_mode", "off"))))
+        jev_layout.addWidget(self.jev_routing)
+        jev_note = c.label(
+            "Measure suggested routes while your chosen model works. This does not change its answer or tools. "
+            "A separate TypeSafe permission covers your latest text request (up to 4,096 characters); "
+            "history and attachments are excluded. Requests resembling code or credentials are skipped. "
+            "Uses your configured TYPESAFE_API_KEY.", role="caption", scale=scale)
+        jev_note.setWordWrap(True)
+        jev_layout.addWidget(jev_note)
+        jev_buttons = QtWidgets.QHBoxLayout()
+        self.jev_permissions = c.Button("JEV permissions…", variant="secondary")
+        self.jev_save = c.Button("Save routing preference", variant="ghost")
+        self.jev_permissions.clicked.connect(self._jev_project_rules)
+        self.jev_save.clicked.connect(self._save_jev)
+        jev_buttons.addWidget(self.jev_permissions)
+        jev_buttons.addWidget(self.jev_save)
+        jev_layout.addLayout(jev_buttons)
+        self.jev_status = c.label("", role="caption", scale=scale)
+        self.jev_status.setWordWrap(True)
+        self.jev_status.setTextFormat(QtCore.Qt.PlainText)
+        jev_layout.addWidget(self.jev_status)
+        layout.addWidget(jev_group)
+        self._refresh_jev_status()
         self.destination = c.label("", role="body", scale=scale)
         self.destination.setWordWrap(True)
         self.destination.setTextFormat(QtCore.Qt.PlainText)
@@ -106,7 +148,7 @@ class ConnectionDialog(QtWidgets.QDialog):
         buttons.addStretch()
         buttons.addWidget(cancel)
         buttons.addWidget(self.use)
-        layout.addLayout(buttons)
+        outer.addLayout(buttons)  # Always accessible while the content scrolls.
         self.check.clicked.connect(self._check)
         self.use.clicked.connect(self._use)
         cancel.clicked.connect(self.reject)
@@ -119,6 +161,11 @@ class ConnectionDialog(QtWidgets.QDialog):
         index = self.engine.findData(provider_id)
         self.engine.setCurrentIndex(index if index >= 0 else 0)
         self._engine_changed()
+        screen = self.screen()
+        if screen is not None:
+            available = screen.availableGeometry()
+            self.resize(min(max(380, self.sizeHint().width()), max(380, available.width() - 32)),
+                        min(self.sizeHint().height(), max(200, available.height() - 32)))
 
     def _engine_changed(self, *_):
         pid = self.engine.currentData()
@@ -248,7 +295,8 @@ class ConnectionDialog(QtWidgets.QDialog):
         bound = self._checked
         from synapse.panel.settings import load_settings, save_settings
         settings = load_settings()
-        settings.update(routing_mode=self.routing.currentData(), task_need=self.need.currentData())
+        settings.update(routing_mode=self.routing.currentData(), task_need=self.need.currentData(),
+                        jev_routing_mode=self.jev_routing.currentData())
         if not save_settings(settings):
             self.status.setText("The model preferences could not be saved. Try again.")
             return
@@ -270,6 +318,44 @@ class ConnectionDialog(QtWidgets.QDialog):
         dialog = ProjectRulesDialog(self, spec=spec)
         dialog.exec() if hasattr(dialog, "exec") else dialog.exec_()
         dialog.deleteLater()
+
+    def _save_jev(self):
+        from synapse.panel.settings import load_settings, save_settings
+        settings = load_settings()
+        settings["jev_routing_mode"] = self.jev_routing.currentData()
+        if not save_settings(settings):
+            self.jev_status.setText("The routing preference could not be saved. Try again.")
+            return
+        self._refresh_jev_status()
+
+    def _refresh_jev_status(self):
+        from synapse import model_access as access
+        from synapse.jev import adapter
+        from synapse.panel.settings import load_settings
+        if load_settings().get("jev_routing_mode") != "shadow":
+            self.jev_status.setText("Off. No artist request is sent to JEV.")
+            return
+        if not adapter.enabled(opt_in=True):
+            self.jev_status.setText("Unavailable: disabled by SYNAPSE_JEV. Your chosen model is unchanged.")
+            return
+        key = adapter.resolve_key()
+        if not key:
+            self.jev_status.setText("Unavailable: configure TYPESAFE_API_KEY. Your chosen model is unchanged.")
+            return
+        try:
+            access.require_access(adapter.connection_spec(), key=key)
+        except access.ModelAccessDenied as exc:
+            self.jev_status.setText("Unavailable: " + str(exc))
+            return
+        self.jev_status.setText("Ready to measure future tasks. Endpoint: " + adapter.ENDPOINT)
+
+    def _jev_project_rules(self):
+        from synapse.jev.adapter import connection_spec
+        from synapse.panel.project_rules import ProjectRulesDialog
+        dialog = ProjectRulesDialog(self, spec=connection_spec())
+        dialog.exec() if hasattr(dialog, "exec") else dialog.exec_()
+        dialog.deleteLater()
+        self._refresh_jev_status()
 
     def done(self, result):
         try:

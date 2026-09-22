@@ -69,6 +69,7 @@ _DEFAULTS = {
     "custom": {"base_url": "", "model": "", "key_env": ""},
     "composer_height": None,    # None = never dragged → centred (L5-22)
     "routing_mode": "chosen_model",
+    "jev_routing_mode": "off",  # Optional shadow measurement; never generation routing.
     "task_need": "conversation",
     "notifications": {"quiet": False, "desktop": False,
                       "completions": True, "connections": True},
@@ -177,6 +178,8 @@ def load_settings(path: Path | None = None) -> dict:
             out[key] = data[key]
     if data.get("routing_mode") in ("chosen_model", "prefer_checked_local"):
         out["routing_mode"] = data["routing_mode"]
+    if data.get("jev_routing_mode") in ("off", "shadow"):
+        out["jev_routing_mode"] = data["jev_routing_mode"]
     if data.get("task_need") in ("conversation", "tools", "vision"):
         out["task_need"] = data["task_need"]
     notifications = data.get("notifications")

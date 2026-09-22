@@ -159,6 +159,8 @@ class ClaudeWorker(QThread):
         from synapse.model_access import capture_scope
         self._model_scope = getattr(self._provider, "_model_scope", None) or capture_scope()
         self._provider._model_scope = self._model_scope
+        self._shadow_job = None
+        self._shadow_started = False
 
     # ------------------------------------------------------------------
     # Public API
@@ -179,6 +181,22 @@ class ClaudeWorker(QThread):
         have appended assistant/user messages.
         """
         return copy.deepcopy(self._messages)
+
+    def _begin_shadow_measurement(self):
+        """One non-joining observation, on the worker thread, for this task."""
+        if self._shadow_started or self._abort:
+            return
+        self._shadow_started = True
+        try:
+            from synapse.jev.panel_routing import start_shadow
+            self._shadow_job = start_shadow(
+                self._messages, scope=self._model_scope,
+                provider=getattr(self._provider, "id", None),
+                model=getattr(self._provider, "model_identity", None),
+                should_abort=lambda: self._abort or not self._model_scope.active)
+        except Exception:
+            # Optional measurement can never prevent the selected model working.
+            self._shadow_job = None
 
     def get_terminal_messages(self):
         """Copy the published terminal transcript, or None while it is live."""
@@ -268,6 +286,10 @@ class ClaudeWorker(QThread):
             "tool_calls_total": 0,
             "tools": [],            # [{"name", "is_error"}] in dispatch order
             "stream_ms": [],        # perf_counter wall ms per provider.stream()
+            "tool_ms": [],          # measured tool dispatch wall times, including errors
+            "worker_first_token_ms": None,  # from this worker loop, not from the UI click
+            "worker_ms": None,
+            "task_id": getattr(getattr(self, "_model_scope", None), "task_id", None),
             "stop_reason": None,
             "outcome": "error",     # completed | stopped | error | cap_hit
         }
@@ -277,6 +299,12 @@ class ClaudeWorker(QThread):
         # globals(): a missing ``time`` degrades to an unmeasured (None) stream
         # wall time instead of a NameError inside the artist's turn.
         _perf = getattr(globals().get("time"), "perf_counter", None)
+        _worker_t0 = _perf() if _perf is not None else None
+
+        def _emit_token(text):
+            if text and ledger["worker_first_token_ms"] is None and _worker_t0 is not None:
+                ledger["worker_first_token_ms"] = round((_perf() - _worker_t0) * 1000., 3)
+            self.token_received.emit(text)
 
         def _run_turns() -> str:
             """The conversation loop proper. Returns the outcome label; raises
@@ -299,6 +327,11 @@ class ClaudeWorker(QThread):
                 if self._abort:
                     return "stopped"
 
+                if iteration == 0:
+                    begin_shadow = getattr(self, "_begin_shadow_measurement", None)
+                    if callable(begin_shadow):
+                        begin_shadow()
+
                 self.activity_changed.emit("Waiting for model response…")
                 stream_t0 = _perf() if _perf is not None else None
                 try:
@@ -307,7 +340,7 @@ class ClaudeWorker(QThread):
                         tools=self._tools,
                         system=self._system,
                         api_key=api_key,
-                        emit_token=self.token_received.emit,
+                        emit_token=_emit_token,
                         should_abort=lambda: self._abort,
                     )
                 finally:
@@ -373,6 +406,7 @@ class ClaudeWorker(QThread):
                                     {"name": block.get("name"), "is_error": True})
                                 continue
 
+                            tool_t0 = _perf() if _perf is not None else None
                             try:
                                 result_msg = self._execute_tool_block(block)
                             except BaseException:
@@ -392,6 +426,12 @@ class ClaudeWorker(QThread):
                                     "is_error": True,
                                 } for pending in calls[index + 1:])
                                 raise
+                            finally:
+                                ledger["tool_ms"].append({
+                                    "name": block.get("name"),
+                                    "ms": round((_perf() - tool_t0) * 1000., 3)
+                                    if tool_t0 is not None else None,
+                                })
                             tool_results.append(result_msg)
                             tool_calls_total += 1
                             ledger["tool_calls_total"] = tool_calls_total
@@ -443,6 +483,10 @@ class ClaudeWorker(QThread):
         finally:
             try:
                 row = dict(ledger)
+                row["worker_ms"] = (round((_perf() - _worker_t0) * 1000., 3)
+                                    if _worker_t0 is not None else None)
+                shadow = getattr(self, "_shadow_job", None)
+                row["jev"] = shadow.snapshot() if shadow is not None else None
                 row["ts"] = time.time()
                 usage = None
                 if USAGE_SINK is not None:

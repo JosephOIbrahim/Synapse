@@ -68,7 +68,12 @@ class ProjectRulesDialog(QtWidgets.QDialog):
         self.permissions.setMinimumHeight(115)
         self.permissions.setMaximumHeight(200)
         layout.addWidget(self.permissions, 1)
-        sharing = c.label("Allowed background requests may send prompts, conversation, scene context, recalled memory, tool results and images to the checked models.", role="caption", scale=scale)
+        sharing = c.label(
+            "Generation models may receive prompts, conversation, scene context, recalled memory, tool results and images. "
+            "The separate typesafe/jev-latest permission allows only routing measurements: the latest plain-text artist "
+            "request (up to 4,096 characters) and bounded routing context, without history or attachments. "
+            "Requests resembling code or credentials are skipped. JEV does not replace your chosen model.",
+            role="caption", scale=scale)
         sharing.setWordWrap(True)
         layout.addWidget(sharing)
         self.disclosure = QtWidgets.QCheckBox("I allow these background permissions")

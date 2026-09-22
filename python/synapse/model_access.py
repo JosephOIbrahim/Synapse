@@ -137,8 +137,10 @@ def _decode(data):
             raise ValueError("Invalid approved model")
         if any(not isinstance(value, str) or not value or len(value) > 2048 for value in row.values()):
             raise ValueError("Invalid approved model")
-        if row["provider"] not in ("claude", "gemini", "nemotron", "ollama", "custom"):
+        if row["provider"] not in ("claude", "gemini", "nemotron", "ollama", "custom", "typesafe"):
             raise ValueError("Unknown provider")
+        if row["provider"] == "typesafe" and row["endpoint"] != "https://api.typesafe.ai/v1/systemone":
+            raise ValueError("Unknown TypeSafe endpoint")
         models.append(ConnectionSpec(**row))
     if len(set(models)) != len(models):
         raise ValueError("Duplicate approved model")

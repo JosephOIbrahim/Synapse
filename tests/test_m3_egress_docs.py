@@ -61,6 +61,8 @@ def test_remote_egress_sites_are_frozen():
         "panel/providers/metadata_probes.py",
         # Existing J2 metadata path, now detected through constructor aliases.
         "panel/providers/ollama_provider.py",
+        # Separate opt-in shadow request; documented payload/permission lane.
+        "jev/adapter.py",
     }
     assert https_sites == _known, (
         f"New raw-HTTPS egress site(s): {https_sites - _known} "

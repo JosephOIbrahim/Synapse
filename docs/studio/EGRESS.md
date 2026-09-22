@@ -9,7 +9,7 @@ until this document is updated.
 
 ## Remote endpoints
 
-Three default remote hosts exist in first-party code; owned SDK clients also
+Four default remote hosts exist in first-party code; owned SDK clients also
 honor an explicit `ANTHROPIC_BASE_URL` when created, and permission is checked
 against that effective destination:
 
@@ -25,6 +25,9 @@ against that effective destination:
   switches the panel to Nemotron. Endpoint-overridable via `NVIDIA_BASE_URL`
   (OpenRouter / Ollama-cloud / self-hosted vLLM/NIM) — the default is the
   NVIDIA NIM cloud above.
+- `api.typesafe.ai:443` (TLS, `POST /v1/systemone`) — optional JEV routing
+  measurements. Off by default; requires a separate exact TypeSafe project
+  permission. It does not replace the selected generation model.
 
 Two further panel engines carry **no fixed first-party endpoint**:
 
@@ -39,6 +42,33 @@ Two further panel engines carry **no fixed first-party endpoint**:
 Both reuse the streaming transport pinned in `nemotron_provider.py`, so the
 frozen-egress pin (`tests/test_m3_egress_docs.py`) already covers their code
 path; this document is the control for where they are pointed.
+
+### The JEV routing measurement lane
+
+`jev/panel_routing.py` starts at most one shadow observation for an accepted
+panel task. `jev/adapter.py` is its single transport door: fixed verified-TLS
+destination, an explicit JEV model (the panel requests `jev-latest`), no endpoint
+environment override, redirects, or retries. No TypeSafe SDK is required.
+
+The request contains the latest plain-text artist request (up to 4,096
+characters), bounded routing context, and two fixed typed classification
+questions. It excludes chat history, attachments, tool results, memory, and
+live scene reads. Oversized, multimodal, and recognizable code or credential
+text are skipped; text filtering cannot identify every secret. The separate
+sharing permission explicitly covers the latest artist request. A build-time
+permission to send a task summary does not authorize these product requests.
+
+The task's captured project scope crosses the worker boundary. The adapter
+rechecks the exact TypeSafe permission and cancellation before transport I/O
+and before accepting an answer. Local-only policy, revocation, and stopping
+remain authoritative. A generation-model grant cannot authorize this service.
+
+One process-wide transport slot stays occupied until the actual request ends,
+even after the 800ms caller wait expires. The panel does not join shadow work
+at send, first response, Stop, or task completion. Judgments cannot change
+generation inputs or execute tools. Local receipts contain typed labels,
+timing, and a request hash rather than request text. See
+[panel setup and measurement limits](../panel-jev-routing.md).
 
 ### The capability-probe lane (metadata only)
 
@@ -83,6 +113,7 @@ Call sites:
 | Panel worker (Nemotron) | `claude_worker.py` → `panel/providers/nemotron_provider.py` | stdlib `http.client.HTTPSConnection`, streaming SSE (OpenAI-compatible) |
 | Panel worker (Ollama) | `claude_worker.py` → `panel/providers/ollama_provider.py` | inherited nemotron transport — plaintext HTTP to localhost by default; TLS when `OLLAMA_HOST` is https |
 | Panel worker (Custom) | `claude_worker.py` → `panel/providers/custom_provider.py` | inherited nemotron transport to the configured base URL (http or https, scheme preserved) |
+| JEV shadow measurement | `panel/claude_worker.py` → `jev/panel_routing.py` → `jev/adapter.py` | stdlib verified-TLS POST to the fixed TypeSafe endpoint, bounded response, no retry or redirect |
 | Host daemon agent loop | `host/daemon.py` → `cognitive/agent_loop.py` | vendored `anthropic` SDK |
 | Routing tiers 2/3 | `routing/router.py` | `anthropic` SDK |
 | Capability probe (all engines) | `panel/providers/probe.py` | stdlib `http.client.HTTPSConnection` / `HTTPConnection`, single bounded `GET`, no retry, no redirect |
@@ -98,6 +129,7 @@ anywhere in the codebase.
 | Lane | What is sent, per turn |
 |---|---|
 | **Panel worker** (`claude_worker`) | The system prompt (identity + TONE.md + current network path + **selected node paths** + frame + hip basename); the full chat history including drag-and-dropped node paths; the 121 advertised tool schemas (115 registry + 6 group-info) — names + descriptions; and **every tool result serialized in full** — scene inspection output, parameter values, memory recall/search/context content, render metadata. |
+| **JEV shadow routing** (`jev/adapter.py`) | Latest bounded plain-text request and bounded context plus fixed typed questions; separately permitted, without history or attachments. |
 | **Daemon agent loop** (`agent_loop` / daemon) | The user prompt + registered cognitive tool results (today: `synapse_inspect_stage` stage summaries). |
 | **Routing tiers 2/3** (`router`) | The user query + tier-1 RAG knowledge + up to 3 project-memory search results embedded in the user message. |
 | **Capability probe** (`providers/probe.py`) | Nothing. Every call is a `GET` with an empty body; only the auth header transits. |
@@ -122,6 +154,9 @@ anywhere in the codebase.
 - The **Custom engine key** (optional; the env var *named* in the Configure…
   dialog) — leaves only as the `Authorization: Bearer` auth header to the
   user-configured base URL, never inside payloads.
+- The **TYPESAFE_API_KEY** — leaves only as the `Authorization: Bearer`
+  header to the fixed `api.typesafe.ai` endpoint, never inside the routing
+  payload or local JEV receipt.
 - The **memory store ciphertext** — at-rest only.
 - Viewport/render pixels are **not** in this never-leaves category: the panel
   worker can attach image bytes from tool results through `vision_attach`.
