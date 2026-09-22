@@ -14,7 +14,8 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default
-from ..core.errors import NodeNotFoundError, HoudiniUnavailableError
+from ..core.errors import NodeNotFoundError, HoudiniUnavailableError, SynapseUserError
+from .solaris_graph_plan import observed_inputs
 from .handler_helpers import (
     _HOUDINI_UNAVAILABLE, _layout_vertical_chain, VERTICAL_SPACING,
     HORIZONTAL_SPACING, _free_origin,
@@ -459,6 +460,7 @@ class SolarisAssembleMixin:
                     "skipped": skipped,
                     "chain": [],
                     "dry_run": dry_run,
+                    "verification": {"connections": "not_needed"},
                     "layout": {"requested": orientation, "applied": False},
                 }
 
@@ -575,11 +577,18 @@ class SolarisAssembleMixin:
 
                         if not dry_run:
                             node.setInput(target_index, prev)
+                            if observed_inputs(node).get(target_index) != (prev.path(), 0):
+                                raise SynapseUserError(
+                                    "Connection readback failed at %s input %d" %
+                                    (node.path(), target_index),
+                                    suggestion="Inspect the partial chain before retrying. "
+                                               "The requested wire was not verified.")
 
                         link = {
                             "from": prev.path(),
                             "to": node.path(),
                             "input": target_index,
+                            "output": 0,
                         }
                         if displaced is not None:
                             link["replaced"] = displaced.path()
@@ -654,6 +663,17 @@ class SolarisAssembleMixin:
                 try:
                     with hou.undos.group("SYNAPSE: assemble_chain"):
                         _wire_and_layout()
+                        # A later setter or layout callback can invalidate an
+                        # earlier write. Verify the whole receipt at the end.
+                        for link in wired:
+                            target = hou.node(link["to"])
+                            if (target is None or observed_inputs(target).get(link["input"])
+                                    != (link["from"], link["output"])):
+                                raise SynapseUserError(
+                                    "Connection changed before assembly completed at %s input %d" %
+                                    (link["to"], link["input"]),
+                                    suggestion="Inspect the partial chain before retrying. "
+                                               "The final connections were not verified.")
                 except Exception:
                     # The C++ undo layer for LOP nodes carrying USD stage data
                     # can itself throw on __exit__, so roll back explicitly —
@@ -674,6 +694,8 @@ class SolarisAssembleMixin:
                 "skipped": skipped,
                 "chain": chain_paths,
                 "dry_run": dry_run,
+                "verification": {"connections": ("planned" if dry_run else "verified")
+                                 if wired else "not_needed"},
                 "layout": {"requested": orientation, "applied": layout_applied},
             }
 

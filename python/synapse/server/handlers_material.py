@@ -15,6 +15,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default
+from ..core.errors import SynapseUserError
 from ..core.mtlx_types import (
     MTLX_STANDARD_SURFACE,
     MTLX_IMAGE,
@@ -22,6 +23,7 @@ from ..core.mtlx_types import (
     MTLX_NORMALMAP,
 )
 from .handlers_usd import _usd_to_json, _coerce_bool
+from .solaris_graph_plan import observed_inputs
 from .handler_helpers import (
     _HOUDINI_UNAVAILABLE,
     _safe_node_name,
@@ -30,6 +32,30 @@ from .handler_helpers import (
 )
 
 _log = logging.getLogger(__name__)
+
+
+class _TextureNotApplied(RuntimeError):
+    """A requested texture has no verified path to the surface shader."""
+
+
+def _author_texture_text(node, name, value, *, raw=False):
+    parm = node.parm(name)
+    if parm is None:
+        raise _TextureNotApplied("Missing %s parameter on %s" % (name, node.path()))
+    parm.set(value)
+    # File tokens such as $HIP and <UDIM> must survive the receipt unchanged.
+    actual = parm.unexpandedString() if raw else parm.evalAsString()
+    if actual != value:
+        raise _TextureNotApplied("Parameter readback failed for %s on %s" % (name, node.path()))
+
+
+def _connect_texture_input(target, name, source):
+    names = tuple(target.inputNames())
+    if name not in names:
+        raise _TextureNotApplied("Missing %s input on %s" % (name, target.path()))
+    target.setNamedInput(name, source, 0)
+    if observed_inputs(target).get(names.index(name)) != (source.path(), 0):
+        raise _TextureNotApplied("Connection readback failed for %s on %s" % (name, target.path()))
 
 # Material presets — common physically-based starting points.
 # Keys map to mtlxstandard_surface parm names.
@@ -463,12 +489,10 @@ class MaterialHandlerMixin:
         """Create a MaterialX standard surface with texture file inputs.
 
         Creates a materiallibrary with an mtlxstandard_surface shader and
-        wires mtlximage nodes for each provided texture map (diffuse, roughness,
-        normal, displacement). Handles UDIM detection (<UDIM> in filename) and
-        connects UV coordinates (mtlxgeompropvalue) to all texture nodes.
-
-        This is the production-ready version of create_material — use this when
-        the artist has texture files, use create_material for simple solid colors.
+        wires supported mtlximage maps through a shared UV reader. Reports only
+        observed parameter values and connections as connected; unsupported or
+        incomplete maps are returned separately. Texture file contents and
+        rendering are not checked by this graph-building operation.
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
@@ -517,55 +541,59 @@ class MaterialHandlerMixin:
 
                 # Create UV coordinate node (shared by all texture readers)
                 uv_node = matlib.createNode(MTLX_GEOMPROPVALUE, "uv_reader")
-                if uv_node:
-                    # Set to read 'st' (UV) attribute as vector2
-                    sig_parm = uv_node.parm("signature")
-                    if sig_parm:
-                        sig_parm.set("vector2")
-                    prop_parm = uv_node.parm("geomprop")
-                    if prop_parm:
-                        prop_parm.set("st")
+                uv_error = None
+                try:
+                    if uv_node is None:
+                        raise _TextureNotApplied("Could not create the shared UV reader")
+                    _author_texture_text(uv_node, "signature", "vector2")
+                    _author_texture_text(uv_node, "geomprop", "st")
+                except _TextureNotApplied as exc:
+                    uv_error = str(exc)
 
                 connected_maps = []
+                unapplied_maps = []
+                texture_checks = []
 
-                def _create_texture(tex_path, tex_name, shader_input, is_color=False):
-                    """Create an mtlximage node and connect it to the shader."""
-                    img = matlib.createNode(MTLX_IMAGE, tex_name)
-                    if img is None:
-                        return None
-
-                    # Set file path
-                    file_parm = img.parm("file")
-                    if file_parm:
-                        file_parm.set(tex_path)
-
-                    # Set signature based on whether this is color or scalar
-                    sig_parm = img.parm("signature")
-                    if sig_parm:
-                        if is_color:
-                            sig_parm.set("color3")
-                        else:
-                            sig_parm.set("float")
-
-                    # Connect UV reader to texture's texcoord input
-                    if uv_node:
-                        img.setNamedInput("texcoord", uv_node, 0)
-
-                    # Connect texture output to shader input
-                    shader.setNamedInput(shader_input, img, 0)
-
-                    connected_maps.append({
+                def _create_texture(tex_path, tex_name, shader_input, signature="default", normal=False):
+                    record = {
                         "map": tex_name,
                         "file": tex_path,
                         "shader_input": shader_input,
-                        "node": img.path(),
+                        "node": None,
                         "udim": "<UDIM>" in tex_path or "<udim>" in tex_path,
-                    })
-                    return img
+                    }
+                    try:
+                        if uv_error:
+                            raise _TextureNotApplied(uv_error)
+                        img = matlib.createNode(MTLX_IMAGE, tex_name)
+                        if img is None:
+                            raise _TextureNotApplied("Could not create the texture reader")
+                        record["node"] = img.path()
+                        _author_texture_text(img, "file", tex_path, raw=True)
+                        # MaterialX menus initialize lazily; final authored
+                        # values and observed wires are the stable authority.
+                        _author_texture_text(img, "signature", signature)
+                        _connect_texture_input(img, "texcoord", uv_node)
+                        links = [(img, "texcoord", uv_node)]
+                        source = img
+                        if normal:
+                            source = matlib.createNode(MTLX_NORMALMAP, "normal_convert")
+                            if source is None:
+                                raise _TextureNotApplied("Could not create the normal-map converter")
+                            _connect_texture_input(source, "in", img)
+                            links.append((source, "in", img))
+                        _connect_texture_input(shader, shader_input, source)
+                        links.append((shader, shader_input, source))
+                        # Recheck after the remaining maps and cook; host
+                        # callbacks must not make an earlier receipt stale.
+                        texture_checks.append((record, img, signature, links))
+                    except (_TextureNotApplied, SynapseUserError) as exc:
+                        record["reason"] = str(exc)
+                        unapplied_maps.append(record)
 
                 # Wire texture maps to shader inputs
                 if diffuse_map:
-                    _create_texture(diffuse_map, "diffuse_tex", "base_color", is_color=True)
+                    _create_texture(diffuse_map, "diffuse_tex", "base_color", "color3")
 
                 if roughness_map:
                     _create_texture(roughness_map, "roughness_tex", "specular_roughness")
@@ -582,34 +610,10 @@ class MaterialHandlerMixin:
                         p.set(float(metalness_value))
 
                 if normal_map:
-                    # Normal maps need a mtlxnormalmap node between the image and shader
-                    normal_img = matlib.createNode(MTLX_IMAGE, "normal_tex")
-                    if normal_img:
-                        fp = normal_img.parm("file")
-                        if fp:
-                            fp.set(normal_map)
-                        sig = normal_img.parm("signature")
-                        if sig:
-                            sig.set("vector3")
-                        if uv_node:
-                            normal_img.setNamedInput("texcoord", uv_node, 0)
-
-                        # Create normalmap converter
-                        normal_conv = matlib.createNode(MTLX_NORMALMAP, "normal_convert")
-                        if normal_conv:
-                            normal_conv.setNamedInput("in", normal_img, 0)
-                            shader.setNamedInput("normal", normal_conv, 0)
-
-                        connected_maps.append({
-                            "map": "normal_tex",
-                            "file": normal_map,
-                            "shader_input": "normal",
-                            "node": normal_img.path(),
-                            "udim": "<UDIM>" in normal_map or "<udim>" in normal_map,
-                        })
+                    _create_texture(normal_map, "normal_tex", "normal", "vector3", normal=True)
 
                 if opacity_map:
-                    _create_texture(opacity_map, "opacity_tex", "opacity", is_color=True)
+                    _create_texture(opacity_map, "opacity_tex", "opacity", "color3")
 
                 # Layout nodes cleanly
                 matlib.layoutChildren()
@@ -623,6 +627,8 @@ class MaterialHandlerMixin:
                     "material_usd_path": material_usd_path,
                     "name": name,
                     "connected_maps": connected_maps,
+                    "unapplied_maps": unapplied_maps,
+                    "texture_files_checked": False,
                 }
 
                 # Optional: create inline material assignment
@@ -645,17 +651,43 @@ class MaterialHandlerMixin:
 
                 # Handle displacement separately (needs render settings context)
                 if displacement_map:
-                    connected_maps.append({
+                    unapplied_maps.append({
                         "map": "displacement_tex",
                         "file": displacement_map,
                         "shader_input": "displacement",
                         "node": None,
                         "udim": "<UDIM>" in displacement_map or "<udim>" in displacement_map,
-                        "note": "Displacement requires a displacementshader setup — "
-                                "use set_usd_attribute to configure displacement on the geometry prim",
+                        "reason": "Displacement is not connected by this tool. "
+                                  "It needs a displacement shader and geometry render settings.",
                     })
 
                 result.update(_wire_display(_tip, node, set_display))
+                for record, img, signature, links in texture_checks:
+                    try:
+                        for owner, parm_name, expected, raw in (
+                            (img, "file", record["file"], True),
+                            (img, "signature", signature, False),
+                            (uv_node, "signature", "vector2", False),
+                            (uv_node, "geomprop", "st", False),
+                        ):
+                            parm = owner.parm(parm_name)
+                            actual = None if parm is None else (
+                                parm.unexpandedString() if raw else parm.evalAsString())
+                            if actual != expected:
+                                raise _TextureNotApplied("Final parameter readback failed for %s on %s" %
+                                                         (parm_name, owner.path()))
+                        for target, input_name, source in links:
+                            names = tuple(target.inputNames())
+                            if (input_name not in names or
+                                    observed_inputs(target).get(names.index(input_name)) != (source.path(), 0)):
+                                raise _TextureNotApplied("Final connection readback failed for %s on %s" %
+                                                         (input_name, target.path()))
+                        record["verification"] = "parameters_and_connections"
+                        connected_maps.append(record)
+                    except (_TextureNotApplied, SynapseUserError) as exc:
+                        record["reason"] = str(exc)
+                        unapplied_maps.append(record)
+                result["texture_status"] = "partial" if unapplied_maps else "complete"
                 return result
 
         return run_on_main(_on_main, label="material:_handle_create_textured_material")

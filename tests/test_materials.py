@@ -604,14 +604,44 @@ def _make_import_patcher(mock_usdshade):
 
 class TestCreateTexturedMaterial:
     def _make_matlib_with_shader(self, name="textured_material"):
-        """Create mock matlib and shader for textured material tests."""
+        """Model authored values and observed wires, not only setter calls."""
+        def _graph_node(node_name, inputs):
+            node = MagicMock()
+            node.path.return_value = f"/stage/{name}/{node_name}"
+            node.inputNames.return_value = tuple(inputs)
+            links, parms = {}, {}
+
+            def _parm(parm_name):
+                if parm_name not in parms:
+                    parm = MagicMock()
+                    value = {"text": ""}
+                    parm.set.side_effect = lambda text: value.update(text=text)
+                    parm.unexpandedString.side_effect = lambda: value["text"]
+                    parm.evalAsString.side_effect = lambda: value["text"]
+                    parm.menuItems.return_value = ("default", "color3", "vector2", "vector3")
+                    parms[parm_name] = parm
+                return parms[parm_name]
+
+            def _connect(input_name, source, output):
+                links[inputs.index(input_name)] = (source, output)
+
+            def _connections():
+                return tuple(types.SimpleNamespace(
+                    inputIndex=lambda i=i: i,
+                    inputNode=lambda source=source: source,
+                    outputIndex=lambda output=output: output,
+                ) for i, (source, output) in links.items())
+
+            node.parm.side_effect = _parm
+            node.setNamedInput.side_effect = _connect
+            node.inputConnections.side_effect = _connections
+            return node
+
         matlib = MagicMock()
         matlib.path.return_value = f"/stage/{name}"
-        shader = MagicMock()
-        shader.path.return_value = f"/stage/{name}/{name}_shader"
-
-        uv_node = MagicMock()
-        uv_node.path.return_value = f"/stage/{name}/uv_reader"
+        shader = _graph_node(name + "_shader", [
+            "base_color", "specular_roughness", "metalness", "normal", "opacity"])
+        uv_node = _graph_node("uv_reader", [])
 
         img_nodes = {}
         def _create_node(node_type, node_name):
@@ -619,13 +649,130 @@ class TestCreateTexturedMaterial:
                 return shader
             if node_type == "mtlxgeompropvalue":
                 return uv_node
-            node = MagicMock()
-            node.path.return_value = f"/stage/{name}/{node_name}"
+            node = _graph_node(node_name, ["in"] if node_name == "normal_convert"
+                               else ["texcoord"])
             img_nodes[node_name] = node
             return node
 
         matlib.createNode.side_effect = _create_node
         return matlib, shader, uv_node, img_nodes
+
+    @pytest.mark.parametrize("fault", [
+        "missing_image", "missing_converter", "missing_uv", "missing_file",
+        "missing_signature", "ignored_file", "ignored_signature",
+        "ignored_uv_parameter", "ignored_uv_link", "ignored_shader_link",
+        "wrong_output", "ignored_normal_link",
+    ])
+    def test_unverified_map_is_explicitly_unapplied(self, handler, fault):
+        lop_node = _make_lop_node()
+        matlib, shader, uv, _ = self._make_matlib_with_shader()
+        lop_node.parent.return_value.createNode.return_value = matlib
+        original_create = matlib.createNode.side_effect
+        if fault == "ignored_uv_parameter":
+            uv.parm("geomprop").set.side_effect = lambda value: None
+        if fault == "ignored_shader_link":
+            shader.setNamedInput.side_effect = lambda *args: None
+        if fault == "wrong_output":
+            original_connect = shader.setNamedInput.side_effect
+            shader.setNamedInput.side_effect = lambda name, source, output: original_connect(name, source, 1)
+
+        def _create(node_type, node_name):
+            if ((fault == "missing_image" and node_name == "diffuse_tex") or
+                (fault == "missing_converter" and node_name == "normal_convert") or
+                (fault == "missing_uv" and node_name == "uv_reader")):
+                return None
+            node = original_create(node_type, node_name)
+            if node_name == "diffuse_tex":
+                if fault in ("missing_file", "missing_signature"):
+                    original_parm = node.parm.side_effect
+                    missing = fault.removeprefix("missing_")
+                    node.parm.side_effect = lambda name: None if name == missing else original_parm(name)
+                if fault in ("ignored_file", "ignored_signature"):
+                    node.parm(fault.removeprefix("ignored_")).set.side_effect = lambda value: None
+                if fault == "ignored_uv_link":
+                    node.setNamedInput.side_effect = lambda *args: None
+            if node_name == "normal_convert" and fault == "ignored_normal_link":
+                node.setNamedInput.side_effect = lambda *args: None
+            return node
+
+        matlib.createNode.side_effect = _create
+        map_key = "normal_map" if fault in ("missing_converter", "ignored_normal_link") else "diffuse_map"
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            result = handler._handle_create_textured_material({
+                "node": "/stage/node1", map_key: "$HIP/textures/wood.<UDIM>.exr"})
+        assert result["connected_maps"] == []
+        unapplied, = result["unapplied_maps"]
+        assert unapplied["map"] == map_key.replace("_map", "_tex")
+        assert unapplied["reason"]
+        assert result["texture_status"] == "partial"
+
+    @pytest.mark.parametrize("with_diffuse", [False, True])
+    def test_displacement_never_claimed_connected(self, handler, with_diffuse):
+        lop_node = _make_lop_node()
+        matlib, _, _, _ = self._make_matlib_with_shader()
+        lop_node.parent.return_value.createNode.return_value = matlib
+        payload = {"node": "/stage/node1", "displacement_map": "$HIP/height.exr"}
+        if with_diffuse:
+            payload["diffuse_map"] = "$HIP/color.exr"
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            result = handler._handle_create_textured_material(payload)
+        assert [entry["map"] for entry in result["connected_maps"]] == (["diffuse_tex"] if with_diffuse else [])
+        unapplied, = result["unapplied_maps"]
+        assert unapplied["map"] == "displacement_tex"
+        assert unapplied["node"] is None
+        assert "displacement" in unapplied["reason"].lower()
+        assert result["texture_status"] == "partial"
+
+    def test_verified_receipt_preserves_authored_file_tokens(self, handler):
+        lop_node = _make_lop_node()
+        matlib, _, _, images = self._make_matlib_with_shader()
+        lop_node.parent.return_value.createNode.return_value = matlib
+        authored = "$HIP/textures/wood.<UDIM>.exr"
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            result = handler._handle_create_textured_material({
+                "node": "/stage/node1", "diffuse_map": authored})
+        connected, = result["connected_maps"]
+        assert connected["file"] == images["diffuse_tex"].parm("file").unexpandedString() == authored
+        assert connected["verification"] == "parameters_and_connections"
+        assert result["unapplied_maps"] == []
+        assert result["texture_status"] == "complete"
+        assert result["texture_files_checked"] is False
+
+    @pytest.mark.parametrize("kind", ["roughness", "metalness"])
+    def test_scalar_image_uses_advertised_float_token(self, handler, kind):
+        # H22.0.400's measured menu pairs default/Float; 'float' is not a token.
+        lop_node = _make_lop_node()
+        matlib, _, _, images = self._make_matlib_with_shader()
+        lop_node.parent.return_value.createNode.return_value = matlib
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            result = handler._handle_create_textured_material({
+                "node": "/stage/node1", kind + "_map": "$HIP/scalar.exr"})
+        signature = images[kind + "_tex"].parm("signature")
+        assert signature.evalAsString() == "default"
+        assert signature.evalAsString() in signature.menuItems()
+        assert result["texture_status"] == "complete"
+
+    def test_lazy_signature_menu_does_not_hide_a_verified_map(self, handler):
+        # A cold H22 MaterialX menu can advertise only default even when
+        # color3/vector3 are supported. Final value/port readback is authority.
+        lop_node = _make_lop_node()
+        matlib, _, _, images = self._make_matlib_with_shader()
+        lop_node.parent.return_value.createNode.return_value = matlib
+        original_create = matlib.createNode.side_effect
+
+        def _create(node_type, name):
+            node = original_create(node_type, name)
+            if name == "diffuse_tex":
+                node.parm("signature").menuItems.return_value = ("default",)
+            return node
+
+        matlib.createNode.side_effect = _create
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            result = handler._handle_create_textured_material({
+                "node": "/stage/node1", "diffuse_map": "$HIP/color.exr"})
+        assert [entry["map"] for entry in result["connected_maps"]] == ["diffuse_tex"]
+        assert result["texture_status"] == "complete"
+        assert images["diffuse_tex"].parm("signature").evalAsString() == "color3"
 
     def test_diffuse_only(self, handler):
         """Create textured material with just a diffuse map."""
