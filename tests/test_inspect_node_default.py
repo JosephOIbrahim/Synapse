@@ -25,7 +25,10 @@ def _capture_include_geometry(monkeypatch, payload):
 
     monkeypatch.setattr(handlers_mod, "HOU_AVAILABLE", True)
     monkeypatch.setattr(introspection_mod, "inspect_node_detail", fake_detail)
-    monkeypatch.setattr(main_thread_mod, "run_on_main", lambda fn: fn())
+    def dispatch(fn, *, label):
+        assert label == "handlers:_handle_inspect_node"
+        return fn()
+    monkeypatch.setattr(main_thread_mod, "run_on_main", dispatch)
 
     handler = handlers_mod.SynapseHandler()
     handler._handle_inspect_node(payload)

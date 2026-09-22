@@ -117,6 +117,20 @@ def _make_node(path, node_type="null", category="Sop", parms=None, inputs=None,
     node.type.return_value = _make_type(node_type, category)
     node.parms.return_value = parms or []
     node.inputs.return_value = inputs or []
+    node.sessionId.return_value = id(node)
+    node.parent.return_value.path.return_value = path.rsplit("/", 1)[0]
+    input_conns = []
+    for index, source in enumerate(inputs or []):
+        if source is None:
+            continue
+        conn = MagicMock()
+        conn.inputNode.return_value = conn.inputItem.return_value = source
+        conn.outputNode.return_value = conn.outputItem.return_value = node
+        conn.subnetIndirectInput.return_value = None
+        conn.inputIndex.return_value = index
+        conn.outputIndex.return_value = conn.inputItemOutputIndex.return_value = 0
+        input_conns.append(conn)
+    node.inputConnections.return_value = input_conns
     node.outputConnections.return_value = output_conns or []
     node.warnings.return_value = warnings or []
     node.errors.return_value = errors or []

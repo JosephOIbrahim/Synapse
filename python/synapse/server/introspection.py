@@ -275,36 +275,25 @@ def _recurse_inputs(node, depth: int, current: int = 0, _seen=None) -> List[Dict
 # Public API — called by handlers
 # ---------------------------------------------------------------------------
 
-def inspect_selection(depth: int = 1) -> Dict[str, Any]:
-    """Inspect currently selected nodes with input-graph traversal.
+def inspect_selection(depth: int = 0, *, include_parameters: bool = False,
+                      include_geometry: bool = False, max_nodes: int = 200,
+                      max_edges: int = 2000, node_paths=None,
+                      expected_identities=None, expected_scene=None,
+                      expected_topology_hash=None) -> Dict[str, Any]:
+    """Observe bounded selection topology, or validate an explicit pinned scope.
 
-    Args:
-        depth: How many levels of input nodes to recurse (0 = none).
-
-    Returns:
-        ``{"count": N, "nodes": [...], "topology": [...]}``
+    The default only reads identities, port metadata and connections. Parameter
+    evaluation and geometry reads require explicit opt-ins. All callers must
+    marshal this function to Houdini's main thread.
     """
-    selected = hou.selectedNodes()
-    nodes = []
-    topology = []
-
-    for node in selected[:50]:  # cap at 50
-        info = _node_basic(node)
-        info["modified_parms"] = _modified_parms(node)
-        info["connections"] = _connections(node)
-        info["issues"] = _node_issues(node)
-        info["geometry"] = _geometry_summary(node)
-        if depth > 0:
-            info["input_graph"] = _recurse_inputs(node, depth)
-
-        nodes.append(info)
-
-        # Build topology edges: (source_name, target_name, input_index)
-        for inp in node.inputs():
-            if inp is not None:
-                topology.append([inp.name(), node.name(), 0])
-
-    return {"count": len(nodes), "nodes": nodes, "topology": topology}
+    # Absolute import also supports the standalone introspection test loader.
+    from synapse.server.selection_snapshot import capture_selection
+    return capture_selection(
+        hou, depth=depth, include_parameters=include_parameters,
+        include_geometry=include_geometry, max_nodes=max_nodes, max_edges=max_edges,
+        node_paths=node_paths, expected_identities=expected_identities,
+        expected_scene=expected_scene, expected_topology_hash=expected_topology_hash,
+        parameter_reader=_modified_parms, geometry_reader=_geometry_summary)
 
 
 def inspect_scene(

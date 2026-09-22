@@ -1023,9 +1023,35 @@ TOOL_DEFS: list[tuple] = [
 
     # -- Introspection --
     ("synapse_inspect_selection", "inspect_selection", _identity,
-     "Inspect selected nodes: parameters, connections, geometry stats, input graph.",
+     "Read-only selection topology: exact wire ports, boundary connections, limits and "
+     "node identities. Defaults to a fast scan without geometry or parameter evaluation. "
+     "Explicit pinned paths and expected identities refuse missing or replaced nodes; "
+     "this inspection scope does not constrain other mutation tools.",
      {"type": "object", "properties": {
-         "depth": {"type": "integer", "description": "Input traversal depth (default: 1)"},
+         "depth": {"type": "integer", "minimum": 0, "maximum": 5, "default": 0,
+                   "description": "Optional upstream traversal depth; default 0 observes selected nodes and their boundary wires."},
+         "max_nodes": {"type": "integer", "minimum": 1, "maximum": 500, "default": 200,
+                       "description": "Total selected and upstream node observation budget."},
+         "max_edges": {"type": "integer", "minimum": 1, "maximum": 5000, "default": 2000},
+         "include_parameters": {"type": "boolean", "default": False,
+                                "description": "Opt in to evaluating modified parameter values."},
+         "include_geometry": {"type": "boolean", "default": False,
+                              "description": "Opt in to geometry reads, which may cook nodes."},
+         "node_paths": {"type": "array", "maxItems": 500, "uniqueItems": True,
+                        "items": {"type": "string"},
+                        "description": "Explicit absolute paths instead of current selection; an empty list remains empty."},
+         "expected_identities": {"type": "array", "maxItems": 500,
+                                 "items": {"type": "object", "properties": {
+                                     "path": {"type": "string"}, "session_id": {"type": "integer", "minimum": 0}},
+                                     "required": ["path", "session_id"]},
+                                 "description": "Captured identities, matching node_paths exactly."},
+         "expected_scene": {"type": "object", "properties": {
+             "session_token": {"type": "string"}, "hip_path": {"type": "string"},
+             "houdini_version": {"type": ["string", "null"]}},
+             "required": ["session_token", "hip_path"],
+             "description": "Captured scene/session evidence for pinned refresh."},
+         "expected_topology_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$",
+                                    "description": "Optional wiring precondition; requires all pinned paths, identities and scene fields."},
      }, "required": []},
      True, False, True),
 

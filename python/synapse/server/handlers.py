@@ -1548,13 +1548,18 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
     # =========================================================================
 
     def _handle_inspect_selection(self, payload: Dict) -> Dict:
-        """Inspect currently selected nodes -- connections, parms, geometry, input graph."""
+        """Bounded topology scan, with optional detail and pinned preconditions."""
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from .introspection import inspect_selection
         from .main_thread import run_on_main
-        depth = resolve_param_with_default(payload, "depth", 1)
-        return run_on_main(lambda: inspect_selection(depth=int(depth)), label="handlers:_handle_inspect_selection")
+        defaults = {"depth": 0, "include_parameters": False, "include_geometry": False,
+                    "max_nodes": 200, "max_edges": 2000, "node_paths": None,
+                    "expected_identities": None, "expected_scene": None,
+                    "expected_topology_hash": None}
+        options = {key: resolve_param_with_default(payload, key, default)
+                   for key, default in defaults.items()}
+        return run_on_main(lambda: inspect_selection(**options), label="handlers:_handle_inspect_selection")
 
     def _handle_inspect_scene(self, payload: Dict) -> Dict:
         """Hierarchical scene overview with issues and artist notes."""
