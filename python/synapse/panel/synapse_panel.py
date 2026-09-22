@@ -4149,7 +4149,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def closeEvent(self, event):
         inspector = getattr(self, "_selection_inspector", None)
         if inspector is not None:
-            inspector.shutdown()
+            inspector.close()
         discovery = getattr(self, "_ollama_discovery", None)
         if discovery is not None:
             discovery.close()

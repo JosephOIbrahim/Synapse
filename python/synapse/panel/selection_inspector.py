@@ -144,9 +144,6 @@ class SelectionInspectorDialog(QtWidgets.QDialog):
 
     def _build_ui(self):
         outer = QtWidgets.QVBoxLayout(self)
-        gutter = t.scaled(t.SPACE_MD, self._scale)
-        outer.setContentsMargins(gutter, gutter, gutter, gutter)
-        outer.setSpacing(t.scaled(t.SPACE_SM, self._scale))
         self._scroll = QtWidgets.QScrollArea()
         self._scroll.setObjectName("DsSelectionScroll")
         self._scroll.viewport().setObjectName("DsSelectionViewport")
@@ -156,8 +153,6 @@ class SelectionInspectorDialog(QtWidgets.QDialog):
         self._page.setObjectName("DsSelectionPage")
         self._page.setAttribute(QtCore.Qt.WA_StyledBackground, True)
         layout = QtWidgets.QVBoxLayout(self._page)
-        layout.setContentsMargins(0, 0, t.scaled(t.SPACE_XS, self._scale), 0)
-        layout.setSpacing(t.scaled(t.SPACE_SM, self._scale))
         self._title = self._label("Selected network", "display")
         layout.addWidget(self._title)
         layout.addWidget(self._label("Read nodes and exact connections before choosing a next step."))
@@ -204,7 +199,6 @@ class SelectionInspectorDialog(QtWidgets.QDialog):
         self._rank_status = self._label("Default order. JEV suggestions are optional in Connect models.", "caption")
         layout.addWidget(self._rank_status)
         self._action_layout = QtWidgets.QVBoxLayout()
-        self._action_layout.setSpacing(t.scaled(t.SPACE_XS, self._scale))
         self._action_buttons = {}
         for action in ACTIONS:
             button = self._button(action.label, lambda checked=False, aid=action.id: self._prepare(aid))

@@ -1028,6 +1028,12 @@ def prepare_connection_dialog(root, scale=t.FONT_SCALE_DEFAULT):
 
 def prepare_selection_inspector(root, scale=t.FONT_SCALE_DEFAULT):
     """Scoped native inspector controls use the panel's current host palette."""
+    gutter = t.scaled(t.SPACE_MD, scale)
+    root.layout().setContentsMargins(gutter, gutter, gutter, gutter)
+    root.layout().setSpacing(t.scaled(t.SPACE_SM, scale))
+    root._page.layout().setContentsMargins(0, 0, t.scaled(t.SPACE_XS, scale), 0)
+    root._page.layout().setSpacing(t.scaled(t.SPACE_SM, scale))
+    root._action_layout.setSpacing(t.scaled(t.SPACE_XS, scale))
     root.setStyleSheet(stylesheet(scale) + f"""
 #DsRoot[panel_popup="selection_inspector"] QWidget#DsSelectionPage,
 #DsRoot[panel_popup="selection_inspector"] QWidget#DsSelectionViewport,

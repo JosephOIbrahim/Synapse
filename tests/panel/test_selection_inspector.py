@@ -223,7 +223,7 @@ def test_panel_tools_entry_is_reusable_and_appends_draft_without_sending(make_pa
             self.draft_ready = SimpleNamespace(connect=lambda callback: setattr(self, "ready", callback))
             self.opens = 0; self.closed = False; dialogs.append(self)
         def open_inspection(self): self.opens += 1
-        def shutdown(self): self.closed = True
+        def close(self): self.closed = True
     monkeypatch.setattr(module, "SelectionInspectorDialog", ProbeDialog)
     sent = []
     monkeypatch.setattr(panel, "_send", lambda *a: sent.append(a))
@@ -237,3 +237,46 @@ def test_panel_tools_entry_is_reusable_and_appends_draft_without_sending(make_pa
     assert sent == []
     panel.close(); assert dialogs[0].closed
     menu.deleteLater()
+
+
+def test_real_panel_close_closes_inspector_and_reopen_revalidates_pin(make_panel, monkeypatch):
+    global _APP
+    panel = make_panel()
+    _APP = QtWidgets.QApplication.instance()
+    import synapse.panel.selection_inspector as module
+    jobs, requests, sent = [], [], []
+    def scanner(request, cancelled):
+        assert not cancelled()
+        requests.append(deepcopy(request))
+        return report()
+    controller = InspectionController(scanner=scanner, launch=jobs.append)
+    ranker = Ranker()
+    real_dialog = module.SelectionInspectorDialog
+    def factory(parent, **kwargs):
+        return real_dialog(parent, controller=controller, service=ranker,
+            settings_reader=lambda: {"jev_suggestions_enabled": False}, **kwargs)
+    monkeypatch.setattr(module, "SelectionInspectorDialog", factory)
+    monkeypatch.setattr(panel, "_send", lambda *a: sent.append(a))
+    panel._input.setPlainText("Keep this draft through close and reopen.")
+    panel._open_selection_inspector()
+    dialog = panel._selection_inspector
+    assert isinstance(dialog, real_dialog) and dialog.isVisible() and dialog._timer.isActive()
+    jobs.pop(0)(); dialog._poll(); settle()
+    dialog._pin_btn.click()
+    dialog._refresh_btn.click()  # One queued read must be cancelled on parent close.
+    panel.close(); settle()
+    assert not panel.isVisible() and not dialog.isVisible()
+    assert controller.view()["closed"] and not dialog._timer.isActive()
+    jobs.pop(0)()
+    assert len(requests) == 1
+    panel.show(); panel._open_selection_inspector(); settle()
+    assert panel._selection_inspector is dialog
+    assert dialog.isVisible() and dialog._timer.isActive()
+    assert controller.view()["status"] == "loading" and controller.view()["pinned"]
+    assert not any(button.isEnabled() for button in dialog._action_buttons.values())
+    jobs.pop(0)(); dialog._poll(); settle()
+    assert controller.view()["status"] == "ready"
+    assert requests[-1]["expected_identities"] == report()["identities"]
+    assert requests[-1]["expected_topology_hash"] == report()["topology_hash"]
+    assert panel._input.toPlainText() == "Keep this draft through close and reopen."
+    assert not sent and not ranker.calls
