@@ -2,10 +2,12 @@
 
 The native panel aligns the conversation invitation, composer, and actions on
 one grid. Instructions and actions below the prompt share its left and right
-edges; narrow layouts wrap into separate rows without overlapping. Model menus
-use font-scaled vertical padding and remain scrollable for long lists. STOP sits
-at the right of the work rail, with a compact 20 px height at normal scale and
-corresponding host scaling.
+edges; narrow layouts wrap into separate rows without overlapping. The model
+picker groups Anthropic, Google, NVIDIA, Ollama and Custom in one searchable,
+scrollable list. Rows separate readable names from exact model IDs and scale
+with the host font. The saved next-task choice remains visible while filtering.
+STOP sits directly below SEND at the right of the composer, shares its styling,
+and keeps a compact 20 px height at normal scale with corresponding host scaling.
 Stopping is cooperative: the panel stays busy until its worker ends. A stop
 does not promise to interrupt a Houdini cook or undo scene changes.
 
@@ -15,13 +17,17 @@ tab does not disable that recording or substitute estimates for missing counts.
 
 ## Keep the chosen generation model
 
-JEV is a separate routing measurement service. It is not an entry in the model
-chooser and does not replace the selected provider or model. The initial
-integration is shadow only: its judgments never change the generator's prompt,
-history, tools, or scene operations.
+JEV is a separate assistance service. It is not an entry in the model chooser
+and does not replace the selected provider or model. Routing measurement is
+shadow only: those judgments never change the generator's prompt, history,
+tools, or scene operations. Optional selected-network action ranking is a
+separate feature: it orders actions when requested, and choosing an action
+prepares an editable draft for the selected generator.
 
-In **Connect models**, the **JEV routing measurement** group offers **Off**
-(the default) and **Measure routing**. Saving that preference does not grant
+In **Connect models**, the **JEV assistance** group offers **Off**
+(the default), **Measure routing**, and a separate **Rank selected-network
+actions** preference. See [Selected network](selection-inspector-jev.md) for the
+ranking workflow. Saving either preference does not grant
 network permission. **JEV permissions…** opens the existing project rules for
 the separate `typesafe/jev-latest` connection. The service also needs a
 configured `TYPESAFE_API_KEY`. An explicit off value in `SYNAPSE_JEV` remains

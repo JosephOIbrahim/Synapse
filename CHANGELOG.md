@@ -22,6 +22,27 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.81.0 - Model choice and selected-network assistance
+
+The panel gains a searchable model picker organized by Anthropic, Google, NVIDIA,
+Ollama and Custom, with exact IDs, readable names, a persistent saved-choice
+summary and keyboard navigation. Composer footer text aligns with the prompt;
+compact Stop sits below Send with matching styling. The standalone TOKEN tab is
+removed while provider-reported usage remains recorded.
+
+Selected network inspection captures bounded topology and exact ports, detects
+stale pinned identities, prepares editable Explain/Check wiring/Fix/Optimize/
+Inspect materials prompts, and previews two-wire insertions without applying
+them. Optional, permissioned JEV ranks these actions on request; routing
+measurement remains shadow-only and the selected generator remains unchanged.
+Solaris assembly and material reports verify authored connections and distinguish
+partial work from completed wiring.
+
+Source release; no new Windows installer. Native panel checks pass; the local
+whole suite retains its 21 established Windows harness failures. No real-world
+JEV ranking accuracy, end-to-end latency improvement, or live Houdini GUI
+deployment is claimed. Details: [v5.81.0](docs/releases/v5.81.0.md).
+
 ## v5.80.0 - The corpus arrives, and the referee reads it
 
 *No product change beyond the version string (`python scripts/product_surface.py --diff v5.79.1 HEAD`, measured after the release commit: 1 file, +2/-2, both lines `__version__` in `python/synapse/__init__.py`). Knowledge and instruments only: `rag/`, `harness/`, `docs/`, and one README line. The last built installer, `SYNAPSE-5.75.2-Setup.exe`, does not carry these files.*

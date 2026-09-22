@@ -10,7 +10,7 @@ The wire insertion preview uses an observed connection, an existing selected int
 
 ## Optional JEV ranking
 
-In **Connect a model → JEV assistance**, enable **Rank selected-network actions** and save. This preference is separate from the existing **Measure routing** setting and defaults off. Configure `TYPESAFE_API_KEY` and the existing TypeSafe project permission. Saving a preference grants no external access.
+In **Connect models → JEV assistance**, enable **Rank selected-network actions** and save. This preference is separate from the existing **Measure routing** setting and defaults off. Configure `TYPESAFE_API_KEY` and the existing TypeSafe project permission. Saving a preference grants no external access.
 
 In Selected network, describe the intent in plain language and choose **Suggest actions**. JEV orders the five existing action templates by relevance. The selected generator and its tools remain unchanged. All actions remain available in their default order while ranking is off, unavailable, denied, busy, malformed, stale, or cancelled.
 
