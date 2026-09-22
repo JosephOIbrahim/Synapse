@@ -25,7 +25,7 @@ from . import qss
 
 __all__ = [
     "Button", "Pill", "Card", "Badge", "StatusDot", "MarkDot", "ProgressBar",
-    "label", "divider", "apply_font_role", "repolish",
+    "ModelMenu", "ConversationInvitation", "label", "divider", "apply_font_role", "repolish",
 ]
 
 
@@ -97,6 +97,97 @@ class Button(QtWidgets.QPushButton):
     def set_variant(self, variant):
         self.setProperty("variant", variant)
         repolish(self)
+
+
+class ModelMenu(QtWidgets.QMenu):
+    """Native model selection with readable rows and bounded popup geometry.
+
+    The scoped stylesheet enables Qt's own scrolling, preserving keyboard and
+    checked-action behavior even for a long local-model list. Full labels stay
+    in tooltips when a model name is wider than the screen.
+    """
+
+    def __init__(self, parent=None, *, title="", scale=t.FONT_SCALE_DEFAULT):
+        super().__init__(title, parent)
+        self.setObjectName("DsModelMenu")
+        self.setAccessibleName(title or "Choose generation model")
+        self.setToolTipsVisible(True)
+        self._chrome_scale = scale
+        # QMenu caches SH_Menu_Scrollable during construction, before its
+        # object name exists. Apply at this popup boundary so Qt receives a
+        # StyleChange and creates its scroller; inherited paint alone does
+        # not initialize scrolling (Qt 6.8 QMenu::changeEvent).
+        apply_stylesheet(self, scale)
+        apply_font_role(self, "body", scale)
+        repolish(self)  # discard the inherited selector cache from QMenu.__init__
+        QtWidgets.QApplication.sendEvent(self, QtCore.QEvent(QtCore.QEvent.Type.StyleChange))
+        self.aboutToShow.connect(self._fit_to_screen)
+
+    def _fit_to_screen(self):
+        screen = self.screen()
+        if screen is None:
+            return
+        available = screen.availableGeometry()
+        limit = max(t.SPACE_48, available.width() - 2 * t.SPACE_SM)
+        self.setMaximumWidth(limit)
+        self.setMaximumHeight(max(t.SPACE_48, available.height() - 2 * t.SPACE_SM))
+        # Leave space for native checkmarks, submenu arrows and both insets.
+        text_width = max(t.SPACE_48, limit - t.scaled(t.SPACE_48 * 2, self._chrome_scale))
+        fm = self.fontMetrics()
+        for action in self.actions():
+            if action.isSeparator():
+                continue
+            full = action.property("model_full_label") or action.text()
+            action.setProperty("model_full_label", full)
+            action.setToolTip(full)
+            action.setText(fm.elidedText(full, Qt.TextElideMode.ElideMiddle, text_width))
+
+
+class ConversationInvitation(QtWidgets.QWidget):
+    """A quiet, left-aligned invitation, separate from conversation history."""
+
+    def __init__(self, parent=None, scale=t.FONT_SCALE_DEFAULT):
+        super().__init__(parent)
+        self.setObjectName("DsConversationInvitation")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, t.SPACE_LG, 0, t.SPACE_MD)
+        layout.setSpacing(t.SPACE_SM)
+        self.title = label("What are we building?", role="title", scale=scale)
+        self.body = label("Describe a network, inspect your scene, or work through a problem.",
+                          role="body", scale=scale)
+        for item in (self.title, self.body):
+            item.setTextFormat(Qt.TextFormat.PlainText)
+            item.setWordWrap(True)
+            item.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            layout.addWidget(item)
+
+    def set_scale(self, scale):
+        apply_font_role(self.title, "title", scale)
+        apply_font_role(self.body, "body", scale)
+
+    def fit_content(self, width, height):
+        """Reduce optional invitation copy before any text would be clipped."""
+        layout = self.layout()
+        self.title.setText("What are we building?")
+        self.body.setVisible(True)
+        layout.setContentsMargins(0, t.SPACE_LG, 0, t.SPACE_MD)
+        layout.invalidate()
+        needed = layout.totalHeightForWidth(width)
+        if needed > height:
+            self.body.hide()
+            layout.setContentsMargins(0, t.SPACE_SM, 0, t.SPACE_SM)
+            needed = self.title.heightForWidth(width) + 2 * t.SPACE_SM
+        if needed > height:
+            self.title.setText("Start here")
+            needed = self.title.heightForWidth(width) + 2 * t.SPACE_SM
+        # At extreme heights (for example a tall artist-owned composer plus
+        # active Stop), keep the field/action visible and omit optional copy.
+        self.setVisible(needed <= height)
+        if needed <= height:
+            self.setGeometry(0, 0, width, needed)
+            layout.activate()
 
 
 class Pill(QtWidgets.QPushButton):
@@ -414,4 +505,3 @@ def apply_stylesheet(widget, scale: float = t.FONT_SCALE_DEFAULT) -> None:
     already where the apply_* helpers live.
     """
     widget.setStyleSheet(qss.stylesheet(scale))
-

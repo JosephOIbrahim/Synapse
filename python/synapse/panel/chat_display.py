@@ -34,7 +34,7 @@ except Exception:  # pragma: no cover
     def _timed_phase(*_a, **_k):
         return _nullctx()
 from synapse.panel.designsystem import tokens as t
-from synapse.panel.designsystem import rhythm, fontload
+from synapse.panel.designsystem import rhythm, fontload, components
 
 # W5-PANEL item 5: the absolute-leading enum, resolved once across PySide6/2.
 # LineDistanceHeight ADDS a fixed distance to each line (Qt: effective height =
@@ -137,6 +137,11 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.document().setDocumentMargin(0)
         self._document_density = None
         self._set_document_font(self._font_scale)
+        self._empty_state = components.ConversationInvitation(
+            self.viewport(), scale=self._font_scale)
+        self._invitation_enabled = False
+        self._empty_state.hide()
+        self.document().contentsChanged.connect(self._sync_empty_state)
 
         # Connect anchor clicks
         self.anchorClicked.connect(self._on_anchor_clicked)
@@ -176,6 +181,24 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         font.setPixelSize(max(t.FONT_FLOOR_PX, t.scaled(t.SIZE_BODY, scale)))
         self.document().setDefaultFont(font)
         self.setCurrentFont(font)
+        invitation = getattr(self, "_empty_state", None)
+        if invitation is not None:
+            invitation.set_scale(scale)
+            self._sync_empty_state()
+
+    def show_invitation(self):
+        """Enable the empty-state surface without inserting a fake chat turn."""
+        self._invitation_enabled = True
+        self._sync_empty_state()
+
+    def _sync_empty_state(self):
+        invitation = getattr(self, "_empty_state", None)
+        if invitation is None:
+            return
+        visible = self._invitation_enabled and self.document().isEmpty()
+        invitation.setVisible(visible)
+        if visible:
+            invitation.fit_content(self.viewport().width(), self.viewport().height())
 
     def _rhythm_density(self):
         parent = self
@@ -448,6 +471,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             pass
         finally:
             self._measuring_resize = False
+            self._sync_empty_state()
 
     # -- Message append methods ----------------------------------------------
 

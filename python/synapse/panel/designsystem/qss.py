@@ -1174,3 +1174,50 @@ def prepare_render_dialog(root, scale=t.FONT_SCALE_DEFAULT):
 #DsRoot[panel_popup="render"] QScrollArea#DsRenderScroll {{ background: {t.PANEL}; border: none; }}
 """)
 # --- END RENDER_WORKSPACE
+
+
+# --- EDITORIAL_PANEL (model choice and composition)
+_editorial_base_stylesheet = stylesheet
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _editorial_base_stylesheet(scale) + f"""
+/* Native menu scrolling keeps large local-model lists on one screen. */
+QMenu#DsModelMenu {{
+    menu-scrollable: 1;
+    padding: {t.SPACE_SM}px;
+}}
+QMenu#DsModelMenu::item {{
+    min-height: {t.scaled(t.SPACE_MD, scale)}px;
+    padding: {t.scaled(t.SPACE_12, scale)}px {t.scaled(t.SPACE_MD, scale)}px;
+}}
+QMenu#DsModelMenu::separator {{
+    height: 1px; background: {t.BORDER};
+    margin: {t.SPACE_SM}px {t.SPACE_MD}px;
+}}
+QMenu#DsModelMenu::scroller {{ height: {t.scaled(t.SPACE_LG, scale)}px; }}
+QWidget#DsConversationInvitation {{ background: {t.GROUND}; }}
+QWidget#DsConversationInvitation QLabel {{ background: {t.GROUND}; }}
+QWidget#DsConversationInvitation QLabel[role="body"] {{ color: {t.TEXT_SECONDARY}; }}
+QPushButton#DsComposerAttach {{
+    background: transparent; color: {t.TEXT_SECONDARY}; border: none;
+    border-radius: {t.RADIUS_SM}px; padding: {t.SPACE_XS}px {t.SPACE_SM}px;
+}}
+QPushButton#DsComposerAttach:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
+QPushButton#DsComposerAttach:focus {{ border: 1px solid {t.SIGNAL}; }}
+QLabel#DsComposerHint {{ color: {t.TEXT_SECONDARY}; }}
+QScrollArea#DsConnectionScroll, QWidget#DsConnectionViewport,
+QWidget#DsConnectionPage, QGroupBox#DsJevRouting {{
+    background: {t.PANEL}; color: {t.TEXT_PRIMARY};
+}}
+QGroupBox#DsJevRouting {{
+    border: 1px solid {t.BORDER}; margin-top: {t.SPACE_MD}px;
+    padding: {t.SPACE_MD}px {t.SPACE_SM}px {t.SPACE_SM}px;
+    font-size: {t.scaled(t.SIZE_BODY, scale)}px;
+}}
+QGroupBox#DsJevRouting::title {{
+    subcontrol-origin: margin; subcontrol-position: top left;
+    left: {t.SPACE_SM}px; background: {t.PANEL}; color: {t.TEXT_PRIMARY};
+}}
+"""
+# --- END EDITORIAL_PANEL

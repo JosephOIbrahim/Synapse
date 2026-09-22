@@ -198,7 +198,7 @@ def test_failed_selection_does_not_keep_previous_location_tooltip():
                             _active_model=lambda: "b", _provider_id="custom",
                             _prepare_connection=Mock(side_effect=ValueError("bad config")),
                             _model_connection_detail="Local\nollama/a", _connection_status=Mock(),
-                            _render_token_state=Mock())
+                            _render_token_state=Mock(), _fit_panel_chrome=Mock())
     panel_methods("_refresh_engine_selector")["_refresh_engine_selector"](panel)
     assert "ollama/a" not in panel._model_connection_detail
     assert "Local" not in panel._model_connection_detail

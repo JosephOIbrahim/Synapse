@@ -109,6 +109,13 @@ def _amend_constructors(original):
             "stale CRIT.md 2026-09-15 constructor amendment - the baseline "
             + name + " constructor no longer contains it exactly once: " + old)
         original[name] = original[name].replace(old, new, 1)
+    # Approved 2026-09-22 composer refinement: the existing input owns the
+    # embedded Attach control alongside Send. Freeze every other constructor
+    # byte; this single initialized reference adds no lifecycle owner.
+    anchor = '        self._send_widget = None    # the embedded Send (attach_send)'
+    assert original["_GrowingInput"].count(anchor) == 1
+    original["_GrowingInput"] = original["_GrowingInput"].replace(
+        anchor, anchor + '\n        self._attach_widget = None', 1)
     return original
 CAMERA = ("synapse_panel.py", "face_token.py", "token_readout.py",
           "chat_display.py", "recall_card.py")
@@ -213,6 +220,12 @@ def _assert_lifecycle_method(current, original, name):
         previous = '        self._connect_btn.setVisible(not busy)   # Connect | Stop share one slot\n'
         assert current.count(approved) == 1, "Connect stays visible and is disabled while busy"
         current = current.replace(approved, previous, 1)
+    elif name == "showEvent":
+        # Approved responsive refinement runs geometry before the existing
+        # settle/cap path. It adds no worker or resource lifetime operation.
+        addition = '        self._fit_panel_chrome()\n'
+        assert current.count(addition) == 1
+        current = current.replace(addition, "", 1)
     assert current == original
 
 
@@ -230,7 +243,7 @@ def test_lifecycle_and_token_completion_methods_byte_identical(name):
                              _method(_source("synapse_panel.py", _panel_base()), name), name)
 
 
-@pytest.mark.parametrize("name", ["_set_busy", "_on_token", "_update_context"])
+@pytest.mark.parametrize("name", ["_set_busy", "_on_token", "_update_context", "showEvent"])
 def test_lifecycle_pin_rejects_unrelated_work_even_in_an_amended_method(name):
     current = _method(_source("synapse_panel.py"), name)
     original = _method(_source("synapse_panel.py", _panel_base()), name)
@@ -319,6 +332,7 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
 
 @pytest.mark.parametrize("before,after", [
     ("self.setAcceptRichText(False)", "self.setAcceptRichText(True)"),
+    ("self._attach_widget = None", "self._attach_widget = object()"),
     ('rhythm.apply_layout_margins(self, "band")', 'rhythm.apply_layout_margins(self, "row")'),
     ("class _GrowingInput", "class ExtraOwner:\n    def __init__(self):\n        pass\n\nclass _GrowingInput"),
 ])

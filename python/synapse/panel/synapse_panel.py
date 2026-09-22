@@ -229,11 +229,12 @@ class _ShortcutLayout(QtWidgets.QLayout):
     def minimumSize(self):
         size = QtCore.QSize()
         for item in self._items:
-            size = size.expandedTo(item.minimumSize())
+            if not item.isEmpty():
+                size = size.expandedTo(item.minimumSize())
         return size
 
     def sizeHint(self):
-        sizes = [item.sizeHint() for item in self._items]
+        sizes = [item.sizeHint() for item in self._items if not item.isEmpty()]
         return QtCore.QSize(
             sum(size.width() for size in sizes) + self._horizontal_gap * max(0, len(sizes) - 1),
             max((size.height() for size in sizes), default=0))
@@ -250,16 +251,19 @@ class _ShortcutLayout(QtWidgets.QLayout):
         the same 4 the composer column stacks its own children with.
         """
         gap = self._horizontal_gap
-        slack = len(self._items) - 1
+        items = [item for item in self._items if not item.isEmpty()]
+        slack = len(items) - 1
         if slack < 1:
             return gap
-        room = rect.width() - sum(item.sizeHint().width() for item in self._items)
+        room = rect.width() - sum(item.sizeHint().width() for item in items)
         return min(gap, max(t.SPACE_XS, room // slack))
 
     def _arrange(self, rect, place):
         gap = self._row_gap(rect)
         rows, row, row_width = [], [], 0
         for item in self._items:
+            if item.isEmpty():
+                continue
             size = item.sizeHint()
             step = gap if row else 0
             if row and row_width + step + size.width() > rect.width():
@@ -323,6 +327,7 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self._height_settled = False     # flips on settle_height / drag
         self._cap = None            # pane-imposed ceiling (CTO B4); never persisted
         self._send_widget = None    # the embedded Send (attach_send)
+        self._attach_widget = None
         self.setFixedHeight(self._user_h)
         self.textChanged.connect(self._autosize)
 
@@ -332,6 +337,13 @@ class _GrowingInput(QtWidgets.QTextEdit):
         if self._cap is not None:
             h = max(self._floor, min(h, self._cap))
         self.setFixedHeight(h)
+        owner = self.parentWidget()
+        if owner is not None and owner.layout() is not None and owner.layout().indexOf(self) >= 0:
+            owner.setMinimumHeight(0)
+            owner.layout().invalidate()
+            required = owner.layout().totalHeightForWidth(owner.width())
+            if required >= 0:
+                owner.setMinimumHeight(required)
 
     def cap_height(self, cap):
         """Pane-imposed ceiling (CTO B4 ruling 2026-09-05). The artist's
@@ -369,14 +381,19 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self._autosize()
 
     # -- embedded Send (v9 comp: bottom-right INSIDE the field) -------------
-    def attach_send(self, btn):
+    def attach_send(self, btn, accessory=None):
         """Parent the Send button to the field itself (NOT the viewport, so it
         never scrolls) and reserve a bottom viewport margin so text never
         flows under it."""
         self._send_widget = btn
+        self._attach_widget = accessory
         btn.setParent(self)
+        if accessory is not None:
+            accessory.setParent(self)
+            accessory.show()
         try:
-            self.setViewportMargins(0, 0, 0, btn.sizeHint().height() + 12)
+            height = max(btn.sizeHint().height(), accessory.sizeHint().height() if accessory else 0)
+            self.setViewportMargins(0, 0, 0, height + t.SPACE_MD)
         except Exception:
             pass
         btn.show()
@@ -387,8 +404,14 @@ class _GrowingInput(QtWidgets.QTextEdit):
         if btn is None:
             return
         bs = btn.sizeHint()
-        btn.resize(bs)
-        btn.move(self.width() - bs.width() - 10, self.height() - bs.height() - 10)
+        accessory = self._attach_widget
+        height = max(bs.height(), accessory.sizeHint().height() if accessory else 0)
+        btn.resize(bs.width(), height)
+        bottom = self.height() - height - t.SPACE_SM
+        btn.move(self.width() - bs.width() - t.SPACE_12, bottom)
+        if accessory is not None:
+            accessory.resize(accessory.sizeHint().width(), height)
+            accessory.move(t.SPACE_12, bottom)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
@@ -971,7 +994,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # A `stack` owner (gap 4/6/3, RULING-4a) inside the `shell` rail.
         ident = self._section()
         ident.setProperty("rhythm_role", "stack")
-        top = QtWidgets.QHBoxLayout(ident)
+        top = QtWidgets.QGridLayout(ident)
+        self._rail_identity_layout = top
+        self._rail_identity = ident
         # Boot truth is one string: not connected (headless / bridge down).
         # MarkDot accepts 'disconnected' as a resting state (components._RESTING).
         self._mark = c.MarkDot("disconnected", diameter=16)
@@ -1027,17 +1052,19 @@ class SynapsePanel(QtWidgets.QWidget):
             "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         self._author_lbl.clicked.connect(self._open_author_menu)
         self._refresh_engine_selector()      # text + never-elide floor
-        top.addWidget(self._mark)
-        top.addSpacing(t.WORDMARK_GAP)       # the lockup: mark ·stack gap + 5· SYNAPSE
-        top.addWidget(word)
-        top.addStretch(1)
-        top.addWidget(self._author_lbl)
+        top.addWidget(self._mark, 0, 0)
+        top.setColumnMinimumWidth(1, t.WORDMARK_GAP)
+        top.addWidget(word, 0, 2)
+        top.setColumnStretch(3, 1)
+        top.addWidget(self._author_lbl, 0, 4)
         col.addWidget(ident)
 
         # -- row 2: [sentence] ... [Connect][Doctor][bolt] --
         row = self._section()
         row.setProperty("rhythm_role", "stack")
-        bot = QtWidgets.QHBoxLayout(row)
+        bot = QtWidgets.QGridLayout(row)
+        self._rail_status_layout = bot
+        self._rail_status_row = row
         # The ONE state sentence (F2). Its text is always a STATUS phrase, or
         # the two turn phrases (_DONE_PHRASE / _STOPPING_PHRASE); its floor is
         # the widest of them measured in its own font - the wordmark's rule
@@ -1063,6 +1090,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # surfaces of ONE Stop -- #DsStop paints it in the mark's warm note,
         # not the danger outline, so the pair reads as a single control.
         self._stop_btn.setObjectName("DsStop")
+        self._stop_btn.setAccessibleName("Stop current task")
+        self._stop_btn.setToolTip(
+            "Stop this task. An operation already sent to Houdini may still be finishing.")
         self._stop_btn.setMinimumWidth(t.SPACE_48)
         self._stop_btn.clicked.connect(self._on_stop)
         self._stop_btn.setEnabled(False)
@@ -1086,16 +1116,16 @@ class SynapsePanel(QtWidgets.QWidget):
         self._doctor_btn.setAccessibleName("Check SYNAPSE")
         self._doctor_btn.setToolTip("Run synapse_doctor locally · no model request or scene changes")
         self._doctor_btn.clicked.connect(self._open_doctor)
-        bot.addWidget(self._header_status)
-        bot.addStretch(1)
-        bot.addWidget(self._connect_btn)
-        bot.addSpacing(t.scaled(t.SPACE_12, self._chrome_scale))
-        bot.addWidget(self._doctor_btn)
-        bot.addWidget(overflow)
+        bot.addWidget(self._header_status, 0, 0)
+        bot.setColumnStretch(1, 1)
+        bot.addWidget(self._connect_btn, 0, 2)
+        bot.setColumnMinimumWidth(3, t.scaled(t.SPACE_12, self._chrome_scale))
+        bot.addWidget(self._doctor_btn, 0, 4)
+        bot.addWidget(overflow, 0, 5)
         col.addWidget(row)
         # A working-only line avoids compressing the state or action labels
         # when the artist docks SYNAPSE in a narrow pane.
-        col.addWidget(self._stop_btn, 0, Qt.AlignmentFlag.AlignLeft)
+        col.addWidget(self._stop_btn, 0, Qt.AlignmentFlag.AlignRight)
 
         # -- hidden owners: constructed, written to, read by the overflow;
         #    in NO layout, never shown. ----------------------------------
@@ -1303,6 +1333,7 @@ class SynapsePanel(QtWidgets.QWidget):
             status = getattr(self, "_connection_status", None)
             if status is not None:
                 status.setText(shown.facts.location + " · Connect models")
+                status.setProperty("full_connection_label", status.text())
                 status.setToolTip(detail)
             face = getattr(self, "_token_face", None)
             if face is not None and hasattr(face, "set_connection"):
@@ -1322,8 +1353,10 @@ class SynapsePanel(QtWidgets.QWidget):
             status = getattr(self, "_connection_status", None)
             if status is not None:
                 status.setText((task.facts.location if task else "Unverified") + " · Connect models")
+                status.setProperty("full_connection_label", status.text())
                 status.setToolTip(self._model_connection_detail)
         self._render_token_state()      # getattr-guarded: no-op before the rail
+        self._fit_panel_chrome()
 
     def _build_context_ribbon(self):
         cached = self._region_cache.get("_build_context_ribbon")
@@ -1388,9 +1421,7 @@ class SynapsePanel(QtWidgets.QWidget):
             # row under the rail's "Not connected" (tokens.py:619, :1005),
             # two claims in opposite directions. The face asks the question;
             # the rail owns the state.
-            self._chat.append_system_message(
-                "What are we building?"
-            )
+            self._chat.show_invitation()
         except Exception:
             pass
         # The chat is the dominant surface via stretch (it expands to fill), so
@@ -1770,21 +1801,19 @@ class SynapsePanel(QtWidgets.QWidget):
         refresh = menu.addAction("Refresh Ollama models", discovery.refresh)
         refresh.setEnabled(not discovery.loading)
 
-    def _open_author_menu(self):
-        """The rail author token's engine+model menu (v9) — one submenu per
-        provider, rows from the registry; REUSES the proven _set_provider /
-        _set_model / _persist_picks machinery (only the anchor moved from the
-        retired pill bar). Exactly one row is checked: the active pair."""
+    def _build_author_menu(self):
+        """Build the native picker independently of its popup event loop."""
         try:
             from synapse.panel.providers.registry import PROVIDER_IDS, PROVIDER_LABELS
         except Exception:
-            return
-        menu = QtWidgets.QMenu(self)
+            return None, None
+        menu = c.ModelMenu(self, scale=self._chrome_scale)
         menu.addAction("Connect models…", self._open_connections)
         menu.addSeparator()
         watcher = None
         for pid in PROVIDER_IDS:
-            sub = menu.addMenu(PROVIDER_LABELS.get(pid, pid))
+            sub = c.ModelMenu(menu, title=PROVIDER_LABELS.get(pid, pid), scale=self._chrome_scale)
+            menu.addMenu(sub)
             self._fill_author_submenu(sub, pid)
             if pid == "ollama":
                 discovery = self._get_ollama_discovery()
@@ -1792,6 +1821,13 @@ class SynapsePanel(QtWidgets.QWidget):
                 watcher = MenuRefresh(menu, discovery,
                                       lambda s=sub: self._fill_author_submenu(s, "ollama"))
                 sub.aboutToShow.connect(discovery.refresh)
+        return menu, watcher
+
+    def _open_author_menu(self):
+        """The active generation model remains the single checked choice."""
+        menu, watcher = self._build_author_menu()
+        if menu is None:
+            return
         btn = getattr(self, "_author_lbl", None)
         anchor = btn if btn is not None else self
         pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
@@ -1822,7 +1858,7 @@ class SynapsePanel(QtWidgets.QWidget):
         pid = getattr(self, "_provider_id", "claude")
         if not items and pid != "custom":
             return
-        menu = QtWidgets.QMenu(self)
+        menu = c.ModelMenu(self, scale=self._chrome_scale)
         self._fill_model_menu(menu, pid)
         watcher = None
         if pid == "ollama":
@@ -1954,13 +1990,25 @@ class SynapsePanel(QtWidgets.QWidget):
             if lay is not None:
                 lay.activate()
         before = inp._cap
+        composer = inp.parentWidget()
+        composer.setMinimumHeight(0)
         if inp._cap is not None:
             inp.cap_height(None)
         _relayout()
-        bottom = inp.mapTo(self, QtCore.QPoint(0, inp.height())).y()
+        composer_layout = composer.layout()
+        # The legend and wrapped shortcuts consume real height below the
+        # field. Qt may compress a nested height-for-width owner before its
+        # parent sees that height, overlapping siblings. Reserve it explicitly.
+        required = composer_layout.totalHeightForWidth(composer.width())
+        if required < 0:
+            required = composer_layout.sizeHint().height()
+        composer.setMinimumHeight(required)
+        _relayout()
+        bottom = composer.mapTo(self, QtCore.QPoint(0, composer.height())).y()
         room = self.height() - bottom
         if room < 0:
             inp.cap_height(inp.height() + room)
+            composer.setMinimumHeight(composer_layout.totalHeightForWidth(composer.width()))
         # Nested layouts converge over event-loop turns, not in one call: a
         # pass that moved the cap schedules one more, until the cap is stable
         # (bounded - never a loop that outlives the resize).
@@ -1970,13 +2018,74 @@ class SynapsePanel(QtWidgets.QWidget):
         else:
             self._fit_rounds = 0
 
+    def _fit_panel_chrome(self):
+        """Reflow enlarged host chrome inside a narrow dock, without scaling it.
+
+        Full model identity remains the picker value and accessible name.
+        Only its display can elide; secondary actions remain in Tools.
+        """
+        if not hasattr(self, "_overflow_btn"):
+            return
+        available = max(t.SPACE_48, self.width() - 2 * t.GUTTER)
+        label = self._author_lbl
+        full = self._author_token()
+        task = getattr(self, "_task_connection", None)
+        identity = (task.spec.provider + "/" + task.spec.model if task else
+                    getattr(self, "_provider_id", "claude") + "/" + (self._active_model() or ""))
+        label.setAccessibleName("Generation model: " + identity)
+        label.setText(full)
+        natural = label.sizeHint().width()
+        gap = max(0, self._rail_identity_layout.spacing())
+        identity_width = self._mark.sizeHint().width() + t.WORDMARK_GAP + self._wordmark.sizeHint().width() + natural + 4 * gap
+        compact = identity_width > available
+        label.setText(label.fontMetrics().elidedText(full, Qt.TextElideMode.ElideMiddle,
+                                                  max(t.SPACE_48, available - 2 * t.SPACE_XS)))
+        label.setMinimumWidth(min(available, label.sizeHint().width()))
+        top = self._rail_identity_layout
+        wanted = 1 if compact else 0
+        if top.getItemPosition(top.indexOf(label))[0] != wanted:
+            top.removeWidget(label)
+            if compact:
+                top.addWidget(label, 1, 0, 1, 5, Qt.AlignmentFlag.AlignRight)
+            else:
+                top.addWidget(label, 0, 4)
+        controls_width = sum(w.sizeHint().width() for w in
+                             (self._header_status, self._connect_btn, self._doctor_btn, self._overflow_btn))
+        controls_width += t.scaled(t.SPACE_12, self._chrome_scale) + 4 * gap
+        status_compact = controls_width > available
+        bot = self._rail_status_layout
+        state_row = 1 if status_compact else 0
+        if getattr(self, "_status_compact", None) != status_compact:
+            self._status_compact = status_compact
+            for widget in (self._header_status, self._connect_btn, self._doctor_btn, self._overflow_btn):
+                bot.removeWidget(widget)
+            bot.addWidget(self._header_status, 0, 0, 1, 6 if status_compact else 1)
+            bot.addWidget(self._connect_btn, state_row, 0 if status_compact else 2)
+            bot.addWidget(self._doctor_btn, state_row, 4)
+            bot.addWidget(self._overflow_btn, state_row, 5)
+        self._doctor_btn.setVisible(not status_compact)
+        self._compact_chrome = compact
+        if hasattr(self, "_khint"):
+            self._khint.setText("Enter sends\nShift+Enter: new line" if compact else
+                                "Enter sends · Shift+Enter adds a line")
+            self._khint.setMinimumHeight(max(self._khint.fontMetrics().height(),
+                                             self._khint.heightForWidth(available)))
+            self._recipes_btn.setVisible(not compact)
+            self._events_btn.setVisible(not compact)
+            status = self._connection_status
+            full_status = status.property("full_connection_label") or status.text()
+            status.setText("Connect models" if status.fontMetrics().horizontalAdvance(full_status) + 2 * t.SPACE_MD > available else full_status)
+            status.setMinimumWidth(0)
+
     def showEvent(self, e):
         super().showEvent(e)
+        self._fit_panel_chrome()
         self._settle_composer_height()
         self._fit_composer_to_pane()
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
+        self._fit_panel_chrome()
         self._settle_composer_height()
         self._fit_composer_to_pane()
 
@@ -2533,15 +2642,18 @@ class SynapsePanel(QtWidgets.QWidget):
         # L5-22: a released grip-drag is the artist's answer — remember it
         self._input.height_committed.connect(self._persist_composer_height)
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
-        row = QtWidgets.QHBoxLayout()
-        # Image attachment uses the existing drawn glyph.
-        attach = c.Button("", variant="ghost")
+        # Both actions sit inside one full-width field. Text reserves their
+        # bottom band; neither control scrolls with the draft.
+        attach = c.Button("Attach", variant="ghost")
+        attach.setObjectName("DsComposerAttach")
+        c.apply_font_role(attach, "body", self._chrome_scale)
         attach.setIcon(_image_icon())
-        attach.setIconSize(QtCore.QSize(36, 36))
-        attach.setFixedWidth(52)
+        icon_px = t.scaled(t.GLYPH_MD, self._chrome_scale)
+        attach.setIconSize(QtCore.QSize(icon_px, icon_px))
         attach.setToolTip("Attach image / file as context")
         attach.setAccessibleName("Attach image or file")
         attach.clicked.connect(self._on_attach)
+        self._attach_btn = attach
         # v9 comp: SEND rides bottom-right INSIDE the composer (the attr name
         # `_send_btn` is load-bearing — the clip audit finds it by name).
         self._send_btn = QtWidgets.QPushButton("SEND")
@@ -2550,19 +2662,17 @@ class SynapsePanel(QtWidgets.QWidget):
         self._send_btn.setFont(fontload.tracked_font(
             "SEND", t.SIZE_SMALL, scale=self._chrome_scale, weight=500))
         self._send_btn.clicked.connect(self._on_submit)
-        self._input.attach_send(self._send_btn)
-        row.addWidget(self._input, 1)
-        row.addWidget(attach)
-        col.addLayout(row)
+        self._input.attach_send(self._send_btn, attach)
+        col.addWidget(self._input)
         # khint — the composer's quiet key legend (comp .khint). BC-4: it tells
         # the two keys and nothing else - '/' is told once, in the placeholder
         # (the telling G3 pins) - at the chrome floor (SIZE_SMALL, DATA mono,
         # TEXT_SECONDARY via the label colour role), one signal per fact.
         self._khint = c.label("Enter sends · Shift+Enter adds a line", role="label")
-        self._khint.setFont(fontload.tracked_font(
-            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        self._khint.setObjectName("DsComposerHint")
+        c.apply_font_role(self._khint, "body", self._chrome_scale)
         self._khint.setWordWrap(True)
-        self._khint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._khint.setAlignment(Qt.AlignmentFlag.AlignLeft)
         col.addWidget(self._khint)
         self._commands_btn = c.Button("Commands", variant="ghost")
         # PNL-L3A: the '/' telling moved back to the placeholder (the
@@ -2800,6 +2910,11 @@ class SynapsePanel(QtWidgets.QWidget):
         'Larger text / Default text' are the Aa font scale, not density."""
         menu = QtWidgets.QMenu(self)
         menu.addAction("Copy conversation", self._copy_conversation)
+        if getattr(self, "_status_compact", False):
+            menu.addAction("Doctor", self._open_doctor)
+        if getattr(self, "_compact_chrome", False):
+            menu.addAction("Saved networks", self._open_saved_recipes)
+            menu.addAction("Updates", self._open_notifications)
         menu.addAction("Revoke session model permissions", self._revoke_session_approvals)
         # Build HDA: the form is unchanged; only the way in moved (BC-1).
         menu.addAction("Build HDA…", lambda: self._set_direct_view("hda"))
