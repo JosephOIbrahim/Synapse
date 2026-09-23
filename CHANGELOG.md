@@ -22,6 +22,22 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.82.0 - Soft Editorial panel
+
+The native panel gains an open reading column, coral SYNAPSE identity, sea-green
+YOU labels and a blue-green model selector. Hollow circles identify SYNAPSE;
+genuine numbered responses become rounded cells while retaining selection and
+node links. A softer asymmetric composer starts compact and preserves saved
+artist height. Model rows measure both prose and monospace fonts, and exact
+provider/model identity remains accessible.
+
+Validated with 141 focused native panel checks, 79 source/constructor checks and
+48 independent rendering comparisons (overlapping suites, not a summed total).
+The broader Windows suite remains qualified with known and environment-related
+failures; it is not reported all green. This is a source release with no new
+Windows installer or live panel deployment. Details and limits:
+[v5.82.0](docs/releases/v5.82.0.md).
+
 ## v5.81.0 - Model choice and selected-network assistance
 
 The panel gains a searchable model picker organized by Anthropic, Google, NVIDIA,

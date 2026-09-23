@@ -4,7 +4,7 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.81.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.81.0 is Latest</sub></p>
+<p align="center"><sub>v5.82.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.82.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
@@ -121,11 +121,11 @@ flowchart TB
 
 **Staged, not yet served:** `rag/corpus/guides` holds 31 workflow guides from [fxhoudinimcp](https://github.com/healkeiser/fxhoudinimcp) @ 29b6695b (MIT), gate-checked against 22.0.400. The product does not consult this directory yet; it is listed here so the provenance is public before the serving wiring lands.
 
-**New in 5.81.0** — clearer model choice and selected-network assistance.
+**New in 5.82.0** — the Soft Editorial panel.
 
-Search models by provider, name or exact ID. The composer has aligned footer text and a compact Stop below Send. **Tools → Selected network…** captures nodes and wires, pins the inspection, prepares focused prompts and previews wire insertion. Optional JEV ranks actions when asked; your selected model remains the generator. Solaris assembly and material tools now report verified connections and incomplete work more precisely.
+An open reading column pairs coral SYNAPSE accents with sea-green YOU labels and a blue-green model selector. Hollow circular marks, rounded response plans and a softer composer give the native panel more breathing room. Search, exact model identities, text selection, node links and Send/Stop keep their existing behavior.
 
-This is a **source release**. The Windows Setup linked above remains v5.75.2 and does not include these changes. See [source installation](docs/getting-started/installation.md#source-installation) and the [v5.81.0 release notes](docs/releases/v5.81.0.md), including validation and current limits.
+This is a **source release**. The Windows Setup linked above remains v5.75.2 and does not include these changes. See [source installation](docs/getting-started/installation.md#source-installation) and the [v5.82.0 release notes](docs/releases/v5.82.0.md), including validation and current limits.
 
 ## Watch it work
 
