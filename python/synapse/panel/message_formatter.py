@@ -1,18 +1,8 @@
-"""Convert SYNAPSE responses to styled HTML for the chat display.
+"""Format real conversation content for the native Soft Editorial transcript.
 
-Mile 3 (Pentagram pass) — *speakers are told apart by type, not bubbles.*
-J3 (RULING_JOE_FIVE, 2026-09-05) — *and by one colour each.* Every turn leads
-with a 2px hairline rule and, at the head of a group, a label (dot + name) in
-its speaker's colour: USER = SIGNAL, SYNAPSE = CONIFEROUS. Body copy keeps its
-text-ramp colour on both sides; no bubbles, no chrome. Node references render
-as **artifact chips** — a node mark + mono path, a thing you can click, not a
-sentence. One accent for actions (SIGNAL, the artist's next move) and two
-speaker marks; every colour comes from the vendored design system, never the
-legacy cyan, never a new hex.
-
-Public surface is unchanged (chat_display.py depends on it):
-``format_response``, ``format_user_message``, ``format_synapse_message``,
-``format_system_message``, ``format_timestamp_divider``.
+Sea-green identifies YOU, coral identifies SYNAPSE, and body copy stays neutral.
+The assistant has an open reading column; only user turns carry a leading rule.
+The formatter stays pure so it can run on the existing background worker.
 """
 
 import html
@@ -35,15 +25,8 @@ _SIGNAL      = _t.SIGNAL          # the accent: actions, chips, the artist
 _TEXT        = _t.TEXT_PRIMARY    # agent voice / body
 _TEXT_BRIGHT = _t.TEXT_BRIGHT     # human voice (emphasis)
 _TEXT_DIM    = _t.TEXT_TERTIARY   # system lines / captions / timestamps
-# J3: one colour per speaker, decided HERE and nowhere else. The label (dot +
-# name) and the turn's leading rule both take it; body text never does.
-#   YOU     -> SIGNAL      the accent already means "the artist"
-#   SYNAPSE -> CONIFEROUS  4.58:1 on GROUND (>= 4.5 AA at SIZE_BODY 12 / 500).
-#              MUSHROOM measured 4.64:1 but its chroma is exactly 24 - not
-#              > 24 - so the panel's own chromatic predicate reads it as grey,
-#              which is the complaint this fixes. WARM (the busy mark) leaves
-#              the transcript: one hue means "SYNAPSE, alive" everywhere.
-_SPEAKER = {"YOU": _t.SIGNAL, "SYNAPSE": _t.CONIFEROUS}
+# Speaker identity is independent of model selection and connection status.
+_SPEAKER = {"YOU": _t.CHAT_USER, "SYNAPSE": _t.CHAT_ASSISTANT}
 _GROUND      = _t.GROUND          # chip + code-block inset
 _LINE        = _t.GRAPHITE        # hairline borders
 _ERROR       = _t.ERROR
@@ -279,8 +262,24 @@ def _markdown_blocks(raw, font_scale):
 
     def flush_list():
         if items:
-            out.append('<%s style="margin:4px 0;">' % list_kind +
-                       "".join("<li>%s</li>" % item for item in items) + '</%s>' % list_kind)
+            if list_kind == "ol":
+                # A native list inside a padded frame keeps selection, copying
+                # and node links. ChatDisplay rounds this frame after Qt paints
+                # it; QTextDocument does not implement CSS border-radius.
+                rows = "".join(
+                    '<li style="color:{accent}; margin:{gap}px 0;">'
+                    '<span style="color:{ink};">{item}</span></li>'.format(
+                        accent=_t.CHAT_ASSISTANT, ink=_TEXT, item=item,
+                        gap=max(8, round(12 * font_scale)))
+                    for item in items)
+                out.append(
+                    '<table border="0" cellspacing="0" cellpadding="{pad}" '
+                    'width="100%" bgcolor="{bg}" style="margin:12px 0;"><tr><td>'
+                    '<ol style="margin:0;">{rows}</ol></td></tr></table>'.format(
+                        pad=max(8, round(12 * font_scale)), bg=_t.RAISED, rows=rows))
+            else:
+                out.append('<ul style="margin:4px 0;">' +
+                           "".join("<li>%s</li>" % item for item in items) + '</ul>')
             items.clear()
 
     for line in raw.splitlines():
@@ -385,39 +384,19 @@ def format_response(response, font_scale=1.0):
 
 
 def _speaker_label(who, timestamp, font_scale):
-    """Slack's actual dialogue anatomy: a NAME at the head of a group, the time
-    beside it, and nothing repeated on continuations.
-
-    Measured 2026-07-27, the only thing separating the two voices was tone —
-    TEXT_BRIGHT for the human, TEXT_PRIMARY for the agent, plus a 2px rule on the human
-    side. Twenty-five points of grey on a dim panel is not a speaker signal.
-    The v9 design said "type and the rule tell the speaker apart"; in practice
-    the reader has to infer, every message.
-
-    A COLOURED DOT leads the label, because tone alone still asks the reader
-    to compare. J3 (2026-09-05): the dot alone was not enough either — the
-    widget's label pass painted the whole block one grey over it and Joe read
-    "grey for both". So the NAME carries the speaker colour too (``_SPEAKER``:
-    YOU = SIGNAL, SYNAPSE = CONIFEROUS), the dot beside it, and only the
-    timestamp stays dim. The dot is a text glyph rather than a styled box:
-    QTextDocument's HTML subset drops background-colour and border-radius on
-    inline spans, so a coloured bullet is the shape that actually survives.
-
-    Rendered as chrome, not content: small, and tracked ALL CAPS sans by the
-    display's one tracked font (PNL-L5 — not inline here) — so it reads
-    as a label and never competes with what was said. Callers pass "" for a
-    grouped message, which is what makes it Slack rather than a chat log.
-    """
+    """A role label and quiet time; the native display supplies the ring image."""
     sz = _scale(_SMALL_PX, font_scale)
     # CRIT.md 2026-09-15 #1 (P2 · type scale): the timestamp rides the ramp.
     # max(sz - 1, 8) shipped it at 10px — a size the 11 / 12 / 15 / 19 ramp
     # does not have. Same size as the speaker label, one step of colour apart.
-    ts = ('<span style="color:{d}; font-size:{s}px;">&#160;&#160;{t}</span>'
-          .format(d=_TEXT_DIM, s=sz, t=html.escape(timestamp))
+    ts = ('<span style="color:{d}; font-family:{mono}; font-size:{s}px;">&#160;&#160;{t}</span>'
+          .format(d=_TEXT_DIM, mono=html.escape(_t.FONT_MONO_CSS, quote=True),
+                  s=sz, t=html.escape(timestamp))
           if timestamp else "")
     colour = _speaker_colour(who)
-    dot = ('<span style="color:{c}; font-size:{s}px;">&#9679;</span>&#160;&#160;'
-           .format(c=colour, s=sz))
+    diameter = max(6, round(8 * font_scale))
+    dot = ('<img src="synapse:assistant-ring" width="{s}" height="{s}" />&#160;&#160;'
+           .format(s=diameter) if str(who).upper().startswith("SYNAPSE") else "")
     # PNL-L5 (R3-D): no family and no inline tracking here. The label's
     # typography has ONE owner — the tracked sans/500/caps font ChatDisplay
     # merges onto this block (_apply_turn_rhythm). Declaring mono + 1.2px
@@ -435,12 +414,11 @@ def _speaker_colour(who):
 
 
 def _ruled_turn(body, rule, fg, body_sz, my):
-    """The turn anatomy both voices share: a 2px rule in the SPEAKER's colour ·
-    14px gap · body (the v9 comp's ``.you``, extended to SYNAPSE by J3 so each
-    turn leads with its speaker's mark). A two-cell table carries the rule:
-    QTextDocument paints table-cell backgrounds reliably where it ignores block
-    ``border-left``. ``line-height`` is best-effort — harmless if the
-    QTextDocument subset drops it."""
+    """A stable reading column with an optional two-pixel leading rule.
+
+    Qt reliably paints table cells but not CSS border-left on blocks. User
+    turns color the rule; assistant turns keep it transparent for open prose.
+    """
     return (
         '<table border="0" cellspacing="0" cellpadding="0" width="100%" '
         'style="margin:{my}px 0;"><tr>'
@@ -452,28 +430,22 @@ def _ruled_turn(body, rule, fg, body_sz, my):
 
 
 def format_user_message(text, grouped=False, timestamp=None, font_scale=1.0):
-    """The human voice: a SIGNAL hairline rule, brighter text, and a speaker
+    """The human voice: a sea-green hairline, neutral text, and a speaker
     label at the head of a group (``_ruled_turn`` carries the anatomy)."""
     escaped = html.escape(text).replace("\n", "<br>")
     body_sz = _scale(_BODY_PX, font_scale)
     my = _MSG_MARGIN_Y if grouped else _GROUP_MARGIN_Y
     label = "" if grouped else _speaker_label("YOU", timestamp, font_scale)
-    return _ruled_turn(label + escaped, _SPEAKER["YOU"], _TEXT_BRIGHT, body_sz, my)
+    return _ruled_turn(label + escaped, _SPEAKER["YOU"], _TEXT, body_sz, my)
 
 
 def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.0,
                            signed=None):
-    """The agent voice: plain body copy behind a CONIFEROUS hairline rule, with
-    a speaker label at the head of a group — no bubble. J3 gave it the same
-    turn anatomy as the human voice (``_ruled_turn``) so the speaker reads
-    without reading. Results inside it surface as artifact chips via the
-    rich-text pipeline.
+    """Open body copy, a coral identity label, and real result/artifact content.
 
-    ``signed`` adds a quiet, display-only authorship note (the model that
-    produced the result) once at the head of a SYNAPSE group — never per
-    message. It is a label, not a substrate write. v9: when the result carries
-    a node chip, the FIRST chip carries the ``signed`` suffix (comp anatomy);
-    otherwise the standalone note renders as before — exactly one either way."""
+    The optional model signature appears once per assistant group, on its first
+    artifact chip when present or as a quiet note otherwise. It is display only.
+    """
     body, chip_signed = _format_response_ex(
         content, font_scale, signed=None if grouped else signed)
     my = _MSG_MARGIN_Y if grouped else _GROUP_MARGIN_Y
@@ -488,7 +460,7 @@ def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.
             'margin-top:2px;">signed {who}</div>'
         ).format(dim=_TEXT_DIM, sz=_scale(_SMALL_PX, font_scale),
                  who=html.escape(str(signed)))
-    return _ruled_turn(label + body + note, _SPEAKER["SYNAPSE"], _TEXT,
+    return _ruled_turn(label + body + note, "transparent", _TEXT,
                        _scale(_BODY_PX, font_scale), my)
 
 

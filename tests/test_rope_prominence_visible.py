@@ -17,9 +17,9 @@ non-button hero rules (meters, labels, verbs) keep their L5-14 accents.
 SIGNAL_DEEP is a shade within SIGNAL (x0.85), not a third accent.
 
 Artist request 2026-09-22: Stop moves beneath Send and matches Send's
-styling. Its effective cascade now uses SIGNAL_DEEP, SIGNAL and SIGNAL_PRESS,
-with the shared disabled fill and ink. Historical base rules remain intact;
-the editorial override owns this change. Other prominence rules are unchanged.
+styling. Soft Editorial (2026-09-23) now assigns both composer actions the
+coral WARM family, with the shared disabled fill and ink. The matching Stop
+contract is preserved; generic hero-button prominence remains unchanged.
 """
 
 import re
@@ -96,14 +96,13 @@ def test_hero_button_reads_as_knockout():
     assert not rogue, f"hero button rules paint hexes outside the assigned accent + ink: {sorted(rogue)}"
 
 
-def test_deep_blue_shared_by_send_and_hero_buttons():
-    """L5-16: SIGNAL_DEEP fills BOTH the SEND rest state and at least one
-    hero button rule -- CONNECT/CORPUS/SEND read as one deep blue."""
+def test_composer_send_is_coral_while_generic_hero_keeps_its_role():
+    """The approved composer action changes without recoloring other surfaces."""
     qss = stylesheet()
     send = re.search(r'QPushButton#DsSend\s*\{[^{}]*\}', qss)
     assert send, "no QPushButton#DsSend rest rule"
-    assert _hexes(t.SIGNAL_DEEP) & _hexes(send.group(0)), (
-        "DsSend rest fill is not SIGNAL_DEEP"
+    assert _hexes(t.WARM) & _hexes(send.group(0)), (
+        "DsSend rest fill is not the approved coral action"
     )
     hero_buttons = [r for r in _rules(qss, "hero") if r.startswith("QPushButton#DsButton")]
     assert any(_hexes(t.SIGNAL_DEEP) & _hexes(r) for r in hero_buttons), (
@@ -139,9 +138,9 @@ def _button_properties(name, state=""):
 
 
 def test_stop_matches_send_knockout():
-    """The requested matching style replaces the former warm Stop fill."""
+    """Both composer actions share the approved coral knockout style."""
     stop, send = _button_properties("DsStop"), _button_properties("DsSend")
-    assert stop["background"] == send["background"] == t.SIGNAL_DEEP
+    assert stop["background"] == send["background"] == t.WARM
     assert stop["color"] == send["color"] == t.TEXT_ON_ACCENT
     assert stop["border"] == send["border"] == "none"
     assert stop["border-radius"] == send["border-radius"]
@@ -150,8 +149,8 @@ def test_stop_matches_send_knockout():
 def test_stop_defines_hover_pressed_and_disabled():
     """Stop carries Send's complete interaction ramp, not just its rest fill."""
     for state, token, label in (
-        (":hover", t.SIGNAL, "SIGNAL"),
-        (":pressed", t.SIGNAL_PRESS, "SIGNAL_PRESS"),
+        (":hover", t.WARM_HOVER, "WARM_HOVER"),
+        (":pressed", t.WARM_PRESS, "WARM_PRESS"),
         (":disabled", t.DISABLED_BG, "DISABLED_BG"),
     ):
         stop, send = _button_properties("DsStop", state), _button_properties("DsSend", state)
@@ -162,7 +161,7 @@ def test_stop_defines_hover_pressed_and_disabled():
 def test_stop_paints_only_sanctioned_tokens():
     """Every effective Stop color belongs to the existing Send token family."""
     sanctioned = (
-        _hexes(t.SIGNAL_DEEP) | _hexes(t.SIGNAL) | _hexes(t.SIGNAL_PRESS)
+        _hexes(t.WARM) | _hexes(t.WARM_HOVER) | _hexes(t.WARM_PRESS)
         | _hexes(t.TEXT_ON_ACCENT) | _hexes(t.DISABLED_BG) | _hexes(t.TEXT_DISABLED)
     )
     effective = "\n".join(value for state in ("", ":hover", ":pressed", ":disabled")

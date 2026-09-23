@@ -208,9 +208,9 @@ def probe(density):
         assert first.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["turn"], density)
         label_cursor = QtGui.QTextCursor(first)
         label_cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
-        # J3 (RULING_JOE_FIVE, 2026-09-05): the SYNAPSE label is CONIFEROUS, not
-        # the TEXT_SECONDARY grey that flattened both speakers ("grey for both").
-        assert label_cursor.charFormat().foreground().color() == QtGui.QColor(t.CONIFEROUS)
+        # Soft Editorial (2026-09-23) gives the assistant coral identity;
+        # the label must still survive the rhythm pass without becoming grey.
+        assert label_cursor.charFormat().foreground().color() == QtGui.QColor(t.CHAT_ASSISTANT)
         chat.append_synapse_message("YOUR shader stays body text.")
         chat._flush_pending_formats()
         grouped = chat.document().find("YOUR shader")
@@ -220,8 +220,8 @@ def probe(density):
         # a grouped message continues one speaker's turn, so it takes the transcript's
         # own "turn_same" key rather than the shared "row" key it used to borrow.
         assert grouped.blockFormat().topMargin() == t.gap(rhythm.ROLE_GAPS["turn_same"], density)
-        # J3 twin: the artist's label is SIGNAL (the accent already means "the
-        # artist"); searched from the end so "YOUR shader" above is never it.
+        # The artist's label is sea-green; search from the end so the earlier
+        # body words "YOUR shader" cannot be mistaken for the speaker label.
         you_start = chat.document().characterCount() - 1
         chat.append_user_message("you speak")
         chat._flush_pending_formats()
@@ -230,7 +230,7 @@ def probe(density):
         assert you_cursor.block().blockFormat().property(QtGui.QTextFormat.UserProperty + 1) == "YOU"
         you_label = QtGui.QTextCursor(you_cursor.block())
         you_label.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
-        assert you_label.charFormat().foreground().color() == QtGui.QColor(t.SIGNAL)
+        assert you_label.charFormat().foreground().color() == QtGui.QColor(t.CHAT_USER)
         content = chat.toPlainText()
         for target in ("tight", "airy", density):
             panel._recompose({"airy": "curious", "standard": "expert", "tight": "ml"}[target])

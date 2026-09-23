@@ -224,13 +224,15 @@ class TestMessageFormatterStatus:
 
 
 class TestUserMessageFormat:
-    """Mile 3 — the human voice: a signal hairline + brighter text, no bubble."""
+    """The human voice: the approved sea-green hairline and neutral prose."""
 
-    def test_user_message_has_signal_rule(self):
-        # The single hairline rule on the human voice uses the canonical
-        # signal blue (#8FB3D9), not the legacy cyan, not a bubble.
+    def test_user_message_has_its_identity_rule(self):
+        # Soft Editorial (2026-09-23) replaces the historical SIGNAL-blue
+        # speaker assignment with the dedicated user identity role.
+        from synapse.panel.designsystem import tokens as t
         result = format_user_message("Hello")
-        assert "#8FB3D9" in result
+        assert "background:" + t.CHAT_USER in result
+        assert t.CHAT_ASSISTANT not in result
 
     def test_user_message_has_no_bubble(self):
         # Bubbles are dead: no CARBON fill, no rounded container.

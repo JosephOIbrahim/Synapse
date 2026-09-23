@@ -1,4 +1,11 @@
-"""design/joe-five J1 - the model token is a status light (Joe's word
+"""Model identity and truthful state, amended by Soft Editorial 2026-09-23.
+
+The approved blue-green model selector now keeps its identity color through
+live/working/off. The status sentence and tooltip carry actual state. The
+existing J1 tests still exercise the same state transitions and missing-key
+reasons; only the obsolete color-as-liveness contract changes.
+
+Historical J1 rationale (Joe's word
 2026-09-05, harness/cto/runs/2026-09-05/RULING_JOE_FIVE.md J1).
 
 Joe: "the model has no color so if you are running an llm there is no
@@ -50,8 +57,7 @@ QtGui = getattr(_bc, "QtGui", None)
 QtCore = getattr(_bc, "QtCore", None)
 
 _CONTEXT = {"frame": 1, "selected_nodes": [], "scene_file": ""}
-_LIVE_BUCKET = 8      # CONIFEROUS #6E8F72 -> 127.3 deg // 15
-_WORKING_BUCKET = 0   # WARM       #FF7759 ->  10.8 deg // 15
+_MODEL_BUCKET = 12   # blue-green identity, hue near 191 degrees
 
 
 @pytest.fixture
@@ -92,16 +98,16 @@ def _buckets(panel, widget=None):
             for r, g, b in colours if max(r, g, b) - min(r, g, b) > 24}
 
 
-def test_boot_disconnected_token_is_off_and_grey(scratch_settings):
-    """At boot the panel is not connected (headless), so the token is 'off':
-    TEXT_DISABLED, no chromatic pixel, and the tooltip says why. The same
-    truth the mark shows (disconnected) - one signal, two readouts."""
+def test_boot_disconnected_token_keeps_identity_and_reports_off(scratch_settings):
+    """At boot the selector retains blue-green and truthfully reports off.
+    The tooltip explains the missing connection; the accent is identity.
+    """
     p = _bc._panel("expert")
     try:
         tok = _token(p)
         assert p._mark._state == "disconnected"
         assert tok.property("liveness") == "off", tok.property("liveness")
-        assert _buckets(p, tok) == set(), sorted(_buckets(p, tok))
+        assert _buckets(p, tok) == {_MODEL_BUCKET}, sorted(_buckets(p, tok))
         assert "Not connected" in tok.toolTip(), tok.toolTip()
         assert tok.toolTip().startswith("Engine & model - click to switch")
     finally:
@@ -109,11 +115,9 @@ def test_boot_disconnected_token_is_off_and_grey(scratch_settings):
 
 
 def test_connected_keyed_engine_is_live_then_working_then_live(scratch_settings):
-    """A keyless engine (ollama: resolve_key() == 'not-needed') on a connected
-    panel is 'live' (CONIFEROUS, bucket 8); a streaming turn turns it 'working'
-    (WARM, bucket 0 - the mark's own note); the turn ending returns it to
-    'live'. The colour follows _apply_context / _set_busy - the same edges the
-    mark and Connect follow - never a stale value."""
+    """A keyless local engine cycles live → working → live with stable color.
+    The existing state property still follows both task edges accurately.
+    """
     p = _bc._panel("expert")
     pid0 = p._provider_id
     try:
@@ -123,16 +127,16 @@ def test_connected_keyed_engine_is_live_then_working_then_live(scratch_settings)
         p._apply_context(dict(_CONTEXT))
         assert p._conn_state == "connected"
         assert tok.property("liveness") == "live", tok.property("liveness")
-        assert _buckets(p, tok) == {_LIVE_BUCKET}, sorted(_buckets(p, tok))
+        assert _buckets(p, tok) == {_MODEL_BUCKET}, sorted(_buckets(p, tok))
         assert tok.toolTip() == "Engine & model - click to switch", tok.toolTip()
 
         p._set_busy(True)
         assert tok.property("liveness") == "working", tok.property("liveness")
-        assert _buckets(p, tok) == {_WORKING_BUCKET}, sorted(_buckets(p, tok))
+        assert _buckets(p, tok) == {_MODEL_BUCKET}, sorted(_buckets(p, tok))
 
         p._set_busy(False)
         assert tok.property("liveness") == "live", tok.property("liveness")
-        assert _buckets(p, tok) == {_LIVE_BUCKET}, sorted(_buckets(p, tok))
+        assert _buckets(p, tok) == {_MODEL_BUCKET}, sorted(_buckets(p, tok))
     finally:
         p._set_provider(pid0)
         p.close()
@@ -154,7 +158,7 @@ def test_connected_unkeyed_engine_is_off_with_reason(scratch_settings):
         p._set_provider("custom")
         assert p._provider_id == "custom"
         assert tok.property("liveness") == "off", tok.property("liveness")
-        assert _buckets(p, tok) == set(), sorted(_buckets(p, tok))
+        assert _buckets(p, tok) == {_MODEL_BUCKET}, sorted(_buckets(p, tok))
         assert "No key for custom" in tok.toolTip(), tok.toolTip()
     finally:
         p._set_provider(pid0)

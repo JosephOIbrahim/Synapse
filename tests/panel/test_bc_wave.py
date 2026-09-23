@@ -227,24 +227,23 @@ def test_rail_one_state_sentence_never_elides():
 
 
 def test_author_token_visible_top_right():
-    """Joe's Addendum 2 (2026-09-05): the MODEL is always visible, top right.
+    """The model remains visible; Soft Editorial uses a friendly sans label.
 
-    The active provider/model is the one fact the artist must never lose. It
-    sits top right of the panel at rest, in every profile and density, at
-    PANEL_PREF_WIDTH 340: Space Mono (the data voice), DATA tracking, at or
-    above the type floor, never elided (a hard minimum from its own hint),
-    never in the overflow; it names the live provider/model and click opens
-    the existing picker."""
+    The 2026-09-23 approval changes the presentation from an exact mono token
+    to a human-readable name, while accessible text retains exact identity.
+    Geometry, a readable type floor and direct access to the picker remain.
+    """
     from synapse.panel.designsystem import tokens as t, fontload
     _app()   # a QFont before the QApplication is a silent hython abort
-    mono = QtGui.QFontInfo(fontload.apply_family(QtGui.QFont(), mono=True)).family()
+    sans = QtGui.QFontInfo(fontload.apply_family(QtGui.QFont(), mono=False)).family()
     for profile in PROFILES:
         p = _panel(profile)
         try:
             rail = _rail(p)
             tok = p._author_lbl
             assert tok.isVisible() and _in_a_layout(tok), profile
-            assert tok.text() and tok.text() == p._author_token(), tok.text()
+            assert tok.text() and tok.text() == p._author_display_label(), tok.text()
+            assert tok.accessibleName() == "Generation model: " + p._provider_id + "/" + p._active_model()
             assert tok.minimumWidth() >= tok.sizeHint().width(), (
                 profile, tok.minimumWidth(), tok.sizeHint().width())
             assert tok.width() >= tok.sizeHint().width(), (
@@ -257,11 +256,12 @@ def test_author_token_visible_top_right():
                 profile, tl.x(), tok.width(), rail.width())
             assert tl.x() > rail.width() // 2, (profile, tl.x())
             assert abs((tl.y() + tok.height() // 2) - (wl.y() + p._wordmark.height() // 2))                 <= p._wordmark.height(), (profile, tl.y(), wl.y())
-            # The data voice at the floor, tracked as DATA.
+            # The readable model name uses the prose family; IDs remain in
+            # the accessible name and picker details, not a mono headline.
             f = tok.font()
-            assert QtGui.QFontInfo(f).family() == mono
-            assert QtGui.QFontInfo(f).pixelSize() >= t.scaled(t.SIZE_SMALL, p._chrome_scale)
-            assert abs(f.letterSpacing() - (100.0 + t.TRACKING_EM["DATA"] * 100.0)) < 0.05
+            assert QtGui.QFontInfo(f).family() == sans
+            assert QtGui.QFontInfo(f).pixelSize() >= t.scaled(t.SIZE_BODY, p._chrome_scale)
+            assert f.weight() == t.WEIGHT_REGULAR
             # Never in the overflow.
             texts = [a.text() for a in p._build_overflow_menu().actions()]
             assert tok.text() not in texts
@@ -287,22 +287,13 @@ def _hue_buckets(widget):
             for r, g, b in colours if max(r, g, b) - min(r, g, b) > 24}
 
 
-def test_chat_face_monochrome_one_accent_plus_state_marks():
-    """CRUX repair (2026-09-05, 'second hue at rest') retargeted under Joe's
-    word: RULING_JOE_FIVE.md J1 (2026-09-05) supersedes RULING_DIRECTION_BC.md
-    Addendum 3.3 ('the token is data, not a status light') - the model token
-    IS a status light, coloured by the engine's liveness from the panel's own
-    state signal. Unset it still speaks in the text ramp (TEXT_SECONDARY rest;
-    hover TEXT_BRIGHT + underline - the `(:hover)?` regex below does not match
-    the [liveness=...] blocks, so that half of the pin is unchanged), and its
-    three liveness blocks name exactly CONIFEROUS (live) / WARM (working) /
-    TEXT_DISABLED (off) and nothing else chromatic. Pentagram bar: monochrome
-    plus ONE accent for actions, plus the state marks. Measured at 340x760 in
-    every profile: the CHAT face holds <= 3 hue buckets at boot (disconnected:
-    the warm mark + the SEND accent; the token is grey) and <= 4 once
-    _apply_context connects, the one added bucket being 8 - CONIFEROUS, the
-    token's own. (The allowed rest set {0 WARM, 8 CONIFEROUS, 14 SIGNAL} is
-    what J3 later paints inside; it needs no edit here.)"""
+def test_chat_face_uses_stable_model_identity_with_separate_status():
+    """Soft Editorial (2026-09-23) gives model selection a stable blue-green.
+
+    This deliberately supersedes J1's model-as-status-light color contract.
+    State remains observable and truthful, but may not recolor the model.
+    The limited accent palette is still measured on the composed panel.
+    """
     import re
     from synapse.panel.designsystem import tokens as t, qss
     sheet = qss.stylesheet()
@@ -310,35 +301,46 @@ def test_chat_face_monochrome_one_accent_plus_state_marks():
               re.finditer(r"QPushButton#DsAuthor(:hover)?\s*\{([^}]*)\}", sheet)}
     assert set(blocks) == {"rest", ":hover"}, list(blocks)
     for name, body in blocks.items():
-        for hue in (t.CONIFEROUS, t.GROW, t.SIGNAL, t.WARN, t.ERROR, t.FIRE):
+        assert t.MODEL_ACCENT.lower() in body, (name, body)
+        for hue in (t.CHAT_USER, t.CHAT_ASSISTANT, t.CONIFEROUS):
             assert hue.lower() not in body, (name, hue)
-    assert t.TEXT_SECONDARY.lower() in blocks["rest"], blocks["rest"]
-    assert t.TEXT_BRIGHT.lower() in blocks[":hover"] and "underline" in blocks[":hover"], blocks[":hover"]
-    # J1: the liveness blocks - and only those - carry state colour.
+    # Liveness can remain a widget property, but no color override may change
+    # the visual identity of the selected model.
     live = {m.group(1): m.group(2).lower() for m in
             re.finditer(r'QPushButton#DsAuthor\[liveness="(\w+)"\]\s*\{([^}]*)\}', sheet)}
-    assert set(live) == {"live", "working", "off"}, list(live)
-    assert t.CONIFEROUS.lower() in live["live"], live["live"]
-    assert t.WARM.lower() in live["working"], live["working"]
-    assert t.TEXT_DISABLED.lower() in live["off"], live["off"]
     for name, body in live.items():
-        for hue in (t.GROW, t.SIGNAL, t.WARN, t.ERROR, t.FIRE):
-            assert hue.lower() not in body, (name, hue)
-    # Equal specificity in Qt QSS: source order decides, and hover must win.
-    assert sheet.rfind('QPushButton#DsAuthor[liveness=') < sheet.find("QPushButton#DsAuthor:hover")
+        color = re.search(r"(?:^|;)\s*color\s*:\s*([^;]+)", body)
+        assert color is None or color.group(1).strip() == t.MODEL_ACCENT.lower(), (name, body)
     for profile in PROFILES:
         p = _panel(profile)
         pid0 = p._provider_id
         try:
+            # Drive both connection edges explicitly: the suite's hou stub
+            # may already have supplied a synthetic connected context at boot.
+            p._conn_state = "disconnected"
+            p._render_state()
+            _app().processEvents()
             rest = _hue_buckets(p)
             assert len(rest) <= 3, (profile, sorted(rest))
+            assert 12 in rest, (profile, "model blue-green missing", sorted(rest))
+            assert p._author_lbl.property("liveness") == "off"
+            assert p._author_lbl.palette().color(QtGui.QPalette.ButtonText) == QtGui.QColor(t.MODEL_ACCENT)
             p._set_provider("ollama")        # keyless engine: keyed without a secret
             p._apply_context({"frame": 1, "selected_nodes": [], "scene_file": ""})
             _app().processEvents()
             connected = _hue_buckets(p)
             assert len(connected) <= 4, (profile, sorted(connected))
-            assert connected - rest == {8}, (   # CONIFEROUS, the token's bucket
-                profile, sorted(rest), sorted(connected))
+            assert 12 in connected, (profile, sorted(connected))
+            assert p._author_lbl.property("liveness") == "live"
+            assert p._author_lbl.palette().color(QtGui.QPalette.ButtonText) == QtGui.QColor(t.MODEL_ACCENT)
+            p._set_busy(True)
+            _app().processEvents()
+            assert p._author_lbl.property("liveness") == "working"
+            assert p._author_lbl.palette().color(QtGui.QPalette.ButtonText) == QtGui.QColor(t.MODEL_ACCENT)
+            p._set_busy(False)
+            _app().processEvents()
+            assert p._author_lbl.property("liveness") == "live"
+            assert p._author_lbl.palette().color(QtGui.QPalette.ButtonText) == QtGui.QColor(t.MODEL_ACCENT)
         finally:
             p._set_provider(pid0)            # the module-wide scratch file stays on its pick
             p.close()

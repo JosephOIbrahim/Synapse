@@ -1,4 +1,4 @@
-"""J3 (RULING_JOE_FIVE, 2026-09-05) - two speakers, two colours, on the widget.
+"""Two distinct speaker identities on the real Qt widget.
 
 Joe: "The chat used to have a color for USER and a color for SYNAPSE now its
 grey for both. That is confusing for the user."
@@ -15,8 +15,10 @@ ALL CAPS - mono has no 500, so the MEDIUM this file asserts was a weight the
 face could not draw. The assertion below is unchanged and now measures a
 weight that is really there; no colour pin moved.
 
-  YOU     -> SIGNAL      (the accent that already means "the artist")
-  SYNAPSE -> CONIFEROUS  (4.58:1 on GROUND, >= 4.5 AA; the warden's pick)
+Soft Editorial (user approval 2026-09-23) supersedes the old J3 palette:
+YOU is CHAT_USER sea-green, SYNAPSE is CHAT_ASSISTANT coral and carries a
+hollow ring image. The original anti-regression guarantee remains: label
+colors must survive the rhythm pass, and label typography must not spread.
 
 Real Qt only (hython 22.0.400 offscreen); skips under stock Python. The
 transcript is grabbed under a DsRoot carrying the design-system stylesheet so
@@ -48,11 +50,11 @@ if not os.environ.get("SYNAPSE_PANEL_SETTINGS"):
         tempfile.mkdtemp(prefix="synapse_j3_"), "panel_settings.json")
 
 try:
-    from PySide6 import QtWidgets, QtGui
+    from PySide6 import QtWidgets, QtGui, QtCore
     _HAVE_QT = True
 except ImportError:
     try:
-        from PySide2 import QtWidgets, QtGui
+        from PySide2 import QtWidgets, QtGui, QtCore
         _HAVE_QT = True
     except ImportError:
         _HAVE_QT = False
@@ -72,10 +74,10 @@ if not _HAVE_QT:
 
 from synapse.panel.designsystem import tokens as t
 
-# Hue buckets (15-degree) of the two speaker colours, from the tokens themselves
-# so the pin follows the palette rather than a copied number.
-_SIGNAL_BUCKET = 14
-_CONIFEROUS_BUCKET = 8
+# Hue sectors for the approved sea-green/coral identity, independently of
+# text labels: green-cyan and red-orange, respectively.
+_USER_BUCKET = 9
+_ASSISTANT_BUCKET = 0
 
 _APP = None
 
@@ -121,9 +123,10 @@ def _label_block(doc, who):
     return cur.block()
 
 
-def _first_char_colour(block):
-    c = QtGui.QTextCursor(block)
-    c.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
+def _speaker_colour(doc, who):
+    # The first assistant fragment is an image, so measure the name itself.
+    c = doc.find(who)
+    assert not c.isNull(), who
     return c.charFormat().foreground().color()
 
 
@@ -159,16 +162,15 @@ def test_label_foreground_is_the_speaker_colour():
         # tagged with the speaker - the merge reads the speaker from there.
         assert you.blockFormat().property(QtGui.QTextFormat.UserProperty + 1) == "YOU"
         assert syn.blockFormat().property(QtGui.QTextFormat.UserProperty + 1) == "SYNAPSE"
-        you_ink = _first_char_colour(you)
-        syn_ink = _first_char_colour(syn)
-        assert you_ink == QtGui.QColor(t.SIGNAL), you_ink.name()
-        assert syn_ink == QtGui.QColor(t.CONIFEROUS), syn_ink.name()
+        you_ink = _speaker_colour(doc, "YOU")
+        syn_ink = _speaker_colour(doc, "SYNAPSE")
+        assert you_ink == QtGui.QColor(t.CHAT_USER), you_ink.name()
+        assert syn_ink == QtGui.QColor(t.CHAT_ASSISTANT), syn_ink.name()
         # Neither speaker is the grey that flattened both before J3.
         assert QtGui.QColor(t.TEXT_SECONDARY) not in (you_ink, syn_ink)
         # The label typography survives the colour: sans, medium, tracked,
         # ALL CAPS (PNL-L5; it was mono before, which could not draw 500).
-        c = QtGui.QTextCursor(syn)
-        c.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor)
+        c = doc.find("SYNAPSE")
         font = c.charFormat().font()
         assert font.weight() == t.WEIGHT_MEDIUM, font.weight()
     finally:
@@ -176,17 +178,68 @@ def test_label_foreground_is_the_speaker_colour():
 
 
 def test_transcript_carries_both_speaker_hues():
-    assert _bucket_of(t.SIGNAL) == _SIGNAL_BUCKET
-    assert _bucket_of(t.CONIFEROUS) == _CONIFEROUS_BUCKET
+    assert _bucket_of(t.CHAT_USER) == _USER_BUCKET
+    assert _bucket_of(t.CHAT_ASSISTANT) == _ASSISTANT_BUCKET
     root, chat = _chat()
     try:
         _one_turn(chat)
         buckets = _hue_buckets(chat)
-        # Both speakers are on screen, pre-attentively: the SIGNAL rule + label
-        # and the CONIFEROUS rule + label each survive the chroma > 24 gate.
-        assert {_SIGNAL_BUCKET, _CONIFEROUS_BUCKET} <= buckets, sorted(buckets)
-        # Two speakers, two colours - nothing else in a bare transcript is
-        # chromatic (the warm mark lives in the rail, not here).
-        assert buckets <= {_SIGNAL_BUCKET, _CONIFEROUS_BUCKET}, sorted(buckets)
+        # Both identities survive rendering, and neutral prose adds no hue.
+        assert {_USER_BUCKET, _ASSISTANT_BUCKET} <= buckets, sorted(buckets)
+        assert buckets <= {_USER_BUCKET, _ASSISTANT_BUCKET}, sorted(buckets)
+    finally:
+        root.close()
+
+
+@pytest.mark.parametrize("scale", [1.0, 1.25, 2.25])
+def test_assistant_mark_is_a_registered_hollow_image_not_a_missing_glyph(scale):
+    root, chat = _chat()
+    try:
+        chat.font_scale = scale
+        # Clearing also removes QTextDocument's resource cache. The second
+        # conversation must still resolve the local ring without a font reset.
+        for conversation in range(2):
+            if conversation:
+                chat.clear()
+            _one_turn(chat)
+            doc = chat.document()
+            images = []
+            block = _label_block(doc, "SYNAPSE")
+            it = block.begin()
+            while not it.atEnd():
+                frag = it.fragment()
+                it += 1
+                if frag.isValid() and frag.charFormat().isImageFormat():
+                    image_format = frag.charFormat().toImageFormat()
+                    images.append(image_format.name())
+                    # Inspect paint BEFORE asking resource(), which could
+                    # populate the cache and conceal a first-render failure.
+                    cursor = QtGui.QTextCursor(doc)
+                    cursor.setPosition(frag.position())
+                    bounds = chat.cursorRect(cursor)
+                    rect = QtCore.QRect(bounds.x(), bounds.y(),
+                                        int(image_format.width()), bounds.height())
+                    assert chat.viewport().rect().contains(rect)
+                    raster = chat.viewport().grab().toImage()
+                    dpr = raster.devicePixelRatio()
+                    painted = QtCore.QRect(round(rect.x() * dpr), round(rect.y() * dpr),
+                                           round(rect.width() * dpr), round(rect.height() * dpr))
+                    ink = [(x, y) for y in range(painted.top(), painted.bottom() + 1)
+                           for x in range(painted.left(), painted.right() + 1)
+                           if raster.pixelColor(x, y) == QtGui.QColor(t.CHAT_ASSISTANT)]
+                    assert ink, (conversation, "assistant ring missing from first raster")
+                    center = QtCore.QPoint((min(x for x, _ in ink) + max(x for x, _ in ink)) // 2,
+                                          (min(y for _, y in ink) + max(y for _, y in ink)) // 2)
+                    assert raster.pixelColor(center) == QtGui.QColor(t.PANEL), (
+                        conversation, "painted assistant mark has no hole")
+            assert images == ["synapse:assistant-ring"]
+            ring = doc.resource(QtGui.QTextDocument.ImageResource,
+                                QtCore.QUrl(images[0]))
+            assert isinstance(ring, QtGui.QImage) and not ring.isNull(), conversation
+            assert ring.pixelColor(ring.width() // 2, ring.height() // 2).alpha() == 0
+            visible = [ring.pixelColor(x, y) for y in range(ring.height())
+                       for x in range(ring.width()) if ring.pixelColor(x, y).alpha() > 128]
+            assert visible, "the ring resource is empty"
+            assert any(c.rgb() == QtGui.QColor(t.CHAT_ASSISTANT).rgb() for c in visible)
     finally:
         root.close()

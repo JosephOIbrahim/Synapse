@@ -369,6 +369,8 @@ class MarkDot(QtWidgets.QWidget):
     a consent gate that does not gate (R18, R29).
     """
 
+    # identity_ring keeps the Soft Editorial header's hollow circle in every
+    # state. The existing default progress mark remains available to other faces.
     _RESTING = {"idle", "ready", "connected", "disconnected", "warning", "error", ""}
 
     # Ring geometry, in degrees. The working arc opens at MIN_SWEEP and grows
@@ -378,9 +380,10 @@ class MarkDot(QtWidgets.QWidget):
     MAX_SWEEP = 300
     STEPS_TO_FULL = 8       # increments from MIN to MAX; further steps hold at MAX
 
-    def __init__(self, state="idle", diameter=16, parent=None):
+    def __init__(self, state="idle", diameter=16, parent=None, *, identity_ring=False):
         super().__init__(parent)
         self._d = diameter
+        self._identity_ring = identity_ring
         self._state = state or "idle"
         self._angle = 0
         self._steps = 0            # completed steps this cycle -> arc LENGTH
@@ -472,20 +475,26 @@ class MarkDot(QtWidgets.QWidget):
     def paintEvent(self, _event):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.Antialiasing)
-        col = QtGui.QColor(t.WARM)
+        col = QtGui.QColor(t.CHAT_ASSISTANT if self._identity_ring else t.WARM)
         m = 2
         # Monolinear: ONE weight, ONE line, no fills and no dual-tone. State is
         # carried by how much of the circle is drawn -- an open outline at rest,
         # an arc that FILLS IN as steps land, a closed ring when done -- never by
         # a second tone or a heavier stroke. Diameter 16 = the 24px grid x 2/3.
         pen = QtGui.QPen(col)
-        pen.setWidthF(t.STROKE_PX)
+        stroke = self._d * 3.0 / 14.0 if self._identity_ring else t.STROKE_PX
+        pen.setWidthF(stroke)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         p.setPen(pen)
         p.setBrush(Qt.BrushStyle.NoBrush)
-        inset = m + t.STROKE_PX / 2.0
+        inset = m + stroke / 2.0
         rect = QtCore.QRectF(inset, inset,
-                             self._d - t.STROKE_PX, self._d - t.STROKE_PX)
+                             self._d - stroke, self._d - stroke)
+        if self._identity_ring:
+            # Keep the hole in every state; progress overlays the existing ring.
+            p.setOpacity(0.4 if self._state == "working" else 1.0)
+            p.drawEllipse(rect)
+            p.setOpacity(1.0)
         if self._state == "working":
             # Length = accumulation, rotation = liveness. Qt angles are
             # 1/16 degree, 0 at 3 o'clock, positive counter-clockwise; the span
@@ -493,6 +502,8 @@ class MarkDot(QtWidgets.QWidget):
             sweep = self.MIN_SWEEP + (self.MAX_SWEEP - self.MIN_SWEEP) * self.progress()
             start = (90 - self._angle) % 360
             p.drawArc(rect, int(start * 16), int(-sweep * 16))
+        elif self._identity_ring:
+            pass
         elif self._state == "done":
             p.drawEllipse(rect)                                # closed ring
             # ...plus a check, drawn with the SAME pen: the completed sweep.

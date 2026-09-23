@@ -303,6 +303,7 @@ class _GrowingInput(QtWidgets.QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsInput")
+        self.setProperty("softEditorial", True)
         self.setAcceptRichText(False)
         # PNL-L3A (spec leg L3a, "a control says what happens"): the composer
         # is a control, so it tells what it does ON ITSELF. The '/' telling
@@ -1030,7 +1031,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._rail_identity = ident
         # Boot truth is one string: not connected (headless / bridge down).
         # MarkDot accepts 'disconnected' as a resting state (components._RESTING).
-        self._mark = c.MarkDot("disconnected", diameter=16)
+        self._mark = c.MarkDot("disconnected", diameter=t.scaled(14, self._chrome_scale),
+                               identity_ring=True)
+        self._mark.setAccessibleName("SYNAPSE status and stop")
         # brand word - 14px/TEXT_BRIGHT (comp .word); tracking lives on the
         # QFont (Qt QSS has no letter-spacing), colour in the sheet.
         #
@@ -1079,8 +1082,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._author_lbl.setFlat(True)
         self._author_lbl.setCursor(Qt.CursorShape.PointingHandCursor)
         self._author_lbl.setToolTip("Engine & model - click to switch")
-        self._author_lbl.setFont(fontload.tracked_font(
-            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        c.apply_font_role(self._author_lbl, "body", self._chrome_scale)
         self._author_lbl.clicked.connect(self._open_author_menu)
         self._refresh_engine_selector()      # text + never-elide floor
         top.addWidget(self._mark, 0, 0)
@@ -1136,7 +1138,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # and it does NOT auto-start - this button is the one-click way to force
         # it without dropping into Houdini's Python Shell. Keep Connect visible
         # beside Doctor; disable it while work is in flight (_set_busy).
-        self._connect_btn = c.Button("Connect", variant="primary")
+        self._connect_btn = c.Button("Connect", variant="ghost")
         self._connect_btn.setToolTip(
             "Start the Synapse bridge server (port 9999) so external / MCP tools "
             "can reach Houdini. Safe to click anytime - idempotent."
@@ -1328,21 +1330,16 @@ class SynapsePanel(QtWidgets.QWidget):
             btn.setText("Corpus ✓" if loaded else "Corpus")
 
     def _refresh_engine_selector(self):
-        """Repaint the engine/model selection readout — v9: the rail author
-        token IS the selector (the ENGINE pill bar left the chrome; this keeps
-        its name for the 4 call sites). A MODEL switch (not just a provider
-        switch) must update it. Idempotent; safe before the rail is built.
+        """Refresh the friendly model label and exact connection facts.
 
-        joe-five J1: this is also where the engine's KEYED truth is decided —
-        the provider builds and its own ``resolve_key()`` returns a value
-        (ollama's ``'not-needed'`` counts; an unconfigured Custom engine is
-        ``None``). Env / .env reads only, never a network probe. Runs at rail
-        build and on every provider / model switch, then re-renders the
-        token's liveness colour (``_render_token_state``)."""
+        A model switch, task start or completion updates both. Key availability
+        is read locally; liveness metadata and tooltips stay truthful while the
+        selector keeps its own blue-green identity. No network probe is made.
+        """
         lbl = getattr(self, "_author_lbl", None)
         if lbl is not None:
             try:
-                lbl.setText(self._author_token())
+                lbl.setText(self._author_display_label())
                 # Addendum 2: the token never elides. Re-floor on every model
                 # switch (the text changed; chrome type is frozen on Aa).
                 lbl.setMinimumWidth(lbl.sizeHint().width())
@@ -1857,13 +1854,11 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def _settle_composer_height(self):
-        """L5-22 first run: the divider opens equidistant between prompt and
-        chat — half the space the two share, measured at show/resize where
-        the pane's height is real (never __init__). A persisted artist drag
-        wins instead. Either way the height settles exactly ONCE per panel:
-        after that the divider moves only under the artist's hand (L6 — the
-        panel remembers their answer, never re-imposes its own). Identical
-        in curious / expert / ml — this is seat comfort, not a profile."""
+        """Open a compact composer once, retaining any saved artist height.
+
+        The approved Soft Editorial layout gives the conversation most of the
+        pane. Subsequent resizes and profile changes retain the artist's choice.
+        """
         inp = getattr(self, "_input", None)
         if inp is None or inp._height_settled:
             return
@@ -1877,11 +1872,13 @@ class SynapsePanel(QtWidgets.QWidget):
         shared = chat_h + inp.height()
         try:
             from synapse.panel import settings as _pset
-            target = _pset.composer_start_height(
-                _pset.load_settings().get("composer_height"),
-                shared, inp._floor, inp._max_h)
+            saved = _pset.load_settings().get("composer_height")
+            if not (isinstance(saved, int) and not isinstance(saved, bool) and saved > 0):
+                saved = t.scaled(t.SPACE_48 * 3, self._chrome_scale)
+            target = _pset.composer_start_height(saved, shared, inp._floor, inp._max_h)
         except Exception:
-            target = max(inp._floor, min(inp._max_h, shared // 2))
+            target = max(inp._floor, min(inp._max_h,
+                         t.scaled(t.SPACE_48 * 3, self._chrome_scale)))
         inp.settle_height(target)
 
     def _fit_composer_to_pane(self):
@@ -1951,7 +1948,7 @@ class SynapsePanel(QtWidgets.QWidget):
             return
         available = max(t.SPACE_48, self.width() - 2 * t.GUTTER)
         label = self._author_lbl
-        full = self._author_token()
+        full = self._author_display_label()
         task = getattr(self, "_task_connection", None)
         identity = (task.spec.provider + "/" + task.spec.model if task else
                     getattr(self, "_provider_id", "claude") + "/" + (self._active_model() or ""))
@@ -2005,6 +2002,14 @@ class SynapsePanel(QtWidgets.QWidget):
         self._fit_panel_chrome()
         self._settle_composer_height()
         self._fit_composer_to_pane()
+
+    def _author_display_label(self):
+        """Friendly reading label; exact task identity remains in accessible text."""
+        from synapse.panel.providers.registry import model_label
+        task = getattr(self, "_task_connection", None)
+        model = task.spec.model if task else self._active_model()
+        provider = task.spec.provider if task else getattr(self, "_provider_id", "claude")
+        return model_label(provider, model) if model else "Choose a model"
 
     def _author_token(self):
         """The model token: ``<provider>/<model short id>`` - who is thinking.
@@ -3854,27 +3859,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._render_token_state()
 
     def _render_token_state(self):
-        """The model token is a status light (Joe's word, RULING_JOE_FIVE.md
-        J1, 2026-09-05; supersedes RULING_DIRECTION_BC.md Addendum 3.3).
+        """Keep liveness metadata and truthful tooltips on the model selector.
 
-        The token says WHICH engine is thinking; that is state, and state has
-        colour in this panel. Its colour is the engine's liveness, decided
-        from the panel's OWN state — the same signal the mark and Connect
-        read (``_apply_context`` → ``_render_state``, ``_set_busy`` →
-        ``_render_state``) — so it is never a stale green:
-
-          working  a turn is streaming            → WARM (the mark's busy note)
-          live     Houdini connected (or 'warning': reachable, gate stale)
-                   AND the engine is keyed         → CONIFEROUS
-          off      not connected, or no key for the engine → TEXT_DISABLED
-
-        'Keyed' is ``_engine_keyed`` from ``_refresh_engine_selector`` (the
-        provider's own ``resolve_key()``; env / .env only, never a network
-        probe — this is not a daemon liveness check). The state is written as
-        the dynamic property ``liveness`` (qss.py paints it); unpolish/polish
-        only when the value moves, so an idle context tick costs nothing. The
-        tooltip carries the reason when off. Display only — never authored
-        to USD. Safe before the rail exists (no-op)."""
+        Soft Editorial gives model selection a stable blue-green identity.
+        The status sentence and mark carry activity; the tooltip still explains
+        missing connections and keys. No model request is made here.
+        """
         lbl = getattr(self, "_author_lbl", None)
         if lbl is None:
             return

@@ -316,6 +316,28 @@ WARM_HOVER  = "#FF8E72"
 WARM_PRESS  = "#E5634A"
 WARM_TINT   = "rgba(255, 119, 89, 0.14)"
 
+
+def _readable_identity(colour, surfaces):
+    """Keep the approved hue, adjusting only when the host needs contrast."""
+    rgb = tuple(int(colour[i:i + 2], 16) for i in (1, 3, 5))
+    target = (255 if min(_contrast("#FFFFFF", s) for s in surfaces)
+              >= min(_contrast("#000000", s) for s in surfaces) else 0)
+    for step in range(101):
+        amount = step / 100.0
+        candidate = _hexrgb(*(c + (target - c) * amount for c in rgb))
+        if min(_contrast(candidate, s) for s in surfaces) >= 4.5:
+            return candidate
+    return candidate
+
+
+# Soft Editorial: identity is independent of connection health and task state.
+MODEL_SELECTION = ("#35454A" if _wcag_lum(PANEL) < 0.2 else "#DCE8EB")
+_IDENTITY_SURFACES = (PANEL, GROUND, RAISED)
+CHAT_ASSISTANT = _readable_identity(WARM, _IDENTITY_SURFACES)
+CHAT_USER = _readable_identity("#8AC7A3", _IDENTITY_SURFACES)
+MODEL_ACCENT = _readable_identity("#79C2D2", _IDENTITY_SURFACES + (MODEL_SELECTION,))
+MODEL_DETAIL = _readable_identity(TEXT_PRIMARY, (MODEL_SELECTION,))
+
 # The active Houdini tab marker; the fallback is H22 UIDark.hcs SELECTION_BASE
 # (HSV 40, 0.825, 0.725). Keep diagnostic emphasis separate from warning status.
 _TAB_RGB = theme_source.host_surface_rgb("PaneTabMarker") or (185, 134, 32)

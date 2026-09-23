@@ -5,7 +5,7 @@ try:
 except ImportError:  # pragma: no cover - Houdini's older Qt build
     from PySide2 import QtCore, QtGui, QtWidgets
 
-from .designsystem import components as c, rhythm, tokens as t
+from .designsystem import components as c, fontload, rhythm, tokens as t
 from .providers.registry import model_label
 
 Qt = QtCore.Qt
@@ -25,22 +25,35 @@ class _Rows(QtWidgets.QStyledItemDelegate):
         super().__init__(parent)
         self.scale = scale
 
+    def _fonts(self):
+        label = QtGui.QFont(self.parent().font())
+        detail = QtGui.QFont(label)
+        fontload.apply_family(detail, mono=True)
+        return label, detail
+
+    def model_row_height(self):
+        label, detail = self._fonts()
+        return (QtGui.QFontMetrics(label).height() + QtGui.QFontMetrics(detail).height()
+                + t.scaled(t.SPACE_MD, self.scale))
+
     def sizeHint(self, option, index):
         row = index.data(ROW) or {}
         line = QtGui.QFontMetrics(self.parent().font()).height()
         height = (line + t.scaled(t.SPACE_LG, self.scale) if row.get("kind") == "provider"
-                  else 2 * line + t.scaled(t.SPACE_LG, self.scale))
+                  else self.model_row_height())
         return QtCore.QSize(t.SPACE_48, height)
 
     def paint(self, painter, option, index):
         row = index.data(ROW) or {}
         painter.save()
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setClipRect(option.rect)
         rect = option.rect
         inset = t.scaled(t.SPACE_MD, self.scale)
-        font = QtGui.QFont(self.parent().font())
+        font, detail_font = self._fonts()
         painter.setFont(font)
         fm = QtGui.QFontMetrics(font)
+        detail_metrics = QtGui.QFontMetrics(detail_font)
         if row.get("kind") == "provider":
             painter.setPen(QtGui.QColor(t.TEXT_SECONDARY))
             painter.drawText(rect.adjusted(inset, 0, -inset, 0), Qt.AlignVCenter,
@@ -50,27 +63,32 @@ class _Rows(QtWidgets.QStyledItemDelegate):
             return
         selected = bool(option.state & QtWidgets.QStyle.State_Selected)
         hovered = bool(option.state & QtWidgets.QStyle.State_MouseOver)
-        if selected or hovered:
-            painter.fillRect(rect.adjusted(t.SPACE_XS, 0, -t.SPACE_XS, 0),
-                             QtGui.QColor(t.HOVER_BG))
+        cell = rect.adjusted(t.SPACE_XS, 1, -t.SPACE_XS, -1)
+        radius = t.scaled(t.RADIUS_MD, self.scale)
+        if row.get("active") or selected or hovered:
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QtGui.QColor(t.MODEL_SELECTION if row.get("active") else t.HOVER_BG))
+            painter.drawRoundedRect(cell, radius, radius)
         mark_width = t.scaled(t.SPACE_LG, self.scale)
         text_rect = rect.adjusted(inset + mark_width, 0, -inset, 0)
         if row.get("active"):
-            painter.setPen(QtGui.QPen(QtGui.QColor(t.SIGNAL), max(1, round(2 * self.scale))))
+            painter.setPen(QtGui.QPen(QtGui.QColor(t.MODEL_ACCENT), max(1, round(2 * self.scale))))
             center = QtCore.QPoint(rect.left() + inset + mark_width // 3, rect.center().y())
             arm = max(1, round(t.SPACE_XS * self.scale))
             painter.drawLine(center + QtCore.QPoint(-arm, 0), center + QtCore.QPoint(0, arm))
             painter.drawLine(center + QtCore.QPoint(0, arm), center + QtCore.QPoint(2 * arm, -arm))
-        top = rect.center().y() - fm.height()
-        painter.setPen(QtGui.QColor(t.TEXT_PRIMARY))
+        top = rect.center().y() - (fm.height() + detail_metrics.height()) // 2
+        painter.setPen(QtGui.QColor(t.MODEL_ACCENT if row.get("active") else t.TEXT_PRIMARY))
         painter.drawText(QtCore.QRect(text_rect.left(), top, text_rect.width(), fm.height()),
                          Qt.AlignVCenter, fm.elidedText(row["label"], Qt.ElideRight, text_rect.width()))
-        painter.setPen(QtGui.QColor(t.TEXT_SECONDARY))
-        painter.drawText(QtCore.QRect(text_rect.left(), top + fm.height(), text_rect.width(), fm.height()),
-                         Qt.AlignVCenter, fm.elidedText(row["detail"], Qt.ElideMiddle, text_rect.width()))
+        painter.setPen(QtGui.QColor(t.MODEL_DETAIL if row.get("active") else t.TEXT_SECONDARY))
+        painter.setFont(detail_font)
+        painter.drawText(QtCore.QRect(text_rect.left(), top + fm.height(), text_rect.width(), detail_metrics.height()),
+                         Qt.AlignVCenter, detail_metrics.elidedText(row["detail"], Qt.ElideMiddle, text_rect.width()))
         if option.state & QtWidgets.QStyle.State_HasFocus:
-            painter.setPen(QtGui.QPen(QtGui.QColor(t.SIGNAL_DEEP), 1))
-            painter.drawRect(rect.adjusted(t.SPACE_XS, 0, -t.SPACE_XS - 1, -1))
+            painter.setPen(QtGui.QPen(QtGui.QColor(t.MODEL_ACCENT), 1))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawRoundedRect(cell, radius, radius)
         painter.restore()
 
 
@@ -260,7 +278,7 @@ class ModelPicker(QtWidgets.QWidget):
                   + 3 * self.current.fontMetrics().height() + self.search.sizeHint().height()
                   + max(0, self.status.heightForWidth(inner)) + footer_height
                   + 2 * t.SPACE_MD + 6 * self.layout().spacing())
-        row_height = 2 * line + t.scaled(t.SPACE_LG, self._scale)
+        row_height = self.list.itemDelegate().model_row_height()
         self._compact = height < chrome + 2 * row_height
         self._title.setVisible(not self._compact)
         self.status.setVisible(bool(self.status.text()) and not self._compact)
@@ -301,7 +319,7 @@ class ModelPicker(QtWidgets.QWidget):
     def popup(self, anchor):
         available = anchor.screen().availableGeometry()
         position = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
-        width = min(t.scaled(440, self._scale), available.width() - 2 * t.SPACE_SM)
+        width = min(t.scaled(390, self._scale), available.width() - 2 * t.SPACE_SM)
         height = min(t.scaled(600, self._scale), available.height() - 2 * t.SPACE_SM)
         self._fit_chrome(width, height)
         self.resize(width, height)

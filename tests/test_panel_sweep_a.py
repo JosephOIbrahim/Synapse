@@ -392,9 +392,44 @@ PNL_20260921_QSS_AMENDMENTS = (
      'QPushButton {{  background: {t.CARBON};  color: {t.BONE};  border: 1px solid {t.GRAPHITE};  border-radius: 14px;  padding: 7px 12px; font-size: {s(t.SIZE_LABEL)}px;}}'),
 )
 
+# User-approved Soft Editorial (2026-09-23): neutral transcript, rounded
+# composer, coral actions. Amend exact upstream rules; do not exempt whole
+# selectors or re-anchor the historical baseline. Real disabled states and
+# every unrelated declaration remain protected by the original comparison.
+SOFT_EDITORIAL_20260923_QSS_AMENDMENTS = (
+    ('QTextBrowser {{ background: {t.GROUND}; border: none; }}',
+     'QTextBrowser {{ background: {t.GROUND}; border: none; }}' + _NL +
+     'QTextBrowser#DsChatTranscript {{ background: {t.PANEL}; }}'),
+    ('QPushButton#DsStop {{' + _NL +
+     '    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};' + _NL +
+     '    border: none; border-radius: {t.RADIUS_SM}px;',
+     'QPushButton#DsStop {{' + _NL +
+     '    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};' + _NL +
+     '    border: none; border-radius: 12px; border-bottom-right-radius: 4px;'),
+    ('QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}',
+     'QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}' + _NL +
+     'QTextEdit#DsInput[softEditorial="true"] {{' + _NL +
+     '    border-color: {t.BORDER_STRONG};' + _NL +
+     '    border-top-left-radius: 20px; border-top-right-radius: 20px;' + _NL +
+     '    border-bottom-left-radius: 20px; border-bottom-right-radius: 6px;' + _NL +
+     '}}' + _NL +
+     'QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CHAT_ASSISTANT}; }}'),
+    ('QPushButton#DsSend {{' + _NL +
+     '    background: {t.SIGNAL_DEEP}; color: {t.TEXT_ON_ACCENT};' + _NL +
+     '    border: none; border-radius: {t.RADIUS_SM}px;',
+     'QPushButton#DsSend {{' + _NL +
+     '    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};' + _NL +
+     '    border: none; border-radius: 12px; border-bottom-right-radius: 4px;'),
+    ('QPushButton#DsSend:hover   {{ background: {t.SIGNAL}; }}',
+     'QPushButton#DsSend:hover   {{ background: {t.WARM_HOVER}; }}'),
+    ('QPushButton#DsSend:pressed {{ background: {t.SIGNAL_PRESS}; }}',
+     'QPushButton#DsSend:pressed {{ background: {t.WARM_PRESS}; }}'),
+)
+
 _DECLARED_QSS_AMENDMENTS = (
     ("CRIT.md 2026-09-15", CRIT_20260915_QSS_AMENDMENTS),
     ("READABILITY.md 2026-09-15 D3b", D3B_20260915_QSS_AMENDMENTS),
+    ("User-approved Soft Editorial 2026-09-23", SOFT_EDITORIAL_20260923_QSS_AMENDMENTS),
 )
 
 def _amend(original, amendments=None, label="CRIT.md 2026-09-15"):
@@ -433,7 +468,7 @@ def test_a_stale_qss_amendment_reddens_instead_of_passing():
     matches the baseline FAILS. Proves it in both directions: an `old` that is
     absent, and an `old` that is present more than once."""
     original = _base("python/synapse/panel/designsystem/qss.py")
-    saved = globals()["D3B_20260915_QSS_AMENDMENTS"]
+    saved = globals()["_DECLARED_QSS_AMENDMENTS"]
     try:
         globals()["_DECLARED_QSS_AMENDMENTS"] = (
             ("bogus", (("a rule the baseline never contained", "x"),)),)
@@ -443,11 +478,7 @@ def test_a_stale_qss_amendment_reddens_instead_of_passing():
         with pytest.raises(AssertionError, match="stale bogus amendment"):
             _amend(original)
     finally:
-        globals()["D3B_20260915_QSS_AMENDMENTS"] = saved
-        globals()["_DECLARED_QSS_AMENDMENTS"] = (
-            ("CRIT.md 2026-09-15", CRIT_20260915_QSS_AMENDMENTS),
-            ("READABILITY.md 2026-09-15 D3b", saved),
-        )
+        globals()["_DECLARED_QSS_AMENDMENTS"] = saved
     # and the real list still applies cleanly
     _amend(original)
 
@@ -493,6 +524,15 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
      "    min-height: {t.SPACE_SM}px;\n    color: {t.TEXT_SECONDARY};"),
     ("QPushButton#DsFooterLink:disabled", "QPushButton#DsVerb:disabled"),
     ("color: {t.MUSHROOM};", "color: {t.TEXT_PRIMARY};"),
+    # The approved editorial deltas remain frozen too: restoring a retired
+    # color, broadening the composer selector, or dropping its geometry fails.
+    ('QTextBrowser#DsChatTranscript {{ background: {t.PANEL}; }}',
+     'QTextBrowser#DsChatTranscript {{ background: {t.GROUND}; }}'),
+    ('QTextEdit#DsInput[softEditorial="true"] {{', 'QTextEdit#DsInput {{'),
+    ('    border-bottom-left-radius: 20px; border-bottom-right-radius: 6px;',
+     '    border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;'),
+    ('QPushButton#DsSend:hover   {{ background: {t.WARM_HOVER}; }}',
+     'QPushButton#DsSend:hover   {{ background: {t.SIGNAL}; }}'),
 ])
 def test_upstream_qss_guard_rejects_local_and_unrelated_style_drift(before, after):
     source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")

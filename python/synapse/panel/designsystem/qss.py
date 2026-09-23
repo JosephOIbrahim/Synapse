@@ -35,6 +35,7 @@ QWidget#DsRoot {{
 }}
 QWidget#DsSection {{ background: {t.PANEL}; }}
 QTextBrowser {{ background: {t.GROUND}; border: none; }}
+QTextBrowser#DsChatTranscript {{ background: {t.PANEL}; }}
 /* v9 rail: flat PANEL with a 1px HAIR bottom rule (the comp retired the
    cool→warm gradient wash). */
 QWidget#DsHeader {{
@@ -110,7 +111,7 @@ QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DIS
    Not profile-conditional -- Stop looks identical in all three. */
 QPushButton#DsStop {{
     background: {t.WARM}; color: {t.TEXT_ON_ACCENT};
-    border: none; border-radius: {t.RADIUS_SM}px;
+    border: none; border-radius: 12px; border-bottom-right-radius: 4px;
     padding: {t.SPACE_SM}px {t.SPACE_MD}px;
     font-size: {s(t.SIZE_UI)}px; font-weight: {t.WEIGHT_SEMIBOLD};
 }}
@@ -135,39 +136,19 @@ QPushButton#DsPill[active="true"] {{
     color: {t.TEXT_BRIGHT}; border-bottom: 2px solid {t.SIGNAL};
 }}
 
-/* ---- rail author token — THE engine+model click target (v9) ----
-   Mono/DATA family+tracking live on the QFont; hover underline + pointing
-   hand carry discoverability (the comp shows no ▾).
-   joe-five J1 (Joe's word, RULING_JOE_FIVE.md 2026-09-05; supersedes the
-   bc-wave 'data, not a status light' repair / RULING_DIRECTION_BC.md
-   Addendum 3.3): the token says WHICH engine is thinking - that is state,
-   and state has colour here (the mark, the sentence). Its colour is the
-   engine's liveness, written by synapse_panel._render_token_state as the
-   dynamic property `liveness` from the same signal the mark and Connect
-   read (_apply_context -> _render_state), never a stale green:
-     live    -> CONIFEROUS    Houdini connected + the engine keyed, idle
-     working -> WARM          a turn streaming (the mark's own busy note)
-     off     -> TEXT_DISABLED not connected, or no key for the engine
-   Unset (before the first render) it rests in the text ramp
-   (TEXT_SECONDARY; the mono/DATA QFont carries the data voice). Hover keeps
-   TEXT_BRIGHT + underline and is declared LAST: attribute and pseudo-state
-   selectors share specificity in Qt QSS, so source order decides, and hover
-   must win over every liveness colour. Boot (disconnected) stays grey, so
-   the CHAT face at rest still measures 3 hue buckets; connected adds the
-   token's own (CONIFEROUS, bucket 8) -> 4. */
+/* Model identity stays blue-green; state is conveyed by the status line. */
 QPushButton#DsAuthor {{
-    background: transparent; border: none;
+    background: transparent; border: 1px solid transparent;
+    border-radius: 12px; border-bottom-right-radius: 4px;
     /* bc-wave BC-2 (Addendum 2): the token is a click target, not a glyph -
        SPACE_LG content + SPACE_XS air clears the 26px floor G3 measures. */
     min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_XS}px;
-    color: {t.TEXT_SECONDARY};
+    color: {t.MODEL_ACCENT};
 }}
-QPushButton#DsAuthor[liveness="live"]    {{ color: {t.CONIFEROUS}; }}
-QPushButton#DsAuthor[liveness="working"] {{ color: {t.WARM}; }}
-QPushButton#DsAuthor[liveness="off"]     {{ color: {t.TEXT_DISABLED}; }}
 QPushButton#DsAuthor:hover {{
-    color: {t.TEXT_BRIGHT}; text-decoration: underline;
+    color: {t.MODEL_ACCENT}; background: {t.RAISED};
 }}
+QPushButton#DsAuthor:focus {{ border-color: {t.MODEL_ACCENT}; }}
 
 /* ---- rail token meter (tokens only, never $) + ⌘K chip -------- */
 QLabel#DsMeter {{ color: {t.TEXT_TERTIARY}; }}
@@ -306,18 +287,22 @@ QTextEdit#DsInput, QLineEdit#DsField {{
     selection-background-color: {t.SIGNAL_TINT_STRONG};
 }}
 QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}
+QTextEdit#DsInput[softEditorial="true"] {{
+    border-color: {t.BORDER_STRONG};
+    border-top-left-radius: 20px; border-top-right-radius: 20px;
+    border-bottom-left-radius: 20px; border-bottom-right-radius: 6px;
+}}
+QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CHAT_ASSISTANT}; }}
 
 /* ---- SEND — embedded bottom-right inside the composer (comp) --- */
-/* L5-16 (Joe's seat call): rest darkens to SIGNAL_DEEP so SEND and hero
-   buttons read as the same deep blue knockout; hover rises to SIGNAL
-   (the old rest) and press keeps SIGNAL_PRESS -- the ramp still moves. */
+/* Coral actions share the assistant identity. */
 QPushButton#DsSend {{
-    background: {t.SIGNAL_DEEP}; color: {t.TEXT_ON_ACCENT};
-    border: none; border-radius: {t.RADIUS_SM}px;
+    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};
+    border: none; border-radius: 12px; border-bottom-right-radius: 4px;
     padding: 9px 15px;
 }}
-QPushButton#DsSend:hover   {{ background: {t.SIGNAL}; }}
-QPushButton#DsSend:pressed {{ background: {t.SIGNAL_PRESS}; }}
+QPushButton#DsSend:hover   {{ background: {t.WARM_HOVER}; }}
+QPushButton#DsSend:pressed {{ background: {t.WARM_PRESS}; }}
 QPushButton#DsSend:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
 
 /* ---- role labels (color; font set in Python from TYPE_ROLES) -- */
@@ -1245,8 +1230,8 @@ QMenu#DsModelMenu::separator {{
     margin: {t.SPACE_SM}px {t.SPACE_MD}px;
 }}
 QMenu#DsModelMenu::scroller {{ height: {t.scaled(t.SPACE_LG, scale)}px; }}
-QWidget#DsConversationInvitation {{ background: {t.GROUND}; }}
-QWidget#DsConversationInvitation QLabel {{ background: {t.GROUND}; }}
+QWidget#DsConversationInvitation {{ background: {t.PANEL}; }}
+QWidget#DsConversationInvitation QLabel {{ background: {t.PANEL}; }}
 QWidget#DsConversationInvitation QLabel[role="body"] {{ color: {t.TEXT_SECONDARY}; }}
 QPushButton#DsComposerAttach {{
     background: transparent; color: {t.TEXT_SECONDARY}; border: none;
@@ -1255,16 +1240,17 @@ QPushButton#DsComposerAttach {{
 QPushButton#DsComposerAttach:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsComposerAttach:focus {{ border: 1px solid {t.SIGNAL}; }}
 QLabel#DsComposerHint {{ color: {t.TEXT_SECONDARY}; }}
-/* Stop shares Send's type and blue states, retaining its compact height. */
+/* Stop shares Send's coral action family, retaining its compact height. */
 QPushButton#DsStop {{
-    background: {t.SIGNAL_DEEP}; color: {t.TEXT_ON_ACCENT};
+    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};
+    border-radius: 12px; border-bottom-right-radius: 4px;
     font-size: {t.scaled(t.SIZE_SMALL, scale)}px; font-weight: {t.WEIGHT_MEDIUM};
     min-height: {t.scaled(t.SPACE_MD + t.SPACE_XS, scale)}px;
     max-height: {t.scaled(t.SPACE_MD + t.SPACE_XS, scale)}px;
     padding: 0 {t.scaled(t.SPACE_SM, scale)}px;
 }}
-QPushButton#DsStop:hover {{ background: {t.SIGNAL}; }}
-QPushButton#DsStop:pressed {{ background: {t.SIGNAL_PRESS}; }}
+QPushButton#DsStop:hover {{ background: {t.WARM_HOVER}; }}
+QPushButton#DsStop:pressed {{ background: {t.WARM_PRESS}; }}
 QPushButton#DsStop:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
 QScrollArea#DsConnectionScroll, QWidget#DsConnectionViewport,
 QWidget#DsConnectionPage, QGroupBox#DsJevRouting {{
@@ -1290,17 +1276,18 @@ def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
     return _model_picker_base_stylesheet(scale) + f"""
 QWidget#DsModelPicker {{
     background: {t.PANEL}; color: {t.TEXT_PRIMARY};
-    border: 1px solid {t.BORDER};
+    border: 1px solid {t.BORDER_STRONG}; border-radius: 20px; border-bottom-right-radius: 6px;
 }}
 QWidget#DsModelPicker QLabel {{ background: transparent; border: none; }}
-QLabel#DsModelCurrent, QLabel#DsModelDiscovery {{ color: {t.TEXT_SECONDARY}; }}
+QLabel#DsModelCurrent {{ color: {t.MODEL_ACCENT}; }}
+QLabel#DsModelDiscovery {{ color: {t.TEXT_SECONDARY}; }}
 QLineEdit#DsModelSearch {{
     background: {t.GROUND}; color: {t.TEXT_PRIMARY};
-    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    border: 1px solid {t.BORDER_STRONG}; border-radius: 11px; border-bottom-right-radius: 5px;
     padding: {t.scaled(t.SPACE_12, scale)}px {t.scaled(t.SPACE_MD, scale)}px;
-    selection-background-color: {t.SIGNAL}; selection-color: {t.TEXT_ON_ACCENT};
+    selection-background-color: {t.MODEL_ACCENT}; selection-color: {t.TEXT_ON_ACCENT};
 }}
-QLineEdit#DsModelSearch:focus {{ border-color: {t.SIGNAL}; }}
+QLineEdit#DsModelSearch:focus {{ border-color: {t.MODEL_ACCENT}; }}
 QListWidget#DsModelList {{
     background: {t.PANEL}; color: {t.TEXT_PRIMARY};
     border: none; outline: none;

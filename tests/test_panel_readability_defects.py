@@ -433,8 +433,9 @@ def _rule_color(sheet, selector_re):
 _D3B_INK_ONLY_SITES = (
     ("DsPill disabled tab", r"QPushButton#DsPill:disabled",
      r"QPushButton#DsPill"),
-    ("DsAuthor engine token liveness=off",
-     r'QPushButton#DsAuthor\[liveness="off"\]', r"QPushButton#DsAuthor"),
+    # Soft Editorial (2026-09-23): the model selector remains an active
+    # blue-green control when its engine is off. Liveness moved to status
+    # text/metadata; it is no longer an inactive-ink state of this control.
     ("DsFooterLink disabled", r"QPushButton#DsFooterLink:disabled",
      r"QPushButton#DsFooterLink"),
 )
@@ -493,7 +494,8 @@ D3B_INERT_INK_SITES = {
     'QPushButton#DsPill:disabled': "a disabled tab",
     'QPushButton#DsSend:disabled': "a disabled Send",
     'QPushButton#DsFooterLink:disabled': "a disabled footer link",
-    'QPushButton#DsAuthor[liveness="off"]': "no engine is live",
+    # DsAuthor was removed by the approved 2026-09-23 identity palette: it
+    # stays actionable for choosing/configuring a model even when disconnected.
     'QLabel#DsHdaStageDot': "a build stage not yet reached",
 }
 

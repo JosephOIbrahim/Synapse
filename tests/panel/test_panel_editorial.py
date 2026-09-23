@@ -316,7 +316,10 @@ def test_narrow_enlarged_panel_reflows_without_overlap_and_restores_draft_height
     assert panel._input._user_h == 260
     assert panel._input.height() == 260
     assert panel._input.toPlainText() == "Keep the lighting draft"
-    assert panel._author_lbl.text() == panel._author_token()
+    # Soft Editorial displays the registry label; exact identity stays available.
+    from synapse.panel.providers.registry import model_label
+    assert panel._author_lbl.text() == model_label(panel._provider_id, panel._active_model())
+    assert panel._active_model() in panel._author_lbl.accessibleName()
     assert panel._recipes_btn.isVisible() and panel._events_btn.isVisible()
     assert abs(box(panel._wordmark, panel).center().y() - box(panel._author_lbl, panel).center().y()) < 3
 
@@ -506,3 +509,16 @@ def test_completion_keeps_real_usage_without_a_token_tab(make_panel):
         assert getattr(panel, "_token_face", None) is None
     finally:
         USAGE_SINK.clear()
+
+
+def test_first_run_leaves_reading_room_and_retains_artist_height(make_panel):
+    panel = make_panel(1.25, 720, 1080)
+    assert panel._input.height() < panel._chat.height() * 0.6
+    # A fresh composer must actually expose its two-line draft area above Send.
+    assert panel._input.viewport().height() >= 2 * panel._input.fontMetrics().height()
+    panel._input.set_user_height(240)
+    panel._input.setPlainText("Keep the lighting draft")
+    panel.resize(620, 1000)
+    settle()
+    assert panel._input.height() == 240
+    assert panel._input.toPlainText() == "Keep the lighting draft"

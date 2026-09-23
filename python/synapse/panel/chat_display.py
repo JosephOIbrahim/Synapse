@@ -81,8 +81,8 @@ class ChatDisplay(QtWidgets.QTextBrowser):
     """Read-only rich text display for chat messages.
 
     Features:
-    - User messages right-aligned with subtle background
-    - SYNAPSE messages left-aligned
+    - User messages identified by a sea-green rule
+    - SYNAPSE messages in an open reading column with a coral identity mark
     - Code blocks with monospace font and dark background
     - Node paths as clickable links
     - Message grouping with timestamp dividers
@@ -181,10 +181,37 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         font.setPixelSize(max(t.FONT_FLOOR_PX, t.scaled(t.SIZE_BODY, scale)))
         self.document().setDefaultFont(font)
         self.setCurrentFont(font)
+        self._register_identity_ring(scale)
         invitation = getattr(self, "_empty_state", None)
         if invitation is not None:
             invitation.set_scale(scale)
             self._sync_empty_state()
+
+    def _register_identity_ring(self, scale):
+        """Draw the mark on the UI thread, without depending on a font glyph."""
+        diameter = max(6, round(8 * scale))
+        image = QtGui.QImage(diameter * 2, diameter * 2,
+                             QtGui.QImage.Format_ARGB32_Premultiplied)
+        image.setDevicePixelRatio(2.0)
+        image.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(image)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        stroke = diameter / 4.0
+        painter.setPen(QtGui.QPen(QtGui.QColor(t.CHAT_ASSISTANT), stroke))
+        painter.setBrush(QtCore.Qt.NoBrush)
+        painter.drawEllipse(QtCore.QRectF(stroke / 2, stroke / 2,
+                                          diameter - stroke, diameter - stroke))
+        painter.end()
+        self._identity_ring_image = image
+        self.document().addResource(QtGui.QTextDocument.ImageResource,
+                                    QUrl("synapse:assistant-ring"), image)
+
+    def loadResource(self, resource_type, name):
+        # QTextDocument.clear() also drops its resource cache. Keep the local
+        # identity available on the second conversation without any file/URL IO.
+        if name.toString() == "synapse:assistant-ring":
+            return self._identity_ring_image
+        return super().loadResource(resource_type, name)
 
     def show_invitation(self):
         """Enable the empty-state surface without inserting a fake chat turn."""
@@ -292,11 +319,13 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             it += 1
             if not frag.isValid():
                 continue
+            if frag.charFormat().isImageFormat():
+                continue
             text = frag.text().strip()
             if not text:
                 continue
             # the label run is the dot and the speaker word, nothing after it
-            bare = text.lstrip("●• ").strip()
+            bare = text.lstrip("●•○ ").strip()
             if bare.upper() not in ("SYNAPSE", "YOU"):
                 return
             c = QtGui.QTextCursor(doc)
@@ -313,6 +342,75 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             if self._document_density != self._rhythm_density():
                 self._apply_turn_rhythm()
         return result
+
+    def _plan_frames(self, frame=None):
+        """Yield the padded, single-cell ordered-list frames we author.
+
+        Other rich-text tables and code stay under Qt's normal rendering.
+        Looking only at direct list blocks avoids mistaking the outer turn
+        table for its nested response plan.
+        """
+        frame = frame or self.document().rootFrame()
+        for child in frame.childFrames():
+            if (isinstance(child, QtGui.QTextTable) and child.rows() == 1
+                    and child.columns() == 1
+                    and child.format().background().color() == QtGui.QColor(t.RAISED)):
+                blocks = []
+                it = child.begin()
+                while not it.atEnd():
+                    block = it.currentBlock()
+                    if block.isValid() and block.textList() is not None:
+                        if block.textList().format().style() == QtGui.QTextListFormat.ListDecimal:
+                            blocks.append(block)
+                    it += 1
+                if blocks:
+                    yield child, blocks
+            yield from self._plan_frames(child)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        # Qt paints the actual list, links and selection. Only empty corners
+        # and the space between rows are decorated here, so text remains live.
+        painter = QtGui.QPainter(self.viewport())
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setClipRect(event.rect())
+        offset = QtCore.QPointF(-self.horizontalScrollBar().value(),
+                               -self.verticalScrollBar().value())
+        layout = self.document().documentLayout()
+        for frame, blocks in self._plan_frames():
+            padding = frame.format().cellPadding()
+            # For an imported HTML table Qt reports the first cell's padded
+            # origin while the size includes its padding (verified Qt 6.8).
+            rect = layout.frameBoundingRect(frame).translated(
+                offset - QtCore.QPointF(padding, padding))
+            rect.setHeight(rect.height() - frame.format().topMargin()
+                           - frame.format().bottomMargin())
+            if not rect.intersects(QtCore.QRectF(event.rect())):
+                continue
+            radius = min(20 * self._font_scale, rect.width() / 2, rect.height() / 2)
+            small = min(6 * self._font_scale, radius)
+            x, y, w, h = rect.x(), rect.y(), rect.width(), rect.height()
+            rounded = QtGui.QPainterPath()
+            rounded.moveTo(x + radius, y)
+            rounded.lineTo(x + w - radius, y)
+            rounded.quadTo(x + w, y, x + w, y + radius)
+            rounded.lineTo(x + w, y + h - radius)
+            rounded.quadTo(x + w, y + h, x + w - radius, y + h)
+            rounded.lineTo(x + small, y + h)
+            rounded.quadTo(x, y + h, x, y + h - small)
+            rounded.lineTo(x, y + radius)
+            rounded.quadTo(x, y, x + radius, y)
+            square = QtGui.QPainterPath()
+            square.addRect(rect)
+            painter.fillPath(square.subtracted(rounded), QtGui.QColor(t.PANEL))
+            painter.setPen(QtGui.QPen(QtGui.QColor(t.BORDER), 1))
+            for previous, current in zip(blocks, blocks[1:]):
+                a = layout.blockBoundingRect(previous).translated(offset)
+                b = layout.blockBoundingRect(current).translated(offset)
+                split_y = round((a.bottom() + b.top()) / 2) + 0.5
+                painter.drawLine(QtCore.QPointF(rect.left() + padding, split_y),
+                                 QtCore.QPointF(rect.right() - padding, split_y))
+        painter.end()
 
     # -- Grouping helpers ----------------------------------------------------
 

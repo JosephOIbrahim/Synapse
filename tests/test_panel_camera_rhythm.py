@@ -116,6 +116,13 @@ def _amend_constructors(original):
     assert original["_GrowingInput"].count(anchor) == 1
     original["_GrowingInput"] = original["_GrowingInput"].replace(
         anchor, anchor + '\n        self._attach_widget = None', 1)
+    # User-approved Soft Editorial (2026-09-23): opt the existing composer
+    # into its rounded QSS treatment. The exact added property has no new
+    # owner or lifecycle; preserve every other constructor byte.
+    anchor = '        self.setObjectName("DsInput")'
+    assert original["_GrowingInput"].count(anchor) == 1
+    original["_GrowingInput"] = original["_GrowingInput"].replace(
+        anchor, anchor + '\n        self.setProperty("softEditorial", True)', 1)
     return original
 CAMERA = ("synapse_panel.py", "face_token.py", "token_readout.py",
           "chat_display.py", "recall_card.py")
@@ -340,6 +347,7 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
 
 @pytest.mark.parametrize("before,after", [
     ("self.setAcceptRichText(False)", "self.setAcceptRichText(True)"),
+    ('self.setProperty("softEditorial", True)', 'self.setProperty("softEditorial", False)'),
     ("self._attach_widget = None", "self._attach_widget = object()"),
     ('rhythm.apply_layout_margins(self, "band")', 'rhythm.apply_layout_margins(self, "row")'),
     ("class _GrowingInput", "class ExtraOwner:\n    def __init__(self):\n        pass\n\nclass _GrowingInput"),
