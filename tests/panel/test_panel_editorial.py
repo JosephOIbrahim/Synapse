@@ -250,8 +250,10 @@ def test_empty_state_has_hierarchy_then_yields_to_real_content(make_panel):
     chat = panel._chat
     invitation = chat._empty_state
     assert invitation.isVisible() and chat.toPlainText() == ""
-    assert invitation.title.text() == "What are we building?"
-    assert invitation.title.alignment() & QtCore.Qt.AlignLeft
+    assert invitation.title.text() == "Welcome to"
+    assert invitation.title.alignment() & QtCore.Qt.AlignHCenter
+    assert invitation.wordmark.accessibleName() == "SYNAPSE"
+    assert invitation.wordmark.isVisible()
     assert not invitation.title.font().italic()
     assert invitation.title.font().pixelSize() > invitation.body.font().pixelSize()
     author_font = panel._author_lbl.font().pixelSize()
@@ -264,7 +266,19 @@ def test_empty_state_has_hierarchy_then_yields_to_real_content(make_panel):
     settle()
     assert not invitation.isVisible()
     assert "Inspect the selected network." in chat.toPlainText()
-    assert "What are we building?" not in chat.toPlainText()
+    assert "Welcome to" not in chat.toPlainText()
+    chat.clear()
+    settle()
+    assert invitation.isVisible() and chat.toPlainText() == ""
+    for width, height in ((720, 1100), (340, 900), (480, 1000)):
+        panel.resize(width, height)
+        settle()
+        assert invitation.isVisible()
+        center = invitation.geometry().center()
+        viewport_center = chat.viewport().rect().center()
+        assert abs(center.x() - viewport_center.x()) <= 1
+        assert abs(center.y() - viewport_center.y()) <= 1
+        assert invitation.rect().contains(invitation.wordmark.geometry())
 
 
 @pytest.mark.parametrize("scale,width", [(1.0, 380), (1.25, 480), (2.25, 720)])
@@ -359,6 +373,26 @@ def test_narrow_empty_invitation_and_busy_actions_never_paint_clipped(make_panel
     expose_footer(panel, panel._connection_status)
     if invite.isVisible():
         assert invite.title.height() >= invite.title.heightForWidth(invite.title.width())
+    panel._set_busy(False)
+    panel.resize(1200, 1600)
+    settle()
+    assert invite.isVisible() and invite.wordmark.isVisible()
+    assert invite.title.text() == "Welcome to"
+
+
+def test_welcome_compact_fallback_contains_copy_and_restores_art(make_panel):
+    panel = make_panel(2.25, 720, 1200)
+    invite = panel._chat._empty_state
+    # Width, independently of height, can make the artwork too small.
+    invite.fit_content(100, 600)
+    assert invite.isVisible() and invite.title.text() == "Welcome"
+    assert invite.wordmark.isHidden() and invite.body.isHidden()
+    assert invite.rect().contains(invite.title.geometry())
+    invite.fit_content(900, 600)
+    assert invite.title.text() == "Welcome to"
+    assert invite.wordmark.isVisible() and invite.body.isVisible()
+    for child in (invite.title, invite.wordmark, invite.body):
+        assert invite.rect().contains(child.geometry())
 
 
 def expose_footer(panel, widget):
