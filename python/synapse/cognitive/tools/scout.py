@@ -765,7 +765,8 @@ def _load_symbol_table() -> tuple[Optional[set[str]], dict]:
 
 def _ground_symbols(query: str, stores: list[Store],
                     table_syms: Optional[set[str]],
-                    table_reason: Optional[str] = None) -> list[dict]:
+                    table_reason: Optional[str] = None,
+                    extra_entries: tuple[dict, ...] = ()) -> list[dict]:
     """For each dotted API symbol in the query report:
       exists_in_runtime — the MEMBERSHIP VERDICT from the introspected table
                           (True/False; None when no trustworthy table is loaded).
@@ -782,6 +783,8 @@ def _ground_symbols(query: str, stores: list[Store],
             # A missing/empty store can't supply the documented hint; skip it
             # rather than fail the whole scout (the hits path surfaced it).
             continue
+    for entry in extra_entries:
+        universe.update(_DOTTED_RE.findall(str(entry.get(TEXT_FIELD, ""))))
     out = []
     for sym in wanted:
         entry = {"symbol": sym,
@@ -963,7 +966,8 @@ def synapse_scout(
                    # + verified_against_running_build:False outside Houdini (R-M5b-1)
           "hits": [{id, domain, type, source, score, snippet}],
           "symbols": [{symbol, exists_in_runtime, documented}],   # membership + doc hint
-          "warnings": [...]
+          "warnings": [...],
+          "source_status": {"sidefx_library": {...}}  # only when configured
         }
     """
     _WARN.clear()
@@ -1037,6 +1041,23 @@ def synapse_scout(
             if _id in by_id:
                 id_meta[_id] = (store, by_id[_id])
 
+    # The large installed/web help library is prebuilt outside Houdini. This
+    # reader opens a fresh query-only connection and loads only a shortlist;
+    # no corpus ingestion, embedding, network, or symbol-table authority here.
+    from synapse.cognitive.tools.sidefx_library import query_library
+    library = query_library(query, domain=domain, k=fanout, where=where)
+    library_entries = tuple(library["entries"]) if library is not None else ()
+    if library is not None:
+        _WARN.extend(library["warnings"])
+    if library_entries:
+        used_lexical = True
+        per_retriever.append([entry["id"] for entry in library_entries])
+        for entry in library_entries:
+            # Domain is the database's explicit classification, not a guess
+            # from the source format (sidefx_markdown includes VEX pages).
+            source = Store(Path(), Path(), entry["domain"])
+            id_meta[entry["id"]] = (source, entry)
+
     fused = _rrf(per_retriever) if per_retriever else []
 
     hits: list[dict] = []
@@ -1082,8 +1103,11 @@ def synapse_scout(
         "gate_armed": table_syms is not None,  # Spike 2.5 membership authority loaded+trusted (NOT the corpus 'stale' axis)
         "table": table_status,           # Spike 2.5: symbol-table membership authority status
         "hits": hits,
-        "symbols": _ground_symbols(query, stores, table_syms, table_status.get("reason")),
+        "symbols": _ground_symbols(query, stores, table_syms, table_status.get("reason"),
+                                   extra_entries=library_entries),
         "warnings": list(_WARN),
+        **({"source_status": {"sidefx_library": library["source_status"]}}
+           if library is not None else {}),
     }
 
 
@@ -1108,6 +1132,11 @@ def _hit_provenance(entry: dict) -> dict:
               "build_relation_at_import", "evidence_level", "fetched_at",
               "snapshot_id", "scope", "licence", "build", "content_sha")
     out = {key: entry[key] for key in fields if key in entry}
+    if entry.get("retrieval_source") == "sidefx_library":
+        out.update({key: entry[key] for key in
+                    ("title", "raw_source_path", "library_generation", "retrieval_source",
+                     "source_format", "source_url_basis", "source_origin", "origin", "local_source")
+                    if key in entry})
     if "docs_build" in out:
         current = _running_build() or None
         stamp = str(out["docs_build"])
