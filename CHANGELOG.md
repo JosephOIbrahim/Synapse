@@ -22,6 +22,28 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.83.0 - Panel continuity, welcome motion and World Labs
+
+Inset footer controls, matching native submenus, consistent Attach/Send styling,
+balanced panel padding and coral model selection extend the Soft Editorial panel.
+A centered dimensional ASCII welcome drops in once per empty conversation and
+rolls upward on interaction, with reduced-motion support.
+
+World Labs adds explicit API connection and import controls beside Cloud relay.
+Supported local Gaussian PLY files convert through Bake GSplats into native
+Houdini splats. Network work runs outside the Qt thread; scene construction uses
+the main thread and cleans up failed imports. A separate Houdini 22.0.400 probe
+verified an existing 500,000-splat Marble file. Authenticated API export/download,
+API-export scale/axis normalization and Karma appearance remain unverified.
+
+A bounded offline SideFX Markdown adapter feeds the existing Scout corpus with
+source hashes, build stamps and document-only evidence. A local two-page pilot
+produced 14 searchable rows; downloaded documentation is not bundled. No nightly
+crawler, world generation or new Jev runtime path is included.
+
+Source release; the existing Windows installer is unchanged. Details, usage and
+validation: [v5.83.0](docs/releases/v5.83.0.md).
+
 ## v5.82.0 - Soft Editorial panel
 
 The native panel gains an open reading column, coral SYNAPSE identity, sea-green

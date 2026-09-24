@@ -4,7 +4,7 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.82.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.82.0 is Latest</sub></p>
+<p align="center"><sub>v5.83.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.83.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
@@ -121,11 +121,13 @@ flowchart TB
 
 **Staged, not yet served:** `rag/corpus/guides` holds 31 workflow guides from [fxhoudinimcp](https://github.com/healkeiser/fxhoudinimcp) @ 29b6695b (MIT), gate-checked against 22.0.400. The product does not consult this directory yet; it is listed here so the provenance is public before the serving wiring lands.
 
-**New in 5.82.0** — the Soft Editorial panel.
+**New in 5.83.0** — a cohesive panel, welcome motion and World Labs import.
 
-An open reading column pairs coral SYNAPSE accents with sea-green YOU labels and a blue-green model selector. Hollow circular marks, rounded response plans and a softer composer give the native panel more breathing room. Search, exact model identities, text selection, node links and Send/Stop keep their existing behavior.
+Inset footer buttons, matching submenus and coral model selection carry the panel design through its controls. The centered ASCII welcome drops in and rolls away when you interact.
 
-This is a **source release**. The Windows Setup linked above remains v5.75.2 and does not include these changes. See [source installation](docs/getting-started/installation.md#source-installation) and the [v5.82.0 release notes](docs/releases/v5.82.0.md), including validation and current limits.
+**World Labs** imports supported Gaussian PLY exports as native Houdini splats and provides an API connection flow. A SideFX Markdown adapter adds source and build provenance to the existing Scout corpus. Remote World API access remains unverified; downloaded documentation is supplied locally.
+
+This is a **source release**. The Windows Setup linked above remains v5.75.2 and does not include these changes. See [source installation](docs/getting-started/installation.md#source-installation) and the [v5.83.0 release notes](docs/releases/v5.83.0.md), including validation and current limits.
 
 ## Watch it work
 
