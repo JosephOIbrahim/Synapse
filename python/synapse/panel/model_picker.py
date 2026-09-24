@@ -119,9 +119,12 @@ class ModelPicker(QtWidgets.QWidget):
         title = self._title = c.label("Choose a model", role="title", scale=scale)
         title.setWordWrap(True)
         title.setMinimumWidth(0)
+        title.setContentsMargins(0, 0, 0, t.scaled(t.SPACE_SM, scale))
         outer.addWidget(title)
         self.current = c.label("", role="body", scale=scale)
-        self.current.setTextFormat(Qt.PlainText)
+        self.current.setTextFormat(Qt.RichText)
+        self.current.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.current.setContentsMargins(0, 0, 0, t.scaled(t.SPACE_XS, scale))
         self.current.setWordWrap(False)
         self.current.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
         self.current.setMinimumWidth(0)
@@ -251,12 +254,13 @@ class ModelPicker(QtWidgets.QWidget):
         full = "Selected for next task\n" + self._current_title
         if self._current_id:
             full += "\n" + self._current_id
-        width = max(t.SPACE_48, (width or self.width()) - 2 * t.SPACE_MD)
+        margins = self.layout().contentsMargins()
+        width = max(t.SPACE_48, (width or self.width()) - margins.left() - margins.right())
         fm = self.current.fontMetrics()
         visible = ("Next task · " + self._current_title + "\n" + self._current_id
                    if self._compact else full)
-        self.current.setText("\n".join(fm.elidedText(line, Qt.ElideMiddle, width)
-                                       for line in visible.splitlines()))
+        lines = [escape(fm.elidedText(line, Qt.ElideMiddle, width)) for line in visible.splitlines()]
+        self.current.setText('<p style="line-height:140%; margin:0">' + '<br>'.join(lines) + '</p>')
         self.current.setAccessibleName(full)
         self.current.setToolTip("<qt>" + escape(full).replace("\n", "<br>") + "</qt>")
 
@@ -267,18 +271,22 @@ class ModelPicker(QtWidgets.QWidget):
 
     def _fit_chrome(self, width, height):
         """Reserve a usable result area before fitting secondary popup chrome."""
-        inner = max(t.SPACE_48, width - 2 * t.SPACE_MD)
+        margins = self.layout().contentsMargins()
+        inner = max(t.SPACE_48, width - margins.left() - margins.right())
         buttons = (self.connect_button, self.refresh_button)
         stacked = sum(b.sizeHint().width() for b in buttons) + self._footer.spacing() > inner
         self._footer.setDirection(QtWidgets.QBoxLayout.TopToBottom if stacked
                                   else QtWidgets.QBoxLayout.LeftToRight)
         footer_height = (sum(b.sizeHint().height() for b in buttons) + self._footer.spacing()
                          if stacked else max(b.sizeHint().height() for b in buttons))
-        line = self.list.fontMetrics().height()
+        # Measure the roomy header before deciding whether compact chrome is
+        # needed, including the selected model's increased line spacing.
+        self._compact = False
+        self._fit_current(width)
         chrome = (max(self._title.sizeHint().height(), self._title.heightForWidth(inner))
-                  + 3 * self.current.fontMetrics().height() + self.search.sizeHint().height()
+                  + self.current.sizeHint().height() + self.search.sizeHint().height()
                   + max(0, self.status.heightForWidth(inner)) + footer_height
-                  + 2 * t.SPACE_MD + 6 * self.layout().spacing())
+                  + margins.top() + margins.bottom() + 6 * self.layout().spacing())
         row_height = self.list.itemDelegate().model_row_height()
         self._compact = height < chrome + 2 * row_height
         self._title.setVisible(not self._compact)
