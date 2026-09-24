@@ -22,6 +22,24 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.84.0 - SideFX help library and clearer prompt controls
+
+- Added a local SideFX library built from installed help and official Markdown,
+  with resumable bounded downloads, source hashes, immutable SQLite search
+  generations, and explicit coverage gaps. Scout queries the published library
+  without rebuilding it and prioritizes named documentation subjects and methods.
+- Raised the prompt composer's initial height and made its resize control
+  visible, with keyboard support and persisted sizing. Improved label fitting at
+  fractional host scale.
+- Removed the footer's Render shortcut and compacted the remaining controls.
+- Unified focus and selection outlines with the footer's dark gray across the
+  panel and submenus, preserving coral text and filled action colors.
+
+Source release for Houdini 22.0.400; no new Windows installer or bundled SideFX
+documentation. The local library validation recorded 439 upstream HTTP 404s;
+partial coverage remains explicit. Usage, evidence and limits:
+[v5.84.0](docs/releases/v5.84.0.md).
+
 ## v5.83.0 - Panel continuity, welcome motion and World Labs
 
 Inset footer controls, matching native submenus, consistent Attach/Send styling,

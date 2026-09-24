@@ -7,14 +7,14 @@ Houdini runs SYNAPSE with its own Python.
 
 ## Windows installer
 
-**[Download the latest Setup.exe](https://github.com/JosephOIbrahim/Synapse/releases/latest)**
+**[Download Windows Setup v5.75.2](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SYNAPSE-5.75.2-Setup.exe)**
 
-The release page carries one installer, named for its own version:
-`SYNAPSE-<version>-Setup.exe`. Every link on this page follows `latest`, so it
-cannot hand you a superseded build.
+This is the older packaged installer. Newer source releases, including v5.84.0,
+do not contain a new Setup executable. For the current version, use
+[source installation](#source-installation) below.
 
-[Release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/latest) ·
-[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/latest/download/SHA256SUMS.txt)
+[Installer release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.75.2) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SHA256SUMS.txt)
 
 1. Save your scene and close Houdini.
 2. Open Setup. This installer is unsigned, so Windows may show an unknown publisher.
@@ -27,13 +27,11 @@ Setup includes required Python dependencies and the separately licensed Moneta
 bundle; it needs no terminal, Git or system Python. Model credentials and optional
 external services are separate.
 
-**What was tested lives in that release's own notes, not on this page.** Read its
-asset table before you install. As of v5.75.1 (2026-09-17) the release carries
-three assets and `installer-verification.json` is not one of them: the installer
-is built from pinned, hash-verified inputs, but it has not been qualified against
-a running Houdini. Native wizard inspection, clean-machine testing, live
-model/scene behavior and active Moneta persistence are each verified per release
-— never by this page.
+**Read the downloaded installer's own validation record.** The
+[v5.75.2 notes](../releases/v5.75.2.md) describe its checks and remaining limits.
+Newer source-release tests do not qualify that older executable. Native wizard
+inspection, clean-machine testing, model/scene behavior and Moneta persistence
+are separate checks recorded per release.
 
 The source installation steps below are an alternative route. Avoid running
 the source scripts over a registration managed by the Setup wizard.

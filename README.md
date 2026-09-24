@@ -4,13 +4,15 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.83.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.83.0 is Latest</sub></p>
+<p align="center"><sub>v5.84.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.84.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Download Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SYNAPSE-5.75.2-Setup.exe)** · [What's new](docs/releases/v5.75.2.md) · [Help](#when-you-get-stuck)
+**[Windows Setup v5.75.2](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SYNAPSE-5.75.2-Setup.exe)** · [What's new in v5.84.0](docs/releases/v5.84.0.md) · [Help](#when-you-get-stuck)
+
+For **v5.84.0**, follow [source installation](docs/getting-started/installation.md#source-installation). The older Windows Setup does not contain the latest changes.
 
 ## Start here
 
@@ -121,13 +123,13 @@ flowchart TB
 
 **Staged, not yet served:** `rag/corpus/guides` holds 31 workflow guides from [fxhoudinimcp](https://github.com/healkeiser/fxhoudinimcp) @ 29b6695b (MIT), gate-checked against 22.0.400. The product does not consult this directory yet; it is listed here so the provenance is public before the serving wiring lands.
 
-**New in 5.83.0** — a cohesive panel, welcome motion and World Labs import.
+**New in 5.84.0** — a searchable SideFX help library and clearer prompt controls.
 
-Inset footer buttons, matching submenus and coral model selection carry the panel design through its controls. The centered ASCII welcome drops in and rolls away when you interact.
+Scout can query a local SideFX library built from installed Houdini help and the official Markdown index. Downloads resume, search generations publish atomically, and each result retains its source and build provenance. See [build and connection instructions](docs/studio/SIDEFX_LIBRARY.md).
 
-**World Labs** imports supported Gaussian PLY exports as native Houdini splats and provides an API connection flow. A SideFX Markdown adapter adds source and build provenance to the existing Scout corpus. Remote World API access remains unverified; downloaded documentation is supplied locally.
+The prompt box starts taller, with a visible **Drag to resize** control and saved sizing. The footer is simpler after removing its Render shortcut. Focus and selection outlines now use the footer's dark gray, with coral identity and action colors retained.
 
-This is a **source release**. The Windows Setup linked above remains v5.75.2 and does not include these changes. See [source installation](docs/getting-started/installation.md#source-installation) and the [v5.83.0 release notes](docs/releases/v5.83.0.md), including validation and current limits.
+This is a **source release**. The Windows Setup linked above remains v5.75.2 and does not include these changes. Documentation caches are built locally and are not bundled. See [source installation](docs/getting-started/installation.md#source-installation) and the [v5.84.0 release notes](docs/releases/v5.84.0.md), including validation and current limits.
 
 ## Watch it work
 
@@ -219,7 +221,7 @@ Anything that claims otherwise is drift. Path-qualified `IntegrityBlock`s record
 - [Installer build and tests](installer/README.md)
 - [Source installation and tests](docs/getting-started/installation.md#for-contributors)
 - [MCP setup](docs/mcp/SETUP.md)
-- [Release notes](docs/releases/v5.80.0.md) · [Changelog](CHANGELOG.md)
+- [Release notes](docs/releases/v5.84.0.md) · [Changelog](CHANGELOG.md)
 
 **What the CI badge proves.** GitHub CI tests stock Python on Linux and macOS.
 
