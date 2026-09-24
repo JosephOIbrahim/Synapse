@@ -85,7 +85,7 @@ def source_files(rag_root: Path) -> list[Path]:
 
 
 def source_digest(rag_root: Path) -> str:
-    """BLAKE2b over (relative-path | size | mtime) of every source file —
+    """BLAKE2b over (relative-path | size | mtime_ns) of every source file —
     stable across process restarts (unlike PYTHONHASHSEED-salted ``hash()``).
     Relative paths keep it stable across checkout locations. A vanished file
     folds its absence into the digest, so deleting a source drifts too."""
@@ -94,7 +94,7 @@ def source_digest(rag_root: Path) -> str:
         try:
             st = p.stat()
             rel = p.relative_to(rag_root).as_posix()
-            h.update(f"{rel}|{st.st_size}|{int(st.st_mtime)}".encode("utf-8"))
+            h.update(f"{rel}|{st.st_size}|{st.st_mtime_ns}".encode("utf-8"))
         except OSError:
             h.update(f"{p}|missing".encode("utf-8"))
     return h.hexdigest()

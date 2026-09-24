@@ -35,6 +35,7 @@ except Exception:  # pragma: no cover
         return _nullctx()
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import rhythm, fontload, components
+from synapse.panel.welcome_motion import WelcomeMotion
 
 # W5-PANEL item 5: the absolute-leading enum, resolved once across PySide6/2.
 # LineDistanceHeight ADDS a fixed distance to each line (Qt: effective height =
@@ -140,6 +141,8 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self._empty_state = components.ConversationInvitation(
             self.viewport(), scale=self._font_scale)
         self._invitation_enabled = False
+        self._invitation_had_content = False
+        self._invitation_motion = WelcomeMotion(self._empty_state, self)
         self._empty_state.hide()
         self.document().contentsChanged.connect(self._sync_empty_state)
 
@@ -218,14 +221,37 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self._invitation_enabled = True
         self._sync_empty_state()
 
+    def dismiss_invitation(self):
+        """Roll the welcome away once; typing/controls may call this repeatedly."""
+        self._invitation_motion.dismiss()
+
     def _sync_empty_state(self):
         invitation = getattr(self, "_empty_state", None)
         if invitation is None:
             return
-        visible = self._invitation_enabled and self.document().isEmpty()
-        invitation.setVisible(visible)
-        if visible:
-            invitation.fit_content(self.viewport().width(), self.viewport().height())
+        if not self.document().isEmpty():
+            self._invitation_had_content = True
+            self._invitation_motion.cancel()
+            return
+        if self._invitation_had_content:
+            self._invitation_had_content = False
+            self._invitation_motion.reset()
+        if self._invitation_enabled:
+            rect = invitation.fit_content(self.viewport().width(), self.viewport().height())
+            self._invitation_motion.show_at(
+                rect, t.scaled(t.SPACE_LG, self._font_scale), ready=self.isVisible())
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._sync_empty_state()
+
+    def hideEvent(self, event):
+        self._invitation_motion.suspend()
+        super().hideEvent(event)
+
+    def mousePressEvent(self, event):
+        self.dismiss_invitation()
+        super().mousePressEvent(event)
 
     def _rhythm_density(self):
         parent = self
@@ -788,8 +814,8 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self._async_format_enabled = bool(enabled)
 
     def shutdown(self):
-        """Stop the off-main formatter thread. Optional — the thread is a daemon and
-        dies with the process; call it for a clean teardown (tests, panel close)."""
+        """Stop welcome motion and the off-main formatter for a clean teardown."""
+        self._invitation_motion.cancel()
         fmt = getattr(self, "_fmt", None)
         if fmt is not None:
             try:

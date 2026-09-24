@@ -202,7 +202,7 @@ class ConversationInvitation(QtWidgets.QWidget):
         self.body.setToolTip(self._BODY_TEXT if text != self._BODY_TEXT else "")
 
     def fit_content(self, width, height):
-        """Center the complete group, yielding optional copy on short docks."""
+        """Fit the group and return its resting rectangle, or None if too short."""
         self.title.setText("WELCOME TO")
         content_width = max(1, min(width, t.scaled(560, self._scale)))
         # A centered column with a generous, proportional side margin. The
@@ -248,6 +248,7 @@ class ConversationInvitation(QtWidgets.QWidget):
         if show_body:
             self.body.setGeometry((content_width - body_width) // 2,
                                   art_y + art_h + body_gap, body_width, body_h)
+        return QtCore.QRect(self.geometry())
 
 
 class EdgeRow(QtWidgets.QWidget):
