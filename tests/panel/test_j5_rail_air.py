@@ -123,13 +123,14 @@ def test_expert_rail_has_space_32_air_above_the_identity_row():
         # The rail's margins: GUTTER sides, SPACE_32 top, SPACE_SM bottom -
         # the air under the rail is unchanged.
         assert _margins(rail) == (t.GUTTER, air, t.GUTTER, t.SPACE_SM), _margins(rail)
-        # The other `shell` edge containers keep the role's default inset:
-        # the air is the rail's edge condition, not the role's default.
+        # The footer mirrors the header's outer air; the ribbon stays at
+        # the shell default because it does not meet an outer panel edge.
         ribbon = p._region_cache["_build_context_ribbon"]
         direct_face = p._recall_card.parentWidget()
         for shell in (ribbon, direct_face):
             assert shell.property("rhythm_role") == "shell", shell.objectName()
-            assert _margins(shell) == (t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM), (
+            bottom = air if shell is direct_face else t.SPACE_SM
+            assert _margins(shell) == (t.GUTTER, t.SPACE_SM, t.GUTTER, bottom), (
                 shell.objectName(), _margins(shell))
         assert _margins(ribbon) == (30, 8, 30, 8)
         # BC-5's measured goal still holds with the increased top inset: the
