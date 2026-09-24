@@ -1,5 +1,10 @@
 """Native UI checks: delayed responses may never import after dismissal."""
 import pytest
+
+QtWidgets = pytest.importorskip("PySide6.QtWidgets")
+if not isinstance(QtWidgets.QApplication, type):
+    pytest.skip("Real Qt required, not a mock QApplication", allow_module_level=True)
+
 from PySide6 import QtTest
 
 from synapse.panel.worldlabs_dialog import WorldLabsDialog, QtCore, QtWidgets
