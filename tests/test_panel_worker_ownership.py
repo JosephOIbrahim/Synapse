@@ -101,7 +101,7 @@ def load_generation():
     release = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
                    and node.name == "_release_panel_worker")
     methods = [node for node in cls.body if isinstance(node, ast.FunctionDef)
-               and node.name in {"_send", "_start_worker"}]
+               and node.name in {"_send", "_start_worker", "_sync_attachment_button"}]
     module = ModuleType("synapse.panel.synapse_panel")
     module.__dict__.update({"ClaudeWorker": Worker, "get_anthropic_tools": lambda: [],
                             "_timed_phase": timed_phase, "logger": Mock(),
@@ -123,13 +123,14 @@ def reload_ui():
 def make_panel(module):
     panel = SimpleNamespace(_worker=None, _messages=[{"role": "assistant", "content": "Previous result"}],
                             _pending_context=["/stage/artist_selection"], _permission_connections=[],
-                            _tool_executor=None, _input=Mock(), _chat=Mock(),
+                            _tool_executor=None, _input=Mock(), _attach_btn=Mock(), _chat=Mock(),
                             _prepare_connection=Mock(side_effect=Connection),
                             _route_connection=lambda connection, text: connection,
                             _allow_connection=Mock(return_value=True),
                             _build_system_prompt=Mock(return_value="Synthetic prompt; never sent"))
     panel._send = module._send.__get__(panel)
     panel._start_worker = module._start_worker.__get__(panel)
+    panel._sync_attachment_button = module._sync_attachment_button.__get__(panel)
     for name in ("_hide_turn_receipt", "_refresh_engine_selector", "_set_thinking", "_set_busy",
                  "_on_token", "_on_done", "_on_error", "_on_tool_status", "_on_render_receipt",
                  "_on_integrity", "_on_activity", "_on_worker_thread_finished"):

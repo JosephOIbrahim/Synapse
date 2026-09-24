@@ -293,6 +293,9 @@ def test_failed_start_keeps_draft_context_and_removes_only_failed_prompt(monkeyp
     assert panel._messages == before
     assert panel._pending_context == ['/stage/light']
     panel._input.clear.assert_not_called()
+    panel._attach_btn.setProperty.assert_called_with('pending_count', 1)
+    panel._attach_btn.setText.assert_called_with('Attach (1)')
+    assert '/stage/light' in panel._attach_btn.setToolTip.call_args.args[0]
 
 
 @pytest.mark.parametrize('signal', ['_on_error', '_on_done'])

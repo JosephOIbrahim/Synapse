@@ -418,9 +418,14 @@ def test_d3b_the_inactive_step_survives_every_host_seed():
 
 
 def _rule(sheet, selector_re):
-    m = re.search(selector_re + r"\s*\{([^}]*)\}", sheet)
-    assert m, "no rule matched %s" % selector_re
-    return m.group(1)
+    # Inset footer buttons share their rest declarations with a status label.
+    # Match an entire member of a selector group, never a prefix or pseudo-state.
+    sheet = re.sub(r"/\*.*?\*/", "", sheet, flags=re.DOTALL)
+    for match in re.finditer(r"([^{}]+)\{([^{}]*)\}", sheet):
+        if any(re.fullmatch(selector_re, selector.strip())
+               for selector in match.group(1).split(",")):
+            return match.group(2)
+    raise AssertionError("no rule matched %s" % selector_re)
 
 
 def _rule_color(sheet, selector_re):
@@ -459,6 +464,24 @@ def test_d3b_state_rules_that_carry_state_in_ink_alone_still_say_something(
         % (label, state, rest, ratio(state, rest)))
 
 
+@pytest.mark.parametrize("mutation", ["missing-rest", "collapsed-disabled"])
+def test_d3b_grouped_footer_guard_rejects_missing_or_collapsed_state(monkeypatch, mutation):
+    from synapse.panel.designsystem import qss, tokens as t
+    sheet = qss.stylesheet()
+    if mutation == "missing-rest":
+        before = "QPushButton#DsFooterLink, QLabel#DsFooterStatus"
+        after = "QPushButton#DsFooterLink:hover, QLabel#DsFooterStatus"
+    else:
+        before = "QPushButton#DsFooterLink:disabled { color: %s; }" % t.TEXT_DISABLED
+        after = "QPushButton#DsFooterLink:disabled { color: %s; }" % _rule_color(
+            sheet, r"QPushButton#DsFooterLink")
+    assert sheet.count(before) == 1
+    monkeypatch.setattr(qss, "stylesheet", lambda: sheet.replace(before, after))
+    with pytest.raises(AssertionError):
+        test_d3b_state_rules_that_carry_state_in_ink_alone_still_say_something(
+            *_D3B_INK_ONLY_SITES[-1])
+
+
 def test_d3b_the_trace_left_rule_is_a_three_step_grammar_not_two():
     """network_trace marks hot / trivial / normal steps with a left rule, and
     the function's own comment says the trivial one "reads as inactive"."""
@@ -494,30 +517,35 @@ D3B_INERT_INK_SITES = {
     'QPushButton#DsPill:disabled': "a disabled tab",
     'QPushButton#DsSend:disabled': "a disabled Send",
     'QPushButton#DsFooterLink:disabled': "a disabled footer link",
+    'QPushButton#DsComposerAttach:disabled': "a disabled attachment action",
+    'QMenu#DsSubmenu::item:disabled': "an unavailable submenu action",
+    'QCheckBox:disabled': "a disabled checkbox in a scoped submenu",
     # DsAuthor was removed by the approved 2026-09-23 identity palette: it
     # stays actionable for choosing/configuring a model even when disconnected.
     'QLabel#DsHdaStageDot': "a build stage not yet reached",
 }
 
 
-def test_d3b_the_inert_ink_is_only_spent_on_inactive_components():
-    """TEXT_DISABLED sits below the AA floor on an exemption that only covers
-    INACTIVE components, so a rule painting ACTIVE text with it is claiming an
-    exemption it does not have. That is what DsMeter and DsKHint at
-    prominence=quiet were doing - using the inert ink as a rung below tertiary.
-
-    Read from SOURCE, not from the rendered sheet, on purpose: while the two
-    roles resolve to the same hex a sheet scan cannot tell them apart, so the
-    one instrument that might have caught the collapse would have been blind
-    to it."""
+def _assert_inert_ink_sites(source):
     found = set()
-    for line in _src("qss.py").splitlines():
+    for line in source.splitlines():
         stripped = line.strip()
         if "t.TEXT_DISABLED" not in stripped or stripped.startswith(("#", "*")):
             continue
         m = re.match(r"([^{]+?)\s*\{\{", stripped)
         if m:
             found.add(" ".join(m.group(1).split()))
+    # Secondary windows construct scoped rules instead of spelling every root
+    # selector twice. Audit their literal leaves against the same closed list.
+    for node in ast.walk(ast.parse(source)):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id == "rule" and len(node.args) >= 2):
+            continue
+        if any(isinstance(part, ast.Attribute) and isinstance(part.value, ast.Name)
+               and part.value.id == "t" and part.attr == "TEXT_DISABLED"
+               for part in ast.walk(node.args[1])):
+            assert isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)
+            found.add(node.args[0].value)
     extra = sorted(found - set(D3B_INERT_INK_SITES))
     missing = sorted(set(D3B_INERT_INK_SITES) - found)
     assert not extra, (
@@ -526,6 +554,25 @@ def test_d3b_the_inert_ink_is_only_spent_on_inactive_components():
     assert not missing, (
         "declared inert-ink sites whose rule is gone - the list is stale: %s"
         % missing)
+
+
+def test_d3b_the_inert_ink_is_only_spent_on_inactive_components():
+    """Read source tokens so identical resolved hexes cannot hide active use
+    of the inactive-only ink. The allowlist remains exact in both directions."""
+    _assert_inert_ink_sites(_src("qss.py"))
+
+
+@pytest.mark.parametrize("before,after", [
+    ("QPushButton#DsComposerAttach:disabled {{", "QPushButton#DsComposerAttach:hover {{"),
+    ("rule('QCheckBox:disabled',", "rule('QCheckBox',"),
+    ("QMenu#DsSubmenu::item:disabled {{ color: {t.TEXT_DISABLED}; }}",
+     "QMenu#DsSubmenu::item:disabled {{ color: {t.TEXT_SECONDARY}; }}"),
+])
+def test_d3b_inert_ink_guard_rejects_active_use_and_missing_declarations(before, after):
+    source = _src("qss.py")
+    assert source.count(before) == 1
+    with pytest.raises(AssertionError):
+        _assert_inert_ink_sites(source.replace(before, after))
 
 
 if __name__ == "__main__":  # pragma: no cover

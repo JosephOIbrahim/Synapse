@@ -76,10 +76,8 @@ def _outside_rhythm_block(text):
     return "\n".join(lines[:node.lineno - 1] + lines[node.end_lineno:]).rstrip()
 
 
-def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
+def _assert_qss_extension_contract(source):
     from synapse.panel.designsystem import qss, tokens
-    path = "python/synapse/panel/designsystem/qss.py"
-    source = (ROOT / path).read_text(encoding="utf-8")
     first = "# --- SWEEP_A (chat_panel.py)"
     prefix, tail = source[:source.index(first)], source[source.index(first):]
     # Landing receipt retired (CTO 2026-09-05, RULING_DIRECTION_BC.md Addendum
@@ -119,7 +117,17 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     # Provider organization appends one scoped sheet. Preserve every previous
     # fence and enforce the same token-only rules on the new extension.
     assert tail[:tail.index(picker_start)].rstrip().endswith(editorial_end)
-    assert tail.rstrip().endswith(picker_end)
+    # The approved submenu vocabulary is a separate generator after the last
+    # fenced panel extension. Bound it by its actual AST span; nothing else may
+    # be inserted between that fence and the function or silently trail it.
+    submenu = [node for node in ast.parse(source).body
+               if isinstance(node, ast.FunctionDef) and node.name == "submenu_stylesheet"]
+    assert len(submenu) == 1
+    node = submenu[0]
+    lines = source.splitlines(keepends=True)
+    assert "".join(lines[:node.lineno - 1]).rstrip().endswith(picker_end)
+    assert not "".join(lines[node.end_lineno:]).strip()
+    submenu_block = "".join(lines[node.lineno - 1:node.end_lineno])
     block_b = tail[tail.index(start):tail.index(end) + len(end)]
     new_block = tail[tail.index(new_start):tail.index(new_end) + len(new_end)]
     recipe_block = tail[tail.index(recipe_start):tail.index(recipe_end) + len(recipe_end)]
@@ -127,8 +135,9 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     events_block = tail[tail.index(events_start):tail.index(events_end) + len(events_end)]
     render_block = tail[tail.index(render_start):tail.index(editorial_start)]
     editorial_block = tail[tail.index(editorial_start):tail.index(picker_start)]
-    picker_block = tail[tail.index(picker_start):]
-    for block in (block_b, new_block, recipe_block, rules_block, events_block, render_block, editorial_block, picker_block):
+    picker_block = tail[tail.index(picker_start):tail.index(picker_end) + len(picker_end)]
+    for block in (block_b, new_block, recipe_block, rules_block, events_block,
+                  render_block, editorial_block, picker_block, submenu_block):
         assert not re.search(r"#[0-9a-fA-F]{6}(?![0-9a-zA-Z_])", block)
         assert "font-family:" not in block
         for node in ast.walk(ast.parse(block)):
@@ -136,6 +145,25 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
                 assert hasattr(tokens, node.attr), node.attr
     sheet = qss.stylesheet()
     assert "SWEEP_B: HDA views" in sheet and "SWEEP_B: working_indicator" in sheet
+
+
+def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
+    _assert_qss_extension_contract((PANEL / "designsystem/qss.py").read_text(encoding="utf-8"))
+
+
+@pytest.mark.parametrize("before,after", [
+    ("# --- END PROVIDER_MODEL_PICKER", "# removed picker fence"),
+    ("def submenu_stylesheet(", "def unrelated_stylesheet("),
+    ("    return sheet\n", "    return sheet\n\ndef unchecked_extension():\n    return ''\n"),
+    ("color: {t.TEXT_PRIMARY}; spacing:", "color: #123456; spacing:"),
+    ("color: {t.TEXT_PRIMARY}; spacing:", "font-family: sans; color: {t.TEXT_PRIMARY}; spacing:"),
+    ("color: {t.TEXT_PRIMARY}; spacing:", "color: {t.UNDECLARED_SUBMENU_INK}; spacing:"),
+])
+def test_qss_extension_guard_rejects_fence_scope_and_token_drift(before, after):
+    source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
+    assert source.count(before) == 1
+    with pytest.raises(AssertionError):
+        _assert_qss_extension_contract(source.replace(before, after))
 
 
 def test_no_widget_constructors_added():

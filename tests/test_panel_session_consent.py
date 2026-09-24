@@ -25,7 +25,8 @@ PANEL_SOURCE = Path(__file__).parents[1] / "python/synapse/panel/synapse_panel.p
 def panel_methods(qt_widgets):
     tree = ast.parse(PANEL_SOURCE.read_text(encoding="utf-8"))
     cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "SynapsePanel")
-    names = {"_allow_connection", "_send", "_on_submit", "_refresh_session_permission", "_revoke_session_approvals"}
+    names = {"_allow_connection", "_send", "_on_submit", "_sync_attachment_button",
+             "_refresh_session_permission", "_revoke_session_approvals"}
     namespace = {"QtWidgets": qt_widgets, "Qt": SimpleNamespace(PlainText=0),
                  "logger": Mock(), "ClaudeWorker": object, "_ACTIVE_PANEL_WORKERS": PanelWorkerRegistry(),
                  "_timed_phase": lambda *args, **kwargs: nullcontext(),
@@ -138,7 +139,7 @@ def make_panel(policy):
 
     def make(spec=None, key="synthetic-key"):
         panel = PanelState(
-            choices=[], prompts=[], _worker=None, _input=Mock(),
+            choices=[], prompts=[], _worker=None, _input=Mock(), _attach_btn=Mock(),
             _pending_context=["/stage/artist_selection"], _messages=[], _chat=Mock(),
             _permission_connections=[], _task_connection=None,
             _hide_turn_receipt=Mock(), _start_worker=Mock(), _refresh_engine_selector=Mock(),

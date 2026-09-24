@@ -20,9 +20,13 @@ Artist request 2026-09-22: Stop moves beneath Send and matches Send's
 styling. Soft Editorial (2026-09-23) now assigns both composer actions the
 coral WARM family, with the shared disabled fill and ink. The matching Stop
 contract is preserved; generic hero-button prominence remains unchanged.
+The September 24 composer refinement gives Send a 1px matching coral border
+and fully rounded 9px corners. Stop retains its compact earlier shape.
 """
 
 import re
+
+import pytest
 
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem.qss import stylesheet
@@ -142,8 +146,27 @@ def test_stop_matches_send_knockout():
     stop, send = _button_properties("DsStop"), _button_properties("DsSend")
     assert stop["background"] == send["background"] == t.WARM
     assert stop["color"] == send["color"] == t.TEXT_ON_ACCENT
-    assert stop["border"] == send["border"] == "none"
-    assert stop["border-radius"] == send["border-radius"]
+    assert stop["border"] == "none"
+    assert send["border"] == "1px solid " + t.WARM
+    assert stop["border-radius"] == "12px"
+    assert stop["border-bottom-right-radius"] == "4px"
+    assert send["border-radius"] == "%dpx" % t.scaled(9, t.FONT_SCALE_DEFAULT)
+    assert "border-bottom-right-radius" not in send
+
+
+@pytest.mark.parametrize("button,property_name,value", [
+    ("DsSend", "border", "none"),
+    ("DsSend", "border", "1px solid " + t.SIGNAL),
+    ("DsSend", "border-radius", "12px"),
+    ("DsStop", "background", t.SIGNAL),
+    ("DsStop", "border", "1px solid " + t.WARM),
+])
+def test_composer_action_guard_rejects_border_shape_and_fill_drift(monkeypatch, button, property_name, value):
+    original = stylesheet()
+    altered = original + "\nQPushButton#%s { %s: %s; }" % (button, property_name, value)
+    monkeypatch.setitem(test_stop_matches_send_knockout.__globals__, "stylesheet", lambda: altered)
+    with pytest.raises(AssertionError):
+        test_stop_matches_send_knockout()
 
 
 def test_stop_defines_hover_pressed_and_disabled():

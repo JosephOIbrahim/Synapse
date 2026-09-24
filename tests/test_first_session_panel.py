@@ -26,9 +26,9 @@ def fixture_panel():
     connection = SimpleNamespace(spec=spec, facts=ConnectionFacts(spec),
                                  provider=SimpleNamespace(resolve_key=lambda: "test-key"),
                                  release=Mock(), revoke=Mock())
-    methods = panel_methods("_send", "_on_submit")
+    methods = panel_methods("_send", "_on_submit", "_sync_attachment_button")
     panel = SimpleNamespace(
-        _worker=None, _input=Mock(), _pending_context=["/stage/light"],
+        _worker=None, _input=Mock(), _attach_btn=Mock(), _pending_context=["/stage/light"],
         _messages=[{"role": "user", "content": "earlier"}], _chat=Mock(),
         _prepare_connection=Mock(return_value=connection),
         _route_connection=Mock(side_effect=lambda candidate, text: candidate),
@@ -39,6 +39,7 @@ def fixture_panel():
     )
     panel._input.toPlainText.return_value = "My unfinished prompt"
     panel._send = lambda text: methods["_send"](panel, text)
+    panel._sync_attachment_button = methods["_sync_attachment_button"].__get__(panel)
     return panel, connection, methods
 
 
@@ -86,6 +87,8 @@ def test_accept_binds_exact_connection_and_consumes_once():
     panel._input.clear.assert_called_once()
     assert len(panel._messages) == 2
     assert panel._pending_context == []
+    panel._attach_btn.setProperty.assert_called_once_with("pending_count", 0)
+    panel._attach_btn.setText.assert_called_once_with("Attach")
 
 
 def test_completion_credits_task_even_after_selection_changes(monkeypatch):
