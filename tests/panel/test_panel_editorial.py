@@ -250,7 +250,7 @@ def test_empty_state_has_hierarchy_then_yields_to_real_content(make_panel):
     chat = panel._chat
     invitation = chat._empty_state
     assert invitation.isVisible() and chat.toPlainText() == ""
-    assert invitation.title.text() == "Welcome to"
+    assert invitation.title.text() == "WELCOME TO"
     assert invitation.title.alignment() & QtCore.Qt.AlignHCenter
     assert invitation.wordmark.accessibleName() == "SYNAPSE"
     assert invitation.wordmark.isVisible()
@@ -266,7 +266,7 @@ def test_empty_state_has_hierarchy_then_yields_to_real_content(make_panel):
     settle()
     assert not invitation.isVisible()
     assert "Inspect the selected network." in chat.toPlainText()
-    assert "Welcome to" not in chat.toPlainText()
+    assert "WELCOME TO" not in chat.toPlainText()
     chat.clear()
     settle()
     assert invitation.isVisible() and chat.toPlainText() == ""
@@ -377,7 +377,7 @@ def test_narrow_empty_invitation_and_busy_actions_never_paint_clipped(make_panel
     panel.resize(1200, 1600)
     settle()
     assert invite.isVisible() and invite.wordmark.isVisible()
-    assert invite.title.text() == "Welcome to"
+    assert invite.title.text() == "WELCOME TO"
 
 
 def test_welcome_compact_fallback_contains_copy_and_restores_art(make_panel):
@@ -385,14 +385,40 @@ def test_welcome_compact_fallback_contains_copy_and_restores_art(make_panel):
     invite = panel._chat._empty_state
     # Width, independently of height, can make the artwork too small.
     invite.fit_content(100, 600)
-    assert invite.isVisible() and invite.title.text() == "Welcome"
+    assert invite.isVisible() and invite.title.text() == "WELCOME"
     assert invite.wordmark.isHidden() and invite.body.isHidden()
     assert invite.rect().contains(invite.title.geometry())
     invite.fit_content(900, 600)
-    assert invite.title.text() == "Welcome to"
+    assert invite.title.text() == "WELCOME TO"
     assert invite.wordmark.isVisible() and invite.body.isVisible()
     for child in (invite.title, invite.wordmark, invite.body):
         assert invite.rect().contains(child.geometry())
+
+
+@pytest.mark.parametrize("scale,width", [(1.0, 480), (1.25, 640), (2.25, 799)])
+def test_welcome_helper_stays_single_line_and_recovers_after_narrow_resize(make_panel, scale, width):
+    panel = make_panel(scale, width, 1200)
+    invite = panel._chat._empty_state
+    sentence = "Describe a network, inspect your scene, or work through a problem."
+    for available_width in (width, 260, width):
+        invite.fit_content(available_width, 600)
+        body = invite.body
+        assert body.isVisible() and not body.wordWrap()
+        assert "\n" not in body.text()
+        assert body.font().pixelSize() < panel._chat.font().pixelSize()
+        assert body.fontMetrics().horizontalAdvance(body.text()) <= body.width()
+        assert body.height() >= body.fontMetrics().height()
+        assert body.accessibleName() == sentence
+        assert invite.rect().contains(body.geometry())
+        if available_width == width:
+            assert body.text() == sentence and not body.toolTip()
+        else:
+            assert body.text() != sentence and body.toolTip() == sentence
+            # The truncated label must really receive hover events; setting a
+            # tooltip on a mouse-transparent welcome would make it unreachable.
+            point = body.mapTo(panel, body.rect().center())
+            assert panel.childAt(point) is body
+    assert invite.title.text() == "WELCOME TO"
 
 
 def expose_footer(panel, widget):
@@ -402,6 +428,83 @@ def expose_footer(panel, widget):
     bounds = box(widget, panel)
     assert panel.rect().contains(bounds)
     assert box(panel._inset_footer.viewport(), panel).contains(bounds)
+
+
+def test_connection_location_exposes_current_evidence_without_reconfiguring(make_panel, monkeypatch):
+    panel = make_panel(2.25, 900, 1200)
+    evidence = "Current task\nLocal: checked connection\n\nNext task: selected model"
+    panel._model_connection_detail = evidence
+    before = (panel._provider_id, dict(panel._model_by_provider), panel._input.toPlainText())
+    calls = []
+    monkeypatch.setattr(panel, "_open_connections", lambda: calls.append("configure"))
+    monkeypatch.setattr(panel, "_prepare_connection", lambda: calls.append("prepare"))
+    location = panel._connection_location
+    assert isinstance(location, QtWidgets.QPushButton)
+    expose_footer(panel, location)
+    location.setFocus()
+    QtTest.QTest.keyClick(location, QtCore.Qt.Key_Space)
+    settle()
+    dialog = panel._connection_details_dialog
+    assert dialog.isVisible() and not dialog.isModal()
+    assert dialog.details.isReadOnly() and dialog.details.toPlainText() == evidence
+    assert calls == []
+    QtTest.QTest.keyClick(dialog, QtCore.Qt.Key_Escape)
+    settle()
+    assert not dialog.isVisible()
+    panel._model_connection_detail = "Connection evidence updated"
+    location.click()
+    settle()
+    assert panel._connection_details_dialog is dialog
+    assert dialog.details.toPlainText() == "Connection evidence updated"
+    assert (panel._provider_id, panel._model_by_provider, panel._input.toPlainText()) == before
+    dialog.close()
+
+
+def test_pending_attachments_are_visible_removable_and_do_not_clip_actions(make_panel, monkeypatch):
+    panel = make_panel(2.25, 900, 1200)
+    files = ["C:/context/look.png", "C:/context/light.exr"]
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileNames", lambda *a, **k: (files + files, ""))
+    panel._input.setPlainText("Keep my draft")
+    panel._attach_btn.click()
+    settle()
+    assert panel._pending_context == files
+    assert "2" in panel._attach_btn.text()
+    assert "2 attachments" in panel._attach_btn.accessibleName()
+    panel.resize(340, 900)
+    settle()
+    for button in (panel._attach_btn, panel._send_btn):
+        assert panel._input.rect().contains(button.geometry())
+        assert button.width() >= button.sizeHint().width()
+    assert panel._attach_btn.geometry().right() < panel._send_btn.geometry().left()
+    panel._attach_btn.click()
+    settle()
+    menu = panel._attachment_menu
+    removal = next(action for action in menu.actions() if action.toolTip() == files[0])
+    removal.trigger()
+    menu.close()
+    settle()
+    assert panel._pending_context == files[1:]
+    assert "1" in panel._attach_btn.text()
+    panel._remove_attachment(files[1])
+    settle()
+    assert not panel._pending_context and panel._attach_btn.text() == "Attach"
+    assert panel._input.toPlainText() == "Keep my draft"
+
+
+def test_composer_placeholder_fits_at_enlarged_scale_and_restores(make_panel):
+    panel = make_panel(2.25, 900, 1200)
+    field = panel._input
+    original = field.placeholderText()
+    for width, busy in ((340, False), (340, True), (900, False)):
+        panel.resize(width, 900)
+        panel._set_busy(busy)
+        settle()
+        available = field.viewport().width() - 2 * field.document().documentMargin()
+        assert field.fontMetrics().horizontalAdvance(field.placeholderText()) <= available
+        assert "/" in field.placeholderText()
+        assert "commands" in field.accessibleDescription()
+        assert field.viewport().height() >= field.fontMetrics().height()
+    assert field.placeholderText() == original
 
 
 def text_box(widget, root):

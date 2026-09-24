@@ -8,8 +8,8 @@ QtCore, QtGui, QtWidgets = c.QtCore, c.QtGui, c.QtWidgets
 class InsetFooter(QtWidgets.QWidget):
     """Four equal columns, then two or one when the actual labels need room.
 
-    The connection status stays a QLabel. Its evidence and the five buttons'
-    existing signal connections belong to the panel, not to this layout.
+    Connection evidence and every control's existing signal connections belong
+    to the panel, not to this layout.
     """
 
     reflow_requested = QtCore.Signal()
