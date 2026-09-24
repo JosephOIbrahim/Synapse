@@ -503,7 +503,7 @@ class _InputResizeGrip(QtWidgets.QWidget):
         ink = QtGui.QColor(t.WARM if active else t.TEXT_SECONDARY)
         gap = t.scaled(t.SPACE_SM, self._scale)
         glyph = t.scaled(t.GLYPH_SM, self._scale)
-        label = "Drag to resize"
+        label = "Resize"
         # Integer advance can round below Qt's fractional text width at host
         # scale, otherwise elidedText truncates even this naturally sized rail.
         label_width = self.fontMetrics().horizontalAdvance(label) + 2
