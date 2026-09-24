@@ -302,12 +302,13 @@ QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.BORDER}; }}
 /* Coral actions share the assistant identity. */
 QPushButton#DsSend {{
     background: {t.WARM}; color: {t.TEXT_ON_ACCENT};
-    border: none; border-radius: 12px; border-bottom-right-radius: 4px;
-    padding: 9px 15px;
+    border: 1px solid {t.WARM}; border-radius: {t.scaled(9, scale)}px;
+    padding: {t.scaled(7, scale)}px 14px;
 }}
 QPushButton#DsSend:hover   {{ background: {t.WARM_HOVER}; }}
 QPushButton#DsSend:pressed {{ background: {t.WARM_PRESS}; }}
-QPushButton#DsSend:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
+QPushButton#DsSend:focus {{ border-color: {t.TEXT_PRIMARY}; }}
+QPushButton#DsSend:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: {t.DISABLED_BG}; }}
 
 /* ---- role labels (color; font set in Python from TYPE_ROLES) -- */
 QLabel[role="title"]   {{ color: {t.TEXT_BRIGHT}; }}
@@ -1238,12 +1239,14 @@ QWidget#DsConversationInvitation {{ background: {t.PANEL}; }}
 QWidget#DsConversationInvitation QLabel {{ background: {t.PANEL}; }}
 QWidget#DsConversationInvitation QLabel[role="body"] {{ color: {t.TEXT_SECONDARY}; }}
 QPushButton#DsComposerAttach {{
-    background: {t.FIELD_INSET}; color: {t.TEXT_SECONDARY}; border: 1px solid {t.BORDER};
-    border-radius: {t.scaled(t.RADIUS_CARD, scale)}px;
-    padding: {t.SPACE_XS}px {t.SPACE_SM}px;
+    background: {t.PANEL}; color: {t.TEXT_SECONDARY}; border: 1px solid {t.BORDER};
+    border-radius: {t.scaled(8, scale)}px;
+    padding: {t.scaled(6, scale)}px 10px;
 }}
 QPushButton#DsComposerAttach:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
+QPushButton#DsComposerAttach:pressed {{ background: {t.PRESS_BG}; }}
 QPushButton#DsComposerAttach:focus {{ border: 1px solid {t.SIGNAL}; }}
+QPushButton#DsComposerAttach:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
 QLabel#DsComposerHint {{
     color: {t.TEXT_SECONDARY};
     padding: {t.scaled(t.SPACE_12 // 2, scale)}px 0;
