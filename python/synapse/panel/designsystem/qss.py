@@ -990,6 +990,8 @@ def prepare_sweep_b_popup(root, scale=t.FONT_SCALE_DEFAULT):
         if parent is not None:
             width = min(width, parent.width())
         root.resize(width, height)
+    from . import submenus
+    submenus.prepare(root, scale)
 def ensure_sweep_b_view(root):
     """Give an HDA view the central sheet when hosted by the legacy entry.
 
@@ -1014,6 +1016,8 @@ def ensure_sweep_b_view(root):
 def prepare_connection_dialog(root, scale=t.FONT_SCALE_DEFAULT):
     """Install the central sheet on the connection dialog's separate window."""
     root.setStyleSheet(stylesheet(scale))
+    from . import submenus
+    submenus.prepare(root, scale, kind="connection")
 
 
 def prepare_selection_inspector(root, scale=t.FONT_SCALE_DEFAULT):
@@ -1063,6 +1067,8 @@ def prepare_selection_inspector(root, scale=t.FONT_SCALE_DEFAULT):
     selection-background-color: {t.SIGNAL}; selection-color: {t.TEXT_ON_ACCENT};
 }}
 """)
+    from . import submenus
+    submenus.prepare(root, scale)
 
 
 def _connection_stylesheet(scale=t.FONT_SCALE_DEFAULT):
@@ -1092,6 +1098,8 @@ def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
 def prepare_saved_recipes_dialog(root, scale=t.FONT_SCALE_DEFAULT):
     """Install the shared sheet for the recipe dialog's separate window."""
     root.setStyleSheet(stylesheet(scale))
+    from . import submenus
+    submenus.prepare(root, scale)
 
 
 def _recipe_stylesheet(scale=t.FONT_SCALE_DEFAULT):
@@ -1134,6 +1142,8 @@ def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
 # --- MODEL_RULES (scoped project permissions)
 def prepare_model_rules_dialog(root, scale=t.FONT_SCALE_DEFAULT):
     root.setStyleSheet(stylesheet(scale))
+    from . import submenus
+    submenus.prepare(root, scale)
 
 
 _rules_base_stylesheet = stylesheet
@@ -1160,6 +1170,8 @@ def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
 def prepare_events_dialog(root, scale=t.FONT_SCALE_DEFAULT):
     """Apply the common panel sheet at the native popup boundary."""
     root.setStyleSheet(stylesheet(scale))
+    from . import submenus
+    submenus.prepare(root, scale)
 
 
 _events_base_stylesheet = stylesheet
@@ -1212,6 +1224,8 @@ def prepare_render_dialog(root, scale=t.FONT_SCALE_DEFAULT):
 #DsRoot[panel_popup="render"] QWidget#DsRenderSettings,
 #DsRoot[panel_popup="render"] QScrollArea#DsRenderScroll {{ background: {t.PANEL}; border: none; }}
 """)
+    from . import submenus
+    submenus.prepare(root, scale)
 # --- END RENDER_WORKSPACE
 
 
@@ -1305,3 +1319,82 @@ QListWidget#DsModelList {{
 }}
 """
 # --- END PROVIDER_MODEL_PICKER
+
+
+def submenu_stylesheet(scale=t.FONT_SCALE_DEFAULT):
+    """The approved panel vocabulary, scoped to secondary windows only."""
+    from pathlib import Path
+    s = lambda px: t.scaled(px, scale)
+    arrow = (Path(__file__).parent / 'icons' / 'chevron-down.svg').as_posix()
+    check = (Path(__file__).parent / 'icons' / 'check.svg').as_posix()
+    roots = ('#DsRoot[synapse_submenu="true"][panel_popup]',
+             '#DsModelPicker[synapse_submenu="true"]')
+    def rule(leaf, body):
+        return ',\n'.join(root + ' ' + leaf for root in roots) + ' {' + body + '}\n'
+    sheet = rule('QPushButton#DsButton', f'''
+        background: {t.GROUND}; color: {t.TEXT_SECONDARY};
+        border: 1px solid {t.BORDER}; border-radius: {s(9)}px;
+        padding: {s(7)}px 12px; font-size: {s(t.SIZE_UI)}px;
+        font-weight: {t.WEIGHT_MEDIUM};''')
+    sheet += rule('QPushButton#DsButton:hover', f'background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY};')
+    sheet += rule('QPushButton#DsButton:pressed', f'background: {t.PRESS_BG};')
+    sheet += rule('QPushButton#DsButton[variant="primary"]', f'background: {t.WARM}; color: {t.TEXT_ON_ACCENT}; border-color: {t.WARM};')
+    sheet += rule('QPushButton#DsButton[variant="primary"]:hover', f'background: {t.WARM_HOVER};')
+    sheet += rule('QPushButton#DsButton[variant="primary"]:pressed', f'background: {t.WARM_PRESS};')
+    sheet += rule('QPushButton#DsButton[variant="danger"]', f'color: {t.ERROR}; border-color: {t.ERROR};')
+    sheet += rule('QPushButton#DsButton:focus', f'border-color: {t.TEXT_PRIMARY};')
+    sheet += rule('QPushButton#DsButton:disabled', f'background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: {t.BORDER};')
+    for field in ('QLineEdit', 'QLineEdit#DsField', 'QLineEdit#DsModelSearch',
+                  'QComboBox', 'QComboBox:editable', 'QComboBox#DsConnectionSelect',
+                  'QComboBox#DsConnectionSelect:editable', 'QSpinBox',
+                  'QPlainTextEdit', 'QPlainTextEdit#DsRulesPath', 'QListWidget',
+                  'QListWidget#DsList', 'QTreeWidget'):
+        sheet += rule(field, f'''background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+            border: 1px solid {t.BORDER}; border-radius: {s(8)}px;
+            padding: {s(6)}px 10px; font-size: {s(t.SIZE_UI)}px;
+            selection-background-color: {t.MODEL_SELECTION}; selection-color: {t.TEXT_PRIMARY};''')
+        sheet += rule(field + ':focus', f'border-color: {t.MODEL_ACCENT};')
+    # An editable combo owns its inset; its embedded editor must not draw a second field.
+    sheet += rule('QComboBox QLineEdit', 'border: none; border-radius: 0; padding: 0; background: transparent;')
+    sheet += rule('QComboBox QLineEdit#DsField', 'border: none; border-radius: 0; padding: 0; background: transparent;')
+    sheet += rule('QComboBox::drop-down', f'border: none; background: transparent; width: {s(18)}px;')
+    sheet += rule('QComboBox::down-arrow', f'image: url("{arrow}"); width: {s(10)}px; height: {s(10)}px;')
+    sheet += rule('QComboBox QAbstractItemView', f'background: {t.PANEL}; color: {t.TEXT_PRIMARY}; selection-background-color: {t.MODEL_SELECTION}; selection-color: {t.TEXT_PRIMARY};')
+    sheet += rule('QListWidget::item', f'padding: {s(6)}px 10px; border-radius: {s(6)}px;')
+    sheet += rule('QListWidget::item:selected', f'background: {t.MODEL_SELECTION}; color: {t.TEXT_PRIMARY};')
+    sheet += rule('QListWidget::item:hover', f'background: {t.HOVER_BG};')
+    sheet += rule('QPushButton#DsChip', f'''background: {t.GROUND}; color: {t.TEXT_SECONDARY};
+        border: 1px solid {t.BORDER}; border-radius: {s(6)}px; padding: {s(4)}px 6px;''')
+    sheet += rule('QPushButton#DsChip[active="true"]', f'background: {t.MODEL_SELECTION}; color: {t.MODEL_ACCENT}; border-color: {t.MODEL_ACCENT};')
+    sheet += rule('QPushButton#DsChip:hover', f'background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY};')
+    sheet += rule('QPushButton#DsChip:focus', f'border-color: {t.TEXT_PRIMARY};')
+    sheet += rule('QLabel#DsPaletteAxis', f'background: transparent; color: {t.TEXT_SECONDARY};')
+    sheet += rule('QCheckBox', f'color: {t.TEXT_PRIMARY}; spacing: {s(6)}px; font-size: {s(t.SIZE_UI)}px;')
+    sheet += rule('QCheckBox:focus', f'color: {t.MODEL_ACCENT};')
+    sheet += rule('QCheckBox:disabled', f'color: {t.TEXT_DISABLED};')
+    sheet += rule('QCheckBox::indicator', f'width: {s(12)}px; height: {s(12)}px; border: 1px solid {t.BORDER_STRONG}; border-radius: {s(3)}px; background: {t.GROUND};')
+    sheet += rule('QCheckBox::indicator:checked', f'background: {t.MODEL_ACCENT}; border-color: {t.MODEL_ACCENT}; image: url("{check}");')
+    sheet += rule('QCheckBox::indicator:disabled', f'background: {t.DISABLED_BG}; border-color: {t.BORDER};')
+    sheet += rule('QTabBar::tab', f'background: {t.GROUND}; color: {t.TEXT_SECONDARY}; padding: {s(7)}px 12px; margin-right: {s(4)}px; border-radius: {s(7)}px; border: 1px solid {t.BORDER};')
+    sheet += rule('QTabBar::tab:selected', f'background: {t.MODEL_SELECTION}; color: {t.MODEL_ACCENT}; border-color: {t.MODEL_ACCENT};')
+    sheet += rule('QTabWidget::pane', 'border: none;')
+    sheet += rule('QGroupBox#DsJevRouting', f'border-radius: {s(9)}px; padding: {s(12)}px {s(8)}px {s(8)}px;')
+    sheet += f'''
+#DsRoot[synapse_submenu="true"][panel_popup="tool"],
+#DsModelPicker[synapse_submenu="true"],
+#DsRoot[synapse_submenu="true"] QFrame#PaletteContainer {{
+    background: {t.PANEL}; border: 1px solid {t.BORDER}; border-radius: {s(10)}px;
+}}
+#DsModelPicker[synapse_submenu="true"] QListWidget#DsModelList {{
+    background: {t.PANEL}; border: none; padding: 0;
+}}
+QMenu#DsSubmenu {{
+    background: {t.PANEL}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.BORDER};
+    border-radius: {s(9)}px; padding: {s(6)}px; menu-scrollable: 1;
+}}
+QMenu#DsSubmenu::item {{ padding: {s(7)}px {s(14)}px; border-radius: {s(6)}px; }}
+QMenu#DsSubmenu::item:selected {{ background: {t.HOVER_BG}; color: {t.WARM}; }}
+QMenu#DsSubmenu::item:disabled {{ color: {t.TEXT_DISABLED}; }}
+QMenu#DsSubmenu::separator {{ background: {t.BORDER}; height: 1px; margin: {s(6)}px {s(8)}px; }}
+'''
+    return sheet

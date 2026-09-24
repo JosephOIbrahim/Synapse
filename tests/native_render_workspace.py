@@ -442,6 +442,11 @@ def check_panel_routes():
     layout = QtWidgets.QVBoxLayout(panel)
     panel._chat = ChatDisplay(panel)
     layout.addWidget(panel._chat, 1)
+    # The real header creates Stop before the input reparents it. This fixture
+    # bypasses the header and must still supply that existing composer control.
+    panel._stop_btn = QtWidgets.QPushButton("STOP", panel)
+    panel._stop_btn.setObjectName("DsStop")
+    panel._stop_btn.hide()
     layout.addWidget(panel._build_input())
     panel._input.setPlainText("Preserve this lighting draft when I open Render.")
     panel.resize(320, 680)
@@ -457,7 +462,9 @@ def check_panel_routes():
 
     panel._worker = BusyModel()
     marker = object()
-    sp._ACTIVE_PANEL_WORKERS.add(marker)
+    reservation = sp._ACTIVE_PANEL_WORKERS.reserve()
+    assert reservation is not None
+    sp._ACTIVE_PANEL_WORKERS.bind(reservation, marker)
     try:
         draft = panel._input.toPlainText()
         assert panel._send(" /RENDER ") is True
@@ -490,7 +497,7 @@ def check_panel_routes():
             assert button.width() >= button.minimumSizeHint().width()
         assert panel.grab().save(str(OUT / "panel-render-entry-320.png"))
     finally:
-        sp._ACTIVE_PANEL_WORKERS.discard(marker)
+        sp._ACTIVE_PANEL_WORKERS.release(marker)
         rw.RenderWorkspaceDialog = original_dialog
         panel._worker = None
         panel._location_timer.stop()

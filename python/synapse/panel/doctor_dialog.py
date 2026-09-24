@@ -62,14 +62,18 @@ _CALLS = set()
 
 if QtWidgets is not None:
     from .direct_tool import DirectToolCall
-    from .designsystem import components as c
+    from .designsystem import components as c, submenus, tokens as t
 
     class DoctorDialog(QtWidgets.QDialog):
         def __init__(self, parent=None):
             super().__init__(parent)
+            self.setObjectName("DsRoot")
+            scale = getattr(parent, "_chrome_scale", t.FONT_SCALE_DEFAULT)
+            c.apply_stylesheet(self, scale)
+            submenus.prepare(self, scale, kind="doctor")
             self.setWindowTitle("Check SYNAPSE")
             self.setModal(False)
-            self.resize(640, 480)
+            self.resize(round(580 * min(scale, 1.4)), round(480 * min(scale, 1.4)))
             self._worker = None
             layout = QtWidgets.QVBoxLayout(self)
             description = QtWidgets.QLabel(

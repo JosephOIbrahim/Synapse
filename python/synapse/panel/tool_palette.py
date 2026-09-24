@@ -52,15 +52,15 @@ def _classify(name, title, desc):
 
 def group_head_item(text, scale=t.FONT_SCALE_DEFAULT):
     """A palette group head (bc-wave BC-3): one SPACE_48 cell wearing the
-    rhythm-label eyebrow - mono, uppercase, SEND (+0.08em, the tracking
-    rhythm.label borrows), TEXT_TERTIARY - with the text sitting at the
+    rhythm-label eyebrow - sans, uppercase, LABEL_RHYTHM (+0.08em),
+    TEXT_TERTIARY - with the text sitting at the
     bottom of the cell (the label doctrine's 24 above / 12 below inside one
     48 rung). Not selectable, not a row. Shared by both palettes."""
     head = QtWidgets.QListWidgetItem(str(text).upper())
     head.setFlags(Qt.ItemFlag.NoItemFlags)
     head.setSizeHint(QtCore.QSize(0, t.SPACE_48))
     head.setTextAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
-    font = fontload.tracked_font("SEND", t.SIZE_SMALL, scale=scale, mono=True)
+    font = fontload.tracked_font("LABEL_RHYTHM", t.SIZE_SMALL, scale=scale)
     font.setCapitalization(type(font).AllUppercase)
     head.setFont(font)
     try:
@@ -421,7 +421,8 @@ class ToolPalette(QtWidgets.QWidget):
         # first item, a SPACE_48 head cell and five SPACE_XL option cells,
         # each paying the spacing on both sides.
         gap = self._list.spacing()
-        want = gap + (t.SPACE_48 + 2 * gap) + 5 * (t.SPACE_XL + 2 * gap)
+        want = gap + sum(self._list.sizeHintForRow(i) + 2 * gap
+                         for i in range(min(6, self._list.count())))
         have = self._list.viewport().height()
         room = opener.height() - t.SPACE_LG - self.height()
         grow = min(want - have, room)
