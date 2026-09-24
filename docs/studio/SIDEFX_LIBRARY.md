@@ -1,9 +1,37 @@
 # SideFX help library
 
+[Back to README](../../README.md) · [Architecture](../architecture/overview.md)
+
 SYNAPSE Scout can search an externally built SideFX help library alongside its
 existing node, VEX and reference sources. Configure the library once; queries
 read a bounded shortlist from SQLite FTS5. They do not download documentation,
 parse every page, construct an index, or call a model.
+
+## Ingestion and lookup
+
+Build the library outside Houdini. Publish a checked generation, then let Scout
+read it locally. A query never starts a library download.
+
+```mermaid
+flowchart TD
+    accTitle: Build the SideFX library once, query the published index locally
+    accDescr: Installed help and the official Markdown index feed a resumable cache. A coverage check protects publication. A new SQLite generation becomes active through an atomic pointer. Scout reads a bounded shortlist; runtime symbol checks remain separate.
+    I["Installed Houdini help"] --> C["Cache original sources<br/>Record hashes and builds"]
+    W["Official llms.txt<br/>and linked Markdown"] --> C
+    C --> G{"Coverage permits publication?"}
+    G -->|"yes"| B["Build SQLite FTS5 generation"]
+    G -->|"web errors by default"| E["Report gaps<br/>Keep active generation"]
+    B --> P["Publish current.json<br/>with an atomic update"]
+    P --> Q["Scout reads a<br/>bounded local shortlist"]
+    Q --> R["Cited document-only results"]
+    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
+    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    class P,Q synapse
+```
+
+An explicit `--allow-incomplete-web` build can publish available pages with
+recorded gaps. It never turns incomplete coverage into a completeness claim.
+Scout's runtime symbol table remains the authority for API membership.
 
 ## Build and connect
 
