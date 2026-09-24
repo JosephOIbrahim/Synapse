@@ -209,6 +209,10 @@ class ConversationInvitation(QtWidgets.QWidget):
         # text scale sets a ceiling; the actual dock sets the artwork's size.
         art_width = max(1, min(content_width, round(width * 0.72)))
         body_width = max(1, content_width - 2 * t.scaled(t.SPACE_SM, self._scale))
+        # Grow the artwork's space with its font; preserve the helper's text
+        # measure and allow the welcome group to widen when the dock has room.
+        art_width = max(1, min(width, round(art_width * self.wordmark.size_multiplier)))
+        content_width = max(content_width, art_width)
         self._fit_body(body_width)
         title_gap = t.scaled(t.SPACE_12, self._scale)
         body_gap = t.scaled(t.SPACE_LG, self._scale)
