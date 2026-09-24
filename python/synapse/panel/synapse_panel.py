@@ -498,12 +498,15 @@ class _InputResizeGrip(QtWidgets.QWidget):
     def paintEvent(self, _event):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.Antialiasing)
+        p.setFont(self.font())
         active = self._hovered or self.hasFocus() or self._drag_y is not None
         ink = QtGui.QColor(t.WARM if active else t.TEXT_SECONDARY)
         gap = t.scaled(t.SPACE_SM, self._scale)
         glyph = t.scaled(t.GLYPH_SM, self._scale)
         label = "Drag to resize"
-        label_width = self.fontMetrics().horizontalAdvance(label)
+        # Integer advance can round below Qt's fractional text width at host
+        # scale, otherwise elidedText truncates even this naturally sized rail.
+        label_width = self.fontMetrics().horizontalAdvance(label) + 2
         width = min(self.width() - 2, label_width + glyph + 3 * gap)
         height = self.height() - t.SPACE_XS
         box = QtCore.QRectF((self.width() - width) / 2.0,
