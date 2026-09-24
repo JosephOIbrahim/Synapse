@@ -5,7 +5,7 @@ try:
 except ImportError:  # pragma: no cover - Houdini's older Qt build
     from PySide2 import QtCore, QtGui, QtWidgets
 
-from .designsystem import components as c, fontload, rhythm, tokens as t
+from .designsystem import components as c, fontload, rhythm, submenus, tokens as t
 from .providers.registry import model_label
 
 Qt = QtCore.Qt
@@ -172,6 +172,7 @@ class ModelPicker(QtWidgets.QWidget):
         self.refresh_button.clicked.connect(discovery.refresh)
         # Bound Qt receiver: late replies cannot call a deleted popup.
         self._connection = discovery.changed.connect(self.refresh)
+        submenus.prepare(self, scale)
         self.refresh()
 
     @staticmethod

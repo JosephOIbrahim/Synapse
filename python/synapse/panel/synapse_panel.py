@@ -2846,6 +2846,8 @@ class SynapsePanel(QtWidgets.QWidget):
                 "Cancel PDG cooks under /obj and capture a session report. "
                 "Does NOT stop background renders — those are reported back "
                 "so you can stop them explicitly.")
+        from synapse.panel.designsystem import submenus
+        submenus.prepare_menu(menu, self._chrome_scale)
         return menu
 
     # ── H3b · cook cancel + emergency halt ──────────────────────────────
