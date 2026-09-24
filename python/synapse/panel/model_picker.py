@@ -86,7 +86,7 @@ class _Rows(QtWidgets.QStyledItemDelegate):
         painter.drawText(QtCore.QRect(text_rect.left(), top + fm.height(), text_rect.width(), detail_metrics.height()),
                          Qt.AlignVCenter, detail_metrics.elidedText(row["detail"], Qt.ElideMiddle, text_rect.width()))
         if option.state & QtWidgets.QStyle.State_HasFocus:
-            painter.setPen(QtGui.QPen(QtGui.QColor(t.MODEL_ACCENT), 1))
+            painter.setPen(QtGui.QPen(QtGui.QColor(t.CONTROL_OUTLINE), 1))
             painter.setBrush(Qt.NoBrush)
             painter.drawRoundedRect(cell, radius, radius)
         painter.restore()

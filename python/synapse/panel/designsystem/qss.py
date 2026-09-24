@@ -148,7 +148,7 @@ QPushButton#DsAuthor {{
 QPushButton#DsAuthor:hover {{
     color: {t.MODEL_ACCENT}; background: {t.RAISED};
 }}
-QPushButton#DsAuthor:focus {{ border-color: {t.MODEL_ACCENT}; }}
+QPushButton#DsAuthor:focus {{ border-color: {t.CONTROL_OUTLINE}; }}
 
 /* ---- rail token meter (tokens only, never $) + ⌘K chip -------- */
 QLabel#DsMeter {{ color: {t.TEXT_TERTIARY}; }}
@@ -218,7 +218,7 @@ QPushButton#DsFooterLink, QLabel#DsFooterStatus {{
 }}
 QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsFooterLink:pressed {{ background: {t.FIELD_INSET}; }}
-QPushButton#DsFooterLink:focus {{ border: 1px solid {t.SIGNAL}; color: {t.TEXT_PRIMARY}; }}
+QPushButton#DsFooterLink:focus {{ background: {t.HOVER_BG}; border: 1px solid {t.CONTROL_OUTLINE}; color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsFooterLink:disabled {{ color: {t.TEXT_DISABLED}; }}
 
 /* ---- two-axis palette chips (⌘K · DO × WHERE) ---------------- */
@@ -290,13 +290,13 @@ QTextEdit#DsInput, QLineEdit#DsField {{
     padding: {t.SPACE_MD}px 15px; font-size: {s(t.SIZE_UI)}px;
     selection-background-color: {t.SIGNAL_TINT_STRONG};
 }}
-QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}
+QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.CONTROL_OUTLINE}; }}
 QTextEdit#DsInput[softEditorial="true"] {{
     border: 3px solid {t.BORDER};
     border-top-left-radius: 20px; border-top-right-radius: 20px;
     border-bottom-left-radius: 20px; border-bottom-right-radius: 6px;
 }}
-QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.BORDER}; }}
+QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CONTROL_OUTLINE}; }}
 
 /* ---- SEND — embedded bottom-right inside the composer (comp) --- */
 /* Coral actions share the assistant identity. */
@@ -932,7 +932,7 @@ QLineEdit#DsCommandSearch {{
     border: 1px solid transparent; border-radius: {t.RADIUS_SM}px;
     padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
 }}
-QLineEdit#DsCommandSearch:focus {{ border-color: {t.SIGNAL}; }}
+QLineEdit#DsCommandSearch:focus {{ border-color: {t.CONTROL_OUTLINE}; }}
 QFrame#DsCommandDivider {{ color: {t.BORDER}; background: {t.BORDER}; border: none; }}
 QListWidget#DsCommandResults {{
     background: transparent; color: {t.TEXT_PRIMARY};
@@ -1259,7 +1259,7 @@ QPushButton#DsComposerAttach {{
 }}
 QPushButton#DsComposerAttach:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsComposerAttach:pressed {{ background: {t.PRESS_BG}; }}
-QPushButton#DsComposerAttach:focus {{ border: 1px solid {t.SIGNAL}; }}
+QPushButton#DsComposerAttach:focus {{ border: 1px solid {t.CONTROL_OUTLINE}; }}
 QPushButton#DsComposerAttach:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
 QLabel#DsComposerHint {{
     color: {t.TEXT_SECONDARY};
@@ -1312,7 +1312,7 @@ QLineEdit#DsModelSearch {{
     padding: {t.scaled(t.SPACE_12, scale)}px {t.scaled(t.SPACE_MD, scale)}px;
     selection-background-color: {t.MODEL_ACCENT}; selection-color: {t.TEXT_ON_ACCENT};
 }}
-QLineEdit#DsModelSearch:focus {{ border-color: {t.MODEL_ACCENT}; }}
+QLineEdit#DsModelSearch:focus {{ border-color: {t.CONTROL_OUTLINE}; }}
 QListWidget#DsModelList {{
     background: {t.PANEL}; color: {t.TEXT_PRIMARY};
     border: none; outline: none;
@@ -1342,7 +1342,7 @@ def submenu_stylesheet(scale=t.FONT_SCALE_DEFAULT):
     sheet += rule('QPushButton#DsButton[variant="primary"]:hover', f'background: {t.WARM_HOVER};')
     sheet += rule('QPushButton#DsButton[variant="primary"]:pressed', f'background: {t.WARM_PRESS};')
     sheet += rule('QPushButton#DsButton[variant="danger"]', f'color: {t.ERROR}; border-color: {t.ERROR};')
-    sheet += rule('QPushButton#DsButton:focus', f'border-color: {t.TEXT_PRIMARY};')
+    sheet += rule('QPushButton#DsButton:focus', f'border-color: {t.CONTROL_OUTLINE};')
     sheet += rule('QPushButton#DsButton:disabled', f'background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: {t.BORDER};')
     for field in ('QLineEdit', 'QLineEdit#DsField', 'QLineEdit#DsModelSearch',
                   'QComboBox', 'QComboBox:editable', 'QComboBox#DsConnectionSelect',
@@ -1353,7 +1353,7 @@ def submenu_stylesheet(scale=t.FONT_SCALE_DEFAULT):
             border: 1px solid {t.BORDER}; border-radius: {s(8)}px;
             padding: {s(6)}px 10px; font-size: {s(t.SIZE_UI)}px;
             selection-background-color: {t.MODEL_SELECTION}; selection-color: {t.TEXT_PRIMARY};''')
-        sheet += rule(field + ':focus', f'border-color: {t.MODEL_ACCENT};')
+        sheet += rule(field + ':focus', f'border-color: {t.CONTROL_OUTLINE};')
     # An editable combo owns its inset; its embedded editor must not draw a second field.
     sheet += rule('QComboBox QLineEdit', 'border: none; border-radius: 0; padding: 0; background: transparent;')
     sheet += rule('QComboBox QLineEdit#DsField', 'border: none; border-radius: 0; padding: 0; background: transparent;')
@@ -1365,9 +1365,9 @@ def submenu_stylesheet(scale=t.FONT_SCALE_DEFAULT):
     sheet += rule('QListWidget::item:hover', f'background: {t.HOVER_BG};')
     sheet += rule('QPushButton#DsChip', f'''background: {t.GROUND}; color: {t.TEXT_SECONDARY};
         border: 1px solid {t.BORDER}; border-radius: {s(6)}px; padding: {s(4)}px 6px;''')
-    sheet += rule('QPushButton#DsChip[active="true"]', f'background: {t.MODEL_SELECTION}; color: {t.MODEL_ACCENT}; border-color: {t.MODEL_ACCENT};')
+    sheet += rule('QPushButton#DsChip[active="true"]', f'background: {t.MODEL_SELECTION}; color: {t.MODEL_ACCENT}; border-color: {t.CONTROL_OUTLINE};')
     sheet += rule('QPushButton#DsChip:hover', f'background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY};')
-    sheet += rule('QPushButton#DsChip:focus', f'border-color: {t.TEXT_PRIMARY};')
+    sheet += rule('QPushButton#DsChip:focus', f'border-color: {t.CONTROL_OUTLINE};')
     sheet += rule('QLabel#DsPaletteAxis', f'background: transparent; color: {t.TEXT_SECONDARY};')
     sheet += rule('QCheckBox', f'color: {t.TEXT_PRIMARY}; spacing: {s(6)}px; font-size: {s(t.SIZE_UI)}px;')
     sheet += rule('QCheckBox:focus', f'color: {t.MODEL_ACCENT};')
@@ -1376,7 +1376,7 @@ def submenu_stylesheet(scale=t.FONT_SCALE_DEFAULT):
     sheet += rule('QCheckBox::indicator:checked', f'background: {t.MODEL_ACCENT}; border-color: {t.MODEL_ACCENT}; image: url("{check}");')
     sheet += rule('QCheckBox::indicator:disabled', f'background: {t.DISABLED_BG}; border-color: {t.BORDER};')
     sheet += rule('QTabBar::tab', f'background: {t.GROUND}; color: {t.TEXT_SECONDARY}; padding: {s(7)}px 12px; margin-right: {s(4)}px; border-radius: {s(7)}px; border: 1px solid {t.BORDER};')
-    sheet += rule('QTabBar::tab:selected', f'background: {t.MODEL_SELECTION}; color: {t.MODEL_ACCENT}; border-color: {t.MODEL_ACCENT};')
+    sheet += rule('QTabBar::tab:selected', f'background: {t.MODEL_SELECTION}; color: {t.MODEL_ACCENT}; border-color: {t.CONTROL_OUTLINE};')
     sheet += rule('QTabWidget::pane', 'border: none;')
     sheet += rule('QGroupBox#DsJevRouting', f'border-radius: {s(9)}px; padding: {s(12)}px {s(8)}px {s(8)}px;')
     sheet += f'''

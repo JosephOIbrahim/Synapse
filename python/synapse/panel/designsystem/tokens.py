@@ -377,6 +377,7 @@ HOT_SOFT   = "#D08A57"
 OK_SOFT = CONIFEROUS
 
 HOVER_BG   = RAISED        # neutral hover surface
+CONTROL_OUTLINE = HOVER_BG  # interaction outlines share the inset footer's gray highlight
 PRESS_BG   = "#202022"     # neutral press surface
 FOCUS_RING = SIGNAL        # focus outline color
 DISABLED_BG = SURFACE

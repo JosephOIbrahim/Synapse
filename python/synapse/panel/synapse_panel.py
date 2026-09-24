@@ -515,7 +515,7 @@ class _InputResizeGrip(QtWidgets.QWidget):
         p.setPen(QtGui.QPen(QtGui.QColor(t.BORDER_STRONG), 1))
         p.drawLine(QtCore.QPointF(0, cy), QtCore.QPointF(max(0, box.left() - gap), cy))
         p.drawLine(QtCore.QPointF(min(self.width(), box.right() + gap), cy), QtCore.QPointF(self.width(), cy))
-        p.setPen(QtGui.QPen(ink if active else QtGui.QColor(t.BORDER_STRONG), 1))
+        p.setPen(QtGui.QPen(QtGui.QColor(t.CONTROL_OUTLINE if active else t.BORDER_STRONG), 1))
         p.setBrush(QtGui.QColor(t.GROUND))
         radius = t.scaled(t.SPACE_SM, self._scale)
         p.drawRoundedRect(box, radius, radius)
