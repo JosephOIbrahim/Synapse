@@ -1151,7 +1151,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # shell: the rail is an edge container - GUTTER inset, SPACE_SM air.
         w.setProperty("rhythm_role", "shell")
         # J5 (Joe, 2026-09-05): the rail meets the pane's top edge, so it takes
-        # the shell role's top-edge air (rhythm._EDGE_TOP: SPACE_MD, scaled
+        # the shell role's top-edge air (rhythm._EDGE_TOP, scaled
         # by density) - the value lives in the role table, not here.
         w.setProperty("rhythm_edge", "top")
         # One type applier per widget (RULING-4c): the header controls are
@@ -1464,6 +1464,8 @@ class SynapsePanel(QtWidgets.QWidget):
         OPTIMIZE are slash-palette rows and BUILD HDA is an overflow action."""
         page = self._section()
         page.setProperty("rhythm_role", "shell")
+        # Match the header's outer inset below the footer, at every density.
+        page.setProperty("rhythm_edge", "bottom")
         col = QtWidgets.QVBoxLayout(page)
         col.addWidget(self._build_converse(), 1)   # chat | Build-HDA inner stack
         # bc-wave BC-6a: the consent slot - a `card` collection (16/24/12,

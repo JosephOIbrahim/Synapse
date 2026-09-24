@@ -55,7 +55,7 @@ _MARGINS = {
             tokens.SPACE_SM + tokens.SPACE_XS // 2, tokens.SPACE_12 // 2),
     "shell": (tokens.GUTTER, tokens.SPACE_SM, tokens.GUTTER, tokens.SPACE_SM),
 }
-# Top-edge shells reserve more breathing room above the identity row.
+# The top-edge inset also owns the matching air below the panel's footer.
 # User spacing refinement (2026-09-24): 16 -> 32, density-scaled through
 # the existing gap owner. Other shell margins and horizontal anchors stay put.
 _EDGE_TOP = {"shell": tokens.SPACE_32}
@@ -95,6 +95,9 @@ def apply_layout_margins(layout, role, density="standard", edge=None):
     if edge == "top" and role in _EDGE_TOP:
         margins = (margins[0], tokens.gap(_EDGE_TOP[role], density),
                    margins[2], margins[3])
+    elif edge == "bottom" and role in _EDGE_TOP:
+        margins = (margins[0], margins[1], margins[2],
+                   tokens.gap(_EDGE_TOP[role], density))
     layout.setContentsMargins(*margins)
 
 
