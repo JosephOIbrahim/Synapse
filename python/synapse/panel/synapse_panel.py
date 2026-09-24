@@ -332,6 +332,12 @@ class _GrowingInput(QtWidgets.QTextEdit):
         bottom_inset = t.scaled(t.SPACE_SM, scale)
         gap = t.scaled(t.SPACE_XS, scale)
         accessory = self._attach_widget
+        if accessory is not None and accessory.property("pending_count"):
+            count = accessory.property("pending_count")
+            accessory.setText("Attach (%s)" % count)
+            available = self.width() - bs.width() - gap - 2 * t.SPACE_XS
+            if accessory.sizeHint().width() > available:
+                accessory.setText(str(count))
         height = max(bs.height(), accessory.sizeHint().height() if accessory else 0)
         stop = getattr(self, "_stop_widget", None)
         stop_height = stop.sizeHint().height() if stop is not None and not stop.isHidden() else 0
@@ -369,6 +375,15 @@ class _GrowingInput(QtWidgets.QTextEdit):
     def resizeEvent(self, e):
         super().resizeEvent(e)
         self._place_send()
+        self._fit_placeholder()
+
+    def _fit_placeholder(self):
+        """Keep the empty-field instruction above the action band on small docks."""
+        available = max(0, self.viewport().width() - 2 * self.document().documentMargin() - 2)
+        metrics = QtGui.QFontMetrics(self.font())
+        candidates = ("Ask SYNAPSE · / commands", "Ask SYNAPSE · /", "Ask · /", "/")
+        self.setPlaceholderText(next((text for text in candidates
+                                     if metrics.horizontalAdvance(text) <= available), "/"))
 
     def keyPressEvent(self, e):
         # "/" on an empty prompt opens the command palette (⌘K folded into the
@@ -1336,6 +1351,9 @@ class SynapsePanel(QtWidgets.QWidget):
                 location.setToolTip(self._model_connection_detail)
                 location.setAccessibleName("Generation location: " + location.text())
                 location.setAccessibleDescription(self._model_connection_detail)
+        details_dialog = getattr(self, "_connection_details_dialog", None)
+        if details_dialog is not None and details_dialog.isVisible():
+            details_dialog.set_details(self._model_connection_detail)
         self._render_token_state()      # getattr-guarded: no-op before the rail
         self._fit_panel_chrome()
 
@@ -2526,6 +2544,7 @@ class SynapsePanel(QtWidgets.QWidget):
         col = QtWidgets.QVBoxLayout(w)
         self._input = _GrowingInput(on_height_change=self._fit_composer_to_pane)
         self._input.setAccessibleName("Message to SYNAPSE")
+        self._input.setAccessibleDescription("Ask SYNAPSE. Type / on an empty message to browse commands. Enter sends; Shift+Enter adds a newline.")
         # Aa scales document text; the inherited root sheet owns the chrome.
         self._set_prompt_font(self._input, self._font_scale)
         self._input.submitted.connect(self._on_submit)
@@ -2580,11 +2599,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._events_btn = c.Button("Updates", variant="ghost")
         self._events_btn.setToolTip("Local work and connection updates")
         self._events_btn.clicked.connect(self._open_notifications)
-        self._connection_location = c.label("Unverified", role="body", scale=self._chrome_scale)
-        self._connection_location.setTextFormat(Qt.TextFormat.PlainText)
-        self._connection_location.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        self._connection_location.setWordWrap(True)
-        self._connection_location.setMargin(0)
+        self._connection_location = c.Button("Unverified", variant="ghost")
+        self._connection_location.clicked.connect(self._open_connection_details)
         self._connection_status = c.Button("Connect models", variant="ghost")
         self._connection_status.setObjectName("DsFooterLink")
         c.apply_font_role(self._connection_status, "body", self._chrome_scale)
@@ -2618,7 +2634,52 @@ class SynapsePanel(QtWidgets.QWidget):
         if not already_visible:
             dialog.run_check()
 
+    def _open_connection_details(self):
+        from synapse.panel.connection_details import ConnectionDetailsDialog
+        dialog = getattr(self, "_connection_details_dialog", None)
+        if dialog is None:
+            dialog = ConnectionDetailsDialog(self)
+            self._connection_details_dialog = dialog
+        dialog.set_details(getattr(self, "_model_connection_detail", "Connection details are not available yet."))
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+
     def _on_attach(self):
+        """Add context, or review the pending context before the next send."""
+        if not self._pending_context:
+            self._choose_attachments()
+            return
+        from synapse.panel.designsystem import submenus
+        menu = c.ModelMenu(self, title="Attachments for next message", scale=self._chrome_scale)
+        menu.addAction("Add files…", self._choose_attachments)
+        menu.addSeparator()
+        for path in self._pending_context:
+            name = path.replace("\\", "/").rsplit("/", 1)[-1] or path
+            action = menu.addAction("Remove " + name.replace("&", "&&"), partial(self._remove_attachment, path))
+            action.setToolTip(path)
+        submenus.prepare_menu(menu, self._chrome_scale)
+        self._attachment_menu = menu
+        menu.aboutToHide.connect(menu.deleteLater)
+        menu.popup(self._attach_btn.mapToGlobal(QtCore.QPoint(0, self._attach_btn.height())))
+
+    def _remove_attachment(self, path):
+        if path in self._pending_context:
+            self._pending_context.remove(path)
+        self._sync_attachment_button()
+        self._input.setFocus()
+
+    def _sync_attachment_button(self):
+        count = len(self._pending_context)
+        button = self._attach_btn
+        button.setProperty("pending_count", count)
+        button.setText("Attach (%s)" % count if count else "Attach")
+        button.setAccessibleName("Review %s attachments for next message" % count if count else "Attach image or file")
+        button.setToolTip("Review or remove context for the next message:\n" + "\n".join(self._pending_context)
+                          if count else "Attach image / file as context")
+        self._input._place_send()
+
+    def _choose_attachments(self):
         """Image-attach button — adds picked files to the next request's context
         (same path as a file drag-drop)."""
         try:
@@ -2634,6 +2695,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._pending_context.append(p)
                 added.append(p)
         if added:
+            self._sync_attachment_button()
             try:
                 self._chat.append_system_message("Attached: %s" % ", ".join(added))
             except Exception:
@@ -2989,6 +3051,8 @@ class SynapsePanel(QtWidgets.QWidget):
         content.mergeCharFormat(fmt)
         inp.setTextCursor(selection)
         inp.setCurrentFont(font)
+        if hasattr(inp, "_fit_placeholder"):
+            inp._fit_placeholder()
 
     def _cycle_font_scale(self):
         """Step through the font-scale presets live. The overflow's 'Larger
@@ -3265,6 +3329,7 @@ class SynapsePanel(QtWidgets.QWidget):
             if self._pending_context:
                 text = "[Context: %s]\n%s" % (", ".join(self._pending_context), text)
                 self._pending_context = []
+                self._sync_attachment_button()
             try:
                 self._chat.append_user_message(display)
             except Exception:
@@ -3275,6 +3340,7 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 connection.release()
                 self._pending_context = pending
+                self._sync_attachment_button()
                 self._on_error("The task could not start. Your draft is still available.")
                 self._messages.pop()
                 return False
@@ -4079,6 +4145,7 @@ class SynapsePanel(QtWidgets.QWidget):
                     self._pending_context.append(p)
                     added.append(p)
             if added:
+                self._sync_attachment_button()
                 try:
                     self._chat.append_system_message(
                         "Added to context: %s — ask away." % ", ".join(added)

@@ -140,30 +140,33 @@ class ModelMenu(QtWidgets.QMenu):
                 continue
             full = action.property("model_full_label") or action.text()
             action.setProperty("model_full_label", full)
-            action.setToolTip(full)
+            # QAction's default tooltip mirrors its text. Materialize it
+            # before eliding, while retaining an explicit attachment path.
+            action.setToolTip(action.toolTip() or full)
             action.setText(fm.elidedText(full, Qt.TextElideMode.ElideMiddle, text_width))
 
 
 class ConversationInvitation(QtWidgets.QWidget):
     """A centered welcome, separate from conversation history and actions."""
 
-    _BODY_LINES = ("Describe a network, inspect your scene,", "or work through a problem.")
+    _BODY_TEXT = "Describe a network, inspect your scene, or work through a problem."
 
     def __init__(self, parent=None, scale=t.FONT_SCALE_DEFAULT):
         super().__init__(parent)
         self.setObjectName("DsConversationInvitation")
         self.setAccessibleName("Welcome to SYNAPSE")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._scale = scale
-        self.title = label("Welcome to", role="title", scale=scale, parent=self)
+        self.title = label("WELCOME TO", role="title", scale=scale, parent=self)
+        self.title.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.wordmark = AsciiWordmark(self)
-        self.body = label("\n".join(self._BODY_LINES),
-                          role="body", scale=scale, parent=self)
+        self.body = label(self._BODY_TEXT, role="body", scale=scale, parent=self)
+        self.body.setAccessibleName(self._BODY_TEXT)
         for item in (self.title, self.body):
             item.setTextFormat(Qt.TextFormat.PlainText)
-            item.setWordWrap(True)
             item.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title.setWordWrap(True)
+        self.body.setWordWrap(False)
         self.set_scale(scale)
 
     def set_scale(self, scale):
@@ -180,23 +183,38 @@ class ConversationInvitation(QtWidgets.QWidget):
         title_font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 0)
         self.title.setFont(title_font)
 
+    def _fit_body(self, width):
+        # This supporting sentence is deliberately smaller than conversation
+        # copy. Bound the reduction so a narrow dock never produces tiny type.
+        font = self.body.font()
+        minimum = max(t.FONT_FLOOR_PX, t.scaled(9, self._scale))
+        pixels = max(minimum, t.scaled(10, self._scale))
+        available = max(0, width - 2)
+        while True:
+            font.setPixelSize(pixels)
+            metrics = QtGui.QFontMetrics(font)
+            if metrics.horizontalAdvance(self._BODY_TEXT) <= available or pixels <= minimum:
+                break
+            pixels -= 1
+        self.body.setFont(font)
+        text = metrics.elidedText(self._BODY_TEXT, Qt.TextElideMode.ElideRight, available)
+        self.body.setText(text)
+        self.body.setToolTip(self._BODY_TEXT if text != self._BODY_TEXT else "")
+
     def fit_content(self, width, height):
         """Center the complete group, yielding optional copy on short docks."""
-        self.title.setText("Welcome to")
+        self.title.setText("WELCOME TO")
         content_width = max(1, min(width, t.scaled(560, self._scale)))
         # A centered column with a generous, proportional side margin. The
         # text scale sets a ceiling; the actual dock sets the artwork's size.
         art_width = max(1, min(content_width, round(width * 0.72)))
-        body_width = min(art_width, t.scaled(360, self._scale))
-        # Keep the semantic two-line measure where it fits; let narrower docks
-        # reflow the full sentence instead of leaving a single-word line.
-        separator = "\n" if self.body.fontMetrics().horizontalAdvance(self._BODY_LINES[0]) + 2 <= body_width else " "
-        self.body.setText(separator.join(self._BODY_LINES))
+        body_width = max(1, min(content_width, round(width * 0.88)))
+        self._fit_body(body_width)
         title_gap = t.scaled(t.SPACE_12, self._scale)
         body_gap = t.scaled(t.SPACE_LG, self._scale)
         padding = t.scaled(t.SPACE_MD, self._scale)
         title_h = max(self.title.fontMetrics().height(), self.title.heightForWidth(content_width))
-        body_h = max(self.body.fontMetrics().height(), self.body.heightForWidth(body_width))
+        body_h = self.body.fontMetrics().height()
         art_h = self.wordmark.heightForWidth(art_width)
         needed = 2 * padding + title_h + title_gap + art_h + body_gap + body_h
         show_body = needed <= height
@@ -209,7 +227,7 @@ class ConversationInvitation(QtWidgets.QWidget):
             # A very short viewport can fit readable copy but no useful art.
             # Restore the complete greeting on the next roomy resize.
             show_body = False
-            self.title.setText("Welcome")
+            self.title.setText("WELCOME")
             title_h = max(self.title.fontMetrics().height(), self.title.heightForWidth(content_width))
             needed = 2 * padding + title_h
         fits = width > 0 and needed <= height
