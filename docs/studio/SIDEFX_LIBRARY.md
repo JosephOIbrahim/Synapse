@@ -24,7 +24,7 @@ Re-run the same command to resume with SHA256-checked cached pages. Add
 Unchanged installed snapshots and search generations are reused. Updates run
 on demand; this does not install a scheduled job.
 
-Source errors stop the default update with exit 2 and preserve the active search
+Web fetch errors stop the default update with exit 2 and preserve the active search
 generation. Inspect `web_manifest.json`. `--allow-incomplete-web` deliberately
 publishes available pages with visible gap counts; it never labels a partial
 download complete. `--installed-only` explicitly builds the installed source

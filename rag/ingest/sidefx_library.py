@@ -199,7 +199,12 @@ def build_library(root: Path, *, include_web: bool = False,
         for page, row in sorted(manifest["pages"].items()):
             if kind == "web" and row.get("status") != "ok":
                 continue
-            provenance.append((kind, page, row))
+            # HTTP revalidation timestamps/validators do not change the emitted
+            # citation or searchable content; avoid rebuilding 100k chunks on
+            # a 304-only refresh. All response-affecting provenance is retained.
+            emitted = {k: v for k, v in row.items()
+                       if k not in {"validated_at", "etag", "last_modified", "bytes", "status", "error"}}
+            provenance.append((kind, page, emitted))
     state = [{"source": kind, "closure_complete": m.get("closure_complete"),
               "fetch_complete": m.get("fetch_complete"),
               "pages": [(p, r.get("status", "ok"), r.get("error")) for p, r in sorted(m["pages"].items())]}

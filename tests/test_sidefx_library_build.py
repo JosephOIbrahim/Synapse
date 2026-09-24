@@ -78,6 +78,11 @@ def test_web_provenance_stays_separate_from_installed_build(tmp_path):
     assert row['docs_build'] == '22.0.452'
     assert row['docs_build_basis'] == 'index_inferred'
     assert row['runtime_build_at_import'] == '22.0.400'
+    manifest = json.loads((root / 'web_manifest.json').read_text())
+    manifest['pages']['nodes/sop/new.md'].update(validated_at='later', etag='same-content-validator')
+    lib.atomic_json(root / 'web_manifest.json', manifest)
+    repeated = lib.build_library(root, include_web=True, runtime_build='22.0.400')
+    assert repeated['generation'] == result['generation']
 
 
 @pytest.mark.parametrize('relative', ['../escape.txt', '/absolute.txt', 'folder/../../escape.txt', 'folder\\escape.txt'])
