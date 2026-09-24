@@ -208,7 +208,7 @@ class ConversationInvitation(QtWidgets.QWidget):
         # A centered column with a generous, proportional side margin. The
         # text scale sets a ceiling; the actual dock sets the artwork's size.
         art_width = max(1, min(content_width, round(width * 0.72)))
-        body_width = max(1, min(content_width, round(width * 0.88)))
+        body_width = max(1, content_width - 2 * t.scaled(t.SPACE_SM, self._scale))
         self._fit_body(body_width)
         title_gap = t.scaled(t.SPACE_12, self._scale)
         body_gap = t.scaled(t.SPACE_LG, self._scale)
