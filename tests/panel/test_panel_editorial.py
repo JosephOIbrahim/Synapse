@@ -397,7 +397,11 @@ def test_welcome_compact_fallback_contains_copy_and_restores_art(make_panel):
 
 @pytest.mark.parametrize("scale,width", [(1.0, 480), (1.25, 640), (2.25, 799)])
 def test_welcome_helper_stays_single_line_and_recovers_after_narrow_resize(make_panel, scale, width):
-    panel = make_panel(scale, width, 1200)
+    # This helper/hover check intentionally fits a 600px invitation viewport.
+    # Leave that much actual room above the responsive seven-control footer;
+    # short-dock tests separately verify that optional helper text yields.
+    panel = make_panel(scale, width, 1800)
+    assert panel._chat.viewport().height() >= 600
     invite = panel._chat._empty_state
     sentence = "Describe a network, inspect your scene, or work through a problem."
     assert invite.body.text() == sentence, "The complete helper must fit the actual normal dock viewport"
@@ -704,7 +708,7 @@ def test_inset_footer_reflows_live_labels_without_resizing(make_panel, scale, wi
         assert all(panel.rect().contains(bounds) for bounds in boxes)
         assert all(not a.intersects(b) for i, a in enumerate(boxes) for b in boxes[i + 1:])
         assert boxes[4].center().x() == boxes[0].center().x()
-        assert boxes[5].center().x() == boxes[3].center().x()
+        assert boxes[-1].center().x() == boxes[3].center().x()
 
 
 def test_install_insets_preserves_open_panel_objects_and_connections(make_panel, monkeypatch):
@@ -736,7 +740,8 @@ def test_install_insets_preserves_open_panel_objects_and_connections(make_panel,
     for control in controls[:4]:
         top.addWidget(control)
     column.addLayout(top)
-    panel._connection_row = c.EdgeRow(*controls[4:], scale=panel._chrome_scale)
+    panel._connection_row = c.EdgeRow(panel._connection_location, panel._connection_status,
+                                     scale=panel._chrome_scale)
     column.addWidget(panel._connection_row)
     first = install_footer(panel)
     assert install_footer(panel) is first

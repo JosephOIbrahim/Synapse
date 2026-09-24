@@ -1043,6 +1043,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._author_lbl.setToolTip("Engine & model - click to switch")
         c.apply_font_role(self._author_lbl, "body", self._chrome_scale)
         self._author_lbl.clicked.connect(self._open_author_menu)
+        self._author_lbl.clicked.connect(self._dismiss_welcome)
         self._refresh_engine_selector()      # text + never-elide floor
         top.addWidget(self._mark, 0, 0)
         top.setColumnMinimumWidth(1, t.WORDMARK_GAP)
@@ -1103,6 +1104,7 @@ class SynapsePanel(QtWidgets.QWidget):
             "can reach Houdini. Safe to click anytime - idempotent."
         )
         self._connect_btn.clicked.connect(self._on_connect)
+        self._connect_btn.clicked.connect(self._dismiss_welcome)
         self._doctor_btn = c.Button("Doctor", variant="ghost")
         # PNL-L7 (ruling R2-B1): no tone="doctor" here any more. Doctor is an
         # action, so it rests in the shipped action family with Connect and the
@@ -1110,6 +1112,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._doctor_btn.setAccessibleName("Check SYNAPSE")
         self._doctor_btn.setToolTip("Run synapse_doctor locally · no model request or scene changes")
         self._doctor_btn.clicked.connect(self._open_doctor)
+        self._doctor_btn.clicked.connect(self._dismiss_welcome)
         bot.addWidget(self._header_status, 0, 0)
         bot.setColumnStretch(1, 1)
         bot.addWidget(self._connect_btn, 0, 2)
@@ -2548,6 +2551,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # Aa scales document text; the inherited root sheet owns the chrome.
         self._set_prompt_font(self._input, self._font_scale)
         self._input.submitted.connect(self._on_submit)
+        self._input.textChanged.connect(self._dismiss_welcome_on_draft)
         self._input.slash.connect(self._open_palette)   # "/" → command palette
         # L5-22: a released grip-drag is the artist's answer — remember it
         self._input.height_committed.connect(self._persist_composer_height)
@@ -2607,6 +2611,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._connection_status.clicked.connect(self._open_connections)
         from synapse.panel.inset_footer import install_footer
         install_footer(self, col)
+        for button in (attach, self._send_btn, *self._inset_footer.controls):
+            button.clicked.connect(self._dismiss_welcome)
         # CRIT.md 2026-09-15 #18 (P8 · dead weight): the "Session · Revoke"
         # ghost is deleted. It was built hidden and duplicated the overflow's
         # "Revoke session model permissions" (:2702), which owns the action.
@@ -2621,6 +2627,15 @@ class SynapsePanel(QtWidgets.QWidget):
         self._location_timer.start()
         QTimer.singleShot(0, self._refresh_engine_selector)
         return w
+
+    def _dismiss_welcome(self, *_args):
+        dismiss = getattr(self._chat, "dismiss_invitation", None)
+        if dismiss is not None:
+            dismiss()
+
+    def _dismiss_welcome_on_draft(self):
+        if self._input.toPlainText():
+            self._dismiss_welcome()
 
     def _open_doctor(self):
         from synapse.panel.doctor_dialog import DoctorDialog

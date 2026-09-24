@@ -1062,6 +1062,7 @@ def synapse_scout(
             "source": entry.get("source", ""),
             "score": round(1.0 / (rank + 1), 4),   # fused rank -> [0,1]
             "snippet": str(entry.get(TEXT_FIELD, ""))[:max_chars].strip(),
+            **_hit_provenance(entry),
         })
         if len(hits) >= k:
             break
@@ -1092,6 +1093,33 @@ def _passes(entry: dict, where: dict) -> bool:
     if "source_contains" in where and where["source_contains"] not in str(entry.get("source", "")):
         return False
     return True
+
+
+def _hit_provenance(entry: dict) -> dict:
+    """Carry citation evidence without turning documentation into runtime truth.
+
+    Old rows retain their old hit shape. A snapshot's import-time comparison is
+    explicitly historical; compare its doc stamp to the current injected build
+    on every query. Outside Houdini that comparison is unknown, not a guess from
+    the packaged symbol table. Symbol membership remains the independent gate.
+    """
+    fields = ("source_url", "source_anchor", "source_sha256", "content_sha256",
+              "heading", "docs_build", "docs_build_basis", "runtime_build_at_import",
+              "build_relation_at_import", "evidence_level", "fetched_at",
+              "snapshot_id", "scope", "licence", "build", "content_sha")
+    out = {key: entry[key] for key in fields if key in entry}
+    if "docs_build" in out:
+        current = _running_build() or None
+        stamp = str(out["docs_build"])
+        out.update(runtime_build=current, build_relation="unknown")
+        if current and re.fullmatch(r"\d+\.\d+\.\d+", current) and re.fullmatch(r"\d+\.\d+\.\d+", stamp):
+            docs = tuple(map(int, stamp.split(".")))
+            runtime = tuple(map(int, current.split(".")))
+            out["build_relation"] = (
+                "same_build" if docs == runtime else
+                "different_version" if docs[:2] != runtime[:2] else
+                "ahead_of_runtime" if docs > runtime else "behind_runtime")
+    return out
 
 
 # --------------------------------------------------------------------------- #
