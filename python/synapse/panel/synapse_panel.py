@@ -328,28 +328,36 @@ class _GrowingInput(QtWidgets.QTextEdit):
         if btn is None:
             return
         bs = btn.sizeHint()
+        scale = max(1.0, btn.font().pixelSize() / float(t.SIZE_UI))
+        bottom_inset = t.scaled(t.SPACE_SM, scale)
+        gap = t.scaled(t.SPACE_XS, scale)
         accessory = self._attach_widget
         height = max(bs.height(), accessory.sizeHint().height() if accessory else 0)
         stop = getattr(self, "_stop_widget", None)
         stop_height = stop.sizeHint().height() if stop is not None and not stop.isHidden() else 0
-        band = height + (stop_height + t.SPACE_XS if stop_height else 0)
+        band = height + (stop_height + gap if stop_height else 0)
         # Qt already excludes the styled field's bottom inset. Reserve only
         # the remaining action band plus the gap above it, not that inset twice.
-        margin = max(0, band + t.SPACE_SM + t.SPACE_XS - self.contentsMargins().bottom())
+        margin = max(0, band + bottom_inset + gap - self.contentsMargins().bottom())
         if self.viewportMargins().bottom() != margin:
             self.setViewportMargins(0, 0, 0, margin)
             self._autosize()
         width = max(bs.width(), stop.sizeHint().width() if stop is not None else 0)
+        accessory_width = accessory.sizeHint().width() if accessory else 0
+        # Keep the preview's inset at host scale, reducing only empty side
+        # space when enlarged text meets a very narrow dock.
+        side_inset = min(t.scaled(t.SPACE_12, scale),
+                         max(t.SPACE_XS, (self.width() - width - accessory_width - gap) // 2))
         btn.resize(width, height)
-        top = self.height() - band - t.SPACE_SM
-        left = self.width() - width - t.SPACE_12
+        top = self.height() - band - bottom_inset
+        left = self.width() - width - side_inset
         btn.move(left, top)
         if stop_height:
             stop.resize(width, stop_height)
-            stop.move(left, top + height + t.SPACE_XS)
+            stop.move(left, top + height + gap)
         if accessory is not None:
             accessory.resize(accessory.sizeHint().width(), height)
-            accessory.move(t.SPACE_12, top)
+            accessory.move(side_inset, top)
 
     def eventFilter(self, watched, event):
         if watched is getattr(self, "_stop_widget", None) and event.type() in (
@@ -422,6 +430,29 @@ class _InputResizeGrip(QtWidgets.QWidget):
         for dx in (-12, 0, 12):
             p.drawEllipse(QtCore.QRectF(cx + dx - 1.5, cy - 1.5, 3, 3))
         p.end()
+
+
+def _attachment_icon(px=18, color=None):
+    """A compact monoline paperclip, matching the preview's general attachment action."""
+    pm = QtGui.QPixmap(px * 2, px * 2)
+    pm.setDevicePixelRatio(2)
+    pm.fill(QtGui.QColor(0, 0, 0, 0))
+    painter = QtGui.QPainter(pm)
+    painter.setRenderHint(QtGui.QPainter.Antialiasing)
+    painter.scale(px / 24.0, px / 24.0)
+    pen = QtGui.QPen(QtGui.QColor(color or t.TEXT_SECONDARY), 1.8)
+    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+    pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+    painter.setPen(pen)
+    path = QtGui.QPainterPath(QtCore.QPointF(8, 12))
+    path.lineTo(13, 7)
+    path.cubicTo(16, 4, 20, 8, 17, 11)
+    path.lineTo(10, 18)
+    path.cubicTo(6, 22, 0, 16, 4, 12)
+    path.lineTo(13, 3)
+    painter.drawPath(path)
+    painter.end()
+    return QtGui.QIcon(pm)
 
 
 def _image_icon(px=18, color=None):
@@ -1037,7 +1068,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._stop_btn.setObjectName("DsStop")
         self._stop_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._stop_btn.setFont(fontload.tracked_font(
-            "SEND", t.SIZE_SMALL, scale=self._chrome_scale, weight=500))
+            "BODY", t.SIZE_UI, scale=self._chrome_scale, weight=500))
         self._stop_btn.setAccessibleName("Stop current task")
         self._stop_btn.setToolTip(
             "Stop this task. An operation already sent to Houdini may still be finishing.")
@@ -2505,8 +2536,8 @@ class SynapsePanel(QtWidgets.QWidget):
         attach = c.Button("Attach", variant="ghost")
         attach.setObjectName("DsComposerAttach")
         c.apply_font_role(attach, "body", self._chrome_scale)
-        attach.setIcon(_image_icon())
-        icon_px = t.scaled(t.GLYPH_MD, self._chrome_scale)
+        icon_px = t.scaled(t.GLYPH_SM, self._chrome_scale)
+        attach.setIcon(_attachment_icon(icon_px))
         attach.setIconSize(QtCore.QSize(icon_px, icon_px))
         attach.setToolTip("Attach image / file as context")
         attach.setAccessibleName("Attach image or file")
@@ -2514,11 +2545,11 @@ class SynapsePanel(QtWidgets.QWidget):
         self._attach_btn = attach
         # v9 comp: SEND rides bottom-right INSIDE the composer (the attr name
         # `_send_btn` is load-bearing — the clip audit finds it by name).
-        self._send_btn = QtWidgets.QPushButton("SEND")
+        self._send_btn = QtWidgets.QPushButton("Send")
         self._send_btn.setObjectName("DsSend")
         self._send_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._send_btn.setFont(fontload.tracked_font(
-            "SEND", t.SIZE_SMALL, scale=self._chrome_scale, weight=500))
+            "BODY", t.SIZE_UI, scale=self._chrome_scale, weight=500))
         self._send_btn.clicked.connect(self._on_submit)
         self._input.attach_send(self._send_btn, attach, self._stop_btn)
         col.addWidget(self._input)
