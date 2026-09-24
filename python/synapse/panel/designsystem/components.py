@@ -261,6 +261,10 @@ class ComposerHints(EdgeRow):
         for item, alignment in ((left, Qt.AlignmentFlag.AlignLeft),
                                 (right, Qt.AlignmentFlag.AlignRight)):
             item.setObjectName("DsComposerHint")
+            # Match the header status caption's tracking while keeping body type.
+            font = item.font()
+            font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, t.TYPE_ROLES["caption"][3])
+            item.setFont(font)
             item.setTextFormat(Qt.TextFormat.PlainText)
             item.setWordWrap(True)
             item.setMargin(0)
