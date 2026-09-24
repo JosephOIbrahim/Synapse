@@ -51,11 +51,14 @@ class AsciiWordmark(QtWidgets.QWidget):
         self.setAccessibleDescription("SYNAPSE in dimensional ASCII lettering")
         self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
         self._ink_font = fontload.apply_family(QtGui.QFont(), mono=True)
-        self._ink_font.setPixelSize(16)
+        # Add three typographic points to the previous 16-pixel ASCII face.
+        base_points = 16 * 72.0 / self.logicalDpiY()
+        self._ink_font.setPointSizeF(base_points + 3.0)
+        self.size_multiplier = (base_points + 3.0) / base_points
         self._ink_font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 0)
         self._front_font = QtGui.QFont(self._ink_font)
         self._front_font.setBold(True)
-        metrics = QtGui.QFontMetricsF(self._ink_font)
+        metrics = QtGui.QFontMetricsF(self._ink_font, self)
         self._cell = metrics.horizontalAdvance("#")
         self._glyph_box = metrics.tightBoundingRect("#/: ")
         self._line = self._glyph_box.height() + 2
