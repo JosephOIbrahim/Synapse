@@ -198,8 +198,10 @@ class _GrowingInput(QtWidgets.QTextEdit):
     slash = Signal()           # "/" on an empty prompt → open the command palette
     height_committed = Signal(int)   # grip drag released → persist (L5-22)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, on_height_change=None):
         super().__init__(parent)
+        self._on_height_change = on_height_change
+        self._height_fit_pending = False
         self.setObjectName("DsInput")
         self.setProperty("softEditorial", True)
         self.setAcceptRichText(False)
@@ -234,6 +236,17 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self._attach_widget = None
         self.setFixedHeight(self._user_h)
         self.textChanged.connect(self._autosize)
+        self.textChanged.connect(self._queue_height_fit)
+
+    def _queue_height_fit(self):
+        """Fit after artist edits; internal cap adjustments never requeue."""
+        if getattr(self, "_on_height_change", None) is None or getattr(self, "_height_fit_pending", False):
+            return
+        self._height_fit_pending = True
+        def fit():
+            self._height_fit_pending = False
+            self._on_height_change()
+        QTimer.singleShot(0, self, fit)
 
     def _autosize(self):
         content = int(self.document().size().height()) + 18
@@ -288,8 +301,11 @@ class _GrowingInput(QtWidgets.QTextEdit):
     def set_user_height(self, h):
         """Set the artist's preferred input height (driven by the resize grip)."""
         self._height_settled = True      # the artist decided — never re-centre
+        previous = self._user_h
         self._user_h = max(self._floor, min(self._max_h, int(h)))
         self._autosize()
+        if self._user_h != previous:
+            self._queue_height_fit()
 
     # -- composer actions: Send above Stop, Attach alongside Send ----------
     def attach_send(self, btn, accessory=None, stop=None):
@@ -1806,10 +1822,10 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
             if lay is not None:
                 lay.activate()
-        before = inp._cap
         composer = inp.parentWidget()
         composer.setMinimumHeight(0)
         footer = getattr(self, "_inset_footer", None)
+        before = (inp._cap, footer._cap if footer is not None else None)
         if footer is not None:
             footer.cap_height(None)
         if inp._cap is not None:
@@ -1826,6 +1842,7 @@ class SynapsePanel(QtWidgets.QWidget):
         _relayout()
         bottom = composer.mapTo(self, QtCore.QPoint(0, composer.height())).y()
         room = self.height() - bottom
+        shortage = 0
         if footer is not None:
             # Keep a readable conversation and composer when a large host
             # font turns the footer into six rows. Only that footer scrolls.
@@ -1838,13 +1855,17 @@ class SynapsePanel(QtWidgets.QWidget):
                 _relayout()
                 bottom = composer.mapTo(self, QtCore.QPoint(0, composer.height())).y()
                 room = self.height() - bottom
-        if room < 0:
-            inp.cap_height(inp.height() + room)
+                # Once the footer reaches its one-row floor, the composer
+                # must share the remaining shortage with the conversation.
+                shortage = max(0, reserve - (chat.height() if chat is not None else reserve))
+        if room < shortage:
+            inp.cap_height(inp.height() + room - shortage)
             composer.setMinimumHeight(composer_layout.totalHeightForWidth(composer.width()))
         # Nested layouts converge over event-loop turns, not in one call: a
         # pass that moved the cap schedules one more, until the cap is stable
         # (bounded - never a loop that outlives the resize).
-        if inp._cap != before and getattr(self, "_fit_rounds", 0) < 8:
+        after = (inp._cap, footer._cap if footer is not None else None)
+        if after != before and getattr(self, "_fit_rounds", 0) < 8:
             self._fit_rounds = getattr(self, "_fit_rounds", 0) + 1
             QTimer.singleShot(0, self._fit_composer_to_pane)
         else:
@@ -2470,7 +2491,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # legend at 4/6/3 - one beat on the grid, no hand-added spacer.
         w.setProperty("rhythm_role", "stack")
         col = QtWidgets.QVBoxLayout(w)
-        self._input = _GrowingInput()
+        self._input = _GrowingInput(on_height_change=self._fit_composer_to_pane)
         self._input.setAccessibleName("Message to SYNAPSE")
         # Aa scales document text; the inherited root sheet owns the chrome.
         self._set_prompt_font(self._input, self._font_scale)

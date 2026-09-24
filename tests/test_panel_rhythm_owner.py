@@ -342,9 +342,10 @@ def test_recorded_layout_sequence_is_derived_from_base_not_current(monkeypatch, 
     ("band", "standard", None, (0, 0, 0, 0)),
     ("row", "airy", None, (16, 12, 16, 12)),
     ("shell", "tight", None, (30, 8, 30, 8)),
-    ("shell", "airy", "top", (30, 24, 30, 8)),
-    ("shell", "standard", "top", (30, 16, 30, 8)),
-    ("shell", "tight", "top", (30, 12, 30, 8)),
+    # User spacing refinement (2026-09-24): 32px standard top inset.
+    ("shell", "airy", "top", (30, 48, 30, 8)),
+    ("shell", "standard", "top", (30, 32, 30, 8)),
+    ("shell", "tight", "top", (30, 24, 30, 8)),
 ])
 def test_nested_layout_margins_preserve_band_zero_and_shell_edge(role, density, edge, expected):
     layout = _Layout()

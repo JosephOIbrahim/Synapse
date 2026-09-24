@@ -1244,7 +1244,10 @@ QPushButton#DsComposerAttach {{
 }}
 QPushButton#DsComposerAttach:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsComposerAttach:focus {{ border: 1px solid {t.SIGNAL}; }}
-QLabel#DsComposerHint {{ color: {t.TEXT_SECONDARY}; }}
+QLabel#DsComposerHint {{
+    color: {t.TEXT_SECONDARY};
+    padding: {t.scaled(t.SPACE_12 // 2, scale)}px 0;
+}}
 /* Stop shares Send's coral action family, retaining its compact height. */
 QPushButton#DsStop {{
     background: {t.WARM}; color: {t.TEXT_ON_ACCENT};

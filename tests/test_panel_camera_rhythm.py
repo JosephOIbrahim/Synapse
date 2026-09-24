@@ -123,6 +123,19 @@ def _amend_constructors(original):
     assert original["_GrowingInput"].count(anchor) == 1
     original["_GrowingInput"] = original["_GrowingInput"].replace(
         anchor, anchor + '\n        self.setProperty("softEditorial", True)', 1)
+    # User spacing refinement (2026-09-24): preferred input-height changes
+    # refit the padded composer after layout, without changing lifecycle work.
+    # These exact additions preserve the baseline and its negative controls.
+    for old, new in (
+        ('def __init__(self, parent=None):',
+         'def __init__(self, parent=None, on_height_change=None):'),
+        ('        super().__init__(parent)',
+         '        super().__init__(parent)\n        self._on_height_change = on_height_change\n        self._height_fit_pending = False'),
+        ('        self.textChanged.connect(self._autosize)',
+         '        self.textChanged.connect(self._autosize)\n        self.textChanged.connect(self._queue_height_fit)'),
+    ):
+        assert original["_GrowingInput"].count(old) == 1
+        original["_GrowingInput"] = original["_GrowingInput"].replace(old, new, 1)
     return original
 CAMERA = ("synapse_panel.py", "face_token.py", "token_readout.py",
           "chat_display.py", "recall_card.py")

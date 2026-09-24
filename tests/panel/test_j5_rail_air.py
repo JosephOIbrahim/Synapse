@@ -3,20 +3,20 @@
 Joe's word: "The top of SYNAPSE just needs a spacer so the text doesnt feel
 choked by the panels top edge."  CTO ruling J5
 (harness/cto/runs/2026-09-05/RULING_JOE_FIVE.md): the rail's shell inset gets
-a top margin one grid step larger than its sides' vertical inset - SPACE_MD
-(16 at standard, scaled with density) - carried by the rhythm role, never a
-literal. Measured: wordmark top y >= 16 at 340x760 in the composed panel.
+a top margin carried by the rhythm role, never a literal. The user's
+2026-09-24 spacing refinement increases this to SPACE_32 (32 at standard,
+scaled with density). The original 16px expectation is explicitly superseded.
 
 Two tests, committed RED before the fix (today y == 8 in all three profiles;
 regions_{expert,curious,ml}.json, harness/design_review/2026-09-05):
 
-  1. expert - the wordmark's top is one SPACE_MD below the pane's top edge and
-     the rail's margins read (GUTTER, gap(SPACE_MD), GUTTER, SPACE_SM); the
+  1. expert - the wordmark's top is one SPACE_32 below the pane's top edge and
+     the rail's margins read (GUTTER, gap(SPACE_32), GUTTER, SPACE_SM); the
      `shell` role's other edge containers (ribbon, direct face) keep the
      role's default (GUTTER, SPACE_SM, GUTTER, SPACE_SM) - the air is the
      rail's condition, not the role's default, so nothing under the rail moves.
-  2. density - `_recompose('curious')` puts the wordmark at gap(SPACE_MD, airy)
-     == 24 and `_recompose('ml')` at gap(SPACE_MD, tight) == 12: the value
+  2. density - `_recompose('curious')` puts the wordmark at gap(SPACE_32, airy)
+     == 48 and `_recompose('ml')` at gap(SPACE_32, tight) == 24: the value
      lives in the role table (rhythm._EDGE_TOP) and scales through tokens.gap,
      the same machinery path every other role margin takes.
 
@@ -105,23 +105,22 @@ def _margins(widget):
     return (m.left(), m.top(), m.right(), m.bottom())
 
 
-def test_expert_rail_has_space_md_air_above_the_identity_row():
+def test_expert_rail_has_space_32_air_above_the_identity_row():
     from synapse.panel.designsystem import tokens as t
     p = _panel("expert")
     try:
         assert p.property("density") == "standard"
         rail = p._region_cache["_build_rail"]
         assert rail.property("rhythm_role") == "shell"
-        air = t.gap(t.SPACE_MD, "standard")
-        assert air == 16
-        # J5: the wordmark top sits one SPACE_MD below the pane's top edge
-        # (was 8 = SPACE_SM, the shell role's default; regions_expert.json).
+        air = t.gap(t.SPACE_32, "standard")
+        assert air == 32
+        # User refinement: the identity now has twice its previous 16px air.
         y = _top_y(p, p._wordmark)
         assert y == air, ("wordmark top y", y, "expected", air)
         # The whole identity row moves together: mark, wordmark, model token.
         assert _top_y(p, p._mark) == y
         assert _top_y(p, p._author_lbl) == y
-        # The rail's margins: GUTTER sides, SPACE_MD top, SPACE_SM bottom -
+        # The rail's margins: GUTTER sides, SPACE_32 top, SPACE_SM bottom -
         # the air under the rail is unchanged.
         assert _margins(rail) == (t.GUTTER, air, t.GUTTER, t.SPACE_SM), _margins(rail)
         # The other `shell` edge containers keep the role's default inset:
@@ -133,7 +132,7 @@ def test_expert_rail_has_space_md_air_above_the_identity_row():
             assert _margins(shell) == (t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM), (
                 shell.objectName(), _margins(shell))
         assert _margins(ribbon) == (30, 8, 30, 8)
-        # BC-5's measured goal still holds with the rail 8px taller: the
+        # BC-5's measured goal still holds with the increased top inset: the
         # conversation keeps a majority of the pane at 340x760. Same reading
         # as test_bc_wave.py / measure_regions.py - the composer at its floor
         # (at first run L5-22 opens the divider at half; that is the
@@ -151,21 +150,21 @@ def test_expert_rail_has_space_md_air_above_the_identity_row():
 def test_rail_air_scales_with_density_through_the_role_table():
     from synapse.panel.designsystem import rhythm, tokens as t
     # The value lives in the role table, keyed by the edge condition, and is
-    # the SPACE_MD token - never a literal in synapse_panel.py.
+    # the SPACE_32 token - never a literal in synapse_panel.py.
     edge_top = getattr(rhythm, "_EDGE_TOP", None)
     assert edge_top is not None, "rhythm._EDGE_TOP: the shell role's top-edge condition"
-    assert edge_top == {"shell": t.SPACE_MD}
+    assert edge_top == {"shell": t.SPACE_32}
     assert rhythm._MARGINS["shell"] == (t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM)
     p = _panel("expert")
     try:
         rail = p._region_cache["_build_rail"]
         assert rail.property("rhythm_edge") == "top"
-        for profile, density, expected in (("curious", "airy", 24), ("ml", "tight", 12),
-                                           ("expert", "standard", 16)):
+        for profile, density, expected in (("curious", "airy", 48), ("ml", "tight", 24),
+                                           ("expert", "standard", 32)):
             p._recompose(profile)
             _app().processEvents()
             assert p.property("density") == density, profile
-            assert t.gap(t.SPACE_MD, density) == expected
+            assert t.gap(t.SPACE_32, density) == expected
             # Recompose reuses the cached rail widget; the edge condition rides
             # on it, so every density re-resolves the top through tokens.gap.
             assert p._region_cache["_build_rail"] is rail

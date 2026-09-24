@@ -55,13 +55,10 @@ _MARGINS = {
             tokens.SPACE_SM + tokens.SPACE_XS // 2, tokens.SPACE_12 // 2),
     "shell": (tokens.GUTTER, tokens.SPACE_SM, tokens.GUTTER, tokens.SPACE_SM),
 }
-# Edge condition (Joe's five, J5, 2026-09-05): a shell that meets the pane's
-# TOP edge (rhythm_edge="top") takes one grid step more air above than the
-# role's SPACE_SM - SPACE_MD, density-scaled through tokens.gap (24/16/12) -
-# so the identity row is not choked by the pane edge. The role's default is
-# unchanged: the ribbon and the faces (the other shell owners) keep SPACE_SM,
-# so the air UNDER the rail does not move. Sides stay GUTTER, bottom SPACE_SM.
-_EDGE_TOP = {"shell": tokens.SPACE_MD}
+# Top-edge shells reserve more breathing room above the identity row.
+# User spacing refinement (2026-09-24): 16 -> 32, density-scaled through
+# the existing gap owner. Other shell margins and horizontal anchors stay put.
+_EDGE_TOP = {"shell": tokens.SPACE_32}
 _WARNED = set()
 
 
