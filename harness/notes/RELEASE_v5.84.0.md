@@ -21,7 +21,8 @@ reload, scene edit or local installer execution is part of cutting this release.
 
 The isolated release worktree ran 13 existing test files with Houdini 22.0.400's
 Python 3.13 and native Qt, offscreen: **287 passed, 1 skipped**. The skip is the
-SideFX reader's Windows symlink-privilege check. No tests or assertions changed.
+SideFX reader's Windows symlink-privilege check. That initial release-preparation
+run changed no tests or assertions.
 The run includes panel editorial/design/submenu/model-picker/palette/World Labs
 checks, SideFX reader/builder/downloader/Markdown checks, version conformance,
 tool-count/public README checks and product-surface checks.
@@ -32,6 +33,26 @@ Commands and detailed receipts are in the local release board
 The six canonical surfaces agree after `python scripts/sync_version.py --write`.
 The public release notes retain the upstream 404s, incomplete web-fetch status,
 document-only runtime authority, and measured short-dock layout regression.
+
+## CI correction before publication
+
+The first candidate, `6c51d2c2`, failed CI run `36052675251` with four failures:
+the deployment environment table omitted `SYNAPSE_SIDEFX_CORPUS_ROOT`; the
+CAMERA constructor guard still pinned the earlier resize grip; the QSS guard
+still pinned older focus colors; and one negative control used a retired
+focus-rule anchor. The release remained unpublished.
+
+The correction documents the environment override and records exact,
+count-checked guard amendments for the user-requested changes already in
+`90e72706` and `d5a2e9e7`. Literal baselines, constructor equality, selector
+coverage and existing negative controls remain intact. Additional negative
+controls reject incorrect grip scale/accessibility/drag state and restoration
+of the retired focus colors. No runtime source changes are part of this
+correction. Independent review and native guard-check artifacts are retained
+in the release board. All 115 tests across the environment, CAMERA and QSS
+guard modules passed under Houdini 22.0.400's Python 3.13, including native Qt
+subprocess checks. Publication still requires a fresh successful CI run on
+the corrected commit, using a newly checked local tag before its first push.
 
 ## Publication sequence
 

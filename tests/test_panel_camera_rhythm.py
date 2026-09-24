@@ -136,6 +136,31 @@ def _amend_constructors(original):
     ):
         assert original["_GrowingInput"].count(old) == 1
         original["_GrowingInput"] = original["_GrowingInput"].replace(old, new, 1)
+    # User-requested visible resize control (90e72706, 2026-09-24). Amend
+    # only the grip's scale, accessibility and drag-state initialization;
+    # keep the literal baseline and every other constructor byte protected.
+    for old, new in (
+        ('def __init__(self, target, parent=None):',
+         'def __init__(self, target, parent=None, scale=1.0):'),
+        ('        self._target = target',
+         '        self._target = target\n        self._scale = scale'),
+        ('        self.setFixedHeight(10)',
+         '        c.apply_font_role(self, "body", scale)\n'
+         '        # The text follows host scale; tight padding keeps this utility rail\n'
+         '        # from spending the writing space it is meant to expose.\n'
+         '        self.setFixedHeight(max(t.SPACE_LG, self.fontMetrics().height() + t.SPACE_XS))'),
+        ('        self.setCursor(Qt.CursorShape.SizeVerCursor)',
+         '        self.setCursor(Qt.CursorShape.SizeVerCursor)\n'
+         '        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)\n'
+         '        self.setAccessibleName("Resize prompt area")\n'
+         '        self.setAccessibleDescription("Drag up for more writing space, or down for less. When focused, use the Up and Down arrow keys.")\n'
+         '        self.setToolTip("Drag up for more writing space · drag down for less\\nKeyboard: focus here, then use Up / Down")\n'
+         '        self._hovered = False'),
+        ('        self._start_h = 0',
+         '        self._start_h = 0\n        self._start_user_h = 0\n        self._drag_moved = False'),
+    ):
+        assert original["_InputResizeGrip"].count(old) == 1, "stale resize-grip constructor amendment"
+        original["_InputResizeGrip"] = original["_InputResizeGrip"].replace(old, new, 1)
     return original
 CAMERA = ("synapse_panel.py", "face_token.py", "token_readout.py",
           "chat_display.py", "recall_card.py")
@@ -354,6 +379,12 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
     ('self.setProperty("softEditorial", True)', 'self.setProperty("softEditorial", False)'),
     ("self._attach_widget = None", "self._attach_widget = object()"),
     ("self._height_settled = False", "self._height_settled = True"),
+    ('def __init__(self, target, parent=None, scale=1.0):',
+     'def __init__(self, target, parent=None, scale=2.0):'),
+    ('self.setAccessibleName("Resize prompt area")',
+     'self.setAccessibleName("Unrelated control")'),
+    ('self._start_user_h = 0\n        self._drag_moved = False',
+     'self._start_user_h = 0\n        self._drag_moved = True'),
     ("class _GrowingInput", "class ExtraOwner:\n    def __init__(self):\n        pass\n\nclass _GrowingInput"),
 ])
 def test_constructor_pin_rejects_changed_input_and_new_owners(before, after):

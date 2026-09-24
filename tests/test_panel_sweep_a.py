@@ -208,6 +208,8 @@ def _outside_ruled_regions(text):
 # re-adding either row now reddens as unapproved drift.
 # User-approved quiet insets (2026-09-23) replace the old transparent links.
 # Exact local rules stay pinned; unrelated upstream rules remain unchanged.
+# User-requested neutral outlines (d5a2e9e7, 2026-09-24) give footer focus
+# the existing hover fill and shared gray outline, retaining the full-rule pin.
 _APPROVED_LOCAL_RULES = (
     'QWidget#DsInsetFooter, QScrollArea#DsInsetFooterScroll {{ background: {t.PANEL}; border: none; }}',
     '''QPushButton#DsFooterLink, QLabel#DsFooterStatus {{
@@ -219,7 +221,7 @@ _APPROVED_LOCAL_RULES = (
 }}''',
     'QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}',
     'QPushButton#DsFooterLink:pressed {{ background: {t.FIELD_INSET}; }}',
-    'QPushButton#DsFooterLink:focus {{ border: 1px solid {t.SIGNAL}; color: {t.TEXT_PRIMARY}; }}',
+    'QPushButton#DsFooterLink:focus {{ background: {t.HOVER_BG}; border: 1px solid {t.CONTROL_OUTLINE}; color: {t.TEXT_PRIMARY}; }}',
     'QPushButton#DsFooterLink:disabled {{ color: {t.TEXT_DISABLED}; }}',
 )
 
@@ -456,11 +458,22 @@ COMPOSER_20260924_QSS_AMENDMENTS = (
      'QPushButton#DsSend:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: {t.DISABLED_BG}; }}'),
 )
 
+# The user's shared neutral-outline request (d5a2e9e7) supersedes only
+# these focus colors. Preserve the earlier deltas and exact selector/body
+# comparison; no new selector is excluded from the guard.
+NEUTRAL_OUTLINE_20260924_QSS_AMENDMENTS = (
+    ('QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}',
+     'QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.CONTROL_OUTLINE}; }}'),
+    ('QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.BORDER}; }}',
+     'QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CONTROL_OUTLINE}; }}'),
+)
+
 _DECLARED_QSS_AMENDMENTS = (
     ("CRIT.md 2026-09-15", CRIT_20260915_QSS_AMENDMENTS),
     ("READABILITY.md 2026-09-15 D3b", D3B_20260915_QSS_AMENDMENTS),
     ("User-approved Soft Editorial 2026-09-23", SOFT_EDITORIAL_20260923_QSS_AMENDMENTS),
     ("Neutral composer outline 2026-09-24", COMPOSER_20260924_QSS_AMENDMENTS),
+    ("Shared neutral control outlines 2026-09-24", NEUTRAL_OUTLINE_20260924_QSS_AMENDMENTS),
 )
 
 def _amend(original, amendments=None, label="CRIT.md 2026-09-15"):
@@ -565,8 +578,12 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
     ('QPushButton#DsSend:hover   {{ background: {t.WARM_HOVER}; }}',
      'QPushButton#DsSend:hover   {{ background: {t.SIGNAL}; }}'),
     ('    border: 3px solid {t.BORDER};', '    border: 1px solid {t.BORDER};'),
-    ('QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.BORDER}; }}',
+    ('QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CONTROL_OUTLINE}; }}',
      'QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CHAT_ASSISTANT}; }}'),
+    ('QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.CONTROL_OUTLINE}; }}',
+     'QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}'),
+    ('QPushButton#DsFooterLink:focus {{ background: {t.HOVER_BG}; border: 1px solid {t.CONTROL_OUTLINE}; color: {t.TEXT_PRIMARY}; }}',
+     'QPushButton#DsFooterLink:focus {{ background: {t.HOVER_BG}; border: 1px solid {t.SIGNAL}; color: {t.TEXT_PRIMARY}; }}'),
     ('QPushButton#DsSend:focus {{ border-color: {t.TEXT_PRIMARY}; }}',
      'QPushButton#DsSend:focus {{ border-color: {t.WARM}; }}'),
 ])
