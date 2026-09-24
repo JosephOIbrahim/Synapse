@@ -103,9 +103,10 @@ def apply_layout_margins(layout, role, density="standard", edge=None):
 
 def model_picker_layout(outer, footer, scale):
     """One owner for the provider picker's shell and action rhythm."""
-    inset = tokens.SPACE_MD
+    inset = tokens.scaled(tokens.SPACE_MD, min(scale, 1.5))
+    top = tokens.scaled(tokens.SPACE_LG, min(scale, 1.5))
     gap = tokens.scaled(tokens.SPACE_SM, scale)
-    outer.setContentsMargins(inset, inset, inset, inset)
+    outer.setContentsMargins(inset, top, inset, inset)
     outer.setSpacing(gap)
     footer.setSpacing(gap)
 
