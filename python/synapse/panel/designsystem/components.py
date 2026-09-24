@@ -147,6 +147,8 @@ class ModelMenu(QtWidgets.QMenu):
 class ConversationInvitation(QtWidgets.QWidget):
     """A centered welcome, separate from conversation history and actions."""
 
+    _BODY_LINES = ("Describe a network, inspect your scene,", "or work through a problem.")
+
     def __init__(self, parent=None, scale=t.FONT_SCALE_DEFAULT):
         super().__init__(parent)
         self.setObjectName("DsConversationInvitation")
@@ -156,33 +158,52 @@ class ConversationInvitation(QtWidgets.QWidget):
         self._scale = scale
         self.title = label("Welcome to", role="title", scale=scale, parent=self)
         self.wordmark = AsciiWordmark(self)
-        self.body = label("Describe a network, inspect your scene, or work through a problem.",
+        self.body = label("\n".join(self._BODY_LINES),
                           role="body", scale=scale, parent=self)
         for item in (self.title, self.body):
             item.setTextFormat(Qt.TextFormat.PlainText)
             item.setWordWrap(True)
             item.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.set_scale(scale)
 
     def set_scale(self, scale):
         self._scale = scale
         apply_font_role(self.title, "title", scale)
         apply_font_role(self.body, "body", scale)
+        # The ASCII name carries the display voice. Keep its introduction at
+        # the panel's title size, with a quieter weight and natural spacing.
+        title_font = self.title.font()
+        try:
+            title_font.setWeight(QtGui.QFont.Weight.Medium)
+        except AttributeError:  # Qt5 host fallback
+            title_font.setWeight(QtGui.QFont.Medium)
+        title_font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 0)
+        self.title.setFont(title_font)
 
     def fit_content(self, width, height):
         """Center the complete group, yielding optional copy on short docks."""
         self.title.setText("Welcome to")
-        content_width = max(1, min(width, t.scaled(520, self._scale)))
-        gap = t.scaled(t.SPACE_SM, self._scale)
+        content_width = max(1, min(width, t.scaled(560, self._scale)))
+        # A centered column with a generous, proportional side margin. The
+        # text scale sets a ceiling; the actual dock sets the artwork's size.
+        art_width = max(1, min(content_width, round(width * 0.72)))
+        body_width = min(art_width, t.scaled(360, self._scale))
+        # Keep the semantic two-line measure where it fits; let narrower docks
+        # reflow the full sentence instead of leaving a single-word line.
+        separator = "\n" if self.body.fontMetrics().horizontalAdvance(self._BODY_LINES[0]) + 2 <= body_width else " "
+        self.body.setText(separator.join(self._BODY_LINES))
+        title_gap = t.scaled(t.SPACE_12, self._scale)
+        body_gap = t.scaled(t.SPACE_LG, self._scale)
         padding = t.scaled(t.SPACE_MD, self._scale)
         title_h = max(self.title.fontMetrics().height(), self.title.heightForWidth(content_width))
-        body_h = max(self.body.fontMetrics().height(), self.body.heightForWidth(content_width))
-        art_h = self.wordmark.heightForWidth(content_width)
-        needed = 2 * padding + title_h + art_h + body_h + 2 * gap
+        body_h = max(self.body.fontMetrics().height(), self.body.heightForWidth(body_width))
+        art_h = self.wordmark.heightForWidth(art_width)
+        needed = 2 * padding + title_h + title_gap + art_h + body_gap + body_h
         show_body = needed <= height
         if not show_body:
             padding = t.SPACE_XS
-            art_h = min(art_h, max(0, height - 2 * padding - title_h - gap))
-            needed = 2 * padding + title_h + gap + art_h
+            art_h = min(art_h, max(0, height - 2 * padding - title_h - title_gap))
+            needed = 2 * padding + title_h + title_gap + art_h
         show_art = art_h >= t.scaled(t.SIZE_BODY, self._scale)
         if not show_art:
             # A very short viewport can fit readable copy but no useful art.
@@ -200,10 +221,11 @@ class ConversationInvitation(QtWidgets.QWidget):
         self.setGeometry((width - content_width) // 2, (height - needed) // 2,
                          content_width, needed)
         self.title.setGeometry(0, padding, content_width, title_h)
-        art_y = padding + title_h + gap
-        self.wordmark.setGeometry(0, art_y, content_width, art_h)
+        art_y = padding + title_h + title_gap
+        self.wordmark.setGeometry((content_width - art_width) // 2, art_y, art_width, art_h)
         if show_body:
-            self.body.setGeometry(0, art_y + art_h + gap, content_width, body_h)
+            self.body.setGeometry((content_width - body_width) // 2,
+                                  art_y + art_h + body_gap, body_width, body_h)
 
 
 class EdgeRow(QtWidgets.QWidget):
