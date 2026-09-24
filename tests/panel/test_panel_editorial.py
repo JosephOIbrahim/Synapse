@@ -534,9 +534,9 @@ def test_composer_footer_insets_span_both_field_edges(make_panel, scale, width):
     panel._input.set_user_height(220)
     settle()
     field = box(panel._input, panel)
-    links = [button for button in (panel._commands_btn, panel._render_btn,
-                                  panel._recipes_btn, panel._events_btn) if button.isVisible()]
-    assert len(links) == 4, "All actions remain available when the footer wraps"
+    links = [button for button in (panel._commands_btn, panel._recipes_btn,
+                                  panel._events_btn) if button.isVisible()]
+    assert len(links) == 3, "All remaining actions stay available when the footer wraps"
     blocks = [box(button, panel) for button in links]
     painted = [text_box(button, panel) for button in links]
     assert abs(min(bounds.left() for bounds in blocks) - field.left()) <= 2
@@ -603,8 +603,13 @@ def test_connection_insets_align_to_actions_and_retain_evidence(make_panel, monk
     first_block, last_block = box(location, panel), box(panel._connection_status, panel)
     commands, updates = box(panel._commands_btn, panel), box(panel._events_btn, panel)
     assert first_block.width() == commands.width() == last_block.width() == updates.width()
-    assert first_block.center().x() == commands.center().x()
-    assert last_block.center().x() == updates.center().x()
+    if panel._inset_footer.grid._columns == 2:
+        right_action = box(panel._recipes_btn, panel)
+        assert first_block.center().x() == right_action.center().x()
+        assert last_block.center().x() == right_action.center().x()
+    else:
+        assert first_block.center().x() == commands.center().x()
+        assert last_block.center().x() == updates.center().x()
     assert first_block.contains(first) and last_block.contains(last)
     assert not first.intersects(last)
     expose_footer(panel, location)
@@ -700,6 +705,7 @@ def test_inset_footer_reflows_live_labels_without_resizing(make_panel, scale, wi
         panel._connection_location.setText("Cloud relay")
         settle()
         controls = panel._inset_footer.controls
+        assert len(controls) == 6 and all(widget.text() != "Render" for widget in controls)
         boxes = [box(widget, panel) for widget in controls]
         assert panel.width() == original_width
         assert len({bounds.width() for bounds in boxes}) == 1
@@ -707,8 +713,11 @@ def test_inset_footer_reflows_live_labels_without_resizing(make_panel, scale, wi
         assert all(bounds.contains(text_box(widget, panel)) for widget, bounds in zip(controls, boxes))
         assert all(panel.rect().contains(bounds) for bounds in boxes)
         assert all(not a.intersects(b) for i, a in enumerate(boxes) for b in boxes[i + 1:])
-        assert boxes[4].center().x() == boxes[0].center().x()
-        assert boxes[-1].center().x() == boxes[3].center().x()
+        if panel._inset_footer.grid._columns == 3:
+            assert boxes[3].center().x() == boxes[0].center().x()
+            assert boxes[4].center().x() == boxes[1].center().x()
+            assert boxes[5].center().x() == boxes[2].center().x()
+        assert boxes[-1].right() == max(bounds.right() for bounds in boxes)
 
 
 def test_install_insets_preserves_open_panel_objects_and_connections(make_panel, monkeypatch):
@@ -716,7 +725,7 @@ def test_install_insets_preserves_open_panel_objects_and_connections(make_panel,
     from synapse.panel.synapse_panel import SynapsePanel
     from synapse.panel.designsystem import components as c
     calls = []
-    for method in ("_open_palette", "_open_render_workspace", "_open_saved_recipes",
+    for method in ("_open_palette", "_open_saved_recipes",
                    "_open_notifications", "_open_connections"):
         monkeypatch.setattr(SynapsePanel, method, lambda self, checked=False, name=method: calls.append(name))
     panel = make_panel(1.25, 720, 1100)
@@ -737,7 +746,7 @@ def test_install_insets_preserves_open_panel_objects_and_connections(make_panel,
     old_footer.deleteLater()
     del panel._inset_footer
     top = QtWidgets.QHBoxLayout()
-    for control in controls[:4]:
+    for control in controls[:3]:
         top.addWidget(control)
     column.addLayout(top)
     panel._connection_row = c.EdgeRow(panel._connection_location, panel._connection_status,
@@ -754,7 +763,7 @@ def test_install_insets_preserves_open_panel_objects_and_connections(make_panel,
     for button in controls:
         if isinstance(button, QtWidgets.QPushButton):
             button.click()
-    assert calls == ["_open_palette", "_open_render_workspace", "_open_saved_recipes",
+    assert calls == ["_open_palette", "_open_saved_recipes",
                      "_open_notifications", "_open_connections"]
     assert not box(panel._attach_btn, panel).intersects(box(panel._send_btn, panel))
 
@@ -772,7 +781,7 @@ def test_short_footer_scrolls_keyboard_focus_and_recovers_full_grid(make_panel):
         # focused button into view automatically without a custom click path.
         panel._commands_btn.setFocus()
         settle()
-        for button in (panel._commands_btn, panel._render_btn, panel._recipes_btn,
+        for button in (panel._commands_btn, panel._recipes_btn,
                        panel._events_btn, panel._connection_status):
             for _ in range(20):
                 if _APP.focusWidget() is button:

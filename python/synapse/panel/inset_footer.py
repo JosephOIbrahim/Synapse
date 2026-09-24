@@ -6,7 +6,7 @@ QtCore, QtGui, QtWidgets = c.QtCore, c.QtGui, c.QtWidgets
 
 
 class InsetFooter(QtWidgets.QWidget):
-    """Four equal columns, then two or one when the actual labels need room.
+    """Three equal columns, then two or one when the actual labels need room.
 
     Connection evidence and every control's existing signal connections belong
     to the panel, not to this layout.
@@ -21,7 +21,7 @@ class InsetFooter(QtWidgets.QWidget):
         self._gap = t.scaled(t.FOOTER_GAP, scale)
         self._height = t.scaled(t.FOOTER_HEIGHT, scale)
         self._padding = t.scaled(t.SPACE_SM, scale)
-        self._columns = 4
+        self._columns = 3
         policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding,
                                        QtWidgets.QSizePolicy.Fixed)
         policy.setHeightForWidth(True)
@@ -48,14 +48,14 @@ class InsetFooter(QtWidgets.QWidget):
                    for widget in self.controls) + 2 * self._padding + 2
 
     def columns_for_width(self, width):
-        for columns in (4, 2):
+        for columns in (3, 2):
             if columns * self._cell_width() + (columns - 1) * self._gap <= width:
                 return columns
         return 1
 
     def sizeHint(self):
-        return QtCore.QSize(4 * self._cell_width() + 3 * self._gap,
-                            2 * self._height + self._gap)
+        width = 3 * self._cell_width() + 2 * self._gap
+        return QtCore.QSize(width, self.heightForWidth(width))
 
     def minimumSizeHint(self):
         return QtCore.QSize(0, self._height)
@@ -65,8 +65,7 @@ class InsetFooter(QtWidgets.QWidget):
 
     def heightForWidth(self, width):
         columns = self.columns_for_width(width)
-        extras = max(0, len(self.controls) - 4)
-        rows = 4 // columns + (extras + columns - 1) // columns
+        rows = (len(self.controls) + columns - 1) // columns
         return rows * self._height + (rows - 1) * self._gap
 
     def fit_width(self, width):
@@ -84,15 +83,7 @@ class InsetFooter(QtWidgets.QWidget):
         cell = max(0, (width - (columns - 1) * self._gap) // columns)
         left = max(0, (width - columns * cell - (columns - 1) * self._gap) // 2)
         for index, widget in enumerate(self.controls):
-            if index < 4 or columns == 1:
-                row, column = divmod(index, columns)
-            else:
-                extra_row, column = divmod(index - 4, columns)
-                row = 4 // columns + extra_row
-                # Keep Connect models on the right; World Labs follows the
-                # connection-location control in the same row when it fits.
-                if index == len(self.controls) - 1:
-                    column = columns - 1
+            row, column = divmod(index, columns)
             widget.setGeometry(left + column * (cell + self._gap),
                                row * (self._height + self._gap), cell, self._height)
 
@@ -181,11 +172,11 @@ def install_footer(panel, column=None):
         column = panel._composer_hints.parentWidget().layout()
     from .worldlabs_dialog import create_worldlabs_button
     worldlabs = create_worldlabs_button(panel)
-    controls = (panel._commands_btn, panel._render_btn, panel._recipes_btn,
+    controls = (panel._commands_btn, panel._recipes_btn,
                 panel._events_btn, panel._connection_location, worldlabs,
                 panel._connection_status)
     old_row = getattr(panel, "_connection_row", None)
-    # The pre-inset panel has a layout for the top four and an EdgeRow below.
+    # The pre-inset panel has a layout for its actions and an EdgeRow below.
     # Release layout items before reparenting; never delete a control.
     for index in range(column.count() - 1, -1, -1):
         item = column.itemAt(index)

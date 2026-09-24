@@ -2590,9 +2590,6 @@ class SynapsePanel(QtWidgets.QWidget):
         # the composer still tells '/' exactly once (BC-4).
         self._commands_btn.setToolTip("Browse commands · Ctrl+K")
         self._commands_btn.clicked.connect(self._open_palette)
-        self._render_btn = c.Button("Render", variant="ghost")
-        self._render_btn.setToolTip("Prepare a saved scene, render with TOPs and return to recent jobs")
-        self._render_btn.clicked.connect(self._open_render_workspace)
         # CRIT.md 2026-09-15 (USE · copy as design): the footer says what the
         # artist gets, in the host's vocabulary. "Recipes" is not Houdini's
         # word for a saved network, and "Events" named the subsystem while its

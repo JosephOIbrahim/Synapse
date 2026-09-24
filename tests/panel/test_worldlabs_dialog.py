@@ -157,7 +157,7 @@ def test_connection_lists_worlds_without_importing_or_generating(dialog, app):
 
 @pytest.mark.parametrize("width", [330, 640, 1100])
 def test_worldlabs_is_adjacent_to_cloud_with_equal_inset_widths(app, width):
-    controls = [c.Button(title) for title in ("Commands", "Render", "Saved networks",
+    controls = [c.Button(title) for title in ("Commands", "Saved networks",
                 "Updates", "Cloud relay", "World Labs", "Connect models")]
     footer = InsetFooter(controls, scale=1.0)
     footer.resize(width, footer.heightForWidth(width))
@@ -167,8 +167,8 @@ def test_worldlabs_is_adjacent_to_cloud_with_equal_inset_widths(app, width):
     assert len({box.width() for box in boxes}) == 1
     assert all(footer.rect().contains(box) for box in boxes)
     assert all(not left.intersects(right) for i, left in enumerate(boxes) for right in boxes[i+1:])
-    if footer._columns >= 2:
-        assert boxes[4].top() == boxes[5].top()
-        assert boxes[4].right() < boxes[5].left()
+    if footer._columns == 3:
+        assert boxes[3].top() == boxes[4].top()
+        assert boxes[3].right() < boxes[4].left()
     assert boxes[-1].right() == max(box.right() for box in boxes)
     footer.close()
