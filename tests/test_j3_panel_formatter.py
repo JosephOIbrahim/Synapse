@@ -26,7 +26,8 @@ from synapse.panel.designsystem import tokens as t
 def test_speaker_label_and_hollow_mark_use_the_approved_identity_colours():
     # The two speaker colours are distinct palette entries with real chroma,
     # or the assertions below prove nothing.
-    assert len({t.CHAT_USER, t.CHAT_ASSISTANT, t.MODEL_ACCENT}) == 3
+    assert t.CHAT_USER != t.CHAT_ASSISTANT
+    assert t.MODEL_ACCENT == t.CHAT_ASSISTANT  # Model selection matches the ring.
 
     you = mf._speaker_label("YOU", None, 1.0)
     assert t.CHAT_USER in you, you
@@ -39,7 +40,7 @@ def test_speaker_label_and_hollow_mark_use_the_approved_identity_colours():
     syn = mf._speaker_label("SYNAPSE", None, 1.0)
     assert t.CHAT_ASSISTANT in syn, syn
     assert t.CHAT_USER not in syn, syn
-    assert t.MODEL_ACCENT not in syn, syn
+    assert t.MODEL_ACCENT in syn, syn
     # The native display supplies a ring image: Space Grotesk does not have
     # the hollow-circle glyph, so depending on U+25CB loses the mark entirely.
     assert 'src="synapse:assistant-ring"' in syn, syn

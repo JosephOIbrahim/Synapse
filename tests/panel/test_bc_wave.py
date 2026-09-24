@@ -288,7 +288,7 @@ def _hue_buckets(widget):
 
 
 def test_chat_face_uses_stable_model_identity_with_separate_status():
-    """Soft Editorial (2026-09-23) gives model selection a stable blue-green.
+    """The 2026-09-24 color approval matches model selection to the coral ring.
 
     This deliberately supersedes J1's model-as-status-light color contract.
     State remains observable and truthful, but may not recolor the model.
@@ -296,13 +296,14 @@ def test_chat_face_uses_stable_model_identity_with_separate_status():
     """
     import re
     from synapse.panel.designsystem import tokens as t, qss
+    assert t.MODEL_ACCENT == t.CHAT_ASSISTANT
     sheet = qss.stylesheet()
     blocks = {m.group(1) or "rest": m.group(2).lower() for m in
               re.finditer(r"QPushButton#DsAuthor(:hover)?\s*\{([^}]*)\}", sheet)}
     assert set(blocks) == {"rest", ":hover"}, list(blocks)
     for name, body in blocks.items():
         assert t.MODEL_ACCENT.lower() in body, (name, body)
-        for hue in (t.CHAT_USER, t.CHAT_ASSISTANT, t.CONIFEROUS):
+        for hue in (t.CHAT_USER, t.CONIFEROUS):
             assert hue.lower() not in body, (name, hue)
     # Liveness can remain a widget property, but no color override may change
     # the visual identity of the selected model.
@@ -322,7 +323,7 @@ def test_chat_face_uses_stable_model_identity_with_separate_status():
             _app().processEvents()
             rest = _hue_buckets(p)
             assert len(rest) <= 3, (profile, sorted(rest))
-            assert 12 in rest, (profile, "model blue-green missing", sorted(rest))
+            assert 0 in rest, (profile, "SYNAPSE coral missing", sorted(rest))
             assert p._author_lbl.property("liveness") == "off"
             assert p._author_lbl.palette().color(QtGui.QPalette.ButtonText) == QtGui.QColor(t.MODEL_ACCENT)
             p._set_provider("ollama")        # keyless engine: keyed without a secret
@@ -330,7 +331,7 @@ def test_chat_face_uses_stable_model_identity_with_separate_status():
             _app().processEvents()
             connected = _hue_buckets(p)
             assert len(connected) <= 4, (profile, sorted(connected))
-            assert 12 in connected, (profile, sorted(connected))
+            assert 0 in connected, (profile, sorted(connected))
             assert p._author_lbl.property("liveness") == "live"
             assert p._author_lbl.palette().color(QtGui.QPalette.ButtonText) == QtGui.QColor(t.MODEL_ACCENT)
             p._set_busy(True)
