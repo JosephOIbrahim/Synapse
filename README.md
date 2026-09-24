@@ -28,6 +28,7 @@ Then:
 - Want node creation? Select **Build and edit networks** in the model dialog.
 - Cloud model? It needs your API key.
 - Ollama? Start Ollama first, then choose an installed model.
+- JEV assistance? **Connect models → JEV / TypeSafe key setup → Save session key.** [Key and permission setup](docs/getting-started/jev-setup.md).
 
 The installer is **unsigned** — verify it against the [checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SHA256SUMS.txt).
 

@@ -44,19 +44,9 @@ def enabled(*, opt_in=False):
 
 
 def resolve_key():
-    """Environment first, then Windows user registry. Never log the value."""
-    key = os.environ.get("TYPESAFE_API_KEY", "").strip()
-    if key:
-        return key
-    if sys.platform == "win32":
-        try:
-            import winreg
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as handle:
-                value, _ = winreg.QueryValueEx(handle, "TYPESAFE_API_KEY")
-                return str(value or "").strip() or None
-        except Exception:
-            pass
-    return None
+    """Use the panel's session key, then the existing environment fallback."""
+    from synapse.jev.credentials import resolve_key as resolve_credential
+    return resolve_credential()
 
 
 def connection_spec(model=DEFAULT_MODEL):

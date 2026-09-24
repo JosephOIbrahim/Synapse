@@ -49,6 +49,10 @@ class ConnectionDialog(QtWidgets.QDialog):
         intro = c.label("Choose a model and where your work is allowed to go.", role="body", scale=scale)
         intro.setWordWrap(True)
         layout.addWidget(intro)
+        self.jev_key_setup = c.Button("JEV / TypeSafe key setup", variant="secondary")
+        self.jev_key_setup.setAutoDefault(False)
+        self.jev_key_setup.clicked.connect(self._show_jev_key)
+        layout.addWidget(self.jev_key_setup)
         form = QtWidgets.QFormLayout()
         self.engine = QtWidgets.QComboBox()
         self.engine.setObjectName("DsConnectionSelect")
@@ -95,9 +99,45 @@ class ConnectionDialog(QtWidgets.QDialog):
         rules = c.Button("Project rules…", variant="secondary")
         rules.clicked.connect(self._project_rules)
         layout.addWidget(rules)
-        jev_group = QtWidgets.QGroupBox("JEV assistance")
+        jev_group = QtWidgets.QGroupBox("JEV assistance · TypeSafe")
         jev_group.setObjectName("DsJevRouting")
         jev_layout = QtWidgets.QVBoxLayout(jev_group)
+        key_label = c.label("TypeSafe API key", role="label", scale=scale)
+        jev_layout.addWidget(key_label)
+        self.jev_key = QtWidgets.QLineEdit()
+        self.jev_key.setObjectName("DsField")
+        self.jev_key.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.jev_key.setPlaceholderText("Paste your TypeSafe API key here")
+        self.jev_key.setAccessibleName("TypeSafe API key for JEV")
+        self.jev_key.installEventFilter(self)
+        key_label.setBuddy(self.jev_key)
+        jev_layout.addWidget(self.jev_key)
+        key_buttons = QtWidgets.QHBoxLayout()
+        self.jev_key_save = c.Button("Save session key", variant="secondary")
+        self.jev_key_clear = c.Button("Clear session key", variant="ghost")
+        self.jev_key_save.setAutoDefault(False)
+        self.jev_key_clear.setAutoDefault(False)
+        self.jev_key_save.setEnabled(False)
+        self.jev_key_save.clicked.connect(self._save_jev_key)
+        self.jev_key_clear.clicked.connect(self._clear_jev_key)
+        self.jev_key.textChanged.connect(
+            lambda text: self.jev_key_save.setEnabled(bool(text.strip())))
+        key_buttons.addWidget(self.jev_key_save)
+        key_buttons.addWidget(self.jev_key_clear)
+        jev_layout.addLayout(key_buttons)
+        self.jev_key_status = c.label("", role="caption", scale=scale)
+        self.jev_key_status.setTextFormat(QtCore.Qt.PlainText)
+        self.jev_key_status.setWordWrap(True)
+        self.jev_key_status.setAccessibleName("TypeSafe key status")
+        jev_layout.addWidget(self.jev_key_status)
+        key_note = c.label(
+            "Kept in memory until Houdini closes. Saving a key does not enable JEV or grant permission. "
+            "Clearing a session key returns to your configured environment key, if one exists.",
+            role="caption", scale=scale)
+        key_note.setWordWrap(True)
+        jev_layout.addWidget(key_note)
+        self._refresh_jev_key_status()
+        jev_layout.addSpacing(t.scaled(t.SPACE_SM, scale))
         self.jev_routing = QtWidgets.QComboBox()
         self.jev_routing.setObjectName("DsConnectionSelect")
         self.jev_routing.addItem("Off", "off")
@@ -112,7 +152,7 @@ class ConnectionDialog(QtWidgets.QDialog):
             "a draft for your selected model. Measure routing separately records suggestions during tasks. "
             "Both require TypeSafe permission for your latest text request (up to 4,096 characters). "
             "Ranking sends no selected nodes, wires, history, or attachments; requests resembling code, "
-            "credentials, or scene paths are skipped. Uses your configured TYPESAFE_API_KEY.",
+            "credentials, or scene paths are skipped. Uses the TypeSafe key configured above.",
             role="caption", scale=scale)
         jev_note.setWordWrap(True)
         jev_layout.addWidget(jev_note)
@@ -139,7 +179,7 @@ class ConnectionDialog(QtWidgets.QDialog):
         self.status.setTextFormat(QtCore.Qt.PlainText)
         layout.addWidget(self.status)
         note = c.label(
-            "Entered keys stay in this panel session. Closing the panel clears them; "
+            "Model API keys stay in this panel session. Closing the panel clears them; "
             "an in-flight response may finish, but closing stops further model requests. Existing environment keys still work.\n\n"
             "The check sends credentials and asks for model metadata only. It sends no scene or prompt.", role="caption", scale=scale)
         note.setWordWrap(True)
@@ -335,6 +375,49 @@ class ConnectionDialog(QtWidgets.QDialog):
             return
         self._refresh_jev_status()
 
+    def eventFilter(self, watched, event):
+        if (watched is getattr(self, "jev_key", None)
+                and event.type() == QtCore.QEvent.KeyPress
+                and event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter)):
+            self._save_jev_key()
+            return True
+        return super().eventFilter(watched, event)
+
+    def _show_jev_key(self):
+        self._content_scroll.ensureWidgetVisible(self.jev_key, 0, t.scaled(t.SPACE_MD, self._chrome_scale))
+        self.jev_key.setFocus(QtCore.Qt.OtherFocusReason)
+
+    def _save_jev_key(self):
+        from synapse.jev import credentials
+        try:
+            credentials.set_session_key(self.jev_key.text())
+        except ValueError as exc:
+            self.jev_key_status.setText(str(exc))
+            return
+        self.jev_key.clear()
+        self._refresh_jev_key_status()
+        self._refresh_jev_status()
+
+    def _clear_jev_key(self):
+        from synapse.jev import credentials
+        credentials.clear_session_key()
+        self.jev_key.clear()
+        self._refresh_jev_key_status()
+        self._refresh_jev_status()
+
+    def _refresh_jev_key_status(self):
+        from synapse.jev import credentials
+        source = credentials.key_source()
+        self.jev_key_clear.setEnabled(source == "session")
+        self.jev_key.setPlaceholderText(
+            "Paste a replacement TypeSafe API key" if source != "none"
+            else "Paste your TypeSafe API key here")
+        self.jev_key_status.setText({
+            "session": "Session key saved. Validity has not been checked.",
+            "environment": "Using configured TYPESAFE_API_KEY. Validity has not been checked.",
+            "none": "No TypeSafe key configured. Paste it above, then choose Save session key.",
+        }[source])
+
     def _refresh_jev_status(self):
         from synapse import model_access as access
         from synapse.jev import adapter
@@ -350,7 +433,7 @@ class ConnectionDialog(QtWidgets.QDialog):
             return
         key = adapter.resolve_key()
         if not key:
-            self.jev_status.setText("Unavailable: configure TYPESAFE_API_KEY. Your chosen model is unchanged.")
+            self.jev_status.setText("Add a TypeSafe API key above to use JEV. Your chosen model is unchanged.")
             return
         try:
             access.require_access(adapter.connection_spec(), key=key)
@@ -387,6 +470,7 @@ class ConnectionDialog(QtWidgets.QDialog):
         self._candidate_bound = None
         self._keys.clear()
         self.key.clear()
+        self.jev_key.clear()
         self._request_inputs = None
         self._executor.shutdown(wait=False, cancel_futures=True)
         super().done(result)
