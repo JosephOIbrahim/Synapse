@@ -311,3 +311,74 @@ def test_scout_apex_route_does_not_consult_local_library(tmp_path, monkeypatch):
     monkeypatch.setattr(library, "query_library", lambda *args, **kwargs: pytest.fail(
         "APEX must remain on its explicitly federated route"))
     assert scout.synapse_scout("callback", domain="apex") == {"domain": "apex"}
+
+
+def _subject_row(identity, title, heading, body, *, domain="docs"):
+    row = list(_row(identity, f"{title}\n{heading}\n{body}", domain=domain))
+    row[2] = title
+    metadata = json.loads(row[4])
+    metadata["heading"] = heading
+    row[4] = json.dumps(metadata, sort_keys=True)
+    return tuple(row)
+
+
+@pytest.mark.parametrize("query,domain,target,other", [
+    ("pcfind point cloud radius", "vex",
+     ("pcfind", "pcfind", "pcfind",
+      "Returns a list of closest points. int[] pcfind(geometry, Pchannel, P, radius, maxpoints). "
+      "Only maxpoints closest points within the given radius are returned. " + "Arguments are described below. " * 15),
+     ("index", "VEX Functions", "Point clouds", "[pcfind] point cloud radius")),
+    ("Bake GSplats gaussian splats point attributes", "docs",
+     ("bake", "Bake GSplats", "Bake GSplats",
+      "Converts Gaussian splats to Houdini point attributes. Convert PLY data before transforming it. "
+      "The orientation, opacity and spherical harmonic data have distinct conversions. " * 12),
+     ("delight", "Labs Delight GSplats", "Parameters", "bake GSplats gaussian splats point attributes")),
+    ("hou.Node createNode", "docs",
+     ("create", "hou.Node", "`createNode(self, node_type_name, node_name=None)`",
+      "Create a new node of type node_type_name as a child of this node. "
+      "An existing name receives a unique numeric suffix. " * 12),
+     ("connector", "hou.Node", "outputConnectors(self)", "hou.Node createNode")),
+])
+def test_named_subject_and_method_beats_navigation_or_incidental_mentions(
+        tmp_path, query, domain, target, other):
+    _publish(tmp_path / "external", [
+        _subject_row(*target, domain=domain), _subject_row(*other, domain=domain)])
+    result = library.query_library(query, domain=domain, k=1)
+    assert [entry["id"] for entry in result["entries"]] == [f"sidefx_library:{target[0]}"]
+
+
+def test_precision_candidates_keep_partial_match_recall(tmp_path):
+    _publish(tmp_path / "external", [
+        _subject_row("complete", "Quasar sampling", "Setup", "quasar sampling radius"),
+        _subject_row("partial", "Quasar sampling", "Example", "quasar sampling nearby positions"),
+        _subject_row("other", "Radius", "Description", "radius")])
+    result = library.query_library("quasar sampling radius", k=3)
+    assert {entry["id"] for entry in result["entries"]} == {
+        "sidefx_library:complete", "sidefx_library:partial", "sidefx_library:other"}
+
+
+def test_generic_trailing_title_does_not_override_full_context(tmp_path):
+    _publish(tmp_path / "external", [
+        _subject_row("licenses", "Studio Licensing", "Server installation",
+                     "license server installation " * 4),
+        _subject_row("queue", "Installation", "Client", "installation server compute queue")])
+    result = library.query_library("license server installation", k=1)
+    assert result["entries"][0]["id"] == "sidefx_library:licenses"
+
+
+def test_named_module_index_does_not_outrank_substantive_topic(tmp_path):
+    _publish(tmp_path / "external", [
+        _subject_row("index", "pdg", "Reference", "pdg work item dependency scheduler"),
+        _subject_row("scheduling", "Scheduling tasks", "Dependencies",
+                     "A pdg scheduler runs each work item after its dependency completes. " * 8)])
+    result = library.query_library("PDG work item dependency scheduler", k=1)
+    assert result["entries"][0]["id"] == "sidefx_library:scheduling"
+
+
+def test_natural_language_preamble_keeps_named_subject_precision(tmp_path):
+    _publish(tmp_path / "external", [
+        _subject_row("sample", "starfind", "starfind",
+                     "Returns neighboring elements within the radius. starfind(target, radius). " * 8),
+        _subject_row("directory", "Functions", "Lookup", "how do I use starfind point cloud radius")])
+    result = library.query_library("How do I use starfind point cloud radius?", k=1)
+    assert result["entries"][0]["id"] == "sidefx_library:sample"

@@ -946,7 +946,7 @@ def synapse_scout(
     max_chars: int = DEFAULT_MAX_CHARS,
     where: Optional[dict] = None,
 ) -> dict:
-    """Scout the H21 docs RAG and the VEX corpus for grounding material.
+    """Scout configured Houdini documentation/library and VEX sources.
 
     Args:
         query:      natural-language need OR an API/VEX signature to verify.
@@ -1157,15 +1157,19 @@ def _hit_provenance(entry: dict) -> dict:
 SYNAPSE_SCOUT_SCHEMA: dict = {
     "name": "synapse_scout",
     "description": (
-        "Scout the Houdini 21.0.671 documentation RAG and the VEX corpus for real "
+        "Scout configured Houdini documentation/library and VEX sources for real "
         "reference material. CALL THIS BEFORE writing any unfamiliar hou.* / pdg.* / "
         "pxr.* call or VEX function — it returns grounding snippets AND, for each API "
-        "symbol in your query, whether it exists in the live H21.0.671 runtime "
-        "(checked against an introspected dir() symbol table, the membership authority). "
-        "A symbol with exists_in_runtime=false does NOT exist in H21.0.671 and must not "
-        "be used; exists_in_runtime=true is real even if undocumented. The 'documented' "
+        "symbol in your query, its membership in the introspected dir() symbol table. "
+        "When the running Houdini build is known, that table must match the current build. "
+        "In a headless process without a known build, verdicts apply only to the table's "
+        "recorded build (see result.table), not an unobserved live Houdini session. "
+        "A symbol with exists_in_runtime=false is absent from that verified table and must not "
+        "be used; exists_in_runtime=true is a member even if undocumented. The 'documented' "
         "flag is a secondary hint (does the corpus mention it). "
         "Prefer the returned snippets over your own recall of the Houdini API. "
+        "Installed and web documentation carry separate source/build provenance and never "
+        "grant runtime API validity; source_status reports configured library coverage or failure. "
         "If exists_in_runtime is null the gate is DOWN (missing/corrupt/build-"
         "mismatched symbol table -- result.table.reason and each symbol's "
         "unverified_reason say why, gate_armed=false): treat the symbol as "
