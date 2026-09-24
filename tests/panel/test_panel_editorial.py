@@ -400,6 +400,7 @@ def test_welcome_helper_stays_single_line_and_recovers_after_narrow_resize(make_
     panel = make_panel(scale, width, 1200)
     invite = panel._chat._empty_state
     sentence = "Describe a network, inspect your scene, or work through a problem."
+    assert invite.body.text() == sentence, "The complete helper must fit the actual normal dock viewport"
     for available_width in (width, 260, width):
         invite.fit_content(available_width, 600)
         body = invite.body
