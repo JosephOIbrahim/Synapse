@@ -207,14 +207,18 @@ QPushButton#DsVerb[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
    -- it is the Houdini tab chrome sample, not a status colour, and no status
    yellow anywhere else is touched by this leg. */
 
-/* Quiet, centered local navigation uses Ready's caption family and weight. */
-QPushButton#DsFooterLink {{
-    background: transparent; border: none; padding: 2px 0;
-    min-height: {t.SPACE_LG}px;
+/* Quiet inset controls: geometry owns the complete outer height. */
+QWidget#DsInsetFooter, QScrollArea#DsInsetFooterScroll {{ background: {t.PANEL}; border: none; }}
+QPushButton#DsFooterLink, QLabel#DsFooterStatus {{
+    background: {t.GROUND}; border: 1px solid {t.BORDER};
+    border-radius: {s(t.RADIUS_CARD)}px; padding: 0 {s(t.SPACE_SM)}px;
+    min-height: 0px;
     color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_SMALL)}px;
     font-weight: {t.WEIGHT_REGULAR}; text-align: center;
 }}
-QPushButton#DsFooterLink:hover {{ color: {t.TEXT_ACCENT}; }}
+QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
+QPushButton#DsFooterLink:pressed {{ background: {t.FIELD_INSET}; }}
+QPushButton#DsFooterLink:focus {{ border: 1px solid {t.SIGNAL}; color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsFooterLink:disabled {{ color: {t.TEXT_DISABLED}; }}
 
 /* ---- two-axis palette chips (⌘K · DO × WHERE) ---------------- */
@@ -1234,8 +1238,9 @@ QWidget#DsConversationInvitation {{ background: {t.PANEL}; }}
 QWidget#DsConversationInvitation QLabel {{ background: {t.PANEL}; }}
 QWidget#DsConversationInvitation QLabel[role="body"] {{ color: {t.TEXT_SECONDARY}; }}
 QPushButton#DsComposerAttach {{
-    background: transparent; color: {t.TEXT_SECONDARY}; border: none;
-    border-radius: {t.RADIUS_SM}px; padding: {t.SPACE_XS}px {t.SPACE_SM}px;
+    background: {t.FIELD_INSET}; color: {t.TEXT_SECONDARY}; border: 1px solid {t.BORDER};
+    border-radius: {t.scaled(t.RADIUS_CARD, scale)}px;
+    padding: {t.SPACE_XS}px {t.SPACE_SM}px;
 }}
 QPushButton#DsComposerAttach:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}
 QPushButton#DsComposerAttach:focus {{ border: 1px solid {t.SIGNAL}; }}

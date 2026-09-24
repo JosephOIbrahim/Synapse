@@ -307,9 +307,10 @@ def test_narrow_enlarged_panel_reflows_without_overlap_and_restores_draft_height
                           (panel._input, panel._khint)):
         assert not box(first, panel).intersects(box(second, panel))
     for widget in (panel._author_lbl, panel._connect_btn, panel._overflow_btn,
-                   panel._input, panel._khint, panel._connection_status):
+                   panel._input, panel._khint, panel._inset_footer):
         assert panel.rect().contains(box(widget, panel)), widget.objectName()
     assert panel._khint.height() >= panel._khint.heightForWidth(panel._khint.width())
+    expose_footer(panel, panel._connection_status)
     assert panel._connection_status.width() >= panel._connection_status.sizeHint().width()
     panel.resize(900, 1100)
     settle()
@@ -352,11 +353,21 @@ def test_narrow_empty_invitation_and_busy_actions_never_paint_clipped(make_panel
         assert invite.rect().contains(invite.body.geometry())
     panel._set_busy(True)
     settle()
-    for widget in (panel._stop_btn, panel._input, panel._khint, panel._connection_status):
+    for widget in (panel._stop_btn, panel._input, panel._khint, panel._inset_footer):
         assert panel.rect().contains(box(widget, panel))
     assert not box(panel._input, panel).intersects(box(panel._khint, panel))
+    expose_footer(panel, panel._connection_status)
     if invite.isVisible():
         assert invite.title.height() >= invite.title.heightForWidth(invite.title.width())
+
+
+def expose_footer(panel, widget):
+    """A cramped dock scrolls its footer, retaining full controls and labels."""
+    panel._inset_footer.ensureWidgetVisible(widget, 0, 0)
+    settle()
+    bounds = box(widget, panel)
+    assert panel.rect().contains(bounds)
+    assert box(panel._inset_footer.viewport(), panel).contains(bounds)
 
 
 def text_box(widget, root):
@@ -376,16 +387,23 @@ def text_box(widget, root):
 
 @pytest.mark.parametrize("scale,width", [(1.0, 340), (1.0, 640), (1.25, 340),
                                         (1.25, 640), (2.25, 340), (2.25, 900)])
-def test_composer_footer_text_anchors_to_both_field_edges(make_panel, scale, width):
+def test_composer_footer_insets_span_both_field_edges(make_panel, scale, width):
     panel = make_panel(scale, width, 1100)
     panel._input.set_user_height(220)
     settle()
     field = box(panel._input, panel)
     links = [button for button in (panel._commands_btn, panel._render_btn,
                                   panel._recipes_btn, panel._events_btn) if button.isVisible()]
+    assert len(links) == 4, "All actions remain available when the footer wraps"
+    blocks = [box(button, panel) for button in links]
     painted = [text_box(button, panel) for button in links]
-    assert abs(painted[0].left() - field.left()) <= 2
-    assert abs(painted[-1].right() - field.right()) <= 2
+    assert abs(min(bounds.left() for bounds in blocks) - field.left()) <= 2
+    viewport = box(panel._inset_footer.viewport(), panel)
+    assert abs(max(bounds.right() for bounds in blocks) - viewport.right()) <= 2
+    assert field.left() == viewport.left() and viewport.right() <= field.right()
+    assert len({bounds.width() for bounds in blocks}) == 1
+    assert all(button.height() == round(38 * .95 * scale) for button in links)
+    assert all(block.contains(text) for block, text in zip(blocks, painted))
     newline = getattr(panel, "_newline_hint", None)
     assert newline is not None, "The two instructions need independent left/right anchors"
     left, right_hint = text_box(panel._khint, panel), text_box(newline, panel)
@@ -395,7 +413,9 @@ def test_composer_footer_text_anchors_to_both_field_edges(make_panel, scale, wid
     assert not left.intersects(right_hint)
     assert all(bounds.top() > max(left.bottom(), right_hint.bottom()) for bounds in painted)
     assert all(not a.intersects(b) for i, a in enumerate(painted) for b in painted[i + 1:])
-    assert all(panel.rect().contains(bounds) for bounds in [left, right_hint] + painted)
+    assert all(panel.rect().contains(bounds) for bounds in [left, right_hint])
+    for button in links:
+        expose_footer(panel, button)
 
 
 @pytest.mark.parametrize("scale,width", [(1.0, 340), (1.25, 480), (2.25, 720)])
@@ -412,7 +432,7 @@ def test_stop_uses_requested_compact_height_without_changing_other_targets(make_
 
 @pytest.mark.parametrize("scale,width", [(1.0, 340), (1.0, 640), (1.25, 340),
                                         (1.25, 640), (2.25, 340), (2.25, 900)])
-def test_connection_row_text_uses_the_prompt_edges_and_retains_evidence(make_panel, monkeypatch, scale, width):
+def test_connection_insets_align_to_actions_and_retain_evidence(make_panel, monkeypatch, scale, width):
     from synapse.panel.synapse_panel import SynapsePanel
     openings = []
     monkeypatch.setattr(SynapsePanel, "_open_connections", lambda self: openings.append(True))
@@ -438,10 +458,15 @@ def test_connection_row_text_uses_the_prompt_edges_and_retains_evidence(make_pan
     assert openings == [True]
     field = box(panel._input, panel)
     first, last = text_box(location, panel), text_box(panel._connection_status, panel)
-    assert abs(first.left() - field.left()) <= 2
-    assert abs(last.right() - field.right()) <= 2
+    first_block, last_block = box(location, panel), box(panel._connection_status, panel)
+    commands, updates = box(panel._commands_btn, panel), box(panel._events_btn, panel)
+    assert first_block.width() == commands.width() == last_block.width() == updates.width()
+    assert first_block.center().x() == commands.center().x()
+    assert last_block.center().x() == updates.center().x()
+    assert first_block.contains(first) and last_block.contains(last)
     assert not first.intersects(last)
-    assert all(panel.rect().contains(bounds) for bounds in (first, last))
+    expose_footer(panel, location)
+    expose_footer(panel, panel._connection_status)
     assert first.top() > field.bottom() and last.top() > field.bottom()
     # A failed next selection clears stale locality, including accessibility.
     monkeypatch.setattr(panel, "_prepare_connection", lambda: (_ for _ in ()).throw(ValueError("unavailable")))
@@ -522,3 +547,98 @@ def test_first_run_leaves_reading_room_and_retains_artist_height(make_panel):
     settle()
     assert panel._input.height() == 240
     assert panel._input.toPlainText() == "Keep the lighting draft"
+
+
+@pytest.mark.parametrize("scale,width", [(1.0, 340), (1.0, 640), (2.25, 340), (2.25, 1100)])
+def test_inset_footer_reflows_live_labels_without_resizing(make_panel, scale, width):
+    panel = make_panel(scale, width, 1500)
+    original_width = panel.width()
+    for text in ("Updates (125)", "Updates · quiet", "Updates"):
+        panel._events_btn.setText(text)
+        panel._connection_location.setText("Cloud relay")
+        settle()
+        controls = panel._inset_footer.controls
+        boxes = [box(widget, panel) for widget in controls]
+        assert panel.width() == original_width
+        assert len({bounds.width() for bounds in boxes}) == 1
+        assert all(widget.isVisible() for widget in controls)
+        assert all(bounds.contains(text_box(widget, panel)) for widget, bounds in zip(controls, boxes))
+        assert all(panel.rect().contains(bounds) for bounds in boxes)
+        assert all(not a.intersects(b) for i, a in enumerate(boxes) for b in boxes[i + 1:])
+        assert boxes[4].center().x() == boxes[0].center().x()
+        assert boxes[5].center().x() == boxes[3].center().x()
+
+
+def test_install_insets_preserves_open_panel_objects_and_connections(make_panel, monkeypatch):
+    from synapse.panel.inset_footer import install_footer
+    from synapse.panel.synapse_panel import SynapsePanel
+    from synapse.panel.designsystem import components as c
+    calls = []
+    for method in ("_open_palette", "_open_render_workspace", "_open_saved_recipes",
+                   "_open_notifications", "_open_connections"):
+        monkeypatch.setattr(SynapsePanel, method, lambda self, checked=False, name=method: calls.append(name))
+    panel = make_panel(1.25, 720, 1100)
+    panel._input.setPlainText("Preserve this draft")
+    panel._chat.append_user_message("Preserve this conversation")
+    panel._worker = SimpleNamespace(abort=lambda: None)
+    panel._set_busy(True)
+    controls = panel._inset_footer.controls
+    retained = (panel._input, panel._input.document(), panel._chat, panel._worker,
+                panel._messages, panel._task_connection)
+    # Recreate the old two-container ownership shape; migration must retain
+    # controls and their existing connections, including across a second call.
+    old_footer = panel._inset_footer
+    column = panel._composer_hints.parentWidget().layout()
+    column.removeWidget(old_footer)
+    for control in controls:
+        control.setParent(panel._composer_hints.parentWidget())
+    old_footer.deleteLater()
+    del panel._inset_footer
+    top = QtWidgets.QHBoxLayout()
+    for control in controls[:4]:
+        top.addWidget(control)
+    column.addLayout(top)
+    panel._connection_row = c.EdgeRow(*controls[4:], scale=panel._chrome_scale)
+    column.addWidget(panel._connection_row)
+    first = install_footer(panel)
+    assert install_footer(panel) is first
+    settle()
+    assert retained == (panel._input, panel._input.document(), panel._chat, panel._worker,
+                        panel._messages, panel._task_connection)
+    assert panel._input.toPlainText() == "Preserve this draft"
+    assert panel._stop_btn.isVisible()
+    panel._set_busy(False)
+    for button in controls:
+        if isinstance(button, QtWidgets.QPushButton):
+            button.click()
+    assert calls == ["_open_palette", "_open_render_workspace", "_open_saved_recipes",
+                     "_open_notifications", "_open_connections"]
+    assert not box(panel._attach_btn, panel).intersects(box(panel._send_btn, panel))
+
+
+def test_short_footer_scrolls_keyboard_focus_and_recovers_full_grid(make_panel):
+    panel = make_panel(2.25, 340, 900)
+    panel._input.setPlainText("Keep this draft readable")
+    for label in ("Updates (12345678901234567890)", "Updates · quiet", "Updates"):
+        panel._events_btn.setText(label)
+        settle()
+        footer = panel._inset_footer
+        assert panel.rect().contains(box(footer, panel))
+        assert panel._input.viewport().height() >= panel._input.fontMetrics().height()
+        # Tabs move focus through every real action; QScrollArea brings the
+        # focused button into view automatically without a custom click path.
+        panel._commands_btn.setFocus()
+        settle()
+        for button in (panel._commands_btn, panel._render_btn, panel._recipes_btn,
+                       panel._events_btn, panel._connection_status):
+            for _ in range(20):
+                if _APP.focusWidget() is button:
+                    break
+                QtTest.QTest.keyClick(_APP.focusWidget(), QtCore.Qt.Key_Tab)
+                settle()
+            assert _APP.focusWidget() is button
+            assert box(footer.viewport(), panel).contains(box(button, panel))
+    panel.resize(1100, 1500)
+    settle()
+    assert panel._inset_footer.verticalScrollBar().maximum() == 0
+    assert panel._input.toPlainText() == "Keep this draft readable"

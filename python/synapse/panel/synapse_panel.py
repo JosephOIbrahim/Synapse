@@ -190,108 +190,6 @@ _QUICK_ACTIONS = [
 ]
 
 
-class _ShortcutLayout(QtWidgets.QLayout):
-    """Keep natural-width links on rows spanning the composer's two edges."""
-
-    def __init__(self, horizontal_gap, vertical_gap):
-        super().__init__()
-        self._items = []
-        self._horizontal_gap = horizontal_gap
-        self._vertical_gap = vertical_gap
-        rhythm.apply_layout_margins(self, "band")
-
-    def addItem(self, item):
-        self._items.append(item)
-        self.invalidate()
-
-    def count(self):
-        return len(self._items)
-
-    def itemAt(self, index):
-        return self._items[index] if 0 <= index < len(self._items) else None
-
-    def takeAt(self, index):
-        if 0 <= index < len(self._items):
-            item = self._items.pop(index)
-            self.invalidate()
-            return item
-        return None
-
-    def expandingDirections(self):
-        return Qt.Orientation(0)
-
-    def hasHeightForWidth(self):
-        return True
-
-    def heightForWidth(self, width):
-        return self._arrange(QtCore.QRect(0, 0, width, 0), place=False)
-
-    def minimumSize(self):
-        size = QtCore.QSize()
-        for item in self._items:
-            if not item.isEmpty():
-                size = size.expandedTo(item.minimumSize())
-        return size
-
-    def sizeHint(self):
-        sizes = [item.sizeHint() for item in self._items if not item.isEmpty()]
-        return QtCore.QSize(
-            sum(size.width() for size in sizes) + self._horizontal_gap * max(0, len(sizes) - 1),
-            max((size.height() for size in sizes), default=0))
-
-    def setGeometry(self, rect):
-        super().setGeometry(rect)
-        self._arrange(rect, place=True)
-
-    def _row_gap(self, rect):
-        """The gap this width can afford - the declared one, or less.
-
-        The links keep their natural width (that is the class's whole job);
-        the gap is the only give. It never goes below the ladder's XS rung,
-        the same 4 the composer column stacks its own children with.
-        """
-        gap = self._horizontal_gap
-        items = [item for item in self._items if not item.isEmpty()]
-        slack = len(items) - 1
-        if slack < 1:
-            return gap
-        room = rect.width() - sum(item.sizeHint().width() for item in items)
-        return min(gap, max(t.SPACE_XS, room // slack))
-
-    def _arrange(self, rect, place):
-        gap = self._row_gap(rect)
-        rows, row, row_width = [], [], 0
-        for item in self._items:
-            if item.isEmpty():
-                continue
-            size = item.sizeHint()
-            step = gap if row else 0
-            if row and row_width + step + size.width() > rect.width():
-                rows.append((row, row_width))
-                row, row_width, step = [], 0, 0
-            row.append((item, size))
-            row_width += step + size.width()
-        if row:
-            rows.append((row, row_width))
-        heights = [max(size.height() for _, size in row) for row, _ in rows]
-        height = sum(heights) + self._vertical_gap * max(0, len(rows) - 1)
-        if place:
-            y = rect.y() + max(0, (rect.height() - height) // 2)
-            for row_index, ((row, width), row_height) in enumerate(zip(rows, heights)):
-                free = max(0, rect.width() - sum(size.width() for _, size in row))
-                used = 0
-                for index, (item, size) in enumerate(row):
-                    # Shared row geometry owns both anchors. Distribute only
-                    # the available air; do not widen a native button's text box.
-                    offset = round(free * index / (len(row) - 1)) if len(row) > 1 else (free if row_index else 0)
-                    x = rect.x() + used + offset
-                    item.setGeometry(QtCore.QRect(
-                        QtCore.QPoint(x, y + (row_height - size.height()) // 2), size))
-                    used += size.width()
-                y += row_height + self._vertical_gap
-        return height
-
-
 class _GrowingInput(QtWidgets.QTextEdit):
     """Auto-growing chat input. Enter sends; Shift+Enter newlines."""
 
@@ -339,10 +237,9 @@ class _GrowingInput(QtWidgets.QTextEdit):
 
     def _autosize(self):
         content = int(self.document().size().height()) + 18
-        stop = getattr(self, "_stop_widget", None)
-        # The extra floor belongs to the active stack. Preserve the artist's
-        # existing idle divider position when only Send is present.
-        floor = self._readable_floor() if stop is not None and not stop.isHidden() else self._floor
+        # Preserve at least one readable line above the action band, even
+        # when the taller inset footer exhausts a short dock's space.
+        floor = self._readable_floor()
         h = max(floor, self._user_h, min(self._max_h, content))
         if self._cap is not None:
             h = max(floor, min(h, self._cap))
@@ -1912,6 +1809,9 @@ class SynapsePanel(QtWidgets.QWidget):
         before = inp._cap
         composer = inp.parentWidget()
         composer.setMinimumHeight(0)
+        footer = getattr(self, "_inset_footer", None)
+        if footer is not None:
+            footer.cap_height(None)
         if inp._cap is not None:
             inp.cap_height(None)
         _relayout()
@@ -1926,6 +1826,18 @@ class SynapsePanel(QtWidgets.QWidget):
         _relayout()
         bottom = composer.mapTo(self, QtCore.QPoint(0, composer.height())).y()
         room = self.height() - bottom
+        if footer is not None:
+            # Keep a readable conversation and composer when a large host
+            # font turns the footer into six rows. Only that footer scrolls.
+            chat = getattr(self, "_converse_stack", None)
+            reserve = t.scaled(t.SPACE_48, self._chrome_scale)
+            shortage = max(0, reserve - (chat.height() if chat is not None else reserve))
+            if room < shortage:
+                footer.cap_height(footer.height() + room - shortage)
+                composer.setMinimumHeight(composer_layout.totalHeightForWidth(composer.width()))
+                _relayout()
+                bottom = composer.mapTo(self, QtCore.QPoint(0, composer.height())).y()
+                room = self.height() - bottom
         if room < 0:
             inp.cap_height(inp.height() + room)
             composer.setMinimumHeight(composer_layout.totalHeightForWidth(composer.width()))
@@ -1987,8 +1899,6 @@ class SynapsePanel(QtWidgets.QWidget):
         self._compact_chrome = compact
         if hasattr(self, "_khint"):
             self._composer_hints.fit_width(available)
-            self._recipes_btn.setVisible(not compact)
-            self._events_btn.setVisible(not compact)
             self._connection_row.fit_width(available)
 
     def showEvent(self, e):
@@ -2616,9 +2526,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._events_btn = c.Button("Updates", variant="ghost")
         self._events_btn.setToolTip("Local work and connection updates")
         self._events_btn.clicked.connect(self._open_notifications)
-        col.addLayout(self._build_shortcut_footer())
         self._connection_location = c.label("Unverified", role="body", scale=self._chrome_scale)
-        self._connection_location.setObjectName("DsComposerHint")
         self._connection_location.setTextFormat(Qt.TextFormat.PlainText)
         self._connection_location.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._connection_location.setWordWrap(True)
@@ -2627,9 +2535,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._connection_status.setObjectName("DsFooterLink")
         c.apply_font_role(self._connection_status, "body", self._chrome_scale)
         self._connection_status.clicked.connect(self._open_connections)
-        self._connection_row = c.EdgeRow(self._connection_location, self._connection_status,
-                                         scale=self._chrome_scale)
-        col.addWidget(self._connection_row)
+        from synapse.panel.inset_footer import install_footer
+        install_footer(self, col)
         # CRIT.md 2026-09-15 #18 (P8 · dead weight): the "Session · Revoke"
         # ghost is deleted. It was built hidden and duplicated the overflow's
         # "Revoke session model permissions" (:2702), which owns the action.
@@ -2644,54 +2551,6 @@ class SynapsePanel(QtWidgets.QWidget):
         self._location_timer.start()
         QTimer.singleShot(0, self._refresh_engine_selector)
         return w
-
-    def _build_shortcut_footer(self):
-        """Span the field edges with local links in the existing label type."""
-        # Four links in a line are a row, so they take the grid's row-breath
-        # rung (SPACE_12), not SPACE_LG (24) - a gap no rhythm role declares
-        # (rhythm.ROLE_GAPS tops out at SPACE_MD) and 6x the `stack` gap of the
-        # composer column they sit in. #98 renamed Recipes->Saved networks and
-        # Events->Updates, taking the strip to 229px + 3x24 = 301 in a 280px
-        # host (GUTTER sides at the 340 pref dock width): _ShortcutLayout wrapped
-        # the fourth link onto a second row and the composer grew 36px upward,
-        # paid for out of the conversation's share of the pane (0.5355 -> 0.4882
-        # at 340x760, hython offscreen). 12 clears that (229 + 36 = 265 in 280),
-        # but the strip is not always 229 wide: `_refresh_events` owns the
-        # fourth label after boot, and the states it writes measure 58/39/87/61
-        # (`Updates (1)`) and 58/39/87/82 (`Updates · quiet`) - 245 and 266,
-        # needing 281 and 290 at a fixed 12. A fixed rung does not hold the
-        # strip; _ShortcutLayout._row_gap gives the gap back only under that
-        # pressure (never below SPACE_XS), so every state stays one row.
-        footer = _ShortcutLayout(
-            t.scaled(t.SPACE_12, self._chrome_scale),
-            t.scaled(t.SPACE_XS, self._chrome_scale))
-        for button in (self._commands_btn, self._render_btn, self._recipes_btn, self._events_btn):
-            button.setObjectName("DsFooterLink")
-            # PNL-L4 (ruling R2-A1): these four read as WORDS (Commands,
-            # Render, Recipes, Events), so they take the sans LABEL role with
-            # the pills and the verbs. `caption` is the metadata voice; a
-            # button is not metadata, and on the new 12px caption its wider
-            # LABEL_SM tracking pushed this strip onto the second row the
-            # comment above was written to prevent.
-            c.apply_font_role(button, "label", scale=self._chrome_scale)
-            # ...with its tracking taken back OFF, and the number is why.
-            # Widest live state, measured on this branch at 340x760 offscreen:
-            # Commands 67 + Render 45 + Saved networks 99 + Updates (1) 74 =
-            # 285 against a 280px strip. That is over budget before a single
-            # gap is drawn, so _row_gap cannot rescue it and the strip takes a
-            # second row - the exact 36px the comment above was written to
-            # prevent. The label role's 0.5px is display air; on a strip that
-            # is already width-bound it buys nothing and costs a row (39
-            # tracked gaps = the 20px that puts 285 over the line).
-            _f = button.font()
-            try:
-                _f.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 0.0)
-            except Exception:
-                pass
-            button.setFont(_f)
-            button.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
-            footer.addWidget(button)
-        return footer
 
     def _open_doctor(self):
         from synapse.panel.doctor_dialog import DoctorDialog

@@ -779,6 +779,9 @@ RADIUS_PILL = 14
 # ROW_MIN_H is the list-row min height / 44×44 glyph cell. The three-band recall
 # card is greenfield (a held spawn) and will consume these; pinned by
 # tests/test_bp2_paneldesign_density.py so they are contract, not dead code.
+FOOTER_HEIGHT = 38 * 0.95  # approved 5% reduction, outer height before host scale
+FOOTER_GAP = 9
+
 RADIUS_CARD  = 10
 RADIUS_ROUND = 999
 ROW_MIN_H    = 44

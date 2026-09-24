@@ -206,14 +206,20 @@ def _outside_ruled_regions(text):
 # so there is no longer a local addition here to approve. The guard does NOT
 # weaken: the sheet must still equal baseline-plus-exactly-these-additions, so
 # re-adding either row now reddens as unapproved drift.
+# User-approved quiet insets (2026-09-23) replace the old transparent links.
+# Exact local rules stay pinned; unrelated upstream rules remain unchanged.
 _APPROVED_LOCAL_RULES = (
-    '''QPushButton#DsFooterLink {{
-    background: transparent; border: none; padding: 2px 0;
-    min-height: {t.SPACE_LG}px;
+    'QWidget#DsInsetFooter, QScrollArea#DsInsetFooterScroll {{ background: {t.PANEL}; border: none; }}',
+    '''QPushButton#DsFooterLink, QLabel#DsFooterStatus {{
+    background: {t.GROUND}; border: 1px solid {t.BORDER};
+    border-radius: {s(t.RADIUS_CARD)}px; padding: 0 {s(t.SPACE_SM)}px;
+    min-height: 0px;
     color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_SMALL)}px;
     font-weight: {t.WEIGHT_REGULAR}; text-align: center;
 }}''',
-    'QPushButton#DsFooterLink:hover {{ color: {t.TEXT_ACCENT}; }}',
+    'QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}',
+    'QPushButton#DsFooterLink:pressed {{ background: {t.FIELD_INSET}; }}',
+    'QPushButton#DsFooterLink:focus {{ border: 1px solid {t.SIGNAL}; color: {t.TEXT_PRIMARY}; }}',
     'QPushButton#DsFooterLink:disabled {{ color: {t.TEXT_DISABLED}; }}',
 )
 
@@ -518,9 +524,9 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
 # on a local rule, and a local selector broadened onto a shared target), now
 # aimed at the surviving DsFooterLink local rules.
 @pytest.mark.parametrize("before,after", [
-    ("QPushButton#DsFooterLink:hover {{ color: {t.TEXT_ACCENT}; }}",
-     "QPushButton#DsFooterLink:hover {{ color: {t.WARM}; }}"),
-    ("    min-height: {t.SPACE_LG}px;\n    color: {t.TEXT_SECONDARY};",
+    ("QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}",
+     "QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.WARM}; }}"),
+    ("    min-height: 0px;\n    color: {t.TEXT_SECONDARY};",
      "    min-height: {t.SPACE_SM}px;\n    color: {t.TEXT_SECONDARY};"),
     ("QPushButton#DsFooterLink:disabled", "QPushButton#DsVerb:disabled"),
     ("color: {t.MUSHROOM};", "color: {t.TEXT_PRIMARY};"),

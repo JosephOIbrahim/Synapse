@@ -310,8 +310,8 @@ def test_stop_revokes_connections_before_worker_abort():
 
 
 def _assert_panel_constructors(current_source, original_source):
-    # Compare class identities: the approved shortcut layout precedes the
-    # protected _GrowingInput constructor but cannot displace its source pin.
+    # The user-approved inset footer replaces _ShortcutLayout in a separate
+    # component. All remaining input/lifecycle constructor pins stay intact.
     def constructors(source):
         result = {}
         for cls in ast.parse(source).body:
@@ -324,20 +324,11 @@ def _assert_panel_constructors(current_source, original_source):
         return result
     current = constructors(current_source)
     original = _amend_constructors(constructors(original_source))
-    assert set(current) == set(original) | {"_ShortcutLayout"}
+    assert set(current) == set(original)
     # The annotation is allowed on BOTH sides (the base now carries it too).
     strip = lambda src: re.sub(r"  # rhythm-exempt:[^\n]*", "", src)
     assert {name: strip(current[name]) for name in original} == {
         name: strip(source) for name, source in original.items()}
-    # The new layout stores caller-owned gaps and gets its zero margins from
-    # the shared band role. No constructor/lifecycle carve-out for other code.
-    shortcut = '''def __init__(self, horizontal_gap, vertical_gap):
-        super().__init__()
-        self._items = []
-        self._horizontal_gap = horizontal_gap
-        self._vertical_gap = vertical_gap
-        rhythm.apply_layout_margins(self, "band")'''
-    assert ast.dump(ast.parse(current["_ShortcutLayout"])) == ast.dump(ast.parse(shortcut))
 
 
 def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
@@ -349,10 +340,10 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
     ("self.setAcceptRichText(False)", "self.setAcceptRichText(True)"),
     ('self.setProperty("softEditorial", True)', 'self.setProperty("softEditorial", False)'),
     ("self._attach_widget = None", "self._attach_widget = object()"),
-    ('rhythm.apply_layout_margins(self, "band")', 'rhythm.apply_layout_margins(self, "row")'),
+    ("self._height_settled = False", "self._height_settled = True"),
     ("class _GrowingInput", "class ExtraOwner:\n    def __init__(self):\n        pass\n\nclass _GrowingInput"),
 ])
-def test_constructor_pin_rejects_changed_input_new_owners_and_shortcut_drift(before, after):
+def test_constructor_pin_rejects_changed_input_and_new_owners(before, after):
     current = _source("synapse_panel.py")
     assert current.count(before) == 1
     with pytest.raises(AssertionError):
