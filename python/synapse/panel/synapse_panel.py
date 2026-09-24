@@ -402,16 +402,27 @@ class _GrowingInput(QtWidgets.QTextEdit):
 
 
 class _InputResizeGrip(QtWidgets.QWidget):
-    """A thin drag handle above the input — drag up/down to set its height."""
+    """Visible, full-width resize rail; dragging up gives the draft more room."""
 
-    def __init__(self, target, parent=None):
+    def __init__(self, target, parent=None, scale=1.0):
         super().__init__(parent)
         self._target = target
+        self._scale = scale
         self.setObjectName("DsGrip")
-        self.setFixedHeight(10)
+        c.apply_font_role(self, "body", scale)
+        # The text follows host scale; tight padding keeps this utility rail
+        # from spending the writing space it is meant to expose.
+        self.setFixedHeight(max(t.SPACE_LG, self.fontMetrics().height() + t.SPACE_XS))
         self.setCursor(Qt.CursorShape.SizeVerCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAccessibleName("Resize prompt area")
+        self.setAccessibleDescription("Drag up for more writing space, or down for less. When focused, use the Up and Down arrow keys.")
+        self.setToolTip("Drag up for more writing space · drag down for less\nKeyboard: focus here, then use Up / Down")
+        self._hovered = False
         self._drag_y = None
         self._start_h = 0
+        self._start_user_h = 0
+        self._drag_moved = False
 
     def _gy(self, event):
         try:
@@ -420,30 +431,104 @@ class _InputResizeGrip(QtWidgets.QWidget):
             return event.globalY()               # PySide2
 
     def mousePressEvent(self, event):
+        if event.button() != Qt.MouseButton.LeftButton:
+            event.ignore()
+            return
         self._drag_y = self._gy(event)
-        self._start_h = self._target._user_h
+        # A saved tall preference may currently be capped by the dock. Start
+        # at the visible edge so the first pixel of dragging never jumps.
+        self._start_h = self._target.height()
+        self._start_user_h = self._target._user_h
+        self._drag_moved = False
+        self.setFocus(Qt.FocusReason.MouseFocusReason)
+        self.update()
+        event.accept()
 
     def mouseMoveEvent(self, event):
         if self._drag_y is not None:
             delta = self._drag_y - self._gy(event)   # drag up → taller
-            self._target.set_user_height(self._start_h + delta)
+            if delta or self._drag_moved:
+                self._drag_moved = True
+                self._target.set_user_height(self._start_h + delta if delta else self._start_user_h)
+            event.accept()
 
-    def mouseReleaseEvent(self, _event):
-        if self._drag_y is not None and self._target._user_h != self._start_h:
+    def mouseReleaseEvent(self, event):
+        if event.button() != Qt.MouseButton.LeftButton or self._drag_y is None:
+            event.ignore()
+            return
+        if self._target._user_h != self._start_user_h:
             # L5-22: persist the artist's answer on release only — one
             # settings write per drag, never one per mouse-move.
             self._target.height_committed.emit(self._target._user_h)
         self._drag_y = None
+        self.update()
+        event.accept()
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Up, Qt.Key.Key_Down):
+            step = t.scaled(t.SPACE_MD, self._scale)
+            if event.key() == Qt.Key.Key_Down:
+                step = -step
+            previous = self._target._user_h
+            self._target.set_user_height(self._target.height() + step)
+            if self._target._user_h != previous:
+                self._target.height_committed.emit(self._target._user_h)
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+    def enterEvent(self, event):
+        self._hovered = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hovered = False
+        self.update()
+        super().leaveEvent(event)
+
+    def focusInEvent(self, event):
+        self.update()
+        super().focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        self.update()
+        super().focusOutEvent(event)
 
     def paintEvent(self, _event):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.Antialiasing)
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QtGui.QColor(t.BORDER_STRONG))
-        cx = self.width() / 2.0
-        cy = self.height() / 2.0
-        for dx in (-12, 0, 12):
-            p.drawEllipse(QtCore.QRectF(cx + dx - 1.5, cy - 1.5, 3, 3))
+        active = self._hovered or self.hasFocus() or self._drag_y is not None
+        ink = QtGui.QColor(t.WARM if active else t.TEXT_SECONDARY)
+        gap = t.scaled(t.SPACE_SM, self._scale)
+        glyph = t.scaled(t.GLYPH_SM, self._scale)
+        label = "Drag to resize"
+        label_width = self.fontMetrics().horizontalAdvance(label)
+        width = min(self.width() - 2, label_width + glyph + 3 * gap)
+        height = self.height() - t.SPACE_XS
+        box = QtCore.QRectF((self.width() - width) / 2.0,
+                            (self.height() - height) / 2.0, width, height)
+        cy = box.center().y()
+        p.setPen(QtGui.QPen(QtGui.QColor(t.BORDER_STRONG), 1))
+        p.drawLine(QtCore.QPointF(0, cy), QtCore.QPointF(max(0, box.left() - gap), cy))
+        p.drawLine(QtCore.QPointF(min(self.width(), box.right() + gap), cy), QtCore.QPointF(self.width(), cy))
+        p.setPen(QtGui.QPen(ink if active else QtGui.QColor(t.BORDER_STRONG), 1))
+        p.setBrush(QtGui.QColor(t.GROUND))
+        radius = t.scaled(t.SPACE_SM, self._scale)
+        p.drawRoundedRect(box, radius, radius)
+        p.setPen(QtGui.QPen(ink, max(1.0, self._scale)))
+        # Draw the vertical arrows instead of relying on a font's glyphs.
+        cx = box.left() + gap + glyph / 2.0
+        half = glyph * 0.3
+        tip = glyph * 0.2
+        p.drawLine(QtCore.QPointF(cx, cy - half), QtCore.QPointF(cx, cy + half))
+        for direction in (-1, 1):
+            y = cy + direction * half
+            p.drawLine(QtCore.QPointF(cx - tip, y - direction * tip), QtCore.QPointF(cx, y))
+            p.drawLine(QtCore.QPointF(cx + tip, y - direction * tip), QtCore.QPointF(cx, y))
+        text_box = box.adjusted(gap + glyph + gap, 0, -gap, 0)
+        p.drawText(text_box, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                   self.fontMetrics().elidedText(label, Qt.TextElideMode.ElideRight, max(0, int(text_box.width()))))
         p.end()
 
 
@@ -1821,31 +1906,26 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
     def _settle_composer_height(self):
-        """Open a compact composer once, retaining any saved artist height.
+        """Open with room to write, retaining any saved artist height.
 
-        The approved Soft Editorial layout gives the conversation most of the
-        pane. Subsequent resizes and profile changes retain the artist's choice.
+        A taller starting field makes its writing space immediately available.
+        Subsequent resizes and profile changes retain the artist's choice.
         """
         inp = getattr(self, "_input", None)
-        if inp is None or inp._height_settled:
+        if inp is None or inp._height_settled or not self.isVisible():
             return
-        lay = self.layout()
-        if lay is not None:
-            lay.activate()          # geometry must be real before we measure
-        chat = getattr(self, "_converse_stack", None)
-        chat_h = chat.height() if chat is not None else 0
-        if chat_h <= 0:
-            return                  # not laid out yet — the next event retries
-        shared = chat_h + inp.height()
         try:
             from synapse.panel import settings as _pset
             saved = _pset.load_settings().get("composer_height")
             if not (isinstance(saved, int) and not isinstance(saved, bool) and saved > 0):
-                saved = t.scaled(t.SPACE_48 * 3, self._chrome_scale)
-            target = _pset.composer_start_height(saved, shared, inp._floor, inp._max_h)
+                saved = t.scaled(t.SPACE_48 * 4, self._chrome_scale)
+            # Startup layouts can still be transiently small at first show.
+            # Retain the preference; _fit_composer_to_pane applies a temporary
+            # cap and restores that preference when the dock has room again.
+            target = _pset.composer_start_height(saved, 0, inp._floor, inp._max_h)
         except Exception:
             target = max(inp._floor, min(inp._max_h,
-                         t.scaled(t.SPACE_48 * 3, self._chrome_scale)))
+                         t.scaled(t.SPACE_48 * 4, self._chrome_scale)))
         inp.settle_height(target)
 
     def _fit_composer_to_pane(self):
@@ -2555,7 +2635,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._input.slash.connect(self._open_palette)   # "/" → command palette
         # L5-22: a released grip-drag is the artist's answer — remember it
         self._input.height_committed.connect(self._persist_composer_height)
-        col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
+        col.addWidget(_InputResizeGrip(self._input, scale=self._chrome_scale))
         # Actions sit inside one full-width field. Text reserves the complete
         # Send/Stop band; none of these controls scrolls with the draft.
         attach = c.Button("Attach", variant="ghost")

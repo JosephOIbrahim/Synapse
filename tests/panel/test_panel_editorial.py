@@ -83,6 +83,96 @@ def box(widget, root):
     return QtCore.QRect(widget.mapTo(root, QtCore.QPoint()), widget.size())
 
 
+@pytest.mark.parametrize("scale", [1.0, 2.25])
+def test_composer_opens_with_more_writing_space_and_restores_after_shrinking(make_panel, scale):
+    panel = make_panel(scale, 1200, 1800)
+    field = panel._input
+    # The old 144px starting height also got clamped against a transient
+    # startup layout. A roomy panel must expose the intended writing space.
+    assert field._user_h == round(192 * scale)
+    assert field.height() == field._user_h
+    field.setPlainText("Keep this draft while resizing")
+    panel.resize(380, 900)
+    settle()
+    panel.resize(1200, 1800)
+    settle()
+    assert field.height() == round(192 * scale)
+    assert field.toPlainText() == "Keep this draft while resizing"
+
+
+def test_composer_reopens_at_artist_height_instead_of_reapplying_default(make_panel):
+    from synapse.panel import settings
+    first = make_panel(1.0, 900, 1200)
+    first._input.set_user_height(310)
+    first._input.height_committed.emit(310)
+    assert settings.load_settings()["composer_height"] == 310
+    second = make_panel(1.0, 900, 1200)
+    assert second._input._user_h == second._input.height() == 310
+
+
+@pytest.fixture
+def isolated_composer_grip():
+    global _APP
+    _APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    from synapse.panel.synapse_panel import _GrowingInput, _InputResizeGrip
+    field = _GrowingInput()
+    grip = _InputResizeGrip(field)
+    grip.resize(400, grip.height())
+    commits = []
+    field.height_committed.connect(commits.append)
+    yield field, grip, commits
+    grip.deleteLater()
+    field.deleteLater()
+    settle()
+
+
+def grip_event(grip, event_type, y, button=QtCore.Qt.MouseButton.LeftButton):
+    event = QtGui.QMouseEvent(event_type, QtCore.QPointF(100, 10),
+                             QtCore.QPointF(100, y), button,
+                             QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.KeyboardModifier.NoModifier)
+    QtWidgets.QApplication.sendEvent(grip, event)
+
+
+def test_resize_grip_uses_visible_height_and_saves_once_on_release(isolated_composer_grip):
+    field, grip, commits = isolated_composer_grip
+    field.set_user_height(400)
+    field.cap_height(180)
+    grip_event(grip, QtCore.QEvent.Type.MouseButtonPress, 300)
+    grip_event(grip, QtCore.QEvent.Type.MouseMove, 310, QtCore.Qt.MouseButton.NoButton)
+    assert field._user_h == field.height() == 170  # down10, without a jump from400
+    grip_event(grip, QtCore.QEvent.Type.MouseMove, 320, QtCore.Qt.MouseButton.NoButton)
+    assert field.height() == 160
+    assert commits == []
+    grip_event(grip, QtCore.QEvent.Type.MouseButtonRelease, 320)
+    assert commits == [160]
+
+
+@pytest.mark.parametrize("movement", [[], [299, 300]])
+def test_grip_click_or_zero_net_drag_preserves_capped_preference(isolated_composer_grip, movement):
+    field, grip, commits = isolated_composer_grip
+    field.set_user_height(400)
+    field.cap_height(180)
+    grip_event(grip, QtCore.QEvent.Type.MouseButtonPress, 300)
+    for y in movement:
+        grip_event(grip, QtCore.QEvent.Type.MouseMove, y, QtCore.Qt.MouseButton.NoButton)
+    grip_event(grip, QtCore.QEvent.Type.MouseButtonRelease, 300)
+    assert field._user_h == 400 and field.height() == 180
+    assert commits == []
+
+
+def test_grip_ignores_secondary_drag_and_supports_keyboard_resize(isolated_composer_grip):
+    field, grip, commits = isolated_composer_grip
+    field.set_user_height(192)
+    grip_event(grip, QtCore.QEvent.Type.MouseButtonPress, 300, QtCore.Qt.MouseButton.RightButton)
+    grip_event(grip, QtCore.QEvent.Type.MouseMove, 250, QtCore.Qt.MouseButton.NoButton)
+    grip_event(grip, QtCore.QEvent.Type.MouseButtonRelease, 250, QtCore.Qt.MouseButton.RightButton)
+    assert field.height() == 192 and commits == []
+    QtTest.QTest.keyClick(grip, QtCore.Qt.Key.Key_Up)
+    assert field.height() == 208 and commits == [208]
+    QtTest.QTest.keyClick(grip, QtCore.Qt.Key.Key_Down)
+    assert field.height() == 192 and commits == [208, 192]
+
+
 @pytest.mark.parametrize("scale,width", [(1.0, 380), (1.25, 480), (2.25, 720)])
 def test_stop_stays_on_right_and_tells_the_truth_through_second_task(make_panel, scale, width):
     panel = make_panel(scale, width)
@@ -711,7 +801,14 @@ def test_inset_footer_reflows_live_labels_without_resizing(make_panel, scale, wi
         assert len({bounds.width() for bounds in boxes}) == 1
         assert all(widget.isVisible() for widget in controls)
         assert all(bounds.contains(text_box(widget, panel)) for widget, bounds in zip(controls, boxes))
-        assert all(panel.rect().contains(bounds) for bounds in boxes)
+        # With the taller first-run composer, enlarged text in a narrow
+        # dock can require the existing footer scroll. Every control must
+        # still be fully reachable, without reducing the artist's text size.
+        if panel._inset_footer._cap is not None:
+            for widget in controls:
+                expose_footer(panel, widget)
+        else:
+            assert all(panel.rect().contains(bounds) for bounds in boxes)
         assert all(not a.intersects(b) for i, a in enumerate(boxes) for b in boxes[i + 1:])
         if panel._inset_footer.grid._columns == 3:
             assert boxes[3].center().x() == boxes[0].center().x()
