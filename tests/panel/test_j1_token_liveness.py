@@ -1,6 +1,6 @@
-"""Model identity and truthful state, amended by Soft Editorial 2026-09-23.
+"""Model identity and truthful state, amended by the coral match 2026-09-24.
 
-The approved blue-green model selector now keeps its identity color through
+The approved coral model selector now keeps the SYNAPSE ring color through
 live/working/off. The status sentence and tooltip carry actual state. The
 existing J1 tests still exercise the same state transitions and missing-key
 reasons; only the obsolete color-as-liveness contract changes.
@@ -57,7 +57,7 @@ QtGui = getattr(_bc, "QtGui", None)
 QtCore = getattr(_bc, "QtCore", None)
 
 _CONTEXT = {"frame": 1, "selected_nodes": [], "scene_file": ""}
-_MODEL_BUCKET = 12   # blue-green identity, hue near 191 degrees
+_MODEL_BUCKET = 0   # SYNAPSE ring coral: hue 10.8 degrees, within 0..15
 
 
 @pytest.fixture
@@ -99,7 +99,7 @@ def _buckets(panel, widget=None):
 
 
 def test_boot_disconnected_token_keeps_identity_and_reports_off(scratch_settings):
-    """At boot the selector retains blue-green and truthfully reports off.
+    """At boot the selector retains coral and truthfully reports off.
     The tooltip explains the missing connection; the accent is identity.
     """
     p = _bc._panel("expert")

@@ -136,7 +136,7 @@ QPushButton#DsPill[active="true"] {{
     color: {t.TEXT_BRIGHT}; border-bottom: 2px solid {t.SIGNAL};
 }}
 
-/* Model identity stays blue-green; state is conveyed by the status line. */
+/* Model identity matches the coral ring; state is conveyed by the status line. */
 QPushButton#DsAuthor {{
     background: transparent; border: 1px solid transparent;
     border-radius: 12px; border-bottom-right-radius: 4px;

@@ -331,11 +331,12 @@ def _readable_identity(colour, surfaces):
 
 
 # Soft Editorial: identity is independent of connection health and task state.
-MODEL_SELECTION = ("#35454A" if _wcag_lum(PANEL) < 0.2 else "#DCE8EB")
+MODEL_SELECTION = ("#44332E" if _wcag_lum(PANEL) < 0.2 else "#F5E6E0")
 _IDENTITY_SURFACES = (PANEL, GROUND, RAISED)
 CHAT_ASSISTANT = _readable_identity(WARM, _IDENTITY_SURFACES)
 CHAT_USER = _readable_identity("#8AC7A3", _IDENTITY_SURFACES)
-MODEL_ACCENT = _readable_identity("#79C2D2", _IDENTITY_SURFACES + (MODEL_SELECTION,))
+# Model choice shares the SYNAPSE ring's coral; the inset selection stays muted.
+MODEL_ACCENT = CHAT_ASSISTANT
 MODEL_DETAIL = _readable_identity(TEXT_PRIMARY, (MODEL_SELECTION,))
 
 # The active Houdini tab marker; the fallback is H22 UIDark.hcs SELECTION_BASE
