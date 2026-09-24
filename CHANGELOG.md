@@ -22,6 +22,14 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.84.2 - JEV / TypeSafe key setup
+
+Added a direct setup shortcut and masked TypeSafe API-key field in Connect models.
+Session save/clear controls explain key availability and lifetime, preserve the
+existing environment fallback, and leave JEV permissions and the chosen model
+unchanged. Key saving does not claim verified authentication. This is a source
+release with no new Windows installer. See [v5.84.2](docs/releases/v5.84.2.md).
+
 ## v5.84.1 - Shorter Resize label
 
 The prompt handle now says **Resize**. Dragging, keyboard adjustment and saved
