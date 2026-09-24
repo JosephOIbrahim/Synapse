@@ -22,6 +22,7 @@ from . import fontload
 # with a Windows access violation in importlib._bootstrap.acquire (2026-09-21).
 # qss imports only tokens, so there is no cycle to avoid here.
 from . import qss
+from .ascii_wordmark import AsciiWordmark
 
 __all__ = [
     "Button", "Pill", "Card", "Badge", "StatusDot", "MarkDot", "ProgressBar",
@@ -144,50 +145,65 @@ class ModelMenu(QtWidgets.QMenu):
 
 
 class ConversationInvitation(QtWidgets.QWidget):
-    """A quiet, left-aligned invitation, separate from conversation history."""
+    """A centered welcome, separate from conversation history and actions."""
 
     def __init__(self, parent=None, scale=t.FONT_SCALE_DEFAULT):
         super().__init__(parent)
         self.setObjectName("DsConversationInvitation")
+        self.setAccessibleName("Welcome to SYNAPSE")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, t.SPACE_LG, 0, t.SPACE_MD)
-        layout.setSpacing(t.SPACE_SM)
-        self.title = label("What are we building?", role="title", scale=scale)
+        self._scale = scale
+        self.title = label("Welcome to", role="title", scale=scale, parent=self)
+        self.wordmark = AsciiWordmark(self)
         self.body = label("Describe a network, inspect your scene, or work through a problem.",
-                          role="body", scale=scale)
+                          role="body", scale=scale, parent=self)
         for item in (self.title, self.body):
             item.setTextFormat(Qt.TextFormat.PlainText)
             item.setWordWrap(True)
-            item.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-            layout.addWidget(item)
+            item.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def set_scale(self, scale):
+        self._scale = scale
         apply_font_role(self.title, "title", scale)
         apply_font_role(self.body, "body", scale)
 
     def fit_content(self, width, height):
-        """Reduce optional invitation copy before any text would be clipped."""
-        layout = self.layout()
-        self.title.setText("What are we building?")
-        self.body.setVisible(True)
-        layout.setContentsMargins(0, t.SPACE_LG, 0, t.SPACE_MD)
-        layout.invalidate()
-        needed = layout.totalHeightForWidth(width)
-        if needed > height:
-            self.body.hide()
-            layout.setContentsMargins(0, t.SPACE_SM, 0, t.SPACE_SM)
-            needed = self.title.heightForWidth(width) + 2 * t.SPACE_SM
-        if needed > height:
-            self.title.setText("Start here")
-            needed = self.title.heightForWidth(width) + 2 * t.SPACE_SM
-        # At extreme heights (for example a tall artist-owned composer plus
-        # active Stop), keep the field/action visible and omit optional copy.
-        self.setVisible(needed <= height)
-        if needed <= height:
-            self.setGeometry(0, 0, width, needed)
-            layout.activate()
+        """Center the complete group, yielding optional copy on short docks."""
+        self.title.setText("Welcome to")
+        content_width = max(1, min(width, t.scaled(520, self._scale)))
+        gap = t.scaled(t.SPACE_SM, self._scale)
+        padding = t.scaled(t.SPACE_MD, self._scale)
+        title_h = max(self.title.fontMetrics().height(), self.title.heightForWidth(content_width))
+        body_h = max(self.body.fontMetrics().height(), self.body.heightForWidth(content_width))
+        art_h = self.wordmark.heightForWidth(content_width)
+        needed = 2 * padding + title_h + art_h + body_h + 2 * gap
+        show_body = needed <= height
+        if not show_body:
+            padding = t.SPACE_XS
+            art_h = min(art_h, max(0, height - 2 * padding - title_h - gap))
+            needed = 2 * padding + title_h + gap + art_h
+        show_art = art_h >= t.scaled(t.SIZE_BODY, self._scale)
+        if not show_art:
+            # A very short viewport can fit readable copy but no useful art.
+            # Restore the complete greeting on the next roomy resize.
+            show_body = False
+            self.title.setText("Welcome")
+            title_h = max(self.title.fontMetrics().height(), self.title.heightForWidth(content_width))
+            needed = 2 * padding + title_h
+        fits = width > 0 and needed <= height
+        self.setVisible(fits)
+        self.body.setVisible(show_body)
+        self.wordmark.setVisible(show_art)
+        if not fits:
+            return
+        self.setGeometry((width - content_width) // 2, (height - needed) // 2,
+                         content_width, needed)
+        self.title.setGeometry(0, padding, content_width, title_h)
+        art_y = padding + title_h + gap
+        self.wordmark.setGeometry(0, art_y, content_width, art_h)
+        if show_body:
+            self.body.setGeometry(0, art_y + art_h + gap, content_width, body_h)
 
 
 class EdgeRow(QtWidgets.QWidget):
