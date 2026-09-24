@@ -101,14 +101,16 @@ def apply_layout_margins(layout, role, density="standard", edge=None):
     layout.setContentsMargins(*margins)
 
 
-def model_picker_layout(outer, footer, scale):
-    """One owner for the provider picker's shell and action rhythm."""
+def model_picker_layout(outer, footer, scale, title, current):
+    """One owner for the provider picker's shell, headings and actions."""
     inset = tokens.scaled(tokens.SPACE_MD, min(scale, 1.5))
     top = tokens.scaled(tokens.SPACE_LG, min(scale, 1.5))
     gap = tokens.scaled(tokens.SPACE_SM, scale)
     outer.setContentsMargins(inset, top, inset, inset)
     outer.setSpacing(gap)
     footer.setSpacing(gap)
+    title.setContentsMargins(0, 0, 0, tokens.scaled(tokens.SPACE_SM, scale))
+    current.setContentsMargins(0, 0, 0, tokens.scaled(tokens.SPACE_XS, scale))
 
 
 def apply(root, density="standard"):

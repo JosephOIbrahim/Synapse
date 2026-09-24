@@ -432,10 +432,35 @@ SOFT_EDITORIAL_20260923_QSS_AMENDMENTS = (
      'QPushButton#DsSend:pressed {{ background: {t.WARM_PRESS}; }}'),
 )
 
+# The neutral composer outline and matching Send control landed in d0413d75
+# and 75864ddf. Preserve the original editorial delta above, then amend only
+# these exact rules.
+# Unrelated selector, color and geometry changes still fail the same guard.
+COMPOSER_20260924_QSS_AMENDMENTS = (
+    ('QTextEdit#DsInput[softEditorial="true"] {{' + _NL +
+     '    border-color: {t.BORDER_STRONG};',
+     'QTextEdit#DsInput[softEditorial="true"] {{' + _NL +
+     '    border: 3px solid {t.BORDER};'),
+    ('QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CHAT_ASSISTANT}; }}',
+     'QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.BORDER}; }}'),
+    ('QPushButton#DsSend {{' + _NL +
+     '    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};' + _NL +
+     '    border: none; border-radius: 12px; border-bottom-right-radius: 4px;' + _NL +
+     '    padding: 9px 15px;',
+     'QPushButton#DsSend {{' + _NL +
+     '    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};' + _NL +
+     '    border: 1px solid {t.WARM}; border-radius: {t.scaled(9, scale)}px;' + _NL +
+     '    padding: {t.scaled(7, scale)}px 14px;'),
+    ('QPushButton#DsSend:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}',
+     'QPushButton#DsSend:focus {{ border-color: {t.TEXT_PRIMARY}; }}' + _NL +
+     'QPushButton#DsSend:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: {t.DISABLED_BG}; }}'),
+)
+
 _DECLARED_QSS_AMENDMENTS = (
     ("CRIT.md 2026-09-15", CRIT_20260915_QSS_AMENDMENTS),
     ("READABILITY.md 2026-09-15 D3b", D3B_20260915_QSS_AMENDMENTS),
     ("User-approved Soft Editorial 2026-09-23", SOFT_EDITORIAL_20260923_QSS_AMENDMENTS),
+    ("Neutral composer outline 2026-09-24", COMPOSER_20260924_QSS_AMENDMENTS),
 )
 
 def _amend(original, amendments=None, label="CRIT.md 2026-09-15"):
@@ -539,6 +564,11 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
      '    border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;'),
     ('QPushButton#DsSend:hover   {{ background: {t.WARM_HOVER}; }}',
      'QPushButton#DsSend:hover   {{ background: {t.SIGNAL}; }}'),
+    ('    border: 3px solid {t.BORDER};', '    border: 1px solid {t.BORDER};'),
+    ('QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.BORDER}; }}',
+     'QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CHAT_ASSISTANT}; }}'),
+    ('QPushButton#DsSend:focus {{ border-color: {t.TEXT_PRIMARY}; }}',
+     'QPushButton#DsSend:focus {{ border-color: {t.WARM}; }}'),
 ])
 def test_upstream_qss_guard_rejects_local_and_unrelated_style_drift(before, after):
     source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
