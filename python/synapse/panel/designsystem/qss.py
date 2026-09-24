@@ -292,11 +292,11 @@ QTextEdit#DsInput, QLineEdit#DsField {{
 }}
 QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}
 QTextEdit#DsInput[softEditorial="true"] {{
-    border-color: {t.BORDER_STRONG};
+    border: 3px solid {t.BORDER};
     border-top-left-radius: 20px; border-top-right-radius: 20px;
     border-bottom-left-radius: 20px; border-bottom-right-radius: 6px;
 }}
-QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CHAT_ASSISTANT}; }}
+QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.BORDER}; }}
 
 /* ---- SEND — embedded bottom-right inside the composer (comp) --- */
 /* Coral actions share the assistant identity. */
