@@ -10,45 +10,46 @@
 
 ## File Manifest and SHA256 Verification
 
-The 31 guide files are included as-is from upstream. Each file's SHA256 hash below can be verified against the upstream repository at the commit specified above.
+The 31 guide files and LICENSE are vendored as-is from upstream. Each SHA256 below is the sha256 of the committed git blob (LF bytes), read via `git cat-file blob HEAD:<path>`, so it is independent of the working-tree line endings on any platform (Windows core.autocrlf converts LF to CRLF on checkout; the blob itself stays LF). These blobs are the upstream files at the commit above.
 
 | Filename | SHA256 |
 |----------|--------|
-| anim.md | 57514d24876770764b1363fe6bf1f150ff98ee5a2668bca3f08bb693e371ce6f |
-| assets.md | 52fc4b26348fe88f7ef693fd3b2734712870419b71b8336c77f605290a603336 |
-| character.md | 10146c8e2a418ff643e97617014a3813f5f91971fc3a0ce9c5d8afdfec3bce42 |
-| composite.md | 1f0a309a0edd5e67952e59e81656e7b55b20614e4224b81022ae770518e03b92 |
-| copernicus.md | cb5e027af3c9a89c2affc16a35ef5b92365f39bf0baddd3542c6fa689adea3c8 |
-| copy.md | c7f751363a0af952f95610cf89365173c2abf2366fb790e6dd5a86094c94600e |
-| crowds.md | 7bb36950d0bfcedd606345278ae16954c4d986a5c10e2c8bea8ce862331f7e41 |
-| destruction.md | e9722906b83a3ed6c58ee61f502e4dcbcb86a7df96cda685abab10418f539beb |
-| dopparticles.md | 22e9c7184b0e55a2f53eaa1ed6b0675e92725a5231d12f0d6d471e6a9c45209b |
-| dyno.md | 9c8bb647a20584435d8397059d978e05c32099049b46320ca245a7e728d7ee31 |
-| feathers.md | 2b494f9b4f03db08fd8fc2c13a67826bc014351ed903671b852c15318f323a06 |
-| finiteelements.md | 7083cfb2e0d4d8c00a7b0808546c51815e064ce08142cde8ac0c7d44fe1a4b60 |
-| fluid.md | 4aed92f98210d3aad2f059e7d6c4e0bc6ac36d5957fba43afa996863f1dc606e |
-| fur.md | 7f04076887f95ef9208261a15e269b4b77cc603387b9da354b7c34eecae5d8fa |
-| grains.md | 3de908e78de71aff132c9091c3158b8f8a561454511d155b1bbf6cba7d0f8288 |
-| heightfields.md | b964715fcc66dad0bb44f8ac84912e2daa446a1d9688530074a124675e04727a |
-| heightfields_cop.md | 094bd934d0819c8088ef7ec71966085e80e46e6b1d670d9512005d204dbbb7de |
-| io.md | 647340187d94ffa85e7c63c16b8d52b169cf5b8d6f613cc81bdda5d4da2a5161 |
-| ml.md | ab2b6c0f48ac95a186f8eaefdcf35fa2f94782cc0671e2bbc8f859809689d21b |
-| model.md | 221416b0f76bef29f545111fa7940a60370fbd61a4699537d599f40fb50d7da6 |
-| mpm.md | 8f00b079b2e86636e97abd05e1849a8443c6f32d491a9a7225fc1cf57d3a4cb0 |
-| muscles.md | 138b2bc49f5f0eb037f7cbaa69f272101c6b90fa708f2bb25ec747d64cf6261c |
-| ocean.md | 3a7319e9bdb01527371eb54840d1ab7dd5d6fc18c3cda4e5d9cf2387bed74f51 |
-| props.md | 5a61fb2ff6d24519dedffc222482ec0de8533a4ad3cdb959b2bee3ca74d54d87 |
-| pyro.md | f16fe2b317fafee3a31357773ebc47d87fa5764a8194662009f21ad9aa3a5a0c |
-| render.md | 3887cff200fdb549ed280c38349c9315d58bf9af065b0a9e7b27f96b19bc8f09 |
-| shade.md | f6a5ea8e0e9b728c05732ac90e25d5b7745557086608b0ecbf890b543aabe91d |
-| solaris.md | 138bd124eb6ab50bbff1bc9f9d3469f714bf1b9ead1602117298fd6d2b497546 |
-| tops.md | b3ed59965fd2cb4bf4d79261d97aa0944d55ee438b4b1042d00142b29c3b921b |
-| troubleshooting.md | 81c885ce4e630dfc5af925f94271914a5a60c616508744573fb144d5c20f9950 |
-| vellum.md | 9a1e423171525b9ecb69ceb023369f2db8b89e296ca45075aeb9b43da2a349bb |
+| anim.md | 57fae325b428776d32fd368d4bb7d514e1a21ddf1798d275c7faad0ae0f2ba93 |
+| assets.md | 58e21335fd127cd4381f7230b953e273f2c13e42e84c0892ac94fa57fbdde5cb |
+| character.md | eaaf3db576bba65bc921d64eae956be1af533bee46d82bfc8b40920ba11e2836 |
+| composite.md | 1a593294315838ddff5f67db0f3a99094eb065bd26430ad8f7e57589fe7810e3 |
+| copernicus.md | 79541cfecf7e18add7c70b41b0f52c3897c31fa29b163a2b59a8a31de461c873 |
+| copy.md | aac561364d3a688a3b36e717c71095b7d1db570dcdcc32487daa081d9f33d9e6 |
+| crowds.md | 0f26d55cf7f2ed6eca085eec8040dc4c0ebd36e298405fd24f7b141b84dc50bc |
+| destruction.md | 1f76d61633d51cde17526cac3c2c3d0fa7bdafafcdd1b96d68e1f2e7386c0382 |
+| dopparticles.md | 64460a5c5009259b7bf34f9dffc8d4582f6a827bfa159fd368d64c7eed8178dc |
+| dyno.md | 106d49fcf7c0aad71c5e5911ca2958d0e2a16f6487f147f0a903d21ed208774f |
+| feathers.md | f585fd1537e4618dfc103d52084977e75a2b5b2982fd7b640fcf9faf09353c50 |
+| finiteelements.md | 3e3cda2afcecd66d7705a0857c984632e7309e1168d9f24a82353d091f76a888 |
+| fluid.md | c35e18b07c0449fb58e7949973de01aaf2cde98e7cebfe99b71152a40d1387ba |
+| fur.md | e5bc9800717d5cd4286a9ee81912a2476f638076743e02b23f3961049114b932 |
+| grains.md | 0c2ecfed6444a748efa3500c035b4c874b4386c66e732c0190c1ebdd98d5e9c8 |
+| heightfields.md | 989eefe3e5deab70a29141f8b72db071acd0db153358cb0acc9a19147d684127 |
+| heightfields_cop.md | b88ddfab6bbf5ab2b647220b2d9d0e5dbeda68c30cd2aaba272b562cce0e3513 |
+| io.md | 56ce70d16f59dc7d23ea6e84c1690099793ab725092897433f79e855df7365d0 |
+| ml.md | c84b68ff93676fd6ba757420020615e3c5cd68802cd5a048c80b0d63f6ed7f53 |
+| model.md | 54c8fbbf2bb81dd06a3ae511025a0f2ee12eee05746c9b72e92afe22b8840eb2 |
+| mpm.md | eb884cc0427f614a35de9d6ebd420991f26433ffa5670ef95d8ba0c4f7d2c8a5 |
+| muscles.md | 76600f7e9054f4d468b5ec689c9e3b3e86e41c62f5a7a4211c12e6c441e2c802 |
+| ocean.md | fe8255f859b1ee38cf36dcce733409655776abfc23ef389ab5257607daddcadd |
+| props.md | 0d36c349df8289dee27c571d51ed5a779143a040e0e34fd7224216c432a2c47e |
+| pyro.md | 1e81b24cb23a5832c01635fb3c622d855929c3277cb7e0bcffbe5a8fdeb92758 |
+| render.md | f1a444d15c3409e0910af67945cd5e6c3f75de51e10a036d7bb8fbebe226d67a |
+| shade.md | 4ba1447ff90890dd573fe71d18b216627bd13d8e3eac1cd1dd9f6310aa07c778 |
+| solaris.md | 96c78ec444c8c48deb5e61ece8d2edfbfac30decd84e06801288e366bb3b707c |
+| tops.md | 29692c7ecc40ffeddf97b9f59b3fcfa125df3c68a3a176afbcd172dabcc6145c |
+| troubleshooting.md | 72af45912dc53955bcadcbfd229c8a2ce28dad198cf2c4fc12decd0d3987bf94 |
+| vellum.md | e9ac7b32f2f0055144fd9b66a4ed58548d14f8c02742f183ffdd022d1d1eae6d |
+| LICENSE | 79a2891ba34d73cb07da165714464f3bb6a6c6a254ea7ad1bac2cf3f7aae5918 |
 
 ## License
 
-The LICENSE file in this directory is reproduced from the upstream repository, which is licensed under the MIT License. See LICENSE for the full text.
+The LICENSE file in this directory is reproduced from the upstream repository, which is licensed under the MIT License. See LICENSE for the full text. The LICENSE git blob is 1083 bytes (`git cat-file blob HEAD:python/synapse/_vendor/fxhoudinimcp/LICENSE | wc -c`).
 
 ## Producer Path
 

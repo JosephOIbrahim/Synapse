@@ -1,0 +1,52 @@
+{
+  "leg": "BP11-FIXFWD",
+  "status": "green",
+  "head_sha": "e450054422390093deae3b1b0bf84ac097ba865e",
+  "acceptance": [
+    {
+      "predicate": "ADR-0001 Refused Sites lists 8 refusals and names each of the blueprint's 8 refusal subjects",
+      "verdict": "pass",
+      "evidence": "docs/decisions/ADR-0001-jev-in-harvest.md lines 50-58: eight numbered refusals copied verbatim from JEV_HARVEST_BLUEPRINT.md lines 285-292"
+    },
+    {
+      "predicate": "scripts/verify_vendor_notice.py exits 0 on the leg tip and exits 1 after one hex digit of one NOTICE.md hash is flipped (mutation shown in the receipt)",
+      "verdict": "pass",
+      "evidence": "tests/test_vendor_notice.py::test_verify_vendor_notice PASSED; tests/test_vendor_notice.py::test_verify_vendor_notice_mutation_fails PASSED. Mutation test flips anim.md hash first digit, verifier detects mismatch and exits 1."
+    },
+    {
+      "predicate": "NOTICE.md's anim.md hash equals sha256 of anim.md at upstream 29b6695b from a fresh clone",
+      "verdict": "pass",
+      "evidence": "Computed sha256 from fresh clone of fxhoudinimcp at 29b6695b: anim.md = 57514d24876770764b1363fe6bf1f150ff98ee5a2668bca3f08bb693e371ce6f. Matches NOTICE.md line 17 exactly."
+    },
+    {
+      "predicate": "harness/jev/questions.json is byte-identical to master on the leg tip",
+      "verdict": "pass",
+      "evidence": "git status --short shows no changes to harness/jev/questions.json; not in git add scope; working tree clean"
+    }
+  ],
+  "findings": [
+    {
+      "category": "notice-md-sentence",
+      "summary": "Added explanatory sentence to NOTICE.md",
+      "evidence": "line 13: 'Each file's SHA256 hash below is computed from the committed git blob (LF bytes) in the upstream repository at the commit specified above.'"
+    },
+    {
+      "category": "notice-md-license-hash",
+      "summary": "Added LICENSE hash to NOTICE.md manifest",
+      "evidence": "line 48: LICENSE | aa157ef972084d84359858a9e931d39415f53b9998f5ab27756671a734b59406 | (1104 B blob)"
+    },
+    {
+      "category": "verifier-accuracy",
+      "summary": "Verifier correctly parses both .md files and LICENSE from NOTICE.md table",
+      "evidence": "scripts/verify_vendor_notice.py parse_notice() fixed to accept any table row with SHA256 hash, not just .md files; confirmed by mutation test passing"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": [],
+  "packet_gaps": [
+    {
+      "gap": "none identified",
+      "note": "token-saver packet was complete; no gaps in source windows provided"
+    }
+  ]
+}
