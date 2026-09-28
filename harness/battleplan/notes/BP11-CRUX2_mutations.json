@@ -1,0 +1,442 @@
+{
+  "leg": "BP11-CRUX2",
+  "date": "2026-09-28",
+  "clone": {
+    "branch": "bp11/idfix",
+    "tip": "3f7157cd",
+    "product_heads": {
+      "HARDFIX": "6efbe4c6",
+      "IDFIX": "cf6d14f9"
+    },
+    "how": "git clone --shared -c core.longpaths=true --branch bp11/idfix <worktree> <scratchpad>/idfix; git status --short empty before every mutation"
+  },
+  "driver": ".scratch/crux2_mutations.py (gitignored; one mutation at a time, restore via git checkout -- <file>, status re-checked)",
+  "interpreters": {
+    "default": "C:\\Python314\\python.exe 3.14.2",
+    "C4_alt": "py -3.12 (3.12, Windows)"
+  },
+  "labels": {
+    "bite": "a named check exits non-zero for the predicted reason",
+    "survived": "every named check exits 0",
+    "crash": "a check exits non-zero for a reason unrelated to the mutation (none this run)"
+  },
+  "summary": {
+    "total": 16,
+    "bite": 14,
+    "survived": 2,
+    "crash": 0,
+    "tracked_test_bites": 13,
+    "grep_or_ratchet_only_bites": [
+      "M6"
+    ]
+  },
+  "mutations": [
+    {
+      "id": "M1",
+      "source": "seat seed",
+      "target_row": "HARDFIX 1,4 / defect 1",
+      "file": "python/synapse/identify/salience.py",
+      "mutation": "salience.py: dedent `_JOBS.slot.release()` inside run_shadow's except body by two columns so the module no longer parses",
+      "expected": "every check non-zero; ratchet names salience.py",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "ratchet",
+          "rc": 1,
+          "summary": "1 file(s) could not be read or parsed; ratchet fails closed.",
+          "named": [
+            "UNPARSED python/synapse/identify/salience.py"
+          ]
+        },
+        {
+          "check": "pytest salience",
+          "rc": 2,
+          "summary": "1 warning, 1 error in 0.43s",
+          "named": [
+            "ERROR tests/test_identify_salience.py"
+          ]
+        },
+        {
+          "check": "pytest compile pin",
+          "rc": 4,
+          "summary": "1 warning, 1 error in 0.38s",
+          "named": [
+            "ERROR tests/test_identify_hardfix.py"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M2",
+      "source": "seat seed",
+      "target_row": "HARDFIX 5 / defect 2",
+      "file": "python/synapse/identify/facts.py",
+      "mutation": "facts.py _parm_is_expression: delete the `if parm.keyframes():` guard (every raising expression() reads as an expression)",
+      "expected": "test_plain_parm_is_not_expression fails",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest hardfix pins",
+          "rc": 1,
+          "summary": "1 failed, 4 passed, 2 warnings in 0.34s",
+          "named": [
+            "FAILED tests/test_identify_hardfix.py::test_plain_parm_is_not_expression"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M3",
+      "source": "seat seed",
+      "target_row": "HARDFIX 5 / defect 3",
+      "file": "python/synapse/identify/library.py",
+      "mutation": "library.py summarize: delete `hit = None` in the except branch (a raising lookup leaves hit unbound)",
+      "expected": "test_summarize_returns_honest_unknown_when_lookup_raises fails",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest hardfix pins",
+          "rc": 1,
+          "summary": "1 failed, 4 passed, 2 warnings in 0.33s",
+          "named": [
+            "FAILED tests/test_identify_hardfix.py::test_summarize_returns_honest_unknown_when_lookup_raises"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M4",
+      "source": "seat seed",
+      "target_row": "HARDFIX 5 / defect 4",
+      "file": "python/synapse/identify/salience.py",
+      "mutation": "salience.py run_shadow: delete `_JOBS.slot.release()` in the except branch (slot leak per failure)",
+      "expected": "test_run_shadow_releases_slot_when_spawn_raises fails",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest hardfix pins",
+          "rc": 1,
+          "summary": "1 failed, 4 passed, 2 warnings in 0.33s",
+          "named": [
+            "FAILED tests/test_identify_hardfix.py::test_run_shadow_releases_slot_when_spawn_raises"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M5",
+      "source": "seat seed",
+      "target_row": "HARDFIX 4 + IDFIX 5 / defect 6",
+      "file": "python/synapse/identify/compose.py",
+      "mutation": "compose.py: append a function with a bare `except Exception: pass`",
+      "expected": "ratchet rc 1 naming compose.py; test_except_ratchet_passes_on_clean_tree fails",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "ratchet",
+          "rc": 1,
+          "summary": "python/synapse/identify/compose.py: 0 -> 1",
+          "named": [
+            "python/synapse/identify/compose.py: 0 -> 1"
+          ]
+        },
+        {
+          "check": "pytest ratchet",
+          "rc": 1,
+          "summary": "1 failed, 5 passed, 2 warnings in 1.77s",
+          "named": [
+            "FAILED tests/test_except_ratchet.py::test_except_ratchet_passes_on_clean_tree"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M6",
+      "source": "seat seed",
+      "target_row": "HARDFIX 3 / defect 5",
+      "file": "python/synapse/identify/apply.py",
+      "mutation": "apply.py _flash: replace the module `_log.debug(` with root-level `logging.debug(` (apply.py:116)",
+      "expected": "the row-3 grep fails; tracked tests are expected to survive (unpinned)",
+      "outcome": "bite",
+      "tracked_test_bites": false,
+      "checks": [
+        {
+          "check": "grep root logging (receipt row 3)",
+          "rc": 1,
+          "summary": "ROOT_LOGGING_HITS ['python\\\\synapse\\\\identify\\\\apply.py:116']",
+          "named": [
+            "ROOT_LOGGING_HITS ['python\\\\synapse\\\\identify\\\\apply.py:116']"
+          ]
+        },
+        {
+          "check": "pytest identify+ratchet (tracked)",
+          "rc": 0,
+          "summary": "23 passed, 2 warnings in 2.12s",
+          "named": []
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M8",
+      "source": "seat seed",
+      "target_row": "HARDFIX 4 / defect 7 (H-M3)",
+      "file": "tests/test_except_ratchet.py",
+      "mutation": "tests/test_except_ratchet.py positive control: point `baseline` at TRACKED_BASELINE instead of tmp_path",
+      "expected": "the autouse unchanged-bytes guard fails",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest positive control",
+          "rc": 1,
+          "summary": "1 passed, 2 warnings, 1 error in 0.57s",
+          "named": [
+            "ERROR tests/test_except_ratchet.py::test_positive_control_detects_new_silent_handler"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M9",
+      "source": "IDFIX seed",
+      "target_row": "IDFIX 2",
+      "file": "python/synapse/identify/apply.py",
+      "mutation": "apply.py show(): remove the `install_save_callbacks()` call",
+      "expected": "test_show_installs_exactly_one_save_callback + toggle path fail",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest idfix",
+          "rc": 1,
+          "summary": "3 failed, 1 passed, 2 warnings in 0.37s",
+          "named": [
+            "FAILED tests/test_identify_idfix.py::test_show_installs_exactly_one_save_callback",
+            "FAILED tests/test_identify_idfix.py::test_reshow_does_not_re_register_the_callback",
+            "FAILED tests/test_identify_idfix.py::test_toggle_and_clear_paths_also_arm_save_safety"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M10",
+      "source": "IDFIX seed",
+      "target_row": "IDFIX 3",
+      "file": "python/synapse/identify/library.py",
+      "mutation": "library.py summary_paragraph: drop the `_strip_help_header(...)` wrap (BOM / `#key:` header skip)",
+      "expected": "the BOM/header tests fail",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest library",
+          "rc": 1,
+          "summary": "4 failed, 17 passed, 2 warnings in 0.45s",
+          "named": [
+            "FAILED tests/test_identify_library.py::test_summary_paragraph_strips_bom_and_header_directives",
+            "FAILED tests/test_identify_library.py::test_summarize_bom_header_yields_first_prose_sentence",
+            "FAILED tests/test_identify_library.py::test_summarize_header_only_is_honest_unknown",
+            "FAILED tests/test_identify_library.py::test_first_prose_line_wins_even_without_blank_line"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M11",
+      "source": "IDFIX seed",
+      "target_row": "IDFIX 4",
+      "file": "python/synapse/panel/synapse_panel.py",
+      "mutation": "synapse_panel.py _identify_worker: `capped_paths = paths` (remove the CAP slice)",
+      "expected": "test_worker_caps_before_facts_memoizes_lookup_and_flashes_full_total fails",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest button",
+          "rc": 1,
+          "summary": "1 failed, 9 passed, 2 warnings in 0.76s",
+          "named": [
+            "FAILED tests/panel/test_identify_button.py::test_worker_caps_before_facts_memoizes_lookup_and_flashes_full_total"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "M12",
+      "source": "IDFIX seed",
+      "target_row": "IDFIX 4",
+      "file": "python/synapse/identify/library.py",
+      "mutation": "library.py summarize: never serve `_SUMMARY_CACHE` (memo removed)",
+      "expected": "the memo tests fail (5 lookups become 200)",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest library+button",
+          "rc": 1,
+          "summary": "2 failed, 29 passed, 2 warnings in 0.90s",
+          "named": [
+            "FAILED tests/test_identify_library.py::test_summarize_memoizes_default_path_one_lookup_per_key",
+            "FAILED tests/panel/test_identify_button.py::test_worker_caps_before_facts_memoizes_lookup_and_flashes_full_total"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "C1",
+      "source": "crucible",
+      "target_row": "HARDFIX 4 / defect 6",
+      "file": "scripts/except_ratchet.py",
+      "mutation": "scripts/except_ratchet.py analyze_file: `return (0, 0)` instead of raising RatchetUnparsable (HARDEN's fail-open)",
+      "expected": "fail-closed tests fail",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest ratchet",
+          "rc": 1,
+          "summary": "2 failed, 4 passed, 2 warnings in 1.84s",
+          "named": [
+            "FAILED tests/test_except_ratchet.py::test_fail_closed_on_unparsable_file",
+            "FAILED tests/test_except_ratchet.py::test_analyze_file_raises_on_unparsable"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "C2",
+      "source": "crucible",
+      "target_row": "IDFIX 2 (closes CRUX R4-M1 'bites live only')",
+      "file": "python/synapse/identify/apply.py",
+      "mutation": "apply.py before_save: keep the block (`node.setComment(comment)`) instead of stripping it (CRUX R4-M1, which bit live only on IDCORE)",
+      "expected": "test_before_save_strips_every_block_and_after_save_restores fails",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest idfix",
+          "rc": 1,
+          "summary": "1 failed, 3 passed, 2 warnings in 0.35s",
+          "named": [
+            "FAILED tests/test_identify_idfix.py::test_before_save_strips_every_block_and_after_save_restores"
+          ]
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "C3",
+      "source": "crucible",
+      "target_row": "HARDFIX 4 (_rule text)",
+      "file": "scripts/except_ratchet.py",
+      "mutation": "scripts/except_ratchet.py: reverse the written `_rule` text back to HARDEN's 'count grows, never shrinks'",
+      "expected": "expected to survive: the _rule wording is documentation, unpinned",
+      "outcome": "survived",
+      "tracked_test_bites": false,
+      "checks": [
+        {
+          "check": "pytest ratchet",
+          "rc": 0,
+          "summary": "6 passed, 2 warnings in 2.07s",
+          "named": []
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "C4",
+      "source": "crucible",
+      "target_row": "HARDFIX 7 (xfail marker removal, Windows py3.12)",
+      "file": "tests/test_routing.py",
+      "mutation": "tests/test_routing.py: remove the Windows/<3.13 xfail marker from test_latency_is_tracked; run under py -3.12 and py 3.14",
+      "expected": "fails on py3.12 (15.6 ms tick), passes on py3.14",
+      "outcome": "bite",
+      "tracked_test_bites": true,
+      "checks": [
+        {
+          "check": "pytest routing latency py3.12",
+          "rc": 1,
+          "summary": "1 failed, 1 warning in 0.47s",
+          "named": [
+            "FAILED tests/test_routing.py::TestTieredRouter::test_latency_is_tracked"
+          ]
+        },
+        {
+          "check": "pytest routing latency py3.14",
+          "rc": 0,
+          "summary": "1 passed, 2 warnings in 0.51s",
+          "named": []
+        }
+      ],
+      "restored_clean": true
+    },
+    {
+      "id": "C5",
+      "source": "crucible",
+      "target_row": "IDFIX 2 (save dispatch label)",
+      "file": "python/synapse/identify/apply.py",
+      "mutation": "apply.py _save_dispatch: BeforeSave no longer calls before_save() (the event->strip wiring)",
+      "expected": "dispatch->before_save is only pinned live: expected to survive under pytest",
+      "outcome": "survived",
+      "tracked_test_bites": false,
+      "checks": [
+        {
+          "check": "pytest idfix+apply",
+          "rc": 0,
+          "summary": "16 passed, 2 warnings in 0.48s",
+          "named": []
+        }
+      ],
+      "restored_clean": true
+    }
+  ],
+  "probes": [
+    {
+      "id": "P-G6",
+      "row": "IDFIX 2 + HARDEN row 3 (iii)",
+      "script": ".scratch/crux2_g6.py (hython 22.0.400, Python 3.13.10)",
+      "result": "PASS: show() armed the hipFile callback (0 -> 1) with NO explicit install; 60/60 shown; hipFile.save -> RAW_DISK_SENTINELS 0, RESTORED_AFTER_SAVE 60, artist note intact; fresh hython reload -> RELOAD_NODES 60 RELOAD_SENTINELS 0; PolyBevel bubble 'Distance 0.07' with is_expression False (HARDEN's '(expr)' regression gone)"
+    },
+    {
+      "id": "P-HM3",
+      "row": "HARDFIX 4 / HARDEN row 2 (CRUX H-M3)",
+      "script": ".scratch/crux2_hm3_replay.py on the hardfix clone 5159b6bc",
+      "result": "CLOSED: planted swallow -> ratchet rc 1 'compose.py: 0 -> 1'; one run of tests/test_except_ratchet.py (1 failed, 5 passed) -> tracked baseline bytes unchanged, synapse_panel.py bytes unchanged; ratchet STILL rc 1 afterwards; restored -> rc 0 OK; git status clean"
+    },
+    {
+      "id": "P-MEMO",
+      "row": "IDFIX 4 (crucible nit)",
+      "script": ".scratch/crux2_memo_probe.py",
+      "result": "MEMO_PINS_OUTAGE True: help_summary raises once then returns a row; summarize returns (None,'unknown') on the 2nd call too, underlying calls 1 - a transient outage is cached as unknown for the process"
+    },
+    {
+      "id": "P-BOM",
+      "row": "IDFIX 3",
+      "script": ".scratch/crux2_bom_probe.py",
+      "result": "see BP11-CRUX2_verdicts.md IDFIX row 3"
+    },
+    {
+      "id": "P-PY311",
+      "row": "HARDFIX 7",
+      "script": "py -V:Astral/CPython3.11.15 -m pytest -q -m 'not needs_houdini' tests/test_routing.py tests/test_sessions.py tests/test_prst_network_persistence.py tests/test_pkg_bootstrap_invariant.py -rxXf",
+      "result": "288 passed, 4 xfailed (latency, expire_stale, both persistence), 1 xpassed (touch_updates_last_active), 0 failed; R310 passes with no marker"
+    }
+  ]
+}
