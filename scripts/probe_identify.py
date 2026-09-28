@@ -107,6 +107,31 @@ def build_chain():
     return geo, nodes
 
 
+def build_lop_chain():
+    """A LOP chain (BP11-SALIENCE T5): sphere 'ball' + cube 'box' -> merge 'both'.
+
+    lastModifiedPrims() on the merge should report both prim paths, so the merge
+    bubble's Here line reads 'writes /ball (+1)' (paths sorted; first + count-1).
+    """
+    stage = hou.node("/stage")
+    old = stage.node("identify_lop_probe")
+    if old:
+        old.destroy()
+    top = stage.createNode("subnet", "identify_lop_probe")
+    ball = top.createNode("sphere", "ball")
+    box = top.createNode("cube", "box")
+    merge = top.createNode("merge", "both")
+    merge.setInput(0, ball)
+    merge.setInput(1, box)
+    top.layoutChildren()
+    for n in (ball, box, merge):
+        try:
+            n.cook(force=True)
+        except Exception:
+            pass
+    return merge
+
+
 def bubble_for(node):
     f = F.node_facts(node)
     text, source = L.summarize(f.get("help_url"), f.get("hda_help"))
@@ -133,6 +158,16 @@ def main():
           polybevel_here is not None and "," not in polybevel_here
           and "ramp" not in polybevel_here.lower(),
           f"here={polybevel_here!r}")
+
+    # LOP writes line (BP11-SALIENCE T5): the merge bubble names the prims it wrote.
+    merge = build_lop_chain()
+    lf, llines = bubble_for(merge)
+    lop_here = llines[1] if len(llines) > 1 else None
+    print("BUBBLE", merge.name(), "lop_writes=", lf.get("lop_writes"),
+          "|", " // ".join(llines))
+    check("LOP merge Here line reads 'writes /ball (+1)'",
+          lop_here == "writes /ball (+1)",
+          f"here={lop_here!r} (producer: build_lop_chain + facts._lop_writes)")
 
     A.install_save_callbacks()
 

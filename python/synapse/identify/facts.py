@@ -43,6 +43,19 @@ def _is_hidden(template) -> bool:
         return False
 
 
+def _template_help(template) -> str:
+    """The parameter's own help string (an exact source), or '' when it has none.
+
+    ``hou.ParmTemplate.help()`` carries the parameter help the node definition
+    ships — the SideFX library help for a built-in node. Used by the Jev salience
+    state (IDENTIFY_BLUEPRINT sec. 5); empty is honest, never guessed.
+    """
+    try:
+        return str(template.help() or "")
+    except Exception:
+        return ""
+
+
 def _parm_is_expression(tuple_) -> bool:
     """True if any component of the tuple is driven by an expression/channel."""
     try:
@@ -96,6 +109,7 @@ def _node_params(node) -> list[dict]:
                 "multi": multi,
                 "is_expression": _parm_is_expression(tuple_),
                 "hidden": _is_hidden(template),
+                "help": _template_help(template),
             })
         except Exception:
             continue
@@ -103,14 +117,34 @@ def _node_params(node) -> list[dict]:
 
 
 def _lop_writes(node) -> dict | None:
-    """Prims a LOP last modified. UNKNOWN on 22.0.400 until an API is proved.
+    """Prims a LOP node last modified, for the ``writes <first> (+N)`` Here line.
 
-    No public 22.0.400 method for "last modified prims" has been verified, so
-    this returns ``None`` (honest unknown) rather than an estimate. The probe
-    explores whether such an API exists; compose already renders the line when
-    a future read supplies ``{"first": ..., "count": N}``.
+    ``hou.LopNode.lastModifiedPrims()`` returns the USD prim paths this node's
+    last cook modified — verified live on 22.0.400 (seat probe, BP11-SALIENCE:
+    sphere 'ball' -> ['/ball'], merge -> ['/ball', '/box']). LOP nodes only, so a
+    possibly-absent method is never touched on a SOP; a node that has not cooked
+    reports no paths and yields no line. This never cooks a node to obtain the
+    paths (a cook here would be a side effect the read must not have). The paths
+    are sorted so the first is stable, and ``compose`` renders ``writes <first>
+    (+<count-1>)``. Any failure returns ``None`` — the line is omitted, never
+    guessed (IDENTIFY_BLUEPRINT rule 6: exact sources or UNKNOWN).
     """
-    return None
+    try:
+        if node.type().category().name() != "Lop":
+            return None
+    except Exception:
+        return None
+    try:
+        prims = node.lastModifiedPrims()
+    except Exception:
+        return None
+    try:
+        paths = sorted(str(path) for path in (prims or ()))
+    except Exception:
+        return None
+    if not paths:
+        return None
+    return {"first": paths[0], "count": len(paths)}
 
 
 def node_facts(node) -> dict:
