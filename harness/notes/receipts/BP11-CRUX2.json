@@ -1,0 +1,82 @@
+{
+  "leg": "BP11-CRUX2",
+  "status": "green_with_findings",
+  "product_head": "1cc23593",
+  "base": "master 312ed2cf (branch bp11/crux2, worktree .claude/worktrees/bp11-crux2)",
+  "ahead_at_receipt": 1,
+  "runtime": "Windows; system Python 3.14.2; py -3.12 and py 3.11.15 for the clock rows; hython 22.0.400 (Python 3.13.10) for the G6 round trip; no Houdini GUI",
+  "clones": {
+    "idfix": "3f7157cd (product cf6d14f9) - git clone --shared -c core.longpaths=true --branch bp11/idfix, scratchpad",
+    "hardfix": "5159b6bc (product 6efbe4c6) - same method, used for the rows that name the HARDFIX tip"
+  },
+  "verdict": {
+    "bp11/idfix (merge candidate)": "SOUND-WITH-NITS",
+    "BP11-HARDFIX rows": "7 of 7 pass on re-run",
+    "BP11-IDFIX rows": "5 of 6 pass on re-run; row 6 (live G2/G5/G6) UNKNOWN",
+    "why not SOUND": "one UNKNOWN gui row on IDFIX plus the inherited IDSURF G1/G2/G3/G5, SALIENCE G4 and HARDEN row 5 UNKNOWNs; seven nits, none BROKEN-class",
+    "why not BROKEN": "no builder-marked pass was false on re-run; every seed mutation bites; no false claim found on an owned surface"
+  },
+  "acceptance": [
+    {
+      "predicate": "every HARDFIX and IDFIX acceptance row has a CRUX2 verdict with a crucible anchor",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP11-CRUX2_verdicts.md: HARDFIX table 7 rows, IDFIX table 6 rows, every cell anchored to a crucible re-run, mutation id or probe script"
+    },
+    {
+      "predicate": "the six seed mutations and at least two crucible-authored ones are recorded, each labelled bite, survived or crash",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP11-CRUX2_mutations.json: 16 entries - seat seeds M1-M6 + M8 (7), IDFIX seeds M9-M12 (4), crucible C1-C5 (5); 14 bite / 2 survived (C3 _rule text, C5 BeforeSave event wiring) / 0 crash; restored_clean true on all 16"
+    },
+    {
+      "predicate": "every CRUX finding has a closure line",
+      "verdict": "pass",
+      "evidence": "BP11-CRUX2_verdicts.md closure table: 30 rows covering every BP11-CRUX row finding, nit and cross-leg note; labels closed by HARDFIX / closed by IDFIX / for_ruling (HARDFIX receipt item) / open / UNKNOWN"
+    },
+    {
+      "predicate": "gui_probe rows are UNKNOWN in the verdicts, never pass",
+      "verdict": "pass",
+      "evidence": "IDFIX row 6, IDSURF rows 5-8, SALIENCE G4 and HARDEN row 5 are written UNKNOWN; the headless halves are recorded beside them, never as a pass"
+    }
+  ],
+  "crucible_criteria": [
+    {"criterion": "flips no contract feature and edits no product file", "evidence": "git status --short empty in both clones after every mutation (driver restores via git checkout -- <file>); the worktree commit 1cc23593 touches only the two notes files; no ratified surface read for write"},
+    {"criterion": "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS", "evidence": "applied: bp11/idfix rated SOUND-WITH-NITS on IDFIX row 6 alone before the nits"},
+    {"criterion": "any hash of a committed file is taken over git blob bytes", "evidence": "no file-hash claim is made in T1/T2; commits are cited by sha only"}
+  ],
+  "findings": [
+    {"id": "N1", "claim": "IDFIX summarize memo caches (None, 'unknown') for the process lifetime: a transient library outage at the first click pins '- not in library' on that type until Houdini restarts; the cache key ignores the corpus root; tests/test_identify_library.py:130-133 leaves an entry in the module cache", "anchor": ".scratch/crux2_memo_probe.py -> MEMO_PINS_OUTAGE True (gitignored); library.py summarize"},
+    {"id": "N2", "claim": "HARDFIX row 3's no-root-logging clause is grep-pinned only: M6 restores a root logging.debug( at apply.py:116 and 23 tracked tests stay green", "anchor": "BP11-CRUX2_mutations.json M6"},
+    {"id": "N3", "claim": "tests/test_identify_hardfix.py:21 imports salience at module level, so the compile guard test cannot collect when salience.py is unparsable (M1: pytest rc 4 on the node id); the ratchet's UNPARSED line is the working detector", "anchor": "BP11-CRUX2_mutations.json M1"},
+    {"id": "N4", "claim": "the ratchet _rule wording is unpinned (C3 survives 6 tests)", "anchor": "BP11-CRUX2_mutations.json C3"},
+    {"id": "N5", "claim": "the BeforeSave event -> before_save() wiring in apply._save_dispatch is pinned live only (C5 survives 16 tests); the crucible's hython G6 is the proof", "anchor": "BP11-CRUX2_mutations.json C5 + probe P-G6"},
+    {"id": "N6", "claim": "the two persistence xfails are win32-only with strict=False: XPASS on 3.14, XFAIL on 3.11 on this box; the marker mutes the Windows signal on every Python until BP12 deletes it (disclosed in the reason text)", "anchor": "tests/test_prst_network_persistence.py:291,441; T1 xfail table"},
+    {"id": "N7", "claim": "in the scratch clone hython resolves the PolyBevel What line to '- not in library' (no .synapse/sidefx_library.json in the clone; SYNAPSE_SIDEFX_CORPUS_ROOT alone did not resolve it) - pre-existing IDCORE behaviour (CRUX IDCORE row 5), not this leg's; the G6 verdict does not depend on it", "anchor": ".scratch/crux2_g6.py PB_LINES"}
+  ],
+  "for_ruling": [
+    {"item": "merge word for bp11/idfix 3f7157cd (SOUND-WITH-NITS): it carries idcore + idsurf + salience + harden + hardfix + idfix; the FIXFWD line merges separately as bp11/fixfwd2", "reason": "merge is Joe's word"},
+    {"item": "gui gates G1-G6 and the GitHub Windows CI run stay UNKNOWN", "reason": "computer use / push are the seat's and Joe's; headless halves are proven in T1"},
+    {"item": "N1: cache only positive library rows in identify.summarize (or key the memo by corpus root)", "reason": "product change on python/synapse/identify/library.py - needs an identify-scoped leg (spawn below)"},
+    {"item": "N2/N4/N5: whether to add tracked pins for the root-logging grep, the _rule text and the BeforeSave event dispatch", "reason": "test additions outside this leg's touches"},
+    {"item": "CRUX findings 1-6 and 26 (bp11/fixfwd line) remain open on that line", "reason": "not on the HARDFIX/IDFIX branch line; nothing here changes their state"}
+  ],
+  "spawn": [
+    {
+      "id": "BP12-IDMEMO",
+      "class": "build",
+      "name": "Memoize only positive library rows in identify.summarize and pin the save-event dispatch",
+      "note": "Skip the _SUMMARY_CACHE write when the result is (None, 'unknown') or key it by the resolved corpus root, with a test that a lookup raising once does not pin unknown; add a fake-event test that _save_dispatch(BeforeSave) strips and (AfterSave) restores (closes N1 and N5). Held for Joe.",
+      "touches": ["python/synapse/identify/library.py", "python/synapse/identify/apply.py", "tests/test_identify_library.py", "tests/test_identify_idfix.py"]
+    }
+  ],
+  "packet_gaps": [
+    "the IDFIX receipt and product diff (read via git show bp11/idfix:... and git diff 6efbe4c6 cf6d14f9)",
+    "the HARDFIX test files tests/test_identify_hardfix.py and tests/test_except_ratchet.py (read in the clone)",
+    "the xfail-marker diff and the line of each marker (git diff fbd7eb8a 6efbe4c6 -- the four test files)",
+    "apply.py install_save_callbacks / before_save / after_save / _save_dispatch / _reset_state bodies (apply.py:207-265)",
+    "read_selection_facts signature (facts.py:223) for the hython probe",
+    "the library config resolution (sidefx_library.py:21-22: CONFIG_PATH walks to <repo>/.synapse/sidefx_library.json; ROOT_ENV)",
+    "which alternate Pythons the box has (py -0p: 3.14, 3.13, 3.12, 3.11) - needed for the <3.13 clock rows"
+  ],
+  "token_accounting": "unavailable - the host reports no per-call usage to the leg; model calls: this session only (no subagents, no workflows)",
+  "turns": "14 of 20 self-cap at receipt"
+}
