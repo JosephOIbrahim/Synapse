@@ -28,6 +28,10 @@ _PARAGRAPHS = re.compile(r"\n\s*\n")
 #: A Houdini help-page header directive line, e.g. ``#type: node`` (sec. 2).
 _HELP_DIRECTIVE = re.compile(r"^#[A-Za-z][\w-]*:")
 
+#: A Houdini help-page include line, e.g. ``:include /shelf/polyextrude#includeme:``
+#: — a ``:name ...:`` markup directive that carries no prose (sec. 2).
+_HELP_INCLUDE = re.compile(r"^:[A-Za-z][\w-]*(?:\s.*)?:$")
+
 
 def derive_help_keys(help_url: str) -> list[str]:
     """Canonical ``nodes/<context>/<name>`` keys, most specific first.
@@ -89,17 +93,49 @@ def _strip_help_header(text: str) -> str:
     return "\n".join(lines[start:])
 
 
+def _is_markup_only(paragraph: str) -> bool:
+    """True when *paragraph* carries only help markup, no prose (sec. 2).
+
+    Real corpus pages interleave help-markup paragraphs with the prose: a
+    ``#type: node`` directive block or a ``:include ...:`` line can sit *after*
+    the title, so stripping the header only from the top of the body is not
+    enough (BP11-IDFIX2). A paragraph is markup-only when, after dropping a
+    U+FEFF from each line, it has at least one non-empty line and every
+    non-empty line is a ``#key: value`` directive or a ``:name ...:`` include.
+    Such a paragraph is never a node's description, so the caller skips it
+    wherever it sits.
+    """
+    saw_line = False
+    for line in paragraph.split("\n"):
+        line = line.strip().lstrip("﻿").strip()
+        if not line:
+            continue
+        saw_line = True
+        if not (_HELP_DIRECTIVE.match(line) or _HELP_INCLUDE.match(line)):
+            return False
+    return saw_line
+
+
 def summary_paragraph(body: str) -> str:
     """The description paragraph of a node help page.
 
     Corpus node pages read ``Title\\n\\nSummary sentence.\\n\\n...`` — the first
     paragraph is the node's own title (a bare heading). Drop that heading so the
-    What line is the description, not ``PolyBevel PolyBevel ...``. A leading BOM
-    and ``#key: value`` header lines are stripped first (sec. 2).
+    What line is the description, not ``PolyBevel PolyBevel ...``. Help-markup
+    paragraphs — a leading BOM, ``#key: value`` header directives, and
+    ``:name ...:`` includes — are dropped *wherever they sit*, not only at the
+    top of the body, so a directive block that follows the title never becomes
+    the summary (BP11-IDFIX2, sec. 2). When only markup remains the result is
+    empty, which the caller reports as the honest unknown.
     """
-    paragraphs = [p.strip()
-                  for p in _PARAGRAPHS.split(_strip_help_header(str(body or "")).strip())
-                  if p.strip()]
+    paragraphs = []
+    for p in _PARAGRAPHS.split(_strip_help_header(str(body or "")).strip()):
+        p = p.strip()
+        if not p or not p.lstrip("﻿").strip():
+            continue          # empty, or only a BOM / whitespace
+        if _is_markup_only(p):
+            continue          # a directive/include-only paragraph, wherever it sits
+        paragraphs.append(p)
     if not paragraphs:
         return ""
     head = paragraphs[0]
