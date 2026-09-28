@@ -1,0 +1,68 @@
+{
+  "leg": "BP11-FIXFWD2",
+  "status": "green_with_findings",
+  "head_sha": "f29d81fd2b00f9a6f3da90fbb49593d2ba686193",
+  "base_sha": "38fbb91281e047556ae60789f21620ac2627363b",
+  "acceptance": [
+    {
+      "predicate": "for all 31 guides and LICENSE, the NOTICE.md value equals sha256 of `git cat-file blob HEAD:<path>` (count line 32/32 in the receipt)",
+      "verdict": "pass",
+      "evidence": "Committed HEAD f29d81fd: 32/32 NOTICE-blob values == sha256(git cat-file blob HEAD:<path>) for all 31 guides + LICENSE, 0 mismatches. Blobs are pure LF (guide_cr_total=0), so the values are platform-independent."
+    },
+    {
+      "predicate": "NOTICE.md gives anim.md as 57fae325b428776d32fd368d4bb7d514e1a21ddf1798d275c7faad0ae0f2ba93 and LICENSE as 79a2891ba34d73cb07da165714464f3bb6a6c6a254ea7ad1bac2cf3f7aae5918 (blob values from the seat's check)",
+      "verdict": "pass",
+      "evidence": "NOTICE.md line 17 anim.md = 57fae325b428776d32fd368d4bb7d514e1a21ddf1798d275c7faad0ae0f2ba93; line 48 LICENSE = 79a2891ba34d73cb07da165714464f3bb6a6c6a254ea7ad1bac2cf3f7aae5918. Both equal sha256(git cat-file blob HEAD:<path>)."
+    },
+    {
+      "predicate": "tests/test_vendor_notice.py passes, including the new test in which a CRLF-hashed table fails the verifier",
+      "verdict": "pass",
+      "evidence": "python -m pytest -q tests/test_vendor_notice.py -> 3 passed. New test_verify_vendor_notice_crlf_table_fails rebuilds the whole table with sha256(blob-as-CRLF) and asserts verifier exit 1 (guards that anim.md's CRLF hash differs from its LF hash so the swap is real)."
+    },
+    {
+      "predicate": "the verifier hashes through git cat-file only; grep shows no read_bytes or open() on a guide path in scripts/verify_vendor_notice.py",
+      "verdict": "pass",
+      "evidence": "git_blob() runs `git cat-file blob HEAD:<path>` (no clone, no working-tree read of any guide/LICENSE). grep -nE 'open\\(|read_bytes' scripts/verify_vendor_notice.py -> no hits. NOTICE.md itself is read via Path.read_text (required so the mutation/CRLF tests bite); NOTICE is not a guide path."
+    }
+  ],
+  "findings": [
+    {
+      "category": "predecessor-receipt-correction",
+      "summary": "T3: BP11-FIXFWD receipt rows 2 and 3 (1-indexed) recorded 'pass' on evidence that hashed a Windows CRLF checkout; both are FAIL on any LF platform. My NOTICE.md + verifier make the claim true.",
+      "anchor": "harness/notes/receipts/BP11-FIXFWD.json acceptance[1] and acceptance[2]",
+      "row2_acceptance_index_1": "'scripts/verify_vendor_notice.py exits 0 on the leg tip ...' -> the old verifier cloned upstream and hashed the CLONE's working-tree files; under Windows core.autocrlf=true those are CRLF and matched the CRLF NOTICE hashes, so it exited 0. On a LF platform (Linux CI) the same verifier exits 1. The 'pass' was platform-dependent and blessed CRLF hashes. Corrected: new verifier hashes the committed LF blob via git cat-file; 32/32 match on any platform.",
+      "row3_acceptance_index_2": "'NOTICE.md's anim.md hash equals sha256 ... from a fresh clone = 57514d24...' -> 57514d24876770764b1363fe6bf1f150ff98ee5a2668bca3f08bb693e371ce6f is sha256 of anim.md-as-CRLF, verified by sha256(blob.replace(LF->CRLF))==57514d24 exactly. The committed LF blob is 57fae325b428776d32fd368d4bb7d514e1a21ddf1798d275c7faad0ae0f2ba93, now in NOTICE.md line 17."
+    },
+    {
+      "category": "predecessor-license-size",
+      "summary": "BP11-FIXFWD's LICENSE finding cited '1104 B blob' -- that is the CRLF checkout size. The committed LF blob is 1083 bytes.",
+      "anchor": "harness/notes/receipts/BP11-FIXFWD.json findings[1]; verified len(HEAD:LICENSE blob)=1083, CRLF len=1104. NOTICE.md line 52 now states 1083 bytes with a producer path."
+    },
+    {
+      "category": "provenance-sentence",
+      "summary": "NOTICE.md provenance sentence rewritten to be true and ASCII-only: names `git cat-file blob HEAD:<path>` as the source and explains the LF/CRLF platform independence.",
+      "anchor": "python/synapse/_vendor/fxhoudinimcp/NOTICE.md line 13"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "BP11-FIXFWD.json still shows status 'green' with 'pass' verdicts on acceptance[1] and acceptance[2], which are now known CRLF-tainted. That file is outside this leg's touches, so the correction lives in this receipt only; a human may wish to annotate or supersede the predecessor receipt.",
+      "anchor": "harness/notes/receipts/BP11-FIXFWD.json"
+    }
+  ],
+  "spawn": [],
+  "packet_gaps": [
+    {
+      "gap": "NOTICE.md window stopped at line 16 (packet showed 1-16); the full table (rows 17-48) and the License/Producer sections (49-59) were read directly from the file.",
+      "note": "The pinned anim.md/LICENSE target values in acceptance were sufficient to verify, but the packet did not carry the row values being replaced."
+    },
+    {
+      "gap": "verify_vendor_notice.py window stopped at line 90 (main() body 91-129) and test_vendor_notice.py at line 60 (61-75); both tails read from file.",
+      "note": "Needed to preserve the existing comparison logic and the mutation test's finally-restore."
+    },
+    {
+      "gap": "harness/notes/receipts/BP11-FIXFWD.json (required by T3) and the guides/ directory listing were not in the packet.",
+      "note": "Read the predecessor receipt directly for the exact row wording; enumerated the 31 guides via `git ls-tree HEAD:<vendor>/guides`."
+    }
+  ]
+}
