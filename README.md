@@ -4,17 +4,17 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.84.2 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.84.2 is Latest</sub></p>
+<p align="center"><sub>v5.85.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.85.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Install](docs/getting-started/installation.md#source-installation)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.84.2.md)
+**[Install](docs/getting-started/installation.md#source-installation)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.85.0.md)
 
 ## Start here
 
-**Current release: source installation.** The available Windows Setup is older, v5.75.2. It does not include the latest panel, JEV or SideFX library changes.
+**Current release: source installation.** The available Windows Setup is older, v5.75.2. It does not include Identify or the latest panel, JEV and SideFX library changes.
 
 The current validation target is **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md#source-installation).
 
@@ -53,6 +53,33 @@ flowchart LR
 
 The normal panel worker blocks node deletion, arbitrary Python/VEX, rendering, exporting and PDG cooking. See [tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries).
 
+## See what nodes do
+
+Select one or more nodes in a network editor. Then click **Identify** at the top of the panel, or send `/identify`.
+
+A short note appears under each node. It says what the node does, which parameters you changed, and whether the node has an error, a warning or a bypass.
+
+The note comes from the node itself and your local SideFX help library. No model runs, and nothing leaves your machine.
+
+Click **Identify** again to clear the notes, or use **Undo**. Saved scenes never keep them.
+
+```mermaid
+flowchart LR
+    accTitle: How Identify explains selected nodes
+    accDescr: You select nodes and click Identify. SYNAPSE reads each node and the local SideFX help library without a model. A short note appears under each node. Saving the scene leaves the notes out of the file.
+    S["Select nodes"] --> I["Click Identify"]
+    I --> R["Read the node +<br/>local help library"]
+    R --> N["Short note<br/>under each node"]
+    N --> F["Save keeps notes<br/>out of the file"]
+    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
+    classDef artist fill:#87CDA5,stroke:#87CDA5,color:#1F1F1F
+    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    class S,I artist
+    class R,N synapse
+```
+
+Each click notes up to 60 nodes. The [release notes](docs/releases/v5.85.0.md) explain the details and current limits.
+
 ## Find the right control
 
 | I want to… | Open or use… |
@@ -61,6 +88,7 @@ The normal panel worker blocks node deletion, arbitrary Python/VEX, rendering, e
 | Add my JEV / TypeSafe key | **Connect models → JEV / TypeSafe key setup → Save session key**. [Setup guide](docs/getting-started/jev-setup.md). |
 | Make more room for my prompt | Drag **Resize** above the input box. |
 | Find an action | **Commands** below the input box. |
+| See what selected nodes do | **Identify** at the top of the panel, or send `/identify`. |
 | Import a Marble world or Gaussian `.ply` | **World Labs** beside **Cloud relay**. [Import flow and limits](docs/architecture/overview.md#world-labs-import). |
 | Connect the SideFX help library | Follow **[Build and connect](docs/studio/SIDEFX_LIBRARY.md#build-and-connect)**; Scout searches the published local index. |
 | Check a connection | **Connect**, then **Doctor**. |
@@ -78,11 +106,12 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 ## What's ready
 
 - **Network work:** build and inspect through permitted tools; keep the result editable in Houdini.
+- **Identify:** a short note under each selected node, built from the node and local SideFX help with no model call.
 - **Model choice:** Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.84.2.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.85.0.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -93,6 +122,8 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 | Unsure where the TypeSafe key goes | [JEV key setup](docs/getting-started/jev-setup.md#add-your-key). |
 | No saved suggestion | Read its reason. A checked record, matching version and project memory owner are required. |
 | Build running away | Use [Cancel cook or Emergency halt](#three-ways-to-stop), then inspect the scene. |
+| Identify notes say **not in library** | [Build and connect the SideFX library](docs/studio/SIDEFX_LIBRARY.md#build-and-connect), then restart Houdini. |
+| Houdini freezes on the first save of a new scene | Wait for it to recover. SYNAPSE is copying its untitled-scene memory, which can take several minutes. [Known issue](docs/releases/v5.85.0.md#validation-and-limits). |
 
 [Report a bug](https://github.com/JosephOIbrahim/Synapse/issues/new/choose) · [First-session walkthrough](docs/getting-started/quickstart.md)
 
@@ -117,7 +148,7 @@ Configured memory and scene/project notes supply recalled context. Recall is adv
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
-**CI covers stock Python on Linux and macOS.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.84.2.md) before relying on it.
+**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.85.0.md) before relying on it.
 
 </details>
 

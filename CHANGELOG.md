@@ -22,6 +22,16 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.85.0 - Identify selected nodes
+
+Added **Identify**: select nodes, then click **Identify** or send `/identify`.
+Each node gets a short note on the canvas: what it does, changed parameters,
+errors or bypass, and for a LOP the primitive it writes. Notes come from the node
+and the local SideFX library with no model call, take one undo step, and stay
+out of saved files. CI now also runs on Windows, and a ratchet blocks new silent
+broad `except` handlers. This is a source release with no new Windows installer.
+See [v5.85.0](docs/releases/v5.85.0.md).
+
 ## v5.84.2 - JEV / TypeSafe key setup
 
 Added a direct setup shortcut and masked TypeSafe API-key field in Connect models.

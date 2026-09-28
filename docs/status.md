@@ -2,12 +2,13 @@
 
 [Back to README](../README.md) · [Architecture](architecture/overview.md) · [Latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 
-This feature map was reviewed on **2026-09-24**. For the published version and its validation, use the [README banner](../README.md) and matching release notes. A documentation update does not qualify a new installer or a live scene.
+This feature map was reviewed on **2026-09-28**. For the published version and its validation, use the [README banner](../README.md) and matching release notes. A documentation update does not qualify a new installer or a live scene.
 
 ## Recent changes
 
 | Area | Available now | Read next |
 |---|---|---|
+| Identify | Select nodes, then **Identify** or `/identify`: a short local note under each node from its type, changed parameters, state and the SideFX library. No model call. | [Identify release](releases/v5.85.0.md), [how it works](architecture/overview.md#identify). |
 | Panel | Shared dark-gray/coral styling, welcome motion, inset footer controls and a taller prompt with **Resize**. | [Panel release](releases/v5.83.0.md), [resize and library update](releases/v5.84.0.md), [shorter Resize label](releases/v5.84.1.md). |
 | JEV / TypeSafe | Discoverable key setup with masked entry and explicit session save/clear. Ranking and routing measurement remain optional. | [Key setup](getting-started/jev-setup.md), [JEV release](releases/v5.84.2.md). |
 | World Labs | Artist-triggered import of an existing API-accessible world or supported local Gaussian PLY. | [Import flow and limits](architecture/overview.md#world-labs-import). |
@@ -15,9 +16,9 @@ This feature map was reviewed on **2026-09-24**. For the published version and i
 
 **Installation:** the current release is source-only. Windows Setup remains the older **v5.75.2** package. It does not contain the recent changes above. Use [source installation](getting-started/installation.md#source-installation) for the current version.
 
-**Validation:** [v5.84.2](releases/v5.84.2.md) records targeted native checks. Its [GitHub CI run](https://github.com/JosephOIbrahim/Synapse/actions/runs/36061873013) checks stock Python on Linux and macOS. Neither establishes an authenticated World Labs import, a Karma beauty render or a new Windows installer.
+**Validation:** [v5.85.0](releases/v5.85.0.md) records live Identify gates in Houdini 22.0.400 and two independent reviews. GitHub CI checks stock Python on Linux, macOS and Windows; the GitHub release links the run for its exact commit. Neither establishes an authenticated World Labs import, a Karma beauty render or a new Windows installer.
 
-**Known gaps remain:** short docks at high UI scale can overflow, the measured SideFX download has missing pages, and alternate Houdini themes lack qualification. See the [inherited release limits](releases/v5.84.1.md#validation-and-limits).
+**Known gaps remain:** short docks at high UI scale can overflow, the measured SideFX download has missing pages, and alternate Houdini themes lack qualification. See the [inherited release limits](releases/v5.84.1.md#validation-and-limits). The first save of an untitled scene can also freeze Houdini for minutes while memory is copied; the [v5.85.0 limits](releases/v5.85.0.md#validation-and-limits) cover that and Identify.
 
 ## Artist control
 

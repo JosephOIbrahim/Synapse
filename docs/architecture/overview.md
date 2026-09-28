@@ -8,6 +8,7 @@ These diagrams describe implemented behavior. Each section links to its source. 
 |---|---|
 | A model calls a tool | [Execution paths](#execution-paths) |
 | JEV offers advice | [JEV assistance](#jev-assistance) |
+| Selected nodes are explained | [Identify](#identify) |
 | A Marble world enters Houdini | [World Labs import](#world-labs-import) |
 | Scout searches SideFX help | [Library ingestion and lookup](../studio/SIDEFX_LIBRARY.md#ingestion-and-lookup) |
 | A project decision is remembered | [Memory](#project-and-scene-memory) |
@@ -116,6 +117,30 @@ JEV is an optional adviser. A saved TypeSafe key, enabled preferences and the re
 Neither mode grants scene permission. If assistance is unavailable, its status must remain explicit.
 
 [Key setup and flow diagram](../getting-started/jev-setup.md) · [action ranking](../../python/synapse/jev/selection_suggestions.py) · [routing measurement](../../python/synapse/jev/panel_routing.py) · [credentials](../../python/synapse/jev/credentials.py)
+
+## Identify
+
+Select nodes in a network editor, then click **Identify** or send `/identify`. The panel answers the command itself. It never reaches the model, and nothing leaves the machine.
+
+```mermaid
+flowchart LR
+    accTitle: Identify writes a short local note under each selected node
+    accDescr: The panel reads facts for up to 60 selected nodes on Houdini's main thread. A worker thread looks up each node type once in the local SideFX library and composes up to three lines without a model. The main thread writes every note as a node comment inside one undo group. Before a save the notes are removed from the file, and after the save they are restored.
+    S["Selected nodes<br/>(up to 60)"] --> F["Read node facts<br/>on the main thread"]
+    F --> L["Look up each type once<br/>in the local library"]
+    L --> C["Compose up to 3 lines<br/>without a model"]
+    C --> W["Write comments<br/>in one undo group"]
+    W --> V["Save: strip before,<br/>restore after"]
+    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
+    classDef artist fill:#87CDA5,stroke:#87CDA5,color:#1F1F1F
+    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    class S artist
+    class C,W synapse
+```
+
+The summary comes from the node's exact help page, never from a search result. A node the library does not cover says **not in library**. Each note sits below a `~ identify ~` line, so an artist's comment text above it is kept. The Selection Inspector shows the same text in a read-only column.
+
+Sources: [writer](../../python/synapse/identify/apply.py), [composer](../../python/synapse/identify/compose.py), [node facts](../../python/synapse/identify/facts.py), [library lookup](../../python/synapse/identify/library.py), [panel](../../python/synapse/panel/synapse_panel.py). Limits: [v5.85.0 release notes](../releases/v5.85.0.md#validation-and-limits).
 
 ## World Labs import
 

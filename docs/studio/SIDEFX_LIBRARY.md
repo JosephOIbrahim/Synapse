@@ -15,7 +15,7 @@ read it locally. A query never starts a library download.
 ```mermaid
 flowchart TD
     accTitle: Build the SideFX library once, query the published index locally
-    accDescr: Installed help and the official Markdown index feed a resumable cache. A coverage check protects publication. A new SQLite generation becomes active through an atomic pointer. Scout reads a bounded shortlist; runtime symbol checks remain separate.
+    accDescr: Installed help and the official Markdown index feed a resumable cache. A coverage check protects publication. A new SQLite generation becomes active through an atomic pointer. Scout reads a bounded shortlist, and Identify reads one exact node page per type; runtime symbol checks remain separate.
     I["Installed Houdini help"] --> C["Cache original sources<br/>Record hashes and builds"]
     W["Official llms.txt<br/>and linked Markdown"] --> C
     C --> G{"Coverage permits publication?"}
@@ -24,14 +24,20 @@ flowchart TD
     B --> P["Publish current.json<br/>with an atomic update"]
     P --> Q["Scout reads a<br/>bounded local shortlist"]
     Q --> R["Cited document-only results"]
+    P --> D["Identify reads one exact<br/>node page per type"]
+    D --> N["First prose sentence<br/>becomes the node's note"]
     classDef default fill:#282828,stroke:#555555,color:#E5E5E5
     classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
-    class P,Q synapse
+    class P,Q,D synapse
 ```
 
 An explicit `--allow-incomplete-web` build can publish available pages with
 recorded gaps. It never turns incomplete coverage into a completeness claim.
 Scout's runtime symbol table remains the authority for API membership.
+
+Identify reads the same published generation, but only by exact node page. It
+never uses a ranked search result, and a node without a page says **not in
+library**.
 
 ## Build and connect
 
