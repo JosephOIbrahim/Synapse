@@ -1,0 +1,1067 @@
+{
+ "leg": "BP11-CRUX",
+ "date": "2026-09-28",
+ "method": "fresh `git clone --shared -c core.longpaths=true` of each leg branch under the session scratchpad; baseline check green FIRST, exact-count byte edit (EOL-normalised), re-run, restore from HEAD with `git checkout -- <file>`, prove `git status --short --untracked-files=no` empty (or content-identical under --ignore-cr-at-eol); hython = C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe (22.0.400, Python 3.13.10); system python 3.14.2; git 2.55.0",
+ "driver": ".scratch/crux_mutate.py + .scratch/crux_spec1.json / crux_spec2.json in the bp11/crux worktree (gitignored; the crucible's own checks, never a product edit); a check is red on exit code, or on its reason pattern when pattern-scored; BITES requires the reason on a red line (FAILED / [FINDING] / CRUX_* / mismatch), CRASH = red for another reason, SURVIVED = every check green",
+ "floor": "at least one crucible-authored mutation per IDENTIFY_BLUEPRINT.md sec. 3 rule 1-9, each labelled bite / survived / crash",
+ "rule_coverage": {
+  "1": {
+   "rule": "zero tokens",
+   "mutations": [
+    "R1-M1:bite",
+    "R1-M2:bite",
+    "R1-M1b:bite"
+   ]
+  },
+  "2": {
+   "rule": "artist text never lost",
+   "mutations": [
+    "R2-M1:bite"
+   ]
+  },
+  "3": {
+   "rule": "one undo step",
+   "mutations": [
+    "R3-M1:bite"
+   ]
+  },
+  "4": {
+   "rule": "bubbles never reach disk",
+   "mutations": [
+    "R4-M1:bite"
+   ]
+  },
+  "5": {
+   "rule": "short main-thread holds",
+   "mutations": [
+    "R5-M1:bite",
+    "R5-M2:bite"
+   ]
+  },
+  "6": {
+   "rule": "exact sources or UNKNOWN",
+   "mutations": [
+    "R6-M1:bite"
+   ]
+  },
+  "7": {
+   "rule": "reuse, don't fork",
+   "mutations": [
+    "R7-M1b:bite"
+   ]
+  },
+  "8": {
+   "rule": "the Inspector stays read-only",
+   "mutations": [
+    "R8-M1:bite"
+   ]
+  },
+  "9": {
+   "rule": "tokens and one registry",
+   "mutations": [
+    "R9-M1:bite",
+    "R9-M2:survived"
+   ]
+  }
+ },
+ "totals": {
+  "driver_mutations": 21,
+  "manual_mutations": 2,
+  "bite": 20,
+  "survived": 3,
+  "crash": 0
+ },
+ "legs": {
+  "BP11-FIXFWD": {
+   "checkout": "38fbb912 (product e4500544)",
+   "mutations": [
+    {
+     "id": "F1-M1",
+     "rule": "fixfwd-adr",
+     "target_row": "FIXFWD row 1",
+     "files": [
+      "docs/decisions/ADR-0001-jev-in-harvest.md"
+     ],
+     "mutation": "refusal 8 (run_on_main closure) deleted from ADR-0001 Refused Sites",
+     "edits": [
+      {
+       "file": "docs/decisions/ADR-0001-jev-in-harvest.md",
+       "old": "8. Anything inside a `run_on_main` closure. Adapter invariant (e).\n",
+       "new": ""
+      }
+     ],
+     "checks": [
+      {
+       "check": "CRUX ADR refusal check",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "CRUX_ADR FAIL",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "CRUX_ADR FAIL"
+       ]
+      },
+      {
+       "check": "pytest test_vendor_notice (no tracked test pins the ADR)",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "reason_pattern": "FAILED",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": []
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "CRUX ADR refusal check"
+     ],
+     "right_reason": true,
+     "note": "pre-restored files left modified by an earlier run (EOL-only or ledger): ['python/synapse/_vendor/fxhoudinimcp/NOTICE.md']"
+    },
+    {
+     "id": "F1-M2",
+     "leg": "BP11-FIXFWD",
+     "rules": [],
+     "target_row": "FIXFWD rows 2-3",
+     "files": [
+      "scripts/verify_vendor_notice.py (environment mutation, no edit)"
+     ],
+     "mutation": "the verifier's own `git clone --depth 1` of upstream forced to an LF checkout with GIT_CONFIG_PARAMETERS=\"'core.autocrlf=false'\" (what the ubuntu-latest / macos-latest CI runners do by default)",
+     "checks": [
+      {
+       "check": "python scripts/verify_vendor_notice.py (bp11/fixfwd clone 38fbb912)",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "mutated_red_lines": [
+        "Mismatch tops.md: expected b3ed5996..., got 29692c7e...",
+        "Mismatch troubleshooting.md: expected 81c885ce..., got 72af4591...",
+        "Mismatch vellum.md: expected 9a1e4231..., got e9ac7b32..."
+       ]
+      },
+      {
+       "check": "pytest tests/test_vendor_notice.py (same env)",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "mutated_red_lines": [
+        "FAILED tests/test_vendor_notice.py::test_verify_vendor_notice - AssertionError: Verifier failed with exit code 1",
+        "1 failed, 1 passed"
+       ]
+      },
+      {
+       "check": "control: same env on bp11/fixfwd2 (blob-hashing verifier)",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "mutated_red_lines": [
+        "[ok] all 32 hashes match their committed git blobs"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "right_reason": true,
+     "note": "This is the CI red that the FIXFWD receipt's Windows-only evidence could not see: NOTICE(fixfwd) holds 32/32 CRLF hashes, so any LF platform mismatches every row. FIXFWD2 (same branch line) is green in the same environment."
+    }
+   ]
+  },
+  "BP11-FIXFWD2": {
+   "checkout": "88bcf957 (product f29d81fd)",
+   "mutations": [
+    {
+     "id": "F2-M1",
+     "rule": "fixfwd2-notice",
+     "target_row": "FIXFWD2 rows 1-3",
+     "files": [
+      "python/synapse/_vendor/fxhoudinimcp/NOTICE.md"
+     ],
+     "mutation": "NOTICE.md anim.md value flipped to its CRLF-checkout hash 57514d24... (the BP11-FIXFWD defect re-planted)",
+     "edits": [
+      {
+       "file": "python/synapse/_vendor/fxhoudinimcp/NOTICE.md",
+       "old": "57fae325b428776d32fd368d4bb7d514e1a21ddf1798d275c7faad0ae0f2ba93",
+       "new": "57514d24876770764b1363fe6bf1f150ff98ee5a2668bca3f08bb693e371ce6f"
+      }
+     ],
+     "checks": [
+      {
+       "check": "python scripts/verify_vendor_notice.py",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "anim.md",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "[err] 1 mismatches found:",
+        "  Mismatch anim.md: NOTICE 57514d24..., blob 57fae325..."
+       ]
+      },
+      {
+       "check": "pytest test_vendor_notice",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "test_verify_vendor_notice -",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": [
+        "=================== 2 failed, 1 passed, 2 warnings in 3.29s ==================="
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "python scripts/verify_vendor_notice.py"
+     ],
+     "right_reason": true,
+     "note": "pre-restored files left modified by an earlier run (EOL-only or ledger): ['python/synapse/_vendor/fxhoudinimcp/NOTICE.md']"
+    },
+    {
+     "id": "F2-M2",
+     "rule": "fixfwd2-verifier",
+     "target_row": "FIXFWD2 row 4",
+     "files": [
+      "scripts/verify_vendor_notice.py"
+     ],
+     "mutation": "verifier hashes the working-tree file instead of the git blob (git_blob reads the checkout)",
+     "edits": [
+      {
+       "file": "scripts/verify_vendor_notice.py",
+       "old": "    result = subprocess.run(\n        [\"git\", \"cat-file\", \"blob\", f\"HEAD:{repo_path}\"],\n        cwd=str(repo_root),\n        capture_output=True,\n    )\n    if res",
+       "new": "    return (Path(repo_root) / repo_path).read_bytes()\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_vendor_notice",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "reason_pattern": "crlf_table_fails",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": []
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "survived",
+     "bitten_by": [],
+     "right_reason": false
+    }
+   ]
+  },
+  "BP11-IDCORE": {
+   "checkout": "5f5c4c13 (product c46a6e79)",
+   "mutations": [
+    {
+     "id": "R1-M2",
+     "rule": 1,
+     "target_row": "IDCORE row 7",
+     "files": [
+      "python/synapse/identify/compose.py"
+     ],
+     "mutation": "import urllib.request into compose.py (a network-capable import on the bubble path)",
+     "edits": [
+      {
+       "file": "python/synapse/identify/compose.py",
+       "old": "import re\n",
+       "new": "import re\nimport urllib.request\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "CRUX-IC6 network/harness grep over python/synapse/identify",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "urllib",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": []
+      },
+      {
+       "check": "pytest identify compose+library+apply",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "reason_pattern": "FAILED",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": []
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "CRUX-IC6 network/harness grep over python/synapse/identify"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R2-M1",
+     "rule": 2,
+     "target_row": "IDCORE row 3",
+     "files": [
+      "python/synapse/identify/apply.py"
+     ],
+     "mutation": "strip_block drops one extra line above the sentinel (artist's last line lost on clear)",
+     "edits": [
+      {
+       "file": "python/synapse/identify/apply.py",
+       "old": "    return \"\\n\".join((comment or \"\").split(\"\\n\")[:idx])\n",
+       "new": "    return \"\\n\".join((comment or \"\").split(\"\\n\")[:idx - 1])\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_identify_apply",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "byte_identical|prose_survives",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idcore\\tests\\test_identify_apply.py:112: AssertionError: assert '' == 'artist note'",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idcore\\tests\\test_identify_apply.py:123: AssertionError: assert '' == 'artist note'",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idcore\\tests\\test_identify_apply.py:139: AssertionError: assert '' == 'see the ~ id...w for det",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idcore\\tests\\test_identify_apply.py:179: AssertionError: assert ('clear' == 'clear'"
+       ]
+      },
+      {
+       "check": "CRUX own artist comment quoting the sentinel in prose",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "CRUX_ARTIST FAIL",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "CRUX_ARTIST FAIL",
+        "CRUX_ARTIST_EDGE B standalone sentinel mid-text: shown_comment='~ identify ~\\nBox - crux bubble\\nSize 2.5' | byte-identical=False",
+        "CRUX_ARTIST_EDGE C standalone sentinel last line: shown_comment='~ identify ~\\nBox - crux bubble\\nSize 2.5' | byte-identical=False",
+        "CRUX_ARTIST_EDGE has_block(artist B) = True | has_block(artist C) = True"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_identify_apply",
+      "CRUX own artist comment quoting the sentinel in prose"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R3-M1",
+     "rule": 3,
+     "target_row": "IDCORE row 5",
+     "files": [
+      "python/synapse/identify/apply.py"
+     ],
+     "mutation": "show() runs outside its undo group (nullcontext instead of hou.undos.group('SYNAPSE Identify'))",
+     "edits": [
+      {
+       "file": "python/synapse/identify/apply.py",
+       "old": "    capped = items[:CAP]\n    with _undo_group(UNDO_LABEL):\n",
+       "new": "    capped = items[:CAP]\n    with _nullcontext():\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_identify_apply",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "test_one_undo_group_per_show_and_per_clear",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "FAILED tests/test_identify_apply.py::test_one_undo_group_per_show_and_per_clear",
+        "================== 1 failed, 11 passed, 2 warnings in 0.46s ==================="
+       ]
+      },
+      {
+       "check": "hython probe_identify (live undoLabels)",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "undoLabels gained 0",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "[FINDING] one undo group per show: undoLabels gained 0 'SYNAPSE Identify' entr(y/ies)",
+        "PROBE_RESULT FAIL: one undo group per show"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_identify_apply",
+      "hython probe_identify (live undoLabels)"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R4-M1",
+     "rule": 4,
+     "target_row": "IDCORE row 5",
+     "files": [
+      "python/synapse/identify/apply.py"
+     ],
+     "mutation": "BeforeSave strip disabled (_save_dispatch never matches 'BeforeSave')",
+     "edits": [
+      {
+       "file": "python/synapse/identify/apply.py",
+       "old": "    if label == \"BeforeSave\":\n",
+       "new": "    if label == \"BeforeSaveX\":\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "hython probe_identify (save + reopen sentinel count)",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "[1-9][0-9]* sentinel lines survived",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "[FINDING] zero sentinels on disk after reopen: 7 sentinel lines survived the save (producer: hipFile.save+reopen)",
+        "PROBE_RESULT FAIL: zero sentinels on disk after reopen"
+       ]
+      },
+      {
+       "check": "pytest test_identify_apply",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "reason_pattern": "save|Save",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": []
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "hython probe_identify (save + reopen sentinel count)"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R5-M2",
+     "rule": 5,
+     "target_row": "IDCORE row 6 (cap)",
+     "files": [
+      "python/synapse/identify/apply.py"
+     ],
+     "mutation": "the 60-bubble cap removed from show()",
+     "edits": [
+      {
+       "file": "python/synapse/identify/apply.py",
+       "old": "    capped = items[:CAP]\n",
+       "new": "    capped = items\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_identify_apply",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "test_cap_and_flash_line",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idcore\\tests\\test_identify_apply.py:157: AssertionError: assert {'shown': 62, 'total': 62} == {",
+        "FAILED tests/test_identify_apply.py::test_cap_and_flash_line - AssertionError...",
+        "================== 1 failed, 11 passed, 2 warnings in 0.44s ==================="
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_identify_apply"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R6-M1",
+     "rule": 6,
+     "target_row": "IDCORE row 4",
+     "files": [
+      "python/synapse/cognitive/tools/sidefx_library.py"
+     ],
+     "mutation": "help_summary turned from a keyed exact match into a stem search (LIKE on the first 8 chars, first page wins)",
+     "edits": [
+      {
+       "file": "python/synapse/cognitive/tools/sidefx_library.py",
+       "old": "                [f\"%{name}%\" for name in names],\n",
+       "new": "                [f\"%{name[:8]}%\" for name in names],\n"
+      },
+      {
+       "file": "python/synapse/cognitive/tools/sidefx_library.py",
+       "old": "            if key in wanted and key not in best:\n",
+       "new": "            if key not in best:\n"
+      },
+      {
+       "file": "python/synapse/cognitive/tools/sidefx_library.py",
+       "old": "        for candidate in candidates:  # most-specific candidate first\n            if candidate in best:\n",
+       "new": "        for candidate in list(best):\n            if candidate in best:\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_identify_library",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "test_exact_returns_unknown_where_search_would_phantom",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idcore\\tests\\test_identify_library.py:115: AssertionError: assert ('A demo.', 'https://www.side",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idcore\\tests\\test_identify_library.py:125: AssertionError: assert 'Versioned page summary.' in ",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idcore\\tests\\test_identify_library.py:158: AssertionError: assert ('Bevels or chamfers the edge",
+        "FAILED tests/test_identify_library.py::test_help_summary_excludes_example_pages"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_identify_library"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R7-M1b",
+     "rule": 7,
+     "target_row": "IDCORE row 7 / blueprint rule 7",
+     "files": [
+      "python/synapse/identify/facts.py"
+     ],
+     "mutation": "re-run of R7-M1 with the idcore leg's own three test files (the panel file does not exist on bp11/idcore)",
+     "edits": [
+      {
+       "file": "python/synapse/identify/facts.py",
+       "old": "    if inspect is None:\n        from synapse.server.introspection import inspect_selection as inspect\n",
+       "new": "    if inspect is None:\n        inspect = lambda **kw: None\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest identify compose+library+apply",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "reason_pattern": "FAILED",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": []
+      },
+      {
+       "check": "CRUX-R7 grep: facts.py imports inspect_selection",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "count 0",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "CRUX_R7 import-of-inspect_selection count 0"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "CRUX-R7 grep: facts.py imports inspect_selection"
+     ],
+     "right_reason": true
+    }
+   ]
+  },
+  "BP11-IDSURF": {
+   "checkout": "6fc22be6 (product fbbb7187)",
+   "mutations": [
+    {
+     "id": "R1-M1",
+     "rule": 1,
+     "target_row": "IDSURF row 2",
+     "files": [
+      "python/synapse/panel/command_palette.py"
+     ],
+     "mutation": "remove '/identify' from PANEL_ANSWERED_COMMANDS (command_palette.py) so the command could reach the model",
+     "edits": [
+      {
+       "file": "python/synapse/panel/command_palette.py",
+       "old": "    \"/restore-session\",\n    \"/identify\",\n})\n",
+       "new": "    \"/restore-session\",\n})\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest identify_button+palette_ranking",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "appears_exactly_once|never_reaches_the_model|PANEL_ANSWERED",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idsurf\\tests\\panel\\test_identify_button.py:88: AssertionError: assert '/identify' in frozenset(",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idsurf\\tests\\test_palette_ranking.py:103: AssertionError: assert frozenset({'/...ved-recipes'})",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idsurf\\tests\\test_palette_ranking.py:175: AssertionError: ['/identify']",
+        "FAILED tests/panel/test_identify_button.py::test_identify_is_panel_answered_and_appears_exactly_once"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest identify_button+palette_ranking"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R5-M1",
+     "rule": 5,
+     "target_row": "IDSURF row 3",
+     "files": [
+      "python/synapse/panel/synapse_panel.py"
+     ],
+     "mutation": "compose moved onto the main thread inside _identify_worker (run_on_main around compose)",
+     "edits": [
+      {
+       "file": "python/synapse/panel/synapse_panel.py",
+       "old": "                composed.append((node_facts.get(\"path\"), _compose.compose(node_facts)))\n",
+       "new": "                composed.append((node_facts.get(\"path\"), run_on_main(lambda: _compose.compose(node_facts))))\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_identify_button",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "run_off_main_and_apply_runs_on_main",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "FAILED tests/panel/test_identify_button.py::test_compose_and_library_run_off_main_and_apply_runs_on_main",
+        "=================== 1 failed, 8 passed, 2 warnings in 0.84s ==================="
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_identify_button"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R8-M1",
+     "rule": 8,
+     "target_row": "IDSURF row 4",
+     "files": [
+      "python/synapse/panel/selection_inspector.py"
+     ],
+     "mutation": "a setComment writer added to selection_inspector.identify_cell_text",
+     "edits": [
+      {
+       "file": "python/synapse/panel/selection_inspector.py",
+       "old": "    path = node.get(\"path\")\n    node_facts = None\n",
+       "new": "    path = node.get(\"path\")\n    writer = getattr(node, \"setComment\", None)\n    if writer:\n        writer(\"crux\")\n    node_facts = None\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_identify_button",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "test_inspector_stays_read_only_no_writer_calls",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idsurf\\tests\\panel\\test_identify_button.py:240: AssertionError: setComment",
+        "FAILED tests/panel/test_identify_button.py::test_inspector_stays_read_only_no_writer_calls",
+        "=================== 1 failed, 8 passed, 2 warnings in 0.88s ==================="
+       ]
+      },
+      {
+       "check": "CRUX-IS3 grep: writer calls in selection_inspector.py",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "count [1-9]",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "CRUX_R8 writer-call count 1"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_identify_button",
+      "CRUX-IS3 grep: writer calls in selection_inspector.py"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R9-M1",
+     "rule": 9,
+     "target_row": "IDSURF row 2",
+     "files": [
+      "python/synapse/panel/command_palette.py"
+     ],
+     "mutation": "'/identify' registered twice in the command_palette catalogue",
+     "edits": [
+      {
+       "file": "python/synapse/panel/command_palette.py",
+       "old": "    (\"/identify\", \"Explain every selected node with an on-canvas bubble (local, zero-token)\"),\n]\n",
+       "new": "    (\"/identify\", \"Explain every selected node with an on-canvas bubble (local, zero-token)\"),\n    (\"/identify\", \"Explain every selected node with an on-canvas "
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest identify_button+palette_ranking",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "appears_exactly_once|literals|duplicate",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idsurf\\tests\\panel\\test_identify_button.py:91: AssertionError: [{'context': None, 'desc': 'Expl",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\idsurf\\tests\\test_palette_ranking.py:172: AssertionError: a command is listed twice",
+        "FAILED tests/panel/test_identify_button.py::test_identify_is_panel_answered_and_appears_exactly_once",
+        "FAILED tests/test_palette_ranking.py::test_exactly_five_palette_sends_are_still_literals"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest identify_button+palette_ranking"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "R9-M2",
+     "rule": 9,
+     "target_row": "IDSURF row 1 (token authority)",
+     "files": [
+      "python/synapse/panel/synapse_panel.py"
+     ],
+     "mutation": "the Identify button built from a raw QPushButton with a hex colour stylesheet instead of designsystem.components + tokens",
+     "edits": [
+      {
+       "file": "python/synapse/panel/synapse_panel.py",
+       "old": "        self._identify_btn = c.Button(\"Identify\", variant=\"ghost\")\n",
+       "new": "        self._identify_btn = QtWidgets.QPushButton(\"Identify\")\n        self._identify_btn.setStyleSheet(\"color: #ff00ff;\")\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_token_authority",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "reason_pattern": "declares_colours|colour|ff00ff",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": []
+      },
+      {
+       "check": "pytest test_identify_button",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "reason_pattern": "FAILED",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": []
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "survived",
+     "bitten_by": [],
+     "right_reason": false
+    },
+    {
+     "id": "R1-M1b",
+     "rule": 1,
+     "target_row": "IDSURF row 2",
+     "files": [
+      "python/synapse/panel/command_palette.py"
+     ],
+     "mutation": "R1-M1 again with a direct membership check: is '/identify' still panel-answered and never sent to the model?",
+     "edits": [
+      {
+       "file": "python/synapse/panel/command_palette.py",
+       "old": "    \"/restore-session\",\n    \"/identify\",\n})\n",
+       "new": "    \"/restore-session\",\n})\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "CRUX-R1 membership: /identify in PANEL_ANSWERED_COMMANDS",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "panel-answered = False",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "CRUX_R1 /identify panel-answered = False"
+       ]
+      },
+      {
+       "check": "pytest test_palette_ranking -k panel_answered",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "FAILED|Error",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "E   AssertionError: assert frozenset({'/...ved-recipes'}) == frozenset({'/...ved-recipes'})",
+        "E   AssertionError: ['/identify']",
+        "E   AssertionError: assert '/identify' in frozenset({'/events', '/lookdev-suggestion', '/render', '/restore-session', '/saved-recipes'})",
+        "FAILED tests/test_palette_ranking.py::test_the_five_panel_answered_commands_are_marked_at_the_one_build_path"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "CRUX-R1 membership: /identify in PANEL_ANSWERED_COMMANDS",
+      "pytest test_palette_ranking -k panel_answered"
+     ],
+     "right_reason": true
+    }
+   ]
+  },
+  "BP11-SALIENCE": {
+   "checkout": "92c81850 (product df7aba01)",
+   "mutations": [
+    {
+     "id": "S-M1",
+     "rule": "salience-privacy",
+     "target_row": "SALIENCE row 2",
+     "files": [
+      "python/synapse/identify/salience.py"
+     ],
+     "mutation": "_node_view leaks the node path into node_summary (the state reaching Jev)",
+     "edits": [
+      {
+       "file": "python/synapse/identify/salience.py",
+       "old": "        \"node_summary\": facts.get(\"summary\") or \"\",\n    }\n",
+       "new": "        \"node_summary\": (facts.get(\"summary\") or \"\") + \" \" + str(facts.get(\"path\") or \"\"),\n    }\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_identify_salience",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "leak_nothing",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\salience\\tests\\test_identify_salience.py:73: AssertionError: 'show_secret' leaked into the sali",
+        "FAILED tests/test_identify_salience.py::test_states_for_a_secret_node_leak_nothing",
+        "=================== 1 failed, 8 passed, 2 warnings in 0.44s ==================="
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_identify_salience"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "S-M2",
+     "rule": "salience-lop",
+     "target_row": "SALIENCE rows 8-9",
+     "files": [
+      "python/synapse/identify/facts.py"
+     ],
+     "mutation": "_lop_writes returns None for every node (the LOP 'writes' line vanishes)",
+     "edits": [
+      {
+       "file": "python/synapse/identify/facts.py",
+       "old": "    try:\n        if node.type().category().name() != \"Lop\":\n            return None\n",
+       "new": "    return None\n    try:\n        if node.type().category().name() != \"Lop\":\n            return None\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_identify_facts_lop",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "sorts_and_counts|writes_ball",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\salience\\tests\\test_identify_facts_lop.py:90: AssertionError: assert None == {'count': 2, 'firs",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\salience\\tests\\test_identify_facts_lop.py:100: AssertionError: assert 'writes /ball (+1)' in ['",
+        "FAILED tests/test_identify_facts_lop.py::test_lop_writes_sorts_and_counts - A...",
+        "FAILED tests/test_identify_facts_lop.py::test_lop_writes_here_line_reads_writes_ball_plus_one"
+       ]
+      },
+      {
+       "check": "hython probe_identify (LOP merge line)",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "PROBE_RESULT FAIL: LOP merge|\\[FINDING\\] LOP merge",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "[FINDING] LOP merge Here line reads 'writes /ball (+1)': here=None (producer: build_lop_chain + facts._lop_writes)",
+        "PROBE_RESULT FAIL: LOP merge Here line reads 'writes /ball (+1)'"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_identify_facts_lop",
+      "hython probe_identify (LOP merge line)"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "S-M3",
+     "rule": "salience-optin",
+     "target_row": "SALIENCE row 3",
+     "files": [
+      "python/synapse/identify/salience.py"
+     ],
+     "mutation": "run_shadow ignores the artist's Jev preference (opt_in no longer gates the lane)",
+     "edits": [
+      {
+       "file": "python/synapse/identify/salience.py",
+       "old": "    if not opt_in or not adapter.enabled(opt_in=True):\n",
+       "new": "    if not adapter.enabled(opt_in=True):\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "pytest test_identify_salience",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "test_preference_off_never_calls_judge",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "FAILED tests/test_identify_salience.py::test_preference_off_never_calls_judge",
+        "=================== 1 failed, 8 passed, 2 warnings in 0.44s ==================="
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_identify_salience"
+     ],
+     "right_reason": true
+    }
+   ]
+  },
+  "BP11-HARDEN": {
+   "checkout": "fbd7eb8a (product 04d827e4)",
+   "mutations": [
+    {
+     "id": "H-M1",
+     "rule": "harden",
+     "target_row": "HARDEN row 2",
+     "files": [
+      "python/synapse/identify/compose.py"
+     ],
+     "mutation": "a silent 'except Exception: pass' appended to python/synapse/identify/compose.py (crucible's file of choice)",
+     "edits": [
+      {
+       "file": "python/synapse/identify/compose.py",
+       "old": "",
+       "new": "\n\ndef _crux_swallow():\n    try:\n        return 1\n    except Exception:\n        pass\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "python scripts/except_ratchet.py",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "compose",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": []
+      },
+      {
+       "check": "pytest test_except_ratchet",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "test_except_ratchet_passes_on_clean_tree",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\harden\\tests\\test_except_ratchet.py:25: AssertionError: Ratchet check failed: broad_total=1379",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5\\scratchpad\\clones\\harden\\tests\\test_except_ratchet.py:134: AssertionError: Identify file python/synapse/identify/",
+        "FAILED tests/test_except_ratchet.py::test_except_ratchet_passes_on_clean_tree",
+        "FAILED tests/test_except_ratchet.py::test_identify_files_have_zero_baseline"
+       ]
+      }
+     ],
+     "restored_clean": false,
+     "verdict": "bite",
+     "bitten_by": [
+      "pytest test_except_ratchet"
+     ],
+     "right_reason": true,
+     "note": "pre-restored files left modified by an earlier run (EOL-only or ledger): ['python/synapse/panel/synapse_panel.py', 'tests/fixtures/except_ratchet_baseline.json']"
+    },
+    {
+     "id": "H-M2",
+     "rule": "harden-ci",
+     "target_row": "HARDEN row 1",
+     "files": [
+      ".github/workflows/ci.yml"
+     ],
+     "mutation": "windows-latest removed from the ci.yml test matrix",
+     "edits": [
+      {
+       "file": ".github/workflows/ci.yml",
+       "old": "        os: [ubuntu-latest, macos-latest, windows-latest]\n",
+       "new": "        os: [ubuntu-latest, macos-latest]\n"
+      }
+     ],
+     "checks": [
+      {
+       "check": "CRUX-H0 yaml matrix check",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "reason_pattern": "CRUX_CI os = \\['ubuntu-latest', 'macos-latest'\\]",
+       "reason_found_on_red_line": true,
+       "mutated_red_lines": [
+        "CRUX_CI os = ['ubuntu-latest', 'macos-latest']"
+       ]
+      },
+      {
+       "check": "pytest test_r_track ci tests + test_except_ratchet (no tracked pin expected)",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "reason_pattern": "FAILED",
+       "reason_found_on_red_line": false,
+       "mutated_red_lines": []
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "bite",
+     "bitten_by": [
+      "CRUX-H0 yaml matrix check"
+     ],
+     "right_reason": true
+    },
+    {
+     "id": "H-M3",
+     "leg": "BP11-HARDEN",
+     "rules": [],
+     "target_row": "HARDEN row 2",
+     "files": [
+      "python/synapse/identify/compose.py (planted swallow)",
+      "tests/fixtures/except_ratchet_baseline.json (rewritten by the leg's own test)"
+     ],
+     "mutation": "plant one silent `except Exception: pass` in compose.py, run the leg's own tests/test_except_ratchet.py ONCE, restore compose.py, re-plant the same swallow, run the ratchet check",
+     "checks": [
+      {
+       "check": "STEP1 python scripts/except_ratchet.py with the swallow planted (fresh baseline)",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "mutated_red_lines": [
+        "FILE VIOLATIONS (1):",
+        "python/synapse/identify/compose.py: 0 -> 1"
+       ]
+      },
+      {
+       "check": "STEP2 pytest tests/test_except_ratchet.py once (its positive control runs --write-baseline and restores only synapse_panel.py)",
+       "baseline_rc": 0,
+       "mutated_rc": 1,
+       "mutated_red_lines": [
+        "2 failed, 2 passed",
+        "baseline now lists python/synapse/identify/compose.py: 1"
+       ]
+      },
+      {
+       "check": "STEP4 python scripts/except_ratchet.py with the swallow re-planted, against the baseline the test left behind",
+       "baseline_rc": 0,
+       "mutated_rc": 0,
+       "mutated_red_lines": [
+        "OK"
+       ]
+      }
+     ],
+     "restored_clean": true,
+     "verdict": "survived",
+     "right_reason": false,
+     "note": "The ratchet holds on a fresh baseline (STEP1) and resets itself after one run of its own test file (STEP4): test_positive_control_detects_new_silent_handler regenerates the TRACKED baseline with every swallow present in the tree and its finally-block restores only the mutated panel file. Producer: .scratch/crux_ratchet_selfdefeat.py on the bp11/harden clone fbd7eb8a."
+    }
+   ]
+  }
+ }
+}
