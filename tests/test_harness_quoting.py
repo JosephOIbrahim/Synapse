@@ -353,13 +353,23 @@ def _harness_ps1(exclude_retired=True):
     return files
 
 
+def _display_path(f):
+    """Repo-relative path for a finding, or the absolute path when *f* is on
+    another drive. GitHub's Windows runners check the repo out on D: and give
+    pytest a C: temp dir, and os.path.relpath raises ValueError across drives."""
+    try:
+        return os.path.relpath(f, ROOT)
+    except ValueError:
+        return os.path.abspath(f)
+
+
 def find_command_interpolation(files):
     hits = []
     for f in files:
         try:
             for i, line in enumerate(open(f, encoding="utf-8", errors="replace"), 1):
                 if _RE_CMD.search(line):
-                    hits.append("%s:%d %s" % (os.path.relpath(f, ROOT), i, line.strip()))
+                    hits.append("%s:%d %s" % (_display_path(f), i, line.strip()))
         except OSError:
             pass
     return hits
@@ -371,7 +381,7 @@ def find_bom_json_writes(files):
         try:
             for i, line in enumerate(open(f, encoding="utf-8", errors="replace"), 1):
                 if _RE_BOMJSON.search(line):
-                    hits.append("%s:%d %s" % (os.path.relpath(f, ROOT), i, line.strip()))
+                    hits.append("%s:%d %s" % (_display_path(f), i, line.strip()))
         except OSError:
             pass
     return hits
@@ -384,7 +394,7 @@ def find_unparseable_json(files):
             with open(f, encoding="utf-8") as fh:
                 json.load(fh)
         except Exception as e:
-            bad.append("%s: %s" % (os.path.relpath(f, ROOT), str(e)[:80]))
+            bad.append("%s: %s" % (_display_path(f), str(e)[:80]))
     return bad
 
 
