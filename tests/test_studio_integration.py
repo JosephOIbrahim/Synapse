@@ -214,9 +214,13 @@ class TestStudioIntegration:
         )
         assert mgr.count == 1
 
-        # Let it expire
+        # Let it expire. Wait on the clock SessionManager reads, not a fixed
+        # sleep: before Python 3.13 on Windows, time.monotonic() ticks about
+        # every 15.6 ms, so a 10 ms sleep can leave the session still fresh.
         import time
-        time.sleep(0.01)
+        start = time.monotonic()
+        while time.monotonic() - start <= 0.01:
+            time.sleep(0.005)
         expired = mgr.expire_stale()
         assert expired == 1
         assert mgr.count == 0
