@@ -32,6 +32,7 @@ from pathlib import Path
 
 from . import compose as _compose
 from ..jev import adapter
+import logging
 
 #: Adapter lane + mode for this feature (IDENTIFY_BLUEPRINT sec. 5).
 LANE = "identify_salience"
@@ -206,6 +207,9 @@ def run_shadow(node_facts, *, opt_in, scope=None, grant=None, should_abort=None,
     try:
         return spawn(lambda: _judge_survivors(node_view, params, scope=scope,
                                               grant=grant, should_abort=should_abort))
-    except Exception:
-        _JOBS.slot.release()
+    except Exception as e:
+
+            logging.debug("exception: %s", e)
+
+                
         return None

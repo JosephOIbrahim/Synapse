@@ -14,10 +14,12 @@ sentinel.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import logging
 
 try:  # pragma: no cover - exercised live under hython
     import hou
-except Exception:  # pragma: no cover
+except Exception as e:  # pragma: no cover
+    logging.debug("hou import unavailable: %s", e)
     hou = None
 
 
@@ -108,8 +110,8 @@ def _flash(editor, text: str) -> None:
         return
     try:
         editor.flashMessage(None, text, 6)
-    except Exception:
-        pass
+    except Exception as e:
+        logging.debug("flashMessage failed: %s", e)
 
 
 def show(items, total=None, editor=None) -> dict:

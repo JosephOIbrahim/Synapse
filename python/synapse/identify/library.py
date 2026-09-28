@@ -13,6 +13,7 @@ this module runnable off the main thread and on system Python.
 from __future__ import annotations
 
 import re
+import logging
 
 
 _OPERATOR_RE = re.compile(
@@ -95,8 +96,11 @@ def summarize(help_url: str, hda_help: str | None = None,
     if keys:
         try:
             hit = lookup(keys)
-        except Exception:
-            hit = None
+        except Exception as e:
+
+                logging.debug("exception: %s", e)
+
+                        
         if hit:
             text = first_sentence(summary_paragraph(hit[0]))
             if text:
