@@ -2,7 +2,12 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import sqlite3
+from pathlib import Path
+
+import pytest
 
 from synapse.identify import library as LIB
 from synapse.cognitive.tools import sidefx_library as SL
@@ -236,3 +241,94 @@ def test_injected_lookup_is_never_served_from_cache(monkeypatch):
     LIB.summarize("operator:Sop/box", lookup=spy)
     LIB.summarize("operator:Sop/box", lookup=spy)
     assert len(hits) == 2                       # called both times, not cached
+
+
+# ── BP11-IDFIX2 T2: markup paragraphs AFTER the title are skipped ──────────────
+
+# The exact real-corpus body for PolyExtrude — help_summary(['nodes/sop/polyextrude'])
+# at bp11/idfix, SYNAPSE_SIDEFX_CORPUS_ROOT=G:/HOUDINI22/_CORPUS (seat finding
+# 17:10). The BOM+directive block and the include line sit AFTER the title, not
+# at the very top, so header-stripping from the top left '#type: node' as the
+# summary (the G2 bubble bug). The markup-only paragraphs must be skipped
+# wherever they sit, so the first prose paragraph after the title wins.
+_POLYEXTRUDE_REAL = (
+    "PolyExtrude\n\n\ufeff#type: node\n\n"
+    "Extrudes polygonal faces and edges.\n\n"
+    ":include /shelf/polyextrude#includeme:")
+
+
+def test_summary_paragraph_skips_markup_after_title_real_shape():
+    assert LIB.summary_paragraph(_POLYEXTRUDE_REAL) == (
+        "Extrudes polygonal faces and edges.")
+
+
+def test_summarize_polyextrude_real_shape_yields_prose():
+    # summarize with the exact real body -> the prose sentence, source 'library'.
+    text, source = LIB.summarize("operator:Sop/polyextrude::2.0",
+                                 lookup=lambda keys: (_POLYEXTRUDE_REAL, "u"))
+    assert (text, source) == ("Extrudes polygonal faces and edges.", "library")
+
+
+def test_is_markup_only_covers_directive_include_and_bom():
+    # markup-only paragraphs (dropped wherever they sit):
+    assert LIB._is_markup_only("\ufeff#type: node")
+    assert LIB._is_markup_only("#type: node\n#context: sop")
+    assert LIB._is_markup_only(":include /shelf/polyextrude#includeme:")
+    assert LIB._is_markup_only(":include /news/beta:")
+    # NOT markup-only (prose kept): a sentence, a wiki heading, and an inline
+    # ':warning:' admonition on real prose (line-level markup, out of scope).
+    assert not LIB._is_markup_only("Extrudes polygonal faces and edges.")
+    assert not LIB._is_markup_only("= Name =")
+    assert not LIB._is_markup_only(":warning:Deprecated: the node is gone.")
+
+
+def _corpus_top_bodies():
+    """page-top chunk body per indexed nodes/sop|lop key, or skip if no corpus.
+
+    Mirrors sidefx_library.help_summary's key normalization and earliest-chunk
+    ('page-top') selection so the invariant is checked on exactly the bodies the
+    product summarizes.
+    """
+    root = os.environ.get(SL.ROOT_ENV)
+    if not root or not (Path(root) / "current.json").exists():
+        pytest.skip(f"{SL.ROOT_ENV} not configured / corpus absent")
+    root = Path(root)
+    pointer = json.loads((root / "current.json").read_text(encoding="utf-8"))
+    db = root / pointer["database"]
+    with sqlite3.connect(db.as_uri() + "?mode=ro", uri=True) as con:
+        con.execute("PRAGMA query_only = ON")
+        rows = con.execute(
+            "SELECT id, source_url, body FROM chunks WHERE domain='docs' AND "
+            "(source_url LIKE '%nodes/sop/%' OR source_url LIKE '%nodes/lop/%') "
+            "ORDER BY id").fetchall()
+    top: dict[str, tuple] = {}
+    for cid, url, body in rows:
+        path = str(url).replace("\\", "/").split("#", 1)[0].split("?", 1)[0].lower()
+        last = path.rsplit("/", 1)[-1]
+        if "." in last:
+            path = path[: len(path) - len(last)] + last.rsplit(".", 1)[0]
+        m = re.search(r"(?:^|/)(nodes/[a-z0-9_]+/[a-z0-9_.\-]+)$", path)
+        if not m:
+            continue
+        key = m.group(1)
+        if key.endswith("-"):
+            key = key[:-1]
+        if key not in top or cid < top[key][0]:
+            top[key] = (cid, body)
+    return top
+
+
+def test_no_indexed_sop_lop_summary_is_a_markup_only_paragraph():
+    """Corpus-gated invariant (BP11-IDFIX2 T2): across every indexed SOP/LOP node
+    page, the chosen summary paragraph is never a help-markup-only block — no
+    '#key: value' directive, ':name ...:' include, or BOM+directive leaks as a
+    node's What line. Residual LINE-level markup ('=' stub headings, ':warning:'
+    inline admonitions, '@' TOC/index pages) is not a markup-only paragraph and
+    is out of this rule's scope; it is tracked in the leg receipt's for_ruling.
+    Removing the markup-paragraph skip in summary_paragraph makes this bite.
+    """
+    top = _corpus_top_bodies()
+    assert top, "no indexed SOP/LOP pages found in the corpus"
+    leaks = [key for key, (_cid, body) in top.items()
+             if LIB._is_markup_only(LIB.summary_paragraph(body))]
+    assert leaks == [], f"markup-only summaries leaked for: {sorted(leaks)[:10]}"

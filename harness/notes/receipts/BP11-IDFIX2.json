@@ -1,0 +1,66 @@
+{
+  "leg": "BP11-IDFIX2",
+  "status": "green_with_findings",
+  "product_head": "61f1e3e3",
+  "base": "3f7157cd",
+  "touches": [
+    "python/synapse/identify/library.py",
+    "tests/test_identify_library.py"
+  ],
+  "summary": "summary_paragraph now skips help-markup-only paragraphs (U+FEFF, '#key: value' directives, ':name ...:' includes) wherever they sit, not only at the top of the body, so the first prose paragraph after the title wins. The real corpus shape for PolyExtrude now yields 'Extrudes polygonal faces and edges.' instead of the '#type: node' directive. Corpus sweep over 1571 SOP/LOP pages: markup-leading summaries 27 -> 17; the classes the paragraph rule covers go to 0. Residual line-level markup is listed in for_ruling.",
+  "acceptance": [
+    {
+      "predicate": "pytest passes on the leg tip for tests/test_identify_*.py, tests/panel/test_identify_button.py and tests/test_except_ratchet.py; counts in the receipt",
+      "verdict": "pass",
+      "evidence": "SYNAPSE_SIDEFX_CORPUS_ROOT=G:/HOUDINI22/_CORPUS python -m pytest -q --tb=line -p no:cacheprovider -> 51 passed, 2 warnings in 3.56s. Counts: test_identify_library.py 25, test_identify_hardfix.py 5, test_identify_facts_lop.py 5, tests/panel/test_identify_button.py 10, tests/test_except_ratchet.py 6. No skip marker: the corpus-gated test RAN (env set), not skipped."
+    },
+    {
+      "predicate": "summarize('operator:Sop/polyextrude::2.0') against the real corpus returns ('Extrudes polygonal faces and edges.', 'library')",
+      "verdict": "pass",
+      "evidence": ".scratch/check_acc2.py (default lookup, real corpus G:/HOUDINI22/_CORPUS) printed ('Extrudes polygonal faces and edges.', 'library') then ACC2_OK."
+    },
+    {
+      "predicate": "the corpus sweep reports markup-leading summaries before and after, with 0 after for the classes the rule covers",
+      "verdict": "pass",
+      "evidence": ".scratch/sweep_markup.py -> .scratch/sweep_markup_report.json: pages_scanned 1571; before_total 27 {':' 14, '=' 6, U+FEFF 5, '@' 2}; after_total 17 {':' 8, '=' 6, U+FEFF 1, '@' 2}. Paragraph-rule classes -> 0 after: no '#key: value'-only paragraph leaks, the ':include /news/beta:' includes are gone, and the 'U+FEFF#type: node' directive blocks are gone. The residual 17 are line-level markup outside the paragraph rule (for_ruling)."
+    },
+    {
+      "predicate": "scripts/except_ratchet.py exits 0; grep finds no root-level logging call in python/synapse/identify/",
+      "verdict": "pass",
+      "evidence": "python scripts/except_ratchet.py -> broad_total=1379 silent_total=995 OK, exit 0 (no except added). grep 'logging.(debug|info|warning|error|critical|exception|log)\\(' over python/synapse/identify/ -> No matches (only '_log = logging.getLogger(__name__)' and additive '_log.debug', per HARDFIX)."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "BP11-HARDFIX holds an open (unreleased) bus claim on python/synapse/identify/library.py, which overlaps this leg's touches. HARDFIX is this leg's ancestor: its commits (5159b6bc/6efbe4c6) are baked into base 3f7157cd and this worktree is cut from bp11/idfix. This is the intended sequential handoff, not a live concurrent edit, so I proceeded rather than blocking on a completed parent (blocking would deadlock the chain).",
+      "anchor": "bus claims bp11 (BP11-HARDFIX claim ts 2026-09-28T14:15:07)"
+    },
+    {
+      "claim": "The fix cut markup-leading SOP/LOP summaries from 27 to 17 over 1571 indexed pages. All covered classes reached 0; the residual 17 are line-level or heading-level markup that the paragraph rule cannot address without a different rule.",
+      "anchor": ".scratch/sweep_markup_report.json"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "':warning:' inline admonition on prose (8 pages: nodes/sop/{cloud,bonesolidify,deformmuscle,muscle,musclecapture,muscledeform,...})",
+      "detail": "The deprecation description begins with an inline ':warning:' admonition token glued to real prose (e.g. ':warning:Deprecated: The Cloud SOP is now deprecated.'). The paragraph is genuinely prose, so the markup-only paragraph rule must NOT drop it. Proposed follow-up (a distinct LINE-level rule): strip a leading inline ':name:' admonition token from the chosen summary. Deliberately not done here to keep the diff to the paragraph rule.",
+      "anchor": ".scratch/sweep_markup_report.json after_first_ten"
+    },
+    {
+      "item": "'= Heading =' stub/redirect pages (7 incl. one BOM variant: nodes/sop/lopimport '= LOP Import =', nodes/sop/name 'U+FEFF= Name =', ...)",
+      "detail": "These pages carry only a wiki heading and no prose paragraph, so the honest answer is UNKNOWN, but the existing title-drop heuristic cannot fire (it needs a following paragraph). Proposed follow-up: treat a lone '= Heading =' paragraph as a droppable title so the page reports the honest unknown (rule 6). Not a '#'/':name...:' directive, so out of the paragraph rule as scoped.",
+      "anchor": ".scratch/sweep_markup_report.json after_first_ten (lopimport, name)"
+    },
+    {
+      "item": "'@subtopics Examples' TOC/index pages (2: nodes/sop/index, nodes/lop/index)",
+      "detail": "These are category index pages, not node types. An Identify lookup keys on a node's operator help URL (derive_help_keys) and never resolves to '/index', so this does not affect the feature. Proposed: no product fix needed; optionally exclude '/index' pages from any future corpus audit.",
+      "anchor": ".scratch/sweep_markup_report.json after_first_ten (nodes/sop/index, nodes/lop/index)"
+    }
+  ],
+  "packet_gaps": [
+    "The packet gave the exact code windows (library.py:61-157) and the bug evidence, but not the top-of-file regex/imports (lines 1-60: _HELP_DIRECTIVE, _PARAGRAPHS, _SENTENCE_END, _log) the fix builds on; had to read them.",
+    "No pointer to how to ENUMERATE the indexed pages for the sweep: sidefx_library.help_summary's key normalization + page-top (earliest-chunk) selection at lines 300-369; had to read sidefx_library.py to mirror it faithfully in both the sweep and the corpus-gated test.",
+    "The existing tests/test_identify_library.py shape (fixtures _build_corpus, naming) was not in the packet; had to read it to match style and avoid duplicate names."
+  ],
+  "spawn": []
+}
