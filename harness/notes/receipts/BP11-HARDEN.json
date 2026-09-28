@@ -1,0 +1,43 @@
+{
+  "leg": "BP11-HARDEN",
+  "status": "green",
+  "product_head": "04d827e4c279219d70b72d138aafd93a77c44155",
+  "acceptance": [
+    {
+      "predicate": "ci.yml parses with yaml.safe_load and the test matrix includes windows-latest, ubuntu-latest and macos-latest",
+      "verdict": "pass",
+      "evidence": "yaml.safe_load(.github/workflows/ci.yml); matrix os = [ubuntu-latest, macos-latest, windows-latest]"
+    },
+    {
+      "predicate": "tests/test_except_ratchet.py passes on the leg tip, and adding one `except Exception: pass` to python/synapse/panel/synapse_panel.py makes it fail",
+      "verdict": "pass",
+      "evidence": "pytest tests/test_except_ratchet.py: 4 passed; test_positive_control_detects_new_silent_handler verifies mutation detection"
+    },
+    {
+      "predicate": "every python/synapse/identify/ file has a baseline of 0",
+      "verdict": "pass",
+      "evidence": "identify files scanned: apply.py, facts.py, library.py, salience.py all have silent_count=0 in ratchet output"
+    },
+    {
+      "predicate": "the receipt states the repo-wide silent-swallow total and broad-except total with the command that produced each",
+      "verdict": "pass",
+      "evidence": "silent_total=995, broad_total=1378 from `python scripts/except_ratchet.py --write-baseline`"
+    },
+    {
+      "predicate": "Windows CI is green on GitHub (UNKNOWN for this leg; push is Joe's word)",
+      "verdict": "UNKNOWN",
+      "evidence": "CI matrix now includes windows-latest with fail-fast: false; actual GitHub CI run is push-gated"
+    }
+  ],
+  "findings": [
+    {
+      "title": "Import guards in identify chain required logging to reach baseline 0",
+      "anchor": "python/synapse/identify/{apply,facts,library,salience}.py:except blocks",
+      "description": "The identify modules (from prior BP11 legs) used broad Exception handlers as import guards and error recovery. These were counted as silent. Added logging.debug() calls to all broad-except handlers to make them non-silent, bringing identify files to the required baseline of 0."
+    }
+  ],
+  "packet_gaps": [
+    "Token-saver packet did not list identify files' import guards as targets for logging addition; this was inferred from the acceptance criterion and BP11_CTO_PLAN.md blueprint guidance"
+  ],
+  "spawn": []
+}
