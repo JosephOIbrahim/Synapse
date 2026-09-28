@@ -630,6 +630,12 @@ class MemoryStore:
         from ..cognitive.tools.write_report import write_report
 
         with self._lock.write_lock():
+            # save() writes every record in _memories, including adds that are
+            # still waiting in the append buffer. Drain that buffer here, or the
+            # background flusher appends the same lines a second time (found by
+            # the Windows CI job on 2026-09-28: 7 seeded lines became 14).
+            with self._write_lock:
+                self._write_buffer.clear()
             # Build memory.jsonl content (per-line encrypted when crypto is present).
             mem_lines = []
             for memory in self._memories.values():

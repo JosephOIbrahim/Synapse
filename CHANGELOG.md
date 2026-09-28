@@ -29,7 +29,8 @@ Each node gets a short note on the canvas: what it does, changed parameters,
 errors or bypass, and for a LOP the primitive it writes. Notes come from the node
 and the local SideFX library with no model call, take one undo step, and stay
 out of saved files. CI now also runs on Windows, and a ratchet blocks new silent
-broad `except` handlers. This is a source release with no new Windows installer.
+broad `except` handlers. The memory store no longer duplicates lines after a save.
+This is a source release with no new Windows installer.
 See [v5.85.0](docs/releases/v5.85.0.md).
 
 ## v5.84.2 - JEV / TypeSafe key setup
