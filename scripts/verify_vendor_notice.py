@@ -1,86 +1,84 @@
 #!/usr/bin/env python3
-"""Verify fxhoudinimcp NOTICE.md hashes against upstream git blobs.
+"""Verify fxhoudinimcp NOTICE.md hashes against the committed git blobs.
 
-Recomputes SHA256 for each file listed in NOTICE.md by cloning the upstream
-repository at the specified commit and hashing the actual file content.
-Exits with status 0 if all hashes match, 1 if any mismatch is found.
+For every file listed in NOTICE.md, the expected SHA256 is compared against the
+sha256 of the *committed git blob* obtained with `git cat-file blob HEAD:<path>`.
+
+Hashing the blob (not a working-tree file) is deliberate: on Windows,
+``core.autocrlf=true`` rewrites LF to CRLF on checkout, so a working-tree file
+hashes differently on every platform while its blob stays LF everywhere. A
+verifier that read the checkout would bless CRLF hashes on Windows and reject
+them on Linux -- which is exactly the BP11-FIXFWD defect this repair closes.
+
+The NOTICE.md table itself is read from the working tree (so a local edit to a
+hash is what the mutation/CRLF tests exercise); only the *content* being hashed
+comes from the object store. No guide or LICENSE file is ever read from disk.
+
+Exits 0 if every hash matches, 1 on any mismatch, missing, or unexpected entry.
 """
 
 import sys
 import re
-import tempfile
 import subprocess
 import hashlib
 from pathlib import Path
 
+VENDOR = "python/synapse/_vendor/fxhoudinimcp"
+
 
 def parse_notice(notice_path):
-    """Parse NOTICE.md to extract upstream commit and hashes."""
-    with open(notice_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+    """Parse NOTICE.md (working tree) for the upstream commit and hash table."""
+    content = Path(notice_path).read_text(encoding="utf-8")
 
-    # Extract commit hash
-    commit_match = re.search(r'\*\*Commit:\*\*\s+([a-f0-9]{40})', content)
+    commit_match = re.search(r"\*\*Commit:\*\*\s+([a-f0-9]{40})", content)
     if not commit_match:
         raise ValueError("Could not find commit hash in NOTICE.md")
     commit = commit_match.group(1)
 
-    # Extract hashes from table
     hashes = {}
-    for line in content.split('\n'):
-        if line.startswith('|') and ('|' in line[1:]):  # Table row with at least one |
-            parts = [p.strip() for p in line.split('|')]
+    for line in content.split("\n"):
+        if line.startswith("|") and ("|" in line[1:]):  # table row with >=1 pipe
+            parts = [p.strip() for p in line.split("|")]
             if len(parts) >= 3 and parts[1] and parts[2]:
                 filename = parts[1]
                 filehash = parts[2]
-                if len(filehash) == 64:  # SHA256 is 64 hex chars
+                if len(filehash) == 64 and re.fullmatch(r"[0-9a-f]{64}", filehash):
                     hashes[filename] = filehash
 
     return commit, hashes
 
 
-def compute_hashes(commit, upstream_url="https://github.com/healkeiser/fxhoudinimcp"):
-    """Clone upstream repo and compute hashes for all files."""
+def blob_path_for(filename):
+    """Map a NOTICE table entry to its committed repo path."""
+    if filename == "LICENSE":
+        return f"{VENDOR}/LICENSE"
+    return f"{VENDOR}/guides/{filename}"
+
+
+def git_blob(repo_root, repo_path):
+    """Return the raw bytes of HEAD:<repo_path>, or None if it is absent."""
+    result = subprocess.run(
+        ["git", "cat-file", "blob", f"HEAD:{repo_path}"],
+        cwd=str(repo_root),
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
+def compute_hashes(repo_root, expected_hashes):
+    """sha256 of the committed git blob for each file named in the NOTICE table."""
     hashes = {}
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Clone and checkout
-        subprocess.run(
-            ["git", "clone", "--depth", "1", upstream_url, tmpdir],
-            check=True, capture_output=True
-        )
-        subprocess.run(
-            ["git", "fetch", "origin", commit],
-            cwd=tmpdir, check=True, capture_output=True
-        )
-        subprocess.run(
-            ["git", "checkout", commit],
-            cwd=tmpdir, check=True, capture_output=True
-        )
-
-        tmpdir_path = Path(tmpdir)
-
-        # Compute hashes for guide files
-        workflows_dir = tmpdir_path / "python" / "fxhoudinimcp" / "prompts" / "markdown" / "workflows"
-        if workflows_dir.exists():
-            for md_file in sorted(workflows_dir.glob("*.md")):
-                filename = md_file.name
-                with open(md_file, 'rb') as f:
-                    content = f.read()
-                hashes[filename] = hashlib.sha256(content).hexdigest()
-
-        # Compute hash for LICENSE
-        license_file = tmpdir_path / "LICENSE"
-        if license_file.exists():
-            with open(license_file, 'rb') as f:
-                content = f.read()
-            hashes["LICENSE"] = hashlib.sha256(content).hexdigest()
-
+    for filename in expected_hashes:
+        data = git_blob(repo_root, blob_path_for(filename))
+        if data is None:
+            continue  # recorded as a mismatch (missing) by the caller
+        hashes[filename] = hashlib.sha256(data).hexdigest()
     return hashes
 
 
 def main():
-    """Main verifier."""
     repo_root = Path(__file__).parent.parent
     notice_path = repo_root / "python" / "synapse" / "_vendor" / "fxhoudinimcp" / "NOTICE.md"
 
@@ -90,30 +88,23 @@ def main():
 
     try:
         expected_commit, expected_hashes = parse_notice(notice_path)
-        print(f"[info] verifying {len(expected_hashes)} files from commit {expected_commit[:8]}")
+        print(f"[info] verifying {len(expected_hashes)} files against committed git blobs "
+              f"(commit {expected_commit[:8]})")
     except ValueError as e:
         print(f"Error parsing NOTICE.md: {e}", file=sys.stderr)
         return 1
 
-    try:
-        computed_hashes = compute_hashes(expected_commit)
-    except subprocess.CalledProcessError as e:
-        print(f"Error cloning/checking out upstream: {e}", file=sys.stderr)
-        return 1
+    computed_hashes = compute_hashes(repo_root, expected_hashes)
 
-    # Compare
     mismatches = []
     for filename, expected_hash in sorted(expected_hashes.items()):
         if filename not in computed_hashes:
-            mismatches.append(f"Missing: {filename}")
+            mismatches.append(f"Missing blob: {filename} (HEAD:{blob_path_for(filename)})")
         elif computed_hashes[filename] != expected_hash:
             mismatches.append(
-                f"Mismatch {filename}: expected {expected_hash[:8]}..., got {computed_hashes[filename][:8]}..."
+                f"Mismatch {filename}: NOTICE {expected_hash[:8]}..., "
+                f"blob {computed_hashes[filename][:8]}..."
             )
-
-    for filename in computed_hashes:
-        if filename not in expected_hashes:
-            mismatches.append(f"Unexpected: {filename}")
 
     if mismatches:
         print(f"[err] {len(mismatches)} mismatches found:", file=sys.stderr)
@@ -121,7 +112,7 @@ def main():
             print(f"  {msg}", file=sys.stderr)
         return 1
 
-    print(f"[ok] all {len(expected_hashes)} hashes verified")
+    print(f"[ok] all {len(expected_hashes)} hashes match their committed git blobs")
     return 0
 
 
