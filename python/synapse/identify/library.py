@@ -25,6 +25,9 @@ _SENTENCE_END = re.compile(r"(?<=[.!?])(\s|$)")
 
 _PARAGRAPHS = re.compile(r"\n\s*\n")
 
+#: A Houdini help-page header directive line, e.g. ``#type: node`` (sec. 2).
+_HELP_DIRECTIVE = re.compile(r"^#[A-Za-z][\w-]*:")
+
 
 def derive_help_keys(help_url: str) -> list[str]:
     """Canonical ``nodes/<context>/<name>`` keys, most specific first.
@@ -66,20 +69,49 @@ def first_sentence(text: str) -> str:
     return collapsed
 
 
+def _strip_help_header(text: str) -> str:
+    """Drop a leading UTF-8 BOM and any ``#key: value`` help-header lines.
+
+    Houdini help pages often begin with directives like ``#type: node`` and
+    ``#context: sop``, sometimes behind a UTF-8 BOM. Skip the BOM and those
+    header lines so the first *prose* line wins, not a directive (sec. 2). When
+    only a BOM and directives are present the result is empty, which the caller
+    reports as the honest unknown.
+    """
+    lines = text.lstrip("﻿").split("\n")
+    start = len(lines)
+    for i, line in enumerate(lines):
+        stripped = line.strip().lstrip("﻿")
+        if not stripped or _HELP_DIRECTIVE.match(stripped):
+            continue
+        start = i
+        break
+    return "\n".join(lines[start:])
+
+
 def summary_paragraph(body: str) -> str:
     """The description paragraph of a node help page.
 
     Corpus node pages read ``Title\\n\\nSummary sentence.\\n\\n...`` — the first
     paragraph is the node's own title (a bare heading). Drop that heading so the
-    What line is the description, not ``PolyBevel PolyBevel ...``.
+    What line is the description, not ``PolyBevel PolyBevel ...``. A leading BOM
+    and ``#key: value`` header lines are stripped first (sec. 2).
     """
-    paragraphs = [p.strip() for p in _PARAGRAPHS.split(str(body or "").strip()) if p.strip()]
+    paragraphs = [p.strip()
+                  for p in _PARAGRAPHS.split(_strip_help_header(str(body or "")).strip())
+                  if p.strip()]
     if not paragraphs:
         return ""
     head = paragraphs[0]
     if len(paragraphs) > 1 and "\n" not in head and len(head) <= 40 and not re.search(r"[.!?]", head):
         return paragraphs[1]
     return head
+
+
+#: Per-process memo keyed by ``(help_url, hda_help)`` (sec. 5 responsiveness).
+#: Only the production path (``lookup is None``) is memoized, so an injected
+#: test ``lookup`` is always called and never served a stale cached row.
+_SUMMARY_CACHE: dict[tuple, tuple] = {}
 
 
 def summarize(help_url: str, hda_help: str | None = None,
@@ -90,10 +122,19 @@ def summarize(help_url: str, hda_help: str | None = None,
     help first sentence, else unknown. *lookup* defaults to the library's exact
     ``help_summary``; it is injectable for tests. A ``lookup`` that raises is
     treated as no row (honest unknown), never a crash on the bubble path.
+
+    The default path memoizes its result per ``(help_url, hda_help)`` for the
+    life of the process, so a 200-node selection of a few types costs one
+    library lookup per distinct type, not one per node (sec. 5).
     """
-    if lookup is None:
+    use_cache = lookup is None
+    if use_cache:
+        cache_key = (help_url, hda_help)
+        if cache_key in _SUMMARY_CACHE:
+            return _SUMMARY_CACHE[cache_key]
         from synapse.cognitive.tools.sidefx_library import help_summary as lookup
 
+    result: tuple[str | None, str] = (None, "unknown")
     keys = derive_help_keys(help_url)
     if keys:
         try:
@@ -104,11 +145,13 @@ def summarize(help_url: str, hda_help: str | None = None,
         if hit:
             text = first_sentence(summary_paragraph(hit[0]))
             if text:
-                return (text, "library")
+                result = (text, "library")
 
-    if hda_help and str(hda_help).strip():
+    if result[0] is None and hda_help and str(hda_help).strip():
         text = first_sentence(summary_paragraph(hda_help))
         if text:
-            return (text, "hda")
+            result = (text, "hda")
 
-    return (None, "unknown")
+    if use_cache:
+        _SUMMARY_CACHE[cache_key] = result
+    return result
