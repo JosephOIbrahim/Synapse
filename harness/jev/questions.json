@@ -518,6 +518,32 @@
         "other_verdict": "FAIL",
         "confidence_floor": 0.6
       }
+    },
+    "salience": {
+      "edge": "identify changed parms (>2 survive) -> jev_salience.py --shadow -> bp11.salience.jsonl",
+      "state_fields": [
+        "notice",
+        "node_type",
+        "node_category",
+        "node_summary",
+        "parameter_label",
+        "parameter_help",
+        "parameter_type"
+      ],
+      "questions": {
+        "salient": {
+          "type": "noul",
+          "text_source": "python/synapse/identify/salience_questions.json",
+          "_comment": "One question text in one file (IDENTIFY_BLUEPRINT sec. 5): the Noul instructions live in the product file above; jev_salience.py reads them from there so the grader asks exactly what the product asks. Not duplicated here."
+        }
+      },
+      "policy": {
+        "key": "tests/fixtures/identify_salience_key_v1.json",
+        "min_group_params": 3,
+        "top_k": 2,
+        "mode": "shadow",
+        "promotion_bar": "across the graded groups, Jev top-2 agrees with the key more often than code order (ruling R-2)"
+      }
     }
   }
 }

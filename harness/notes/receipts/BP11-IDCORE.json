@@ -1,0 +1,66 @@
+{
+  "leg": "BP11-IDCORE",
+  "status": "green_with_findings",
+  "product_head": "c46a6e79c939e64dd2c186359406de80d6826a42",
+  "acceptance": [
+    {
+      "predicate": "pytest tests/test_identify_compose.py tests/test_identify_library.py tests/test_identify_apply.py passes on system Python without hou",
+      "verdict": "pass",
+      "evidence": "45 passed, 2 warnings (Python 3.14.2, no hou); ABI warning is pre-existing C3."
+    },
+    {
+      "predicate": "compose() on M0 PolyBevel facts (offset 0.07 + five ramp internals) yields exactly one Here entry, by label, no ramp internal",
+      "verdict": "pass",
+      "evidence": "test_m0_polybevel_one_here_entry_no_ramp_internal (== 'Offset 0.07', no comma, no ramp); live probe polybevel1 Here='Distance 0.07' (offset label is 'Distance')."
+    },
+    {
+      "predicate": "artist comment byte-identical after show->clear, after show+BeforeSave strip+AfterSave re-apply+clear, and when it quotes the sentinel in prose",
+      "verdict": "pass",
+      "evidence": "test_show_then_clear_is_byte_identical; test_save_strip_reapply_then_clear_byte_identical; test_artist_comment_that_quotes_sentinel_in_prose_survives (line-based strip inverts the append exactly)."
+    },
+    {
+      "predicate": "library returns 'unknown' for a type with no exact help-path row, and swapping the exact lookup for a search makes a test fail (mutation shown)",
+      "verdict": "pass",
+      "evidence": "test_exact_returns_unknown_where_search_would_phantom: help_summary(['nodes/sop/polybevel_old']) is None; a substring/FTS search returns the polybevel page (phantom) for that missing type. MUTATION: replace help_summary's keyed exact match with a LIKE/FTS search -> the 'is None' assertion fails."
+    },
+    {
+      "predicate": "hython scripts/probe_identify.py on 22.0.400 prints version, shows 7 bubbles, saved .hip reopened has zero sentinel lines and one undo group per show",
+      "verdict": "pass",
+      "evidence": "PROBE_RESULT PASS: VERSION 22.0.400; 7/7 sentinels; undoLabels gained exactly 1 'SYNAPSE Identify'; 0 sentinel lines on disk after reopen (producer hipFile.save+reopen). Save callbacks fire on scripted hython save."
+    },
+    {
+      "predicate": "main-thread apply for 60 nodes timed in hython, ms figure vs 100 ms starting target",
+      "verdict": "pass",
+      "evidence": "APPLY_MS 60 nodes = 0.5 ms (target 100), producer apply.show timed in hython. Far under target."
+    },
+    {
+      "predicate": "nothing under python/synapse/identify imports harness/ or opens a network connection, and only apply.py calls setComment/setGenericFlag/hou.undos",
+      "verdict": "pass",
+      "evidence": "grep: 0 hits for harness/socket/requests/urllib/http in python/synapse/identify; setComment/setGenericFlag/hou.undos appear only in apply.py (10 code lines)."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "T2 exact help-path lookup proven end-to-end against the LIVE corpus (G:/HOUDINI22/_CORPUS). summarize resolves polybevel::3.0->'Bevels points and edges.' (base page; no -3.0 published), box, scatter::2.0 (versioned page), null, attribnoise::2.0. Real source_url shape: nodes/<ctx>/<name>.md; versioned-doc base <name>-.md (+ alias <name>.md); versions <name>-<ver>.md; example pages under examples/nodes/** are excluded by the $-anchored 2-segment key. help_summary normalizes a trailing '-' so base/alias forms match one key.",
+      "anchor": "live summarize check + scripts/probe_identify.py"
+    },
+    {
+      "claim": "The worktree has no .synapse/sidefx_library.json (config lives only in the main checkout); env SYNAPSE_SIDEFX_CORPUS_ROOT is unset. A naive hython probe from the worktree returns all-unknown summaries (still valid '- not in library' bubbles). The probe now bootstraps by walking to the first ancestor with the config; with it, all 7 bubbles show real summaries.",
+      "anchor": "scripts/probe_identify.py:_ensure_corpus"
+    },
+    {
+      "claim": "UNKNOWN (honest, in-feature not in-acceptance): LOP last-modified-prims has no verified public 22.0.400 API, so facts._lop_writes returns None (compose already renders 'writes <prim> (+N)' when a future read supplies it). Not exercised live here (no LOP chain; GUI gate G4 covers it).",
+      "anchor": "python/synapse/identify/facts.py:_lop_writes"
+    },
+    {
+      "claim": "UNKNOWN (honest): node-type 'beta' detection has no verified 22.0.400 API; facts sets beta=False. compose supports the State field ('beta') if a future read sets it.",
+      "anchor": "python/synapse/identify/facts.py:node_facts"
+    }
+  ],
+  "packet_gaps": [
+    "The packet gave selection_inspection/introspection/sidefx_library/run_on_main windows but NOT: the live corpus source_url shape for node help pages (had to probe the DB), the H22 hipFile-save event-firing behavior (probed live), that the worktree lacks .synapse/sidefx_library.json, or a hou.undos.undoLabels() usage window for the undo-count check.",
+    "sidefx_library window showed query_library/_search but not the chunks column set (id, source_url, title, body, metadata, domain) or the meta/pointer/current.json contract needed to build a test corpus - re-derived from _database_path/query_library."
+  ],
+  "for_ruling": [],
+  "spawn": []
+}

@@ -28,6 +28,46 @@ def _scope():
     return capture_scope()
 
 
+def identify_cell_text(node, facts_reader=None):
+    """The read-only Identify column text for one inspected node row.
+
+    Returns the same bubble text the Identify button would draw, composed from
+    exact facts through the pure ``compose`` pipeline. This owns no Houdini
+    objects and writes nothing — it only READS. A live facts read is used when
+    Houdini is present (``facts_reader`` lets a test inject one); otherwise it
+    degrades honestly to the node type the bounded inspection already read,
+    never a guessed summary.
+    """
+    from synapse.identify.compose import bubble_text
+    from synapse.identify import facts as _facts, library as _library
+    path = node.get("path")
+    node_facts = None
+    try:
+        if facts_reader is not None:
+            node_facts = facts_reader(path)
+        elif _facts.hou is not None and path:
+            node_facts = _facts.node_facts(_facts.hou.node(path))
+    except Exception:
+        node_facts = None
+    if node_facts is None:
+        node_facts = {
+            "type_label": node.get("type"), "type_name": node.get("type"),
+            "category": node.get("category"), "params": [],
+            "errors": [], "warnings": [], "bypassed": False,
+        }
+    else:
+        try:
+            summary, source = _library.summarize(
+                node_facts.get("help_url"), node_facts.get("hda_help"))
+            node_facts["summary"], node_facts["summary_source"] = summary, source
+        except Exception:
+            pass
+    try:
+        return bubble_text(node_facts)
+    except Exception:
+        return ""
+
+
 class _InspectorButton(c.Button):
     """Wrap a native button label when large host text meets a narrow pane."""
     def __init__(self, text, variant="secondary"):
@@ -169,7 +209,7 @@ class SelectionInspectorDialog(QtWidgets.QDialog):
             "Pinning keeps these nodes in this inspector. Review edit targets before applying changes.", "caption")
         layout.addWidget(self._scope_note)
         layout.addWidget(self._label("Captured nodes", "label"))
-        self._nodes = self._tree(["Node", "Type / context"], "Captured nodes", 115)
+        self._nodes = self._tree(["Node", "Type / context", "Identify"], "Captured nodes", 115)
         layout.addWidget(self._nodes)
         layout.addWidget(self._label("Observed wires · ports are zero-based", "label"))
         self._wires = self._tree(["Boundary", "From", "Out", "To", "In"], "Observed wires with exact ports", 195)
@@ -413,6 +453,12 @@ class SelectionInspectorDialog(QtWidgets.QDialog):
             self._preview_text.clear()
         self._refresh_row.fit_width(self._scroll.viewport().width() - t.scaled(t.SPACE_XS, self._scale))
 
+    def _identify_text(self, node):
+        """Read-only Identify preview for one inspected row (see
+        :func:`identify_cell_text`)."""
+        return identify_cell_text(
+            node, facts_reader=getattr(self, "_identify_facts_reader", None))
+
     def _render_snapshot(self, snapshot):
         wires = snapshot.get("wires", {})
         counts = [len(wires.get(group, [])) for group in ("internal", "entering", "leaving")]
@@ -432,8 +478,8 @@ class SelectionInspectorDialog(QtWidgets.QDialog):
         self._nodes.clear(); self._wires.clear(); self._via.clear(); self._preview_text.clear()
         for node in snapshot.get("nodes", []):
             path = str(node.get("path", "unknown"))
-            row = QtWidgets.QTreeWidgetItem([path, str(node.get("type", "unknown")) + " / " + str(node.get("category", "unknown"))])
-            for column in range(2): row.setToolTip(column, row.text(column))
+            row = QtWidgets.QTreeWidgetItem([path, str(node.get("type", "unknown")) + " / " + str(node.get("category", "unknown")), self._identify_text(node)])
+            for column in range(3): row.setToolTip(column, row.text(column))
             self._nodes.addTopLevelItem(row)
             self._via.addItem(path, path)
         for group in ("internal", "entering", "leaving"):

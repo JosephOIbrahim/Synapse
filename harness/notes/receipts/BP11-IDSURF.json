@@ -1,0 +1,83 @@
+{
+  "leg": "BP11-IDSURF",
+  "status": "green_with_findings",
+  "product_head": "fbbb7187",
+  "base": "bp11/idcore",
+  "acceptance": [
+    {
+      "predicate": "tests/panel/test_identify_button.py, tests/panel/test_token_authority.py and every existing PANEL_ANSWERED_COMMANDS pin pass",
+      "verdict": "pass",
+      "evidence": "74 passed: test_identify_button.py (9), test_token_authority.py, test_palette_ranking.py, test_panel_finesse.py, test_first_session_panel.py (pytest -q, 2026-09-28)"
+    },
+    {
+      "predicate": "'/identify' is in PANEL_ANSWERED_COMMANDS, appears exactly once in tool_palette._load_entries(), and sending it never reaches the model send path (spy count 0)",
+      "verdict": "pass",
+      "evidence": "test_identify_is_panel_answered_and_appears_exactly_once (len==1, group==PANEL) + test_send_identify_toggles_locally_and_never_reaches_the_model (_prepare_connection spy assert_not_called for /identify, /IDENTIFY, /identify off)"
+    },
+    {
+      "predicate": "compose and library run off the Qt main thread and apply runs on it, asserted with thread identities in a test that drives the real handler",
+      "verdict": "pass",
+      "evidence": "test_compose_and_library_run_off_main_and_apply_runs_on_main: real SynapsePanel._run_identify; marshaller runs run_on_main closures on the test main thread; compose_ident/library_ident != main_ident, facts_ident/apply_ident == main_ident"
+    },
+    {
+      "predicate": "selection_inspector.py contains no setComment, setGenericFlag or undos call (count line 0)",
+      "verdict": "pass",
+      "evidence": "grep -Ec 'setComment|setGenericFlag|\\.undos' python/synapse/panel/selection_inspector.py == 0; also test_inspector_stays_read_only_no_writer_calls"
+    },
+    {
+      "predicate": "G1: the Identify button is visible in the live 22.0.400 panel's action row and token-styled",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required; no Houdini GUI available to this leg. Built: c.Button('Identify', variant='ghost') at synapse_panel.py action-row grid col 6, objectName DsVerb + label type applier (same family as Connect/Doctor). Verify by computer use at the GUI gate."
+    },
+    {
+      "predicate": "G2: a seven-node SOP chain shows seven bubbles and the flash line",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required; headless cannot draw. Pipeline wired: facts->summarize->compose->apply.toggle; flash via _identify_network_editor (paneTabOfType/paneTabType.NetworkEditor/flashMessage, all in the committed h22 symbol table)."
+    },
+    {
+      "predicate": "G3: one Ctrl+Z removes every bubble and a pre-existing artist comment survives show and clear",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required; undo/comment-preservation is IDCORE apply.py behaviour exercised here through toggle/clear. Not measurable headless."
+    },
+    {
+      "predicate": "G5: with 200 selected nodes the panel stays responsive and the measured hold is recorded",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required; headless has no live selection or Qt event loop. Design: compose off a daemon, two short run_on_main holds (facts read, comment/flag write); cap 60 (IDCORE apply.CAP). Measure the hold at the GUI gate."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "The PANEL_ANSWERED_COMMANDS exact-set pin lives in tests/test_palette_ranking.py, which is NOT in this leg's `touches`. Updated it to the six-command set under the brief's explicit carve-out ('Existing tests that pin the exact PANEL_ANSWERED_COMMANDS set may be updated, nothing else'). test_panel_finesse.py and test_first_session_panel.py (which ARE in touches) needed no edit; they pass unchanged.",
+      "anchor": "tests/test_palette_ranking.py:103"
+    },
+    {
+      "claim": "The read-only Inspector Identify column is bounded by what inspect_selection serializes. The bounded snapshot node dict carries only {path, type, category} (introspection.py:399-404; the inspector's own note says parameters were not read), so with no live facts read the column shows the type-label What line, and the full bubble (help_url/params/errors) needs a per-node facts read. server/introspection.py is outside `touches`, so enriching the snapshot to carry help_url was out of scope this leg. identify_cell_text uses a live facts read (identify.facts.node_facts) when Houdini is present, else degrades honestly to the type label - never a guessed summary.",
+      "anchor": "python/synapse/panel/selection_inspector.py:identify_cell_text"
+    },
+    {
+      "claim": "Minimal diff held: of the eight `touches` paths, four were edited (command_palette.py, synapse_panel.py, selection_inspector.py, test_identify_button.py). tool_palette.py needed no change (its _load_entries already routes panel_answered rows into the PANEL group). designsystem/ needed no new token (the button reuses c.Button ghost + the label type applier; token_authority stays green). test_panel_finesse.py and test_first_session_panel.py needed no change.",
+      "anchor": "python/synapse/panel/tool_palette.py:184-216"
+    }
+  ],
+  "packet_gaps": [
+    "The packet showed tool_palette._load_entries lines 141-183 (registry section a) but not the panel_answered branch (section b, lines 184-216) - the path that turns a PANEL_ANSWERED command into exactly one PANEL row. Needed to confirm '/identify appears exactly once'.",
+    "command_palette.build_palette_entries (lines 303-341) - the panel_answered/DROPPED/COMMAND_PROMPTS decision - was not in the packet; it decides how /identify becomes a single row.",
+    "tests/test_palette_ranking.py - the actual PANEL_ANSWERED_COMMANDS exact-set pin (line 103) and its equality assertions (176-177, 185-187) - was NOT in the packet (the packet shipped a test_token_authority window instead) AND is absent from `touches`, though the brief authorizes editing it.",
+    "The off-main/on-main thread-identity test convention (tests/test_compose_offmain_wp3.py in_main model; tests/panel/test_doctor_button.py off-thread assert) and the fake-self import helper (tests/qt_stub_window.py) were not in the packet; found by grep. A future surface packet should point at the qt_stub_window import and one thread-identity template.",
+    "The panel selection callback hook (_register_selection_cb / _on_selection_changed, synapse_panel.py ~4143) was not in the packet; it is the natural refresh point for the button's disabled-with-reason state.",
+    "The IDCORE public API surface the surface leg builds on (identify.facts.read_selection_facts / node_facts, identify.library.summarize, identify.compose.compose/bubble_text, identify.apply.show/clear/toggle) was not in the packet; a chained surface leg needs the previous leg's API windows, not just the panel windows."
+  ],
+  "for_ruling": [],
+  "spawn": [
+    {
+      "id": "BP11-IDSURF-INSPECTORFACTS",
+      "band": "BUILD",
+      "class": "build",
+      "readonly": false,
+      "name": "Carry help_url (and optionally filtered parms) through inspect_selection so the Inspector Identify column shows full bubbles without a second per-node read",
+      "note": "Today identify_cell_text does a live facts read (identify.facts.node_facts) when Houdini is present, or degrades to the type label. Enriching the inspect_selection node serialization (server/introspection.py) with help_url would let the read-only column show the real What line from the shared inspection pipeline, honouring rule 7 (no second walk). Touches server/introspection.py (OBSERVER territory) + selection_inspector.py; must keep the bounded/read-only contract.",
+      "touches": ["python/synapse/server/introspection.py", "python/synapse/panel/selection_inspector.py"],
+      "deps": ["BP11-IDSURF"]
+    }
+  ]
+}

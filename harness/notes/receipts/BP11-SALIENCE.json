@@ -1,0 +1,86 @@
+{
+  "leg": "BP11-SALIENCE",
+  "status": "green_with_findings",
+  "product_head": "df7aba019a5558799da88c9884a431c57a72a416",
+  "base": "6fc22be6",
+  "acceptance": [
+    {
+      "predicate": "tests/test_identify_salience.py, tests/test_jev_product_boundary.py and pytest harness/jev/tests pass",
+      "verdict": "pass",
+      "evidence": "pytest -q combined run: 138 passed, 0 failed. Includes test_identify_salience.py (9), test_jev_product_boundary.py (2), all harness/jev/tests incl. test_jev_salience.py (7)."
+    },
+    {
+      "predicate": "a state built for a node at /obj/show_secret/geo1 in secret_show.hip contains none of 'show_secret', 'geo1', 'secret_show', and a mutation that adds the node path fails the test",
+      "verdict": "pass",
+      "evidence": "test_identify_salience.py::test_states_for_a_secret_node_leak_nothing (scans states_for(facts with those secrets), none present) + ::test_build_state_signature_takes_no_path_name_or_hip. State = 7 sanctioned fields only; _node_view drops path/name."
+    },
+    {
+      "predicate": "with the artist's Jev suggestion preference off, adapter.judge is never called (spy count 0), and no call is attempted from the main thread",
+      "verdict": "pass",
+      "evidence": "test_preference_off_never_calls_judge (opt_in=False -> spy count 0, thread None) + test_judgment_runs_off_the_main_thread (opt_in on -> 3 judge calls, none on threading.main_thread())."
+    },
+    {
+      "predicate": "the key file holds >= 40 cases across >= 10 node types with its producer command, and a hython re-run reproduces it byte-identical",
+      "verdict": "pass",
+      "evidence": "tests/fixtures/identify_salience_key_v1.json: 45 cases, 21 (context,type) pairs, producer 'hython scripts/build_identify_salience_key.py'. Two hython 22.0.400 runs -> sha256 613a79db... identical (LF-normalized)."
+    },
+    {
+      "predicate": "jev_salience.py --shadow prints the agreement table with counts and ledgers it; without a key or TypeSafe access the table says UNKNOWN, never 0",
+      "verdict": "pass",
+      "evidence": "Ran SYNAPSE_JEV=off python harness/jev/jev_salience.py --shadow: table printed, 6 gradeable groups, code-order agree=9/10, Jev columns UNKNOWN (never 0), ledgered bp11.salience.jsonl. Live Jev agreement number is UNKNOWN (see findings: not run live to avoid ~45 autonomous billed calls)."
+    },
+    {
+      "predicate": "every pre-existing guard in harness/jev/questions.json is object-identical to master (diff proof in the receipt)",
+      "verdict": "pass",
+      "evidence": "python compare: {guards} minus 'salience' == json.loads(git show master:harness/jev/questions.json)['guards'] -> True. Only 'salience' added; route/screen/drift/release/shape/team/harvest/rerank/bench untouched."
+    },
+    {
+      "predicate": "the bubble text is identical with salience on and off",
+      "verdict": "pass",
+      "evidence": "test_bubble_text_identical_salience_on_and_off: compose(facts) equal before and after run_shadow completes; salience never feeds compose/apply in V1 and never mutates the facts dict."
+    },
+    {
+      "predicate": "tests/test_identify_facts_lop.py passes: a fake LopNode reporting ['/box', '/ball'] yields the Here line 'writes /ball (+1)', a SOP node yields no writes line, and a raising lastModifiedPrims yields no writes line",
+      "verdict": "pass",
+      "evidence": "test_identify_facts_lop.py: 5 passed. Sorted first '/ball', count 2 -> 'writes /ball (+1)'; SOP category short-circuits to None; raising lastModifiedPrims -> None (no crash)."
+    },
+    {
+      "predicate": "hython scripts/probe_identify.py on 22.0.400 prints the merge bubble with 'writes /ball (+1)' and the SOP chain result unchanged from IDCORE's receipt",
+      "verdict": "pass",
+      "evidence": "hython 22.0.400: BUBBLE both lop_writes={'first':'/ball','count':2} | ... // writes /ball (+1); PROBE_RESULT PASS. IDCORE SOP rows unchanged (7 bubbles, 1 undo group, 0 disk sentinels, 60-node apply 0.5ms)."
+    }
+  ],
+  "findings": [
+    "salience.run_shadow is a complete standalone lane but is NOT yet wired into apply.py (apply.py is outside this leg's touches). Production caller (kick run_shadow off a worker after apply.show, gated on the artist Jev-suggestion preference) is a follow-on. See spawn[0].",
+    "Live Jev agreement is UNKNOWN by design of this run: typesafe_sdk and a key are both present, so a live --shadow would fire ~45 billed TypeSafe calls. Not done autonomously. Operator runs 'python harness/jev/jev_salience.py --shadow' with SYNAPSE_JEV=on to grade Jev vs code order live (promotion bar, ruling R-2).",
+    "Grader passes node_summary='' : the measured key carries node type/category and per-parameter fields but not the runtime library one-line summary (a live-node lookup). The product's live state includes it. Fidelity nuance, not a correctness gap; the salient signal (type/category/label/help/type) is present in both.",
+    "facts._node_params gained a 'help' field (exact source hou.ParmTemplate.help()) to feed the salience state's parameter_help. Additive; existing test_identify_compose/apply/library stay green (part of the 138).",
+    "GUI gate G4 (the LOP 'writes' bubble rendered live in the panel) is a seat/computer-use gate per IDENTIFY_BLUEPRINT sec.7 and is UNKNOWN to this headless leg. The hython probe proves the facts->compose text path; on-canvas panel rendering is the seat's gate."
+  ],
+  "packet_gaps": [
+    "Packet gave jev_client.py:113-160 only; needed the whole file for build_questions (Noul), ask() and _answers_to_dict.",
+    "Packet gave guards.rerank only; needed the full harness/jev/questions.json to append guards.salience and prove pre-existing guards byte/object-identical.",
+    "Packet gave adapter enabled/resolve_key/judge-head; needed full judge()/_validated()/_questions_valid() to know the noul question+answer contract.",
+    "Not in packet: python/synapse/jev/credentials.py (resolve_key), harness/jev/tests/test_jev_guards.py (to confirm no guard-schema test would break), python/synapse/identify/__init__.py, and the worktree-live facts.py/compose.py/probe_identify.py full files.",
+    "Not in packet: whether apply.py/selection_inspector already call salience (grepped: they do not -> finding[0])."
+  ],
+  "for_ruling": [
+    "R-2 promotion (IDENTIFY_BLUEPRINT sec.5): the grader implements Jev-top-2 vs code-order-top-2 against the measured key; the live agreement number that decides promotion is pending an operator run with a TypeSafe key (billed). Joe's word gates both the live run and the go-live ordering."
+  ],
+  "spawn": [
+    {
+      "id": "BP11-SALIENCE-WIRE",
+      "band": "BUILD",
+      "class": "build",
+      "readonly": false,
+      "name": "Wire identify.salience.run_shadow into apply.py: after apply.show puts bubbles on the canvas, kick run_shadow on a worker gated on the artist Jev-suggestion preference (jev_suggestions_enabled)",
+      "note": "salience.run_shadow(node_facts, opt_in=<pref>, scope=<captured>, should_abort=<stop>) already fails closed off the main thread and ledgers to ~/.synapse/jev/identify_salience.jsonl. V1 must change nothing on screen (assert the bubble text is identical). Touches apply.py (out of BP11-SALIENCE scope).",
+      "touches": ["python/synapse/identify/apply.py", "tests/test_identify_apply.py"],
+      "targets": ["Call run_shadow after show() on a worker, opt-in on the artist preference the Selection Inspector reads; scope captured on the main thread."],
+      "acceptance": [
+        {"predicate": "with the preference off, apply.show triggers no adapter.judge call", "evidence": "test"},
+        {"predicate": "the on-canvas bubble text is byte-identical with salience wired on and off", "evidence": "test"}
+      ]
+    }
+  ]
+}

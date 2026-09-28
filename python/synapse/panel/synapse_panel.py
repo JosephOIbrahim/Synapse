@@ -190,6 +190,49 @@ _QUICK_ACTIONS = [
 ]
 
 
+# -- Identify (BP11-IDSURF) default seams -------------------------------------
+# Injectable so tests can drive the real handler against fake Qt leaves and
+# assert thread placement (the test_rope_switcher_wires_profile / compose-offmain
+# convention). Production wiring launches a daemon and marshals through
+# server.main_thread.run_on_main.
+
+#: The action tooltip while a selection exists — no model call, no tokens.
+_IDENTIFY_TOOLTIP = ("Draw a short bubble under each selected node from exact "
+                     "local sources — no model call, no tokens. Click again "
+                     "(or /identify off) to clear.")
+#: The reason the button is disabled with nothing selected (never a dead
+#: control with no reason).
+_IDENTIFY_NO_SELECTION = ("Select one or more nodes in the network editor, then "
+                          "Identify explains each on the canvas.")
+
+
+def _identify_launch_default(fn):
+    """Run the Identify worker on a daemon thread (the selection-inspection
+    ``_launch`` pattern) so library lookup + composition never block the Qt
+    main thread (IDENTIFY_BLUEPRINT rule 5)."""
+    import threading
+    threading.Thread(target=fn, name="synapse-identify", daemon=True).start()
+
+
+def _identify_run_on_main_default(fn):
+    """Marshal *fn* onto Houdini's main thread. The live facts read and the
+    comment/flag write are the only Identify steps that touch ``hou``."""
+    from synapse.server.main_thread import run_on_main
+    return run_on_main(fn)
+
+
+def _identify_network_editor():
+    """The current network editor pane tab, for the flash line; None headless.
+
+    Best-effort and fully guarded — apply.show swallows a failed flash, so a
+    missing editor degrades to no banner, never a crash."""
+    try:
+        import hou
+        return hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
+    except Exception:
+        return None
+
+
 class _GrowingInput(QtWidgets.QTextEdit):
     """Auto-growing chat input. Enter sends; Shift+Enter newlines."""
 
@@ -1201,13 +1244,24 @@ class SynapsePanel(QtWidgets.QWidget):
         self._doctor_btn.setToolTip("Run synapse_doctor locally · no model request or scene changes")
         self._doctor_btn.clicked.connect(self._open_doctor)
         self._doctor_btn.clicked.connect(self._dismiss_welcome)
+        # Identify (BP11-IDSURF): draw a zero-token bubble under each selected
+        # node from exact local sources. Toggles show/clear; a model turn is
+        # never involved. Disabled with a reason when nothing is selected
+        # (_refresh_identify_enabled, driven by the selection callback).
+        self._identify_btn = c.Button("Identify", variant="ghost")
+        self._identify_btn.setAccessibleName("Identify selected nodes")
+        self._identify_btn.clicked.connect(self._on_identify)
+        self._identify_btn.clicked.connect(self._dismiss_welcome)
         bot.addWidget(self._header_status, 0, 0)
         bot.setColumnStretch(1, 1)
         bot.addWidget(self._connect_btn, 0, 2)
         bot.setColumnMinimumWidth(3, t.scaled(t.SPACE_12, self._chrome_scale))
         bot.addWidget(self._doctor_btn, 0, 4)
-        bot.addWidget(overflow, 0, 5)
+        bot.setColumnMinimumWidth(5, t.scaled(t.SPACE_12, self._chrome_scale))
+        bot.addWidget(self._identify_btn, 0, 6)
+        bot.addWidget(overflow, 0, 7)
         col.addWidget(row)
+        self._refresh_identify_enabled()
 
         # -- hidden owners: constructed, written to, read by the overflow;
         #    in NO layout, never shown. ----------------------------------
@@ -1264,7 +1318,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # verbs and take the LABEL tracked font (mono) - the same applier as
         # _verb and the CHAT / TOKEN pills - so the chrome siblings match
         # byte-for-byte; no rhythm_role="label" on top of it.
-        for control in (self._doctor_btn, self._connect_btn, self._corpus_btn, self._help_btn, overflow):
+        for control in (self._doctor_btn, self._connect_btn, self._identify_btn, self._corpus_btn, self._help_btn, overflow):
             control.setObjectName("DsVerb")
             # PNL-L4 (ruling R2-A1): quiet by FORM. This read as words in a
             # typewriter face; mono is for data the eye aligns character by
@@ -3247,6 +3301,92 @@ class SynapsePanel(QtWidgets.QWidget):
         self._input.setPlainText(existing + "\n\n" + draft if existing else draft)
         self._input.setFocus()
 
+    # -- Identify (BP11-IDSURF) ------------------------------------------
+    def _identify_selection_paths(self):
+        """Selected node paths — a cheap main-thread read. ``[]`` when nothing
+        is selected or Houdini is unavailable (headless / tests)."""
+        try:
+            import hou
+        except Exception:
+            return []
+        try:
+            return [n.path() for n in hou.selectedNodes()]
+        except Exception:
+            return []
+
+    def _refresh_identify_enabled(self):
+        """Enable Identify when the selection is non-empty; otherwise disable it
+        and say why in the tooltip (never a dead control with no reason)."""
+        btn = getattr(self, "_identify_btn", None)
+        if btn is None:
+            return
+        if self._identify_selection_paths():
+            btn.setEnabled(True)
+            btn.setToolTip(_IDENTIFY_TOOLTIP)
+        else:
+            btn.setEnabled(False)
+            btn.setToolTip(_IDENTIFY_NO_SELECTION)
+
+    def _on_identify(self):
+        """Action-row click: toggle bubbles for the current selection."""
+        self._run_identify("toggle")
+
+    def _run_identify(self, mode="toggle"):
+        """Compose bubbles off the main thread, apply them on it.
+
+        Threading (IDENTIFY_BLUEPRINT rule 5): the live facts read and the write
+        both marshal through ``run_on_main`` (short main-thread holds); library
+        lookup and text composition run on the worker thread in between. A model
+        turn is never involved — this is a panel-answered, zero-token op.
+        """
+        paths = self._identify_selection_paths()
+        if not paths:
+            try:
+                self._chat.append_system_message(_IDENTIFY_NO_SELECTION)
+            except Exception:
+                pass
+            return
+        launch = getattr(self, "_identify_launch", None) or _identify_launch_default
+        launch(lambda: self._identify_worker(paths, mode))
+
+    def _identify_worker(self, paths, mode):
+        """Worker body: read facts on main, compose off main, write on main."""
+        from synapse.identify import apply as _apply
+        from synapse.identify import compose as _compose
+        from synapse.identify import facts as _facts
+        from synapse.identify import library as _library
+        run_on_main = (getattr(self, "_identify_run_on_main", None)
+                       or _identify_run_on_main_default)
+        # 1) main thread: read live facts once (reuses inspect_selection).
+        facts_list = run_on_main(lambda: _facts.read_selection_facts(paths)) or []
+        # 2) worker thread: library lookup + composition (no hou, no Qt).
+        composed = []
+        for node_facts in facts_list:
+            try:
+                summary, source = _library.summarize(
+                    node_facts.get("help_url"), node_facts.get("hda_help"))
+                node_facts["summary"], node_facts["summary_source"] = summary, source
+            except Exception:
+                pass
+            try:
+                composed.append((node_facts.get("path"), _compose.compose(node_facts)))
+            except Exception:
+                continue
+        total = len(facts_list)
+        # 3) main thread: the only writer — comments + flags in one hold.
+        def _write():
+            import hou
+            editor = _identify_network_editor()
+            items = []
+            for path, lines in composed:
+                node = hou.node(path) if path else None
+                if node is not None:
+                    items.append((node, lines))
+            if mode == "clear":
+                return _apply.clear([node for node, _ in items], editor=editor)
+            return _apply.toggle(items, total=total, editor=editor)
+        return run_on_main(_write)
+
     def _open_selection_inspector(self):
         from .selection_inspector import SelectionInspectorDialog
         dialog = getattr(self, "_selection_inspector", None)
@@ -3354,6 +3494,13 @@ class SynapsePanel(QtWidgets.QWidget):
             return True
         if (text or "").strip().lower() == "/lookdev-suggestion":
             self._open_lookdev_suggestion()
+            return True
+        # BP11-IDSURF: /identify toggles bubbles, /identify off clears them.
+        # Panel-answered — a local canvas op that never reaches the model, so it
+        # is intercepted here ahead of the busy/worker gate like /render.
+        _low = (text or "").strip().lower()
+        if _low in ("/identify", "/identify off"):
+            self._run_identify("clear" if _low == "/identify off" else "toggle")
             return True
         if _ACTIVE_PANEL_WORKERS:
             self._chat.append_system_message(
@@ -4151,6 +4298,10 @@ class SynapsePanel(QtWidgets.QWidget):
         firing into a torn-down panel can never crash."""
         try:
             self._update_context()
+        except Exception:
+            pass
+        try:
+            self._refresh_identify_enabled()
         except Exception:
             pass
 

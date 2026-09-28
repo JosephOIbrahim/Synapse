@@ -295,3 +295,83 @@ def query_library(query: str, domain: str = "both", k: int = 24,
         status["reason"] = reason
         return {"entries": [], "source_status": status, "warnings": [
             f"[scout] SideFX library unavailable: {reason} — using existing Scout sources only."]}
+
+
+def help_summary(help_paths) -> tuple[str, str] | None:
+    """Exact node-help-page lookup — never a search, so no phantom near-miss.
+
+    *help_paths* is an ordered list of canonical ``nodes/<context>/<name>`` keys
+    (most specific first, e.g. a versioned page then its base). The winning row
+    is the earliest candidate that an actual ``chunks`` page normalizes to; among
+    that page's chunks the earliest (page-top) chunk body is returned. Returns
+    ``(body, source_url)`` or ``None`` when nothing matches or the source is not
+    safely configured. This is a read-only query: it opens the published
+    generation exactly as :func:`query_library` does and runs a keyed ``SELECT``,
+    not an FTS ``MATCH``. A ranked search result is never a node's summary.
+    """
+    candidates = [str(p).strip().lower().replace("\\", "/")
+                  for p in (help_paths or ()) if str(p).strip()]
+    if not candidates:
+        return None
+
+    def _key(source_url: str) -> str | None:
+        # Normalize any page URL to its ``nodes/<context>/<name>`` identity,
+        # independent of host prefix or file extension.
+        path = str(source_url).replace("\\", "/").split("#", 1)[0].split("?", 1)[0].lower()
+        last = path.rsplit("/", 1)[-1]
+        if "." in last:
+            path = path[: len(path) - len(last)] + last.rsplit(".", 1)[0]
+        # Anchored to a two-segment ``nodes/<context>/<name>`` tail, so an
+        # example subpage (``examples/nodes/sop/<node>/<demo>``) never matches.
+        found = re.search(r"(?:^|/)(nodes/[a-z0-9_]+/[a-z0-9_.\-]+)$", path)
+        if not found:
+            return None
+        key = found.group(1)
+        # A versioned-doc base page is named ``<name>-`` (trailing dash); the
+        # plain and trailing-dash forms are the same node page.
+        if key.endswith("-"):
+            key = key[:-1]
+        return key
+
+    try:
+        root = _configured_root()
+        if root is None:
+            return None
+        pointer = _read_json(_within(root, root / "current.json"))
+        if pointer.get("schema") != POINTER_SCHEMA:
+            raise LibraryUnavailable("unsupported library pointer schema")
+        generation = pointer.get("generation")
+        if not isinstance(generation, str) or not generation.strip():
+            raise LibraryUnavailable("library pointer is missing its generation")
+        database = _database_path(root, pointer.get("database"))
+        wanted = set(candidates)
+        # Narrow to pages whose file name equals a wanted node name; verify the
+        # full ``nodes/<context>/<name>`` key in Python so the match is exact.
+        names = sorted({c.rsplit("/", 1)[-1] for c in candidates})
+        deadline = time.monotonic() + QUERY_SECONDS
+        with closing(sqlite3.connect(database.as_uri() + "?mode=ro", uri=True,
+                                     timeout=1.0)) as connection:
+            connection.execute("PRAGMA query_only = ON")
+            connection.execute("PRAGMA trusted_schema = OFF")
+            connection.set_progress_handler(lambda: time.monotonic() > deadline, 10000)
+            connection.execute("BEGIN")
+            like = " OR ".join("source_url LIKE ?" for _ in names)
+            rows = connection.execute(
+                "SELECT id, source_url, body FROM chunks "
+                f"WHERE domain = 'docs' AND ({like}) ORDER BY id",
+                [f"%{name}%" for name in names],
+            ).fetchall()
+        best: dict[str, tuple] = {}
+        for row in rows:
+            key = _key(row[1])
+            if key in wanted and key not in best:
+                best[key] = (row[1], row[2])  # first (page-top) chunk wins
+        for candidate in candidates:  # most-specific candidate first
+            if candidate in best:
+                source_url, body = best[candidate]
+                text = str(body or "").strip()
+                if text:
+                    return (text, source_url)
+        return None
+    except (OSError, ValueError, TypeError, sqlite3.Error):
+        return None

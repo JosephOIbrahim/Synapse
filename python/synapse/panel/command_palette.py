@@ -86,7 +86,7 @@ class PaletteEntry:
 # ===================================================================
 
 # PNL-L3A (spec leg L3a, ruling R2-misc — "one registry, one name"):
-# these five commands are answered by the PANEL ITSELF. A pick never reaches
+# these six commands are answered by the PANEL ITSELF. A pick never reaches
 # the model: synapse_panel._send intercepts the literal and opens a local view
 # (pinned by tests/test_panel_finesse.py and tests/test_first_session_panel.py,
 # and the '/render' send by tests/native_render_workspace.py +
@@ -99,6 +99,7 @@ PANEL_ANSWERED_COMMANDS: frozenset[str] = frozenset({
     "/saved-recipes",
     "/lookdev-suggestion",
     "/restore-session",
+    "/identify",
 })
 
 # Hardcoded slash commands with descriptions. NOT a second registry: this is
@@ -138,6 +139,7 @@ _SLASH_COMMANDS: list[tuple[str, str]] = [
     ("/scene", "Scene summary and statistics"),
     ("/inspect", "Inspect geometry or node details"),
     ("/search", "Search nodes, parameters, or assets"),
+    ("/identify", "Explain every selected node with an on-canvas bubble (local, zero-token)"),
 ]
 
 # PNL-L3B (1): the five panel rows are TITLED BY OUTCOME and read in this
@@ -150,6 +152,7 @@ PANEL_ROW_ORDER: tuple[str, ...] = (
     "/saved-recipes",
     "/lookdev-suggestion",
     "/restore-session",
+    "/identify",
 )
 PANEL_ROW_TITLES: dict[str, str] = {
     "/render": "Open the render workspace",
@@ -157,6 +160,7 @@ PANEL_ROW_TITLES: dict[str, str] = {
     "/saved-recipes": "Saved networks",
     "/lookdev-suggestion": "Saved lookdev suggestion",
     "/restore-session": "Restore last session",
+    "/identify": "Identify selected nodes",
 }
 
 # PNL-L3B (2a): the rows that survive as a REAL PROMPT --
