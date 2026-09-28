@@ -167,3 +167,72 @@ def test_exact_returns_unknown_where_search_would_phantom(tmp_path, monkeypatch)
     assert phantom is not None            # a search WOULD return a row ...
     assert phantom[0] == _POLYBEVEL       # ... the wrong node's page (phantom)
     # Therefore the exact 'unknown' above is the guarantee; a search breaks it.
+
+
+# ── BP11-IDFIX T2: BOM + '#key: value' header lines are skipped ───────────────
+
+_BOM = "﻿"
+_HELP_WITH_HEADER = (_BOM + "#type: node\n#context: sop\n\n"
+                     "Extrudes polygons into 3D. More text follows.")
+
+
+def test_summary_paragraph_strips_bom_and_header_directives():
+    assert LIB.summary_paragraph(_HELP_WITH_HEADER) == (
+        "Extrudes polygons into 3D. More text follows.")
+
+
+def test_summarize_bom_header_yields_first_prose_sentence():
+    # G2 showed '﻿#type: node' as the summary; the prose sentence must win.
+    text, source = LIB.summarize("operator:Sop/polyextrude",
+                                 lookup=lambda keys: (_HELP_WITH_HEADER, "u"))
+    assert (text, source) == ("Extrudes polygons into 3D.", "library")
+
+
+def test_summarize_header_only_is_honest_unknown():
+    # A page that is only a BOM and directives has no prose -> honest unknown,
+    # never a '#type: node' bubble.
+    header_only = _BOM + "#type: node\n#context: sop\n#icon: SOP/polyextrude"
+    text, source = LIB.summarize("operator:Sop/polyextrude",
+                                 lookup=lambda keys: (header_only, "u"))
+    assert (text, source) == (None, "unknown")
+
+
+def test_first_prose_line_wins_even_without_blank_line():
+    # No blank line between the last directive and the prose line.
+    body = _BOM + "#type: node\nJust one line of prose."
+    assert LIB.summary_paragraph(body) == "Just one line of prose."
+
+
+# ── BP11-IDFIX T3: summarize memoizes the default path per (help_url, hda) ─────
+
+def test_summarize_memoizes_default_path_one_lookup_per_key(monkeypatch):
+    """200 summarize calls over 5 types cost 5 library lookups, not 200 (sec. 5)."""
+    LIB._SUMMARY_CACHE.clear()
+    calls = []
+
+    def counter(keys):
+        calls.append(tuple(keys))
+        return ("Type\n\nDoes a thing.", "u")
+
+    monkeypatch.setattr(SL, "help_summary", counter)
+    urls = [f"operator:Sop/type{i}" for i in range(5)]
+    for _ in range(40):                       # 40 x 5 = 200 summarize calls
+        for u in urls:
+            text, source = LIB.summarize(u)   # lookup=None -> memoized path
+            assert source == "library" and text == "Does a thing."
+    assert len(calls) == 5                     # one underlying lookup per type
+    LIB._SUMMARY_CACHE.clear()
+
+
+def test_injected_lookup_is_never_served_from_cache(monkeypatch):
+    """An injected test lookup bypasses the memo, so it always runs."""
+    LIB._SUMMARY_CACHE.clear()
+    hits = []
+
+    def spy(keys):
+        hits.append(tuple(keys))
+        return None
+
+    LIB.summarize("operator:Sop/box", lookup=spy)
+    LIB.summarize("operator:Sop/box", lookup=spy)
+    assert len(hits) == 2                       # called both times, not cached

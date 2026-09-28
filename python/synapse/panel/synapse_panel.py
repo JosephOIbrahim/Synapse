@@ -3357,8 +3357,13 @@ class SynapsePanel(QtWidgets.QWidget):
         from synapse.identify import library as _library
         run_on_main = (getattr(self, "_identify_run_on_main", None)
                        or _identify_run_on_main_default)
+        # Cap BEFORE reading facts and composing: show() keeps only CAP bubbles,
+        # so reading facts and composing a full 200-node selection is wasted work
+        # (sec. 5). The flash still reports the full selection count as total.
+        total = len(paths)
+        capped_paths = paths[:_apply.CAP]
         # 1) main thread: read live facts once (reuses inspect_selection).
-        facts_list = run_on_main(lambda: _facts.read_selection_facts(paths)) or []
+        facts_list = run_on_main(lambda: _facts.read_selection_facts(capped_paths)) or []
         # 2) worker thread: library lookup + composition (no hou, no Qt).
         composed = []
         for node_facts in facts_list:
@@ -3372,7 +3377,6 @@ class SynapsePanel(QtWidgets.QWidget):
                 composed.append((node_facts.get("path"), _compose.compose(node_facts)))
             except Exception:
                 continue
-        total = len(facts_list)
         # 3) main thread: the only writer — comments + flags in one hold.
         def _write():
             import hou

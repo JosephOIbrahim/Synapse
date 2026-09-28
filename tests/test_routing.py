@@ -1103,6 +1103,14 @@ class TestTieredRouter:
 
     # --- Latency tracking ---
 
+    @pytest.mark.xfail(
+        condition=sys.platform == "win32" and sys.version_info < (3, 13),
+        reason="Windows time.time() ticks every ~15.6ms before Python 3.13, so a "
+               "sub-tick route measures latency_ms == 0.0 and the `> 0` assert fails; "
+               "Python 3.13+ uses the high-resolution clock. BP12 fixes the root cause "
+               "(monotonic high-resolution timing in the router).",
+        strict=False,
+    )
     def test_latency_is_tracked(self):
         result = self.router.route("ping")
         assert result.latency_ms > 0

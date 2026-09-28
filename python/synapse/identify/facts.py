@@ -14,10 +14,14 @@ Library lookup and text composition happen elsewhere, off the main thread
 live path is exercised by ``scripts/probe_identify.py`` under hython.
 """
 from __future__ import annotations
+import logging
+
+_log = logging.getLogger(__name__)
 
 try:  # pragma: no cover - exercised live under hython
     import hou
 except Exception:  # pragma: no cover
+    _log.debug("swallowed exception", exc_info=True)
     hou = None
 
 
@@ -33,6 +37,7 @@ def _template_kind(template) -> str:
         name = ttype.name() if hasattr(ttype, "name") else str(ttype)
         return str(name).rsplit(".", 1)[-1].lower()
     except Exception:
+        _log.debug("swallowed exception", exc_info=True)
         return "other"
 
 
@@ -40,6 +45,7 @@ def _is_hidden(template) -> bool:
     try:
         return bool(template.isHidden())
     except Exception:
+        _log.debug("swallowed exception", exc_info=True)
         return False
 
 
@@ -53,6 +59,7 @@ def _template_help(template) -> str:
     try:
         return str(template.help() or "")
     except Exception:
+        _log.debug("swallowed exception", exc_info=True)
         return ""
 
 
@@ -64,9 +71,11 @@ def _parm_is_expression(tuple_) -> bool:
                 parm.expression()
                 return True
             except Exception:
+                _log.debug("swallowed exception", exc_info=True)
                 if parm.keyframes():
                     return True
     except Exception:
+        _log.debug("swallowed exception", exc_info=True)
         return False
     return False
 
@@ -76,6 +85,7 @@ def _tuple_value(tuple_):
     try:
         values = tuple_.eval()
     except Exception:
+        _log.debug("swallowed exception", exc_info=True)
         return (None, True)
     if len(tuple_) == 1:
         return (values[0], False)
@@ -89,6 +99,7 @@ def _node_params(node) -> list[dict]:
     try:
         parms = node.parms()
     except Exception:
+        _log.debug("swallowed exception", exc_info=True)
         return params
     for parm in parms:
         try:
@@ -112,6 +123,7 @@ def _node_params(node) -> list[dict]:
                 "help": _template_help(template),
             })
         except Exception:
+            _log.debug("swallowed exception", exc_info=True)
             continue
     return params
 
@@ -133,14 +145,17 @@ def _lop_writes(node) -> dict | None:
         if node.type().category().name() != "Lop":
             return None
     except Exception:
+        _log.debug("swallowed exception", exc_info=True)
         return None
     try:
         prims = node.lastModifiedPrims()
     except Exception:
+        _log.debug("swallowed exception", exc_info=True)
         return None
     try:
         paths = sorted(str(path) for path in (prims or ()))
     except Exception:
+        _log.debug("swallowed exception", exc_info=True)
         return None
     if not paths:
         return None
@@ -157,51 +172,51 @@ def node_facts(node) -> dict:
     try:
         facts["path"] = node.path()
     except Exception:
-        pass
+        _log.debug("swallowed exception", exc_info=True)
     try:
         ntype = node.type()
         try:
             facts["type_name"] = ntype.name()
         except Exception:
-            pass
+            _log.debug("swallowed exception", exc_info=True)
         try:
             facts["type_label"] = ntype.description()
         except Exception:
-            pass
+            _log.debug("swallowed exception", exc_info=True)
         try:
             facts["category"] = ntype.category().name()
         except Exception:
-            pass
+            _log.debug("swallowed exception", exc_info=True)
         try:
             facts["help_url"] = ntype.defaultHelpUrl()
         except Exception:
-            pass
+            _log.debug("swallowed exception", exc_info=True)
         # Embedded help is only meaningful for an HDA (not a compiled type).
         try:
             definition = ntype.definition()
             if definition is not None:
                 facts["hda_help"] = definition.embeddedHelp()
         except Exception:
-            pass
+            _log.debug("swallowed exception", exc_info=True)
     except Exception:
-        pass
+        _log.debug("swallowed exception", exc_info=True)
     try:
         facts["params"] = _node_params(node)
     except Exception:
-        pass
+        _log.debug("swallowed exception", exc_info=True)
     facts["lop_writes"] = _lop_writes(node)
     try:
         facts["errors"] = list(node.errors())
     except Exception:
-        pass
+        _log.debug("swallowed exception", exc_info=True)
     try:
         facts["warnings"] = list(node.warnings())
     except Exception:
-        pass
+        _log.debug("swallowed exception", exc_info=True)
     try:
         facts["bypassed"] = bool(node.isBypassed())
     except Exception:
-        pass
+        _log.debug("swallowed exception", exc_info=True)
     return facts
 
 

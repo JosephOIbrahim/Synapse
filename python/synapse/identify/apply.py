@@ -14,10 +14,14 @@ sentinel.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import logging
+
+_log = logging.getLogger(__name__)
 
 try:  # pragma: no cover - exercised live under hython
     import hou
 except Exception:  # pragma: no cover
+    _log.debug("swallowed exception", exc_info=True)
     hou = None
 
 
@@ -109,7 +113,7 @@ def _flash(editor, text: str) -> None:
     try:
         editor.flashMessage(None, text, 6)
     except Exception:
-        pass
+        _log.debug("swallowed exception", exc_info=True)
 
 
 def show(items, total=None, editor=None) -> dict:
@@ -118,7 +122,13 @@ def show(items, total=None, editor=None) -> dict:
     Capped at :data:`CAP`. One undo group wraps the whole show. Re-showing a
     node first strips its prior block, so the operation is idempotent and never
     stacks blocks. The prior display-comment flag is recorded once per node.
+
+    Installs the BeforeSave/AfterSave callbacks first, idempotently, so the very
+    first bubble a session draws is already save-safe (rule 4) — even when the
+    artist reached ``show`` through ``toggle`` or ``/identify`` and never called
+    :func:`install_save_callbacks` explicitly. Re-showing does not re-register.
     """
+    install_save_callbacks()
     items = list(items)
     total = len(items) if total is None else total
     capped = items[:CAP]

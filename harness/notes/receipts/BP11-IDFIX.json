@@ -1,0 +1,59 @@
+{
+  "leg": "BP11-IDFIX",
+  "status": "green_with_findings",
+  "product_head": "cf6d14f9",
+  "base": "bp11/hardfix",
+  "acceptance": [
+    {
+      "predicate": "pytest passes on the leg tip for tests/test_identify_*.py, tests/panel/test_identify_button.py and tests/test_except_ratchet.py with no collection error; the counts are in the receipt",
+      "verdict": "pass",
+      "evidence": "python -m pytest -q -p no:cacheprovider (2026-09-28): tests/test_identify_*.py 74 passed 0 failed; tests/panel/test_identify_button.py 10 passed; tests/test_except_ratchet.py 6 passed; no collection error."
+    },
+    {
+      "predicate": "a show() on the fake hou registers the save callback exactly once, and a hython save round trip with bubbles shown and NO explicit install call leaves 0 sentinels on disk",
+      "verdict": "pass",
+      "evidence": "tests/test_identify_idfix.py::test_show_installs_exactly_one_save_callback (callbacks==1) + ::test_reshow_does_not_re_register_the_callback; hython .scratch/g6_roundtrip.py: cb_installed=True raw_disk_sentinels=0 reload_sentinels=0 restored_after_save=60 (Houdini 22.0.400)."
+    },
+    {
+      "predicate": "a BOM-prefixed help text with '#key: value' header lines yields its first prose sentence",
+      "verdict": "pass",
+      "evidence": "tests/test_identify_library.py::test_summarize_bom_header_yields_first_prose_sentence -> ('Extrudes polygons into 3D.','library'); ::test_summarize_header_only_is_honest_unknown -> (None,'unknown')."
+    },
+    {
+      "predicate": "200 selected paths of 5 types make at most 5 library lookups, compose at most CAP, and flash a total of 200",
+      "verdict": "pass",
+      "evidence": "tests/panel/test_identify_button.py::test_worker_caps_before_facts_memoizes_lookup_and_flashes_full_total: lookups<=5, composed<=apply.CAP, writer items<=CAP, flash total==200; facts_stub asserts the worker passes only the capped path list."
+    },
+    {
+      "predicate": "scripts/except_ratchet.py exits 0 on the leg tip and every identify file stays at 0 silent",
+      "verdict": "pass",
+      "evidence": "python scripts/except_ratchet.py -> EXIT=0 'OK' (broad_total=1379 silent_total=995); grep -A1 except on apply.py+library.py: every 'except Exception' is followed by _log.debug(...). No new excepts added."
+    },
+    {
+      "predicate": "live G2/G5/G6 re-run in Houdini 22.0.400 (the seat's, after the wave)",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required; no Houdini GUI available to this leg. Left UNKNOWN for the seat. Headless G6 disk round trip proven separately under hython (see predicate 2); G2/G5 behavior pinned by tests but the live-panel re-run stays the seat's."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "The overlapping OPEN bus claims on apply.py, library.py and except_ratchet_baseline.json are held by completed upstream chain legs (SALIENCE/HARDEN/HARDFIX), which are this leg's direct git ancestors, not live peers. No concurrent-edit conflict; the chain design keeps one Opus leg live at a time. Proceeded rather than blocking on a dead claim.",
+      "anchor": "bus claims 18d988d8/18d98a94/18d98ec5; git ancestors 92c81850(SALIENCE),04d827e4+6efbe4c6(HARDEN/HARDFIX),5159b6bc"
+    },
+    {
+      "claim": "except_ratchet_baseline.json (listed in touches) required no change: the fixes added 0 silent excepts and the ratchet exits 0 unchanged. Left untouched for minimal diff.",
+      "anchor": "scripts/except_ratchet.py EXIT=0"
+    },
+    {
+      "claim": "F4 (a standalone sentinel line inside artist text mis-parsed as our block) remains a known issue, out of scope per the brief. Not touched.",
+      "anchor": "harness/battleplan/notes/IDENTIFY_BLUEPRINT.md sec.7; packet G3/F4"
+    }
+  ],
+  "packet_gaps": [
+    "apply.py: the packet windowed show/toggle/before_save/after_save/_save_dispatch/install_save_callbacks but omitted remove_save_callbacks() and _reset_state() (needed to know _SAVE_CALLBACK test-isolation) and the module header globals (_SAVE_CALLBACK/CAP/_display_flag/strip_block/has_block/_compose_comment). Had to read apply.py 1-118 and 245-261.",
+    "library.py: the packet omitted the module header regexes (_PARAGRAPHS/_SENTENCE_END) and derive_help_keys, needed to place _HELP_DIRECTIVE and the BOM/header strip. Had to read library.py 1-56.",
+    "The packet carried no test files. Writing the tests needed the fake-hou pattern (tests/test_identify_apply.py) and the qt_stub/_panel worker harness (tests/panel/test_identify_button.py), plus confirmation that synapse.cognitive.tools.sidefx_library imports without hou (for the lookup-count test). Add the relevant test-harness windows to future packets."
+  ],
+  "for_ruling": [],
+  "spawn": []
+}

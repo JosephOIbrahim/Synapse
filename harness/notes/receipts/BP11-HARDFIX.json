@@ -1,0 +1,96 @@
+{
+  "leg": "BP11-HARDFIX",
+  "status": "green_with_findings",
+  "product_head": "6efbe4c6",
+  "base": "bp11/salience 92c81850",
+  "ahead": 3,
+  "runtime": "Windows, Python 3.14.2 (this box); hython 22.0.400 not required for any gate here",
+  "acceptance": [
+    {
+      "predicate": "python -m compileall -q python/synapse/identify scripts exits 0 on the leg tip",
+      "verdict": "pass",
+      "evidence": "compileall rc=0 (2026-09-28); test_all_identify_modules_compile green"
+    },
+    {
+      "predicate": "pytest passes for tests/test_identify_*.py, tests/panel/test_identify_button.py and tests/test_except_ratchet.py with no collection error; pass counts in the receipt",
+      "verdict": "pass",
+      "evidence": "79 passed, 0 failed, 0 collection errors; incl test_identify_hardfix 5, test_except_ratchet 6, test_identify_salience 9, test_identify_button 9, remainder apply/compose/library/facts_lop = 50"
+    },
+    {
+      "predicate": "git diff bp11/salience -- python/synapse/identify/ removes no line other than a bare pass; no root-level logging.<level>( call in identify",
+      "verdict": "pass",
+      "evidence": "diff removals = 12, all bare pass (non-pass-removal grep empty); grep 'logging.(debug|info|warning|error|critical|exception|warn)(' in identify = 0 hits"
+    },
+    {
+      "predicate": "except_ratchet.py exits 1 and names the file on an unparsable module (control), exits 0 on the leg tip with every identify file at 0",
+      "verdict": "pass",
+      "evidence": "test_fail_closed_on_unparsable_file: UNPARSED pkg/broken.py + rc1 (check and write-baseline); real check rc0 OK, silent_total 995, no identify entry in baseline"
+    },
+    {
+      "predicate": "each pin in test_identify_hardfix.py fails when the matching HARDEN defect (packet items 2-4) is re-applied; the three mutations and outcomes in the receipt",
+      "verdict": "pass",
+      "evidence": ".scratch/mutation_demo.py: defect2 drop keyframes-guard -> BITES; defect3 drop hit=None -> BITES; defect4 drop slot.release() -> BITES; files restored, diff still additive"
+    },
+    {
+      "predicate": "every CRUX finding against HARDEN or a touched file has a disposition (fixed with anchor, or for_ruling with reason)",
+      "verdict": "pass",
+      "evidence": "see findings[] (HARDEN rows 2,3 + defects 1,5,6,7 fixed) and for_ruling[] (out-of-fence NITs/UNKNOWNs)"
+    },
+    {
+      "predicate": "on the leg's Windows python, pytest over test_routing, test_sessions, test_prst_network_persistence, test_pkg_bootstrap_invariant (-m 'not needs_houdini') reports 0 failed, known cases xfailed",
+      "verdict": "pass",
+      "evidence": "291 passed, 2 xpassed, 0 failed on win32/py3.14 (51s). Clock condition false on 3.14 so clock tests pass; persistence xpass locally (env-dependent) and xfail in CI 3.11/3.14 (strict=False tolerates both); R310 passes with no marker. Seat re-runs the 3.11/3.14 CI dry run on this tip."
+    }
+  ],
+  "harden_rows_restated": [
+    {
+      "row": 2,
+      "harden_claim": "test_except_ratchet passes; a new except Exception: pass in synapse_panel.py makes it fail",
+      "crux_verdict": "pass as written, BROKEN in substance (H-M3): the positive control ran --write-baseline over the REAL tree and asserted the count grew, so it re-baselined the tracked fixture on every run, never tested check-mode exit 1, and left synapse_panel.py + the baseline CRLF-rewritten",
+      "corrected": "fixed",
+      "corrected_evidence": "tests/test_except_ratchet.py rewritten: test_positive_control_detects_new_silent_handler now plants a swallow in a tmp tree with a tmp baseline and asserts CHECK MODE rc==1 (never --write-baseline on the real tree); autouse _tracked_baseline_untouched asserts the tracked fixture bytes are unchanged after every test; writer opens with newline='\\n'"
+    },
+    {
+      "row": 3,
+      "harden_claim": "every python/synapse/identify file has a baseline of 0",
+      "crux_verdict": "pass as written, BROKEN in substance: achieved by editing four files OUT OF FENCE and regressing the product -- salience.py IndentationError (module cannot import), library.summarize UnboundLocalError on a raising lookup, facts._parm_is_expression True for every literal parm, salience.run_shadow slot leak; the receipt called these 'logging added to import guards'",
+      "corrected": "fixed",
+      "corrected_evidence": "the four files restored from bp11/salience bytes (write_bytes) then made non-silent additively (module _log + one _log.debug per broad except; bare pass replaced, all other statements kept). identify silent count now 0 legitimately; git diff bp11/salience -- identify is additive-only (12 bare-pass removals); the three regressions are pinned by test_identify_hardfix.py and each mutation BITES"
+    }
+  ],
+  "findings": [
+    {"defect": 1, "claim": "salience.py IndentationError at line 215 -- module could not import", "disposition": "fixed", "anchor": "python/synapse/identify/salience.py restored from bp11/salience; compileall rc0; test_all_identify_modules_compile green"},
+    {"defect": 2, "claim": "facts._parm_is_expression returned True for a literal parm (keyframes guard deleted)", "disposition": "fixed", "anchor": "facts.py _parm_is_expression keeps 'if parm.keyframes(): return True'; test_plain_parm_is_not_expression / test_keyed_parm_is_expression; mutation BITES"},
+    {"defect": 3, "claim": "library.summarize UnboundLocalError when lookup raises (hit=None deleted)", "disposition": "fixed", "anchor": "library.py summarize keeps 'hit = None'; test_summarize_returns_honest_unknown_when_lookup_raises; mutation BITES"},
+    {"defect": 4, "claim": "salience.run_shadow leaked _JOBS.slot on spawn failure (release deleted)", "disposition": "fixed", "anchor": "salience.py run_shadow keeps '_JOBS.slot.release()'; test_run_shadow_releases_slot_when_spawn_raises; mutation BITES"},
+    {"defect": 5, "claim": "handlers used root-level logging.debug(...) which runs basicConfig() in Houdini", "disposition": "fixed", "anchor": "one _log = logging.getLogger(__name__) per file; grep root logging.<level>( in identify = 0"},
+    {"defect": 6, "claim": "except_ratchet returned (0,0) for an unparsable file (fail-open) and _rule text was reversed", "disposition": "fixed", "anchor": "scripts/except_ratchet.py: analyze_file raises RatchetUnparsable; main prints 'UNPARSED <path>' and exits 1 (both modes); _rule reads 'count may shrink, never grow' in fixture + writer + docs/HARDENING_RATCHETS.md"},
+    {"defect": 7, "claim": "test_positive_control re-baselined the tracked fixture and never tested check-mode exit 1 (CRUX H-M3)", "disposition": "fixed", "anchor": "tests/test_except_ratchet.py rewritten on tmp roots + autouse tracked-baseline guard (see harden_rows_restated row 2)"}
+  ],
+  "for_ruling": [
+    {"item": "HARDEN row 1 / H-M2: the ci.yml OS matrix is unpinned by any tracked test", "reason": ".github/workflows/ci.yml is not in my touches; needs a tracked test that reddens when windows-latest is dropped -- CI-owning leg"},
+    {"item": "HARDEN row 5: Windows CI green on GitHub", "reason": "push is Joe's word; unmeasurable here. I marked the known 3.11/3.14 failures xfail(strict=False) so they do not red the run; the seat re-runs the CI dry run on this tip"},
+    {"item": "IDCORE row 3 NIT: apply.py reads an artist STANDALONE '~ identify ~' line as an Identify block before any show (has_block True; toggle clears)", "reason": "apply.py restored byte-identical to bp11/salience except added logging; pre-existing, not one of the six defects, not BROKEN/must-fix -- behavior fix belongs to an IDCORE-scoped leg"},
+    {"item": "IDCORE row 7 NIT: rule 1 no-network clause and rule 7 (reuse inspect_selection) are unpinned by any tracked test (grep-only)", "reason": "add tracked pins in an identify-scoped leg; out of the six defects"},
+    {"item": "IDSURF NIT(a): the Identify button (synapse_panel.py:1251) is not pinned to designsystem tokens (R9-M2 survived)", "reason": "synapse_panel.py is in touches but this is IDSURF scope, not one of the six defects"},
+    {"item": "IDSURF NIT(b): synapse_panel.py:3346/3369/3373 carry silent except Exception: pass on the zero-token identify path, counted into the baseline rather than logged", "reason": "in touches, NIT not BROKEN/must-fix; logging them shrinks the baseline (allowed) but is out of the six defects -- proposed as a spawn"},
+    {"item": "IDSURF rows 5-8: G1/G2/G3/G5 gui_probe gates UNKNOWN", "reason": "no Houdini GUI for this seat; the seat closes G1-G6 by computer use after the wave (IDENTIFY_BLUEPRINT sec. 7)"},
+    {"item": "SALIENCE NIT: the grader writes the tracked harness/jev/ledger/bp11.salience.jsonl on every run; LOP key hashes reproduce only via the full producer", "reason": "those files are not in my touches; the ledger-write-in-finally fix belongs to the grader owner"}
+  ],
+  "spawn": [
+    {
+      "id": "BP12-IDPANEL-LOG",
+      "class": "build",
+      "name": "Log the zero-token Identify path's silent excepts and pin the Identify button to tokens",
+      "note": "Replace the three silent except Exception: pass at synapse_panel.py:3346/3369/3373 (_run_identify/_identify_worker) with a module _log.debug (shrinks synapse_panel.py's ratchet baseline, allowed direction), and add a tracked test that reddens if the Identify button stops using designsystem components/tokens (IDSURF NIT a). Held for Joe.",
+      "touches": ["python/synapse/panel/synapse_panel.py", "tests/panel/test_identify_button.py", "tests/fixtures/except_ratchet_baseline.json"]
+    }
+  ],
+  "packet_gaps": [
+    "R310_PERPETRATORS membership: the packet listed the R310 test as a 3.11 failure but not that tests/test_routing.py is a perpetrator; I grepped test_pkg_bootstrap_invariant.py:418-437 to confirm the clock marker fixes R310 transitively (so R310 needs no marker)",
+    "exact placement/line of the five T5 tests and whether each file already imports sys+pytest -- grepped (all do)",
+    "the per-failure MECHANISM for the two persistence xfail reasons -- read the test docstrings (WAL UUID parse -> silent MemoryStore downgrade; swap-and-pop recall reordering)",
+    "compose.HERE_PARMS value for the run_shadow survivor gate -- inferred 2 from the blueprint, used 5 fake survivors to be safe",
+    "this box's Python is 3.14.2 (not <3.13), so the clock failures do not reproduce locally; I verified the markers by reasoning about the 3.11 CI env, not by re-running 3.11"
+  ]
+}

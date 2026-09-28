@@ -276,3 +276,74 @@ def test_inspector_identify_column_degrades_honestly_without_facts():
     cell = si.identify_cell_text(node, facts_reader=lambda path: None)
     assert "polybevel" in cell
     assert cell  # never empty for a real node row
+
+
+# --------------------------------------------------------------------------- #
+# BP11-IDFIX T3: a big selection is capped before facts/compose, the library
+# lookup is memoized per type, and the flash still reports the full count.
+# --------------------------------------------------------------------------- #
+
+def test_worker_caps_before_facts_memoizes_lookup_and_flashes_full_total(monkeypatch):
+    from synapse.identify import apply as amod
+    from synapse.identify import compose as cmod
+    from synapse.identify import facts as fmod
+    from synapse.identify import library as lmod
+    from synapse.cognitive.tools import sidefx_library as SL
+
+    N, TYPES = 200, 5
+    paths = [f"/obj/n{i}" for i in range(N)]
+    help_url = {p: f"operator:Sop/type{i % TYPES}" for i, p in enumerate(paths)}
+
+    lmod._SUMMARY_CACHE.clear()
+    lookups = []
+
+    def counter(keys):
+        lookups.append(tuple(keys))
+        return ("Type\n\nDoes a thing.", "u")
+
+    monkeypatch.setattr(SL, "help_summary", counter)
+
+    def facts_stub(sel):
+        # The worker must pass the CAPPED path list here, not all 200.
+        assert len(sel) <= amod.CAP
+        return [{
+            "path": p, "help_url": help_url[p], "hda_help": None,
+            "type_name": "t", "type_label": "T", "category": "Sop",
+            "params": [], "errors": [], "warnings": [], "bypassed": False,
+        } for p in sel]
+
+    monkeypatch.setattr(fmod, "read_selection_facts", facts_stub)
+
+    composed = []
+    real_compose = cmod.compose
+
+    def spy_compose(f, *a, **k):
+        composed.append(f.get("path"))
+        return real_compose(f, *a, **k)
+
+    monkeypatch.setattr(cmod, "compose", spy_compose)
+
+    seen: dict = {}
+
+    def spy_toggle(items, total=None, editor=None):
+        items = list(items)
+        seen["total"], seen["items"] = total, len(items)
+        return {"action": "show", "shown": len(items), "total": total}
+
+    monkeypatch.setattr(amod, "toggle", spy_toggle)
+    monkeypatch.setitem(sys.modules, "hou",
+                        SimpleNamespace(node=lambda p: SimpleNamespace(path=lambda: p)))
+
+    fake = _panel(
+        _identify_selection_paths=lambda: paths,
+        _identify_launch=lambda fn: fn(),
+        _identify_run_on_main=lambda fn: fn(),
+        _chat=_Chat(),
+    )
+    SynapsePanel._run_identify(fake, "toggle")
+
+    assert len(lookups) <= TYPES          # memo: <= 5 library lookups for 5 types
+    assert len(composed) <= amod.CAP      # compose runs at most CAP times
+    assert seen["items"] <= amod.CAP      # the writer receives at most CAP items
+    assert seen["total"] == N             # the flash reports the full selection
+    lmod._SUMMARY_CACHE.clear()
