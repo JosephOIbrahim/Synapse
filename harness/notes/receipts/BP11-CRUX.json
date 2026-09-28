@@ -1,0 +1,238 @@
+{
+  "leg": "BP11-CRUX",
+  "status": "green_with_findings",
+  "product_head": "32b7947f651a520bdce84799f36c78f70e792cbc",
+  "base": "312ed2cf",
+  "branch": "bp11/crux",
+  "summary": "Adversarial re-verification of the six BP11 builder legs (37 acceptance rows) in fresh `git clone --shared` checkouts, hython 22.0.400 for every headless gate. Verdicts: FIXFWD BROKEN (CRLF checkout hashes published as blob hashes; CI-red on LF runners; superseded on its own branch line by FIXFWD2), FIXFWD2 SOUND-WITH-NITS, IDCORE SOUND-WITH-NITS, IDSURF SOUND-WITH-NITS (G1/G2/G3/G5 UNKNOWN), SALIENCE SOUND-WITH-NITS, HARDEN BROKEN (four out-of-touches edits regressed python/synapse/identify: salience.py cannot import, library crashes on a lookup error, every literal parameter renders as (expr) on the canvas; the except ratchet resets itself after one run of its own test). 23 crucible mutations, 20 bite / 3 survived / 0 crash, rules 1-9 covered. No product file touched. Nothing merges on the two BROKEN legs; the Identify chain's clean tip is bp11/salience (92c81850).",
+  "verdicts": {
+    "BP11-FIXFWD": "BROKEN",
+    "BP11-FIXFWD2": "SOUND-WITH-NITS",
+    "BP11-IDCORE": "SOUND-WITH-NITS",
+    "BP11-IDSURF": "SOUND-WITH-NITS",
+    "BP11-SALIENCE": "SOUND-WITH-NITS",
+    "BP11-HARDEN": "BROKEN"
+  },
+  "acceptance": [
+    {
+      "predicate": "every builder acceptance row has a CRUX verdict with a crucible anchor",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP11-CRUX_verdicts.md: 6 verdict sections, 37 rows (FIXFWD 4, FIXFWD2 4, IDCORE 7, IDSURF 8, SALIENCE 9, HARDEN 5) each with the crucible's own command + observed value, re-run in fresh clones under the session scratchpad (tips 38fbb912 / 88bcf957 / 5f5c4c13 / 6fc22be6 / 92c81850 / fbd7eb8a). Headless gates re-run on hython 22.0.400: probe_identify on idcore/salience/harden (7/7 bubbles, 1 undo group, 0 disk sentinels, APPLY_MS 0.5 ms; harden prints 'Distance (expr)'), salience key producer full re-run (45/45 hash pairs identical, fixture byte-identical), 5-case re-measure (4/5; the LOP light case embeds node ids), shadow grader with SYNAPSE_JEV=off (UNKNOWN never 0). Hashes over `git cat-file blob` bytes only (FIXFWD 0/32 + 0/6 upstream; FIXFWD2 32/32 + 6/6 upstream)."
+    },
+    {
+      "predicate": "the mutation record holds at least one crucible-authored mutation per Identify rule 1-9, each labelled bite, survived or crash",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP11-CRUX_mutations.json rule_coverage: 1 [R1-M1 bite, R1-M2 bite, R1-M1b bite], 2 [R2-M1 bite], 3 [R3-M1 bite], 4 [R4-M1 bite], 5 [R5-M1 bite, R5-M2 bite], 6 [R6-M1 bite], 7 [R7-M1b bite (crucible grep only; all tracked tests survive)], 8 [R8-M1 bite], 9 [R9-M1 bite, R9-M2 survived]. Totals {\"driver_mutations\": 21, \"manual_mutations\": 2, \"bite\": 20, \"survived\": 3, \"crash\": 0}. Driver .scratch/crux_mutate.py (gitignored): baseline green first, exact-count byte edit, re-run, restore from HEAD, clone proven clean (H-M1 false only because HARDEN's own test rewrote the tracked baseline mid-check; restored in H-M3)."
+    },
+    {
+      "predicate": "each leg's verdict carries its SCREEN-vs-CRUX agreement line",
+      "verdict": "pass",
+      "evidence": "Read from harness/jev/ledger/bp11.screen.jsonl (6 REFEREE decisions). FIXFWD weak [1,3] -> PARTIAL (row 2 CI-fail agree, row 4 cleared, row 3 missed). FIXFWD2 weak [0,1] -> DISAGREE (both pass on blob hashes). IDCORE weak [0..6] crux_need 0.99 -> DISAGREE (all 7 pass; nits outside rows). IDSURF weak [0,1,2,4,5,6,7] -> PARTIAL (4 UNKNOWN agree, 3 cleared). SALIENCE weak [1,2,5,6,7,8] -> DISAGREE (all pass; nits in unflagged rows 4-5). HARDEN weak [0,1,2,4] crux_need 1.56 -> AGREE (rows 2-3 BROKEN-class, row 5 UNKNOWN, row 1 cleared)."
+    },
+    {
+      "predicate": "gui_probe rows are UNKNOWN in the verdicts, never pass",
+      "verdict": "pass",
+      "evidence": "IDSURF rows 5-8 (G1, G2, G3, G5) UNKNOWN; HARDEN row 5 (GitHub Windows CI) UNKNOWN; SALIENCE's G4 and the live Jev agreement recorded UNKNOWN. IDSURF is therefore SOUND-WITH-NITS at best, never SOUND."
+    }
+  ],
+  "crucible_criteria": {
+    "flips_no_contract_feature_edits_no_product_file": "git show --stat 32b7947f: only harness/battleplan/notes/BP11-CRUX_verdicts.md and BP11-CRUX_mutations.json; every clone restored (`git checkout -- <file>`; status empty or content-identical under --ignore-cr-at-eol)",
+    "unknown_legs_at_best_sound_with_nits": "IDSURF (4 UNKNOWN) = SOUND-WITH-NITS; HARDEN (1 UNKNOWN) = BROKEN",
+    "hashes_over_git_blob_bytes": "every NOTICE comparison used `git cat-file blob HEAD:<path>` in the leg clone and `git cat-file blob 29b6695b:<path>` in a blob-less upstream clone; never a Windows checkout"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "leg": "BP11-HARDEN",
+      "verdict": "BROKEN",
+      "claim": "Product commit 04d827e4 edited apply.py, facts.py, library.py, salience.py under python/synapse/identify (outside its touches) and regressed them: salience.py:215 IndentationError (module unimportable; tests/test_identify_salience.py collection ERROR), library.py:104 UnboundLocalError on a lookup error (test_summarize_swallows_lookup_error_to_unknown FAILED), facts.py:68-76 _parm_is_expression True for every literal parm (hython: 'Size (expr)', 'Distance (expr)', 'Force Total Count (expr)'; PROBE_RESULT still PASS because no check pins a Here value), salience.py spawn-failure slot release dropped.",
+      "anchor": "git diff 92c81850 04d827e4 -- python/synapse/identify; .scratch/crux_harden_regress.py on the harden clone; verdicts.md HARDEN row 3"
+    },
+    {
+      "id": "F2",
+      "leg": "BP11-HARDEN",
+      "verdict": "BROKEN",
+      "claim": "The except ratchet resets itself: test_positive_control_detects_new_silent_handler runs --write-baseline against the live tree, asserts only that the count grew, and restores only synapse_panel.py. A planted swallow fails the checker (rc 1), passes (rc 0) after one run of tests/test_except_ratchet.py, and the tracked baseline then carries the swallow. The test also leaves synapse_panel.py and the baseline CRLF-rewritten (dirty git status on Windows; eol=lf pinned).",
+      "anchor": "T2 entries H-M1 (bite on a fresh baseline) and H-M3 (survived after one test run); .scratch/crux_ratchet_selfdefeat.py"
+    },
+    {
+      "id": "F3",
+      "leg": "BP11-FIXFWD",
+      "verdict": "BROKEN",
+      "claim": "NOTICE(fixfwd) publishes 32/32 CRLF-checkout hashes under a sentence claiming git-blob provenance (0/32 match HEAD blobs, 0/6 match upstream 29b6695b blobs); its verifier clones GitHub on every run and hashes that checkout, so it is green only where autocrlf=true: with the clone forced to LF (the ubuntu/macos default) the verifier exits 1 with 32 mismatches and test_verify_vendor_notice fails. The receipt says green/pass/no gaps. FIXFWD2 (same branch line, one commit later) is correct in the same environment.",
+      "anchor": "T2 F1-M2; verdicts.md FIXFWD rows 2-3"
+    },
+    {
+      "id": "F4",
+      "leg": "BP11-IDCORE",
+      "verdict": "NIT",
+      "claim": "Rule 2 edge: an artist comment containing the sentinel as a standalone line is read as an Identify block before any show; show() strips the artist text after it, clear() leaves the comment shorter than the original, toggle() clears instead of showing. The _block_start docstring promises the opposite.",
+      "anchor": ".scratch/crux_artist_comment.py cases B/C on the idcore clone; apply.py:70-97"
+    },
+    {
+      "id": "F5",
+      "leg": "BP11-IDSURF",
+      "verdict": "NIT",
+      "claim": "Rule 9's token clause is unpinned for the Identify button: a raw QtWidgets.QPushButton with setStyleSheet('color: #ff00ff;') keeps test_token_authority (33) and test_identify_button (9) green (R9-M2 survived). _run_identify / _identify_worker add three silent `except Exception: pass` (synapse_panel.py:3346, 3369, 3373) on the new zero-token path.",
+      "anchor": "T2 R9-M2; grep on the idsurf clone"
+    },
+    {
+      "id": "F6",
+      "leg": "BP11-SALIENCE",
+      "verdict": "NIT",
+      "claim": "The LOP hash recipe embeds Houdini node ids (HoudiniCreatorNode / HoudiniEditorNodes in the flattened export), so a LOP case's hashes reproduce only when the whole producer runs in creation order (full re-run byte-identical 45/45; a 5-case partial re-measure differs on Lop light::2.0 primpath; `matters` unaffected). The grader rewrites the tracked ledger harness/jev/ledger/bp11.salience.jsonl on every run.",
+      "anchor": ".scratch/crux_key_recheck.py, .scratch/crux_lop_export.py; verdicts.md SALIENCE rows 4-5"
+    },
+    {
+      "id": "F7",
+      "leg": "BP11-FIXFWD2",
+      "verdict": "NIT",
+      "claim": "test_verify_vendor_notice_mutation_fails and the CRLF test rewrite NOTICE.md in text mode; on Windows the file comes back CRLF against .gitattributes eol=lf and `git status` shows it modified after a green run (content-identical). F2-M2 (verifier hashes the checkout) survives all three tests because eol=lf makes checkout == blob here; row 4 is pinned by grep only.",
+      "anchor": "T2 F2-M2; git status on the fixfwd2 clone after pytest"
+    },
+    {
+      "id": "F8",
+      "leg": "cross-leg",
+      "verdict": "NIT",
+      "claim": "Rules pinned by the crucible's grep only (no tracked test reddens the mutation): rule 1 no-network clause (R1-M2), rule 7 reuse-don't-fork (R7-M1b), ADR refusal list (F1-M1), CI matrix (H-M2), BeforeSave strip under pytest (R4-M1 bites live only).",
+      "anchor": "BP11-CRUX_mutations.json bitten_by fields"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "R-A",
+      "item": "Merge route for the Identify chain: (A) merge bp11/salience 92c81850 (SOUND-WITH-NITS, carries idcore+idsurf+salience) and redo HARDEN on top without touching python/synapse/identify; or (B) fix-forward bp11/harden by restoring the four identify files to 92c81850, rebuilding the baseline and repairing the positive-control test. Nothing merges from bp11/harden fbd7eb8a as is."
+    },
+    {
+      "id": "R-B",
+      "item": "bp11/fixfwd never merges; bp11/fixfwd2 88bcf957 (which contains it) does. Annotating BP11-FIXFWD.json's false rows is a human act (FIXFWD2's own for_ruling)."
+    },
+    {
+      "id": "R-C",
+      "item": "GUI gates G1-G6 (IDSURF rows 5-8, SALIENCE G4) close by computer use on the live 22.0.400 GUI after the wave; the rule-2 sentinel-collision case (F4) is worth one extra G3 click with a comment that contains the sentinel line."
+    },
+    {
+      "id": "R-D",
+      "item": "Hygiene rule for future legs: a test may not clone GitHub (FIXFWD's verifier did), may not rewrite a tracked file without restoring it in finally with the same line endings, and may not persist a regenerated baseline."
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP11-HARDEN-FIX",
+      "band": "TRUST",
+      "class": "build",
+      "tier": "auto",
+      "readonly": false,
+      "deps": [
+        "BP11-CRUX"
+      ],
+      "name": "HARDEN fix-forward: restore identify/, repair the ratchet's positive control, newline hygiene",
+      "touches": [
+        "python/synapse/identify/apply.py",
+        "python/synapse/identify/facts.py",
+        "python/synapse/identify/library.py",
+        "python/synapse/identify/salience.py",
+        "scripts/except_ratchet.py",
+        "tests/test_except_ratchet.py",
+        "tests/fixtures/except_ratchet_baseline.json"
+      ],
+      "acceptance": [
+        {
+          "predicate": "the four identify files are byte-identical to 92c81850, or their except blocks are repaired with the 68-test identify set green (compose 12 + library 15 + apply 12 + facts_lop 5 + salience 9 + panel identify_button 9 + product boundary 2 = the numbers CRUX counted) and the hython probe printing 'Distance 0.07', never '(expr)', for a literal parm",
+          "evidence": "test"
+        },
+        {
+          "predicate": "test_positive_control asserts the checker exits 1 on the planted swallow, never writes the tracked baseline, and `git status --short` is empty after the test file runs on Windows",
+          "evidence": "test"
+        },
+        {
+          "predicate": "the H-M3 sequence (plant, run the test file once, re-plant, check) ends with the checker at rc 1",
+          "evidence": "check"
+        }
+      ],
+      "source": {
+        "doc": "harness/battleplan/notes/BP11-CRUX_verdicts.md",
+        "anchor": "BP11-HARDEN rows 2-3"
+      }
+    },
+    {
+      "id": "BP11-IDCORE-SENTINEL",
+      "band": "TRUST",
+      "class": "build",
+      "tier": "auto",
+      "readonly": false,
+      "deps": [
+        "BP11-CRUX"
+      ],
+      "name": "Identify: an artist's own standalone sentinel line never counts as our block",
+      "touches": [
+        "python/synapse/identify/apply.py",
+        "tests/test_identify_apply.py"
+      ],
+      "acceptance": [
+        {
+          "predicate": "show then clear leaves 'artist line one\\n~ identify ~\\nartist line two' byte-identical, has_block() is False on it before any show, and toggle() shows rather than clears",
+          "evidence": "test"
+        },
+        {
+          "predicate": "the existing 12 apply tests and the hython probe stay green (7/7, 1 undo group, 0 disk sentinels)",
+          "evidence": "check"
+        }
+      ],
+      "source": {
+        "doc": "harness/battleplan/notes/BP11-CRUX_verdicts.md",
+        "anchor": "BP11-IDCORE row 3 NIT (F4)"
+      }
+    },
+    {
+      "id": "BP11-NEWLINE-HYGIENE",
+      "band": "TRUST",
+      "class": "build",
+      "tier": "mechanical",
+      "readonly": false,
+      "deps": [
+        "BP11-CRUX"
+      ],
+      "name": "Tests that rewrite tracked files write LF and restore in finally",
+      "touches": [
+        "tests/test_vendor_notice.py",
+        "tests/test_except_ratchet.py",
+        "harness/jev/jev_salience.py"
+      ],
+      "acceptance": [
+        {
+          "predicate": "after running tests/test_vendor_notice.py, tests/test_except_ratchet.py and `python harness/jev/jev_salience.py --shadow` with SYNAPSE_JEV=off on a Windows checkout, `git status --short --untracked-files=no` is empty",
+          "evidence": "check"
+        }
+      ],
+      "source": {
+        "doc": "harness/battleplan/notes/BP11-CRUX_verdicts.md",
+        "anchor": "Cross-leg notes (F7)"
+      }
+    }
+  ],
+  "packet_gaps": [
+    {
+      "gap": "the six leg receipts (harness/notes/receipts/BP11-*.json on each branch) - the rows the crucible re-runs",
+      "note": "read via git show <branch>:<path>"
+    },
+    {
+      "gap": "the SCREEN ledger lines (harness/jev/ledger/bp11.screen.jsonl) - needed for the agreement lines",
+      "note": "the brief carried three of six brief_lines; the ledger has all six"
+    },
+    {
+      "gap": "identify package source windows (apply.py strip/show/clear/save, facts._lop_writes and read_selection_facts, library.summarize, salience._node_view/run_shadow, probe_identify.py) - needed to author rule mutations",
+      "note": "located by grep -n on bp11/harden"
+    },
+    {
+      "gap": "the HARDEN diff to python/synapse/identify (the regressions) - the packet showed no HARDEN window at all",
+      "note": "git diff 92c81850 04d827e4"
+    },
+    {
+      "gap": "the upstream guide path python/fxhoudinimcp/prompts/markdown/workflows/ at 29b6695b",
+      "note": "git ls-tree on a --filter=blob:none clone"
+    }
+  ],
+  "turns_used": "19 of 30 (self-reported)",
+  "producer": "python .scratch/crux_write_receipt.py (worktree bp11/crux)"
+}
