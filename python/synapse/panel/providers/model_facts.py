@@ -33,6 +33,8 @@ from typing import Optional, Tuple
 
 _ANTHROPIC_PRICING = "https://platform.claude.com/docs/en/about-claude/pricing · 2026-09-05"
 _ANTHROPIC_MODELS = "https://platform.claude.com/docs/en/models/overview · 2026-09-05"
+_ANTHROPIC_PRICING_0928 = "https://platform.claude.com/docs/en/about-claude/pricing · 2026-09-28"
+_ANTHROPIC_MODELS_0928 = "https://platform.claude.com/docs/en/models/overview · 2026-09-28"
 _GEMINI_PRICING = "https://ai.google.dev/gemini-api/docs/pricing · 2026-09-05"
 _GEMINI_MODELS_GET = "generativelanguage.googleapis.com models.get inputTokenLimit · 2026-09-05"
 
@@ -42,6 +44,10 @@ CONTEXT_WINDOW = {
     # "200K tokens" (API id claude-haiku-4-5-20251001). The pricing page's
     # "Long context pricing": "Claude 4.6 and later models ... include the
     # full 1M token context window" covers Opus 4.8, Sonnet 4.6 and Fable 5.
+    # Models overview, 2026-09-28: Fable 5.1, Opus 5.5 and Sonnet 5.5 "1M tokens".
+    ("claude", "claude-fable-5-1"):          (1_000_000, _ANTHROPIC_MODELS_0928),
+    ("claude", "claude-opus-5-5"):           (1_000_000, _ANTHROPIC_MODELS_0928),
+    ("claude", "claude-sonnet-5-5"):         (1_000_000, _ANTHROPIC_MODELS_0928),
     ("claude", "claude-opus-5"):             (1_000_000, _ANTHROPIC_MODELS),
     ("claude", "claude-opus-4-8"):           (1_000_000, _ANTHROPIC_PRICING),
     ("claude", "claude-sonnet-5"):           (1_000_000, _ANTHROPIC_MODELS),
@@ -60,7 +66,11 @@ CONTEXT_WINDOW = {
 PRICE_USD_PER_MTOK = {
     # Anthropic "Model pricing" table: base input / output, 5-minute cache
     # writes (the panel's _with_prompt_cache uses the default ephemeral TTL),
-    # cache hits at 0.1x base input.
+    # and cache hits as listed. Hits are 0.1x base input on most rows; the
+    # 2026-09-28 table lists Fable 5.1 at $0.25 and Opus 5.5 at $0.20.
+    ("claude", "claude-fable-5-1"):          (10.0, 50.0, 0.25, 12.50, _ANTHROPIC_PRICING_0928),
+    ("claude", "claude-opus-5-5"):           (4.0, 20.0, 0.20, 5.00, _ANTHROPIC_PRICING_0928),
+    ("claude", "claude-sonnet-5-5"):         (2.0, 10.0, 0.20, 2.50, _ANTHROPIC_PRICING_0928),
     ("claude", "claude-opus-5"):             (5.0, 25.0, 0.50, 6.25, _ANTHROPIC_PRICING),
     ("claude", "claude-opus-4-8"):           (5.0, 25.0, 0.50, 6.25, _ANTHROPIC_PRICING),
     ("claude", "claude-sonnet-5"):           (2.0, 10.0, 0.20, 2.50, _ANTHROPIC_PRICING),

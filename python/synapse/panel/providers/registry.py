@@ -50,12 +50,22 @@ ANTHROPIC_MODELS = (
     # V3_probe_live.install.json. The provenance gap is closed; the DATE is the
     # load-bearing part, because this note becomes a claim about the past the
     # moment it is written (R74) and probe.py is what keeps it honest.
-    ("claude-opus-5",              "Opus 5"),
-    ("claude-opus-4-8",            "Opus 4.8"),
-    ("claude-sonnet-5",            "Sonnet 5"),      # verified live (GET /v1/models, 2026-07-01)
-    ("claude-sonnet-4-6",          "Sonnet 4.6"),
+    #
+    # 2026-09-28: Fable 5.1, Opus 5.5 and Sonnet 5.5 added at the top, newest first;
+    # every older row stays so a saved pick keeps its label. VERIFIED the same day:
+    # live GET /v1/models served all three (producer harness/notes/econ/v3_probe_live.py
+    # -> V3_probe_live.bp11-models-0928.json, zero completion spend), and the models
+    # overview lists them as the current generation. The default stays Sonnet 4.6
+    # until a live completion smoke passes on Sonnet 5.5 (the Sonnet 5 precedent).
+    ("claude-fable-5-1",           "Fable 5.1"),
+    ("claude-opus-5-5",            "Opus 5.5"),
+    ("claude-sonnet-5-5",          "Sonnet 5.5"),
     ("claude-haiku-4-5-20251001",  "Haiku 4.5"),
+    ("claude-opus-5",              "Opus 5"),
+    ("claude-sonnet-5",            "Sonnet 5"),      # verified live (GET /v1/models, 2026-07-01)
     ("claude-fable-5",             "Fable 5"),
+    ("claude-opus-4-8",            "Opus 4.8"),
+    ("claude-sonnet-4-6",          "Sonnet 4.6"),
 )
 ANTHROPIC_MODEL = "claude-sonnet-4-6"   # default pick
 ANTHROPIC_MAX_TOKENS = 4096
