@@ -49,13 +49,21 @@ Lives in: `harness/jev/jev_bench.py`, consumed by `harness/outside_in/verify.py`
 
 ## Refused Sites
 
-1. **Should a chunk leave quarantine?** No. Jev sorts, never promotes. Quarantine is policy.
+1. Whether a chunk leaves quarantine. Rule 3.
 
-2. **Is this under a licence SYNAPSE may commit?** No. Legal policy, not a judgment call.
+2. Whether text is under a licence SYNAPSE may commit. The spec and Joe.
 
-3. **Did the benchmark check pass?** No. Exact, boolean predicate.
+3. Whether a probe passed. G3 is exact.
 
-4. **Is the stamp current?** No. String compare between builds.
+4. Whether the stamp is current. G4 is a string compare.
+
+5. Whether a benchmark check passed. `hou` in a third process.
+
+6. Which model runs anything. `rails_exec.json`, invariant 1.
+
+7. Anything on the instant tier. The review cut the recipe gate for 450 ms; that reasoning stands.
+
+8. Anything inside a `run_on_main` closure. Adapter invariant (e).
 
 ## Invariants Inherited
 

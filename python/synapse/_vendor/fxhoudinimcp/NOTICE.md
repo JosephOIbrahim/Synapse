@@ -10,7 +10,7 @@
 
 ## File Manifest and SHA256 Verification
 
-The 31 guide files are included as-is from upstream. Each file's SHA256 hash below can be verified against the upstream repository at the commit specified above.
+The 31 guide files and LICENSE are included as-is from upstream. Each file's SHA256 hash below is computed from the committed git blob (LF bytes) in the upstream repository at the commit specified above.
 
 | Filename | SHA256 |
 |----------|--------|
@@ -45,6 +45,7 @@ The 31 guide files are included as-is from upstream. Each file's SHA256 hash bel
 | tops.md | b3ed59965fd2cb4bf4d79261d97aa0944d55ee438b4b1042d00142b29c3b921b |
 | troubleshooting.md | 81c885ce4e630dfc5af925f94271914a5a60c616508744573fb144d5c20f9950 |
 | vellum.md | 9a1e423171525b9ecb69ceb023369f2db8b89e296ca45075aeb9b43da2a349bb |
+| LICENSE | aa157ef972084d84359858a9e931d39415f53b9998f5ab27756671a734b59406 |
 
 ## License
 
