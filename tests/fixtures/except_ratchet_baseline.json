@@ -1,5 +1,5 @@
 {
-  "_rule": "silent broad-except ratchet: count grows, never shrinks",
+  "_rule": "silent broad-except ratchet: count may shrink, never grow",
   "files": {
     "python/synapse/autonomy/planner.py": 1,
     "python/synapse/autonomy/predictor.py": 2,

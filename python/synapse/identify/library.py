@@ -15,6 +15,8 @@ from __future__ import annotations
 import re
 import logging
 
+_log = logging.getLogger(__name__)
+
 
 _OPERATOR_RE = re.compile(
     r"^operator:(?P<context>[^/]+)/(?P<name>[^?]+)(?:\?version=(?P<version>[\w.]+))?$")
@@ -96,11 +98,9 @@ def summarize(help_url: str, hda_help: str | None = None,
     if keys:
         try:
             hit = lookup(keys)
-        except Exception as e:
-
-                logging.debug("exception: %s", e)
-
-                        
+        except Exception:
+            _log.debug("swallowed exception", exc_info=True)
+            hit = None
         if hit:
             text = first_sentence(summary_paragraph(hit[0]))
             if text:

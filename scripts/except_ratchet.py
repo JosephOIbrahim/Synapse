@@ -74,20 +74,35 @@ def is_silent_handler(handler: ast.ExceptHandler) -> bool:
     return True
 
 
+class RatchetUnparsable(Exception):
+    """A scanned file could not be read or parsed.
+
+    The ratchet fails closed on it (prints ``UNPARSED <path>`` and exits 1)
+    rather than silently counting an unreadable file as a clean zero. Fail-open
+    is exactly how a broken file (an IndentationError) slipped this gate before
+    (BP11-HARDFIX defect 6).
+    """
+
+    def __init__(self, filepath):
+        super().__init__(str(filepath))
+        self.filepath = filepath
+
+
 def analyze_file(filepath: Path) -> Tuple[int, int]:
     """
     Analyze a Python file.
 
     Returns: (broad_count, silent_count)
     where silent_count is the number of silent broad handlers.
+
+    Raises :class:`RatchetUnparsable` when the file cannot be read or parsed.
     """
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         tree = ast.parse(source, filename=str(filepath))
-    except (SyntaxError, OSError):
-        # Skip files that can't be parsed
-        return 0, 0
+    except (SyntaxError, OSError, UnicodeDecodeError) as exc:
+        raise RatchetUnparsable(filepath) from exc
 
     broad_count = 0
     silent_count = 0
@@ -123,55 +138,94 @@ def main():
         action="store_true",
         help="Write baseline to tests/fixtures/except_ratchet_baseline.json"
     )
+    parser.add_argument(
+        "--root",
+        default=None,
+        help="Directory to scan (default: python/synapse under the repo). "
+             "Lets a control point the ratchet at a temporary tree."
+    )
+    parser.add_argument(
+        "--rel-base",
+        default=None,
+        help="Base directory for the relative-path keys (default: repo root)."
+    )
+    parser.add_argument(
+        "--baseline",
+        default=None,
+        help="Baseline JSON path (default: tests/fixtures/except_ratchet_baseline.json)."
+    )
     args = parser.parse_args()
 
     # Determine repo root (assume script is at scripts/except_ratchet.py)
     script_dir = Path(__file__).parent
     repo_root = script_dir.parent
-    synapse_root = repo_root / "python" / "synapse"
 
-    if not synapse_root.exists():
-        print(f"Error: python/synapse not found at {synapse_root}", file=sys.stderr)
+    scan_root = Path(args.root).resolve() if args.root else (repo_root / "python" / "synapse")
+    rel_base = Path(args.rel_base).resolve() if args.rel_base else repo_root
+    if args.baseline:
+        baseline_path = Path(args.baseline).resolve()
+    else:
+        baseline_path = repo_root / "tests" / "fixtures" / "except_ratchet_baseline.json"
+
+    if not scan_root.exists():
+        print(f"Error: scan root not found at {scan_root}", file=sys.stderr)
         sys.exit(1)
+
+    def rel_key(path: Path) -> str:
+        try:
+            return path.relative_to(rel_base).as_posix()
+        except ValueError:
+            return path.as_posix()
 
     # Analyze all files
     files_data: Dict[str, int] = {}
+    unparsed: List[Path] = []
     repo_wide_silent = 0
     repo_wide_broad = 0
 
-    for filepath in walk_python_files(synapse_root):
-        broad_cnt, silent_cnt = analyze_file(filepath)
+    for filepath in walk_python_files(scan_root):
+        try:
+            broad_cnt, silent_cnt = analyze_file(filepath)
+        except RatchetUnparsable:
+            unparsed.append(filepath)
+            continue
 
         if silent_cnt > 0:
-            # Store as path relative to repo root (posix)
-            rel_path = filepath.relative_to(repo_root).as_posix()
-            files_data[rel_path] = silent_cnt
+            files_data[rel_key(filepath)] = silent_cnt
 
         repo_wide_silent += silent_cnt
         repo_wide_broad += broad_cnt
 
+    # Fail closed: a file we cannot read or parse is a defect, never a clean 0.
+    if unparsed:
+        for filepath in sorted(unparsed, key=str):
+            print(f"UNPARSED {rel_key(filepath)}")
+        print(
+            f"{len(unparsed)} file(s) could not be read or parsed; "
+            "ratchet fails closed.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     if args.write_baseline:
         # Write baseline fixture
-        baseline_path = repo_root / "tests" / "fixtures" / "except_ratchet_baseline.json"
         baseline_path.parent.mkdir(parents=True, exist_ok=True)
 
         baseline = {
-            "_rule": "silent broad-except ratchet: count grows, never shrinks",
+            "_rule": "silent broad-except ratchet: count may shrink, never grow",
             "files": files_data
         }
 
-        with open(baseline_path, "w", encoding="utf-8") as f:
+        with open(baseline_path, "w", encoding="utf-8", newline="\n") as f:
             json.dump(baseline, f, indent=2, sort_keys=True)
 
-        print(f"Baseline written to {baseline_path.relative_to(repo_root)}")
+        print(f"Baseline written to {baseline_path}")
         print(f"Files with silent handlers: {len(files_data)}")
         print(f"Total silent broad-except handlers: {repo_wide_silent}")
         print(f"Total broad-except handlers: {repo_wide_broad}")
         sys.exit(0)
 
     # Check mode: compare against baseline
-    baseline_path = repo_root / "tests" / "fixtures" / "except_ratchet_baseline.json"
-
     baseline_data = {}
     if baseline_path.exists():
         with open(baseline_path, "r", encoding="utf-8") as f:

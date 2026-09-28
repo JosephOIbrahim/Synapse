@@ -26,7 +26,7 @@ The baseline lives at `tests/fixtures/except_ratchet_baseline.json`:
 
 ```json
 {
-  "_rule": "silent broad-except ratchet: count grows, never shrinks",
+  "_rule": "silent broad-except ratchet: count may shrink, never grow",
   "files": {
     "python/synapse/identify/facts.py": 0,
     "python/synapse/core/session.py": 2,
@@ -45,6 +45,12 @@ scripts/except_ratchet.py
 ```
 
 Exits 0 if all files are at or below their baseline. Exits 1 if any file's silent count exceeds its baseline, or if a file has silents but was not in the baseline (new regression).
+
+**The rule, stated once:** `count may shrink, never grow`. A file's silent count may go *down* at any time (lowering a baseline is always allowed and encouraged). It may not go *up* past its baseline. Raising a baseline is Joe's word (see House Rules).
+
+**Fail-closed on unparsable files.** A file the ratchet cannot read or parse is a defect, not a clean zero. The script prints `UNPARSED <path>` for each such file and exits 1 — it never counts an unreadable or syntactically broken module as `(0, 0)`. This is deliberate: a fail-*open* skip is exactly how a broken module (an `IndentationError`) once slipped the gate while reporting a passing baseline. `analyze_file` raises `RatchetUnparsable`; the check refuses to pass while any scanned file is unparsable.
+
+The scan root, the relative-path base, and the baseline file are overridable with `--root`, `--rel-base`, and `--baseline`, so the controls can exercise both the positive (a planted swallow) and fail-closed (an unparsable file) paths against a temporary tree without ever touching the tracked baseline.
 
 Reports:
 - File list of all violations

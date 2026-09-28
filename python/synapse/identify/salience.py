@@ -34,6 +34,8 @@ from . import compose as _compose
 from ..jev import adapter
 import logging
 
+_log = logging.getLogger(__name__)
+
 #: Adapter lane + mode for this feature (IDENTIFY_BLUEPRINT sec. 5).
 LANE = "identify_salience"
 MODE = "shadow"
@@ -207,9 +209,7 @@ def run_shadow(node_facts, *, opt_in, scope=None, grant=None, should_abort=None,
     try:
         return spawn(lambda: _judge_survivors(node_view, params, scope=scope,
                                               grant=grant, should_abort=should_abort))
-    except Exception as e:
-
-            logging.debug("exception: %s", e)
-
-                
+    except Exception:
+        _log.debug("swallowed exception", exc_info=True)
+        _JOBS.slot.release()
         return None

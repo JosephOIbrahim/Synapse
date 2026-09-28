@@ -16,10 +16,12 @@ from __future__ import annotations
 from contextlib import contextmanager
 import logging
 
+_log = logging.getLogger(__name__)
+
 try:  # pragma: no cover - exercised live under hython
     import hou
-except Exception as e:  # pragma: no cover
-    logging.debug("hou import unavailable: %s", e)
+except Exception:  # pragma: no cover
+    _log.debug("swallowed exception", exc_info=True)
     hou = None
 
 
@@ -110,8 +112,8 @@ def _flash(editor, text: str) -> None:
         return
     try:
         editor.flashMessage(None, text, 6)
-    except Exception as e:
-        logging.debug("flashMessage failed: %s", e)
+    except Exception:
+        _log.debug("swallowed exception", exc_info=True)
 
 
 def show(items, total=None, editor=None) -> dict:
