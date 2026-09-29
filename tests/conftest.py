@@ -994,3 +994,25 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         f"{total} test(s) in {len(by_module)} module(s) deselected by "
         f"-m 'not needs_houdini'. Run the full suite under hython "
         f"(pytest tests/, no -m filter) to execute them.")
+
+
+
+# ---------------------------------------------------------------------------
+# Ruling R-D (BP11): a test session never leaves a tracked file changed.
+# See tests/r_d_guard.py. A failure names the files; write to a temp copy, or
+# restore the exact bytes in ``finally``.
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="session", autouse=True)
+def _r_d_tracked_files_unchanged():
+    from pathlib import Path
+
+    from r_d_guard import snapshot, touched_since
+
+    snap = snapshot(Path(__file__).resolve().parents[1])
+    yield
+    changed = touched_since(snap)
+    if changed:
+        pytest.fail("ruling R-D: this test session changed tracked file(s) and left them "
+                    "changed: " + ", ".join(changed) + ". Write to a temp copy, or restore "
+                    "the exact bytes in finally.", pytrace=False)

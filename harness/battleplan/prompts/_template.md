@@ -33,6 +33,11 @@ brief is complete; if any part reads truncated, STOP and say so.
 - **Territory:** `python/synapse/loop/pgdrm.py` belongs to the memory board's
   live `mem/m2-pgdrm` branch. Never touch it.
 - Named-file commits only on your branch. Never `git add -A`.
+- **Test hygiene (ruling R-D).** A test never clones a remote repository, never
+  leaves a tracked file changed (edit a temp copy; if a tracked file must be
+  touched, restore its exact bytes in `finally`), and never persists a
+  regenerated baseline. `tests/conftest.py` fails the run naming any tracked
+  file a test left changed.
 - Scope is the mission. Prerequisite work is real work — do it. Unrelated value —
   post a `spawn` proposal, don't chase it.
 

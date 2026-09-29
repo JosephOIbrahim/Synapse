@@ -140,9 +140,9 @@
       },
       "policy": {
         "flag_does_not_support_min": 0.6,
-        "clear_min_support_confidence": 0.8,
-        "clear_max_self_contradiction": 0.2,
-        "clear_max_crux_need": 0.5,
+        "weak_below_support": 0.5,
+        "clear_max_self_contradiction": 0.25,
+        "clear_max_crux_need": 0.9,
         "fallback_verdict": "REFEREE"
       }
     },

@@ -137,7 +137,7 @@ def test_screen_flag_on_does_not_support():
 
 
 def test_screen_clear_when_all_supported():
-    """CLEAR. Mutation: raise `clear_min_support_confidence` to 0.99 (or delete
+    """CLEAR. Mutation: raise `weak_below_support` to 0.99 (or delete
     `clear_max_crux_need`) in questions.json -> a clean receipt no longer clears -> RED."""
     d = jev_screen.decide(2, _screen_answers([("supports", 0.90, 0.03), ("supports", 0.88, 0.03)],
                                              self_contra=0.10, crux_need=0.30), SCREEN_POLICY)
@@ -146,9 +146,9 @@ def test_screen_clear_when_all_supported():
 
 
 def test_screen_referee_on_weak_row():
-    """REFEREE. Mutation: lower `clear_min_support_confidence` to 0.0 -> a thin-evidence row
-    silently clears instead of going to the referee -> RED."""
-    d = jev_screen.decide(1, _screen_answers([("supports", 0.55, 0.05)]), SCREEN_POLICY)
+    """REFEREE. Mutation: lower `weak_below_support` to 0.0 -> a row Jev gives less than even
+    odds of support silently clears instead of going to the referee -> RED."""
+    d = jev_screen.decide(1, _screen_answers([("supports", 0.40, 0.55)]), SCREEN_POLICY)
     assert d["verdict"] == "REFEREE"
     assert d["rows"] == [0]
 

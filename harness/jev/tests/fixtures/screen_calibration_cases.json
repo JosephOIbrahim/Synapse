@@ -1,0 +1,1516 @@
+{
+ "generated": "2026-09-29",
+ "producer": "harness/jev/calibrate_screen.py --write",
+ "cases": [
+  {
+   "leg": "BP10-BENCH",
+   "source": "bp10.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "FLAG",
+   "n_rows": 6,
+   "code_flags": true,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.88,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.91,
+       "claims_unknown": 0.0,
+       "partial": 0.09
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.93,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.95,
+       "claims_unknown": 0.0,
+       "partial": 0.05
+      }
+     },
+     "acc_2": {
+      "choice": "claims_unknown",
+      "confidence": 0.99,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.0,
+       "claims_unknown": 1.0,
+       "partial": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.72,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.79,
+       "claims_unknown": 0.0,
+       "partial": 0.21
+      }
+     },
+     "acc_4": {
+      "choice": "supports",
+      "confidence": 0.9,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.93,
+       "claims_unknown": 0.0,
+       "partial": 0.07
+      }
+     },
+     "acc_5": {
+      "choice": "supports",
+      "confidence": 0.97,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.98,
+       "claims_unknown": 0.0,
+       "partial": 0.02
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.17
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.98
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP10-CORPUS",
+   "source": "bp10.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "FLAG",
+   "n_rows": 6,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.99,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.01,
+       "supports": 0.99,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.99,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.01,
+       "supports": 0.99,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "does_not_support",
+      "confidence": 0.58,
+      "probabilities": {
+       "does_not_support": 0.69,
+       "partial": 0.14,
+       "supports": 0.17,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "partial",
+      "confidence": 0.35,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.52,
+       "supports": 0.48,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_4": {
+      "choice": "supports",
+      "confidence": 0.73,
+      "probabilities": {
+       "does_not_support": 0.02,
+       "partial": 0.18,
+       "supports": 0.8,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_5": {
+      "choice": "supports",
+      "confidence": 0.99,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.0,
+       "supports": 1.0,
+       "claims_unknown": 0.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.46
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 1.42
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP10-GUIDES",
+   "source": "bp10.screen.jsonl",
+   "crux": "BROKEN",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 6,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.99,
+      "probabilities": {
+       "partial": 0.0,
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0,
+       "supports": 1.0
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 1.0,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "partial": 0.0,
+       "does_not_support": 0.0,
+       "supports": 1.0
+      }
+     },
+     "acc_2": {
+      "choice": "does_not_support",
+      "confidence": 0.43,
+      "probabilities": {
+       "partial": 0.21,
+       "claims_unknown": 0.0,
+       "does_not_support": 0.57,
+       "supports": 0.22
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.97,
+      "probabilities": {
+       "partial": 0.02,
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0,
+       "supports": 0.98
+      }
+     },
+     "acc_4": {
+      "choice": "supports",
+      "confidence": 0.96,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "partial": 0.02,
+       "does_not_support": 0.01,
+       "supports": 0.97
+      }
+     },
+     "acc_5": {
+      "choice": "supports",
+      "confidence": 1.0,
+      "probabilities": {
+       "partial": 0.0,
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0,
+       "supports": 1.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.57
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.87
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP10-SCAFFOLD",
+   "source": "bp10.screen.jsonl",
+   "crux": "BROKEN",
+   "recorded_verdict": "FLAG",
+   "n_rows": 6,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "partial",
+      "confidence": 0.54,
+      "probabilities": {
+       "supports": 0.32,
+       "does_not_support": 0.02,
+       "partial": 0.66,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_1": {
+      "choice": "partial",
+      "confidence": 0.8,
+      "probabilities": {
+       "supports": 0.14,
+       "does_not_support": 0.01,
+       "partial": 0.85,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "partial",
+      "confidence": 0.51,
+      "probabilities": {
+       "supports": 0.0,
+       "does_not_support": 0.36,
+       "partial": 0.64,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "does_not_support",
+      "confidence": 0.38,
+      "probabilities": {
+       "supports": 0.01,
+       "partial": 0.41,
+       "does_not_support": 0.53,
+       "claims_unknown": 0.05
+      }
+     },
+     "acc_4": {
+      "choice": "does_not_support",
+      "confidence": 0.86,
+      "probabilities": {
+       "supports": 0.01,
+       "partial": 0.1,
+       "does_not_support": 0.89,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_5": {
+      "choice": "does_not_support",
+      "confidence": 0.61,
+      "probabilities": {
+       "supports": 0.04,
+       "does_not_support": 0.71,
+       "partial": 0.25,
+       "claims_unknown": 0.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.13
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 1.99
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP11-FIXFWD",
+   "source": "bp11.screen.jsonl",
+   "crux": "BROKEN",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 4,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.93,
+      "probabilities": {
+       "partial": 0.05,
+       "does_not_support": 0.0,
+       "supports": 0.95,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.66,
+      "probabilities": {
+       "partial": 0.26,
+       "does_not_support": 0.0,
+       "supports": 0.74,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.97,
+      "probabilities": {
+       "partial": 0.02,
+       "does_not_support": 0.0,
+       "supports": 0.98,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "partial",
+      "confidence": 0.68,
+      "probabilities": {
+       "supports": 0.21,
+       "does_not_support": 0.03,
+       "partial": 0.76,
+       "claims_unknown": 0.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.06
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.52
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP11-FIXFWD2",
+   "source": "bp11.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 4,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "partial",
+      "confidence": 0.36,
+      "probabilities": {
+       "does_not_support": 0.02,
+       "partial": 0.52,
+       "claims_unknown": 0.0,
+       "supports": 0.46
+      }
+     },
+     "acc_1": {
+      "choice": "partial",
+      "confidence": 0.34,
+      "probabilities": {
+       "does_not_support": 0.01,
+       "partial": 0.51,
+       "claims_unknown": 0.0,
+       "supports": 0.48
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.99,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.01,
+       "claims_unknown": 0.0,
+       "supports": 0.99
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.94,
+      "probabilities": {
+       "does_not_support": 0.01,
+       "partial": 0.03,
+       "claims_unknown": 0.0,
+       "supports": 0.96
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.08
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.47
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP11-HARDEN",
+   "source": "bp11.screen.jsonl",
+   "crux": "BROKEN",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 5,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.58,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.31,
+       "supports": 0.69,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_1": {
+      "choice": "partial",
+      "confidence": 0.84,
+      "probabilities": {
+       "does_not_support": 0.01,
+       "partial": 0.87,
+       "supports": 0.12,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.65,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.26,
+       "supports": 0.74,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.87,
+      "probabilities": {
+       "does_not_support": 0.02,
+       "partial": 0.08,
+       "supports": 0.9,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_4": {
+      "choice": "claims_unknown",
+      "confidence": 0.97,
+      "probabilities": {
+       "does_not_support": 0.02,
+       "partial": 0.0,
+       "supports": 0.0,
+       "claims_unknown": 0.98
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.22
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 1.56
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP11-HARDFIX",
+   "source": "bp11.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 7,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.45,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 0.59,
+       "does_not_support": 0.0,
+       "partial": 0.41
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.72,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 0.79,
+       "does_not_support": 0.0,
+       "partial": 0.21
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.41,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 0.55,
+       "does_not_support": 0.06,
+       "partial": 0.39
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.42,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.01,
+       "supports": 0.57,
+       "partial": 0.42
+      }
+     },
+     "acc_4": {
+      "choice": "partial",
+      "confidence": 0.58,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.01,
+       "supports": 0.3,
+       "partial": 0.6900000000000001
+      }
+     },
+     "acc_5": {
+      "choice": "partial",
+      "confidence": 0.94,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 0.01,
+       "does_not_support": 0.04,
+       "partial": 0.95
+      }
+     },
+     "acc_6": {
+      "choice": "partial",
+      "confidence": 0.55,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 0.07,
+       "does_not_support": 0.26,
+       "partial": 0.67
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.27
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 1.36
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP11-IDCORE",
+   "source": "bp11.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 7,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.43,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0,
+       "supports": 0.58,
+       "partial": 0.42
+      }
+     },
+     "acc_1": {
+      "choice": "partial",
+      "confidence": 0.3,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.08,
+       "supports": 0.45,
+       "partial": 0.47
+      }
+     },
+     "acc_2": {
+      "choice": "partial",
+      "confidence": 0.93,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0,
+       "supports": 0.05,
+       "partial": 0.95
+      }
+     },
+     "acc_3": {
+      "choice": "partial",
+      "confidence": 0.41,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.01,
+       "supports": 0.44,
+       "partial": 0.55
+      }
+     },
+     "acc_4": {
+      "choice": "supports",
+      "confidence": 0.35,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.09,
+       "supports": 0.52,
+       "partial": 0.39
+      }
+     },
+     "acc_5": {
+      "choice": "supports",
+      "confidence": 0.33,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.05,
+       "supports": 0.51,
+       "partial": 0.44
+      }
+     },
+     "acc_6": {
+      "choice": "supports",
+      "confidence": 0.66,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0,
+       "supports": 0.74,
+       "partial": 0.26
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.17
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.99
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP11-IDFIX",
+   "source": "bp11.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 6,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.96,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.97,
+       "partial": 0.03,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.92,
+      "probabilities": {
+       "does_not_support": 0.03,
+       "supports": 0.9299999999999999,
+       "partial": 0.04,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.94,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.96,
+       "partial": 0.04,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.77,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.83,
+       "partial": 0.17,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_4": {
+      "choice": "supports",
+      "confidence": 0.63,
+      "probabilities": {
+       "supports": 0.72,
+       "does_not_support": 0.12,
+       "partial": 0.16,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_5": {
+      "choice": "claims_unknown",
+      "confidence": 1.0,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "supports": 0.0,
+       "partial": 0.0,
+       "claims_unknown": 1.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.08
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.72
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP11-IDSURF",
+   "source": "bp11.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 8,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.74,
+      "probabilities": {
+       "supports": 0.8,
+       "does_not_support": 0.01,
+       "partial": 0.19,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.49,
+      "probabilities": {
+       "supports": 0.62,
+       "claims_unknown": 0.0,
+       "partial": 0.38,
+       "does_not_support": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.37,
+      "probabilities": {
+       "supports": 0.53,
+       "claims_unknown": 0.0,
+       "partial": 0.47,
+       "does_not_support": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.97,
+      "probabilities": {
+       "supports": 0.98,
+       "claims_unknown": 0.0,
+       "partial": 0.02,
+       "does_not_support": 0.0
+      }
+     },
+     "acc_4": {
+      "choice": "claims_unknown",
+      "confidence": 1.0,
+      "probabilities": {
+       "supports": 0.0,
+       "does_not_support": 0.0,
+       "partial": 0.0,
+       "claims_unknown": 1.0
+      }
+     },
+     "acc_5": {
+      "choice": "claims_unknown",
+      "confidence": 1.0,
+      "probabilities": {
+       "supports": 0.0,
+       "claims_unknown": 1.0,
+       "partial": 0.0,
+       "does_not_support": 0.0
+      }
+     },
+     "acc_6": {
+      "choice": "claims_unknown",
+      "confidence": 1.0,
+      "probabilities": {
+       "supports": 0.0,
+       "does_not_support": 0.0,
+       "partial": 0.0,
+       "claims_unknown": 1.0
+      }
+     },
+     "acc_7": {
+      "choice": "claims_unknown",
+      "confidence": 1.0,
+      "probabilities": {
+       "supports": 0.0,
+       "claims_unknown": 1.0,
+       "partial": 0.0,
+       "does_not_support": 0.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.12
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.87
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP11-SALIENCE",
+   "source": "bp11.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 9,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.94,
+      "probabilities": {
+       "partial": 0.04,
+       "supports": 0.96,
+       "does_not_support": 0.0,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_1": {
+      "choice": "partial",
+      "confidence": 0.7,
+      "probabilities": {
+       "partial": 0.77,
+       "supports": 0.22,
+       "does_not_support": 0.01,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.43,
+      "probabilities": {
+       "partial": 0.42,
+       "supports": 0.58,
+       "does_not_support": 0.0,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 1.0,
+      "probabilities": {
+       "partial": 0.0,
+       "supports": 1.0,
+       "does_not_support": 0.0,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_4": {
+      "choice": "supports",
+      "confidence": 0.84,
+      "probabilities": {
+       "partial": 0.06,
+       "supports": 0.88,
+       "does_not_support": 0.0,
+       "claims_unknown": 0.06
+      }
+     },
+     "acc_5": {
+      "choice": "supports",
+      "confidence": 0.68,
+      "probabilities": {
+       "partial": 0.23,
+       "supports": 0.76,
+       "does_not_support": 0.01,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_6": {
+      "choice": "partial",
+      "confidence": 0.71,
+      "probabilities": {
+       "partial": 0.79,
+       "supports": 0.21,
+       "does_not_support": 0.0,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_7": {
+      "choice": "supports",
+      "confidence": 0.78,
+      "probabilities": {
+       "partial": 0.16,
+       "supports": 0.84,
+       "does_not_support": 0.0,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_8": {
+      "choice": "supports",
+      "confidence": 0.61,
+      "probabilities": {
+       "partial": 0.29,
+       "supports": 0.7,
+       "does_not_support": 0.01,
+       "claims_unknown": 0.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.2
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.56
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP4-B7FIX",
+   "source": "bp4.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 4,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.85,
+      "probabilities": {
+       "partial": 0.11,
+       "supports": 0.89,
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 1.0,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 1.0,
+       "partial": 0.0,
+       "does_not_support": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 1.0,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 1.0,
+       "partial": 0.0,
+       "does_not_support": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.67,
+      "probabilities": {
+       "partial": 0.24,
+       "supports": 0.75,
+       "claims_unknown": 0.0,
+       "does_not_support": 0.01
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.16
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.38
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP4-INTAKE",
+   "source": "bp4.shadow.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 3,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "partial",
+      "confidence": 0.39,
+      "probabilities": {
+       "does_not_support": 0.16,
+       "partial": 0.55,
+       "supports": 0.29,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.98,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.01,
+       "supports": 0.99,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.84,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.12,
+       "supports": 0.88,
+       "claims_unknown": 0.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.33
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 1.17
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP4-PANELFONT",
+   "source": "bp4.shadow.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 5,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.8,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.14,
+       "supports": 0.85,
+       "claims_unknown": 0.01
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.8,
+      "probabilities": {
+       "does_not_support": 0.04,
+       "partial": 0.11,
+       "supports": 0.85,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.86,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.1,
+       "supports": 0.9,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.84,
+      "probabilities": {
+       "does_not_support": 0.1,
+       "partial": 0.03,
+       "supports": 0.87,
+       "claims_unknown": 0.0
+      }
+     },
+     "acc_4": {
+      "choice": "claims_unknown",
+      "confidence": 1.0,
+      "probabilities": {
+       "does_not_support": 0.0,
+       "partial": 0.0,
+       "supports": 0.0,
+       "claims_unknown": 1.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.25
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.63
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP4-RULINGS",
+   "source": "bp4.screen.jsonl",
+   "crux": "BROKEN",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 3,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.48,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "partial": 0.14,
+       "supports": 0.61,
+       "does_not_support": 0.25
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.53,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "partial": 0.35,
+       "supports": 0.65,
+       "does_not_support": 0.0
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.92,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "partial": 0.01,
+       "supports": 0.94,
+       "does_not_support": 0.05
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.69
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 1.56
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP4-SPATIAL",
+   "source": "bp4.shadow.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 4,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.98,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 0.98,
+       "partial": 0.01,
+       "does_not_support": 0.01
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.84,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 0.88,
+       "partial": 0.11,
+       "does_not_support": 0.01
+      }
+     },
+     "acc_2": {
+      "choice": "partial",
+      "confidence": 0.31,
+      "probabilities": {
+       "claims_unknown": 0.11,
+       "supports": 0.4,
+       "partial": 0.48,
+       "does_not_support": 0.01
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.45,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "supports": 0.58,
+       "partial": 0.41,
+       "does_not_support": 0.01
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.37
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.76
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP4-USDKNOW",
+   "source": "bp4.shadow.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 4,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.91,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.01,
+       "supports": 0.93,
+       "partial": 0.05
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.65,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.01,
+       "supports": 0.74,
+       "partial": 0.25
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 1.0,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0,
+       "partial": 0.0,
+       "supports": 1.0
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.99,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0,
+       "partial": 0.01,
+       "supports": 0.99
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.18
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.52
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP8-TIMEOUTS",
+   "source": "bp8.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 5,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.9,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "partial": 0.07,
+       "does_not_support": 0.01,
+       "supports": 0.92
+      }
+     },
+     "acc_1": {
+      "choice": "partial",
+      "confidence": 0.5,
+      "probabilities": {
+       "does_not_support": 0.01,
+       "partial": 0.63,
+       "claims_unknown": 0.0,
+       "supports": 0.36
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.6,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "partial": 0.3,
+       "does_not_support": 0.0,
+       "supports": 0.7
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.83,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "partial": 0.12,
+       "does_not_support": 0.01,
+       "supports": 0.87
+      }
+     },
+     "acc_4": {
+      "choice": "supports",
+      "confidence": 0.99,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "partial": 0.01,
+       "does_not_support": 0.0,
+       "supports": 0.99
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.13
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.8
+     }
+    }
+   }
+  },
+  {
+   "leg": "BP8-WATCHDOG",
+   "source": "bp8.screen.jsonl",
+   "crux": "SOUND-WITH-NITS",
+   "recorded_verdict": "REFEREE",
+   "n_rows": 5,
+   "code_flags": false,
+   "answers": {
+    "choices": {
+     "acc_0": {
+      "choice": "supports",
+      "confidence": 0.86,
+      "probabilities": {
+       "partial": 0.1,
+       "does_not_support": 0.0,
+       "claims_unknown": 0.0,
+       "supports": 0.9
+      }
+     },
+     "acc_1": {
+      "choice": "supports",
+      "confidence": 0.48,
+      "probabilities": {
+       "partial": 0.38,
+       "does_not_support": 0.0,
+       "claims_unknown": 0.0,
+       "supports": 0.62
+      }
+     },
+     "acc_2": {
+      "choice": "supports",
+      "confidence": 0.54,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.01,
+       "partial": 0.34,
+       "supports": 0.65
+      }
+     },
+     "acc_3": {
+      "choice": "supports",
+      "confidence": 0.95,
+      "probabilities": {
+       "claims_unknown": 0.0,
+       "does_not_support": 0.0,
+       "partial": 0.03,
+       "supports": 0.97
+      }
+     },
+     "acc_4": {
+      "choice": "claims_unknown",
+      "confidence": 1.0,
+      "probabilities": {
+       "partial": 0.0,
+       "does_not_support": 0.0,
+       "claims_unknown": 1.0,
+       "supports": 0.0
+      }
+     }
+    },
+    "nouls": {
+     "self_contradiction": {
+      "noul": 0.22
+     }
+    },
+    "scores": {
+     "crux_need": {
+      "score": 0.76
+     }
+    }
+   }
+  }
+ ]
+}
