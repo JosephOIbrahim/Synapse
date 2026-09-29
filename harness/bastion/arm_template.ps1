@@ -9,8 +9,10 @@
 #   2. CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 (LANDMINE 2, 600s ceiling kills
 #      teams) ......................... arm_w8.ps1:21, CARD_cache-advisor.md:65.
 #   3. CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (AGENT_TEAMS env) ... arm_w8.ps1:20.
-#   4. detached Start-Process + pid capture ...... arm_w8.ps1:25-26;
-#      runner form orchestrate.ps1:493,504.
+#   4. detached launch + pid capture. Win32_Process.Create by default
+#      (harness/lib/detached.ps1, BP12 item 6), so restarting the app that
+#      armed the wave does not stop it; -InAppTree keeps the Start-Process
+#      child of arm_w8.ps1:25-26.
 #   5. debom discipline ............... quote_safe.py / quote-safe.ps1
 #      (Write-Utf8NoBom); pid files written -Encoding ascii as the originals do.
 #
@@ -31,9 +33,13 @@ param(
     [double]$StewardDeadlineHours = 12,                      # past the wave horizon
     [string]$RepoRoot = 'C:\Users\User\SYNAPSE',
     # /rc BAKE-IN SLOT (fills from W8-SMITH task 1 resolution). UNKNOWN today.
-    [string]$RcBakeIn = '<<UNKNOWN: /rc expansion unresolved - W8-SMITH task 1; see harness/bastion/HARNESS_V2.md>>'
+    [string]$RcBakeIn = '<<UNKNOWN: /rc expansion unresolved - W8-SMITH task 1; see harness/bastion/HARNESS_V2.md>>',
+    # Start the orchestrator and steward as children of this shell, as before
+    # BP12 item 6. Without it they start outside the app's process tree.
+    [switch]$InAppTree
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $RepoRoot 'harness\lib\detached.ps1')
 $bastion = Join-Path $RepoRoot 'harness\bastion'
 $notes   = Join-Path $RepoRoot 'harness\notes\h22'
 
@@ -52,16 +58,31 @@ if ($ManifestBuilder) {
 }
 if (-not (Test-Path $ManifestPath)) { throw "manifest not found: $ManifestPath" }
 
-# --- survival rules 2+3: env set BEFORE launch, inherited by orchestrate + legs
-$env:CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1'   # AGENT_TEAMS  (arm_w8.ps1:20)
-$env:CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS = '0'   # LANDMINE 2   (arm_w8.ps1:21)
+# --- survival rules 2+3: env for orchestrate + legs. Set in this shell for the
+# -InAppTree path (a Start-Process child inherits it) and handed to the detached
+# path, because a process Win32_Process.Create starts does not inherit this
+# shell's $env: edits.
+$legEnv = [ordered]@{
+    CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1'   # AGENT_TEAMS  (arm_w8.ps1:20)
+    CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS = '0'   # LANDMINE 2   (arm_w8.ps1:21)
+}
+foreach ($k in $legEnv.Keys) { Set-Item -Path ('env:' + $k) -Value $legEnv[$k] }
 
-# --- survival rule 4: detached Start-Process + pid capture (arm_w8.ps1:25-26)
+# --- survival rule 4: detached launch + pid capture. By default the orchestrator
+# starts outside this shell's process tree, so closing or restarting the app that
+# armed the wave does not stop it (the desktop-app restart at 15:12 on 2026-09-28
+# killed the BP11 orchestrator). Every output stream goes to $outLog. -InAppTree
+# keeps the old Start-Process child, with stderr in $errLog.
 $outLog = Join-Path $notes ("orchestrator-" + $Wave + ".log")
 $errLog = Join-Path $notes ("orchestrator-" + $Wave + ".err")
-$p = Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $RepoRoot 'harness\orchestrate.ps1'),'-ManifestPath',$ManifestPath -WindowStyle Hidden -PassThru -RedirectStandardOutput $outLog -RedirectStandardError $errLog
-$p.Id | Out-File $pidFile -Encoding ascii
-Write-Host ("$Wave orchestrator armed, pid " + $p.Id)
+$orchestrate = Join-Path $RepoRoot 'harness\orchestrate.ps1'
+if ($InAppTree) {
+    $orchPid = (Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',$orchestrate,'-ManifestPath',$ManifestPath -WindowStyle Hidden -PassThru -RedirectStandardOutput $outLog -RedirectStandardError $errLog).Id
+} else {
+    $orchPid = Start-Detached -Command ('& ' + (Format-PSLiteral $orchestrate) + ' -ManifestPath ' + (Format-PSLiteral $ManifestPath)) -WorkingDirectory $RepoRoot -Environment $legEnv -LogPath $outLog
+}
+$orchPid | Out-File $pidFile -Encoding ascii
+Write-Host ("$Wave orchestrator armed, pid " + $orchPid)
 
 # --- v2: STEWARD ARM/REFRESH (deadline past the wave horizon). Kill stale, relaunch.
 $stewardPid = Join-Path $notes ("steward-" + $Wave + ".pid")
@@ -70,9 +91,15 @@ if (Test-Path $stewardPid) {
     $sp = Get-CimInstance Win32_Process -Filter "ProcessId=$olds" -ErrorAction SilentlyContinue
     if ($sp) { Stop-Process -Id $olds -Force -ErrorAction SilentlyContinue; Write-Host ("killed stale steward pid " + $olds) }
 }
-$s = Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $bastion 'steward.ps1'),'-DeadlineHours',$StewardDeadlineHours,'-LegLog',$outLog -WindowStyle Hidden -PassThru
-$s.Id | Out-File $stewardPid -Encoding ascii
-Write-Host ("$Wave steward armed (deadline +" + $StewardDeadlineHours + "h), pid " + $s.Id)
+$steward = Join-Path $bastion 'steward.ps1'
+if ($InAppTree) {
+    $stewardProc = (Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',$steward,'-DeadlineHours',$StewardDeadlineHours,'-LegLog',$outLog -WindowStyle Hidden -PassThru).Id
+} else {
+    $hours = $StewardDeadlineHours.ToString([Globalization.CultureInfo]::InvariantCulture)
+    $stewardProc = Start-Detached -Command ('& ' + (Format-PSLiteral $steward) + ' -DeadlineHours ' + $hours + ' -LegLog ' + (Format-PSLiteral $outLog)) -WorkingDirectory $RepoRoot -Environment $legEnv
+}
+$stewardProc | Out-File $stewardPid -Encoding ascii
+Write-Host ("$Wave steward armed (deadline +" + $StewardDeadlineHours + "h), pid " + $stewardProc)
 
 # --- /rc BAKE-IN SLOT status (target 4). Named UNKNOWN until task 1 resolves.
 if ($RcBakeIn -like '*UNKNOWN*') {

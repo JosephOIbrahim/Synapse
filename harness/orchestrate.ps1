@@ -474,13 +474,25 @@ function Get-LegState([object]$leg) {
             if ($age -lt 10) { return 'launched' }
             Say "  $($leg.id): launch marker is $([int]$age)m old with no session - re-dispatching" 'Yellow'
         }
-        if (Test-Path $wt) { return 'ready' }
+        # BP12 item 6: a leftover worktree is not readiness. On 2026-09-28 a
+        # worktree left from an earlier run made CRUX2 read 'ready' and dispatch
+        # before the leg it depends on had a receipt. The worktree is reused only
+        # once the deps are met; a live leg above still reads 'running'.
+        if ((Test-Path $wt) -and -not (Test-DepsUnmet $leg)) { return 'ready' }
     }
+    if (Test-DepsUnmet $leg) { return 'blocked' }
+    return 'ready'
+}
+
+function Test-DepsUnmet([object]$leg) {
+    # True when a declared dep has no receipt yet (Get-ReceiptPath looks in the
+    # dep's worktree, then the main tree). Get-LegState asks this before a leg
+    # may read 'ready', whether or not a worktree was left behind.
     foreach ($d in @($leg.deps)) {
         $dep = $manifest.legs | Where-Object { $_.id -eq $d }
-        if ($dep -and -not (Get-ReceiptPath $dep)) { return 'blocked' }
+        if ($dep -and -not (Get-ReceiptPath $dep)) { return $true }
     }
-    return 'ready'
+    return $false
 }
 
 # BP9-NONETIER (ruling 2): a tier-'none' leg is a PROBE the orchestrator runs ITSELF.
