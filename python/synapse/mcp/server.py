@@ -443,8 +443,13 @@ class MCPServer:
             headers["Mcp-Session-Id"] = new_session_id
             return jsonrpc_result(msg_id, result), headers
 
-        # All other methods require a valid session
+        # All other methods require a valid session. The MCP Streamable HTTP transport
+        # answers a request without one with 400, and one whose session is unknown or
+        # ended with 404, which is what tells a client to initialize again (Level 1,
+        # F1b). The JSON-RPC body stays, so a client that reads only the body still
+        # sees SESSION_INVALID. _post_response turns the marker into the status.
         if session_id is None:
+            headers[HTTP_STATUS_KEY] = 400
             return jsonrpc_error(
                 msg_id, SESSION_INVALID,
                 "Missing Mcp-Session-Id header. Send initialize first.",
@@ -452,6 +457,7 @@ class MCPServer:
 
         session = self._sessions.get_session(session_id)
         if session is None:
+            headers[HTTP_STATUS_KEY] = 404
             return jsonrpc_error(
                 msg_id, SESSION_INVALID,
                 f"Unknown session: {session_id}",
@@ -961,6 +967,11 @@ def _request_header(request, name, default=None):
     return header_value(request.headers(), name, default)
 
 
+#: An internal key handle_request() sets on its headers when a request is refused at the
+#: session gate; _post_response() turns it into the HTTP status and never sends it.
+HTTP_STATUS_KEY = "x-synapse-http-status"
+
+
 def _post_response(response_body, headers: dict):
     """What ``POST /mcp`` sends back: ``(body, status, content_type, extra_headers)``.
 
@@ -974,8 +985,10 @@ def _post_response(response_body, headers: dict):
     if response_body is None:
         return "", 202, "text/plain", {}
     data = response_body.decode("utf-8") if isinstance(response_body, bytes) else response_body
-    extra = {key: value for key, value in headers.items() if key != "Content-Type"}
-    return data, 200, headers.get("Content-Type", "application/json"), extra
+    status = int(headers.get(HTTP_STATUS_KEY, 200))
+    extra = {key: value for key, value in headers.items()
+             if key not in ("Content-Type", HTTP_STATUS_KEY)}
+    return data, status, headers.get("Content-Type", "application/json"), extra
 
 
 # =========================================================================

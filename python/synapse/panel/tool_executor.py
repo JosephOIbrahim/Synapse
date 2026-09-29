@@ -221,6 +221,19 @@ class _MCPLocalClient:
                 self._port = port
             return self._port is not None
 
+    @staticmethod
+    def _session_gone(body: dict, status: int, data: str) -> dict:
+        """A session-gate refusal (HTTP 400 or 404) as a SESSION_INVALID reply."""
+        from synapse.mcp.protocol import SESSION_INVALID
+
+        message = "The MCP session is no longer valid (HTTP %d)." % status
+        try:
+            message = json.loads(data)["error"]["message"]
+        except (ValueError, KeyError, TypeError):
+            pass  # keep the plain message; the status alone is the signal
+        return {"jsonrpc": "2.0", "id": body.get("id"),
+                "error": {"code": SESSION_INVALID, "message": message}}
+
     def _post(self, body: dict, headers: Optional[dict] = None,
               timeout: float = 35.0) -> dict:
         """POST JSON-RPC to localhost MCP endpoint. Returns parsed response.
@@ -258,6 +271,11 @@ class _MCPLocalClient:
                 conn.request("POST", "/mcp", body=payload, headers=all_headers)
                 resp = conn.getresponse()
                 data = resp.read().decode("utf-8")
+                status = getattr(resp, "status", 200)
+                if status in (400, 404) and body.get("method") != "initialize":
+                    # Refused at the session gate (MCP Streamable HTTP): nothing was
+                    # dispatched, whatever the body says. Level 1, F1b.
+                    return self._session_gone(body, status, data)
                 result = json.loads(data)
                 if not isinstance(result, dict) or not ({"result", "error"} & result.keys()):
                     raise ValueError("Missing JSON-RPC result")
@@ -327,6 +345,35 @@ class _MCPLocalClient:
         MCPUnavailable proves no tool request was sent. MCPOutcomeUnknown
         forbids fallback after possible dispatch. Tool errors are RuntimeError.
         """
+        # An expired or unknown session was refused before dispatch, so the client
+        # starts a new session and sends the call once more; a second refusal in a row
+        # is an error, not a loop (Level 1, F1a).
+        from synapse.mcp.protocol import SESSION_INVALID
+
+        for attempt in (1, 2):
+            result = self._call_once(tool_name, arguments)
+            error = result.get("error")
+            if error is None:
+                break
+            if error.get("code") == SESSION_INVALID:
+                with self._lock:
+                    self._session_id = None
+                if attempt == 1:
+                    continue
+            raise RuntimeError(error.get("message", "Unknown MCP error"))
+
+        payload = result.get("result")
+        if not isinstance(payload, dict):
+            # None is the caller's definitely-unsent fallback sentinel. Never
+            # let an invalid reply reuse it after a tools/call was transmitted.
+            raise MCPOutcomeUnknown(
+                "The tool reply was invalid after possible execution. "
+                "Check the scene before trying the command again."
+            )
+        return payload
+
+    def _call_once(self, tool_name: str, arguments: dict) -> dict:
+        """One tools/call on the current session; the raw JSON-RPC reply."""
         try:
             session_id = self._ensure_session()
         except Exception as exc:
@@ -336,7 +383,7 @@ class _MCPLocalClient:
         # C7: budget from the shared per-tool table (+5s margin for the HTTP
         # round trip) instead of a fixed 35s that render/sequence tools blow.
         from synapse.core.timeouts import timeout_for
-        result = self._post(
+        return self._post(
             {
                 "jsonrpc": "2.0",
                 "id": "panel-{}-{}".format(tool_name, int(time.time() * 1000)),
@@ -349,24 +396,6 @@ class _MCPLocalClient:
             headers={"Mcp-Session-Id": session_id},
             timeout=timeout_for(tool_name) + 5.0,
         )
-
-        if "error" in result:
-            error_msg = result["error"].get("message", "Unknown MCP error")
-            # Session may have expired -- clear it so next call re-initializes
-            if result["error"].get("code") == -32003:  # SESSION_INVALID
-                with self._lock:
-                    self._session_id = None
-            raise RuntimeError(error_msg)
-
-        payload = result.get("result")
-        if not isinstance(payload, dict):
-            # None is the caller's definitely-unsent fallback sentinel. Never
-            # let an invalid reply reuse it after a tools/call was transmitted.
-            raise MCPOutcomeUnknown(
-                "The tool reply was invalid after possible execution. "
-                "Check the scene before trying the command again."
-            )
-        return payload
 
     def reset(self) -> None:
         """Reset the client (e.g., on session expiry)."""

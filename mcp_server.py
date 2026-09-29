@@ -167,6 +167,18 @@ try:
 except Exception:  # pragma: no cover - resolution is best-effort
     _resolve_endpoint = None
 
+try:
+    from synapse.mcp.resend_policy import may_resend as _may_resend
+except ImportError:  # pragma: no cover - without the policy, nothing is sent twice
+    def _may_resend(cmd_type: str, sent: bool) -> bool:
+        return not sent
+
+
+def _lost_after_send(cmd_type: str) -> str:
+    """The message for a command whose connection dropped after it was sent (Level 1, F2)."""
+    return (f"The connection to Houdini dropped after {cmd_type} was sent, so it may have run. "
+            "It was not sent again. Check the scene before trying again.")
+
 
 def _candidate_urls() -> list:
     """Ordered, de-duplicated list of WS URLs to try.
@@ -389,7 +401,10 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
     last_err = None
 
     try:
-        for _attempt in range(2):  # One transparent retry on connection failure
+        # One retry on a connection failure, and only when sending again cannot apply a
+        # change twice: the bytes never left, or the command cannot change anything
+        # (synapse.mcp.resend_policy). The server keeps no record of command ids.
+        for _attempt in range(2):
             ws = await _get_connection()
 
             # Register a future for this command's response
@@ -397,8 +412,10 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
             future: asyncio.Future = loop.create_future()
             _pending[command_id] = future
 
+            sent = False
             try:
                 await ws.send(_dumps_str(command))
+                sent = True
 
                 # Direct wait on future set -- avoids asyncio.wait_for's internal task overhead
                 done, _ = await asyncio.wait({future}, timeout=cmd_timeout)
@@ -424,7 +441,7 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                     f"The {cmd_type} command took too long to respond \u2014 "
                     "Houdini may be busy with a heavy operation"
                 )
-            except ConnectionError:
+            except ConnectionError as e:
                 # Future was signaled by _recv_loop disconnect
                 _pending.pop(command_id, None)
                 try:
@@ -433,6 +450,8 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                 except Exception:
                     pass
                 _ws_connection = None
+                if not _may_resend(cmd_type, sent):
+                    raise ConnectionError(_lost_after_send(cmd_type)) from e
                 last_err = ConnectionError(f"Connection lost during {cmd_type}")
                 logger.warning("Connection lost during %s, reconnecting...", cmd_type)
             except Exception as e:
@@ -443,6 +462,8 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                 except Exception:
                     pass
                 _ws_connection = None
+                if not _may_resend(cmd_type, sent):
+                    raise ConnectionError(_lost_after_send(cmd_type)) from e
                 last_err = e
                 logger.warning("Connection lost during %s, reconnecting... (%s)", cmd_type, e)
         else:
