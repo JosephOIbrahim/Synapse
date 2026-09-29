@@ -2,7 +2,7 @@
 a shared pytest process imported first (the apexforge tests cache a different mission_schema)."""
 from pathlib import Path
 
-from bp_mission_schema import PATH, ms, pin_battleplan_mission_schema  # noqa: F401
+from jev_bp_schema_pin import PATH, ms, pin_battleplan_mission_schema  # noqa: F401
 
 
 def test_a_bare_import_resolves_to_the_battleplan_copy_inside_a_jev_test():
