@@ -1,0 +1,116 @@
+**2026-09-29.** Source release and Windows Setup for Houdini 22.0.400 with Python 3.13.
+
+**Identify draws its bubbles over the network editor.** It no longer writes the
+bubble text into node comments. A see-through window above the editor draws each
+bubble beside its node and follows pan and zoom. Clicks and scrolls pass through
+it, and nothing is written to the scene. Clicking **Identify** again, or sending
+`/identify off`, clears the bubbles.
+
+**Old notes are cleaned up carefully.** Earlier versions wrote the note into the
+node comment, below a `~ identify ~` line. When Identify finds such a block on a
+selected node, it removes it in one undo group, and only when the block has the
+exact shape Identify wrote, so artist text is kept.
+
+**Identify finds a node's help page the way Houdini's own help does.** The
+lookup used to lowercase the node category instead of mapping it, and it
+rejected a help address that carried a namespace. So every Object node, every
+ROP, every Labs node, the VOP networks and the network managers said "Not in the
+local SideFX library." The lookup now builds the page path as Houdini 22's help
+does: the category's help folder (Object → `obj`, Driver → `out`, VOP network →
+`vex`), the namespace and version in the page name, and the manager page as the
+last try. On Houdini 22.0.400, node types with a library page went from 3,864 to
+4,625 of 5,661. A scoped type still says it is not in the library.
+
+**The What line no longer shows help markup.** Before this release, markup
+leaked into the line on 617 of the library's 4,606 node pages, and 53 of 55 HDA
+help texts showed their `"""` tooltip quotes. The line is now the first sentence of
+the node's tooltip when it has one, as Houdini reads it, or else of the first
+plain paragraph before any section, with markup turned into plain words. After the
+change, no page and no HDA text shows markup. 12 of the 4,322 pages reached from
+Houdini 22.0.400's node types have no summary line, so their bubbles say the
+summary is unknown.
+
+**A library outage is not remembered.** If the library could not be read, or a
+lookup failed, Identify looks the node up again on the next click. A rebuilt
+library is read afresh.
+
+**MCP notifications get the reply the transport expects.** `POST /mcp` used to
+answer a notification with 204 No Content. Houdini's web server framed that in
+a way that made Python's `http.client` wait on the kept-alive connection, so the
+next request hung. It now answers 202 Accepted with no body, as the MCP
+Streamable HTTP transport specifies.
+
+**An opt-in read-only mode for MCP.** Set `SYNAPSE_MCP_READ_ONLY=1` in Houdini's
+environment to limit MCP callers to read-only tools. It covers `/mcp` and the
+WebSocket that the stdio bridge uses, which is how Claude Code reaches Houdini.
+41 of the 137 tools are read-only under both of SYNAPSE's checks
+and still run. Any other call is refused with a message that names the tool and
+the variable; on `/mcp` it is JSON-RPC error -32005.
+
+**Read-only mode also fences the SYNAPSE panel's own agent,** because the panel
+sends its tool calls to `/mcp` too, so while the variable is set the panel can
+only read. **Stopping is never fenced:** Cancel cook, Emergency halt, the farm
+and render cancels and render stop always run, for every caller. The mode is
+off by default. [Read-only mode](https://github.com/JosephOIbrahim/Synapse/blob/v5.86.0/docs/mcp/SETUP.md#read-only-mode).
+
+**Timing reads a high-resolution clock.** The router's latency numbers and the
+session manager's activity stamps used `time.monotonic()`, which ticks every
+15.6 ms on Windows before Python 3.13. A fast route measured 0 ms, and a session
+touch inside one tick went unseen. Both now read `time.perf_counter()`.
+
+**A current Windows Setup.** This release ships `SYNAPSE-5.86.0-Setup.exe`, the
+first Setup since v5.75.2. It includes Identify and the panel, JEV and SideFX
+library changes made since then, and the same Moneta bundle as v5.75.2. It is
+unsigned, so Windows may show an unknown publisher. Check the file against
+`SHA256SUMS.txt` on the release.
+[Install with Setup](https://github.com/JosephOIbrahim/Synapse/blob/v5.86.0/docs/getting-started/installation.md#windows-installer).
+
+**Also in this release, tests and harness only.** A full test run now fails if
+it leaves a tracked file changed, and the NOTICE check edits a temporary copy,
+so a Windows run no longer rewrites `NOTICE.md`. A test pins Linux, macOS and
+Windows in the CI matrix. Two Moneta-backed persistence tests now skip with the
+import error when Moneta is not importable, instead of carrying stale Windows
+expected-failure marks. The battle-plan harness checks a leg's dependencies
+before treating a leftover worktree as ready, launches its orchestrator and
+steward outside the arming app's process tree, and keeps leg sessions from
+stopping at the SYNAPSE MCP server approval dialog. The JEV screen is
+calibrated against recorded CRUX verdicts.
+
+For a source installation, restart Houdini and any separate MCP processes to
+load the updated source.
+
+## Validation and limits
+
+The full `tests/` suite passed locally on Windows with Python 3.14, with the
+tests that need a Houdini runtime deselected: 10,449 passed, 426 skipped, 119 deselected, 5 xfailed, 0 failed. The except ratchet
+is at 1,360 broad handlers and 983 silent ones, down from 1,366 and 987 in v5.85.6. The installer's own tests passed:
+37 of 37.
+
+The compiled TestSetup passed all 19 of 19 qualification checks against an
+installed Houdini 22.0.400, in an isolated test root. They cover a real
+install, repeat, upgrade, uninstall and reinstall cycle, and the failure cases.
+The upgrade step used a synthetic earlier installer, not v5.75.2, so an upgrade
+from v5.75.2 itself has not been run. Publication requires all six GitHub CI
+jobs to pass on the exact tagged commit, linked in the GitHub release.
+
+Some limits remain. The overlay was checked live in Houdini 22.0.400 when it was
+built: the bubbles drew over the editor, a wheel zoom passed through and the
+bubbles followed, clearing removed them all, and the scene hash did not change.
+The final code, with the help-path and library changes, was not opened in the
+Houdini GUI, and the panel's **Identify** button was not clicked on it. The 202
+reply was proven on a private Houdini web server under hython, not on the live
+server with the final code. Read-only mode has unit tests only. A panel
+exemption from read-only mode is planned, not built.
+
+The Setup is unsigned. Its qualification does not cover the wizard's look, a
+clean machine, a full artist session in the Houdini GUI or model access.
+
+The inherited [v5.85.6 limits](https://github.com/JosephOIbrahim/Synapse/blob/v5.86.0/docs/releases/v5.85.6.md#validation-and-limits) remain.
+
+---
+
+**Assets.** `SYNAPSE-5.86.0-Setup.exe` is unsigned, so check it against `SHA256SUMS.txt` (SHA-256 `5101a285335555ca46c858dc22504714b062fb27ad75dcddb50346d0cd38334b`, 32,194,817 bytes). `SYNAPSE-5.86.0-Setup.public-build.json` is the build report. `installer-verification.json` carries the 19 of 19 qualification against Houdini 22.0.400, and an audit of every payload file against this tag: 1789 identical, 34 identical after line-ending normalisation, 0 different, 100 generated by the builder.
+
+**CI.** All six jobs passed on `0e67a740`: [run 36638956262](https://github.com/JosephOIbrahim/Synapse/actions/runs/36638956262).
+
+Full notes in the tree: [docs/releases/v5.86.0.md](https://github.com/JosephOIbrahim/Synapse/blob/v5.86.0/docs/releases/v5.86.0.md)

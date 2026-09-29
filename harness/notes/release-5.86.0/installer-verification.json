@@ -1,0 +1,134 @@
+{
+  "build_base_revision": "b7461c334775f1f6d97ea43a1d0b64743eb1ffbd",
+  "ci": {
+    "note": "all six required contexts (ubuntu, macos, windows x Python 3.11, 3.14) green on the tagged commit before the tag was pushed",
+    "run_id": "36638956262"
+  },
+  "compiled_installer": {
+    "checks": [
+      "Missing required dependency blocks compiled setup",
+      "Failure explains the missing dependency in readable text",
+      "Windows write-denied destination is rejected",
+      "Fresh installation through compiled Setup",
+      "Windows uninstall registration and shortcuts exist",
+      "Repeat installation",
+      "Upgrade switches active payload",
+      "One registration points at installed files",
+      "Bundled maintenance runtime verifies installation",
+      "No user-data changes during upgrade",
+      "Windows uninstaller preserves changed registration",
+      "Windows uninstaller preserves changed maintenance file",
+      "Generated Windows uninstaller",
+      "Uninstall preserves projects, memory, credentials and custom files",
+      "Uninstall removes unchanged payload and maintenance files",
+      "Windows uninstall registration and shortcuts removed",
+      "Reinstall after uninstall with retained data",
+      "Runtime uninstall can finish before Windows cleanup",
+      "Windows cleanup resumes after runtime uninstall completed"
+    ],
+    "checks_passed": 19,
+    "checks_total": 19,
+    "houdini": "22.0.400",
+    "note": "real install / repeat / upgrade / uninstall / reinstall cycle against an installed Houdini, in a new isolated test root, with the compiled TestSetup. HOUDINI_PACKAGE_DIR was sandboxed to an empty directory for the qualification process only -- the dev machine registers the source tree there, which Setup correctly refuses. The upgrade step used the synthetic 0.0.1 fixture, not v5.75.2.",
+    "status": "PASS"
+  },
+  "installer_unit_tests": {
+    "command": "python -B -m unittest discover -s installer/tests",
+    "status": "PASS",
+    "tests": 37
+  },
+  "installer_vs_v5.75.2": {
+    "differing": [],
+    "maintenance_files_compared": 41,
+    "maintenance_files_differing": 0,
+    "note": "diffed from the two build reports' maintenance_files maps"
+  },
+  "known": [
+    "The upgrade check used a synthetic earlier installer, not v5.75.2; an upgrade from v5.75.2 itself has not been run.",
+    "The Setup is unsigned. The qualification does not cover the wizard's look, a clean machine, a full artist session in the Houdini GUI or model access.",
+    "The final code was not opened in the Houdini GUI. The Identify overlay was checked live when it was built; the help-path and library changes were not. The 202 reply was proven on a private hwebserver under hython. Read-only mode has unit tests only.",
+    "CI runs stock Python on Linux, macOS and Windows. It has no Houdini leg and no scheduled run, so the qualification above is a human-triggered act."
+  ],
+  "payload_audit": {
+    "builds": [
+      {
+        "bytes": 32194817,
+        "name": "SYNAPSE-5.86.0-Setup.exe",
+        "sha256": "5101a285335555ca46c858dc22504714b062fb27ad75dcddb50346d0cd38334b"
+      },
+      {
+        "name": "SYNAPSE-5.86.0-TestSetup.exe",
+        "sha256": "461066b075415d1cd1b610a8d38610bb2041db0247544cd629f7926ebc096c28"
+      }
+    ],
+    "moneta_archive_sha256": "81a3d8735c7da49ca81302725acab6a3324311091e850c34afcea92e87ea31f7",
+    "moneta_note": "the same archive v5.75.2 shipped",
+    "payload_files": 1922,
+    "payload_id": "5.86.0-9a3cc9d6cb172bca",
+    "payload_sha256": "1d05a26fb549f1277af988dfb59687c0b9a3c6f43b01bf58fd7670300edd04e2",
+    "payload_vs_tagged_tree": {
+      "differing": 0,
+      "generated_examples": [
+        "DEPENDENCIES.txt",
+        "dependencies/moneta/LICENSE-NOTICE.txt",
+        "dependencies/moneta/moneta-bundle.json",
+        "dependencies/moneta/schema/MonetaSchema.usda",
+        "dependencies/moneta/schema/generatedSchema.usda",
+        "dependencies/moneta/schema/plugInfo.json",
+        "dependencies/moneta/src/moneta-1.2.0rc1.dist-info/METADATA",
+        "dependencies/moneta/src/moneta/__init__.py",
+        "dependencies/moneta/src/moneta/api.py",
+        "dependencies/moneta/src/moneta/attention_log.py",
+        "dependencies/moneta/src/moneta/consolidation.py",
+        "dependencies/moneta/src/moneta/decay.py"
+      ],
+      "identical": 1789,
+      "identical_after_crlf_to_lf": 34,
+      "not_in_git_generated_by_the_builder": 100,
+      "status": "PASS",
+      "tree": "0e67a7403e2e004073059d58643b5fcb2c1e2be3"
+    },
+    "status": "PASS"
+  },
+  "product_change_since_v5.85.6": {
+    "check": "git diff --stat v5.85.6 0e67a7403e2e004073059d58643b5fcb2c1e2be3 -- python installer mcp_server.py mcp_tools_*.py install.py run_panel.py",
+    "definition": "scripts/product_surface.py (PRODUCT_PATHSPEC)",
+    "files": [
+      "python/synapse/__init__.py",
+      "python/synapse/cognitive/tools/sidefx_library.py",
+      "python/synapse/identify/__init__.py",
+      "python/synapse/identify/apply.py",
+      "python/synapse/identify/bubble.py",
+      "python/synapse/identify/compose.py",
+      "python/synapse/identify/layout.py",
+      "python/synapse/identify/library.py",
+      "python/synapse/identify/overlay.py",
+      "python/synapse/mcp/protocol.py",
+      "python/synapse/mcp/read_only_mode.py",
+      "python/synapse/mcp/server.py",
+      "python/synapse/panel/synapse_panel.py",
+      "python/synapse/routing/router.py",
+      "python/synapse/server/hwebserver_adapter.py",
+      "python/synapse/server/sessions.py",
+      "python/synapse/server/websocket.py"
+    ],
+    "files_changed": 17,
+    "result": " python/synapse/__init__.py                       |   4 +-\n python/synapse/cognitive/tools/sidefx_library.py |  69 ++-\n python/synapse/identify/__init__.py              |  22 +-\n python/synapse/identify/apply.py                 | 315 +++---------\n python/synapse/identify/bubble.py                |  82 ++++\n python/synapse/identify/compose.py               |  26 +\n python/synapse/identify/layout.py                | 180 +++++++\n python/synapse/identify/library.py               | 370 +++++++++++---\n python/synapse/identify/overlay.py               | 601 +++++++++++++++++++++++\n python/synapse/mcp/protocol.py                   |   1 +\n python/synapse/mcp/read_only_mode.py             |  81 +++\n python/synapse/mcp/server.py                     |  44 +-\n python/synapse/panel/synapse_panel.py            | 115 +++--\n python/synapse/routing/router.py                 |  34 +-\n python/synapse/server/hwebserver_adapter.py      |  15 +\n python/synapse/server/sessions.py                |   8 +-\n python/synapse/server/websocket.py               |  15 +\n 17 files changed, 1575 insertions(+), 407 deletions(-)"
+  },
+  "schema": "synapse-release-verification-1",
+  "source_revision": "0e67a7403e2e004073059d58643b5fcb2c1e2be3",
+  "status": "PASS",
+  "suites": {
+    "command": "python -m pytest -m \"not needs_houdini\" -q -p no:cacheprovider",
+    "counts": {
+      "deselected": 119,
+      "passed": 10449,
+      "skipped": 426,
+      "xfailed": 5
+    },
+    "platform": "Windows, stock Python 3.14, tests that need a Houdini runtime deselected",
+    "status": "PASS",
+    "summary": "10449 passed, 426 skipped, 119 deselected, 5 xfailed, 626 warnings in 458.41s (0:07:38)"
+  },
+  "version": "5.86.0"
+}
