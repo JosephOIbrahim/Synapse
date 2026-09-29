@@ -233,9 +233,9 @@ from .memory.store import (
 )
 
 # Memory context, markdown, session, agent — all deferred to first access via __getattr__
-# Routing, Server, UI — all deferred to first access via __getattr__
-# This avoids importing ~3,000 lines of code (regex compilation, websockets,
-# Qt widgets) on every `import synapse`, keeping Houdini startup fast.
+# Routing, Server — all deferred to first access via __getattr__
+# This avoids importing ~3,000 lines of code (regex compilation, websockets)
+# on every `import synapse`, keeping Houdini startup fast.
 
 def __getattr__(name):
     """Lazy-load heavy modules on first attribute access."""
