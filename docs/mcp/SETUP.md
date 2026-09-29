@@ -196,7 +196,7 @@ claude mcp add --transport http synapse http://localhost:9999/mcp --header "Auth
 
 Set `SYNAPSE_MCP_READ_ONLY=1` in Houdini's environment to let MCP clients read the scene without changing it. On `/mcp`, and on the WebSocket that the stdio bridge uses, a client can then call only the tools SYNAPSE treats as read-only in both of its checks: the tool's `readOnlyHint` annotation and the execution bridge's own read-only list. Any other tool call is refused with a message that names the tool and the variable; on `/mcp` it is JSON-RPC error `-32005`. The tool list stays complete, so a client still sees what exists and learns why a call was refused.
 
-The fence applies to every caller of those two routes, and that includes the SYNAPSE panel's own agent, because the panel also sends its tool calls to `/mcp`. While the variable is set, the panel can only read as well. The variable is read on every call, so setting it from Houdini's Python shell (`os.environ["SYNAPSE_MCP_READ_ONLY"] = "1"`) takes effect at the next call, and clearing it takes effect the same way.
+The fence applies to every caller of those two routes, and that includes the SYNAPSE panel's own agent, because the panel also sends its tool calls to `/mcp`. While the variable is set, the panel can only read as well, with one exception that applies to every caller: stopping is never fenced. Cancel cook, Emergency halt, the farm and render cancels and render stop always run, because a mode meant to prevent changes must never keep anyone from stopping work. The variable is read on every call, so setting it from Houdini's Python shell (`os.environ["SYNAPSE_MCP_READ_ONLY"] = "1"`) takes effect at the next call, and clearing it takes effect the same way.
 
 ## SSE Streaming
 

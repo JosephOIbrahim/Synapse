@@ -27,7 +27,8 @@ from synapse.mcp.protocol import JsonRpcError, READ_ONLY_REFUSED
 _CMD = {entry[0]: entry[1] for entry in TOOL_DEFS}
 BOTH_SETS = sorted(name for name in _CMD if S.is_transport_fast_path(name))[0]
 TRANSPORT_ONLY = sorted(S.read_only_set_divergence())
-MUTATING = sorted(name for name in _CMD if name not in S._READ_ONLY_TOOLS)[0]
+MUTATING = sorted(name for name in _CMD
+                  if name not in S._READ_ONLY_TOOLS and name not in RO.STOPS_ALWAYS_PASS)[0]
 
 
 # ── 202 for a notification ──────────────────────────────────────────────────
@@ -119,3 +120,16 @@ def test_the_hwebserver_websocket_route_runs_the_same_gate():
         encoding="utf-8")
     gate = text.index("refusal = _read_only_refusal_for_command(command.type)")
     assert gate < text.index("# Lazy session creation") < text.index("response = handler.handle(command)", gate)
+
+
+def test_stop_controls_always_pass(monkeypatch):
+    """Stopping is never fenced: every stop control runs in read-only mode, on both routes.
+
+    Before this, the panel's Cancel cook and Emergency halt were refused while the variable
+    was set. Removing the stop check makes every assertion in the loop fail."""
+    monkeypatch.setenv(RO.ENV, "1")
+    assert RO.STOPS_ALWAYS_PASS <= set(_CMD), "a stop control is not a registered tool"
+    for name in sorted(RO.STOPS_ALWAYS_PASS):
+        assert RO.refusal_for_tool(name) is None, name
+        assert RO.refusal_for_command(_CMD[name]) is None, name
+    assert RO.refusal_for_tool(MUTATING)

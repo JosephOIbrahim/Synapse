@@ -12,7 +12,10 @@ that names it and this variable.
 The fence sits in the transports and applies to every caller of them. That
 includes the SYNAPSE panel's own agent, which sends its tool calls to
 ``POST /mcp`` (``panel/tool_executor.py``), so while the variable is set the
-panel can only read as well. A WebSocket command that is not a tool
+panel can only read as well. Stopping is never fenced, for any caller: the
+tools in ``STOPS_ALWAYS_PASS`` always run, because a mode meant to prevent
+changes must never keep anyone from stopping work. A WebSocket command that
+is not a tool
 (``authenticate``, ``heartbeat``, ``ping`` and the like) is protocol and always
 passes. The variable is read on every call, so it can be switched without a
 restart. It is off by default.
@@ -24,6 +27,17 @@ import os
 ENV = "SYNAPSE_MCP_READ_ONLY"
 
 _ON = frozenset({"1", "true", "yes", "on"})
+
+#: Stop controls pass the fence for every caller. Stopping work is not a change the
+#: fence exists to prevent, and refusing it would turn a safety mode into a hazard:
+#: the panel's Cancel cook and Emergency halt are among these.
+STOPS_ALWAYS_PASS = frozenset({
+    "tops_cancel_cook",
+    "synapse_emergency_halt",
+    "synapse_farm_cancel",
+    "synapse_render_farm_cancel",
+    "synapse_render_stop",
+})
 
 #: Command type -> tool name, built from the tool registry on first use.
 _TOOL_BY_COMMAND: dict | None = None
@@ -37,6 +51,8 @@ def enabled() -> bool:
 def refusal_for_tool(tool_name: str) -> str | None:
     """The refusal message for *tool_name*, or None when the call may run."""
     if not enabled():
+        return None
+    if tool_name in STOPS_ALWAYS_PASS:
         return None
     from synapse.mcp.server import is_transport_fast_path
 
