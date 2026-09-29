@@ -22,7 +22,8 @@ def receive_function(handler):
     namespace = {'__name__':'synapse.server.hwebserver_adapter', '__package__':'synapse.server',
                  'json':json, 'SynapseCommand':SynapseCommand, 'SynapseResponse':SynapseResponse,
                  'FARM_CONTROL_COMMANDS':FARM_CONTROL_COMMANDS, 'FARM_READ_COMMANDS':FARM_READ_COMMANDS,
-                 '_get_handler':lambda:handler, '_rate_limiter':None, '_circuit_breaker':None}
+                 '_get_handler':lambda:handler, '_rate_limiter':None, '_circuit_breaker':None,
+                 '_read_only_refusal_for_command':lambda _command_type: None}
     exec(compile(ast.Module(body=[node],type_ignores=[]), str(source), 'exec'), namespace)
     return namespace['receive']
 

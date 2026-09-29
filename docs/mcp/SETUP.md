@@ -163,6 +163,7 @@ that normal panel chat permits every tool.
 | `SYNAPSE_BRIDGE_FILE` | `~/.synapse/bridge.json` | Where the real bound endpoint is published for discovery |
 | `SYNAPSE_API_KEY` | (none) | API key for both WebSocket and MCP Bearer token auth |
 | `SYNAPSE_DEPLOY_MODE` | `local` | Origin-validation posture for `/mcp` (DNS-rebinding protection) |
+| `SYNAPSE_MCP_READ_ONLY` | (off) | Set to `1` to limit MCP clients, on `/mcp` and through the stdio bridge, to read-only tools ([Read-only mode](#read-only-mode)) |
 
 > There is **no** separate MCP port setting. `/mcp` rides the single hwebserver port above.
 
@@ -190,6 +191,12 @@ MCP clients that support auth headers can pass the token. For Claude Code, add t
 ```bash
 claude mcp add --transport http synapse http://localhost:9999/mcp --header "Authorization: Bearer your-secret-key"
 ```
+
+## Read-only mode
+
+Set `SYNAPSE_MCP_READ_ONLY=1` in Houdini's environment to let MCP clients read the scene without changing it. On `/mcp`, and on the WebSocket that the stdio bridge uses, a client can then call only the tools SYNAPSE treats as read-only in both of its checks: the tool's `readOnlyHint` annotation and the execution bridge's own read-only list. Any other tool call is refused with a message that names the tool and the variable; on `/mcp` it is JSON-RPC error `-32005`. The tool list stays complete, so a client still sees what exists and learns why a call was refused.
+
+The SYNAPSE panel's own agent is not affected. The variable is read on every call, so setting it from Houdini's Python shell (`os.environ["SYNAPSE_MCP_READ_ONLY"] = "1"`) takes effect at the next call.
 
 ## SSE Streaming
 

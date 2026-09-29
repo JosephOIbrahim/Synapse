@@ -57,6 +57,7 @@ from .auth import (get_auth_key, authenticate, validate_origin, header_value,
                    AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE)
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
+from ..mcp.read_only_mode import refusal_for_command as _read_only_refusal_for_command
 from .resilience import RateLimiter, BackpressureController, CircuitBreaker
 from ..session.tracker import get_bridge
 from .bridge_endpoint import publish_endpoint, clear_endpoint
@@ -257,6 +258,20 @@ if HWEBSERVER_AVAILABLE:
                             sequence=command.sequence
                         ).to_json(), is_binary=False)
                         return
+
+                # BP12 item 12: SYNAPSE_MCP_READ_ONLY fences external clients to the
+                # tools that are read-only under both gating sets. A command that is
+                # not a tool (authenticate, heartbeat, ping ...) passes.
+                refusal = _read_only_refusal_for_command(command.type)
+                if refusal:
+                    await self.send(SynapseResponse(
+                        id=command.id,
+                        success=False,
+                        error=refusal,
+                        data={"read_only_mode": True},
+                        sequence=command.sequence
+                    ).to_json(), is_binary=False)
+                    return
 
                 # Lazy session creation
                 if (self._session_id is None

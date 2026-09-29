@@ -23,7 +23,7 @@ from synapse.core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from synapse.core.protocol import SynapseCommand, SynapseResponse
 from synapse.host import memory_loop as host
 from synapse.loop.ports import PortResult
-from synapse.mcp.protocol import JsonRpcError, JsonRpcInvalidParams, INTERNAL_ERROR
+from synapse.mcp.protocol import JsonRpcError, JsonRpcInvalidParams, INTERNAL_ERROR, READ_ONLY_REFUSED
 from synapse.mcp.tools import dispatch_tool
 
 
@@ -110,6 +110,8 @@ def rig(monkeypatch):
         "is_farm_control": is_farm_control,
         "dispatch_tool": dispatch_tool, "logger": logging.getLogger("probe"),
         "JsonRpcInvalidParams": JsonRpcInvalidParams, "JsonRpcError": JsonRpcError, "INTERNAL_ERROR": INTERNAL_ERROR,
+        "read_only_mode": SimpleNamespace(refusal_for_tool=lambda _name: None),
+        "READ_ONLY_REFUSED": READ_ONLY_REFUSED,
         "_note_marshal_bypass": lambda *args: None,
         "_isError_text": lambda result: result["content"][0]["text"]}
     server = SimpleNamespace(_get_handler=lambda: handler, _circuit_breaker=None,

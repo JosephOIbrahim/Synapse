@@ -42,6 +42,7 @@ from ..core.queue import DeterministicCommandQueue, ResponseDeliveryQueue
 from .auth import get_auth_key, authenticate, hash_key_for_log, validate_origin, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
+from ..mcp.read_only_mode import refusal_for_command as _read_only_refusal_for_command
 from .rbac import Role, check_permission, is_rbac_enabled
 from .sessions import (
     SessionManager,
@@ -689,6 +690,20 @@ class SynapseServer:
                         return
                     # Touch session to keep it alive
                     self._session_manager.touch(user_session.session_id)
+
+            # BP12 item 12: SYNAPSE_MCP_READ_ONLY fences external clients to the
+            # tools that are read-only under both gating sets. A command that is
+            # not a tool (authenticate, heartbeat, ping ...) passes.
+            refusal = _read_only_refusal_for_command(command.type)
+            if refusal:
+                websocket.send(SynapseResponse(
+                    id=command.id,
+                    success=False,
+                    error=refusal,
+                    data={"read_only_mode": True},
+                    sequence=command.sequence,
+                ).to_json())
+                return
 
             # Read-only commands bypass resilience AND latency tracking —
             # they're cheap reads that can't cause cascading failures

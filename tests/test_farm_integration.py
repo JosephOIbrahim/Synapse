@@ -254,7 +254,7 @@ def test_primary_hweb_cancel_survives_gates_without_memory(monkeypatch, gate, al
     handler = SimpleNamespace(handle=Mock(return_value=SynapseResponse(id="stop", success=True, data={})))
     ns = {"json": json, "_dumps": json.dumps, "logger": logging.getLogger("farm-test"),
           "SynapseCommand": SynapseCommand, "SynapseResponse": SynapseResponse,
-          "_READ_ONLY_COMMANDS": FARM_READ_COMMANDS, "FARM_CONTROL_COMMANDS": FARM_CONTROL_COMMANDS,
+          "_READ_ONLY_COMMANDS": FARM_READ_COMMANDS, "_read_only_refusal_for_command": lambda _command_type: None, "FARM_CONTROL_COMMANDS": FARM_CONTROL_COMMANDS,
           "FARM_READ_COMMANDS": FARM_READ_COMMANDS, "_get_handler": lambda: handler,
           "get_bridge": Mock(side_effect=AssertionError("Constructed artist memory")),
           "_client_sessions": {},
@@ -288,7 +288,7 @@ def test_primary_hweb_launch_obeys_external_policy(monkeypatch, command_type, al
     handler = SimpleNamespace(handle=Mock(return_value=SynapseResponse(id="request", success=True, data={})))
     ns = {"json": json, "_dumps": json.dumps, "logger": logging.getLogger("farm-test"),
           "SynapseCommand": SynapseCommand, "SynapseResponse": SynapseResponse,
-          "_READ_ONLY_COMMANDS": FARM_READ_COMMANDS, "FARM_CONTROL_COMMANDS": FARM_CONTROL_COMMANDS,
+          "_READ_ONLY_COMMANDS": FARM_READ_COMMANDS, "_read_only_refusal_for_command": lambda _command_type: None, "FARM_CONTROL_COMMANDS": FARM_CONTROL_COMMANDS,
           "FARM_READ_COMMANDS": FARM_READ_COMMANDS, "_get_handler": lambda: handler,
           "get_bridge": Mock(side_effect=AssertionError("Constructed artist memory")),
           "_client_sessions": {}, "_rate_limiter": None, "_circuit_breaker": None}

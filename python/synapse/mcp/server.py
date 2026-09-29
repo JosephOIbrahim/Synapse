@@ -29,6 +29,7 @@ from .protocol import (
     INVALID_PARAMS,
     INVALID_REQUEST,
     METHOD_NOT_FOUND,
+    READ_ONLY_REFUSED,
     SESSION_INVALID,
     JsonRpcError,
     JsonRpcInvalidParams,
@@ -42,6 +43,7 @@ from .protocol import (
 from .session import MCPSessionManager
 from .resources import get_resources, get_resource_templates, resolve_resource
 from .tools import dispatch_tool, get_tools
+from . import read_only_mode
 from synapse.core.farm_contract import is_farm_control
 
 # Resilience layer — shared with WebSocket server
@@ -589,6 +591,12 @@ class MCPServer:
         if not tool_name:
             raise JsonRpcInvalidParams("Missing 'name' in tools/call params")
 
+        # BP12 item 12: SYNAPSE_MCP_READ_ONLY fences external clients to the tools
+        # that are read-only under both gating sets, before anything is dispatched.
+        refusal = read_only_mode.refusal_for_tool(tool_name)
+        if refusal:
+            raise JsonRpcError(READ_ONLY_REFUSED, refusal)
+
         arguments = params.get("arguments", {})
         handler = self._get_handler()
 
@@ -952,6 +960,23 @@ def _request_header(request, name, default=None):
     return header_value(request.headers(), name, default)
 
 
+def _post_response(response_body, headers: dict):
+    """What ``POST /mcp`` sends back: ``(body, status, content_type, extra_headers)``.
+
+    A POST that carries only notifications or responses gets 202 Accepted with no
+    body, as the MCP Streamable HTTP transport specifies. It was 204 No Content,
+    which hwebserver frames with ``Transfer-Encoding: chunked`` and no chunk, so
+    Python's http.client waited for a chunk that never came and hung the kept-alive
+    connection; Node clients ignore the header (BP12 item 12). A request gets 200
+    with its JSON-RPC body, and every header but Content-Type is passed through.
+    """
+    if response_body is None:
+        return "", 202, "text/plain", {}
+    data = response_body.decode("utf-8") if isinstance(response_body, bytes) else response_body
+    extra = {key: value for key, value in headers.items() if key != "Content-Type"}
+    return data, 200, headers.get("Content-Type", "application/json"), extra
+
+
 # =========================================================================
 # hwebserver integration (conditional — only when running inside Houdini)
 # =========================================================================
@@ -1003,20 +1028,10 @@ try:
 
             session_id = _request_header(request, "Mcp-Session-Id")
             response_body, headers = server.handle_request(body, session_id)
-
-            if response_body is None:
-                # Notification — 204 No Content
-                return hwebserver.Response("", status=204, content_type="text/plain")
-
-            data = response_body.decode("utf-8") if isinstance(response_body, bytes) else response_body
-            resp = hwebserver.Response(
-                data,
-                status=200,
-                content_type=headers.get("Content-Type", "application/json"),
-            )
-            for key, val in headers.items():
-                if key != "Content-Type":
-                    resp.setHeader(key, val)
+            data, status, content_type, extra = _post_response(response_body, headers)
+            resp = hwebserver.Response(data, status=status, content_type=content_type)
+            for key, val in extra.items():
+                resp.setHeader(key, val)
             return resp
 
         elif request.method() == "DELETE":
