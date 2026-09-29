@@ -37,7 +37,7 @@ def key_fingerprint(key: bytes) -> str:
     a changed/wrong key WITHOUT exposing the key — safe to store in plaintext."""
     return hashlib.sha256(key).hexdigest()[:8]
 
-# Optional dependency — follows existing pattern (SERVER_AVAILABLE, UI_AVAILABLE)
+# Optional dependency — follows existing pattern (SERVER_AVAILABLE)
 try:
     from cryptography.fernet import Fernet
     ENCRYPTION_AVAILABLE = True

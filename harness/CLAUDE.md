@@ -17,7 +17,7 @@ cp311; the embedded version is whatever the live interpreter reports.
   to `agent.usd` with `decision` + `reasoning` + `revert` path. No ledger entry ⇒ incomplete.
 - **Probe truth > pinned constants.** Where the probe reports API drift, use the
   live-introspected op. Never hardcode an H21-era constant the probe flagged.
-- **One source of UI truth:** `panel/`. The legacy `ui/` tree is dead — never add to it.
+- **One source of UI truth:** `panel/`. The legacy `ui/` tree was retired on 2026-09-29; `synapse.SynapsePanel` and `create_panel` no longer exist.
 - **One source of version.** `VERSION` is canonical; `pyproject.toml` and the demo script
   follow it. Never edit `VERSION` on your own initiative, and never by hand. The one
   exception is an operator-directed release cut, where `scripts/sync_version.py --write`

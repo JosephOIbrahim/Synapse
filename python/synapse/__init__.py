@@ -425,27 +425,12 @@ def __getattr__(name):
             globals().update(_fallback)
             return _fallback.get(name)
 
-    # --- UI ---
-    _ui_names = {'SynapsePanel', 'NexusPanel', 'create_panel', 'UI_AVAILABLE'}
-    if name in _ui_names:
-        try:
-            from .ui.panel import SynapsePanel as _SynapsePanel, create_panel as _create_panel
-            _map = {
-                'SynapsePanel': _SynapsePanel,
-                'NexusPanel': _SynapsePanel,
-                'create_panel': _create_panel,
-                'UI_AVAILABLE': True,
-            }
-            globals().update(_map)
-            return _map[name]
-        except ImportError:
-            _fallback = {
-                'UI_AVAILABLE': False,
-                'SynapsePanel': None, 'NexusPanel': None,
-                'create_panel': None,
-            }
-            globals().update(_fallback)
-            return _fallback.get(name)
+    # --- Retired UI (2026-09-29) ---
+    if name in {'SynapsePanel', 'NexusPanel', 'create_panel', 'UI_AVAILABLE'}:
+        raise AttributeError(
+            f"synapse.{name} was removed with the older synapse.ui panel. "
+            "The panel Houdini loads is synapse.panel.synapse_panel.SynapsePanel."
+        )
 
     raise AttributeError(f"module 'synapse' has no attribute {name!r}")
 
@@ -560,10 +545,4 @@ __all__ = [
     'INSPECTOR_AVAILABLE',
     'InspectorError',
     'StageNotFoundError',
-
-    # UI
-    'SynapsePanel',
-    'NexusPanel',        # Backwards compat
-    'create_panel',
-    'UI_AVAILABLE',
 ]

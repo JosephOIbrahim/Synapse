@@ -141,10 +141,6 @@ module = "synapse.routing.router"
 disable_error_code = ["assignment"]
 
 [[tool.mypy.overrides]]
-module = "synapse.ui.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
 module = "synapse.server.websocket"
 disable_error_code = ["assignment"]
 

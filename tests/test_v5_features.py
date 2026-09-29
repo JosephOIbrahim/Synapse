@@ -53,8 +53,6 @@ for mod_name, mod_path in [
     ("synapse.session", _PKG / "synapse" / "session"),
     ("synapse.memory", _PKG / "synapse" / "memory"),
     ("synapse.routing", _PKG / "synapse" / "routing"),
-    ("synapse.ui", _PKG / "synapse" / "ui"),
-    ("synapse.ui.tabs", _PKG / "synapse" / "ui" / "tabs"),
 ]:
     pkgbootstrap.ensure_package(mod_name, mod_path)
 
@@ -75,9 +73,6 @@ class TestStructuredLogging:
         "synapse.server.resilience",
         "synapse.server.hwebserver_adapter",
         "synapse.server.api_adapter",
-        "synapse.ui.panel",
-        "synapse.ui.tabs.decisions",
-        "synapse.ui.tabs.context",
         "synapse.session.tracker",
         "synapse.server.start_hwebserver",
         "synapse.core.queue",
