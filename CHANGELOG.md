@@ -29,7 +29,7 @@ with one checkpoint instead of one per record. With 1,458 records that
 took 309 seconds and now takes 3.2. Each untitled launch keeps its own
 memory folder, so earlier launches' records are no longer copied into new
 projects. `clear()` on the file-based memory store no longer waits on its
-own lock, which hung the panel's Clear All Memories button; the Moneta
+own lock, which hung the older panel's Clear All button; the Moneta
 store still cannot clear. The scout tests no longer pick up a configured
 SideFX library. This is a source release with no new Windows installer.
 See [v5.85.4](docs/releases/v5.85.4.md).

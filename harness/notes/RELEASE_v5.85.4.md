@@ -43,8 +43,14 @@ Publish three commits on top of v5.85.3 (`a0ad330d`). Joe's word: "Yes", to
   before and after. Jev was not used: batch size, folder binding, lock order and
   a test fixture are exact questions.
 - **Known, not fixed.** BP12 items 18 (notes and store in different folders),
-  19 (embedder id without the model), 20 (Clear All Memories is silent on
-  Moneta) and 21 (a flusher append can follow a save).
+  19 (embedder id without the model), 20 (the older, unregistered panel's
+  Clear All is silent on Moneta) and 21 (a flusher append can follow a save).
+
+- **Correction, 2026-09-29, after publication.** The only caller of `clear()` is the
+  Clear All button in the older `synapse.ui` panel (`python/synapse/ui/panel.py`). The
+  registered Houdini pane loads `synapse.panel.synapse_panel`, so no shipped surface
+  reaches that button. The notes above first said a normal session could hang on it;
+  they now say otherwise.
 
 This record does not claim that the later CI, push or publication steps have
 completed. They are checked after publication.
