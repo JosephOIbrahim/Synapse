@@ -22,6 +22,18 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.85.4 - A first save that no longer freezes
+
+The first save of an untitled scene copies its memory into the new project
+with one checkpoint instead of one per record. With 1,458 records that
+took 309 seconds and now takes 3.2. Each untitled launch keeps its own
+memory folder, so earlier launches' records are no longer copied into new
+projects. `clear()` on the file-based memory store no longer waits on its
+own lock, which hung the panel's Clear All Memories button; the Moneta
+store still cannot clear. The scout tests no longer pick up a configured
+SideFX library. This is a source release with no new Windows installer.
+See [v5.85.4](docs/releases/v5.85.4.md).
+
 ## v5.85.3 - Raw parameter reads and a steady scene hash
 
 Parameter reads now return `raw`, the string as written, when it differs
