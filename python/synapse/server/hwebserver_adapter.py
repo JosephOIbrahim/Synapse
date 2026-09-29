@@ -306,16 +306,22 @@ if HWEBSERVER_AVAILABLE:
                 await self.send(response.to_json(), is_binary=False)
 
             except json.JSONDecodeError as e:
+                from ..core.outcomes import info as _outcome
+
                 await self.send(SynapseResponse(
                     id="unknown",
                     success=False,
-                    error=f"Invalid JSON: {e}"
+                    error=f"Invalid JSON: {e}",
+                    data={"outcome": _outcome("request.invalid", str(e)).to_dict()},
                 ).to_json(), is_binary=False)
             except Exception as e:
+                from ..core.outcomes import info as _outcome
+
                 await self.send(SynapseResponse(
                     id="unknown",
                     success=False,
-                    error=str(e)
+                    error=str(e),
+                    data={"outcome": _outcome("tool.internal", str(e)).to_dict()},
                 ).to_json(), is_binary=False)
 
         async def disconnect(self, code):

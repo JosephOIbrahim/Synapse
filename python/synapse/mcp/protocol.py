@@ -45,6 +45,25 @@ NODE_NOT_FOUND = -32002
 COOK_ERROR = -32003
 SESSION_INVALID = -32004
 READ_ONLY_REFUSED = -32005  # SYNAPSE_MCP_READ_ONLY refused a tool (BP12 item 12)
+SERVER_BUSY = -32006  # rate limit, circuit breaker or a stalled main thread; wait, then retry (Level 1)
+NEEDS_ARTIST = -32007  # an artist must approve the call before it runs (Level 1)
+
+#: JSON-RPC code -> the outcome code it means (synapse.core.outcomes, Level 1 M1). A caller that
+#: knows its case more precisely passes the outcome in the error's data instead.
+OUTCOME_BY_JSONRPC_CODE = {
+    PARSE_ERROR: "request.invalid",
+    INVALID_REQUEST: "request.invalid",
+    METHOD_NOT_FOUND: "request.unknown_method",
+    INVALID_PARAMS: "request.invalid",
+    INTERNAL_ERROR: "tool.internal",
+    SAFETY_GUARD_REJECTION: "policy.safety_guard",
+    NODE_NOT_FOUND: "scene.node_not_found",
+    COOK_ERROR: "cook.error",
+    SESSION_INVALID: "session.expired",
+    READ_ONLY_REFUSED: "policy.read_only",
+    SERVER_BUSY: "server.busy",
+    NEEDS_ARTIST: "artist.approval_needed",
+}
 
 # MCP protocol version
 MCP_PROTOCOL_VERSION = "2025-06-18"
@@ -140,10 +159,17 @@ def jsonrpc_result(msg_id: Any, result: dict) -> bytes:
 
 def jsonrpc_error(msg_id: Any, code: int, message: str,
                   data: Optional[dict] = None) -> bytes:
-    """Format a JSON-RPC 2.0 error response."""
-    error: dict = {"code": code, "message": message}
-    if data is not None:
-        error["data"] = data
+    """Format a JSON-RPC 2.0 error response.
+
+    Its ``data`` always carries ``outcome``: what happened and what to do next (Level 1,
+    M1). A caller that knows its case passes it; otherwise the code decides.
+    """
+    data = dict(data or {})
+    if not isinstance(data.get("outcome"), dict):
+        from synapse.core.outcomes import info
+
+        data["outcome"] = info(OUTCOME_BY_JSONRPC_CODE.get(code, "tool.internal"), message).to_dict()
+    error: dict = {"code": code, "message": message, "data": data}
     return _dumps({
         "error": error,
         "id": msg_id,

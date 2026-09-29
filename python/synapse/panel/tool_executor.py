@@ -161,9 +161,13 @@ class ToolRequest:
 class MCPUnavailable(ConnectionError):
     """No tool request was sent; local fallback is safe."""
 
+    outcome_code = "bridge.unreachable"  # synapse.core.outcomes (Level 1, M1)
+
 
 class MCPOutcomeUnknown(RuntimeError):
     """A tool request may have run; it must not be dispatched again."""
+
+    outcome_code = "transport.reply_lost"  # synapse.core.outcomes (Level 1, M1)
 
 
 class _MCPLocalClient:
@@ -360,7 +364,10 @@ class _MCPLocalClient:
                     self._session_id = None
                 if attempt == 1:
                     continue
-            raise RuntimeError(error.get("message", "Unknown MCP error"))
+            from synapse.core.outcomes import describe
+
+            data = error.get("data") if isinstance(error.get("data"), dict) else {}
+            raise RuntimeError(describe(data.get("outcome"), error.get("message", "Unknown MCP error")))
 
         payload = result.get("result")
         if not isinstance(payload, dict):

@@ -265,8 +265,14 @@ class SynapseResponse:
     protocol_version: str = PROTOCOL_VERSION
 
     def to_json(self) -> str:
+        data = self.data
+        if not self.success:
+            # Level 1, M1: a failure always says what happened and what to do next.
+            from .outcomes import with_failure_outcome
+
+            data = with_failure_outcome(data, self.error)
         return _to_json_str({
-            "data": self.data,
+            "data": data,
             "error": self.error,
             "id": self.id,
             "protocol_version": self.protocol_version,

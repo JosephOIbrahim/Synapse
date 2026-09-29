@@ -43,6 +43,7 @@ from .auth import get_auth_key, authenticate, hash_key_for_log, validate_origin,
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from ..mcp.read_only_mode import refusal_for_command as _read_only_refusal_for_command
+from ..core.outcomes import info as _outcome
 from .rbac import Role, check_permission, is_rbac_enabled
 from .sessions import (
     SessionManager,
@@ -678,13 +679,15 @@ class SynapseServer:
                 user_session = self._session_manager.get_by_client(client_id)
                 if user_session:
                     if not check_permission(user_session.role, command.type):
+                        message = (
+                            f"Your role ({user_session.role.value}) doesn't have "
+                            f"permission for '{command.type}'"
+                        )
                         websocket.send(SynapseResponse(
                             id=command.id,
                             success=False,
-                            error=(
-                                f"Your role ({user_session.role.value}) doesn't have "
-                                f"permission for '{command.type}'"
-                            ),
+                            error=message,
+                            data={"outcome": _outcome("policy.rbac", message).to_dict()},
                             sequence=command.sequence,
                         ).to_json())
                         return
@@ -823,7 +826,8 @@ class SynapseServer:
             websocket.send(SynapseResponse(
                 id="unknown",
                 success=False,
-                error=f"Couldn't parse the incoming message as JSON — check the message format ({e})"
+                error=f"Couldn't parse the incoming message as JSON — check the message format ({e})",
+                data={"outcome": _outcome("request.invalid", str(e)).to_dict()},
             ).to_json())
         except Exception as e:
             # Notify circuit breaker on handler exceptions (service errors)
@@ -838,7 +842,8 @@ class SynapseServer:
             websocket.send(SynapseResponse(
                 id="unknown",
                 success=False,
-                error=str(e)
+                error=str(e),
+                data={"outcome": _outcome("tool.internal", str(e)).to_dict()},
             ).to_json())
 
     def _on_freeze(self, duration: float):

@@ -174,10 +174,25 @@ except ImportError:  # pragma: no cover - without the policy, nothing is sent tw
         return not sent
 
 
+try:
+    from synapse.core.outcomes import describe as _describe, info as _outcome
+except ImportError:  # pragma: no cover - without the vocabulary, messages stay as they were
+    _describe = None
+    _outcome = None
+
+
+def _say(code: str, message: str) -> str:
+    """*message* with its outcome and next step (synapse.core.outcomes, Level 1 M1)."""
+    if _outcome is None:
+        return message
+    return _describe(_outcome(code, message).to_dict(), message)
+
+
 def _lost_after_send(cmd_type: str) -> str:
     """The message for a command whose connection dropped after it was sent (Level 1, F2)."""
-    return (f"The connection to Houdini dropped after {cmd_type} was sent, so it may have run. "
-            "It was not sent again. Check the scene before trying again.")
+    return _say("transport.reply_lost",
+                f"The connection to Houdini dropped after {cmd_type} was sent, so it may have run. "
+                "It was not sent again.")
 
 
 def _candidate_urls() -> list:
@@ -405,7 +420,13 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
         # change twice: the bytes never left, or the command cannot change anything
         # (synapse.mcp.resend_policy). The server keeps no record of command ids.
         for _attempt in range(2):
-            ws = await _get_connection()
+            try:
+                ws = await _get_connection()
+            except OSError as e:
+                # Nothing was sent. Houdini, or its SYNAPSE server, is not answering. (F3)
+                raise ConnectionError(_say(
+                    "houdini.not_reachable",
+                    f"Houdini isn't answering on the SYNAPSE port ({e})")) from e
 
             # Register a future for this command's response
             loop = asyncio.get_running_loop()
@@ -437,10 +458,10 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                 except Exception:
                     pass
                 _ws_connection = None
-                raise TimeoutError(
+                raise TimeoutError(_say(
+                    "transport.read_retry" if _may_resend(cmd_type, True) else "transport.timeout",
                     f"The {cmd_type} command took too long to respond \u2014 "
-                    "Houdini may be busy with a heavy operation"
-                )
+                    "Houdini may be busy with a heavy operation"))
             except ConnectionError as e:
                 # Future was signaled by _recv_loop disconnect
                 _pending.pop(command_id, None)
@@ -485,6 +506,8 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
         data = response.get("data") or {}
         if isinstance(data, dict) and "retry_after" in data:
             error_msg += f" (retry after {data['retry_after']}s)"
+        if _describe is not None and isinstance(data, dict):
+            error_msg = _describe(data.get("outcome"), error_msg)
         raise RuntimeError(error_msg)
 
     return response.get("data", {})

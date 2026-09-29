@@ -112,6 +112,8 @@ def rig(monkeypatch):
         "JsonRpcInvalidParams": JsonRpcInvalidParams, "JsonRpcError": JsonRpcError, "INTERNAL_ERROR": INTERNAL_ERROR,
         "read_only_mode": SimpleNamespace(refusal_for_tool=lambda _name: None),
         "READ_ONLY_REFUSED": READ_ONLY_REFUSED,
+        "SERVER_BUSY": __import__("synapse.mcp.protocol", fromlist=["SERVER_BUSY"]).SERVER_BUSY,
+        "_outcome": __import__("synapse.core.outcomes", fromlist=["info"]).info,
         "_note_marshal_bypass": lambda *args: None,
         "_isError_text": lambda result: result["content"][0]["text"]}
     server = SimpleNamespace(_get_handler=lambda: handler, _circuit_breaker=None,

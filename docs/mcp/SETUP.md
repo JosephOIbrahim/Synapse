@@ -198,6 +198,19 @@ Set `SYNAPSE_MCP_READ_ONLY=1` in Houdini's environment to let MCP clients read t
 
 The fence applies to every caller of those two routes, and that includes the SYNAPSE panel's own agent, because the panel also sends its tool calls to `/mcp`. While the variable is set, the panel can only read as well, with one exception that applies to every caller: stopping is never fenced. Cancel cook, Emergency halt, the farm and render cancels and render stop always run, because a mode meant to prevent changes must never keep anyone from stopping work. The variable is read on every call, so setting it from Houdini's Python shell (`os.environ["SYNAPSE_MCP_READ_ONLY"] = "1"`) takes effect at the next call, and clearing it takes effect the same way.
 
+## What a failed call tells you
+
+Every refused or failed call carries an `outcome`: in the error's `data` on `/mcp`, and in the
+response's `data` on the WebSocket. It is one of `refused`, `retryable`, `unrecoverable`,
+`needs_artist`, `unknown_outcome` or `failed`, with a stable `code`, a one-sentence `message`, a
+`next` step in plain words, and `dispatched` (`no`, `yes` or `maybe`). Send a call again without
+looking only when it is `retryable`. An `unknown_outcome` may have run, so check the scene first.
+The stdio bridge and the SYNAPSE panel add the next step to the message they show. The
+vocabulary is [`synapse/core/outcomes.py`](../../python/synapse/core/outcomes.py).
+
+The busy answers (the rate limiter, the circuit breaker and a stalled main thread) use JSON-RPC
+code `-32006`, with the wait in `outcome.retry_after_s`.
+
 ## SSE Streaming
 
 The HTTP handler supports SSE-formatted **short polling responses**, including

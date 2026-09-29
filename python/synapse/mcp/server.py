@@ -30,6 +30,7 @@ from .protocol import (
     INVALID_REQUEST,
     METHOD_NOT_FOUND,
     READ_ONLY_REFUSED,
+    SERVER_BUSY,
     SESSION_INVALID,
     JsonRpcError,
     JsonRpcInvalidParams,
@@ -44,6 +45,7 @@ from .session import MCPSessionManager
 from .resources import get_resources, get_resource_templates, resolve_resource
 from .tools import dispatch_tool, get_tools
 from . import read_only_mode
+from ..core.outcomes import info as _outcome
 from synapse.core.farm_contract import is_farm_control
 
 # Resilience layer — shared with WebSocket server
@@ -453,6 +455,8 @@ class MCPServer:
             return jsonrpc_error(
                 msg_id, SESSION_INVALID,
                 "Missing Mcp-Session-Id header. Send initialize first.",
+                {"outcome": _outcome(
+                    "session.missing", "Missing Mcp-Session-Id header.").to_dict()},
             ), headers
 
         session = self._sessions.get_session(session_id)
@@ -654,7 +658,8 @@ class MCPServer:
             # a JSON-RPC error rather than a success result with isError buried
             # inside (matches the non-read-only path below).
             if isinstance(result, dict) and result.get("isError"):
-                raise JsonRpcError(INTERNAL_ERROR, _isError_text(result))
+                raise JsonRpcError(INTERNAL_ERROR, _isError_text(result), {
+                    "outcome": _outcome("tool.failed", _isError_text(result)).to_dict()})
             if self._circuit_breaker:
                 self._circuit_breaker.record_success()
             return result
@@ -669,34 +674,39 @@ class MCPServer:
                 and is_main_thread_stalled() and not probe_main_thread()):
             if self._circuit_breaker:
                 self._circuit_breaker.record_failure()
-            raise JsonRpcError(
-                INTERNAL_ERROR,
+            message = (
                 "Houdini's main thread is unresponsive ({} consecutive timeouts) "
                 "— a heavy cook, render, or another MCP client may be saturating "
                 "it; commands will resume when it recovers".format(
                     stall_state()["consecutive_timeouts"]
-                ),
+                )
             )
+            raise JsonRpcError(SERVER_BUSY, message, {"outcome": _outcome(
+                "houdini.busy", message, retry_after_s=5.0).to_dict()})
 
         # 2. Rate limiting (keyed by MCP session, not per-client like WS)
         if self._enable_resilience and self._rate_limiter:
             allowed, info = self._rate_limiter.acquire("mcp")
             if not allowed:
-                raise JsonRpcError(
-                    INTERNAL_ERROR,
+                message = (
                     "Synapse is handling a lot of requests right now — "
-                    "try again in a moment ({})".format(info.get("reason", "")),
+                    "try again in a moment ({})".format(info.get("reason", ""))
                 )
+                raise JsonRpcError(SERVER_BUSY, message, {"outcome": _outcome(
+                    "server.busy", message,
+                    retry_after_s=float(info.get("retry_after", 1.0))).to_dict()})
 
         # 3. Circuit breaker
         if self._enable_resilience and self._circuit_breaker:
             can_exec, cb_info = self._circuit_breaker.can_execute()
             if not can_exec:
-                raise JsonRpcError(
-                    INTERNAL_ERROR,
+                message = (
                     "Synapse paused commands temporarily to recover from errors — "
-                    "it'll resume shortly ({})".format(cb_info.get("reason", "")),
+                    "it'll resume shortly ({})".format(cb_info.get("reason", ""))
                 )
+                raise JsonRpcError(SERVER_BUSY, message, {"outcome": _outcome(
+                    "server.busy", message,
+                    retry_after_s=float(cb_info.get("retry_after", 30.0))).to_dict()})
 
         # Notify SSE subscribers about critical tool execution
         if session_id is not None and tool_name in (
@@ -812,7 +822,12 @@ class MCPServer:
                     "reason": error_text[:200],
                     "status": "degraded",
                 })
-            raise JsonRpcError(INTERNAL_ERROR, error_text)
+            # A timeout or a stalled main thread may leave the operation running: the
+            # artist checks the scene first. Anything else ran and failed. (Level 1, M1)
+            infra = any(k in error_text.lower()
+                        for k in ("timeout", "main thread", "crashed", "unresponsive"))
+            raise JsonRpcError(INTERNAL_ERROR, error_text, {"outcome": _outcome(
+                "transport.timeout" if infra else "tool.failed", error_text).to_dict()})
 
         if self._circuit_breaker:
             self._circuit_breaker.record_success()
