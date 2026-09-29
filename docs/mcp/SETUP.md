@@ -55,24 +55,21 @@ curl -s -X POST http://localhost:9999/mcp \
 > ✅ **You should see** a JSON response containing `protocolVersion` and `capabilities`.
 > **If you see** `Connection refused`, check the discovered endpoint, click **Connect**, then run **Doctor**.
 
-*Status: the `/mcp`-on-9999 wiring is confirmed by reading the registration code (`mcp/server.py:685` + `hwebserver_adapter.py:273`). **Verify live** with the curl above before depending on it in a studio setup.*
+*Status: verified live on 2026-09-28. Claude Code 2.1.284 loaded all 137 tools from Houdini 22.0.400 and answered a read-only question from the open scene. The handler is `_mcp_url_handler` in `python/synapse/mcp/server.py`.*
 
 ## Claude Code
 
-Add to your MCP server configuration (`~/.claude/settings.json` or project `.claude/settings.json`):
+Register the endpoint with the Claude Code CLI. Run these commands in the folder you will start Claude Code from. The default `local` scope loads the server only in that folder, so your other projects, including harness worktrees, never reach your live scene.
 
-```json
-{
-  "mcpServers": {
-    "synapse": {
-      "type": "streamableHttp",
-      "url": "http://localhost:9999/mcp"
-    }
-  }
-}
+```bash
+claude mcp add --transport http synapse http://localhost:9999/mcp
+claude mcp get synapse
 ```
 
-Claude Code will auto-discover all SYNAPSE tools on connection.
+> ✅ **You should see** `Status: ✔ Connected`.
+> **If you see** `Connected · tools fetch failed` with "Missing Mcp-Session-Id header", Houdini is running SYNAPSE v5.85.0 or earlier. Those versions read request headers case-sensitively, and Claude Code sends them in lowercase. Update SYNAPSE, then restart Houdini.
+
+Claude Code loads every SYNAPSE tool and asks before each call unless a permission rule allows it. To let read-only tools run without asking, list them in `.claude/settings.local.json` in the same folder, for example `{"permissions": {"allow": ["mcp__synapse__houdini_scene_info"]}}`. Tools that change the scene keep asking.
 
 ### Alternative: the stdio bridge
 
@@ -188,20 +185,10 @@ export SYNAPSE_API_KEY="your-secret-key"
 echo "your-secret-key" > ~/.synapse/auth.key
 ```
 
-MCP clients that support auth headers can pass the token. For Claude Code, configure via `.claude/settings.json`:
+MCP clients that support auth headers can pass the token. For Claude Code, add the header when you register the server:
 
-```json
-{
-  "mcpServers": {
-    "synapse": {
-      "type": "streamableHttp",
-      "url": "http://localhost:9999/mcp",
-      "headers": {
-        "Authorization": "Bearer your-secret-key"
-      }
-    }
-  }
-}
+```bash
+claude mcp add --transport http synapse http://localhost:9999/mcp --header "Authorization: Bearer your-secret-key"
 ```
 
 ## SSE Streaming
