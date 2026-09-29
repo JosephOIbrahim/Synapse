@@ -183,3 +183,29 @@ def compose(facts: dict, width: int = WIDTH) -> list[str]:
 def bubble_text(facts: dict, width: int = WIDTH) -> str:
     """The composed lines as one newline-joined block (no sentinel)."""
     return "\n".join(compose(facts, width))
+
+
+# ---------------------------------------------------------------------------
+# Public line builders. The overlay's bubble model (``bubble.py``) and the
+# legacy cleaner (``apply.py``) need single lines at their own widths; these are
+# the functions ``compose`` itself uses, so every surface formats a line alike.
+# ---------------------------------------------------------------------------
+
+def what_line(facts: dict, width: int = WIDTH) -> str:
+    """The What line: the library or HDA summary, else ``<label> - not in library``."""
+    return _what_line(facts, width)
+
+
+def here_line(facts: dict, width: int = WIDTH) -> str | None:
+    """The Here line: ``writes <prim> (+N)`` for a LOP, else up to two changed parms."""
+    return _here_line(facts, width)
+
+
+def state_line(facts: dict, width: int = WIDTH) -> str | None:
+    """The State line: the first error or warning, then ``bypassed`` and ``beta``."""
+    return _state_line(facts, width)
+
+
+def truncate(text: str, width: int = WIDTH) -> str:
+    """*text* on one line, cut to *width* and ending in ``...`` when it overflows."""
+    return _truncate(text, width)

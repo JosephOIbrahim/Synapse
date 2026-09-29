@@ -8,7 +8,7 @@ This feature map was reviewed on **2026-09-28**. For the published version and i
 
 | Area | Available now | Read next |
 |---|---|---|
-| Identify | Select nodes, then **Identify** or `/identify`: a short local note under each node from its type, changed parameters, state and the SideFX library. No model call. | [Identify release](releases/v5.85.0.md), [how it works](architecture/overview.md#identify). |
+| Identify | Select nodes, then **Identify** or `/identify`: a short local bubble beside each node, drawn over the network editor, from its type, changed parameters, state and the SideFX library. No model call, and nothing is written to the scene. | [Identify release](releases/v5.85.0.md), [how it works](architecture/overview.md#identify). |
 | Panel | Shared dark-gray/coral styling, welcome motion, inset footer controls and a taller prompt with **Resize**. | [Panel release](releases/v5.83.0.md), [resize and library update](releases/v5.84.0.md), [shorter Resize label](releases/v5.84.1.md). |
 | JEV / TypeSafe | Discoverable key setup with masked entry and explicit session save/clear. Ranking and routing measurement remain optional. | [Key setup](getting-started/jev-setup.md), [JEV release](releases/v5.84.2.md). |
 | World Labs | Artist-triggered import of an existing API-accessible world or supported local Gaussian PLY. | [Import flow and limits](architecture/overview.md#world-labs-import). |

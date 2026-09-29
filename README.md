@@ -58,20 +58,20 @@ The normal panel worker blocks node deletion, arbitrary Python/VEX, rendering, e
 
 Select one or more nodes in a network editor. Then click **Identify** at the top of the panel, or send `/identify`.
 
-A short note appears under each node. It says what the node does, which parameters you changed, and whether the node has an error, a warning or a bypass.
+A short bubble appears beside each node, drawn over the network editor. It says what the node does, which parameters you changed, and whether the node has an error, a warning or a bypass.
 
-The note comes from the node itself and your local SideFX help library. No model runs, and nothing leaves your machine.
+The bubble comes from the node itself and your local SideFX help library. No model runs, and nothing leaves your machine.
 
-Click **Identify** again to clear the notes, or use **Undo**. Saved scenes never keep them.
+Click **Identify** again, or send `/identify off`, to clear the bubbles. They are drawn over the editor, so nothing is written to your scene.
 
 ```mermaid
 flowchart LR
     accTitle: How Identify explains selected nodes
-    accDescr: You select nodes and click Identify. SYNAPSE reads each node and the local SideFX help library without a model. A short note appears under each node. Saving the scene leaves the notes out of the file.
+    accDescr: You select nodes and click Identify. SYNAPSE reads each node and the local SideFX help library without a model. A short bubble appears beside each node, drawn over the network editor. Nothing is written to the scene.
     S["Select nodes"] --> I["Click Identify"]
     I --> R["Read the node +<br/>local help library"]
-    R --> N["Short note<br/>under each node"]
-    N --> F["Save keeps notes<br/>out of the file"]
+    R --> N["Short bubble<br/>beside each node"]
+    N --> F["Nothing written<br/>to the scene"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
@@ -80,7 +80,7 @@ flowchart LR
     linkStyle default stroke:#D07020
 ```
 
-Each click notes up to 60 nodes. The [release notes](docs/releases/v5.85.0.md) explain the details and current limits.
+Each click shows up to 60 bubbles. The [release notes](docs/releases/v5.85.0.md) explain the details and current limits.
 
 ## Find the right control
 
@@ -108,7 +108,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 ## What's ready
 
 - **Network work:** build and inspect through permitted tools; keep the result editable in Houdini.
-- **Identify:** a short note under each selected node, built from the node and local SideFX help with no model call.
+- **Identify:** a short bubble beside each selected node, built from the node and local SideFX help with no model call.
 - **Model choice:** Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
 - **Claude Code:** use SYNAPSE's tools from Claude Code through [MCP](docs/mcp/SETUP.md#claude-code). It asks before each tool call unless you allow that tool.
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
@@ -125,7 +125,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 | Unsure where the TypeSafe key goes | [JEV key setup](docs/getting-started/jev-setup.md#add-your-key). |
 | No saved suggestion | Read its reason. A checked record, matching version and project memory owner are required. |
 | Build running away | Use [Cancel cook or Emergency halt](#three-ways-to-stop), then inspect the scene. |
-| Identify notes say **not in library** | [Build and connect the SideFX library](docs/studio/SIDEFX_LIBRARY.md#build-and-connect), then restart Houdini. |
+| Identify bubbles say **Not in the local SideFX library** | [Build and connect the SideFX library](docs/studio/SIDEFX_LIBRARY.md#build-and-connect), then restart Houdini. |
 
 [Report a bug](https://github.com/JosephOIbrahim/Synapse/issues/new/choose) · [First-session walkthrough](docs/getting-started/quickstart.md)
 

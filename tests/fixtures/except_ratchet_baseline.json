@@ -114,7 +114,7 @@
     "python/synapse/panel/session_journal.py": 3,
     "python/synapse/panel/settings.py": 1,
     "python/synapse/panel/shot_login.py": 4,
-    "python/synapse/panel/synapse_panel.py": 121,
+    "python/synapse/panel/synapse_panel.py": 116,
     "python/synapse/panel/system_prompt.py": 2,
     "python/synapse/panel/token_readout.py": 4,
     "python/synapse/panel/tool_executor.py": 4,

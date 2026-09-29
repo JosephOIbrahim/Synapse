@@ -1,266 +1,105 @@
-"""The only writer in Identify: node comments and the comment-display flag.
+"""Identify's only scene writer: it removes old ``~ identify ~`` comment blocks.
 
-Everything here is reversible and never reaches disk (IDENTIFY_BLUEPRINT rule
-2/3/4). Text is appended below an ASCII sentinel line so an encoding round trip
-cannot corrupt the marker; artist text above the sentinel is never touched. One
-``hou.undos.group('SYNAPSE Identify')`` wraps a whole show and a whole clear, so
-one Ctrl+Z reverses a click. A BeforeSave callback strips every block with undo
-disabled and an AfterSave callback re-applies it, so a saved ``.hip`` carries no
-sentinel.
+Older versions of Identify appended their bubble text to a node's comment,
+below an ASCII sentinel line, and switched the comment display on. Bubbles are
+now drawn by the overlay (``overlay.py``), which writes nothing to the scene.
+One write is still worth doing: when the artist identifies a node that carries
+a block an older version left behind (an autosave or a crash-recovery file can
+hold one), the block is removed and the artist's own text above it stays
+byte-identical.
 
-``hou`` is import-guarded; tests inject a fake ``hou`` with ``undos.group`` /
-``undos.disabler`` context managers and ``nodeFlag.DisplayComment``.
+A block is removed only when it has the exact shape Identify wrote (CRUX F4).
+Its sentinel is the last standalone sentinel line in the comment, one to three
+lines follow it, none longer than ``compose.WIDTH``, and the first of them is a
+What line Identify would have written for that node
+(``bubble.legacy_what_lines``). An artist's own standalone ``~ identify ~`` line
+followed by their own text is therefore left alone. One undo group wraps a
+cleanup, so one Ctrl+Z puts the blocks back, and nothing is written when no
+node carries a block.
+
+``hou`` is import-guarded; tests inject a fake with ``undos.group`` and
+``nodeFlag.DisplayComment``.
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import nullcontext
 import logging
+
+from . import compose
 
 _log = logging.getLogger(__name__)
 
 try:  # pragma: no cover - exercised live under hython
     import hou
-except Exception:  # pragma: no cover
-    _log.debug("swallowed exception", exc_info=True)
+except ImportError:  # pragma: no cover
     hou = None
 
 
-#: ASCII so no cp1252/utf round trip can corrupt it (rule 2).
+#: The ASCII line older versions wrote above their bubble text.
 SENTINEL = "~ identify ~"
 
-#: Selection cap. A starting value to tune at the GUI gate (rule 5).
-CAP = 60
+#: One undo group per cleanup.
+UNDO_LABEL = "SYNAPSE Identify cleanup"
 
-#: Undo group name — one entry per click (rule 3).
-UNDO_LABEL = "SYNAPSE Identify"
-
-#: sessionId -> {"path": str, "prior_flag": bool}. Per-session, in-memory only.
-_REGISTRY: dict[int, dict] = {}
-
-#: Filled by BeforeSave, drained by AfterSave: (path, comment, flag).
-_SAVE_STASH: list[tuple] = []
-
-#: The registered hipFile callback, so install is idempotent.
-_SAVE_CALLBACK = None
+#: The most lines an older block carried below its sentinel: What, Here, State.
+_MAX_LINES = 3
 
 
-@contextmanager
-def _nullcontext():
-    yield
+def legacy_block_start(comment: str, what_lines) -> int:
+    """Index of the line where an old Identify block starts, or -1.
 
-
-def _undo_group(label: str):
-    if hou is None:
-        return _nullcontext()
-    return hou.undos.group(label)
-
-
-def _undo_disabler():
-    if hou is None:
-        return _nullcontext()
-    return hou.undos.disabler()
-
-
-def _display_flag():
-    return hou.nodeFlag.DisplayComment
-
-
-# ---------------------------------------------------------------------------
-# Sentinel block: append and its clean inverse
-# ---------------------------------------------------------------------------
-
-def _block_start(comment: str) -> int:
-    """Index of the line that begins *our* block, or -1.
-
-    The sentinel is matched only as a standalone line, so artist prose that
-    quotes ``~ identify ~`` inline is never mistaken for our block. We append
-    last, so the *last* standalone sentinel line is ours; an artist's own
-    standalone sentinel (earlier) is left in place.
+    *what_lines* holds the What lines Identify could have written for this
+    node. Anything that does not match the exact block shape is artist text.
     """
     lines = (comment or "").split("\n")
+    start = -1
     for i in range(len(lines) - 1, -1, -1):
         if lines[i].strip() == SENTINEL:
-            return i
-    return -1
+            start = i
+            break
+    if start == -1:
+        return -1
+    tail = lines[start + 1:]
+    if not 1 <= len(tail) <= _MAX_LINES:
+        return -1
+    if any(len(line) > compose.WIDTH for line in tail):
+        return -1
+    if tail[0] not in what_lines:
+        return -1
+    return start
 
 
-def strip_block(comment: str) -> str:
-    """Artist text with our block removed — the exact inverse of :func:`_compose_comment`."""
-    idx = _block_start(comment)
-    if idx == -1:
+def has_legacy_block(comment: str, what_lines) -> bool:
+    return legacy_block_start(comment, what_lines) != -1
+
+
+def strip_legacy(comment: str, what_lines) -> str:
+    """*comment* without its old Identify block; unchanged when it has none."""
+    start = legacy_block_start(comment, what_lines)
+    if start == -1:
         return comment or ""
-    return "\n".join((comment or "").split("\n")[:idx])
+    return "\n".join((comment or "").split("\n")[:start])
 
 
-def _compose_comment(artist: str, bubble: str) -> str:
-    """Artist text, then the sentinel line, then the bubble."""
-    if artist:
-        return f"{artist}\n{SENTINEL}\n{bubble}"
-    return f"{SENTINEL}\n{bubble}"
+def clean_legacy(items) -> int:
+    """Remove old Identify blocks from ``[(node, what_lines), ...]``.
 
-
-def has_block(comment: str) -> bool:
-    return _block_start(comment) != -1
-
-
-# ---------------------------------------------------------------------------
-# Show / clear / toggle
-# ---------------------------------------------------------------------------
-
-def _flash(editor, text: str) -> None:
-    if editor is None:
-        return
-    try:
-        editor.flashMessage(None, text, 6)
-    except Exception:
-        _log.debug("swallowed exception", exc_info=True)
-
-
-def show(items, total=None, editor=None) -> dict:
-    """Draw a bubble under each node. *items* is ``[(node, lines), ...]``.
-
-    Capped at :data:`CAP`. One undo group wraps the whole show. Re-showing a
-    node first strips its prior block, so the operation is idempotent and never
-    stacks blocks. The prior display-comment flag is recorded once per node.
-
-    Installs the BeforeSave/AfterSave callbacks first, idempotently, so the very
-    first bubble a session draws is already save-safe (rule 4) — even when the
-    artist reached ``show`` through ``toggle`` or ``/identify`` and never called
-    :func:`install_save_callbacks` explicitly. Re-showing does not re-register.
+    Returns how many nodes were cleaned. The comment display flag follows what
+    the old clear did for a block with no record of its prior value: on when
+    artist text remains, off when the comment is now empty.
     """
-    install_save_callbacks()
-    items = list(items)
-    total = len(items) if total is None else total
-    capped = items[:CAP]
-    with _undo_group(UNDO_LABEL):
-        for node, lines in capped:
-            existing = node.comment() or ""
-            artist = strip_block(existing)
-            bubble = "\n".join(lines) if not isinstance(lines, str) else lines
-            new_comment = _compose_comment(artist, bubble)
-            sid = node.sessionId()
-            if sid not in _REGISTRY:
-                _REGISTRY[sid] = {
-                    "path": node.path(),
-                    "prior_flag": bool(node.isGenericFlagSet(_display_flag())),
-                }
-            else:
-                _REGISTRY[sid]["path"] = node.path()
-            node.setComment(new_comment)
-            node.setGenericFlag(_display_flag(), True)
-    shown = len(capped)
-    _flash(editor, f"Identify: {shown} of {total} nodes")
-    return {"shown": shown, "total": total}
-
-
-def clear(nodes, editor=None) -> dict:
-    """Remove every Identify block from *nodes* and restore the prior flag.
-
-    Registry entries restore their exact prior display-comment flag. Orphan
-    blocks (no registry entry, e.g. left by a prior session) are removed too;
-    their flag is set to whether artist text remains, since the prior value is
-    unknown. One undo group wraps the whole clear.
-    """
-    removed = 0
-    with _undo_group(UNDO_LABEL):
-        for node in nodes:
-            existing = node.comment() or ""
-            if not has_block(existing):
-                continue
-            artist = strip_block(existing)
+    targets = []
+    for node, what_lines in items:
+        comment = node.comment() or ""
+        if has_legacy_block(comment, what_lines):
+            targets.append((node, comment, what_lines))
+    if not targets:
+        return 0
+    group = hou.undos.group(UNDO_LABEL) if hou is not None else nullcontext()
+    with group:
+        for node, comment, what_lines in targets:
+            artist = strip_legacy(comment, what_lines)
             node.setComment(artist)
-            sid = node.sessionId()
-            entry = _REGISTRY.pop(sid, None)
-            if entry is not None:
-                node.setGenericFlag(_display_flag(), entry["prior_flag"])
-            else:
-                node.setGenericFlag(_display_flag(), bool(artist))
-            removed += 1
-    return {"removed": removed}
-
-
-def toggle(items, total=None, editor=None) -> dict:
-    """Show if no selected node carries a block, else clear (idempotent toggle)."""
-    items = list(items)
-    nodes = [node for node, _ in items]
-    active = any(has_block(node.comment() or "") for node in nodes)
-    if active:
-        result = clear(nodes, editor=editor)
-        result["action"] = "clear"
-        return result
-    result = show(items, total=total, editor=editor)
-    result["action"] = "show"
-    return result
-
-
-# ---------------------------------------------------------------------------
-# Save safety: strip on BeforeSave, re-apply on AfterSave, undo disabled
-# ---------------------------------------------------------------------------
-
-def _active_nodes():
-    for sid, entry in list(_REGISTRY.items()):
-        node = hou.node(entry["path"]) if hou is not None else None
-        if node is not None:
-            yield sid, node
-
-
-def before_save(*_event) -> None:
-    """Strip every Identify block so the saved file carries no sentinel."""
-    with _undo_disabler():
-        _SAVE_STASH.clear()
-        for _sid, node in _active_nodes():
-            comment = node.comment() or ""
-            if not has_block(comment):
-                continue
-            flag = bool(node.isGenericFlagSet(_display_flag()))
-            _SAVE_STASH.append((node.path(), comment, flag))
-            node.setComment(strip_block(comment))
-
-
-def after_save(*_event) -> None:
-    """Put every stripped block back exactly as it was before the save."""
-    with _undo_disabler():
-        for path, comment, flag in _SAVE_STASH:
-            node = hou.node(path) if hou is not None else None
-            if node is None:
-                continue
-            node.setComment(comment)
-            node.setGenericFlag(_display_flag(), flag)
-        _SAVE_STASH.clear()
-
-
-def _save_dispatch(event) -> None:
-    name = getattr(event, "name", lambda: str(event))
-    label = name() if callable(name) else str(event)
-    label = str(label).rsplit(".", 1)[-1]
-    if label == "BeforeSave":
-        before_save()
-    elif label == "AfterSave":
-        after_save()
-
-
-def install_save_callbacks() -> None:
-    """Register the BeforeSave/AfterSave hipFile callbacks once."""
-    global _SAVE_CALLBACK
-    if hou is None or _SAVE_CALLBACK is not None:
-        return
-    hou.hipFile.addEventCallback(_save_dispatch)
-    _SAVE_CALLBACK = _save_dispatch
-
-
-def remove_save_callbacks() -> None:
-    global _SAVE_CALLBACK
-    if hou is None or _SAVE_CALLBACK is None:
-        return
-    try:
-        hou.hipFile.removeEventCallback(_SAVE_CALLBACK)
-    finally:
-        _SAVE_CALLBACK = None
-
-
-def _reset_state() -> None:
-    """Clear in-memory registry/stash — test hook, not a scene operation."""
-    global _SAVE_CALLBACK
-    _REGISTRY.clear()
-    _SAVE_STASH.clear()
-    _SAVE_CALLBACK = None
+            node.setGenericFlag(hou.nodeFlag.DisplayComment, bool(artist))
+    _log.info("Identify removed %d old comment block(s)", len(targets))
+    return len(targets)

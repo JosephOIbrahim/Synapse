@@ -1,5 +1,5 @@
 """BP11-IDSURF: the Identify action-row button, /identify registry, and the
-compose-off-main / apply-on-main threading — driven against fake Qt leaves.
+bubble-off-main / overlay-on-main threading — driven against fake Qt leaves.
 
 These tests drive the REAL ``SynapsePanel`` handlers (the
 ``test_rope_switcher_wires_profile`` convention: unbound methods on a fake self,
@@ -63,10 +63,14 @@ class _Chat:
         self.messages.append(text)
 
 
+def _fake_node(path):
+    return SimpleNamespace(path=lambda: path, sessionId=lambda: hash(path),
+                           parent=lambda: None, comment=lambda: "")
+
+
 def _fake_hou_with_selection(paths):
-    nodes = [SimpleNamespace(path=lambda p=p: p) for p in paths]
-    return SimpleNamespace(selectedNodes=lambda: nodes,
-                           node=lambda p: SimpleNamespace(path=lambda: p))
+    nodes = [_fake_node(p) for p in paths]
+    return SimpleNamespace(selectedNodes=lambda: nodes, node=_fake_node)
 
 
 def _panel(**attrs):
@@ -77,6 +81,8 @@ def _panel(**attrs):
     if not hasattr(fake, "_identify_selection_paths"):
         fake._identify_selection_paths = lambda: SynapsePanel._identify_selection_paths(fake)
     fake._identify_worker = lambda paths, mode: SynapsePanel._identify_worker(fake, paths, mode)
+    if not hasattr(fake, "_identify_say"):
+        fake._identify_say = lambda text: SynapsePanel._identify_say(fake, text)
     return fake
 
 
@@ -140,7 +146,7 @@ def test_run_identify_with_nothing_selected_says_why_and_launches_nothing(monkey
 
 
 # --------------------------------------------------------------------------- #
-# Acceptance 3: compose + library run OFF the main thread, apply runs ON it.
+# Acceptance 3: library + bubble run OFF the main thread, the overlay draws ON it.
 # --------------------------------------------------------------------------- #
 
 def _facts_stub(paths, record):
@@ -152,11 +158,11 @@ def _facts_stub(paths, record):
     } for p in paths]
 
 
-def test_compose_and_library_run_off_main_and_apply_runs_on_main(monkeypatch):
-    from synapse.identify import apply as amod
-    from synapse.identify import compose as cmod
+def test_library_and_bubble_run_off_main_and_the_overlay_draws_on_main(monkeypatch):
+    from synapse.identify import bubble as bmod
     from synapse.identify import facts as fmod
     from synapse.identify import library as lmod
+    from synapse.identify import overlay as omod
 
     main_ident = threading.get_ident()
     record: dict = {}
@@ -186,45 +192,45 @@ def test_compose_and_library_run_off_main_and_apply_runs_on_main(monkeypatch):
                 continue
         worker.join(5)
 
-    real_compose = cmod.compose
+    real_model = bmod.bubble_model
     real_summarize = lmod.summarize
 
-    def spy_compose(facts, *a, **k):
-        record["compose_ident"] = threading.get_ident()
-        return real_compose(facts, *a, **k)
+    def spy_model(facts, *a, **k):
+        record["model_ident"] = threading.get_ident()
+        return real_model(facts, *a, **k)
 
     def spy_summarize(*a, **k):
         record["library_ident"] = threading.get_ident()
         return real_summarize(*a, **k)
 
-    def spy_toggle(items, total=None, editor=None):
-        record["apply_ident"] = threading.get_ident()
-        record["apply_total"] = total
-        return {"action": "show", "shown": len(list(items)), "total": total}
+    def spy_toggle(entries, total=None, editor=None, cleanup=None):
+        record["draw_ident"] = threading.get_ident()
+        record["draw_total"] = total
+        return {"action": "show", "shown": len(list(entries)), "total": total}
 
-    monkeypatch.setitem(sys.modules, "hou",
-                        SimpleNamespace(node=lambda p: SimpleNamespace(path=lambda: p)))
+    monkeypatch.setitem(sys.modules, "hou", SimpleNamespace(node=_fake_node))
     monkeypatch.setattr(fmod, "read_selection_facts",
                         lambda paths: _facts_stub(paths, record))
-    monkeypatch.setattr(cmod, "compose", spy_compose)
+    monkeypatch.setattr(bmod, "bubble_model", spy_model)
     monkeypatch.setattr(lmod, "summarize", spy_summarize)
-    monkeypatch.setattr(amod, "toggle", spy_toggle)
+    monkeypatch.setattr(omod, "toggle", spy_toggle)
 
     fake = _panel(
         _identify_selection_paths=lambda: ["/obj/geo1"],
         _identify_launch=fake_launch,
         _identify_run_on_main=fake_run_on_main,
+        _identify_find_editor=lambda network: None,
         _chat=_Chat(),
     )
     SynapsePanel._run_identify(fake, "toggle")
 
-    # The live facts read and the comment/flag write are marshalled ONTO main.
+    # The live facts read and the overlay draw are marshalled ONTO main.
     assert record["facts_ident"] == main_ident
-    assert record["apply_ident"] == main_ident
-    # Library lookup and composition run OFF main (on the worker thread).
-    assert record["compose_ident"] != main_ident
+    assert record["draw_ident"] == main_ident
+    # Library lookup and the bubble model run OFF main (on the worker thread).
+    assert record["model_ident"] != main_ident
     assert record["library_ident"] != main_ident
-    assert record["apply_total"] == 1
+    assert record["draw_total"] == 1
 
 
 # --------------------------------------------------------------------------- #
@@ -283,11 +289,11 @@ def test_inspector_identify_column_degrades_honestly_without_facts():
 # lookup is memoized per type, and the flash still reports the full count.
 # --------------------------------------------------------------------------- #
 
-def test_worker_caps_before_facts_memoizes_lookup_and_flashes_full_total(monkeypatch):
-    from synapse.identify import apply as amod
-    from synapse.identify import compose as cmod
+def test_worker_caps_before_facts_memoizes_lookup_and_reports_the_full_total(monkeypatch):
+    from synapse.identify import bubble as bmod
     from synapse.identify import facts as fmod
     from synapse.identify import library as lmod
+    from synapse.identify import overlay as omod
     from synapse.cognitive.tools import sidefx_library as SL
 
     N, TYPES = 200, 5
@@ -305,7 +311,7 @@ def test_worker_caps_before_facts_memoizes_lookup_and_flashes_full_total(monkeyp
 
     def facts_stub(sel):
         # The worker must pass the CAPPED path list here, not all 200.
-        assert len(sel) <= amod.CAP
+        assert len(sel) <= bmod.CAP
         return [{
             "path": p, "help_url": help_url[p], "hda_help": None,
             "type_name": "t", "type_label": "T", "category": "Sop",
@@ -314,36 +320,79 @@ def test_worker_caps_before_facts_memoizes_lookup_and_flashes_full_total(monkeyp
 
     monkeypatch.setattr(fmod, "read_selection_facts", facts_stub)
 
-    composed = []
-    real_compose = cmod.compose
+    modelled = []
+    real_model = bmod.bubble_model
 
-    def spy_compose(f, *a, **k):
-        composed.append(f.get("path"))
-        return real_compose(f, *a, **k)
+    def spy_model(f, *a, **k):
+        modelled.append(f.get("path"))
+        return real_model(f, *a, **k)
 
-    monkeypatch.setattr(cmod, "compose", spy_compose)
+    monkeypatch.setattr(bmod, "bubble_model", spy_model)
 
     seen: dict = {}
 
-    def spy_toggle(items, total=None, editor=None):
-        items = list(items)
-        seen["total"], seen["items"] = total, len(items)
-        return {"action": "show", "shown": len(items), "total": total}
+    def spy_toggle(entries, total=None, editor=None, cleanup=None):
+        entries = list(entries)
+        seen["total"], seen["items"] = total, len(entries)
+        seen["summaries"] = {model["summary"] for _key, model in entries}
+        return {"action": "show", "shown": len(entries), "total": total}
 
-    monkeypatch.setattr(amod, "toggle", spy_toggle)
-    monkeypatch.setitem(sys.modules, "hou",
-                        SimpleNamespace(node=lambda p: SimpleNamespace(path=lambda: p)))
+    monkeypatch.setattr(omod, "toggle", spy_toggle)
+    monkeypatch.setitem(sys.modules, "hou", SimpleNamespace(node=_fake_node))
 
     fake = _panel(
         _identify_selection_paths=lambda: paths,
         _identify_launch=lambda fn: fn(),
         _identify_run_on_main=lambda fn: fn(),
+        _identify_find_editor=lambda network: None,
         _chat=_Chat(),
     )
     SynapsePanel._run_identify(fake, "toggle")
 
     assert len(lookups) <= TYPES          # memo: <= 5 library lookups for 5 types
-    assert len(composed) <= amod.CAP      # compose runs at most CAP times
-    assert seen["items"] <= amod.CAP      # the writer receives at most CAP items
-    assert seen["total"] == N             # the flash reports the full selection
+    assert len(modelled) <= bmod.CAP      # bubbles are built at most CAP times
+    assert seen["items"] <= bmod.CAP      # the overlay receives at most CAP entries
+    assert seen["total"] == N             # the chip reports the full selection
+    assert seen["summaries"] == {"Does a thing."}
     lmod._SUMMARY_CACHE.clear()
+
+
+# --------------------------------------------------------------------------- #
+# BP12 item 2: /identify off clears on main; a missing editor is said in chat.
+# --------------------------------------------------------------------------- #
+
+def test_identify_off_clears_the_overlay_on_the_main_thread(monkeypatch):
+    from synapse.identify import overlay as omod
+
+    marshalled = []
+
+    def spy_clear():
+        return {"action": "clear", "removed": 3}
+
+    def run_on_main(fn):
+        marshalled.append(fn)
+        return fn()
+
+    monkeypatch.setattr(omod, "clear", spy_clear)
+    fake = _panel(_identify_run_on_main=run_on_main, _chat=_Chat())
+    result = SynapsePanel._identify_worker(fake, ["/obj/geo1"], "clear")
+    assert result == {"action": "clear", "removed": 3}
+    assert marshalled == [spy_clear]
+
+
+def test_no_network_editor_is_said_in_the_chat(monkeypatch):
+    from synapse.identify import facts as fmod
+    from synapse.identify import overlay as omod
+
+    monkeypatch.setattr(fmod, "read_selection_facts", lambda paths: _facts_stub(paths, {}))
+    monkeypatch.setitem(sys.modules, "hou", SimpleNamespace(node=_fake_node))
+    monkeypatch.setattr(omod, "_OVERLAY", None)
+    fake = _panel(
+        _identify_selection_paths=lambda: ["/obj/geo1"],
+        _identify_launch=lambda fn: fn(),
+        _identify_run_on_main=lambda fn: fn(),
+        _identify_find_editor=lambda network: None,
+        _chat=_Chat(),
+    )
+    SynapsePanel._run_identify(fake, "toggle")
+    assert fake._chat.messages == [omod.NO_EDITOR]

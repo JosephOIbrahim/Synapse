@@ -197,9 +197,9 @@ _QUICK_ACTIONS = [
 # server.main_thread.run_on_main.
 
 #: The action tooltip while a selection exists — no model call, no tokens.
-_IDENTIFY_TOOLTIP = ("Draw a short bubble under each selected node from exact "
-                     "local sources — no model call, no tokens. Click again "
-                     "(or /identify off) to clear.")
+_IDENTIFY_TOOLTIP = ("Show a short bubble beside each selected node from exact "
+                     "local sources — no model call, no tokens, nothing written "
+                     "to the scene. Click again (or /identify off) to clear.")
 #: The reason the button is disabled with nothing selected (never a dead
 #: control with no reason).
 _IDENTIFY_NO_SELECTION = ("Select one or more nodes in the network editor, then "
@@ -216,21 +216,31 @@ def _identify_launch_default(fn):
 
 def _identify_run_on_main_default(fn):
     """Marshal *fn* onto Houdini's main thread. The live facts read and the
-    comment/flag write are the only Identify steps that touch ``hou``."""
+    overlay draw are the only Identify steps that touch ``hou`` or Qt."""
     from synapse.server.main_thread import run_on_main
     return run_on_main(fn)
 
 
-def _identify_network_editor():
-    """The current network editor pane tab, for the flash line; None headless.
+def _identify_network_editor(network_path=None):
+    """The network editor Identify draws its bubbles on; None without a UI.
 
-    Best-effort and fully guarded — apply.show swallows a failed flash, so a
-    missing editor degrades to no banner, never a crash."""
+    Prefers an editor on its visible tab that already shows *network_path*
+    (the selected nodes' network), then any editor showing it, then the first
+    network editor. hython and tests have no UI, and the caller says so."""
     try:
         import hou
-        return hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
-    except Exception:
+    except ImportError:
         return None
+    if not hou.isUIAvailable():
+        return None
+    editors = [tab for tab in hou.ui.paneTabs()
+               if tab.type() == hou.paneTabType.NetworkEditor]
+    if network_path:
+        showing = [tab for tab in editors if tab.pwd().path() == network_path]
+        current = [tab for tab in showing if tab.isCurrentTab()]
+        if current or showing:
+            return (current or showing)[0]
+    return editors[0] if editors else None
 
 
 class _GrowingInput(QtWidgets.QTextEdit):
@@ -3327,6 +3337,14 @@ class SynapsePanel(QtWidgets.QWidget):
             btn.setEnabled(False)
             btn.setToolTip(_IDENTIFY_NO_SELECTION)
 
+    def _identify_say(self, text):
+        """Post an Identify notice in the chat; a panel without a chat skips it."""
+        chat = getattr(self, "_chat", None)
+        if chat is None:
+            logger.debug("Identify: no chat to show %r", text)
+            return
+        chat.append_system_message(text)
+
     def _on_identify(self):
         """Action-row click: toggle bubbles for the current selection."""
         self._run_identify("toggle")
@@ -3341,55 +3359,68 @@ class SynapsePanel(QtWidgets.QWidget):
         """
         paths = self._identify_selection_paths()
         if not paths:
-            try:
-                self._chat.append_system_message(_IDENTIFY_NO_SELECTION)
-            except Exception:
-                pass
+            self._identify_say(_IDENTIFY_NO_SELECTION)
             return
         launch = getattr(self, "_identify_launch", None) or _identify_launch_default
         launch(lambda: self._identify_worker(paths, mode))
 
     def _identify_worker(self, paths, mode):
-        """Worker body: read facts on main, compose off main, write on main."""
+        """Worker body: read facts on main, build bubbles off main, draw on main.
+
+        The bubbles are an overlay on the network editor (``identify.overlay``),
+        so nothing is written to the scene. The one exception is the legacy
+        cleanup (``identify.apply``): a selected node that still carries a
+        comment block from an older Identify has it removed, in one undo group.
+        """
         from synapse.identify import apply as _apply
-        from synapse.identify import compose as _compose
+        from synapse.identify import bubble as _bubble
         from synapse.identify import facts as _facts
         from synapse.identify import library as _library
+        from synapse.identify import overlay as _overlay
         run_on_main = (getattr(self, "_identify_run_on_main", None)
                        or _identify_run_on_main_default)
-        # Cap BEFORE reading facts and composing: show() keeps only CAP bubbles,
-        # so reading facts and composing a full 200-node selection is wasted work
-        # (sec. 5). The flash still reports the full selection count as total.
+        find_editor = (getattr(self, "_identify_find_editor", None)
+                       or _identify_network_editor)
+        if mode == "clear":
+            return run_on_main(_overlay.clear)
+        # Cap BEFORE reading facts: the overlay draws at most CAP bubbles, so
+        # reading a full 200-node selection is wasted work (sec. 5). The chip
+        # still reports the full selection count as the total.
         total = len(paths)
-        capped_paths = paths[:_apply.CAP]
+        capped_paths = paths[:_bubble.CAP]
         # 1) main thread: read live facts once (reuses inspect_selection).
         facts_list = run_on_main(lambda: _facts.read_selection_facts(capped_paths)) or []
-        # 2) worker thread: library lookup + composition (no hou, no Qt).
-        composed = []
+        # 2) worker thread: library lookup and the bubble model (no hou, no Qt).
+        #    summarize() already turns a failed lookup into the honest unknown,
+        #    so nothing here swallows an error.
+        prepared = []
         for node_facts in facts_list:
-            try:
-                summary, source = _library.summarize(
-                    node_facts.get("help_url"), node_facts.get("hda_help"))
-                node_facts["summary"], node_facts["summary_source"] = summary, source
-            except Exception:
-                pass
-            try:
-                composed.append((node_facts.get("path"), _compose.compose(node_facts)))
-            except Exception:
-                continue
-        # 3) main thread: the only writer — comments + flags in one hold.
-        def _write():
+            summary, source = _library.summarize(
+                node_facts.get("help_url"), node_facts.get("hda_help"))
+            node_facts["summary"], node_facts["summary_source"] = summary, source
+            prepared.append((node_facts.get("path"),
+                             _bubble.bubble_model(node_facts),
+                             _bubble.legacy_what_lines(node_facts)))
+
+        # 3) main thread: remove any old comment block, then draw the overlay.
+        def _draw():
             import hou
-            editor = _identify_network_editor()
-            items = []
-            for path, lines in composed:
+            entries, legacy = [], []
+            for path, model, what_lines in prepared:
                 node = hou.node(path) if path else None
                 if node is not None:
-                    items.append((node, lines))
-            if mode == "clear":
-                return _apply.clear([node for node, _ in items], editor=editor)
-            return _apply.toggle(items, total=total, editor=editor)
-        return run_on_main(_write)
+                    entries.append((node.sessionId(), model))
+                    legacy.append((node, what_lines))
+            parent = legacy[0][0].parent() if legacy else None
+            editor = find_editor(parent.path() if parent is not None else None)
+            return _overlay.toggle(entries, total=total, editor=editor,
+                                   cleanup=lambda: _apply.clean_legacy(legacy))
+
+        result = run_on_main(_draw)
+        reason = result.get("reason") if isinstance(result, dict) else None
+        if reason:
+            run_on_main(lambda: self._identify_say(reason))
+        return result
 
     def _open_selection_inspector(self):
         from .selection_inspector import SelectionInspectorDialog

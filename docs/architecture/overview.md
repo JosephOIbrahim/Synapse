@@ -127,13 +127,13 @@ Select nodes in a network editor, then click **Identify** or send `/identify`. T
 
 ```mermaid
 flowchart LR
-    accTitle: Identify writes a short local note under each selected node
-    accDescr: The panel reads facts for up to 60 selected nodes on Houdini's main thread. A worker thread looks up each node type once in the local SideFX library and composes up to three lines without a model. The main thread writes every note as a node comment inside one undo group. Before a save the notes are removed from the file, and after the save they are restored.
+    accTitle: Identify draws a short local bubble beside each selected node
+    accDescr: The panel reads facts for up to 60 selected nodes on Houdini's main thread. A worker thread looks up each node type once in the local SideFX library and builds each bubble without a model. The main thread draws the bubbles in a click-through overlay above the network editor, which follows pan and zoom. Nothing is written to the scene.
     S["Selected nodes<br/>(up to 60)"] --> F["Read node facts<br/>on the main thread"]
     F --> L["Look up each type once<br/>in the local library"]
-    L --> C["Compose up to 3 lines<br/>without a model"]
-    C --> W["Write comments<br/>in one undo group"]
-    W --> V["Save: strip before,<br/>restore after"]
+    L --> C["Build each bubble<br/>without a model"]
+    C --> W["Draw an overlay<br/>above the editor"]
+    W --> V["Follow pan and zoom,<br/>scene untouched"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
@@ -142,9 +142,9 @@ flowchart LR
     linkStyle default stroke:#D07020
 ```
 
-The summary comes from the node's exact help page, never from a search result. A node the library does not cover says **not in library**. Each note sits below a `~ identify ~` line, so an artist's comment text above it is kept. The Selection Inspector shows the same text in a read-only column.
+The summary comes from the node's exact help page, never from a search result. A node the library does not cover says so. The overlay is its own see-through window above the editor, because Houdini draws the editor in one OpenGL surface; clicks and scrolls pass through it. Older versions wrote the note into the node comment below a `~ identify ~` line. When Identify finds such a block on a selected node it removes it in one undo group, and only when the block has the exact shape Identify wrote, so artist text is kept. The Selection Inspector shows the same text in a read-only column.
 
-Sources: [writer](../../python/synapse/identify/apply.py), [composer](../../python/synapse/identify/compose.py), [node facts](../../python/synapse/identify/facts.py), [library lookup](../../python/synapse/identify/library.py), [panel](../../python/synapse/panel/synapse_panel.py). Limits: [v5.85.0 release notes](../releases/v5.85.0.md#validation-and-limits).
+Sources: [overlay](../../python/synapse/identify/overlay.py), [bubble](../../python/synapse/identify/bubble.py), [placement](../../python/synapse/identify/layout.py), [old-note cleanup](../../python/synapse/identify/apply.py), [composer](../../python/synapse/identify/compose.py), [node facts](../../python/synapse/identify/facts.py), [library lookup](../../python/synapse/identify/library.py), [panel](../../python/synapse/panel/synapse_panel.py). Limits: [v5.85.0 release notes](../releases/v5.85.0.md#validation-and-limits).
 
 ## World Labs import
 
