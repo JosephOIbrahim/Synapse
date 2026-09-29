@@ -9,25 +9,26 @@ careful. A stale version string is worse: the download button 404s.
 What this proves, and what it does not
 --------------------------------------
 It proves the SOURCE declares what this file checks: every diagram node resolves
-to the dark-grey fill and white ink, every release-tagged version string on the
-page matches VERSION, and the tool count matches the module the page itself names
-as its producer.
+to the two-orange palette (light #F6B26B or deep #D07020 fill, #000000 ink, #D07020
+stroke, edges pinned by ``linkStyle default``), the page's current-release pointers
+name VERSION, every release page it links exists, and the tool count matches the
+module the page itself names as its producer.
 
 It does NOT prove GitHub's renderer emits those colours. No browser was invoked.
 An unrendered claim is UNKNOWN, not verified (AGENTS.md Law 4) - so this receipt
 is labelled a source-resolution check, and the render itself remains unmeasured.
 
 Two limits of the styling, stated rather than omitted:
-  * ``classDef`` styles NODES. Edge lines and edge labels inherit the host theme,
-    deliberately - pinning them white would make them invisible on GitHub's light
-    background. Edge labels are therefore host-coloured in both themes.
-  * The two subgraph containers in the developer diagram are NOT styled. Their
-    frames and titles inherit the host theme, which keeps their titles legible on
-    either background; forcing a dark fill there risks a dark title on dark fill.
+  * ``classDef`` styles NODES. Edge LINES are pinned by ``linkStyle default`` and this
+    file checks that line; edge LABELS are not styled by it and inherit the host theme.
+  * A node with no class resolves through ``classDef default``, which is Mermaid's own
+    rule; a block with no ``classDef default`` and an unclassed node fails.
 
 An instrument that has not been shown to disagree is not evidence (AGENTS.md
-Law 1), so this runs two negative controls - a block with no styling, and a block
-styled white-on-white - and fails if the resolver calls either of them good.
+Law 1), so this runs negative controls - a block with no styling, one styled
+white-on-white, the retired grey palette, an off-palette default, and one without
+``linkStyle`` - plus a positive control that must pass, and fails if the resolver
+gets any of them wrong.
 
 Why it reads TOOL_DEFS by import rather than by parse: the page names
 ``python/synapse/mcp/_tool_registry.py`` as the producer of the count. Importing
@@ -48,6 +49,14 @@ corpus count really is still 603. Drift, not fabrication.
 
 So: one live channel, no numbers on it, no colour check at all, and nothing in the
 tree invoked it. Not "a check that could not fail" - half a check that could.
+
+Second revision (BP12 item 17): the README moved from dark grey to the two-orange
+palette and this file kept asserting the retired grey and a version rule that every
+release-tagged string equals VERSION, so it failed on the tree it guards while nothing
+ran it. The version rule is now: VERSION is named, nothing named is newer, every linked
+release page exists, and the three current-release pointers equal VERSION (older tags
+such as the installer's v5.75.2 are history, not pointers). tests/test_readme_receipt.py
+runs it in the normal suite and mutates the README to prove it fails.
 """
 from __future__ import annotations
 
@@ -58,8 +67,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 # The declared styling. One place, so the check and the expectation cannot drift.
-WANT_FILL = "#333333"
-WANT_INK = "#FFFFFF"
+WANT_FILLS = ("#F6B26B", "#D07020")   # light "artist" fill, deep "synapse" fill
+WANT_INK = "#000000"
+WANT_STROKE = "#D07020"
+WANT_LINK = "linkStyle default stroke:#D07020"
 
 NODE_REF = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*(?=[\[\{\(])")
 CLASS_DEF = re.compile(r"^classDef\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.*)$")
@@ -119,7 +130,7 @@ def node_ids(block: str) -> list[str]:
         line = raw.strip()
         if not line or line.startswith("%%") or line.startswith("classDef"):
             continue
-        if line.startswith("class ") or line == "end":
+        if line.startswith(("class ", "style ", "linkStyle", "accTitle", "accDescr")) or line == "end":
             continue
         # The subgraph id and its title are not nodes; its interior lines still are.
         if line.startswith("subgraph"):
@@ -139,6 +150,8 @@ def resolve(block: str) -> list[tuple[str, str | None, str | None, str | None]]:
     out = []
     for node in node_ids(block):
         cls = assigned.get(node)
+        if cls is None and "default" in defs:
+            cls = "default"          # Mermaid gives every unassigned node the default class
         attrs = defs.get(cls, {}) if cls else {}
         out.append((node, cls, attrs.get("fill"), attrs.get("color")))
     return out
@@ -175,14 +188,22 @@ def check_block(rd: Verdict, index: int, block: str) -> int:
         f"block {index}: {len(unstyled)} node(s) carry no class and would render in the host "
         f"theme: {', '.join(unstyled)}",
     )
+    defs, _ = parse_styles(block)
     for node, cls, fill, ink in resolved:
         if cls is None:
             continue
-        if fill != WANT_FILL or ink != WANT_INK:
+        stroke = defs.get(cls, {}).get("stroke")
+        if ((fill or "").upper() not in WANT_FILLS or (ink or "").upper() != WANT_INK
+                or (stroke or "").upper() != WANT_STROKE):
             rd.fail(
-                f"block {index}: node {node} resolves via class {cls!r} to fill={fill} ink={ink}, "
-                f"expected fill={WANT_FILL} ink={WANT_INK}"
+                f"block {index}: node {node} resolves via class {cls!r} to fill={fill} "
+                f"ink={ink} stroke={stroke}, expected fill in {'/'.join(WANT_FILLS)} "
+                f"ink={WANT_INK} stroke={WANT_STROKE}"
             )
+    rd.check(
+        any(l.strip() == WANT_LINK for l in lines),
+        f"block {index}: no '{WANT_LINK}' line, so edges would render in the host theme",
+    )
     return len(resolved)
 
 
@@ -197,10 +218,35 @@ WRONG_INK_CONTROL = """flowchart LR
     class A,B dark
 """
 
+_LINK = "    linkStyle default stroke:#D07020\n"
+GREY_CONTROL = ("flowchart LR\n    A[\"one\"] --> B[\"two\"]\n"
+                "    classDef default fill:#333333,stroke:#333333,color:#FFFFFF\n" + _LINK)
+OFF_DEFAULT_CONTROL = ("flowchart LR\n    A[\"one\"] --> B[\"two\"]\n"
+                       "    classDef default fill:#FF0000,stroke:#D07020,color:#000000\n" + _LINK)
+NO_LINK_CONTROL = ("flowchart LR\n    A[\"one\"] --> B[\"two\"]\n"
+                   "    classDef default fill:#F6B26B,stroke:#D07020,color:#000000\n")
+GOOD_CONTROL = ("flowchart LR\n    A[\"one\"] --> B[\"two\"]\n"
+                "    classDef default fill:#F6B26B,stroke:#D07020,color:#000000\n"
+                "    classDef synapse fill:#D07020,stroke:#D07020,color:#000000\n"
+                "    class B synapse\n" + _LINK)
+
+BAD_CONTROLS = (
+    ("unstyled", UNSTYLED_CONTROL),
+    ("white-on-white", WRONG_INK_CONTROL),
+    ("retired grey palette", GREY_CONTROL),
+    ("off-palette default", OFF_DEFAULT_CONTROL),
+    ("no linkStyle", NO_LINK_CONTROL),
+)
+
 
 def run_controls(rd: Verdict) -> None:
     """Show the resolver can disagree. A resolver that passes these proves nothing."""
-    for label, block in (("unstyled", UNSTYLED_CONTROL), ("white-on-white", WRONG_INK_CONTROL)):
+    good = Verdict()
+    check_block(good, 0, GOOD_CONTROL)
+    if good.failures:
+        rd.fail("POSITIVE CONTROL FAILED: the resolver rejected a block that follows the palette "
+                f"({good.failures[0]}), so its verdict on the real README means nothing")
+    for label, block in BAD_CONTROLS:
         probe = Verdict()
         check_block(probe, 0, block)
         if not probe.failures:
@@ -211,8 +257,15 @@ def run_controls(rd: Verdict) -> None:
 
 
 # ---------------------------------------------------------------- the page's numbers
-def check_numbers(rd: Verdict, readme: str) -> None:
-    version = (ROOT / "VERSION").read_text(encoding="utf-8-sig").strip()
+def _vtuple(v: str) -> tuple[int, ...]:
+    return tuple(int(p) for p in v.split("."))
+
+
+def check_numbers(rd: Verdict, readme: str, version: str | None = None,
+                  root: Path | None = None) -> None:
+    root = root or ROOT
+    if version is None:
+        version = (root / "VERSION").read_text(encoding="utf-8-sig").strip()
 
     # Version: every RELEASE-TAGGED reference (the ``v`` prefix) must be this repo's
     # version. A bare ``5.43.0`` in "shipped since 5.43.0" is a historical fact, not a
@@ -220,12 +273,26 @@ def check_numbers(rd: Verdict, readme: str) -> None:
     tagged = sorted(set(re.findall(r"v(\d+\.\d+\.\d+)", readme)))
     bare = sorted(set(re.findall(r"(?<![\dv])(\d+\.\d+\.\d+)", readme)) - set(tagged))
     print(f"    version            VERSION={version}")
-    print(f"      release-tagged   {', '.join('v' + t for t in tagged) or '(none)'}")
+    print(f"      release-tagged   {', '.join('v' + t for t in tagged) or '(none)'}   "
+          "(older tags are history if their page exists)")
     print(f"      not release-tagged (not checked, historical): {', '.join(bare) or '(none)'}")
     if not rd.check(bool(tagged), "README carries no release-tagged version at all"):
         return
-    stale = [t for t in tagged if t != version]
-    rd.check(not stale, f"README names {'v' + ', v'.join(stale)}, but VERSION is {version}")
+    # Older tags (the installer's v5.75.2, Identify's v5.85.0) are history. The rule is that
+    # VERSION is named, nothing named is newer, every linked release page exists, and the
+    # three current-release pointers equal VERSION.
+    rd.check(version in tagged, f"README never names v{version}, the current VERSION")
+    newer = [t for t in tagged if _vtuple(t) > _vtuple(version)]
+    rd.check(not newer, f"README names {'v' + ', v'.join(newer)}, newer than VERSION {version}")
+    linked = sorted(set(re.findall(r"docs/releases/(v\d+\.\d+\.\d+\.md)", readme)))
+    missing = [n for n in linked if not (root / "docs" / "releases" / n).is_file()]
+    rd.check(not missing, f"README links release page(s) that do not exist: {', '.join(missing)}")
+    for label in ("What's new", "Latest release notes", "release's evidence"):
+        m = re.search(r"\[" + re.escape(label) + r"\]\(docs/releases/v(\d+\.\d+\.\d+)\.md\)", readme)
+        if not rd.check(bool(m), f"README has no [{label}](docs/releases/v...md) pointer"):
+            continue
+        rd.check(m.group(1) == version,
+                 f"[{label}] points at v{m.group(1)}, but VERSION is {version}")
 
     # Tool count: the page names its own producer, so read that producer.
     claimed = re.search(r"\*\*(\d+)\s+tools", readme)
@@ -251,8 +318,12 @@ def check_numbers(rd: Verdict, readme: str) -> None:
 
 
 def main() -> int:
-    rd = Verdict()
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    return report(run_checks(readme))
+
+
+def run_checks(readme: str, version: str | None = None, root: Path | None = None) -> Verdict:
+    rd = Verdict()
     blocks = re.findall(r"```mermaid\n(.*?)```", readme, re.DOTALL)
 
     print("  mermaid blocks:", len(blocks))
@@ -265,19 +336,23 @@ def main() -> int:
         total += check_block(rd, i, block)
         head = block.strip().split("\n")[0].strip()
         print(f"  {i}. {head:<12} {len(resolved):2d} nodes   styled {styled}/{len(resolved)}   "
-              f"fill={WANT_FILL} ink={WANT_INK}")
+              f"palette={'/'.join(WANT_FILLS)} ink={WANT_INK}")
     print(f"     {total} nodes across {len(blocks)} block(s), all resolved by source")
 
     print()
     print("  ASSERTED vs ACTUAL   (these gate - a mismatch fails this receipt)")
-    check_numbers(rd, readme)
+    check_numbers(rd, readme, version, root)
 
     print()
     print("  NEGATIVE CONTROLS    (a resolver that cannot fail is not evidence)")
     run_controls(rd)
-    print("    unstyled block        reported as failing: yes")
-    print("    white-on-white block  reported as failing: yes")
+    for label, _ in BAD_CONTROLS:
+        print(f"    {label:<22} reported as failing: yes")
+    print("    palette-following      reported as passing: yes")
+    return rd
 
+
+def report(rd: Verdict) -> int:
     print()
     if rd.failures:
         for why in rd.failures:
@@ -285,8 +360,9 @@ def main() -> int:
         print()
         print(f"RESULT: FAIL - {len(rd.failures)} check(s) did not hold")
         return 1
-    print("RESULT: PASS - source declares dark-grey fill and white ink on every node,")
-    print("        version strings and the tool count match their producers.")
+    print("RESULT: PASS - source declares the two-orange palette on every node and edge,")
+    print("        the current-release pointers name VERSION, every linked release page")
+    print("        exists, and the tool count matches its producer.")
     print("        NOT PROVEN: that GitHub renders those colours. No renderer was invoked.")
     return 0
 
