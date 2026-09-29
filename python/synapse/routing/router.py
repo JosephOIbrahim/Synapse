@@ -244,7 +244,7 @@ class TieredRouter:
         Returns:
             RoutingResult with the tier that handled the request.
         """
-        start = time.monotonic()
+        start = time.perf_counter()
         context = context or {}
         context_hash = self._hash_context(context)
 
@@ -264,7 +264,7 @@ class TieredRouter:
                     tier=RoutingTier.INSTANT,
                     answer=reply,
                     confidence=1.0,
-                    latency_ms=(time.monotonic() - start) * 1000,
+                    latency_ms=(time.perf_counter() - start) * 1000,
                     metadata={"conversational": True},
                 )
 
@@ -303,7 +303,7 @@ class TieredRouter:
                         commands=cached.commands,
                         responses=cached.responses,
                         confidence=cached.confidence,
-                        latency_ms=(time.monotonic() - start) * 1000,
+                        latency_ms=(time.perf_counter() - start) * 1000,
                         cached=True,
                         metadata={"original_tier": cached.tier.value},
                     )
@@ -393,7 +393,7 @@ class TieredRouter:
             success=False,
             tier=RoutingTier.DEEP,
             answer="I couldn't understand that request. Could you rephrase?",
-            latency_ms=(time.monotonic() - start) * 1000,
+            latency_ms=(time.perf_counter() - start) * 1000,
             metadata={"reason": "no_tier_matched"},
         )
         # A genuine routing failure. Recorded under NO_TIER_KEY rather than
@@ -463,7 +463,7 @@ class TieredRouter:
             commands=commands,
             responses=responses,
             confidence=0.95,
-            latency_ms=(time.monotonic() - start) * 1000,
+            latency_ms=(time.perf_counter() - start) * 1000,
             metadata={
                 "recipe": recipe.name,
                 "params": params,
@@ -529,7 +529,7 @@ class TieredRouter:
             commands=plan.steps,
             responses=responses,
             confidence=0.9,
-            latency_ms=(time.monotonic() - start) * 1000,
+            latency_ms=(time.perf_counter() - start) * 1000,
             metadata={
                 "planned": True,
                 "workflow": plan.name,
@@ -578,7 +578,7 @@ class TieredRouter:
             commands=[parse.command] if parse.command else [],
             responses=responses,
             confidence=parse.confidence,
-            latency_ms=(time.monotonic() - start) * 1000,
+            latency_ms=(time.perf_counter() - start) * 1000,
             metadata={
                 "pattern": parse.pattern_name,
                 "extracted": parse.extracted,
@@ -619,7 +619,7 @@ class TieredRouter:
             tier=RoutingTier.FAST,
             answer=lookup.answer,
             confidence=lookup.confidence,
-            latency_ms=(time.monotonic() - start) * 1000,
+            latency_ms=(time.perf_counter() - start) * 1000,
             metadata={
                 "topic": lookup.topic,
                 "sources": lookup.sources,
@@ -714,7 +714,7 @@ class TieredRouter:
             try:
                 response = _future.result(timeout=_t2)
             except _FutureTimeout:
-                latency_ms = (time.monotonic() - start) * 1000
+                latency_ms = (time.perf_counter() - start) * 1000
                 self._record_metric(RoutingTier.STANDARD, latency_ms, False)
                 logger.warning("Tier 2 timed out after %.1fs", _t2)
                 # Well-formed failure the cascade can act on: carries an answer
@@ -779,7 +779,7 @@ class TieredRouter:
                 commands=commands,
                 responses=responses,
                 confidence=parsed.get("confidence", 0.7),
-                latency_ms=(time.monotonic() - start) * 1000,
+                latency_ms=(time.perf_counter() - start) * 1000,
                 metadata=tier2_meta,
             )
 
@@ -844,7 +844,7 @@ class TieredRouter:
                 tier=RoutingTier.DEEP,
                 answer="Processing in background...",
                 confidence=0.5,
-                latency_ms=(time.monotonic() - start) * 1000,
+                latency_ms=(time.perf_counter() - start) * 1000,
                 async_handle=handle,
                 metadata={"async": True},
             )
@@ -877,14 +877,14 @@ class TieredRouter:
         Both failure paths also STORE a result, so a poller gets a verdict
         instead of a handle that never resolves.
         """
-        start = time.monotonic()
+        start = time.perf_counter()
         try:
             result = self._tier3_sync(text, context, context_hash, start, tier1_hint)
             if result:
                 with self._async_lock:
                     self._async_results[handle] = result
             else:
-                latency_ms = (time.monotonic() - start) * 1000
+                latency_ms = (time.perf_counter() - start) * 1000
                 failure = RoutingResult(
                     success=False,
                     tier=RoutingTier.DEEP,
@@ -897,7 +897,7 @@ class TieredRouter:
                 self._record_metric(RoutingTier.DEEP, latency_ms, failure.success)
         except Exception as e:
             logger.error("Tier 3 worker failed: %s", e)
-            latency_ms = (time.monotonic() - start) * 1000
+            latency_ms = (time.perf_counter() - start) * 1000
             failure = RoutingResult(
                 success=False,
                 tier=RoutingTier.DEEP,
@@ -952,7 +952,7 @@ class TieredRouter:
                 # the ModelAccessDenied path below: in async mode _tier3_worker
                 # sees a truthy result and does NOT re-record (no double count);
                 # in sync mode route() returns this result directly.
-                latency_ms = (time.monotonic() - start) * 1000
+                latency_ms = (time.perf_counter() - start) * 1000
                 self._record_metric(RoutingTier.DEEP, latency_ms, False)
                 logger.warning("Tier 3 timed out after %.1fs", _t3)
                 return RoutingResult(
@@ -981,7 +981,7 @@ class TieredRouter:
                 tier=RoutingTier.DEEP,
                 answer=parsed.get("answer", raw_text),
                 confidence=parsed.get("confidence", 0.6),
-                latency_ms=(time.monotonic() - start) * 1000,
+                latency_ms=(time.perf_counter() - start) * 1000,
                 metadata={
                     "model": self._config.llm_model_deep,
                     "model_request": sdk_receipt(client),
@@ -998,7 +998,7 @@ class TieredRouter:
         except ModelAccessDenied as exc:
             result = RoutingResult(success=False, tier=RoutingTier.DEEP, answer=str(exc),
                                    metadata={"model_access": "blocked"})
-            self._record_metric(RoutingTier.DEEP, (time.monotonic() - start) * 1000, False)
+            self._record_metric(RoutingTier.DEEP, (time.perf_counter() - start) * 1000, False)
             return result
         except Exception as e:
             logger.warning("Tier 3 sync failed: %s", e)

@@ -112,20 +112,29 @@ class TestSessionManager:
     def test_get_by_client_not_found(self):
         assert self.mgr.get_by_client("unknown") is None
 
-    @pytest.mark.xfail(
-        condition=sys.platform == "win32" and sys.version_info < (3, 13),
-        reason="Windows time.time() ticks every ~15.6ms before Python 3.13, so touch() "
-               "within the same tick leaves last_active unchanged and the `>` assert "
-               "fails; Python 3.13+ uses the high-resolution clock. BP12 fixes the root "
-               "cause (monotonic timing for session activity).",
-        strict=False,
-    )
     def test_touch_updates_last_active(self):
         s = self.mgr.create_session("alice", Role.ARTIST, "client_001")
         old_active = s.last_active
         time.sleep(0.01)
         self.mgr.touch(s.session_id)
         assert s.last_active > old_active
+
+    def test_activity_reads_the_high_resolution_clock(self, monkeypatch):
+        """Session activity reads ``time.perf_counter`` (BP12 item 5).
+
+        ``time.monotonic`` ticks every 15.6 ms on Windows before Python 3.13, so a
+        touch() or an expiry inside one tick went unseen. The fake clock below makes
+        a revert to ``monotonic`` fail on any platform.
+        """
+        from types import SimpleNamespace
+        ticks = iter([100.0, 100.5, 101.0])
+        monkeypatch.setattr(sess_mod, "time", SimpleNamespace(
+            perf_counter=lambda: next(ticks), monotonic=lambda: 0.0))
+        s = self.mgr.create_session("alice", Role.ARTIST, "client_001")
+        assert s.last_active == 100.0
+        self.mgr.touch(s.session_id)
+        assert s.last_active == 100.5
+        assert self.mgr.expire_stale(max_idle=0.25) == 1
 
     def test_remove_session(self):
         s = self.mgr.create_session("alice", Role.ARTIST, "client_001")
@@ -142,14 +151,6 @@ class TestSessionManager:
     def test_remove_by_client_not_found(self):
         assert self.mgr.remove_by_client("unknown") is None
 
-    @pytest.mark.xfail(
-        condition=sys.platform == "win32" and sys.version_info < (3, 13),
-        reason="Windows time.time() ticks every ~15.6ms before Python 3.13, so a session "
-               "created and expired within one tick is not seen as stale (expired == 0, "
-               "not 1); Python 3.13+ uses the high-resolution clock. BP12 fixes the root "
-               "cause (monotonic timing for session expiry).",
-        strict=False,
-    )
     def test_expire_stale(self):
         # Create session with effectively expired timeout
         s = self.mgr.create_session("alice", Role.ARTIST, "client_001")

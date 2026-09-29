@@ -1103,18 +1103,26 @@ class TestTieredRouter:
 
     # --- Latency tracking ---
 
-    @pytest.mark.xfail(
-        condition=sys.platform == "win32" and sys.version_info < (3, 13),
-        reason="Windows time.time() ticks every ~15.6ms before Python 3.13, so a "
-               "sub-tick route measures latency_ms == 0.0 and the `> 0` assert fails; "
-               "Python 3.13+ uses the high-resolution clock. BP12 fixes the root cause "
-               "(monotonic high-resolution timing in the router).",
-        strict=False,
-    )
     def test_latency_is_tracked(self):
         result = self.router.route("ping")
         assert result.latency_ms > 0
         assert result.latency_ms < 1000  # Should be well under 1s
+
+    def test_latency_reads_the_high_resolution_clock(self, monkeypatch):
+        """Route latency reads ``time.perf_counter`` (BP12 item 5).
+
+        ``time.monotonic`` ticks every 15.6 ms on Windows before Python 3.13 and
+        measured a fast route as 0 ms. Each fake read below is 4 ms later, so a
+        revert to ``monotonic`` (pinned at 0) fails on any platform.
+        """
+        import itertools
+        from types import SimpleNamespace
+        import synapse.routing.router as router_mod
+        ticks = itertools.count(start=10.0, step=0.004)
+        monkeypatch.setattr(router_mod, "time", SimpleNamespace(
+            perf_counter=lambda: next(ticks), monotonic=lambda: 0.0))
+        result = self.router.route("ping")
+        assert result.latency_ms >= 3.99
 
     # --- RoutingTier enum ---
 

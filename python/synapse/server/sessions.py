@@ -38,7 +38,7 @@ class UserSession:
     user_id: str
     role: Role
     display_name: str
-    created_at: float       # time.monotonic()
+    created_at: float       # time.perf_counter()
     last_active: float      # Updated on each request
     client_id: str          # WebSocket client_id
     metadata: Dict = field(default_factory=dict)  # IP, user agent, etc.
@@ -86,7 +86,7 @@ class SessionManager:
         Returns:
             The created UserSession
         """
-        now = time.monotonic()
+        now = time.perf_counter()
         with self._lock:
             self._counter += 1
             session_id = deterministic_uuid(
@@ -131,7 +131,7 @@ class SessionManager:
         with self._lock:
             session = self._sessions.get(session_id)
             if session:
-                session.last_active = time.monotonic()
+                session.last_active = time.perf_counter()
 
     def remove_session(self, session_id: str) -> None:
         """Remove a session (on disconnect or expiry)."""
@@ -169,7 +169,7 @@ class SessionManager:
             Number of sessions expired
         """
         timeout = max_idle if max_idle is not None else self._session_timeout
-        now = time.monotonic()
+        now = time.perf_counter()
         expired_count = 0
 
         with self._lock:
