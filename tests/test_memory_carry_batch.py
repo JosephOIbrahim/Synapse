@@ -119,3 +119,47 @@ def test_cortex_saves_once_per_deferred_batch(tmp_path, monkeypatch):
     cortex.write("decision", "id5", "{}")
     assert counts["cortex"] == 2  # outside the context every write still saves
     assert len(cortex.query(kind="decision")) == 6
+
+
+# ---------------------------------------------------------------- the shared untitled root stops growing
+
+@pytest.mark.parametrize("seat", ["jsonl", "moneta"], indirect=True)
+def test_each_launch_binds_its_own_untitled_session(seat):
+    from pathlib import Path
+    from synapse.host import memory_lifecycle as lifecycle
+
+    root = Path(module._safe_unsaved_base())
+    first = lifecycle.current_binding()
+    assert first.unsaved
+    assert first.project_dir.is_relative_to(root.resolve() / "sessions")
+    assert lifecycle.current_binding().project_dir == first.project_dir  # steady within a launch
+    lifecycle._unsaved_base = None  # the next launch
+    assert lifecycle.current_binding().project_dir != first.project_dir
+
+
+@pytest.mark.parametrize("seat", ["jsonl", "moneta"], indirect=True)
+def test_first_save_carries_only_this_sessions_records(seat):
+    from pathlib import Path
+    from synapse.host import memory_lifecycle as lifecycle
+
+    # Earlier launches left records in the shared untitled root, as every
+    # launch did before sessions (1,458 of them on the seat's machine).
+    root = Path(module._safe_unsaved_base())
+    legacy = module.SynapseMemory(project_path=str(root))
+    earlier = [remember(legacy, "untitled.hip", f"earlier launch {i}") for i in range(3)]
+    lifecycle._persist(legacy)
+    lifecycle._release(legacy)
+
+    owner = module.get_synapse_memory()
+    mine = remember(owner, seat.hip.current, "this launch")
+    hip = saved(seat.root / "show" / "a.hip")
+    seat.values["JOB"] = str(hip.parent)
+    seat.hip.fire("AfterSave", hip)
+    assert payloads(module.get_synapse_memory()) == {mine.id: mine.to_json()}
+
+    # The earlier records were not moved or deleted; they stay in the shared root.
+    kept = module.SynapseMemory(project_path=str(root))
+    try:
+        assert {m.id for m in earlier} <= set(payloads(kept))
+    finally:
+        lifecycle._release(kept)

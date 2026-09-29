@@ -41,12 +41,21 @@ def _key(path):
 
 def current_binding(hou_module=None):
     """Read host context on main; choose an existing containing JOB or HIP."""
+    global _unsaved_base
     from synapse.memory import store as module
     hou = hou_module if hou_module is not None else module.hou
     hip_path = str(hou.hipFile.path())
     unsaved = module.hip_is_unsaved(hip_path, hou)
     if unsaved:
-        base = Path(_unsaved_base or module._safe_unsaved_base()).resolve()
+        # Each untitled session gets its own store, as File > New already did
+        # (BP12 item 1, 2026-09-29). The launch session used the shared untitled
+        # root, so every launch inherited every earlier one's records and each
+        # first save carried all of them into its project. A base left over
+        # from another temp root (tests) is replaced rather than reused.
+        root = Path(module._safe_unsaved_base())
+        if _unsaved_base is None or not Path(_unsaved_base).is_relative_to(root):
+            _unsaved_base = root / "sessions" / uuid.uuid4().hex
+        base = Path(_unsaved_base).resolve()
         return MemoryBinding(hip_path, base, base, True, "unsaved")
     scene = Path(hip_path).resolve().parent
     raw = hou.getenv("JOB", "") if callable(getattr(hou, "getenv", None)) else ""

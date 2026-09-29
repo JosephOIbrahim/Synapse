@@ -66,7 +66,9 @@ def test_unsaved_full_path_routes_to_temp(monkeypatch, tmp_path):
     """The exact production shape: full path ending in untitled.hip."""
     hip = "C:/Program Files/Side Effects Software/Houdini 22.0.397/bin/untitled.hip"
     out = _resolve(monkeypatch, _fake_hou(hip, tmp_path, is_new=True))
-    assert out == Path(str(tmp_path)) / "untitled"
+    # Since BP12 item 1 each untitled session has its own store under the
+    # shared temp root, so the address is contained in it rather than equal.
+    assert out.is_relative_to(Path(str(tmp_path)) / "untitled")
     assert "Program Files" not in str(out)
 
 
@@ -96,7 +98,7 @@ def test_untitled_basename_without_isnewfile_falls_back_to_temp(
     launch-directory address."""
     hip = str(tmp_path / "myproject" / "untitled.hip")
     out = _resolve(monkeypatch, _fake_hou(hip, tmp_path, with_is_new=False))
-    assert out == Path(str(tmp_path)) / "untitled"
+    assert out.is_relative_to(Path(str(tmp_path)) / "untitled")
 
 
 def test_hip_is_unsaved_unit():

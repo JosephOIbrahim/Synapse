@@ -254,13 +254,16 @@ def test_resolve_semantics_unchanged_on_main_thread(monkeypatch, tmp_path):
     monkeypatch.setattr(store_mod, "HOU_AVAILABLE", True)
     sm = SynapseMemory.__new__(SynapseMemory)
 
-    # unsaved (full path ending untitled.hip) -> $HOUDINI_TEMP_DIR/untitled
+    # unsaved (full path ending untitled.hip) -> this launch's own store under
+    # $HOUDINI_TEMP_DIR/untitled/sessions (BP12 item 1, 2026-09-29)
     monkeypatch.setattr(
         store_mod, "hou",
         _plain_hou("C:/Program Files/SideFX/bin/untitled.hip", str(tmp_path), True),
         raising=False,
     )
-    assert sm._resolve_project_path(None) == Path(str(tmp_path)) / "untitled"
+    unsaved = sm._resolve_project_path(None)
+    assert unsaved.parent == Path(str(tmp_path)) / "untitled" / "sessions"
+    assert sm._resolve_project_path(None) == unsaved  # steady within a launch
 
     # saved scene -> the project path itself
     hip = str(tmp_path / "shots" / "seq010_v002.hip")

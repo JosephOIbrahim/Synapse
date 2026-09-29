@@ -293,11 +293,13 @@ def test_resolvers_are_idempotent(monkeypatch, tmp_path):
 
 
 def test_unsaved_base_matches_store(monkeypatch, tmp_path):
-    """The two subsystems must agree on where an unsaved scene lives.
+    """The two subsystems must agree on the root an unsaved scene lives under.
 
-    store._resolve_project_path returns $HOUDINI_TEMP_DIR/untitled and puts
-    .synapse under it; scene_memory puts claude/ under the same root. One
-    scene, one address.
+    scene_memory puts claude/ under $HOUDINI_TEMP_DIR/untitled. Since BP12
+    item 1 (2026-09-29) store._resolve_project_path gives each untitled launch
+    its own store under that root (sessions/<id>, as File > New already did),
+    so the store address is inside the root rather than equal to it. The
+    claude/ notes still use the root itself; that split is BP12 item 18.
     """
     from synapse.memory import store as store_mod
 
@@ -317,7 +319,10 @@ def test_unsaved_base_matches_store(monkeypatch, tmp_path):
     store_side = store_mod.SynapseMemory.__new__(
         store_mod.SynapseMemory)._resolve_project_path(None)
 
-    assert os.path.normpath(str(store_side)) == sm.unsaved_memory_base()
+    root = sm.unsaved_memory_base()
+    store_path = os.path.normpath(str(store_side))
+    assert os.path.commonpath([store_path, root]) == root
+    assert os.path.relpath(store_path, root).split(os.sep)[0] == "sessions"
 
 
 def test_unexpanded_houdini_temp_dir_is_rejected(monkeypatch, tmp_path):
