@@ -128,6 +128,30 @@ def hash_key_for_log(key: str) -> str:
 # Origin validation (DNS rebinding protection)
 # =========================================================================
 
+def header_value(headers, name: str, default=None):
+    """Look up an HTTP header by name, ignoring case (RFC 9110 section 5.1).
+
+    hwebserver returns header names exactly as the client sent them, and Node's
+    MCP client (Claude Code) sends them in lowercase. A plain
+    ``headers.get("Mcp-Session-Id")`` therefore missed that client's session, and
+    a lowercase ``origin`` read as "no Origin", which ``validate_origin`` allows.
+    An exact-case match wins; otherwise the first case-insensitive match is used.
+    """
+    if not headers:
+        return default
+    try:
+        value = headers.get(name)
+    except AttributeError:
+        return default
+    if value is not None:
+        return value
+    wanted = name.lower()
+    for key, value in headers.items():
+        if isinstance(key, str) and key.lower() == wanted:
+            return value
+    return default
+
+
 _LOCALHOST_ORIGINS = frozenset([
     "http://localhost", "https://localhost",
     "http://127.0.0.1", "https://127.0.0.1",

@@ -53,7 +53,8 @@ from ..core.protocol import (
     SynapseResponse,
     PROTOCOL_VERSION,
 )
-from .auth import get_auth_key, authenticate, validate_origin, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
+from .auth import (get_auth_key, authenticate, validate_origin, header_value,
+                   AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE)
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from .resilience import RateLimiter, BackpressureController, CircuitBreaker
@@ -117,7 +118,7 @@ if HWEBSERVER_AVAILABLE:
             # Origin validation (DNS rebinding protection)
             origin = ""
             try:
-                origin = req.headers().get("Origin", "")
+                origin = header_value(req.headers(), "Origin", "")
             except (AttributeError, TypeError):
                 pass
             deploy_mode = os.environ.get("SYNAPSE_DEPLOY_MODE", "local")

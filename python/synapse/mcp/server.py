@@ -939,6 +939,19 @@ def get_mcp_server() -> MCPServer:
     return _mcp_server
 
 
+def _request_header(request, name, default=None):
+    """Read one request header, ignoring case (see ``server.auth.header_value``)."""
+    try:
+        from ..server.auth import header_value
+    except ImportError:  # pragma: no cover - auth ships with the package
+        wanted = name.lower()
+        for key, value in (request.headers() or {}).items():
+            if isinstance(key, str) and key.lower() == wanted:
+                return value
+        return default
+    return header_value(request.headers(), name, default)
+
+
 # =========================================================================
 # hwebserver integration (conditional — only when running inside Houdini)
 # =========================================================================
@@ -956,7 +969,7 @@ try:
             from ..server.auth import get_auth_key, authenticate
             auth_key = get_auth_key()
             if auth_key is not None:
-                auth_header = request.headers().get("Authorization", "")
+                auth_header = _request_header(request, "Authorization", "")
                 token = ""
                 if auth_header.startswith("Bearer "):
                     token = auth_header[7:].strip()
@@ -972,7 +985,7 @@ try:
         # Origin validation (DNS rebinding protection)
         try:
             from ..server.auth import validate_origin
-            origin = request.headers().get("Origin", "")
+            origin = _request_header(request, "Origin", "")
             deploy_mode = os.environ.get("SYNAPSE_DEPLOY_MODE", "local")
             if not validate_origin(origin, deploy_mode=deploy_mode):
                 return hwebserver.Response(
@@ -988,7 +1001,7 @@ try:
             if isinstance(body, str):
                 body = body.encode("utf-8")
 
-            session_id = request.headers().get("Mcp-Session-Id")
+            session_id = _request_header(request, "Mcp-Session-Id")
             response_body, headers = server.handle_request(body, session_id)
 
             if response_body is None:
@@ -1007,14 +1020,14 @@ try:
             return resp
 
         elif request.method() == "DELETE":
-            session_id = request.headers().get("Mcp-Session-Id")
+            session_id = _request_header(request, "Mcp-Session-Id")
             if session_id:
                 server.destroy_session(session_id)
             return hwebserver.Response("", status=200, content_type="text/plain")
 
         elif request.method() == "GET":
             # SSE polling -- drain queued events for the session
-            accept = request.headers().get("Accept", "")
+            accept = _request_header(request, "Accept", "")
             if "text/event-stream" not in accept:
                 return hwebserver.Response(
                     '{"error": "GET /mcp requires Accept: text/event-stream"}',
@@ -1022,7 +1035,7 @@ try:
                     content_type="application/json",
                 )
 
-            session_id = request.headers().get("Mcp-Session-Id")
+            session_id = _request_header(request, "Mcp-Session-Id")
             if not session_id:
                 return hwebserver.Response(
                     '{"error": "Missing Mcp-Session-Id header"}',
@@ -1039,7 +1052,7 @@ try:
                     content_type="application/json",
                 )
 
-            last_event_id = request.headers().get("Last-Event-ID")
+            last_event_id = _request_header(request, "Last-Event-ID")
             events = server._events.drain(session_id, last_event_id)
 
             if not events:
