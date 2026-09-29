@@ -322,6 +322,29 @@ def corpus_identity() -> tuple[str, str] | None:
         return None
 
 
+def page_key(source_url) -> str | None:
+    """A library page URL as its ``nodes/<folder>/<page>`` key, or None.
+
+    The key is independent of the host prefix and the file extension. It is
+    anchored to a two-segment ``nodes/<folder>/<page>`` tail, so an example
+    subpage (``examples/nodes/sop/<node>/<demo>``) never matches. A
+    versioned-doc base page is named ``<name>-`` (trailing dash); the plain
+    and trailing-dash forms are the same node page. :func:`help_summary`
+    matches on this key, and the Identify corpus sweep reads pages by it.
+    """
+    path = str(source_url).replace("\\", "/").split("#", 1)[0].split("?", 1)[0].lower()
+    last = path.rsplit("/", 1)[-1]
+    if "." in last:
+        path = path[: len(path) - len(last)] + last.rsplit(".", 1)[0]
+    found = re.search(r"(?:^|/)(nodes/[a-z0-9_]+/[a-z0-9_.\-]+)$", path)
+    if not found:
+        return None
+    key = found.group(1)
+    if key.endswith("-"):
+        key = key[:-1]
+    return key
+
+
 def help_summary(help_paths) -> tuple[str, str] | None:
     """Exact node-help-page lookup — never a search, so no phantom near-miss.
 
@@ -338,25 +361,6 @@ def help_summary(help_paths) -> tuple[str, str] | None:
                   for p in (help_paths or ()) if str(p).strip()]
     if not candidates:
         return None
-
-    def _key(source_url: str) -> str | None:
-        # Normalize any page URL to its ``nodes/<context>/<name>`` identity,
-        # independent of host prefix or file extension.
-        path = str(source_url).replace("\\", "/").split("#", 1)[0].split("?", 1)[0].lower()
-        last = path.rsplit("/", 1)[-1]
-        if "." in last:
-            path = path[: len(path) - len(last)] + last.rsplit(".", 1)[0]
-        # Anchored to a two-segment ``nodes/<context>/<name>`` tail, so an
-        # example subpage (``examples/nodes/sop/<node>/<demo>``) never matches.
-        found = re.search(r"(?:^|/)(nodes/[a-z0-9_]+/[a-z0-9_.\-]+)$", path)
-        if not found:
-            return None
-        key = found.group(1)
-        # A versioned-doc base page is named ``<name>-`` (trailing dash); the
-        # plain and trailing-dash forms are the same node page.
-        if key.endswith("-"):
-            key = key[:-1]
-        return key
 
     try:
         root = _configured_root()
@@ -388,7 +392,7 @@ def help_summary(help_paths) -> tuple[str, str] | None:
             ).fetchall()
         best: dict[str, tuple] = {}
         for row in rows:
-            key = _key(row[1])
+            key = page_key(row[1])
             if key in wanted and key not in best:
                 best[key] = (row[1], row[2])  # first (page-top) chunk wins
         for candidate in candidates:  # most-specific candidate first

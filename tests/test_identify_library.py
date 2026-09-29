@@ -60,12 +60,21 @@ _BODY = "PolyBevel\n\nBevels or chamfers the edges of polygons.\n\nIn the simple
 # ── derive_help_keys ─────────────────────────────────────────────────────────
 
 def test_derive_keys_versioned_most_specific_first():
+    """The versioned page, then the unversioned page, then the manager page."""
     assert LIB.derive_help_keys("operator:Sop/polybevel?version=3.0") == [
-        "nodes/sop/polybevel-3.0", "nodes/sop/polybevel"]
+        "nodes/sop/polybevel-3.0", "nodes/sop/polybevel", "nodes/manager/polybevel"]
 
 
 def test_derive_keys_base_only():
-    assert LIB.derive_help_keys("operator:Sop/box") == ["nodes/sop/box"]
+    """A plain type tries its own page, then ``nodes/manager/<name>`` (BP12 item 3).
+
+    The manager fallback mirrors ``houdinihelp.api.components_to_path`` with
+    ``maybe_manager=True`` in Houdini 22: a network manager placed in another
+    context (a ``sopnet`` inside a COP network, a ``ropnet`` inside SOPs) has
+    no page of its own there, so Houdini's help opens the manager page. On the
+    seat's Houdini 22.0.400, 73 node types reach their page only this way.
+    """
+    assert LIB.derive_help_keys("operator:Sop/box") == ["nodes/sop/box", "nodes/manager/box"]
 
 
 def test_derive_keys_non_operator_is_empty():
@@ -290,12 +299,13 @@ def test_is_markup_only_covers_directive_include_and_bom():
     assert not LIB._is_markup_only(":warning:Deprecated: the node is gone.")
 
 
-def _corpus_top_bodies():
-    """page-top chunk body per indexed nodes/sop|lop key, or skip if no corpus.
+def _corpus_top_bodies(patterns=("%nodes/sop/%", "%nodes/lop/%")):
+    """page-top chunk body per indexed node key, or skip if no corpus.
 
-    Mirrors sidefx_library.help_summary's key normalization and earliest-chunk
-    ('page-top') selection so the invariant is checked on exactly the bodies the
-    product summarizes.
+    *patterns* are ``source_url LIKE`` filters (SOP and LOP pages by default).
+    Uses sidefx_library's own key normalization (``page_key``) and its
+    earliest-chunk ('page-top') selection, so the invariant is checked on
+    exactly the bodies the product summarizes.
     """
     root = os.environ.get(SL.ROOT_ENV)
     if not root or not (Path(root) / "current.json").exists():
@@ -305,22 +315,15 @@ def _corpus_top_bodies():
     db = root / pointer["database"]
     with sqlite3.connect(db.as_uri() + "?mode=ro", uri=True) as con:
         con.execute("PRAGMA query_only = ON")
+        like = " OR ".join("source_url LIKE ?" for _ in patterns)
         rows = con.execute(
-            "SELECT id, source_url, body FROM chunks WHERE domain='docs' AND "
-            "(source_url LIKE '%nodes/sop/%' OR source_url LIKE '%nodes/lop/%') "
-            "ORDER BY id").fetchall()
+            f"SELECT id, source_url, body FROM chunks WHERE domain='docs' AND ({like}) "
+            "ORDER BY id", list(patterns)).fetchall()
     top: dict[str, tuple] = {}
     for cid, url, body in rows:
-        path = str(url).replace("\\", "/").split("#", 1)[0].split("?", 1)[0].lower()
-        last = path.rsplit("/", 1)[-1]
-        if "." in last:
-            path = path[: len(path) - len(last)] + last.rsplit(".", 1)[0]
-        m = re.search(r"(?:^|/)(nodes/[a-z0-9_]+/[a-z0-9_.\-]+)$", path)
-        if not m:
+        key = SL.page_key(url)
+        if key is None:
             continue
-        key = m.group(1)
-        if key.endswith("-"):
-            key = key[:-1]
         if key not in top or cid < top[key][0]:
             top[key] = (cid, body)
     return top
@@ -399,3 +402,239 @@ def test_corpus_identity_is_none_when_unconfigured(tmp_path, monkeypatch):
     monkeypatch.delenv(SL.ROOT_ENV, raising=False)
     monkeypatch.setattr(SL, "CONFIG_PATH", tmp_path / "missing.json")
     assert SL.corpus_identity() is None
+
+
+# ── BP12 item 3: help paths built the way Houdini builds them ─────────────────
+# URL shapes are the ones Houdini 22.0.400's defaultHelpUrl() writes (seat
+# probe, 2026-09-29). Before this item, every Object, ROP and Labs node, and a
+# VOP network, missed its page: the category was lower-cased instead of mapped
+# (``Object`` is ``nodes/obj``, ``Driver`` is ``nodes/out``, ``VopNet`` is
+# ``nodes/vex``), and a ``?namespace=`` query failed the pattern outright.
+
+@pytest.mark.parametrize("url, keys", [
+    ("operator:Object/geo", ["nodes/obj/geo", "nodes/manager/geo"]),
+    ("operator:Driver/karma", ["nodes/out/karma", "nodes/manager/karma"]),
+    ("operator:VopNet/vopmaterial", ["nodes/vex/vopmaterial", "nodes/manager/vopmaterial"]),
+    ("operator:Cop/uv_grid_texture?namespace=labs&version=1.0",
+     ["nodes/cop/labs--uv_grid_texture-1.0", "nodes/cop/labs--uv_grid_texture"]),
+    ("operator:Sop/autouv?namespace=labs", ["nodes/sop/labs--autouv"]),
+    ("operator:Sop/Rig_Delay?namespace=MOPSPlus&version=1.0",
+     ["nodes/sop/mopsplus--rig_delay-1.0", "nodes/sop/mopsplus--rig_delay"]),
+    ("operator:Sop/tool?namespace=studio::fx", ["nodes/sop/studio$$fx--tool"]),
+])
+def test_derive_keys_mirror_houdini_help_paths(url, keys):
+    """Category folder, ``<namespace>--`` prefix (colons as ``$``), ``-<version>`` suffix."""
+    assert LIB.derive_help_keys(url) == keys
+
+
+def test_derive_keys_scoped_type_is_honestly_unknown():
+    """A scoped type's page name needs ``hou`` to decode its scope: no key, no guess."""
+    assert LIB.derive_help_keys("operator:Data/highpass?scopeop=cop/filterfrequencies") == []
+
+
+def test_derive_keys_read_a_full_type_name_in_the_path():
+    """``polyextrude::2.0`` or ``labs::widget::1.0`` written into the path still resolves."""
+    assert LIB.derive_help_keys("operator:Sop/polyextrude::2.0") == [
+        "nodes/sop/polyextrude-2.0", "nodes/sop/polyextrude", "nodes/manager/polyextrude"]
+    assert LIB.derive_help_keys("operator:Sop/labs::widget::1.0") == [
+        "nodes/sop/labs--widget-1.0", "nodes/sop/labs--widget"]
+
+
+def test_summarize_end_to_end_labs_and_object_pages(tmp_path, monkeypatch):
+    """Through the real help_summary, a Labs page and an Object page now resolve.
+
+    Mutation: map ``Object`` to ``object``, or drop the ``?namespace=`` read,
+    and the matching half of this test returns the honest unknown instead.
+    """
+    root = _build_corpus(tmp_path, [
+        (1, f"{_DOCS}/nodes/sop/labs--widget-1.0.md", "Labs Widget",
+         "Labs Widget\nLabs Widget\n# Labs Widget\n\nMakes widgets.\n\nMore text."),
+        (2, f"{_DOCS}/nodes/obj/geo.md", "Geometry", "Geometry\n\nHolds geometry. More."),
+    ])
+    monkeypatch.setenv(SL.ROOT_ENV, str(root))
+    assert LIB.summarize("operator:Sop/widget?namespace=labs&version=1.0") == (
+        "Makes widgets.", "library")
+    assert LIB.summarize("operator:Object/geo") == ("Holds geometry.", "library")
+
+
+def test_page_key_is_the_one_help_summary_matches_on():
+    """``page_key`` normalizes host, extension, trailing dash; examples never key."""
+    assert SL.page_key(f"{_DOCS}/nodes/cop/labs--uv_grid_texture-1.0.md") == (
+        "nodes/cop/labs--uv_grid_texture-1.0")
+    assert SL.page_key(_POLYBEVEL) == "nodes/sop/polybevel"
+    assert SL.page_key(_POLYBEVEL_EXAMPLE) is None
+
+
+# ── BP12 item 3: the What line carries no help markup ─────────────────────────
+# One test per shape the corpus sweep found. The bodies are invented; each
+# copies the markup shape of a real library page named in its docstring.
+
+def test_wiki_title_headings_are_skipped():
+    """``= Name =`` titles: the Name SOP's prose sits after two of them, one behind a BOM."""
+    body = "= Naming things =\n\n\ufeff= Widget =\n\nMakes widgets for you.\n\nMore."
+    assert LIB.summary_text(body) == "Makes widgets for you."
+
+
+def test_text_before_a_mid_body_bom_is_dropped():
+    """A stray ``== Main ==`` above the page's own file (the Mantra procedural pages)."""
+    body = "== Main ==\n\n\ufeff= Widget Procedural =\n\nRuns widgets at render time."
+    assert LIB.summary_text(body) == "Runs widgets at render time."
+
+
+def test_markdown_breadcrumb_title_is_skipped():
+    """``Title / Title / # Title`` above the summary, as on every Labs page."""
+    body = "Labs Widget\nLabs Widget\n# Labs Widget\n\nMakes widgets.\n\nIt does more."
+    assert LIB.summary_text(body) == "Makes widgets."
+
+
+def test_a_long_title_is_still_a_title():
+    """A title up to 60 characters is skipped (Houdini Engine Procedural pages ran 42)."""
+    body = "Widget Engine Procedural: Point Generate Mode\n\nCooks a widget per point."
+    assert LIB.summary_text(body) == "Cooks a widget per point."
+
+
+def test_warning_and_note_boxes_are_not_the_summary():
+    """``:warning:Deprecated:`` (the Muscle tools), ``**NOTE:**``, ``> **Note**`` (Labs)."""
+    for box in (":warning:Deprecated:\n    The Widget SOP is deprecated.",
+                "**NOTE:**\n    Use the Gadget SOP instead.",
+                "> **Note**\n> To be removed in a later version."):
+        body = f"Widget\n\n{box}\n\nMakes widgets."
+        assert LIB.summary_text(body) == "Makes widgets.", box
+
+
+def test_picture_line_is_dropped():
+    """``[Image:...]`` between the title and the summary (the MaterialX pages)."""
+    body = "Widget\n\n[Image:/images/nodes/vop/widget.jpg]\n\nMakes widgets."
+    assert LIB.summary_text(body) == "Makes widgets."
+
+
+def test_inline_markup_becomes_plain_words():
+    """Bold, italics, code spans and links keep only the words a reader sees."""
+    body = ("Widget\n\nMakes **Shape Match** widgets with *Gadget SOP* and ''care'', "
+            "a _value clip_, `usda` code, [Node:sop/gadget], "
+            "[the guide|/help/widgets] and [Labs Guide](../sop/labs--guide).")
+    assert LIB.summary_text(body) == (
+        "Makes Shape Match widgets with Gadget SOP and care, a value clip, usda code, "
+        "gadget, the guide and Labs Guide.")
+
+
+def test_code_span_is_protected_from_italics():
+    """``_id_`` inside backticks is code, not italics."""
+    assert LIB.summary_text("Widget\n\nSets the `_id_` attribute.") == (
+        "Sets the _id_ attribute.")
+
+
+def test_brackets_and_globs_in_prose_are_left_alone():
+    """A range, an array (``[in1, in2]``) or one glob is prose, not a link or italics."""
+    body = "Widget\n\nMakes an array [in1, in2] of values in [0, 1] from *.bgeo files."
+    assert LIB.summary_text(body) == (
+        "Makes an array [in1, in2] of values in [0, 1] from *.bgeo files.")
+
+
+def test_triple_quoted_tooltip_is_the_summary():
+    """Houdini's tooltip rule, as HDA help writes it (the MOPs HDAs)."""
+    help_text = ('= Widget Delay =\n#icon: opdef:.?widget.svg\n\n'
+                 '""" Delays widgets. """\n\nThe Widget Delay behaves like the Delay.')
+    assert LIB.summary_text(help_text) == "Delays widgets."
+    assert LIB.summarize("operator:Sop/Widget_Delay?namespace=studio&version=1.0",
+                         hda_help=help_text, lookup=lambda keys: None) == (
+        "Delays widgets.", "hda")
+
+
+def test_template_placeholder_is_honestly_unknown():
+    """``[Basic Description]`` is a help template's blank, not a summary (Labs Tree Branch Placer)."""
+    help_text = ('= Widget =\n\n#type: node\n#context: sop\n\n""" [Basic Description] """\n\n'
+                 '[ Detailed description]\n\n@parameters\n    Tag:\n        [Needs tooltip]')
+    assert LIB.summary_text(help_text) == ""
+    assert LIB.summarize("operator:Sop/widget", hda_help=help_text,
+                         lookup=lambda keys: None) == (None, "unknown")
+
+
+def test_a_section_before_any_summary_is_honestly_unknown():
+    """``## Overview`` or ``## Parameters`` first: the page top has no summary line.
+
+    Load Layer for Editing opens on an Overview section and Cloth Solver on its
+    Parameters. The text there describes a part or a context of the node, so
+    the What line stays honestly unknown rather than borrowing it.
+    """
+    for section, text in (("Overview", "This node is like the Gadget node."),
+                          ("Parameters", "Size:\n    How big the widget is."),
+                          ("Related", "- [Node:sop/gadget]")):
+        body = f"Widget\n{section}\n## {section}\n{text}"
+        assert LIB.summary_text(body) == "", section
+
+
+def test_a_sentence_above_a_heading_is_still_prose():
+    """Only title-like lines above a heading are breadcrumbs; a sentence is kept."""
+    assert LIB.summary_text("Makes widgets.\n## Parameters") == "Makes widgets."
+
+
+def test_section_marker_and_parameter_term_end_the_search():
+    """``@subtopics`` (the index pages) and ``Size:`` with an indented body."""
+    assert LIB.summary_text("Widget examples\n\n@subtopics Examples\n\n:list_examples:") == ""
+    assert LIB.summary_text("Widget\n\nSize:\n\n    How big the widget is.") == ""
+
+
+def test_a_colon_ending_summary_without_a_definition_is_kept():
+    """``... such as:`` followed by a list is prose, not a parameter term (Composite VOP)."""
+    body = "Widget\n\nPerforms widget operations such as:\n\n- A over B\n- A under B"
+    assert LIB.summary_text(body) == "Performs widget operations such as:"
+
+
+def test_html_comment_include_page_and_source_path_title():
+    """``<!-- -->`` (RBD Transform), a ``#type: include`` page, a ``.txt`` path as title."""
+    assert LIB.summary_text(
+        "Widget\n\n<!---#icon: SOP/widget--->\n\nMakes widgets.") == "Makes widgets."
+    assert LIB.summary_text(
+        "nodes/sop/common.txt\n\n\ufeff#type: include\n\nShared text about widgets.") == ""
+    assert LIB.summary_text(
+        "nodes/sop/widget.txt\n\n\ufeff= Widget =\n\nMakes widgets.") == "Makes widgets."
+    assert LIB.summary_text(
+        "nodes/sop/common.txt\n\n== Channel == (channel)\n\nAlign:\n    How to align.") == ""
+
+
+def test_a_directive_without_its_colon_is_markup():
+    """``#icon COMMON/materialx`` (the glTF material page) is a directive, not prose.
+
+    Found by the Jev What-line check (BP12 item 3); the colon-only pattern let it
+    through as a What line."""
+    body = "nodes/vop/widget.txt\n\n#icon COMMON/widget\n\nA wrapper around the widget shader."
+    assert LIB.summary_text(body) == "A wrapper around the widget shader."
+    assert LIB.summary_text("Widget\n\n#1 rule: widgets first.") == "#1 rule: widgets first."
+
+
+def test_tables_and_lists_are_not_the_summary():
+    """A wiki table row (``Code ||``) or a list item never stands in for the summary."""
+    body = "Widget\n\nCode ||\n    Meaning ||\n\n- first item\n\nMakes widgets."
+    assert LIB.summary_text(body) == "Makes widgets."
+
+
+def test_a_page_with_only_its_title_gives_the_title():
+    """Unchanged behavior: a page whose only text is its title (the MaterialX Lama pages)."""
+    assert LIB.summary_text("MtlX Widget\n\n:include _materialx#widget/:") == "MtlX Widget"
+
+
+def test_residue_pattern_catches_each_shape_it_names():
+    """The detector the sweep and the corpus gate share flags every shape above."""
+    for leak in ("\ufeff= Name =", "Cloth Solver Parameters ## Parameters",
+                 ":warning:Deprecated: gone.", "[Image:/images/a.jpg]", "Makes **bold** things.",
+                 '""" Delays widgets.', "@subtopics Examples", "#icon: SOP/x",
+                 "a _value clip_ here", "see [Node:sop/copy]", "Code || Meaning ||",
+                 "#icon COMMON/materialx",
+                 "nodes/sop/widget.txt", "[Basic Description]", "with *Gadget SOP* too"):
+        assert LIB.RESIDUE.search(leak), leak
+    for clean in ("Makes widgets.", "Makes an array [in1, in2] of values in [0, 1].",
+                  "Reads *.bgeo files.", "if value1<=value2.", "snake_case_name stays"):
+        assert not LIB.RESIDUE.search(clean), clean
+
+
+def test_no_node_page_what_line_carries_help_markup():
+    """Corpus-gated (BP12 item 3): across every indexed node page, the What line
+    carries no help markup by ``library.RESIDUE``, the same pattern
+    ``scripts/sweep_identify_summaries.py`` reports with. Loosening a rule in
+    summary_paragraph or plain_text makes this bite on the real library."""
+    top = _corpus_top_bodies(("%nodes/%",))
+    assert top, "no indexed node pages found in the corpus"
+    leaks = sorted(key for key, (_cid, body) in top.items()
+                   if LIB.RESIDUE.search(LIB.summary_text(body)))
+    assert leaks == [], f"help markup reached a What line for: {leaks[:10]}"
