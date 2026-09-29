@@ -1079,6 +1079,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         parm_name = resolve_param(payload, "parm")
 
         from .main_thread import run_on_main
+        from .parm_authored import authored_fields, authored_tuple_fields
 
         def _on_main():
             nonlocal parm_name
@@ -1104,21 +1105,27 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     if parm_tuple is not None:
                         parm_name = usd_encoded
                 if parm_tuple is not None:
+                    # hou.Parm.eval() reads parameter value -- not Python eval()
+                    values = [p.eval() for p in parm_tuple]  # noqa: S307
                     return {
                         "node": node_path,
                         "parm": parm_name,
-                        # hou.Parm.eval() reads parameter value -- not Python eval()
-                        "value": [p.eval() for p in parm_tuple],  # noqa: S307
+                        "value": values,
                         "is_tuple": True,
+                        **authored_tuple_fields(parm_tuple, values),
                     }
                 hint = _suggest_parms(node, parm_name)
                 raise ParameterError(node_path, parm_name, suggestion=hint.strip() if hint else "")
 
+            value = parm.eval()
             return {
                 "node": node_path,
                 "parm": parm_name,
-                "value": parm.eval(),
+                "value": value,
                 "is_tuple": False,
+                # The string as written, or the expression that drives the
+                # parm, when it differs from the evaluated value (BP12 15).
+                **authored_fields(parm, value),
             }
 
         return run_on_main(_on_main, label="handlers:_handle_get_parm")

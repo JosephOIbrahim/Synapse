@@ -210,7 +210,9 @@ TOOL_DEFS: list[tuple] = [
     # -- Parameters --
     ("houdini_get_parm", "get_parm",
      _filter_keys(("node", "parm")),
-     "Read a parameter value from a Houdini node.",
+     "Read a parameter value from a Houdini node. A string written with "
+     "variables such as $HIP also returns `raw`, the string as written, and "
+     "a keyframed parameter returns its `expression`.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "Node path"},
          "parm": {"type": "string", "description": "Parameter name"},

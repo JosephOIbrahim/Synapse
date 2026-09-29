@@ -33,7 +33,7 @@ SYNAPSE registers **115 tools**, live-counted from the tool registry (`python/sy
 | `houdini_delete_node` | Delete a node in Houdini by its path. |
 | `houdini_execute_python` | Execute Python code in Houdini's runtime environment. ONE mutation per call. Wrapped in undo group -- autom… |
 | `houdini_execute_vex` | Execute VEX code by creating an Attribute Wrangle node. |
-| `houdini_get_parm` | Read a parameter value from a Houdini node. |
+| `houdini_get_parm` | Read a parameter value from a Houdini node. A string written with variables such as $HIP also returns `raw`, the string as written, and a keyframed parameter returns its `expression`. |
 | `houdini_get_selection` | Get the currently selected nodes in Houdini. |
 | `houdini_get_usd_attribute` | Read a USD attribute value from a prim on the stage. |
 | `houdini_hda_create` | Convert a subnet into a Houdini Digital Asset (HDA). Sets metadata (author, version), installs the .hda fil… |

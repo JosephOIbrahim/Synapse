@@ -589,6 +589,11 @@ _STAGE_HASH_LARGE_MODE_ENV = "SYNAPSE_STAGE_HASH_LARGE_MODE"
 _STAGE_HASH_LARGE_MODES = ("reduced", "structural", "full")
 
 
+# Stage-hash modes whose signature covers the whole composed stage, attribute
+# values included ("reduced" reads none). See _compute_scene_hash_impl.
+_COMPLETE_STAGE_HASH_MODES = frozenset({"full", "structural"})
+
+
 def _stage_hash_large_mode() -> str:
     """Above-threshold stage-hash mode from env; unknown/absent values fall
     back to "reduced" (a bad value never silently disables the gate)."""
@@ -1089,12 +1094,22 @@ class LosslessExecutionBridge:
 
         hash_data = []
 
+        # The same inputs without cook counts, used when the composed stage is
+        # hashed completely (see the note after the S2 block).
+        content_data = []
+
+        def _both(entry):
+            hash_data.append(entry)
+            content_data.append(entry)
+
         # Global topology: child count + session IDs capture create/delete/wire
         try:
             children = node.children()
-            hash_data.append(f"children:{len(children)}")
+            _both(f"children:{len(children)}")
             for child in children:
-                hash_data.append(f"sid:{child.sessionId()}:{child.cookCount()}")
+                sid = child.sessionId()
+                content_data.append(f"sid:{sid}")
+                hash_data.append(f"sid:{sid}:{child.cookCount()}")
         except Exception:
             pass
 
@@ -1108,9 +1123,9 @@ class LosslessExecutionBridge:
         try:
             geo = node.geometry()
             if geo:
-                hash_data.append(f"pts:{geo.intrinsicValue('pointcount')}")
-                hash_data.append(f"prims:{geo.intrinsicValue('primitivecount')}")
-                hash_data.append(f"bounds:{geo.intrinsicValue('bounds')}")
+                _both(f"pts:{geo.intrinsicValue('pointcount')}")
+                _both(f"prims:{geo.intrinsicValue('primitivecount')}")
+                _both(f"bounds:{geo.intrinsicValue('bounds')}")
         except Exception:
             pass
 
@@ -1125,13 +1140,29 @@ class LosslessExecutionBridge:
         # (default: reduced-detail signature, recorded honestly on the
         # IntegrityBlock as stage_hash_mode/stage_hash_full_fidelity).
         # include_stage=False (live envelope) skips this block structurally.
+        stage_complete = False
         try:
             if include_stage and hasattr(node, "stage"):
                 stage = node.stage()
                 if stage is not None:
-                    hash_data.append("stage:" + self._hash_stage_signature(stage))
+                    _both("stage:" + self._hash_stage_signature(stage))
+                    stage_complete = (
+                        getattr(self._stage_hash_tl, "mode", "")
+                        in _COMPLETE_STAGE_HASH_MODES)
         except Exception:
             pass  # graceful — never let one missing API kill the hash
+
+        # BP12 item 16 (2026-09-29): a complete stage signature describes the
+        # scene; cook counts only count work. The counts above are read before
+        # node.stage() cooks a pending change, so after any write the next read
+        # of the same scene hashed differently: the next op reported an
+        # external change, and a rollback that restored the stage still read
+        # "rollback_incomplete" (hython probe, Houdini 22.0.400). With a
+        # complete signature (full or structural) the hash is topology plus
+        # content. A reduced signature reads no attribute values, so that path
+        # keeps its inputs as before, and its blocks record reduced fidelity.
+        if stage_complete:
+            hash_data = content_data
 
         if not hash_data:
             return hashlib.sha256(

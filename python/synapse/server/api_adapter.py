@@ -284,16 +284,22 @@ if HWEBSERVER_AVAILABLE:
         if n is None:
             raise hwebserver.APIError(f"Node not found: {node}")
 
+        from .parm_authored import authored_fields, authored_tuple_fields
+
         p = n.parm(parm)
         if p is not None:
-            return {"node": node, "parm": parm, "value": p.eval(), "is_tuple": False}
+            value = p.eval()
+            return {"node": node, "parm": parm, "value": value, "is_tuple": False,
+                    **authored_fields(p, value)}
 
         pt = n.parmTuple(parm)
         if pt is not None:
+            values = [x.eval() for x in pt]
             return {
                 "node": node, "parm": parm,
-                "value": [x.eval() for x in pt],
+                "value": values,
                 "is_tuple": True,
+                **authored_tuple_fields(pt, values),
             }
         raise hwebserver.APIError(f"Parameter not found: {parm} on {node}")
 

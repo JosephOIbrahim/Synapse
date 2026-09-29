@@ -26,7 +26,7 @@ Core scene manipulation. Always inspect before mutating. One mutation per tool c
 | 6 | `houdini_create_node` | MUT | Create a new node in Houdini. Returns the path of the created node. |
 | 7 | `houdini_delete_node` | MUT | Delete a node in Houdini by its path. |
 | 8 | `houdini_connect_nodes` | MUT | Connect the output of one node to the input of another. |
-| 9 | `houdini_get_parm` | RO IDEM | Read a parameter value from a Houdini node. |
+| 9 | `houdini_get_parm` | RO IDEM | Read a parameter value from a Houdini node. A string written with variables such as $HIP also returns `raw`, the string as written, and a keyframed parameter returns its `expression`. |
 | 10 | `houdini_set_parm` | MUT IDEM | Set a parameter value on a Houdini node. **USD note:** parameter names are encoded (e.g. `xn__inputsintensity_i0a` not `intensity`). Use `houdini_inspect_node` first. |
 | 11 | `houdini_execute_python` | MUT | Execute Python code in Houdini's runtime. ONE mutation per call. Wrapped in undo group -- automatic rollback on failure. |
 | 12 | `houdini_execute_vex` | MUT | Execute VEX code by creating an Attribute Wrangle node. |

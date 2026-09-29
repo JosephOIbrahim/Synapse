@@ -16,6 +16,11 @@ try:
 except ImportError:
     hou = None  # type: ignore[assignment]
 
+try:
+    from .parm_authored import raw_string
+except ImportError:  # loaded by file path, outside the package (tests do)
+    from synapse.server.parm_authored import raw_string
+
 
 # C1-F10: a hard ceiling on input-graph traversal depth. The depth argument is
 # agent-supplied and was clamped nowhere, over what was 2^depth growth. The
@@ -467,12 +472,17 @@ def inspect_node_detail(
             folder = parm.containingFolders()
             folder_name = " > ".join(folder) if folder else "Root"
 
+            # hou.Parm read — NOT Python's eval()
+            value = parm.eval()  # noqa: S307
             parm_info: Dict[str, Any] = {
                 "name": parm.name(),
                 "label": tmpl.label(),
-                # hou.Parm read — NOT Python's eval()
-                "value": parm.eval(),  # noqa: S307
+                "value": value,
             }
+            # The string as written, when it differs from the value (BP12 15).
+            raw = raw_string(parm, value)
+            if raw is not None:
+                parm_info["raw"] = raw
 
             # Expression detection
             if include_expressions:
