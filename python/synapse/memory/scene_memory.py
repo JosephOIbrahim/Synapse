@@ -123,7 +123,28 @@ def _read_on_main(fn, label="synapse_scene_memory"):
 
 
 def unsaved_memory_base() -> str:
-    """Where an UNSAVED scene's memory lives: ``$HOUDINI_TEMP_DIR/untitled``.
+    """Where an UNSAVED scene's ``claude/`` notes live (BP12 item 18).
+
+    The launch session's own folder, ``$HOUDINI_TEMP_DIR/untitled/sessions/<id>``: the same
+    folder that holds the session's ``.synapse`` store, so the notes and the store travel
+    together and a new launch does not read an earlier launch's notes. The session is ensured
+    on every call, so a write and a later read cannot straddle its creation. Where the host
+    layer cannot be imported (a test loading this file as a top-level module), or the session
+    is not under the current temp root, it is the shared ``$HOUDINI_TEMP_DIR/untitled`` root.
+    """
+    shared = _shared_untitled_base()
+    try:
+        from synapse.host.memory_lifecycle import ensure_unsaved_base
+        session = ensure_unsaved_base()
+    except ImportError:
+        return shared
+    if session.is_relative_to(shared):
+        return os.path.normpath(str(session))
+    return shared
+
+
+def _shared_untitled_base() -> str:
+    """The shared root: ``$HOUDINI_TEMP_DIR/untitled``.
 
     Deliberately the SAME root ``store._resolve_project_path`` routes an
     unsaved scene's ``.synapse`` store to (C-0 / PR #60, commit 19c299b). The

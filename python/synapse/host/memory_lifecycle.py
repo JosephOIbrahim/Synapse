@@ -39,9 +39,23 @@ def _key(path):
     return os.path.normcase(str(Path(path).resolve()))
 
 
+def ensure_unsaved_base():
+    """The launch session's folder for an unsaved scene, created lazily (BP12 items 1 and 18).
+
+    ``$HOUDINI_TEMP_DIR/untitled/sessions/<id>``. Both the store and the ``claude/`` notes of an
+    untitled scene live here, so they travel together. A base left over from another temp root
+    (tests) is replaced rather than reused.
+    """
+    global _unsaved_base
+    from synapse.memory import store as module
+    root = Path(module._safe_unsaved_base())
+    if _unsaved_base is None or not Path(_unsaved_base).is_relative_to(root):
+        _unsaved_base = root / "sessions" / uuid.uuid4().hex
+    return Path(_unsaved_base)
+
+
 def current_binding(hou_module=None):
     """Read host context on main; choose an existing containing JOB or HIP."""
-    global _unsaved_base
     from synapse.memory import store as module
     hou = hou_module if hou_module is not None else module.hou
     hip_path = str(hou.hipFile.path())
@@ -52,10 +66,7 @@ def current_binding(hou_module=None):
         # root, so every launch inherited every earlier one's records and each
         # first save carried all of them into its project. A base left over
         # from another temp root (tests) is replaced rather than reused.
-        root = Path(module._safe_unsaved_base())
-        if _unsaved_base is None or not Path(_unsaved_base).is_relative_to(root):
-            _unsaved_base = root / "sessions" / uuid.uuid4().hex
-        base = Path(_unsaved_base).resolve()
+        base = ensure_unsaved_base().resolve()
         return MemoryBinding(hip_path, base, base, True, "unsaved")
     scene = Path(hip_path).resolve().parent
     raw = hou.getenv("JOB", "") if callable(getattr(hou, "getenv", None)) else ""
