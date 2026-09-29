@@ -22,6 +22,19 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.85.3 - Raw parameter reads and a steady scene hash
+
+Parameter reads now return `raw`, the string as written, when it differs
+from the evaluated value, so an agent can confirm a write of a `$HIP` path.
+`houdini_get_parm` also returns the expression behind a keyframed parameter.
+The scene hash no longer counts cooks when the stage is hashed in full, so a
+write no longer makes the next one report an outside change, and a clean
+undo no longer reads "rollback incomplete". These close the two limits named
+in v5.85.2. The README and documentation diagrams use two orange tones and
+black type; diagrams in older entries below keep their colors as records.
+This is a source release with no new Windows installer. See
+[v5.85.3](docs/releases/v5.85.3.md).
+
 ## v5.85.2 - Karma render settings on Houdini 22
 
 SYNAPSE can change Karma Render Settings on Houdini 22 again. Houdini 22.0.400's
