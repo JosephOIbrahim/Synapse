@@ -6,9 +6,10 @@ for the chunk and hung the kept-alive connection (reproduced on the live server 
 on a private hwebserver under hython, where 202 works). It now answers 202 Accepted
 with no body, as the MCP Streamable HTTP transport specifies.
 
-``SYNAPSE_MCP_READ_ONLY`` fences external clients to the tools that are read-only
+``SYNAPSE_MCP_READ_ONLY`` fences every caller to the tools that are read-only
 under both gating sets, on ``/mcp`` and on the WebSocket that ``mcp_server.py``
-uses. Protocol commands pass, and the panel's own agent is never gated.
+uses. The panel's own agent calls ``/mcp`` too, so it is fenced as well.
+Protocol commands pass.
 """
 from __future__ import annotations
 

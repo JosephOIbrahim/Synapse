@@ -591,8 +591,9 @@ class MCPServer:
         if not tool_name:
             raise JsonRpcInvalidParams("Missing 'name' in tools/call params")
 
-        # BP12 item 12: SYNAPSE_MCP_READ_ONLY fences external clients to the tools
-        # that are read-only under both gating sets, before anything is dispatched.
+        # BP12 item 12: SYNAPSE_MCP_READ_ONLY fences every /mcp caller, the panel's
+        # own agent included, to the tools that are read-only under both gating
+        # sets, before anything is dispatched.
         refusal = read_only_mode.refusal_for_tool(tool_name)
         if refusal:
             raise JsonRpcError(READ_ONLY_REFUSED, refusal)

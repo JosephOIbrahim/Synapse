@@ -1,7 +1,7 @@
-"""Opt-in read-only mode for external MCP clients (BP12 item 12).
+"""Opt-in read-only mode for MCP clients (BP12 item 12).
 
-External clients reach Houdini through two transports that skip the panel's
-worker policy: ``POST /mcp`` (MCP Streamable HTTP) and the ``/synapse``
+MCP clients reach Houdini through two transports: ``POST /mcp`` (MCP
+Streamable HTTP) and the ``/synapse``
 WebSocket that ``mcp_server.py`` bridges stdio clients such as Claude Code
 onto. Setting ``SYNAPSE_MCP_READ_ONLY=1`` in Houdini's environment fences both
 to the tools that are read-only under both of SYNAPSE's gating sets: the MCP
@@ -9,8 +9,10 @@ transport's ``readOnlyHint`` annotation and the bridge's own read-only set
 (``server.is_transport_fast_path``). Any other tool is refused with a message
 that names it and this variable.
 
-The fence sits in the transports, not in ``SynapseHandler.handle``, so the
-panel's own agent is never affected. A WebSocket command that is not a tool
+The fence sits in the transports and applies to every caller of them. That
+includes the SYNAPSE panel's own agent, which sends its tool calls to
+``POST /mcp`` (``panel/tool_executor.py``), so while the variable is set the
+panel can only read as well. A WebSocket command that is not a tool
 (``authenticate``, ``heartbeat``, ``ping`` and the like) is protocol and always
 passes. The variable is read on every call, so it can be switched without a
 restart. It is off by default.
