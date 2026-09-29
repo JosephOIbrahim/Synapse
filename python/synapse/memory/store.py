@@ -246,6 +246,10 @@ class MemoryStore:
         # Write buffer — defers disk I/O to background thread (saves 1-5ms per add)
         self._write_buffer: list = []
         self._write_lock = threading.Lock()
+        # Held across the flusher's take-and-append and across save()'s file replace, so an
+        # append can never land on a file that save() has just replaced (BP12 item 21).
+        # Order: _append_lock, then _lock, then _write_lock. add() never takes it.
+        self._append_lock = threading.Lock()
         self._flush_interval = 2.0  # seconds
         self._flush_max = 50  # items
         self._flush_event = threading.Event()  # Wakes flusher immediately on buffer full
@@ -309,20 +313,21 @@ class MemoryStore:
                 logger.error("Full rewrite flush error: %s", e)
             return
 
-        with self._write_lock:
-            if not self._write_buffer:
-                return
-            lines = self._write_buffer[:]
-            self._write_buffer.clear()
-
-        try:
-            with open(self.memory_file, 'a', encoding='utf-8') as f:
-                f.write("".join(lines))
-        except Exception as e:
-            logger.error("Write flush error, restoring %d lines to buffer: %s", len(lines), e)
+        with self._append_lock:
             with self._write_lock:
-                # Prepend failed lines back (they're older than anything new)
-                self._write_buffer[0:0] = lines
+                if not self._write_buffer:
+                    return
+                lines = self._write_buffer[:]
+                self._write_buffer.clear()
+
+            try:
+                with open(self.memory_file, 'a', encoding='utf-8') as f:
+                    f.write("".join(lines))
+            except Exception as e:
+                logger.error("Write flush error, restoring %d lines to buffer: %s", len(lines), e)
+                with self._write_lock:
+                    # Prepend failed lines back (they're older than anything new)
+                    self._write_buffer[0:0] = lines
 
     def flush(self):
         """Force-flush any buffered writes (call on shutdown)."""
@@ -622,6 +627,12 @@ class MemoryStore:
 
     def save(self):
         """Persist all memories to disk."""
+        # An in-flight flusher append finishes before the file is replaced, and none starts
+        # until the replace is done, so a taken line can neither duplicate nor resurrect.
+        with self._append_lock:
+            self._save_unlocked()
+
+    def _save_unlocked(self):
         self._require_writable_load()
         crypto = _get_crypto()
         # C2: atomic, backed-up writes. Lazy import keeps store.py's import order
