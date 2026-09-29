@@ -22,6 +22,16 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.85.5 - The older panel is retired
+
+The older `synapse.ui` panel, which Houdini never loaded, is removed.
+`synapse.SynapsePanel`, `NexusPanel`, `create_panel` and `UI_AVAILABLE` now
+raise an `AttributeError` that points at `synapse.panel.synapse_panel`. The
+v5.85.4 notes are corrected: the Clear All button that could hang on the
+file-based memory store was on that older panel, which the registered
+Houdini panel never loaded. This is a source release with no new Windows
+installer. See [v5.85.5](docs/releases/v5.85.5.md).
+
 ## v5.85.4 - A first save that no longer freezes
 
 The first save of an untitled scene copies its memory into the new project

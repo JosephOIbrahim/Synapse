@@ -9,7 +9,7 @@ Houdini runs SYNAPSE with its own Python.
 
 **[Download Windows Setup v5.75.2](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SYNAPSE-5.75.2-Setup.exe)**
 
-This is the older packaged installer. Newer source releases, including v5.85.4,
+This is the older packaged installer. Newer source releases, including v5.85.5,
 do not contain a new Setup executable. For the current version, use
 [source installation](#source-installation) below.
 

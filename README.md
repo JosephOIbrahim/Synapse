@@ -4,13 +4,13 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.85.4 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.85.4 is Latest</sub></p>
+<p align="center"><sub>v5.85.5 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.85.5 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Install](docs/getting-started/installation.md#source-installation)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.85.4.md)
+**[Install](docs/getting-started/installation.md#source-installation)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.85.5.md)
 
 ## Start here
 
@@ -114,7 +114,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.85.4.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.85.5.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -151,7 +151,7 @@ Configured memory and scene/project notes supply recalled context. Recall is adv
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
-**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.85.4.md) before relying on it.
+**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.85.5.md) before relying on it.
 
 </details>
 
