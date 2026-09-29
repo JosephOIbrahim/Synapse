@@ -17,15 +17,43 @@ Only json and orjson (optional).
 import json
 from typing import Any
 
+def _json_default(obj):
+    """Encode a host value that a tool returned as-is.
+
+    orjson and json cannot encode Houdini objects. Before 2026-09-28 a single
+    ramp parameter made houdini_network_explain and synapse_inspect_node fail
+    with "Type is not JSON serializable: Ramp". A Ramp becomes its basis, keys
+    and values; other iterables become lists; anything else becomes its string.
+    """
+    basis = getattr(obj, "basis", None)
+    keys = getattr(obj, "keys", None)
+    values = getattr(obj, "values", None)
+    if callable(basis) and callable(keys) and callable(values):
+        is_color = getattr(obj, "isColor", None)
+        return {
+            "type": "ramp",
+            "basis": [str(b).rsplit(".", 1)[-1] for b in basis()],
+            "keys": list(keys()),
+            "values": [list(v) if isinstance(v, (tuple, list)) else v
+                       for v in values()],
+            "is_color": bool(is_color()) if callable(is_color) else False,
+        }
+    try:
+        return list(obj)
+    except TypeError:
+        return str(obj)
+
+
 try:
     import orjson
 
     def _dumps_str(obj) -> str:
-        return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS).decode()
+        return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS,
+                            default=_json_default).decode()
 except ImportError:
 
     def _dumps_str(obj) -> str:
-        return json.dumps(obj, sort_keys=True)
+        return json.dumps(obj, sort_keys=True, default=_json_default)
 
 
 # =========================================================================

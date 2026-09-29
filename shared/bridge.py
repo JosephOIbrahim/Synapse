@@ -229,6 +229,52 @@ except ImportError:
 
 
 # ── pxr Import Seam (Finding 4: composition validation) ────────
+def _arc_list_sources(prim, usd_api, spec_field):
+    """(items_api, anchor_layer) pairs listing a prim's authored arcs.
+
+    The Usd.References / Usd.Payloads object when it carries
+    ``GetAddedOrExplicitItems`` (H21.0.671). Otherwise one pair per prim spec,
+    from the spec's list-editor proxy (``SdfPrimSpec.referenceList`` and
+    ``.payloadList`` carry ``GetAddedOrExplicitItems`` on H22.0.400, probed
+    2026-09-28), with the spec's layer as the anchor for relative asset paths.
+    Empty when neither API exists; the caller then skips the sub-check.
+    """
+    if hasattr(usd_api, "GetAddedOrExplicitItems"):
+        return [(usd_api, None)]
+    stack_getter = getattr(prim, "GetPrimStack", None)
+    if not callable(stack_getter):
+        return []
+    sources = []
+    for spec in stack_getter():
+        proxy = getattr(spec, spec_field, None)
+        if proxy is not None and hasattr(proxy, "GetAddedOrExplicitItems"):
+            sources.append((proxy, getattr(spec, "layer", None)))
+    return sources
+
+
+def _anchor_asset_path(layer, asset_path):
+    """``asset_path`` made absolute against the layer that introduced it, when
+    that layer can say (``Sdf.Layer.ComputeAbsolutePath``); otherwise as given."""
+    compute = getattr(layer, "ComputeAbsolutePath", None) if layer is not None else None
+    if not callable(compute):
+        return asset_path
+    try:
+        anchored = compute(asset_path)
+    except (RuntimeError, ValueError, TypeError):
+        return asset_path
+    return str(anchored) if anchored else asset_path
+
+
+def _is_inside(node, container):
+    """True when ``node`` lives inside ``container`` (an HDA's own internals)."""
+    try:
+        inner, outer = node.path(), container.path()
+    except AttributeError:
+        return False
+    return (isinstance(inner, str) and isinstance(outer, str)
+            and inner.startswith(outer.rstrip("/") + "/"))
+
+
 def _import_pxr_composition() -> tuple[Any, Any]:
     """Lazy pxr import for _verify_composition. Returns ``(Sdf, Usd)``;
     each is None when unavailable. pxr stays a call-time import (heavy,
@@ -1517,6 +1563,16 @@ class LosslessExecutionBridge:
         if not node:
             return False
 
+        # A LOP target is its own blast radius. Its dependents() include the
+        # HDA internals that channel-reference its parameters (Karma Render
+        # Settings' pythonscript1 on H22.0.400), and anchoring there validated
+        # and hashed an intermediate stage inside the HDA (2026-09-28).
+        lop_type = getattr(hou, "LopNode", None)
+        if isinstance(lop_type, type) and isinstance(node, lop_type):
+            operation.touches_stage = True
+            operation.stage_path = node.path()
+            return True
+
         # Trace graph forward recursively (max depth 3): does this SOP feed into any LOP?
         try:
             visited = set()
@@ -1532,6 +1588,8 @@ class LosslessExecutionBridge:
                 # box.dependents()==[] but box.outputs()==[blast],
                 # blast.dependents()==[sopimport].
                 for dep in list(n.dependents()) + list(n.outputs()):
+                    if _is_inside(dep, n):
+                        continue  # HDA internals that reference n's parms
                     if isinstance(dep, hou.LopNode):
                         operation.touches_stage = True
                         operation.stage_path = dep.path()
@@ -2667,26 +2725,43 @@ class LosslessExecutionBridge:
                     continue
 
                 if prim.HasAuthoredReferences() and _pxr_available:
-                    # GetAddedOrExplicitItems is live-verified on
-                    # Usd.References (H21.0.671) — called unguarded so a
-                    # broken References API keeps failing CLOSED through the
-                    # outer except (pre-Finding-4 reference outcome preserved).
-                    if not self._check_arc_items(
-                            stage_path, prim, prim.GetReferences(), Sdf,
-                            kind="reference"):
+                    # Usd.References carried GetAddedOrExplicitItems on
+                    # H21.0.671 but not on H22.0.400 (live probe 2026-09-28).
+                    # There the bare call raised on every stage with an
+                    # authored reference, and the outer except failed the op
+                    # CLOSED as a "USD Composition violation". The authored
+                    # list ops come from the prim stack instead, and each
+                    # spec's layer anchors its relative asset paths. A real
+                    # exception still fails closed through the outer except,
+                    # and so does a prim with no list-op API at all: the
+                    # reference checks could not run (INT-3).
+                    ref_sources = _arc_list_sources(
+                        prim, prim.GetReferences(), "referenceList")
+                    if not ref_sources:
+                        self._log_composition_failure(
+                            stage_path, prim.GetPath(),
+                            "no references list-op API; the reference "
+                            "checks could not run")
                         return False
+                    for items_api, anchor in ref_sources:
+                        if not self._check_arc_items(
+                                stage_path, prim, items_api, Sdf,
+                                kind="reference", anchor_layer=anchor):
+                            return False
 
                 if prim.HasAuthoredPayloads() and _pxr_available:
-                    payloads_api = prim.GetPayloads()
-                    # GetAddedOrExplicitItems is verified only on References;
-                    # on Usd.Payloads it is hasattr-guarded — an absent
-                    # optional API skips the sub-check (debug), it is NOT an
+                    # Same list-op sources as references (H22.0.400 has no
+                    # GetAddedOrExplicitItems on Usd.Payloads either). No
+                    # source at all skips the sub-check (debug); it is NOT an
                     # exception path and never a hard fail (INT-3 untouched).
-                    if hasattr(payloads_api, "GetAddedOrExplicitItems"):
-                        if not self._check_arc_items(
-                                stage_path, prim, payloads_api, Sdf,
-                                kind="payload"):
-                            return False
+                    payload_sources = _arc_list_sources(
+                        prim, prim.GetPayloads(), "payloadList")
+                    if payload_sources:
+                        for items_api, anchor in payload_sources:
+                            if not self._check_arc_items(
+                                    stage_path, prim, items_api, Sdf,
+                                    kind="payload", anchor_layer=anchor):
+                                return False
                     else:
                         import logging
                         logging.getLogger("synapse.bridge").debug(
@@ -2781,7 +2856,7 @@ class LosslessExecutionBridge:
             return False
 
     def _check_arc_items(self, stage_path: str, prim, items_api, Sdf,
-                         kind: str) -> bool:
+                         kind: str, anchor_layer=None) -> bool:
         """Shared hard checks for listed composition arcs (references,
         payloads). Extracted from the original reference loop (Finding 4).
 
@@ -2814,9 +2889,15 @@ class LosslessExecutionBridge:
                 return False
             # Validate targeted layers resolve
             if item.assetPath:
+                raw = str(item.assetPath)
+                # anchor_layer (the introducing spec's layer, when known)
+                # makes a relative asset path absolute before the lookup.
+                anchored = _anchor_asset_path(anchor_layer, raw)
                 if kind == "payload":
                     # Advisory only (see docstring) — never a hard fail.
-                    if Sdf.Layer.Find(str(item.assetPath)) is None:
+                    if (Sdf.Layer.Find(anchored) is None
+                            and (anchored == raw
+                                 or Sdf.Layer.Find(raw) is None)):
                         import logging
                         logging.getLogger("synapse.bridge").debug(
                             "payload asset not in the layer registry by raw "
@@ -2824,9 +2905,11 @@ class LosslessExecutionBridge:
                             "introducing layer): %s at %s",
                             item.assetPath, prim.GetPath())
                     continue
-                resolved = Sdf.Layer.Find(str(item.assetPath))
+                resolved = Sdf.Layer.Find(anchored)
+                if resolved is None and anchored != raw:
+                    resolved = Sdf.Layer.Find(raw)
                 if resolved is None:
-                    resolved = Sdf.Layer.FindOrOpen(str(item.assetPath))
+                    resolved = Sdf.Layer.FindOrOpen(anchored)
                 if resolved is None:
                     self._log_composition_failure(
                         stage_path, prim.GetPath(),
