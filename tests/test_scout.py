@@ -28,6 +28,19 @@ _ENTRIES = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def _no_configured_sidefx_library(tmp_path, monkeypatch):
+    """Scout also merges a configured SideFX help library (sidefx_library.py),
+    from SYNAPSE_SIDEFX_CORPUS_ROOT or <repo>/.synapse/sidefx_library.json. A
+    checkout with one configured leaked its pages into these fixture results
+    and failed two tests (BP12 item 9, 2026-09-28). This module tests the
+    fixture corpus alone; tests/test_scout_sidefx_library.py covers the merge.
+    """
+    from synapse.cognitive.tools import sidefx_library
+    monkeypatch.delenv(sidefx_library.ROOT_ENV, raising=False)
+    monkeypatch.setattr(sidefx_library, "CONFIG_PATH", tmp_path / "no-sidefx-library.json")
+
+
 @pytest.fixture()
 def corpus(tmp_path, monkeypatch):
     """A fixture RAG store at tmp_path, wired into scout's module globals; caches

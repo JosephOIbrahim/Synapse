@@ -898,7 +898,15 @@ class MemoryStore:
             return len(self._memories)
 
     def clear(self):
-        """Clear all memories."""
+        """Clear all memories.
+
+        save() takes the store's writer lock itself, and ReadWriteLock is not
+        reentrant, so saving inside the block below blocked forever: every
+        clear() on a JSONL store hung its caller, and the panel's Clear All
+        Memories button calls it on Houdini's main thread (BP12 item 9). The
+        pending appends are dropped with the records, and the save runs after
+        the lock is released, as in add_durable_if_absent().
+        """
         self._require_writable_load()
         with self._lock.write_lock():
             self._memories.clear()
@@ -912,7 +920,9 @@ class MemoryStore:
                 "version": 1
             }
             self._dirty = True
-            self.save()
+            with self._write_lock:
+                self._write_buffer.clear()
+        self.save()
 
     def search(self, query: MemoryQuery) -> List[MemorySearchResult]:
         """Search memories based on query parameters.
