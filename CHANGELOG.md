@@ -22,6 +22,16 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.85.1 - Claude Code connects to SYNAPSE
+
+Claude Code can now load SYNAPSE's tools over MCP. The `/mcp` endpoint read
+request headers case-sensitively, and Claude Code sends them in lowercase, so it
+connected but loaded no tools. The same lookup let a lowercase `origin` skip the
+web-origin check; that is fixed in the HTTP and WebSocket paths. The model menu
+adds Claude Fable 5.1, Opus 5.5 and Sonnet 5.5, and the default stays Sonnet 4.6.
+The MCP setup guide now shows the verified Claude Code steps. This is a source
+release with no new Windows installer. See [v5.85.1](docs/releases/v5.85.1.md).
+
 ## v5.85.0 - Identify selected nodes
 
 Added **Identify**: select nodes, then click **Identify** or send `/identify`.
