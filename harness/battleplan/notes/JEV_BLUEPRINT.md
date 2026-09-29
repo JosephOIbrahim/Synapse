@@ -50,6 +50,9 @@ flowchart LR
     BUS[(bus.jsonl)] -.->|poll| D{{"JEV-DRIFT\nadvancing · looping · out_of_scope"}}
     D -.->|"status warning on bus"| O
     R & S & D --> L[(harness/jev/ledger/*.jsonl)]
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    linkStyle default stroke:#D07020
+    style compile fill:none,stroke:#D07020
 ```
 
 Solid edges are built in mile 1. The dotted DRIFT edge is defined (questions exist) but

@@ -36,11 +36,12 @@ flowchart TD
     R --> D["Choose a suggestion;<br/>edit the prompt"]
     D --> U["You decide when to send"]
     M --> L["Record advisory judgment;<br/>keep selected model"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
-    classDef artist fill:#87CDA5,stroke:#87CDA5,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
     class K synapse
     class U artist
+    linkStyle default stroke:#D07020
 ```
 
 ## What leaves the panel

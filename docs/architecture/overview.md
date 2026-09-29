@@ -37,9 +37,10 @@ flowchart TD
     H -->|"read"| R["Read handler"]
     H -->|"farm control or Doctor"| D["Separate dispatch route"]
     B --> S["Main-thread scene action<br/>and operation receipt"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class H,B synapse
+    linkStyle default stroke:#D07020
 ```
 
 Read-classified tools skip the mutation bridge. Farm controls use their own admission and job I/O; Doctor uses its own off-main handler path. Houdini API access still belongs on the main thread.
@@ -62,9 +63,10 @@ flowchart TD
     X["Direct WebSocket client"] --> W
     W --> H["Direct handlers<br/>auth and RBAC"]
     H --> S["Main-thread Houdini API"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class W,H synapse
+    linkStyle default stroke:#D07020
 ```
 
 These handlers do not inherit the panel worker's restrictions or bridge consent. Tracked mutations produce path-qualified, observe-only `IntegrityBlock` evidence; an unavailable check is not recorded as a passed check.
@@ -81,9 +83,10 @@ flowchart TD
     Q -->|"reply received"| R["Decode result and receipt"]
     Q -->|"definitely not sent"| F["Off-main local fallback"]
     Q -->|"possibly sent; reply lost"| U["Outcome unknown<br/>No redispatch"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class T synapse
+    linkStyle default stroke:#D07020
 ```
 
 Source: [panel tool executor](../../python/synapse/panel/tool_executor.py).
@@ -131,11 +134,12 @@ flowchart LR
     L --> C["Compose up to 3 lines<br/>without a model"]
     C --> W["Write comments<br/>in one undo group"]
     W --> V["Save: strip before,<br/>restore after"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef artist fill:#87CDA5,stroke:#87CDA5,color:#1F1F1F
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class S artist
     class C,W synapse
+    linkStyle default stroke:#D07020
 ```
 
 The summary comes from the node's exact help page, never from a search result. A node the library does not cover says **not in library**. Each note sits below a `~ identify ~` line, so an artist's comment text above it is kept. The Selection Inspector shows the same text in a read-only column.
@@ -155,11 +159,12 @@ flowchart TD
     D --> V
     V --> H["Main-thread import<br/>New SOP and Solaris branch"]
     H --> I["Artist inspects the splat"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
-    classDef artist fill:#87CDA5,stroke:#87CDA5,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
     class H synapse
     class I artist
+    linkStyle default stroke:#D07020
 ```
 
 For remote import, enter a key in the masked field, choose **Connect World Labs**, then supply a world ID/Marble URL or select an API world. Choose a resolution and **Import world**. The list does not represent all Marble-app history.
@@ -187,9 +192,10 @@ flowchart TD
     R --> C["Advisory context<br/>for later work"]
     Q --> C
     S -.->|"Moneta secondary write"| V["USD inspection mirror"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class S synapse
+    linkStyle default stroke:#D07020
 ```
 
 | Normal saved-project location | Role |
@@ -218,6 +224,7 @@ The optional LOOP observes eligible operations. **It does not choose the scene a
 | Hanish | Retain a pre-action forecast and terminal evidence. |
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#F6B26B','primaryTextColor':'#000000','primaryBorderColor':'#D07020','lineColor':'#D07020','textColor':'#000000','actorBkg':'#F6B26B','actorBorder':'#D07020','actorTextColor':'#000000','actorLineColor':'#D07020','signalColor':'#D07020','signalTextColor':'#000000','labelBoxBkgColor':'#F6B26B','labelBoxBorderColor':'#D07020','labelTextColor':'#000000','loopTextColor':'#000000','noteBkgColor':'#F6B26B','noteTextColor':'#000000','noteBorderColor':'#D07020'}}}%%
 sequenceDiagram
     accTitle: Optional observation around an existing scene action
     accDescr: The host borrows memory, composes context and records a forecast before the authorized action. It then records the result and retains settled feedback. Missing evidence remains unknown.
@@ -226,18 +233,20 @@ sequenceDiagram
     participant O as Octavius
     participant H as Hanish
     participant S as Scene action
-    Host->>M: Borrow owner and recall context
-    M-->>Host: Bounded advisory records
-    Host->>O: Compose allowlisted context
-    O-->>Host: Context and provenance
-    Host->>H: Record EXPOSED forecast
-    H-->>Host: Durable acknowledgement
-    Host->>S: Use existing authorized route
-    S-->>Host: Result or uncertainty
-    Host->>H: Submit measured observation
-    H-->>Host: Outcome or pending status
-    opt Outcome settled
-        Host->>M: Retain feedback with stable identity
+    rect rgb(246, 178, 107)
+        Host->>M: Borrow owner and recall context
+        M-->>Host: Bounded advisory records
+        Host->>O: Compose allowlisted context
+        O-->>Host: Context and provenance
+        Host->>H: Record EXPOSED forecast
+        H-->>Host: Durable acknowledgement
+        Host->>S: Use existing authorized route
+        S-->>Host: Result or uncertainty
+        Host->>H: Submit measured observation
+        H-->>Host: Outcome or pending status
+        opt Outcome settled
+            Host->>M: Retain feedback with stable identity
+        end
     end
 ```
 
@@ -266,11 +275,12 @@ flowchart TD
     C -->|"Use in prompt"| D["Append editable text"]
     C -->|"Dismiss"| X["Close suggestion"]
     D --> S["Artist edits and sends"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
-    classDef artist fill:#87CDA5,stroke:#87CDA5,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
     class C synapse
     class S artist
+    linkStyle default stroke:#D07020
 ```
 
 A record does not replay node paths or authorize a build. Compatibility includes the exact SYNAPSE version; upgrading requires a matching rehearsal/import. [Stage 0 guide](../development/rsi_stage0.md).
@@ -291,9 +301,10 @@ flowchart TD
     C -->|"yes"| T["Verify and publish<br/>tag + GitHub release"]
     C -->|"no / unknown"| H["Hold publication;<br/>investigate"]
     T --> V["Verify remote commit,<br/>tag and release state"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class T synapse
+    linkStyle default stroke:#D07020
 ```
 
 [Version agreement](../../scripts/sync_version.py), [tag gate](../../scripts/tag_release.py) and [CI publication gate](../../scripts/release_ci_gate.py) support this workflow. Historical tags retain their original commits.

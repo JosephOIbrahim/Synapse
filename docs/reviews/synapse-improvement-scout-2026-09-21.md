@@ -236,6 +236,12 @@ flowchart LR
     W1 -->|"SCREEN on receipts"| W2
     W1 -->|"rails 'none' tier ruled"| W3
     W2 -->|"ledger >= 100 rows"| W4
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    linkStyle default stroke:#D07020
+    style W1 fill:none,stroke:#D07020
+    style W2 fill:none,stroke:#D07020
+    style W3 fill:none,stroke:#D07020
+    style W4 fill:none,stroke:#D07020
 ```
 
 Every edge is a guard the harness already has (SCREEN on receipts, ROUTE on tier) or one this report proposes (typed edges). Wave 1 needs no ruling. Wave 2 needs decision 1. Wave 3 needs decision 2. Wave 4 needs decisions 3 to 5 and the RANKED.md calls.

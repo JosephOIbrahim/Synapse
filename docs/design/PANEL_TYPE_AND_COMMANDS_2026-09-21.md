@@ -123,6 +123,8 @@ flowchart LR
     L4 --> L5
     RC{{"R3-C ruled"}} --> L6["L6 host-floor assertion"]
     L4 --> L6
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    linkStyle default stroke:#D07020
 ```
 
 | Leg | Ruling | Targets | Shell-checkable acceptance (abridged) |

@@ -212,7 +212,7 @@ These observations are not a substitute for rerunning the repository’s current
 ## 5. Target architecture
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#F6B26B','primaryTextColor':'#000000','primaryBorderColor':'#D07020','lineColor':'#D07020','textColor':'#000000','secondaryColor':'#F6B26B','tertiaryColor':'#F6B26B','clusterBkg':'#F6B26B','clusterBorder':'#D07020','edgeLabelBackground':'#F6B26B','nodeTextColor':'#000000'}}}%%
 flowchart TD
     A["User intent or planner candidate"] --> B["Host cache probe"]
     B --> C["Machine + workload snapshots"]

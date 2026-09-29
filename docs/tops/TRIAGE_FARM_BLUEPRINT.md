@@ -63,6 +63,8 @@ flowchart TD
     E --> F[Review grid and saved artist choice]
     F --> G[New prepared final request]
     G --> H[Final render and verified delivery]
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    linkStyle default stroke:#D07020
 ```
 
 This is a product workflow spanning separate jobs. A TOP cook must finish and release its resources when the preview work is done. Human review lives in durable application records; it must not hold a Houdini process or license open while the artist decides.

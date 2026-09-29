@@ -26,9 +26,10 @@ flowchart TD
     Q --> R["Cited document-only results"]
     P --> D["Identify reads one exact<br/>node page per type"]
     D --> N["First prose sentence<br/>becomes the node's note"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class P,Q,D synapse
+    linkStyle default stroke:#D07020
 ```
 
 An explicit `--allow-incomplete-web` build can publish available pages with

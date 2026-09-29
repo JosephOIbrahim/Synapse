@@ -42,11 +42,12 @@ flowchart LR
     U["Describe a task"] --> M["Model +<br/>permitted tools"]
     M --> R["Result or<br/>reason shown"]
     R --> I["Inspect in<br/>Houdini"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef artist fill:#87CDA5,stroke:#87CDA5,color:#1F1F1F
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class U,I artist
     class M synapse
+    linkStyle default stroke:#D07020
 ```
 
 **Undo covers a recorded operation.** It does not reverse a whole conversation or files written to disk. A failed build can leave partial nodes until you deliberately undo them.
@@ -71,11 +72,12 @@ flowchart LR
     I --> R["Read the node +<br/>local help library"]
     R --> N["Short note<br/>under each node"]
     N --> F["Save keeps notes<br/>out of the file"]
-    classDef default fill:#282828,stroke:#555555,color:#E5E5E5
-    classDef artist fill:#87CDA5,stroke:#87CDA5,color:#1F1F1F
-    classDef synapse fill:#FF7457,stroke:#FF7457,color:#1F1F1F
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class S,I artist
     class R,N synapse
+    linkStyle default stroke:#D07020
 ```
 
 Each click notes up to 60 nodes. The [release notes](docs/releases/v5.85.0.md) explain the details and current limits.
