@@ -80,6 +80,7 @@ deliberately does not register the plugin), so that is the default posture.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import re
@@ -882,7 +883,10 @@ class UsdCortexStore:
         prim.CreateAttribute(_CORTEX_ATTR_KIND, vt).Set(str(kind))
         prim.CreateAttribute(_CORTEX_ATTR_ID, vt).Set(str(mem_id))
         prim.CreateAttribute(_CORTEX_ATTR_PAYLOAD, vt).Set(str(payload))
-        self._save()
+        if getattr(self, "_defer_depth", 0):
+            self._defer_dirty = True  # deferred_save() saves once on exit
+        else:
+            self._save()
         return str(prim.GetPath())
 
     # -- read ---------------------------------------------------------------
@@ -923,6 +927,25 @@ class UsdCortexStore:
     def count(self) -> int:
         """Number of typed memory prims (excludes the root prim)."""
         return len(self.query())
+
+    @contextlib.contextmanager
+    def deferred_save(self):
+        """Author many prims and save the layer once, when the outermost context exits.
+
+        write() saves the whole cortex_root.usda after every prim, so carrying N
+        records on a first save exported the layer N times (BP12 item 1). Inside
+        this context write() only marks the layer dirty. The save runs on exit
+        even if authoring stopped midway, so every prim authored so far reaches
+        disk, and _save() itself logs rather than raises.
+        """
+        self._defer_depth = getattr(self, "_defer_depth", 0) + 1
+        try:
+            yield self
+        finally:
+            self._defer_depth -= 1
+            if self._defer_depth == 0 and getattr(self, "_defer_dirty", False):
+                self._defer_dirty = False
+                self._save()
 
     def _save(self) -> None:
         if self._stage is None:

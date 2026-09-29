@@ -700,6 +700,43 @@ class MemoryStore:
         self.save()
         return inserted
 
+    def add_durable_many_if_absent(self, memories) -> int:
+        """Checked insertion of many records with one save; return how many were new.
+
+        For migration only (memory_lifecycle._copy_records). The single-record
+        form rewrites memory.jsonl and the index after every record, so a carry
+        of N records rewrote them N times (BP12 item 1). The whole batch is
+        checked before anything is inserted, and a collision never evicts prior
+        data. As in the single form, a failed save leaves an unsettled
+        insertion, never a durable success, and the source still holds every
+        record until the destination is reopened and verified.
+        """
+        self._require_writable_load()
+        batch: Dict[str, Memory] = {}
+        with self._lock.write_lock():
+            for memory in memories:
+                payload = memory.to_json()
+                earlier = batch.get(memory.id)
+                previous = self._memories.get(memory.id)
+                if ((earlier is not None and earlier.to_json() != payload)
+                        or (previous is not None and previous.to_json() != payload)):
+                    self._note_rejected_write(
+                        f"add_durable_many_if_absent() refused id {memory.id!r}: the "
+                        "identity already holds different data"
+                    )
+                    raise ValueError("Memory identity already contains different data")
+                batch.setdefault(memory.id, memory)
+            inserted = 0
+            for key, memory in batch.items():
+                if key not in self._memories:
+                    self._memories[key] = memory
+                    self._index_memory(memory)
+                    inserted += 1
+            if inserted:
+                self._dirty = True
+        self.save()
+        return inserted
+
     def add(self, memory: Memory) -> str:
         """Add a memory to the store.
 

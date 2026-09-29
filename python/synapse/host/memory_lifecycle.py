@@ -215,8 +215,16 @@ def _copy_records(destination, records):
     for record in records:
         if record.id in existing and existing[record.id] != record.to_json():
             raise RuntimeError(f"Destination has conflicting memory identity: {record.id}")
-    for record in records:
-        if record.id not in existing:
+    absent = [record for record in records if record.id not in existing]
+    many = getattr(destination.store, "add_durable_many_if_absent", None)
+    if callable(many):
+        # One checkpoint for the whole carry (BP12 item 1). Checkpointing per
+        # record froze Houdini for minutes on the first save of an untitled
+        # scene. The verified reopen in rebind_owner still guards publication.
+        if absent:
+            many(absent)
+    else:
+        for record in absent:
             add = getattr(destination.store, "add_durable_if_absent", destination.store.add)
             add(record)
     _persist(destination)

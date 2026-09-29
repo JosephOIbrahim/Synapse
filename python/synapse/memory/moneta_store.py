@@ -22,6 +22,7 @@ a durable handle; tests inject an ephemeral one.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import threading
@@ -707,6 +708,64 @@ class MonetaBackedStore:
             self.add(memory, require_durable=True)
             return True
 
+    def add_durable_many_if_absent(self, memories) -> int:
+        """Store many immutable memories with one snapshot; return how many were new.
+
+        For migration only (memory_lifecycle._copy_records); live writers stay
+        on add(). add() snapshots the whole engine after every deposit (PRST
+        SEAM A), and the cortex saves its whole layer after every prim, so
+        carrying N records cost N snapshots, N layer saves and N strict scans.
+        At 1,458 records that froze Houdini for about 7 minutes on the first
+        save of an untitled scene (BP12 item 1). Here the whole batch is checked
+        against one scan before anything is deposited, then deposited,
+        snapshotted once, and mirrored with one layer save and one JSONL flush.
+
+        This relaxes per-record durability inside the batch only. The source
+        store holds every record until rebind_owner publishes a destination it
+        has reopened and verified, so a crash mid-batch loses nothing, and the
+        retry deposits only what is absent. As with add(require_durable=True),
+        a failed deposit marks the store failed-strict and propagates. A record
+        already present with identical data is not deposited again, but its
+        mirrors are re-checked, as add_durable_if_absent does on a retry.
+        """
+        conflict = "Memory identity already contains different or duplicate data"
+        with self._lock:
+            self._require_durable()
+            present: Dict[str, str] = {}
+            for existing in self._iter_memories(strict=True):
+                if existing.id in present:
+                    raise ValueError(conflict)
+                present[existing.id] = existing.to_json()
+            batch: Dict[str, tuple] = {}
+            for memory in memories:
+                payload = memory.to_json()
+                earlier = batch.get(memory.id)
+                if earlier is not None:
+                    if earlier[1] != payload:
+                        raise ValueError(conflict)
+                    continue
+                if memory.id in present and present[memory.id] != payload:
+                    raise ValueError(conflict)
+                batch[memory.id] = (memory, payload)
+            fresh = [item for key, item in batch.items() if key not in present]
+            for memory, payload in fresh:
+                embedding = self._embedder.embed(memory.content or memory.summary or "")
+                floor = self._protected_floor if self._is_protected(memory) else 0.0
+                deposited = False
+                try:
+                    self._handle.deposit(payload, embedding, protected_floor=floor)
+                    deposited = True
+                finally:
+                    if not deposited:
+                        # A backend error may land after ECS insertion; never
+                        # retry the deposit here (same rule as add()).
+                        self._strict_deposit_failed = True
+            self.save(require_durable=True)
+            items = list(batch.values())
+            self._write_cortex_items(items)
+            self._dual_write_jsonl_items([memory for memory, _ in items], only_if_missing=True)
+        return len(fresh)
+
     def _require_durable(self) -> None:
         if getattr(self, "_closed", False):
             raise RuntimeError("Memory store is closed")
@@ -966,32 +1025,50 @@ class MonetaBackedStore:
         """Mirror the memory into cortex_root.usda as a typed prim keyed by
         (kind, id). ``kind`` is the memory type value, ``id`` the SYNAPSE id,
         ``payload`` the same ``Memory.to_json()`` deposited into moneta."""
+        self._write_cortex_items([(memory, payload)])
+
+    def _write_cortex_items(self, items) -> None:
+        """Mirror (memory, payload) pairs into the cortex, saving the layer once
+        when the cortex can defer saves (BP12 item 1). Each prim is isolated
+        and best-effort, exactly as a single write always was."""
         cortex = self._cortex
-        if cortex is None:
+        if cortex is None or not items:
             return
-        try:
-            cortex.write(memory.memory_type.value, memory.id, payload)
-        except Exception as exc:  # noqa: BLE001 -- typed-USD authoring is best-effort
-            logger.warning("cortex write failed (isolated): %s", exc)
+        deferred = getattr(cortex, "deferred_save", None)
+        with (deferred() if callable(deferred) else contextlib.nullcontext()):
+            for memory, payload in items:
+                try:
+                    cortex.write(memory.memory_type.value, memory.id, payload)
+                except Exception as exc:  # noqa: BLE001 -- typed-USD authoring is best-effort
+                    logger.warning("cortex write failed (isolated): %s", exc)
 
     def _dual_write_jsonl(self, memory: Memory, *, only_if_missing: bool = False) -> None:
         """Land the memory in the JSONL MemoryStore safety net via its own,
         unchanged write path (add -> buffered append -> flush). On first use,
         ensure the key.fingerprint sidecar exists (W3-STORE target 4)."""
+        self._dual_write_jsonl_items([memory], only_if_missing=only_if_missing)
+
+    def _dual_write_jsonl_items(self, memories, *, only_if_missing: bool = False) -> None:
+        """Land memories in the JSONL safety net with one flush (BP12 item 1).
+        Each record and the final flush are isolated, as a single write was."""
         net = self._jsonl_net
-        if net is None:
+        if net is None or not memories:
             return
-        try:
-            get = getattr(net, "get", None)
-            existing = get(memory.id) if only_if_missing and callable(get) else None
-            if existing is None or existing.to_json() != memory.to_json():
-                net.add(memory)
-            net.flush()  # synchronous append; drains the buffer to memory.jsonl
-            if not self._sidecar_ensured:
-                self._ensure_keyfp_sidecar()
-                self._sidecar_ensured = True
-        except Exception as exc:  # noqa: BLE001 -- the safety net must never break the caller
-            logger.warning("JSONL dual-write failed (isolated): %s", exc)
+        get = getattr(net, "get", None)
+        steps = [("add", memory) for memory in memories] + [("flush", None)]
+        for step, memory in steps:
+            try:
+                if step == "add":
+                    existing = get(memory.id) if only_if_missing and callable(get) else None
+                    if existing is None or existing.to_json() != memory.to_json():
+                        net.add(memory)
+                    continue
+                net.flush()  # synchronous append; drains the buffer to memory.jsonl
+                if not self._sidecar_ensured:
+                    self._ensure_keyfp_sidecar()
+                    self._sidecar_ensured = True
+            except Exception as exc:  # noqa: BLE001 -- the safety net must never break the caller
+                logger.warning("JSONL dual-write failed (isolated): %s", exc)
 
     def _ensure_keyfp_sidecar(self) -> None:
         """Write ``<storage_dir>/key.fingerprint`` on first use so the doctor's
