@@ -13,6 +13,7 @@ if str(JEV_DIR) not in sys.path:
 
 import jev_client as jc  # noqa: E402
 import jev_shape as js  # noqa: E402
+from bp_mission_schema import pin_battleplan_mission_schema  # noqa: E402,F401
 
 POLICY = jc.load_questions()["guards"]["shape"]["policy"]
 SHAPES = js.load_workflows()["shapes"]

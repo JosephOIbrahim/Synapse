@@ -13,7 +13,7 @@ for p in (str(JEV_DIR), str(BP_DIR)):
 
 import jev_client as jc  # noqa: E402
 import jev_team as jt  # noqa: E402
-import mission_schema as ms  # noqa: E402
+from bp_mission_schema import ms, pin_battleplan_mission_schema  # noqa: E402,F401
 import compile_wave as cw  # noqa: E402
 
 POLICY = jc.load_questions()["guards"]["team"]["policy"]

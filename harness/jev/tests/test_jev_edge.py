@@ -14,7 +14,7 @@ for p in (str(JEV_DIR), str(BP_DIR)):
         sys.path.insert(0, p)
 
 import jev_edge as je  # noqa: E402
-import mission_schema as ms  # noqa: E402
+from bp_mission_schema import ms, pin_battleplan_mission_schema  # noqa: E402,F401
 
 CAP = je.caps()["max_inserted_legs"]
 FLAG = {"verdict": "FLAG", "rows": [1], "reason": "row(s) [1] evidence does not support predicate"}
