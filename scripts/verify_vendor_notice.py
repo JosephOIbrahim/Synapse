@@ -10,13 +10,15 @@ hashes differently on every platform while its blob stays LF everywhere. A
 verifier that read the checkout would bless CRLF hashes on Windows and reject
 them on Linux -- which is exactly the BP11-FIXFWD defect this repair closes.
 
-The NOTICE.md table itself is read from the working tree (so a local edit to a
-hash is what the mutation/CRLF tests exercise); only the *content* being hashed
-comes from the object store. No guide or LICENSE file is ever read from disk.
+The NOTICE.md table itself is read from the working tree, or from the file
+``--notice`` names, so the mutation and CRLF tests check an edited copy without
+touching the tracked file (ruling R-D). Only the *content* being hashed comes
+from the object store. No guide or LICENSE file is ever read from disk.
 
 Exits 0 if every hash matches, 1 on any mismatch, missing, or unexpected entry.
 """
 
+import argparse
 import sys
 import re
 import subprocess
@@ -78,9 +80,16 @@ def compute_hashes(repo_root, expected_hashes):
     return hashes
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Verify the vendored NOTICE.md hashes against committed git blobs.")
+    parser.add_argument(
+        "--notice", type=Path, default=None,
+        help="NOTICE.md to check (default: the vendored copy in this working tree)")
+    args = parser.parse_args(argv)
     repo_root = Path(__file__).parent.parent
-    notice_path = repo_root / "python" / "synapse" / "_vendor" / "fxhoudinimcp" / "NOTICE.md"
+    notice_path = args.notice or (
+        repo_root / "python" / "synapse" / "_vendor" / "fxhoudinimcp" / "NOTICE.md")
 
     if not notice_path.exists():
         print(f"Error: NOTICE.md not found at {notice_path}", file=sys.stderr)

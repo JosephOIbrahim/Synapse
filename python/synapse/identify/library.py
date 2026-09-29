@@ -144,9 +144,13 @@ def summary_paragraph(body: str) -> str:
     return head
 
 
-#: Per-process memo keyed by ``(help_url, hda_help)`` (sec. 5 responsiveness).
-#: Only the production path (``lookup is None``) is memoized, so an injected
-#: test ``lookup`` is always called and never served a stale cached row.
+#: Per-process memo keyed by ``(help_url, hda_help, corpus identity)`` (sec. 5
+#: responsiveness). Only the production path (``lookup is None``) is memoized,
+#: so an injected test ``lookup`` is always called and never served a stale
+#: cached row. A lookup that raised, or a miss while the library could not be
+#: read, is never stored, so an outage on the first click is not pinned until
+#: Houdini restarts (CRUX2 N1). The corpus identity is the library root and its
+#: published generation, so a rebuilt or re-pointed library is looked up afresh.
 _SUMMARY_CACHE: dict[tuple, tuple] = {}
 
 
@@ -159,25 +163,31 @@ def summarize(help_url: str, hda_help: str | None = None,
     ``help_summary``; it is injectable for tests. A ``lookup`` that raises is
     treated as no row (honest unknown), never a crash on the bubble path.
 
-    The default path memoizes its result per ``(help_url, hda_help)`` for the
-    life of the process, so a 200-node selection of a few types costs one
-    library lookup per distinct type, not one per node (sec. 5).
+    The default path memoizes per ``(help_url, hda_help, corpus identity)`` for
+    the life of the process, so a 200-node selection of a few types costs one
+    library lookup per distinct type, not one per node (sec. 5). It remembers a
+    found summary, and a miss only when the library was readable; an outage is
+    looked up again on the next click (CRUX2 N1).
     """
     use_cache = lookup is None
+    identity = None
     if use_cache:
-        cache_key = (help_url, hda_help)
+        from synapse.cognitive.tools import sidefx_library as _sidefx
+        identity = _sidefx.corpus_identity()
+        cache_key = (help_url, hda_help, identity)
         if cache_key in _SUMMARY_CACHE:
             return _SUMMARY_CACHE[cache_key]
-        from synapse.cognitive.tools.sidefx_library import help_summary as lookup
+        lookup = _sidefx.help_summary
 
     result: tuple[str | None, str] = (None, "unknown")
+    failed = False
     keys = derive_help_keys(help_url)
     if keys:
         try:
             hit = lookup(keys)
         except Exception:
-            _log.debug("swallowed exception", exc_info=True)
-            hit = None
+            _log.debug("library lookup failed; the miss is not remembered", exc_info=True)
+            hit, failed = None, True
         if hit:
             text = first_sentence(summary_paragraph(hit[0]))
             if text:
@@ -188,6 +198,6 @@ def summarize(help_url: str, hda_help: str | None = None,
         if text:
             result = (text, "hda")
 
-    if use_cache:
+    if use_cache and not failed and (result[0] is not None or identity is not None):
         _SUMMARY_CACHE[cache_key] = result
     return result

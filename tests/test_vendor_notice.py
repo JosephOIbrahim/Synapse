@@ -65,46 +65,62 @@ def test_verify_vendor_notice():
     )
 
 
-def test_verify_vendor_notice_mutation_fails():
-    """Verify that mutating a hash causes the verifier to fail.
+def _notice_path(repo_root):
+    return repo_root / "python" / "synapse" / "_vendor" / "fxhoudinimcp" / "NOTICE.md"
 
-    This test mutates NOTICE.md temporarily and confirms the verifier exits 1.
-    """
-    repo_root = _repo_root()
-    notice_path = repo_root / "python" / "synapse" / "_vendor" / "fxhoudinimcp" / "NOTICE.md"
+
+def _run_verifier(repo_root, *args):
     verifier = repo_root / "scripts" / "verify_vendor_notice.py"
+    assert verifier.exists(), f"Verifier not found at {verifier}"
+    return subprocess.run([sys.executable, str(verifier), *args],
+                          capture_output=True, text=True)
 
+
+def _copy_with(tmp_path, content):
+    """A NOTICE.md copy holding *content*, written as bytes (no newline translation).
+
+    The mutation and CRLF tests check this copy through ``--notice`` and never
+    write the tracked file (ruling R-D; CRUX F7: a text-mode rewrite left the
+    tracked NOTICE.md CRLF on Windows after every run).
+    """
+    copy = tmp_path / "NOTICE.md"
+    copy.write_bytes(content.encode("utf-8"))
+    return copy
+
+
+def test_verify_vendor_notice_accepts_an_unmodified_copy(tmp_path):
+    """Control for the two tests below: ``--notice`` on a faithful copy passes."""
+    repo_root = _repo_root()
+    before = _notice_path(repo_root).read_bytes()
+    result = _run_verifier(repo_root, "--notice", str(_copy_with(tmp_path, before.decode("utf-8"))))
+    assert result.returncode == 0, (result.stdout, result.stderr)
+    assert _notice_path(repo_root).read_bytes() == before
+
+
+def test_verify_vendor_notice_mutation_fails(tmp_path):
+    """Mutating one hash in a copy of NOTICE.md makes the verifier exit 1."""
+    repo_root = _repo_root()
+    notice_path = _notice_path(repo_root)
     assert notice_path.exists(), f"NOTICE.md not found at {notice_path}"
+    before = notice_path.read_bytes()
+    original_content = before.decode("utf-8")
 
-    original_content = notice_path.read_text(encoding="utf-8")
+    match = re.search(r"\| anim\.md \| ([a-f0-9]{64})", original_content)
+    assert match, "anim.md row not found in NOTICE.md"
+    old_hash = match.group(1)
+    new_hash = ("0" if old_hash[0] != "0" else "1") + old_hash[1:]
+    copy = _copy_with(tmp_path, original_content.replace(old_hash, new_hash))
 
-    try:
-        mutated_content = original_content
-        match = re.search(r"\| anim\.md \| ([a-f0-9]{64})", mutated_content)
-        assert match, "anim.md row not found in NOTICE.md"
-        old_hash = match.group(1)
-        new_digit = "0" if old_hash[0] != "0" else "1"
-        new_hash = new_digit + old_hash[1:]
-        mutated_content = mutated_content.replace(old_hash, new_hash)
-
-        notice_path.write_text(mutated_content, encoding="utf-8")
-
-        result = subprocess.run(
-            [sys.executable, str(verifier)],
-            capture_output=True,
-            text=True,
-        )
-
-        assert result.returncode == 1, (
-            f"Verifier should fail on mutated hash but got exit code {result.returncode}\n"
-            f"stdout: {result.stdout}\n"
-            f"stderr: {result.stderr}"
-        )
-    finally:
-        notice_path.write_text(original_content, encoding="utf-8")
+    result = _run_verifier(repo_root, "--notice", str(copy))
+    assert result.returncode == 1, (
+        f"Verifier should fail on mutated hash but got exit code {result.returncode}\n"
+        f"stdout: {result.stdout}\n"
+        f"stderr: {result.stderr}"
+    )
+    assert notice_path.read_bytes() == before, "the tracked NOTICE.md was touched"
 
 
-def test_verify_vendor_notice_crlf_table_fails():
+def test_verify_vendor_notice_crlf_table_fails(tmp_path):
     """A NOTICE table whose hashes are computed from CRLF bytes must be REJECTED.
 
     This reproduces the BP11-FIXFWD defect exactly: hashes taken from a Windows
@@ -113,13 +129,11 @@ def test_verify_vendor_notice_crlf_table_fails():
     verifier, which hashes the LF blob, must exit 1.
     """
     repo_root = _repo_root()
-    notice_path = repo_root / "python" / "synapse" / "_vendor" / "fxhoudinimcp" / "NOTICE.md"
-    verifier = repo_root / "scripts" / "verify_vendor_notice.py"
-
+    notice_path = _notice_path(repo_root)
     assert notice_path.exists(), f"NOTICE.md not found at {notice_path}"
-
-    original_content = notice_path.read_text(encoding="utf-8")
-    lf_hashes = _table_hashes(original_content)
+    before = notice_path.read_bytes()
+    original_content = before.decode("utf-8")
+    lf_hashes = _table_hashes(original_content.replace("\r\n", "\n"))
     assert lf_hashes, "no hashes parsed from NOTICE.md"
 
     # Build the CRLF-hashed table: for each file, sha256 of its blob as CRLF.
@@ -141,18 +155,9 @@ def test_verify_vendor_notice_crlf_table_fails():
     assert changed_anim, "anim.md CRLF hash equalled its LF hash -- CRLF swap was a no-op"
     assert swapped >= 1, "no CRLF hash differed from its LF hash"
 
-    try:
-        notice_path.write_text(crlf_content, encoding="utf-8")
-
-        result = subprocess.run(
-            [sys.executable, str(verifier)],
-            capture_output=True,
-            text=True,
-        )
-
-        assert result.returncode == 1, (
-            f"Verifier must reject a CRLF-hashed table but got exit code "
-            f"{result.returncode}\nstdout: {result.stdout}\nstderr: {result.stderr}"
-        )
-    finally:
-        notice_path.write_text(original_content, encoding="utf-8")
+    result = _run_verifier(repo_root, "--notice", str(_copy_with(tmp_path, crlf_content)))
+    assert result.returncode == 1, (
+        f"Verifier must reject a CRLF-hashed table but got exit code "
+        f"{result.returncode}\nstdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+    assert notice_path.read_bytes() == before, "the tracked NOTICE.md was touched"

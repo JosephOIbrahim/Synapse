@@ -297,6 +297,31 @@ def query_library(query: str, domain: str = "both", k: int = 24,
             f"[scout] SideFX library unavailable: {reason} — using existing Scout sources only."]}
 
 
+def corpus_identity() -> tuple[str, str] | None:
+    """``(root, generation)`` of the published library, or None when it cannot be read.
+
+    Identify keys its per-process summary memo on this, so a rebuilt or
+    re-pointed library is looked up afresh, and a library that cannot be read
+    is never remembered as having no page (CRUX2 N1). It reads only the pointer
+    file and checks that the database it names exists; nothing is opened.
+    """
+    try:
+        root = _configured_root()
+        if root is None:
+            return None
+        pointer = _read_json(_within(root, root / "current.json"))
+        if pointer.get("schema") != POINTER_SCHEMA:
+            return None
+        generation = pointer.get("generation")
+        if not isinstance(generation, str) or not generation.strip():
+            return None
+        if not _database_path(root, pointer.get("database")).is_file():
+            return None
+        return (str(root), generation)
+    except (OSError, ValueError, TypeError):
+        return None
+
+
 def help_summary(help_paths) -> tuple[str, str] | None:
     """Exact node-help-page lookup — never a search, so no phantom near-miss.
 

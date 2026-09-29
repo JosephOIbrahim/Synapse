@@ -13,6 +13,14 @@ from synapse.identify import library as LIB
 from synapse.cognitive.tools import sidefx_library as SL
 
 
+@pytest.fixture(autouse=True)
+def _fresh_summary_memo():
+    """Every test starts and ends with an empty summary memo (CRUX2 N1)."""
+    LIB._SUMMARY_CACHE.clear()
+    yield
+    LIB._SUMMARY_CACHE.clear()
+
+
 # ── temp corpus (real DB, real help_summary) ─────────────────────────────────
 
 def _build_corpus(tmp_path, rows):
@@ -332,3 +340,62 @@ def test_no_indexed_sop_lop_summary_is_a_markup_only_paragraph():
     leaks = [key for key, (_cid, body) in top.items()
              if LIB._is_markup_only(LIB.summary_paragraph(body))]
     assert leaks == [], f"markup-only summaries leaked for: {sorted(leaks)[:10]}"
+
+
+# ── CRUX2 N1: an outage is never remembered; a rebuilt library is read again ──
+
+def test_n1_a_lookup_that_raised_is_looked_up_again(monkeypatch):
+    calls = []
+
+    def lookup(keys):
+        calls.append(tuple(keys))
+        if len(calls) == 1:
+            raise OSError("the library drive is not mounted")
+        return ("Box\n\nMakes a box.", "u")
+
+    monkeypatch.setattr(SL, "help_summary", lookup)
+    monkeypatch.setattr(SL, "corpus_identity", lambda: ("G:/corpus", "gen1"))
+    assert LIB.summarize("operator:Sop/box") == (None, "unknown")
+    assert LIB.summarize("operator:Sop/box") == ("Makes a box.", "library")
+    assert LIB.summarize("operator:Sop/box") == ("Makes a box.", "library")
+    assert len(calls) == 2          # the outage was retried; the hit is remembered
+
+
+def test_n1_a_miss_while_the_library_is_unreadable_is_not_remembered(monkeypatch):
+    answers = [None, ("Box\n\nMakes a box.", "u")]
+    monkeypatch.setattr(SL, "help_summary", lambda keys: answers.pop(0))
+    monkeypatch.setattr(SL, "corpus_identity", lambda: None)
+    assert LIB.summarize("operator:Sop/box") == (None, "unknown")
+    assert LIB.summarize("operator:Sop/box") == ("Makes a box.", "library")
+
+
+def test_n1_a_definite_miss_is_remembered_per_corpus_generation(monkeypatch):
+    calls = []
+    identity = {"now": ("G:/corpus", "gen1")}
+    monkeypatch.setattr(SL, "help_summary", lambda keys: calls.append(tuple(keys)))
+    monkeypatch.setattr(SL, "corpus_identity", lambda: identity["now"])
+    LIB.summarize("operator:Sop/box")
+    LIB.summarize("operator:Sop/box")
+    assert len(calls) == 1          # a miss in a readable library is remembered
+    identity["now"] = ("G:/corpus", "gen2")
+    LIB.summarize("operator:Sop/box")
+    assert len(calls) == 2          # a rebuilt library is looked up afresh
+
+
+def test_corpus_identity_names_the_root_and_its_generation(tmp_path, monkeypatch):
+    root = _build_corpus(tmp_path, [(1, _POLYBEVEL, "PolyBevel", _BODY)])
+    monkeypatch.setenv(SL.ROOT_ENV, str(root))
+    assert SL.corpus_identity() == (str(root.resolve()), "gen1")
+
+
+def test_corpus_identity_is_none_when_the_database_is_missing(tmp_path, monkeypatch):
+    root = _build_corpus(tmp_path, [(1, _POLYBEVEL, "PolyBevel", _BODY)])
+    (root / "indexes" / "gen1.sqlite3").unlink()
+    monkeypatch.setenv(SL.ROOT_ENV, str(root))
+    assert SL.corpus_identity() is None
+
+
+def test_corpus_identity_is_none_when_unconfigured(tmp_path, monkeypatch):
+    monkeypatch.delenv(SL.ROOT_ENV, raising=False)
+    monkeypatch.setattr(SL, "CONFIG_PATH", tmp_path / "missing.json")
+    assert SL.corpus_identity() is None
