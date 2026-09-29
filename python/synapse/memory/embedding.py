@@ -88,6 +88,7 @@ class HashEmbedder:
         # id encodes every parameter that defines the vector space so a swap --
         # or even a re-config -- is detectable from the stamped provenance.
         self.id = f"{self._FAMILY}-d{dim}-n{ngram_min}_{ngram_max}"
+        self.backend = "hash"  # always; see SemanticEmbedder.backend
 
     def _ngrams(self, text: str) -> Iterator[str]:
         n_chars = len(text)
@@ -135,8 +136,10 @@ class SemanticEmbedder:
     are not installed), :meth:`embed` transparently falls back to
     :class:`HashEmbedder` with the same output dimension. The embedder's
     ``id`` is always ``"minilm-l6-v2-d384"`` regardless of which backend
-    actually produced the vector, so downstream code can detect that a
-    re-embed is needed when the model becomes available.
+    actually produced the vector. The id therefore does NOT reveal whether
+    a stored vector came from the model or from the hash fallback, and
+    cannot be used to detect that a re-embed is needed. Read :attr:`backend`
+    (``"onnx"`` or ``"hash"``) to see what is actually serving right now.
 
     Contract (same as :class:`Embedder`):
 
@@ -180,6 +183,20 @@ class SemanticEmbedder:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    @property
+    def backend(self) -> str:
+        """Which engine is serving now: ``"onnx"``, ``"hash"`` or ``"unloaded"``.
+
+        A pure read of current state -- it never loads the model, so a health
+        probe stays cheap and cannot raise. ``"unloaded"`` means no embed has
+        run yet. ``"hash"`` means an embed fell back to :class:`HashEmbedder`.
+        """
+        if self._session is not None:
+            return "onnx"
+        if self._fallback is not None:
+            return "hash"
+        return "unloaded"
 
     def embed(self, text: str) -> list[float]:
         """Embed *text* and return an L2-normalized vector.

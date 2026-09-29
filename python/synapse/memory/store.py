@@ -1172,6 +1172,9 @@ def backend_health(store: Any = None) -> Optional[Dict[str, Any]]:
     - ``active_backend``     -- what the live store class actually is.
     - ``embedder_id`` / ``embedding_dim`` -- the active embedder identity + vector
       dimension (``None`` on jsonl, which has no embedder -- honest, not faked).
+    - ``embedder_backend``   -- ``onnx``, ``hash`` or ``unloaded`` (no embed has run yet). The
+      id is the same for onnx and hash, so this is the only place the fallback
+      shows. Read-only: reporting never loads the model.
     - ``row_count``          -- ``store.count()`` (``None`` if it raises).
     - ``status``             -- SUCCESS when the served backend satisfies the
       request; UNAVAILABLE when a requested substrate is absent (e.g. Moneta not
@@ -1194,6 +1197,8 @@ def backend_health(store: Any = None) -> Optional[Dict[str, Any]]:
     embedder_id = getattr(store, "embedder_id", None)
     _emb = getattr(store, "_embedder", None) or getattr(store, "embedder", None)
     embedding_dim = getattr(_emb, "dim", None) if _emb is not None else None
+    # The id is constant across onnx/hash, so report the live backend too.
+    embedder_backend = getattr(_emb, "backend", None) if _emb is not None else None
 
     try:
         row_count: Optional[int] = int(store.count())
@@ -1217,6 +1222,7 @@ def backend_health(store: Any = None) -> Optional[Dict[str, Any]]:
         "active_backend": active,
         "embedder_id": embedder_id,
         "embedding_dim": embedding_dim,
+        "embedder_backend": embedder_backend,
         "row_count": row_count,
         "status": status,
         "reason": reason,
