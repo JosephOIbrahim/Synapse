@@ -78,8 +78,11 @@ def test_a_version_the_page_never_names_is_caught():
 
 
 def test_older_release_tags_are_history_not_failures():
-    assert "v5.75.2" in README          # the installer tag the page rightly still names
-    assert not any("5.75.2" in f for f in _failures(README))
+    # An older tag the page names, such as an earlier Setup's release, is history. The line is
+    # added here so the test does not depend on which older tags the page happens to carry.
+    older = README + "\nThe earlier Setup was [v5.75.2](docs/releases/v5.75.2.md).\n"
+    assert "v5.75.2" in older
+    assert not any("5.75.2" in f for f in _failures(older))
 
 
 def test_the_negative_controls_are_live(monkeypatch):

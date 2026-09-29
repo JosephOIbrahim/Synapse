@@ -29,21 +29,25 @@ HTTP `/mcp` and WebSocket `/synapse` share one local Houdini server. **The conne
 ```mermaid
 flowchart TD
     accTitle: HTTP dispatch separates scene mutations from other tools
-    accDescr: Panel calls pass worker policy before HTTP dispatch. External HTTP clients enter dispatch directly. Ordinary scene mutations use the bridge; reads, farm controls and Doctor have separate routes.
+    accDescr: Panel calls pass worker policy before HTTP dispatch. External HTTP clients enter dispatch directly. When the opt-in read-only mode is on, every caller, the panel included, can run only read-only tools and the stop controls, and any other call is refused with error -32005. Ordinary scene mutations use the bridge; reads, farm controls and Doctor have separate routes.
     P["Panel worker"] --> W["Worker policy"]
     W --> H["HTTP /mcp"]
     E["External HTTP client"] --> H
-    H -->|"scene mutation"| B["Execution bridge"]
-    H -->|"read"| R["Read handler"]
-    H -->|"farm control or Doctor"| D["Separate dispatch route"]
+    H --> F["Opt-in read-only fence<br/>for every caller"]
+    F -->|"not read-only or a stop, while on"| N["Refused,<br/>error -32005"]
+    F -->|"scene mutation"| B["Execution bridge"]
+    F -->|"read"| R["Read handler"]
+    F -->|"farm control or Doctor"| D["Separate dispatch route"]
     B --> S["Main-thread scene action<br/>and operation receipt"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
-    class H,B synapse
+    class H,F,B synapse
     linkStyle default stroke:#D07020
 ```
 
 Read-classified tools skip the mutation bridge. Farm controls use their own admission and job I/O; Doctor uses its own off-main handler path. Houdini API access still belongs on the main thread.
+
+The read-only fence is off by default. With `SYNAPSE_MCP_READ_ONLY=1` in Houdini's environment, it refuses every tool that is not read-only under both gating sets, for every caller of `/mcp`, the panel included. Stop controls always pass. [Read-only mode](../mcp/SETUP.md#read-only-mode).
 
 If bridge imports are unavailable, non-farm handlers can fall back to direct dispatch without bridge wrapping. Farm controls fail closed in that case.
 
@@ -56,16 +60,18 @@ Sources: [HTTP dispatch](../../python/synapse/mcp/tools.py), [HTTP server](../..
 ```mermaid
 flowchart TD
     accTitle: Stdio forwards Houdini operations over WebSocket
-    accDescr: The configured stdio MCP server handles local knowledge tools locally. It forwards Houdini operations over WebSocket to direct handlers, which do not use the HTTP execution bridge.
+    accDescr: The configured stdio MCP server handles local knowledge tools locally. It forwards Houdini operations over WebSocket to direct handlers, which do not use the HTTP execution bridge. When the opt-in read-only mode is on, a tool command that is neither read-only nor a stop control is refused before the handlers; protocol commands pass.
     C["Configured stdio client"] --> A["mcp_server.py"]
     A -->|"local knowledge tool"| L["Local response<br/>for example, Scout"]
     A -->|"Houdini operation"| W["WebSocket /synapse"]
     X["Direct WebSocket client"] --> W
-    W --> H["Direct handlers<br/>auth and RBAC"]
+    W --> F["Opt-in read-only fence"]
+    F -->|"not read-only or a stop, while on"| N["Refused, naming<br/>the tool and variable"]
+    F --> H["Direct handlers<br/>auth and RBAC"]
     H --> S["Main-thread Houdini API"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
-    class W,H synapse
+    class W,F,H synapse
     linkStyle default stroke:#D07020
 ```
 
@@ -128,9 +134,9 @@ Select nodes in a network editor, then click **Identify** or send `/identify`. T
 ```mermaid
 flowchart LR
     accTitle: Identify draws a short local bubble beside each selected node
-    accDescr: The panel reads facts for up to 60 selected nodes on Houdini's main thread. A worker thread looks up each node type once in the local SideFX library and builds each bubble without a model. The main thread draws the bubbles in a click-through overlay above the network editor, which follows pan and zoom. Nothing is written to the scene.
+    accDescr: The panel reads facts for up to 60 selected nodes on Houdini's main thread. A worker thread finds each node type's exact help page once in the local SideFX library, building the page path the way Houdini's own help does, falls back to an HDA's own help when the library has no page, and builds each bubble without a model. The main thread draws the bubbles in a click-through overlay above the network editor, which follows pan and zoom. Nothing is written to the scene.
     S["Selected nodes<br/>(up to 60)"] --> F["Read node facts<br/>on the main thread"]
-    F --> L["Look up each type once<br/>in the local library"]
+    F --> L["Find each type's exact<br/>help page once"]
     L --> C["Build each bubble<br/>without a model"]
     C --> W["Draw an overlay<br/>above the editor"]
     W --> V["Follow pan and zoom,<br/>scene untouched"]
@@ -294,16 +300,18 @@ The [staged workflow guides](../../rag/corpus/guides) retain upstream provenance
 ```mermaid
 flowchart TD
     accTitle: Publish only the reviewed and checked release commit
-    accDescr: Review changes and independent evidence, prepare an authorized version commit, push it, and require CI for that exact commit. Publish its tag and release only after the checks pass, then verify the remote references and release state.
+    accDescr: Review changes and independent evidence, prepare an authorized version commit, push it, and require CI for that exact commit. When a release ships a Windows Setup, build and qualify it from the reviewed tree. Publish the tag, release, Setup and checksums only after the checks pass, then verify the remote references, release state and download links.
     A["Review scoped changes<br/>and independent evidence"] --> B["Authorized version update<br/>and release commit"]
+    A --> I["Build and qualify<br/>Windows Setup, if shipped"]
     B --> P["Push reviewed commit"]
     P --> C{"CI passes for this commit?"}
-    C -->|"yes"| T["Verify and publish<br/>tag + GitHub release"]
+    C -->|"yes"| T["Verify and publish tag,<br/>release, Setup and checksums"]
+    I --> T
     C -->|"no / unknown"| H["Hold publication;<br/>investigate"]
-    T --> V["Verify remote commit,<br/>tag and release state"]
+    T --> V["Verify remote commit, tag,<br/>release and download links"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
-    class T synapse
+    class I,T synapse
     linkStyle default stroke:#D07020
 ```
 

@@ -8,15 +8,15 @@ This feature map was reviewed on **2026-09-28**. For the published version and i
 
 | Area | Available now | Read next |
 |---|---|---|
-| Identify | Select nodes, then **Identify** or `/identify`: a short local bubble beside each node, drawn over the network editor, from its type, changed parameters, state and the SideFX library. No model call, and nothing is written to the scene. | [Identify release](releases/v5.85.0.md), [how it works](architecture/overview.md#identify). |
+| Identify | Select nodes, then **Identify** or `/identify`: a short local bubble beside each node, drawn over the network editor, from its type, changed parameters, state and the SideFX library. No model call, and nothing is written to the scene. | [Identify release](releases/v5.85.0.md), [overlay and help paths](releases/v5.86.0.md), [how it works](architecture/overview.md#identify). |
 | Panel | Shared dark-gray/coral styling, welcome motion, inset footer controls and a taller prompt with **Resize**. | [Panel release](releases/v5.83.0.md), [resize and library update](releases/v5.84.0.md), [shorter Resize label](releases/v5.84.1.md). |
 | JEV / TypeSafe | Discoverable key setup with masked entry and explicit session save/clear. Ranking and routing measurement remain optional. | [Key setup](getting-started/jev-setup.md), [JEV release](releases/v5.84.2.md). |
 | World Labs | Artist-triggered import of an existing API-accessible world or supported local Gaussian PLY. | [Import flow and limits](architecture/overview.md#world-labs-import). |
 | SideFX help | Resumable installed-help/Markdown ingestion, published SQLite search generations and bounded local Scout retrieval. | [Build and connect](studio/SIDEFX_LIBRARY.md). |
 
-**Installation:** the current release is source-only. Windows Setup remains the older **v5.75.2** package. It does not contain the recent changes above. Use [source installation](getting-started/installation.md#source-installation) for the current version.
+**Installation:** the current release, **v5.86.0**, ships as a Windows Setup and as source. The Setup contains the changes above. See [installation](getting-started/installation.md).
 
-**Validation:** [v5.85.0](releases/v5.85.0.md) records live Identify gates in Houdini 22.0.400 and two independent reviews. GitHub CI checks stock Python on Linux, macOS and Windows; the GitHub release links the run for its exact commit. Neither establishes an authenticated World Labs import, a Karma beauty render or a new Windows installer.
+**Validation:** [v5.85.0](releases/v5.85.0.md) records live Identify gates in Houdini 22.0.400 and two independent reviews. [v5.86.0](releases/v5.86.0.md) records the Windows Setup qualification. GitHub CI checks stock Python on Linux, macOS and Windows; the GitHub release links the run for its exact commit. None of these establishes an authenticated World Labs import or a Karma beauty render.
 
 **Known gaps remain:** short docks at high UI scale can overflow, the measured SideFX download has missing pages, and alternate Houdini themes lack qualification. See the [inherited release limits](releases/v5.84.1.md#validation-and-limits). The first save of an untitled scene can also freeze Houdini for minutes while memory is copied; the [v5.85.0 limits](releases/v5.85.0.md#validation-and-limits) cover that and Identify.
 

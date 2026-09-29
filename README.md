@@ -4,21 +4,21 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.85.6 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.85.6 is Latest</sub></p>
+<p align="center"><sub>v5.86.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.86.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Install](docs/getting-started/installation.md#source-installation)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.85.6.md)
+**[Install](docs/getting-started/installation.md)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.86.0.md)
 
 ## Start here
 
-**Current release: source installation.** The available Windows Setup is older, v5.75.2. It does not include Identify or the latest panel, JEV and SideFX library changes.
+**Current release: v5.86.0, as a Windows Setup or a source installation.** The [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) includes Identify and the latest panel, JEV and SideFX library changes. It is unsigned, so check it against the release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt).
 
-The current validation target is **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md#source-installation).
+The current validation target is **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md).
 
-1. Save your scene, close Houdini, and follow **[source installation](docs/getting-started/installation.md#source-installation)**.
+1. Save your scene and close Houdini. Run **[Windows Setup](docs/getting-started/installation.md#windows-installer)**, or follow **[source installation](docs/getting-started/installation.md#source-installation)**.
 2. Restart Houdini. Open **New Pane Tab → Synapse**.
 3. Open **Connect models**. Choose a provider and model; add its key if needed.
 4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
@@ -60,16 +60,16 @@ Select one or more nodes in a network editor. Then click **Identify** at the top
 
 A short bubble appears beside each node, drawn over the network editor. It says what the node does, which parameters you changed, and whether the node has an error, a warning or a bypass.
 
-The bubble comes from the node itself and your local SideFX help library. No model runs, and nothing leaves your machine.
+The bubble comes from the node itself and its page in your local SideFX help library, found the way Houdini's own help finds it, or from an HDA's own help when the library has no page for it. No model runs, and nothing leaves your machine.
 
 Click **Identify** again, or send `/identify off`, to clear the bubbles. They are drawn over the editor, so nothing is written to your scene.
 
 ```mermaid
 flowchart LR
     accTitle: How Identify explains selected nodes
-    accDescr: You select nodes and click Identify. SYNAPSE reads each node and the local SideFX help library without a model. A short bubble appears beside each node, drawn over the network editor. Nothing is written to the scene.
+    accDescr: You select nodes and click Identify. SYNAPSE reads each node and finds its exact page in the local SideFX help library, the way Houdini's own help does, or uses an HDA's own help, without a model. A short bubble appears beside each node, drawn over the network editor. Nothing is written to the scene.
     S["Select nodes"] --> I["Click Identify"]
-    I --> R["Read the node +<br/>local help library"]
+    I --> R["Read the node +<br/>its exact help page"]
     R --> N["Short bubble<br/>beside each node"]
     N --> F["Nothing written<br/>to the scene"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
@@ -114,7 +114,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.85.6.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.86.0.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -140,7 +140,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 
 **137 tools, two paths.** The registry count comes from [`TOOL_DEFS`](python/synapse/mcp/_tool_registry.py), checked by [tool-count tests](tests/test_phase0c_doc1_toolcount.py).
 
-Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution bridge. Reads, farm controls and Doctor route separately. The configured stdio client forwards Houdini calls over WebSocket `/synapse` to direct handlers. Those paths have different policy and evidence boundaries.
+Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution bridge. Reads, farm controls and Doctor route separately. The configured stdio client forwards Houdini calls over WebSocket `/synapse` to direct handlers. Those paths have different policy and evidence boundaries. Setting `SYNAPSE_MCP_READ_ONLY=1` limits every `/mcp` and WebSocket caller, the panel included, to read-only tools; stop controls always pass ([read-only mode](docs/mcp/SETUP.md#read-only-mode)).
 
 [Execution diagrams and limits](docs/architecture/overview.md#execution-paths) · [External MCP setup](docs/mcp/SETUP.md) · [Source development and tests](docs/getting-started/installation.md#for-contributors)
 
@@ -150,7 +150,7 @@ Configured memory and scene/project notes supply recalled context. Recall is adv
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
-**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.85.6.md) before relying on it.
+**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.86.0.md) before relying on it.
 
 </details>
 

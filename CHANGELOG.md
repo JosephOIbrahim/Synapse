@@ -22,6 +22,18 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.86.0 - Identify over the editor, Houdini's help paths, a current Windows Setup
+
+Identify now draws its bubbles in a click-through overlay above the network
+editor and writes nothing to the scene. Its library lookup builds help paths
+the way Houdini's own help does, so Object, ROP, Labs, VOP network and manager
+nodes find their pages, and the What line no longer shows help markup. MCP
+clients get a 202 reply to notifications and an opt-in read-only mode,
+`SYNAPSE_MCP_READ_ONLY`, which also fences the panel's own agent while it is
+set; stop controls always pass. Router latency and session activity read a high-resolution clock. This
+release ships a new Windows Setup, the first since v5.75.2. See
+[v5.86.0](docs/releases/v5.86.0.md).
+
 ## v5.85.6 - Memory fixes and a truthful embedder report
 
 Three memory fixes and a README correction. The flusher can no longer append

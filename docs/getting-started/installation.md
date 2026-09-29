@@ -7,14 +7,13 @@ Houdini runs SYNAPSE with its own Python.
 
 ## Windows installer
 
-**[Download Windows Setup v5.75.2](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SYNAPSE-5.75.2-Setup.exe)**
+**[Download Windows Setup v5.86.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe)**
 
-This is the older packaged installer. Newer source releases, including v5.85.6,
-do not contain a new Setup executable. For the current version, use
-[source installation](#source-installation) below.
+This Setup is the current release, v5.86.0. It includes Identify and the latest
+panel, JEV and SideFX library changes.
 
-[Installer release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.75.2) ·
-[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.75.2/SHA256SUMS.txt)
+[Installer release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.86.0) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt)
 
 1. Save your scene and close Houdini.
 2. Open Setup. This installer is unsigned, so Windows may show an unknown publisher.
@@ -28,8 +27,8 @@ bundle; it needs no terminal, Git or system Python. Model credentials and option
 external services are separate.
 
 **Read the downloaded installer's own validation record.** The
-[v5.75.2 notes](../releases/v5.75.2.md) describe its checks and remaining limits.
-Newer source-release tests do not qualify that older executable. Native wizard
+[v5.86.0 notes](../releases/v5.86.0.md) describe its checks and remaining limits.
+Tests of later source releases do not qualify this executable. Native wizard
 inspection, clean-machine testing, model/scene behavior and Moneta persistence
 are separate checks recorded per release.
 

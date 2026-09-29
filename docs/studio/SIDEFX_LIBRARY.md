@@ -15,7 +15,7 @@ read it locally. A query never starts a library download.
 ```mermaid
 flowchart TD
     accTitle: Build the SideFX library once, query the published index locally
-    accDescr: Installed help and the official Markdown index feed a resumable cache. A coverage check protects publication. A new SQLite generation becomes active through an atomic pointer. Scout reads a bounded shortlist, and Identify reads one exact node page per type; runtime symbol checks remain separate.
+    accDescr: Installed help and the official Markdown index feed a resumable cache. A coverage check protects publication. A new SQLite generation becomes active through an atomic pointer. Scout reads a bounded shortlist, and Identify reads one exact node page per type, found the way Houdini's own help finds it, and takes the first sentence of its tooltip or first prose paragraph; runtime symbol checks remain separate.
     I["Installed Houdini help"] --> C["Cache original sources<br/>Record hashes and builds"]
     W["Official llms.txt<br/>and linked Markdown"] --> C
     C --> G{"Coverage permits publication?"}
@@ -24,8 +24,8 @@ flowchart TD
     B --> P["Publish current.json<br/>with an atomic update"]
     P --> Q["Scout reads a<br/>bounded local shortlist"]
     Q --> R["Cited document-only results"]
-    P --> D["Identify reads one exact<br/>node page per type"]
-    D --> N["First prose sentence<br/>becomes the node's note"]
+    P --> D["Identify reads one exact node<br/>page per type, found Houdini's way"]
+    D --> N["First sentence of its tooltip or<br/>first prose becomes the What line"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class P,Q,D synapse
