@@ -22,6 +22,18 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.85.6 - Memory fixes and a truthful embedder report
+
+Three memory fixes and a README correction. The flusher can no longer append
+to a file that a save has just replaced, so a save no longer duplicates or
+resurrects a record. Notes for an untitled scene now live in the launch
+session's folder, beside its store, instead of a folder shared by every
+launch. The memory status report gains `embedder_backend` (`onnx`, `hash` or
+`unloaded`), because the embedder id is the same whether the model or the
+hash fallback is serving. The README no longer lists the first-save freeze
+as a known issue; v5.85.4 fixed it. This is a source release with no new
+Windows installer. See [v5.85.6](docs/releases/v5.85.6.md).
+
 ## v5.85.5 - The older panel is retired
 
 The older `synapse.ui` panel, which Houdini never loaded, is removed.
