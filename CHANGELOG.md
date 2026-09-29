@@ -22,6 +22,17 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.85.2 - Karma render settings on Houdini 22
+
+SYNAPSE can change Karma Render Settings on Houdini 22 again. Houdini 22.0.400's
+USD API dropped the call SYNAPSE's composition check used to list references, so
+every change on a stage with an authored reference was refused as a composition
+violation. The check now reads references from the prim's layer stack, lands on
+the LOP that changed, and still refuses self-references and missing files. Ramp
+parameters no longer break `houdini_network_explain` and `synapse_inspect_node`.
+This is a source release with no new Windows installer. See
+[v5.85.2](docs/releases/v5.85.2.md).
+
 ## v5.85.1 - Claude Code connects to SYNAPSE
 
 Claude Code can now load SYNAPSE's tools over MCP. The `/mcp` endpoint read
