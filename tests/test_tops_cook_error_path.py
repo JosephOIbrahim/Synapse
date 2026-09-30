@@ -35,7 +35,7 @@ def test_cook_failure_returns_structured_error_not_nameerror(monkeypatch):
     class _Node:
         def getPDGNode(self):
             return SimpleNamespace(workItems=[1, 2])
-        def cook(self, block=False):
+        def cookWorkItems(self, block=False):
             raise RuntimeError("cook boom")
 
     # Patch the handler's ACTUAL execution namespace (__globals__ of the function,

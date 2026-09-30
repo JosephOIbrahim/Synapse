@@ -488,7 +488,7 @@ class TestCookNode:
             result = handler._handle_tops_cook_node({"node": "/obj/topnet1/node1"})
 
         assert result["status"] == "cooked"
-        node.cook.assert_called_once_with(block=True)
+        node.cookWorkItems.assert_called_once_with(block=True)
 
     def test_nonblocking_cook(self, handler):
         pdg = _make_pdg_node([])
@@ -501,7 +501,7 @@ class TestCookNode:
             })
 
         assert result["status"] == "cooking"
-        node.cook.assert_called_once_with(block=False)
+        node.cookWorkItems.assert_called_once_with(block=False)
 
     def test_generate_only(self, handler):
         pdg = _make_pdg_node([_make_work_item(id=0)])
@@ -515,7 +515,7 @@ class TestCookNode:
 
         assert result["status"] == "generated"
         node.generateStaticItems.assert_called_once()
-        node.cook.assert_not_called()
+        node.cookWorkItems.assert_not_called()
 
     def test_no_pdg_node_error(self, handler):
         node = _make_top_node(pdg_node=None)
@@ -549,7 +549,7 @@ class TestCookNode:
             result = handler._handle_tops_cook_node({"node": "/obj/topnet1/node1"})
 
         assert result["status"] == "cooked"
-        node.cook.assert_called_once_with(block=True)
+        node.cookWorkItems.assert_called_once_with(block=True)
 
     def test_missing_node_param(self, handler):
         with pytest.raises(ValueError, match="Missing required"):
@@ -1181,7 +1181,7 @@ class TestCookAndValidate:
         assert result["total_attempts"] == 1
         assert result["node"] == "/obj/topnet1/gen1"
         assert result["final_by_state"]["CookedSuccess"] == 2
-        node.cook.assert_called_once_with(block=True)
+        node.cookWorkItems.assert_called_once_with(block=True)
 
     def test_failures_no_retry_configured(self, handler):
         """Items fail but max_retries=0 (default), so no retry happens."""
@@ -1198,7 +1198,7 @@ class TestCookAndValidate:
         assert result["status"] == "failed"
         assert result["total_attempts"] == 1
         assert result["attempts"][0]["failed_items"] == 1
-        node.cook.assert_called_once()
+        node.cookWorkItems.assert_called_once()
 
     def test_retry_succeeds(self, handler):
         """Items fail on first attempt, succeed after retry."""
@@ -1217,14 +1217,14 @@ class TestCookAndValidate:
         def _cook_side_effect(block=True):
             pdg_node.workItems = success_items
 
-        node.cook.side_effect = [None, _cook_side_effect]
+        node.cookWorkItems.side_effect = [None, _cook_side_effect]
         # First cook: fail_items stay. Second cook: success_items appear.
         call_count = [0]
         def _cook(block=True):
             call_count[0] += 1
             if call_count[0] == 2:
                 pdg_node.workItems = success_items
-        node.cook.side_effect = _cook
+        node.cookWorkItems.side_effect = _cook
 
         with patch.object(_handlers_hou, "node", return_value=node):
             result = handler._handle_tops_cook_and_validate({
