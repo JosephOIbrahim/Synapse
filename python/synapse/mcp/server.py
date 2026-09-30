@@ -233,12 +233,13 @@ def _preflight_holder(server, session_id: Optional[str]):
 def _preflight_refusal(server, tool_name: str, session_id: Optional[str]) -> Optional[dict]:
     """The isError result refusing a change the preflight stops, or None (Level 1, R-5).
 
-    Nothing is read from the session until the gate is known to apply: to a change, in a
-    process with Houdini (server/preflight_gate.py).
+    Nothing is read from the session until the gate is known to apply: to a change that is not
+    a farm control, in a process with Houdini (server/preflight_gate.py).
     """
     from synapse.server import preflight_gate
 
-    if not read_only_mode.is_change(tool_name) or preflight_gate.houdini_hop() is None:
+    if (not read_only_mode.is_change(tool_name) or is_farm_control(tool_name)
+            or preflight_gate.houdini_hop() is None):
         return None
     refused = preflight_gate.admit(_preflight_holder(server, session_id), tool_name)
     return None if refused is None else _tool_result(refused)
@@ -760,7 +761,8 @@ class MCPServer:
         # 4. Preflight (Level 1, R-5): before this session's first change, and again after a
         #    retryable or unrecoverable outcome, one 250 ms hop checks that Houdini can take a
         #    change. A refused change is never sent, and the refusal feeds neither the circuit
-        #    breaker nor the stall detector. Farm launches are changes and are checked too.
+        #    breaker nor the stall detector. Farm controls pass: like the stall gate above, a
+        #    farm launch never waits on Houdini's main thread.
         refused = _preflight_refusal(self, tool_name, session_id)
         if refused is not None:
             return refused

@@ -5,11 +5,12 @@ Houdini's main thread, measures free disk and RAM for ``synapse_health``, and ru
 the transports: ``POST /mcp`` (``mcp/server.py``) and the two WebSocket servers that the stdio
 bridge reaches (``server/hwebserver_adapter.py`` and ``server/websocket.py``).
 
-The gate applies to the calls read-only mode refuses (``read_only_mode.is_change``); reads and
-stop controls always pass. It runs before a session's first change, and again after any
-retryable or unrecoverable outcome on that session. The session is the MCP session on
-``/mcp`` and the connection on a WebSocket; each keeps a ``preflight_due`` flag. A refusal feeds
-neither the circuit breaker nor the stall detector: the hop's 250 ms budget is not a stall.
+The gate applies to the calls read-only mode refuses (``read_only_mode.is_change``); reads and stop
+controls always pass, and so do farm controls, which never wait on Houdini's main thread (the stall
+gates exempt them for the same reason). It runs before a session's first change, and again after
+any retryable or unrecoverable outcome on that session. The session is the MCP session on ``/mcp``
+and the connection on a WebSocket; each keeps a ``preflight_due`` flag. A refusal feeds neither the
+circuit breaker nor the stall detector: the hop's 250 ms budget is not a stall.
 
 A process without Houdini has no hop, so the gate does not apply there: every test interpreter,
 whose stand-in ``hou`` (tests/conftest.py) is not Houdini, and the standalone WebSocket server.
@@ -143,9 +144,14 @@ def admit(holder: Any, tool_name: Optional[str],
     attribute says whether the next change must be checked, and defaults to True. A ready
     preflight clears it; ``note`` sets it again.
     """
+    from ..core.farm_contract import is_farm_control
     from ..mcp import read_only_mode
 
     if not tool_name or not read_only_mode.is_change(tool_name):
+        return None
+    if is_farm_control(tool_name):
+        # A farm launch or stop is file, journal and process work that never waits on Houdini's
+        # main thread; the stall gates exempt it for the same reason.
         return None
     hop = houdini_hop()
     if hop is None:

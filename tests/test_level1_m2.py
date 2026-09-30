@@ -82,8 +82,9 @@ def _refused(outcome, code, category):
 
 # ── The checks ───────────────────────────────────────────────────────────────────────────
 
-def test_the_gate_checks_exactly_what_read_only_mode_refuses(monkeypatch):
-    """The two rules never disagree about what a change is. Reads and stops always pass."""
+def test_a_change_is_exactly_what_read_only_mode_refuses(monkeypatch):
+    """The two rules never disagree about what a change is. Reads and stops always pass; the gate
+    also lets farm controls through (test_farm_controls_pass_without_a_hop)."""
     monkeypatch.setenv(RO.ENV, "1")
     for name in _CMD:
         assert RO.is_change(name) == bool(RO.refusal_for_tool(name)), name
@@ -323,7 +324,7 @@ def test_mcp_a_refused_change_is_never_sent_and_feeds_no_breaker(monkeypatch):
     server, dispatch, sid = _mcp(monkeypatch, resilience=True)
     server._rate_limiter = SimpleNamespace(acquire=lambda _key: (True, {}))
     server._circuit_breaker = Mock(can_execute=Mock(return_value=(True, {})))
-    for name, code in ((CHANGE, "houdini.busy"), (FARM, "houdini.not_answering")):
+    for name, code in ((CHANGE, "houdini.busy"), ("houdini_create_node", "houdini.not_answering")):
         result = _rpc(server, sid, name)
         assert result["isError"] is True
         _refused(_meta(result), code, _meta(result)["outcome"])
@@ -339,6 +340,20 @@ def test_mcp_reads_and_stop_controls_pass_while_houdini_is_not_ready(monkeypatch
     for name in (READ, STOP):
         assert not _rpc(server, sid, name).get("isError"), name
     assert hop.calls == 0 and dispatch.call_count == 2
+
+
+def test_farm_controls_pass_without_a_hop(monkeypatch):
+    """A farm launch never waits on Houdini's main thread (the stall gates exempt it too), so the
+    preflight does not hold it back, and reads nothing of the session for it."""
+    hop = _houdini(monkeypatch, Hop(error=TimeoutError("busy")))
+    server, dispatch, sid = _mcp(monkeypatch)
+    assert RO.is_change(FARM)
+    assert not _rpc(server, sid, FARM).get("isError")
+    assert dispatch.call_count == 1
+    assert G.admit(SimpleNamespace(), FARM) is None
+    bare = object.__new__(S.MCPServer)
+    assert S._preflight_refusal(bare, FARM, None) is None and bare.__dict__ == {}
+    assert hop.calls == 0
 
 
 def test_mcp_a_retryable_outcome_makes_the_next_change_check_again(monkeypatch):
@@ -455,6 +470,18 @@ def test_websocket_checks_a_connections_first_change_and_again_after_trouble(mon
     handler.handle.return_value = SynapseResponse(id="r", success=True, data={})
     assert send(_CMD[CHANGE])["success"]
     assert hop.calls == 2
+
+
+def test_websocket_farm_controls_pass_without_a_hop(monkeypatch):
+    from synapse.panel import bridge_adapter as adapter
+
+    monkeypatch.setattr(adapter, "get_bridge", lambda: SimpleNamespace(
+        authorize_external_operation=lambda _operation: True))
+    hop = _houdini(monkeypatch, Hop(error=TimeoutError("busy")))
+    server, handler, send = _websocket()
+    assert send(_CMD[FARM])["success"] is True
+    assert handler.handle.call_count == 1
+    assert hop.calls == 0 and "_preflight_holders" not in server.__dict__
 
 
 def test_the_hwebserver_websocket_route_runs_the_same_gate():

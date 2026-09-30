@@ -115,12 +115,13 @@ def _preflight_refusal_for(server, client_id: str, command) -> Optional[Dict[str
     """The outcome refusing a command the Level 1 preflight stops, or None (R-5).
 
     A connection's first change is checked, and again after a retryable or unrecoverable
-    outcome (server/preflight_gate.py). Nothing is kept for a read, or without Houdini.
+    outcome (server/preflight_gate.py). Nothing is kept for a read, a farm control, or without
+    Houdini.
     """
     from .preflight_gate import admit, houdini_hop
 
     tool = _read_only_tool_for_command(command.type)
-    if tool is None or houdini_hop() is None:
+    if tool is None or command.type in FARM_CONTROL_COMMANDS or houdini_hop() is None:
         return None
     return admit(_preflight_holder(server, client_id), tool, getattr(command, "client_version", None))
 
