@@ -172,3 +172,28 @@ def test_worldlabs_is_adjacent_to_cloud_with_equal_inset_widths(app, width):
         assert boxes[3].right() < boxes[4].left()
     assert boxes[-1].right() == max(box.right() for box in boxes)
     footer.close()
+
+
+@pytest.mark.parametrize("width", [330, 640, 1100])
+def test_render_tail_spans_the_grid_on_its_own_last_row(app, width):
+    titles = ("Commands", "Saved networks", "Updates", "Cloud relay", "World Labs", "Connect models")
+    controls = [c.Button(title) for title in titles]
+    render = c.Button("Render")
+    footer = InsetFooter(controls, scale=1.0, tail=render)
+    plain = InsetFooter([c.Button(title) for title in titles], scale=1.0)
+    footer.resize(width, footer.heightForWidth(width))
+    footer.show()
+    app.processEvents()
+    boxes = [button.geometry() for button in controls]
+    tail = render.geometry()
+    assert footer.controls == tuple(controls) + (render,)
+    assert footer.columns_for_width(width) == plain.columns_for_width(width)
+    assert footer.heightForWidth(width) == plain.heightForWidth(width) + footer._height + footer._gap
+    assert tail.left() == min(box.left() for box in boxes)
+    assert tail.right() == max(box.right() for box in boxes)
+    assert tail.top() > max(box.bottom() for box in boxes)
+    assert tail.height() == boxes[0].height()
+    assert footer.rect().contains(tail)
+    assert all(not tail.intersects(box) for box in boxes)
+    footer.close()
+    plain.close()

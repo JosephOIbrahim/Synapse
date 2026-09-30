@@ -2756,6 +2756,11 @@ class SynapsePanel(QtWidgets.QWidget):
         self._connection_status.setObjectName("DsFooterLink")
         c.apply_font_role(self._connection_status, "body", self._chrome_scale)
         self._connection_status.clicked.connect(self._open_connections)
+        # Joe, 9/30: Render is back, as the footer's last, full-width row. It
+        # opens the same render workspace as Commands -> Open the render workspace.
+        self._render_btn = c.Button("Render", variant="ghost")
+        self._render_btn.setToolTip("Prepare a saved scene, render with TOPs and return to recent jobs")
+        self._render_btn.clicked.connect(self._open_render_workspace)
         from synapse.panel.inset_footer import install_footer
         install_footer(self, col)
         for button in (attach, self._send_btn, *self._inset_footer.controls):

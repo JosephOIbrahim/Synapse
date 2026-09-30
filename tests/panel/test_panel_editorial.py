@@ -30,6 +30,12 @@ def settle():
         _APP.processEvents()
 
 
+def render_row(scale):
+    """The footer's full-width Render row (9/30) adds exactly one row: its height plus the grid gap."""
+    from synapse.panel.designsystem import tokens as t
+    return t.scaled(t.FOOTER_HEIGHT, scale) + t.scaled(t.FOOTER_GAP, scale)
+
+
 @pytest.fixture
 def make_panel(monkeypatch, tmp_path):
     global _APP
@@ -490,7 +496,8 @@ def test_welcome_helper_stays_single_line_and_recovers_after_narrow_resize(make_
     # This helper/hover check intentionally fits a 600px invitation viewport.
     # Leave that much actual room above the responsive seven-control footer;
     # short-dock tests separately verify that optional helper text yields.
-    panel = make_panel(scale, width, 1800)
+    # The dock grows by exactly the full-width Render row (9/30).
+    panel = make_panel(scale, width, 1800 + render_row(scale))
     assert panel._chat.viewport().height() >= 600
     invite = panel._chat._empty_state
     sentence = "Describe a network, inspect your scene, or work through a problem."
@@ -648,6 +655,16 @@ def test_composer_footer_insets_span_both_field_edges(make_panel, scale, width):
     assert all(panel.rect().contains(bounds) for bounds in [left, right_hint])
     for button in links:
         expose_footer(panel, button)
+    # Render is the footer's full-width last row: it spans the grid's outer
+    # edges below every other control and stays reachable at every scale.
+    grid = [box(widget, panel) for widget in panel._inset_footer.grid.grid_controls]
+    render = box(panel._render_btn, panel)
+    assert panel._render_btn.text() == "Render" and panel._render_btn.isVisible()
+    assert render.left() == min(b.left() for b in grid) and render.right() == max(b.right() for b in grid)
+    assert render.top() > max(b.bottom() for b in grid)
+    assert render.height() == panel._commands_btn.height()
+    assert render.contains(text_box(panel._render_btn, panel))
+    expose_footer(panel, panel._render_btn)
 
 
 @pytest.mark.parametrize("scale,width", [(1.0, 340), (1.25, 480), (2.25, 720)])
@@ -774,7 +791,9 @@ def test_completion_keeps_real_usage_without_a_token_tab(make_panel):
 
 
 def test_first_run_leaves_reading_room_and_retains_artist_height(make_panel):
-    panel = make_panel(1.25, 720, 1080)
+    # The dock grows by exactly the full-width Render row (9/30), which comes out
+    # of the transcript because the starting composer is pinned; the check is unchanged.
+    panel = make_panel(1.25, 720, 1080 + render_row(1.25))
     assert panel._input.height() < panel._chat.height() * 0.6
     # A fresh composer must actually expose its two-line draft area above Send.
     assert panel._input.viewport().height() >= 2 * panel._input.fontMetrics().height()
@@ -795,10 +814,12 @@ def test_inset_footer_reflows_live_labels_without_resizing(make_panel, scale, wi
         panel._connection_location.setText("Cloud relay")
         settle()
         controls = panel._inset_footer.controls
-        assert len(controls) == 6 and all(widget.text() != "Render" for widget in controls)
+        grid = panel._inset_footer.grid.grid_controls
+        assert len(grid) == 6 and controls[:-1] == grid and controls[-1] is panel._render_btn
+        assert panel._render_btn.text() == "Render"
         boxes = [box(widget, panel) for widget in controls]
         assert panel.width() == original_width
-        assert len({bounds.width() for bounds in boxes}) == 1
+        assert len({bounds.width() for bounds in boxes[:-1]}) == 1
         assert all(widget.isVisible() for widget in controls)
         assert all(bounds.contains(text_box(widget, panel)) for widget, bounds in zip(controls, boxes))
         # With the taller first-run composer, enlarged text in a narrow
@@ -814,7 +835,11 @@ def test_inset_footer_reflows_live_labels_without_resizing(make_panel, scale, wi
             assert boxes[3].center().x() == boxes[0].center().x()
             assert boxes[4].center().x() == boxes[1].center().x()
             assert boxes[5].center().x() == boxes[2].center().x()
-        assert boxes[-1].right() == max(bounds.right() for bounds in boxes)
+        assert boxes[5].right() == max(bounds.right() for bounds in boxes[:-1])
+        # Render spans the grid on its own row below it, whatever the column count.
+        assert boxes[-1].left() == min(bounds.left() for bounds in boxes[:-1])
+        assert boxes[-1].right() == boxes[5].right()
+        assert boxes[-1].top() > max(bounds.bottom() for bounds in boxes[:-1])
 
 
 def test_install_insets_preserves_open_panel_objects_and_connections(make_panel, monkeypatch):
@@ -823,7 +848,7 @@ def test_install_insets_preserves_open_panel_objects_and_connections(make_panel,
     from synapse.panel.designsystem import components as c
     calls = []
     for method in ("_open_palette", "_open_saved_recipes",
-                   "_open_notifications", "_open_connections"):
+                   "_open_notifications", "_open_connections", "_open_render_workspace"):
         monkeypatch.setattr(SynapsePanel, method, lambda self, checked=False, name=method: calls.append(name))
     panel = make_panel(1.25, 720, 1100)
     panel._input.setPlainText("Preserve this draft")
@@ -861,7 +886,8 @@ def test_install_insets_preserves_open_panel_objects_and_connections(make_panel,
         if isinstance(button, QtWidgets.QPushButton):
             button.click()
     assert calls == ["_open_palette", "_open_saved_recipes",
-                     "_open_notifications", "_open_connections"]
+                     "_open_notifications", "_open_connections", "_open_render_workspace"]
+    assert panel._inset_footer.controls[-1] is panel._render_btn
     assert not box(panel._attach_btn, panel).intersects(box(panel._send_btn, panel))
 
 
@@ -879,7 +905,7 @@ def test_short_footer_scrolls_keyboard_focus_and_recovers_full_grid(make_panel):
         panel._commands_btn.setFocus()
         settle()
         for button in (panel._commands_btn, panel._recipes_btn,
-                       panel._events_btn, panel._connection_status):
+                       panel._events_btn, panel._connection_status, panel._render_btn):
             for _ in range(20):
                 if _APP.focusWidget() is button:
                     break

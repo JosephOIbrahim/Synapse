@@ -472,6 +472,10 @@ def check_panel_routes():
         idle(dialog)
         assert dialog.isVisible() and panel._input.toPlainText() == draft
         dialog.close()
+        panel._render_btn.click()
+        idle(dialog)
+        assert dialog.isVisible() and panel._input.toPlainText() == draft
+        dialog.close()
         panel._commands_btn.click()
         settle()
         palette = panel._palette
@@ -488,8 +492,8 @@ def check_panel_routes():
         dialog.close()
         settle()
         assert panel.width() == 320
-        assert not hasattr(panel, "_render_btn")
-        for button in (panel._commands_btn, panel._recipes_btn, panel._events_btn):
+        assert panel._render_btn.isVisible()
+        for button in (panel._render_btn, panel._commands_btn, panel._recipes_btn, panel._events_btn):
             assert button.width() >= button.minimumSizeHint().width()
         assert panel.grab().save(str(OUT / "panel-render-entry-320.png"))
     finally:
@@ -498,7 +502,7 @@ def check_panel_routes():
         panel._worker = None
         panel._location_timer.stop()
         panel.hide()  # Do not run the skipped live startup's close handler.
-    CHECKS.append("actual panel /render and Commands routes while model busy; no Render footer; draft preserved; zero admission/model calls")
+    CHECKS.append("actual panel /render, full-width Render footer and Commands routes while model busy; draft preserved; zero admission/model calls")
     return panel
 
 

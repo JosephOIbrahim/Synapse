@@ -42,7 +42,7 @@ Sources: [worker policy](../python/synapse/panel/worker_policy.py), [bridge adap
 | Cancel cook | Targets one known cooking node. |
 | Emergency halt | Cancels cooking TOP networks under `/tasks`, `/obj`, `/stage`, `/out` and captures a report. Background renders are reported, not killed. |
 
-The render farm remains available even though the panel's footer Render shortcut was removed. Validate the resulting frames: a file's existence alone does not prove a complete render.
+The render workspace opens from **Render**, the full-width row at the bottom of the panel footer, or from Commands and `/render`. Validate the resulting frames: a file's existence alone does not prove a complete render.
 
 [Stop controls](../README.md#three-ways-to-stop) · [Render operator guide](render-freeze-operator-card.md) · [Farm implementation](../python/synapse/farm)
 

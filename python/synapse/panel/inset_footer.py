@@ -8,16 +8,23 @@ QtCore, QtGui, QtWidgets = c.QtCore, c.QtGui, c.QtWidgets
 class InsetFooter(QtWidgets.QWidget):
     """Three equal columns, then two or one when the actual labels need room.
 
+    An optional tail control takes one full-width row below the grid, spanning
+    the grid's outer edges (Render, 9/30). It never changes the column count.
+
     Connection evidence and every control's existing signal connections belong
     to the panel, not to this layout.
     """
 
     reflow_requested = QtCore.Signal()
 
-    def __init__(self, controls, parent=None, scale=t.FONT_SCALE_DEFAULT):
+    def __init__(self, controls, parent=None, scale=t.FONT_SCALE_DEFAULT, tail=None):
         super().__init__(parent)
         self.setObjectName("DsInsetFooter")
-        self.controls = tuple(controls)
+        self.grid_controls = tuple(controls)
+        self.tail = tail
+        # Every footer widget, tail last: styling, focus order and the panel's
+        # shared connections use controls; the column grid uses grid_controls.
+        self.controls = self.grid_controls + (() if tail is None else (tail,))
         self._gap = t.scaled(t.FOOTER_GAP, scale)
         self._height = t.scaled(t.FOOTER_HEIGHT, scale)
         self._padding = t.scaled(t.SPACE_SM, scale)
@@ -45,7 +52,7 @@ class InsetFooter(QtWidgets.QWidget):
 
     def _cell_width(self):
         return max(widget.fontMetrics().horizontalAdvance(widget.text())
-                   for widget in self.controls) + 2 * self._padding + 2
+                   for widget in self.grid_controls) + 2 * self._padding + 2
 
     def columns_for_width(self, width):
         for columns in (3, 2):
@@ -65,7 +72,7 @@ class InsetFooter(QtWidgets.QWidget):
 
     def heightForWidth(self, width):
         columns = self.columns_for_width(width)
-        rows = (len(self.controls) + columns - 1) // columns
+        rows = (len(self.grid_controls) + columns - 1) // columns + (0 if self.tail is None else 1)
         return rows * self._height + (rows - 1) * self._gap
 
     def fit_width(self, width):
@@ -82,10 +89,14 @@ class InsetFooter(QtWidgets.QWidget):
         # Qt has a remainder pixel. That remainder stays at the outer edges.
         cell = max(0, (width - (columns - 1) * self._gap) // columns)
         left = max(0, (width - columns * cell - (columns - 1) * self._gap) // 2)
-        for index, widget in enumerate(self.controls):
+        for index, widget in enumerate(self.grid_controls):
             row, column = divmod(index, columns)
             widget.setGeometry(left + column * (cell + self._gap),
                                row * (self._height + self._gap), cell, self._height)
+        if self.tail is not None:
+            row = (len(self.grid_controls) + columns - 1) // columns
+            self.tail.setGeometry(left, row * (self._height + self._gap),
+                                  columns * cell + (columns - 1) * self._gap, self._height)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -101,13 +112,13 @@ class InsetFooter(QtWidgets.QWidget):
 class FooterViewport(QtWidgets.QScrollArea):
     """Only scroll the footer when enlarged chrome exhausts a short dock."""
 
-    def __init__(self, controls, scale=t.FONT_SCALE_DEFAULT):
+    def __init__(self, controls, scale=t.FONT_SCALE_DEFAULT, tail=None):
         super().__init__()
         self.setObjectName("DsInsetFooterScroll")
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setWidgetResizable(True)
-        self.grid = InsetFooter(controls, scale=scale)
+        self.grid = InsetFooter(controls, scale=scale, tail=tail)
         self.controls = self.grid.controls
         self._cap = None
         self.setWidget(self.grid)
@@ -187,7 +198,9 @@ def install_footer(panel, column=None):
             while layout.count():
                 layout.takeAt(0)
             layout.deleteLater()
-    footer = FooterViewport(controls, scale=panel._chrome_scale)
+    # Render rides below the grid as its own full-width row (Joe, 9/30).
+    footer = FooterViewport(controls, scale=panel._chrome_scale,
+                            tail=getattr(panel, "_render_btn", None))
     if old_row is not None:
         column.removeWidget(old_row)
         old_row.hide()
