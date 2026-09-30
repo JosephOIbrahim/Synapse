@@ -64,7 +64,7 @@ class TopsCookMixin:
                 }
 
             try:
-                node.cook(block=bool(blocking))
+                node.cookWorkItems(block=bool(blocking))
             except Exception as e:
                 logger.error("PDG cook failed for %s: %s", node_path, e)
                 return {
