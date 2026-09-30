@@ -175,11 +175,13 @@ flowchart TD
 
 For remote import, enter a key in the masked field, choose **Connect World Labs**, then supply a world ID/Marble URL or select an API world. Choose a resolution and **Import world**. The list does not represent all Marble-app history.
 
-The native route is File SOP → Bake GSplats → SOP Import LOP. It creates a separate branch and an undo group; it does not merge into existing stage wiring. On failure it attempts to remove its own new nodes and reports cleanup errors.
+The native route is File SOP → Bake GSplats → SOP Import LOP → a Transform LOP named after the import with `_ground` appended, which grounds it. It creates a separate branch and an undo group; it does not merge into existing stage wiring. On failure it attempts to remove its own new nodes and reports cleanup errors.
 
-**Format limits:** Gaussian PLY supports constant color (DC-only) or a complete degree-3 spherical-harmonic layout. Partial harmonic layouts, ordinary point PLY, direct SPZ and mesh GLB are unsupported. Coordinates and units are preserved; metric scale, grounding and rendered appearance need inspection.
+**Grounding (v5.89.0).** The ground node carries a uniform scale, a 180-degree turn about X for Marble's Y-down export, and a lift that puts the floor at y = 0; the splat's points and the file are unchanged, and the display flag moves to the ground node. The scale comes from export metadata, or from a `<world>.world.json` sidecar beside a local file that gives `metric_scale_factor` and names its `scale_source`. Export metadata wins, and a factor of 1.0 with no named source counts as unknown. The floor comes from the export's `<world>_collider.glb` when it sits beside the file (the area-weighted densest band of near-horizontal faces in the bottom quarter of its height), otherwise from the densest layer of splats at the floor end. The record (scale and source, offset and source, measured ground height) is stored as provenance user data under `synapse.worldlabs` on the new nodes. Without a scale, the world is grounded and the import reports its metric scale as unknown.
 
-Closing the dialog prevents a late scene import; it does not abort a download already running. Authenticated remote access and a Karma beauty render were not established by the [v5.83.0 validation](../releases/v5.83.0.md#world-labs-import).
+**Format limits:** Gaussian PLY supports constant color (DC-only) or a complete degree-3 spherical-harmonic layout. Partial harmonic layouts, ordinary point PLY, direct SPZ and mesh GLB are unsupported. The points keep the export's coordinates and units; the ground node holds the correction. Rendered appearance needs inspection.
+
+Closing the dialog prevents a late scene import; it does not abort a download already running. Authenticated remote access was not established by the [v5.83.0 validation](../releases/v5.83.0.md#world-labs-import) and has not been since. [v5.89.0](../releases/v5.89.0.md#validation-and-limits) rendered a Karma XPU frame of a grounded local import through the render workspace.
 
 Sources: [dialog](../../python/synapse/panel/worldlabs_dialog.py), [API client](../../python/synapse/worldlabs/client.py), [native importer](../../python/synapse/worldlabs/importer.py).
 

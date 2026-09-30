@@ -22,6 +22,21 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.89.0 - A Marble world lands metric and on its ground, and a GPU render profile
+
+A Marble world imported through SYNAPSE now lands upright, on its floor, at a
+named scale. One Transform LOP on the world's parent prim carries the scale, the flip of
+a Y-down export and a lift that puts the floor, measured from the export's
+collider, at y = 0; the scale comes from export metadata or a sidecar that
+names its source, and the import records all of it. The render workspace gains
+**This workstation (GPU)**, a Karma XPU profile with the preview profile's
+limits. A large array attribute now returns a sample, its length and bounds,
+and the panel bounds every tool result, so one oversized result can no longer
+push every later request past the model service's size limit. Seven TOP tool
+paths that called `cook(block=...)`, which `hou.OpNode.cook()` rejects on
+22.0.400, now cook through `TopNode.cookWorkItems`. This is a source release
+with no new Windows Setup. See [v5.89.0](docs/releases/v5.89.0.md).
+
 ## v5.88.0 - A failed call is flagged as an error, and Houdini is checked before a change
 
 A failed tool call now comes back as a result flagged `isError`, as MCP
