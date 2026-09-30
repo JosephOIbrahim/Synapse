@@ -21,6 +21,36 @@ from .handler_helpers import (
 )
 
 
+_ARRAY_RETURN_LIMIT = 256
+_ARRAY_SAMPLE = 16
+
+
+def _bound_array(value):
+    """Summarize a large array attribute instead of returning every element.
+
+    9/30: 500,000 splat positions came back as 24 MB and pushed every later panel request past the model
+    service's payload limit (HTTP 413). Small values return {} and pass through unchanged.
+    """
+    if not isinstance(value, list) or len(value) <= _ARRAY_RETURN_LIMIT:
+        return {}
+    out = {"value": value[:_ARRAY_SAMPLE], "length": len(value), "truncated": True,
+           "note": ("Showing the first %d of %d elements. Ask for bounds, a count, or specific indices "
+                    "instead of the full array." % (_ARRAY_SAMPLE, len(value)))}
+    first = value[0]
+    try:
+        if isinstance(first, (int, float)) and not isinstance(first, bool):
+            nums = [v for v in value if isinstance(v, (int, float)) and not isinstance(v, bool)]
+            out["bounds"] = {"min": min(nums), "max": max(nums)}
+        elif isinstance(first, list) and first and all(isinstance(c, (int, float)) for c in first):
+            width = len(first)
+            rows = [v for v in value if isinstance(v, list) and len(v) == width]
+            out["bounds"] = {"min": [min(r[i] for r in rows) for i in range(width)],
+                             "max": [max(r[i] for r in rows) for i in range(width)]}
+    except (TypeError, ValueError):
+        pass
+    return out
+
+
 def _usd_to_json(value):
     """Convert USD attribute values to JSON-safe types, preserving type info."""
     if value is None:
@@ -364,15 +394,17 @@ class UsdHandlerMixin:
 
             attr = prim.GetAttribute(attr_name)
             if attr.IsValid():
-                value = attr.Get()
-                return {
+                value = _usd_to_json(attr.Get())
+                result = {
                     "node": node.path(),
                     "prim_path": prim_path,
                     "attribute": attr_name,
-                    "value": _usd_to_json(value),
+                    "value": value,
                     "type_name": str(attr.GetTypeName()),
                     "property_kind": "attribute",
                 }
+                result.update(_bound_array(value))
+                return result
 
             # Not an attribute -- fall back to a USD relationship before we can
             # honestly say the property is missing. karma/husk (and stock

@@ -91,3 +91,32 @@ def undo_receipt_line(result):
     if isinstance(artist, str) and artist.startswith(UNDO_RECEIPT_PREFIX):
         return artist
     return ""
+
+
+# 9/30: one 24 MB tool result made every later request exceed the model service's payload limit (HTTP 413)
+# until the history was reset by hand. Each result is bounded before it enters history.
+_MAX_TOOL_RESULT_CHARS = 96_000
+
+
+def cap_tool_results(blocks, limit=_MAX_TOOL_RESULT_CHARS):
+    """Copy of ``blocks`` with every string tool_result content cut to ``limit`` characters plus a note."""
+    capped = []
+    for block in blocks:
+        content = block.get("content") if isinstance(block, dict) else None
+        if (isinstance(block, dict) and block.get("type") == "tool_result"
+                and isinstance(content, str) and len(content) > limit):
+            note = ("\n[SYNAPSE kept the first %d of %d characters of this tool result. Ask for a narrower "
+                    "query, a count, bounds, or specific items instead of the full data.]" % (limit, len(content)))
+            block = dict(block, content=content[:limit] + note)
+        capped.append(block)
+    return capped
+
+
+def cap_history(messages, limit=_MAX_TOOL_RESULT_CHARS):
+    """Apply cap_tool_results to every user message in a stored conversation (a restored history may predate the cap)."""
+    out = []
+    for message in messages or []:
+        if isinstance(message, dict) and message.get("role") == "user" and isinstance(message.get("content"), list):
+            message = dict(message, content=cap_tool_results(message["content"], limit))
+        out.append(message)
+    return out

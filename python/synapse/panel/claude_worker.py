@@ -443,9 +443,12 @@ class ClaudeWorker(QThread):
                     finally:
                         # Also commit earlier results when a later dispatch raises.
                         if tool_results:
+                            # 9/30: bound every result before it enters history (one 24 MB result made each
+                            # later request exceed the model service's payload limit, HTTP 413).
+                            from synapse.core.tool_results import cap_tool_results
                             self._messages.append({
                                 "role": "user",
-                                "content": tool_results,
+                                "content": cap_tool_results(tool_results),
                             })
 
                 else:

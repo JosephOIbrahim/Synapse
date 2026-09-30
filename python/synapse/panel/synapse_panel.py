@@ -734,6 +734,9 @@ class SynapsePanel(QtWidgets.QWidget):
         try:
             from synapse.server import session_store as _session_store
             self._messages, _sess_scope = _session_store.load_conversation_scoped()
+            # 9/30: a stored history can predate the tool-result cap; bound it before the first request.
+            from synapse.core.tool_results import cap_history as _cap_history
+            self._messages = _cap_history(self._messages)
             # W7-SESSCOPE: work from an earlier Houdini boot is parked, never
             # destroyed - a fresh boot starts clean, /restore-session undoes.
             self._parked_previous = (_sess_scope == "previous_parked")
