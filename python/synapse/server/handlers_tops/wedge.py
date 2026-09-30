@@ -50,13 +50,13 @@ class TopsWedgeMixin:
             # If it's a TOP network, find or create wedge node
             if node.type().category().name() == "Top":
                 # It's already a TOP node -- cook it
-                node.cook(block=True)
+                node.cookWorkItems(block=True)
                 return {"node": top_path, "status": "cooked"}
             elif node.type().category().name() == "TopNet":
                 # It's a TOP network -- find wedge nodes and cook
                 wedge_nodes = [n for n in node.children() if "wedge" in n.type().name().lower()]
                 if wedge_nodes:
-                    wedge_nodes[0].cook(block=True)
+                    wedge_nodes[0].cookWorkItems(block=True)
                     return {"node": wedge_nodes[0].path(), "status": "cooked"}
                 else:
                     raise ValueError(

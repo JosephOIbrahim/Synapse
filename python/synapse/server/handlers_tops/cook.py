@@ -464,7 +464,7 @@ class TopsCookMixin:
 
                 t0 = time.monotonic()
                 try:
-                    node.cook(block=bool(blocking))
+                    node.cookWorkItems(block=bool(blocking))
                     elapsed = time.monotonic() - t0
                     item_count = len(pdg_node.workItems)
 

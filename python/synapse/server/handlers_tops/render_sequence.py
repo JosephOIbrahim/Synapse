@@ -293,7 +293,7 @@ class TopsRenderSequenceMixin:
                 cook_error = None
                 if item_count > 0:
                     try:
-                        rop_fetch.cook(block=bool(blocking))
+                        rop_fetch.cookWorkItems(block=bool(blocking))
                         cook_status = "cooked" if blocking else "cooking"
                     except Exception as e:
                         _log.error("PDG cook failed for %s: %s", rop_path, e)
@@ -504,7 +504,7 @@ class TopsRenderSequenceMixin:
             cook_error = None
             if item_count > 0:
                 try:
-                    last_node.cook(block=bool(blocking))
+                    last_node.cookWorkItems(block=bool(blocking))
                     cook_status = "cooked" if blocking else "cooking"
                 except Exception as e:
                     _log.error("Multi-shot PDG cook failed: %s", e)

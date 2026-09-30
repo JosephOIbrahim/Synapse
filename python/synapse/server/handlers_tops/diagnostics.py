@@ -65,7 +65,7 @@ class TopsDiagnosticsMixin:
 
             for attempt_num in range(1, int(max_retries) + 2):
                 t0 = time.monotonic()
-                node.cook(block=True)
+                node.cookWorkItems(block=True)
                 cook_time = time.monotonic() - t0
 
                 # Collect state counts
