@@ -22,6 +22,20 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.90.0 - Render returns to the panel, and the workstation profile renders on the GPU
+
+Render is back as a full-width row at the foot of the panel, under the footer's
+unchanged grid, and it opens the same render workspace as Commands and
+`/render`. The render workspace's **This workstation (GPU)** profile now reuses
+the machine's own Karma XPU caches, OptiX's module cache and the VEX code cache
+in houdini_temp, instead of a fresh cache per job that left every frame to the
+CPU device. On one RTX 4090 a frame of the demo scene took 40 s with the GPU
+idle before, and 5.8 s with the GPU taking 64% of the samples after; a
+120-frame move's render phase fell from 52 minutes to 13.
+Everything else in the worker stays isolated, and the preview profile is
+unchanged. This is a source release with no new Windows Setup. See
+[v5.90.0](docs/releases/v5.90.0.md).
+
 ## v5.89.0 - A Marble world lands metric and on its ground, and a GPU render profile
 
 A Marble world imported through SYNAPSE now lands upright, on its floor, at a
