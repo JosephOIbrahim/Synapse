@@ -57,6 +57,8 @@ CODES: Dict[str, Tuple[Outcome, str, str]] = {
     "server.busy": (Outcome.RETRYABLE, "no", "Wait a moment, then send it again."),
     "houdini.busy": (Outcome.RETRYABLE, "no",
                      "Wait for Houdini's cook or render to finish, then send it again."),
+    "houdini.not_answering": (Outcome.NEEDS_ARTIST, "no",
+                              "Check Houdini for an open dialog or a running cook, then send it again."),
     "houdini.not_reachable": (Outcome.UNRECOVERABLE, "no",
                               "Start Houdini, open the SYNAPSE panel and click Connect, then try again."),
     "bridge.unreachable": (Outcome.UNRECOVERABLE, "no",
@@ -67,6 +69,10 @@ CODES: Dict[str, Tuple[Outcome, str, str]] = {
                              "Check the scene before trying again; it may have run."),
     "transport.timeout": (Outcome.UNKNOWN_OUTCOME, "maybe",
                           "Houdini may still be working on it. Check the scene before trying again."),
+    "scene.loading": (Outcome.RETRYABLE, "no",
+                      "Wait for Houdini to finish loading the scene, then send it again."),
+    "scene.undo_off": (Outcome.UNRECOVERABLE, "no",
+                       "Turn undo back on: run undoctrl on in Houdini's Textport, then send it again."),
     "scene.node_not_found": (Outcome.FAILED, "yes", "Check the node path, then try again."),
     "cook.error": (Outcome.FAILED, "yes", "Read the cook error on the node, fix it, then try again."),
     "tool.failed": (Outcome.FAILED, "yes", "Read the error; it names what failed."),
@@ -83,7 +89,7 @@ CODES: Dict[str, Tuple[Outcome, str, str]] = {
     "preflight.blocked": (Outcome.UNRECOVERABLE, "no",
                           "Fix the failing check named in the message, then try again."),
     "version.mismatch": (Outcome.UNRECOVERABLE, "no",
-                         "Restart the MCP client so it loads the same SYNAPSE version as Houdini."),
+                         "Restart the MCP client or Houdini, whichever runs the older SYNAPSE, so both match."),
 }
 
 #: The codes whose ``next`` names a wait when the caller knows how long.

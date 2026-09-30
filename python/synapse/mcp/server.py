@@ -21,6 +21,7 @@ import logging
 import os
 import threading
 import time
+from types import SimpleNamespace
 from typing import Any, Dict, Optional, Tuple
 
 from .protocol import (
@@ -216,6 +217,44 @@ def read_only_set_divergence() -> frozenset:
     except Exception:
         return frozenset()
     return frozenset(_READ_ONLY_TOOLS - _BRIDGE_READ_ONLY_TOOLS)
+
+
+def _preflight_holder(server, session_id: Optional[str]):
+    """Where a session keeps its preflight flag: its MCP session, or the server itself for a
+    call that carries no session (a direct call, as tests make)."""
+    sessions = getattr(server, "_sessions", None)
+    session = sessions.get_session(session_id) if (sessions is not None and session_id) else None
+    if session is not None:
+        return session
+    return server.__dict__.setdefault("_preflight_without_session",
+                                      SimpleNamespace(preflight_due=True))
+
+
+def _preflight_refusal(server, tool_name: str, session_id: Optional[str]) -> Optional[dict]:
+    """The isError result refusing a change the preflight stops, or None (Level 1, R-5).
+
+    Nothing is read from the session until the gate is known to apply: to a change, in a
+    process with Houdini (server/preflight_gate.py).
+    """
+    from synapse.server import preflight_gate
+
+    if not read_only_mode.is_change(tool_name) or preflight_gate.houdini_hop() is None:
+        return None
+    refused = preflight_gate.admit(_preflight_holder(server, session_id), tool_name)
+    return None if refused is None else _tool_result(refused)
+
+
+def _preflight_note(server, session_id: Optional[str], result: Any) -> None:
+    """After a tool call: a retryable or unrecoverable outcome makes the session's next change
+    check again (Level 1, R-5)."""
+    from synapse.core.preflight import is_trouble
+
+    meta = result.get("_meta") if isinstance(result, dict) else None
+    outcome = meta.get("synapse/outcome") if isinstance(meta, dict) else None
+    if is_trouble(outcome):
+        from synapse.server import preflight_gate
+
+        preflight_gate.note(_preflight_holder(server, session_id), outcome)
 
 
 def _dispatch_doctor_off_main(handler, tool_name: str, arguments: dict) -> dict:
@@ -495,7 +534,9 @@ class MCPServer:
         if method == "tools/list":
             return self._handle_tools_list(params)
         elif method == "tools/call":
-            return self._handle_tools_call(params, session_id=session_id)
+            result = self._handle_tools_call(params, session_id=session_id)
+            _preflight_note(self, session_id, result)
+            return result
         elif method == "resources/list":
             return self._handle_resources_list(params)
         elif method == "resources/read":
@@ -601,7 +642,8 @@ class MCPServer:
         MCP specifies for tool failures: its first text line is the outcome line and
         the outcome object rides in _meta["synapse/outcome"] (Level 1, R-6). JSON-RPC
         errors stay for protocol failures: a missing or unknown tool name, and
-        read-only mode, whose message is its outcome line.
+        read-only mode, whose message is its outcome line. A change passes the
+        preflight gate before it is sent (Level 1, R-5).
         """
         tool_name = params.get("name")
         if not tool_name:
@@ -714,6 +756,14 @@ class MCPServer:
                 )
                 return _tool_result(_outcome(
                     "server.busy", message, retry_after_s=float(cb_info.get("retry_after", 30.0))))
+
+        # 4. Preflight (Level 1, R-5): before this session's first change, and again after a
+        #    retryable or unrecoverable outcome, one 250 ms hop checks that Houdini can take a
+        #    change. A refused change is never sent, and the refusal feeds neither the circuit
+        #    breaker nor the stall detector. Farm launches are changes and are checked too.
+        refused = _preflight_refusal(self, tool_name, session_id)
+        if refused is not None:
+            return refused
 
         # Notify SSE subscribers about critical tool execution
         if session_id is not None and tool_name in (

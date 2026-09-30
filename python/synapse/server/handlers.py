@@ -924,14 +924,23 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         ``healthy`` deliberately stays a liveness answer — a degraded write
         plane is reported in its own field rather than by redefining a key
         other code already reads.
+
+        ``readiness`` is ADDITIVE too: the Level 1 preflight (R-5), ready,
+        degraded (reads only) or blocked, with each check and its fix
+        (``server/preflight_gate.py``). The stdio bridge sends its SYNAPSE
+        version as ``client_version`` so the version check can run.
         """
+        from .preflight_gate import readiness
         from .write_plane import write_plane_state
 
+        client_version = payload.get("client_version") if isinstance(payload, dict) else None
         return {
             "healthy": True,
             "houdini_available": HOU_AVAILABLE,
             "protocol_version": PROTOCOL_VERSION,
             "write_plane": write_plane_state(),
+            "readiness": readiness(
+                client_version=client_version if isinstance(client_version, str) else None),
         }
 
     def _handle_get_help(self, payload: Dict) -> Dict:

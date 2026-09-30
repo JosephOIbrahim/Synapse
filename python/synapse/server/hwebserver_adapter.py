@@ -58,6 +58,7 @@ from .auth import (get_auth_key, authenticate, validate_origin, header_value,
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from ..mcp.read_only_mode import refusal_for_command as _read_only_refusal_for_command
+from ..mcp.read_only_mode import tool_for_command as _read_only_tool_for_command
 from .resilience import RateLimiter, BackpressureController, CircuitBreaker
 from ..session.tracker import get_bridge
 from .bridge_endpoint import publish_endpoint, clear_endpoint
@@ -94,6 +95,25 @@ def _get_handler() -> SynapseHandler:
     if _handler is None:
         _handler = SynapseHandler()
     return _handler
+
+
+def _preflight_refusal_for(connection, command) -> Optional[Dict]:
+    """The outcome refusing a command the Level 1 preflight stops, or None (R-5).
+
+    The connection keeps the flag (``preflight_due``): its first change is checked, and again
+    after a retryable or unrecoverable outcome. See server/preflight_gate.py.
+    """
+    from .preflight_gate import admit
+
+    return admit(connection, _read_only_tool_for_command(command.type),
+                 getattr(command, "client_version", None))
+
+
+def _preflight_note_for(connection, response) -> None:
+    """After a command: a retryable or unrecoverable outcome makes the next change check again."""
+    from .preflight_gate import note, response_outcome
+
+    note(connection, response_outcome(response))
 
 
 def _next_client_id() -> str:
@@ -227,13 +247,15 @@ if HWEBSERVER_AVAILABLE:
                 if _rate_limiter and command.type != "farm_cancel":
                     allowed, info = _rate_limiter.acquire(self._client_id)
                     if not allowed:
-                        await self.send(SynapseResponse(
+                        busy = SynapseResponse(
                             id=command.id,
                             success=False,
                             error=f"Rate limited: {info.get('reason')}",
                             data={"retry_after": info.get("retry_after", 1.0)},
                             sequence=command.sequence
-                        ).to_json(), is_binary=False)
+                        )
+                        _preflight_note_for(self, busy)
+                        await self.send(busy.to_json(), is_binary=False)
                         return
 
                 # F3 breaker gate (2026-08-14): when the freeze chain has opened
@@ -247,7 +269,7 @@ if HWEBSERVER_AVAILABLE:
                         and command.type != "farm_cancel"):
                     can_exec, cb_info = _circuit_breaker.can_execute()
                     if not can_exec:
-                        await self.send(SynapseResponse(
+                        paused = SynapseResponse(
                             id=command.id,
                             success=False,
                             error=("Houdini's main thread was unresponsive, so Synapse "
@@ -256,7 +278,9 @@ if HWEBSERVER_AVAILABLE:
                             data={"retry_after": cb_info.get("retry_after", 30.0),
                                   "state": cb_info.get("state", "open")},
                             sequence=command.sequence
-                        ).to_json(), is_binary=False)
+                        )
+                        _preflight_note_for(self, paused)
+                        await self.send(paused.to_json(), is_binary=False)
                         return
 
                 # BP12 item 12: SYNAPSE_MCP_READ_ONLY fences external clients to the
@@ -269,6 +293,21 @@ if HWEBSERVER_AVAILABLE:
                         success=False,
                         error=refusal,
                         data={"read_only_mode": True},
+                        sequence=command.sequence
+                    ).to_json(), is_binary=False)
+                    return
+
+                # Level 1, R-5: the preflight gate. Before this connection's first change, and
+                # again after a retryable or unrecoverable outcome, one 250 ms hop checks that
+                # Houdini can take a change, and the stdio bridge's SYNAPSE version is compared
+                # with Houdini's. A refused change is never sent. Reads and stops pass.
+                refused = _preflight_refusal_for(self, command)
+                if refused is not None:
+                    await self.send(SynapseResponse(
+                        id=command.id,
+                        success=False,
+                        error=refused["message"],
+                        data={"outcome": refused},
                         sequence=command.sequence
                     ).to_json(), is_binary=False)
                     return
@@ -303,6 +342,7 @@ if HWEBSERVER_AVAILABLE:
                 if (_circuit_breaker is not None and response.success
                         and command.type not in _READ_ONLY_COMMANDS):
                     _circuit_breaker.record_success()
+                _preflight_note_for(self, response)
                 await self.send(response.to_json(), is_binary=False)
 
             except json.JSONDecodeError as e:

@@ -218,6 +218,28 @@ that cannot be parsed, an unknown method or tool, a missing or expired session (
 404), and read-only mode (`-32005`), whose message is its outcome line. On the WebSocket, a
 failed response carries the outcome in its `data`.
 
+## Readiness before a change
+
+Before a session's first change, and again after any `retryable` or `unrecoverable` outcome,
+SYNAPSE checks that Houdini can take a change. On `/mcp` the session is the MCP session; on the
+stdio bridge's WebSocket it is the connection. Reads and stop controls are never checked. The
+check costs one hop onto Houdini's main thread, with a 250 ms budget, and a ready answer is
+remembered for 10 seconds. A change it refuses is never sent, and the refusal names the fix:
+
+| When | Outcome and code | What to do |
+|---|---|---|
+| Houdini's main thread does not answer within 250 ms | `retryable`, `houdini.busy` | Wait 5 s, then send it again. |
+| It misses a second time in a row | `needs_artist`, `houdini.not_answering` | Check Houdini for an open dialog or a running cook. |
+| Houdini is loading a scene | `retryable`, `scene.loading` | Wait for the load to finish. |
+| Undo is off | `unrecoverable`, `scene.undo_off` | Run `undoctrl on` in Houdini's Textport. |
+| The stdio bridge runs another SYNAPSE release than Houdini | `unrecoverable`, `version.mismatch` | Restart the side on the older release, the MCP client or Houdini; the message names it. |
+| A check could not run | `unrecoverable`, `preflight.blocked` | The message names the check. |
+
+`synapse_health` reports the same checks on demand, in its `readiness` section: `ready`,
+`degraded` (reads only) or `blocked`, each check with its status, and free disk and RAM for the
+open scene's folder and its `cache` folder. A figure that could not be measured is `null`,
+never a guess.
+
 ## SSE Streaming
 
 The HTTP handler supports SSE-formatted **short polling responses**, including
@@ -236,4 +258,5 @@ Clients must poll again for subsequent updates. See the
 | **"Method not found"** | Calling an unimplemented MCP method | Supported: `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, `resources/templates/list`, `ping`. |
 | **`ModuleNotFoundError: mcp` / `websockets`** | Dependencies are missing in the stdio client's Python | From the repository, run `python -m pip install -e ".[mcp]"` in that environment. |
 | **Tools timing out** | The client or host wait ended | Check the operation and [shared timeout table](../../python/synapse/core/timeouts.py). A timeout does not prove the action stopped; inspect before retrying a scene mutation. |
+| **`version.mismatch` on a change** | The stdio bridge and Houdini loaded different SYNAPSE releases, one of them before an update | Restart the side on the older release: the MCP client, so its bridge reloads, or Houdini. The refusal names which. |
 | **Stale version in `serverInfo`** | Installed package metadata is stale | Run `pip install -e .` from the SYNAPSE repo root to refresh it. |

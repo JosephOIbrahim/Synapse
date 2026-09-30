@@ -226,15 +226,17 @@ def test_ancestor_walk_finds_an_existing_dir(tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_health_keys_are_additive(targets):
-    """Pins the pre-existing contract. ``write_plane`` is the ONLY new key and
-    the three original keys keep their original meanings — breaking a consumer
-    to improve a signal is a net loss."""
+    """Pins the pre-existing contract. ``write_plane`` and ``readiness`` (the
+    Level 1 preflight, R-5) are the ONLY new keys and the three original keys
+    keep their original meanings — breaking a consumer to improve a signal is a
+    net loss."""
     data = SynapseHandler()._handle_get_health({})
     assert set(data) == {
         "healthy",
         "houdini_available",
         "protocol_version",
         "write_plane",
+        "readiness",
     }
     assert data["healthy"] is True
     assert data["houdini_available"] is HOU_AVAILABLE

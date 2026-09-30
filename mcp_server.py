@@ -185,6 +185,31 @@ except ImportError:  # pragma: no cover - without the vocabulary, messages stay 
     _attached = _for_bad_arguments = _outcome = _outcome_line = None
 
 
+def _bridge_version() -> str | None:
+    """This bridge's SYNAPSE release, read once at start (Level 1, R-5 check 5).
+
+    It is synapse.__version__, the same source Houdini reports, else the VERSION file beside
+    this script. Houdini compares it before a change, so a bridge left running across an update
+    is refused with the fix rather than sending a change the other side may read differently.
+    """
+    try:
+        import synapse as _synapse_pkg
+        version = getattr(_synapse_pkg, "__version__", None)
+    except ImportError:  # pragma: no cover - the package is on sys.path above
+        version = None
+    if not version:
+        try:
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION"),
+                      encoding="utf-8") as fh:
+                version = fh.read().strip() or None
+        except OSError:
+            version = None
+    return version
+
+
+_SYNAPSE_VERSION = _bridge_version()
+
+
 def _outcome_dict(code: str, message: str) -> dict | None:
     """The outcome object for *code* (synapse.core.outcomes, Level 1), or None without it."""
     return None if _outcome is None else _outcome(code, message).to_dict()
@@ -478,6 +503,12 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
         "timestamp": time.time(),
         "protocol_version": PROTOCOL_VERSION,
     }
+    if _SYNAPSE_VERSION:
+        # Houdini compares it with its own before a change (Level 1, R-5), and synapse_health
+        # reports the comparison.
+        command["synapse_version"] = _SYNAPSE_VERSION
+        if cmd_type == "get_health":
+            command["payload"] = dict(command["payload"], client_version=_SYNAPSE_VERSION)
 
     cmd_timeout = _SLOW_COMMANDS.get(cmd_type, COMMAND_TIMEOUT)
     last_err = None

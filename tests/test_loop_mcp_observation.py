@@ -118,6 +118,8 @@ def rig(monkeypatch):
         "has_tool": lambda _name: True,
         "_outcome": _outcomes.info, "_outcome_line": _outcomes.outcome_line,
         "_tool_result": _outcomes.tool_result,
+        # The Level 1 preflight gate (R-5) does not apply without Houdini; the rig has none.
+        "_preflight_refusal": lambda *args: None,
         "_note_marshal_bypass": lambda *args: None,
         "_isError_text": lambda result: result["content"][0]["text"]}
     server = SimpleNamespace(_get_handler=lambda: handler, _circuit_breaker=None,

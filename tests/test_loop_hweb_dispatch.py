@@ -23,7 +23,9 @@ def receive_function(handler):
                  'json':json, 'SynapseCommand':SynapseCommand, 'SynapseResponse':SynapseResponse,
                  'FARM_CONTROL_COMMANDS':FARM_CONTROL_COMMANDS, 'FARM_READ_COMMANDS':FARM_READ_COMMANDS,
                  '_get_handler':lambda:handler, '_rate_limiter':None, '_circuit_breaker':None,
-                 '_read_only_refusal_for_command':lambda _command_type: None}
+                 '_read_only_refusal_for_command':lambda _command_type: None,
+                 # The Level 1 preflight gate (R-5) does not apply without Houdini; the rig has none.
+                 '_preflight_refusal_for':lambda *args: None, '_preflight_note_for':lambda *args: None}
     exec(compile(ast.Module(body=[node],type_ignores=[]), str(source), 'exec'), namespace)
     return namespace['receive']
 

@@ -11,6 +11,7 @@ import signal
 import threading
 import json
 import time
+from types import SimpleNamespace
 from typing import Dict, Any, Optional, Set, Callable
 
 try:
@@ -43,6 +44,7 @@ from .auth import get_auth_key, authenticate, hash_key_for_log, validate_origin,
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from ..mcp.read_only_mode import refusal_for_command as _read_only_refusal_for_command
+from ..mcp.read_only_mode import tool_for_command as _read_only_tool_for_command
 from ..core.outcomes import info as _outcome
 from .rbac import Role, check_permission, is_rbac_enabled
 from .sessions import (
@@ -101,6 +103,36 @@ def get_live_server():
 # in order and the loop stops on connection close (ConnectionClosed* still
 # propagates to the caller, exactly as ``for message in websocket:`` does).
 CANCEL_POLL_INTERVAL = 0.1  # seconds between cancel-event checks
+
+
+def _preflight_holder(server, client_id: str):
+    """The per-connection flag the Level 1 preflight keeps (``preflight_due``)."""
+    holders = server.__dict__.setdefault("_preflight_holders", {})
+    return holders.setdefault(client_id, SimpleNamespace(preflight_due=True))
+
+
+def _preflight_refusal_for(server, client_id: str, command) -> Optional[Dict[str, Any]]:
+    """The outcome refusing a command the Level 1 preflight stops, or None (R-5).
+
+    A connection's first change is checked, and again after a retryable or unrecoverable
+    outcome (server/preflight_gate.py). Nothing is kept for a read, or without Houdini.
+    """
+    from .preflight_gate import admit, houdini_hop
+
+    tool = _read_only_tool_for_command(command.type)
+    if tool is None or houdini_hop() is None:
+        return None
+    return admit(_preflight_holder(server, client_id), tool, getattr(command, "client_version", None))
+
+
+def _preflight_note_for(server, client_id: str, response) -> None:
+    """After a command: a retryable or unrecoverable outcome makes the next change check again."""
+    from ..core.preflight import is_trouble
+    from .preflight_gate import note, response_outcome
+
+    outcome = response_outcome(response)
+    if is_trouble(outcome):
+        note(_preflight_holder(server, client_id), outcome)
 
 
 def iter_messages(websocket, cancel_event, poll_interval=CANCEL_POLL_INTERVAL):
@@ -582,6 +614,7 @@ class SynapseServer:
                 session_id = self._client_sessions.pop(websocket, None)
                 self._clients.discard(websocket)
                 self._client_ids.pop(websocket, None)
+                self.__dict__.get("_preflight_holders", {}).pop(client_id, None)
 
             # Remove user session (studio mode)
             if self._session_manager:
@@ -718,6 +751,7 @@ class SynapseServer:
                     response = self._handler.handle(command)
                 if self._circuit_breaker and response.success:
                     self._circuit_breaker.record_success()
+                _preflight_note_for(self, client_id, response)
                 websocket.send(response.to_json())
                 return
 
@@ -726,36 +760,42 @@ class SynapseServer:
                 # Rate limiting
                 allowed, info = self._rate_limiter.acquire(client_id)
                 if not allowed:
-                    websocket.send(SynapseResponse(
+                    busy = SynapseResponse(
                         id=command.id,
                         success=False,
                         error=f"Synapse is handling a lot of requests right now — try again in a moment ({info.get('reason')})",
                         data={"retry_after": info.get("retry_after", 1.0)},
                         sequence=command.sequence
-                    ).to_json())
+                    )
+                    _preflight_note_for(self, client_id, busy)
+                    websocket.send(busy.to_json())
                     return
 
                 # Circuit breaker
                 can_exec, cb_info = self._circuit_breaker.can_execute()
                 if not can_exec:
-                    websocket.send(SynapseResponse(
+                    paused = SynapseResponse(
                         id=command.id,
                         success=False,
                         error=f"Synapse paused commands temporarily to recover from errors — it'll resume shortly ({cb_info.get('reason')})",
                         data={"retry_after": cb_info.get("retry_after", 30.0)},
                         sequence=command.sequence
-                    ).to_json())
+                    )
+                    _preflight_note_for(self, client_id, paused)
+                    websocket.send(paused.to_json())
                     return
 
                 # Backpressure
                 if not self._backpressure.should_accept():
-                    websocket.send(SynapseResponse(
+                    loaded = SynapseResponse(
                         id=command.id,
                         success=False,
                         error=f"Synapse is under heavy load right now (level: {self._backpressure.level.value}) — try again shortly",
                         data={"retry_after": 2.0},
                         sequence=command.sequence
-                    ).to_json())
+                    )
+                    _preflight_note_for(self, client_id, loaded)
+                    websocket.send(loaded.to_json())
                     return
 
             # Fast-fail if main thread is persistently unresponsive —
@@ -785,7 +825,7 @@ class SynapseServer:
                     if self._circuit_breaker:
                         self._circuit_breaker.record_failure()
                     n = stall_state()["consecutive_timeouts"]
-                    websocket.send(SynapseResponse(
+                    stalled = SynapseResponse(
                         id=command.id,
                         success=False,
                         error=(
@@ -795,10 +835,27 @@ class SynapseServer:
                         ),
                         data={"retry_after": 5.0},
                         sequence=command.sequence,
-                    ).to_json())
+                    )
+                    _preflight_note_for(self, client_id, stalled)
+                    websocket.send(stalled.to_json())
                     return
             except ImportError:
                 pass
+
+            # Level 1, R-5: the preflight gate, last before dispatch. Before this connection's
+            # first change, and again after a retryable or unrecoverable outcome, one 250 ms hop
+            # checks that Houdini can take a change, and the stdio bridge's SYNAPSE version is
+            # compared with Houdini's. A refused change is never sent. Reads and stops pass.
+            refused = _preflight_refusal_for(self, client_id, command)
+            if refused is not None:
+                websocket.send(SynapseResponse(
+                    id=command.id,
+                    success=False,
+                    error=refused["message"],
+                    data={"outcome": refused},
+                    sequence=command.sequence,
+                ).to_json())
+                return
 
             # Process command with latency tracking
             t0 = time.monotonic()
@@ -819,6 +876,7 @@ class SynapseServer:
             if self._circuit_breaker and response.success:
                 self._circuit_breaker.record_success()
 
+            _preflight_note_for(self, client_id, response)
             # Send response
             websocket.send(response.to_json())
 

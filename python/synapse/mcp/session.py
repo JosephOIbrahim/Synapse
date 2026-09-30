@@ -38,7 +38,7 @@ class MCPSession:
 
     __slots__ = (
         "session_id", "client_info", "created_at", "last_activity",
-        "protocol_version", "initialized", "project_context",
+        "protocol_version", "initialized", "project_context", "preflight_due",
     )
 
     def __init__(self, session_id: str, client_info: dict):
@@ -49,6 +49,8 @@ class MCPSession:
         self.protocol_version = "2025-06-18"
         self.initialized = False
         self.project_context = None
+        # Level 1, R-5: the session's next change is checked first (server/preflight_gate.py)
+        self.preflight_due = True
 
     def to_dict(self) -> dict:
         return {

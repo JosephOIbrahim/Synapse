@@ -219,20 +219,27 @@ class SynapseCommand:
     sequence: int = 0
     timestamp: float = field(default_factory=time.time)
     protocol_version: str = PROTOCOL_VERSION
+    #: The SYNAPSE release of the stdio bridge that sent this ("synapse_version" on the wire),
+    #: compared with Houdini's before a change (Level 1, R-5 check 5). Other callers omit it.
+    client_version: Optional[str] = None
 
     def to_json(self) -> str:
-        return _to_json_str({
+        data = {
             "id": self.id,
             "payload": self.payload,
             "protocol_version": self.protocol_version,
             "sequence": self.sequence,
             "timestamp": self.timestamp,
             "type": self.type,
-        })
+        }
+        if self.client_version:
+            data["synapse_version"] = self.client_version
+        return _to_json_str(data)
 
     @classmethod
     def from_json(cls, data: str) -> 'SynapseCommand':
         parsed = _from_json(data)
+        version = parsed.get("synapse_version")
         return cls(
             type=parsed.get("type", ""),
             id=parsed.get("id", ""),
@@ -241,7 +248,8 @@ class SynapseCommand:
             # He2025: preserve wire timestamp; 0.0 sentinel = "not provided"
             # (avoids injecting nondeterministic time.time() on deserialization)
             timestamp=parsed.get("timestamp", 0.0),
-            protocol_version=parsed.get("protocol_version", "1.0.0")
+            protocol_version=parsed.get("protocol_version", "1.0.0"),
+            client_version=version if isinstance(version, str) and version else None,
         )
 
     def normalized_type(self) -> str:

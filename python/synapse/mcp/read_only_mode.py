@@ -48,6 +48,19 @@ def enabled() -> bool:
     return os.environ.get(ENV, "").strip().lower() in _ON
 
 
+def is_change(tool_name: str) -> bool:
+    """True for a tool this mode refuses: not read-only under both gating sets, and not a stop.
+
+    The Level 1 preflight gate checks exactly these calls before they are sent
+    (server/preflight_gate.py), so the two rules never disagree about what a change is.
+    """
+    if tool_name in STOPS_ALWAYS_PASS:
+        return False
+    from synapse.mcp.server import is_transport_fast_path
+
+    return not is_transport_fast_path(tool_name)
+
+
 def refusal_for_tool(tool_name: str) -> str | None:
     """The refusal message for *tool_name*, or None when the call may run."""
     if not enabled():

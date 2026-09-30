@@ -259,6 +259,8 @@ def test_primary_hweb_cancel_survives_gates_without_memory(monkeypatch, gate, al
           "FARM_READ_COMMANDS": FARM_READ_COMMANDS, "_get_handler": lambda: handler,
           "get_bridge": Mock(side_effect=AssertionError("Constructed artist memory")),
           "_client_sessions": {},
+          # The Level 1 preflight gate (R-5) does not apply without Houdini; the rig has none.
+          "_preflight_refusal_for": lambda *args: None, "_preflight_note_for": lambda *args: None,
           "_rate_limiter": SimpleNamespace(acquire=lambda _: (False, {"reason": "full"})) if gate == "rate" else None,
           "_circuit_breaker": SimpleNamespace(can_execute=lambda: (False, {}), record_success=lambda: None) if gate == "breaker" else None}
     exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), "exec"), ns)
@@ -292,7 +294,9 @@ def test_primary_hweb_launch_obeys_external_policy(monkeypatch, command_type, al
           "_READ_ONLY_COMMANDS": FARM_READ_COMMANDS, "_read_only_refusal_for_command": lambda _command_type: None, "_outcome": __import__("synapse.core.outcomes", fromlist=["info"]).info, "FARM_CONTROL_COMMANDS": FARM_CONTROL_COMMANDS,
           "FARM_READ_COMMANDS": FARM_READ_COMMANDS, "_get_handler": lambda: handler,
           "get_bridge": Mock(side_effect=AssertionError("Constructed artist memory")),
-          "_client_sessions": {}, "_rate_limiter": None, "_circuit_breaker": None}
+          "_client_sessions": {}, "_rate_limiter": None, "_circuit_breaker": None,
+          # The Level 1 preflight gate (R-5) does not apply without Houdini; the rig has none.
+          "_preflight_refusal_for": lambda *args: None, "_preflight_note_for": lambda *args: None}
     exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), "exec"), ns)
     connection = SimpleNamespace(_authenticated=True, _client_id="local", _session_id=None, send=send)
     asyncio.run(ns["receive"](connection, json.dumps({"type": command_type, "id": "request", "payload": {}})))
