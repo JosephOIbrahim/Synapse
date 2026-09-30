@@ -15,12 +15,17 @@ A stable ``code`` names the case for software (``session.expired``). ``message``
 happened in one sentence, ``next`` says what to do in plain words, and ``dispatched`` says whether
 the call reached Houdini: "no", "yes" or "maybe". A read changes nothing, so a read that may have
 run can still be ``retryable``; everything else that is ``retryable`` did not run.
+
+On the wire (R-6): a tool call that does not end ``ok`` comes back as a tool result flagged
+``isError``, as MCP specifies for tool failures. Its first text line is the outcome line,
+``<outcome>: <message> Next: <next>``, and the whole object rides in ``_meta["synapse/outcome"]``.
+JSON-RPC errors stay for protocol failures, and each carries its outcome in the error's ``data``.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class Outcome(str, Enum):
@@ -48,6 +53,7 @@ CODES: Dict[str, Tuple[Outcome, str, str]] = {
     "policy.rbac": (Outcome.REFUSED, "no", "Ask a studio admin for a role that allows this command."),
     "request.invalid": (Outcome.REFUSED, "no", "Fix the request; the message names what is wrong with it."),
     "request.unknown_method": (Outcome.REFUSED, "no", "Use a method the SYNAPSE MCP server supports."),
+    "request.unknown_tool": (Outcome.REFUSED, "no", "Use a tool from the tools/list response."),
     "server.busy": (Outcome.RETRYABLE, "no", "Wait a moment, then send it again."),
     "houdini.busy": (Outcome.RETRYABLE, "no",
                      "Wait for Houdini's cook or render to finish, then send it again."),
@@ -126,11 +132,63 @@ def info(code: str, message: str = "", *, retry_after_s: Optional[float] = None,
                        retry_after_s, dict(evidence or {}))
 
 
+def outcome_line(outcome: Optional[Dict[str, Any]], message: Optional[str] = None) -> str:
+    """The first text line of a call that did not end ok: ``<outcome>: <message> Next: <next>``.
+
+    *message* defaults to the outcome's own. The next step is left off when the message already
+    says it, so a refusal that names its own fix does not repeat it. A message that already is
+    an outcome line, as read-only mode's JSON-RPC message is, is not prefixed again. Without an
+    outcome the message is returned as it is.
+    """
+    if not isinstance(outcome, dict) or not outcome.get("outcome"):
+        return message or ""
+    text = (outcome.get("message") or "") if message is None else message
+    prefix = "%s:" % outcome["outcome"]
+    if text == prefix or text.startswith(prefix + " "):
+        line = text
+    else:
+        line = "%s %s" % (prefix, text) if text else prefix
+    next_step = outcome.get("next") or ""
+    if next_step and next_step not in text:
+        line = "%s Next: %s" % (line, next_step)
+    return line
+
+
 def describe(outcome: Optional[Dict[str, Any]], message: str) -> str:
-    """The message a client shows: what happened, the outcome, and the next step."""
-    if not isinstance(outcome, dict) or not outcome.get("next"):
-        return message
-    return "%s [%s: %s] Next: %s" % (message, outcome.get("outcome"), outcome.get("code"), outcome["next"])
+    """The message a client shows for a failure: its outcome line (see outcome_line)."""
+    return outcome_line(outcome, message)
+
+
+def tool_result(outcome: Any, result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """The MCP tool result for *outcome* (an OutcomeInfo or its dict).
+
+    Flagged ``isError`` unless the outcome is ok, as MCP specifies for tool failures. The first
+    content item is the outcome line. The non-text content of *result*, an image say, follows it;
+    the text of *result* is the message the line already carries. The whole outcome object rides
+    in ``_meta["synapse/outcome"]`` for software.
+    """
+    data = outcome.to_dict() if isinstance(outcome, OutcomeInfo) else dict(outcome)
+    content: List[Dict[str, Any]] = [{"type": "text", "text": outcome_line(data)}]
+    if isinstance(result, dict):
+        content.extend(item for item in result.get("content") or ()
+                       if isinstance(item, dict) and item.get("type") != "text")
+    return {"content": content, "isError": data.get("outcome") != Outcome.OK.value,
+            "_meta": {"synapse/outcome": data}}
+
+
+def for_bad_arguments(exc: BaseException) -> OutcomeInfo:
+    """The outcome when a tool's arguments cannot be turned into a request. Nothing was sent."""
+    if isinstance(exc, KeyError):
+        message = "Missing argument %s" % exc
+    else:
+        message = str(exc) or type(exc).__name__
+    return info("request.invalid", message)
+
+
+def attached(exc: BaseException) -> Optional[Dict[str, Any]]:
+    """The outcome object an exception carries on ``.outcome``, or None."""
+    found = getattr(exc, "outcome", None)
+    return found if isinstance(found, dict) and found.get("outcome") else None
 
 
 def with_failure_outcome(data: Any, error: Optional[str]) -> Any:

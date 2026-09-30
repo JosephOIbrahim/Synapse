@@ -30,7 +30,6 @@ from .protocol import (
     INVALID_REQUEST,
     METHOD_NOT_FOUND,
     READ_ONLY_REFUSED,
-    SERVER_BUSY,
     SESSION_INVALID,
     JsonRpcError,
     JsonRpcInvalidParams,
@@ -43,9 +42,9 @@ from .protocol import (
 )
 from .session import MCPSessionManager
 from .resources import get_resources, get_resource_templates, resolve_resource
-from .tools import dispatch_tool, get_tools
+from .tools import dispatch_tool, get_tools, has_tool
 from . import read_only_mode
-from ..core.outcomes import info as _outcome
+from ..core.outcomes import info as _outcome, outcome_line as _outcome_line, tool_result as _tool_result
 from synapse.core.farm_contract import is_farm_control
 
 # Resilience layer — shared with WebSocket server
@@ -477,6 +476,11 @@ class MCPServer:
             return error_from_exception(msg_id, e), headers
         except Exception as e:
             logger.exception("Unhandled error in %s", method)
+            if method == "tools/call":
+                # A tool call's outcome travels in its result (Level 1, R-6). The dispatch may
+                # have run in part, so the caller checks the scene before trying again.
+                return jsonrpc_result(msg_id, _tool_result(
+                    _outcome("tool.internal", f"Internal error: {e}"))), headers
             return jsonrpc_error(
                 msg_id, INTERNAL_ERROR,
                 f"Internal error: {e}",
@@ -593,20 +597,29 @@ class MCPServer:
         match the WebSocket server's behavior so both transports have the
         same safety guarantees.
 
-        If dispatch_tool returns isError=True, we raise a JsonRpcError so
-        MCP clients receive a proper JSON-RPC error response instead of a
-        success response with error content buried inside.
+        A call that does not end ok comes back as a tool result flagged isError, as
+        MCP specifies for tool failures: its first text line is the outcome line and
+        the outcome object rides in _meta["synapse/outcome"] (Level 1, R-6). JSON-RPC
+        errors stay for protocol failures: a missing or unknown tool name, and
+        read-only mode, whose message is its outcome line.
         """
         tool_name = params.get("name")
         if not tool_name:
             raise JsonRpcInvalidParams("Missing 'name' in tools/call params")
+        if not has_tool(tool_name):
+            # An unknown tool is a protocol error, as MCP specifies. Nothing ran.
+            unknown = _outcome("request.unknown_tool", f"Unknown tool: {tool_name}").to_dict()
+            raise JsonRpcError(INVALID_PARAMS, f"Unknown tool: {tool_name}", {"outcome": unknown})
 
         # BP12 item 12: SYNAPSE_MCP_READ_ONLY fences every /mcp caller, the panel's
         # own agent included, to the tools that are read-only under both gating
         # sets, before anything is dispatched.
         refusal = read_only_mode.refusal_for_tool(tool_name)
         if refusal:
-            raise JsonRpcError(READ_ONLY_REFUSED, refusal)
+            # Read-only mode keeps its JSON-RPC code while v5.86.0's contract stands; the
+            # message is its outcome line (Level 1, R-6).
+            refused = _outcome("policy.read_only", refusal).to_dict()
+            raise JsonRpcError(READ_ONLY_REFUSED, _outcome_line(refused), {"outcome": refused})
 
         arguments = params.get("arguments", {})
         handler = self._get_handler()
@@ -653,13 +666,10 @@ class MCPServer:
             # silently REPLACE them, converting a slow-but-working viewport
             # capture into a spurious failure.
             result = dispatch_tool(handler, tool_name, arguments)
-            # Propagate tool errors to the JSON-RPC layer here too — read-only
-            # tools skip resilience, but a handler failure must still surface as
-            # a JSON-RPC error rather than a success result with isError buried
-            # inside (matches the non-read-only path below).
+            # A handler failure comes back as a result flagged isError with its outcome
+            # line (Level 1, R-6), as on the path below; the breaker records no success.
             if isinstance(result, dict) and result.get("isError"):
-                raise JsonRpcError(INTERNAL_ERROR, _isError_text(result), {
-                    "outcome": _outcome("tool.failed", _isError_text(result)).to_dict()})
+                return _tool_result(_outcome("tool.failed", _isError_text(result)), result)
             if self._circuit_breaker:
                 self._circuit_breaker.record_success()
             return result
@@ -681,8 +691,7 @@ class MCPServer:
                     stall_state()["consecutive_timeouts"]
                 )
             )
-            raise JsonRpcError(SERVER_BUSY, message, {"outcome": _outcome(
-                "houdini.busy", message, retry_after_s=5.0).to_dict()})
+            return _tool_result(_outcome("houdini.busy", message, retry_after_s=5.0))
 
         # 2. Rate limiting (keyed by MCP session, not per-client like WS)
         if self._enable_resilience and self._rate_limiter:
@@ -692,9 +701,8 @@ class MCPServer:
                     "Synapse is handling a lot of requests right now — "
                     "try again in a moment ({})".format(info.get("reason", ""))
                 )
-                raise JsonRpcError(SERVER_BUSY, message, {"outcome": _outcome(
-                    "server.busy", message,
-                    retry_after_s=float(info.get("retry_after", 1.0))).to_dict()})
+                return _tool_result(_outcome(
+                    "server.busy", message, retry_after_s=float(info.get("retry_after", 1.0))))
 
         # 3. Circuit breaker
         if self._enable_resilience and self._circuit_breaker:
@@ -704,9 +712,8 @@ class MCPServer:
                     "Synapse paused commands temporarily to recover from errors — "
                     "it'll resume shortly ({})".format(cb_info.get("reason", ""))
                 )
-                raise JsonRpcError(SERVER_BUSY, message, {"outcome": _outcome(
-                    "server.busy", message,
-                    retry_after_s=float(cb_info.get("retry_after", 30.0))).to_dict()})
+                return _tool_result(_outcome(
+                    "server.busy", message, retry_after_s=float(cb_info.get("retry_after", 30.0))))
 
         # Notify SSE subscribers about critical tool execution
         if session_id is not None and tool_name in (
@@ -809,7 +816,7 @@ class MCPServer:
             + (1 - self._latency_alpha) * self._avg_latency
         )
 
-        # Propagate tool errors to JSON-RPC layer so MCP clients detect failures
+        # A tool failure comes back as a result flagged isError (Level 1, R-6)
         if isinstance(result, dict) and result.get("isError"):
             error_text = _isError_text(result)
             # Only record infrastructure failures for circuit breaker
@@ -826,8 +833,8 @@ class MCPServer:
             # artist checks the scene first. Anything else ran and failed. (Level 1, M1)
             infra = any(k in error_text.lower()
                         for k in ("timeout", "main thread", "crashed", "unresponsive"))
-            raise JsonRpcError(INTERNAL_ERROR, error_text, {"outcome": _outcome(
-                "transport.timeout" if infra else "tool.failed", error_text).to_dict()})
+            return _tool_result(_outcome(
+                "transport.timeout" if infra else "tool.failed", error_text), result)
 
         if self._circuit_breaker:
             self._circuit_breaker.record_success()

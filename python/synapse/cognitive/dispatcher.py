@@ -73,6 +73,8 @@ class AgentToolError:
             Empty string when the error has no upstream traceback
             (e.g. ToolNotRegistered, ToolReturnTypeError).
         timestamp: Unix epoch seconds when the error was observed.
+        outcome: The ``synapse.core.outcomes`` object the exception carried on
+            ``.outcome`` (what happened and what to do next), or None.
     """
 
     tool_name: str
@@ -80,10 +82,11 @@ class AgentToolError:
     error_message: str
     traceback_str: str = ""
     timestamp: float = field(default_factory=time.time)
+    outcome: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to a plain dict for JSON-RPC marshalling."""
-        return {
+        out = {
             "agent_tool_error": True,
             "tool_name": self.tool_name,
             "error_type": self.error_type,
@@ -91,6 +94,9 @@ class AgentToolError:
             "traceback_str": self.traceback_str,
             "timestamp": self.timestamp,
         }
+        if self.outcome is not None:
+            out["outcome"] = dict(self.outcome)
+        return out
 
 
 _TRACEBACK_MAX_LEN = 4000
@@ -266,11 +272,13 @@ class Dispatcher:
             else:
                 result = self._execute_via_main_thread(fn, effective_kwargs)
         except Exception as exc:
+            outcome = getattr(exc, "outcome", None)
             return self._error(
                 tool_name=tool_name,
                 error_type=type(exc).__name__,
                 error_message=str(exc),
                 traceback_str=traceback.format_exc()[:_TRACEBACK_MAX_LEN],
+                outcome=outcome if isinstance(outcome, dict) else None,
             )
 
         # A tool can also return an AgentToolError directly (structured
@@ -320,6 +328,7 @@ class Dispatcher:
         error_type: str,
         error_message: str,
         traceback_str: str,
+        outcome: Optional[Dict[str, Any]] = None,
     ) -> AgentToolError:
         return AgentToolError(
             tool_name=tool_name,
@@ -327,4 +336,5 @@ class Dispatcher:
             error_message=error_message,
             traceback_str=traceback_str,
             timestamp=time.time(),
+            outcome=outcome,
         )

@@ -200,16 +200,23 @@ The fence applies to every caller of those two routes, and that includes the SYN
 
 ## What a failed call tells you
 
-Every refused or failed call carries an `outcome`: in the error's `data` on `/mcp`, and in the
-response's `data` on the WebSocket. It is one of `refused`, `retryable`, `unrecoverable`,
-`needs_artist`, `unknown_outcome` or `failed`, with a stable `code`, a one-sentence `message`, a
-`next` step in plain words, and `dispatched` (`no`, `yes` or `maybe`). Send a call again without
-looking only when it is `retryable`. An `unknown_outcome` may have run, so check the scene first.
-The stdio bridge and the SYNAPSE panel add the next step to the message they show. The
-vocabulary is [`synapse/core/outcomes.py`](../../python/synapse/core/outcomes.py).
+Every refused or failed call carries an `outcome`. It is one of `refused`, `retryable`,
+`unrecoverable`, `needs_artist`, `unknown_outcome` or `failed`, with a stable `code`, a
+one-sentence `message`, a `next` step in plain words, and `dispatched` (`no`, `yes` or `maybe`).
+Send a call again without looking only when it is `retryable`. An `unknown_outcome` may have
+run, so check the scene first. The vocabulary is
+[`synapse/core/outcomes.py`](../../python/synapse/core/outcomes.py).
 
-The busy answers (the rate limiter, the circuit breaker and a stalled main thread) use JSON-RPC
-code `-32006`, with the wait in `outcome.retry_after_s`.
+**A tool call that fails comes back as a tool result flagged `isError`**, as MCP specifies for
+tool failures, on `/mcp` and on the stdio bridge. Its first text line reads
+`<outcome>: <message> Next: <next>`, and the whole object is in `_meta["synapse/outcome"]`. A
+busy server (the rate limiter, the circuit breaker or a stalled main thread) answers this way
+too, as `retryable`, with the wait in `retry_after_s`. The SYNAPSE panel shows the line.
+
+**Protocol failures stay JSON-RPC errors**, with the outcome in the error's `data`: a request
+that cannot be parsed, an unknown method or tool, a missing or expired session (HTTP 400 or
+404), and read-only mode (`-32005`), whose message is its outcome line. On the WebSocket, a
+failed response carries the outcome in its `data`.
 
 ## SSE Streaming
 

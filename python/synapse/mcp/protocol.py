@@ -45,11 +45,12 @@ NODE_NOT_FOUND = -32002
 COOK_ERROR = -32003
 SESSION_INVALID = -32004
 READ_ONLY_REFUSED = -32005  # SYNAPSE_MCP_READ_ONLY refused a tool (BP12 item 12)
-SERVER_BUSY = -32006  # rate limit, circuit breaker or a stalled main thread; wait, then retry (Level 1)
-NEEDS_ARTIST = -32007  # an artist must approve the call before it runs (Level 1)
+# -32006 (busy) and -32007 (needs an artist), added in v5.87.0, are withdrawn: both are tool
+# outcomes, so they travel in the tool result flagged isError (Level 1, R-6).
 
-#: JSON-RPC code -> the outcome code it means (synapse.core.outcomes, Level 1 M1). A caller that
-#: knows its case more precisely passes the outcome in the error's data instead.
+#: JSON-RPC code -> the outcome code it means (synapse.core.outcomes, Level 1 M1). These are
+#: protocol failures; a tool call's own outcome travels in its result (R-6). A caller that knows
+#: its case more precisely passes the outcome in the error's data instead.
 OUTCOME_BY_JSONRPC_CODE = {
     PARSE_ERROR: "request.invalid",
     INVALID_REQUEST: "request.invalid",
@@ -61,8 +62,6 @@ OUTCOME_BY_JSONRPC_CODE = {
     COOK_ERROR: "cook.error",
     SESSION_INVALID: "session.expired",
     READ_ONLY_REFUSED: "policy.read_only",
-    SERVER_BUSY: "server.busy",
-    NEEDS_ARTIST: "artist.approval_needed",
 }
 
 # MCP protocol version

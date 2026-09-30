@@ -343,11 +343,27 @@ class _MCPLocalClient:
 
             return self._session_id
 
+    @staticmethod
+    def _failure_text(payload: dict) -> str:
+        """The message of a tool result flagged isError: its outcome line (Level 1, R-6)."""
+        from synapse.core.outcomes import outcome_line
+
+        meta = payload.get("_meta")
+        outcome = meta.get("synapse/outcome") if isinstance(meta, dict) else None
+        if isinstance(outcome, dict) and outcome.get("outcome"):
+            return outcome_line(outcome)
+        for item in payload.get("content") or ():
+            if isinstance(item, dict) and item.get("type") == "text" and item.get("text"):
+                return item["text"]
+        return "The tool failed."
+
     def call_tool(self, tool_name: str, arguments: dict) -> dict:
         """Call a tool via MCP. Returns the result dict.
 
         MCPUnavailable proves no tool request was sent. MCPOutcomeUnknown
-        forbids fallback after possible dispatch. Tool errors are RuntimeError.
+        forbids fallback after possible dispatch. Tool errors are RuntimeError,
+        whether the server answered with a JSON-RPC error or with a result
+        flagged isError (Level 1, R-6).
         """
         # An expired or unknown session was refused before dispatch, so the client
         # starts a new session and sends the call once more; a second refusal in a row
@@ -377,6 +393,10 @@ class _MCPLocalClient:
                 "The tool reply was invalid after possible execution. "
                 "Check the scene before trying the command again."
             )
+        if payload.get("isError") is True:
+            # The server answered, so the call is never sent again; the panel shows
+            # the outcome line, as it does for a JSON-RPC error.
+            raise RuntimeError(self._failure_text(payload))
         return payload
 
     def _call_once(self, tool_name: str, arguments: dict) -> dict:

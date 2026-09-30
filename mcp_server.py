@@ -41,7 +41,7 @@ except ImportError:
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent, ImageContent
+from mcp.types import CallToolResult, Tool, TextContent, ImageContent
 
 import websockets
 
@@ -175,24 +175,91 @@ except ImportError:  # pragma: no cover - without the policy, nothing is sent tw
 
 
 try:
-    from synapse.core.outcomes import describe as _describe, info as _outcome
+    from synapse.core.outcomes import (
+        attached as _attached,
+        for_bad_arguments as _for_bad_arguments,
+        info as _outcome,
+        outcome_line as _outcome_line,
+    )
 except ImportError:  # pragma: no cover - without the vocabulary, messages stay as they were
-    _describe = None
-    _outcome = None
+    _attached = _for_bad_arguments = _outcome = _outcome_line = None
+
+
+def _outcome_dict(code: str, message: str) -> dict | None:
+    """The outcome object for *code* (synapse.core.outcomes, Level 1), or None without it."""
+    return None if _outcome is None else _outcome(code, message).to_dict()
 
 
 def _say(code: str, message: str) -> str:
-    """*message* with its outcome and next step (synapse.core.outcomes, Level 1 M1)."""
-    if _outcome is None:
-        return message
-    return _describe(_outcome(code, message).to_dict(), message)
+    """*message* as its outcome line: what happened and what to do next (Level 1)."""
+    outcome = _outcome_dict(code, message)
+    return message if outcome is None else _outcome_line(outcome)
+
+
+def _tagged(exc_type: type, outcome, message: str) -> BaseException:
+    """An *exc_type* whose text is the outcome line and whose ``.outcome`` is the object.
+
+    *outcome* is a code, or the object a failed WebSocket response carried. The raised class
+    stays a builtin (tests/test_passthrough_hygiene.py reads it from the first argument), and a
+    failed call's result carries the object in ``_meta`` (Level 1, R-6).
+    """
+    if isinstance(outcome, str):
+        outcome = _outcome_dict(outcome, message)
+    elif isinstance(outcome, dict):
+        outcome = dict(outcome, message=message)
+    else:
+        outcome = None
+    exc = exc_type(message if outcome is None else _outcome_line(outcome))
+    exc.outcome = outcome
+    return exc
 
 
 def _lost_after_send(cmd_type: str) -> str:
     """The message for a command whose connection dropped after it was sent (Level 1, F2)."""
-    return _say("transport.reply_lost",
-                f"The connection to Houdini dropped after {cmd_type} was sent, so it may have run. "
-                "It was not sent again.")
+    return (f"The connection to Houdini dropped after {cmd_type} was sent, so it may have run. "
+            "It was not sent again.")
+
+
+def _fallback_code(exc_type: type | None, cmd_type: str | None = None) -> str:
+    """The outcome code an exception's class names when it carries none (Level 1, R-6)."""
+    if exc_type is not None:
+        if issubclass(exc_type, ConnectionRefusedError):
+            return "houdini.not_reachable"
+        if issubclass(exc_type, ConnectionError):
+            return "transport.reply_lost"
+        if issubclass(exc_type, TimeoutError):
+            if cmd_type and _may_resend(cmd_type, True):
+                return "transport.read_retry"
+            return "transport.timeout"
+        if issubclass(exc_type, RuntimeError):
+            return "tool.failed"
+    return "tool.internal"
+
+
+def _exc_outcome(exc: BaseException, cmd_type: str | None = None) -> dict | None:
+    """The outcome an exception carries, else the one its class names."""
+    found = None if _attached is None else _attached(exc)
+    return found or _outcome_dict(_fallback_code(type(exc), cmd_type), str(exc))
+
+
+_UNBUILT = object()  # call_tool's marker for a payload its builder never returned
+
+
+def _bad_arguments(exc: BaseException) -> dict | None:
+    """The outcome for arguments a tool could not turn into a request (nothing was sent)."""
+    return None if _for_bad_arguments is None else _for_bad_arguments(exc).to_dict()
+
+
+def _failure(outcome: dict | None, extra_text: str | None = None) -> CallToolResult:
+    """A failed tool call as MCP specifies it (Level 1, R-6 and F8): flagged isError, the
+    outcome line first, and the outcome object in ``_meta["synapse/outcome"]``."""
+    if outcome is None:  # pragma: no cover - only without synapse.core.outcomes
+        return CallToolResult(content=[TextContent(type="text", text=extra_text or "The tool failed.")],
+                              isError=True)
+    content = [TextContent(type="text", text=_outcome_line(outcome))]
+    if extra_text is not None:
+        content.append(TextContent(type="text", text=extra_text))
+    return CallToolResult(content=content, isError=True, **{"_meta": {"synapse/outcome": outcome}})
 
 
 def _candidate_urls() -> list:
@@ -424,9 +491,8 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                 ws = await _get_connection()
             except OSError as e:
                 # Nothing was sent. Houdini, or its SYNAPSE server, is not answering. (F3)
-                raise ConnectionError(_say(
-                    "houdini.not_reachable",
-                    f"Houdini isn't answering on the SYNAPSE port ({e})")) from e
+                raise _tagged(ConnectionError, "houdini.not_reachable",
+                              f"Houdini isn't answering on the SYNAPSE port ({e})") from e
 
             # Register a future for this command's response
             loop = asyncio.get_running_loop()
@@ -458,10 +524,11 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                 except Exception:
                     pass
                 _ws_connection = None
-                raise TimeoutError(_say(
+                raise _tagged(
+                    TimeoutError,
                     "transport.read_retry" if _may_resend(cmd_type, True) else "transport.timeout",
                     f"The {cmd_type} command took too long to respond \u2014 "
-                    "Houdini may be busy with a heavy operation"))
+                    "Houdini may be busy with a heavy operation")
             except ConnectionError as e:
                 # Future was signaled by _recv_loop disconnect
                 _pending.pop(command_id, None)
@@ -472,7 +539,8 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                     pass
                 _ws_connection = None
                 if not _may_resend(cmd_type, sent):
-                    raise ConnectionError(_lost_after_send(cmd_type)) from e
+                    raise _tagged(ConnectionError, "transport.reply_lost",
+                                  _lost_after_send(cmd_type)) from e
                 last_err = ConnectionError(f"Connection lost during {cmd_type}")
                 logger.warning("Connection lost during %s, reconnecting...", cmd_type)
             except Exception as e:
@@ -484,13 +552,17 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                     pass
                 _ws_connection = None
                 if not _may_resend(cmd_type, sent):
-                    raise ConnectionError(_lost_after_send(cmd_type)) from e
+                    raise _tagged(ConnectionError, "transport.reply_lost",
+                                  _lost_after_send(cmd_type)) from e
                 last_err = e
                 logger.warning("Connection lost during %s, reconnecting... (%s)", cmd_type, e)
         else:
-            raise ConnectionError(
-                f"Lost connection while sending {cmd_type} and couldn't reconnect: {last_err}"
-            )
+            # Both attempts lost the connection before a reply. A change reaches here only
+            # when neither attempt sent it; a read may have run and changes nothing.
+            raise _tagged(
+                ConnectionError,
+                "transport.read_retry" if _may_resend(cmd_type, True) else "transport.not_sent",
+                f"Lost connection while sending {cmd_type} and couldn't reconnect: {last_err}")
     finally:
         # An externally-injected cancellation \u2014 the port-wave transport watchdog
         # cancelling this coroutine's run_coroutine_threadsafe future on outer
@@ -506,9 +578,8 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
         data = response.get("data") or {}
         if isinstance(data, dict) and "retry_after" in data:
             error_msg += f" (retry after {data['retry_after']}s)"
-        if _describe is not None and isinstance(data, dict):
-            error_msg = _describe(data.get("outcome"), error_msg)
-        raise RuntimeError(error_msg)
+        outcome = data.get("outcome") if isinstance(data, dict) else None
+        raise _tagged(RuntimeError, outcome if isinstance(outcome, dict) else "tool.failed", error_msg)
 
     return response.get("data", {})
 
@@ -712,32 +783,23 @@ async def _inspector_call_tool(arguments: dict) -> list:
             dispatcher.execute, _INSPECTOR_TOOL_NAME, kwargs,
         )
     except ConnectionError as e:
-        return [TextContent(
-            type="text",
-            text=f"Couldn't reach Synapse \u2014 {e}",
-        )]
+        return _failure(_exc_outcome(e))
     except Exception as e:
         logger.exception("Unexpected error dispatching synapse_inspect_stage")
-        return [TextContent(
-            type="text",
-            text=_dumps_str({
-                "error": type(e).__name__,
-                "message": str(e),
-                "target_path": target_path,
-            }),
-        )]
+        return _failure(_exc_outcome(e), _dumps_str({
+            "error": type(e).__name__,
+            "message": str(e),
+            "target_path": target_path,
+        }))
 
     if isinstance(result, _AgentToolError):
-        # Preserve the Sprint 2 WS adapter error envelope shape so MCP
-        # callers don't see a contract change from the Strangler Fig.
-        return [TextContent(
-            type="text",
-            text=_dumps_str({
-                "error": result.error_type,
-                "message": result.error_message,
-                "target_path": target_path,
-            }),
-        )]
+        # The Sprint 2 WS adapter error envelope follows the outcome line, unchanged, and
+        # the result is flagged isError (Level 1, R-6).
+        return _failure(_agent_outcome(result), _dumps_str({
+            "error": result.error_type,
+            "message": result.error_message,
+            "target_path": target_path,
+        }))
 
     return [TextContent(type="text", text=_dumps_str(result))]
 
@@ -814,14 +876,15 @@ async def _scout_call_tool(arguments: dict) -> list:
         )
     except Exception as e:
         logger.exception("Unexpected error dispatching synapse_scout")
-        return [TextContent(type="text", text=_dumps_str({
+        return _failure(_exc_outcome(e), _dumps_str({
             "error": type(e).__name__, "message": str(e),
-        }))]
+        }))
 
     if isinstance(result, _AgentToolError):
-        return [TextContent(type="text", text=_dumps_str({
+        # Scout reads local documents only, so a failure ran and failed (Level 1, R-6).
+        return _failure(_agent_outcome(result, default="tool.failed"), _dumps_str({
             "error": result.error_type, "message": result.error_message,
-        }))]
+        }))
 
     return [TextContent(type="text", text=_dumps_str(result))]
 
@@ -925,20 +988,20 @@ async def _blocks_call_tool(name: str, arguments: dict) -> list:
         dispatcher = _get_blocks_dispatcher()
         result = await _off_loop(dispatcher.execute, name, kwargs)
     except ConnectionError as e:
-        return [TextContent(type="text", text=f"Couldn't reach Synapse — {e}")]
+        return _failure(_exc_outcome(e))
     except Exception as e:
         logger.exception("Unexpected error dispatching %s", name)
-        return [TextContent(type="text", text=_dumps_str({
+        return _failure(_exc_outcome(e), _dumps_str({
             "error": type(e).__name__, "message": str(e),
             "fixture": kwargs.get("fixture"),
-        }))]
+        }))
 
     if isinstance(result, _AgentToolError):
-        return [TextContent(type="text", text=_dumps_str({
+        return _failure(_agent_outcome(result), _dumps_str({
             "error": result.error_type,
             "message": result.error_message,
             "fixture": kwargs.get("fixture"),
-        }))]
+        }))
 
     return [TextContent(type="text", text=_dumps_str(result))]
 
@@ -954,13 +1017,13 @@ async def _blocks_call_tool(name: str, arguments: dict) -> list:
 # call_tool() -> Dispatcher -> injected transport -> send_command.
 #
 # Envelope contract (byte-for-byte, per the Inspector precedent): success
-# returns _dumps_str(data) for ANY data shape; failures map back onto the
-# exact legacy strings ("Couldn't reach Synapse -- ...", "Synapse hit a
-# snag: ...", "Something unexpected happened: ..."). The Dispatcher never
-# raises -- tool exceptions come back as AgentToolError carrying the
-# ORIGINAL exception class name, which _ported_error_text() resolves against
-# builtins to reproduce the legacy except-clause routing (ConnectionError
-# subclasses / RuntimeError subclasses / everything else).
+# returns _dumps_str(data) for ANY data shape, and a failure is the same
+# isError result the legacy path returns (Level 1, R-6): the outcome line
+# first, the outcome object in _meta. The Dispatcher never raises -- tool
+# exceptions come back as AgentToolError carrying the outcome send_command
+# attached, and the ORIGINAL exception class name, which _agent_outcome()
+# resolves against builtins when no outcome came with it (ConnectionError
+# subclasses / TimeoutError / RuntimeError subclasses / everything else).
 # ---------------------------------------------------------------------------
 import builtins as _builtins
 from synapse.cognitive.tools.ws_passthrough import (
@@ -1009,9 +1072,9 @@ def _get_ported_dispatcher() -> _Dispatcher:
         onto the MCP event loop and returns the raw response data.
 
         Exceptions from send_command (ConnectionError / RuntimeError /
-        TimeoutError) propagate UNWRAPPED so the error envelope mapping in
-        _ported_error_text() sees the original class, exactly as the legacy
-        try/except in call_tool() did.
+        TimeoutError) propagate UNWRAPPED, with the outcome send_command
+        attached, so _agent_outcome() maps them exactly as the legacy
+        try/except in call_tool() does.
         """
         fut = asyncio.run_coroutine_threadsafe(
             send_command(cmd_type, payload), loop,
@@ -1031,10 +1094,11 @@ def _get_ported_dispatcher() -> _Dispatcher:
             if fut.done():
                 raise  # send_command's own TimeoutError — pass through as-is
             fut.cancel()
-            raise TimeoutError(
+            raise _tagged(
+                TimeoutError,
+                "transport.read_retry" if _may_resend(cmd_type, True) else "transport.timeout",
                 f"The {cmd_type} command took too long to respond — "
-                "Houdini may be busy with a heavy operation"
-            )
+                "Houdini may be busy with a heavy operation")
 
     _ws_passthrough_configure_transport(_sync_transport)
     tools = {}
@@ -1045,23 +1109,26 @@ def _get_ported_dispatcher() -> _Dispatcher:
     return _ported_dispatcher
 
 
-def _ported_error_text(err: _AgentToolError) -> str:
-    """Map an AgentToolError back onto the legacy call_tool() error envelope.
+def _agent_outcome(err: _AgentToolError, cmd_type: str | None = None,
+                   default: str | None = None) -> dict | None:
+    """The outcome of a failed Dispatcher call (Level 1, R-6).
 
-    Reproduces the legacy except-clause routing by resolving the recorded
-    exception class name against builtins and re-applying the same
-    isinstance semantics (ConnectionError first, then RuntimeError, then the
-    generic catch-all). Non-builtin exception types fall through to the
-    generic branch — identical to the legacy path, where they matched
-    neither ConnectionError nor RuntimeError.
+    It is the one the exception carried: send_command attaches one to everything it raises,
+    and a passthrough tool to an argument error. Otherwise the recorded class NAME is resolved
+    against builtins, which reproduces the legacy isinstance routing for send_command's
+    builtin raise surface. A custom subclass falls through to the generic outcome, or to
+    *default* when the caller knows better (the BW-2 divergence pinned in
+    tests/test_passthrough_hygiene.py).
     """
+    if isinstance(err.outcome, dict) and err.outcome.get("outcome"):
+        return err.outcome
     exc_type = getattr(_builtins, err.error_type, None)
-    if isinstance(exc_type, type) and issubclass(exc_type, BaseException):
-        if issubclass(exc_type, ConnectionError):
-            return f"Couldn't reach Synapse — {err.error_message}"
-        if issubclass(exc_type, RuntimeError):
-            return f"Synapse hit a snag: {err.error_message}"
-    return f"Something unexpected happened: {err.error_message}"
+    if not (isinstance(exc_type, type) and issubclass(exc_type, BaseException)):
+        exc_type = None
+    code = _fallback_code(exc_type, cmd_type)
+    if code == "tool.internal" and default:
+        code = default
+    return _outcome_dict(code, err.error_message)
 
 
 async def _ported_call_tool(name: str, arguments: dict) -> list:
@@ -1078,22 +1145,22 @@ async def _ported_call_tool(name: str, arguments: dict) -> list:
         dispatcher = _get_ported_dispatcher()
         result = await _off_loop(dispatcher.execute, name, arguments)
         if isinstance(result, _AgentToolError):
-            text = _ported_error_text(result)
-            if text.startswith("Something unexpected"):
+            outcome = _agent_outcome(result, TOOL_DISPATCH[name][0])
+            if outcome is None or outcome.get("code") == "tool.internal":
                 # Legacy generic branch logged the traceback; keep that signal.
                 logger.error(
                     "Unexpected error in tool %s: %s: %s\n%s",
                     name, result.error_type, result.error_message,
                     result.traceback_str,
                 )
-            return [TextContent(type="text", text=text)]
+            return _failure(outcome)
         return [TextContent(type="text", text=_dumps_str(_unwrap_ws_data(result)))]
     except Exception as e:
         # Defensive only: dispatcher.execute never raises; this guards the
-        # surrounding plumbing (singleton build, unwrap). Same generic
-        # envelope as the legacy catch-all.
+        # surrounding plumbing (singleton build, unwrap). Same outcome as the
+        # legacy catch-all.
         logger.exception("Unexpected error in tool %s", name)
-        return [TextContent(type="text", text=f"Something unexpected happened: {e}")]
+        return _failure(_exc_outcome(e))
 
 
 # ---------------------------------------------------------------------------
@@ -1207,10 +1274,11 @@ async def call_tool(name: str, arguments: dict):
         return await _ported_call_tool(name, arguments)
 
     if name not in TOOL_DISPATCH:
-        return [TextContent(type="text", text=f"I don't recognize the tool '{name}' \u2014 check the available tools list")]
+        return _failure(_outcome_dict("request.unknown_tool", f"I don't recognize the tool '{name}'"))
 
     cmd_type, build_payload = TOOL_DISPATCH[name]
 
+    payload = _UNBUILT
     try:
         payload = build_payload(arguments)
         data = await send_command(cmd_type, payload)
@@ -1238,21 +1306,21 @@ async def call_tool(name: str, arguments: dict):
                     TextContent(type="text", text=_dumps_str(meta)),
                 ]
             except FileNotFoundError:
-                return [TextContent(type="text", text=(
+                return _failure(_outcome_dict("tool.failed", (
                     f"The capture ran but the image file wasn't found at {image_path} \u2014 "
-                    "it may have been cleaned up or the path changed"
-                ))]
+                    "it may have been cleaned up or the path changed")))
 
         return [TextContent(type="text", text=_dumps_str(data))]
-    except ConnectionError as e:
-        return [TextContent(type="text", text=(
-            f"Couldn't reach Synapse \u2014 {e}"
-        ))]
-    except RuntimeError as e:
-        return [TextContent(type="text", text=f"Synapse hit a snag: {e}")]
+    except (ConnectionError, RuntimeError) as e:
+        # A failed call is flagged isError with its outcome line first (Level 1, R-6 and F8).
+        return _failure(_exc_outcome(e, cmd_type))
     except Exception as e:
+        if payload is _UNBUILT and isinstance(e, (KeyError, ValueError, TypeError)):
+            # Nothing was sent: the arguments do not fit the tool. The port-wave passthrough
+            # gives these the same outcome (synapse.cognitive.tools.ws_passthrough).
+            return _failure(_bad_arguments(e))
         logger.exception("Unexpected error in tool %s", name)
-        return [TextContent(type="text", text=f"Something unexpected happened: {e}")]
+        return _failure(_exc_outcome(e, cmd_type))
 
 
 # ---------------------------------------------------------------------------

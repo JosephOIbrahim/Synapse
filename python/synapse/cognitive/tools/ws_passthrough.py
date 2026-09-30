@@ -84,7 +84,8 @@ def make_passthrough_tool(
         build_payload: The registry's payload builder for this tool — the
             single source of truth for argument -> payload mapping. Its
             exceptions (e.g. ``KeyError`` on a missing required argument)
-            propagate unwrapped, exactly as on the legacy path.
+            propagate unwrapped, exactly as on the legacy path, carrying the
+            ``request.invalid`` outcome the legacy path gives them (Level 1).
     """
 
     def _tool(**kwargs: Any) -> Dict[str, Any]:
@@ -93,7 +94,14 @@ def make_passthrough_tool(
                 f"ws_passthrough transport is not configured — cannot dispatch "
                 f"{tool_name!r}. Call configure_transport(fn) at host boot."
             )
-        payload = build_payload(kwargs)
+        try:
+            payload = build_payload(kwargs)
+        except (KeyError, ValueError, TypeError) as exc:
+            # Nothing was sent: the arguments do not fit the tool (Level 1, R-6).
+            from synapse.core.outcomes import for_bad_arguments
+
+            exc.outcome = for_bad_arguments(exc).to_dict()
+            raise
         data = _transport(command_type, payload)
         return {DATA_KEY: data}
 

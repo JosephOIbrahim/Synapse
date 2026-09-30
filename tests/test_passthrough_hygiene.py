@@ -10,7 +10,7 @@ CancelledError bypasses send_command's except-branch cleanup — leak the in-fli
 ``_pending`` entry. Fix: single-source the budget (``transport_outer_budget`` =
 ``2 * cmd_timeout + 75``) and pop ``_pending`` in a ``finally``.
 
-W.8 (BW-2, sev-2): ``_ported_error_text`` resolves the exception class by NAME
+W.8 (BW-2, sev-2): ``_agent_outcome`` resolves the exception class by NAME
 against ``builtins`` (not ``isinstance`` on a live object). That is faithful ONLY
 because send_command's entire raise surface is builtin exceptions — a conformance
 this file pins so a future non-builtin raise fails loud instead of silently
@@ -162,7 +162,7 @@ def test_send_command_pops_pending_on_cancellation(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# W.8(a) — _ported_error_text NAME-resolution vs send_command's raise surface
+# W.8(a) — _agent_outcome NAME-resolution vs send_command's raise surface
 # ---------------------------------------------------------------------------
 
 def _mk_err(error_type: str, message: str = "boom") -> "mcp_server._AgentToolError":
@@ -172,41 +172,47 @@ def _mk_err(error_type: str, message: str = "boom") -> "mcp_server._AgentToolErr
     )
 
 
-def test_ported_error_text_routes_send_command_builtin_surface():
+def _code(error_type: str, cmd_type: str = "ping") -> str:
+    return mcp_server._agent_outcome(_mk_err(error_type), cmd_type)["code"]
+
+
+def test_agent_outcome_routes_send_command_builtin_surface():
     """send_command's entire raise surface is builtins (ConnectionError /
-    RuntimeError / TimeoutError). _ported_error_text resolves the recorded class
-    NAME against builtins, so each routes to its legacy envelope — proving the
-    NAME approach reproduces the legacy isinstance routing for the real surface."""
-    assert (mcp_server._ported_error_text(_mk_err("ConnectionError", "down"))
-            == "Couldn't reach Synapse — down")
+    RuntimeError / TimeoutError), and each carries its outcome. For one that
+    does not, _agent_outcome resolves the recorded class NAME against builtins,
+    so each routes to the outcome the legacy isinstance routing gives it."""
+    assert _code("ConnectionError") == "transport.reply_lost"
     # A builtin ConnectionError SUBCLASS still resolves + routes (isinstance parity).
-    assert (mcp_server._ported_error_text(_mk_err("ConnectionRefusedError", "no"))
-            == "Couldn't reach Synapse — no")
-    assert (mcp_server._ported_error_text(_mk_err("RuntimeError", "snag"))
-            == "Synapse hit a snag: snag")
-    # TimeoutError is an OSError sibling (not ConnectionError/RuntimeError), so it
-    # falls to generic on BOTH the ported and legacy paths — parity, not a bug.
-    assert (mcp_server._ported_error_text(_mk_err("TimeoutError", "slow"))
-            == "Something unexpected happened: slow")
+    assert _code("ConnectionRefusedError") == "houdini.not_reachable"
+    assert _code("RuntimeError") == "tool.failed"
+    # A timeout on a read may be sent again; on a change it may still be running.
+    assert _code("TimeoutError", "ping") == "transport.read_retry"
+    assert _code("TimeoutError", "create_node") == "transport.timeout"
 
 
-def test_ported_error_text_custom_subclass_diverges_to_generic():
-    """The BW-2 divergence, pinned: _ported_error_text resolves by NAME, not
+def test_agent_outcome_prefers_the_outcome_the_exception_carried():
+    carried = {"outcome": "refused", "code": "policy.read_only", "message": "m",
+               "next": "n", "dispatched": "no"}
+    err = mcp_server._AgentToolError(tool_name="synapse_ping", error_type="RuntimeError",
+                                     error_message="m", traceback_str="", outcome=carried)
+    assert mcp_server._agent_outcome(err, "ping") is carried
+
+
+def test_agent_outcome_custom_subclass_diverges_to_generic():
+    """The BW-2 divergence, pinned: _agent_outcome resolves by NAME, not
     isinstance on a live object, so a CUSTOM RuntimeError/ConnectionError subclass
-    (name absent from builtins) falls through to the generic envelope where the
+    (name absent from builtins) falls through to the generic outcome where the
     legacy isinstance path would have matched the base. This is safe ONLY because
-    send_command never raises such a subclass (see the raise-surface pin below);
-    if that ever changes, the ported envelope silently degrades."""
-    assert (mcp_server._ported_error_text(_mk_err("StudioConnError", "x"))
-            == "Something unexpected happened: x")
-    assert (mcp_server._ported_error_text(_mk_err("MyCustomRuntimeError", "y"))
-            == "Something unexpected happened: y")
+    send_command never raises such a subclass (see the raise-surface pin below)
+    and attaches an outcome to what it does raise."""
+    assert _code("StudioConnError") == "tool.internal"
+    assert _code("MyCustomRuntimeError") == "tool.internal"
 
 
 def test_send_command_raise_surface_is_builtin():
     """Conformance pin (W.8a): every exception send_command RAISES is a builtin
     exception whose class NAME resolves via getattr(builtins, name). That is the
-    invariant _ported_error_text's NAME-based routing depends on — a non-builtin
+    invariant _agent_outcome's NAME-based routing depends on — a non-builtin
     raise here would make the ported error envelope silently degrade to generic.
     Static AST scan so it fails loud on a future edit, with no runtime needed."""
     src = textwrap.dedent(inspect.getsource(mcp_server.send_command))
@@ -216,7 +222,11 @@ def test_send_command_raise_surface_is_builtin():
         if isinstance(node, ast.Raise) and node.exc is not None:
             exc = node.exc
             if isinstance(exc, ast.Call):  # raise X(...) -> unwrap to the callable
-                exc = exc.func
+                if (isinstance(exc.func, ast.Name) and exc.func.id == "_tagged"
+                        and exc.args):
+                    exc = exc.args[0]  # raise _tagged(X, outcome, message): X is raised
+                else:
+                    exc = exc.func
             if isinstance(exc, ast.Name):
                 raised.add(exc.id)
             elif isinstance(exc, ast.Attribute):  # e.g. asyncio.TimeoutError
@@ -226,8 +236,8 @@ def test_send_command_raise_surface_is_builtin():
         obj = getattr(builtins, name, None)
         assert isinstance(obj, type) and issubclass(obj, BaseException), (
             f"send_command raises {name!r}, which is NOT a builtin exception. "
-            "_ported_error_text() resolves the class by name against builtins, so "
-            "a non-builtin raise silently degrades the ported error envelope to "
+            "_agent_outcome() resolves the class by name against builtins, so "
+            "a non-builtin raise silently degrades the ported outcome to "
             "generic. Keep send_command's raise surface builtin, or update "
-            "_ported_error_text to route the new type."
+            "_agent_outcome to route the new type."
         )

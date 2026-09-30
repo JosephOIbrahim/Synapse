@@ -85,8 +85,9 @@ def test_http_controls_still_obey_rate_admission(monkeypatch):
     server = server_module.MCPServer(handler=handler)
     server._enable_resilience = True
     server._rate_limiter = SimpleNamespace(acquire=lambda _: (False, {"reason": "capacity"}))
-    with pytest.raises(server_module.JsonRpcError):
-        server._handle_tools_call({"name": "synapse_farm_submit", "arguments": {}}, None)
+    result = server._handle_tools_call({"name": "synapse_farm_submit", "arguments": {}}, None)
+    assert result["isError"] is True
+    assert result["_meta"]["synapse/outcome"]["code"] == "server.busy"
     handler.handle.assert_not_called()
 
 

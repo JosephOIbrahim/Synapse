@@ -436,8 +436,10 @@ class TestToolsCall:
         assert "error" in resp
         assert resp["error"]["code"] == protocol_mod.INVALID_PARAMS
 
-    def test_tool_error_propagated_as_jsonrpc_error(self):
-        """C3a: dispatch_tool isError must surface as JSON-RPC error, not success."""
+    def test_tool_error_comes_back_as_an_isError_result(self):
+        """C3a, revised by Level 1 R-6: a tool failure is a result flagged isError, as MCP
+        specifies for tool failures, with the outcome line first and the outcome object in
+        _meta. It is neither a JSON-RPC error nor a success."""
         # Handler that returns failure from dispatch_tool
         handler = MagicMock()
         response = MagicMock()
@@ -474,11 +476,11 @@ class TestToolsCall:
         resp_body, _ = srv.handle_request(call_body, session_id=sid)
         resp = _parse_response(resp_body)
 
-        # Must be a JSON-RPC error, NOT a success with isError in content
-        assert "error" in resp, "Tool failure must produce JSON-RPC error response"
-        assert "result" not in resp, "Tool failure must NOT produce a result"
-        assert resp["error"]["code"] == protocol_mod.INTERNAL_ERROR
-        assert "Couldn't find node" in resp["error"]["message"]
+        assert "error" not in resp, "A tool failure is not a protocol error"
+        result = resp["result"]
+        assert result["isError"] is True, "A tool failure must be flagged isError"
+        assert result["content"][0]["text"].startswith("failed: Couldn't find node")
+        assert result["_meta"]["synapse/outcome"]["code"] == "tool.failed"
 
 
 class TestPing:

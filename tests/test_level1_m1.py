@@ -1,7 +1,8 @@
 """Level 1, M1 (claude/LEVEL1_BLUEPRINT.md, sections 2 and 5): one outcome vocabulary on every route.
 
-Every refused or failed call says what happened and what to do next: on /mcp in the JSON-RPC
-error's data, on the WebSocket in the response's data, and in the text the stdio bridge and the
+Every refused or failed call says what happened and what to do next: on /mcp in the tool result
+flagged isError (R-6, tests/test_level1_r6.py) or, for a protocol failure, in the JSON-RPC
+error's data; on the WebSocket in the response's data; and in the text the stdio bridge and the
 panel raise. The walk tests check that no JSON-RPC code and no client exception is left without an
 outcome, so a new one cannot be added silently.
 """
@@ -57,9 +58,9 @@ def test_a_busy_answer_names_its_wait():
     assert busy.to_dict()["retry_after_s"] == 3.0
 
 
-def test_describe_adds_the_outcome_and_the_next_step():
+def test_describe_is_the_outcome_line():
     text = O.describe(O.info("policy.read_only", "refused").to_dict(), "refused")
-    assert text.startswith("refused [refused: policy.read_only] Next: ")
+    assert text.startswith("refused: refused Next: Unset SYNAPSE_MCP_READ_ONLY")
     assert O.describe(None, "plain") == "plain"
 
 
@@ -96,25 +97,28 @@ def _gate_server(**attrs):
     return server
 
 
-def test_the_rate_limiter_answers_server_busy_with_the_wait(monkeypatch):
+def _busy(result):
+    """A busy answer is a result flagged isError whose outcome is retryable (R-6)."""
+    assert result["isError"] is True
+    assert result["content"][0]["text"].startswith("retryable: ")
+    return result["_meta"]["synapse/outcome"]
+
+
+def test_the_rate_limiter_answers_busy_with_the_wait(monkeypatch):
     monkeypatch.delenv("SYNAPSE_MCP_READ_ONLY", raising=False)
     monkeypatch.setattr(S, "_STALL_DETECT_AVAILABLE", False, raising=False)
     limiter = SimpleNamespace(acquire=lambda key: (False, {"reason": "r", "retry_after": 3.0}))
-    with pytest.raises(P.JsonRpcError) as caught:
-        _gate_server(_rate_limiter=limiter)._handle_tools_call({"name": WRITE, "arguments": {}})
-    assert caught.value.code == P.SERVER_BUSY
-    assert caught.value.data["outcome"]["code"] == "server.busy"
-    assert caught.value.data["outcome"]["retry_after_s"] == 3.0
+    outcome = _busy(_gate_server(_rate_limiter=limiter)._handle_tools_call({"name": WRITE, "arguments": {}}))
+    assert (outcome["code"], outcome["retry_after_s"]) == ("server.busy", 3.0)
+    assert outcome["next"] == "Wait 3 s, then send it again."
 
 
-def test_the_circuit_breaker_answers_server_busy_with_the_wait(monkeypatch):
+def test_the_circuit_breaker_answers_busy_with_the_wait(monkeypatch):
     monkeypatch.delenv("SYNAPSE_MCP_READ_ONLY", raising=False)
     monkeypatch.setattr(S, "_STALL_DETECT_AVAILABLE", False, raising=False)
     breaker = SimpleNamespace(can_execute=lambda: (False, {"reason": "open", "retry_after": 30.0}))
-    with pytest.raises(P.JsonRpcError) as caught:
-        _gate_server(_circuit_breaker=breaker)._handle_tools_call({"name": WRITE, "arguments": {}})
-    assert caught.value.code == P.SERVER_BUSY
-    assert caught.value.data["outcome"]["retry_after_s"] == 30.0
+    outcome = _busy(_gate_server(_circuit_breaker=breaker)._handle_tools_call({"name": WRITE, "arguments": {}}))
+    assert (outcome["code"], outcome["retry_after_s"]) == ("server.busy", 30.0)
 
 
 def test_a_stalled_main_thread_answers_houdini_busy(monkeypatch):
@@ -123,10 +127,8 @@ def test_a_stalled_main_thread_answers_houdini_busy(monkeypatch):
     monkeypatch.setattr(S, "is_main_thread_stalled", lambda: True, raising=False)
     monkeypatch.setattr(S, "probe_main_thread", lambda: False, raising=False)
     monkeypatch.setattr(S, "stall_state", lambda: {"consecutive_timeouts": 3}, raising=False)
-    with pytest.raises(P.JsonRpcError) as caught:
-        _gate_server()._handle_tools_call({"name": WRITE, "arguments": {}})
-    assert caught.value.code == P.SERVER_BUSY
-    assert caught.value.data["outcome"]["code"] == "houdini.busy"
+    outcome = _busy(_gate_server()._handle_tools_call({"name": WRITE, "arguments": {}}))
+    assert outcome["code"] == "houdini.busy"
 
 
 def test_a_missing_session_is_refused_and_an_unknown_one_is_retryable():
@@ -177,7 +179,8 @@ def test_stdio_says_what_to_do_when_houdini_is_not_answering(monkeypatch):
     monkeypatch.setattr(ms, "_get_connection", refused)
     with pytest.raises(ConnectionError) as caught:
         asyncio.run(ms.send_command("ping", {}))
-    assert "houdini.not_reachable" in str(caught.value)
+    assert caught.value.outcome["code"] == "houdini.not_reachable"
+    assert str(caught.value).startswith("unrecoverable: ")
     assert "click Connect" in str(caught.value)
 
 
@@ -200,8 +203,8 @@ def test_stdio_passes_a_failure_outcome_through(monkeypatch):
     monkeypatch.setattr(ms, "_get_connection", connection)
     with pytest.raises(RuntimeError) as caught:
         asyncio.run(ms.send_command(_CMD[WRITE], {}))
-    assert "policy.read_only" in str(caught.value)
-    assert "Next:" in str(caught.value)
+    assert caught.value.outcome["code"] == "policy.read_only"
+    assert str(caught.value).startswith("refused: refused Next: ")
 
 
 # ── the panel's client ───────────────────────────────────────────────────────────────────

@@ -23,7 +23,10 @@ from synapse.core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from synapse.core.protocol import SynapseCommand, SynapseResponse
 from synapse.host import memory_loop as host
 from synapse.loop.ports import PortResult
-from synapse.mcp.protocol import JsonRpcError, JsonRpcInvalidParams, INTERNAL_ERROR, READ_ONLY_REFUSED
+from synapse.core import outcomes as _outcomes
+from synapse.mcp.protocol import (
+    JsonRpcError, JsonRpcInvalidParams, INTERNAL_ERROR, INVALID_PARAMS, READ_ONLY_REFUSED,
+)
 from synapse.mcp.tools import dispatch_tool
 
 
@@ -111,9 +114,10 @@ def rig(monkeypatch):
         "dispatch_tool": dispatch_tool, "logger": logging.getLogger("probe"),
         "JsonRpcInvalidParams": JsonRpcInvalidParams, "JsonRpcError": JsonRpcError, "INTERNAL_ERROR": INTERNAL_ERROR,
         "read_only_mode": SimpleNamespace(refusal_for_tool=lambda _name: None),
-        "READ_ONLY_REFUSED": READ_ONLY_REFUSED,
-        "SERVER_BUSY": __import__("synapse.mcp.protocol", fromlist=["SERVER_BUSY"]).SERVER_BUSY,
-        "_outcome": __import__("synapse.core.outcomes", fromlist=["info"]).info,
+        "READ_ONLY_REFUSED": READ_ONLY_REFUSED, "INVALID_PARAMS": INVALID_PARAMS,
+        "has_tool": lambda _name: True,
+        "_outcome": _outcomes.info, "_outcome_line": _outcomes.outcome_line,
+        "_tool_result": _outcomes.tool_result,
         "_note_marshal_bypass": lambda *args: None,
         "_isError_text": lambda result: result["content"][0]["text"]}
     server = SimpleNamespace(_get_handler=lambda: handler, _circuit_breaker=None,
@@ -170,7 +174,10 @@ def test_disabled_loop_dispatches_without_substrate(rig, monkeypatch):
 def test_resilience_refusal_precedes_forecast_and_dispatch(rig):
     rig.server._enable_resilience = True
     rig.server._rate_limiter = SimpleNamespace(acquire=lambda _: (False, {"reason": "busy"}))
-    assert isinstance(rig.run()["error"], JsonRpcError)
+    result = rig.run()
+    assert "error" not in result, result
+    assert result["value"]["isError"] is True
+    assert result["value"]["_meta"]["synapse/outcome"]["code"] == "server.busy"
     assert not rig.events and not rig.values
 
 

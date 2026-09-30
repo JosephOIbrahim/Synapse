@@ -141,8 +141,13 @@ def _run_both_paths(monkeypatch, name, args, *, data=None, exc=None):
 
 
 def _texts(result):
-    """Flatten a call_tool result to comparable (type, text) tuples."""
-    return [(c.type, c.text) for c in result]
+    """Flatten a call_tool result to comparable parts. A success is a plain list of content; a
+    failure is a CallToolResult flagged isError with its outcome in _meta (Level 1, R-6), so
+    parity covers the flag and the outcome object as well as each (type, text)."""
+    if isinstance(result, list):
+        return [(c.type, c.text) for c in result]
+    return (result.isError, (result.meta or {}).get("synapse/outcome"),
+            [(c.type, c.text) for c in result.content])
 
 
 # ---------------------------------------------------------------------------
@@ -226,36 +231,47 @@ def test_success_envelope_non_dict_data(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Parity: error envelopes (the legacy except-clause routing)
+# Parity: error results (Level 1, R-6: flagged isError, outcome line first)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("exc,expected_text", [
+# An exception without an outcome (send_command attaches one to everything it
+# raises, so these are injected) is routed by its class, the same way on both
+# paths. synapse_ping is a read, so its timeout may be sent again.
+@pytest.mark.parametrize("exc,expected_line", [
     (ConnectionError("Houdini might not be running"),
-     "Couldn't reach Synapse — Houdini might not be running"),
+     "unknown_outcome: Houdini might not be running "
+     "Next: Check the scene before trying again; it may have run."),
     (ConnectionRefusedError("refused"),
-     "Couldn't reach Synapse — refused"),
+     "unrecoverable: refused "
+     "Next: Start Houdini, open the SYNAPSE panel and click Connect, then try again."),
     (RuntimeError("Node not found: /obj/nope"),
-     "Synapse hit a snag: Node not found: /obj/nope"),
+     "failed: Node not found: /obj/nope Next: Read the error; it names what failed."),
     (TimeoutError("The ping command took too long to respond"),
-     "Something unexpected happened: The ping command took too long to respond"),
+     "retryable: The ping command took too long to respond "
+     "Next: Send it again; a read changes nothing."),
     (ValueError("bad value"),
-     "Something unexpected happened: bad value"),
+     "unknown_outcome: bad value "
+     "Next: Check the scene before trying again; the call may have run in part."),
 ], ids=["connection", "connection-subclass", "runtime", "timeout", "generic"])
-def test_parity_error_envelopes(monkeypatch, exc, expected_text):
+def test_parity_error_envelopes(monkeypatch, exc, expected_line):
     ported, _, legacy, _ = _run_both_paths(
         monkeypatch, "synapse_ping", {}, exc=exc)
     assert _texts(ported) == _texts(legacy)
-    assert ported[0].text == expected_text
+    assert ported.isError is True
+    assert ported.content[0].text == expected_line
 
 
 def test_parity_missing_required_arg(monkeypatch):
     """A payload builder KeyError (missing required arg) must produce the
-    identical generic envelope on both paths — and never reach the wire."""
+    identical refusal on both paths — and never reach the wire."""
     ported, ported_calls, legacy, legacy_calls = _run_both_paths(
         monkeypatch, "houdini_network_explain", {})
     assert ported_calls == legacy_calls == []
     assert _texts(ported) == _texts(legacy)
-    assert ported[0].text == "Something unexpected happened: 'root_path'"
+    assert ported.content[0].text == (
+        "refused: Missing argument 'root_path' "
+        "Next: Fix the request; the message names what is wrong with it.")
+    assert ported.meta["synapse/outcome"]["code"] == "request.invalid"
 
 
 # ---------------------------------------------------------------------------
@@ -282,17 +298,19 @@ def test_ported_path_actually_uses_dispatcher(monkeypatch):
         assert mcp_server._ported_dispatcher.is_registered(name)
 
 
-def test_unknown_tool_envelope_unchanged(monkeypatch):
-    """A name outside both the wave and the registry keeps the legacy
-    'unknown tool' envelope."""
+def test_unknown_tool_is_refused_and_never_sent(monkeypatch):
+    """A name outside both the wave and the registry is refused, flagged
+    isError (Level 1, R-6), and nothing goes on the wire."""
     recorder = _RecordingSend(data={})
     monkeypatch.setattr(mcp_server, "send_command", recorder)
     result = asyncio.run(mcp_server.call_tool("synapse_not_a_tool", {}))
-    assert _texts(result) == [(
+    assert result.isError is True
+    assert [(c.type, c.text) for c in result.content] == [(
         "text",
-        "I don't recognize the tool 'synapse_not_a_tool' — "
-        "check the available tools list",
+        "refused: I don't recognize the tool 'synapse_not_a_tool' "
+        "Next: Use a tool from the tools/list response.",
     )]
+    assert result.meta["synapse/outcome"]["code"] == "request.unknown_tool"
     assert recorder.calls == []
 
 
