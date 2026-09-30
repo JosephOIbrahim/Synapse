@@ -222,8 +222,8 @@ failed response carries the outcome in its `data`.
 
 Before a session's first change, and again after any `retryable` or `unrecoverable` outcome,
 SYNAPSE checks that Houdini can take a change. On `/mcp` the session is the MCP session; on the
-stdio bridge's WebSocket it is the connection. Reads, stop controls and farm controls, which
-never wait on Houdini's main thread, are not checked. The
+stdio bridge's WebSocket it is the connection. Stop controls, farm controls and reads (the tools
+read-only mode lets through) are not checked. The
 check costs one hop onto Houdini's main thread, with a 250 ms budget, and a ready answer is
 remembered for 10 seconds. A change it refuses is never sent, and the refusal names the fix:
 

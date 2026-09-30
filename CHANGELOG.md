@@ -22,6 +22,18 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.88.0 - A failed call is flagged as an error, and Houdini is checked before a change
+
+A failed tool call now comes back as a result flagged `isError`, as MCP
+specifies, on `/mcp` and on the stdio bridge, with the outcome line first and
+the outcome object in `_meta`. Error codes -32006 and -32007, added in v5.87.0,
+are withdrawn: a busy server answers with a flagged result, and an unknown tool
+is refused with -32602. Before a session's first change, SYNAPSE checks that
+Houdini's main thread answers, that no scene is loading, that undo is on and
+that the stdio bridge runs Houdini's release, and `synapse_health` reports the
+same checks. This is a source release with no new Windows Setup. See
+[v5.88.0](docs/releases/v5.88.0.md).
+
 ## v5.87.0 - MCP sessions recover, and every failed call says what to do next
 
 The SYNAPSE panel now recovers an expired MCP session by itself, and `/mcp`
