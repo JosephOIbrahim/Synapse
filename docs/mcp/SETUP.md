@@ -225,7 +225,7 @@ Clients must poll again for subsequent updates. See the
 | **"Connection refused"** | The endpoint is wrong or the bridge is unavailable | Check the discovered endpoint, click **Connect**, then run **Doctor**. |
 | **Connected, but on the wrong port** | The server was started at another address/port, or the record is stale | Read the configured discovery file and verify the endpoint responds. |
 | **Panel is open but nothing listens** | Opening the panel does not start the bridge | Use the separate **Connect** control. |
-| **"Unknown session"** | `Mcp-Session-Id` header missing or expired | Send a new `initialize` request for a fresh session. |
+| **"Unknown session"** (HTTP 400 or 404) | The `Mcp-Session-Id` header is missing (400), or the session is unknown or expired (404) | Send a new `initialize` request for a fresh session. The SYNAPSE panel does this by itself. |
 | **"Method not found"** | Calling an unimplemented MCP method | Supported: `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, `resources/templates/list`, `ping`. |
 | **`ModuleNotFoundError: mcp` / `websockets`** | Dependencies are missing in the stdio client's Python | From the repository, run `python -m pip install -e ".[mcp]"` in that environment. |
 | **Tools timing out** | The client or host wait ended | Check the operation and [shared timeout table](../../python/synapse/core/timeouts.py). A timeout does not prove the action stopped; inspect before retrying a scene mutation. |

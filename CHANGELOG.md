@@ -22,6 +22,16 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.87.0 - MCP sessions recover, and every failed call says what to do next
+
+The SYNAPSE panel now recovers an expired MCP session by itself, and `/mcp`
+answers a missing session with HTTP 400 and an unknown one with 404, as the MCP
+transport specifies. The stdio bridge no longer sends a change a second time
+after a dropped connection. Every refused or failed call carries an outcome, a
+stable code and the next step, on `/mcp`, the WebSocket, the stdio bridge and
+the panel, and a busy server answers -32006 with the wait. This is a source
+release with no new Windows Setup. See [v5.87.0](docs/releases/v5.87.0.md).
+
 ## v5.86.0 - Identify over the editor, Houdini's help paths, a current Windows Setup
 
 Identify now draws its bubbles in a click-through overlay above the network
