@@ -89,8 +89,9 @@ class NativeTopsBackend:
                   "timeout_seconds": phase_timeout,
                   "manifest_digest": prior.get("package_digest")}
         atomic_json(operation / "config.json", config)
-        env = isolated_environment(self.hfs, operation / "runtime",
-                                   threads=profile_settings(plan["profile_id"])["threads"])
+        settings = profile_settings(plan["profile_id"])
+        env = isolated_environment(self.hfs, operation / "runtime", threads=settings["threads"],
+                                   shared_xpu_cache=settings.get("shared_xpu_cache", False))
         command = [str(self.hfs / "python313/python.exe"), "-B", str(self.driver),
                    "supervise", str(operation / "config.json")]
         creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)

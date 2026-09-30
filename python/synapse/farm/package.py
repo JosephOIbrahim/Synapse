@@ -89,10 +89,13 @@ def frozen_copy(source, destination, expected_sha256=None):
 
 
 # Render profiles this installation can run (R-2, 2026-09-30). Both share the bounded limits below; they differ
-# only in renderer and CPU threads. 'local' is the qualified preview profile and stays exactly as it was.
+# in renderer, CPU threads and XPU caches. 'local' is the qualified preview profile and stays exactly as it was.
+# 'shared_xpu_cache' (XPUCACHE, 2026-09-30): the workstation worker reuses this machine's Karma XPU caches, so the
+# GPU joins each frame instead of leaving it to the CPU device (see machine_xpu_caches).
 PROFILES = {
     "local": {"label": "local", "renderer": "BRAY_HdKarma", "renderer_name": "Karma CPU", "threads": 2},
-    "workstation": {"label": "workstation", "renderer": "BRAY_HdKarmaXPU", "renderer_name": "Karma XPU", "threads": 0},
+    "workstation": {"label": "workstation", "renderer": "BRAY_HdKarmaXPU", "renderer_name": "Karma XPU", "threads": 0,
+                    "shared_xpu_cache": True},
 }
 
 
@@ -158,10 +161,37 @@ def verify_manifest(job_dir, plan, expected_manifest_digest):
     return manifest
 
 
-def isolated_environment(hfs, runtime_dir, threads=2):
+def machine_xpu_caches(environ):
+    """This machine's own Karma XPU caches, read from the artist host's environment.
+
+    XPU needs both OptiX's module cache and the VEX code cache in houdini_temp before the GPU can join a frame.
+    Interactive Houdini and long-lived husk runs complete those kernels. A one-frame husk exits before its slowest
+    compiles finish, so a per-job cache, or any fresh one, never fills and the CPU device renders every frame
+    (RC-2c, 2026-09-30: 0% GPU on all 120 frames; frame 1 took 40 s cold and 5.8 s at 64% GPU on these caches).
+    Values the host doesn't have are left out, which keeps the isolated behaviour.
+    """
+    caches = {}
+    optix = environ.get("OPTIX_CACHE_PATH") or ""
+    if not optix and environ.get("LOCALAPPDATA"):
+        optix = str(Path(environ["LOCALAPPDATA"]) / "NVIDIA" / "OptixCache")
+    if optix:
+        caches["OPTIX_CACHE_PATH"] = optix
+    temp_dir = environ.get("HOUDINI_TEMP_DIR") or ""
+    if not temp_dir or "$" in temp_dir:
+        base = environ.get("TEMP") or environ.get("TMP") or ""
+        temp_dir = str(Path(base) / "houdini_temp") if base else ""
+    if temp_dir:
+        caches["HOUDINI_TEMP_DIR"] = temp_dir
+    return caches
+
+
+def isolated_environment(hfs, runtime_dir, threads=2, shared_xpu_cache=False, environ=None):
     """Allowlist the worker environment; never forward model/application credentials.
 
     ``threads`` caps HOUDINI_MAXTHREADS; 0 leaves it unset so Houdini uses every core (workstation profile).
+    ``shared_xpu_cache`` points OPTIX_CACHE_PATH and HOUDINI_TEMP_DIR at this machine's own caches, read from
+    ``environ`` (default: this process's environment). They hold compiled kernels, not credentials; TEMP, APPDATA,
+    LOCALAPPDATA and the prefs stay isolated either way.
     """
     hfs, runtime_dir = Path(hfs), Path(runtime_dir)
     for name in ("prefs", "temp", "appdata", "localappdata"):
@@ -181,6 +211,8 @@ def isolated_environment(hfs, runtime_dir, threads=2):
                 "LOCALAPPDATA": str(runtime_dir / "localappdata")})
     if threads:
         env["HOUDINI_MAXTHREADS"] = str(int(threads))
+    if shared_xpu_cache:
+        env.update(machine_xpu_caches(os.environ if environ is None else environ))
     return env
 
 
