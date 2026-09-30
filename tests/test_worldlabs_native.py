@@ -38,7 +38,7 @@ def test_import_is_native_and_second_import_does_not_replace_first(tmp_path):
             prim = stage.GetPrimAtPath(result['prim_paths'][0])
             assert prim.GetTypeName() == 'ParticleField3DGaussianSplat'
             assert len(prim.GetAttribute('positions').Get() or prim.GetAttribute('positionsh').Get()) == 1
-        assert len(_children() - before) == 4
+        assert len(_children() - before) == 6  # geo, sopimport and the grounding xform per import
     finally:
         _destroy_added(before)
 
@@ -104,5 +104,27 @@ def test_failed_second_import_preserves_previous_native_world(tmp_path, monkeypa
         assert _children() == previous_paths
         assert previous.isDisplayFlagSet()
         assert previous.stage().GetPrimAtPath(first['prim_paths'][0]).GetTypeName() == 'ParticleField3DGaussianSplat'
+    finally:
+        _destroy_added(before)
+
+
+def test_import_grounds_under_one_xform_with_sidecar_scale(tmp_path):
+    source = tmp_path / 'lane_500k.ply'
+    source.write_bytes(ply_bytes(points=40))
+    (tmp_path / 'lane.world.json').write_text(json.dumps({'metric_scale_factor': 2.5, 'scale_source': 'known dimension: test doorway'}))
+    before = _children()
+    try:
+        result = importer.import_local_asset(source)
+        ground = hou.node(result['node_path'])
+        assert ground.type().name() == 'xform' and ground.isDisplayFlagSet()
+        assert hou.node(result['import_path']).type().name() == 'sopimport'
+        g = result['ground']
+        assert g['scale_applied'] == 2.5 and g['scale_source'] == 'known dimension: test doorway'
+        assert g['scale_status'] == 'metric' and g['units'] == 'm' and g['axis'] == 'y_down_to_y_up'
+        assert abs(g['ground_height']) < 1e-6
+        assert tuple(ground.parmTuple('r').eval()) == (180.0, 0.0, 0.0)
+        saved = json.loads(ground.userData('synapse.worldlabs'))
+        assert saved['grounding']['scale_source'] == 'known dimension: test doorway'
+        assert 'Landed at metric scale x2.5' in result['warnings'][0]
     finally:
         _destroy_added(before)
