@@ -8,7 +8,7 @@ import time
 import uuid
 
 from .package import (QUALIFIED_BUILD, atomic_json, isolated_environment,
-                      owned_path, process_identity, read_json, validate_local_plan)
+                      owned_path, process_identity, profile_settings, read_json, validate_local_plan)
 
 
 class NativeTopsBackend:
@@ -43,8 +43,12 @@ class NativeTopsBackend:
         local_reason = ("Houdini {} files found. Preparation checks the runtime, license, "
                         "and portable scene. Karma CPU; per job: 2 threads, 1 task at a time; "
                         "120 frames, 2048 pixels, 128 samples maximum; 60 seconds per frame.").format(QUALIFIED_BUILD)
+        workstation_reason = ("Houdini {} files found. Karma XPU on this workstation's GPU (Karma uses its CPU device "
+                              "when no GPU is available); per job: all CPU threads, 1 task at a time; 120 frames, "
+                              "2048 pixels, 128 samples maximum; 60 seconds per frame.").format(QUALIFIED_BUILD)
         if not available:
             local_reason = "This local profile needs the qualified Windows Houdini {} installation.".format(QUALIFIED_BUILD)
+            workstation_reason = "The workstation profile needs the qualified Windows Houdini {} installation.".format(QUALIFIED_BUILD)
         return {"build": QUALIFIED_BUILD, "profiles": [
             {"id": "local", "label": "This computer", "available": available,
              "reason": local_reason, "missing": missing, "qualification": "bounded_preview",
@@ -52,15 +56,23 @@ class NativeTopsBackend:
                         "max_samples": 128, "frame_timeout_seconds": 60,
                         "threads": 2, "concurrent_tasks": 1}},
             {"id": "hqueue", "label": "Render farm", "available": False,
-             "reason": "HQueue server, workers, shared storage and license concurrency have not been configured and qualified. No farm submission is available."}],
+             "reason": "HQueue server, workers, shared storage and license concurrency have not been configured and qualified. No farm submission is available."},
+            {"id": "workstation", "label": "This workstation (GPU)", "available": available,
+             "reason": workstation_reason, "missing": missing, "qualification": "workstation",
+             "limits": {"max_frames": 120, "max_width": 2048, "max_height": 2048,
+                        "max_samples": 128, "frame_timeout_seconds": 60,
+                        "threads": "all", "concurrent_tasks": 1, "renderer": "Karma XPU"}}],
             "license_entitlement": "checked when a detached process starts; farm concurrency unknown"}
 
     def _launch(self, phase, plan, job_dir, record=None):
         self._reap_children()
         try:
             validate_local_plan(plan)
-            if not self.capabilities()["profiles"][0]["available"]:
-                raise ValueError(self.capabilities()["profiles"][0]["reason"])
+            # A profile without an id is the local profile (its historical first position).
+            chosen = next((p for p in self.capabilities()["profiles"]
+                           if p.get("id", "local") == plan["profile_id"]), {})
+            if not chosen.get("available"):
+                raise ValueError(chosen.get("reason") or "This render profile is unavailable.")
         except ValueError as exc:
             return {"state": "failed", "note": str(exc), "verified_frames": [], "outputs": []}
         root = Path(job_dir).resolve()
@@ -77,7 +89,8 @@ class NativeTopsBackend:
                   "timeout_seconds": phase_timeout,
                   "manifest_digest": prior.get("package_digest")}
         atomic_json(operation / "config.json", config)
-        env = isolated_environment(self.hfs, operation / "runtime")
+        env = isolated_environment(self.hfs, operation / "runtime",
+                                   threads=profile_settings(plan["profile_id"])["threads"])
         command = [str(self.hfs / "python313/python.exe"), "-B", str(self.driver),
                    "supervise", str(operation / "config.json")]
         creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)

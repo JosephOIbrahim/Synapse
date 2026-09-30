@@ -88,18 +88,32 @@ def frozen_copy(source, destination, expected_sha256=None):
     return copied
 
 
-def validate_local_plan(plan):
-    if plan.get("profile_id") != "local":
+# Render profiles this installation can run (R-2, 2026-09-30). Both share the bounded limits below; they differ
+# only in renderer and CPU threads. 'local' is the qualified preview profile and stays exactly as it was.
+PROFILES = {
+    "local": {"label": "local", "renderer": "BRAY_HdKarma", "renderer_name": "Karma CPU", "threads": 2},
+    "workstation": {"label": "workstation", "renderer": "BRAY_HdKarmaXPU", "renderer_name": "Karma XPU", "threads": 0},
+}
+
+
+def profile_settings(profile_id):
+    """Renderer and thread settings for a named profile; ValueError for anything not in PROFILES."""
+    if profile_id not in PROFILES:
         raise ValueError("HQueue is not configured and qualified for this installation.")
+    return dict(PROFILES[profile_id])
+
+
+def validate_local_plan(plan):
+    name = profile_settings(plan.get("profile_id"))["label"]
     frames = plan.get("frames", [])
     if (not frames or len(frames) > MAX_LOCAL_FRAMES or
             any(type(f) is not int for f in frames) or sorted(set(frames)) != frames):
-        raise ValueError("The local profile accepts 1–120 distinct ordered integer frames.")
+        raise ValueError("The {} profile accepts 1–120 distinct ordered integer frames.".format(name))
     if any(type(plan.get(k)) is not int or not 1 <= plan[k] <= MAX_LOCAL_DIMENSION
            for k in ("width", "height")):
-        raise ValueError("The local profile is limited to 2048 by 2048 pixels.")
+        raise ValueError("The {} profile is limited to 2048 by 2048 pixels.".format(name))
     if type(plan.get("samples")) is not int or not 1 <= plan["samples"] <= MAX_LOCAL_SAMPLES:
-        raise ValueError("The local profile accepts 1–128 samples.")
+        raise ValueError("The {} profile accepts 1–128 samples.".format(name))
     expected = digest({k: v for k, v in plan.items() if k != "digest"})
     if plan.get("digest") != expected:
         raise ValueError("The reviewed plan's digest does not match its contents.")
@@ -144,8 +158,11 @@ def verify_manifest(job_dir, plan, expected_manifest_digest):
     return manifest
 
 
-def isolated_environment(hfs, runtime_dir):
-    """Allowlist the worker environment; never forward model/application credentials."""
+def isolated_environment(hfs, runtime_dir, threads=2):
+    """Allowlist the worker environment; never forward model/application credentials.
+
+    ``threads`` caps HOUDINI_MAXTHREADS; 0 leaves it unset so Houdini uses every core (workstation profile).
+    """
     hfs, runtime_dir = Path(hfs), Path(runtime_dir)
     for name in ("prefs", "temp", "appdata", "localappdata"):
         (runtime_dir / name).mkdir(parents=True, exist_ok=True)
@@ -156,12 +173,14 @@ def isolated_environment(hfs, runtime_dir):
     search.append(str(Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32"))
     env.update({"PATH": os.pathsep.join(search), "HFS": str(hfs),
                 "HOUDINI_PATH": "&", "HOUDINI_PACKAGE_SKIP": "1",
-                "HOUDINI_NO_ENV_FILE": "1", "HOUDINI_MAXTHREADS": "2",
+                "HOUDINI_NO_ENV_FILE": "1",
                 "HOUDINI_USER_PREF_DIR": str(runtime_dir / "prefs/houdini__HVER__"),
                 "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1",
                 "TEMP": str(runtime_dir / "temp"), "TMP": str(runtime_dir / "temp"),
                 "USERPROFILE": str(runtime_dir), "APPDATA": str(runtime_dir / "appdata"),
                 "LOCALAPPDATA": str(runtime_dir / "localappdata")})
+    if threads:
+        env["HOUDINI_MAXTHREADS"] = str(int(threads))
     return env
 
 

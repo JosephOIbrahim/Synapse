@@ -500,8 +500,10 @@ def prepare_native(config):
     hou.hipFile.clear(suppress_save_prompt=True)
     net = hou.node("/obj").createNode("topnet", "synapse_render")
     local = next(n for n in net.children() if n.type().name() == "localscheduler")
+    profile = pkg.profile_settings(plan["profile_id"])
     for key, value in {"maxprocsmenu": "1", "maxprocs": 1,
-                       "local_usehoudinimaxthreads": 1, "local_houdinimaxthreads": 2,
+                       "local_usehoudinimaxthreads": 1 if profile["threads"] else 0,
+                       "local_houdinimaxthreads": profile["threads"] or 2,
                        "local_enabletimeout": 1, "local_maxtime": 60,
                        "local_handletimeout": 0, "local_echandleby": 0,
                        "local_maximumretries": 0, "local_requireswindow": 0,
@@ -516,10 +518,10 @@ def prepare_native(config):
                   "framerange": 1, "rangex": frame, "rangey": frame, "rangez": 1,
                   "outputsource": 0, "outputpath": str(root / output["path"]).replace("\\", "/"),
                   "resolution": 2, "resolutionspecificx": plan["width"], "resolutionspecificy": plan["height"],
-                  "renderer": "BRAY_HdKarma", "usecamera": 1, "camera": camera_info["camera"]}
+                  "renderer": profile["renderer"], "usecamera": 1, "camera": camera_info["camera"]}
         for key, value in values.items():
             _set(node, key, value)
-        node.setComment("Prepared frame {}. Immutable USD input; Karma CPU; 60 second limit.".format(frame))
+        node.setComment("Prepared frame {}. Immutable USD input; {}; 60 second limit.".format(frame, profile["renderer_name"]))
         render_nodes.append(node)
     output_node = net.createNode("waitforall", "all_frames")
     for index, node in enumerate(render_nodes):
