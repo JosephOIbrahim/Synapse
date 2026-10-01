@@ -22,6 +22,25 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.92.0 - H22 Solaris workflows build in one call, a wrong node type names the real one, and REVERT undoes only SYNAPSE
+
+Three of Rob Pieke's Houdini 22 Solaris workflows now have verified one-call
+recipes: Scatter Instances masked to a camera, a Karma blocker light filter
+bound to a light, and Render Pass LOPs. `synapse_knowledge_lookup` serves a
+recipe when the artist's words name the workflow ("blocker", "light filter",
+"scatter instances", "render pass"), and each recipe is one
+`synapse_solaris_build_graph` insert splice. `houdini_create_node` answers an
+invalid node type with the closest real types in that network, and
+`build_graph`'s unknown-type rejection does the same instead of pointing at
+`synapse_scout`. `houdini_get_usd_attribute` reads at the current frame, so a
+time-sampled value is no longer reported as its fallback. In the panel, REVERT
+undoes the last turn's SYNAPSE undo entries itself and refuses when anything
+else is on top, build framing no longer leaves a selection on the undo stack,
+inserted nodes get room for their labels, narration from successive model turns
+starts a new paragraph, and the prompt asks the model to inspect once and state
+what it set. This is a source release with no new Windows Setup. See
+[v5.92.0](docs/releases/v5.92.0.md).
+
 ## v5.91.0 - One call inserts between existing nodes, and a build checks its own badges
 
 `synapse_solaris_build_graph` can now splice new nodes into an occupied input
