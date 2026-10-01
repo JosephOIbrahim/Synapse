@@ -104,7 +104,10 @@ OLLAMA_MODELS = (
     ("glm-5:cloud", "GLM 5"),
 )
 OLLAMA_MODEL = "glm-5:cloud"   # default pick
-OLLAMA_MAX_TOKENS = 4096
+# 10/1: 4096 was exhausted by streamed (hidden, billed) `delta.reasoning`
+# before the model emitted its build call -- the turn ended stop_reason=length
+# with nothing on screen. deepseek-v4.1-flash:cloud accepts 16384 (probe: 200).
+OLLAMA_MAX_TOKENS = 16384
 
 # Custom — a user-configured OpenAI-compatible endpoint. Base URL / model id /
 # key env-var name live in <repo>/.synapse/panel_settings.json (panel/settings.py);

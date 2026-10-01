@@ -757,7 +757,9 @@ TOOL_DEFS: list[tuple] = [
      "patterns (multi_asset_merge, sublayer_stack, render_pass_split, "
      "lighting_rig). copernicus_lookdev creates a fixed modern Copernicus lookdev fixture "
      "on Houdini 22.0.400 in a new owned subnet, preserving existing display. An empty network displays the new fixture. "
-     "It verifies configuration/USD, not rendered appearance. Use assemble_chain for simple linear wiring.",
+     "It verifies configuration/USD, not rendered appearance. Use assemble_chain for simple linear wiring. "
+     "To insert nodes between existing A->B in ONE call: reference A and B with existing:true, wire "
+     "A->new...->B, and mark the last wire insert:true. No template. Do not pass display_node.",
      {"type": "object", "properties": {
          "parent": {"type": "string", "description": "LOP network path (default: /stage)"},
          "nodes": {"type": "array", "items": {"type": "object", "properties": {
@@ -773,6 +775,7 @@ TOOL_DEFS: list[tuple] = [
              "to": {"type": "string", "description": "Target node id"},
              "input": {"type": "integer", "minimum": 0, "description": "Target input index. Default 0 for built nodes; omitted on existing:true targets appends to a free input. Order matters for merge/sublayer."},
              "output": {"type": "integer", "minimum": 0, "description": "Source output index (default: 0)"},
+             "insert": {"type": "boolean", "description": "Splice: replace this occupied input. Allowed only when the node it displaces is also in this graph and feeds the new chain (insert between two existing nodes)."},
          }, "required": ["from", "to"]}, "description": "Connection wiring"},
          "display_node": {"type": "string", "description": "Node id to set display flag (auto-detects if omitted)"},
          "template": {"type": "string", "enum": ["multi_asset_merge", "sublayer_stack", "render_pass_split", "lighting_rig", "hdri_lighting", "instanceable_assets", "variant_selector", "copernicus_lookdev"],
@@ -781,6 +784,9 @@ TOOL_DEFS: list[tuple] = [
          "layout": {"type": "string", "enum": ["vertical", "horizontal"], "description": "New graph layout. Default vertical; horizontal flows left to right."},
          "relayout": {"type": "boolean", "description": "Explicitly reorganize reused nodes named in this graph. Default false preserves their positions; existing:true references always stay fixed."},
          "dry_run": {"type": "boolean", "description": "Preview graph without creating (default: false)"},
+         "badge_check": {"type": "boolean", "description": "Cook the built nodes and roll the whole build back if a new node shows an error badge (default: true). Warnings are reported, never rolled back."},
+         "frame": {"type": "boolean", "description": "Select the new nodes and frame them with their immediate upstream/downstream neighbours in the Network Editor when a UI is present (default: true). Cosmetic; never fails a build."},
+         "splice_layout": {"type": "string", "enum": ["inline", "side"], "description": "Placement for insert:true splices. inline (default): new nodes go directly below the upstream node in its column and only the downstream chain in that column shifts down (reported in layout.shifted). side: a separate column beside it; no existing node moves."},
      }, "required": []},
      False, False, True),
 

@@ -161,6 +161,27 @@ class ClaudeWorker(QThread):
         self._provider._model_scope = self._model_scope
         self._shadow_job = None
         self._shadow_started = False
+        self._tools = self._drop_capture_if_blind(self._tools)
+
+    def _drop_capture_if_blind(self, tools):
+        """Keep houdini_capture_viewport out of a text-only model's roster.
+
+        10/1 live take: deepseek-v4.1-flash (no vision) called the capture
+        twice, then told the artist it could not see it and printed a temp
+        path. Same capability decision vision_attach uses at dispatch, so a
+        vision model's roster is unchanged.
+        """
+        try:
+            from .vision_attach import model_can_see
+            checked = self._checked_vision()
+            can_see = (checked if type(checked) is bool else
+                       model_can_see(getattr(self._provider, "model_identity", "") or ""))
+        except Exception as exc:  # noqa: BLE001 -- unknown: leave the roster as is
+            logger.debug("capture roster check skipped: %s", exc)
+            return tools
+        if can_see or not tools:
+            return tools
+        return [tool for tool in tools if tool.get("name") != "houdini_capture_viewport"]
 
     # ------------------------------------------------------------------
     # Public API
@@ -291,7 +312,7 @@ class ClaudeWorker(QThread):
             "worker_ms": None,
             "task_id": getattr(getattr(self, "_model_scope", None), "task_id", None),
             "stop_reason": None,
-            "outcome": "error",     # completed | stopped | error | cap_hit
+            "outcome": "error",     # completed | stopped | error | cap_hit | truncated
         }
         # test_first_session_panel.py execs this method's AST ALONE with only
         # USAGE_SINK / _MAX_TOOL_ITERATIONS / logger bound, so the loop body is a
@@ -464,6 +485,18 @@ class ClaudeWorker(QThread):
                             "role": "assistant",
                             "content": completed,
                         })
+                    # 10/1: a token-limit stop with nothing shown used to end
+                    # silently as "completed" (hidden reasoning can spend the
+                    # whole budget). Say so on the panel and keep the ledger honest.
+                    if stop_reason in ("length", "max_tokens") and not any(
+                            block.get("type") == "text" and str(block.get("text") or "").strip()
+                            for block in completed):
+                        logger.warning(
+                            "Model hit its response token limit (stop_reason=%s) "
+                            "before answering or completing a tool call", stop_reason)
+                        _emit_token("I ran out of response budget before acting -- "
+                                    "please send that again.")
+                        return "truncated"
                     # L9: record the sequential-turn count (the dominant latency
                     # term) so an imperative build (many turns) vs a one-shot
                     # declarative call (1 turn) is measurable on disk.

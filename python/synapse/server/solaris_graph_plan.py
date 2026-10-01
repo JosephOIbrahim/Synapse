@@ -71,6 +71,32 @@ def _reject_live_cycles(bindings, paths, planned, hou):
                 pending.extend(upstream(path))
 
 
+def _reject_cutting_splices(splices, planned):
+    """An insert:true wire may only re-route a stream, never cut it.
+
+    For each splice (displaced, new_source, target, index) the displaced node
+    must feed the new source through this graph's planned wires -- i.e. the
+    new nodes sit between the displaced node and the target.
+    """
+    feeds = {}
+    for link in planned:
+        feeds.setdefault(link["to"], set()).add(link["from"])
+    for displaced, new_source, target, index in splices:
+        pending, visited = [new_source], set()
+        while pending:
+            path = pending.pop()
+            if path == displaced:
+                break
+            if path not in visited:
+                visited.add(path)
+                pending.extend(feeds.get(path, ()))
+        else:
+            raise SynapseUserError(
+                "insert:true on %s input %d would cut %s out of the stream" % (target, index, displaced),
+                suggestion=("Wire %s into the first new node so the inserted nodes sit between it and %s. "
+                            "Nothing was changed." % (displaced, target)))
+
+
 def observed_inputs(node):
     """Read occupied input slots; an unavailable source is not an empty slot."""
     result = {}
@@ -124,7 +150,8 @@ def resolve_plan(parent, node_map, sorted_ids, connections, hou, resolve_existin
         if "input" in conn or not node_map[target].get("existing"):
             reserved.setdefault(target, set()).add(conn.get("input", 0))
 
-    planned, claimed = [], set()
+    planned, claimed, splices = [], set(), []
+    graph_paths = set(paths.values())
     for conn in connections:
         source, target = conn["from"], conn["to"]
         output = conn.get("output", 0)
@@ -152,15 +179,29 @@ def resolve_plan(parent, node_map, sorted_ids, connections, hou, resolve_existin
             raise SynapseUserError("Multiple connections claim %s input %d" % (paths[target], index),
                                    suggestion="Give each requested wire a distinct input. Nothing was changed.")
         prior = slots.get(index)
-        if prior is not None and (prior[0] != desired[0] or (protected and prior != desired)):
+        # Opt-in splice (insert between existing A -> B): a wire marked
+        # insert:true may replace an occupied input, but only when the node it
+        # displaces is itself in this graph -- and (checked below, once the
+        # whole plan is known) upstream of the new source, so the stream is
+        # re-routed through the new nodes and never cut.
+        splice = (conn.get("insert") is True and prior is not None
+                  and prior[0] != desired[0] and prior[0] in graph_paths)
+        if prior is not None and not splice and (prior[0] != desired[0] or (protected and prior != desired)):
             raise SynapseUserError("Input %d of %s is already connected to %s output %d"
                                    % (index, paths[target], prior[0], prior[1]),
-                                   suggestion="Choose an unused input or omit input to append to an existing node. Nothing was changed.")
+                                   suggestion=("Choose an unused input or omit input to append to an existing node. "
+                                               "To insert between two existing nodes, reference both with "
+                                               "existing:true and mark the wire into the downstream one insert:true. "
+                                               "Nothing was changed."))
+        if splice:
+            splices.append((prior[0], desired[0], paths[target], index))
         claimed.add(key)
         slots[index] = desired
         planned.append({"from_id": source, "to_id": target, "from": paths[source],
                         "to": paths[target], "input": index, "output": output,
-                        "changed": prior != desired})
+                        "changed": prior != desired,
+                        "displaced": prior[0] if splice else None})
+    _reject_cutting_splices(splices, planned)
     _check_unordered_gaps(bindings, node_types, occupied, hou)
     _reject_live_cycles(bindings, paths, planned, hou)
     return {"bindings": bindings, "paths": paths, "connections": planned}

@@ -210,6 +210,234 @@ def _resolve_existing_node(parent_node, spec: Dict) -> Any:
     return node
 
 
+# ── On-camera polish (G1 badge check, G2 framing) ────────────────────────
+# A build that "succeeds" with a red error badge on one of its new nodes reads
+# as a failure on camera, and nothing in the build path looked: node.errors()
+# only reports the LAST cook, and inside the update-mode sandwich (or hython)
+# the new nodes have not cooked yet. So the check cooks first, then reads.
+
+
+def _cook_and_collect_badges(nodes) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
+    """Cook ``nodes`` (sinks first) and return ``(errors, warnings)``.
+
+    Each entry is ``(node_path, message)``. Only LOP nodes are cooked -- a
+    ``usdrender_rop`` under /stage is a RopNode, and cooking a ROP RENDERS, so
+    ROPs (and any non-LOP) are read without cooking. ``hou.OperationFailed``
+    from ``cook()`` is the expected error signal, not a failure of the check;
+    the message is read back from ``errors()``. Never raises.
+    """
+    errors: List[Tuple[str, str]] = []
+    warnings: List[Tuple[str, str]] = []
+    lop_cls = getattr(hou, "LopNode", None)
+    for node in nodes:
+        if lop_cls is not None and isinstance(node, lop_cls):
+            try:
+                node.cook(force=False)
+            except Exception as exc:  # noqa: BLE001 -- OperationFailed == the node errored
+                logger.debug("build_graph: badge cook raised (read back below): %s", exc)
+    for node in nodes:
+        try:
+            path = node.path()
+            node_errors = tuple(node.errors() or ())
+            node_warnings = tuple(node.warnings() or ())
+        except Exception as exc:  # noqa: BLE001 -- a node we cannot read cannot be badged
+            logger.debug("build_graph: badge read skipped: %s", exc)
+            continue
+        errors.extend((path, str(msg)) for msg in node_errors)
+        warnings.extend((path, str(msg)) for msg in node_warnings)
+    return errors, warnings
+
+
+def _inherited_error_nodes(created_nodes, created_paths) -> Dict[str, str]:
+    """Created nodes whose error comes from an erroring EXISTING upstream node.
+
+    ``created_nodes`` in topological order. A LOP under an erroring input
+    reports its own "Invalid source ..." error (probed on 22.0.400), so
+    without this a new light wired under a broken pythonscript LOP would be
+    rolled back and blamed. Returns ``{created_path: external_source_path}``.
+    A node downstream of a created node with its OWN error is not excused.
+    """
+    inherited: Dict[str, str] = {}
+    for node in created_nodes:
+        try:
+            if not node.errors():
+                continue
+            path = node.path()
+            for source in node.inputs():
+                if source is None or not source.errors():
+                    continue
+                src = source.path()
+                if src not in created_paths:
+                    inherited[path] = src
+                    break
+                if src in inherited:
+                    inherited[path] = inherited[src]
+                    break
+        except Exception as exc:  # noqa: BLE001 -- unknown stays fatal
+            logger.debug("build_graph: inherited-error check skipped: %s", exc)
+    return inherited
+
+
+_FRAME_PAD = (0.8, 0.6)      # network units around the framed context
+_FRAME_TRANSITION = 0.25     # seconds; a short animated move reads calmer on camera
+
+
+def _context_bounds(nodes):
+    """hou.BoundingRect around ``nodes`` plus their immediate upstream and
+    downstream neighbours, padded; None when nothing can be measured."""
+    try:
+        seen, items = set(), []
+        for node in list(nodes) + [n for node in nodes
+                                   for n in tuple(node.inputs()) + tuple(node.outputs())]:
+            if node is None or node.path() in seen:
+                continue
+            seen.add(node.path())
+            items.append(node)
+        xs0, ys0, xs1, ys1 = [], [], [], []
+        for node in items:
+            pos, size = node.position(), node.size()
+            xs0.append(pos[0])
+            ys0.append(pos[1])
+            xs1.append(pos[0] + size[0])
+            ys1.append(pos[1] + size[1])
+        if not items:
+            return None
+        rect = hou.BoundingRect(min(xs0), min(ys0), max(xs1), max(ys1))
+        rect.expand(_FRAME_PAD)
+        return rect
+    except Exception as exc:  # noqa: BLE001 -- fall back to homeToSelection
+        logger.debug("build_graph: context bounds unavailable: %s", exc)
+        return None
+
+
+def _frame_new_nodes(parent_node, nodes, current) -> bool:
+    """Best-effort: select ``nodes`` in every Network Editor showing
+    ``parent_node``, make ``current`` the current node, and frame them.
+
+    Returns True only when at least one editor was framed. A no-op returning
+    False when there is no UI (hython), no ``hou.ui``, no editor on this
+    network, or anything at all raises -- framing is cosmetic and must never
+    fail or roll back a build.
+    """
+    try:
+        if not nodes or not hou.isUIAvailable():
+            return False
+        ui = getattr(hou, "ui", None)
+        if ui is None:
+            return False
+        parent_path = parent_node.path()
+        editors = []
+        for tab in ui.paneTabs():
+            if not isinstance(tab, hou.NetworkEditor):
+                continue
+            try:
+                pwd = tab.pwd()
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("build_graph: editor pwd unreadable: %s", exc)
+                continue
+            if pwd is not None and pwd.path() == parent_path:
+                editors.append(tab)
+        if not editors:
+            return False
+        for index, node in enumerate(nodes):
+            node.setSelected(True, clear_all_selected=(index == 0))
+        if current is not None:
+            current.setCurrent(True, clear_all_selected=False)
+        # P4: frame the new nodes TOGETHER WITH their immediate upstream and
+        # downstream neighbours, so the chain reads in context (homeToSelection
+        # alone was too tight on camera). setVisibleBounds keeps the editor's
+        # aspect and animates the move; homeToSelection is the fallback.
+        bounds = _context_bounds(nodes)
+        framed = False
+        for editor in editors:
+            try:
+                if bounds is not None:
+                    editor.setVisibleBounds(bounds, transition_time=_FRAME_TRANSITION)
+                else:
+                    editor.homeToSelection()
+                framed = True
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("build_graph: framing an editor failed: %s", exc)
+                continue
+        return framed
+    except Exception as exc:  # noqa: BLE001 -- cosmetic, never fatal
+        logger.debug("build_graph: framing skipped: %s", exc)
+        return False
+
+
+_SPLICE_SIDE_GAP = 3.0   # network units right of the column beside the splice
+_SPLICE_ROW = 1.0        # first inserted node sits one row below the displaced one
+
+
+def _splice_origin(anchor_pos, local_positions, others) -> Tuple[float, float]:
+    """Layout origin placing a spliced-in block in a side column next to the
+    displaced node ``anchor_pos``: its top row one row below the anchor, its
+    left edge ``_SPLICE_SIDE_GAP`` right of every other node that shares those
+    rows. Pure (positions in, offset out); ``others`` excludes the new nodes.
+    """
+    xs = [p[0] for p in local_positions.values()]
+    ys = [p[1] for p in local_positions.values()]
+    top_y = anchor_pos[1] - _SPLICE_ROW
+    bottom_y = top_y - (max(ys) - min(ys))
+    band = [p[0] for p in others if bottom_y - _SPLICE_ROW <= p[1] <= anchor_pos[1] + _SPLICE_ROW]
+    left_x = max(band + [anchor_pos[0]]) + _SPLICE_SIDE_GAP
+    return left_x - min(xs), top_y - max(ys)
+
+
+_INLINE_BAND = 1.75      # half-width of "the same column" (HORIZONTAL_SPACING / 2)
+_INLINE_ROW = 1.2        # row pitch when A -> B gives none to copy (VERTICAL_SPACING)
+
+
+def _downstream_positions(target, exclude_paths) -> Dict[str, Tuple[float, float]]:
+    """``target`` and every node reachable downstream from it (live outputs),
+    excluding ``exclude_paths`` (this build's new nodes). Path -> position."""
+    found: Dict[str, Tuple[float, float]] = {}
+    pending = [target]
+    while pending:
+        node = pending.pop()
+        try:
+            path = node.path()
+            if path in found or path in exclude_paths:
+                continue
+            pos = node.position()
+            found[path] = (pos[0], pos[1])
+            pending.extend(n for n in node.outputs() if n is not None)
+        except Exception as exc:  # noqa: BLE001 -- unreadable node: leave it where it is
+            logger.debug("build_graph: downstream walk skipped a node: %s", exc)
+    return found
+
+
+def _inline_splice_layout(anchor_pos, target_pos, local_positions, downstream):
+    """P3 inline splice: place the new rows in A's column directly below A and
+    push only B's downstream chain (same column band, below A) down by the
+    room they need. Pure. Returns ``(positions, shifts)`` -- ``positions``
+    {nid: (x, y)}, ``shifts`` [(path, dx, dy)] -- or None when A -> B is not a
+    vertical step (the caller then falls back to the side column).
+
+    The row pitch copies the artist's own A -> B spacing so the column keeps its
+    rhythm; a B that already sits low enough is not moved at all.
+    """
+    gap = anchor_pos[1] - target_pos[1]
+    if gap <= 0.3 or abs(target_pos[0] - anchor_pos[0]) > _INLINE_BAND:
+        return None
+    pitch = gap if gap <= 1.5 * _INLINE_ROW else _INLINE_ROW
+    rows = sorted({round(p[1], 6) for p in local_positions.values()}, reverse=True)
+    row_of = {y: index for index, y in enumerate(rows)}
+    top_row_xs = [p[0] for p in local_positions.values() if round(p[1], 6) == rows[0]]
+    base_x = min(top_row_xs)
+    positions = {
+        nid: (anchor_pos[0] + (x - base_x), anchor_pos[1] - pitch * (row_of[round(y, 6)] + 1))
+        for nid, (x, y) in local_positions.items()}
+    need_y = anchor_pos[1] - pitch * (len(rows) + 1)
+    dy = min(0.0, need_y - target_pos[1])
+    shifts = []
+    if dy < 0.0:
+        for path, (x, y) in sorted(downstream.items()):
+            if abs(x - anchor_pos[0]) <= _INLINE_BAND and y < anchor_pos[1]:
+                shifts.append((path, 0.0, dy))
+    return positions, shifts
+
+
 # ── Validation (pure Python, no hou) ─────────────────────────────────────
 
 
@@ -289,6 +517,8 @@ def validate_graph(
         for field in ("input", "output"):
             if field in conn and (type(conn[field]) is not int or conn[field] < 0):
                 errors.append("Connection %s must be a nonnegative integer" % field)
+        if "insert" in conn and not isinstance(conn["insert"], bool):
+            errors.append("Connection insert must be a boolean")
         if type(conn.get("input", 0)) is int and ("input" in conn or to_id not in existing_ids):
             slot = (to_id, conn.get("input", 0))
             if slot in claimed_slots:
@@ -504,6 +734,11 @@ class SolarisGraphMixin:
                 - template: template name (optional)
                 - template_params: params for template expansion (optional)
                 - dry_run: preview without creating (default: false)
+                - badge_check: cook the built nodes and roll the whole build
+                  back if a NEW node shows an error badge (default: true);
+                  warnings are reported, never rolled back
+                - frame: select + center the Network Editor on the new nodes
+                  when a UI is present (default: true); never fails a build
 
         Returns:
             {
@@ -513,6 +748,8 @@ class SolarisGraphMixin:
                 "display_node": path,
                 "topology": "dag" | "linear" | "single",
                 "merge_points": [path, ...],
+                "badges": {enabled, checked, warnings, errors_on_reused},
+                "framed": bool,
                 "warnings": [str, ...],
                 "dry_run": bool
             }
@@ -543,6 +780,15 @@ class SolarisGraphMixin:
             raise SynapseUserError("layout must be 'vertical' or 'horizontal'")
         if not isinstance(relayout, bool):
             raise SynapseUserError("relayout must be a boolean")
+        badge_check = payload.get("badge_check", True)
+        frame = payload.get("frame", True)
+        if not isinstance(badge_check, bool):
+            raise SynapseUserError("badge_check must be a boolean")
+        if not isinstance(frame, bool):
+            raise SynapseUserError("frame must be a boolean")
+        splice_layout = payload.get("splice_layout", "inline")
+        if splice_layout not in ("inline", "side"):
+            raise SynapseUserError("splice_layout must be 'inline' or 'side'")
 
         # ── Template expansion ──
         if template_name:
@@ -666,6 +912,10 @@ class SolarisGraphMixin:
                     "layout": {"requested": orientation, "applied": False, "relayout": relayout},
                 }
             moved = []
+            shifted = []   # existing nodes an inline splice moved, with offsets
+            splice_applied = None   # "inline" | "side" when a splice was placed
+            badge_report = {"enabled": badge_check, "checked": False,
+                            "warnings": [], "errors_on_reused": [], "inherited_errors": []}
             undo_enabled, labels_before = False, ()
             try:
                 undo_enabled = bool(hou.undos.areEnabled())
@@ -777,10 +1027,44 @@ class SolarisGraphMixin:
                         local_positions = _compute_dag_positions(moving_ids, layout_links,
                                                                  orientation=orientation)
                         anchors = [nid for nid in moving_ids if nid not in created_ids]
-                        if anchors:
+                        splice_link = next((link for link in plan["connections"]
+                                            if link.get("displaced")), None)
+                        splice_anchor = hou.node(splice_link["displaced"]) if splice_link else None
+                        explicit = None   # nid -> (x, y) when a layout places nodes itself
+                        if (not anchors and splice_anchor is not None and local_positions
+                                and splice_layout == "inline" and orientation == "vertical"):
+                            # P3 inline: the new nodes go in A's column directly
+                            # below A; only B's downstream chain (same column
+                            # band) moves down to make room. Nothing else moves.
+                            splice_target = hou.node(splice_link["to"])
+                            new_paths = {node.path() for node in movable.values()}
+                            downstream = _downstream_positions(splice_target, new_paths)
+                            inline = _inline_splice_layout(
+                                splice_anchor.position(), splice_target.position(),
+                                local_positions, downstream)
+                            if inline is not None:
+                                explicit, shift_plan = inline
+                                for path, dx, dy in shift_plan:
+                                    node = hou.node(path)
+                                    pos = node.position()
+                                    node.setPosition(hou.Vector2(pos[0] + dx, pos[1] + dy))
+                                    shifted.append({"node": path, "dx": round(dx, 6), "dy": round(dy, 6)})
+                        if explicit is not None:
+                            ox, oy = 0.0, 0.0
+                            splice_applied = "inline"
+                        elif anchors:
                             anchor = anchors[0]
                             current, desired = movable[anchor].position(), local_positions[anchor]
                             ox, oy = current[0] - desired[0], current[1] - desired[1]
+                        elif splice_anchor is not None and local_positions:
+                            # Inserted between existing A -> B: a side column
+                            # beside A, not the bottom of the network (whose
+                            # wires would run back up behind the whole chain).
+                            new_paths = {node.path() for node in movable.values()}
+                            others = [child.position() for child in parent_node.children()
+                                      if child.path() not in new_paths]
+                            ox, oy = _splice_origin(splice_anchor.position(), local_positions, others)
+                            splice_applied = "side"
                         else:
                             ox, oy = _free_origin(parent_node, {node.path() for node in movable.values()})
                             # Horizontal roots can extend above the origin; keep
@@ -790,7 +1074,7 @@ class SolarisGraphMixin:
                         for nid, (x, y) in local_positions.items():
                             node = movable[nid]
                             before = node.position()
-                            desired = (ox + x, oy + y)
+                            desired = explicit[nid] if explicit is not None else (ox + x, oy + y)
                             if any(abs(before[i] - desired[i]) > 1e-7 for i in (0, 1)):
                                 node.setPosition(hou.Vector2(*desired))
                                 moved.append(node.path())
@@ -828,6 +1112,54 @@ class SolarisGraphMixin:
                             except AttributeError:
                                 pass  # RopNode — no display flag
 
+                    # 7. G1 badge check -- AFTER the sandwich has restored the
+                    # artist's update mode, still INSIDE the undo group, so an
+                    # error raised here takes the same performUndo rollback as
+                    # any other build failure. Errors on nodes this build
+                    # CREATED roll the whole build back; warnings (and anything
+                    # on reused nodes, whose state predates this build) are
+                    # reported, never rolled back. Existing:true nodes are the
+                    # artist's and are not inspected.
+                    if badge_check:
+                        created_set = {entry["id"] for entry in nodes_created}
+                        check_ids = [nid for nid in reversed(sorted_ids)
+                                     if nid not in existing_nids]
+                        badge_errors, badge_warnings = _cook_and_collect_badges(
+                            [id_to_hou[nid] for nid in check_ids])
+                        created_paths = {id_to_hou[nid].path() for nid in created_set}
+                        # An error inherited from an erroring EXISTING upstream
+                        # node is the artist's, not this build's: keep the build
+                        # and say where the error comes from.
+                        inherited = _inherited_error_nodes(
+                            [id_to_hou[nid] for nid in sorted_ids if nid in created_set],
+                            created_paths)
+                        for p, src in sorted(inherited.items()):
+                            badge_report["inherited_errors"].append({"node": p, "from": src})
+                            warnings.append("%s inherits an upstream error from %s; build kept"
+                                            % (p, src))
+                        fatal = [(p, m) for p, m in badge_errors
+                                 if p in created_paths and p not in inherited]
+                        for p, m in badge_errors:
+                            if p not in created_paths:
+                                badge_report["errors_on_reused"].append(
+                                    {"node": p, "message": m})
+                                warnings.append("reused node %s has an error: %s" % (p, m))
+                        for p, m in badge_warnings:
+                            badge_report["warnings"].append({"node": p, "message": m})
+                            warnings.append("%s: %s" % (p, m))
+                        if fatal:
+                            raise SynapseUserError(
+                                "build rolled back -- %d new node(s) showed an error "
+                                "badge after cooking: %s"
+                                % (len({p for p, _ in fatal}),
+                                   "; ".join("%s: %s" % (p, m) for p, m in fatal)),
+                                suggestion=("Nothing was left in the network. Fix the "
+                                            "parameter/input named above and re-run, or "
+                                            "pass badge_check:false to keep the nodes "
+                                            "despite the error."),
+                            )
+                        badge_report["checked"] = True
+
             except Exception:
                 # Safe undo fallback — the C++ undo layer for LOP nodes
                 # with USD stage data can throw during __exit__ if GPU
@@ -850,7 +1182,8 @@ class SolarisGraphMixin:
             # extend that appends nothing new) must never read 'created'.
             display_after, display_after_known = observed_display(parent_node)
             display_changed = (display_before != display_after) if display_known and display_after_known else False
-            _touched = parms_changed or connections_changed or bool(moved) or display_changed
+            _touched = (parms_changed or connections_changed or bool(moved) or bool(shifted)
+                        or display_changed)
             if nodes_created:
                 status = "updated" if nodes_reused else "created"
             elif nodes_reused or existing_nids:
@@ -869,6 +1202,18 @@ class SolarisGraphMixin:
                     "%d parameter(s) could not be set and were NOT applied -- "
                     "see parms_missed" % len(parms_missed))
 
+            # G2: frame the network editor on what this build made. After the
+            # undo group has closed (selection is not undoable, and a framing
+            # failure must never roll back a good build). No-op in hython.
+            framed = False
+            if frame and (nodes_created or moved):
+                frame_ids = [nid for nid in sorted_ids if nid not in existing_nids
+                             and (nid in created_ids or id_to_hou[nid].path() in moved)]
+                current = (display_hou if display_node_id not in existing_nids
+                           else (id_to_hou[frame_ids[-1]] if frame_ids else None))
+                framed = _frame_new_nodes(parent_node,
+                                          [id_to_hou[nid] for nid in frame_ids], current)
+
             return {
                 "status": status,
                 "nodes_created": nodes_created,
@@ -884,11 +1229,18 @@ class SolarisGraphMixin:
                 "display_observed": display_after_known,
                 "requested_display_node": display_hou.path(),
                 "layout": {"requested": orientation, "applied": bool(movable), "moved": moved,
-                           "preserved": [node.path() for nid, node in id_to_hou.items() if nid not in movable]},
+                           # existing nodes an inline splice moved, with exact offsets
+                           "splice_layout": splice_applied,
+                           "shifted": shifted,
+                           "preserved": [node.path() for nid, node in id_to_hou.items()
+                                         if nid not in movable
+                                         and node.path() not in {s["node"] for s in shifted}]},
                 "verification": {"connections": "verified", "parameters": "partial" if parms_missed else "applied"},
                 "topology": topology,
                 "merge_points": [id_to_hou[mid].path() for mid in merge_ids],
                 "ambiguous_merges": ambiguous_merges,
+                "badges": badge_report,
+                "framed": framed,
                 "warnings": warnings,
                 "dry_run": False,
             }
