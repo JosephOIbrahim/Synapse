@@ -322,9 +322,18 @@ class ClaudeWorker(QThread):
         _perf = getattr(globals().get("time"), "perf_counter", None)
         _worker_t0 = _perf() if _perf is not None else None
 
+        # R3 (10/1): narration streamed by successive model turns (between tool
+        # calls) used to be glued together ("stageinstead", "full picture.The
+        # lane"). The first text of a later turn now starts a new paragraph.
+        _narration = {"any": False, "this_turn": False}
+
         def _emit_token(text):
             if text and ledger["worker_first_token_ms"] is None and _worker_t0 is not None:
                 ledger["worker_first_token_ms"] = round((_perf() - _worker_t0) * 1000., 3)
+            if text and not _narration["this_turn"]:
+                if _narration["any"]:
+                    self.token_received.emit("\n\n")
+                _narration["any"] = _narration["this_turn"] = True
             self.token_received.emit(text)
 
         def _run_turns() -> str:
@@ -345,6 +354,7 @@ class ClaudeWorker(QThread):
             context_recorded = False   # J2: the window is looked up once per task
             for iteration in range(_MAX_TOOL_ITERATIONS):
                 ledger["turns"] = iteration + 1
+                _narration["this_turn"] = False
                 if self._abort:
                     return "stopped"
 

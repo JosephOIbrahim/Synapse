@@ -5,6 +5,7 @@ Builds arbitrary DAG topologies in Solaris LOP networks — merge nodes,
 sublayer stacks, parallel streams. Complements assemble_chain (linear only).
 """
 
+import contextlib
 from collections import defaultdict, deque
 from typing import Dict, List, Any, Optional, Tuple
 import logging
@@ -339,10 +340,17 @@ def _frame_new_nodes(parent_node, nodes, current) -> bool:
                 editors.append(tab)
         if not editors:
             return False
-        for index, node in enumerate(nodes):
-            node.setSelected(True, clear_all_selected=(index == 0))
-        if current is not None:
-            current.setCurrent(True, clear_all_selected=False)
+        # R1: HOM setSelected pushes its own "Change Selection" undo entry
+        # (probed on 22.0.400). Framing must not leave one on top of the
+        # build -- Ctrl+Z would hit the selection first and the panel's REVERT
+        # would refuse. Selection is cosmetic, so it is made outside undo.
+        undos = getattr(hou, "undos", None)
+        disabler = getattr(undos, "disabler", None)
+        with (disabler() if callable(disabler) else contextlib.nullcontext()):
+            for index, node in enumerate(nodes):
+                node.setSelected(True, clear_all_selected=(index == 0))
+            if current is not None:
+                current.setCurrent(True, clear_all_selected=False)
         # P4: frame the new nodes TOGETHER WITH their immediate upstream and
         # downstream neighbours, so the chain reads in context (homeToSelection
         # alone was too tight on camera). setVisibleBounds keeps the editor's
@@ -407,7 +415,44 @@ def _downstream_positions(target, exclude_paths) -> Dict[str, Tuple[float, float
     return found
 
 
-def _inline_splice_layout(anchor_pos, target_pos, local_positions, downstream):
+# R2 (10/1 12:22 take): at the artist's 0.894 row pitch the inserted lights'
+# labels overlapped, and dusk_key's sat under look_fade_10's three-line
+# comment. Text is NOT measured through hou; a conservative, tested rule adds
+# room below any node that draws text under its tile:
+#   * a displayed comment (DisplayComment flag set) counts its lines, each
+#     source line wrapped at _LABEL_WRAP characters (look_fade_10's 107-char
+#     comment -> 3 lines, the 3 it drew on camera);
+#   * a node with a `primpath` parm (lights, cameras) draws its prim path as
+#     one more line.
+# Each line adds _LABEL_LINE network units (about one node tile height, 0.28).
+_LABEL_LINE = 0.28
+_LABEL_WRAP = 40
+
+
+def _label_lines(comment, shows_comment, has_primpath) -> int:
+    """Text lines a node draws below its tile, by the rule above. Pure."""
+    lines = 0
+    if shows_comment and comment:
+        for part in str(comment).splitlines() or [""]:
+            lines += max(1, -(-len(part) // _LABEL_WRAP))
+    if has_primpath:
+        lines += 1
+    return lines
+
+
+def _node_label_lines(node) -> int:
+    """_label_lines for a live hou node; 0 when anything is unreadable."""
+    try:
+        return _label_lines(node.comment(),
+                            node.isGenericFlagSet(hou.nodeFlag.DisplayComment),
+                            node.parm("primpath") is not None)
+    except Exception as exc:  # noqa: BLE001 -- spacing degrades to the plain pitch
+        logger.debug("build_graph: label lines unreadable: %s", exc)
+        return 0
+
+
+def _inline_splice_layout(anchor_pos, target_pos, local_positions, downstream,
+                          anchor_lines=0, node_lines=None):
     """P3 inline splice: place the new rows in A's column directly below A and
     push only B's downstream chain (same column band, below A) down by the
     room they need. Pure. Returns ``(positions, shifts)`` -- ``positions``
@@ -415,20 +460,29 @@ def _inline_splice_layout(anchor_pos, target_pos, local_positions, downstream):
     vertical step (the caller then falls back to the side column).
 
     The row pitch copies the artist's own A -> B spacing so the column keeps its
-    rhythm; a B that already sits low enough is not moved at all.
+    rhythm; a B that already sits low enough is not moved at all. R2: the gap
+    below A grows by ``anchor_lines`` label lines, and the gap below each new
+    row by the most label lines any node in that row draws (``node_lines``).
     """
     gap = anchor_pos[1] - target_pos[1]
     if gap <= 0.3 or abs(target_pos[0] - anchor_pos[0]) > _INLINE_BAND:
         return None
+    node_lines = node_lines or {}
     pitch = gap if gap <= 1.5 * _INLINE_ROW else _INLINE_ROW
     rows = sorted({round(p[1], 6) for p in local_positions.values()}, reverse=True)
-    row_of = {y: index for index, y in enumerate(rows)}
+    row_lines = [max([node_lines.get(nid, 0) for nid, p in local_positions.items()
+                      if round(p[1], 6) == y] + [0]) for y in rows]
+    row_y, y = [], anchor_pos[1] - (pitch + _LABEL_LINE * anchor_lines)
+    for lines in row_lines:
+        row_y.append(y)
+        y -= pitch + _LABEL_LINE * lines
+    row_of = {ry: index for index, ry in enumerate(rows)}
     top_row_xs = [p[0] for p in local_positions.values() if round(p[1], 6) == rows[0]]
     base_x = min(top_row_xs)
     positions = {
-        nid: (anchor_pos[0] + (x - base_x), anchor_pos[1] - pitch * (row_of[round(y, 6)] + 1))
-        for nid, (x, y) in local_positions.items()}
-    need_y = anchor_pos[1] - pitch * (len(rows) + 1)
+        nid: (anchor_pos[0] + (x - base_x), row_y[row_of[round(py, 6)]])
+        for nid, (x, py) in local_positions.items()}
+    need_y = y   # one labelled row below the last new row
     dy = min(0.0, need_y - target_pos[1])
     shifts = []
     if dy < 0.0:
@@ -1039,9 +1093,14 @@ class SolarisGraphMixin:
                             splice_target = hou.node(splice_link["to"])
                             new_paths = {node.path() for node in movable.values()}
                             downstream = _downstream_positions(splice_target, new_paths)
+                            # R2: room for the text drawn under A and under each
+                            # new node (comments + prim path), by _label_lines.
                             inline = _inline_splice_layout(
                                 splice_anchor.position(), splice_target.position(),
-                                local_positions, downstream)
+                                local_positions, downstream,
+                                anchor_lines=_node_label_lines(splice_anchor),
+                                node_lines={nid: _node_label_lines(movable[nid])
+                                            for nid in local_positions})
                             if inline is not None:
                                 explicit, shift_plan = inline
                                 for path, dx, dy in shift_plan:

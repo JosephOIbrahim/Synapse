@@ -91,6 +91,7 @@ def _release_panel_worker(worker):
     if _ACTIVE_PANEL_WORKERS.release(worker):
         worker.deleteLater()
 
+
 # Proven runtime + widgets — composed, not rewritten. All optional so the panel
 # always instantiates (graceful degradation is a runtime contract).
 try:
@@ -2530,6 +2531,23 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 pass
             return False
+        if not operation:
+            # R1: the turn receipt / review face REVERT undoes the last turn
+            # directly -- only SYNAPSE's own undo groups from that turn, and only
+            # while nothing else sits above them (turn_revert). No model turn.
+            from synapse.panel import turn_revert
+            ok, message = turn_revert.revert_turn(
+                turn_revert.hou_undos(), getattr(self, "_turn_undo_before", None),
+                getattr(self, "_turn_undo_after", None))
+            try:
+                self._chat.append_system_message(message)
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("revert message not shown: %s", exc)
+            if ok:
+                self._turn_undo_after = None      # one turn, one revert
+                self._hide_turn_receipt()
+                self._set_face("direct")
+            return ok
         prompt = "Undo the last change using houdini_undo, then confirm what was reverted."
         if operation:
             prompt += (" The change I mean is the %s you just ran; if the last undo"
@@ -3607,6 +3625,11 @@ class SynapsePanel(QtWidgets.QWidget):
             # Submitting is the artist handing off — drop input focus. The last
             # turn's receipt goes with it (bc-wave BC-6a): a new turn, a new record.
             self._hide_turn_receipt()
+            # R1: the undo stack as this turn starts. REVERT later undoes only
+            # SYNAPSE entries added on top of it (turn_revert).
+            from synapse.panel import turn_revert
+            self._turn_undo_before = turn_revert.snapshot(turn_revert.hou_undos())
+            self._turn_undo_after = None
             if getattr(self, "_input", None) is not None:
                 self._input.clearFocus()
             display = text
@@ -3935,6 +3958,14 @@ class SynapsePanel(QtWidgets.QWidget):
         # counted from the same evidence the Work face credits.
         # Best-effort like every seam in this method: a completion must never
         # fail on the receipt (duck-typed completions carry no slot).
+        try:
+            # R1: the undo stack as this turn ends -- the exact state REVERT
+            # requires to still be on top before it will undo anything.
+            from synapse.panel import turn_revert
+            self._turn_undo_after = turn_revert.snapshot(turn_revert.hou_undos())
+        except Exception as exc:  # noqa: BLE001 -- REVERT then refuses
+            logger.debug("turn undo snapshot failed: %s", exc)
+            self._turn_undo_after = None
         try:
             credit = self._turn_evidence()[0]
             if credit:

@@ -233,13 +233,15 @@ def test_refused_revert_returns_false():
 def test_accepted_revert_returns_true_and_a_declined_send_returns_false():
     revert = _panel_methods("_on_revert")["_on_revert"]
 
+    # Round 3 R1: a card's revert names its operation and still goes to the
+    # model; the plain (turn receipt) REVERT undoes directly -- test_round3_camera.
     panel = _panel(running=False)
-    assert revert(panel) is True
+    assert revert(panel, "delete_node") is True
     panel._set_face.assert_called_once_with("direct")
 
     declined = _panel(running=False)
     declined._send.return_value = False
-    assert revert(declined) is False
+    assert revert(declined, "delete_node") is False
     declined._set_face.assert_not_called()
 
 
@@ -258,9 +260,11 @@ def test_the_request_names_the_operation_the_card_names():
     assert "houdini_undo" in prompt
     assert "delete_node" in prompt, prompt
 
+    # Round 3 R1: a plain revert (the turn receipt) never asks the model at all;
+    # it undoes SYNAPSE's own undo groups directly or refuses (turn_revert).
     plain = _panel(running=False)
     revert(plain)
-    assert "delete_node" not in plain._send.call_args[0][0]
+    plain._send.assert_not_called()
 
 
 # ── The whole chain, on the path that actually happens ───────────────────

@@ -275,10 +275,12 @@ def test_revert_decline_does_not_announce_or_leave_review():
     panel = SimpleNamespace(_worker=None, _send=Mock(return_value=False),
                             _chat=Mock(), _set_face=Mock())
     revert = panel_methods("_on_revert")["_on_revert"]
-    revert(panel)
+    # Round 3 R1: only a consent card's revert (it names an operation) still
+    # asks the model; the turn receipt's REVERT undoes directly (turn_revert).
+    revert(panel, "delete_node")
     panel._chat.append_system_message.assert_not_called()
     panel._set_face.assert_not_called()
     panel._send.return_value = True
-    revert(panel)
+    revert(panel, "delete_node")
     panel._chat.append_system_message.assert_called_once()
     panel._set_face.assert_called_once_with("direct")
