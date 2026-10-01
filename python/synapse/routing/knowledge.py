@@ -19,6 +19,18 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
+try:
+    from . import solaris_recipes as _solaris_recipes
+except ImportError:
+    # Loaded as a standalone file (tests/test_knowledge.py spec-loads this module
+    # without its package): load the sibling recipe table by path. It has no
+    # imports of its own beyond the stdlib.
+    import importlib.util as _ilu
+    _rspec = _ilu.spec_from_file_location(
+        "solaris_recipes", Path(__file__).with_name("solaris_recipes.py"))
+    _solaris_recipes = _ilu.module_from_spec(_rspec)
+    _rspec.loader.exec_module(_solaris_recipes)
+
 logger = logging.getLogger(__name__)
 
 # W4-KNOW Target 3: default result count for the node/disambiguation path. Mirrors
@@ -368,6 +380,12 @@ class KnowledgeIndex:
         if params:
             answer = "%s\n\nParameters (%d) - internal name(s) to set each:\n%s" % (
                 summary, len(params), "\n".join(lines))
+        recipe_key = _solaris_recipes.recipe_for_type(entry.get("type") or "")
+        if recipe_key:
+            # Point a datasheet reader at the verified one-call build (Pieke pack).
+            answer = ("A verified one-call recipe exists for this node: look up '%s' "
+                      "(%s).\n\n%s" % (recipe_key.replace("_", " "),
+                                       _solaris_recipes.RECIPES[recipe_key]["title"], answer))
 
         build = self._corpus_build or "?"
         result = KnowledgeLookupResult(
@@ -381,6 +399,25 @@ class KnowledgeIndex:
             reference_file=entry.get("help_key") or "",
             parameters=params,
             context=ctx or "",
+        )
+        result.serve_bytes = self._measure_serve_bytes(result)
+        return result
+
+    def _recipe_result(self, key) -> KnowledgeLookupResult:
+        """A verified H22 Solaris workflow recipe (Pieke pack): the notes, the
+        placeholders and the ONE build_graph payload, proven on 22.0.400."""
+        recipe = _solaris_recipes.RECIPES[key]
+        answer = _solaris_recipes.render(key)
+        result = KnowledgeLookupResult(
+            found=True,
+            answer=answer,
+            confidence=0.95,
+            topic=key,
+            sources=["solaris_recipes:%s" % key],
+            agent_hint="VERIFIED-RECIPE, Houdini 22.0.400, lop context - build it in one "
+                       "synapse_solaris_build_graph call",
+            summary=recipe["title"],
+            context="lop",
         )
         result.serve_bytes = self._measure_serve_bytes(result)
         return result
@@ -584,6 +621,15 @@ class KnowledgeIndex:
         query_lower = query.lower().strip()
         query_words = set(self._tokenize(query_lower))
         floor = DENSE_MATCH_FLOOR if min_similarity is None else float(min_similarity)
+
+        # Strategy -1 (Pieke pack, 10/1): a verified H22 Solaris workflow recipe
+        # named in the artist's words ("blocker", "light filter", "render pass",
+        # "scatter instances"). The 10/1 baseline showed these words reaching no
+        # type, so the model guessed type names or fell back to pre-H22 workflows.
+        # A bare type name as the whole query still gets its datasheet below.
+        recipe_key = _solaris_recipes.match(query_words)
+        if recipe_key:
+            return self._recipe_result(recipe_key)
 
         # Strategy 0: the node path. EXCLUSIVE - when it owns the query it returns
         # its verdict (answer, disambiguation, or honest not-found) and the

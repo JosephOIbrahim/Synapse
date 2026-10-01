@@ -195,6 +195,13 @@ Verified on 22.0.400: light LOPs are `light` (set `lighttype` to one of \
 UsdLuxDistantLight, UsdLuxRectLight, UsdLuxSphereLight, UsdLuxDiskLight, \
 UsdLuxCylinderLight, point) and `distantlight`; rectlight, spherelight and \
 spotlight are NOT node types.
+**Verified H22 workflow recipes:** Scatter Instances (`scatterinstances`), the \
+Karma blocker light filter (`karmablockerlightfilter`) and Render Passes \
+(`renderpass`, not extra ROPs) each have a proven one-call build. For these, call \
+synapse_knowledge_lookup ONCE with the artist's words (e.g. "karma blocker", \
+"scatter instances", "render passes"), fill its placeholders from what you have \
+already inspected, then build in ONE synapse_solaris_build_graph call. Never guess \
+these type names.
 
 ### Lighting Law
 - **Intensity is ALWAYS 1.0** -- control brightness via exposure only.

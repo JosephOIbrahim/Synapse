@@ -61,13 +61,18 @@ from synapse.server import handlers_usd as husd  # noqa: E402
 
 
 class _Attr:
-    def __init__(self, valid, value=None, type_name="float"):
+    def __init__(self, valid, value=None, type_name="float", samples=None):
         self._valid, self._value, self._tn = valid, value, type_name
+        self._samples = dict(samples or {})
 
     def IsValid(self):
         return self._valid
 
-    def Get(self):
+    def Get(self, time=None):
+        # Mirrors UsdAttribute.Get(time=Default): a time-sampled value at `time`,
+        # else the default/fallback value.
+        if time is not None and time in self._samples:
+            return self._samples[time]
         return self._value
 
     def GetTypeName(self):
@@ -142,6 +147,21 @@ def test_get_attribute_hit_unchanged(monkeypatch):
     assert res["prim_path"] == "/lights/key"
     assert res["node"] == "/stage/krs"
     assert res["property_kind"] == "attribute"
+
+
+def test_get_attribute_reads_the_current_frame(monkeypatch):
+    # 10/1 Pieke bench: Configure Primitive authors visibility as a time sample at
+    # the current frame. Read at USD's default time it came back 'inherited' at
+    # every node while the prim was invisible, and the model looped for 145 s
+    # "fixing" a correct build. The read must use the current frame.
+    prim = _Prim(_Attr(True, value="inherited", type_name="token", samples={1.0: "invisible"}),
+                 _Rel(False))
+    handler = _handler_reading(monkeypatch, prim)
+    monkeypatch.setattr(husd.hou, "frame", lambda: 1.0, raising=False)
+    res = handler._handle_get_usd_attribute(
+        {"prim_path": "/World/collider", "usd_attribute": "visibility"}
+    )
+    assert res["value"] == "invisible"
 
 
 # ---- READ: relationship fallback -------------------------------------------

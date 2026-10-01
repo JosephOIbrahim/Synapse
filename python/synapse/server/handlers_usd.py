@@ -394,7 +394,19 @@ class UsdHandlerMixin:
 
             attr = prim.GetAttribute(attr_name)
             if attr.IsValid():
-                value = _usd_to_json(attr.Get())
+                # Read at the CURRENT FRAME, not USD's default time. LOPs often
+                # author time samples (Configure Primitive writes visibility as a
+                # sample at the current frame), and attr.Get() at default time then
+                # returns the fallback: 10/1 bench, the collider read 'inherited'
+                # at every node while it was invisible at frame 1, and the model
+                # spent 145 s "fixing" a correct build. An unsampled attribute
+                # reads the same either way.
+                try:
+                    frame = float(hou.frame())
+                except Exception:
+                    frame = None
+                raw = attr.Get(frame) if frame is not None else attr.Get()
+                value = _usd_to_json(raw)
                 result = {
                     "node": node.path(),
                     "prim_path": prim_path,
