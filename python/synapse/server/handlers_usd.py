@@ -401,10 +401,8 @@ class UsdHandlerMixin:
                 # at every node while it was invisible at frame 1, and the model
                 # spent 145 s "fixing" a correct build. An unsampled attribute
                 # reads the same either way.
-                try:
-                    frame = float(hou.frame())
-                except Exception:
-                    frame = None
+                frame_fn = getattr(hou, "frame", None)
+                frame = float(frame_fn()) if callable(frame_fn) else None
                 raw = attr.Get(frame) if frame is not None else attr.Get()
                 value = _usd_to_json(raw)
                 result = {

@@ -1,6 +1,6 @@
 {
   "schema": "emitted_node_types/v1",
-  "generated_from_commit": "a4d86ce43936445f66baf87d2a6d9acb3d03a8b0",
+  "generated_from_commit": "7cc1e42736932bcf147a6d076656958b08b1a88b",
   "entries": [
     {
       "category": "apex_seed",
@@ -149,6 +149,13 @@
     },
     {
       "category": "createNode_literal",
+      "type_name": "bakegsplat",
+      "source_files": [
+        "python/synapse/worldlabs/importer.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
       "type_name": "block_begin",
       "source_files": [
         "python/synapse/server/handlers_cops.py"
@@ -265,10 +272,11 @@
       ]
     },
     {
-      "category": "createNode_literal",
+      "category": "createNode_literal+recipe_payload",
       "type_name": "configureprimitive",
       "source_files": [
-        "python/synapse/mcp/tool_impls/solaris/set_purpose.py"
+        "python/synapse/mcp/tool_impls/solaris/set_purpose.py",
+        "python/synapse/routing/solaris_recipes.py"
       ]
     },
     {
@@ -377,7 +385,8 @@
       "type_name": "file",
       "source_files": [
         "python/synapse/routing/recipes/pipeline_recipes.py",
-        "python/synapse/server/handlers_cops.py"
+        "python/synapse/server/handlers_cops.py",
+        "python/synapse/worldlabs/importer.py"
       ]
     },
     {
@@ -409,7 +418,15 @@
       "source_files": [
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/server/handlers.py",
-        "python/synapse/server/handlers_hda.py"
+        "python/synapse/server/handlers_hda.py",
+        "python/synapse/worldlabs/importer.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "gltf",
+      "source_files": [
+        "python/synapse/worldlabs/importer.py"
       ]
     },
     {
@@ -452,6 +469,13 @@
       "type_name": "hsv",
       "source_files": [
         "python/synapse/routing/recipes/scene_recipes.py"
+      ]
+    },
+    {
+      "category": "recipe_payload",
+      "type_name": "karmablockerlightfilter",
+      "source_files": [
+        "python/synapse/routing/solaris_recipes.py"
       ]
     },
     {
@@ -514,12 +538,13 @@
       ]
     },
     {
-      "category": "createNode_literal",
+      "category": "createNode_literal+recipe_payload",
       "type_name": "light",
       "source_files": [
         "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
-        "python/synapse/routing/recipes/render_recipes.py"
+        "python/synapse/routing/recipes/render_recipes.py",
+        "python/synapse/routing/solaris_recipes.py"
       ]
     },
     {
@@ -602,13 +627,6 @@
       "type_name": "mountain",
       "source_files": [
         "python/synapse/routing/hda_recipes.py"
-      ]
-    },
-    {
-      "category": "createNode_literal",
-      "type_name": "noise",
-      "source_files": [
-        "python/synapse/server/handlers_cops.py"
       ]
     },
     {
@@ -765,11 +783,19 @@
       ]
     },
     {
-      "category": "createNode_literal",
+      "category": "createNode_literal+recipe_payload",
       "type_name": "reference",
       "source_files": [
         "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+        "python/synapse/routing/solaris_recipes.py",
         "python/synapse/server/handlers_usd.py"
+      ]
+    },
+    {
+      "category": "recipe_payload",
+      "type_name": "renderpass",
+      "source_files": [
+        "python/synapse/routing/solaris_recipes.py"
       ]
     },
     {
@@ -804,6 +830,13 @@
       ]
     },
     {
+      "category": "recipe_payload",
+      "type_name": "scatterinstances",
+      "source_files": [
+        "python/synapse/routing/solaris_recipes.py"
+      ]
+    },
+    {
       "category": "createNode_literal+recipe_payload+setdressing_verified",
       "type_name": "sopimport",
       "source_files": [
@@ -811,7 +844,15 @@
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py",
         "python/synapse/routing/recipes/scene_recipes.py",
+        "python/synapse/worldlabs/importer.py",
         "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "recipe_payload",
+      "type_name": "sphere",
+      "source_files": [
+        "python/synapse/routing/solaris_recipes.py"
       ]
     },
     {
@@ -833,11 +874,13 @@
       "category": "createNode_literal",
       "type_name": "subnet",
       "source_files": [
+        "python/synapse/host/saved_networks.py",
         "python/synapse/mcp/tool_impls/solaris/component_builder.py",
         "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py",
-        "python/synapse/server/handlers_hda.py"
+        "python/synapse/server/handlers_hda.py",
+        "python/synapse/server/solaris_lookdev.py"
       ]
     },
     {
@@ -851,7 +894,22 @@
       "category": "createNode_literal",
       "type_name": "topnet",
       "source_files": [
+        "python/synapse/farm/native_driver.py",
         "python/synapse/server/handlers_tops/render_sequence.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "unpack",
+      "source_files": [
+        "python/synapse/worldlabs/importer.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "usd",
+      "source_files": [
+        "python/synapse/farm/native_driver.py"
       ]
     },
     {
@@ -869,6 +927,13 @@
         "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "usdrenderscene",
+      "source_files": [
+        "python/synapse/farm/native_driver.py"
       ]
     },
     {
@@ -918,6 +983,13 @@
     },
     {
       "category": "createNode_literal",
+      "type_name": "waitforall",
+      "source_files": [
+        "python/synapse/farm/native_driver.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
       "type_name": "wedge",
       "source_files": [
         "python/synapse/server/handlers_tops/wedge.py"
@@ -941,7 +1013,8 @@
       "category": "createNode_literal",
       "type_name": "xform",
       "source_files": [
-        "python/synapse/mcp/tool_impls/solaris/import_megascans.py"
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+        "python/synapse/worldlabs/importer.py"
       ]
     }
   ]
