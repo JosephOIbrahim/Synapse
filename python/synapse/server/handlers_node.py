@@ -37,6 +37,17 @@ def _suggest_children(parent_path: str) -> str:
     return ""
 
 
+def _invalid_type_hint(parent_node, node_type: str):
+    """The nearest-real-types sentence for a type that is not in
+    ``parent_node``'s child category, or None if the catalogue is unreadable."""
+    try:
+        from ..core.type_suggest import live_hint
+        return live_hint(str(node_type), parent_node.childTypeCategory())
+    except Exception as exc:  # noqa: BLE001 -- guidance is best-effort; the raw error stands
+        _log.debug("create_node: type hint unavailable: %s", exc)
+        return None
+
+
 class NodeHandlerMixin:
     """Mixin providing node creation, deletion, and connection handlers."""
 
@@ -64,10 +75,21 @@ class NodeHandlerMixin:
             # deliberately. Matches the handlers_cops/_usd/_material/batch/execute
             # inline-wrap pattern; the non-mutating parent lookup stays outside.
             with hou.undos.group("synapse_node_create"):
-                if name:
-                    new_node = parent_node.createNode(node_type, name)
-                else:
-                    new_node = parent_node.createNode(node_type)
+                try:
+                    if name:
+                        new_node = parent_node.createNode(node_type, name)
+                    else:
+                        new_node = parent_node.createNode(node_type)
+                except Exception as exc:
+                    # TYPEHINT (10/1): a bare "Invalid node type name" let the
+                    # model guess fifteen spellings in a row. Answer with the
+                    # closest real types in this network's category instead.
+                    if "invalid node type" not in str(exc).lower():
+                        raise
+                    hint = _invalid_type_hint(parent_node, node_type)
+                    if hint is None:
+                        raise
+                    raise ValueError(hint) from exc
 
                 new_node.moveToGoodPosition()
 

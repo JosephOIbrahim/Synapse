@@ -79,6 +79,7 @@ def _validate_node_types(parent_node, node_map: Dict[str, Dict]) -> None:
         return
 
     bad: List[str] = []
+    catalog = None
     for spec in node_map.values():
         if spec.get("existing"):
             continue  # resolved live, not created -- no type to validate
@@ -92,6 +93,18 @@ def _validate_node_types(parent_node, node_map: Dict[str, Dict]) -> None:
         if exists:
             continue
         remediation = _absent_type_remediation(type_name)
+        if not remediation:
+            # TYPEHINT (10/1): name the closest real types, so one failed
+            # guess becomes one correct retry instead of a run of guesses.
+            try:
+                from ..core.type_suggest import live_catalog, suggest
+                if catalog is None:
+                    catalog = live_catalog(category)
+                near = suggest(type_name, catalog)
+                if near:
+                    remediation = "closest real types: " + ", ".join(near)
+            except Exception as exc:  # noqa: BLE001 -- guidance is best-effort
+                logger.debug("build_graph: type hint unavailable: %s", exc)
         bad.append("'%s'%s" % (type_name,
                                (" -- " + remediation) if remediation else ""))
 
@@ -99,8 +112,11 @@ def _validate_node_types(parent_node, node_map: Dict[str, Dict]) -> None:
         raise SynapseUserError(
             "unknown %s node type(s): %s"
             % (category.name(), "; ".join(sorted(set(bad)))),
-            suggestion=("Nothing was created. Fix the node type(s) and re-run "
-                        "-- synapse_scout will confirm what exists on this build."),
+            # The panel worker may not call synapse_scout (fail-closed allowlist);
+            # pointing there sent the 10/1 bench into denied calls.
+            suggestion=("Nothing was created. Use one of the closest real types "
+                        "exactly, or look up the artist's words with "
+                        "synapse_knowledge_lookup, then re-run."),
         )
 
 
