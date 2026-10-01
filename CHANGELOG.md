@@ -22,6 +22,24 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.91.0 - One call inserts between existing nodes, and a build checks its own badges
+
+`synapse_solaris_build_graph` can now splice new nodes into an occupied input
+with `insert: true` on the wire into the downstream node. It only re-routes the
+stream through the new nodes and refuses any splice that would cut a node out.
+Inserted nodes go directly below the upstream node in its column by default
+(`splice_layout: "inline"`), and only that column's downstream chain moves down,
+reported in `layout.shifted`; `"side"` moves no existing node. After building,
+the tool cooks the new nodes and rolls the whole build back if one of them shows
+an error badge; an error inherited from an existing upstream node is reported
+as a warning and the build is kept. When the Network Editor shows the network,
+the build is selected and framed with its neighbours. `scene_template` now lays
+out only its own nodes and keeps the artist's display flag. In the panel, the
+Ollama response budget rises from 4,096 to 16,384 tokens, a turn that hits the
+limit with nothing shown now says so, and a text-only model no longer gets the
+viewport capture tool. This is a source release with no new Windows Setup. See
+[v5.91.0](docs/releases/v5.91.0.md).
+
 ## v5.90.0 - Render returns to the panel, and the workstation profile renders on the GPU
 
 Render is back as a full-width row at the foot of the panel, under the footer's
