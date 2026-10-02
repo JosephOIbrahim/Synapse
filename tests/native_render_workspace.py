@@ -18,6 +18,11 @@ import traceback
 import faulthandler
 
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
+# TESTSPILL (2026-10-02): run under hython, this check rewrote ~/.synapse/bridge.json,
+# the sidecar a live Houdini session's own clients read to find it. Its logs and
+# its sidecar go beside its output instead. Set before any synapse import.
+os.environ.setdefault("SYNAPSE_LOG_DIR", str(Path(sys.argv[1]).resolve() / "logs"))
+os.environ.setdefault("SYNAPSE_BRIDGE_FILE", str(Path(sys.argv[1]).resolve() / "bridge.json"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python"))
 NATIVE_HOST = os.environ.get("SYNAPSE_NATIVE_QT_HOST") == "hython"
 if not NATIVE_HOST:

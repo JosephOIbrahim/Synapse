@@ -15,6 +15,55 @@ from unittest.mock import MagicMock
 
 
 # ---------------------------------------------------------------------------
+# A test session's logs and bridge sidecar go to a folder of its own
+# ---------------------------------------------------------------------------
+# TESTSPILL / F8 (2026-10-02). The dev seat is the production seat. A full run
+# wrote an emergency_halt and freeze_dump pair into ~/.synapse/logs every time:
+# the newest-five pruning there evicts real freeze evidence, and the "SUSTAINED
+# FREEZE" lines landed in the log of a Houdini session that was open and fine.
+#
+# The per-file fixtures (test_freeze_chain, test_m3_logs_doctor, ...) redirect
+# $SYNAPSE_LOG_DIR for the length of one test. What got through was written
+# outside any one test: a freeze chain's timer firing after the test that armed
+# it had torn its redirect down. So this is set here, at import, before the
+# first test module is collected, and it stays set between tests.
+#
+# It is a default. A variable the operator already set is left alone, and a
+# test that sets or clears one in its body still gets what it asked for.
+# tests/test_session_scratch.py pins this, and names what it does not cover.
+
+def _give_the_session_its_own_folder():
+    names = {"SYNAPSE_LOG_DIR": "logs", "SYNAPSE_BRIDGE_FILE": "bridge.json"}
+    if all(os.environ.get(name, "").strip() for name in names):
+        return None
+    import atexit
+    import shutil
+    import tempfile
+
+    scratch = tempfile.mkdtemp(prefix="synapse-tests-")
+    for name, leaf in names.items():
+        if not os.environ.get(name, "").strip():
+            os.environ[name] = os.path.join(scratch, leaf)
+
+    def _remove():
+        # The rotating log handler holds its file open; on Windows the folder
+        # cannot go until it lets go.
+        logfile = sys.modules.get("synapse.core.logfile")
+        if logfile is not None:
+            try:
+                logfile.reset_file_logging()
+            except Exception:
+                pass
+        shutil.rmtree(scratch, ignore_errors=True)
+
+    atexit.register(_remove)
+    return scratch
+
+
+SESSION_SCRATCH = _give_the_session_its_own_folder()
+
+
+# ---------------------------------------------------------------------------
 # Single-source build constants (runway §1.3 — the dual-build H21/H22 axis)
 # ---------------------------------------------------------------------------
 # Tests that pin against the RUNNING build parametrize on HOUDINI_BUILD.
