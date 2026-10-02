@@ -2388,8 +2388,17 @@ class SynapsePanel(QtWidgets.QWidget):
         connection.provider._route_reason = decision.reason
         return connection
 
+    # A tool is credited as a change when its name carries one of these.
+    # "trail" and "assemble" joined on 10/2: synapse_spatial_trail writes a
+    # node and matched none, so a turn that drew the path showed no receipt and
+    # no REVERT (the D6 GUI test); synapse_solaris_assemble_chain had the same
+    # gap. tests/panel/test_turn_receipt_credit.py pins every builder the
+    # worker may call against this list. It is still a name heuristic: other
+    # changing tools go uncredited, and crediting from the undo stack instead
+    # of from names is the fix that is not made here.
     _MUTATORS = ("create", "set_", "assign", "build", "wire", "connect",
-                 "render", "author", "delete", "apply", "configure")
+                 "render", "author", "delete", "apply", "configure",
+                 "trail", "assemble")
 
     def _turn_evidence(self):
         """(credit, flags, paths) from what the turn actually did.
