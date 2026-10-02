@@ -836,6 +836,54 @@ def test_turn_receipt_offers_revert_on_chat():
             p.close()
 
 
+def test_turn_receipt_goes_after_the_artists_own_undo():
+    """STALERECEIPT (the recorded GUI check, 2026-10-02): after Edit > Undo the
+    receipt stayed and offered to revert a change no longer in the scene. The
+    two-second context read carries the undo history's labels; the receipt goes
+    when they no longer hold the turn, and stays while the turn is still there
+    under whatever the artist did next. The real widgets, the real slot."""
+    from unittest import mock
+    from synapse.server import session_store
+    before = ("Artist: create light", "Load scene")
+    after = ("SYNAPSE: Draw camera path",) + before
+    scene = {"selected_nodes": [], "current_network": "", "scene_file": "/proj/shot.hip", "frame": 7.0}
+
+    def reverts(panel):
+        return [b for b in _chat_face(panel).findChildren(QtWidgets.QAbstractButton)
+                if b.isVisible() and "REVERT" in b.text()]
+
+    p = _panel("expert")
+    try:
+        p._start_worker = lambda: None
+        p._set_busy(True)
+        p._on_tool_status("synapse_spatial_trail", "running", "")
+        p._on_tool_status("synapse_spatial_trail", "done", "")
+        with mock.patch.object(session_store, "save_conversation", lambda *a, **k: True):
+            p._on_done()
+        _app().processEvents()
+        assert len(reverts(p)) == 1 and p._consent_slot.isVisible()
+        # This file's hou is a bare module, so _on_done read no undo history.
+        # Give the turn the record a real session leaves.
+        p._turn_undo_before, p._turn_undo_after = before, after
+
+        for labels in (None, after, ("Change Selection",) + after):
+            p._apply_context(dict(scene, undo_labels=labels))
+            _app().processEvents()
+            assert len(reverts(p)) == 1, labels            # still on the stack, or not readable
+        p._apply_context(scene)                            # an older caller's context: no labels
+        _app().processEvents()
+        assert len(reverts(p)) == 1
+        assert p._ctx_label.text() == "shot.hip · f7"       # the ribbon still renders
+
+        p._apply_context(dict(scene, undo_labels=before))  # the artist's own Ctrl+Z
+        _app().processEvents()
+        assert reverts(p) == [] and not p._consent_slot.isVisible()
+        assert p._turn_undo_after == after                 # the record stays; REVERT's refusal is the net
+        assert p._ctx_label.text() == "shot.hip · f7"
+    finally:
+        p.close()
+
+
 # ---------------------------------------------------------------------- W7
 def test_wordmark_lockup_measured():
     """Joe's addendum: 'The SYNAPSE title needs to be 1pt larger and 5px

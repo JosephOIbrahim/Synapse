@@ -1725,6 +1725,41 @@ class SynapsePanel(QtWidgets.QWidget):
             receipt.hide()
         self._sync_consent_slot()
 
+    def _retire_stale_receipt(self, ctx):
+        """Hide the turn receipt once Houdini's undo history no longer holds
+        the turn. Returns True when it hid one.
+
+        STALERECEIPT (the recorded GUI check, 2026-10-02): after the artist's
+        own Edit > Undo the receipt stayed, offering to revert a change that
+        was no longer in the scene. ``ctx`` is the two-second context read,
+        which carries the history's labels (``undo_labels``); the comparison is
+        turn_revert's, the one REVERT makes before it undoes anything.
+
+        It hides, and nothing else: no undo, no message, and the turn's two
+        snapshots stay, so a REVERT click that lands first still refuses in its
+        own words. Only a readable history is evidence: no labels, or a turn
+        with no record, hides nothing. An entry on top of the turn (a click in
+        the network editor) hides nothing either. A redo does not bring the
+        receipt back.
+
+        The labels were read a moment before this runs. A read from before a
+        turn, delivered after that turn's receipt went up, would retire the new
+        receipt; the read is queued ahead of anything the turn queues, so that
+        takes a thread held up for the whole of the turn's own work.
+        """
+        from synapse.panel import turn_revert
+        receipt = getattr(self, "_turn_receipt", None)
+        if receipt is None or receipt.isHidden():
+            return False
+        labels = ctx.get("undo_labels") if isinstance(ctx, dict) else None
+        after = getattr(self, "_turn_undo_after", None)
+        if labels is None or not isinstance(after, tuple):
+            return False
+        if not turn_revert.turn_gone(getattr(self, "_turn_undo_before", None), after, tuple(labels)):
+            return False
+        self._hide_turn_receipt()
+        return True
+
     def _build_work_face(self):
         """Work — the walk-away glance AND the payoff, on one surface (v9 fold).
 
@@ -4393,7 +4428,8 @@ class SynapsePanel(QtWidgets.QWidget):
         is the ONLY place the tick touches Qt widgets. ``ctx`` is the dict from
         ``ws_bridge._gather_context_on_main_thread`` — keys ``selected_nodes``
         (node paths), ``current_network``, ``scene_file`` (full path), ``frame``
-        (float). The ribbon/strip content is byte-identical to the former inline
+        (float), and ``undo_labels`` (the undo history, for the turn receipt
+        only). The ribbon/strip content is byte-identical to the former inline
         computation: ``scene_file`` basename == ``hipFile.basename()`` and the
         first selection's parent path == ``sel[0].parent().path()`` were both
         confirmed on live H22.0.400 (W2-S5 probe).
@@ -4442,6 +4478,12 @@ class SynapsePanel(QtWidgets.QWidget):
                     "API gate stale: %s" % self._gate_stale_reason)
         except Exception:
             pass
+        # STALERECEIPT: the same read carries the undo history's labels. A
+        # block of its own, so a failure here never costs the ribbon above.
+        try:
+            self._retire_stale_receipt(ctx)
+        except Exception as exc:  # noqa: BLE001 -- the receipt stays; REVERT still refuses safely
+            logger.debug("stale receipt check failed: %s", exc)
         self._update_health_strip(conn, proj)
 
     def _update_health_strip(self, connection, project):

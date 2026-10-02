@@ -66,6 +66,9 @@ def _empty_context():
         "current_network": "",
         "scene_file": "",
         "frame": 1.0,
+        # The undo history's labels, next-to-undo first; None when unreadable.
+        # For the panel's turn receipt only (see _gather_context_on_main_thread).
+        "undo_labels": None,
     }
 
 
@@ -73,7 +76,13 @@ def _gather_context_on_main_thread():
     """Gather Houdini scene context. MUST run on the main thread.
 
     Returns a dict with keys: selected_nodes, current_network,
-    scene_file, frame.
+    scene_file, frame, undo_labels.
+
+    ``undo_labels`` is Houdini's undo history as ``hou.undos.undoLabels()``
+    gives it (a tuple, next-to-undo first), or None when undo is disabled or
+    cannot be read. The panel's turn receipt reads it on the two-second tick to
+    notice that the artist undid a turn by hand (STALERECEIPT, 2026-10-02). It
+    stays inside the panel: ``send_chat`` leaves it out of what it sends.
     """
     context = _empty_context()
     try:
@@ -99,6 +108,15 @@ def _gather_context_on_main_thread():
         context["frame"] = hou.frame()
     except Exception:
         pass
+
+    # A block of its own: the reads above leave together at the first one a
+    # host does not have, and the receipt's read must not go with them.
+    try:
+        from . import turn_revert
+        context["undo_labels"] = turn_revert.snapshot(turn_revert.hou_undos())
+    except Exception:
+        logger.debug("undo labels not read", exc_info=True)
+        context["undo_labels"] = None
 
     return context
 
@@ -375,6 +393,9 @@ class SynapseWSBridge(QThread):
         }
 
         if context:
+            if isinstance(context, dict):
+                # The undo history is the panel's own; it never rides a message.
+                context = {k: v for k, v in context.items() if k != "undo_labels"}
             payload["context"] = context
 
         msg_json = json.dumps(payload, sort_keys=True)

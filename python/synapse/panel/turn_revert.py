@@ -69,6 +69,25 @@ def turn_entries(before, after):
     return tuple(after[:added])
 
 
+def turn_gone(before, after, now) -> bool:
+    """True when the undo stack, read as ``now``, no longer holds the turn the
+    way the turn left it (``before`` -> ``after``).
+
+    That is what an artist's own undo does: the turn's step comes off the top
+    and ``now`` stops ending in ``after``. Newer entries on top of the turn (a
+    click in the network editor, a manual edit) do not make it gone: the step
+    is still there, under them. It is the comparison ``revert_turn`` makes
+    before it undoes anything, so the receipt and REVERT agree.
+
+    Only a readable history is evidence. A snapshot that is None, a turn whose
+    record is not a clean extension, and a turn that left no step on the stack
+    all answer False: nothing can be said to be gone.
+    """
+    if not turn_entries(before, after) or now is None:
+        return False
+    return turn_entries(after, now) is None
+
+
 def _refused(reason):
     return False, "REVERT refused: %s Nothing was changed. Ctrl+Z still works." % reason
 
@@ -88,12 +107,12 @@ def revert_turn(undos, before, after):
     now = snapshot(undos)
     if now is None:
         return _refused("undo is disabled or unreadable right now.")
-    if now != tuple(after):
-        extra = len(now) - len(after)
-        if extra > 0 and tuple(now[extra:]) == tuple(after):
-            return _refused("\"%s\" happened after that turn, and REVERT never undoes "
-                            "your own changes." % now[0])
+    newer = turn_entries(after, now)         # what sits on top of the turn now
+    if newer is None:
         return _refused("the undo history changed after that turn.")
+    if newer:
+        return _refused("\"%s\" happened after that turn, and REVERT never undoes "
+                        "your own changes." % newer[0])
     for expected in entries:
         try:
             top = tuple(undos.undoLabels())[:1]
