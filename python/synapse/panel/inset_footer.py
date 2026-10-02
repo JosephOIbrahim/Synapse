@@ -8,8 +8,13 @@ QtCore, QtGui, QtWidgets = c.QtCore, c.QtGui, c.QtWidgets
 class InsetFooter(QtWidgets.QWidget):
     """Three equal columns, then two or one when the actual labels need room.
 
-    An optional tail control takes one full-width row below the grid, spanning
-    the grid's outer edges (Render, 9/30). It never changes the column count.
+    An optional tail takes the row below the grid, across the grid's outer
+    edges. One control spans it (Render, 9/30). Several share it in equal cells
+    (Identify, Spatial, Render, 10/2): at three columns each cell sits on a
+    grid column, and the tail stays ONE row for as long as its own labels fit,
+    so the dock is no taller than with a single control. Only when they do not
+    fit does the tail wrap, by the rule the grid uses for itself. The tail
+    never changes the grid's column count.
 
     Connection evidence and every control's existing signal connections belong
     to the panel, not to this layout.
@@ -21,10 +26,15 @@ class InsetFooter(QtWidgets.QWidget):
         super().__init__(parent)
         self.setObjectName("DsInsetFooter")
         self.grid_controls = tuple(controls)
-        self.tail = tail
+        # tail: nothing, one widget (the 9/30 call), or the row's widgets in order.
+        if tail is None:
+            tail = ()
+        elif isinstance(tail, QtWidgets.QWidget):
+            tail = (tail,)
+        self.tail_controls = tuple(tail)
         # Every footer widget, tail last: styling, focus order and the panel's
         # shared connections use controls; the column grid uses grid_controls.
-        self.controls = self.grid_controls + (() if tail is None else (tail,))
+        self.controls = self.grid_controls + self.tail_controls
         self._gap = t.scaled(t.FOOTER_GAP, scale)
         self._height = t.scaled(t.FOOTER_HEIGHT, scale)
         self._padding = t.scaled(t.SPACE_SM, scale)
@@ -60,6 +70,32 @@ class InsetFooter(QtWidgets.QWidget):
                 return columns
         return 1
 
+    def _grid_geometry(self, width):
+        """(columns, cell, left, span): equal integer cells, the remainder
+        pixel split between the outer edges, and the grid's own outer span."""
+        columns = self.columns_for_width(width)
+        cell = max(0, (width - (columns - 1) * self._gap) // columns)
+        left = max(0, (width - columns * cell - (columns - 1) * self._gap) // 2)
+        return columns, cell, left, columns * cell + (columns - 1) * self._gap
+
+    def tail_columns_for_width(self, width):
+        """Tail cells per row: all of them while their own labels fit inside
+        the grid's span, then as many as do. 0 with no tail."""
+        count = len(self.tail_controls)
+        if count <= 1:
+            return count
+        span = self._grid_geometry(width)[3]
+        need = max(widget.fontMetrics().horizontalAdvance(widget.text())
+                   for widget in self.tail_controls) + 2 * self._padding + 2
+        for per_row in range(count, 1, -1):
+            if per_row * need + (per_row - 1) * self._gap <= span:
+                return per_row
+        return 1
+
+    def _tail_rows(self, width):
+        per_row = self.tail_columns_for_width(width)
+        return (len(self.tail_controls) + per_row - 1) // per_row if per_row else 0
+
     def sizeHint(self):
         width = 3 * self._cell_width() + 2 * self._gap
         return QtCore.QSize(width, self.heightForWidth(width))
@@ -72,7 +108,7 @@ class InsetFooter(QtWidgets.QWidget):
 
     def heightForWidth(self, width):
         columns = self.columns_for_width(width)
-        rows = (len(self.grid_controls) + columns - 1) // columns + (0 if self.tail is None else 1)
+        rows = (len(self.grid_controls) + columns - 1) // columns + self._tail_rows(width)
         return rows * self._height + (rows - 1) * self._gap
 
     def fit_width(self, width):
@@ -84,19 +120,33 @@ class InsetFooter(QtWidgets.QWidget):
         self._arrange(width)
 
     def _arrange(self, width):
-        columns = self._columns = self.columns_for_width(width)
         # Equal integer widths keep both lower controls identical even when
         # Qt has a remainder pixel. That remainder stays at the outer edges.
-        cell = max(0, (width - (columns - 1) * self._gap) // columns)
-        left = max(0, (width - columns * cell - (columns - 1) * self._gap) // 2)
+        columns, cell, left, span = self._grid_geometry(width)
+        self._columns = columns
         for index, widget in enumerate(self.grid_controls):
             row, column = divmod(index, columns)
             widget.setGeometry(left + column * (cell + self._gap),
                                row * (self._height + self._gap), cell, self._height)
-        if self.tail is not None:
-            row = (len(self.grid_controls) + columns - 1) // columns
-            self.tail.setGeometry(left, row * (self._height + self._gap),
-                                  columns * cell + (columns - 1) * self._gap, self._height)
+        if not self.tail_controls:
+            return
+        # The tail spans the grid's outer edges. Each of its rows shares that
+        # span in equal cells, so a row of `columns` cells lands on the grid's
+        # own columns and a lone control spans the grid (Render, 9/30). When a
+        # row cannot divide the span exactly, the spare pixels go into its
+        # first gaps: the cells stay equal and both outer edges stay exact.
+        per_row = self.tail_columns_for_width(width)
+        row = (len(self.grid_controls) + columns - 1) // columns
+        for start in range(0, len(self.tail_controls), per_row):
+            widgets = self.tail_controls[start:start + per_row]
+            count = len(widgets)
+            tail_cell = max(0, (span - (count - 1) * self._gap) // count)
+            spare = max(0, span - count * tail_cell - (count - 1) * self._gap)
+            x = left
+            for index, widget in enumerate(widgets):
+                widget.setGeometry(x, row * (self._height + self._gap), tail_cell, self._height)
+                x += tail_cell + self._gap + (1 if index < spare else 0)
+            row += 1
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -198,9 +248,15 @@ def install_footer(panel, column=None):
             while layout.count():
                 layout.takeAt(0)
             layout.deleteLater()
-    # Render rides below the grid as its own full-width row (Joe, 9/30).
-    footer = FooterViewport(controls, scale=panel._chrome_scale,
-                            tail=getattr(panel, "_render_btn", None))
+    # The last row (Joe, 10/2): the verbs that act on the scene with no
+    # conversation turn -- Identify, Spatial, Render -- one cell each on the
+    # grid's columns. A panel without one of them keeps the rest; Render alone
+    # is the 9/30 full-width row.
+    tail = tuple(control for control in (getattr(panel, "_identify_btn", None),
+                                         getattr(panel, "_spatial_btn", None),
+                                         getattr(panel, "_render_btn", None))
+                 if control is not None)
+    footer = FooterViewport(controls, scale=panel._chrome_scale, tail=tail or None)
     if old_row is not None:
         column.removeWidget(old_row)
         old_row.hide()

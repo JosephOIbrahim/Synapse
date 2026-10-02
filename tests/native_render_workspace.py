@@ -502,7 +502,7 @@ def check_panel_routes():
         panel._worker = None
         panel._location_timer.stop()
         panel.hide()  # Do not run the skipped live startup's close handler.
-    CHECKS.append("actual panel /render, full-width Render footer and Commands routes while model busy; draft preserved; zero admission/model calls")
+    CHECKS.append("actual panel /render, Render in the footer's last row and Commands routes while model busy; draft preserved; zero admission/model calls")
     return panel
 
 

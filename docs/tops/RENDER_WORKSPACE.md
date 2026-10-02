@@ -1,6 +1,6 @@
 # Rendering from SYNAPSE
 
-Click **Render**, the full-width row at the bottom of the panel, find **/render** in Commands, or type `/render`. The view opens beside your work and preserves a conversation draft when opened with a button or Commands. A model connection is not required. You can check a render while another SYNAPSE conversation is busy.
+Click **Render**, in the last row at the bottom of the panel, find **/render** in Commands, or type `/render`. The view opens beside your work and preserves a conversation draft when opened with a button or Commands. A model connection is not required. You can check a render while another SYNAPSE conversation is busy.
 
 Save the Houdini scene first. Select its Solaris output, choose the frames and destination, then press **Prepare render**. SYNAPSE makes a separate package of the scene and textures. Preparation does not render. When preparation finishes, review the source, exact frames and settings, then press **Render N frames**.
 

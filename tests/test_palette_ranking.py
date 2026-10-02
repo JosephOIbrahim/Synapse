@@ -102,7 +102,7 @@ def test_the_five_panel_answered_commands_are_marked_at_the_one_build_path():
 
     assert PANEL_ANSWERED_COMMANDS == frozenset({
         "/render", "/events", "/saved-recipes", "/lookdev-suggestion",
-        "/restore-session", "/identify"})
+        "/restore-session", "/identify", "/spatial"})
     marked = {e.command for e in build_palette_entries(force_rebuild=True)
               if getattr(e, "panel_answered", False)}
     # AMENDED BY DECLARATION (PNL-L3B). L3a asserted

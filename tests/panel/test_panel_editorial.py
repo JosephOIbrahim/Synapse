@@ -31,7 +31,8 @@ def settle():
 
 
 def render_row(scale):
-    """The footer's full-width Render row (9/30) adds exactly one row: its height plus the grid gap."""
+    """The footer's last row (Render alone on 9/30; Identify, Spatial, Render since 10/2)
+    adds exactly one row while its labels fit one row: its height plus the grid gap."""
     from synapse.panel.designsystem import tokens as t
     return t.scaled(t.FOOTER_HEIGHT, scale) + t.scaled(t.FOOTER_GAP, scale)
 
@@ -655,16 +656,38 @@ def test_composer_footer_insets_span_both_field_edges(make_panel, scale, width):
     assert all(panel.rect().contains(bounds) for bounds in [left, right_hint])
     for button in links:
         expose_footer(panel, button)
-    # Render is the footer's full-width last row: it spans the grid's outer
-    # edges below every other control and stays reachable at every scale.
-    grid = [box(widget, panel) for widget in panel._inset_footer.grid.grid_controls]
-    render = box(panel._render_btn, panel)
-    assert panel._render_btn.text() == "Render" and panel._render_btn.isVisible()
-    assert render.left() == min(b.left() for b in grid) and render.right() == max(b.right() for b in grid)
-    assert render.top() > max(b.bottom() for b in grid)
-    assert render.height() == panel._commands_btn.height()
-    assert render.contains(text_box(panel._render_btn, panel))
-    expose_footer(panel, panel._render_btn)
+    # The footer's last row is Identify, Spatial, Render (10/2). It sits below
+    # every grid control, ends on the grid's outer edges, shows every label
+    # whole and stays reachable at every scale. While the three labels fit it
+    # is ONE row of equal cells; when they do not, it wraps and each row still
+    # shares the span equally, so a lone control spans the grid as Render did.
+    footer = panel._inset_footer.grid
+    grid = [box(widget, panel) for widget in footer.grid_controls]
+    tail = (panel._identify_btn, panel._spatial_btn, panel._render_btn)
+    assert footer.tail_controls == tail
+    assert [widget.text() for widget in tail] == ["Identify", "Spatial", "Render"]
+    assert all(widget.isVisible() for widget in tail)
+    tail_boxes = [box(widget, panel) for widget in tail]
+    left_edge, right_edge = min(b.left() for b in grid), max(b.right() for b in grid)
+    tail_rows = {}
+    for bounds in tail_boxes:
+        tail_rows.setdefault(bounds.top(), []).append(bounds)
+    assert len(tail_rows) == footer._tail_rows(footer.width())
+    for top, cells in tail_rows.items():
+        assert top > max(b.bottom() for b in grid)
+        assert min(b.left() for b in cells) == left_edge
+        assert max(b.right() for b in cells) == right_edge
+        assert len({b.width() for b in cells}) == 1
+    assert all(b.height() == panel._commands_btn.height() for b in tail_boxes)
+    assert all(b.contains(text_box(w, panel)) for w, b in zip(tail, tail_boxes))
+    assert all(not a.intersects(b) for i, a in enumerate(tail_boxes) for b in tail_boxes[i + 1:])
+    if footer._columns == 3:
+        # Three columns: one row, and each cell sits on the grid column above it.
+        assert len(tail_rows) == 1
+        assert [b.left() for b in tail_boxes] == [b.left() for b in grid[:3]]
+        assert [b.right() for b in tail_boxes] == [b.right() for b in grid[:3]]
+    for widget in tail:
+        expose_footer(panel, widget)
 
 
 @pytest.mark.parametrize("scale,width", [(1.0, 340), (1.25, 480), (2.25, 720)])
@@ -815,11 +838,12 @@ def test_inset_footer_reflows_live_labels_without_resizing(make_panel, scale, wi
         settle()
         controls = panel._inset_footer.controls
         grid = panel._inset_footer.grid.grid_controls
-        assert len(grid) == 6 and controls[:-1] == grid and controls[-1] is panel._render_btn
-        assert panel._render_btn.text() == "Render"
+        tail = (panel._identify_btn, panel._spatial_btn, panel._render_btn)
+        assert len(grid) == 6 and controls[:6] == grid and controls[6:] == tail
+        assert [widget.text() for widget in tail] == ["Identify", "Spatial", "Render"]
         boxes = [box(widget, panel) for widget in controls]
         assert panel.width() == original_width
-        assert len({bounds.width() for bounds in boxes[:-1]}) == 1
+        assert len({bounds.width() for bounds in boxes[:6]}) == 1
         assert all(widget.isVisible() for widget in controls)
         assert all(bounds.contains(text_box(widget, panel)) for widget, bounds in zip(controls, boxes))
         # With the taller first-run composer, enlarged text in a narrow
@@ -835,11 +859,14 @@ def test_inset_footer_reflows_live_labels_without_resizing(make_panel, scale, wi
             assert boxes[3].center().x() == boxes[0].center().x()
             assert boxes[4].center().x() == boxes[1].center().x()
             assert boxes[5].center().x() == boxes[2].center().x()
-        assert boxes[5].right() == max(bounds.right() for bounds in boxes[:-1])
-        # Render spans the grid on its own row below it, whatever the column count.
-        assert boxes[-1].left() == min(bounds.left() for bounds in boxes[:-1])
-        assert boxes[-1].right() == boxes[5].right()
-        assert boxes[-1].top() > max(bounds.bottom() for bounds in boxes[:-1])
+            # The row of three sits on the same three columns.
+            assert [b.center().x() for b in boxes[6:]] == [b.center().x() for b in boxes[:3]]
+        assert boxes[5].right() == max(bounds.right() for bounds in boxes[:6])
+        # The last row sits below the grid and ends on the grid's outer edges,
+        # whatever the column count.
+        assert min(b.left() for b in boxes[6:]) == min(b.left() for b in boxes[:6])
+        assert max(b.right() for b in boxes[6:]) == boxes[5].right()
+        assert min(b.top() for b in boxes[6:]) > max(b.bottom() for b in boxes[:6])
 
 
 def test_install_insets_preserves_open_panel_objects_and_connections(make_panel, monkeypatch):
@@ -847,8 +874,9 @@ def test_install_insets_preserves_open_panel_objects_and_connections(make_panel,
     from synapse.panel.synapse_panel import SynapsePanel
     from synapse.panel.designsystem import components as c
     calls = []
-    for method in ("_open_palette", "_open_saved_recipes",
-                   "_open_notifications", "_open_connections", "_open_render_workspace"):
+    # _on_spatial is patched with the rest: a real click would run the trail tool.
+    for method in ("_open_palette", "_open_saved_recipes", "_open_notifications",
+                   "_open_connections", "_on_spatial", "_open_render_workspace"):
         monkeypatch.setattr(SynapsePanel, method, lambda self, checked=False, name=method: calls.append(name))
     panel = make_panel(1.25, 720, 1100)
     panel._input.setPlainText("Preserve this draft")
@@ -885,9 +913,12 @@ def test_install_insets_preserves_open_panel_objects_and_connections(make_panel,
     for button in controls:
         if isinstance(button, QtWidgets.QPushButton):
             button.click()
-    assert calls == ["_open_palette", "_open_saved_recipes",
-                     "_open_notifications", "_open_connections", "_open_render_workspace"]
-    assert panel._inset_footer.controls[-1] is panel._render_btn
+    # Identify is disabled with nothing selected, so its click is not in the list.
+    assert not panel._identify_btn.isEnabled()
+    assert calls == ["_open_palette", "_open_saved_recipes", "_open_notifications",
+                     "_open_connections", "_on_spatial", "_open_render_workspace"]
+    assert panel._inset_footer.controls[-3:] == (
+        panel._identify_btn, panel._spatial_btn, panel._render_btn)
     assert not box(panel._attach_btn, panel).intersects(box(panel._send_btn, panel))
 
 
@@ -904,8 +935,8 @@ def test_short_footer_scrolls_keyboard_focus_and_recovers_full_grid(make_panel):
         # focused button into view automatically without a custom click path.
         panel._commands_btn.setFocus()
         settle()
-        for button in (panel._commands_btn, panel._recipes_btn,
-                       panel._events_btn, panel._connection_status, panel._render_btn):
+        for button in (panel._commands_btn, panel._recipes_btn, panel._events_btn,
+                       panel._connection_status, panel._spatial_btn, panel._render_btn):
             for _ in range(20):
                 if _APP.focusWidget() is button:
                     break

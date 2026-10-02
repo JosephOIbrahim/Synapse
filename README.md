@@ -56,7 +56,7 @@ The normal panel worker blocks node deletion, arbitrary Python/VEX, rendering, e
 
 ## See what nodes do
 
-Select one or more nodes in a network editor. Then click **Identify** at the top of the panel, or send `/identify`.
+Select one or more nodes in a network editor. Then click **Identify** at the bottom of the panel, or send `/identify`.
 
 A short bubble appears beside each node, drawn over the network editor. It says what the node does, which parameters you changed, and whether the node has an error, a warning or a bypass.
 
@@ -90,7 +90,8 @@ Each click shows up to 60 bubbles. The [release notes](docs/releases/v5.85.0.md)
 | Add my JEV / TypeSafe key | **Connect models → JEV / TypeSafe key setup → Save session key**. [Setup guide](docs/getting-started/jev-setup.md). |
 | Make more room for my prompt | Drag **Resize** above the input box. |
 | Find an action | **Commands** below the input box. |
-| See what selected nodes do | **Identify** at the top of the panel, or send `/identify`. |
+| See what selected nodes do | **Identify** at the bottom of the panel, or send `/identify`. |
+| Read how the shot's camera moves | **Spatial** at the bottom of the panel, or send `/spatial`. It draws the path in one undo step, with no model call. |
 | Import a Marble world or Gaussian `.ply` | **World Labs** beside **Cloud relay**. [Import flow and limits](docs/architecture/overview.md#world-labs-import). |
 | Connect the SideFX help library | Follow **[Build and connect](docs/studio/SIDEFX_LIBRARY.md#build-and-connect)**; Scout searches the published local index. |
 | Check a connection | **Connect**, then **Doctor**. |

@@ -222,6 +222,14 @@ def _identify_run_on_main_default(fn):
     return run_on_main(fn)
 
 
+def _spatial_launch_default(fn):
+    """Run the Spatial worker on a daemon thread. The tool call waits for
+    Houdini's main thread, and waiting for it ON the Qt thread would be the
+    deadlock the executor's off-main path exists to avoid."""
+    import threading
+    threading.Thread(target=fn, name="synapse-spatial", daemon=True).start()
+
+
 def _identify_network_editor(network_path=None):
     """The network editor Identify draws its bubbles on; None without a UI.
 
@@ -1258,24 +1266,16 @@ class SynapsePanel(QtWidgets.QWidget):
         self._doctor_btn.setToolTip("Run synapse_doctor locally · no model request or scene changes")
         self._doctor_btn.clicked.connect(self._open_doctor)
         self._doctor_btn.clicked.connect(self._dismiss_welcome)
-        # Identify (BP11-IDSURF): draw a zero-token bubble under each selected
-        # node from exact local sources. Toggles show/clear; a model turn is
-        # never involved. Disabled with a reason when nothing is selected
-        # (_refresh_identify_enabled, driven by the selection callback).
-        self._identify_btn = c.Button("Identify", variant="ghost")
-        self._identify_btn.setAccessibleName("Identify selected nodes")
-        self._identify_btn.clicked.connect(self._on_identify)
-        self._identify_btn.clicked.connect(self._dismiss_welcome)
+        # Identify left the rail on 10/2 (Joe): it sits in the footer's last
+        # row beside Spatial and Render (_build_input), so this row carries the
+        # sentence and the two remedies, in the cells _fit_panel_chrome uses.
         bot.addWidget(self._header_status, 0, 0)
         bot.setColumnStretch(1, 1)
         bot.addWidget(self._connect_btn, 0, 2)
         bot.setColumnMinimumWidth(3, t.scaled(t.SPACE_12, self._chrome_scale))
         bot.addWidget(self._doctor_btn, 0, 4)
-        bot.setColumnMinimumWidth(5, t.scaled(t.SPACE_12, self._chrome_scale))
-        bot.addWidget(self._identify_btn, 0, 6)
-        bot.addWidget(overflow, 0, 7)
+        bot.addWidget(overflow, 0, 5)
         col.addWidget(row)
-        self._refresh_identify_enabled()
 
         # -- hidden owners: constructed, written to, read by the overflow;
         #    in NO layout, never shown. ----------------------------------
@@ -1332,7 +1332,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # verbs and take the LABEL tracked font (mono) - the same applier as
         # _verb and the CHAT / TOKEN pills - so the chrome siblings match
         # byte-for-byte; no rhythm_role="label" on top of it.
-        for control in (self._doctor_btn, self._connect_btn, self._identify_btn, self._corpus_btn, self._help_btn, overflow):
+        for control in (self._doctor_btn, self._connect_btn, self._corpus_btn, self._help_btn, overflow):
             control.setObjectName("DsVerb")
             # PNL-L4 (ruling R2-A1): quiet by FORM. This read as words in a
             # typewriter face; mono is for data the eye aligns character by
@@ -2783,13 +2783,32 @@ class SynapsePanel(QtWidgets.QWidget):
         self._connection_status.setObjectName("DsFooterLink")
         c.apply_font_role(self._connection_status, "body", self._chrome_scale)
         self._connection_status.clicked.connect(self._open_connections)
-        # Joe, 9/30: Render is back, as the footer's last, full-width row. It
-        # opens the same render workspace as Commands -> Open the render workspace.
+        # Joe, 10/2: the footer's last row is the verbs that act on the scene
+        # with no conversation turn -- Identify, Spatial, Render -- one cell
+        # each on the grid's columns (arrangement B, the row of three).
+        #
+        # Identify (BP11-IDSURF) moved here from the rail: a zero-token bubble
+        # under each selected node from exact local sources. Disabled with a
+        # reason when nothing is selected (_refresh_identify_enabled, driven by
+        # the selection callback).
+        self._identify_btn = c.Button("Identify", variant="ghost")
+        self._identify_btn.setAccessibleName("Identify selected nodes")
+        self._identify_btn.clicked.connect(self._on_identify)
+        # Spatial (D6 / R-10, R-11): read the camera's move and draw its path
+        # with the tool the model calls, and no model turn (_run_spatial).
+        from synapse.panel import spatial_action
+        self._spatial_btn = c.Button("Spatial", variant="ghost")
+        self._spatial_btn.setAccessibleName("Read the shot and draw the camera path")
+        self._spatial_btn.setToolTip(spatial_action.TOOLTIP)
+        self._spatial_btn.clicked.connect(self._on_spatial)
+        # Render (Joe, 9/30) opens the same render workspace as Commands ->
+        # Open the render workspace.
         self._render_btn = c.Button("Render", variant="ghost")
         self._render_btn.setToolTip("Prepare a saved scene, render with TOPs and return to recent jobs")
         self._render_btn.clicked.connect(self._open_render_workspace)
         from synapse.panel.inset_footer import install_footer
         install_footer(self, col)
+        self._refresh_identify_enabled()
         for button in (attach, self._send_btn, *self._inset_footer.controls):
             button.clicked.connect(self._dismiss_welcome)
         # CRIT.md 2026-09-15 #18 (P8 · dead weight): the "Session · Revoke"
@@ -3457,6 +3476,118 @@ class SynapsePanel(QtWidgets.QWidget):
             run_on_main(lambda: self._identify_say(reason))
         return result
 
+    # -- Spatial (D6 / R-10, R-11) ----------------------------------------
+    def _on_spatial(self):
+        """Footer click: read the shot and draw the camera's path."""
+        self._run_spatial()
+
+    def _spatial_say(self, text):
+        """Post a Spatial notice in the chat; a panel without a chat skips it."""
+        chat = getattr(self, "_chat", None)
+        if chat is None:
+            logger.debug("Spatial: no chat to show %r", text)
+            return
+        chat.append_system_message(text)
+
+    def _run_spatial(self):
+        """Read the camera's move and draw its path, answered by the panel.
+
+        The same tool the model calls (``synapse_spatial_trail``), through the
+        panel's own executor, so the change is the bridge's one undo step with
+        its integrity record. A model turn is never involved: the answer is the
+        sentence the tool composed from measured fields.
+
+        The click writes one node. It is refused while a task is running,
+        because its undo step would land inside that turn's and REVERT would
+        then refuse both. Returns True when the read was started.
+
+        Threading: the call runs on a daemon thread (the executor marshals the
+        handler onto Houdini's main thread by the deferred route, with the
+        tool's timeout), and the result comes back to the Qt thread through
+        ``run_on_main`` -- the Identify seams, injectable the same way.
+        """
+        from synapse.panel import spatial_action, turn_revert
+        if getattr(self, "_spatial_running", False):
+            self._spatial_say(spatial_action.RUNNING)
+            return False
+        worker = getattr(self, "_worker", None)
+        if _ACTIVE_PANEL_WORKERS or (worker is not None and hasattr(worker, "isRunning")
+                                     and worker.isRunning()):
+            self._spatial_say(spatial_action.BUSY)
+            return False
+        # A new action, a new record: the last receipt goes, and the undo stack
+        # as it stands now is what REVERT later measures the click against.
+        self._hide_turn_receipt()
+        self._turn_undo_before = turn_revert.snapshot(turn_revert.hou_undos())
+        self._turn_undo_after = None
+        # One read at a time. A flag, not a disabled control: the worker thread
+        # can clear a flag if the Qt thread never hears back, and it could not
+        # re-enable a button from there.
+        self._spatial_running = True
+        launch = getattr(self, "_spatial_launch", None) or _spatial_launch_default
+        launch(self._spatial_worker)
+        return True
+
+    def _spatial_worker(self):
+        """Worker body, off the Qt thread: run the tool, then hand its result
+        to the Qt thread. A call that raises is reported as the tool's error."""
+        from synapse.panel import spatial_action
+        call = getattr(self, "_spatial_call", None) or spatial_action.call_trail
+        run_on_main = (getattr(self, "_spatial_run_on_main", None)
+                       or _identify_run_on_main_default)
+        try:
+            result, error = call()
+        except Exception as exc:  # noqa: BLE001 -- reported in the chat, never swallowed
+            logger.exception("Spatial: the trail call raised")
+            result, error = None, "%s: %s" % (type(exc).__name__, exc)
+        try:
+            return run_on_main(lambda: self._spatial_done(result, error))
+        except Exception:  # noqa: BLE001 -- the Qt thread never got the result
+            logger.exception("Spatial: the result could not be shown")
+            self._spatial_running = False
+            return None
+
+    def _spatial_done(self, result, error):
+        """Qt thread: show the answer, the receipt, and give the model's history
+        the click. An error shows the tool's reason and leaves no receipt."""
+        from synapse.panel import spatial_action, turn_revert
+        self._spatial_running = False
+        # The undo stack as the click left it: the exact state REVERT requires
+        # to still be on top before it undoes anything (turn_revert).
+        self._turn_undo_after = turn_revert.snapshot(turn_revert.hou_undos())
+        if error or not isinstance(result, dict):
+            self._hide_turn_receipt()
+            self._spatial_say(spatial_action.error_text(error))
+            return False
+        text = spatial_action.answer_text(result)
+        self._chat.append_synapse_message(text, signed=spatial_action.SIGNED)
+        if spatial_action.changed_scene(result):
+            self._show_turn_receipt(1)
+        else:
+            self._hide_turn_receipt()
+        self._spatial_remember(text)
+        return True
+
+    def _spatial_remember(self, text):
+        """Give the model's history the click as one ask-and-answer pair, so a
+        follow-up question can refer to the path, and save it as _on_done saves
+        a turn. Skipped when the history does not end on an answer: two user
+        messages in a row are not a conversation a provider accepts."""
+        from synapse.panel import spatial_action
+        messages = getattr(self, "_messages", None)
+        if messages is None:
+            return
+        if messages and messages[-1].get("role") != "assistant":
+            logger.debug("Spatial: history does not end on an answer; click not recorded")
+            return
+        messages.append({"role": "user", "content": spatial_action.HISTORY_ASK})
+        messages.append({"role": "assistant", "content": text + spatial_action.HISTORY_NOTE})
+        try:
+            from synapse.server import session_store as _session_store
+            _session_store.save_conversation(messages)
+        except Exception as exc:  # noqa: BLE001 -- persistence is best-effort, as in _on_done
+            logger.debug("Spatial: conversation not saved: %s", exc)
+
     def _open_selection_inspector(self):
         from .selection_inspector import SelectionInspectorDialog
         dialog = getattr(self, "_selection_inspector", None)
@@ -3572,6 +3703,12 @@ class SynapsePanel(QtWidgets.QWidget):
         if _low in ("/identify", "/identify off"):
             self._run_identify("clear" if _low == "/identify off" else "toggle")
             return True
+        # D6 / R-10: /spatial is the Spatial control's twin, for a composer
+        # that is in frame when the footer is not. Panel-answered: the trail
+        # tool runs with no model turn. It writes one node, so _run_spatial
+        # itself refuses while a task is running; a refused send keeps its draft.
+        if _low == "/spatial":
+            return bool(self._run_spatial())
         if _ACTIVE_PANEL_WORKERS:
             self._chat.append_system_message(
                 "A SYNAPSE panel task is still running on this workstation. Wait for it to finish before starting another.")

@@ -197,3 +197,75 @@ def test_render_tail_spans_the_grid_on_its_own_last_row(app, width):
     assert all(not tail.intersects(box) for box in boxes)
     footer.close()
     plain.close()
+
+
+@pytest.mark.parametrize("width", [330, 640, 1100])
+def test_tail_row_of_three_shares_the_grids_span_and_adds_one_row(app, width):
+    """Identify, Spatial, Render (10/2): one row while the three labels fit,
+    across the grid's outer edges, on the grid's columns when it shows three."""
+    titles = ("Commands", "Saved networks", "Updates", "Cloud relay", "World Labs", "Connect models")
+    controls = [c.Button(title) for title in titles]
+    tail = [c.Button(title) for title in ("Identify", "Spatial", "Render")]
+    footer = InsetFooter(controls, scale=1.0, tail=tail)
+    single = InsetFooter([c.Button(title) for title in titles], scale=1.0, tail=c.Button("Render"))
+    footer.resize(width, footer.heightForWidth(width))
+    footer.show()
+    app.processEvents()
+    boxes = [button.geometry() for button in controls]
+    cells = [button.geometry() for button in tail]
+    assert footer.controls == tuple(controls) + tuple(tail)
+    assert footer.tail_controls == tuple(tail)
+    # The tail never changes the grid's column count, and three short labels
+    # cost no more height than the one full-width Render row did.
+    assert footer.columns_for_width(width) == single.columns_for_width(width)
+    assert footer.tail_columns_for_width(width) == 3
+    assert footer.heightForWidth(width) == single.heightForWidth(width)
+    assert len({cell.top() for cell in cells}) == 1
+    assert cells[0].top() > max(box.bottom() for box in boxes)
+    assert cells[0].left() == min(box.left() for box in boxes)
+    assert cells[-1].right() == max(box.right() for box in boxes)
+    assert len({cell.width() for cell in cells}) == 1
+    assert all(cell.height() == boxes[0].height() for cell in cells)
+    assert all(footer.rect().contains(cell) for cell in cells)
+    assert all(not a.intersects(b) for i, a in enumerate(cells) for b in cells[i + 1:])
+    assert all(not cell.intersects(box) for cell in cells for box in boxes)
+    for button, cell in zip(tail, cells):
+        assert cell.width() >= button.fontMetrics().horizontalAdvance(button.text()) + 2 * footer._padding
+    if footer._columns == 3:
+        assert [cell.left() for cell in cells] == [box.left() for box in boxes[:3]]
+        assert [cell.right() for cell in cells] == [box.right() for box in boxes[:3]]
+    footer.close()
+    single.close()
+
+
+def test_tail_wraps_only_when_its_own_labels_do_not_fit_one_row(app):
+    """Enlarged text in a narrow dock: the three labels no longer fit, so the
+    tail wraps by the grid's own rule and a lone control spans the grid."""
+    titles = ("Commands", "Saved networks", "Updates", "Cloud relay", "World Labs", "Connect models")
+    controls = [c.Button(title) for title in titles]
+    tail = [c.Button(title) for title in ("Identify", "Spatial", "Render")]
+    footer = InsetFooter(controls, scale=1.0, tail=tail)
+    need = max(b.fontMetrics().horizontalAdvance(b.text()) for b in tail) + 2 * footer._padding + 2
+    two_fit = 2 * need + footer._gap            # room for two cells, not three
+    one_fits = need                             # room for one
+    for width, per_row, rows in ((two_fit, 2, 2), (one_fits, 1, 3)):
+        footer.resize(width, footer.heightForWidth(width))
+        footer.show()
+        app.processEvents()
+        assert footer.tail_columns_for_width(width) == per_row
+        assert footer._tail_rows(width) == rows
+        grid = [button.geometry() for button in controls]
+        cells = [button.geometry() for button in tail]
+        left, right = min(b.left() for b in grid), max(b.right() for b in grid)
+        by_row = {}
+        for cell in cells:
+            by_row.setdefault(cell.top(), []).append(cell)
+        assert len(by_row) == rows
+        for top, row in by_row.items():
+            assert top > max(b.bottom() for b in grid)
+            assert min(c_.left() for c_ in row) == left and max(c_.right() for c_ in row) == right
+            assert len({c_.width() for c_ in row}) == 1
+        assert footer.rect().contains(cells[-1])
+        # Render, alone on the last row, spans the grid as it did on 9/30.
+        assert cells[-1].left() == left and cells[-1].right() == right
+    footer.close()
