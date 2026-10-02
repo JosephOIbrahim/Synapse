@@ -313,6 +313,7 @@ class ClaudeWorker(QThread):
             "task_id": getattr(getattr(self, "_model_scope", None), "task_id", None),
             "stop_reason": None,
             "outcome": "error",     # completed | stopped | error | cap_hit | truncated
+            "wrap_up": None,        # cap_hit only: answered | closed (see the last round below)
         }
         # test_first_session_panel.py execs this method's AST ALONE with only
         # USAGE_SINK / _MAX_TOOL_ITERATIONS / logger bound, so the loop body is a
@@ -326,6 +327,28 @@ class ClaudeWorker(QThread):
         # calls) used to be glued together ("stageinstead", "full picture.The
         # lane"). The first text of a later turn now starts a new paragraph.
         _narration = {"any": False, "this_turn": False}
+
+        # 10/2: the round cap used to end a turn on the model's narration of a
+        # tool call that never ran ("Let me check the collider..."), so the
+        # artist's reply stopped mid-thought. The last round now carries this
+        # directive in the system prompt (the one field every provider takes,
+        # and it leaves the history untouched), and a tool call that comes
+        # anyway is not executed: the turn closes with a line that says so.
+        # Locals, not module globals: test_first_session_panel execs this
+        # method alone with only USAGE_SINK / _MAX_TOOL_ITERATIONS / logger.
+        _last_round_directive = (
+            "This is the last model round for this request: its tool budget is "
+            "used up, so no tool will run. Do not call a tool. Answer the artist "
+            "now from the results above: what you did, what you did not do or "
+            "could not verify, and what to ask next.")
+
+        def _closing_line(narrated):
+            return ("I stopped here: this request used all %d of its tool rounds%s. "
+                    "Nothing changed after the last tool result. Send the request "
+                    "again to continue from the scene as it is now."
+                    % (_MAX_TOOL_ITERATIONS,
+                       ", so that last step did not run" if narrated
+                       else " before I could answer"))
 
         def _emit_token(text):
             if text and ledger["worker_first_token_ms"] is None and _worker_t0 is not None:
@@ -355,6 +378,7 @@ class ClaudeWorker(QThread):
             for iteration in range(_MAX_TOOL_ITERATIONS):
                 ledger["turns"] = iteration + 1
                 _narration["this_turn"] = False
+                last_round = iteration == _MAX_TOOL_ITERATIONS - 1
                 if self._abort:
                     return "stopped"
 
@@ -363,13 +387,17 @@ class ClaudeWorker(QThread):
                     if callable(begin_shadow):
                         begin_shadow()
 
+                system = self._system
+                if last_round and isinstance(system, str):
+                    system = (system + "\n\n" if system else "") + _last_round_directive
+
                 self.activity_changed.emit("Waiting for model response…")
                 stream_t0 = _perf() if _perf is not None else None
                 try:
                     stop_reason, content_blocks = self._provider.stream(
                         messages=self._messages,
                         tools=self._tools,
-                        system=self._system,
+                        system=system,
                         api_key=api_key,
                         emit_token=_emit_token,
                         should_abort=lambda: self._abort,
@@ -414,6 +442,27 @@ class ClaudeWorker(QThread):
                 ledger["stop_reason"] = stop_reason
                 if self._abort:
                     return "stopped"
+
+                if stop_reason == "tool_use" and last_round:
+                    # The budget is spent: a call requested anyway is never run.
+                    # Keep what the model said (as the token-limit branch below
+                    # does, minus the unpaired call), close the turn in words, and
+                    # record the close so the history ends on an assistant message.
+                    kept = [block for block in content_blocks
+                            if block.get("type") != "tool_use"]
+                    narrated = _narration["this_turn"]
+                    closing = _closing_line(narrated)
+                    _emit_token(("\n\n" if narrated else "") + closing)
+                    self._messages.append({
+                        "role": "assistant",
+                        "content": kept + [{"type": "text", "text": closing}],
+                    })
+                    ledger["wrap_up"] = "closed"
+                    logger.warning(
+                        "Hit max tool-use iterations (%d) with %d tool calls; the "
+                        "last round still asked for a tool, which was not run",
+                        _MAX_TOOL_ITERATIONS, tool_calls_total)
+                    return "cap_hit"
 
                 if stop_reason == "tool_use":
                     # Append the assistant message with all content blocks
@@ -514,6 +563,11 @@ class ClaudeWorker(QThread):
                         "Conversation complete: %d turns, %d tool calls",
                         iteration + 1, tool_calls_total,
                     )
+                    if last_round:
+                        # It answered, but only because the budget ran out: the
+                        # cap stays visible in the ledger.
+                        ledger["wrap_up"] = "answered"
+                        return "cap_hit"
                     return "completed"
 
             logger.warning(
