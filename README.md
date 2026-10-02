@@ -4,21 +4,21 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.92.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.92.0 is Latest</sub></p>
+<p align="center"><sub>v5.92.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.92.1 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Install](docs/getting-started/installation.md)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.92.0.md)
+**[Install](docs/getting-started/installation.md)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.92.1.md)
 
 ## Start here
 
-**Current release: v5.92.0, as a source installation.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the latest panel, JEV and SideFX library changes, but not the changes in v5.87.0 through v5.92.0. It is unsigned, so check it against that release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt).
+**Current release: v5.92.1, as a source installation.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the latest panel, JEV and SideFX library changes, but not the changes in v5.87.0 through v5.92.1. It is unsigned, so check it against that release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt).
 
 The current validation target is **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md).
 
-1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.92.0, or run the v5.86.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
+1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.92.1, or run the v5.86.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
 2. Restart Houdini. Open **New Pane Tab → Synapse**.
 3. Open **Connect models**. Choose a provider and model; add its key if needed.
 4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
@@ -114,7 +114,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.92.0.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.92.1.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -150,7 +150,7 @@ Configured memory and scene/project notes supply recalled context. Recall is adv
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
-**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.92.0.md) before relying on it.
+**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.92.1.md) before relying on it.
 
 </details>
 

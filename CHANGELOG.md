@@ -22,6 +22,20 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.92.1 - A turn that runs out of tool rounds ends in words, and a failed build says what it left behind
+
+A panel turn that reaches its 25-round tool limit no longer stops mid-thought.
+The last round carries an instruction to answer with what the turn has. A tool
+asked for on that round is not run, and the turn closes with a line saying the
+request used all its tool rounds and that nothing changed after the last tool
+result. The usage ledger adds `wrap_up: answered | closed` beside
+`outcome: cap_hit`. `synapse_solaris_build_graph`'s failure message is now
+written after its rollback attempt. Inside the panel's own undo step the
+rollback cannot run, and the error now says the build was not rolled back, that
+its nodes are still in the network, and that one Ctrl+Z or REVERT removes them,
+where it used to say nothing was left. This is a source release with no new
+Windows Setup. See [v5.92.1](docs/releases/v5.92.1.md).
+
 ## v5.92.0 - H22 Solaris workflows build in one call, a wrong node type names the real one, and REVERT undoes only SYNAPSE
 
 Three of Rob Pieke's Houdini 22 Solaris workflows now have verified one-call
