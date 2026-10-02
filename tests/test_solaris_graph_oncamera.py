@@ -283,6 +283,39 @@ class TestHandlerFlags:
         assert '"frame": {"type": "boolean"' in block
 
 
+class TestBadgeFailureSaysWhatHappened:
+    """A build whose new node errors is rolled back only when its undo group
+    reaches the undo stack. Under another open group (the panel's execution
+    bridge) it does not, the nodes stay, and before 10/1 the error still said
+    "rolled back ... Nothing was left in the network". Probed on 22.0.400."""
+
+    DETAIL = "1 new node(s) showed an error badge after cooking: /stage/bad: boom"
+
+    def test_rolled_back_says_so(self):
+        text = str(graph_mod._badge_failure_error(self.DETAIL, True, True))
+        assert text.startswith("build rolled back -- 1 new node(s) showed an error badge")
+        assert "Nothing was left in the network. Fix the parameter/input named above" in text
+
+    def test_not_rolled_back_under_another_undo_step_says_so(self):
+        text = str(graph_mod._badge_failure_error(self.DETAIL, False, True))
+        assert text.startswith("build failed and was NOT rolled back -- 1 new node(s)")
+        assert "Its nodes are still in the network" in text and "one Ctrl+Z (or REVERT) removes them" in text
+        assert "Nothing was left" not in text and "rolled back --" not in text.replace("NOT rolled back --", "")
+
+    def test_undo_off_says_to_remove_them_by_hand(self):
+        text = str(graph_mod._badge_failure_error(self.DETAIL, False, False))
+        assert "undo is off, so remove them by hand" in text and "Ctrl+Z" not in text
+
+    def test_the_error_is_worded_after_the_rollback_attempt(self):
+        src = open(graph_mod.__file__, encoding="utf-8").read()
+        raised = src.index("raise _BadgeFailure(")
+        attempt = src.index("hou.undos.performUndo()\n                        rolled_back = True", raised)
+        worded = src.index("raise _badge_failure_error(str(build_exc), rolled_back, undo_enabled)", attempt)
+        assert raised < attempt < worded
+        assert src.count('"build rolled back -- "') == 1          # one place words it, and it checks first
+        assert issubclass(graph_mod._BadgeFailure, graph_mod.SynapseUserError)
+
+
 # ── G3: scene_template layout + display ─────────────────────────────────
 
 

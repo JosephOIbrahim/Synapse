@@ -295,6 +295,36 @@ def _inherited_error_nodes(created_nodes, created_paths) -> Dict[str, str]:
     return inherited
 
 
+class _BadgeFailure(SynapseUserError):
+    """New nodes showed an error badge. Raised inside the build's undo group;
+    the handler's ``except`` words the error, because only there is it known
+    whether the build was really taken back out (see ``_badge_failure_error``)."""
+
+
+def _badge_failure_error(detail: str, rolled_back: bool, undo_enabled: bool) -> SynapseUserError:
+    """The error for a build whose new nodes showed an error badge.
+
+    It says "rolled back" only when the undo actually ran. Under another open
+    undo group this build's own group never reaches the undo stack, so nothing
+    can be undone here (``performUndo`` raises inside a group on 22.0.400) and
+    the nodes are still in the network: the panel's execution bridge wraps
+    every mutating tool that way. Before 10/1 the text claimed a rollback on
+    every path. Probed on 22.0.400: without an outer group the build is rolled
+    back; under one, the node stays and one Ctrl+Z removes it."""
+    retry = ("fix the parameter/input named above and re-run, or pass badge_check:false "
+             "to keep the nodes despite the error.")
+    if rolled_back:
+        return SynapseUserError("build rolled back -- " + detail,
+                                suggestion="Nothing was left in the network. F" + retry[1:])
+    if undo_enabled:
+        where = ("Its nodes are still in the network: the build ran inside another undo "
+                 "step, so one Ctrl+Z (or REVERT) removes them")
+    else:
+        where = "Its nodes are still in the network, and undo is off, so remove them by hand"
+    return SynapseUserError("build failed and was NOT rolled back -- " + detail,
+                            suggestion="%s. Then %s" % (where, retry))
+
+
 _FRAME_PAD = (0.8, 0.6)      # network units around the framed context
 _FRAME_TRANSITION = 0.25     # seconds; a short animated move reads calmer on camera
 
@@ -1223,28 +1253,27 @@ class SolarisGraphMixin:
                             badge_report["warnings"].append({"node": p, "message": m})
                             warnings.append("%s: %s" % (p, m))
                         if fatal:
-                            raise SynapseUserError(
-                                "build rolled back -- %d new node(s) showed an error "
-                                "badge after cooking: %s"
+                            raise _BadgeFailure(
+                                "%d new node(s) showed an error badge after cooking: %s"
                                 % (len({p for p, _ in fatal}),
-                                   "; ".join("%s: %s" % (p, m) for p, m in fatal)),
-                                suggestion=("Nothing was left in the network. Fix the "
-                                            "parameter/input named above and re-run, or "
-                                            "pass badge_check:false to keep the nodes "
-                                            "despite the error."),
-                            )
+                                   "; ".join("%s: %s" % (p, m) for p, m in fatal)))
                         badge_report["checked"] = True
 
-            except Exception:
+            except Exception as build_exc:
                 # Safe undo fallback — the C++ undo layer for LOP nodes
                 # with USD stage data can throw during __exit__ if GPU
                 # resources are being deallocated. Catch and explicitly
                 # undo to prevent undo stack corruption.
+                rolled_back = False
                 try:
                     if undo_enabled and tuple(hou.undos.undoLabels()) != labels_before:
                         hou.undos.performUndo()
+                        rolled_back = True
                 except Exception as undo_exc:
                     logger.warning("build_graph: undo rollback also failed: %s", undo_exc)
+                if isinstance(build_exc, _BadgeFailure):
+                    # Only now is it known whether the build was taken back out.
+                    raise _badge_failure_error(str(build_exc), rolled_back, undo_enabled) from None
                 raise
 
             # B4: a rebuild that reused everything is not a "created" -- saying
