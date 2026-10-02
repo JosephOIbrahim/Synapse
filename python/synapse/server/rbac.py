@@ -60,6 +60,10 @@ _ARTIST_COMMANDS: FrozenSet[str] = frozenset({
     # R-CACHE-1 insert slice -- an undoable graph mutation (creates + wires a File Cache SOP).
     # Mutation tier, NOT viewer (assess_cache stays viewer/read-only above).
     "insert_cache",
+    # D6 -- the camera path's trail: creates and wires one Python Script LOP whose
+    # code SYNAPSE generates. Mutation tier; its read (get_spatial_path) rides the
+    # viewer get_* wildcard.
+    "spatial_trail",
     "execute_python", "execute_vex",
     "create_usd_prim", "modify_usd_prim", "set_usd_attribute",
     "reference_usd",

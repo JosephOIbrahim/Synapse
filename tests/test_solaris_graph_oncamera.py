@@ -248,7 +248,7 @@ class TestFraming:
 
 
 class TestHandlerFlags:
-    @pytest.mark.parametrize("flag", ["badge_check", "frame"])
+    @pytest.mark.parametrize("flag", ["badge_check", "frame", "sections"])
     def test_non_boolean_flag_is_rejected(self, monkeypatch, flag):
         from synapse.core.errors import SynapseUserError
         monkeypatch.setattr(graph_mod, "HOU_AVAILABLE", True)
@@ -281,6 +281,24 @@ class TestHandlerFlags:
         block = reg[reg.index('("synapse_solaris_build_graph"'):reg.index('("synapse_solaris_component_builder"')]
         assert '"badge_check": {"type": "boolean"' in block
         assert '"frame": {"type": "boolean"' in block
+        # sections is the handler's own knob (the camera path's trail passes
+        # false); a model has no use for it, so the schema does not offer it.
+        assert '"sections"' not in block
+
+    def test_sections_false_skips_the_whole_section_pass(self):
+        """The section pass SWEEPS the display node's namespace before it draws
+        (handler_helpers._apply_section_boxes), so a one-node splice above a
+        display node whose earlier build drew boxes would erase them and draw
+        none. sections:false must gate the call itself, not its drawing."""
+        src = open(graph_mod.__file__, encoding="utf-8").read()
+        assert 'draw_sections = payload.get("sections", True)' in src
+        gate = src.index("if draw_sections and (created_ids or moved):")
+        call = src.index("sections = _apply_section_boxes(parent_node, managed, node_ranks,", gate)
+        assert src.count("_apply_section_boxes(parent_node") == 1          # the one call, behind the gate
+        assert "elif managed:" in src[call:call + 400]                     # false falls through to the read-only listing
+        spatial = open(os.path.join(os.path.dirname(graph_mod.__file__), "handlers_spatial.py"),
+                       encoding="utf-8").read()
+        assert '"sections": False' in spatial
 
 
 class TestBadgeFailureSaysWhatHappened:

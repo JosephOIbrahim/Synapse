@@ -61,6 +61,10 @@ SLOW_COMMANDS = {
     # model reverts to the slow 25-turn imperative path (the convergence lever).
     "solaris_build_graph": 30.0,
     "solaris_assemble_chain": 30.0,
+    # D6 -- the camera path's trail measures (about 1 s on the demo scene) and
+    # then builds through solaris_build_graph, so it carries that budget. The
+    # read (get_spatial_path) stays on the 10 s default: its own budget is 3 s.
+    "spatial_trail": 30.0,
     # Copernicus (COPs) -- solvers and batch need longer timeouts
     "cops_reaction_diffusion": 60.0,
     "cops_growth_propagation": 60.0,

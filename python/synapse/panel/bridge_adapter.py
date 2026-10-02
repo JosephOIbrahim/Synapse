@@ -63,6 +63,8 @@ _READ_ONLY_TOOLS = frozenset({
     "synapse_assess_cache",
     # Read-only compose-tier assessment (PRD 7.3); handler does no mutation.
     "synapse_assess_render_ready",
+    # D6 -- the camera path read: parm evaluation and a stage read, nothing authored.
+    "synapse_spatial_path",
     "synapse_search", "synapse_recall", "synapse_memory_query",
     "synapse_memory_status", "synapse_metrics", "synapse_router_stats",
     "synapse_list_recipes", "synapse_render_farm_status",
@@ -173,6 +175,13 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "synapse_solaris_shotsetup_karma_xpu": "build_from_manifest",
     "synapse_matlib_bind": "build_from_manifest",
     "synapse_assess_render_ready": "inspect_geometry",
+    # D6 -- the camera path's trail. It builds through solaris_build_graph, so
+    # it carries build_graph's own tier (review); the panel worker may still
+    # call it because it sits on worker_policy._WORKER_BUILDER_ALLOWLIST beside
+    # build_graph. Not execute_python (critical): the HOST generates the node's
+    # code from measured numbers, and the model passes no code and no
+    # coordinates. Pinned by tests/test_spatial_tools.py.
+    "synapse_spatial_trail": "build_from_manifest",
     "tops_pause_cook": "set_parameter",
     "tops_resume_cook": "set_parameter",
 }

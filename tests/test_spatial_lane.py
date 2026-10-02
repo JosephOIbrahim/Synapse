@@ -257,28 +257,12 @@ def test_classify_unavailable_on_pointcloud_only():
     assert r["status"] == "UNAVAILABLE"
 
 
-def test_no_default_on_registration():
-    """Rule D-1: the lane is ratified:false, so nothing outside its own package
-    imports or registers the spatial tools, and no SYNAPSE_SPATIAL_LANE gate is
-    wired on. (evidence: check — also recorded as a grep in the review doc.)"""
-    py_root = _REPO / "python"
-    ref_hits, env_hits = [], []
-    for py in py_root.rglob("*.py"):
-        posix = py.as_posix()
-        if "/synapse/spatial/" in posix:
-            continue
-        txt = py.read_text(encoding="utf-8", errors="ignore")
-        if "synapse.spatial" in txt or "synapse_spatial_describe" in txt \
-                or "synapse_spatial_frustum" in txt:
-            ref_hits.append(posix)
-        if "SYNAPSE_SPATIAL_LANE" in txt:
-            env_hits.append(posix)
-    root_mcp = _REPO / "mcp_server.py"
-    if root_mcp.exists():
-        t = root_mcp.read_text(encoding="utf-8", errors="ignore")
-        assert "synapse.spatial" not in t and "synapse_spatial_" not in t
-    assert ref_hits == [], f"spatial tools referenced outside their package: {ref_hits}"
-    assert env_hits == [], f"SYNAPSE_SPATIAL_LANE wired outside the package: {env_hits}"
+# Rule D-1 (the lane's registration pin) moved to tests/test_spatial_tools.py on
+# 2026-10-01: this module needs OpenUSD, so its old test_no_default_on_registration
+# never ran on stock CI. The pin there runs everywhere, scans the repo-root
+# mcp_*.py modules too, and names all three stage queries (the two holes
+# BP4-CRUX found). R-5 lifts D-1 for exactly synapse_spatial_path and
+# synapse_spatial_trail; describe, classify and frustum stay unregistered.
 
 
 # ============================================================================ #

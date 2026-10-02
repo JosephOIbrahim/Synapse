@@ -964,6 +964,40 @@ TOOL_DEFS: list[tuple] = [
      }},
      True, False, True),
 
+    # -- Spatial lane (D6, R-5): the camera path read and its trail ----------
+    # Handlers: python/synapse/server/handlers_spatial.py over the pure-numpy
+    # core python/synapse/spatial/path.py. Exactly these two are registered;
+    # describe/classify/frustum stay unregistered (rule D-1).
+    ("synapse_spatial_path", "get_spatial_path",
+     _filter_keys(("node", "camera", "frames", "against")),
+     "Measure how a Solaris camera moves across the shot and how close it comes to the "
+     "scene: travel, height, yaw sweep, a fitted arc radius and a move class, plus the "
+     "nearest geometry with its frame and side of the lens. Read-only: no playhead move, "
+     "no forced cook, nothing authored; what it cannot read comes back UNKNOWN, never guessed.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "LOP node whose stage is read (default: /stage's display node)"},
+         "camera": {"type": "string", "description": "Camera prim path, Camera LOP path or camera name (default: the render settings' camera)"},
+         "frames": {"type": "string", "description": "Frames to sample: '1-120', '1-120x5' or '40' (default: the scene's frame range)"},
+         "against": {"type": "string", "enum": ["auto", "splats", "mesh", "none"],
+                     "description": "What clearance is measured against. auto (default): splat centres when the stage has splats, else mesh vertices."},
+     }, "required": []},
+     True, False, True),
+
+    ("synapse_spatial_trail", "spatial_trail",
+     _filter_keys(("node", "camera", "frames", "purpose")),
+     "Draw a camera's measured path in the scene as one guide curve: SYNAPSE writes one "
+     "Python Script LOP above the node (display flag untouched, one undo step) and returns "
+     "the same measurements as synapse_spatial_path. Pass no code and no coordinates; it is "
+     "a snapshot, so call it again after the move changes.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "LOP node the trail is spliced above (default: /stage's display node)"},
+         "camera": {"type": "string", "description": "Camera prim path, Camera LOP path or camera name (default: the render settings' camera)"},
+         "frames": {"type": "string", "description": "Frames to draw: '1-120', '1-120x5' (default: the scene's frame range)"},
+         "purpose": {"type": "string", "enum": ["proxy", "guide", "default", "render"],
+                     "description": "USD purpose of the curve (default: proxy, which Karma's default render settings leave out)"},
+     }, "required": []},
+     False, False, True),
+
     ("houdini_configure_light_linking", "configure_light_linking", _identity,
      "Configure light linking between lights and geometry via USD collections. "
      "Control which geometry a light illuminates or casts shadows on. "

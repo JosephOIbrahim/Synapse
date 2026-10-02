@@ -98,9 +98,10 @@ def undo_receipt(label, *, rolls_back_on_failure=False):
     Returns ``{"undo": {...}}`` to merge into the handler's result dict:
     ``label`` (the exact ``hou.undos.group`` label -- what one Ctrl+Z reverses),
     ``artist`` (that label in plain words), ``rolls_back_on_failure`` (a
-    STATIC property of the code path: True only where the handler calls
-    ``performUndo()`` on its exception path, never a runtime guess) and
-    ``on_failure`` (the same fact in artist words).
+    STATIC property of the code path: True only where the handler, on its
+    exception path, calls ``performUndo()`` or takes its own change back out
+    explicitly, never a runtime guess) and ``on_failure`` (the same fact in
+    artist words).
     """
     rolls_back = bool(rolls_back_on_failure)
     return {

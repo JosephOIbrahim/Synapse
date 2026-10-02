@@ -25,7 +25,16 @@ it behind an env flag that defaults OFF, e.g. in ``mcp_server`` registration::
         # ... register the three tools here ...
 
 Until then the flag is unread anywhere in the tree (grep ``SYNAPSE_SPATIAL_LANE``)
-— the lane is import-only.
+— these three are import-only.
+
+The camera path (D6, R-5, 2026-10-01).  ``path.py`` is a second, separate
+module: pure ``numpy``, no ``pxr`` and no ``hou``. R-5 lifts D-1 for exactly
+two tools built on it, ``synapse_spatial_path`` (read) and
+``synapse_spatial_trail`` (one build), registered under the neutral lane
+``spatial`` through ``synapse/server/handlers_spatial.py``. That module is the
+only one outside this package that imports it. Nothing here names a vendor,
+and the three queries above stay unregistered. Pinned by
+``tests/test_spatial_tools.py::test_d1_lifts_for_exactly_two_tools``.
 """
 from .queries import (  # noqa: F401
     SCATTER_MAX_ANGLE_DEFAULT_DEG,

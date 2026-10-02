@@ -59,6 +59,7 @@ from .handlers_solaris_assemble import SolarisAssembleMixin
 from .handlers_solaris_graph import SolarisGraphMixin
 from .handlers_solaris_compose import SolarisComposeMixin
 from .handlers_solaris_tools import SolarisToolsMixin
+from .handlers_spatial import SpatialHandlerMixin
 from .handlers_graph_synth import GraphSynthHandlerMixin
 # Mile 4 (resource-aware-cache Phase 1, R-CACHE-1) -- read-only, feature-flagged
 # synapse_assess_cache. Import-safe standalone (guards hou/cache_host_probe/cache_policy
@@ -129,6 +130,9 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "solaris_shotsetup_karma_xpu": AuditCategory.PIPELINE,
     "matlib_bind": AuditCategory.MATERIAL,
     "assess_render_ready": AuditCategory.RENDER,
+    # D6 -- the camera path's trail: one Python Script LOP SYNAPSE writes itself.
+    # get_spatial_path is read-only, no category needed.
+    "spatial_trail": AuditCategory.PIPELINE,
     "create_material": AuditCategory.MATERIAL,
     "create_textured_material": AuditCategory.MATERIAL,
     "assign_material": AuditCategory.MATERIAL,
@@ -218,6 +222,11 @@ _READ_ONLY_COMMANDS = frozenset({
     "validate_frame",
     "solaris_validate_ordering",
     "assess_render_ready",
+    # D6 -- the camera path read. It evaluates Camera LOP parms per frame
+    # (evalAtFrame: no playhead move, no cook) and reads the composed stage;
+    # nothing is authored (handlers_spatial.py). Its sibling spatial_trail
+    # builds a node and is deliberately absent here.
+    "get_spatial_path",
     "get_metrics", "router_stats", "list_recipes", "get_live_metrics",
     "tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats",
     "tops_query_items",
@@ -424,7 +433,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, FarmHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
+class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, FarmHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, SpatialHandlerMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
     """
     Main command handler for the Synapse server.
 
@@ -767,6 +776,12 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         reg.register("solaris_shotsetup_karma_xpu", self._handle_solaris_shotsetup_karma_xpu)
         reg.register("matlib_bind", self._handle_matlib_bind)
         reg.register("assess_render_ready", self._handle_assess_render_ready)
+
+        # Spatial lane (D6, R-5): the camera path read and its trail. Exactly
+        # these two; describe/classify/frustum stay unregistered (rule D-1,
+        # pinned by tests/test_spatial_tools.py).
+        reg.register("get_spatial_path", self._handle_get_spatial_path)
+        reg.register("spatial_trail", self._handle_spatial_trail)
 
         # Keyframe / Render Settings
         reg.register("set_keyframe", self._handle_set_keyframe)

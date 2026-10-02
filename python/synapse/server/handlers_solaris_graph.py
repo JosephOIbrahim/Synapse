@@ -839,6 +839,11 @@ class SolarisGraphMixin:
                   warnings are reported, never rolled back
                 - frame: select + center the Network Editor on the new nodes
                   when a UI is present (default: true); never fails a build
+                - sections: draw the section boxes for this build (default:
+                  true). The pass first sweeps every box in the display node's
+                  namespace, so a caller that splices in ONE node (the camera
+                  path's trail) passes false: nothing to draw, and the boxes
+                  earlier builds drew stay. Not in the tool schema.
 
         Returns:
             {
@@ -889,6 +894,9 @@ class SolarisGraphMixin:
         splice_layout = payload.get("splice_layout", "inline")
         if splice_layout not in ("inline", "side"):
             raise SynapseUserError("splice_layout must be 'inline' or 'side'")
+        draw_sections = payload.get("sections", True)
+        if not isinstance(draw_sections, bool):
+            raise SynapseUserError("sections must be a boolean")
 
         # ── Template expansion ──
         if template_name:
@@ -1187,7 +1195,7 @@ class SolarisGraphMixin:
                         # Cosmetic sections follow the actual flow axis. A no-op
                         # preserves existing boxes, including the artist's sizing.
                         sections = []
-                        if created_ids or moved:
+                        if draw_sections and (created_ids or moved):
                             node_ranks = {nid: _SOLARIS_NODE_ORDER.get(
                                 str(node_map[nid]["type"]).split("::")[0].lower(), _UNRANKED_RANK)
                                 for nid in managed}

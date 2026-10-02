@@ -21,7 +21,10 @@ GROUP_KNOWLEDGE = (
     "SOLARIS CHAIN: Always create LOP nodes in /stage, never /obj. "
     "Canonical order: SOPCreate \u2192 MaterialLibrary \u2192 AssignMaterial \u2192 "
     "Camera \u2192 Lights \u2192 RenderProperties \u2192 OUTPUT null. Wire linearly "
-    "with setInput(0, prev). Use sopcreate (not sopimport) for new geometry."
+    "with setInput(0, prev). Use sopcreate (not sopimport) for new geometry. "
+    "CAMERA PATH: synapse_spatial_path measures how a camera moves and how close "
+    "it comes to the scene (read-only); synapse_spatial_trail draws that path. "
+    "Report their numbers as given; an UNKNOWN from them is an answer, not a gap to fill."
 )
 
 # Tools in this group
@@ -57,6 +60,10 @@ TOOL_NAMES = [
     "synapse_solaris_shotsetup_karma_xpu",
     "synapse_matlib_bind",
     "synapse_assess_render_ready",
+    # Spatial lane (D6, R-5): the camera path read and its trail. Exactly
+    # these two; the lane's three stage queries stay unregistered (rule D-1).
+    "synapse_spatial_path",
+    "synapse_spatial_trail",
 ]
 
 # Dispatch entries for this group
@@ -90,4 +97,6 @@ DISPATCH_KEYS = {
     "synapse_solaris_shotsetup_karma_xpu": ("solaris_shotsetup_karma_xpu", "identity"),
     "synapse_matlib_bind":               ("matlib_bind",               "identity"),
     "synapse_assess_render_ready":       ("assess_render_ready",       "identity"),
+    "synapse_spatial_path":              ("get_spatial_path",          "filter_keys:node,camera,frames,against"),
+    "synapse_spatial_trail":             ("spatial_trail",             "filter_keys:node,camera,frames,purpose"),
 }
