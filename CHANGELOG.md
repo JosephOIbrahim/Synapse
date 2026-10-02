@@ -22,6 +22,30 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.93.0 - SYNAPSE measures how a camera moves through a scene, and draws the path
+
+Two new tools open the spatial lane. `synapse_spatial_path` is a read-only
+measurement of a Solaris camera's move across the shot (travel, height, yaw
+sweep, a fitted arc, a move class) and of its clearance to the scene (the
+nearest splat centre or mesh vertex, with its frame and its side of the lens).
+It evaluates the Camera LOP's own transform parameters at every frame without
+moving the playhead, checks them against the composed stage at the current
+frame, and returns UNKNOWN with the reason where that one frame cannot vouch
+for the rest. `synapse_spatial_trail` draws the measured path as one
+proxy-purpose guide curve: SYNAPSE writes a Python Script LOP itself, splices
+it in above the node through `synapse_solaris_build_graph` with the display
+flag untouched, in one undo step, reads the curve back from the stage and
+withdraws the node if it is not there. The registry goes from 137 to 139
+tools; `describe`, `classify` and `frustum` stay unregistered. The panel gains
+a **Spatial** control: a click, or `/spatial`, runs the trail with no model
+request, answers in the tool's own words and leaves a one-change receipt with
+REVERT. It sits in the footer's last row with **Identify**, which moves there
+from the top of the panel, and **Render**. A turn that draws the path now
+leaves a receipt too: the receipt's credit keywords gain `trail` and
+`assemble`, pinned by a test over the tools the panel agent may build with.
+This is a source release with no new Windows Setup. See
+[v5.93.0](docs/releases/v5.93.0.md).
+
 ## v5.92.1 - A turn that runs out of tool rounds ends in words, and a failed build says what it left behind
 
 A panel turn that reaches its 25-round tool limit no longer stops mid-thought.
