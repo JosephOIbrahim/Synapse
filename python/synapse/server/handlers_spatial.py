@@ -41,7 +41,7 @@ the composed stage to 0.0 mm and 0.0 deg on all 120 frames, in 4 ms.
 
 The trail reuses ``synapse_solaris_build_graph`` for the build: one Python
 Script LOP spliced in above the node, display flag untouched, badge-checked,
-under one undo group (``SYNAPSE: spatial_trail``). The handler reads the path
+under one undo group (``SYNAPSE: Draw camera path``). The handler reads the path
 back from the stage afterwards, and a write that did not put it there is taken
 back out before the error is raised. The model never writes or relays the code
 or the coordinates; the handler generates both, and the only text that reaches
@@ -84,7 +84,10 @@ _NOTHING_FOUND = {"auto": "splats or mesh", "splats": "splats", "mesh": "mesh"}
 PURPOSES = ("proxy", "guide", "default", "render")
 TRAIL_PARENT = "/guides"
 TRAIL_HEADER = "# SYNAPSE: camera path"
-TRAIL_UNDO = "SYNAPSE: spatial_trail"
+# The step's name in Houdini's Edit menu. The panel's bridge names its own outer
+# group from this (bridge_adapter), so the label a result reports is the label
+# the artist sees, whichever way the tool was reached.
+TRAIL_UNDO = "SYNAPSE: Draw camera path"
 RETIME_LOPS = ("timeshift",)      # a node of these types after the camera retimes the stage
 _XFORM_MODE_PARM = "xn__xformOptransform_51a"
 _FRAMES_RE = re.compile(

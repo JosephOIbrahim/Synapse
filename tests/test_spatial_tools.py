@@ -171,6 +171,59 @@ def test_the_bridge_skips_the_read_and_gives_the_trail_build_graphs_tier():
     assert allowed and "composite Solaris builder" in why
 
 
+def _through_the_bridge(monkeypatch, tool, command_type, payload):
+    """What the panel's bridge is handed for one tool call: the Operation."""
+    from types import SimpleNamespace
+    from synapse.core.protocol import SynapseCommand, SynapseResponse
+    operations = []
+    command = SynapseCommand(type=command_type, id="label-test", payload=payload)
+    response = SynapseResponse(id=command.id, success=True, data={"status": "SUCCESS"})
+
+    class Bridge:
+        def execute(self, operation):
+            operations.append(operation)
+            return SimpleNamespace(success=True, result=operation.fn(), integrity=None)
+
+    monkeypatch.setattr(bridge_adapter, "get_bridge", lambda: Bridge())
+    handler = SimpleNamespace(handle=lambda received: response if received is command else None)
+    assert bridge_adapter.execute_through_bridge(tool, handler, command) is response
+    assert len(operations) == 1
+    return operations[0]
+
+
+def test_the_trails_undo_step_is_named_in_words_and_named_once(monkeypatch):
+    """UNDOLABEL (the recorded GUI checks, 2026-10-02). Houdini's Edit menu and
+    status bar named the step ``SYNAPSE: synapse_spatial_trail: {}``: the tool's
+    internal name and its empty arguments, while the tool's own result called it
+    ``SYNAPSE: spatial_trail``. The bridge's group is the outer one, so its name
+    is the one Houdini shows. Now there is one name, in words, and the result
+    reports the name the artist sees."""
+    from synapse.panel import turn_revert
+    from synapse.server.handler_helpers import undo_receipt
+
+    operation = _through_the_bridge(monkeypatch, TRAIL, "spatial_trail", {})
+    shown = "SYNAPSE: " + operation.summary            # shared/bridge.py opens the group under this
+    assert shown == "SYNAPSE: Draw camera path"
+    assert shown == hs.TRAIL_UNDO                      # the label the tool's result reports
+    assert "spatial_trail" not in shown and "{" not in shown
+    assert turn_revert.is_synapse_label(shown)         # REVERT still knows the step as SYNAPSE's
+    assert operation.operation_type == "build_from_manifest"
+    # Arguments do not change the name: one step, one name.
+    with_args = _through_the_bridge(monkeypatch, TRAIL, "spatial_trail",
+                                    {"node": "/stage/out", "camera": "/cameras/a", "frames": "1-48"})
+    assert with_args.summary == operation.summary
+    assert with_args.kwargs["node_path"] == "/stage/out"       # the target still reaches integrity
+    assert undo_receipt(hs.TRAIL_UNDO)["undo"]["artist"] == "One Ctrl+Z reverses: Draw camera path"
+
+
+def test_other_tools_keep_the_label_they_had(monkeypatch):
+    """The plain name is the trail's. Every other tool's summary is also the
+    text of its consent card, so it is not reworded in passing."""
+    payload = {"parent": "/obj", "type": "geo"}
+    operation = _through_the_bridge(monkeypatch, "houdini_create_node", "create_node", payload)
+    assert operation.summary == "houdini_create_node: %s" % str(payload)[:80]
+
+
 @pytest.mark.parametrize("mode, read_ok, trail_ok", [
     ("standard", True, True), ("unrestricted", True, True),
     ("demo", True, False), ("strict", True, False), ("proposal", True, False),

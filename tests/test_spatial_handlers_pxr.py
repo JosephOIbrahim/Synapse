@@ -720,9 +720,9 @@ def test_the_trail_is_one_build_graph_splice_above_the_display_node(world):
     assert t["prim"] == "/guides/demo_cam_path" and t["purpose"] == "proxy"
     assert t["points"] == 120 + 2 * 12 and t["karma_leaves_it_out"] is True
     assert build["sections"] is False                                 # earlier builds' boxes are left alone
-    assert world.undo_labels == ["SYNAPSE: spatial_trail"]            # one group around the build
-    assert r["undo"]["label"] == "SYNAPSE: spatial_trail"
-    assert r["undo"]["artist"] == "One Ctrl+Z reverses: spatial trail"
+    assert world.undo_labels == ["SYNAPSE: Draw camera path"]            # one group around the build
+    assert r["undo"]["label"] == "SYNAPSE: Draw camera path"
+    assert r["undo"]["artist"] == "One Ctrl+Z reverses: Draw camera path"
     assert r["undo"]["rolls_back_on_failure"] is True                 # a failed write is taken back out
     assert r["status"] == "SUCCESS" and r["move"]["class"] == "arc"
     assert r["outcome"].endswith("Drew the path as /guides/demo_cam_path (proxy purpose, 144 points); "
@@ -748,16 +748,16 @@ def test_asking_again_changes_nothing_and_a_new_move_redraws_in_one_undo(world):
     handler = Handler(world)
     handler._handle_spatial_trail({})
     again = handler._handle_spatial_trail({})
-    assert len(handler.builds) == 1 and world.undo_labels == ["SYNAPSE: spatial_trail"]
+    assert len(handler.builds) == 1 and world.undo_labels == ["SYNAPSE: Draw camera path"]
     assert again["trail"]["status"] == "unchanged" and "undo" not in again
     assert "The path is already drawn as /guides/demo_cam_path" in again["outcome"]
 
     world.nodes["demo_cam"].parm("t").set(lambda f: (0.0, 1.29, -8.0 * (f - 1) / 119.0))
     world.nodes["demo_cam"].parm("r").set((0.0, 0.0, 0.0))
     moved = handler._handle_spatial_trail({})
-    assert len(handler.builds) == 1 and world.undo_labels == ["SYNAPSE: spatial_trail"] * 2
+    assert len(handler.builds) == 1 and world.undo_labels == ["SYNAPSE: Draw camera path"] * 2
     assert moved["trail"]["status"] == "updated" and moved["trail"]["node"] == "/stage/demo_cam_path"
-    assert moved["undo"]["label"] == "SYNAPSE: spatial_trail"
+    assert moved["undo"]["label"] == "SYNAPSE: Draw camera path"
     assert moved["move"]["class"] == "dolly" and "Redrew the path" in moved["outcome"]
     stage = world.display.stage()
     pts = UsdGeom.BasisCurves(stage.GetPrimAtPath("/guides/demo_cam_path")).GetPointsAttr().Get()
@@ -921,7 +921,7 @@ def test_a_bypassed_trail_is_switched_back_on_when_asked_for_again(world):
     again = handler._handle_spatial_trail({})
     assert again["trail"]["status"] == "updated" and len(handler.builds) == 1
     assert world.nodes["demo_cam_path"].isBypassed() is False
-    assert world.undo_labels == ["SYNAPSE: spatial_trail"] * 2
+    assert world.undo_labels == ["SYNAPSE: Draw camera path"] * 2
     assert world.display.stage().GetPrimAtPath("/guides/demo_cam_path").IsValid()
 
 

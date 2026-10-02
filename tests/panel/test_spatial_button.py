@@ -43,8 +43,8 @@ OUTCOME = ("demo_cam: an arc of radius 6.00 m through 20.0 deg, 2.09 m of travel
            "height of 1.29 m; the nearest splat centre comes to 1.04 m, left of the lens, at "
            "frame 1. Drew the path as /guides/demo_cam_path (proxy purpose, 144 points).")
 CREATED = {"status": "SUCCESS", "outcome": OUTCOME, "trail": {"status": "created"},
-           "undo": {"artist": "One Ctrl+Z reverses: spatial trail"}}
-TRAIL_LABEL = "SYNAPSE: synapse_spatial_trail: {}"
+           "undo": {"artist": "One Ctrl+Z reverses: Draw camera path"}}
+TRAIL_LABEL = "SYNAPSE: Draw camera path"
 
 
 class _Chat:

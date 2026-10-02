@@ -446,10 +446,20 @@ def execute_through_bridge(
     if tool_name in _DISK_WRITING_TOOLS:
         op_kwargs["touches_disk"] = True
 
+    # The summary names the undo step: the bridge opens its group as
+    # "SYNAPSE: <summary>", and that outer group's name is the one Houdini's
+    # Edit menu and status bar show. It is also the text of a consent card.
     summary = "{}: {}".format(tool_name, str(payload)[:80])
     if tool_name == "houdini_layout_network":
         from synapse.server.network_layout import layout_summary
         summary = layout_summary(payload)
+    elif tool_name == "synapse_spatial_trail":
+        # UNDOLABEL (2026-10-02): the step read "SYNAPSE: synapse_spatial_trail: {}"
+        # in the Edit menu while the tool's own result called it something else.
+        # One step, one name, in words: the handler's label, minus the prefix
+        # the bridge adds back.
+        from synapse.server.handlers_spatial import TRAIL_UNDO
+        summary = TRAIL_UNDO.split(": ", 1)[-1]
     op = Operation(
         agent_id=agent_id,
         operation_type=op_type,

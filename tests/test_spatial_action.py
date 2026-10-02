@@ -25,7 +25,7 @@ CREATED = {
     "clearance": {"min_m": 1.04, "frame": 1.0, "side": "left", "status": "SUCCESS"},
     "trail": {"status": "created", "node": "/stage/demo_cam_path", "prim": "/guides/demo_cam_path",
               "points": 144, "purpose": "proxy", "karma_leaves_it_out": True},
-    "undo": {"artist": "One Ctrl+Z reverses: spatial trail", "label": "SYNAPSE: spatial_trail"},
+    "undo": {"artist": "One Ctrl+Z reverses: Draw camera path", "label": "SYNAPSE: Draw camera path"},
 }
 
 
@@ -33,7 +33,7 @@ def test_the_answer_is_the_tools_sentence_then_the_way_back():
     text = sa.answer_text(CREATED)
     first, last = text.split("\n\n")
     assert first == OUTCOME                       # the tool's sentence, word for word
-    assert last == "One Ctrl+Z reverses: spatial trail."
+    assert last == "One Ctrl+Z reverses: Draw camera path."
     # Nothing here is the panel's own claim about the scene.
     assert "Not measured" not in text
 
