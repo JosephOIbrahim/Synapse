@@ -972,7 +972,8 @@ TOOL_DEFS: list[tuple] = [
      _filter_keys(("node", "camera", "frames", "against")),
      "Measure how a Solaris camera moves across the shot and how close it comes to the "
      "scene: travel, height, yaw sweep, a fitted arc radius and a move class, plus the "
-     "nearest geometry with its frame and side of the lens. Read-only: no playhead move, "
+     "nearest geometry with its frame and side of the lens, and whether its path is drawn "
+     "on that stage now. Read-only: no playhead move, "
      "no forced cook, nothing authored; what it cannot read comes back UNKNOWN, never guessed.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "LOP node whose stage is read (default: /stage's display node)"},

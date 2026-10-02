@@ -934,3 +934,124 @@ def test_an_artists_own_guides_prim_keeps_its_type(world):
     stage = world.display.stage()
     assert stage.GetPrimAtPath("/guides").GetTypeName() == "Xform"
     assert stage.GetPrimAtPath("/guides/demo_cam_path").IsValid()
+
+
+# --------------------------------------------------------------------------- #
+#  The read says whether the path is drawn                                    #
+# --------------------------------------------------------------------------- #
+ABSENT = " Its path is not drawn on this stage."
+DRAWN = " Its path is drawn on this stage as /guides/demo_cam_path (144 points)."
+
+
+def _undo_by_hand(world, name="demo_cam_path"):
+    """What Edit > Undo does to a drawn trail: the node and its wire go."""
+    trail = world.nodes[name]
+    for node in list(world.nodes.values()):
+        if node.input(0) is trail:
+            node.setInput(0, trail.input(0))
+    trail.destroy()
+
+
+def test_the_read_says_not_drawn_then_drawn_then_not_drawn_after_an_undo(world):
+    """TRAILPRESENT (the recorded D6 test, 2026-10-02). Asked again after the
+    path was undone, the model called the read, which said nothing about a
+    path, and answered from its own history that the path was still there. The
+    read now says what the stage holds, both ways, in the sentence the model is
+    told to relay."""
+    _demo(world)
+    handler = Handler(world)
+    before = handler._handle_get_spatial_path({})
+    assert before["trail"] == {"status": "absent"}
+    assert before["outcome"].endswith("at frame 64 (a stray point: the 10th nearest is 28.96 m)." + ABSENT)
+
+    handler._handle_spatial_trail({})
+    drawn = handler._handle_get_spatial_path({})
+    assert drawn["trail"] == {"status": "drawn", "node": "/stage/demo_cam_path",
+                              "prim": "/guides/demo_cam_path", "points": 144}
+    assert drawn["outcome"].endswith(DRAWN) and ABSENT not in drawn["outcome"]
+    assert drawn["move"] == before["move"] and drawn["clearance"] == before["clearance"]
+
+    _undo_by_hand(world)
+    gone = handler._handle_get_spatial_path({})
+    assert gone["trail"] == {"status": "absent"}                      # the finding: this said nothing
+    assert gone["outcome"] == before["outcome"]
+    # Three reads opened no undo group and wrote nothing: one group, the trail's.
+    assert world.undo_labels == ["SYNAPSE: Draw camera path"]
+
+
+def test_the_read_with_a_path_drawn_still_fits_the_budget_and_names_no_file(world):
+    _demo(world)
+    handler = Handler(world)
+    handler._handle_spatial_trail({})
+    text = json.dumps(handler._handle_get_spatial_path({}))
+    assert len(text) < 1800, len(text)
+    for token in ("\\\\", ":/", ".hip", ".usd", ".ply", ".glb"):
+        assert token not in text
+
+
+def test_a_bypassed_trail_is_not_drawn_and_the_read_says_which_node(world):
+    _demo(world)
+    handler = Handler(world)
+    handler._handle_spatial_trail({})
+    world.nodes["demo_cam_path"].bypass(True)
+    r = handler._handle_get_spatial_path({})
+    assert r["trail"] == {"status": "bypassed", "node": "/stage/demo_cam_path"}
+    assert r["outcome"].endswith(" Its path is not drawn on this stage: /stage/demo_cam_path is bypassed.")
+    assert world.nodes["demo_cam_path"].isBypassed() is True          # a read switches nothing back on
+
+
+def test_a_curve_of_the_artists_own_at_that_path_is_not_called_synapses(world):
+    """The prim alone is not the evidence. A curve an artist authored at
+    /guides/demo_cam_path, with no trail node of SYNAPSE's above the node, is
+    theirs, and the read does not claim it."""
+    def own_curve(stage):
+        curve = UsdGeom.BasisCurves.Define(stage, "/guides/demo_cam_path")
+        curve.CreatePointsAttr([Gf.Vec3f(0, 0, 0), Gf.Vec3f(1, 0, 0)])
+
+    _demo(world, before=own_curve)
+    assert world.display.stage().GetPrimAtPath("/guides/demo_cam_path").GetTypeName() == "BasisCurves"
+    r = hs.SpatialHandlerMixin()._handle_get_spatial_path({})
+    assert r["trail"] == {"status": "absent"} and r["outcome"].endswith(ABSENT)
+
+
+def test_the_read_answers_for_the_stage_and_the_camera_it_read(world):
+    """A trail sits above the display node. Read at a node above the trail, the
+    stage there does not hold it. And each camera's path is its own."""
+    second = _camera_parms(t=lambda f: (3.0, 2.0, 0.1 * f), r=(0.0, 0.0, 0.0), prim="/cameras/wide")
+    tip = Node(world, "lane", "sublayer", author=_splats(_wall()))
+    tip = Node(world, "demo_cam", "camera", parms=_camera_parms(), up=tip)
+    tip = Node(world, "wide", "camera", parms=second, up=tip)
+    world.display = Node(world, "demo_settings", "karmarendersettings", author=_settings, up=tip)
+    handler = Handler(world)
+    handler._handle_spatial_trail({})                                 # demo_cam's path only
+    assert handler._handle_get_spatial_path({})["trail"]["status"] == "drawn"
+    assert handler._handle_get_spatial_path({"camera": "/cameras/wide"})["trail"] == {"status": "absent"}
+    above = handler._handle_get_spatial_path({"node": "/stage/wide", "camera": CAM})
+    assert above["node"] == "/stage/wide" and above["trail"] == {"status": "absent"}
+    # Read at the trail's own node, the stage there holds it.
+    at_trail = handler._handle_get_spatial_path({"node": "/stage/demo_cam_path", "camera": CAM})
+    assert at_trail["trail"]["status"] == "drawn" and at_trail["trail"]["node"] == "/stage/demo_cam_path"
+
+
+def test_a_path_drawn_before_the_move_became_unreadable_is_still_reported(world):
+    """The drawn path is a snapshot. Look-at switched on afterwards makes the
+    move UNKNOWN, and the curve drawn earlier is still on the stage."""
+    _demo(world)
+    handler = Handler(world)
+    handler._handle_spatial_trail({})
+    world.nodes["demo_cam"]._parms["lookatenable"] = Parm(1, world)
+    r = handler._handle_get_spatial_path({})
+    assert r["status"] == sp.STATUS_UNKNOWN and "its move is UNKNOWN (look-at is on" in r["outcome"]
+    assert r["trail"]["status"] == "drawn" and r["outcome"].endswith(DRAWN)
+
+
+def test_the_trail_tools_own_result_is_worded_as_it_was(world):
+    """The read's sentence about the path belongs to the read. The trail says
+    what it did, in the words it had."""
+    _demo(world)
+    handler = Handler(world)
+    drawn = handler._handle_spatial_trail({})
+    assert "on this stage" not in drawn["outcome"]
+    assert drawn["outcome"].endswith("Drew the path as /guides/demo_cam_path (proxy purpose, 144 points); "
+                                     "Karma's render settings leave it out.")
+    assert set(drawn["trail"]) == {"status", "node", "prim", "points", "purpose", "karma_leaves_it_out"}

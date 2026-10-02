@@ -3,7 +3,8 @@
 Two commands over ``synapse/spatial/path.py`` (pure numpy):
 
     get_spatial_path  read-only. The camera's move across frames and its
-                      clearance to the scene, measured.
+                      clearance to the scene, measured, and whether its path
+                      is drawn on the stage that was read.
     spatial_trail     one build. The same read, drawn as a guide curve in a
                       Python Script LOP that SYNAPSE writes itself.
 
@@ -541,16 +542,23 @@ def _is_trail(node) -> Optional[str]:
     return text if text.startswith(TRAIL_HEADER) else None
 
 
-def _trail_above(node, camera: str):
+def _trail_above(node, camera: str, or_at: bool = False):
     """The trail SYNAPSE already wrote for this camera, anywhere upstream of
     ``node``. Trails for other cameras, and nodes an artist has since put
-    between the trail and ``node``, are stepped over."""
+    between the trail and ``node``, are stepped over. ``or_at`` also looks at
+    ``node`` itself: the read may be asked at the trail's own node."""
     header = "%s of %s," % (TRAIL_HEADER, camera)
-    for up in node.inputAncestors():
+    for up in ([node] if or_at else []) + list(node.inputAncestors()):
         text = _is_trail(up)
         if text is not None and text.startswith(header):
             return up
     return None
+
+
+def _trail_names(camera: str) -> Tuple[str, str]:
+    """The camera's own name, and where its path is drawn: /guides/<name>_path."""
+    leaf = camera.rsplit("/", 1)[-1] or "camera"
+    return leaf, "%s/%s_path" % (TRAIL_PARENT, leaf)
 
 
 def _free_name(parent, base: str) -> str:
@@ -577,12 +585,20 @@ def _karma_purposes(stage) -> Optional[List[str]]:
     return [str(v) for v in value] if value else ["default", "render"]
 
 
+def _trail_curve(stage, prim_path: str):
+    """The curve prim at ``prim_path`` when the stage holds one, else None."""
+    prim = stage.GetPrimAtPath(prim_path) if stage is not None else None
+    if prim is not None and prim.IsValid() and prim.GetTypeName() == "BasisCurves":
+        return prim
+    return None
+
+
 def _trail_on_stage(node, prim_path: str, purpose: str) -> Dict[str, Any]:
     """Read the trail back from the node's stage: what is there, not what was asked for."""
     from pxr import UsdGeom
     stage = node.stage()
-    prim = stage.GetPrimAtPath(prim_path) if stage is not None else None
-    ok = bool(prim is not None and prim.IsValid() and prim.GetTypeName() == "BasisCurves")
+    prim = _trail_curve(stage, prim_path)
+    ok = prim is not None
     purposes = _karma_purposes(stage) if stage is not None else None
     return {
         "prim": prim_path if ok else None,
@@ -590,6 +606,31 @@ def _trail_on_stage(node, prim_path: str, purpose: str) -> Dict[str, Any]:
         "purpose": str(UsdGeom.Imageable(prim).ComputePurpose()) if ok else None,
         "karma_leaves_it_out": (purpose not in purposes) if purposes is not None else None,
     }
+
+
+def _path_drawn(node, camera: str) -> Tuple[Dict[str, Any], str]:
+    """Whether SYNAPSE's path for ``camera`` is on the stage read at ``node``:
+    the ``trail`` field of the read, and the sentence that says it.
+
+    Drawn takes both halves. A trail node SYNAPSE wrote for this camera is at
+    or upstream of ``node``, and the stage there holds its curve. The node
+    alone would count a bypassed trail as drawn; the curve alone would call an
+    artist's own curve at that path SYNAPSE's. The answer is for this stage and
+    this camera. It reads, and switches nothing on."""
+    from pxr import UsdGeom
+    _leaf, prim_path = _trail_names(camera)
+    trail = _trail_above(node, camera, or_at=True)
+    if trail is None:
+        return {"status": "absent"}, "Its path is not drawn on this stage."
+    prim = _trail_curve(node.stage(), prim_path)
+    if prim is None:
+        if trail.isBypassed():
+            return ({"status": "bypassed", "node": trail.path()},
+                    "Its path is not drawn on this stage: %s is bypassed." % trail.path())
+        return {"status": "absent", "node": trail.path()}, "Its path is not drawn on this stage."
+    points = len(UsdGeom.BasisCurves(prim).GetPointsAttr().Get() or [])
+    return ({"status": "drawn", "node": trail.path(), "prim": prim_path, "points": points},
+            "Its path is drawn on this stage as %s (%d points)." % (prim_path, points))
 
 
 def _withdraw(parent, name: str, node, up, positions) -> bool:
@@ -633,7 +674,12 @@ class SpatialHandlerMixin:
         from .main_thread import run_on_main
 
         def _on_main():
-            result, _context = measure(node_path, camera, frames, against)
+            result, ctx = measure(node_path, camera, frames, against)
+            # TRAILPRESENT (2026-10-02): asked after an undo, the read said
+            # nothing about the path and the model answered from its history.
+            # The read says what this stage holds, in the sentence it relays.
+            result["trail"], says = _path_drawn(ctx["node"], ctx["camera"])
+            result["outcome"] += " " + says
             return result
 
         return run_on_main(_on_main, label="spatial:get_spatial_path")
@@ -661,8 +707,7 @@ class SpatialHandlerMixin:
             if ctx["cam"] is None:
                 raise SynapseUserError("No trail drawn: " + str(result["move"].get("reason")))
             node = ctx["node"]
-            leaf = ctx["camera"].rsplit("/", 1)[-1] or "camera"
-            prim_path = "%s/%s_path" % (TRAIL_PARENT, leaf)
+            leaf, prim_path = _trail_names(ctx["camera"])
             try:
                 code = spatial_path.trail_code(prim_path, ctx["frames"], ctx["cam"],
                                                camera=ctx["camera"], meters_per_unit=ctx["mpu"],
