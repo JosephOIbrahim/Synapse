@@ -22,6 +22,23 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.93.1 - The read says whether the camera's path is drawn, its undo step has a name in words, and a receipt goes after a hand undo
+
+Five fixes from the checks of v5.93.0, four of which close limits that release
+listed. `synapse_spatial_path` now says whether SYNAPSE's guide curve for the
+camera is on the stage it read: its result gains a `trail` field (`drawn`,
+`absent` or `bypassed`) and its sentence ends by saying so. The camera path's
+undo step reads `SYNAPSE: Draw camera path` in Houdini's Edit menu and in the
+tool's own result, where the menu used to show the tool's internal name and its
+arguments. The turn receipt goes once Houdini's undo history no longer holds
+the turn: the panel reads the history on its two-second tick, so a receipt no
+longer stays after a hand undo. On an empty scene the Spatial control gives the
+reason and leaves out a hint that tells a caller which argument to pass. A test
+session keeps its logs and its bridge sidecar in a folder of its own, out of
+`~/.synapse`. None of the five has been seen in the Houdini GUI yet: the checks
+ran in hython and with the panel offscreen. This is a source release with no
+new Windows Setup. See [v5.93.1](docs/releases/v5.93.1.md).
+
 ## v5.93.0 - SYNAPSE measures how a camera moves through a scene, and draws the path
 
 Two new tools open the spatial lane. `synapse_spatial_path` is a read-only

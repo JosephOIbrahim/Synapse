@@ -11,7 +11,7 @@ Houdini runs SYNAPSE with its own Python.
 
 This is the latest packaged installer, v5.86.0. It includes Identify and the
 latest panel, JEV and SideFX library changes. Newer source releases, including
-v5.87.0, v5.88.0, v5.89.0, v5.90.0, v5.91.0, v5.92.0, v5.92.1 and v5.93.0, do not contain a new Setup executable. For the current
+v5.87.0, v5.88.0, v5.89.0, v5.90.0, v5.91.0, v5.92.0, v5.92.1, v5.93.0 and v5.93.1, do not contain a new Setup executable. For the current
 version, use [source installation](#source-installation) below.
 
 [Installer release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.86.0) ·
