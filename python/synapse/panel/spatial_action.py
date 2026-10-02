@@ -44,6 +44,12 @@ HISTORY_NOTE = (" (Answered by the panel with no model call. It describes the "
                 "scene when it ran; an undo or a later edit is not reflected here.)")
 
 _TOOL_HINT = re.compile(r"\s*\(pass against=\w+\)")
+#: The tool's suggestion to a caller that has arguments, as its error joins it
+#: on: "<reason> -- Pass a LOP node path". It is written for a model. A click
+#: passes nothing, so the panel shows the reason and leaves that half out (the
+#: recorded GUI check of 2026-10-02, on an empty scene). A suggestion in other
+#: words stays: "It may need to cook" is for the artist as much as for a model.
+_ARGUMENT_HINT = re.compile(r"\s+--\s+Pass\b.*\Z", re.S)
 
 
 def answer_text(result: Dict[str, Any]) -> str:
@@ -71,8 +77,10 @@ def changed_scene(result: Dict[str, Any]) -> bool:
 
 def error_text(error: Optional[str]) -> str:
     """What the panel says when nothing was drawn: the tool's own reason. An
-    UNKNOWN move arrives here as 'No trail drawn: <why it cannot be read>'."""
-    reason = (error or "").strip() or "the tool returned no result"
+    UNKNOWN move arrives here as 'No trail drawn: <why it cannot be read>'.
+    The reason is the tool's, word for word; only a hint about which argument
+    to pass is left out, because a click has no arguments to pass."""
+    reason = _ARGUMENT_HINT.sub("", (error or "").strip()) or "the tool returned no result"
     return "Spatial: %s" % reason
 
 

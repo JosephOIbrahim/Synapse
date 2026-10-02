@@ -67,6 +67,62 @@ def test_an_error_shows_the_tools_own_reason():
     assert sa.error_text("  ") == "Spatial: the tool returned no result"
 
 
+def test_a_hint_about_which_argument_to_pass_is_left_out_of_a_click():
+    """SPATIALHINT (the recorded GUI check, 2026-10-02). On an empty scene the
+    control said "Spatial: /stage has no display node -- Pass a LOP node path".
+    The second half is the tool's suggestion to a caller that has arguments.
+    A click has none, so the panel shows the reason and leaves that half out."""
+    from synapse.core.errors import SynapseUserError
+    error = str(SynapseUserError("/stage has no display node", suggestion="Pass a LOP node path"))
+    assert error == "/stage has no display node -- Pass a LOP node path"      # what the tool sends
+    assert sa.error_text(error) == "Spatial: /stage has no display node"
+    splice = ("No trail drawn: /stage/cam has no input to splice the trail above -- Pass the node "
+              "the trail should sit above; the display flag is never moved")
+    assert sa.error_text(splice) == "Spatial: No trail drawn: /stage/cam has no input to splice the trail above"
+    assert "Pass" not in sa.error_text("No LOP node at /stage -- Pass a Solaris node path, or leave "
+                                       "node out to use /stage's display node")
+
+
+def test_a_suggestion_anyone_can_act_on_is_kept():
+    """Only the argument hint goes. What the scene needs, and what was left as
+    it was, are for the artist as much as for a model."""
+    for error in ("/stage/out has no USD stage yet -- It may need to cook, or its input may be in error",
+                  "The trail was not redrawn: /guides/cam_path is not on the stage at /stage/out -- "
+                  "/stage/cam_path was left as it was",
+                  "Couldn't find a node at '/stage/x' -- did you mean '/stage/y'?"):
+        assert sa.error_text(error) == "Spatial: " + error
+    # A reason that only mentions the word is not a hint.
+    assert sa.error_text("Pass 2 of the read failed") == "Spatial: Pass 2 of the read failed"
+
+
+def test_every_suggestion_the_spatial_tools_raise_is_one_the_panel_knows():
+    """The panel drops a suggestion by how it starts. So a new one in the
+    handler has to be either an argument hint ("Pass ...") or a sentence listed
+    here as fit for an artist. A hint worded another way fails here, and not at
+    the panel in front of someone."""
+    import ast
+    from pathlib import Path
+    from synapse.server import handlers_spatial
+
+    for_anyone = ("It may need to cook, or its input may be in error", "%s was left as it was")
+    tree = ast.parse(Path(handlers_spatial.__file__).read_text(encoding="utf-8"))
+    seen = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        for keyword in node.keywords:
+            if keyword.arg != "suggestion":
+                continue
+            value = keyword.value.left if isinstance(keyword.value, ast.BinOp) else keyword.value
+            assert isinstance(value, ast.Constant) and isinstance(value.value, str), ast.dump(keyword.value)
+            seen.append(value.value)
+    assert len(seen) >= 8, seen                    # the scan still finds the handler's suggestions
+    for text in seen:
+        assert text.startswith("Pass ") or text in for_anyone, text
+        shown = sa.error_text("a reason -- " + text)
+        assert shown == ("Spatial: a reason" if text.startswith("Pass ") else "Spatial: a reason -- " + text)
+
+
 def test_the_copy_names_no_vendor_and_fits_the_control():
     for text in (sa.TOOLTIP, sa.SIGNED, sa.BUSY, sa.RUNNING, sa.HISTORY_ASK, sa.HISTORY_NOTE):
         assert "world labs" not in text.lower() and "worldlabs" not in text.lower()
