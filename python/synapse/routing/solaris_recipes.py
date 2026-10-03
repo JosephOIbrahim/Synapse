@@ -38,6 +38,9 @@ RECIPES: Dict[str, Dict[str, Any]] = {
             "The camera mask reads the camera PRIM, so splice the scatter in AFTER the node that authors "
             "the camera (e.g. after the camera LOP, before render settings), not before it.",
             "Multiparms are zero-based: protogroupprims0 / protogroupweight0 is the first group.",
+            "The direction mask (enabledirection 1, maxangle 20) keeps instances on near-level ground and "
+            "off walls, sills and roofs. To also drop instances too far away to read, set "
+            "enablecameramaskfar 1 and cameramaskfar to a distance in metres.",
             "executionmode menu: 0 Deferred (render-time procedural), 1 Immediate (instances on the stage "
             "now; use this so the viewport and a stage check see them). scattermethod: 0 Number, 1 Density, "
             "2 Face Centroids.",
@@ -65,9 +68,11 @@ RECIPES: Dict[str, Dict[str, Any]] = {
                            "scattertargetgeometry": "<WORLD_PRIM>/collider/**",
                            "scattercount": 2000, "executionmode": 1,
                            "enablecameramask": 1, "enablecamera": 1, "camerapath": "<CAMERA_PRIM>",
-                           # Up-facing faces only (within 45 degrees of +Y). Most instances land on the
-                           # lane; up-facing ledges and sills still catch some. Measured in hython 2026-10-03.
-                           "enabledirection": 1, "maxangle": 45,
+                           # Near-level faces only (within 20 degrees of +Y). Measured in hython on the
+                           # demo lane, 2026-10-03, as height above the lane (the lane climbs 1.3 m over
+                           # 45 m): at 45 degrees 73 of 763 instances sat more than 0.35 m above it, at 20
+                           # degrees 12 of 758, all of them more than 26 m from the camera.
+                           "enabledirection": 1, "maxangle": 20,
                            "protopattern": "/prototypes/*", "hideprotosourceprims": 1,
                            "protogroups": 1, "protogroupprims0": "/prototypes/rock_a",
                            "protogroupweight0": 1.0}},
