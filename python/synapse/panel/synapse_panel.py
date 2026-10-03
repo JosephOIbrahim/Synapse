@@ -3203,6 +3203,12 @@ class SynapsePanel(QtWidgets.QWidget):
     def _display_recall_result(self, result):
         card = getattr(self, "_recall_card", None)
         if card is not None:
+            from synapse.panel.recall_card import recall_view
+            if recall_view(result)["status"] == "KNOWLEDGE":
+                # Only reference articles came back: nothing was remembered,
+                # so "what I remember" stays off the screen.
+                card.hide()
+                return
             card.set_result(result)
             card.show()
 

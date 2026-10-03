@@ -36,7 +36,13 @@ def recall_view(result):
         matches = payload.get("matches")
         if isinstance(matches, list):
             parts = []
-            for match in matches:
+            # A match the recall handler took from the knowledge corpus is a
+            # reference article, not something remembered about this scene.
+            memory = [m for m in matches
+                      if not (isinstance(m, Mapping) and m.get("source") == "knowledge")]
+            if matches and not memory:
+                return {"status": "KNOWLEDGE", "deposit": "UNKNOWN"}
+            for match in memory:
                 if isinstance(match, Mapping):
                     content = match.get("content")
                     if isinstance(content, str) and content:
