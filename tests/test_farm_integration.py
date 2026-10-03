@@ -201,7 +201,7 @@ def test_local_client_authenticates_to_loopback(monkeypatch):
     client = _local_client_class()()
     client._port = 12345
     client._post({"method": "initialize"})
-    assert constructor.call_args.args == ("localhost", 12345)
+    assert constructor.call_args.args == ("127.0.0.1", 12345)
     assert connection.request.call_args.kwargs["headers"]["Authorization"] == "Bearer test-only-key"
 
 

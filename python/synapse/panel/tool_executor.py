@@ -263,14 +263,24 @@ class _MCPLocalClient:
 
         payload = json.dumps(body, sort_keys=True).encode("utf-8")
 
-        conn = http.client.HTTPConnection("localhost", request_port, timeout=timeout)
+        # The numeric loopback address first. On Windows "localhost" resolves to ::1
+        # before 127.0.0.1, and against an IPv4-only listener every connect then waits
+        # about 2 s before it falls back: 2.01 s against 0.009 s, measured 2026-10-03.
+        # "localhost" stays as the fallback for a listener bound to IPv6 only.
+        loopback_hosts = ("127.0.0.1", "localhost")
+        conn = http.client.HTTPConnection(loopback_hosts[0], request_port, timeout=timeout)
         try:
             # Separate connection establishment from request transmission.
             # Once request() starts, even ConnectionError can mean a lost reply.
             try:
                 conn.connect()
-            except (OSError, http.client.HTTPException) as exc:
-                raise MCPUnavailable("Could not connect to the local MCP endpoint.") from exc
+            except (OSError, http.client.HTTPException) as first_exc:
+                conn.close()
+                conn = http.client.HTTPConnection(loopback_hosts[1], request_port, timeout=timeout)
+                try:
+                    conn.connect()
+                except (OSError, http.client.HTTPException) as exc:
+                    raise MCPUnavailable("Could not connect to the local MCP endpoint.") from exc
             try:
                 conn.request("POST", "/mcp", body=payload, headers=all_headers)
                 resp = conn.getresponse()
