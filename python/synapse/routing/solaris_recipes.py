@@ -65,6 +65,9 @@ RECIPES: Dict[str, Dict[str, Any]] = {
                            "scattertargetgeometry": "<WORLD_PRIM>/collider/**",
                            "scattercount": 2000, "executionmode": 1,
                            "enablecameramask": 1, "enablecamera": 1, "camerapath": "<CAMERA_PRIM>",
+                           # Up-facing faces only (within 45 degrees of +Y). Most instances land on the
+                           # lane; up-facing ledges and sills still catch some. Measured in hython 2026-10-03.
+                           "enabledirection": 1, "maxangle": 45,
                            "protopattern": "/prototypes/*", "hideprotosourceprims": 1,
                            "protogroups": 1, "protogroupprims0": "/prototypes/rock_a",
                            "protogroupweight0": 1.0}},
