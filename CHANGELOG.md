@@ -22,6 +22,18 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.93.3 - Scatter keeps to near-level ground
+
+One change to the Scatter Instances recipe: its direction mask goes from 45
+degrees to 20, so sills, ledges and far roofs stop catching instances. In
+hython on the demo scene, instances more than 0.35 m above the lane went from
+73 of 763 to 12 of 758, with none left within 26 m of the camera. The recipe's
+notes name the two far-plane parameters that remove the rest. This release
+also corrects v5.93.2's "53 of 763 above 1.5 m", a flat-height count on a lane
+that climbs. The change has not been seen in the Houdini GUI. v5.93.2's mask
+and card have now been seen there. This is a source release with no new
+Windows Setup. See [v5.93.3](docs/releases/v5.93.3.md).
+
 ## v5.93.2 - A tool call stops waiting two seconds, Scatter keeps to up-facing faces, and the memory card shows only memory
 
 Three fixes from a day of checks on v5.93.1, and a tidy of the repository's
