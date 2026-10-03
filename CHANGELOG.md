@@ -22,6 +22,22 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.93.2 - A tool call stops waiting two seconds, Scatter keeps to up-facing faces, and the memory card shows only memory
+
+Three fixes from a day of checks on v5.93.1, and a tidy of the repository's
+root. The panel opened one connection to `localhost` for each tool call, and on
+Windows each connect waited about two seconds before reaching the IPv4
+listener; it now connects to `127.0.0.1` first. Measured in the Houdini GUI,
+tool time per call went from 2.02-2.75 s to 0.05-0.75 s, and one request went
+from 37.2 s to 8.7 s. The Scatter Instances recipe sets an up-facing mask
+(`enabledirection` 1, `maxangle` 45), so far fewer instances land on walls; in
+hython, instances above 1.5 m went from 346 of 531 to 53 of 763. The "what I
+remember" card no longer shows a knowledge-corpus article as a memory hit.
+Eight unreferenced root scripts moved to `attic/` and four dated reports to
+`docs/archive/`, and `LATENCY_PLAN.md` holds this release's measurements. The
+mask and the card have not been seen in the Houdini GUI. This is a source
+release with no new Windows Setup. See [v5.93.2](docs/releases/v5.93.2.md).
+
 ## v5.93.1 - The read says whether the camera's path is drawn, its undo step has a name in words, and a receipt goes after a hand undo
 
 Five fixes from the checks of v5.93.0, four of which close limits that release
