@@ -1610,7 +1610,8 @@ TOOL_DEFS: list[tuple] = [
 
     # -- Copernicus (COPs) -- Foundation --
     ("cops_create_network", "cops_create_network", _identity,
-     "Create a COP2 network container for Copernicus image processing.",
+     "Create a legacy COP2 network ('cop2net', the old compositing context). "
+     "This is not Copernicus: use cops_create_copnet for a Copernicus network.",
      {"type": "object", "properties": {
          "parent": {"type": "string", "description": "Parent node path (default: /obj)"},
          "name": {"type": "string", "description": "Network name (default: cop2net)"},
@@ -1687,7 +1688,9 @@ TOOL_DEFS: list[tuple] = [
      False, True, False),
 
     ("cops_analyze_render", "cops_analyze_render", _identity,
-     "Analyze rendered image in COPs: black pixels, dynamic range, clipping, noise.",
+     "Report a COP node's resolution, planes and cook errors. It does not read pixels: "
+     "the checks asked for come back as checks_requested, checks_performed lists what ran, "
+     "and overall_quality is not_analyzed unless a cook error or API drift is found.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "COP node with image"},
          "checks": {"type": "array", "items": {"type": "string"},

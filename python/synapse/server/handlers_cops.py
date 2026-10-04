@@ -906,8 +906,13 @@ class CopsHandlerMixin:
     def _handle_cops_analyze_render(self, payload: Dict) -> Dict:
         """Analyze a rendered image for quality issues using COP processing.
 
-        Performs black pixel detection, NaN/Inf check, dynamic range analysis,
-        noise estimation, and clipping detection. Returns a structured report.
+        Reads the node's resolution, planes and cook errors. It does not read
+        pixels: the pixel checks a caller asks for (black pixels, dynamic
+        range, clipping, noise) are recorded under ``checks_requested`` and are
+        not run, ``checks_performed`` lists what did run, and
+        ``overall_quality`` is ``not_analyzed`` unless something was found
+        (COP-21, 2026-10-04: it used to echo the request as ``checks_run`` and
+        answer ``pass``).
 
         Payload:
             node (str, required): COP node path containing the image to analyze.
@@ -940,7 +945,8 @@ class CopsHandlerMixin:
 
             report = {
                 "node": node.path(),
-                "checks_run": checks,
+                "checks_requested": checks,
+                "checks_performed": ["cook_errors"],
                 "issues": [],
                 "overall_quality": "unknown",
             }
@@ -999,7 +1005,9 @@ class CopsHandlerMixin:
 
             # Quality assessment based on available info
             if not report["issues"]:
-                report["overall_quality"] = "pass"
+                # Nothing was found by the one check that ran. No pixel was
+                # read, so this is not a pass.
+                report["overall_quality"] = "not_analyzed"
             elif any(i["severity"] == "error" for i in report["issues"]):
                 report["overall_quality"] = "fail"
             else:

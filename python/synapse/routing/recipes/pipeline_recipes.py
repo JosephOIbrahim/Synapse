@@ -1109,9 +1109,10 @@ def register_pipeline_recipes(registry):
             "composited result."
         ),
         triggers=[
+            # Only the explicit phrase. "set up render comp" and "composite
+            # render passes" used to match too, which put this recipe one
+            # slip away from the Render Passes request (COP-23).
             r"^(?:set up|setup|create)\s+(?:a\s+)?copernicus\s+render\s+comp(?:osite|ositing)?(?:\s+(?:for|from|with)\s+(?P<exr_path>.+))?$",
-            r"^(?:set up|setup|create)\s+(?:a\s+)?render\s+comp(?:osite|ositing)?(?:\s+(?:for|from|with)\s+(?P<exr_path>.+))?$",
-            r"^composite\s+render\s+passes(?:\s+(?:for|from|with)\s+(?P<exr_path>.+))?$",
         ],
         parameters=["exr_path"],
         gate_level=GateLevel.REVIEW,
@@ -1122,6 +1123,20 @@ def register_pipeline_recipes(registry):
                 payload_template={
                     "code": (
                         "import hou\n"
+                        # COP-23: this builds an old COP2 network. On 22.0.400
+                        # 'tonemap' is a Copernicus type only, so the build
+                        # raised at that node with the network half made.
+                        # Check every type first and create nothing if one
+                        # is missing.
+                        "_cop2 = hou.cop2NodeTypeCategory()\n"
+                        "_absent = [t for t in ('file', 'colorcorrect', "
+                        "'tonemap', 'rop_comp') "
+                        "if hou.nodeType(_cop2, t) is None]\n"
+                        "if _absent:\n"
+                        "    raise hou.Error('This recipe builds an old COP2 "
+                        "network and this Houdini build has no COP2 node "
+                        "type for: ' + ', '.join(_absent) + '. Nothing was "
+                        "created.')\n"
                         "exr_path = '{exr_path}'.strip()\n"
                         "if not exr_path:\n"
                         "    exr_path = '$HIP/render/$HIPNAME/"

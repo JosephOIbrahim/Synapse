@@ -1,0 +1,23 @@
+{
+ "note": "Names in code strings under python/synapse/routing that rag/catalog/h22.0.400 does not have, as of 2026-10-04. Leads, not proven bugs. This list may only shrink.",
+ "misses": [
+  "str_parm|python/synapse/routing/planner.py|create_packed",
+  "str_parm|python/synapse/routing/planner.py|numpieces",
+  "str_parm|python/synapse/routing/recipes/fx_recipes.py|create_packed",
+  "str_parm|python/synapse/routing/recipes/fx_recipes.py|numpieces",
+  "str_parm|python/synapse/routing/recipes/pipeline_recipes.py|clippingRange1",
+  "str_parm|python/synapse/routing/recipes/pipeline_recipes.py|clippingRange2",
+  "str_parm|python/synapse/routing/recipes/pipeline_recipes.py|resolutionx",
+  "str_parm|python/synapse/routing/recipes/pipeline_recipes.py|resolutiony",
+  "str_parm|python/synapse/routing/recipes/pipeline_recipes.py|xn__karmasubdivisionmesh_beb",
+  "str_parm|python/synapse/routing/recipes/pipeline_recipes.py|xn__karmasubdivisionmesh_control_kfb",
+  "str_parm|python/synapse/routing/recipes/render_recipes.py|ar_aov_name_",
+  "str_parm|python/synapse/routing/recipes/render_recipes.py|clippingRange1",
+  "str_parm|python/synapse/routing/recipes/render_recipes.py|clippingRange2",
+  "str_parm|python/synapse/routing/recipes/render_recipes.py|resolutionx",
+  "str_parm|python/synapse/routing/recipes/render_recipes.py|resolutiony",
+  "str_parm|python/synapse/routing/recipes/render_recipes.py|specularlimit",
+  "str_parm|python/synapse/routing/recipes/scene_recipes.py|sizex",
+  "str_type|python/synapse/routing/recipes/pipeline_recipes.py|editproperties::2.0"
+ ]
+}

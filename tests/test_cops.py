@@ -668,7 +668,11 @@ class TestCopsAnalyzeRender:
                 payload={"node": "/obj/cop2net1/file1"},
             ))
         assert result.success
-        assert result.data["overall_quality"] == "pass"
+        # No pixel is read, so a clean node is not_analyzed, never "pass" (COP-21).
+        assert result.data["overall_quality"] == "not_analyzed"
+        assert result.data["checks_performed"] == ["cook_errors"]
+        assert result.data["checks_requested"] == [
+            "black_pixels", "dynamic_range", "clipping", "noise"]
         assert result.data["resolution"] == [1024, 1024]
 
     def test_analyze_render_with_errors(self, handler):
@@ -708,7 +712,7 @@ class TestCopsAnalyzeRender:
                 payload={"node": "/img/copnet1/ramp1"},
             ))
         assert result.success
-        assert result.data["overall_quality"] == "pass"
+        assert result.data["overall_quality"] == "not_analyzed"
         assert result.data["resolution"] == [1024, 1024]
         assert result.data["pixel_count"] == 1024 * 1024
         assert result.data["planes"] == ["ramp"]
@@ -737,7 +741,7 @@ _READ_LAYER_INFO_GOLDEN_KEYS = {
     "cook_status", "errors", "warnings",
 }
 _ANALYZE_RENDER_GOLDEN_KEYS = {
-    "node", "checks_run", "issues", "overall_quality",
+    "node", "checks_requested", "checks_performed", "issues", "overall_quality",
     "resolution", "pixel_count", "planes",
 }
 
