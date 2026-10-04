@@ -381,7 +381,8 @@ if HWEBSERVER_AVAILABLE:
         _log_action("execute_python")
         return {
             "executed": True,
-            "result": str(result) if result else "executed",
+            # A falsy value the script set (0, False, []) is still its answer.
+            "result": str(result) if "result" in exec_locals else "executed",
         }
 
     # =========================================================================

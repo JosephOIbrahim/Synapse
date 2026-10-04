@@ -26,6 +26,19 @@ from .summary import generate_session_summary
 logger = logging.getLogger("synapse.session")
 
 
+def _auto_memory_enabled() -> bool:
+    """AUTO-MEMORY switch for the three automatic housekeeping rows.
+
+    ``SYNAPSE_AUTO_MEMORY=0`` (or off / false / no) stops the tracker writing
+    "AI session started", "Executed: <cmd>" and the session summary into the
+    memory store. Session bookkeeping and cache invalidation still run, and
+    explicit writes (decisions, add_memory, errors) are untouched. Unset, or
+    any other value, is today's behaviour exactly.
+    """
+    value = os.environ.get("SYNAPSE_AUTO_MEMORY", "").strip().lower()
+    return value not in ("0", "off", "false", "no")
+
+
 def _scope_tier(scope):
     if scope == "all":
         return None
@@ -160,7 +173,7 @@ class SynapseBridge:
             self._sessions[session_id] = session
 
         # Log session start to memory
-        if self._synapse:
+        if self._synapse and _auto_memory_enabled():
             self._synapse.add(
                 content=f"AI session started (client: {client_id})",
                 memory_type=MemoryType.NOTE,
@@ -187,7 +200,7 @@ class SynapseBridge:
         summary = session.to_summary()
 
         # Log session summary to memory
-        if self._synapse and session.commands_executed > 0:
+        if self._synapse and session.commands_executed > 0 and _auto_memory_enabled():
             self._synapse.add(
                 content=summary,
                 memory_type=MemoryType.SUMMARY,
@@ -337,13 +350,14 @@ class SynapseBridge:
                     session.nodes_modified.extend(node_paths)
 
         # Log to memory
-        self._synapse.add(
-            content=action,
-            memory_type=MemoryType.ACTION,
-            tags=["action", "ai"],
-            node_paths=node_paths or [],
-            source="ai"
-        )
+        if _auto_memory_enabled():
+            self._synapse.add(
+                content=action,
+                memory_type=MemoryType.ACTION,
+                tags=["action", "ai"],
+                node_paths=node_paths or [],
+                source="ai"
+            )
         self.invalidate_context_cache()
 
     def log_node_created(self, node_path: str, node_type: str, session_id: str = None):

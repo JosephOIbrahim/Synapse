@@ -1383,12 +1383,14 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 with cook_sandwich(label="execute_python"):
                     _run_compiled(compiled, exec_globals, exec_locals)
 
-            # Try to extract a result variable
+            # Try to extract a result variable. A script that SET `result` gets
+            # that value back even when it is falsy: a measured 0 / False / []
+            # is an answer, and must not read the same as "no result set".
             result = exec_locals.get("result", "executed")
 
             return {
                 "executed": True,
-                "result": str(result) if result else "executed",
+                "result": str(result) if "result" in exec_locals else "executed",
             }
 
         # TIMEOUT CHOICE: _SLOW_TIMEOUT (30s), UNCHANGED -- this is the shipped
