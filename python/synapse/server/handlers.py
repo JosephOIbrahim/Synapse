@@ -92,6 +92,18 @@ except ImportError:
 _ROLLBACK_ERRORS = (NameError, SyntaxError, TypeError, AttributeError, IndexError,
                     KeyError, ValueError, UnboundLocalError)
 
+# attribwrangle "class" (Run Over) menu index, in the node's own order:
+# Detail, Primitives, Points, Vertices, Numbers. Pinned against the 22.0.400
+# parm catalog by tests/test_harden_h2_vex_run_over.py (H-2, 2026-10-04: the
+# earlier table had points=1, so "Points" ran over primitives).
+VEX_RUN_OVER_CLASS: Dict[str, int] = {
+    "detail": 0,
+    "primitives": 1, "primitive": 1, "prims": 1,
+    "points": 2, "point": 2,
+    "vertices": 3, "vertex": 3,
+    "numbers": 4, "number": 4,
+}
+
 # Map command types to audit categories for structured logging
 _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "create_node": AuditCategory.PIPELINE,
@@ -1484,11 +1496,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 wrangle = parent.createNode("attribwrangle", "synapse_vex")
                 wrangle.parm("snippet").set(snippet)
 
-                # Map run_over string to class menu value
-                run_over_map = {
-                    "detail": 0, "points": 1, "vertices": 2, "primitives": 3,
-                }
-                class_val = run_over_map.get(run_over.lower(), 1)
+                # Map run_over string to the attribwrangle "class" menu index.
+                # Unknown values fall back to Points, the node's own default.
+                class_val = VEX_RUN_OVER_CLASS.get(
+                    str(run_over).strip().lower(), VEX_RUN_OVER_CLASS["points"])
                 wrangle.parm("class").set(class_val)
 
                 # Wire input if provided

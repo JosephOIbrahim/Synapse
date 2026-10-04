@@ -70,12 +70,14 @@ def parse_vex_command(text: str) -> dict[str, str]:
 # Parameter names that hold VEX code, ordered by priority.
 _VEX_CODE_PARMS = ("snippet", "code", "vexcode", "vex_code", "script")
 
-# Run-over values from attribwrangle runover parm.
+# Run-over labels for the attribwrangle "class" parm, in the node's own menu
+# order (22.0.400 parm catalog; pinned by tests/test_harden_h2_vex_run_over.py).
 _RUN_OVER_MAP = {
     0: "Detail",
-    1: "Points",
-    2: "Primitives",
+    1: "Primitives",
+    2: "Points",
     3: "Vertices",
+    4: "Numbers",
 }
 
 
