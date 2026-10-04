@@ -682,6 +682,7 @@ class SynapseServer:
 
     def _handle_message(self, websocket, message: str, client_id: str):
         """Handle an incoming message (sync)."""
+        command = None  # set once parsed, so an error reply can carry its id
         try:
             # Fast-path: detect heartbeat from raw bytes before full JSON parse
             # Saves ~0.5ms per heartbeat by avoiding SynapseCommand construction
@@ -898,8 +899,11 @@ class SynapseServer:
             )
             if self._circuit_breaker and (is_service_error(e) or is_timeout):
                 self._circuit_breaker.record_failure()
+            # H-3: reply under the request's own id. A client matches replies
+            # by id; "unknown" is discarded and the caller waits out its whole
+            # timeout instead of seeing this error.
             websocket.send(SynapseResponse(
-                id="unknown",
+                id=getattr(command, "id", None) or "unknown",
                 success=False,
                 error=str(e),
                 data={"outcome": _outcome("tool.internal", str(e)).to_dict()},

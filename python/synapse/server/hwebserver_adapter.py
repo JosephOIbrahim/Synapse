@@ -222,6 +222,7 @@ if HWEBSERVER_AVAILABLE:
                 except (json.JSONDecodeError, KeyError):
                     pass  # Fall through to normal parsing
 
+            command = None  # set once parsed, so an error reply can carry its id
             try:
                 command = SynapseCommand.from_json(text_data)
 
@@ -357,8 +358,11 @@ if HWEBSERVER_AVAILABLE:
             except Exception as e:
                 from ..core.outcomes import info as _outcome
 
+                # H-3: reply under the request's own id. A client matches
+                # replies by id; "unknown" is discarded and the caller waits
+                # out its whole timeout instead of seeing this error.
                 await self.send(SynapseResponse(
-                    id="unknown",
+                    id=getattr(command, "id", None) or "unknown",
                     success=False,
                     error=str(e),
                     data={"outcome": _outcome("tool.internal", str(e)).to_dict()},
