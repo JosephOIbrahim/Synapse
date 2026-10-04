@@ -16,7 +16,35 @@ except ImportError:
 
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.show_config import get_show_config, reload_show_config
+from ..core.errors import SynapseServiceError, SynapseUserError
 from .handler_helpers import _HOUDINI_UNAVAILABLE
+
+# What the caller got wrong. Everything else a memory handler reports under
+# "error" is the store failing.
+_MEMORY_CALLER_ERRORS = (
+    "no valid kind",
+    "Decision scope must",
+    "A decision must contain",
+    "scope must be",
+)
+
+
+def _fail_on_error(result):
+    """A memory result that carries ``error`` is a failed call, not data (BRIDGE-13).
+
+    The tracker reports a dead store, a failed write and a bad kind as a dict
+    with an ``error`` key. Returned as it was, handle() wrapped that dict as
+    success, so on the recall path a store that could not be read looked the
+    same as a store with nothing in it. Raising makes handle() answer
+    success=False, which the MCP layer flags isError.
+    """
+    error = result.get("error") if isinstance(result, dict) else None
+    if not error:
+        return result
+    text = str(error)
+    if text.startswith(_MEMORY_CALLER_ERRORS):
+        raise SynapseUserError(text)
+    raise SynapseServiceError(text)
 
 
 class MemoryHandlerMixin:
@@ -177,15 +205,15 @@ class MemoryHandlerMixin:
             if payload.get("scope", "all") != "all" or result.get("error"):
                 return result
             return self._augment_with_knowledge(payload.get("query", ""), result)
-        return self._memory_on_main(search)
+        return _fail_on_error(self._memory_on_main(search))
 
     def _handle_memory_add(self, payload: Dict) -> Dict:
         """Handle add_memory/engram_add command."""
-        return self._memory_on_main(lambda bridge: bridge.handle_memory_add(payload))
+        return _fail_on_error(self._memory_on_main(lambda bridge: bridge.handle_memory_add(payload)))
 
     def _handle_memory_decide(self, payload: Dict) -> Dict:
         """Handle decide/engram_decide command."""
-        return self._memory_on_main(lambda bridge: bridge.handle_memory_decide(payload))
+        return _fail_on_error(self._memory_on_main(lambda bridge: bridge.handle_memory_decide(payload)))
 
     def _handle_memory_recall(self, payload: Dict) -> Dict:
         """Handle recall/engram_recall command.
@@ -199,7 +227,7 @@ class MemoryHandlerMixin:
             if payload.get("scope", "all") != "all" or result.get("error"):
                 return result
             return self._augment_with_knowledge(payload.get("query", ""), result)
-        return self._memory_on_main(recall)
+        return _fail_on_error(self._memory_on_main(recall))
 
     def _handle_project_setup(self, payload: Dict) -> Dict:
         """Initialize or load SYNAPSE project structure for current scene."""

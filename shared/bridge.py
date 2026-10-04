@@ -1955,6 +1955,14 @@ class LosslessExecutionBridge:
                 undo_enabled, undo_depth_before, undo_topo_before,
                 integrity.delta_hash, hash_target,
             )
+            # handler.handle catches errors and returns failure as data. Such a
+            # response must not count as a verified operation (BRIDGE-15); the
+            # history path below has carried this same check.
+            if getattr(result, "success", None) is False:
+                return self._fail_with_integrity(
+                    integrity, getattr(result, "error", None) or "The handler reported failure",
+                    "execution_error",
+                )
             return self._finalize(operation, integrity, result)
 
         except Exception as e:
