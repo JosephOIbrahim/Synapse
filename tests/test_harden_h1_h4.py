@@ -1,7 +1,8 @@
 """Hardening cards H-1 and H-4 (2026-10-04, SideFX cross-reference review).
 
 H-1  execute_python returns a falsy measured result instead of "executed".
-H-4  SYNAPSE_AUTO_MEMORY=0 stops the three automatic housekeeping rows.
+H-4  SYNAPSE_AUTO_MEMORY switches the three automatic housekeeping rows.
+     Since B3 they are off unless the variable asks for them.
 
 Runs without Houdini. The tracker is built with object.__new__ and a MagicMock
 store: SynapseBridge.__init__ would open the real memory backend, and a test
@@ -100,8 +101,8 @@ def _one_session(b):
     return counted, cache_after_action, summary
 
 
-def test_unset_writes_all_three_rows(monkeypatch):
-    monkeypatch.delenv("SYNAPSE_AUTO_MEMORY", raising=False)
+def test_opted_in_writes_all_three_rows(monkeypatch):
+    monkeypatch.setenv("SYNAPSE_AUTO_MEMORY", "1")
     b = _bridge()
     counted, cache, summary = _one_session(b)
     contents = [c.kwargs["content"] for c in b._synapse.add.call_args_list]
@@ -111,9 +112,12 @@ def test_unset_writes_all_three_rows(monkeypatch):
     assert counted == (1, ["/stage/a"]) and cache is None
 
 
-@pytest.mark.parametrize("value", ["0", "off", "false", "no", " OFF "])
-def test_switch_off_writes_nothing_but_keeps_bookkeeping(monkeypatch, value):
-    monkeypatch.setenv("SYNAPSE_AUTO_MEMORY", value)
+@pytest.mark.parametrize("value", [None, "", "0", "off", "false", "no", " OFF ", "anything"])
+def test_unset_or_off_writes_nothing_but_keeps_bookkeeping(monkeypatch, value):
+    if value is None:
+        monkeypatch.delenv("SYNAPSE_AUTO_MEMORY", raising=False)
+    else:
+        monkeypatch.setenv("SYNAPSE_AUTO_MEMORY", value)
     b = _bridge()
     counted, cache, summary = _one_session(b)
     b._synapse.add.assert_not_called()
@@ -123,8 +127,8 @@ def test_switch_off_writes_nothing_but_keeps_bookkeeping(monkeypatch, value):
     assert summary
 
 
-@pytest.mark.parametrize("value", ["1", "on", "", "anything"])
-def test_any_other_value_is_todays_behaviour(monkeypatch, value):
+@pytest.mark.parametrize("value", ["1", "on", "true", "yes", " ON "])
+def test_every_opt_in_spelling_writes_the_rows(monkeypatch, value):
     monkeypatch.setenv("SYNAPSE_AUTO_MEMORY", value)
     b = _bridge()
     _one_session(b)

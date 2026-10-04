@@ -117,6 +117,12 @@ def _handle_event(event):
     from synapse.memory import store as module
     events = module.hou.hipFileEventType
     cause = None
+    quit_event = getattr(events, "BeforeQuit", None)
+    if quit_event is not None and event == quit_event:
+        # Houdini is closing: a slow quit must not read as a frozen main thread.
+        from synapse.server.freeze_chain import note_host_quitting
+        note_host_quitting()
+        return
     if event == events.BeforeLoad:
         _loading = True
     elif event == events.AfterLoad:

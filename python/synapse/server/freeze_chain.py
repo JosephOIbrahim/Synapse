@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from typing import Optional
 
 from .resilience import Watchdog
@@ -426,5 +427,34 @@ def shutdown_freeze_chain() -> bool:
 
 def beat():
     """The panel's one-call entry: heartbeat the process-wide chain.
-    Cheap (lock + timestamp); safe on the UI thread at 1 s cadence."""
+    Cheap (lock + timestamp); safe on the UI thread at 1 s cadence.
+    A no-op while the host is quitting (see note_host_quitting)."""
+    if time.monotonic() < _quitting_until:
+        return
     get_freeze_chain().heartbeat()
+
+
+# -- the host is quitting -----------------------------------------------------
+
+# How long a quit is given before the chain may arm again. A quit that the
+# artist cancels at the save prompt leaves Houdini running; after this window
+# the next beat rebuilds the chain, so the safety net is not lost for the
+# session.
+QUIT_GRACE_S = 120.0
+_quitting_until = 0.0
+
+
+def note_host_quitting(grace_s: float = QUIT_GRACE_S) -> bool:
+    """Stand the chain down because Houdini has begun to quit.
+
+    A quit holds the main thread while the panel's beat stops, which is exactly
+    what the watchdog reads as a freeze: on 2026-10-04 one quit took over 30 s
+    and logged "SUSTAINED FREEZE ... emergency halt" against a session that was
+    only closing. Stops the chain and makes ``beat`` a no-op for ``grace_s``
+    seconds, so a late beat during teardown cannot rebuild it.
+
+    Returns True if a chain was running.
+    """
+    global _quitting_until
+    _quitting_until = time.monotonic() + max(0.0, grace_s)
+    return shutdown_freeze_chain()

@@ -29,14 +29,16 @@ logger = logging.getLogger("synapse.session")
 def _auto_memory_enabled() -> bool:
     """AUTO-MEMORY switch for the three automatic housekeeping rows.
 
-    ``SYNAPSE_AUTO_MEMORY=0`` (or off / false / no) stops the tracker writing
-    "AI session started", "Executed: <cmd>" and the session summary into the
-    memory store. Session bookkeeping and cache invalidation still run, and
-    explicit writes (decisions, add_memory, errors) are untouched. Unset, or
-    any other value, is today's behaviour exactly.
+    Off unless asked for. ``SYNAPSE_AUTO_MEMORY=1`` (or on / true / yes) makes
+    the tracker write "AI session started", "Executed: <cmd>" and the session
+    summary into the memory store. Unset, or any other value, writes none of
+    them: an automated client on the bridge must not be able to fill decision
+    memory by observing (461 rows in one night, 2026-10-04). Session
+    bookkeeping and cache invalidation always run, and explicit writes
+    (decisions, add_memory, errors) are untouched.
     """
     value = os.environ.get("SYNAPSE_AUTO_MEMORY", "").strip().lower()
-    return value not in ("0", "off", "false", "no")
+    return value in ("1", "on", "true", "yes")
 
 
 def _scope_tier(scope):
