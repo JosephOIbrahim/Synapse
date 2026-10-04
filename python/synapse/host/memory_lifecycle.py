@@ -177,6 +177,13 @@ def _validate_jsonl(owner):
         raise RuntimeError(f"Cannot migrate or rewrite incomplete JSONL source {path}: {exc}") from exc
 
 
+def _require_carry_budget(records):
+    """Bound the records one migration moves between stores, never a store's size."""
+    if (len(records) > _MAX_RECORDS
+            or sum(len(m.to_json().encode("utf-8")) for m in records) > _MAX_BYTES):
+        raise RuntimeError("Memory migration exceeds the bounded record/byte budget")
+
+
 def _records(owner):
     backend = owner.store
     strict = getattr(backend, "_iter_memories", None)
@@ -188,8 +195,11 @@ def _records(owner):
         records = backend.all()
         if getattr(backend, "_degraded_load", False):
             raise RuntimeError("Cannot migrate a degraded memory store")
-    if len(records) > _MAX_RECORDS or sum(len(m.to_json().encode("utf-8")) for m in records) > _MAX_BYTES:
-        raise RuntimeError("Memory migration exceeds the bounded record/byte budget")
+    # No size refusal here (H-5, 2026-10-04). This read also serves destination
+    # dedupe, post-rebind verification and adoption, so refusing a store for
+    # its size made any store past the bound impossible to bind, load or adopt
+    # into ever again -- and the refusal came after the read, so it bounded
+    # nothing. The budget belongs to what is CARRIED: see _require_carry_budget.
     ids = [m.id for m in records]
     if len(ids) != len(set(ids)):
         raise RuntimeError("Source memory has duplicate identities")
@@ -319,9 +329,7 @@ def rebind_owner(project_path, *, records=None, binding=None, inherited_hips=Non
         if _key(target / ".synapse") == _key(old.storage_dir):
             return {"status": "UNCHANGED", "storage_dir": str(old.storage_dir)}
         carried = list(records or [])
-        if (len(carried) > _MAX_RECORDS
-                or sum(len(m.to_json().encode("utf-8")) for m in carried) > _MAX_BYTES):
-            raise RuntimeError("Memory migration exceeds the bounded record/byte budget")
+        _require_carry_budget(carried)
         _persist(old)
         replacement = _open(target)
         try:
@@ -373,6 +381,7 @@ def _adopt_scene_store(owner, binding):
         legacy = _open(binding.scene_dir)
     try:
         records = _records(legacy)
+        _require_carry_budget(records)
         _copy_records(owner, records)
     finally:
         _release(legacy)

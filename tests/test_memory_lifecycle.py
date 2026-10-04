@@ -426,3 +426,77 @@ def test_migration_refuses_partial_jsonl_without_rewriting_source(tmp_path, monk
         assert not (tmp_path / "destination").exists()
     finally:
         store._shutdown_flush()
+
+
+# ---------------------------------------------------------------------------
+# H-5 (2026-10-04): the record budget bounds what is CARRIED, not what a store
+# may hold. A store that grew past the bound must still bind, load and adopt.
+# ---------------------------------------------------------------------------
+
+def _big_project(seat, lifecycle, count):
+    """A saved scene whose project store already holds ``count`` records."""
+    job = seat.root / "grown"
+    hip = saved(job / "scene.hip")
+    owner = module.SynapseMemory(project_path=str(job))
+    records = [remember(owner, hip, f"record {i}") for i in range(count)]
+    lifecycle._persist(owner)
+    lifecycle._release(owner)
+    return job, hip, records
+
+
+def test_load_binds_a_store_that_grew_past_the_carry_bound(seat, monkeypatch):
+    from synapse.host import memory_lifecycle as lifecycle
+    monkeypatch.setattr(lifecycle, "_MAX_RECORDS", 3)
+    job, hip, records = _big_project(seat, lifecycle, 5)
+    first = module.get_synapse_memory()          # memory starts on the untitled scene
+    assert first.storage_dir != job / ".synapse"
+    seat.values["JOB"] = str(job)
+    seat.hip.fire("BeforeLoad")
+    seat.hip.fire("AfterLoad", hip)              # then the scene is opened
+    owner = module.get_synapse_memory()
+    assert owner.storage_dir == job / ".synapse"
+    assert getattr(owner, "_memory_binding_error", None) is None
+    assert payloads(owner) == {m.id: m.to_json() for m in records}
+
+
+def test_small_legacy_store_is_adopted_into_a_grown_store(seat, monkeypatch):
+    from synapse.host import memory_lifecycle as lifecycle
+    monkeypatch.setattr(lifecycle, "_MAX_RECORDS", 3)
+    job, _, records = _big_project(seat, lifecycle, 5)
+    hip = saved(job / "shots" / "a" / "a.hip")
+    legacy = module.SynapseMemory(project_path=str(hip.parent))
+    wanted = remember(legacy, hip, "Legacy current scene")
+    lifecycle._persist(legacy)
+    lifecycle._release(legacy)
+    seat.values["JOB"] = str(job)
+    seat.hip.current = str(hip)
+    owner = lifecycle.ensure_current_memory()
+    assert wanted.id in payloads(owner)
+    assert len(payloads(owner)) == len(records) + 1
+
+
+def test_a_carry_past_the_bound_is_still_refused(seat, monkeypatch):
+    from synapse.host import memory_lifecycle as lifecycle
+    monkeypatch.setattr(lifecycle, "_MAX_RECORDS", 3)
+    owner = module.get_synapse_memory()
+    carried = [remember(owner, seat.hip.current, f"unsaved {i}") for i in range(5)]
+    with pytest.raises(RuntimeError, match="bounded record/byte budget"):
+        lifecycle.rebind_owner(seat.root / "destination", records=carried)
+    assert module.get_synapse_memory() is owner
+    assert not (seat.root / "destination" / ".synapse").exists()
+
+
+def test_a_legacy_store_past_the_bound_is_not_adopted(seat, monkeypatch):
+    from synapse.host import memory_lifecycle as lifecycle
+    monkeypatch.setattr(lifecycle, "_MAX_RECORDS", 3)
+    job = seat.root / "show"
+    hip = saved(job / "shots" / "a" / "a.hip")
+    legacy = module.SynapseMemory(project_path=str(hip.parent))
+    for i in range(5):
+        remember(legacy, hip, f"legacy {i}")
+    lifecycle._persist(legacy)
+    lifecycle._release(legacy)
+    seat.values["JOB"] = str(job)
+    seat.hip.current = str(hip)
+    with pytest.raises(RuntimeError, match="bounded record/byte budget"):
+        lifecycle.ensure_current_memory()
