@@ -1,0 +1,31 @@
+{
+ "about": "Literal node types and parm names in python/synapse that are not in rag/catalog/h22.0.400. Ratchet: may only shrink. See tests/test_harden_catalog_conformance.py.",
+ "generated": "2026-10-04",
+ "build": "22.0.400",
+ "misses": [
+  "parm|python/synapse/server/handlers_cops.py|data_type",
+  "parm|python/synapse/server/handlers_tops/render_sequence.py|partitionattribute",
+  "parm|python/synapse/server/handlers_tops/render_sequence.py|pdg_framerange",
+  "parm|python/synapse/server/handlers_tops/render_sequence.py|pythonscript",
+  "parm|python/synapse/server/handlers_tops/render_sequence.py|res_overridex",
+  "parm|python/synapse/server/handlers_tops/render_sequence.py|res_overridey",
+  "typed|python/synapse/mcp/tool_impls/solaris/component_builder.py|componentgeometry.soppath",
+  "typed|python/synapse/mcp/tool_impls/solaris/component_builder.py|componentoutput.filepath",
+  "typed|python/synapse/mcp/tool_impls/solaris/import_megascans.py|componentoutput.filepath",
+  "typed|python/synapse/mcp/tool_impls/solaris/import_megascans.py|reference.destpath",
+  "typed|python/synapse/mcp/tool_impls/solaris/scene_template.py|karmarendersettings.resx",
+  "typed|python/synapse/mcp/tool_impls/solaris/scene_template.py|karmarendersettings.resy",
+  "typed|python/synapse/mcp/tool_impls/solaris/scene_template.py|materiallibrary.primpath",
+  "typed|python/synapse/server/handlers_cops.py|file.channel",
+  "typed|python/synapse/server/handlers_cops.py|file.filename1",
+  "typed|python/synapse/server/handlers_cops.py|file.plane",
+  "typed|python/synapse/server/handlers_tops/render_sequence.py|genericgenerator.pythonscript",
+  "typed|python/synapse/server/handlers_tops/render_sequence.py|partitionbyattribute.partitionattribute",
+  "typed|python/synapse/server/handlers_tops/render_sequence.py|ropfetch.f1",
+  "typed|python/synapse/server/handlers_tops/render_sequence.py|ropfetch.f2",
+  "typed|python/synapse/server/handlers_tops/render_sequence.py|ropfetch.f3",
+  "typed|python/synapse/server/handlers_tops/render_sequence.py|ropfetch.pdg_framerange",
+  "typed|python/synapse/validation/solaris/verify_set_purpose.py|componentgeometry.purpose",
+  "type|python/synapse/mcp/tool_impls/solaris/component_builder.py|componentbuilder"
+ ]
+}
