@@ -314,6 +314,7 @@ class ClaudeWorker(QThread):
             "stop_reason": None,
             "outcome": "error",     # completed | stopped | error | cap_hit | truncated
             "wrap_up": None,        # cap_hit only: answered | closed (see the last round below)
+            "cap": None,            # cap_hit only: rounds | time | tokens
         }
         # test_first_session_panel.py execs this method's AST ALONE with only
         # USAGE_SINK / _MAX_TOOL_ITERATIONS / logger bound, so the loop body is a
@@ -342,11 +343,51 @@ class ClaudeWorker(QThread):
             "now from the results above: what you did, what you did not do or "
             "could not verify, and what to ask next.")
 
-        def _closing_line(narrated):
-            return ("I stopped here: this request used all %d of its tool rounds%s. "
+        # A2 (10/4): the round count was the only ceiling on a turn. One turn ran
+        # 15 minutes and read 5.77 million input tokens before round 25 stopped
+        # it. A turn now also ends on a wall-clock budget and an input-token
+        # budget, the same way the round cap ends it: one last model round with
+        # the directive above and no tools. 0 switches a budget off. Read
+        # through globals() for the same reason as the clock (see _perf).
+        _os = globals().get("os")
+
+        def _budget(raw, default):
+            try:
+                value = float(raw) if str(raw).strip() else default
+            except ValueError:
+                value = default
+            return value if value > 0 else None
+
+        _budget_s = _budget(
+            os.environ.get("SYNAPSE_TURN_BUDGET_S", "") if _os is not None else "", 600.0)
+        _budget_tokens = _budget(
+            os.environ.get("SYNAPSE_TURN_BUDGET_TOKENS", "") if _os is not None else "",
+            3000000.0)
+
+        def _spent():
+            """The budget this turn has used up: None, "time" or "tokens"."""
+            if (_budget_s is not None and _perf is not None and _worker_t0 is not None
+                    and _perf() - _worker_t0 >= _budget_s):
+                return "time"
+            snapshot = getattr(USAGE_SINK, "snapshot", None)
+            if _budget_tokens is not None and callable(snapshot):
+                used = (snapshot() or {}).get("input_tokens")
+                # None is UNKNOWN (the engine reported no usage), never 0.
+                if isinstance(used, (int, float)) and used >= _budget_tokens:
+                    return "tokens"
+            return None
+
+        def _closing_line(narrated, cap="rounds"):
+            if cap == "time":
+                used_up = "reached its time budget of %d seconds" % _budget_s
+            elif cap == "tokens":
+                used_up = "reached its budget of {:,} input tokens".format(int(_budget_tokens))
+            else:
+                used_up = "used all %d of its tool rounds" % _MAX_TOOL_ITERATIONS
+            return ("I stopped here: this request %s%s. "
                     "Nothing changed after the last tool result. Send the request "
                     "again to continue from the scene as it is now."
-                    % (_MAX_TOOL_ITERATIONS,
+                    % (used_up,
                        ", so that last step did not run" if narrated
                        else " before I could answer"))
 
@@ -378,7 +419,10 @@ class ClaudeWorker(QThread):
             for iteration in range(_MAX_TOOL_ITERATIONS):
                 ledger["turns"] = iteration + 1
                 _narration["this_turn"] = False
-                last_round = iteration == _MAX_TOOL_ITERATIONS - 1
+                cap = "rounds" if iteration == _MAX_TOOL_ITERATIONS - 1 else _spent()
+                last_round = cap is not None
+                if last_round:
+                    ledger["cap"] = cap
                 if self._abort:
                     return "stopped"
 
@@ -451,7 +495,7 @@ class ClaudeWorker(QThread):
                     kept = [block for block in content_blocks
                             if block.get("type") != "tool_use"]
                     narrated = _narration["this_turn"]
-                    closing = _closing_line(narrated)
+                    closing = _closing_line(narrated, cap)
                     _emit_token(("\n\n" if narrated else "") + closing)
                     self._messages.append({
                         "role": "assistant",
@@ -459,9 +503,9 @@ class ClaudeWorker(QThread):
                     })
                     ledger["wrap_up"] = "closed"
                     logger.warning(
-                        "Hit max tool-use iterations (%d) with %d tool calls; the "
-                        "last round still asked for a tool, which was not run",
-                        _MAX_TOOL_ITERATIONS, tool_calls_total)
+                        "Turn capped by %s after %d of %d rounds and %d tool calls; "
+                        "the last round still asked for a tool, which was not run",
+                        cap, iteration + 1, _MAX_TOOL_ITERATIONS, tool_calls_total)
                     return "cap_hit"
 
                 if stop_reason == "tool_use":
