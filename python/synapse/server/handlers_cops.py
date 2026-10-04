@@ -24,6 +24,7 @@ except ImportError:
 
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..validation.parm_gate import gated_set
+from ..core.parm_report import note_missing
 from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 _LOG = logging.getLogger(__name__)
@@ -829,6 +830,7 @@ class CopsHandlerMixin:
                 raise ValueError(f"Couldn't find parent node '{parent_path}'")
 
             created_any = False
+            parms_missed: List[str] = []  # B1
             try:
                 with hou.undos.group("synapse_cops_composite_aovs"):
                     network = _create_cop_node(parent, "cop2net", name)
@@ -845,11 +847,15 @@ class CopsHandlerMixin:
                         file_parm = file_node.parm("filename1") or file_node.parm("file")
                         if file_parm is not None:
                             file_parm.set(exr_path)
+                        else:
+                            note_missing(parms_missed, file_node, "filename1", "file")
 
                         # Set channel/plane selection if available
                         plane_parm = file_node.parm("channel") or file_node.parm("plane")
                         if plane_parm is not None:
                             plane_parm.set(aov_name)
+                        else:
+                            note_missing(parms_missed, file_node, "channel", "plane")
 
                         file_node.moveToGoodPosition()
                         layer_nodes.append({
@@ -892,6 +898,7 @@ class CopsHandlerMixin:
                 "layers": layer_nodes,
                 "merge_node": merge_node.path() if merge_node else None,
                 "exr_path": exr_path,
+                "parms_missed": parms_missed,
             }
 
         return run_on_main(_on_main, label="cops:_handle_cops_composite_aovs")

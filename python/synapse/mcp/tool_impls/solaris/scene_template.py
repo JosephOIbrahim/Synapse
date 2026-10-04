@@ -24,6 +24,12 @@ except ImportError:
     HOU_AVAILABLE = False
 
 try:
+    from synapse.core.parm_report import note_missing
+except ImportError:  # standalone/test mode
+    def note_missing(missed, node, *names):
+        missed.append("|".join(names))
+
+try:
     from synapse.core.errors import NodeNotFoundError, HoudiniUnavailableError, ValidationError
 except ImportError:
     class ValidationError(ValueError): pass
@@ -278,18 +284,25 @@ def execute(params: Dict) -> Dict:
     try:
         with hou.undos.group(f"SYNAPSE: Create scene template '{scene_name}'"):
             chain = []
+            parms_missed = []  # B1: guarded writes that did not land
 
             # 1. Primitive LOP — hierarchy root
             prim = parent.createNode("primitive", f"primitive_{scene_name}")
             primpath_parm = prim.parm("primpath")
             if primpath_parm:
                 primpath_parm.set(f"/{scene_name}")
+            else:
+                note_missing(parms_missed, prim, "primpath")
             primtype_parm = prim.parm("primtype")
             if primtype_parm:
                 primtype_parm.set("Xform")
+            else:
+                note_missing(parms_missed, prim, "primtype")
             primkind_parm = prim.parm("primkind")
             if primkind_parm:
                 primkind_parm.set("group")
+            else:
+                note_missing(parms_missed, prim, "primkind")
             chain.append(prim)
             prev = prim
 
@@ -299,9 +312,13 @@ def execute(params: Dict) -> Dict:
                 soppath_parm = imp.parm("soppath")
                 if soppath_parm:
                     soppath_parm.set(sop_path)
+                else:
+                    note_missing(parms_missed, imp, "soppath")
                 pp = imp.parm("primpath")
                 if pp:
                     pp.set(f"/{scene_name}/geo/$OS")
+                else:
+                    note_missing(parms_missed, imp, "primpath")
                 imp.setInput(0, prev)
                 chain.append(imp)
                 prev = imp
@@ -311,6 +328,8 @@ def execute(params: Dict) -> Dict:
             cp = cam.parm("primpath")
             if cp:
                 cp.set(f"/{scene_name}/cam/$OS")
+            else:
+                note_missing(parms_missed, cam, "primpath")
             cam.setInput(0, prev)
             chain.append(cam)
             prev = cam
@@ -320,6 +339,8 @@ def execute(params: Dict) -> Dict:
             mp = matlib.parm("primpath")
             if mp:
                 mp.set(f"/{scene_name}/MTL/$OS")
+            else:
+                note_missing(parms_missed, matlib, "primpath")
             matlib.setInput(0, prev)
             chain.append(matlib)
             prev = matlib
@@ -329,6 +350,8 @@ def execute(params: Dict) -> Dict:
             sp = sky.parm("primpath")
             if sp:
                 sp.set(f"/{scene_name}/LGT/$OS")
+            else:
+                note_missing(parms_missed, sky, "primpath")
             sky.setInput(0, prev)
             chain.append(sky)
             prev = sky
@@ -340,17 +363,25 @@ def execute(params: Dict) -> Dict:
             eng_parm = rs.parm("engine")
             if eng_parm:
                 eng_parm.set("XPU" if render_engine == "karma_xpu" else "CPU")
+            else:
+                note_missing(parms_missed, rs, "engine")
             # Resolution
             resx = rs.parm("resx")
             resy = rs.parm("resy")
             if resx:
                 resx.set(resolution[0])
+            else:
+                note_missing(parms_missed, rs, "resx")
             if resy:
                 resy.set(resolution[1])
+            else:
+                note_missing(parms_missed, rs, "resy")
             # Camera
             cam_parm = rs.parm("camera")
             if cam_parm:
                 cam_parm.set(f"/{scene_name}/cam/camera1")
+            else:
+                note_missing(parms_missed, rs, "camera")
             rs.setInput(0, prev)
             chain.append(rs)
             prev = rs
@@ -360,6 +391,8 @@ def execute(params: Dict) -> Dict:
             out_parm = rop.parm("outputimage")
             if out_parm:
                 out_parm.set(output_path)
+            else:
+                note_missing(parms_missed, rop, "outputimage")
             rop.setInput(0, prev)
             chain.append(rop)
 
@@ -396,6 +429,7 @@ def execute(params: Dict) -> Dict:
                 "hierarchy_root": f"/{scene_name}",
                 "render_rop": rop.path(),
                 "display_node": display_node,
+                "parms_missed": parms_missed,
                 "primitive_paths": {
                     k: v.format(scene_name=scene_name)
                     for k, v in _PATH_TEMPLATES.items()

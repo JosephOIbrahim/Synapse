@@ -19,6 +19,12 @@ except ImportError:
     HOU_AVAILABLE = False
 
 try:
+    from synapse.core.parm_report import note_missing
+except ImportError:  # standalone/test mode
+    def note_missing(missed, node, *names):
+        missed.append("|".join(names))
+
+try:
     from synapse.core.errors import NodeNotFoundError, HoudiniUnavailableError, ValidationError
 except ImportError:
     class ValidationError(ValueError): pass
@@ -312,6 +318,8 @@ def execute(params: Dict) -> Dict:
 
             sop_geo.layoutChildren()
 
+            parms_missed = []  # B1: guarded writes that did not land
+
             # Material import via Reference LOP
             mat_ref_path = None
             ref_lop = None
@@ -320,12 +328,18 @@ def execute(params: Dict) -> Dict:
                 fp = ref_lop.parm("filepath1")
                 if fp:
                     fp.set(usdc_path)
+                else:
+                    note_missing(parms_missed, ref_lop, "filepath1")
                 pp = ref_lop.parm("primpath")
                 if pp:
                     pp.set("/materials/*")
+                else:
+                    note_missing(parms_missed, ref_lop, "primpath")
                 dp = ref_lop.parm("destpath")
                 if dp:
                     dp.set("asset/mtl/")
+                else:
+                    note_missing(parms_missed, ref_lop, "destpath")
                 mat_ref_path = ref_lop.path()
 
             # Component Material
@@ -342,10 +356,14 @@ def execute(params: Dict) -> Dict:
             name_parm = out_node.parm("name")
             if name_parm:
                 name_parm.set(asset_name)
+            else:
+                note_missing(parms_missed, out_node, "name")
             if export_path:
                 fp = out_node.parm("filepath")
                 if fp:
                     fp.set(export_path)
+                else:
+                    note_missing(parms_missed, out_node, "filepath")
 
             comp.layoutChildren()
             parent.layoutChildren()
@@ -365,6 +383,7 @@ def execute(params: Dict) -> Dict:
                 "geometry_nodes": geometry_nodes,
                 "material_reference": mat_ref_path,
                 "export_path": export_path,
+                "parms_missed": parms_missed,
             }
 
     except Exception:

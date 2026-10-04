@@ -20,6 +20,12 @@ except ImportError:
     HOU_AVAILABLE = False
 
 try:
+    from synapse.core.parm_report import note_missing
+except ImportError:  # standalone/test mode
+    def note_missing(missed, node, *names):
+        missed.append("|".join(names))
+
+try:
     from synapse.core.aliases import resolve_param, resolve_param_with_default
     from synapse.core.errors import NodeNotFoundError, HoudiniUnavailableError, ValidationError
 except ImportError:
@@ -300,6 +306,8 @@ def execute(params: Dict) -> Dict:
                 mat_node.setInput(0, geo_node)
                 out_node.setInput(0, mat_node)
 
+            parms_missed = []  # B1: guarded writes that did not land
+
             # -- Configure Component Geometry --
             if geo_node and geometry_source:
                 # If it's a SOP path, the componentgeometry node handles
@@ -307,16 +315,22 @@ def execute(params: Dict) -> Dict:
                 soppath_parm = geo_node.parm("soppath")
                 if soppath_parm:
                     soppath_parm.set(geometry_source)
+                else:
+                    note_missing(parms_missed, geo_node, "soppath")
 
             # -- Configure Component Output --
             if out_node:
                 name_parm = out_node.parm("name")
                 if name_parm:
                     name_parm.set(asset_name)
+                else:
+                    note_missing(parms_missed, out_node, "name")
                 if export_path:
                     filepath_parm = out_node.parm("filepath")
                     if filepath_parm:
                         filepath_parm.set(export_path)
+                    else:
+                        note_missing(parms_missed, out_node, "filepath")
 
             # -- Layout --
             comp.layoutChildren()
@@ -343,6 +357,7 @@ def execute(params: Dict) -> Dict:
                 "strategy": "native" if use_native else "subnet",
                 "internal_nodes": internal,
                 "export_path": export_path,
+                "parms_missed": parms_missed,
             }
 
     except Exception as e:
