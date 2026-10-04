@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import copy
 import json
+from pathlib import Path
 from typing import Any, Dict, FrozenSet, List, Optional
 
 RECIPES: Dict[str, Dict[str, Any]] = {
@@ -193,6 +194,15 @@ def render(key: str) -> str:
     r = RECIPES[key]
     lines = ["VERIFIED RECIPE (Houdini 22.0.400, built with 0 error/warning badges): " + r["title"], ""]
     lines += ["- " + n for n in r["notes"]]
+    if key == "scatter_instances":
+        lines += ["", "Use the host resolver instead of discovering the five bindings individually:",
+                  'synapse_solaris_build_graph({"recipe":"scatter_instances","dry_run":true})',
+                  "If UNKNOWN, stop and report the missing evidence; do not guess or build.",
+                  'If RESOLVED, synapse_solaris_build_graph({"recipe":"scatter_instances"}) rechecks and builds.',
+                  "Pass no nodes, bindings or parameter overrides. Recipe literals win over memory, "
+                  "including enabledirection=1 and maxangle=20. The sphere prototype is editable "
+                  "at /prototypes/rock_a for artist material binding."]
+        return "\n".join(lines)
     lines += ["", "Every node type and parm name below is verified on this build: do NOT create probe "
               "nodes, scout, or look them up again. Fill the placeholders, then make this ONE "
               "synapse_solaris_build_graph call and read its receipt (badges, wires, display):"]
@@ -204,14 +214,184 @@ def render(key: str) -> str:
 def payload(key: str, **subs: str) -> Dict[str, Any]:
     """The recipe payload with placeholders filled (keys given without the angle
     brackets, e.g. UPSTREAM='demo_cam'). Unfilled placeholders raise."""
-    text = json.dumps(RECIPES[key]["payload"])
-    for name, value in subs.items():
-        text = text.replace("<%s>" % name, str(value).replace("\\", "/"))
+    def fill(value):
+        if isinstance(value, dict):
+            return {k: fill(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [fill(v) for v in value]
+        if isinstance(value, str):
+            for name, replacement in subs.items():
+                value = value.replace("<%s>" % name, str(replacement).replace("\\", "/"))
+        return value
+    result = fill(RECIPES[key]["payload"])
+    text = json.dumps(result, sort_keys=True)
     missing = [k for k in RECIPES[key]["fill"] if k in text]
     if missing:
         raise ValueError("unfilled placeholders: %s" % ", ".join(missing))
-    return json.loads(text)
+    return result
 
 
 def describe_all() -> List[Dict[str, Any]]:
     return [{"key": k, "title": r["title"], "types": list(r["types"])} for k, r in RECIPES.items()]
+
+
+def resolve_scatter(hou_module, parent_path="/stage") -> Dict[str, Any]:
+    """Read one supported imported-world chain; never choose between candidates.
+
+    Must run on Houdini's main thread. Collider identity comes from the
+    importer's persisted grounding provenance, not a generated filename.
+    The supported splice is a Camera LOP directly feeding Render Settings.
+    No memory store, remote request, geometry creation or parameter write.
+    """
+    bindings = {name.strip("<>"): {"value": "UNKNOWN", "source": None}
+                for name in RECIPES["scatter_instances"]["fill"]}
+
+    def unknown(reason):
+        return {"status": "UNKNOWN", "recipe": "scatter_instances",
+                "bindings": bindings, "reason": reason, "build_allowed": False}
+
+    def bind(name, value, source):
+        bindings[name] = {"value": str(value), "source": source}
+
+    if parent_path != "/stage":
+        return unknown("Scatter resolver supports only the /stage network")
+    host_errors = tuple(cls for name in ("OperationFailed", "ObjectWasDeleted")
+                        if isinstance((cls := getattr(hou_module, name, None)), type)
+                        and issubclass(cls, BaseException))
+    read_errors = (AttributeError, KeyError, TypeError, ValueError, OSError, RuntimeError) + host_errors
+    try:
+        parent = hou_module.node(parent_path)
+        if parent is None:
+            return unknown("LOP network is missing")
+        shown = parent.displayNode()
+        if shown is None:
+            return unknown("LOP network has no displayed stage")
+        stage = shown.stage()
+        if stage is None:
+            return unknown("Displayed stage is unavailable")
+        cameras = [p for p in stage.Traverse() if p.GetTypeName() == "Camera"]
+        if len(cameras) != 1:
+            return unknown("Expected exactly one camera on the displayed stage")
+        camera_path = str(cameras[0].GetPath())
+        bind("CAMERA_PRIM", camera_path, shown.path() + ":stage Camera")
+        chain = [shown] + list(shown.inputAncestors())
+        camera_nodes = [n for n in chain if not n.isBypassed()
+                        and n.type().nameComponents()[2] == "camera"
+                        and n.parm("primpath") is not None
+                        and n.parm("primpath").evalAsString() == camera_path]
+        if len(camera_nodes) != 1:
+            return unknown("Expected exactly one active Camera LOP authoring this camera")
+        camera = camera_nodes[0]
+        downstream = [n for n in parent.children() if not n.isBypassed()
+                      and n.type().nameComponents()[2] in ("rendersettings", "karmarendersettings")
+                      and n.input(0) == camera and n in chain]
+        if len(downstream) != 1 or len(camera.outputs()) != 1:
+            return unknown("Camera must feed exactly one Render Settings node directly")
+        bind("UPSTREAM", camera.path(), camera.path() + ":primpath")
+        bind("DOWNSTREAM", downstream[0].path(), downstream[0].path() + ":input[0]")
+        upstream = [camera] + list(camera.inputAncestors())
+        imports = [n for n in upstream if not n.isBypassed()
+                   and n.type().nameComponents()[2] == "sopimport"
+                   and n.userData("synapse.worldlabs")]
+        if len(imports) != 1:
+            return unknown("Expected exactly one provenance-bearing world import upstream")
+        world = imports[0]
+        root = world.parm("pathprefix").evalAsString()
+        if not root.startswith("/") or root == "/" or not stage.GetPrimAtPath(root).IsValid():
+            return unknown("Imported world root is not a valid live prim")
+        splats = [p for p in stage.Traverse()
+                  if p.GetTypeName() == "ParticleField3DGaussianSplat"
+                  and (str(p.GetPath()) == root
+                       or str(p.GetPath()).startswith(root.rstrip("/") + "/"))]
+        if not splats:
+            return unknown("World root has no live native splat prim")
+        bind("WORLD_PRIM", root, world.path() + ":pathprefix + live splat descendants")
+        sop = hou_module.node(world.parm("soppath").evalAsString())
+        if sop is None:
+            return unknown("World import SOP source is missing")
+        sources = [n for n in [sop] + list(sop.inputAncestors())
+                   if n.type().nameComponents()[2] == "file" and n.parm("file") is not None]
+        if len(sources) != 1:
+            return unknown("World source must resolve to exactly one File SOP")
+        source = Path(sources[0].parm("file").evalAsString())
+        provenance = json.loads(world.userData("synapse.worldlabs"))
+        collider_name = provenance.get("grounding", {}).get("collider")
+        if (not isinstance(collider_name, str) or not collider_name
+                or Path(collider_name).name != collider_name
+                or "/" in collider_name or "\\" in collider_name):
+            return unknown("Import provenance does not identify a sibling collider")
+        collider = source.with_name(collider_name)
+        if not source.is_absolute() or not source.is_file() or not collider.is_file():
+            return unknown("Recorded source or collider file is missing")
+        if source.suffix.lower() != ".ply" or collider.suffix.lower() != ".glb":
+            return unknown("Recorded source/collider formats are unsupported")
+        # Multiple sibling candidates are unresolved, even if provenance names one.
+        from synapse.worldlabs.importer import world_stem
+        candidates = {source.with_name(stem + "_collider.glb")
+                      for stem in (world_stem(source), source.stem)}
+        present = {p.resolve() for p in candidates if p.is_file()}
+        if present != {collider.resolve()}:
+            return unknown("Sibling collider candidates are missing, ambiguous or contradict provenance")
+        bind("COLLIDER_GLB", collider.as_posix(),
+             world.path() + ":synapse.worldlabs.grounding.collider + " + sources[0].path() + ":file")
+        values = {k: v["value"] for k, v in bindings.items()}
+        return {"status": "RESOLVED", "recipe": "scatter_instances", "bindings": bindings,
+                "build_allowed": True, "payload": payload("scatter_instances", **values),
+                "limits": ["Current-frame camera mask; not occlusion or whole-move coverage",
+                           "Collider association is recorded importer provenance, not a content hash"]}
+    except read_errors as error:
+        return unknown("Cannot read required binding evidence: %s" % error)
+
+
+def scatter_request(hou_module, request: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve-only or canonical recipe execution request; no model overrides.
+
+    Execution re-reads the scene rather than trusting a previous resolver
+    payload. The caller applies the returned graph only when build_allowed.
+    """
+    allowed = {"recipe", "recipe_action", "parent"}
+    extra = set(request) - allowed
+    if extra:
+        raise ValueError("Scatter recipe parameters are fixed; unsupported overrides: "
+                         + ", ".join(sorted(extra)))
+    if request.get("recipe") != "scatter_instances":
+        raise ValueError("Only scatter_instances is supported by this resolver")
+    action = request.get("recipe_action", "resolve")
+    if action not in ("resolve", "build"):
+        raise ValueError("recipe_action must be resolve or build")
+    result = resolve_scatter(hou_module, request.get("parent", "/stage"))
+    result["action"] = action
+    return result
+
+
+def scatter_fixed_parameters() -> Dict[str, Any]:
+    """Canonical literal Scatter parms; live camera/target bindings stay separate."""
+    spec = next(n for n in RECIPES["scatter_instances"]["payload"]["nodes"]
+                if n.get("type") == "scatterinstances")
+    return {k: copy.deepcopy(v) for k, v in spec["parms"].items()
+            if not (isinstance(v, str) and "<" in v)}
+
+
+def enforce_scatter_parameters(nodes):
+    """Copy the graph and replace every Scatter literal with its recipe value.
+
+    Existing references are wiring-only and never have their parms written.
+    Corrections describe request normalization, not proof of a live parm write.
+    """
+    if not isinstance(nodes, list) or any(not isinstance(node, dict) for node in nodes):
+        raise ValueError("Graph nodes must be a list of objects")
+    result = copy.deepcopy(nodes)
+    corrections = []
+    fixed = scatter_fixed_parameters()
+    for node in result:
+        if node.get("existing") or "scatterinstances" not in str(node.get("type", "")).split("::"):
+            continue
+        parms = node.setdefault("parms", {})
+        if not isinstance(parms, dict):
+            raise ValueError("scatterinstances parms must be an object")
+        for name, value in fixed.items():
+            if name not in parms or parms[name] != value or type(parms[name]) is not type(value):
+                corrections.append({"node": node.get("id"), "parm": name,
+                                    "requested": parms.get(name), "fixed": value})
+            parms[name] = value
+    return result, corrections

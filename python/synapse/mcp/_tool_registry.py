@@ -755,12 +755,19 @@ TOOL_DEFS: list[tuple] = [
      "sublayer stacks, parallel streams. Specify nodes and connections as "
      "a directed acyclic graph. Supports pre-built templates for common "
      "patterns (multi_asset_merge, sublayer_stack, render_pass_split, "
-     "lighting_rig). copernicus_lookdev creates a fixed modern Copernicus lookdev fixture "
-     "on Houdini 22.0.400 in a new owned subnet, preserving existing display. An empty network displays the new fixture. "
+     "lighting_rig). "
+     "For Scatter rocks/instances use recipe='scatter_instances': dry_run=true resolves live bindings "
+     "read-only in one call; omit dry_run to re-resolve and build the canonical recipe. UNKNOWN means "
+     "no build. Pass no nodes/connections or parameter overrides with recipe. All scatterinstances "
+     "builds enforce the recipe's fixed parameters (including maxangle=20) and report corrections. "
+     "copernicus_lookdev creates a fixed modern Copernicus lookdev fixture on Houdini 22.0.400 "
+     "in a new owned subnet, preserving existing display. An empty network displays the new fixture. "
      "It verifies configuration/USD, not rendered appearance. Use assemble_chain for simple linear wiring. "
      "To insert nodes between existing A->B in ONE call: reference A and B with existing:true, wire "
      "A->new...->B, and mark the last wire insert:true. No template. Do not pass display_node.",
      {"type": "object", "properties": {
+         "recipe": {"type": "string", "enum": ["scatter_instances"],
+                    "description": "Resolve/build the fixed Scatter recipe from live evidence. dry_run=true returns bindings without building; otherwise resolve again and build only when known. No model overrides."},
          "parent": {"type": "string", "description": "LOP network path (default: /stage)"},
          "nodes": {"type": "array", "items": {"type": "object", "properties": {
              "id": {"type": "string", "description": "Local graph ID for connections"},

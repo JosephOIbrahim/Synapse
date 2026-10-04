@@ -862,6 +862,34 @@ class SolarisGraphMixin:
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError()
 
+        if "recipe" in payload:
+            from ..routing.solaris_recipes import scatter_request
+            from .main_thread import run_on_main, _SLOW_TIMEOUT
+            extra = set(payload) - {"recipe", "parent", "dry_run"}
+            if extra:
+                raise SynapseUserError("Recipe parameters are fixed; remove overrides: "
+                                       + ", ".join(sorted(extra)))
+            if not isinstance(payload.get("dry_run", False), bool):
+                raise SynapseUserError("dry_run must be a boolean")
+
+            def _recipe_on_main():
+                try:
+                    resolved = scatter_request(hou, {
+                        "recipe": payload["recipe"], "parent": payload.get("parent", "/stage"),
+                        "recipe_action": "resolve" if payload.get("dry_run", False) else "build"})
+                except ValueError as error:
+                    raise SynapseUserError(str(error)) from error
+                if not resolved["build_allowed"] or payload.get("dry_run", False):
+                    return resolved
+                # Resolution and application share the same main-thread turn.
+                # Never apply a graph supplied back by the model.
+                result = self._handle_solaris_build_graph(resolved["payload"])
+                result["recipe_resolution"] = {k: v for k, v in resolved.items() if k != "payload"}
+                return result
+
+            return run_on_main(_recipe_on_main, timeout=_SLOW_TIMEOUT,
+                               label="solaris_graph:scatter_recipe")
+
         if payload.get("template") == "copernicus_lookdev":
             from .solaris_lookdev import validate_request, build_lookdev
             from .main_thread import run_on_main, _SLOW_TIMEOUT
@@ -912,6 +940,12 @@ class SolarisGraphMixin:
                 display_node_id = template_result.get("display_node")
 
         # ── Validation ──
+        from ..routing.solaris_recipes import enforce_scatter_parameters, scatter_fixed_parameters
+        try:
+            raw_nodes, scatter_corrections = enforce_scatter_parameters(raw_nodes)
+        except ValueError as error:
+            raise SynapseUserError(str(error)) from error
+        fixed_scatter = scatter_fixed_parameters()
         valid, errors, warnings = validate_graph(raw_nodes, raw_connections, display_node_id)
         if not valid:
             raise SynapseUserError(
@@ -1017,6 +1051,7 @@ class SolarisGraphMixin:
                     "requested_display_node": plan["paths"][display_node_id],
                     "topology": topology, "merge_points": [plan["paths"][nid] for nid in merge_ids],
                     "ambiguous_merges": ambiguous_merges, "warnings": warnings,
+                    "scatter_parameter_corrections": scatter_corrections,
                     "layout": {"requested": orientation, "applied": False, "relayout": relayout},
                 }
             moved = []
@@ -1086,6 +1121,15 @@ class SolarisGraphMixin:
                                 # is exactly the case that silently vanished.
                                 # Resolve, then parmTuple, then REPORT the miss.
                                 landed, changed = _set_parm(node, parm_name, parm_value)
+                                is_fixed_scatter = (
+                                    "scatterinstances" in str(spec.get("type", "")).split("::")
+                                    and parm_name in fixed_scatter)
+                                if is_fixed_scatter:
+                                    parameter = node.parm(parm_name)
+                                    if (not landed or parameter is None
+                                            or parameter.eval() != fixed_scatter[parm_name]):
+                                        raise SynapseUserError("Fixed Scatter parameter did not verify: "
+                                                               + node.path() + ":" + parm_name)
                                 if landed:
                                     if changed:
                                         parms_changed = True
@@ -1095,6 +1139,20 @@ class SolarisGraphMixin:
                                     "parm": parm_name,
                                     "value": repr(parm_value)[:80],
                                 })
+
+                        # Read fixed literals again after ALL writes, so later
+                        # parameters/aliases cannot quietly undo the recipe.
+                        for nid in sorted_ids:
+                            spec = node_map[nid]
+                            if (nid in existing_nids
+                                    or "scatterinstances" not in str(spec.get("type", "")).split("::")):
+                                continue
+                            node = id_to_hou[nid]
+                            for name, value in fixed_scatter.items():
+                                parameter = node.parm(name)
+                                if parameter is None or parameter.eval() != value:
+                                    raise SynapseUserError("Fixed Scatter parameter did not verify: "
+                                                           + node.path() + ":" + name)
 
                         # 3. Apply the resolved plan, then read every wire back.
                         # Unordered ports compact gaps as they are wired. Fill
@@ -1336,6 +1394,7 @@ class SolarisGraphMixin:
                 ],
                 "sections": sections,
                 "parms_missed": parms_missed,
+                "scatter_parameter_corrections": scatter_corrections,
                 "connections_made": connections_made,
                 "display_node": display_after,
                 "display_observed": display_after_known,
