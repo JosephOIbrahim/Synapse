@@ -332,8 +332,10 @@ def resolve_scatter(hou_module, parent_path="/stage") -> Dict[str, Any]:
         present = {p.resolve() for p in candidates if p.is_file()}
         if present != {collider.resolve()}:
             return unknown("Sibling collider candidates are missing, ambiguous or contradict provenance")
+        # The key that holds this record carries a vendor's name. A binding label
+        # is text the model reads and can quote, so it says what the record is.
         bind("COLLIDER_GLB", collider.as_posix(),
-             world.path() + ":synapse.worldlabs.grounding.collider + " + sources[0].path() + ":file")
+             world.path() + ":import record, grounding collider + " + sources[0].path() + ":file")
         values = {k: v["value"] for k, v in bindings.items()}
         return {"status": "RESOLVED", "recipe": "scatter_instances", "bindings": bindings,
                 "build_allowed": True, "payload": payload("scatter_instances", **values),

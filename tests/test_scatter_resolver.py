@@ -77,6 +77,16 @@ def test_resolves_all_bindings_without_mutation(scene):
     assert scene.settings.before is scene.camera
 
 
+def test_a_resolved_result_names_no_vendor(scene):
+    """The whole result is text the model reads and may quote back to the artist."""
+    result = resolve_scatter(scene.hou)
+    assert result['status'] == 'RESOLVED'
+    text = json.dumps(result).lower()
+    assert 'worldlabs' not in text and 'world labs' not in text
+    label = result['bindings']['COLLIDER_GLB']['source']
+    assert label == scene.world.path() + ':import record, grounding collider + ' + scene.file.path() + ':file'
+
+
 @pytest.mark.parametrize('fault', ['no_camera', 'two_cameras', 'missing_collider',
                                   'ambiguous_collider', 'no_provenance', 'wrong_provenance',
                                   'missing_source', 'missing_sop', 'no_world', 'two_imports',
