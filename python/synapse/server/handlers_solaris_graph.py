@@ -940,7 +940,8 @@ class SolarisGraphMixin:
                 display_node_id = template_result.get("display_node")
 
         # ── Validation ──
-        from ..routing.solaris_recipes import enforce_scatter_parameters, scatter_fixed_parameters
+        from ..routing.solaris_recipes import (
+            enforce_scatter_parameters, is_recipe_scatter, scatter_fixed_parameters)
         try:
             raw_nodes, scatter_corrections = enforce_scatter_parameters(raw_nodes)
         except ValueError as error:
@@ -1122,8 +1123,7 @@ class SolarisGraphMixin:
                                 # Resolve, then parmTuple, then REPORT the miss.
                                 landed, changed = _set_parm(node, parm_name, parm_value)
                                 is_fixed_scatter = (
-                                    "scatterinstances" in str(spec.get("type", "")).split("::")
-                                    and parm_name in fixed_scatter)
+                                    is_recipe_scatter(spec) and parm_name in fixed_scatter)
                                 if is_fixed_scatter:
                                     parameter = node.parm(parm_name)
                                     if (not landed or parameter is None
@@ -1144,8 +1144,7 @@ class SolarisGraphMixin:
                         # parameters/aliases cannot quietly undo the recipe.
                         for nid in sorted_ids:
                             spec = node_map[nid]
-                            if (nid in existing_nids
-                                    or "scatterinstances" not in str(spec.get("type", "")).split("::")):
+                            if nid in existing_nids or not is_recipe_scatter(spec):
                                 continue
                             node = id_to_hou[nid]
                             for name, value in fixed_scatter.items():

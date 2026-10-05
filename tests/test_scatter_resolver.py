@@ -178,7 +178,7 @@ def test_named_houdini_exception_is_unknown(scene):
 def test_generic_enforcement_preserves_bindings_and_reports_every_correction():
     from synapse.routing.solaris_recipes import enforce_scatter_parameters, scatter_fixed_parameters
     nodes = [{'id': 's', 'type': 'scatterinstances',
-              'parms': {'maxangle': 45, 'enabledirection': 0,
+              'parms': {'primpath': '/World/scatter_rocks', 'maxangle': 45, 'enabledirection': 0,
                         'camerapath': '/cameras/artist', 'scattertargetgeometry': '/World/target'}}]
     normalized, corrections = enforce_scatter_parameters(nodes)
     assert nodes[0]['parms']['maxangle'] == 45  # incoming request remains intact
@@ -186,18 +186,34 @@ def test_generic_enforcement_preserves_bindings_and_reports_every_correction():
         assert normalized[0]['parms'][name] == value
     assert normalized[0]['parms']['camerapath'] == '/cameras/artist'
     assert normalized[0]['parms']['scattertargetgeometry'] == '/World/target'
-    assert {c['parm'] for c in corrections} == set(scatter_fixed_parameters())
+    # primpath is what identified the node as the recipe's, so it needs no correction.
+    assert {c['parm'] for c in corrections} == set(scatter_fixed_parameters()) - {'primpath'}
     assert next(c for c in corrections if c['parm'] == 'maxangle')['requested'] == 45
 
 
 def test_enforcement_is_idempotent_and_preserves_other_tools():
     from synapse.routing.solaris_recipes import enforce_scatter_parameters
-    nodes = [{'id': 's', 'type': 'scatterinstances::1.0'},
+    nodes = [{'id': 's', 'type': 'scatterinstances::1.0', 'parms': {'primpath': '/World/scatter_rocks'}},
              {'id': 'light', 'type': 'light', 'parms': {'maxangle': 45}}]
     normalized, _ = enforce_scatter_parameters(nodes)
     again, changes = enforce_scatter_parameters(normalized)
     assert again == normalized and changes == []
     assert again[1] == nodes[1]
+
+
+def test_an_artists_own_scatter_is_built_as_sent():
+    """Enforcement is for the recipe's node only (primpath /World/scatter_rocks)."""
+    from synapse.routing.solaris_recipes import enforce_scatter_parameters, is_recipe_scatter
+    trees = {'id': 't', 'type': 'scatterinstances',
+             'parms': {'primpath': '/World/trees', 'maxangle': 60, 'scattercount': 500,
+                       'protogroupprims0': '/prototypes/pine'}}
+    bare = {'id': 'b', 'type': 'scatterinstances'}
+    odd = {'id': 'o', 'type': 'scatterinstances', 'parms': 'not-an-object'}
+    normalized, corrections = enforce_scatter_parameters([trees, bare, odd])
+    assert normalized == [trees, bare, odd]
+    assert corrections == []
+    assert not any(is_recipe_scatter(n) for n in (trees, bare, odd))
+    assert is_recipe_scatter({'type': 'scatterinstances::2.0', 'parms': {'primpath': '/World/scatter_rocks'}})
 
 
 @pytest.fixture
@@ -255,7 +271,8 @@ def test_generic_build_preview_enforces_without_resolver(handler_env, monkeypatc
         'bindings': {'s': None}, 'paths': {'s': '/stage/scatter'}, 'connections': []})
     monkeypatch.setattr(graph, 'observed_display', lambda parent: (None, True))
     result = graph.SolarisGraphMixin()._handle_solaris_build_graph({
-        'nodes': [{'id': 's', 'type': 'scatterinstances', 'parms': {'maxangle': 45}}],
+        'nodes': [{'id': 's', 'type': 'scatterinstances',
+                   'parms': {'primpath': '/World/scatter_rocks', 'maxangle': 45}}],
         'dry_run': True})
     correction = next(c for c in result['scatter_parameter_corrections'] if c['parm'] == 'maxangle')
     assert correction == {'node': 's', 'parm': 'maxangle', 'requested': 45, 'fixed': 20}

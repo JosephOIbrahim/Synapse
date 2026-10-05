@@ -372,9 +372,24 @@ def scatter_fixed_parameters() -> Dict[str, Any]:
             if not (isinstance(v, str) and "<" in v)}
 
 
-def enforce_scatter_parameters(nodes):
-    """Copy the graph and replace every Scatter literal with its recipe value.
+def is_recipe_scatter(spec) -> bool:
+    """True for the rock recipe's own Scatter node, and only for it.
 
+    The recipe's node is a scatterinstances spec that authors the recipe's
+    instancer prim. Any other scatterinstances node is an artist's own scatter:
+    it is built as sent and never held to the recipe's literals.
+    """
+    if not isinstance(spec, dict) or "scatterinstances" not in str(spec.get("type", "")).split("::"):
+        return False
+    parms = spec.get("parms")
+    return isinstance(parms, dict) and parms.get("primpath") == scatter_fixed_parameters()["primpath"]
+
+
+def enforce_scatter_parameters(nodes):
+    """Copy the graph and hold the recipe's own Scatter node to its literals.
+
+    Only a node is_recipe_scatter accepts is touched; another scatterinstances
+    node passes through exactly as sent, with no corrections.
     Existing references are wiring-only and never have their parms written.
     Corrections describe request normalization, not proof of a live parm write.
     """
@@ -384,11 +399,9 @@ def enforce_scatter_parameters(nodes):
     corrections = []
     fixed = scatter_fixed_parameters()
     for node in result:
-        if node.get("existing") or "scatterinstances" not in str(node.get("type", "")).split("::"):
+        if node.get("existing") or not is_recipe_scatter(node):
             continue
-        parms = node.setdefault("parms", {})
-        if not isinstance(parms, dict):
-            raise ValueError("scatterinstances parms must be an object")
+        parms = node["parms"]
         for name, value in fixed.items():
             if name not in parms or parms[name] != value or type(parms[name]) is not type(value):
                 corrections.append({"node": node.get("id"), "parm": name,
