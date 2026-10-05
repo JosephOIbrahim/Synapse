@@ -22,6 +22,20 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.94.1 - A reopened store keeps real USD
+
+Three commits on top of v5.94.0: a documentation update and two fixes. A memory
+store reopened in the same process keeps its real-USD mode: Moneta's USD target
+kept its root layer after close, so the second open a rebind makes could not
+create it and fell back. Closing a store now releases that layer. In the Houdini
+GUI a rebind loaded the live store twice with no failure line, and Doctor
+reported USD authoring enabled; on 10/4 the log held that failure line four
+times. The Scatter resolver's collider label no longer carries a vendor's name.
+A five-beat rehearsal ran on this code, and the resolver has now run three times
+in a newly launched Houdini, each in three tool calls at `maxangle` 20. The
+notes list what the rehearsal did not cover. This is a source release with no new
+Windows Setup. See [v5.94.1](docs/releases/v5.94.1.md).
+
 ## v5.94.0 - Recipes that hold, memory that answers, turns that end
 
 Fourteen commits on top of v5.93.3, from one day of hardening before the demo
