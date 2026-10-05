@@ -1,242 +1,871 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <title>SYNAPSE help</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta name="color-scheme" content="dark">
 <style>
-:root{--void:#0A0A0A;--panel:#111;--carbon:#1A1A1A;--graphite:#2A2A2A;
- --bone:#CCC;--silver:#999;--slate:#555;--white:#F0F0F0;
- --signal:#8FB3D9;--deep:#627A93;--ink:#0F1F2B;--warm:#FF7759;
- --sans:"Space Grotesk",-apple-system,"Segoe UI",sans-serif;
- --mono:"Space Mono",ui-monospace,Consolas,monospace}
+/* The panel's own system. Colours are the headless seed of
+   python/synapse/panel/designsystem/tokens.py; the fonts are the files that ship
+   with the panel, so this page makes no network request. */
+@font-face{font-family:"Space Grotesk";font-weight:300 700;font-display:swap;
+  src:local("Space Grotesk"),
+      url("../../python/synapse/panel/designsystem/fonts/SpaceGrotesk-Variable.ttf") format("truetype")}
+@font-face{font-family:"Space Mono";font-weight:400;font-display:swap;
+  src:local("Space Mono"),
+      url("../../python/synapse/panel/designsystem/fonts/SpaceMono-Regular.ttf") format("truetype")}
+@font-face{font-family:"Space Mono";font-weight:700;font-display:swap;
+  src:local("Space Mono Bold"),
+      url("../../python/synapse/panel/designsystem/fonts/SpaceMono-Bold.ttf") format("truetype")}
+
+/* Space between things sits on the panel's grid: 4, 8, 12, 16, 24, 32 and 48 pixels,
+   then steps of 16. */
+:root{
+  --panel:#2A2A2A; --ground:#1F1F1F;
+  --hair:#303030; --line:#363636; --line-strong:#3C3C3C;
+  --ink:#C5C5C5; --bright:#DEDEDE; --quiet:#9E9E9E;
+  --warm:#FF7759; --signal:#8FB3D9;
+  --sans:"Space Grotesk","DM Sans","Segoe UI",sans-serif;
+  --mono:"Space Mono","JetBrains Mono",Consolas,monospace;
+  --name:13.5rem; --gap:4rem; --measure:38rem; --gutter:2rem;
+  --lead:1.8;    /* one line pitch for a name and its answer, so the two columns share baselines */
+  --bar:9rem;    /* the sticky bar plus air: a jump lands below it, and the map stops below it */
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--void);color:var(--bone);font-family:var(--sans);
- font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
-.bar{border-bottom:1px solid var(--graphite);background:var(--panel);
- position:sticky;top:0;z-index:10}
-.bar .in{max-width:860px;margin:0 auto;padding:0 32px}
-.id{display:flex;align-items:center;gap:13px;padding:26px 0 18px}
-.mark{width:14px;height:14px;border:2px solid var(--warm);border-radius:50%;
- border-right-color:transparent;transform:rotate(-30deg)}
-.word{font-weight:600;letter-spacing:.22em;font-size:17px;color:var(--white)}
-.ver{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
- color:var(--slate);text-transform:uppercase}
-nav{display:flex;gap:34px}
-nav button{background:none;border:0;padding:0 0 14px;cursor:pointer;
- font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
- color:var(--slate);border-bottom:2px solid transparent;transition:color .12s}
-nav button:hover{color:var(--silver)}
-nav button[aria-selected="true"]{color:var(--white);border-bottom-color:var(--signal)}
-main{max-width:860px;margin:0 auto;padding:64px 32px 160px}
-section[hidden]{display:none}
-.lede{font-size:22px;line-height:1.5;color:var(--white);letter-spacing:-.015em;
- margin:0 0 14px;max-width:620px}
-.sub{color:var(--silver);margin:0 0 64px;max-width:620px}
-h2{font-size:11px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;
- color:var(--slate);font-family:var(--mono);margin:0 0 26px;
- padding-bottom:12px;border-bottom:1px solid var(--graphite)}
-.topic{margin:0 0 40px;max-width:640px}
-.topic h3{font-size:17px;font-weight:600;color:var(--white);margin:0 0 4px;
- letter-spacing:-.01em}
-.topic .desc{color:var(--silver);font-size:14px;margin:0 0 12px}
-.topic p{margin:0 0 12px}
-.group{margin-bottom:80px}
-code{font-family:var(--mono);font-size:.87em;color:var(--signal)}
-.cmd{display:block;font-family:var(--mono);font-size:14px;color:var(--signal);
- background:var(--carbon);border-left:2px solid var(--deep);
- padding:14px 18px;margin:14px 0;overflow-x:auto}
-a{color:var(--signal);text-decoration:none;border-bottom:1px solid var(--graphite)}
-a:hover{border-bottom-color:var(--signal)}
-strong{color:var(--white);font-weight:600}
-.warn{border-left:2px solid var(--warm);padding-left:18px;margin:16px 0}
+html{scroll-padding-top:var(--bar)}
+body{margin:0;background:var(--panel);color:var(--ink);font-family:var(--sans);
+  font-size:1.0625rem;line-height:var(--lead);-webkit-font-smoothing:antialiased}
+.wrap{max-width:76rem;margin:0 auto;padding:0 var(--gutter)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+a{color:var(--signal);text-decoration:underline;text-decoration-color:var(--line-strong);
+  text-underline-offset:.2em}
+a:hover{text-decoration-color:var(--signal)}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:2px}
+b{font-weight:600;color:var(--bright)}
+p{margin:0 0 1rem;text-wrap:pretty}
+p:last-child{margin-bottom:0}
+
+/* ---- the bar: the mark, the word, and five doors ---- */
+.bar{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+.id{display:flex;align-items:center;gap:.75rem;padding:1.5rem 0 .75rem;line-height:1.4}
+.ring{width:.875rem;height:.875rem;flex:none;border:2px solid var(--warm);border-radius:50%;
+  border-right-color:transparent;transform:rotate(-30deg)}
+.word{font-weight:600;letter-spacing:.22em;font-size:1.0625rem;color:var(--bright)}
+.ver{margin-left:auto;display:flex;gap:1rem;font-size:.8125rem;color:var(--quiet)}
+.doors{display:flex;gap:3rem;overflow-x:auto}
+.doors a{flex:none;padding:.5rem 0 1rem;line-height:1.4;color:var(--quiet);text-decoration:none;
+  font-weight:500;border-bottom:2px solid transparent}
+.doors a:hover{color:var(--bright)}
+.doors a[aria-current="true"]{color:var(--bright);border-bottom-color:var(--warm)}
+
+/* ---- a door's opening statement: one sentence to a line ---- */
+.inner{padding-top:5rem;padding-bottom:6rem}
+.hero{margin:0 0 2rem;max-width:17ch;font-weight:500;color:var(--bright);
+  font-size:clamp(2.5rem,6.4vw,4.5rem);line-height:1.02;letter-spacing:-.03em}
+.hero span{display:block}
+.sub{max-width:42rem;margin:0 0 5rem;font-size:1.25rem;line-height:1.6;text-wrap:balance}
+.sub span{display:block}
+.sub span+span{margin-top:.5rem}
+
+/* ---- the sheet: a name on the left, its answer on the right ---- */
+.group{margin:5rem 0 2rem;font-size:1.75rem;line-height:1.2;font-weight:500;
+  letter-spacing:-.015em;color:var(--bright)}
+.row{display:grid;grid-template-columns:var(--name) minmax(0,var(--measure));
+  column-gap:var(--gap);padding:2rem 0;border-top:1px solid var(--line)}
+.row h4{margin:0;font-size:1.0625rem;line-height:var(--lead);font-weight:600;color:var(--bright);
+  text-wrap:balance}
+.where{margin:.25rem 0 0;font-size:.8125rem;line-height:1.5;color:var(--quiet)}
+/* where you are: the row a link or the map just took you to */
+.row.on h4,.row:target h4{color:var(--warm)}
+
+/* things you type sit in the dark well, as they do in the panel */
+.well{display:block;margin:1rem 0 1.5rem;padding:1rem 1.5rem;overflow-x:auto;background:var(--ground);
+  border:1px solid var(--line);border-radius:4px;font-family:var(--mono);font-size:.9375rem;
+  line-height:1.6;color:var(--signal)}
+.well:last-child{margin-bottom:0}
+code{font-family:var(--mono);font-size:.88em;color:var(--signal)}
+kbd{font-family:var(--mono);font-size:.8125rem;color:var(--bright);padding:.0625rem .375rem;
+  border:1px solid var(--line-strong);border-radius:4px;white-space:nowrap}
+/* words the panel shows you */
+.says{font-family:var(--mono);font-size:.88em;color:var(--bright);white-space:nowrap}
+.note{margin:1.5rem 0;padding-left:1rem;border-left:2px solid var(--warm)}
+
+/* a sequence is numbered; the numeral hangs on the first line and adds no height */
+.steps{list-style:none;margin:1.5rem 0;padding:0;counter-reset:step}
+.steps:first-child{margin-top:0}
+.steps li{counter-increment:step;display:grid;grid-template-columns:3rem minmax(0,1fr);
+  align-items:baseline;padding:0 0 1.5rem}
+.steps li:last-child{padding-bottom:0}
+.steps li::before{content:counter(step);font-size:1.75rem;line-height:0;font-weight:500;
+  color:var(--quiet)}
+.steps .t{margin:0 0 .25rem;font-size:1em;line-height:var(--lead);font-weight:600;color:var(--bright)}
+
+/* a menu, read top to bottom: the name, then what it does */
+.terms{margin:1.5rem 0 0}
+.terms dt{font-weight:600;color:var(--bright)}
+.terms dd{margin:0 0 1rem}
+.terms dd:last-child{margin-bottom:0}
+.terms dd p{margin:0}
+.terms+.terms{padding-top:1.5rem;border-top:1px solid var(--line)}
+.terms+.note{margin-top:2rem}
+.more{display:flex;flex-wrap:wrap;gap:.75rem 2rem;margin:0;padding:0;list-style:none}
+
+/* the way out of a door */
+.next{margin-top:3rem;align-items:baseline}
+.next .where{margin:0}
+.next a{font-size:1.75rem;line-height:1.2;font-weight:500;letter-spacing:-.015em;
+  color:var(--bright);text-decoration:none}
+.next a span{margin-left:.5rem;color:var(--warm)}
+.next a:hover{color:var(--warm)}
+
+/* ---- the panel tab: a map of the panel beside its sheet ---- */
+.atlas{display:grid;grid-template-columns:28rem minmax(0,1fr);column-gap:var(--gap);align-items:start}
+.atlas .row{grid-template-columns:9.5rem minmax(0,var(--measure));column-gap:2rem}
+.atlas .group:first-child{margin-top:0}
+.map{position:sticky;top:var(--bar);margin:0;padding:1.5rem;font-size:.8125rem;line-height:1.3;
+  background:var(--panel);border:1px solid var(--line-strong);border-radius:8px}
+.map a{display:block;padding:.5rem;color:var(--ink);text-decoration:none;white-space:nowrap;
+  border:1px solid transparent;border-radius:4px}
+.map a:hover,.map a.on{color:var(--bright);border-color:var(--warm)}
+.map .top{display:flex;align-items:center;gap:.5rem}
+.map .top .ring{width:.625rem;height:.625rem;border-width:1.5px}
+.map .top .word{font-size:.75rem}
+.map .top a:last-child{margin-left:auto;color:var(--warm)}
+.map .rail{display:flex;align-items:center}
+.map .rail a:nth-child(2){margin-left:auto}
+.map .talk{margin:.75rem 0;padding:.75rem 0;min-height:7.5rem;
+  border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.map .grip{text-align:center;color:var(--quiet)}
+.map .field{margin-top:.5rem;background:var(--ground);border:1px solid var(--line);border-radius:4px}
+.map .field .acts{display:flex;justify-content:space-between;margin-top:1.5rem}
+.map .field .acts a:last-child{color:var(--warm)}
+.map .cells{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin-top:.75rem}
+.map .cells a{text-align:center;border-color:var(--line);overflow:hidden;text-overflow:ellipsis}
+.map .cells a:hover,.map .cells a.on{border-color:var(--warm)}
+.map figcaption{margin-top:1rem;color:var(--quiet)}
+
+/* too narrow for the map and a readable column side by side: the map goes on top */
+@media (max-width:72rem){
+  .atlas{grid-template-columns:minmax(0,1fr)}
+  .atlas .row{grid-template-columns:var(--name) minmax(0,var(--measure));column-gap:var(--gap)}
+  .map{position:static;max-width:28rem;margin:0 0 4rem}
+}
+/* too short for the map to stay in view whole */
+@media (max-height:47rem){
+  .map{position:static}
+}
+@media (max-width:47.5rem){
+  :root{--gutter:1.5rem}
+  .row,.atlas .row{grid-template-columns:minmax(0,1fr);row-gap:.75rem}
+  .inner{padding-top:3rem;padding-bottom:5rem}
+  .sub{margin-bottom:3rem}
+  .group{margin:4rem 0 1.5rem}
+  .doors{gap:1.5rem}
+  .ver span:last-child{display:none}
+  .map{padding:1rem}
+  .map .cells a{display:flex;align-items:center;justify-content:center;white-space:normal}
+}
+@media print{
+  body{background:#fff;color:#111}
+  .bar{position:static;border:0}
+  .doors,.map,.next{display:none}
+  .atlas{display:block}
+  section[hidden]{display:block!important;content-visibility:visible!important}
+  .hero,.group,.row h4,.steps .t,.terms dt,b,.word,.says,kbd{color:#000}
+  .well{background:#f2f2f2;color:#000}
+  a,code{color:#000}
+}
 </style>
+</head>
+<body>
 
-<div class="bar"><div class="in">
-  <div class="id"><div class="mark"></div><div class="word">SYNAPSE</div>
-    <div class="ver">help &nbsp;·&nbsp; v5.42.0</div></div>
-  <nav id="nav">
-    <button aria-selected="true" data-t="start">Getting started</button>
-    <button data-t="using">Using Synapse</button>
-    <button data-t="ref">Reference</button>
-    <button data-t="limits">Limits</button>
+<header class="bar"><div class="wrap">
+  <div class="id">
+    <span class="ring" aria-hidden="true"></span>
+    <span class="word">SYNAPSE</span>
+    <span class="ver"><span>Help</span><span>v5.94.2</span><span>Houdini 22.0.400</span></span>
+  </div>
+  <nav class="doors" id="doors" aria-label="Help sections">
+    <a href="#start" aria-current="true">Start</a>
+    <a href="#ask">Ask</a>
+    <a href="#panel">The panel</a>
+    <a href="#stuck">Stuck</a>
+    <a href="#limits">Limits</a>
   </nav>
-</div></div>
+</div></header>
+
 <main>
+<h1 class="sr">SYNAPSE help</h1>
 
-<section id="start">
-  <p class="lede">Synapse is a rope, not an elevator. It gives you reach you
-  haven't earned yet and safety while you earn it — you're still the one climbing.</p>
-  <p class="sub">Written for someone who knows Houdini and doesn't know Synapse.</p>
+<!-- ============================== START ============================== -->
+<section id="start"><div class="wrap inner">
+  <h2 class="hero"><span>Describe a task.</span><span>Inspect the nodes.</span><span>Keep creative control.</span></h2>
+  <p class="sub"><span>This help is for someone who knows Houdini and is new to SYNAPSE.</span>
+  <span>Use a scratch scene for your first run.</span></p>
 
-  <div class="group"><h2>First session</h2>
-
-    <div class="topic"><h3>Your first prompt</h3>
-      <p class="desc">Type plain English, press Enter, watch nodes appear.</p>
-      <p>Start with something small enough to verify by eye:</p>
-      <span class="cmd">make a grid, scatter 500 points on it, copy spheres to the points</span>
-      <p>When it finishes, look at the <strong>network</strong> — not the chat.
-      The nodes are the deliverable; the conversation is only how you asked.</p></div>
-
-    <div class="topic"><h3>Connect the bridge</h3>
-      <p class="desc">Nothing happens until the bridge is up. It doesn't start itself.</p>
-      <p>Press <strong>Connect</strong> in the panel header. When it reads
-      <code>Bridge ✓</code> you're live. If it already read that and nothing is
-      happening, the problem is elsewhere — check the status line under the wordmark.</p></div>
-
-    <div class="topic"><h3>Install order</h3>
-      <p class="desc">The installer is step two, not step one.</p>
-      <p>Clone or unpack the repository first, then run the installer from inside
-      it. Running the installer against nothing is the most common first-run failure.</p></div>
+  <div class="row" id="first-session">
+    <div><h4>First session</h4><p class="where">Four steps</p></div>
+    <div>
+      <ol class="steps">
+        <li><div><h5 class="t">Open the pane</h5>
+          <p>In Houdini, choose <b>New Pane Tab &rarr; Synapse</b>.</p>
+          <p>The pane opens with a short welcome, and the prompt below it.</p></div></li>
+        <li><div><h5 class="t">Choose a model</h5>
+          <p>Click <b>Connect models</b>, below the prompt. Pick a service and a model, and add
+          its key if it needs one.</p>
+          <p>Under <b>Task needs</b>, select <b>Build and edit networks</b>. Then click
+          <b>Check connection</b>, and <b>Use this model</b>.</p></div></li>
+        <li><div><h5 class="t">Start the bridge</h5>
+          <p>Click <b>Connect</b>, at the top. It starts the local bridge that lets tools reach
+          Houdini.</p></div></li>
+        <li><div><h5 class="t">Check the setup</h5>
+          <p>Click <b>Doctor</b>, at the top. It checks this installation without a model
+          request, and without touching your scene.</p></div></li>
+      </ol>
+      <p class="note">If you use Ollama, start its service before step 2.</p>
+    </div>
   </div>
 
-  <div class="group"><h2>Pace</h2>
-    <div class="topic"><h3>The three profiles</h3>
-      <p class="desc">Curious, Expert, ML — how much is explained, not what is possible.</p>
-      <p><strong>Curious</strong> gives you air: readouts you can't act on yet fold
-      away, and the agent narrates each decision in plain language.
-      <strong>Expert</strong> is full density, no narration, more conversation on
-      screen. <strong>ML</strong> is Expert with the token and model economics
-      surfaced.</p>
-      <p>Capability is identical in all three. Switching adds no tools and removes
-      none — and Synapse never switches for you.</p></div>
-  </div>
-</section>
-
-<section id="using" hidden>
-  <p class="lede">How to ask, and how to check what you got.</p>
-  <p class="sub">Synapse runs inside Houdini's own Python, so it isn't guessing
-  at your scene — it's reading it.</p>
-
-  <div class="group"><h2>Working</h2>
-
-    <div class="topic"><h3>How to ask</h3>
-      <p class="desc">Describe the result, not the node names.</p>
-      <p>"Scatter points on the ground plane and instance the rocks" works better
-      than naming operators. Synapse knows Houdini; it needs to know your intent.
-      When a request is large, ask for it in stages — you'll catch a wrong turn
-      three nodes in rather than thirty.</p></div>
-
-    <div class="topic"><h3>Reading what it did</h3>
-      <p class="desc">Trust the network. The summary is a claim; the nodes are evidence.</p>
-      <p>The agent can be confidently wrong — building something plausible and
-      describing it as if it were what you asked for. Checking the network takes
-      five seconds and is the single habit that makes this tool safe.</p></div>
-
-    <div class="topic"><h3>The verb rail</h3>
-      <p class="desc">EXPLAIN · FIX · OPTIMIZE · BUILD HDA — act on what's selected.</p>
-      <p>Select a node or a subnetwork, then press a verb. Explain describes what
-      the network does. Fix looks for what's broken. Optimize looks for what's slow.
-      Build HDA turns a working network into a digital asset.</p></div>
-
-    <div class="topic"><h3>Commands</h3>
-      <p class="desc">Type <code>/</code> in the prompt for the command list.</p>
-      <p>Commands do the things that aren't conversation — session control, mode
-      switches, diagnostics. The list is discoverable; you don't need to memorise it.</p></div>
+  <div class="row" id="shelf">
+    <div><h4>Opening it again</h4><p class="where">The Synapse shelf</p></div>
+    <div>
+      <p>The Synapse shelf has a <b>Synapse</b> button. It brings back an open Synapse tab,
+      or docks a new one beside the Network Editor.</p>
+      <p>Save your desktop once, so the docked tab is there next time:
+      <b>Windows &rarr; Desktop &rarr; Save Current Desktop As</b>.</p>
+    </div>
   </div>
 
-  <div class="group"><h2>Models</h2>
-    <div class="topic"><h3>Choosing a model</h3>
-      <p class="desc">Discovered from your machine, not hardcoded by us.</p>
-      <p>Synapse reads what's actually available — local models via Ollama, and
-      hosted providers if you've set their API key in the environment. Local models
-      cost nothing and never leave your machine. Larger hosted models handle bigger
-      scene reasoning. Both do the same job at different quality and price.</p></div>
-  </div>
-</section>
-
-<section id="ref" hidden>
-  <p class="lede">Panel anatomy and the tools for when things go sideways.</p>
-  <p class="sub">Most sessions that feel broken are one line of doctor output.</p>
-
-  <div class="group"><h2>Diagnostics</h2>
-    <div class="topic"><h3>synapse_doctor</h3>
-      <p class="desc">Run this first. Always.</p>
-      <p>It checks connection, licence, environment and model access, and names
-      which one is wrong. If the doctor is clean and the behaviour is still wrong,
-      that's worth reporting — paste its output with the issue.</p></div>
+  <div class="row" id="first-build">
+    <div><h4>First build</h4><p class="where">Three steps</p></div>
+    <div>
+      <ol class="steps">
+        <li><div><h5 class="t">Ask for a box</h5>
+          <p>Type this in the prompt and press <kbd>Enter</kbd>.</p>
+          <span class="well">make a box</span></div></li>
+        <li><div><h5 class="t">Read the network</h5>
+          <p>Look at the network, not the conversation. The nodes are the result. The
+          conversation is only how you asked.</p></div></li>
+        <li><div><h5 class="t">Try a change</h5>
+          <p>Change a parameter on the new node. Then try Houdini's Undo, and Redo.</p></div></li>
+      </ol>
+    </div>
   </div>
 
-  <div class="group"><h2>The panel</h2>
-    <div class="topic"><h3>Header</h3>
-      <p class="desc">Mark, status, Help · Connect · Corpus.</p>
-      <p>The mark is the status light: an open ring at rest, filling as work
-      completes, closed when done. While work is in flight it's also the halt —
-      the same Stop the rail button fires. <strong>Corpus</strong> loads the
-      Houdini 21 documentation so scene assembly grounds in real node and
-      parameter names rather than plausible-sounding ones.</p></div>
-
-    <div class="topic"><h3>CHAT and TOKEN</h3>
-      <p class="desc">The conversation, and what it cost.</p>
-      <p>TOKEN reports usage as the provider reports it. Where a number can't be
-      obtained honestly it shows UNKNOWN — never a zero, never an estimate.</p></div>
-
-    <div class="topic"><h3>The composer</h3>
-      <p class="desc">Drag the divider; it remembers where you left it.</p>
-      <p><code>Enter</code> sends. <code>Shift+Enter</code> is a newline.
-      <code>Ctrl+K</code> opens the command palette. The image button attaches
-      references to the next request.</p></div>
+  <div class="row" id="receipt">
+    <div><h4>The receipt</h4><p class="where">At the end of a reply</p></div>
+    <div>
+      <p>When a turn changes your scene, its reply ends with a receipt. The receipt shows a
+      count, such as <span class="says">2 CHANGES</span>, and a
+      <span class="says">&larr; REVERT</span> control.</p>
+      <p>REVERT takes back only what SYNAPSE did in that turn. It never undoes an edit of yours.</p>
+      <p>If anything has changed since, even the selection, REVERT refuses and changes nothing.
+      Houdini's own Undo still works.</p>
+    </div>
   </div>
 
-  <div class="group"><h2>Licences</h2>
-    <div class="topic"><h3>What your licence allows</h3>
-      <p class="desc">Commercial · Indie · Apprentice differ, and it shows up as silence.</p>
-      <p>Some render paths are unavailable on Indie and Apprentice. If a render
-      appears to do nothing, check the licence before assuming Synapse failed.
-      The README carries the current support matrix.</p></div>
-  </div>
-</section>
-
-<section id="limits" hidden>
-  <p class="lede">Early software with an agent inside it. This is the part that
-  saves you an afternoon.</p>
-  <p class="sub">Nothing here is a surprise we're hiding — it's the honest edge
-  of what's built.</p>
-
-  <div class="group"><h2>Before a large request</h2>
-    <div class="topic"><h3>Undo is scene-level</h3>
-      <p class="desc">Save first. Undo reverses the scene, not the disk.</p>
-      <div class="warn"><p>Files written, caches, and renders stay written after an
-      undo. Treat a big prompt the way you'd treat someone else's HDA: save, then
-      run it.</p></div></div>
-
-    <div class="topic"><h3>It can be confidently wrong</h3>
-      <p class="desc">Plausible output, described as if correct.</p>
-      <p>This is the failure mode to expect. The mitigation is cheap and it never
-      changes: read the network, not the summary.</p></div>
+  <div class="row" id="undo">
+    <div><h4>Undo</h4><p class="where">Before a large request</p></div>
+    <div>
+      <p>Save first. Undo reverses the scene, not the disk. Files, caches and renders stay
+      written.</p>
+      <p>Undo covers one recorded operation. It does not reverse a whole conversation.</p>
+      <p>A failed build can leave partial nodes behind. Look at the network and undo them yourself.</p>
+    </div>
   </div>
 
-  <div class="group"><h2>Posture</h2>
-    <div class="topic"><h3>Single user, localhost</h3>
-      <p class="desc">Not hardened for a shared or networked seat.</p>
-      <p>Synapse assumes one artist on one machine. Access control is off in local
-      mode by design. Don't expose the bridge port on a shared network.</p></div>
-
-    <div class="topic"><h3>Tools run with real reach</h3>
-      <p class="desc">It executes in your session, with your permissions.</p>
-      <p>The agent can run Python inside Houdini. That's what makes it useful and
-      it's also what makes the save-first habit matter.</p></div>
+  <div class="row">
+    <div><h4>Read more</h4></div>
+    <div><ul class="more">
+      <li><a href="https://github.com/JosephOIbrahim/Synapse/blob/master/docs/getting-started/quickstart.md">First-session walkthrough</a></li>
+      <li><a href="https://github.com/JosephOIbrahim/Synapse/blob/master/docs/getting-started/installation.md">Installing and updating</a></li>
+    </ul></div>
   </div>
 
-  <div class="group"><h2>The measure</h2>
-    <div class="topic"><h3>What Synapse is for</h3>
-      <p class="desc">Measured by what you can do without it.</p>
-      <p>If it builds things you couldn't build alone and you learn nothing, it's
-      failing at its job however good the output looks. The gradient runs one way:
-      it builds while you watch, then builds with pauses so you can follow and
-      object, then explains the move and you make it yourself. Explanation rises at
-      your pace. Automation never does.</p>
-      <p><a href="https://github.com/JosephOIbrahim/Synapse">Repository, README,
-      and the full known-limitations list</a></p></div>
+  <div class="row next">
+    <div><p class="where">Next</p></div>
+    <div><a href="#ask">Ask<span aria-hidden="true">&rarr;</span></a></div>
   </div>
-</section>
+</div></section>
+
+<!-- =============================== ASK =============================== -->
+<section id="ask"><div class="wrap inner">
+  <h2 class="hero"><span>Say what you want.</span><span>Then read the network.</span></h2>
+  <p class="sub"><span>SYNAPSE reads your scene through Houdini itself.</span>
+  <span>It can still be wrong, so the network is the proof.</span></p>
+
+  <div class="row" id="how-to-ask">
+    <div><h4>How to ask</h4><p class="where">In the prompt</p></div>
+    <div>
+      <p>Describe the result, not the node names.</p>
+      <p>&ldquo;Scatter points on the ground and instance the rocks&rdquo; works better than a list
+      of operators. SYNAPSE knows Houdini. It needs to know what you intend.</p>
+      <p>Ask for a large job in stages. You will catch a wrong turn three nodes in, not thirty.</p>
+    </div>
+  </div>
+
+  <div class="row" id="reading">
+    <div><h4>Reading the result</h4><p class="where">After every reply</p></div>
+    <div>
+      <p>The summary is a claim. The nodes are the evidence.</p>
+      <p>A model can be confidently wrong. It can build something plausible and describe it as
+      what you asked for.</p>
+      <p>Checking the network takes five seconds. It is the one habit that makes this tool safe.</p>
+    </div>
+  </div>
+
+  <div class="row" id="allowed">
+    <div><h4>What the model may do</h4><p class="where">In this panel</p></div>
+    <div>
+      <p>In the panel, the model works only through permitted tools.</p>
+      <p>The normal panel worker blocks node deletion, arbitrary Python and VEX, rendering,
+      exporting and PDG cooking.</p>
+      <p><a href="https://github.com/JosephOIbrahim/Synapse/blob/master/docs/architecture/overview.md#permission-and-undo-boundaries">Tool policy and boundaries</a></p>
+    </div>
+  </div>
+
+  <div class="row" id="leaves">
+    <div><h4>What leaves your machine</h4><p class="where">You are asked first</p></div>
+    <div>
+      <p>Before a task sends your work to a model service, the panel asks:
+      <span class="says">Allow this model connection?</span></p>
+      <p>That service can receive your prompts, the conversation, scene context, recalled
+      memory and tool results.</p>
+      <p>You can allow one task, or the whole session. A session permission lasts until
+      Houdini exits.</p>
+      <p><b>Revoke session model permissions</b>, in the lightning menu, takes it back.</p>
+      <p>Saved memory stays on this computer. What is recalled from it may be sent.</p>
+    </div>
+  </div>
+
+  <div class="row" id="recipes">
+    <div><h4>Verified recipes</h4><p class="where">Built and checked on 22.0.400</p></div>
+    <div>
+      <p>Some requests have a recipe that was built and checked on Houdini 22.0.400.</p>
+      <p>The first one that reads the scene for you is Scatter Instances, on an imported
+      Gaussian-splat world.</p>
+      <span class="well">Scatter rocks along the cobblestone lane.</span>
+      <p>SYNAPSE reads the scene before it builds.</p>
+      <p>It looks for four things: the camera, the world, the world's collider, and the place
+      in the chain where the new nodes go. It tells you where it read each one.</p>
+      <p>If anything is missing or ambiguous, the answer is <span class="says">UNKNOWN</span>
+      and nothing is built.</p>
+      <p>If everything is known, it builds with the recipe's own values. An older note in
+      memory cannot change them.</p>
+    </div>
+  </div>
+
+  <div class="row" id="memory">
+    <div><h4>Memory</h4><p class="where">Scene and project notes</p></div>
+    <div>
+      <p>Ask in plain words what SYNAPSE remembers about this scene.</p>
+      <p>It reads the scene's saved notes first. It tells you the answer is recalled, not
+      measured again.</p>
+      <p>Only what you ask it to remember is stored.</p>
+      <p>A recalled note is advice. It does not authorize a change to your scene.</p>
+    </div>
+  </div>
+
+  <div class="row" id="models">
+    <div><h4>Models</h4><p class="where">You choose</p></div>
+    <div>
+      <p>SYNAPSE works with Claude, Gemini, NVIDIA Nemotron, Ollama and your own compatible
+      endpoint. Tool support varies between them.</p>
+      <p>A local Ollama model needs no key.</p>
+      <p>A cloud or relay model can send your work elsewhere, even through a local service.
+      Check the model and the destination, not only the address.</p>
+      <p><b>Check connection</b> reads the service's model list. It does not test that the
+      model can generate or build.</p>
+    </div>
+  </div>
+
+  <div class="row" id="jev">
+    <div><h4>JEV</h4><p class="where">Optional</p></div>
+    <div>
+      <p>JEV is optional assistance from TypeSafe. It can rank actions for a selected network,
+      or measure routing. Your generation model stays selected.</p>
+      <p>Add a key in <b>Connect models</b>, under <b>JEV / TypeSafe key setup</b>, with
+      <b>Save session key</b>.</p>
+      <p>Saving a key keeps it in memory until Houdini closes. It does not turn JEV on, verify
+      the key or grant permission.</p>
+      <p><a href="https://github.com/JosephOIbrahim/Synapse/blob/master/docs/getting-started/jev-setup.md">JEV key setup</a></p>
+    </div>
+  </div>
+
+  <div class="row next">
+    <div><p class="where">Next</p></div>
+    <div><a href="#panel">The panel<span aria-hidden="true">&rarr;</span></a></div>
+  </div>
+</div></section>
+
+<!-- ============================ THE PANEL ============================ -->
+<section id="panel"><div class="wrap inner">
+  <h2 class="hero"><span>Every control,</span><span>from top to bottom.</span></h2>
+  <p class="sub"><span>Choose a control on the map to find its line.</span>
+  <span>Bold words in a sentence are controls you can click.</span></p>
+
+  <div class="atlas">
+    <figure class="map" aria-label="Map of the SYNAPSE panel">
+      <div class="top">
+        <span class="ring" aria-hidden="true"></span><span class="word">SYNAPSE</span>
+        <a href="#c-model">Model name</a>
+      </div>
+      <div class="rail">
+        <a href="#c-status">Status line</a>
+        <a href="#c-connect">Connect</a>
+        <a href="#c-doctor">Doctor</a>
+        <a href="#c-menu" aria-label="Lightning menu">&#9889;&#xFE0E;</a>
+      </div>
+      <div class="talk"><a href="#c-talk">Conversation</a></div>
+      <div class="grip"><a href="#c-resize">Resize</a></div>
+      <div class="field">
+        <a href="#c-prompt">Ask SYNAPSE &middot; / commands</a>
+        <div class="acts"><a href="#c-attach">Attach</a><a href="#c-send">Send</a></div>
+      </div>
+      <div class="cells">
+        <a href="#c-commands">Commands</a><a href="#c-saved">Saved networks</a><a href="#c-updates">Updates</a>
+        <a href="#c-where">Cloud relay</a><a href="#c-world">World Labs</a><a href="#c-models">Connect models</a>
+        <a href="#c-identify">Identify</a><a href="#c-spatial">Spatial</a><a href="#c-render">Render</a>
+      </div>
+      <figcaption>The panel, drawn as a map. &ldquo;Cloud relay&rdquo; is one of five words that cell can show.</figcaption>
+    </figure>
+
+    <div>
+      <h3 class="group">Top</h3>
+
+      <div class="row" id="c-model">
+        <div><h4>Model name</h4><p class="where">Top right</p></div>
+        <div>
+          <p>This is the model that will answer. Click it to choose another, or to open
+          <b>Connect models</b>.</p>
+          <p>Until you choose one, it reads <span class="says">Choose a model</span>.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-status">
+        <div><h4>Status line</h4><p class="where">Under the wordmark</p></div>
+        <div>
+          <p>This line says where things stand, in one short sentence.</p>
+          <p>Examples are <span class="says">Ready</span>, <span class="says">Working on it</span>,
+          <span class="says">Result ready</span> and <span class="says">Not connected</span>.</p>
+          <p>Read it first when nothing seems to happen.</p>
+          <p>The line under it names the scene file and the current frame.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-connect">
+        <div><h4>Connect</h4><p class="where">Top row</p></div>
+        <div>
+          <p>It starts the local bridge on port 9999, so tools and outside MCP clients can reach
+          Houdini. The bridge does not start by itself.</p>
+          <p>It is safe to click at any time. It is not the model chooser.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-doctor">
+        <div><h4>Doctor</h4><p class="where">Top row</p></div>
+        <div>
+          <p>It checks this installation. It sends no model request and changes nothing in your scene.</p>
+          <p>Each line reads <span class="says">PASS</span>, <span class="says">NEEDS ATTENTION</span>
+          or <span class="says">NOT CHECKED</span>.</p>
+          <p>A check that did not run is never shown as a pass.</p>
+          <p><b>Copy report</b> gives you text to paste into a bug report.</p>
+          <p>A narrow panel moves this button into the lightning menu.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-menu">
+        <div><h4>Lightning menu</h4><p class="where">The lightning icon, top row</p></div>
+        <div>
+          <p>This menu holds the tools and settings you do not need every minute.</p>
+          <p>Lines divide the menu into four groups. This list follows them, in the same order.</p>
+          <dl class="terms">
+            <dt>Copy conversation</dt><dd>Copies the conversation as text.</dd>
+            <dt>Revoke session model permissions</dt><dd>Takes back a permission you gave for the session.</dd>
+            <dt>Build HDA&hellip;</dt><dd>Turns a working network into a digital asset.</dd>
+            <dt>Saved lookdev suggestion&hellip;</dt><dd><p>Looks up a checked lookdev setup.</p>
+              <p><b>Use in prompt</b> adds editable text to your draft. It does not send it.</p></dd>
+            <dt>Selected network&hellip;</dt><dd>Inspects the nodes you have selected, and can suggest actions.</dd>
+            <dt>Commands</dt><dd>Opens the command list.</dd>
+            <dt>Ground the corpus</dt><dd>Connects the Houdini documentation, so Solaris work uses real node and parameter names.</dd>
+          </dl>
+          <dl class="terms">
+            <dt>Engine</dt><dd>Switches the model service.</dd>
+            <dt>Health</dt><dd>Shows four facts: the connection, memory, the project and the job.</dd>
+          </dl>
+          <dl class="terms">
+            <dt>Larger text, Default text</dt><dd>Change the text size.</dd>
+            <dt>Help</dt><dd>Opens this page.</dd>
+          </dl>
+          <dl class="terms">
+            <dt>Cancel cook</dt><dd>Cancels one cooking node, when SYNAPSE knows which node it is.</dd>
+            <dt>Emergency halt&hellip;</dt><dd><p>Cancels cooking TOP networks and captures a session report.</p>
+              <p>Background renders are reported, not stopped.</p></dd>
+          </dl>
+          <p class="note">In a narrow panel, the first group also holds <b>Doctor</b>,
+          <b>Saved networks</b> and <b>Updates</b>.</p>
+        </div>
+      </div>
+
+      <h3 class="group">Conversation</h3>
+
+      <div class="row" id="c-talk">
+        <div><h4>Conversation</h4><p class="where">The middle of the panel</p></div>
+        <div>
+          <p>Your requests and the replies appear here. A new panel shows a short welcome instead.</p>
+          <p>A reply that changed your scene ends with <a href="#receipt">a receipt and a REVERT control</a>.</p>
+        </div>
+      </div>
+
+      <h3 class="group">Prompt</h3>
+
+      <div class="row" id="c-resize">
+        <div><h4>Resize</h4><p class="where">Above the prompt</p></div>
+        <div><p>Drag it to give the prompt more room. The panel remembers where you left it.</p></div>
+      </div>
+
+      <div class="row" id="c-prompt">
+        <div><h4>Prompt</h4><p class="where">The dark field</p></div>
+        <div>
+          <p>Type here. <kbd>Enter</kbd> sends. <kbd>Shift</kbd> + <kbd>Enter</kbd> starts a new line.</p>
+          <p>Type <code>/</code> in an empty prompt to browse commands.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-attach">
+        <div><h4>Attach</h4><p class="where">Inside the prompt, left</p></div>
+        <div><p>It adds an image or a file as context for your next request.</p></div>
+      </div>
+
+      <div class="row" id="c-send">
+        <div><h4>Send</h4><p class="where">Inside the prompt, right</p></div>
+        <div>
+          <p>It sends the prompt. While a task runs, <b>STOP</b> takes its place.</p>
+          <p>STOP ends the panel's turn. The panel says <span class="says">Stopping&hellip;</span>
+          until the current step ends.</p>
+          <p>An operation already sent to Houdini may still be finishing.</p>
+        </div>
+      </div>
+
+      <h3 class="group">Three rows</h3>
+
+      <div class="row" id="c-commands">
+        <div><h4>Commands</h4><p class="where">First row</p></div>
+        <div>
+          <p>It opens the command list. <kbd>Ctrl</kbd> + <kbd>K</kbd> does the same, and
+          <kbd>Esc</kbd> closes it.</p>
+          <p>Search by a word you know, or narrow the list with <b>DO</b> and <b>WHERE</b>.</p>
+          <p>Some commands are answered by the panel itself, with no model. They open parts of
+          the panel, such as the render workspace and the saved networks.</p>
+          <p>The others send a full sentence to your model. Two examples are <b>Check the scene
+          for problems</b> and <b>Summarize the scene</b>.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-saved">
+        <div><h4>Saved networks</h4><p class="where">First row</p></div>
+        <div>
+          <p>It keeps useful Solaris networks on this workstation. No model is involved.</p>
+          <p>Select sibling nodes, choose <b>Save selection</b>, and name what is worth keeping.</p>
+          <p><b>Insert a copy</b> brings one back as a new subnet. File assets are not embedded,
+          and outside wires are not reconnected.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-updates">
+        <div><h4>Updates</h4><p class="where">First row</p></div>
+        <div>
+          <p>It lists recent work and connection events for this Houdini session. A number
+          beside the name counts the unread ones.</p>
+          <p>To follow a render output, a File Cache or a TOP node, select it and choose
+          <b>Watch selected</b>. Watching does not start a cook or a render.</p>
+          <p><span class="says">Finished</span> means the source reported that it completed. It
+          does not certify the image or the cache.</p>
+          <p><span class="says">Needs attention</span> means SYNAPSE saw the work end and could
+          not confirm the outcome. It does not mean the work failed.</p>
+          <p><b>Quiet</b> keeps the history without new alerts.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-where">
+        <div><h4>Location</h4><p class="where">Second row, left</p></div>
+        <div>
+          <p>This cell shows where the current model runs: <span class="says">Local</span>,
+          <span class="says">Cloud</span>, <span class="says">Cloud relay</span>,
+          <span class="says">Remote</span> or <span class="says">Unverified</span>.</p>
+          <p>Click it to read the evidence behind that word.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-world">
+        <div><h4>World Labs</h4><p class="where">Second row</p></div>
+        <div>
+          <p>It imports a Marble world or a Gaussian <code>.ply</code> file.</p>
+          <p>A World Labs key lets you import from your account. Local files can be imported
+          without one.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-models">
+        <div><h4>Connect models</h4><p class="where">Second row, right</p></div>
+        <div>
+          <p>This is where you choose the service and the model, and tell SYNAPSE what the task
+          needs from it.</p>
+          <p>It also shows where your work will go, and it holds the JEV key setup.</p>
+          <p><b>Check connection</b> reads the service's model list. <b>Use this model</b> makes
+          it the one that answers.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-identify">
+        <div><h4>Identify</h4><p class="where">Third row &middot; no model</p></div>
+        <div>
+          <p>Select one or more nodes first. A short bubble appears beside each one.</p>
+          <p>Each bubble says what the node does, which parameters you changed, and whether it
+          has an error, a warning or a bypass.</p>
+          <p>No model runs and nothing leaves your machine. The bubbles are drawn over the editor,
+          so nothing is written to your scene.</p>
+          <p>Click <b>Identify</b> again to clear them. Each click shows up to 60 bubbles.</p>
+          <p>You can also send <code>/identify</code> and <code>/identify off</code>.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-spatial">
+        <div><h4>Spatial</h4><p class="where">Third row &middot; no model</p></div>
+        <div>
+          <p>It reads how the shot's camera moves through the scene, and draws its path in the
+          viewport.</p>
+          <p>It uses no model, and it is one undo step.</p>
+          <p>You can also send <code>/spatial</code>.</p>
+        </div>
+      </div>
+
+      <div class="row" id="c-render">
+        <div><h4>Render</h4><p class="where">Third row &middot; no model</p></div>
+        <div>
+          <p>It opens the render workspace. The workspace prepares a saved scene, renders with
+          TOPs and keeps your recent jobs.</p>
+          <ol class="steps">
+            <li><div><p>Save your scene. An unsaved scene cannot be prepared.</p></div></li>
+            <li><div><p>Choose <b>Source</b>, <b>Frames</b> and <b>Render profile</b>.</p></div></li>
+            <li><div><p>Open <b>Settings</b> to set <b>Width</b>, <b>Height</b> and <b>Samples</b>.</p></div></li>
+            <li><div><p>Click <b>Prepare render</b>. If you change a setting afterwards, prepare again.</p></div></li>
+            <li><div><p>Click the render button. It names the frame count, such as <b>Render 24 frames</b>.</p></div></li>
+          </ol>
+          <p><b>Recent renders</b> brings an earlier job back.</p>
+          <p>You can also send <code>/render</code>.</p>
+          <p class="note">Scroll with the pointer over a label. The wheel changes a number field under it.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row next">
+    <div><p class="where">Next</p></div>
+    <div><a href="#stuck">Stuck<span aria-hidden="true">&rarr;</span></a></div>
+  </div>
+</div></section>
+
+<!-- ============================== STUCK ============================== -->
+<section id="stuck"><div class="wrap inner">
+  <h2 class="hero"><span>Start with the first</span><span>thing to try.</span></h2>
+  <p class="sub"><span>Most sessions that feel broken are one line of Doctor output.</span></p>
+
+  <div class="row">
+    <div><h4>No Synapse pane</h4></div>
+    <div><p>Restart Houdini. If the pane is still missing,
+    <a href="https://github.com/JosephOIbrahim/Synapse/blob/master/docs/getting-started/installation.md#verify-the-installation">verify the installation</a>.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>I cannot find Doctor</h4></div>
+    <div><p>A narrow panel moves <b>Doctor</b> into the lightning menu. Open the menu, or make
+    the panel wider.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Nothing happens when I send</h4></div>
+    <div><p>Read the status line. If it says <span class="says">Not connected</span>, click
+    <b>Connect</b>.</p><p>Then click <b>Doctor</b> and read the lines that need attention.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>The model does not answer</h4></div>
+    <div><p>Open <b>Connect models</b> and run <b>Check connection</b> on the selected service.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Ollama models are missing</h4></div>
+    <div><p>Start Ollama. Then reopen <b>Connect models</b> and run <b>Check connection</b>.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>A build is running away</h4></div>
+    <div><p>Click <b>STOP</b>. If Houdini keeps cooking, use <b>Cancel cook</b> or
+    <b>Emergency halt&hellip;</b> in the lightning menu.</p><p>Then inspect the scene.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>REVERT refuses</h4></div>
+    <div><p>Something changed after that turn, so SYNAPSE will not touch it. Use Houdini's own Undo.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Identify says &ldquo;Not in the local SideFX library&rdquo;</h4></div>
+    <div><p><a href="https://github.com/JosephOIbrahim/Synapse/blob/master/docs/studio/SIDEFX_LIBRARY.md#build-and-connect">Build and connect the SideFX help library</a>, then restart Houdini.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>No saved suggestion appears</h4></div>
+    <div><p>Read the reason it gives. It needs a checked record, a matching version and project memory.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>The text is too small</h4></div>
+    <div><p>Open the lightning menu and choose <b>Larger text</b>.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Where does the TypeSafe key go?</h4></div>
+    <div><p>Open <b>Connect models</b>, then <b>JEV / TypeSafe key setup</b>.
+    <a href="https://github.com/JosephOIbrahim/Synapse/blob/master/docs/getting-started/jev-setup.md#add-your-key">The setup guide</a> walks through it.</p></div>
+  </div>
+
+  <h3 class="group">Three ways to stop</h3>
+
+  <div class="row">
+    <div><h4>STOP</h4><p class="where">In the prompt, while a task runs</p></div>
+    <div><p>It ends the panel's current turn. It does not prove that a cook or a render has stopped.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Cancel cook</h4><p class="where">Lightning menu</p></div>
+    <div><p>It cancels one cooking node. It is unavailable when SYNAPSE cannot tell which node is cooking.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Emergency halt&hellip;</h4><p class="where">Lightning menu</p></div>
+    <div><p>It cancels cooking TOP networks under <code>/tasks</code>, <code>/obj</code>,
+    <code>/stage</code> and <code>/out</code>, and captures a session report.</p>
+    <p>Background renders are reported, not stopped.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>A turn also stops itself</h4><p class="where">Three limits</p></div>
+    <div><p>A turn ends after 25 tool rounds, 10 minutes or 3,000,000 input tokens, whichever
+    comes first.</p><p>The last line of the reply says which limit it reached. No tool runs
+    after that line.</p></div>
+  </div>
+
+  <h3 class="group">Still stuck</h3>
+
+  <div class="row">
+    <div><h4>Report a bug</h4></div>
+    <div><p>Run <b>Doctor</b>, choose <b>Copy report</b>, and paste it into
+    <a href="https://github.com/JosephOIbrahim/Synapse/issues/new/choose">a new issue</a>.</p></div>
+  </div>
+
+  <div class="row next">
+    <div><p class="where">Next</p></div>
+    <div><a href="#limits">Limits<span aria-hidden="true">&rarr;</span></a></div>
+  </div>
+</div></section>
+
+<!-- ============================== LIMITS ============================= -->
+<section id="limits"><div class="wrap inner">
+  <h2 class="hero"><span>The honest edge</span><span>of what is built.</span></h2>
+  <p class="sub"><span>This is early software with a model inside it.</span>
+  <span>Reading this page can save you an afternoon.</span></p>
+
+  <div class="row">
+    <div><h4>It can be confidently wrong</h4></div>
+    <div><p>This is the failure to expect: plausible output, described as if it were correct.</p>
+    <p>The answer is cheap and it never changes. Read the network, not the summary.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Undo is not a time machine</h4></div>
+    <div><p>Save before a large request. Files, caches and renders stay written after an undo.</p>
+    <p>Treat a big prompt the way you would treat someone else's HDA: save, then run it.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>One artist, one machine</h4></div>
+    <div><p>SYNAPSE assumes a single artist on a single workstation. In local mode the bridge
+    has no access control.</p><p>Do not expose the bridge port on a shared network.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Real reach</h4></div>
+    <div><p>SYNAPSE works inside your Houdini session, with your permissions. The panel limits
+    what its model may do.</p>
+    <p>An outside MCP client has its own setup and different permissions.
+    <a href="https://github.com/JosephOIbrahim/Synapse/blob/master/docs/mcp/SETUP.md">MCP connection guide</a></p></div>
+  </div>
+  <div class="row">
+    <div><h4>A check is not a test</h4></div>
+    <div><p><b>Check connection</b> reads a list of models. It does not prove a model can build.</p>
+    <p><span class="says">Finished</span> in Updates means a source reported completion. It
+    does not certify the image.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Recipes know one scene shape</h4></div>
+    <div><p>The Scatter recipe expects a <code>/stage</code> network, one camera, and a Camera
+    node feeding the render settings directly.</p>
+    <p>Anything else returns <span class="says">UNKNOWN</span> and builds nothing.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>What SYNAPSE is for</h4></div>
+    <div><p>SYNAPSE is a rope, not an elevator. It gives you reach you have not earned yet, and
+    safety while you earn it. You are still the one climbing.</p>
+    <p>If it builds things you could not build alone and you learn nothing, it is failing at
+    its job, however good the output looks.</p></div>
+  </div>
+  <div class="row">
+    <div><h4>Read more</h4></div>
+    <div><ul class="more">
+      <li><a href="https://github.com/JosephOIbrahim/Synapse/blob/master/docs/status.md">Current status and limits</a></li>
+      <li><a href="https://github.com/JosephOIbrahim/Synapse/releases/latest">Latest release notes</a></li>
+      <li><a href="https://github.com/JosephOIbrahim/Synapse#readme">README</a></li>
+    </ul></div>
+  </div>
+
+  <div class="row next">
+    <div><p class="where">Back to</p></div>
+    <div><a href="#start">Start<span aria-hidden="true">&rarr;</span></a></div>
+  </div>
+</div></section>
 </main>
+
 <script>
-const nav=document.getElementById('nav');
-nav.addEventListener('click',e=>{
-  const b=e.target.closest('button'); if(!b) return;
-  nav.querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x===b));
-  document.querySelectorAll('main section').forEach(s=>s.hidden=(s.id!==b.dataset.t));
-  window.scrollTo(0,0);
-});
+/* Without this script every section stays visible, in order, and the doors are plain
+   anchors. With it, one door is open at a time. Closed sections stay findable: Ctrl+F
+   opens the door that holds the match. */
+(function () {
+  var sections = [].slice.call(document.querySelectorAll('main > section'));
+  var doors = [].slice.call(document.querySelectorAll('#doors a'));
+
+  function open(id) {
+    sections.forEach(function (s) {
+      if (s.id === id) { s.removeAttribute('hidden'); }
+      else { s.setAttribute('hidden', 'until-found'); }
+    });
+    doors.forEach(function (a) {
+      a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'true' : 'false');
+    });
+  }
+  function go(hash) {
+    var target = hash && document.getElementById(hash.slice(1));
+    var section = target ? target.closest('section') : null;
+    if (!section) { open('start'); return; }
+    open(section.id);
+    if (target === section) { window.scrollTo(0, 0); }
+    else { target.scrollIntoView(); }
+  }
+  sections.forEach(function (s) {
+    s.addEventListener('beforematch', function () { open(s.id); });
+  });
+  window.addEventListener('hashchange', function () { go(location.hash); });
+  go(location.hash);
+
+  /* The map and its sheet point at each other. */
+  [].slice.call(document.querySelectorAll('.map a')).forEach(function (cell) {
+    var row = document.getElementById(cell.getAttribute('href').slice(1));
+    if (!row) { return; }
+    function mark(on) { cell.classList.toggle('on', on); row.classList.toggle('on', on); }
+    [cell, row].forEach(function (el) {
+      el.addEventListener('mouseenter', function () { mark(true); });
+      el.addEventListener('mouseleave', function () { mark(false); });
+    });
+    cell.addEventListener('focus', function () { mark(true); });
+    cell.addEventListener('blur', function () { mark(false); });
+  });
+})();
 </script>
+</body>
+</html>

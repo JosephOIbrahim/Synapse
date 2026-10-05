@@ -22,6 +22,19 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.94.2 - The help page describes the panel as it is
+
+One change on top of v5.94.1: the page the panel's Help opens is rewritten. The
+old page carried the banner v5.42.0 and named none of today's controls. The new
+one is written from the panel's source: five sections, shown one at a time, with
+a first session in four steps, a map of the panel with a row for every control,
+and the first thing to try when stuck. It uses the panel's colours and font
+files and makes no network request. Each name the page marks up was looked for
+in the panel's source, and its behaviour was checked in a desktop browser. It
+has not been opened from the panel in Houdini. No Python file changes apart
+from the version strings. This is a source release with no new Windows Setup.
+See [v5.94.2](docs/releases/v5.94.2.md).
+
 ## v5.94.1 - A reopened store keeps real USD
 
 Three commits on top of v5.94.0: a documentation update and two fixes. A memory
