@@ -14,9 +14,13 @@
 
 ## Start here
 
-**Current release: v5.94.0, as a source installation.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the latest panel, JEV and SideFX library changes, but not the changes in v5.87.0 through v5.94.0. It is unsigned, so check it against that release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt).
+**The current release is v5.94.0, and it installs from source.** It runs on **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md).
 
-The current validation target is **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md).
+**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the latest panel, JEV and SideFX library changes, but not the changes in v5.87.0 through v5.94.0.
+
+The Setup is unsigned, so check it against that release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt) before you run it.
+
+**Pick one path, then follow these four steps.**
 
 1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.94.0, or run the v5.86.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
 2. Restart Houdini. Open **New Pane Tab → Synapse**.
@@ -53,6 +57,40 @@ flowchart LR
 **Undo covers a recorded operation.** It does not reverse a whole conversation or files written to disk. A failed build can leave partial nodes until you deliberately undo them.
 
 The normal panel worker blocks node deletion, arbitrary Python/VEX, rendering, exporting and PDG cooking. See [tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries).
+
+## Build from a verified recipe
+
+Some requests have a recipe that was built and checked on Houdini 22.0.400. Scatter Instances on an imported Gaussian-splat world is the first recipe that reads the scene for you.
+
+Ask in plain words:
+
+```text
+Scatter rocks along the cobblestone lane.
+```
+
+SYNAPSE reads the scene before it builds. It finds the camera, the world, the world's collider and the place in the chain where the new nodes go, and it tells you where it read each one.
+
+If anything is missing or ambiguous, the answer is **UNKNOWN** and nothing is built.
+
+If everything is known, it builds the recipe with the recipe's own values. An older note in memory cannot change them, and any value it had to correct is listed in the reply.
+
+```mermaid
+flowchart LR
+    accTitle: A verified recipe reads the scene before it builds
+    accDescr: You ask for a scatter in plain words. SYNAPSE reads the scene for the camera, the world, its collider and the splice point. If anything is missing or ambiguous it answers UNKNOWN and builds nothing. If everything is known it builds with the recipe's fixed values and shows a receipt you can revert.
+    A["Ask in<br/>plain words"] --> R["Read the scene<br/>for five bindings"]
+    R -->|"missing or ambiguous"| U["UNKNOWN<br/>nothing built"]
+    R -->|"all known"| B["Build with the<br/>recipe's values"]
+    B --> C["Receipt<br/>and Revert"]
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    class A,C artist
+    class R,B synapse
+    linkStyle default stroke:#D07020
+```
+
+The reader knows one scene shape today: a `/stage` network, one camera, and a Camera node feeding the render settings directly. The [release notes](docs/releases/v5.94.0.md) list what was seen in Houdini and what was not.
 
 ## See what nodes do
 
@@ -92,6 +130,7 @@ Each click shows up to 60 bubbles. The [release notes](docs/releases/v5.85.0.md)
 | Find an action | **Commands** below the input box. |
 | See what selected nodes do | **Identify** at the bottom of the panel, or send `/identify`. |
 | Read how the shot's camera moves | **Spatial** at the bottom of the panel, or send `/spatial`. It draws the path in one undo step, with no model call. |
+| Ask what SYNAPSE remembers about this scene | Ask in plain words. It reads this scene's saved notes first, and it says the answer is recalled, not measured again. |
 | Import a Marble world or Gaussian `.ply` | **World Labs** beside **Cloud relay**. [Import flow and limits](docs/architecture/overview.md#world-labs-import). |
 | Connect the SideFX help library | Follow **[Build and connect](docs/studio/SIDEFX_LIBRARY.md#build-and-connect)**; Scout searches the published local index. |
 | Check a connection | **Connect**, then **Doctor**. |
@@ -106,9 +145,12 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 | **Cancel cook** · overflow menu | One known cooking node. | Unavailable when SYNAPSE cannot identify the node. |
 | **Emergency halt** · overflow menu | Cooking TOP networks under `/tasks`, `/obj`, `/stage`, `/out`; captures a session report. | Background renders are reported, not stopped. |
 
+**A turn also stops itself.** It ends after 25 tool rounds, 10 minutes or 3,000,000 input tokens, whichever comes first. The last line of the reply says which limit it reached, and no tool runs after that line.
+
 ## What's ready
 
 - **Network work:** build and inspect through permitted tools; keep the result editable in Houdini.
+- **Verified recipes:** Scatter Instances reads its scene bindings in one call and builds with fixed values, or answers UNKNOWN and builds nothing.
 - **Identify:** a short bubble beside each selected node, built from the node and local SideFX help with no model call.
 - **Model choice:** Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
 - **Claude Code:** use SYNAPSE's tools from Claude Code through [MCP](docs/mcp/SETUP.md#claude-code). It asks before each tool call unless you allow that tool.
@@ -147,7 +189,13 @@ Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution brid
 
 ### How SYNAPSE remembers
 
-Configured memory and scene/project notes supply recalled context. Recall is advice; it does not authorize a scene action. Moneta's USD mirror is an inspection view, not the storage owner. Missing services and unknown outcomes remain visible.
+Configured memory and scene/project notes supply recalled context. Recall is advice; it does not authorize a scene action.
+
+A scene's notes come back through `synapse_project_setup`. Search and recall read saved decisions, and they do not cover those notes. The panel asks for the notes first when you ask what it remembers about a scene.
+
+Only what you ask it to remember is stored. Automatic session and action rows are off unless `SYNAPSE_AUTO_MEMORY=1`.
+
+Moneta's USD mirror is an inspection view, not the storage owner. Missing services and unknown outcomes remain visible. A memory store that cannot be read is reported as a failure, not as an empty answer.
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 

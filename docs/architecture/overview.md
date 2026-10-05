@@ -79,6 +79,35 @@ These handlers do not inherit the panel worker's restrictions or bridge consent.
 
 Sources: [configured client](../../.mcp.json), [stdio adapter](../../mcp_server.py), [handlers](../../python/synapse/server/handlers.py), [integrity envelope](../../python/synapse/server/integrity_envelope.py).
 
+### A verified recipe reads the scene, then builds
+
+`synapse_solaris_build_graph` takes `recipe="scatter_instances"`. With `dry_run` it reads the scene and returns the recipe's five bindings, each with the place it was read from. Without `dry_run` it reads again in the same main-thread turn and builds only when every binding is known.
+
+```mermaid
+flowchart TD
+    accTitle: The Scatter recipe path resolves bindings before any node is created
+    accDescr: A build_graph call with a recipe argument reads the live scene for the camera prim, the upstream and downstream nodes, the world prim and the collider file. If any is missing or ambiguous the result is UNKNOWN and nothing is created. If all are known the canonical recipe graph is built. A graph supplied by a model is built as sent, except that a Scatter Instances node authoring the recipe's prim is held to the recipe's fixed parameters, with corrections reported and values read back.
+    Q["build_graph<br/>recipe = scatter_instances"] --> R["Read the live scene<br/>five bindings + sources"]
+    R -->|"missing or ambiguous"| U["UNKNOWN<br/>no node created"]
+    R -->|"dry_run"| D["Bindings returned<br/>no build"]
+    R -->|"all known"| B["Build the<br/>canonical graph"]
+    G["build_graph<br/>model-supplied graph"] --> E{"Authors the<br/>recipe's prim?"}
+    E -->|"yes"| F["Fixed parameters win<br/>corrections reported"]
+    E -->|"no"| S["Built as sent"]
+    F --> V["Values read back<br/>after the build"]
+    B --> V
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    class R,F,V synapse
+    linkStyle default stroke:#D07020
+```
+
+The reader supports one scene shape: the `/stage` network, exactly one camera, a Camera LOP feeding a Render Settings or Karma Render Settings node directly, and one imported world that still carries its import record. Anything else is UNKNOWN.
+
+Enforcement is keyed on the prim path. A Scatter Instances node that authors `/World/scatter_rocks` is the recipe's node; any other is an artist's own scatter and is built exactly as sent.
+
+Sources: [recipes and resolver](../../python/synapse/routing/solaris_recipes.py), [graph handler](../../python/synapse/server/handlers_solaris_graph.py), [resolver tests](../../tests/test_scatter_resolver.py).
+
 ### A missing reply is not permission to repeat
 
 ```mermaid
@@ -107,6 +136,7 @@ Source: [panel tool executor](../../python/synapse/panel/tool_executor.py).
 | Production bridge | Uses nonblocking auto-approval at its admission layer. No interactive approval card is attached. |
 | Direct WebSocket handlers | Their own authentication, RBAC and handler rules. They do not inherit panel policy. |
 | Undo grouping | Groups supported scene edits. It does not reverse file/network effects or guarantee exception rollback. |
+| Turn budget | Ends a panel turn after 25 tool rounds, 600 seconds (`SYNAPSE_TURN_BUDGET_S`) or 3,000,000 input tokens (`SYNAPSE_TURN_BUDGET_TOKENS`). The last round runs no tool and the reply names the limit. |
 
 The bridge has a `HumanGate` API, but attaching its blocking approval poll to the GUI thread would deadlock the panel. Panel worker refusals are a separate control. External direct handlers can still execute Python/VEX under their own rules.
 
@@ -192,12 +222,14 @@ Recording a decision retains context for later recall. It does not reconstruct a
 ```mermaid
 flowchart TD
     accTitle: Saved decisions, notes and advisory recall
-    accDescr: A decision is written to the configured record store and may also produce a scene note. Typed recall and scene-note queries return advisory context. Moneta can also write a USD inspection mirror, separate from the storage owner.
+    accDescr: A decision is written to the configured record store and may also produce a scene note. Search and recall read the record store. Project setup and context queries read the scene and project notes. Both return advisory context. Moneta can also write a USD inspection mirror, separate from the storage owner.
     D["Record a decision"] --> S["Configured record store"]
     D -.->|"also attempts"| N["Scene / project notes"]
-    S --> R["Typed recall"]
+    S --> R["Search and<br/>typed recall"]
+    N --> P["Project setup<br/>reads notes end to end"]
     N --> Q["Context queries"]
     R --> C["Advisory context<br/>for later work"]
+    P --> C
     Q --> C
     S -.->|"Moneta secondary write"| V["USD inspection mirror"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
@@ -215,7 +247,13 @@ flowchart TD
 
 Unsaved scenes or unwritable projects can use fallback locations. `SYNAPSE_MEMORY_BACKEND=moneta` selects Moneta; initialization failure falls back to JSONL with the reason recorded. Closing the USD view does not control persistence.
 
-`synapse_recall` retrieves typed records, defaulting to decisions. `synapse_memory_query` searches loaded scene/project content. `synapse_project_setup` loads starting context.
+`synapse_recall` retrieves typed records, defaulting to decisions. `synapse_memory_query` searches loaded scene/project content. `synapse_project_setup` loads starting context, including the scene's notes end to end.
+
+**A fact that lives only in the notes is not found by search or recall.** A scene's landing record is one such fact. Since v5.94.0 the panel's prompt sends questions about what is remembered of a scene to `synapse_project_setup` first.
+
+**Automatic rows are opt-in.** The session tracker writes "AI session started", "Executed: <command>" and a session summary only when `SYNAPSE_AUTO_MEMORY=1`. Decisions, explicit memory writes and error rows are always written.
+
+**An error is reported as a failure.** When the store reports an error, search, add, decide and recall fail; they do not return the error as data inside a success.
 
 **An ID alone does not prove durability.** Snapshot, mirror and note writes are independent. Reopen the project and retrieve the record before claiming cross-session persistence. Ordinary saved decisions do not require the optional LOOP.
 
