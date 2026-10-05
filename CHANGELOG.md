@@ -22,6 +22,24 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.94.0 - Recipes that hold, memory that answers, turns that end
+
+Fourteen commits on top of v5.93.3, from one day of hardening before the demo
+take. The Scatter Instances request now resolves its five bindings in one
+read-only call and builds the recipe as written: in the Houdini GUI the build
+went from 17 tool calls at `maxangle` 45 to 3 tool calls at `maxangle` 20. The
+panel's prompt now sends questions about what is remembered of a scene to
+`synapse_project_setup`, after two live answers missed the landing record. A
+panel turn ends after 600 seconds or 3,000,000 input tokens as well as after 25
+rounds. Housekeeping rows in the memory store are now off unless asked for
+(`SYNAPSE_AUTO_MEMORY=1`), a behaviour change. Memory handlers fail instead of
+returning an error as data, four tools report the parameters they could not
+set, a store past 2,000 records binds again, and two ratchets check node and
+parameter names against the 22.0.400 catalog. Most of this is unit-tested and
+not exercised in Houdini; the notes say which parts were seen there. This is a
+source release with no new Windows Setup. See
+[v5.94.0](docs/releases/v5.94.0.md).
+
 ## v5.93.3 - Scatter keeps to near-level ground
 
 One change to the Scatter Instances recipe: its direction mask goes from 45
