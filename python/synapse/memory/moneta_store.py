@@ -1356,8 +1356,26 @@ class MonetaBackedStore:
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("cortex close failed: %s", exc)
             close = getattr(self._handle, "close", None)
-            if callable(close):
-                close()
+            try:
+                if callable(close):
+                    close()
+            finally:
+                self._release_usd_root_layer()
+
+    def _release_usd_root_layer(self) -> None:
+        """Let go of the engine target's root layer once the handle is closed.
+
+        Moneta's ``UsdTarget.close()`` drops its stage and its sublayers but
+        keeps ``_root_layer``, and ``atexit`` keeps this store alive until the
+        process ends. Between them ``.moneta/usd/cortex_root.usda`` stayed
+        registered with USD for the life of the process, so a second open of
+        the same directory could not create it and came back without USD
+        sublayers. ``rebind_owner`` makes exactly that second open, to verify a
+        rebind. A mock target has no root layer and is left alone.
+        """
+        target = getattr(self._handle, "authoring_target", None)
+        if getattr(target, "_root_layer", None) is not None:
+            target._root_layer = None
 
     # -- unsupported (append/consolidate engine) ----------------------------
 
