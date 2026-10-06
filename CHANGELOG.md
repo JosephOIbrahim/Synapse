@@ -22,6 +22,21 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.94.3 - Eleven small repairs, each with its own test
+
+Sixteen commits on top of v5.94.2. Eleven are small repairs, one commit and one
+test file each. A failed `execute_python` or `configure_render_passes` step now
+undoes only when the undo stack changed, so a step that changed nothing no
+longer takes back the artist's last action. The bridge records a rollback whose
+undo raised as incomplete. A node-event name that Houdini 22 does not have is
+corrected, two calls move to `hou.text.expandString`, a missing logger and a
+late import are fixed, and one error message lists its choices in words. A test
+now reads the help page, `sync_version.py` carries the page's version, three
+older help pages use today's names, and two tooltips match their handlers. The
+development harness gains a graph mode. None of this was run in Houdini: every
+repair is unit-tested only. This is a source release with no new Windows Setup.
+See [v5.94.3](docs/releases/v5.94.3.md).
+
 ## v5.94.2 - The help page describes the panel as it is
 
 One change on top of v5.94.1: the page the panel's Help opens is rewritten. The
