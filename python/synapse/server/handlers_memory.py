@@ -5,6 +5,7 @@ Extracted from handlers.py -- contains memory bridge handlers and Living Memory
 (scene memory) handlers for the SynapseHandler class.
 """
 
+import logging
 import os
 from typing import Dict
 
@@ -18,6 +19,8 @@ from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.show_config import get_show_config, reload_show_config
 from ..core.errors import SynapseServiceError, SynapseUserError
 from .handler_helpers import _HOUDINI_UNAVAILABLE
+
+logger = logging.getLogger(__name__)
 
 # What the caller got wrong. Everything else a memory handler reports under
 # "error" is the store failing.
