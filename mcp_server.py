@@ -343,7 +343,7 @@ def _dispatch_executor():
     """The executor this module owns. Created once, never handed to asyncio."""
     global _DISPATCH_EXECUTOR
     if _DISPATCH_EXECUTOR is None:
-        _DISPATCH_EXECUTOR =concurrent.futures.ThreadPoolExecutor(
+        _DISPATCH_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
             max_workers=4, thread_name_prefix="synapse-mcp-dispatch",
         )
     return _DISPATCH_EXECUTOR
