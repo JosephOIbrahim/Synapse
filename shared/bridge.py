@@ -1700,12 +1700,20 @@ class LosslessExecutionBridge:
             h_now = "invalid_context"
 
         if self._is_sentinel_hash(before) or self._is_sentinel_hash(h_now):
+            undo_raised = False
             try:
                 hou.undos.performUndo()
             except Exception:
-                pass
-            integrity.delta_hash = "rolled_back"
+                undo_raised = True
             self._park_hash(hash_target, h_now)
+            if undo_raised:
+                integrity.delta_hash = "rollback_incomplete"
+                return (
+                    f"rollback incomplete on {hash_target}: the undo raised, "
+                    f"so the scene may be partly changed; manual review of "
+                    f"{hash_target} recommended"
+                )
+            integrity.delta_hash = "rolled_back"
             return None
 
         if h_now == before:
