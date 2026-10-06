@@ -131,7 +131,9 @@ def validate(params: Dict) -> None:
     valid_purposes = {"render", "proxy", "simproxy"}
     for p in purposes:
         if p not in valid_purposes:
-            raise ValidationError(f"Unknown purpose '{p}' -- use: {valid_purposes}")
+            raise ValidationError(
+                f"Unknown purpose '{p}' -- use: {', '.join(sorted(valid_purposes))}"
+            )
 
 
 def plan(params: Dict) -> List[Dict[str, Any]]:
