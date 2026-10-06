@@ -50,6 +50,8 @@ SURFACES = {
                     'CLAUDE.md'),
     'readme':      (re.compile(r'<sub>v([0-9]+\.[0-9]+\.[0-9]+) \u00b7 Houdini', re.M),
                     'README.md'),
+    'help_page':   (re.compile(r'<span class="ver"><span>Help</span><span>v([0-9]+\.[0-9]+\.[0-9]+)</span>'),
+                    'docs/help/index.html'),
 }
 
 UNKNOWN = 'UNKNOWN'
