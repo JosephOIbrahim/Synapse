@@ -340,3 +340,14 @@ def test_json_in_finds_the_reply_object():
     assert G.json_in('note {"a": 1} tail') == {"a": 1}
     assert G.json_in('```json\n{"a": {"b": [1, 2]}}\n```\nDONE') == {"a": {"b": [1, 2]}}
     assert G.json_in("no json here") is None
+
+
+def test_a_scout_knows_its_turn_budget_and_may_carry_a_brief(world):
+    """Fails if a scout is not told when to stop reading: 3 of 20 ran out of turns on 2026-10-06."""
+    G, st, repo, slot = world
+    it = _scouts(1)[0]
+    plain = G.build_prompt(st, it)
+    assert "about %d tool calls" % G.TURNS["scout"] in plain and "YOUR BRIEF" not in plain
+    it["brief"] = "Only tooltips."
+    aimed = G.build_prompt(st, it)
+    assert "YOUR BRIEF" in aimed and "Only tooltips." in aimed

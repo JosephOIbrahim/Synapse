@@ -370,7 +370,10 @@ def build_prompt(st, it):
         blast = max([st["areas"][a].get("direct", 0) for a in it["areas"]] or [0])
         listing = "\n".join("  " + f for f in it["files"])
         return SCOUT % {"id": it["id"], "areas": ", ".join(it["areas"]), "blast": blast,
-                        "n": len(it["files"]), "lines": it.get("lines", 0), "files": listing}
+                        "n": len(it["files"]), "lines": it.get("lines", 0), "files": listing,
+                        "turns": TURNS["scout"],
+                        "brief": ("YOUR BRIEF (it narrows the search; the reply format does not change):\n%s\n"
+                                  % it["brief"]) if it.get("brief") else ""}
     if k == "fix":
         card = {x: it[x] for x in ("id", "title", "files", "change", "accept") if x in it}
         return _program() + FIX % {"card": json.dumps(card, indent=1), "id": it["id"]}
@@ -578,8 +581,9 @@ def _finish(st, it):
     res = json_in(text)
     if res is None or ex.get("note"):
         it["status"] = "failed"
+        why = "ran out of turns before replying" if j.get("subtype") == "error_max_turns" else ""
         ledger(st, it["id"], model, "failed", it["attempts"], dur, toks,
-               ex.get("note") or "reply was not JSON: " + text[-120:])
+               ex.get("note") or why or "reply was not JSON: " + text[-120:])
         return
     with open(base + ".result.json", "w", encoding="utf-8") as f:
         json.dump(res, f, indent=1)
@@ -841,6 +845,9 @@ never propose changing one.
 METHOD: Grep first, then Read around each hit. Open the real file and confirm every claim before you
 report it. A wrong report costs a whole session downstream, so five true ones beat fifteen guesses.
 Stop at 6 candidates. You may read any file in the repo to check a claim.
+You have about %(turns)s tool calls. Spend at most three quarters of them reading, then write your
+reply. A scout that runs out of calls before replying has reported nothing.
+%(brief)s
 
 REPLY with one JSON object and nothing after it:
 {"scout":"%(id)s","read_files":0,"candidates":[{
