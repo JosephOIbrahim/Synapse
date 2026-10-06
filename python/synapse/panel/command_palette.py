@@ -144,7 +144,7 @@ _SLASH_COMMANDS: list[tuple[str, str]] = [
     ("/spatial", "Measure the camera's move and how close it comes, and draw its path (local, zero-token)"),
 ]
 
-# PNL-L3B (1): the five panel rows are TITLED BY OUTCOME and read in this
+# PNL-L3B (1): the panel rows are TITLED BY OUTCOME and read in this
 # order at the top of the list. The send stays the literal the panel
 # intercepts -- unchanged, and after this leg the only sends in the whole
 # palette that begin with "/".
