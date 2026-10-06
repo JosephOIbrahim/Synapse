@@ -79,9 +79,12 @@ The release commit on top is version strings and documents.
   `routing/planner.py` lines 275, 360, 534 and 589. Line 327 of `handlers_hda.py` reads `definition.sections()`
   into a name nothing uses, which is dead code and not an argument.
 - **The seat.** The main checkout `C:\Users\User\SYNAPSE` was fingerprinted before and after the hour: `master`
-  at `40ef16f9`, 169 pending lines, the same listing hash. A sweep at 12:19pm read the write time of all 197,315
-  files in it outside `.git`: none was written after 10:50am. Houdini 22.0.400 ran throughout as one process and
-  was not touched.
+  at `40ef16f9`, 169 pending lines, the same listing hash. A walk at 2:25pm read the write time of all 353,958
+  files in it outside `.git` (`rel\sweep2.txt`). Three were written after 10:50am, all inside the live session's
+  own `.synapse` folder: its health history, which Houdini appends to through the day, and two provenance records
+  stamped 11:04am, half an hour before the loop's first session. Nothing else was written. Two old pytest-cache
+  folders under `.claude\worktrees` could not be read. Houdini 22.0.400 ran throughout as one process and was not
+  touched.
 
 ## Decisions
 
@@ -89,7 +92,7 @@ The release commit on top is version strings and documents.
   code changes until the take. His instruction puts this release on GitHub; it does not move the take build.
 - **The seat stays pinned.** `master` on origin moves by a push from `release/v5.94.3` in the hour loop's
   worktree, `git push origin release/v5.94.3:refs/heads/master`, fast-forward only. The main checkout's own
-  `master` is not moved, so it reads 16 commits behind `origin/master` until Joe pulls after the take. Houdini
+  `master` is not moved, so it reads 17 commits behind `origin/master` until Joe pulls after the take. Houdini
   loads files, and those files are still v5.94.2.
 - **The Oct 4 review asked for three of these after the take.** HOM-13: "do not change before Oct 7". HOM-22:
   "Post-take". HOM-6: "Fix must wait: zero take benefit, nonzero risk". Those rulings protect the build that is
@@ -112,6 +115,12 @@ The release commit on top is version strings and documents.
   thirteenth item is the dead read at `handlers_hda.py` line 327. It said two of four `hou.expandString` calls
   were moved; the review lists five sites, the card listed four, and three remain. The notes use the right
   numbers, and the project's hour-loop page is corrected.
+- **One evidence line in the release commit was wrong, and the commit after it corrects it.** `f5f00ae6` said a
+  sweep at 12:19pm had read all 197,315 files in the checkout and found none written after 10:50am. That sweep
+  had stopped without a word at a folder it could not read, having covered about half of the files, and it never
+  reached `.synapse`. The seat line above comes from a second walk that counts its errors. The wrong line also
+  went to Joe in the hour's report and is corrected there. The correction is the seventeenth commit, so the notes
+  and the changelog now say seventeen; the Jev request below checked the sentence when it said sixteen.
 - **JEV.** For the notes, 37 claims were checked in one request
   (`harness/jev/ledger/v5.94.3.release.notes.jsonl`): 31 came back supported and 6 partial, none unsupported. Each
   partial went to a direct read, and two more sentences were tightened on the same pass. Reworded after the

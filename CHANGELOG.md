@@ -24,7 +24,7 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.94.3 - Eleven small repairs, each with its own test
 
-Sixteen commits on top of v5.94.2. Eleven are small repairs, one commit and one
+Seventeen commits on top of v5.94.2. Eleven are small repairs, one commit and one
 test file each. A failed `execute_python` or `configure_render_passes` step now
 undoes only when the undo stack changed, so a step that changed nothing no
 longer takes back the artist's last action. The bridge records a rollback whose
