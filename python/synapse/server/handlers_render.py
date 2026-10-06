@@ -19,6 +19,28 @@ try:
 except ImportError:
     HOU_AVAILABLE = False
 
+
+def _undo_labels_snapshot(hou_mod):
+    """Undo-stack labels before a group opens, or None if unreadable (HOM-13)."""
+    try:
+        return tuple(hou_mod.undos.undoLabels())
+    except Exception:
+        return None
+
+
+def _rollback_if_group_left_entry(hou_mod, labels_before):
+    """performUndo() only when the stack top changed, so an empty group never
+    takes back the artist's own last action. Same guard as build_graph."""
+    if labels_before is None:
+        return False
+    try:
+        if tuple(hou_mod.undos.undoLabels()) != labels_before:
+            hou_mod.undos.performUndo()
+            return True
+    except Exception:
+        pass
+    return False
+
 try:
     from shared.constants import (
         RENDER_VALIDATE_CHECKS as _VALIDATE_CHECKS,
@@ -2015,6 +2037,7 @@ class RenderHandlerMixin:
             # Without the cook, Houdini defers validation to undo
             # serialization time, which can corrupt the undo stack if the
             # pythonscript code has import errors.
+            labels_before = _undo_labels_snapshot(hou)
             try:
                 with hou.undos.group("SYNAPSE: configure_render_passes"):
                     py_lop = parent.createNode("pythonscript", "render_passes")
@@ -2025,10 +2048,7 @@ class RenderHandlerMixin:
                     # serialization time — catches pxr import errors early.
                     py_lop.cook(force=True)
             except Exception:
-                try:
-                    hou.undos.performUndo()
-                except Exception:
-                    pass
+                _rollback_if_group_left_entry(hou, labels_before)
                 raise
 
             return {

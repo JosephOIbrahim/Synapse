@@ -48,7 +48,9 @@ from ..core.errors import (
 from .handlers_node import NodeHandlerMixin
 from .handlers_network_layout import NetworkLayoutMixin
 from .handlers_usd import UsdHandlerMixin
-from .handlers_render import RenderHandlerMixin
+from .handlers_render import (
+    RenderHandlerMixin, _undo_labels_snapshot, _rollback_if_group_left_entry,
+)
 from .handlers_tops import TopsHandlerMixin
 from .handlers_farm import FarmHandlerMixin, FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from .handlers_material import MaterialHandlerMixin
@@ -1374,6 +1376,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             if atomic:
                 _needs_rollback = False
                 _rollback_exc = None
+                _labels_before = _undo_labels_snapshot(hou)
                 with hou.undos.group("synapse_execute"):
                     with cook_sandwich(label="execute_python"):
                         try:
@@ -1386,10 +1389,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                             _rollback_exc = e
                 # Undo group is now closed — safe to roll back
                 if _needs_rollback:
-                    try:
-                        hou.undos.performUndo()
-                    except Exception as e:
-                        _log.debug("Undo rollback best-effort failed: %s", e)
+                    _rollback_if_group_left_entry(hou, _labels_before)
                     raise _rollback_exc
             else:
                 with cook_sandwich(label="execute_python"):
