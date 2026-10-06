@@ -110,7 +110,7 @@ def _get_child_events():
         import hou
         _WATCHED_CHILD_EVENTS = (
             hou.nodeEventType.ParmTupleChanged,
-            hou.nodeEventType.InputChanged,
+            hou.nodeEventType.InputRewired,
             hou.nodeEventType.NameChanged,
             hou.nodeEventType.BeingDeleted,
             hou.nodeEventType.FlagChanged,
