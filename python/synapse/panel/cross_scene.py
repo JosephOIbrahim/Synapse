@@ -105,7 +105,7 @@ def _resolve_job() -> Optional[str]:
     """Return $JOB from Houdini, or None."""
     if _HOU_AVAILABLE and hou is not None:
         try:
-            val = hou.getenv("JOB") or hou.expandString("$JOB")
+            val = hou.getenv("JOB") or hou.text.expandString("$JOB")
             if val and val != "$JOB":
                 return val
         except Exception:

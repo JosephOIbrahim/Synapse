@@ -608,7 +608,7 @@ def _assess_stage(stage, engine_hint=None, max_prims=5000,
     else:
         bad = []
         for pn in names:
-            ex = hou.expandString(pn) if (HOU_AVAILABLE and hasattr(hou, "expandString")) else pn
+            ex = hou.text.expandString(pn) if (HOU_AVAILABLE and hasattr(hou, "text")) else pn
             d = os.path.dirname(ex) or "."
             if os.path.isdir(d):
                 if not os.access(d, os.W_OK):
