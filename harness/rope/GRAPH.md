@@ -1,0 +1,91 @@
+# rope graph · operator card
+
+`runner.py` walks one list, one session at a time, in the tree Houdini serves.
+
+`graph.py` walks a graph, several sessions at a time, in a worktree of its own.
+
+It is the same rope. The checks, the scoped revert and the executor command are imported from `runner.py`, not copied.
+
+## What it does
+
+1. **Map.** It reads the repo's own import graph. Each area of `python/synapse` is a node, plus the entry points outside it.
+2. **Scout.** One read-only session per slice of the map. A scout returns candidates: a file, a line, the quoted line, the smallest fix, and how a program would prove it.
+3. **Route.** Code vetoes first: fenced paths, the exam, and any candidate whose quoted line is not in the file. Then `harness/jev/jev_sweep.py` asks Jev where each survivor goes.
+4. **Fix.** One session per file, each in its own slot worktree. A fixer may edit its card's files and run `python -m pytest`. Nothing else.
+5. **Gate.** Checks decide. Keep is one scoped commit. Fail is a scoped restore.
+6. **Referee.** A read-only session reads the kept commits. A drop is a `git revert`, never a rewrite.
+
+## The three laws
+
+1. **The cap is counted here and nowhere else.** A session is counted before it starts, so a crash cannot beat the cap.
+2. **A fix may only declare files outside the fences and outside the exam.** The refusal is code, in `refuse_item`.
+3. **The loop never edits its own exam.** Existing tests, fixtures, the catalog and this harness are read-only to every worker. No model keeps or discards a change.
+
+## What Jev decides, and what it does not
+
+Jev routes a candidate: `fix_now`, `needs_houdini`, `propose_only`, `not_a_defect`. It scores value. It picks the fixer's tier by name.
+
+Doubt rounds down on the route and up on the tier. With no Jev answer, the route is `propose_only`: an outage produces a list, not edits.
+
+Jev never keeps a change. The questions and thresholds are `guards.sweep` in `harness/jev/questions.json`.
+
+## Run it
+
+Run it from a worktree, never from the checkout Houdini loads.
+
+```
+python harness/rope/graph.py map
+python harness/rope/graph.py init   --run RUN --slots SLOTS --cap 50 --minutes 60
+python harness/rope/graph.py tick   --run RUN --kinds scout --loop 15
+python harness/rope/graph.py route  --run RUN
+python harness/rope/graph.py add    --run RUN RUN/fix_items.json
+python harness/rope/graph.py tick   --run RUN --kinds fix --loop 15
+python harness/rope/graph.py review --run RUN
+python harness/rope/graph.py tick   --run RUN --kinds review --loop 15
+python harness/rope/graph.py status --run RUN
+```
+
+`route` writes `candidates.json` and `fix_items.json` and adds nothing. Read them, then `add`. That pause is deliberate.
+
+`RUN/seeds.json` is optional. It holds candidates from any other finder, in the scout's format. They pass the same vetoes and the same route.
+
+## What you will see
+
+Each tick prints one line:
+
+```
+11:42:07  sessions 23/50  clock 31m left  |  fix 2 kept 1 discarded 3 running  |  scout 22 done
+```
+
+`RUN/results.tsv` has rope's columns, one row per session, with the real token count.
+
+`RUN/<id>.prompt.txt`, `.out`, `.err` and `.result.json` are the full record of each session.
+
+## Models
+
+A tier name goes in and a model string comes out. The table is `harness/rails_exec.json`.
+
+Scouts run on `mechanical`. Fixers run on the tier Jev picked. The referee runs on `referee`.
+
+`--models reasoning=sonnet` overrides one tier for one run. `SYNAPSE_ROPE_ENGINE=ollama` swaps the engine, as it does for rope.
+
+## When it stops
+
+- **`cap reached`.** The 51st session is refused. Raise `--cap` on a new run.
+- **`clock ran out`.** No new session starts. Sessions already running are still gated.
+- **`quota`.** A session reported a usage limit. The loop stops and is never retried.
+- **A slot is `retired`.** A worker left it dirty in a way a scoped restore could not undo. It is not reused. Look at it.
+
+## When Houdini is running
+
+`init` refuses, as rope does. Rope refuses because it edits the tree Houdini serves.
+
+A graph run in its own worktree does not. Pass `--live-seat-ok "<why it is safe>"`. The reason is written to the ledger as the first row.
+
+Workers start with `harness/rope/no-mcp.json` and `harness/rope/graph-worker.json`. They attach to no MCP server and fire no session hooks, so they never touch the live bridge.
+
+## Held lightly
+
+- The import graph of this repo is close to one knot. Transitive reach is the same for almost every area, so work is ordered by direct importers.
+- The gate proves tests pass. It does not prove behaviour inside Houdini. That is why `needs_houdini` candidates are listed and never fixed here.
+- `tests_for` picks judging tests by module name. A module no test names is judged only by its new test and the two ratchets.

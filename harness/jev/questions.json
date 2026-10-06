@@ -544,6 +544,83 @@
         "mode": "shadow",
         "promotion_bar": "across the graded groups, Jev top-2 agrees with the key more often than code order (ruling R-2)"
       }
+    },
+    "sweep": {
+      "edge": "scout candidate -> fix item (harness/rope/graph.py route, once per candidate, after the code vetoes). Jev routes and ranks; the gate keeps or discards by tests. Tier NAMES come from harness/rails_exec.json at runtime; this block only supplies their descriptions.",
+      "state_fields": [
+        "id",
+        "area",
+        "blast",
+        "file",
+        "line",
+        "kind",
+        "claim",
+        "evidence",
+        "fix",
+        "check",
+        "needs_houdini"
+      ],
+      "questions": {
+        "route": {
+          "type": "choice",
+          "instructions": "A read-only scout reported `candidate` while auditing SYNAPSE, an AI assistant that runs inside SideFX Houdini. `candidate.claim` says what is wrong, `candidate.evidence` is the line of code it quotes, `candidate.fix` is the smallest change it proposes and `candidate.check` is how it says a program could verify the fix. Choose what should happen to this candidate next.",
+          "criteria": {
+            "fix_now": {
+              "what": "The evidence shows a real defect or a false statement, the proposed change is small and local, and it changes nothing an artist sees except that the defect is gone.",
+              "not_for": "Anything whose correctness depends on Houdini's own behaviour, and anything that is a choice between designs."
+            },
+            "needs_houdini": {
+              "what": "It may be real, but whether the fix is right depends on how Houdini itself behaves (a node type, a parameter name, a cook, a render, a viewport), so it cannot be settled outside a running Houdini.",
+              "not_for": "Plain Python defects that a unit test with stand-in objects can prove."
+            },
+            "propose_only": {
+              "what": "It may be worth doing, but it is a design choice, a rename, a refactor or a behaviour change an artist would notice: the owner should decide, not a fixer.",
+              "not_for": "A plain defect with one obviously correct small fix."
+            },
+            "not_a_defect": {
+              "what": "The evidence does not show a problem: the code is right as written, the scout misread it, or it is a matter of taste.",
+              "not_for": "A real defect that is merely small."
+            }
+          }
+        },
+        "value": {
+          "type": "score",
+          "instructions": "How much does fixing `candidate` improve SYNAPSE for the artist using it or the developer maintaining it? Judge the defect in `candidate.claim`, not the size of the change.",
+          "criteria": [
+            "Cosmetic: nobody would notice; a wording preference, style, or a path that cannot be reached.",
+            "Useful: removes a real but minor wrong: a misleading message or tooltip, a stale help line, an error path that is rarely hit.",
+            "Important: on a path people actually hit, it currently fails, misleads or loses information: a crash, a swallowed error, a wrong result, a fallback that can never run."
+          ]
+        },
+        "binary": {
+          "type": "noul",
+          "instructions": "Could an automated check that runs without Houdini tell a correct version of the fix in `candidate.fix` from an incorrect one? A unit test with stand-in objects or an exact text search counts. If only a person looking at Houdini could tell, the answer is no."
+        },
+        "tier": {
+          "type": "choice",
+          "instructions": "Choose which execution tier should make the change in `candidate.fix`. The fixer is one session that edits `candidate.file` and writes one short test for it.",
+          "criteria_by_tier": {
+            "mechanical": {
+              "what": "The change is fully spelled out: replace this exact text with that exact text, add a named import, correct a string. No judgment about behaviour is needed.",
+              "not_for": "Anything that requires understanding control flow or designing a test with stand-in objects."
+            },
+            "reasoning": {
+              "what": "The fixer must understand the surrounding code to change it safely: control flow, an error path, a value shared with other code, or a test that needs stand-in objects.",
+              "not_for": "A literal text replacement that the candidate already spells out."
+            }
+          }
+        }
+      },
+      "policy": {
+        "fix_min_confidence": 0.5,
+        "fix_min_binary": 0.6,
+        "fix_min_value": 0.7,
+        "houdini_wins_at": 0.35,
+        "min_tier_confidence": 0.6,
+        "mechanical_max_blast": 3,
+        "fallback_route": "propose_only",
+        "fallback_tier": "reasoning"
+      }
     }
   }
 }
