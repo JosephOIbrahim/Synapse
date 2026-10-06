@@ -56,7 +56,6 @@ _ARTIST_COMMANDS: FrozenSet[str] = frozenset({
     "farm_prepare", "farm_submit", "farm_cancel",
     "create_node", "delete_node", "connect_nodes",
     "set_parm", "set_keyframe", "layout_network",
-    "set_parm", "set_keyframe",
     # R-CACHE-1 insert slice -- an undoable graph mutation (creates + wires a File Cache SOP).
     # Mutation tier, NOT viewer (assess_cache stays viewer/read-only above).
     "insert_cache",
