@@ -499,6 +499,54 @@ def _free_slot(st, slot_path, changed):
         slot["retired"] = "left dirty after scoped restore"
 
 
+LOG_CALL = re.compile(r"\b(?:_?log(?:ger)?|logging|LOG)\.(?:debug|info|warning|warn|error|exception|critical)\(")
+_FIRST_LITERAL = re.compile(r"(['\"])(.+?)\1")
+
+
+def _dropped_logging(slot, changed, card_text):
+    """Logger calls a fix removed and neither moved nor named in its card. Code decides, never a model.
+
+    A removed line is flagged when it is a logger call and
+      (i)  no added line in any declared file equals it after whitespace is normalised
+           (a move or a re-indent is allowed; a new file's lines all count as added), and
+      (ii) the first string literal inside the call does not appear verbatim in the card
+           (a card that quotes the line asked for its removal).
+    There is no waiver for the word "log" in the card: "Keep the existing logging" (K03)
+    must not excuse a dropped line. `print(` is out of scope on purpose.
+    Known gap: a call that spans several lines, with its literal on a continuation line,
+    is not matched, because the diff is read one line at a time.
+    """
+    removed, added = [], set()
+    for code, rel in changed:
+        if code.strip() == "??":                      # new file: no HEAD side to lose,
+            try:                                      # but every line in it is an added line
+                with open(os.path.join(slot, rel), encoding="utf-8", errors="replace") as f:
+                    added.update(_norm(x) for x in f.read().splitlines())
+            except OSError:
+                pass
+            continue
+        out = git("diff", "HEAD", "--unified=0", "--", rel, cwd=slot).stdout
+        for ln in out.splitlines():
+            if ln.startswith("---") or ln.startswith("+++"):
+                continue
+            if ln.startswith("-"):
+                removed.append((rel, ln[1:]))
+            elif ln.startswith("+"):
+                added.add(_norm(ln[1:]))
+    lost = []
+    for rel, ln in removed:
+        m = LOG_CALL.search(ln)
+        if not m:
+            continue
+        if _norm(ln) in added:
+            continue
+        lit = _FIRST_LITERAL.search(ln, m.end())
+        if lit and lit.group(2) in card_text:
+            continue
+        lost.append("%s: %s" % (rel, ln.strip()[:100]))
+    return lost
+
+
 def gate(st, it):
     """Judge one finished fix. Returns (verdict, note). Checks decide; no model is asked."""
     slot, root = it["slot"], st["root"]
@@ -521,7 +569,10 @@ def gate(st, it):
                         ast.parse(f.read())
                 except (SyntaxError, ValueError, OSError) as e:
                     return "syntax", "%s does not parse: %s" % (p, e)
-        existed = {p: os.path.exists(os.path.join(root, p)) for p in paths}
+        lost = _dropped_logging(slot, changed, "%s %s" % (it.get("change", ""), it.get("title", "")))
+        if lost:
+            return "dropped_log", "a fix removed logging its card never mentioned: " + "; ".join(lost[:3])
+        existed ={p: os.path.exists(os.path.join(root, p)) for p in paths}
         for p in paths:
             os.makedirs(os.path.dirname(os.path.join(root, p)) or root, exist_ok=True)
             shutil.copyfile(os.path.join(slot, p), os.path.join(root, p))

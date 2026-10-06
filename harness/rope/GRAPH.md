@@ -12,7 +12,7 @@ It is the same rope. The checks, the scoped revert and the executor command are 
 2. **Scout.** One read-only session per slice of the map. A scout returns candidates: a file, a line, the quoted line, the smallest fix, and how a program would prove it.
 3. **Route.** Code vetoes first: fenced paths, the exam, and any candidate whose quoted line is not in the file. Then `harness/jev/jev_sweep.py` asks Jev where each survivor goes.
 4. **Fix.** One session per file, each in its own slot worktree. A fixer may edit its card's files and run `python -m pytest`. Nothing else.
-5. **Gate.** Checks decide. Keep is one scoped commit. Fail is a scoped restore.
+5. **Gate.** Checks decide. Keep is one scoped commit. Fail is a scoped restore. A fix that removes a logger call is refused (`dropped_log`) unless the same line was added in a declared file or the card quotes the call's message.
 6. **Referee.** A read-only session reads the kept commits. A drop is a `git revert`, never a rewrite.
 
 ## The three laws
@@ -88,4 +88,5 @@ Workers start with `harness/rope/no-mcp.json` and `harness/rope/graph-worker.jso
 
 - The import graph of this repo is close to one knot. Transitive reach is the same for almost every area, so work is ordered by direct importers.
 - The gate proves tests pass. It does not prove behaviour inside Houdini. That is why `needs_houdini` candidates are listed and never fixed here.
+- `dropped_log` reads the diff one line at a time. A logger call split over several lines, with its message on a continuation line, is not seen. `print(` is not checked.
 - `tests_for` picks judging tests by module name. A module no test names is judged only by its new test and the two ratchets.
