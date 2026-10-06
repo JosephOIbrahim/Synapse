@@ -1757,7 +1757,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
     def _handle_router_stats(self, payload: Dict) -> Dict:
         """Return tier cascade statistics for LLM self-reflection."""
         if not hasattr(self, "_router"):
-            return {"error": "Router not initialized"}
+            raise SynapseServiceError("Router not initialized")
         return self._router.stats()
 
     def _handle_list_recipes(self, payload: Dict) -> Dict:
@@ -1790,7 +1790,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
     def _handle_get_live_metrics(self, payload: Dict) -> Dict:
         """Return live metrics snapshot or historical snapshots."""
         if not getattr(self, "_metrics_aggregator", None):
-            return {"error": "Metrics aggregator not running"}
+            raise SynapseServiceError("Metrics aggregator not running")
 
         count = payload.get("history_count", 0)
         if count > 0:
