@@ -1306,7 +1306,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # find. Reached as the overflow's 'Help'.
         self._help_btn = c.Button("?", variant="ghost", parent=w)
         self._help_btn.setAccessibleName("Open documentation")
-        self._help_btn.setToolTip("Open docs/studio/UPGRADE.md")
+        self._help_btn.setToolTip("Open the help page (docs/help/index.html)")
         self._help_btn.clicked.connect(self._on_help)
         # Activate the documentation corpus so Solaris assembly grounds in the
         # running build's real docs (verified node types / parm names) instead
@@ -3155,7 +3155,7 @@ class SynapsePanel(QtWidgets.QWidget):
             halt_act = menu.addAction("Emergency halt…")
             halt_act.triggered.connect(self._on_emergency_halt)
             halt_act.setToolTip(
-                "Cancel PDG cooks under /obj and capture a session report. "
+                "Cancel PDG cooks under /tasks, /obj, /stage and /out and capture a session report. "
                 "Does NOT stop background renders — those are reported back "
                 "so you can stop them explicitly.")
         from synapse.panel.designsystem import submenus
