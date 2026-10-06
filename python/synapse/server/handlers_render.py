@@ -37,8 +37,8 @@ def _rollback_if_group_left_entry(hou_mod, labels_before):
         if tuple(hou_mod.undos.undoLabels()) != labels_before:
             hou_mod.undos.performUndo()
             return True
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Undo rollback best-effort failed: %s", exc)
     return False
 
 try:
