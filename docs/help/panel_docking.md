@@ -1,6 +1,6 @@
 # Keeping the Synapse panel docked
 
-The shelf's **Open Synapse Panel** now docks the panel into your layout (beside
+The shelf's **Synapse** button now docks the panel into your layout (beside
 the Network Editor) instead of opening a floating window, and reuses an existing
 Synapse tab rather than opening a second one.
 

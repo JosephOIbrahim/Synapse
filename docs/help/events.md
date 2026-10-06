@@ -1,7 +1,7 @@
 # Know when work needs your attention
 
-Open **Events** below the prompt, or choose `/events` in Commands. SYNAPSE keeps
-recent work and connection updates in this Houdini session. Opening Events does
+Open **Updates** below the prompt, or choose `/events` in Commands. SYNAPSE keeps
+recent work and connection updates in this Houdini session. Opening Updates does
 not send a prompt, run a job or share scene data.
 
 SYNAPSE render operations and final batch reports appear automatically. To follow

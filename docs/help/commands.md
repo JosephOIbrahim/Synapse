@@ -12,7 +12,7 @@ library. These choices do not send a prompt and remain available while a model
 task runs. Other tool and recipe choices follow SYNAPSE's existing model and
 sharing rules. Selecting a choice keeps the draft you were writing.
 
-Commands, Recipes and Events stay below the composer. Their row wraps when the
+Commands, Saved networks and Updates stay below the composer. Their row wraps when the
 panel is narrow. The keyboard hint has its own line so it does not squeeze the
 actions. Exact model identity and location remain available in the model controls.
 
