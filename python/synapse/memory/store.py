@@ -202,7 +202,6 @@ _RECALL_SYNONYMS_RAW = (
     ("material", "shader", "shading", "shade", "surface"),
     ("background", "backdrop", "cyc"),
     ("fog", "atmosphere", "volumetric", "haze", "mist"),
-    ("ocio", "aces", "colorspace"),
     ("light", "lighting", "lit"),
 )
 
@@ -274,6 +273,7 @@ _RECALL_VALUE_WORDS = frozenset(_fold_recall_word(w) for w in (
     "length", "focal", "resolution", "res", "rule", "rules", "convention",
     "organised", "organized", "layout", "structure", "range", "rate", "speed",
     "level", "strength", "intensity", "scale", "aperture", "detail", "details",
+    "side", "position", "direction", "angle",
 ))
 
 
@@ -295,16 +295,18 @@ def _recall_answered(terms: set, tokens) -> set:
     return answered
 
 
+# A record's first few content words name its subject: "Hero sphere look:
+# ..." is about the hero sphere; "...focus distance on the hero sphere" only
+# mentions it. Coarse on purpose: two records that both open on the asked
+# subject tie, and the newer one wins, so a changed decision beats the one it
+# replaced even when the old one carries more incidental words.
+_RECALL_SUBJECT_WORDS = 3
+
+
 def _recall_score(terms: set, tokens: list) -> tuple:
-    """(terms answered, summed position of each answered term's first
-    occurrence) for one record. A record that opens with the asked-about
-    things is about them ("Hero sphere look: ..."); one that mentions them in
-    passing ("...focus distance on the hero sphere") ranks after it on a tie."""
-    first = {}
-    for i, tok in enumerate(tokens):
-        for term in _recall_answered(terms, (tok,)):
-            first.setdefault(term, i)
-    return len(first), sum(first.values())
+    """(terms answered, terms answered within the record's subject words)."""
+    subject = [t for t in tokens if t not in _RECALL_FILLER_KEYS][:_RECALL_SUBJECT_WORDS]
+    return len(_recall_answered(terms, tokens)), len(_recall_answered(terms, subject))
 
 
 def _recall_required(n_terms: int) -> int:
@@ -2084,9 +2086,10 @@ class SynapseMemory:
         # hero sphere color?" must find "We chose blue metallic for the hero
         # sphere", which says neither "decide" nor "color". Drop the question's
         # filler, fold spelling and plurals on both sides, then rank records by
-        # how many meaningful terms they answer, then by how early those terms
-        # first appear in the record. A record must answer both of two
-        # required terms, else at least half, so one shared word ("coral
+        # how many meaningful terms they answer, then by how many of them the
+        # record's opening subject words carry, then newest first. A record
+        # must answer both of two required terms, else at least half, so one
+        # shared word ("coral
         # submarine" against a coral display) is still not a hit, and words
         # match whole: "oral" is never found inside "coral". Coverage guard: a
         # required term that no record in the pool answers means the question
@@ -2104,11 +2107,10 @@ class SynapseMemory:
             if required and known == required:
                 for m in pool:
                     if len(_recall_answered(required, tokens[m.id])) >= need:
-                        hits, spread = _recall_score(terms, tokens[m.id])
-                        scored.append((-hits, spread, m))
+                        hits, subject = _recall_score(terms, tokens[m.id])
+                        scored.append((-hits, -subject, m))
             # Stable: an equal score keeps the fresher-first, id-asc order
-            # above, so a decision restated in the same words outranks the
-            # one it replaced.
+            # above, so a changed decision outranks the one it replaced.
             scored.sort(key=lambda row: row[:2])
             matches = [row[2] for row in scored]
         else:

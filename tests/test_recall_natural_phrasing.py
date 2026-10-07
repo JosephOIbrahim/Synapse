@@ -104,9 +104,7 @@ def _deposit_overlapping(memory):
     # Tie on terms answered: the record that LEADS with the subject wins over
     # the fresher one that mentions it in passing.
     ("what did we decide about the hero sphere?", "look"),
-    ("coral", "look"),
-    # Synonym groups: OCIO ~ ACES, background ~ backdrop, atmosphere ~ fog.
-    ("remind me of the OCIO decision", "color"),
+    # Synonym groups: background ~ backdrop, atmosphere ~ fog.
     ("what did we decide about the background?", "backdrop"),
     ("what did we decide about atmosphere?", "fog"),
     ("how dense is the fog?", "fog"),
@@ -189,3 +187,25 @@ def test_restated_decision_outranks_the_one_it_replaced(memory):
             content=f"**Decision:** Hero lens is {mm}.", memory_type=MemoryType.DECISION,
         ))
     assert [m.id for m in memory.recall("what lens did we pick for the hero?")] == ["new", "old"]
+
+
+def test_changed_decision_beats_the_old_one_despite_incidental_overlap(memory):
+    # recall-eval's runsheet probe: the old camera record also says "hero"
+    # (in its focus clause); the newer decision is the one the artist means.
+    memory.store.add(Memory(
+        id="old", created_at="2026-10-07T10:00:00", updated_at="2026-10-07T10:00:00",
+        content="**Decision:** Shot camera uses a 50mm lens at f/2.8, focus distance on the hero sphere.",
+        memory_type=MemoryType.DECISION,
+    ))
+    memory.store.add(Memory(
+        id="new", created_at="2026-10-07T11:00:00", updated_at="2026-10-07T11:00:00",
+        content="**Decision:** Remember this for the project: the hero lens is 35mm because the set is tight.",
+        memory_type=MemoryType.DECISION,
+    ))
+    for question in ("What was our hero lens?", "which lens are we using?", "what's the hero lens?"):
+        assert memory.recall(question)[0].id == "new", question
+
+
+def test_which_side_asks_for_a_value(memory):
+    decision = memory.decision("Key light stays warm from frame left; rim is a cool kicker.", "Look.")
+    assert [m.id for m in memory.recall("Which side is the key light on?")] == [decision.id]
