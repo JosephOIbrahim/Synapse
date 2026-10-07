@@ -115,13 +115,18 @@ def tool_status(name, phase, detail=None):
     BP9-WORKER: on the error/failed phase the detail is the failure REASON
     (``translate_tool_error`` output from the worker) and is rendered as
     ``Failed: <label> - <detail>`` so the artist sees why. Receipts unchanged.
+
+    TT-3: the warn phase is a tool that ran but reported misses (cook_error,
+    parms_missed, ...); its detail names them and renders as
+    ``Finished with misses: <label> - <detail>``.
     """
     prefix = {"running": "Running", "done": "Finished", "ok": "Finished",
+              "warn": "Finished with misses",
               "error": "Failed", "failed": "Failed"}.get(phase, "Status")
     line = "%s: %s" % (prefix, tool_label(name))
     receipt, rest = split_undo_receipt(detail)
     if receipt:
         line = "%s \u2014 %s" % (line, receipt)
-    elif phase in ("error", "failed") and rest:
+    elif phase in ("error", "failed", "warn") and rest:
         line = "%s - %s" % (line, rest)
     return line
