@@ -369,14 +369,14 @@ RECIPES = {
             "difficulty": "beginner",
             "nodes": [
                 {"type": "tube", "name": "tube1", "parms": {"rows": 30, "cols": 20, "height": 5}},
-                {"type": "bend", "name": "bend1", "parms": {"bendangle": 45}},
-                {"type": "twist", "name": "twist1", "parms": {"twist": 180}},
+                {"type": "bend", "name": "bend1", "parms": {"bend": 45}},
+                {"type": "twist", "name": "twist1", "parms": {"op": 0, "strength": 180}},
             ],
             "connections": [
                 ["tube1", "bend1", 0],
                 ["bend1", "twist1", 0],
             ],
-            "key_parms": ["bendangle", "twist"],
+            "key_parms": ["bend", "strength"],
             "explanation": (
                 "Chains a bend and twist deformer on a tube. The bend curves the "
                 "geometry along one axis, then the twist rotates points progressively "
