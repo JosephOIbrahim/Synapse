@@ -139,6 +139,7 @@ def fireflies(
     max_blob_area=9,
     max_listed=50,
     mask_path=None,
+    origin=None,
 ):
     """Firefly report for ``img`` (float HxWx3 linear RGB).
 
@@ -153,6 +154,12 @@ def fireflies(
     ``luminance``, ``sigmas``; ``None`` when there are no fireflies) and
     ``fireflies``: up to ``max_listed`` entries, brightest residual first, each
     with the peak pixel ``x``/``y``, ``area`` and ``sigmas``.
+
+    ``x``/``y`` are positions in ``img``. When ``img`` is a data window that
+    does not start at the frame's corner, pass ``origin=(ox, oy)`` (the
+    ``origin`` of ``synapse.cv.read_frame``'s window): every listing entry
+    and ``worst`` then also carry ``frame_x``/``frame_y`` = ``x + ox`` /
+    ``y + oy``, and the result carries ``origin``.
 
     When the noise cannot be estimated (lit pixels exist but are too few, see
     the module docstring) ``inconclusive`` is True, ``note`` says why, and
@@ -171,6 +178,11 @@ def fireflies(
         raise ValueError(f"threshold_sigma must be above 0, got {threshold_sigma}")
     if max_blob_area < 1:
         raise ValueError(f"max_blob_area must be at least 1, got {max_blob_area}")
+    if origin is not None:
+        try:
+            ox, oy = (int(v) for v in origin)
+        except (TypeError, ValueError):
+            raise ValueError(f"origin must be two integers (x, y), got {origin!r}") from None
     arr = _check_rgb(np, img)
     finite = np.isfinite(arr).all(axis=2)
     nonfinite = int(finite.size - int(finite.sum()))
@@ -190,6 +202,7 @@ def fireflies(
         "nonfinite_pixels": nonfinite,
         "threshold_sigma": float(threshold_sigma),
         "max_blob_area": int(max_blob_area),
+        "origin": None if origin is None else [ox, oy],
     }
     levels, lit_px_sigma = _stop_sigmas(np, residual[lit], local[lit])
     if n_lit and lit_px_sigma is None:
@@ -267,6 +280,9 @@ def fireflies(
             "luminance": _r(lum[y, x]),
             "sigmas": top["sigmas"],
         }
+    if origin is not None:
+        for f in found[:max_listed] + ([worst] if worst else []):
+            f["frame_x"], f["frame_y"] = f["x"] + ox, f["y"] + oy
     listed = [{k: v for k, v in f.items() if k != "_residual"} for f in found[:max_listed]]
 
     result = dict(base)

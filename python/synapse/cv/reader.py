@@ -1,6 +1,8 @@
 """The one place frames are read from disk and handed to OpenCV.
 
 ``read_linear_rgb`` returns float32 HxWx3 in R, G, B order, linear light.
+``read_frame`` returns the same array with the file's data and display
+windows, so positions found in the array can be put back in the frame.
 ``to_cv_bgr`` is the only conversion to OpenCV's B, G, R layout.
 
 Linear means the file's own values. EXR and other float formats store linear
@@ -49,9 +51,30 @@ def _pick_rgb(channelnames):
 def read_linear_rgb(path):
     """Read ``path`` into a float32 HxWx3 array, R, G, B order, alpha dropped.
 
+    The array covers the file's data window; :func:`read_frame` also returns
+    where that window sits in the frame.
+
     Raises :class:`CVDependencyError` when OpenImageIO or numpy is missing,
     :class:`FileNotFoundError` for a missing file and :class:`CVInputError`
     for a file OpenImageIO cannot open, an integer format or no RGB channels.
+    """
+    return read_frame(path)[0]
+
+
+def read_frame(path):
+    """Read ``path`` as :func:`read_linear_rgb` does; return ``(pixels, window)``.
+
+    ``pixels`` is the array covering the data window. ``window`` is a dict:
+    ``x``, ``y``, ``width``, ``height`` (the data window, in the file's pixel
+    coordinates), ``full_x``, ``full_y``, ``full_width``, ``full_height`` (the
+    display window, the frame) and ``origin``: ``[x - full_x, y - full_y]``,
+    the frame position of the array's pixel ``[0, 0]``. Array position
+    ``(col, row)`` is frame position ``(col + origin[0], row + origin[1])``;
+    pass ``origin`` to :func:`retina.firefly_scan.fireflies` to get frame
+    positions. A frame cropped to its data window (Karma does this for an
+    object on a transparent background) has a non-zero origin.
+
+    Raises as :func:`read_linear_rgb` does.
     """
     np = require_numpy()
     oiio = require_oiio()
@@ -76,10 +99,21 @@ def read_linear_rgb(path):
         if pixels is None:
             raise CVInputError(f"OpenImageIO failed reading {path}: {inp.geterror()}")
         height, width, nchannels = spec.height, spec.width, spec.nchannels
+        window = {
+            "x": int(spec.x),
+            "y": int(spec.y),
+            "width": int(width),
+            "height": int(height),
+            "full_x": int(spec.full_x),
+            "full_y": int(spec.full_y),
+            "full_width": int(spec.full_width),
+            "full_height": int(spec.full_height),
+            "origin": [int(spec.x - spec.full_x), int(spec.y - spec.full_y)],
+        }
     finally:
         inp.close()
     pixels = np.asarray(pixels, dtype=np.float32).reshape(height, width, nchannels)
-    return np.ascontiguousarray(pixels[:, :, idx], dtype=np.float32)
+    return np.ascontiguousarray(pixels[:, :, idx], dtype=np.float32), window
 
 
 def check_rgb(img):

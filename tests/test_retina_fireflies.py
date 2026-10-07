@@ -307,3 +307,53 @@ def test_fireflies_sparse_stop_borrows_the_nearest(cv2):
     assert by_stop[5]["pixels"] < 100
     assert by_stop[5]["borrowed_from"] == -3
     assert by_stop[5]["sigma"] == by_stop[-3]["sigma"]
+
+
+# --------------------------------------------------------------------------
+# Pins from the review of 65b02294 (nits)
+# --------------------------------------------------------------------------
+
+
+def test_fireflies_diagonal_pair_is_one_blob(cv2):
+    # 8-connected: two pixels touching only at a corner are one firefly.
+    img = flat()
+    img[10, 10] = 30.0
+    img[11, 11] = 30.0
+    r = fireflies(img)
+    assert r["count"] == 1
+    assert r["fireflies"][0]["area"] == 2
+    assert r["pixel_count"] == 2
+
+
+def test_fireflies_pixel_exactly_at_threshold_is_not_a_firefly(cv2):
+    # Candidates need residual > threshold, strictly. On an all-black frame the
+    # sigma is the 1e-6 floor, so the threshold is float32(6) * float32(1e-6);
+    # find a grey value whose Rec.709 luminance is exactly that.
+    from retina.firefly_scan import _luminance
+
+    t = np.float32(6.0) * np.float32(1e-6)
+    v = t
+    for _ in range(200):
+        lum = _luminance(np, np.full((1, 1, 3), v, dtype=np.float32))[0, 0]
+        if lum == t:
+            break
+        v = np.nextafter(v, np.float32(1.0) if lum < t else np.float32(0.0), dtype=np.float32)
+    else:
+        pytest.skip("no float32 grey has a luminance exactly at the threshold")
+    img = np.zeros((32, 32, 3), dtype=np.float32)
+    img[10, 10] = v
+    assert fireflies(img)["count"] == 0
+    img[10, 10] = np.nextafter(v, np.float32(1.0), dtype=np.float32)
+    assert fireflies(img)["count"] == 1
+
+
+def test_fireflies_origin_adds_frame_positions(cv2):
+    r = fireflies(planted(), origin=(10, 20))
+    assert r["origin"] == [10, 20]
+    assert [(f["x"], f["y"]) for f in r["fireflies"]] == [(63, 47), (10, 5), (40, 30)]
+    assert [(f["frame_x"], f["frame_y"]) for f in r["fireflies"]] == [(73, 67), (20, 25), (50, 50)]
+    assert (r["worst"]["frame_x"], r["worst"]["frame_y"]) == (73, 67)
+    assert "frame_x" not in fireflies(planted())["fireflies"][0]
+    assert fireflies(planted())["origin"] is None
+    with pytest.raises(ValueError, match="origin"):
+        fireflies(flat(), origin=(1,))

@@ -225,3 +225,26 @@ def test_submodules_are_not_shadowed_by_the_functions():
     assert callable(scv.exposure)
     assert importlib.import_module("synapse.cv.exposure_stats").exposure is scv.exposure
     assert not hasattr(scv, "fireflies")
+
+
+# --------------------------------------------------------------------------
+# Pins from the review of 65b02294 (nits)
+# --------------------------------------------------------------------------
+
+
+def test_exposure_offset_ignores_a_few_hot_pixels():
+    img = flat(value=0.18)
+    for x, y in [(1, 1), (10, 20), (40, 30), (63, 47)]:
+        img[y, x] = 1000.0
+    r = exposure(img)
+    assert r["mean_luminance"] > 1.0  # the hot pixels do move the mean
+    assert r["suggested_offset_stops"] == pytest.approx(0.0, abs=1e-5)
+
+
+def test_exposure_black_threshold_is_inclusive():
+    img = flat(h=8, w=8, value=0.18)
+    img[2, 3] = (0.0004, 0.0007, 0.0002)
+    thr = float(scv.luminance(img)[2, 3])  # exactly that pixel's luminance
+    assert exposure(img, black_threshold=thr)["black_pct"] == pytest.approx(100.0 / 64)
+    below = float(np.nextafter(np.float32(thr), np.float32(0.0)))
+    assert exposure(img, black_threshold=below)["black_pct"] == 0.0

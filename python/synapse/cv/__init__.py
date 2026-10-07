@@ -4,6 +4,8 @@ Phase 1 of ``docs/plans/OPENCV_RENDER_QC.md``. Entry points:
 
 - :func:`read_linear_rgb` reads a frame on disk into float32 HxWx3 linear RGB
   through OpenImageIO. Channel order is fixed there and nowhere else.
+  :func:`read_frame` returns the same array plus the data and display
+  windows, so array positions can be turned back into frame positions.
 - :func:`to_cv_bgr` is the one conversion to OpenCV's B, G, R layout (numpy
   only; the array is handed to cv2 on the far side of the boundary).
 - :func:`exposure` reports luminance statistics and a suggested exposure offset.
@@ -24,7 +26,7 @@ it (Phase 2) decide where it runs.
 
 from synapse.cv.deps import CVDependencyError, CVInputError
 from synapse.cv.exposure_stats import REC709_WEIGHTS, exposure, luminance
-from synapse.cv.reader import read_linear_rgb, to_cv_bgr
+from synapse.cv.reader import read_frame, read_linear_rgb, to_cv_bgr
 
 __all__ = [
     "CVDependencyError",
@@ -32,6 +34,7 @@ __all__ = [
     "REC709_WEIGHTS",
     "exposure",
     "luminance",
+    "read_frame",
     "read_linear_rgb",
     "to_cv_bgr",
 ]

@@ -181,3 +181,60 @@ def test_to_cv_bgr_uint8_clips_and_rounds(cv2):
 def test_to_cv_bgr_rejects_unknown_dtype():
     with pytest.raises(CVInputError):
         to_cv_bgr(np.zeros((2, 2, 3), dtype=np.float32), dtype="int8")
+
+
+# --------------------------------------------------------------------------
+# Pins from the review of 65b02294 (nits)
+# --------------------------------------------------------------------------
+
+
+def test_several_rgb_layers_are_refused(oiio, tmp_path):
+    px = np.zeros((4, 4, 6), dtype=np.float32)
+    names = ("beauty.R", "beauty.G", "beauty.B", "diffuse.R", "diffuse.G", "diffuse.B")
+    path = write_image(oiio, tmp_path / "layers.exr", px, names)
+    with pytest.raises(CVInputError, match="several RGB layers"):
+        read_linear_rgb(path)
+
+
+def write_windowed(oiio, path, pixels, x, y, full_w, full_h):
+    h, w, c = pixels.shape
+    spec = oiio.ImageSpec(w, h, c, "float")
+    spec.channelnames = ("R", "G", "B")
+    spec.x, spec.y = x, y
+    spec.full_x, spec.full_y, spec.full_width, spec.full_height = 0, 0, full_w, full_h
+    out = oiio.ImageOutput.create(str(path))
+    assert out is not None, oiio.geterror()
+    assert out.open(str(path), spec), out.geterror()
+    assert out.write_image(np.ascontiguousarray(pixels)), out.geterror()
+    out.close()
+    return path
+
+
+def test_read_frame_carries_the_data_window(oiio, tmp_path):
+    from synapse.cv import read_frame  # inside: a tree without it fails here only
+
+    px = np.zeros((6, 8, 3), dtype=np.float32)
+    px[1, 2] = (5.0, 6.0, 7.0)
+    path = write_windowed(oiio, tmp_path / "dw.exr", px, 10, 20, 64, 48)
+    img, window = read_frame(path)
+    assert window == {
+        "x": 10, "y": 20, "width": 8, "height": 6,
+        "full_x": 0, "full_y": 0, "full_width": 64, "full_height": 48,
+        "origin": [10, 20],
+    }
+    assert img[1, 2].tolist() == [5.0, 6.0, 7.0]
+    assert np.array_equal(img, read_linear_rgb(path))
+
+
+def test_windowed_exr_fireflies_in_frame_positions(oiio, cv2, tmp_path):
+    from synapse.cv import read_frame
+    from retina.firefly_scan import fireflies
+
+    px = np.full((24, 32, 3), 0.18, dtype=np.float32)
+    px[5, 7] = 40.0
+    img, window = read_frame(write_windowed(oiio, tmp_path / "ffdw.exr", px, 100, 50, 640, 360))
+    r = fireflies(img, origin=window["origin"])
+    assert r["count"] == 1
+    f = r["fireflies"][0]
+    assert (f["x"], f["y"]) == (7, 5)
+    assert (f["frame_x"], f["frame_y"]) == (107, 55)
