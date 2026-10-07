@@ -402,6 +402,7 @@ class HdaHandlerMixin:
 
                     # Step 1b: Build internal network from nodes spec
                     created_nodes = {}
+                    parms_missed = []
                     for node_spec in nodes:
                         node_type = node_spec.get("type", "")
                         node_name = node_spec.get("name", "")
@@ -419,6 +420,8 @@ class HdaHandlerMixin:
                                 p = internal.parm(pk)
                                 if p is not None:
                                     p.set(pv)
+                                else:
+                                    parms_missed.append(f"{internal.name()}.{pk}")
                             created_nodes[internal.name()] = internal
                         except hou.OperationFailed as e:
                             raise ValueError(
@@ -546,6 +549,11 @@ class HdaHandlerMixin:
 
                     # Step 5: Validation
                     warnings = []
+                    if parms_missed:
+                        warnings.append(
+                            "Couldn't find these parameters, so they weren't set: "
+                            + ", ".join(parms_missed)
+                        )
 
                     # Force cook and capture errors
                     try:
@@ -599,6 +607,7 @@ class HdaHandlerMixin:
                 "operator_type": f"{category}/{name}",
                 "promoted_count": promoted_count,
                 "node_count": len(created_nodes),
+                "parms_missed": parms_missed,
                 "save_path": save_path,
                 "warnings": warnings,
             }
