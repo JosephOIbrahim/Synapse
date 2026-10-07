@@ -2485,7 +2485,11 @@ class LosslessExecutionBridge:
                 dirtied = True
             except Exception as _rb_exc:
                 rollback_note = f" Rollback (dirtyAllTasks) failed: {_rb_exc}."
-            integrity.delta_hash = "pdg_timeout" if timed_out else "pdg_rolled_back"
+            # Never claim a rollback that raised: an undirtied failure records
+            # rollback_incomplete, the same honesty rule as the sentinel branch.
+            integrity.delta_hash = "pdg_timeout" if timed_out else (
+                "pdg_rolled_back" if dirtied else "rollback_incomplete"
+            )
             disposition = "removed from disk" if remove_files else "preserved on disk"
             rollback_state = (
                 f"Tasks dirtied for recook; generated caches {disposition}."

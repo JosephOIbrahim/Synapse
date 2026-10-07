@@ -324,7 +324,6 @@ class HdaHandlerMixin:
 
             # Set help via the DialogScript section
             if help_content.strip():
-                sections = definition.sections()
                 # Use the standard help section name
                 definition.addSection("HelpText", help_content)
 

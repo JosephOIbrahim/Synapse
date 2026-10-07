@@ -78,7 +78,7 @@ def crawl_examples(
     """
     import hou
 
-    hfs = hou.expandString("$HFS")
+    hfs = hou.text.expandString("$HFS")
     examples_root = os.path.join(hfs, examples_subdir)
 
     manifest = HipManifest(
