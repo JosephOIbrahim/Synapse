@@ -22,7 +22,7 @@ Do these in order, before the recording starts. One take = one pass through this
 
    **Every hip in the same folder shares one memory store,** and so does every hip under the same `JOB`. A rehearsal deposit will show up during the show unless the show hip sits in its own new folder. Rehearse in a different folder from the show.
 
-5. **JOB.** `JOB` is unset, or set to this take's folder. Check it in the Python shell: `hou.getenv("JOB")`. Memory goes to `$JOB/.synapse` when `JOB` contains the hip, otherwise to `.synapse` next to the hip (seam-guard, live hython on master `ed01db41`).
+5. **JOB.** `JOB` is unset, or set to this take's folder. Check it in the Python shell: `hou.getenv("JOB")`. If it names a folder **above** the take folder (`C:\`, `C:\Users\User`), set `JOB` to the take folder. Memory goes to `$JOB/.synapse` when `JOB` contains the hip, otherwise to `.synapse` next to the hip (seam-guard, live hython on master `ed01db41`).
 
 6. **Conversation cleared.** Open the fresh copy, open the panel, clear the conversation. The panel keeps one previous session and may open on a "parked" notice. The first frame on camera should be an empty chat.
 
@@ -59,13 +59,13 @@ On today's code, natural rewordings mostly miss: 5 of 65 measured questions hit 
 
    This is the deposit recall-eval measured. Keep its wording.
 
-2. **Check the tool call.** The panel shows a `synapse_decide` call. Confirm it reads **`scope: project`** and the result says **`recorded: true`**. Note the **`id`** in the result: that is the record id for the take sheet. Check that **`storage_dir`** is inside this take's folder.
+2. **Check the tool call.** The panel shows a `synapse_decide` call. Confirm it reads **`scope: project`** and the result says **`recorded: true`**. Note the **`id`** in the result: that is the record id for the take sheet. Check that **`storage_dir`** reads `<take folder>\.synapse`.
 
    If the scope reads `scene`, stop and redo the take. A scene-scoped decision is the wrong demo.
 
 3. **Save.** File > Save.
 
-4. **Close.** File > New. Do not save the empty scene.
+4. **Close.** File > New. Do not save the empty scene. Don't recall here: the empty scene has its own empty store, so recall returns `found: false`. That is expected.
 
 5. **Reopen.** File > Open the same hip from the take folder.
 
