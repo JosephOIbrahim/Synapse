@@ -5,6 +5,7 @@ with styled HTML, clickable node paths, code block formatting, message
 grouping with timestamps, and animated typing indicator.
 """
 
+import logging
 import time
 
 try:
@@ -19,6 +20,8 @@ from synapse.panel.message_formatter import (
     format_synapse_message,
     format_system_message,
     format_timestamp_divider,
+    COPY_SCHEME,
+    decode_copy_href,
 )
 # W2-S2 (F4): the off-main formatting pipeline. Qt-free / hou-free by construction,
 # so importing it never pulls Qt and the ordering/off-main proof is unit-testable
@@ -68,6 +71,12 @@ _GROUP_WINDOW_S = 60
 # Chat-local layout (was tokens.CHAT_BUBBLE_MARGIN_Y; inlined so chat_display
 # sources nothing from the ~/.synapse/design bridge — see designsystem.tokens).
 _BUBBLE_MARGIN_Y = t.SPACE_XS // 2  # grouped messages share a turn
+
+_log = logging.getLogger(__name__)
+
+# How long a code block's Copy control reads "Copied" after a click: long
+# enough to read at a glance, short enough that the next look finds "Copy".
+_COPIED_HOLD_MS = 1500
 
 
 def _format_time(epoch):
@@ -476,10 +485,58 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         if url_str.startswith("node:"):
             node_path = url_str[5:]
             self.node_clicked.emit(node_path)
+        elif url_str.startswith(COPY_SCHEME):
+            self._copy_code(url_str)
         else:
             target = QtCore.QUrl(url_str)
             if target.isValid() and target.scheme() in ("http", "https") and target.host() and not target.userInfo():
                 QtGui.QDesktopServices.openUrl(target)
+
+    def _copy_code(self, href):
+        """A code block's Copy control: its own code onto the clipboard, as
+        plain text, exactly as written. Never navigates. A payload that does
+        not decode is ignored (debug log only) -- the clipboard is untouched."""
+        code = decode_copy_href(href)
+        if code is None:
+            _log.debug("ignored a malformed copy payload (%d chars)", len(href))
+            return
+        QtWidgets.QApplication.clipboard().setText(code)
+        # Quiet acknowledgement, in place: the control itself reads "Copied"
+        # for a moment, the way Claude Desktop's does. No toast exists in this
+        # panel to borrow, and a tooltip would vanish the moment the pointer
+        # moves.
+        self._swap_copy_label(href, "Copy", "Copied")
+        timer = QTimer(self)
+        timer.setSingleShot(True)
+        timer.timeout.connect(
+            lambda: (self._swap_copy_label(href, "Copied", "Copy"), timer.deleteLater()))
+        timer.start(_COPIED_HOLD_MS)
+
+    def _swap_copy_label(self, href, old, new):
+        """Rewrite the text of the Copy anchor(s) carrying *href*, nothing else.
+
+        Fragment-scoped on purpose: a block-wide selection here would merge
+        into the whole message (the v5.79.0 all-caps class). The fragment's
+        own char format goes back on, so the anchor and its colour survive.
+        Identical code in two blocks shares one href, and both read "Copied"
+        -- they copied the same text."""
+        doc = self.document()
+        hits = []
+        block = doc.begin()
+        while block.isValid():
+            it = block.begin()
+            while not it.atEnd():
+                frag = it.fragment()
+                if (frag.isValid() and frag.text() == old
+                        and frag.charFormat().anchorHref() == href):
+                    hits.append((frag.position(), frag.length(), frag.charFormat()))
+                it += 1
+            block = block.next()
+        for pos, length, fmt in reversed(hits):
+            cursor = QtGui.QTextCursor(doc)
+            cursor.setPosition(pos)
+            cursor.setPosition(pos + length, QtGui.QTextCursor.KeepAnchor)
+            cursor.insertText(new, fmt)
 
     def _scroll_to_bottom(self):
         """Scroll the display to the bottom after appending content."""
@@ -729,15 +786,25 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         document, so it stays O(inserted) on the latency-critical main thread.
         Best-effort: a leading failure must never break the insert."""
         try:
-            lead = t.chat_leading_px()
-            if lead <= 0:
-                return
             cur = self.textCursor()
             cur.setPosition(max(0, int(start_pos)))
             cur.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.KeepAnchor)
             bf = QtGui.QTextBlockFormat()
-            bf.setLineHeight(lead, _LINE_DISTANCE_HEIGHT_INT)
+            # Code wraps. The formatter declares white-space:pre-wrap on <pre>,
+            # and Qt ignores it: the importer marks every <pre> block
+            # non-breakable, so one long VEX line widened the whole document
+            # (866px against a 400px text width, measured offscreen
+            # 2026-10-07). With the horizontal scrollbar off, the line's end
+            # was simply unreadable -- and so was the code block's Copy
+            # control, which sits at the right of that widened row. Clearing
+            # the flag on the inserted range is what pre-wrap promised.
+            bf.setNonBreakableLines(False)
+            lead = t.chat_leading_px()
+            if lead > 0:
+                bf.setLineHeight(lead, _LINE_DISTANCE_HEIGHT_INT)
             cur.mergeBlockFormat(bf)
+            if lead <= 0:
+                return
             self._apply_turn_rhythm(start_pos, grouped=grouped, speaker=speaker)
         except Exception:
             pass
