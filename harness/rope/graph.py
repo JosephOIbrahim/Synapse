@@ -417,18 +417,18 @@ def build_prompt(st, it):
         listing = "\n".join("  " + f for f in it["files"])
         return SCOUT % {"id": it["id"], "areas": ", ".join(it["areas"]), "blast": blast,
                         "n": len(it["files"]), "lines": it.get("lines", 0), "files": listing,
-                        "turns": TURNS["scout"],
+                        "turns": TURNS["scout"], "git": GIT_RULES,
                         "brief": ("YOUR BRIEF (it narrows the search; the reply format does not change):\n%s\n"
                                   % it["brief"]) if it.get("brief") else ""}
     if k == "fix":
         card = {x: it[x] for x in ("id", "title", "files", "change", "accept") if x in it}
-        return _program() + FIX % {"card": json.dumps(card, indent=1), "id": it["id"]}
+        return _program() + FIX % {"card": json.dumps(card, indent=1), "id": it["id"], "git": GIT_RULES}
     blocks = []
     for sha, fid in it["commits"]:
         f = by_id(st, fid)
         show = git("show", "--stat", "--patch", "--format=%h %s", sha).stdout
         blocks.append("--- %s : %s\nCARD: %s\n%s" % (fid, f["title"], f.get("change", ""), show[:14000]))
-    return REVIEW % {"id": it["id"], "blocks": "\n\n".join(blocks)}
+    return REVIEW % {"id": it["id"], "git": GIT_RULES, "blocks": "\n\n".join(blocks)}
 
 
 def _exec(run, iid):
@@ -947,6 +947,15 @@ def add_reviews(st, per=5):
 
 # --------------------------------------------------------------------- prompts
 
+# Every session hears this, whatever its tools. Stash refs live in the shared .git, so one
+# worktree's `git stash pop` can take another's stash: two lanes swapped patches on 2026-10-07.
+GIT_RULES = """GIT: Never run git stash. Stash refs are shared by every worktree of this repo, so another
+session can pop your stash and you can pop theirs. To see a test fail on the old code, run it before
+you edit. If old code is ever needed as files, the only safe copy is
+git archive <rev> python | tar -x -C <scratch> with PYTHONPATH pointed at the scratch copy;
+a plain git show <rev>:<path> breaks package imports.
+"""
+
 SCOUT = """You are a read-only scout for SYNAPSE, an AI assistant that runs inside SideFX Houdini.
 You are node %(id)s of a work graph. You read. You never edit a file, never run code, never start a subagent.
 
@@ -972,6 +981,7 @@ FENCES: never report inside python/synapse/server/handlers_tops/, python/synapse
 tests/fixtures/ or rag/catalog/. Existing tests are the exam: read them to learn what is expected,
 never propose changing one.
 
+%(git)s
 METHOD: Grep first, then Read around each hit. Open the real file and confirm every claim before you
 report it. A wrong report costs a whole session downstream, so five true ones beat fifteen guesses.
 Stop at 6 candidates. You may read any file in the repo to check a claim.
@@ -1006,7 +1016,7 @@ Rules for this graph run:
   your change and passes after it, without Houdini.
 - The only command you may run is: python -m pytest <test files named in the card> -q -m "not needs_houdini"
 - Do not commit. Do not start a subagent. The gate decides what is kept.
-- Reply with one JSON object and nothing after it:
+%(git)s- Reply with one JSON object and nothing after it:
   {"id":"%(id)s","outcome":"changed|not-a-bug|needs-houdini|too-big","summary":"<two sentences>"}
 """
 
@@ -1023,6 +1033,7 @@ DROP a commit when any of these is true:
 - the fix is wrong, or the original code was right.
 Otherwise KEEP it. When unsure, drop: a dropped fix is a line in a report, a wrong one ships.
 
+%(git)s
 %(blocks)s
 
 Reply with one JSON object and nothing after it:
