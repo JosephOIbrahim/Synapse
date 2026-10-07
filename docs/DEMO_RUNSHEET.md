@@ -12,7 +12,7 @@ The old script in `docs/archive/DEMO_SCRIPT.md` is stale. It was written for an 
 
 Do these in order, before the recording starts. One take = one pass through this list.
 
-1. **Seat build.** The seat runs commit `40ef16f9`. Its `VERSION` file reads `5.94.2`. Confirm the panel's installed code matches before anything else.
+1. **Seat build.** Joe is fast-forwarding the seat to master before the demo. At master `ed01db41` the `VERSION` file reads `5.95.0`; if master moves again, read the commit and `VERSION` off the seat itself. Confirm the panel's installed code matches before anything else, in a fresh Houdini session (a running panel keeps its old code).
 
 2. **Worker tool mode.** `SYNAPSE_WORKER_TOOL_MODE` and `SYNAPSE_WORKER_TOOL_PROFILE` are both unset, or both `standard`. The `demo`, `strict` and `proposal` modes refuse `synapse_decide` (`python/synapse/panel/worker_policy.py`), so the deposit would never happen.
 
