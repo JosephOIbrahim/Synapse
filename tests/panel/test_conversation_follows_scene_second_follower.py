@@ -83,21 +83,30 @@ def test_r2_shape_three_followers_keep_everything(scenes):
     assert CHAT_B in found and PARKED in found and CHAT_A in found
 
 
-def test_single_panel_r2_and_r3_shapes_keep_everything(scenes):
-    """Baseline: one follower in each shape already kept everything."""
+def test_single_panel_r2_shape_keeps_everything(scenes):
+    """Baseline: one follower in the r2 shape (B has its own chat)."""
     _seed(scenes.store("A"), CHAT_A)
     _seed(_prev(scenes.store("A")), PARKED)
     _seed(scenes.store("B"), CHAT_B)
-    _seed(_prev(scenes.store("B")), B_PREVIOUS)   # B full: chat and previous
     panel = _panel(CHAT_A)
     scenes.open("B")
     panel._on_hip_event(EVENTS.AfterSave)
 
     found = _everything(scenes)
-    # Parking replaces an older previous (as a new boot does): B_PREVIOUS is
-    # the documented casualty of one Save As onto a full store, not of the
-    # second-follower path.
     assert CHAT_B in found and PARKED in found and CHAT_A in found
+
+
+def test_single_panel_r3_shape_keeps_everything(scenes):
+    """Baseline: one follower in the r3 shape (B has only a previous)."""
+    _seed(scenes.store("A"), CHAT_A)
+    _seed(_prev(scenes.store("A")), PARKED)
+    _seed(_prev(scenes.store("B")), B_PREVIOUS)
+    panel = _panel(CHAT_A)
+    scenes.open("B")
+    panel._on_hip_event(EVENTS.AfterSave)
+
+    found = _everything(scenes)
+    assert B_PREVIOUS in found and PARKED in found and CHAT_A in found
 
 
 def test_move_conversation_second_follower_with_taken_slot_changes_nothing(tmp_path):
