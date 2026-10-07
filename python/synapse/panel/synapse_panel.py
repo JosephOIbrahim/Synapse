@@ -1175,7 +1175,7 @@ class SynapsePanel(QtWidgets.QWidget):
         word = c.label("SYNAPSE", role="body")
         word.setProperty("role", "title")
         word.setFont(fontload.tracked_font("WORDMARK", 15, scale=self._chrome_scale,
-                                           weight=600))
+                                           weight=t.WEIGHT_BOLD))
         # The brand never elides (landing r3 repair): a hard minimum is the
         # one floor Qt's engine cannot cross. Chrome is FROZEN on Aa, so the
         # hint is set once here. The same rule now guards the model token
