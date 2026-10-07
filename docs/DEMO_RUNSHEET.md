@@ -47,7 +47,7 @@ That means:
 
 **Every recall says `scope=project`.** The default scope (`all`) adds a reference-docs article and reports a hit even when nothing was remembered (`python/synapse/server/handlers_memory.py`). That is not changing today.
 
-**Two recall lines.** Track B is the primary line once it is measured on the build the seat runs. Track A is the fallback: it matches on the code as it is today.
+**Two recall lines.** Track B is the primary line when the seat includes the recall fix. Track A is the fallback: it matches on the code as it is today.
 
 On today's code, natural rewordings mostly miss: 5 of 65 measured questions hit (recall-eval, `memory/eval/results/baseline-d4a95d0c/`). Say the fallback line exactly as written. Never improvise a recall question on camera.
 
