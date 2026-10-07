@@ -62,7 +62,9 @@ That means:
 
 5. **Reopen.** File > Open the same hip from the take folder.
 
-   Reopening a scene can replace the panel conversation and show a "parked" notice. That is known (PUX-01) and not part of the demo. Clear it if it appears.
+   The panel should open on this scene's own conversation (the PUX-01 fix).
+
+   **Fallback:** if the panel opens on another scene's chat, clear it before recalling.
 
 6. **Recall.** Type in the panel chat:
 
