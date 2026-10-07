@@ -34,6 +34,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import tempfile
 import threading
 from typing import List, Optional
@@ -112,6 +113,73 @@ def save_conversation(messages: List[dict], path: Optional[str] = None,
             except OSError:
                 pass
             return False
+
+
+def save_conversation_pinned(messages: List[dict],
+                             pinned_path: Optional[str] = None) -> bool:
+    """Save *messages* to the file a caller loaded them from (PUX-01).
+
+    ``save_conversation()`` with no path follows whatever scene ``hou.hipFile``
+    points at NOW. A panel that loaded under scene A and saves after File >
+    Open would write A's chat over scene B's store. The panel pins the path at
+    load and saves through here. With no usable pinned path this is exactly
+    the old unpinned call."""
+    if isinstance(pinned_path, str) and pinned_path:
+        return save_conversation(messages, path=pinned_path)
+    return save_conversation(messages)
+
+
+def same_store(path_a: Optional[str], path_b: Optional[str]) -> bool:
+    """True when two conversation paths live in the same store directory."""
+    if not path_a or not path_b:
+        return False
+
+    def norm(p):
+        return os.path.normcase(os.path.abspath(os.path.dirname(p)))
+    return norm(path_a) == norm(path_b)
+
+
+def _carry(src: str, dst: str) -> bool:
+    if not os.path.exists(src):
+        return False
+    try:
+        os.replace(src, dst)
+    except OSError:
+        shutil.move(src, dst)  # Save As to another drive
+    return True
+
+
+def move_conversation(src_path: str, dst_path: str) -> bool:
+    """Carry a conversation store to the folder a scene was saved into (PUX-01b).
+
+    Moves ``conversation.json``, its owner sidecar and the parked
+    ``conversation.previous.json`` from beside *src_path* to beside *dst_path*.
+    Same folder: nothing to do. A conversation already at the destination is
+    parked into the destination's previous slot, never overwritten (parking
+    replaces an older previous, as a new boot does); the source's own previous
+    then stays where it is. Best-effort: returns ``True`` if anything moved.
+    """
+    if not src_path or not dst_path or same_store(src_path, dst_path):
+        return False
+    src_prev, dst_prev = previous_path(src_path), previous_path(dst_path)
+    moved = False
+    with _lock:
+        try:
+            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+            if os.path.exists(dst_path):
+                _carry(dst_path, dst_prev)
+                _carry(_owner_path(dst_path), _owner_path(dst_prev))
+            pairs = [(src_path, dst_path),
+                     (_owner_path(src_path), _owner_path(dst_path))]
+            if not os.path.exists(dst_prev):
+                pairs += [(src_prev, dst_prev),
+                          (_owner_path(src_prev), _owner_path(dst_prev))]
+            for src, dst in pairs:
+                moved = _carry(src, dst) or moved
+        except OSError as exc:
+            logger.warning("session store: move %s -> %s failed: %s",
+                           src_path, dst_path, exc)
+    return moved
 
 
 def load_conversation(path: Optional[str] = None) -> List[dict]:

@@ -87,6 +87,16 @@ def _revoke_model_connections(connections, *_):
         connection.revoke()
 
 
+def _remove_hip_callback(callback, *_):
+    """PUX-01b: drop the panel's hipFile callback when the widget dies, so a
+    later scene event never reaches a deleted panel."""
+    try:
+        import hou
+        hou.hipFile.removeEventCallback(callback)
+    except Exception as exc:  # noqa: BLE001 -- already removed, or no host
+        logger.debug("hipFile callback not removed: %s", exc)
+
+
 def _release_panel_worker(worker):
     if _ACTIVE_PANEL_WORKERS.release(worker):
         worker.deleteLater()
@@ -740,8 +750,13 @@ class SynapsePanel(QtWidgets.QWidget):
         # the process- and reopen-durable store so a reopen continues the SAME
         # session instead of a blank one (the g5 "no chat history" fail).
         # Best-effort; a missing/corrupt store degrades to an empty conversation.
+        self._conversation_path = None
         try:
             from synapse.server import session_store as _session_store
+            # PUX-01: pin the file this conversation came from. Every later
+            # save writes back here, so a scene change can never route this
+            # chat into another scene's store.
+            self._conversation_path = _session_store.conversation_path()
             self._messages, _sess_scope = _session_store.load_conversation_scoped()
             # 9/30: a stored history can predate the tool-result cap; bound it before the first request.
             from synapse.core.tool_results import cap_history as _cap_history
@@ -880,6 +895,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # Selection-change callback (V0-guarded) → instant context updates; the
         # 2s timer above remains the proven fallback.
         self._register_selection_cb()
+        # PUX-01b: the conversation follows File > Open / New / Save As.
+        self._register_hip_cb()
         # Freeze-safety forensic trail: keep the telemetry flush running so a
         # sustained-freeze dump is durable even when no server was started.
         # Idempotent; guarded so a packaging gap can never break construction.
@@ -3628,7 +3645,8 @@ class SynapsePanel(QtWidgets.QWidget):
         messages.append({"role": "assistant", "content": text + spatial_action.HISTORY_NOTE})
         try:
             from synapse.server import session_store as _session_store
-            _session_store.save_conversation(messages)
+            _session_store.save_conversation_pinned(
+                messages, getattr(self, "_conversation_path", None))
         except Exception as exc:  # noqa: BLE001 -- persistence is best-effort, as in _on_done
             logger.debug("Spatial: conversation not saved: %s", exc)
 
@@ -3866,7 +3884,12 @@ class SynapsePanel(QtWidgets.QWidget):
         turns is docketed); the model sees the complete restored history."""
         try:
             from synapse.server import session_store as _session_store
-            restored = _session_store.restore_previous_conversation()
+            # PUX-01: restore into the scene this conversation was loaded from.
+            pinned = getattr(self, "_conversation_path", None)
+            if isinstance(pinned, str) and pinned:
+                restored = _session_store.restore_previous_conversation(path=pinned)
+            else:
+                restored = _session_store.restore_previous_conversation()
         except Exception:
             restored = []
         try:
@@ -3880,6 +3903,90 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._chat.append_system_message("No parked previous session to restore.")
         except Exception:
             pass
+
+    # ---------------------------------------------- conversation follows scene
+    def _register_hip_cb(self):
+        """PUX-01b: follow the scene. The conversation is pinned to the store
+        it loaded from; these events move or rebind that pin. Feature-detected,
+        like the selection callback; headless it is a no-op."""
+        self._hip_cb = None
+        try:
+            import hou
+            hip_file = getattr(hou, "hipFile", None)
+            if hip_file is not None and hasattr(hip_file, "addEventCallback"):
+                self._hip_cb = lambda event: self._on_hip_event(event)
+                hip_file.addEventCallback(self._hip_cb)
+                self.destroyed.connect(partial(_remove_hip_callback, self._hip_cb))
+        except Exception as exc:  # noqa: BLE001 -- the panel works without it
+            logger.debug("hipFile callback not registered: %s", exc)
+
+    def _on_hip_event(self, event):
+        """File > Open (BeforeLoad ... AfterLoad) and File > New (AfterClear)
+        rebind to the new scene's conversation; Save As carries this one to
+        the new $HIP. A plain save leaves everything where it is."""
+        try:
+            import hou
+            kinds = hou.hipFileEventType
+            if event == getattr(kinds, "BeforeLoad", None):
+                self._hip_loading = True
+            elif event == getattr(kinds, "AfterLoad", None):
+                self._hip_loading = False
+                self._rebind_conversation()
+            elif (event == getattr(kinds, "AfterClear", None)
+                  and not getattr(self, "_hip_loading", False)):
+                self._rebind_conversation()
+            elif event == getattr(kinds, "AfterSave", None):
+                self._follow_save_as()
+        except Exception as exc:  # noqa: BLE001 -- a scene event must never break
+            logger.warning("Conversation did not follow the scene change: %s", exc)
+
+    def _follow_save_as(self):
+        """Save As: move this conversation's files into the new $HIP/claude/,
+        re-pin, and write the live chat there (an untitled store may never
+        have been writable, so the files alone are not enough)."""
+        if getattr(self, "_conversation_rebind_pending", False):
+            return  # File > Open mid-turn: the turn's end binds to this scene
+        from synapse.server import session_store as _session_store
+        old = getattr(self, "_conversation_path", None)
+        new = _session_store.conversation_path()
+        if _session_store.same_store(old, new):
+            return
+        _session_store.move_conversation(old, new)
+        self._conversation_path = new
+        _session_store.save_conversation_pinned(self._messages, new)
+
+    def _rebind_conversation(self):
+        """File > Open / New: keep this chat in its own scene and load the new
+        scene's conversation. A turn in flight would land its answer in
+        whichever scene is pinned when it ends, so the rebind waits for it."""
+        if getattr(self, "_worker", None) is not None:
+            self._conversation_rebind_pending = True
+            return
+        self._conversation_rebind_pending = False
+        from synapse.server import session_store as _session_store
+        old = getattr(self, "_conversation_path", None)
+        new = _session_store.conversation_path()
+        if _session_store.same_store(old, new):
+            return
+        if old:
+            _session_store.save_conversation_pinned(self._messages, old)
+        messages, scope = _session_store.load_conversation_scoped(path=new)
+        from synapse.core.tool_results import cap_history as _cap_history
+        self._messages = _cap_history(messages)
+        self._conversation_path = new
+        self._parked_previous = (scope == "previous_parked")
+        try:
+            if self._parked_previous:
+                self._announce_parked()
+            elif self._messages:
+                self._chat.append_system_message(
+                    "Scene changed - continuing this scene's conversation "
+                    "(%d messages)." % len(self._messages))
+            else:
+                self._chat.append_system_message(
+                    "Scene changed - this scene has no conversation yet.")
+        except Exception as exc:  # noqa: BLE001 -- the notice is cosmetic
+            logger.debug("Scene-change notice not shown: %s", exc)
 
     def _build_system_prompt(self):
         """SYNAPSE's identity + the 'act via tools, don't narrate' steering.
@@ -4136,10 +4243,12 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
         # Session survival (R.2): persist the completed transcript so a reopen —
         # even one after the panel was closed while this turn finished headless —
-        # restores the full conversation. Best-effort; disk-keyed by HIP.
+        # restores the full conversation. Best-effort; keyed by the HIP the
+        # conversation was loaded under (PUX-01).
         try:
             from synapse.server import session_store as _session_store
-            _session_store.save_conversation(self._messages)
+            _session_store.save_conversation_pinned(
+                self._messages, getattr(self, "_conversation_path", None))
         except Exception:
             pass
         self._set_busy(False)
@@ -4173,6 +4282,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._task_connection = None
         self._worker = None
         self._refresh_engine_selector()
+        if getattr(self, "_conversation_rebind_pending", False):
+            # PUX-01b: the scene changed during this turn; the turn is saved
+            # to its own scene above, so the panel can follow now.
+            try:
+                self._rebind_conversation()
+            except Exception as exc:  # noqa: BLE001 -- completion must not fail
+                logger.warning("Conversation did not follow the scene change: %s", exc)
 
     def _refresh_token_surfaces(self):
         """Push the last task's per-task token receipt (usage_sink) onto the
@@ -4212,7 +4328,8 @@ class SynapsePanel(QtWidgets.QWidget):
                 if messages is not None:
                     self._messages = messages
                     from synapse.server import session_store as _session_store
-                    _session_store.save_conversation(self._messages)
+                    _session_store.save_conversation_pinned(
+                        self._messages, getattr(self, "_conversation_path", None))
             except Exception:
                 pass
         self._set_thinking(False)
@@ -4232,6 +4349,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._task_connection = None
         self._worker = None
         self._refresh_engine_selector()
+        if getattr(self, "_conversation_rebind_pending", False):
+            # PUX-01b: the scene changed during this turn; the turn is saved
+            # to its own scene above, so the panel can follow now.
+            try:
+                self._rebind_conversation()
+            except Exception as exc:  # noqa: BLE001 -- completion must not fail
+                logger.warning("Conversation did not follow the scene change: %s", exc)
 
     def _on_tool_status(self, name, phase, _detail):
         if phase == "running":
@@ -4618,6 +4742,10 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 pass
             self._sel_cb = None
+        hip_cb = getattr(self, "_hip_cb", None)
+        if hip_cb is not None:
+            _remove_hip_callback(hip_cb)
+            self._hip_cb = None
 
         # R.2: the freeze beat is owned by a PROCESS-LIFETIME source
         # (server/runtime_beat.py), not this widget — so panel close is a
@@ -4634,10 +4762,11 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         # Session survival (R.2): persist the current conversation so a reopen
-        # restores it. Best-effort; disk-keyed by HIP.
+        # restores it. Best-effort; keyed by the HIP it was loaded under (PUX-01).
         try:
             from synapse.server import session_store as _session_store
-            _session_store.save_conversation(self._messages)
+            _session_store.save_conversation_pinned(
+                self._messages, getattr(self, "_conversation_path", None))
         except Exception:
             pass
         super().closeEvent(event)
