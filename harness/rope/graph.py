@@ -70,7 +70,9 @@ EXAM = ("harness/", "tests/fixtures/", "rag/catalog/", ".github/")
 # loads at startup, and the sessions' own agent configuration.
 OWNER_ONLY = (".claude/", "packages/", "installer/", "VERSION", "pyproject.toml", "install.py")
 RATCHETS = ("tests/test_harden_catalog_conformance.py",
-            "tests/test_b4_recipe_strings_conformance.py")
+            "tests/test_b4_recipe_strings_conformance.py",
+            "tests/test_d_track.py",
+            "tests/test_except_ratchet.py")
 # Areas outside python/synapse. Globs are relative to the repo root.
 OUTER = {
     "mcp_stdio": ["mcp_server.py", "mcp_tools_*.py"],
