@@ -12,18 +12,24 @@ Method, all on Rec.709 luminance:
 1. ``residual = L - median5x5(L)`` (``cv2.medianBlur``, border replicated).
 2. Noise is estimated as 1.4826 x the median absolute deviation (MAD) of the
    residual, which the fireflies themselves cannot inflate, separately for
-   two classes of pixel. *Black* pixels have a 5x5 median at or below 0 (an
-   object on black or on a transparent background, Karma's canonical frame).
-   *Lit* pixels are the rest. One MAD over the whole frame is wrong whenever
-   black is at least half of it: the MAD is then 0 whatever the noise on the
-   object, the threshold collapses and object noise floods the mask. Each
-   class's sigma is floored at ``1e-6`` so a noise-free class does not flag
-   float rounding.
-   When lit pixels exist but fewer than ``_MIN_NOISE_PIXELS`` of them, their
-   noise cannot be estimated and the result is *inconclusive*: ``count`` is
-   ``None`` with a ``note``, never a number (the retina/t1.py honesty rule).
+   groups of pixels at the same level. *Black* pixels have a 5x5 median at or
+   below 0 (an object on black or on a transparent background, Karma's
+   canonical frame) and form one group. *Lit* pixels are grouped by stop,
+   ``floor(log2(5x5 median))``, because Monte Carlo noise grows with
+   brightness and one absolute sigma for a frame with a dark and a bright
+   region flags the bright one's noise. (One MAD over the whole frame is
+   also wrong whenever black is at least half of it: the MAD is then 0
+   whatever the noise on the object, the threshold collapses and object
+   noise floods the mask.) Every sigma is floored at ``1e-6`` so a
+   noise-free group does not flag float rounding.
+   A stop with fewer than ``_MIN_NOISE_PIXELS`` pixels borrows the sigma of
+   the nearest stop that has enough (the brighter one on a tie); ``noise``
+   in the result lists every stop and what it borrowed. When lit pixels
+   exist but no stop has enough, their noise cannot be estimated and the
+   result is *inconclusive*: ``count`` is ``None`` with a ``note``, never a
+   number (the retina/t1.py honesty rule).
 3. A pixel is a candidate when ``residual > threshold_sigma * sigma`` of its
-   class.
+   group.
 4. Candidates are grouped with ``cv2.connectedComponentsWithStats``
    (8-connected). A group of at most ``max_blob_area`` pixels is a firefly.
    Larger groups are bright features, not fireflies; they are counted in
@@ -36,6 +42,20 @@ Method, all on Rec.709 luminance:
 
 A 5x5 median sees through blobs up to about 3x3, so the default
 ``max_blob_area`` of 9 matches what step 1 can isolate.
+
+Known limits of the noise model (review of 65b02294, F2):
+
+- A noise-free plateau and a noisy region at the same stop share one MAD; if
+  the plateau is the larger, that stop's sigma is too low. This is the
+  black-background failure moved to a non-zero level; it needs an exactly
+  constant lit region (a flat emissive card, a denoised plate), not a
+  Monte Carlo render.
+- Noise that differs across the frame at the same level (a glossy and a
+  diffuse surface of equal brightness) gets one sigma per stop.
+- Smooth noise-free gradients and half-float quantisation steps have a
+  residual of 0 almost everywhere and tiny steps elsewhere. They register in
+  ``large_blobs_ignored`` / ``attached_blobs_ignored``, which are
+  diagnostics, not in ``count``.
 """
 
 from __future__ import annotations
@@ -124,10 +144,11 @@ def fireflies(
 
     Returns ``count`` (fireflies = small isolated blobs), ``pixel_count``
     (pixels in them), ``large_blobs_ignored``, ``attached_blobs_ignored``,
-    ``sigma`` and ``threshold`` (the lit-pixel noise estimate and the
-    threshold it gives; the black-pixel ones when nothing is lit), ``noise``
-    (both classes: pixel counts and sigmas), ``inconclusive``, ``note``,
-    ``worst`` (the
+    ``sigma`` and ``threshold`` (a frame-wide reference: one MAD over all lit
+    pixels, or over the black ones when nothing is lit, and the threshold it
+    gives; detection uses the per-stop sigmas), ``noise`` (pixel counts and
+    sigmas for the black group and each lit stop, ``levels``),
+    ``inconclusive``, ``note``, ``worst`` (the
     single pixel with the largest residual: ``x``, ``y``, ``rgb``,
     ``luminance``, ``sigmas``; ``None`` when there are no fireflies) and
     ``fireflies``: up to ``max_listed`` entries, brightest residual first, each
@@ -170,7 +191,8 @@ def fireflies(
         "threshold_sigma": float(threshold_sigma),
         "max_blob_area": int(max_blob_area),
     }
-    if 0 < n_lit < _MIN_NOISE_PIXELS:
+    levels, lit_px_sigma = _stop_sigmas(np, residual[lit], local[lit])
+    if n_lit and lit_px_sigma is None:
         return _inconclusive(
             base,
             {
@@ -179,13 +201,16 @@ def fireflies(
                 "black_pixels": n_black,
                 "black_sigma": None,
                 "min_pixels": _MIN_NOISE_PIXELS,
+                "levels": levels,
             },
-            f"only {n_lit} lit pixels (5x5 median above 0), fewer than "
-            f"{_MIN_NOISE_PIXELS}: their noise cannot be estimated",
+            f"{n_lit} lit pixels (5x5 median above 0) and no stop holds "
+            f"{_MIN_NOISE_PIXELS} of them: their noise cannot be estimated",
         )
     lit_sigma = max(_mad_sigma(np, residual[lit]), _SIGMA_FLOOR)
     black_sigma = max(_mad_sigma(np, residual[~lit]), _SIGMA_FLOOR)
-    sigma_px = np.where(lit, np.float32(lit_sigma), np.float32(black_sigma)).astype(np.float32)
+    sigma_px = np.full(lum.shape, np.float32(black_sigma), dtype=np.float32)
+    if n_lit:
+        sigma_px[lit] = lit_px_sigma
     sigma = lit_sigma if n_lit else black_sigma
     thresh_px = np.float32(threshold_sigma) * sigma_px
     candidates = (residual > thresh_px).astype(np.uint8)
@@ -255,6 +280,7 @@ def fireflies(
                 "black_pixels": n_black,
                 "black_sigma": _r(black_sigma),
                 "min_pixels": _MIN_NOISE_PIXELS,
+                "levels": levels,
             },
             "inconclusive": False,
             "note": None,
@@ -277,6 +303,49 @@ def fireflies(
             raise OSError(f"cv2.imwrite could not write the firefly mask to {path}")
         result["mask_path"] = path
     return result
+
+
+def _stop_sigmas(np, res, loc):
+    """Per-stop MAD sigmas for the lit pixels (``res`` and ``loc`` 1-D, loc > 0).
+
+    Returns ``(levels, per_pixel)``: ``levels`` is a list of dicts (``stop``,
+    ``pixels``, ``sigma``, ``borrowed_from``: None when the stop has
+    ``_MIN_NOISE_PIXELS`` itself, else the stop it took its sigma from) and
+    ``per_pixel`` a float32 sigma for every input pixel, floored. When no stop
+    has enough pixels ``per_pixel`` is None. Empty input gives ``([], empty)``.
+    """
+    if res.size == 0:
+        return [], np.zeros(0, dtype=np.float32)
+    stops = np.floor(np.log2(loc.astype(np.float64))).astype(np.int64)
+    uniq, inverse, counts = np.unique(stops, return_inverse=True, return_counts=True)
+    order = np.argsort(inverse, kind="stable")
+    groups = np.split(res[order], np.cumsum(counts)[:-1])
+    own = {}
+    for i, (stop, n) in enumerate(zip(uniq.tolist(), counts.tolist())):
+        if n >= _MIN_NOISE_PIXELS:
+            own[stop] = max(_mad_sigma(np, groups[i]), _SIGMA_FLOOR)
+    levels = []
+    sig = np.zeros(len(uniq), dtype=np.float32)
+    for i, (stop, n) in enumerate(zip(uniq.tolist(), counts.tolist())):
+        if stop in own:
+            src = stop
+        elif own:
+            # Nearest estimated stop; on a tie the brighter one (larger key).
+            src = min(own, key=lambda s: (abs(s - stop), -s))
+        else:
+            src = None
+        sig[i] = own[src] if src is not None else 0.0
+        levels.append(
+            {
+                "stop": int(stop),
+                "pixels": int(n),
+                "sigma": _r(own[src]) if src is not None else None,
+                "borrowed_from": None if src == stop else (None if src is None else int(src)),
+            }
+        )
+    if not own:
+        return levels, None
+    return levels, sig[inverse.reshape(-1)]
 
 
 def _inconclusive(base, noise, note):

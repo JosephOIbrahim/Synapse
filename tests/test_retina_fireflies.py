@@ -267,3 +267,43 @@ def test_fireflies_sigma_floor_ignores_sub_floor_bumps(cv2, level):
     assert r["count"] == 1
     assert (r["worst"]["x"], r["worst"]["y"]) == (32, 24)
     assert r["attached_blobs_ignored"] == 0 and r["large_blobs_ignored"] == 0
+
+
+# --------------------------------------------------------------------------
+# Noise per stop (review of 65b02294, F2): noise that grows with brightness
+# --------------------------------------------------------------------------
+
+
+def test_fireflies_noise_is_judged_per_stop(cv2):
+    # 5% relative noise on a 0.05 half and a 5.0 half. One absolute sigma
+    # (65b02294) flagged the bright half's noise: 220 false fireflies on a
+    # 270x480 frame. Per stop, only the planted ones are found, each about
+    # 12 of its own sigmas over its neighbourhood.
+    rng = np.random.default_rng(5)
+    h, w = 96, 128
+    xx = np.mgrid[0:h, 0:w][1]
+    base = np.where(xx < w // 2, 0.05, 5.0)
+    lum = (base * (1 + rng.normal(0.0, 0.05, (h, w)))).astype(np.float32)
+    img = np.repeat(lum[:, :, None], 3, axis=2)
+    plants = {(20, 30): 0.05 * 1.6, (100, 60): 5.0 * 1.6}
+    for (x, y), v in plants.items():
+        img[y, x] = v
+    r = fireflies(img)
+    assert {(f["x"], f["y"]) for f in r["fireflies"]} == set(plants)
+    assert r["large_blobs_ignored"] == 0 and r["attached_blobs_ignored"] == 0
+    by_stop = {lv["stop"]: lv for lv in r["noise"]["levels"]}
+    assert by_stop[-5]["sigma"] == pytest.approx(0.05 * 0.05, rel=0.35)
+    assert by_stop[2]["sigma"] == pytest.approx(5.0 * 0.05, rel=0.35)
+
+
+def test_fireflies_sparse_stop_borrows_the_nearest(cv2):
+    # The 10x10 square at 50.0 is under 100 pixels at stop 5, so it borrows
+    # the sigma of stop -3 (0.18) and says so.
+    img = flat()
+    img[10:20, 20:30] = 50.0
+    r = fireflies(img)
+    by_stop = {lv["stop"]: lv for lv in r["noise"]["levels"]}
+    assert by_stop[-3]["borrowed_from"] is None
+    assert by_stop[5]["pixels"] < 100
+    assert by_stop[5]["borrowed_from"] == -3
+    assert by_stop[5]["sigma"] == by_stop[-3]["sigma"]
