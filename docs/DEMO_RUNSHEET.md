@@ -24,11 +24,13 @@ Do these in order, before the recording starts. One take = one pass through this
 
 5. **JOB.** `JOB` is unset, or set to this take's folder. Check it in the Python shell: `hou.getenv("JOB")`. If it names a folder **above** the take folder (`C:\`, `C:\Users\User`), set `JOB` to the take folder. Memory goes to `$JOB/.synapse` when `JOB` contains the hip, otherwise to `.synapse` next to the hip (seam-guard, live hython on master `ed01db41`).
 
-6. **Conversation cleared.** Open the fresh copy, open the panel, clear the conversation. The panel keeps one previous session and may open on a "parked" notice. The first frame on camera should be an empty chat.
+6. **Open the take hip first.** File > Open the hip in the take folder before the first deposit, so the panel works in the take scene from the start. Never deposit in an untitled scene and then Save As.
 
-7. **Model locked.** Pick the model in the panel and do not change it during the take.
+7. **Conversation cleared.** With the take hip open, open the panel and clear the conversation. The panel keeps one previous session and may open on a "parked" notice. The first frame on camera should be an empty chat.
 
-8. **No accessibility or recording hooks attached to Houdini.** The September demo had a Houdini exit inside Qt WebEngine / accessibility processing. Present with nothing hooked in. Rehearse once on the real recording setup, with the real capture software, before the take that counts.
+8. **Model locked.** Pick the model in the panel and do not change it during the take.
+
+9. **No accessibility or recording hooks attached to Houdini.** The September demo had a Houdini exit inside Qt WebEngine / accessibility processing. Present with nothing hooked in. Rehearse once on the real recording setup, with the real capture software, before the take that counts.
 
 ---
 
@@ -69,9 +71,7 @@ On today's code, natural rewordings mostly miss: 5 of 65 measured questions hit 
 
 5. **Reopen.** File > Open the same hip from the take folder.
 
-   The panel should open on this scene's own conversation (the PUX-01 fix).
-
-   **Fallback:** if the panel opens on another scene's chat, clear it before recalling.
+   **Check the panel shows this scene's chat.** If it shows another scene's chat, clear it before recalling. (The fix for this, PUX-01, is not on the seat today.)
 
 6. **Recall.** Type in the panel chat:
 
