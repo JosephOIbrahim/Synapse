@@ -9,16 +9,16 @@ swallowed, so the tool answered ``status: monitoring`` for a stream with no
 handler attached. The callback also read ``event.workItem``, which H22's
 ``pdg.Event`` does not carry (it has ``workItemId`` + ``currentState``).
 
-Second defect, found by a live hython 22.0.400 cook (2026-10-07): the graph
-context never delivers WorkItemStateChange or NodeProgressUpdate (0 events,
-against 130 and 11 on the pdg.Node for the same cooks). Handlers are now
-registered on the pdg.Node, and the fakes below deliver those two types only
-through the node, the way H22 does.
+Found by live hython 22.0.400 cooks (2026-10-07):
+- the graph context never delivers WorkItemStateChange or NodeProgressUpdate
+  (0 events, against 130 and 11 on the pdg.Node for the same cooks);
+- a failing item's event.message is empty; the text is in WorkItem.logMessages;
+- a failed item raises no CookError, and CookComplete still fires;
+- H22 coalesces NodeProgressUpdate when items finish together.
 
-The fake ``pdg`` exposes only members present in the committed H22 symbol
-table, and its EventType members are plain objects so ``|`` raises the same
-TypeError the real enum does. The fake work item carries only H22 members
-(``cookDuration``, not ``cookTime``; no ``lastError``).
+The fakes deliver item and progress events only through the node, the way H22
+does, expose only members present in the committed H22 symbol table, and make
+EventType members plain objects so ``|`` raises the same TypeError.
 """
 
 from __future__ import annotations
@@ -44,11 +44,16 @@ _EVENT_TYPES = (
 _STATES = ("Cooking", "CookedSuccess", "CookedCache", "CookedFail", "CookedCancel")
 _MEMBERS_USED = (
     "pdg.Node.addEventHandler", "pdg.Node.removeEventHandler", "pdg.Node.workItems",
-    "pdg.Node.name", "pdg.WorkItem.cookDuration", "pdg.WorkItem.frame",
-    "pdg.WorkItem.resultData", "pdg.Event.message",
+    "pdg.Node.name", "pdg.Node.context", "pdg.GraphContext.addEventHandler",
+    "pdg.GraphContext.removeEventHandler", "pdg.WorkItem.cookDuration", "pdg.WorkItem.frame",
+    "pdg.WorkItem.resultData", "pdg.WorkItem.logMessages", "pdg.Event.message",
+    "hou.topNodeTypeCategory", "hou.Node.childTypeCategory", "hou.Node.children",
+    "hou.TopNode.getPDGNode",
 )
 _NOT_H22 = ("pdg.EventType.CookProgress", "pdg.WorkItem.cookTime", "pdg.WorkItem.lastError")
 _NODE = "/obj/topnet1/proc"
+_NET = "/obj/topnet1"
+_TOP_CATEGORY = object()
 
 
 class _Member:
@@ -94,6 +99,9 @@ class _Registry:
             if etype.name == etype_name and h not in self.removed:
                 fn(event)
 
+    def types(self):
+        return sorted(e.name for _f, e, _h in self.added)
+
 
 class _FakeContext(_Registry):
     def __init__(self):
@@ -117,9 +125,19 @@ def env(monkeypatch):
     monkeypatch.setitem(sys.modules, "hdefereval", types.ModuleType("hdefereval"))
 
     ctx = _FakeContext()
-    state = types.SimpleNamespace(ctx=ctx, pdg=pdg, pnode=_FakePdgNode(ctx))
-    node = types.SimpleNamespace(parent=lambda: None, getPDGNode=lambda: state.pnode)
-    monkeypatch.setattr(diag, "hou", types.SimpleNamespace(node=lambda p: node), raising=False)
+    state = types.SimpleNamespace(ctx=ctx, pdg=pdg, pnode=_FakePdgNode(ctx, "proc"),
+                                  gen=_FakePdgNode(ctx, "gen"))
+    proc = types.SimpleNamespace(parent=lambda: None, getPDGNode=lambda: state.pnode,
+                                 childTypeCategory=lambda: None)
+    gen = types.SimpleNamespace(parent=lambda: None, getPDGNode=lambda: state.gen,
+                                childTypeCategory=lambda: None)
+    net = types.SimpleNamespace(parent=lambda: None, getPDGNode=lambda: None,
+                                childTypeCategory=lambda: _TOP_CATEGORY,
+                                children=lambda: [gen, proc])
+    nodes = {_NODE: proc, _NET: net}
+    fake_hou = types.SimpleNamespace(node=lambda p: nodes.get(p),
+                                     topNodeTypeCategory=lambda: _TOP_CATEGORY)
+    monkeypatch.setattr(diag, "hou", fake_hou, raising=False)
     monkeypatch.setattr(diag, "HOU_AVAILABLE", True)
     monkeypatch.setattr(diag, "_run_in_main_thread_pdg", lambda fn: fn())
     monkeypatch.setattr(diag, "_ensure_tops_warm_standby", lambda *_a, **_k: None)
@@ -127,23 +145,40 @@ def env(monkeypatch):
     return state
 
 
-def _call(env, action, **kw):
-    return env.handler._handle_tops_monitor_stream({"node": _NODE, "action": action, **kw})
+def _call(env, action, node=_NODE, **kw):
+    return env.handler._handle_tops_monitor_stream({"node": node, "action": action, **kw})
 
 
-def _state_change(env, item_id, state, message=""):
+def _state_change(env, item_id, state, message="", on=None):
     """Fire WorkItemStateChange the way H22 does: on the pdg.Node only."""
-    env.pnode.fire("WorkItemStateChange", types.SimpleNamespace(
+    pnode = on or env.pnode
+    pnode.fire("WorkItemStateChange", types.SimpleNamespace(
         type=env.pdg.EventType.WorkItemStateChange, workItemId=item_id,
-        currentState=state, node=env.pnode, context=env.ctx, message=message,
+        currentState=state, node=pnode, context=env.ctx, message=message,
     ))
 
 
-def _item(env, item_id, state, **attrs):
+def _cook_event(env, name, emitter, message=""):
+    emitter.fire(name, types.SimpleNamespace(
+        type=getattr(env.pdg.EventType, name), node=None, context=env.ctx, message=message))
+
+
+def _progress(env, on=None):
+    pnode = on or env.pnode
+    pnode.fire("NodeProgressUpdate", types.SimpleNamespace(
+        type=env.pdg.EventType.NodeProgressUpdate, node=pnode, context=env.ctx))
+
+
+def _item(env, item_id, state, on=None, **attrs):
     wi = types.SimpleNamespace(state=state, frame=float(item_id), **attrs)
     env.ctx.items[item_id] = wi
-    env.pnode.workItems.append(wi)
+    (on or env.pnode).workItems.append(wi)
     return wi
+
+
+def _events(env, mid, kind):
+    monitor = env.handler._tops_monitors[mid]
+    return [e for e in monitor["events"] if e["type"] == kind]
 
 
 def test_fake_members_are_real_h22_symbols():
@@ -162,11 +197,30 @@ def test_fake_members_are_real_h22_symbols():
 def test_start_registers_on_the_pdg_node_not_the_context(env):
     result = _call(env, "start")
     assert result["status"] == "monitoring"
-    registered = [etype.name for _fn, etype, _h in env.pnode.added]
-    assert sorted(registered) == sorted(
+    assert env.pnode.types() == sorted(
         ["WorkItemStateChange", "NodeProgressUpdate", "CookComplete", "CookError"])
     # The graph context never delivers the item/progress events on H22.
     assert env.ctx.added == []
+
+
+def test_network_path_watches_each_child_and_the_context_for_cook_end(env):
+    result = _call(env, "start", node=_NET)
+    assert result["status"] == "monitoring"
+    assert sorted(result["nodes_monitored"]) == ["gen", "proc"]
+    for child in (env.gen, env.pnode):
+        assert child.types() == ["NodeProgressUpdate", "WorkItemStateChange"]
+    assert env.ctx.types() == ["CookComplete", "CookError"]
+    mid = result["monitor_id"]
+    ws = env.pdg.workItemState
+    _item(env, 1, ws.CookedSuccess, on=env.gen)
+    _item(env, 2, ws.CookedSuccess)
+    _state_change(env, 1, ws.CookedSuccess, on=env.gen)
+    _state_change(env, 2, ws.CookedSuccess)
+    _cook_event(env, "CookComplete", env.ctx)
+    stopped = _call(env, "stop", node=_NET, monitor_id=mid)
+    assert stopped["summary"]["completed"] == 2
+    assert stopped["cook_state"] == "complete"
+    assert len(env.ctx.removed) == 2 and len(env.gen.removed) == 2 and len(env.pnode.removed) == 2
 
 
 def test_stop_removes_every_registered_handler(env):
@@ -195,28 +249,60 @@ def test_completed_item_reads_h22_event_and_work_item(env):
     _state_change(env, 42, ws.Cooking)
     _state_change(env, 42, ws.CookedSuccess)
 
-    events = _call(env, "status", monitor_id=mid)["latest_events"]
-    started = [e for e in events if e["type"] == "work_item_started"]
-    done = [e for e in events if e["type"] == "work_item_completed"]
+    started = _events(env, mid, "work_item_started")
+    done = _events(env, mid, "work_item_completed")
     assert started and started[0]["item_id"] == 42
     assert done and done[0]["item_id"] == 42 and done[0]["frame"] == 42.0
     assert done[0]["duration_seconds"] == 1.5
     assert done[0]["output_path"] == "/tmp/out.0042.exr"
-    assert "callback_error" not in _call(env, "status", monitor_id=mid)
+    status = _call(env, "status", monitor_id=mid)
+    assert "callback_error" not in status
+    assert status["cook_state"] == "cooking"
 
 
-def test_failed_item_carries_the_event_message_not_a_placeholder(env):
+def test_failed_item_error_text_comes_from_the_item_log(env):
+    """H22.0.400: the failing event's message is '' and lastError does not exist."""
     mid = _call(env, "start")["monitor_id"]
     ws = env.pdg.workItemState
-    _item(env, 7, ws.CookedFail)
-    _state_change(env, 7, ws.CookedFail, message="python: division by zero")
-    status = _call(env, "status", monitor_id=mid)
-    failed = [e for e in status["latest_events"] if e["type"] == "work_item_failed"]
-    assert failed[0]["error_message"] == "python: division by zero"
-    assert status["summary"]["failed"] == 1
+    _item(env, 7, ws.CookedFail, logMessages=(
+        "[09:12:58.931] ERROR: Failed to run script:\n"
+        "RuntimeError: probe failure\n"))
+    _state_change(env, 7, ws.CookedFail, message="")
+    failed = _events(env, mid, "work_item_failed")
+    assert "RuntimeError: probe failure" in failed[0]["error_message"]
+    assert _call(env, "status", monitor_id=mid)["summary"]["failed"] == 1
 
 
-def test_cached_and_cancelled_items_are_counted_and_progress_reaches_100(env):
+def test_failed_item_prefers_a_non_empty_event_message(env):
+    mid = _call(env, "start")["monitor_id"]
+    ws = env.pdg.workItemState
+    _item(env, 8, ws.CookedFail, logMessages="noise")
+    _state_change(env, 8, ws.CookedFail, message="scheduler lost the item")
+    assert _events(env, mid, "work_item_failed")[0]["error_message"] == "scheduler lost the item"
+
+
+def test_a_cook_with_a_failed_item_ends_complete_with_errors(env):
+    """No CookError fires for an item failure on H22; CookComplete still does."""
+    mid = _call(env, "start")["monitor_id"]
+    ws = env.pdg.workItemState
+    _item(env, 1, ws.CookedSuccess)
+    _item(env, 2, ws.CookedFail)
+    _state_change(env, 1, ws.CookedSuccess)
+    _state_change(env, 2, ws.CookedFail)
+    _cook_event(env, "CookComplete", env.pnode)
+    assert _call(env, "status", monitor_id=mid)["cook_state"] == "complete_with_errors"
+
+
+def test_cook_error_is_not_overwritten_by_cook_complete(env):
+    mid = _call(env, "start")["monitor_id"]
+    _cook_event(env, "CookError", env.pnode, message="scheduler: no local scheduler")
+    err = _events(env, mid, "cook_error")
+    assert err and err[0]["message"] == "scheduler: no local scheduler"
+    _cook_event(env, "CookComplete", env.pnode)
+    assert _call(env, "stop", monitor_id=mid)["cook_state"] == "error"
+
+
+def test_cached_and_cancelled_items_are_counted(env):
     mid = _call(env, "start")["monitor_id"]
     ws = env.pdg.workItemState
     _item(env, 1, ws.CookedSuccess)
@@ -225,34 +311,55 @@ def test_cached_and_cancelled_items_are_counted_and_progress_reaches_100(env):
     _state_change(env, 1, ws.CookedSuccess)
     _state_change(env, 2, ws.CookedCache)
     _state_change(env, 3, ws.CookedCancel)
-    env.pnode.fire("NodeProgressUpdate", types.SimpleNamespace(
-        type=env.pdg.EventType.NodeProgressUpdate, node=env.pnode, context=env.ctx))
+    _progress(env)
 
     status = _call(env, "status", monitor_id=mid)
     assert status["summary"] == {"completed": 1, "cached": 1, "failed": 0,
                                  "cancelled": 1, "total_processed": 3}
-    types_seen = [e["type"] for e in status["latest_events"]]
-    assert "work_item_cancelled" in types_seen
-    cached = [e for e in status["latest_events"] if e.get("cached")]
+    assert _events(env, mid, "work_item_cancelled")
+    cached = [e for e in _events(env, mid, "work_item_completed") if e.get("cached")]
     assert cached and cached[0]["item_id"] == 2
-    progress = [e for e in status["latest_events"] if e["type"] == "cook_progress"]
-    assert progress[-1]["completed"] == 3 and progress[-1]["total"] == 3
-    assert progress[-1]["percent"] == 100.0
+    row = _events(env, mid, "cook_progress")[-1]
+    assert row["processed"] == 3 and row["total"] == 3 and row["percent"] == 100.0
 
 
-def test_cook_complete_and_cook_error_are_terminal_states(env):
+def test_cook_end_always_gets_a_final_progress_row(env):
+    """H22 coalesces NodeProgressUpdate when items finish together."""
     mid = _call(env, "start")["monitor_id"]
-    env.pnode.fire("CookError", types.SimpleNamespace(
-        type=env.pdg.EventType.CookError, node=env.pnode, context=env.ctx,
-        message="scheduler: no local scheduler"))
-    status = _call(env, "status", monitor_id=mid)
-    assert status["cook_state"] == "error"
-    err = [e for e in status["latest_events"] if e["type"] == "cook_error"]
-    assert err and err[0]["message"] == "scheduler: no local scheduler"
+    ws = env.pdg.workItemState
+    for i in range(5):
+        _item(env, i, ws.CookedSuccess)
+    _progress(env)  # the only update H22 sent, before anything finished
+    for i in range(5):
+        _state_change(env, i, ws.CookedSuccess)
+    _cook_event(env, "CookComplete", env.pnode)
+    rows = _events(env, mid, "cook_progress")
+    assert rows[0]["percent"] == 0.0
+    assert rows[-1]["processed"] == 5 and rows[-1]["percent"] == 100.0
 
-    env.pnode.fire("CookComplete", types.SimpleNamespace(
-        type=env.pdg.EventType.CookComplete, node=env.pnode, context=env.ctx, message=""))
-    assert _call(env, "stop", monitor_id=mid)["cook_state"] == "complete"
+
+def test_a_second_cook_starts_its_progress_and_state_over(env):
+    mid = _call(env, "start")["monitor_id"]
+    ws = env.pdg.workItemState
+    for i in range(3):
+        _item(env, i, ws.CookedSuccess)
+        _state_change(env, i, ws.CookedSuccess)
+    _cook_event(env, "CookComplete", env.pnode)
+    assert _call(env, "status", monitor_id=mid)["cook_state"] == "complete"
+
+    # Second cook of the same 3 items: the first progress update comes first.
+    _progress(env)
+    status = _call(env, "status", monitor_id=mid)
+    assert status["cook_state"] == "cooking"
+    first = _events(env, mid, "cook_progress")[-1]
+    assert first["processed"] == 0 and first["percent"] == 0.0
+    _state_change(env, 0, ws.CookedSuccess)
+    _progress(env)
+    row = _events(env, mid, "cook_progress")[-1]
+    assert row["processed"] == 1 and row["total"] == 3
+    status = _call(env, "status", monitor_id=mid)
+    assert status["last_cook"]["completed"] == 1
+    assert status["summary"]["completed"] == 4  # the summary spans both cooks
 
 
 def test_second_start_on_the_same_node_attaches_nothing_new(env):
@@ -308,19 +415,28 @@ def test_unreadable_event_is_reported_not_swallowed(env):
     assert "AttributeError" in _call(env, "stop", monitor_id=mid)["callback_error"]
 
 
-def test_stop_names_a_handler_that_would_not_detach(env):
+def test_a_handler_that_will_not_detach_keeps_the_monitor_for_a_retry(env):
     mid = _call(env, "start")["monitor_id"]
     calls = []
+    real_remove = env.pnode.removeEventHandler
 
     def _flaky_remove(handler):
         calls.append(handler)
         if len(calls) == 1:
             raise RuntimeError("still cooking")
-        env.pnode.removed.append(handler)
+        real_remove(handler)
 
     env.pnode.removeEventHandler = _flaky_remove
     stopped = _call(env, "stop", monitor_id=mid)
-    # One failure is reported, and the remaining handlers were still removed.
+    # One failure is reported, the rest were still removed, and the monitor
+    # stays so the same id can finish the job.
+    assert stopped["status"] == "stop_incomplete"
     assert len(stopped["handler_removal_errors"]) == 1
     assert "still cooking" in stopped["handler_removal_errors"][0]
     assert len(calls) == 4 and len(env.pnode.removed) == 3
+    assert mid in env.handler._tops_monitors
+
+    retried = _call(env, "stop", monitor_id=mid)
+    assert retried["status"] == "stopped"
+    assert len(env.pnode.removed) == 4
+    assert mid not in env.handler._tops_monitors
