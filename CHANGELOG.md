@@ -22,6 +22,29 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.96.0 - Demo-day repairs
+
+62 commits on top of v5.95.0, up to `6df72b24`. `tops_monitor_stream` registers each H22
+event type in its own call, on the objects that send it, so it no longer reports `monitoring` with no handler
+attached; `cook_state` describes each cook, a generate-only pass keeps the
+previous result, a TOP network or subnet path watches every TOP node under it
+once (nodes in a different PDG graph from the first one found, which is how the code treats a nested topnet, are listed in `nodes_unmonitored`, not watched),
+and the five `except Exception: pass` blocks are gone: three of those failures
+now reach the caller and two go only to the log. Recall finds
+a decision from a natural question and refuses a subject it never recorded: 18
+of 25 held-out questions found their decision first on jsonl and 17 of 25 on Moneta (recall-eval, outside Houdini, through the recall handler, at `scope=project`). A
+tool that succeeds but reports misses shows as "Finished with misses" in the
+panel, and the model is told to name each one. Three Recipe Book recipes and
+geometry inspection use names Houdini 22.0.400 has. A failed tool call is now
+marked as failed on Nemotron, Ollama, Custom and Gemini, the usage ledger counts
+misses, `synapse_doctor` checks the SideFX help library, and every fenced code
+block in a reply has a Copy control. Three checks ran in isolated hython
+22.0.400 (the TOPs monitor, 7 of 7 scenarios; the runsheet's two recall lines;
+the Copy control offscreen, 42 of 42); nothing ran in an interactive Houdini
+session. The semantic index was not rebuilt for the edited TOPs recipe. This is
+a source release with no new Windows Setup.
+See [v5.96.0](docs/releases/v5.96.0.md).
+
 ## v5.95.0 - A miss is reported, not hidden
 
 Three hardening loops on top of v5.94.3. Seventeen tools now report misses
