@@ -158,17 +158,6 @@ MODE_INACTIVE_BG = "transparent"
 MODE_INACTIVE_BORDER = GRAPHITE
 
 
-# ── Chat Layout Tokens ───────────────────────────────────────────────
-CHAT_BUBBLE_PADDING = 14       # Inner bubble padding (px)
-CHAT_BUBBLE_RADIUS = 12        # Bubble corner radius (px)
-CHAT_BUBBLE_MARGIN_Y = 2       # Between messages in same group (px)
-CHAT_GROUP_MARGIN_Y = 16       # Between different-sender groups (px)
-CHAT_BUBBLE_MAX_WIDTH_PCT = 85  # Bubble max width (percentage)
-CHAT_INPUT_MIN_H = 44          # Minimum input height (px)
-CHAT_INPUT_MAX_H = 300         # Maximum input height (~10 lines, px)
-CHAT_TIMESTAMP_SIZE = 18       # Timestamp font size (px)
-CHAT_TYPING_DOT_SIZE = 8       # Typing indicator dot diameter (px)
-
 # ── Font size control (the Aa icon) — ONE ladder ────────────────────────
 # This was the same two-authority defect in a non-colour dimension, and it had
 # a live behavioural effect rather than a cosmetic one: the bridge declared
