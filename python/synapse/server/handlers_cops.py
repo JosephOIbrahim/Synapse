@@ -1317,10 +1317,13 @@ class CopsHandlerMixin:
                     block_end.setInput(0, last_proc)
 
                     # Seed mask connection
+                    inputs_missed: List[str] = []
                     if seed_mask:
                         seed_node = hou.node(seed_mask)
                         if seed_node is not None:
                             block_begin.setInput(0, seed_node)
+                        else:
+                            inputs_missed.append(seed_mask)
 
                     for n in [block_begin, dilate, blur, thresh, block_end]:
                         if n is not None:
@@ -1347,6 +1350,7 @@ class CopsHandlerMixin:
                 "iterations": iterations,
                 "growth_rate": growth_rate,
                 "bound": bound,
+                "inputs_missed": inputs_missed,
             }
 
         return run_on_main(_on_main, label="cops:_handle_cops_growth_propagation")
@@ -1537,10 +1541,13 @@ class CopsHandlerMixin:
                     raise RuntimeError("Couldn't create pixel sort node")
 
                 # Wire input
+                inputs_missed: List[str] = []
                 if input_node_path:
                     input_node = hou.node(input_node_path)
                     if input_node is not None:
                         sort_node.setInput(0, input_node)
+                    else:
+                        inputs_missed.append(input_node_path)
 
                 # Author the kernel through the Parm Gate (W5-PARMGATE): same
                 # cure as reaction_diffusion -- the `or parm("code")` phantom
@@ -1575,6 +1582,7 @@ class CopsHandlerMixin:
                 # dropped kernel write is observable, never a silent no-op.
                 "kernel_written": bool(kernel_gate and kernel_gate.get("set")),
                 "kernel_skipped": list((kernel_gate or {}).get("skipped", [])),
+                "inputs_missed": inputs_missed,
                 "note": (
                     "Sort node scaffolded with a placeholder #define-only "
                     "kernel — no kernel body authored and the node was not "
@@ -1868,6 +1876,7 @@ class CopsHandlerMixin:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
             created_any = False
+            parms_missed: List[str] = []  # B1
             try:
                 with hou.undos.group("synapse_cops_bake_textures"):
                     bake_nodes = []
@@ -1884,6 +1893,8 @@ class CopsHandlerMixin:
                                 p = node.parm(pname)
                                 if p is not None:
                                     p.set(int(val))
+                                else:
+                                    note_missing(parms_missed, node, pname)
 
                         node.moveToGoodPosition()
                         bake_nodes.append({
@@ -1911,6 +1922,7 @@ class CopsHandlerMixin:
                 "bake_nodes": bake_nodes,
                 "map_types": map_types,
                 "resolution": resolution,
+                "parms_missed": parms_missed,
                 "scaffolded": True,
                 "baked": False,
                 "unused_inputs": {"high_res": high_res, "low_res": low_res},
@@ -2044,20 +2056,29 @@ class CopsHandlerMixin:
                     raise RuntimeError("Couldn't create stamp scatter node")
 
                 # Wire stamp source
+                inputs_missed: List[str] = []
                 if stamp_source:
                     src = hou.node(stamp_source)
                     if src is not None:
                         scatter_node.setInput(0, src)
+                    else:
+                        inputs_missed.append(stamp_source)
 
                 # Configure stamp parameters
-                for pname, val in [
-                    ("seed", seed),
-                    ("copies", count),
-                    ("count", count),
-                ]:
+                parms_missed: List[str] = []  # B1
+                p = scatter_node.parm("seed")
+                if p is not None:
+                    p.set(seed)
+                else:
+                    note_missing(parms_missed, scatter_node, "seed")
+                count_set = False
+                for pname in ("copies", "count"):
                     p = scatter_node.parm(pname)
                     if p is not None:
-                        p.set(val)
+                        p.set(count)
+                        count_set = True
+                if not count_set:
+                    note_missing(parms_missed, scatter_node, "copies", "count")
 
                 scatter_node.moveToGoodPosition()
                 try:
@@ -2071,6 +2092,8 @@ class CopsHandlerMixin:
                 "scale_range": scale_range,
                 "rotation_range": rotation_range,
                 "seed": seed,
+                "parms_missed": parms_missed,
+                "inputs_missed": inputs_missed,
             }
 
         return run_on_main(_on_main, label="cops:_handle_cops_stamp_scatter")
