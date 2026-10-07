@@ -18,9 +18,11 @@ Do these in order, before the recording starts. One take = one pass through this
 
 3. **OCIO.** `OCIO` points at the color config. See `demo/README.md`.
 
-4. **A fresh hip, outside the repo.** Make a new empty folder for this take, for example `C:\SynapseDemo\take1\`. Copy `demo/synapse_demo.hip` into it. Never open the copy inside the repo: opening it in place writes `demo/.synapse/` into the source tree.
+4. **A fresh folder per take, outside the repo.** Make a new empty folder, for example `C:\SynapseDemo\take1\`, and copy `demo/synapse_demo.hip` into it. Never open the hip inside the repo.
 
-5. **JOB.** `JOB` is unset, or set to this take's folder. Memory is stored under the Houdini project (`JOB`) when that contains the scene, otherwise next to the scene (`docs/demo-repairs.md`). A `JOB` left over from another take would carry that take's memory into this one.
+   **Every hip in the same folder shares one memory store,** and so does every hip under the same `JOB`. A rehearsal deposit will show up during the show unless the show hip sits in its own new folder. Rehearse in a different folder from the show.
+
+5. **JOB.** `JOB` is unset, or set to this take's folder. Check it in the Python shell: `hou.getenv("JOB")`. Memory goes to `$JOB/.synapse` when `JOB` contains the hip, otherwise to `.synapse` next to the hip (seam-guard, live hython on master `ed01db41`).
 
 6. **Conversation cleared.** Open the fresh copy, open the panel, clear the conversation. The panel keeps one previous session and may open on a "parked" notice. The first frame on camera should be an empty chat.
 
@@ -52,7 +54,7 @@ That means:
 
    > **Remember this for the project: the hero lens is 35mm because the set is tight.**
 
-2. **Check the tool call.** The panel shows a `synapse_decide` call. Confirm it reads **`scope: project`** and the result says **`recorded: true`**. Note the **`id`** in the result: that is the record id for the take sheet.
+2. **Check the tool call.** The panel shows a `synapse_decide` call. Confirm it reads **`scope: project`** and the result says **`recorded: true`**. Note the **`id`** in the result: that is the record id for the take sheet. Check that **`storage_dir`** is inside this take's folder.
 
    If the scope reads `scene`, stop and redo the take. A scene-scoped decision is the wrong demo.
 
