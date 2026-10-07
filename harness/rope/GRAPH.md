@@ -49,6 +49,8 @@ python harness/rope/graph.py status --run RUN
 
 `RUN/seeds.json` is optional. It holds candidates from any other finder, in the scout's format. They pass the same vetoes and the same route.
 
+A fix's new test is named `tests/test_graph_<run folder>_<candidate id>.py`. If that path is tracked in git or already on disk, a number is added until it is free. Seed ids repeat from run to run, so the id alone once named a test an earlier run had committed, and the item was refused as the exam.
+
 ## What you will see
 
 Each tick prints one line:
@@ -89,4 +91,5 @@ Workers start with `harness/rope/no-mcp.json` and `harness/rope/graph-worker.jso
 - The import graph of this repo is close to one knot. Transitive reach is the same for almost every area, so work is ordered by direct importers.
 - The gate proves tests pass. It does not prove behaviour inside Houdini. That is why `needs_houdini` candidates are listed and never fixed here.
 - `dropped_log` reads the diff one line at a time. A logger call split over several lines, with its message on a continuation line, is not seen. `print(` is not checked.
+- `dropped_log` counts a logger line pasted into the fix's own new test as moved. A fix can delete a production log call and launder it that way. Closing it means moving the pin `test_a_log_line_moved_to_another_declared_file_is_kept`, which is the owner's call.
 - `tests_for` picks judging tests by module name. A module no test names is judged only by its new test and the two ratchets.
