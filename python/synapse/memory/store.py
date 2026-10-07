@@ -152,6 +152,199 @@ from .models import (
 
 
 # =============================================================================
+# RECALL TERM FOLDING
+# =============================================================================
+
+# Words a spoken question carries that say nothing about WHICH decision is
+# meant. "What did we decide about the hero sphere color?" asks about
+# {hero, sphere, color}; the rest is the shape of a question. Decision verbs
+# sit here too: recall already routes on kind, so "decide"/"chose" in a
+# question narrows nothing a decision record has to repeat.
+_RECALL_FILLER = frozenset({
+    "a", "an", "the", "what", "which", "who", "whom", "whose", "when", "where",
+    "why", "how", "was", "were", "is", "are", "be", "been", "being", "am",
+    "did", "do", "does", "done", "we", "us", "you", "i", "me", "our", "ours",
+    "my", "your", "it", "its", "that", "this", "these", "those", "there",
+    "for", "of", "on", "in", "to", "and", "or", "about", "at", "by", "with",
+    "from", "into", "as", "so", "any", "some", "have", "has", "had",
+    "re", "ll", "ve", "don", "isn", "aren",
+    "please", "remember", "recall", "remind", "tell", "say", "said", "know",
+    "can", "could", "would", "should", "will", "again", "already", "ever",
+    "earlier", "before", "last", "made", "make", "settle", "settled", "up",
+    "pick", "picked", "use", "used", "using", "go", "going", "went", "get",
+    "land", "landed", "many", "much", "coming", "put", "want", "need", "now",
+    "still", "currently", "exactly", "just", "also", "all",
+    "setting", "settings", "setup",
+    "project", "scene", "thing", "things",
+    "decide", "decided", "deciding", "decision", "decisions",
+    "choose", "chose", "chosen", "choosing", "choice", "choices",
+    "agree", "agreed",
+    # conversational padding: "is there a way to...", "too", "doing", "off"
+    "way", "too", "off", "out", "doing", "like", "really", "very", "bit",
+    "little", "lot", "got", "here", "then", "than", "if", "but", "not", "no",
+    "yes", "ok", "okay", "hey", "well", "quite", "pretty", "sort", "maybe",
+    "anything", "something", "everything", "ones",
+})
+
+# Spelling variants folded to one key, on the question and the record alike.
+_RECALL_VARIANTS = {
+    "colour": "color", "colours": "color", "coloured": "color",
+    "colors": "color", "colored": "color", "grey": "gray", "greys": "gray",
+}
+
+# A question about "color" is answered by a record that names one.
+_RECALL_COLOR_NAMES_RAW = (
+    "red", "orange", "yellow", "green", "blue", "purple", "violet", "pink",
+    "magenta", "cyan", "teal", "white", "black", "gray", "brown", "gold",
+    "golden", "silver", "copper", "bronze", "coral", "amber", "crimson",
+    "navy", "beige", "ivory", "charcoal", "turquoise", "maroon",
+)
+
+# Words an artist uses interchangeably for one thing. Each group folds to its
+# first member on both sides. Closed and small on purpose: a group may only
+# hold words a lookdev artist would answer with the same decision.
+_RECALL_SYNONYMS_RAW = (
+    ("material", "shader", "shading", "shade", "surface"),
+    ("background", "backdrop", "cyc"),
+    ("fog", "atmosphere", "volumetric", "haze", "mist"),
+    ("light", "lighting", "lit"),
+)
+
+
+def _stem_recall_word(word: str) -> str:
+    """Crude stem of one lowercased word: spelling variant, plural, then
+    -ing/-ity/-ion/-ness/-ed/-er/-ly, a final -e, a final -y read as -i and a
+    doubled final consonant, so render/renders/rendered/renderer,
+    dense/density, shiny/shininess and vignette/vignetting each land on one
+    key."""
+    word = _RECALL_VARIANTS.get(word, word)
+    if len(word) > 4 and word.endswith("ies"):
+        word = word[:-3] + "y"
+    elif len(word) > 4 and word.endswith(("ches", "shes", "sses", "xes", "zes")):
+        word = word[:-2]
+    elif (len(word) > 3 and word.endswith("s")
+            and not word.endswith(("ss", "us", "is"))):
+        word = word[:-1]
+    stripped = True
+    while stripped:  # renderer -> render -> rend, the same key as render
+        stripped = False
+        for suffix, keep in (("ing", 3), ("ity", 3), ("ion", 4), ("ness", 3),
+                             ("ed", 3), ("er", 4), ("ly", 4)):
+            if word.endswith(suffix) and len(word) - len(suffix) >= keep:
+                word = word[:-len(suffix)]
+                stripped = True
+                break
+    if len(word) > 3 and word.endswith("e"):
+        word = word[:-1]
+    if len(word) > 3 and word.endswith("y"):
+        word = word[:-1] + "i"
+    if len(word) >= 5 and word[-1] == word[-2] and word[-1] not in "aeiouslfz":
+        word = word[:-1]
+    return word
+
+
+_RECALL_SYNONYMS = {
+    _stem_recall_word(w): _stem_recall_word(group[0])
+    for group in _RECALL_SYNONYMS_RAW for w in group
+}
+_RECALL_COLOR = _stem_recall_word("color")
+_RECALL_COLOR_NAMES = frozenset(_stem_recall_word(w) for w in _RECALL_COLOR_NAMES_RAW)
+
+
+def _fold_recall_word(word: str) -> str:
+    """Fold one lowercased word to its recall key, identically on the question
+    and the record. Folding maps whole words to whole words, so the whole-word
+    guard is untouched: "oral" never matches inside "coral"."""
+    stem = _stem_recall_word(word)
+    return _RECALL_SYNONYMS.get(stem, stem)
+
+
+_RECALL_FILLER_KEYS = _RECALL_FILLER | {_fold_recall_word(w) for w in _RECALL_FILLER}
+
+
+def _recall_tokens(text: str) -> list:
+    """Every whole word of ``text`` in order, casefolded and folded."""
+    return [_fold_recall_word(w) for w in re.findall(r"\w+", text.casefold())]
+
+
+def _recall_terms(query: str) -> set:
+    """The meaningful terms of a question: its words minus filler (checked
+    before and after folding) and the stray letters of contractions."""
+    return {
+        _fold_recall_word(w) for w in re.findall(r"\w+", query.casefold())
+        if w not in _RECALL_FILLER and (len(w) > 1 or w.isdigit())
+    } - _RECALL_FILLER_KEYS
+
+
+# Words that ask for a VALUE rather than name a thing: "what focal length is
+# the shot camera?" is about the shot camera, and the record answers with
+# "50mm", not with "focal length". These terms help a record that has them
+# but are never required, and the coverage guard does not count them.
+_RECALL_VALUE_WORDS = frozenset(_fold_recall_word(w) for w in (
+    "size", "count", "number", "amount", "value", "values", "type", "kind",
+    "length", "focal", "resolution", "res", "rule", "rules", "convention",
+    "organised", "organized", "layout", "structure", "range", "rate", "speed",
+    "level", "strength", "intensity", "scale", "aperture", "detail", "details",
+    "side", "position", "direction", "angle",
+))
+
+
+def _recall_split_terms(query: str) -> tuple:
+    """(required terms, value terms, loose terms) of a question. A question
+    made only of value words requires them all. Loose terms are the keys of
+    verb- and adverb-shaped words (-ing, -ed, -ly): they stay required when
+    the store knows them, but their absence never trips the coverage guard,
+    because "how are we handling the X" is still a question about X."""
+    terms = _recall_terms(query)
+    required = terms - _RECALL_VALUE_WORDS
+    loose = {
+        _fold_recall_word(w) for w in re.findall(r"\w+", query.casefold())
+        if w.endswith(("ing", "ed", "ly"))
+    }
+    if not required:
+        return terms, set(), loose
+    return required, terms - required, loose
+
+
+def _recall_answered(terms: set, tokens) -> set:
+    """The question terms a run of record tokens answers (whole word, folded;
+    "color" is answered by any named colour)."""
+    words = set(tokens)
+    answered = terms & words
+    if _RECALL_COLOR in terms and words & _RECALL_COLOR_NAMES:
+        answered.add(_RECALL_COLOR)
+    return answered
+
+
+# A record's first few content words name its subject: "Hero sphere look:
+# ..." is about the hero sphere; "...focus distance on the hero sphere" only
+# mentions it. Coarse on purpose: two records that both open on the asked
+# subject tie, and the newer one wins, so a changed decision beats the one it
+# replaced even when the old one carries more incidental words.
+_RECALL_SUBJECT_WORDS = 3
+
+# Where a decision record's reasoning starts (see SynapseMemory.decision).
+_RECALL_REASONING = re.compile(r"\*\*Reasoning:\*\*", re.IGNORECASE)
+
+
+def _recall_score(terms: set, tokens: list, decision_tokens: list) -> tuple:
+    """(weighted terms answered, terms answered within the record's subject
+    words). A term the decision line answers counts twice; one only the
+    reasoning answers counts once, because the reasoning mentions neighbours
+    ("behind the plinth") that the decision is not about."""
+    answered = _recall_answered(terms, tokens)
+    in_decision = _recall_answered(terms, decision_tokens)
+    subject = [t for t in decision_tokens if t not in _RECALL_FILLER_KEYS][:_RECALL_SUBJECT_WORDS]
+    return len(answered) + len(in_decision), len(_recall_answered(terms, subject))
+
+
+def _recall_required(n_terms: int) -> int:
+    """Terms a record must answer to count as found: both of two (so "coral
+    submarine" never finds a coral display), otherwise at least half."""
+    return max(min(n_terms, 2), (n_terms + 1) // 2)
+
+
+# =============================================================================
 # MEMORY STORE
 # =============================================================================
 
@@ -1886,8 +2079,10 @@ class SynapseMemory:
         index, which resolves only that kind's typed prims (store.py:708), never
         a full-store scan. Defaults to DECISION (the historical recall surface)
         when no kind is given. Determinism mirrors the recall handler: id asc,
-        then fresher-first. Query words match whole words in content/summary,
-        independent of their order; ordinary question words are ignored.
+        then fresher-first. A query is reduced to its meaningful folded terms
+        (question words dropped); records answering enough of them, as whole
+        words in content/summary, rank by terms answered, then by how early the
+        first answering word appears, then by that deterministic order.
 
         ``kinds`` accepts MemoryType members or their ``.value`` strings; an
         unknown kind raises ValueError (loud) rather than silently widening the
@@ -1915,25 +2110,46 @@ class SynapseMemory:
         pool.sort(key=lambda m: m.id)
         pool.sort(key=lambda m: m.created_at or "", reverse=True)
 
-        q = (query or "").strip().casefold()
-        # A question is not an exact quotation. The demo's "look decision"
-        # failed against "**Decision:** ... display look" despite both words
-        # being present. Require EVERY meaningful word, not just one shared
-        # word, and never match "oral" inside "coral". This remains a bounded
-        # typed-record lookup; it neither needs vectors nor invents record IDs.
-        question_words = {
-            "a", "an", "the", "what", "which", "was", "were", "is", "are",
-            "did", "do", "does", "we", "you", "i", "our", "my", "for", "of",
-            "on", "in", "to", "and", "about", "have", "has", "had", "please",
-            "remember", "recall",
-        }
-        terms = set(re.findall(r"\w+", q)) - question_words
-        matches = [
-            m for m in pool
-            if not q or (terms and terms <= set(re.findall(
-                r"\w+", (m.content + " " + m.summary).casefold(),
-            )))
-        ]
+        q = (query or "").strip()
+        # A question is not an exact quotation. "What did we decide about the
+        # hero sphere color?" must find "We chose blue metallic for the hero
+        # sphere", which says neither "decide" nor "color". Drop the question's
+        # filler, fold spelling and plurals on both sides, then rank records by
+        # how many meaningful terms they answer, then by how many of them the
+        # record's opening subject words carry, then newest first. A record
+        # must answer both of two required terms, else at least half, so one
+        # shared word ("coral
+        # submarine" against a coral display) is still not a hit, and words
+        # match whole: "oral" is never found inside "coral". Coverage guard: a
+        # required term that no record in the pool answers means the question
+        # is about something never recorded ("the turntable camera"), so it
+        # finds nothing rather than the nearest neighbour. A question with no
+        # meaningful term finds nothing. Bounded typed-record lookup: no
+        # vectors, no invented IDs.
+        if q:
+            required, value, loose = _recall_split_terms(q)
+            tokens = {m.id: _recall_tokens(m.content + " " + m.summary) for m in pool}
+            known = _recall_answered(required, (t for toks in tokens.values() for t in toks))
+            absent = required - known
+            if absent and absent <= loose:
+                required = known  # an unknown verb or adverb is not a subject
+                absent = set()
+            terms = required | value
+            need = _recall_required(len(required))
+            scored = []
+            if required and not absent:
+                for m in pool:
+                    if len(_recall_answered(required, tokens[m.id])) >= need:
+                        decision_line = _RECALL_REASONING.split(m.content, 1)[0]
+                        hits, subject = _recall_score(
+                            terms, tokens[m.id], _recall_tokens(decision_line))
+                        scored.append((-hits, -subject, m))
+            # Stable: an equal score keeps the fresher-first, id-asc order
+            # above, so a changed decision outranks the one it replaced.
+            scored.sort(key=lambda row: row[:2])
+            matches = [row[2] for row in scored]
+        else:
+            matches = pool
         return matches[:limit] if limit and limit > 0 else matches
 
     @_on_memory_main
