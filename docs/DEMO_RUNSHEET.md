@@ -43,6 +43,7 @@ That means:
 - *decide* is **not** ignored, and the stored text says *Decision*. So "What did we **decide**…" misses. Say "What was our **decision**…" or leave the verb out.
 - *project* is **not** ignored. "Use project scope" is an instruction to the model, not part of the question. If the model puts *project* into the recall `query`, it misses.
 - *light* and *lights* are different words. Use exactly the same nouns in the deposit and the recall.
+- No contractions. "What's" leaves a stray *s* that kills the match.
 
 **Every recall says `scope=project`.** The default scope (`all`) adds a reference-docs article and reports a hit even when nothing was remembered (`python/synapse/server/handlers_memory.py`). That is not changing today.
 
@@ -74,12 +75,16 @@ On today's code, natural rewordings mostly miss: 5 of 65 measured questions hit 
 
 6. **Recall.** Type in the panel chat:
 
-   - **Primary (Track B):** *pending recall-eval's measurement on the forge branch.*
+   - **Primary (Track B, only if the seat runs the recall fix):** **Use project scope. What did we decide about the hero sphere?**
+
+     This hit on the forge working tree with a clean store, and it misses on today's code. It still needs re-confirming on the forge commit before it goes on camera.
    - **Fallback (Track A):** **Use project scope. What was the look decision?**
 
    The fallback hit on today's code on both memory backends, with and without a reopen. Only *look* has to survive in the stored decision; *decision* is always there, because every deposit is stored as "**Decision:** ...".
 
 7. **Check the tool call.** The panel shows a `synapse_recall` call. Confirm it reads **`scope: project`**, and that its `query` holds only words from the stored decision. The model writes the query, not you; an extra word like *memory* or *search* in it is enough to miss.
+
+**One decision per topic in the store.** If an older decision about the same thing is in the store, the recall fix returns the older one first. The fresh folder per take (pre-flight step 4) covers this.
 
 ### What success looks like
 
