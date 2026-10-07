@@ -957,7 +957,13 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         fmt.setForeground(QtGui.QColor(t.TEXT_PRIMARY))
         cursor.setCharFormat(fmt)
         self.setTextCursor(cursor)
-        self._stream_anchor = cursor.position()
+        # A cursor, not an int: an edit BEFORE the stream (a Copy label
+        # swapping to "Copied" and back, +/-2 chars) moves it with the text,
+        # so end_stream never deletes from a stale offset. Keep-on-insert so
+        # the streamed tokens appended AT it do not carry it forward.
+        anchor = QtGui.QTextCursor(cursor)
+        anchor.setKeepPositionOnInsert(True)
+        self._stream_anchor = anchor
         self._streaming = True
 
     def stream_chunk(self, text):
@@ -981,7 +987,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             return
         self._streaming = False
         cursor = self.textCursor()
-        cursor.setPosition(getattr(self, "_stream_anchor", cursor.position()))
+        anchor = getattr(self, "_stream_anchor", None)
+        self._stream_anchor = None
+        if anchor is not None and not anchor.isNull():
+            cursor.setPosition(anchor.position())
         cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.KeepAnchor)
         cursor.removeSelectedText()
         self.setTextCursor(cursor)

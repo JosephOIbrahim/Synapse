@@ -121,7 +121,10 @@ _COPY_PAYLOAD_RE = re.compile(r"[A-Za-z0-9_-]*")
 
 def copy_href(code):
     """The ``synapse-copy:`` href that carries *code* verbatim."""
-    raw = base64.urlsafe_b64encode(str(code).encode("utf-8")).decode("ascii")
+    # surrogatepass (both directions): a lone surrogate in model output must
+    # not raise here -- the formatter would take the whole reply down with it.
+    raw = base64.urlsafe_b64encode(
+        str(code).encode("utf-8", "surrogatepass")).decode("ascii")
     return COPY_SCHEME + raw.rstrip("=")
 
 
@@ -139,7 +142,7 @@ def decode_copy_href(href):
     try:
         data = base64.b64decode(body + "=" * (-len(body) % 4),
                                 altchars=b"-_", validate=True)
-        return data.decode("utf-8")
+        return data.decode("utf-8", "surrogatepass")
     except (binascii.Error, ValueError):
         return None
 
@@ -158,7 +161,9 @@ def _format_code_block(match, font_scale=1.0):
     """
     lang = match.group(1) or ""
     source = match.group(2)
-    if source.endswith("\n"):
+    if source.endswith("\r\n"):
+        source = source[:-2]
+    elif source.endswith("\n"):
         source = source[:-1]
     code = html.escape(match.group(2).rstrip())
     sz = _scale(_SMALL_PX, font_scale)
