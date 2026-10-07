@@ -172,7 +172,8 @@ _RECALL_FILLER = frozenset({
     "can", "could", "would", "should", "will", "again", "already", "ever",
     "earlier", "before", "last", "made", "make", "settle", "settled", "up",
     "pick", "picked", "use", "used", "using", "go", "going", "went", "get",
-    "land", "landed", "many", "much", "coming",
+    "land", "landed", "many", "much", "coming", "put", "want", "need", "now",
+    "still", "currently", "exactly", "just", "also", "all",
     "setting", "settings", "setup",
     "project", "scene", "thing", "things",
     "decide", "decided", "deciding", "decision", "decisions",
@@ -264,19 +265,46 @@ def _recall_terms(query: str) -> set:
     } - _RECALL_FILLER_KEYS
 
 
-def _recall_score(terms: set, tokens: list) -> tuple:
-    """(terms answered, position of the first answering word) for one record.
-    A record that leads with the asked-about thing is about that thing; one
-    that mentions it in passing ranks after it on a tie."""
-    def answers(tok):
-        return tok in terms or (_RECALL_COLOR in terms and tok in _RECALL_COLOR_NAMES)
+# Words that ask for a VALUE rather than name a thing: "what focal length is
+# the shot camera?" is about the shot camera, and the record answers with
+# "50mm", not with "focal length". These terms help a record that has them
+# but are never required, and the coverage guard does not count them.
+_RECALL_VALUE_WORDS = frozenset(_fold_recall_word(w) for w in (
+    "size", "count", "number", "amount", "value", "values", "type", "kind",
+    "length", "focal", "resolution", "res", "rule", "rules", "convention",
+    "organised", "organized", "layout", "structure", "range", "rate", "speed",
+    "level", "strength", "intensity", "scale", "aperture", "detail", "details",
+))
 
+
+def _recall_split_terms(query: str) -> tuple:
+    """(required terms, value terms) of a question. A question made only of
+    value words requires them all."""
+    terms = _recall_terms(query)
+    required = terms - _RECALL_VALUE_WORDS
+    return (required, terms - required) if required else (terms, set())
+
+
+def _recall_answered(terms: set, tokens) -> set:
+    """The question terms a run of record tokens answers (whole word, folded;
+    "color" is answered by any named colour)."""
     words = set(tokens)
-    hits = sum(1 for term in terms if term in words)
-    if _RECALL_COLOR in terms and _RECALL_COLOR not in words and words & _RECALL_COLOR_NAMES:
-        hits += 1
-    first = next((i for i, tok in enumerate(tokens) if answers(tok)), len(tokens))
-    return hits, first
+    answered = terms & words
+    if _RECALL_COLOR in terms and words & _RECALL_COLOR_NAMES:
+        answered.add(_RECALL_COLOR)
+    return answered
+
+
+def _recall_score(terms: set, tokens: list) -> tuple:
+    """(terms answered, summed position of each answered term's first
+    occurrence) for one record. A record that opens with the asked-about
+    things is about them ("Hero sphere look: ..."); one that mentions them in
+    passing ("...focus distance on the hero sphere") ranks after it on a tie."""
+    first = {}
+    for i, tok in enumerate(tokens):
+        for term in _recall_answered(terms, (tok,)):
+            first.setdefault(term, i)
+    return len(first), sum(first.values())
 
 
 def _recall_required(n_terms: int) -> int:
@@ -2056,20 +2084,31 @@ class SynapseMemory:
         # hero sphere color?" must find "We chose blue metallic for the hero
         # sphere", which says neither "decide" nor "color". Drop the question's
         # filler, fold spelling and plurals on both sides, then rank records by
-        # how many meaningful terms they answer. A record must answer more than
-        # half of them, so one shared word ("coral submarine" against a coral
-        # display) is still not a hit, and words match whole: "oral" is never
-        # found inside "coral". A question with no meaningful term finds
-        # nothing. Bounded typed-record lookup: no vectors, no invented IDs.
+        # how many meaningful terms they answer, then by how early those terms
+        # first appear in the record. A record must answer both of two
+        # required terms, else at least half, so one shared word ("coral
+        # submarine" against a coral display) is still not a hit, and words
+        # match whole: "oral" is never found inside "coral". Coverage guard: a
+        # required term that no record in the pool answers means the question
+        # is about something never recorded ("the turntable camera"), so it
+        # finds nothing rather than the nearest neighbour. A question with no
+        # meaningful term finds nothing. Bounded typed-record lookup: no
+        # vectors, no invented IDs.
         if q:
-            terms = _recall_terms(q)
-            need = _recall_required(len(terms))
+            required, value = _recall_split_terms(q)
+            terms = required | value
+            need = _recall_required(len(required))
+            tokens = {m.id: _recall_tokens(m.content + " " + m.summary) for m in pool}
+            known = _recall_answered(required, (t for toks in tokens.values() for t in toks))
             scored = []
-            for m in pool:
-                hits, first = _recall_score(terms, _recall_tokens(m.content + " " + m.summary))
-                if terms and hits >= need:
-                    scored.append((-hits, first, m))
-            # Stable: an equal score keeps the fresher-first, id-asc order above.
+            if required and known == required:
+                for m in pool:
+                    if len(_recall_answered(required, tokens[m.id])) >= need:
+                        hits, spread = _recall_score(terms, tokens[m.id])
+                        scored.append((-hits, spread, m))
+            # Stable: an equal score keeps the fresher-first, id-asc order
+            # above, so a decision restated in the same words outranks the
+            # one it replaced.
             scored.sort(key=lambda row: row[:2])
             matches = [row[2] for row in scored]
         else:

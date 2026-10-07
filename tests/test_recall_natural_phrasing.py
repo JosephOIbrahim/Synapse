@@ -142,7 +142,7 @@ def test_empty_store_finds_nothing(memory):
 
 
 @pytest.mark.parametrize("question", [
-    "What did we decide about the camera focal length?",
+    "What did we decide about the explosion sim?",
     "Which fog density did we choose?",
     "What did we decide?",
     "Remind me what we decided about this project",
@@ -166,3 +166,26 @@ def test_handler_shape_is_unchanged(memory):
     assert out["matches"][0]["id"] == ids["sphere"].id
     miss = bridge.handle_memory_recall({"query": "Which fog density did we choose?"})
     assert miss["found"] is False and miss["count"] == 0 and miss["matches"] == []
+
+
+def test_coverage_guard_refuses_a_never_recorded_subject(memory):
+    # "turntable" is in no record: the question is about something never
+    # decided, so the nearest camera decision must not be offered instead.
+    memory.decision("Shot camera uses a 50mm lens at f/2.8.", "Shallow depth of field.")
+    assert memory.recall("what lens did we use on the turntable camera?") == []
+    assert memory.recall("what lens did we use on the shot camera?")
+
+
+def test_value_words_are_not_required(memory):
+    # The record answers "focal length" with "50mm"; the question is about the camera.
+    decision = memory.decision("Shot camera uses a 50mm lens at f/2.8.", "Shallow depth of field.")
+    assert [m.id for m in memory.recall("what focal length is the shot camera?")] == [decision.id]
+
+
+def test_restated_decision_outranks_the_one_it_replaced(memory):
+    for record_id, date, mm in [("old", "2026-01-01", "50mm"), ("new", "2026-09-09", "85mm")]:
+        memory.store.add(Memory(
+            id=record_id, created_at=date, updated_at=date,
+            content=f"**Decision:** Hero lens is {mm}.", memory_type=MemoryType.DECISION,
+        ))
+    assert [m.id for m in memory.recall("what lens did we pick for the hero?")] == ["new", "old"]
