@@ -22,6 +22,20 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.95.0 - A miss is reported, not hidden
+
+Three hardening loops on top of v5.94.3. Seventeen tools stop reporting success
+over work they did not do: the COPs, material, variant and HDA-package tools
+name a parm or input they could not apply, five USD tools fail when the prim
+does not exist, `safe_render` and `render_progressively` name a settings write
+that failed, `execute_vex` refuses an input path that does not resolve, and
+`router_stats` and `live_metrics` fail when their service is missing. A PDG
+rollback that raised is recorded as incomplete. The panel loses nine unused
+tokens and eight stylesheet rebinds without moving a pixel. Rope's graph mode
+learns three rules from its own runs. Nothing was run in a live Houdini session.
+This is a source release with no new Windows Setup.
+See [v5.95.0](docs/releases/v5.95.0.md).
+
 ## v5.94.3 - Eleven small repairs, each with its own test
 
 Seventeen commits on top of v5.94.2. Eleven are small repairs, one commit and one
