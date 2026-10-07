@@ -426,19 +426,16 @@ class TopsDiagnosticsMixin:
 
             # Unregister callback in main thread
             def _stop():
-                handlers = monitor.get("callback_handlers") or []
+                callback_id = monitor.get("callback_id")
                 pdg_node = monitor.get("pdg_node")
-                if handlers and pdg_node is not None:
+                if callback_id is not None and pdg_node is not None:
                     try:
+                        import pdg as _pdg
                         ctx = pdg_node.context
+                        if ctx is not None:
+                            ctx.removeEventHandler(callback_id)
                     except Exception:
-                        ctx = None
-                    if ctx is not None:
-                        for h in handlers:
-                            try:
-                                ctx.removeEventHandler(h)
-                            except Exception:
-                                pass  # Best-effort cleanup
+                        pass  # Best-effort cleanup
 
                 events = monitor.get("events", [])
                 elapsed = time.monotonic() - monitor.get("start_time", time.monotonic())
@@ -523,14 +520,7 @@ class TopsDiagnosticsMixin:
             mid = f"monitor-{deterministic_uuid(f'tops_monitor_{node_path}')[:8]}"
             events_list: List[Dict] = []
             start_time = time.monotonic()
-            # The record stored in self._tops_monitors; the callback flags
-            # truncation on it, so it must exist before the callback does.
-            monitor: Dict[str, Any] = {
-                "node_path": node_path,
-                "pdg_node": pdg_node,
-                "events": events_list,
-                "start_time": start_time,
-            }
+            total_items = [0]  # mutable for closure
 
             def _on_event(event):
                 """PDG event callback -- must not block the cook thread."""
@@ -546,17 +536,12 @@ class TopsDiagnosticsMixin:
                     elapsed = now - start_time
 
                     if etype == _pdg.EventType.WorkItemStateChange:
-                        # H22 pdg.Event carries workItemId + currentState, not a
-                        # workItem object (probe 2026-10-06, hython 22.0.400).
-                        state = event.currentState
-                        item_id = event.workItemId
-                        wi = None
-                        try:
-                            wi = event.context.graph.workItemById(item_id)
-                        except Exception:
-                            wi = None
+                        wi = event.workItem
+                        if wi is None:
+                            return
+                        state = wi.state
                         item_info = {
-                            "item_id": item_id,
+                            "item_id": wi.id,
                             "node": event.node.name if event.node else node_path,
                             "frame": getattr(wi, 'frame', None),
                             "timestamp": round_float(elapsed),
@@ -585,21 +570,13 @@ class TopsDiagnosticsMixin:
                             item_info["error_message"] = getattr(wi, 'lastError', "Unknown error")
                             events_list.append(item_info)
 
-                    elif etype == _pdg.EventType.NodeProgressUpdate:
-                        # H22 has no CookProgress event and pdg.Event carries no
-                        # counts; derive them from the node's work items.
-                        pnode = event.node
-                        items = list(getattr(pnode, 'workItems', None) or [])
-                        total = len(items)
-                        done_states = (
-                            _pdg.workItemState.CookedSuccess,
-                            _pdg.workItemState.CookedFail,
-                        )
-                        completed = sum(1 for w in items if w.state in done_states)
+                    elif etype == _pdg.EventType.CookProgress:
+                        completed = getattr(event, 'completedCount', 0)
+                        total = getattr(event, 'totalCount', 0)
+                        total_items[0] = total
                         pct = round_float((completed / total * 100.0) if total > 0 else 0.0)
                         events_list.append({
                             "type": "cook_progress",
-                            "node": pnode.name if pnode else node_path,
                             "completed": completed,
                             "total": total,
                             "percent": pct,
@@ -619,45 +596,36 @@ class TopsDiagnosticsMixin:
                 except Exception:
                     pass  # Never block the cook thread
 
-            # Register on the PDG graph context. pdg.EventType members do not
-            # combine with `|` (TypeError on H22.0.400), so it is one
-            # addEventHandler call per event type; each returns the handler
-            # object removeEventHandler needs.
+            # Register callback on the PDG graph context
             ctx = pdg_node.context
-            if ctx is None:
-                raise RuntimeError(
-                    f"Couldn't start monitoring {node_path} -- its PDG node has "
-                    "no graph context, so no cook events can be received"
-                )
-
-            def _remove_handlers(handlers):
-                for h in handlers:
-                    try:
-                        ctx.removeEventHandler(h)
-                    except Exception:
-                        pass  # Best-effort cleanup
-
-            handlers: List[Any] = []
-            try:
-                for etype in (
-                    _pdg.EventType.WorkItemStateChange,
-                    _pdg.EventType.NodeProgressUpdate,
-                    _pdg.EventType.CookComplete,
-                ):
-                    handlers.append(ctx.addEventHandler(_on_event, etype))
-            except Exception as exc:
-                _remove_handlers(handlers)
-                raise RuntimeError(
-                    f"Couldn't start monitoring {node_path} -- registering the "
-                    f"PDG event handler failed: {type(exc).__name__}: {exc}"
-                ) from exc
+            callback_id = None
+            if ctx is not None:
+                try:
+                    callback_id = ctx.addEventHandler(
+                        _on_event,
+                        _pdg.EventType.WorkItemStateChange
+                        | _pdg.EventType.CookProgress
+                        | _pdg.EventType.CookComplete,
+                    )
+                except Exception:
+                    # Fallback: some PDG versions use different API
+                    pass
 
             try:
-                monitor["callback_handlers"] = handlers
-                self._tops_monitors[mid] = monitor
+                self._tops_monitors[mid] = {
+                    "node_path": node_path,
+                    "pdg_node": pdg_node,
+                    "callback_id": callback_id,
+                    "events": events_list,
+                    "start_time": start_time,
+                }
             except Exception:
-                # If storage fails, unregister the callbacks to prevent leak
-                _remove_handlers(handlers)
+                # If storage fails, unregister the callback to prevent leak
+                if callback_id is not None and ctx is not None:
+                    try:
+                        ctx.removeEventHandler(callback_id)
+                    except Exception:
+                        pass
                 raise
 
             return {
