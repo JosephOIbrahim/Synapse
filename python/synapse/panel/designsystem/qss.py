@@ -549,8 +549,8 @@ _sweep_a_base_stylesheet = stylesheet
 _sweep_a_builders = []
 
 
-def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
-    return _sweep_a_base_stylesheet(scale) + "\n" + "\n".join(
+def _sweep_a_section(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return "\n".join(
         builder(scale) for builder in _sweep_a_builders)
 
 
@@ -846,11 +846,8 @@ _sweep_a_builders.append(_sweep_a_quick_actions_stylesheet)
 
 # --- SWEEP_B (hda_views, tool_palette, command_palette, working_indicator)
 # Append-only: preserve LEVER's generator and chain any earlier sweep blocks.
-_sweep_b_base_stylesheet = stylesheet
 
 
-def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
-    return _sweep_b_base_stylesheet(scale) + _sweep_b_stylesheet(scale)
 
 
 def _sweep_b_stylesheet(scale):
@@ -1086,11 +1083,8 @@ QComboBox#DsConnectionSelect QAbstractItemView {{
 """
 
 
-_first_session_base_stylesheet = stylesheet
 
 
-def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
-    return _first_session_base_stylesheet(scale) + "\n" + _connection_stylesheet(scale)
 # --- END FIRST_SESSION
 
 
@@ -1131,11 +1125,8 @@ def _recipe_stylesheet(scale=t.FONT_SCALE_DEFAULT):
 """
 
 
-_recipe_base_stylesheet = stylesheet
 
 
-def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
-    return _recipe_base_stylesheet(scale) + "\n" + _recipe_stylesheet(scale)
 # --- END SAVED_RECIPES
 
 
@@ -1146,11 +1137,10 @@ def prepare_model_rules_dialog(root, scale=t.FONT_SCALE_DEFAULT):
     submenus.prepare(root, scale)
 
 
-_rules_base_stylesheet = stylesheet
 
 
-def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
-    return _rules_base_stylesheet(scale) + f"""
+def _model_rules_section(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return f"""
 #DsRoot[panel_popup="model_rules"] QPlainTextEdit#DsRulesPath,
 #DsRoot[panel_popup="model_rules"] QListWidget {{
     background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
@@ -1174,11 +1164,10 @@ def prepare_events_dialog(root, scale=t.FONT_SCALE_DEFAULT):
     submenus.prepare(root, scale)
 
 
-_events_base_stylesheet = stylesheet
 
 
-def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
-    return _events_base_stylesheet(scale) + f"""
+def _local_events_section(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return f"""
 #DsRoot[panel_popup="notifications"] QListWidget,
 #DsRoot[panel_popup="notifications"] QPlainTextEdit {{
     background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
@@ -1230,11 +1219,10 @@ def prepare_render_dialog(root, scale=t.FONT_SCALE_DEFAULT):
 
 
 # --- EDITORIAL_PANEL (model choice and composition)
-_editorial_base_stylesheet = stylesheet
 
 
-def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
-    return _editorial_base_stylesheet(scale) + f"""
+def _editorial_section(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return f"""
 /* Native menu scrolling keeps large local-model lists on one screen. */
 QMenu#DsModelMenu {{
     menu-scrollable: 1;
@@ -1294,11 +1282,10 @@ QGroupBox#DsJevRouting::title {{
 # --- END EDITORIAL_PANEL
 
 # --- PROVIDER_MODEL_PICKER
-_model_picker_base_stylesheet = stylesheet
 
 
-def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
-    return _model_picker_base_stylesheet(scale) + f"""
+def _model_picker_section(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return f"""
 QWidget#DsModelPicker {{
     background: {t.PANEL}; color: {t.TEXT_PRIMARY};
     border: 1px solid {t.BORDER_STRONG}; border-radius: 20px; border-bottom-right-radius: 6px;
@@ -1318,6 +1305,33 @@ QListWidget#DsModelList {{
     border: none; outline: none;
 }}
 """
+
+# COMPOSER (hour-3 M3). It lives inside the last panel fence because
+# submenu_stylesheet must stay the module's final statement
+# (test_panel_sweep_b_widgets.py extension contract).
+# One ordered list replaces eight `stylesheet = <wrapper of stylesheet>` rebinds.
+# Order and separators are exactly the former chain's; the composed string is
+# byte-identical (pinned by tests/panel/test_qss_one_composer.py goldens).
+# The core sheet keeps its name at the top of the module because it sits in
+# the append-only prefix test_panel_sweep_a.py guards; _sweep_a_base_stylesheet
+# is the stable handle to it.
+_SECTIONS = (
+    ("\n", _sweep_a_section),        # SWEEP_A
+    ("", _sweep_b_stylesheet),       # SWEEP_B
+    ("\n", _connection_stylesheet),  # FIRST_SESSION
+    ("\n", _recipe_stylesheet),      # SAVED_RECIPES
+    ("", _model_rules_section),      # MODEL_RULES
+    ("", _local_events_section),     # LOCAL_EVENTS
+    ("", _editorial_section),        # EDITORIAL_PANEL
+    ("", _model_picker_section),     # PROVIDER_MODEL_PICKER
+)
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _sweep_a_base_stylesheet(scale) + "".join(
+        sep + build(scale) for sep, build in _SECTIONS)
+
+
 # --- END PROVIDER_MODEL_PICKER
 
 
