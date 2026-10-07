@@ -139,7 +139,7 @@ QPushButton#DsPill[active="true"] {{
 /* Model identity matches the coral ring; state is conveyed by the status line. */
 QPushButton#DsAuthor {{
     background: transparent; border: 1px solid transparent;
-    border-radius: 12px; border-bottom-right-radius: 4px;
+    border-radius: {t.RADIUS_LG}px; border-bottom-right-radius: {t.RADIUS_SM}px;
     /* bc-wave BC-2 (Addendum 2): the token is a click target, not a glyph -
        SPACE_LG content + SPACE_XS air clears the 26px floor G3 measures. */
     min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_XS}px;
@@ -723,7 +723,7 @@ QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-al
 QPushButton:hover {{  color: {t.SIGNAL}; }}
 """))
     rules.append(_sweep_a_rule("gate_body", f"""
-background: {t.GROUND}; border: 1px solid {t.GRAPHITE}; border-radius: 4px;
+background: {t.GROUND}; border: 1px solid {t.GRAPHITE}; border-radius: {t.RADIUS_SM}px;
 """))
     rules.append(_sweep_a_rule("gate_integrity", f"""
 background: {t.GROUND}; border-top: 1px solid {t.GRAPHITE};
@@ -1268,7 +1268,7 @@ QLabel#DsComposerHint {{
 /* Stop shares Send's coral action family, retaining its compact height. */
 QPushButton#DsStop {{
     background: {t.WARM}; color: {t.TEXT_ON_ACCENT};
-    border-radius: 12px; border-bottom-right-radius: 4px;
+    border-radius: {t.RADIUS_LG}px; border-bottom-right-radius: {t.RADIUS_SM}px;
     font-size: {t.scaled(t.SIZE_SMALL, scale)}px; font-weight: {t.WEIGHT_MEDIUM};
     min-height: {t.scaled(t.SPACE_MD + t.SPACE_XS, scale)}px;
     max-height: {t.scaled(t.SPACE_MD + t.SPACE_XS, scale)}px;
