@@ -10,7 +10,9 @@ Houdini runs SYNAPSE with its own Python.
 **[Download Windows Setup v5.86.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe)**
 
 This is the latest packaged installer, v5.86.0. It includes Identify and the
-latest panel, JEV and SideFX library changes. Newer source releases, including
+panel as of v5.86.0, with its JEV and SideFX library changes. Spatial, the Render
+footer row and the Scatter recipe that reads the scene are not in it; they need
+the source installation. Newer source releases, including
 v5.87.0, v5.88.0, v5.89.0, v5.90.0, v5.91.0, v5.92.0, v5.92.1, v5.93.0, v5.93.1, v5.93.2, v5.93.3, v5.94.0, v5.94.1, v5.94.2, v5.94.3 and v5.95.0, do not contain a new Setup executable. For the current
 version, use [source installation](#source-installation) below.
 

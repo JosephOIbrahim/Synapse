@@ -129,7 +129,8 @@ Per CLAUDE.md safety rule 15 and the blueprint's provenance tiers, **no unprobed
 | `hou.node(path)`, `node.path()`, `node.name()`, `node.children()`, `node.type().category().name()` | **V1** | `introspection.py:293,318,341-343,347,310` |
 | `hou.selectedNodes()`, `node.inputs()` | **V1** | `introspection.py:255,271` |
 | `node.geometry()`, `geo.points()`, `geo.prims()` | **V1** | `introspection.py:90,96,97` |
-| `attr.name()`, `attr.dataType()`, `attr.size()`, `attr.strings()`, `attr.floatListData()` | **V1** | `introspection.py:104-124` |
+| `attr.name()`, `attr.dataType()`, `attr.size()`, `attr.strings()`, `attr.isArrayType()` | **V1** | `introspection.py:137-160` (`_attr_info`) |
+| numeric attribute values: `geo.{point,prim}{Float,Int}[List]AttribValues(name)` by class, type and array-ness; detail values through `geo.attribValue(name)` | **V1** | `introspection.py:99-112,156-167` (`_VALUE_READERS`), live assay `cto-20261007 assay_lx.log:95-110`, present in `h22_symbol_table.json`. `hou.Attrib` has no numeric value reader; the earlier floatListData entry here was a phantom on 22.0.400, removed from the code in `be0f2e54`. The `vertex*AttribValues` readers are mapped but nothing passes vertex attributes yet (vertex row below). |
 | `node.warnings()`, `node.errors()` | **V1** | `introspection.py:180,184` — the whole of `error_manifest` |
 | `node.stickyNotes()` | **V1** | `introspection.py:330` (graph_manifest artist-notes, optional) |
 | point/prim/detail attribute accessors (the `attrs` iterables feeding `_attr_info`) | **V1 (category)** | `introspection.py:100-130` + `GeoSummary.{point,prim,detail}_attribs` (`shared/types.py:216-218`) |
