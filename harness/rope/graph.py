@@ -803,6 +803,33 @@ def _norm(s):
     return re.sub(r"\s+", " ", str(s)).strip()
 
 
+_SPAN = re.compile(r'`([^`]{6,})`|"((?:[^"\\]|\\.){6,})"')
+_FILE_LINE = re.compile(r"^\S+\.\w+:\d+(?::\d+)?\s*")
+_REF = re.compile(r"[\w./\\-]+\.[A-Za-z]\w*:\d+")
+
+
+def _evidence_spans(raw):
+    """The ways one evidence string can name a line, most literal first.
+
+    Seeds and scouts often send compound evidence: a.py:12 "quote"; b.py:4 `quote`.
+    The whole string comes first, then the string with a file:line prefix removed, so a clean
+    line is never cut down to a quoted token inside it; then each quoted span in reading order.
+    Spans are only read out of evidence that cites a file:line: a plain code line that is gone
+    from the file must stay vetoed, not pass on a "token" quoted inside it.
+    """
+    raw = str(raw)
+    out = [raw, _FILE_LINE.sub("", raw.strip(), count=1)]
+    for m in (_SPAN.finditer(raw) if _REF.search(raw) else ()):
+        out.append(m.group(1) if m.group(1) is not None else m.group(2).replace('\\"', '"'))
+    seen, spans = set(), []
+    for s in out:
+        n = _norm(s)
+        if len(n) >= 6 and n not in seen:
+            seen.add(n)
+            spans.append(n)
+    return spans
+
+
 def veto(c):
     """Deterministic reasons a candidate never reaches a fixer. Checked before any model."""
     f = posix(str(c.get("file", "")))
@@ -814,8 +841,8 @@ def veto(c):
         return "the exam is read-only"
     if f.startswith(OWNER_ONLY):
         return "owner-only"
-    ev = _norm(c.get("evidence", ""))
-    if len(ev) < 6:
+    spans = _evidence_spans(c.get("evidence", ""))
+    if not spans:
         return "no evidence line"
     with open(os.path.join(ROOT, f), encoding="utf-8", errors="replace") as fh:
         lines = fh.read().splitlines()
@@ -824,11 +851,17 @@ def veto(c):
     except (TypeError, ValueError):
         ln = 0
     near = _norm(" ".join(lines[max(0, ln - 9): ln + 8]))
-    if ev in near:
-        return ""
-    for i, text in enumerate(lines, 1):
-        if ev in _norm(text):
-            c["line"] = i          # the quote is real, the line number was off
+    for n, ev in enumerate(spans):
+        hit = ev in near
+        if not hit:
+            for i, text in enumerate(lines, 1):
+                if ev in _norm(text):
+                    c["line"] = i      # the quote is real, the line number was off
+                    hit = True
+                    break
+        if hit:
+            if n:                      # compound evidence: keep the one span this file holds
+                c["evidence"] = ev
             return ""
     return "evidence not found in the file"
 
