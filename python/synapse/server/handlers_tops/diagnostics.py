@@ -18,7 +18,7 @@ except ImportError:
 from ...core.aliases import resolve_param, resolve_param_with_default
 from ...core.determinism import round_float, kahan_sum, deterministic_uuid
 from ..handler_helpers import _HOUDINI_UNAVAILABLE
-from ._common import _run_in_main_thread_pdg, _ensure_tops_warm_standby, _MAX_MONITOR_EVENTS
+from ._common import _run_in_main_thread_pdg, _ensure_tops_warm_standby, _MAX_MONITOR_EVENTS, logger
 
 
 class TopsDiagnosticsMixin:
@@ -428,17 +428,22 @@ class TopsDiagnosticsMixin:
             def _stop():
                 handlers = monitor.get("callback_handlers") or []
                 pdg_node = monitor.get("pdg_node")
+                removal_errors: List[str] = []
                 if handlers and pdg_node is not None:
                     try:
                         ctx = pdg_node.context
-                    except Exception:
+                    except Exception as exc:
                         ctx = None
+                        removal_errors.append(f"graph context unreadable: {type(exc).__name__}: {exc}")
+                        logger.warning("tops_monitor_stream stop: %s", removal_errors[-1])
                     if ctx is not None:
                         for h in handlers:
                             try:
                                 ctx.removeEventHandler(h)
-                            except Exception:
-                                pass  # Best-effort cleanup
+                            except Exception as exc:
+                                # Keep going: one stuck handler must not leave the others attached.
+                                removal_errors.append(f"removeEventHandler failed: {type(exc).__name__}: {exc}")
+                                logger.warning("tops_monitor_stream stop: %s", removal_errors[-1])
 
                 events = monitor.get("events", [])
                 elapsed = time.monotonic() - monitor.get("start_time", time.monotonic())
@@ -466,6 +471,11 @@ class TopsDiagnosticsMixin:
                         "events were dropped. Increase SYNAPSE_MONITOR_EVENT_CAP "
                         "or reduce cook complexity."
                     )
+                if monitor.get("callback_error"):
+                    result["callback_error"] = monitor["callback_error"]
+                if removal_errors:
+                    # A handler still attached keeps firing into a dropped monitor.
+                    result["handler_removal_errors"] = removal_errors
                 return result
 
             return _run_in_main_thread_pdg(_stop)
@@ -483,7 +493,7 @@ class TopsDiagnosticsMixin:
             completed = sum(1 for e in events if e.get("type") == "work_item_completed")
             failed = sum(1 for e in events if e.get("type") == "work_item_failed")
 
-            return {
+            status = {
                 "monitor_id": monitor_id,
                 "status": "active",
                 "elapsed_seconds": round_float(elapsed),
@@ -495,6 +505,11 @@ class TopsDiagnosticsMixin:
                     "total_processed": completed + failed,
                 },
             }
+            if monitor.get("callback_error"):
+                # The callback hit an event it could not read; say so instead
+                # of letting an empty event list look like a quiet cook.
+                status["callback_error"] = monitor["callback_error"]
+            return status
 
         # action == "start"
         def _start():
@@ -553,7 +568,9 @@ class TopsDiagnosticsMixin:
                         wi = None
                         try:
                             wi = event.context.graph.workItemById(item_id)
-                        except Exception:
+                        except Exception as exc:
+                            # The event still counts; only frame/cookTime/outputs go missing.
+                            logger.debug("tops_monitor_stream: workItemById(%s) failed: %s", item_id, exc)
                             wi = None
                         item_info = {
                             "item_id": item_id,
@@ -576,8 +593,8 @@ class TopsDiagnosticsMixin:
                                 outputs = wi.resultData
                                 if outputs:
                                     item_info["output_path"] = str(outputs[0]) if outputs else ""
-                            except Exception:
-                                pass
+                            except Exception as exc:
+                                logger.debug("tops_monitor_stream: resultData unreadable for %s: %s", item_id, exc)
                             events_list.append(item_info)
 
                         elif state == _pdg.workItemState.CookedFail:
@@ -616,8 +633,13 @@ class TopsDiagnosticsMixin:
                             "timestamp": round_float(elapsed),
                         })
 
-                except Exception:
-                    pass  # Never block the cook thread
+                except Exception as exc:
+                    # Never raise into the cook thread, but never hide it either:
+                    # keep the first failure for status/stop to report.
+                    if "callback_error" not in monitor:
+                        monitor["callback_error"] = f"{type(exc).__name__}: {exc}"
+                        logger.warning("tops_monitor_stream callback failed on %s: %s",
+                                       node_path, monitor["callback_error"])
 
             # Register on the PDG graph context. pdg.EventType members do not
             # combine with `|` (TypeError on H22.0.400), so it is one
@@ -634,8 +656,9 @@ class TopsDiagnosticsMixin:
                 for h in handlers:
                     try:
                         ctx.removeEventHandler(h)
-                    except Exception:
-                        pass  # Best-effort cleanup
+                    except Exception as exc:
+                        # Rolling back a failed start; the original error is what gets raised.
+                        logger.warning("tops_monitor_stream rollback: removeEventHandler failed: %s", exc)
 
             handlers: List[Any] = []
             try:

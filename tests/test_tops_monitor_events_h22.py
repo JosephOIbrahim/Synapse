@@ -173,3 +173,50 @@ def test_callback_reads_h22_event_shape(env):
     assert done and done[0]["item_id"] == 42 and done[0]["frame"] == 3.0
     progress = [e for e in events if e["type"] == "cook_progress"]
     assert progress and progress[0]["completed"] == 1 and progress[0]["total"] == 2
+
+
+def test_unreadable_event_is_reported_not_swallowed(env):
+    """A callback failure never raises into the cook thread, but status and
+    stop name it, so an empty event list cannot pass for a quiet cook."""
+    mid = _start(env)["monitor_id"]
+    by_type = {etype.name: fn for fn, etype, _h in env.ctx.added}
+    # The old H21 shape: no workItemId / currentState on the event.
+    by_type["WorkItemStateChange"](types.SimpleNamespace(
+        type=env.pdg.EventType.WorkItemStateChange,
+        workItem=types.SimpleNamespace(id=1), node=None, context=env.ctx,
+    ))
+    status = env.handler._handle_tops_monitor_stream(
+        {"node": "/obj/topnet1/gen", "action": "status", "monitor_id": mid})
+    assert "AttributeError" in status["callback_error"]
+    stopped = env.handler._handle_tops_monitor_stream(
+        {"node": "/obj/topnet1/gen", "action": "stop", "monitor_id": mid})
+    assert "AttributeError" in stopped["callback_error"]
+
+
+def test_a_clean_monitor_reports_no_callback_error(env):
+    mid = _start(env)["monitor_id"]
+    status = env.handler._handle_tops_monitor_stream(
+        {"node": "/obj/topnet1/gen", "action": "status", "monitor_id": mid})
+    assert "callback_error" not in status
+    stopped = env.handler._handle_tops_monitor_stream(
+        {"node": "/obj/topnet1/gen", "action": "stop", "monitor_id": mid})
+    assert "callback_error" not in stopped and "handler_removal_errors" not in stopped
+
+
+def test_stop_names_a_handler_that_would_not_detach(env):
+    mid = _start(env)["monitor_id"]
+    calls = []
+
+    def _flaky_remove(handler):
+        calls.append(handler)
+        if len(calls) == 1:
+            raise RuntimeError("still cooking")
+        env.ctx.removed.append(handler)
+
+    env.ctx.removeEventHandler = _flaky_remove
+    stopped = env.handler._handle_tops_monitor_stream(
+        {"node": "/obj/topnet1/gen", "action": "stop", "monitor_id": mid})
+    # One failure is reported, and the remaining handlers were still removed.
+    assert len(stopped["handler_removal_errors"]) == 1
+    assert "still cooking" in stopped["handler_removal_errors"][0]
+    assert len(calls) == 3 and len(env.ctx.removed) == 2
