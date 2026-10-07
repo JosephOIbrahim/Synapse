@@ -215,8 +215,8 @@ def test_fireflies_on_object_over_black_background(cv2):
     for x, y in on + off:
         img[y, x] = 20.0
     r = fireflies(img)
-    assert r["inconclusive"] is False
     assert {(f["x"], f["y"]) for f in r["fireflies"]} == set(on + off)
+    assert r["inconclusive"] is False
     assert r["count"] == 5
     assert r["large_blobs_ignored"] == 0
     assert r["sigma"] == pytest.approx(0.01, rel=0.35)
