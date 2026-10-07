@@ -230,9 +230,8 @@ def is_tool_allowed_for_worker(tool_name: str, *, profile: str | None = None) ->
         return True, "inform-level mutation: permitted"
     if gate in _DENIED_GATES:
         return False, (
-            f"gate '{gate}' requires human review -- the panel worker may not "
-            "perform this op itself; do it in the native Houdini UI (or via a "
-            "bridge /mcp consent-gated call)"
+            f"gate '{gate}' is outside what the panel worker may do -- "
+            "run it yourself in the native Houdini UI"
         )
     # Non-read-only tool with no derivable gate -> fail closed.
     return False, "unclassified mutation (no gate mapping): denied by fail-closed policy"

@@ -1326,12 +1326,15 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         Executes Python code in Houdini's runtime environment.
         This is a standard DCC scripting pattern for automation.
 
-        Scene mutations are undo-wrapped and reversible.
-        Filesystem and network effects of executed code are not.
+        Scene mutations are grouped into one undo entry when atomic=True.
+        Coding errors roll that group back once; operational errors keep
+        partial work for the artist to undo. atomic=False runs ungrouped.
+        Filesystem and network effects of executed code are never undone.
 
         Options:
             dry_run (bool): Compile-only syntax check -- no execution.
-            atomic (bool): Wrap in undo group with rollback (default True).
+            atomic (bool): Wrap in one undo group; roll it back on coding
+                errors only (default True). False runs ungrouped.
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)

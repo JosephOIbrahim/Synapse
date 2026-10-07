@@ -16,7 +16,7 @@
 
 **The current release is v5.95.0, and it installs from source.** It runs on **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md).
 
-**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the latest panel, JEV and SideFX library changes, but not the changes in v5.87.0 through v5.95.0.
+**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the panel as of v5.86.0, with its JEV and SideFX library changes, but not the changes in v5.87.0 through v5.95.0. Spatial, the Render footer row and the Scatter recipe that reads the scene need the v5.95.0 source install.
 
 The Setup is unsigned, so check it against that release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt) before you run it.
 

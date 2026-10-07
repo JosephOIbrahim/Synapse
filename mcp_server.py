@@ -19,7 +19,7 @@ v2 latency overhaul:
 Architecture:
     Claude Desktop  <-[stdio/JSON-RPC]->  mcp_server.py  <-[WebSocket]->  Synapse (Houdini)
 
-Install: pip install mcp websockets
+Install: python -m pip install -e ".[mcp]"   (pinned set; mcp>=1.27 drops the decorators used here)
 Run: python mcp_server.py
 """
 

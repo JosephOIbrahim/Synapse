@@ -369,14 +369,14 @@ RECIPES = {
             "difficulty": "beginner",
             "nodes": [
                 {"type": "tube", "name": "tube1", "parms": {"rows": 30, "cols": 20, "height": 5}},
-                {"type": "bend", "name": "bend1", "parms": {"bendangle": 45}},
-                {"type": "twist", "name": "twist1", "parms": {"twist": 180}},
+                {"type": "bend", "name": "bend1", "parms": {"bend": 45}},
+                {"type": "twist", "name": "twist1", "parms": {"op": 0, "strength": 180}},
             ],
             "connections": [
                 ["tube1", "bend1", 0],
                 ["bend1", "twist1", 0],
             ],
-            "key_parms": ["bendangle", "twist"],
+            "key_parms": ["bend", "strength"],
             "explanation": (
                 "Chains a bend and twist deformer on a tube. The bend curves the "
                 "geometry along one axis, then the twist rotates points progressively "
@@ -404,13 +404,13 @@ RECIPES = {
                 {"type": "materiallibrary", "name": "matlib1", "parms": {}},
                 {"type": "assignmaterial", "name": "assign1", "parms": {}},
                 {"type": "configureprimitive", "name": "configure1", "parms": {"setkind": 1}},
-                {"type": "usdrop", "name": "usdrop1", "parms": {}},
+                {"type": "usd_rop", "name": "usd_rop1", "parms": {}},
             ],
             "connections": [
                 ["import_geo", "assign1", 0],
                 ["matlib1", "assign1", 1],
                 ["assign1", "configure1", 0],
-                ["configure1", "usdrop1", 0],
+                ["configure1", "usd_rop1", 0],
             ],
             "key_parms": ["setkind"],
             "explanation": (
@@ -500,7 +500,7 @@ RECIPES = {
                         ),
                     },
                 },
-                {"type": "trail", "name": "trail1", "parms": {"traillength": 10, "result": 1}},
+                {"type": "trail", "name": "trail1", "parms": {"length": 10, "result": 2}},
                 {
                     "type": "attribwrangle",
                     "name": "fade_alpha",
@@ -519,14 +519,15 @@ RECIPES = {
                 ["animate_pts", "trail1", 0],
                 ["trail1", "fade_alpha", 0],
             ],
-            "key_parms": ["traillength", "result", "npts"],
+            "key_parms": ["length", "result", "npts"],
             "explanation": (
                 "Scatters points on a sphere, animates them with VEX, then creates "
                 "trail lines from their motion. A second wrangle fades the alpha "
                 "along each trail so the tail disappears smoothly."
             ),
             "tips": [
-                "Set Trail result to 'Connect as Trails' (1) for line output",
+                "Result 'Connect as Polygons' (2) draws the trail lines; "
+                "'Connect as Mesh' (1) joins them into a mesh",
                 "Increase trail length for longer motion streaks",
                 "Use the Alpha attribute in a material for transparency rendering",
             ],

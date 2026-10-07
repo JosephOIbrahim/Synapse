@@ -89,6 +89,28 @@ def _connections(node) -> Dict[str, list]:
 
 _LARGE_GEO_THRESHOLD = 1_000_000  # Skip attribute sampling above this
 
+# Per-element value readers on hou.Geometry, keyed by (attribute class, numeric
+# data type, is array). hou.Attrib has no value accessor of its own for numeric
+# data; these are the Geometry methods Houdini 22.0.400 has (live assay,
+# cto-20261007 assay_lx.log:95-103). The non-array forms return one flat tuple
+# (size-3 P over N points is 3N floats); the *List* forms return one tuple per
+# element. Detail attributes have no detail*AttribValues: they read through
+# geo.attribValue(name).
+_VALUE_READERS = {
+    ("point", "Float", False): "pointFloatAttribValues",
+    ("point", "Int", False): "pointIntAttribValues",
+    ("point", "Float", True): "pointFloatListAttribValues",
+    ("point", "Int", True): "pointIntListAttribValues",
+    ("prim", "Float", False): "primFloatAttribValues",
+    ("prim", "Int", False): "primIntAttribValues",
+    ("prim", "Float", True): "primFloatListAttribValues",
+    ("prim", "Int", True): "primIntListAttribValues",
+    ("vertex", "Float", False): "vertexFloatAttribValues",
+    ("vertex", "Int", False): "vertexIntAttribValues",
+    ("vertex", "Float", True): "vertexFloatListAttribValues",
+    ("vertex", "Int", True): "vertexIntListAttribValues",
+}
+
 
 def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
     """Point/prim/vertex counts, bounding box, primitive types, and attributes.
@@ -108,7 +130,7 @@ def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
     prim_count = len(geo.prims())
     is_large = pt_count > _LARGE_GEO_THRESHOLD
 
-    def _attr_info(attrs, elem_count):
+    def _attr_info(attrs, elem_count, attr_class):
         result = []
         for attr in attrs:
             info = {
@@ -126,13 +148,25 @@ def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
                     limit = min(max_samples, elem_count)
                     samples = []
                     dtype = str(attr.dataType())
+                    numeric = "Float" if "Float" in dtype else "Int" if "Int" in dtype else None
                     if "String" in dtype:
                         raw = attr.strings()
                         samples = list(raw[:limit])
+                    elif numeric is None:
+                        info["sample_status"] = f"not sampled ({dtype})"
+                    elif attr_class == "global":
+                        value = geo.attribValue(attr.name())
+                        samples = [list(value) if isinstance(value, tuple) else value]
+                    elif attr.isArrayType():
+                        reader = _VALUE_READERS[(attr_class, numeric, True)]
+                        raw = getattr(geo, reader)(attr.name())
+                        samples = [list(v) for v in raw[:limit]]
                     else:
-                        raw = attr.floatListData()
-                        if raw:
-                            samples = list(raw[:limit])
+                        reader = _VALUE_READERS[(attr_class, numeric, False)]
+                        size = max(int(attr.size()), 1)
+                        flat = list(getattr(geo, reader)(attr.name())[:limit * size])
+                        samples = flat if size == 1 else [
+                            flat[i:i + size] for i in range(0, len(flat), size)]
                 except Exception as e:
                     samples = []
                     info["sample_status"] = f"error: {str(e)[:80]}"
@@ -170,9 +204,9 @@ def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
         "vertices": len(geo.vertices()) if hasattr(geo, "vertices") else 0,
         "is_empty": pt_count == 0 and prim_count == 0,
         "bounding_box": bbox_dict,
-        "point_attributes": _attr_info(geo.pointAttribs(), pt_count),
-        "prim_attributes": _attr_info(geo.primAttribs(), prim_count),
-        "detail_attributes": _attr_info(geo.globalAttribs(), 1),
+        "point_attributes": _attr_info(geo.pointAttribs(), pt_count, "point"),
+        "prim_attributes": _attr_info(geo.primAttribs(), prim_count, "prim"),
+        "detail_attributes": _attr_info(geo.globalAttribs(), 1, "global"),
     }
     if prim_types:
         result["primitive_types"] = prim_types
