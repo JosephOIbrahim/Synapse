@@ -380,8 +380,9 @@ class TopsDiagnosticsMixin:
         Push-based alternative to polling: registers PDG event callbacks that
         emit work_item_started, work_item_completed (``cached`` when served
         from cache), work_item_failed, work_item_cancelled, cook_progress,
-        cook_complete and cook_error events. ``cook_state`` reads cooking,
-        complete, complete_with_errors or error.
+        cook_complete and cook_error events. ``cook_state`` reads starting
+        (a cook began, no item has moved yet), cooking, complete,
+        complete_with_errors, error or nothing_cooked.
 
         The callback does NOT block the TOPS cook thread -- events are
         enqueued and can be retrieved via the returned monitor_id.
@@ -433,6 +434,14 @@ class TopsDiagnosticsMixin:
                 cook = dict(monitor["cook_counts"])
                 truncated = monitor.get("was_truncated")
                 callback_error = monitor.get("callback_error")
+                if cook_state == "cooking" and not monitor.get("cook_active"):
+                    # A cook has started but no item has cooked yet; it may be a
+                    # generate-only pass that cooks nothing. Until an item moves,
+                    # last_cook is still the previous cook's result.
+                    prev_state, prev_counts = monitor.get("prev_cook") or (None, None)
+                    cook_state = "starting"
+                    if prev_counts is not None:
+                        cook = dict(prev_counts)
             if cook_state:
                 result["cook_state"] = cook_state
                 # The most recent cook on its own; "summary" spans every cook
@@ -576,6 +585,11 @@ class TopsDiagnosticsMixin:
                     # a pdg.Scheduler (live probe 2026-10-07); only pdg.Nodes
                     # have work items.
                     if pn is None or (pdg_node_type is not None and not isinstance(pn, pdg_node_type)):
+                        continue
+                    if any(pn is seen for seen in pdg_nodes):
+                        # A TOP subnet answers getPDGNode() with the pdg.Node of
+                        # the inner node feeding its output (live probe
+                        # 2026-10-07); watching it twice double-counts its items.
                         continue
                     if ctx is None:
                         ctx = pn.context

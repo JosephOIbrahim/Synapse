@@ -368,8 +368,9 @@ def test_a_second_cook_starts_its_progress_and_state_over(env):
     # Second cook of the same 3 items, opened by the context's CookStart.
     _cook_event(env, "CookStart", env.pnode)
     status = _call(env, "status", monitor_id=mid)
-    assert status["cook_state"] == "cooking"
-    assert status["last_cook"]["completed"] == 0
+    # Started, nothing cooked yet: the previous cook's result still shows.
+    assert status["cook_state"] == "starting"
+    assert status["last_cook"]["completed"] == 3
     _progress(env)
     first = _events(env, mid, "cook_progress")[-1]
     assert first["processed"] == 0 and first["percent"] == 0.0
@@ -378,6 +379,7 @@ def test_a_second_cook_starts_its_progress_and_state_over(env):
     row = _events(env, mid, "cook_progress")[-1]
     assert row["processed"] == 1 and row["total"] == 3
     status = _call(env, "status", monitor_id=mid)
+    assert status["cook_state"] == "cooking"
     assert status["last_cook"]["completed"] == 1
     assert status["summary"]["completed"] == 4  # the summary spans both cooks
     _cook_event(env, "CookComplete", env.pnode)
@@ -584,11 +586,15 @@ def test_network_includes_subnet_nodes_and_names_a_nested_graph(env):
     other_ctx = _FakeContext()
     nested = _FakePdgNode(other_ctx, "nested_topnet_node")
     env.extra[:] = [
+        # H22: the subnet node itself answers getPDGNode() with the pdg.Node of
+        # the inner node feeding its output (live probe 2026-10-07).
+        types.SimpleNamespace(getPDGNode=lambda: inner, path=lambda: _NET + "/subnet1"),
         types.SimpleNamespace(getPDGNode=lambda: inner, path=lambda: _NET + "/subnet1/inside_subnet"),
         types.SimpleNamespace(getPDGNode=lambda: nested, path=lambda: _NET + "/topnet2/nested_topnet_node"),
     ]
     result = _call(env, "start", node=_NET)
-    assert sorted(result["nodes_monitored"]) == ["gen", "inside_subnet", "proc"]
+    assert sorted(result["nodes_monitored"]) == ["gen", "inside_subnet", "proc"]  # once each
+    assert len(inner.added) == 2
     assert result["nodes_unmonitored"] == [_NET + "/topnet2/nested_topnet_node"]
     assert nested.added == []
     mid = result["monitor_id"]
@@ -596,4 +602,21 @@ def test_network_includes_subnet_nodes_and_names_a_nested_graph(env):
     _item(env, 9, ws.CookedFail, on=inner, logMessages="ERROR: inside the subnet")
     _state_change(env, 9, ws.CookedFail, on=inner)
     _cook_event(env, "CookComplete", env.ctx)
-    assert _call(env, "status", node=_NET, monitor_id=mid)["cook_state"] == "complete_with_errors"
+    status = _call(env, "status", node=_NET, monitor_id=mid)
+    assert status["cook_state"] == "complete_with_errors"
+    assert status["last_cook"]["failed"] == 1  # counted once
+    assert len(_events(env, mid, "work_item_failed")) == 1
+
+
+def test_a_generate_only_pass_shows_starting_not_an_empty_cook(env):
+    mid = _call(env, "start")["monitor_id"]
+    ws = env.pdg.workItemState
+    _cook_event(env, "CookStart", env.pnode)
+    _item(env, 0, ws.CookedSuccess)
+    _state_change(env, 0, ws.CookedSuccess)
+    _cook_event(env, "CookComplete", env.pnode)
+    _cook_event(env, "CookStart", env.pnode)          # a generate begins
+    _state_change(env, 0, _Member("Uncooked"))
+    mid_pass = _call(env, "status", monitor_id=mid)
+    assert mid_pass["cook_state"] == "starting"
+    assert mid_pass["last_cook"]["completed"] == 1    # not zeroed mid-pass
