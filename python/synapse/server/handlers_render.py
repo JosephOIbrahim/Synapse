@@ -2232,24 +2232,27 @@ class RenderHandlerMixin:
         effective_w = int(width) if width else 0
         effective_h = int(height) if height else 0
         forced_background = False
+        background_error = None
 
         if (effective_w > 512 or effective_h > 512) and user_foreground is None:
             # Force background render to prevent Houdini lockup
-            forced_background = True
             logger.info(
                 "safe_render: resolution %dx%d exceeds 512 -- "
                 "forcing background render (soho_foreground=0)",
                 effective_w, effective_h,
             )
-            # Set soho_foreground=0 on the ROP node before rendering
+            # Set soho_foreground=0 on the ROP node before rendering.
+            # forced_background reports only a write that actually landed;
+            # _handle_render never touches soho_foreground.
             if rop_path:
                 try:
                     self._handle_render_settings({
                         "node": rop_path,
                         "settings": {"soho_foreground": 0},
                     })
-                except Exception:
-                    pass  # Best effort -- render handler handles this too
+                    forced_background = True
+                except Exception as exc:
+                    background_error = f"Couldn't set soho_foreground=0: {exc}"
         elif user_foreground is not None:
             # Respect explicit user setting
             if rop_path:
@@ -2265,12 +2268,15 @@ class RenderHandlerMixin:
         render_result = self._handle_render(render_payload)
 
         # ----- Build enriched response -----
-        return {
+        result = {
             "passed": True,
             "checks": sorted(checks, key=lambda c: c["name"]),
             "render": render_result,
             "forced_background": forced_background,
         }
+        if background_error:
+            result["background_error"] = background_error
+        return result
 
     # =========================================================================
     # PROGRESSIVE RENDER (test -> preview -> production)
@@ -2397,6 +2403,7 @@ class RenderHandlerMixin:
             foreground = config["soho_foreground"]
 
             # Apply render settings (samples + foreground mode) on the ROP
+            settings_error = None
             if rop_path:
                 settings_overrides = {"soho_foreground": foreground}
                 # Try common sample parm names
@@ -2413,8 +2420,8 @@ class RenderHandlerMixin:
                         "node": rop_path,
                         "settings": settings_overrides,
                     })
-                except Exception:
-                    pass  # Best effort -- some parms may not exist
+                except Exception as exc:
+                    settings_error = f"Couldn't apply render settings: {exc}"
 
             # Build render payload
             render_payload = {
@@ -2433,6 +2440,8 @@ class RenderHandlerMixin:
                 "status": "pending",
                 "validation": None,
             }
+            if settings_error:
+                pass_result["settings_error"] = settings_error
 
             try:
                 render_result = self._handle_render(render_payload)
