@@ -478,6 +478,7 @@ class UsdHandlerMixin:
                     "from pxr import Sdf\n"
                     "stage = hou.pwd().editableStage()\n"
                     f"prim = stage.GetPrimAtPath({repr(prim_path)})\n"
+                    f"if not prim: raise ValueError('No prim at ' + {repr(prim_path)})\n"
                     "if prim:\n"
                     f"    attr = prim.GetAttribute({repr(attr_name)})\n"
                     "    if attr:\n"
@@ -592,6 +593,7 @@ class UsdHandlerMixin:
                     "from pxr import Sdf, UsdGeom, Vt",
                     "stage = hou.pwd().editableStage()",
                     f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                    f"if not prim: raise ValueError('No prim at ' + {repr(prim_path)})",
                     "if prim:",
                     (
                         "    pv = UsdGeom.PrimvarsAPI(prim).CreatePrimvar("
@@ -746,6 +748,7 @@ class UsdHandlerMixin:
                     "from pxr import Usd, UsdGeom, Sdf, Kind",
                     "stage = hou.pwd().editableStage()",
                     f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                    f"if not prim: raise ValueError('No prim at ' + {repr(prim_path)})",
                     "if prim:",
                 ]
                 if kind is not None:
@@ -1182,6 +1185,7 @@ class UsdHandlerMixin:
                         "from pxr import Usd, Sdf",
                         "stage = hou.pwd().editableStage()",
                         f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                        f"if not prim: raise ValueError('No prim at ' + {repr(prim_path)})",
                         "if prim:",
                         f"    vset = prim.GetVariantSets().AddVariantSet({repr(variant_set_name)})",
                     ]
@@ -1887,6 +1891,7 @@ class UsdHandlerMixin:
                     lines.append("stage.Unload(_prim_path)")
                 if active is not None:
                     lines.append("prim = stage.GetPrimAtPath(_prim_path)")
+                    lines.append(f"if not prim: raise ValueError('No prim at ' + {repr(prim_path)})")
                     lines.append("if prim:")
                     lines.append(f"    prim.SetActive({bool(active)})")
 
