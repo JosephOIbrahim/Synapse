@@ -31,7 +31,7 @@ parm or input they could not apply, five USD tools return a missing prim as
 that raised, `execute_vex` refuses an input path that does not resolve, and
 `router_stats` and `live_metrics` fail when their service is missing. A PDG
 cook that failed without timing out, and whose rollback raised, is recorded as
-incomplete. The panel loses nine unused tokens and eight stylesheet rebinds.
+incomplete. The panel loses nine unused tokens, and one ordered composer replaces eight stylesheet rebinds.
 Rope's graph mode gains three rules. Some misses still go unreported; the
 release notes list them. Nothing was run in a live Houdini session.
 This is a source release with no new Windows Setup.
