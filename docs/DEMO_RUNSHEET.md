@@ -75,16 +75,16 @@ On today's code, natural rewordings mostly miss: 5 of 65 measured questions hit 
 
 6. **Recall.** Type in the panel chat:
 
-   - **Primary (Track B, only if the seat runs the recall fix):** **Use project scope. What did we decide about the hero sphere?**
+   - **Primary (Track B, only if the seat includes recall fix `22b63e19`):** **Use project scope. What did we decide about the hero sphere?**
 
-     This hit on the forge working tree on both memory backends, in a clean store and in a 12-decision store that also mentions the hero sphere. It misses on today's code. It still needs re-confirming on the forge commit before it goes on camera.
+     Measured at `22b63e19` (branch `mem/recall-20261007`): returns the look deposit first on both memory backends, with and without save, close and reopen, in a 12-decision store. It misses on today's code. Keep it close to the deposit's nouns: the fix returns nothing if the question has a word that is in no record.
    - **Fallback (Track A):** **Use project scope. What was the look decision?**
 
    The fallback hit on today's code on both memory backends, with and without a reopen. Only *look* has to survive in the stored decision; *decision* is always there, because every deposit is stored as "**Decision:** ...".
 
 7. **Check the tool call.** The panel shows a `synapse_recall` call. Confirm it reads **`scope: project`**, and that its `query` holds only words from the stored decision. The model writes the query, not you; an extra word like *memory* or *search* in it is enough to miss.
 
-**One decision per topic in the store.** If an older decision about the same thing is in the store, the recall fix returns the older one first. The fresh folder per take (pre-flight step 4) covers this.
+**One decision per topic in the store.** If an older decision about the same thing is in the store, the recall fix can return the older one first, even after a newer one worded differently. The fresh folder per take (pre-flight step 4) covers this.
 
 ### What success looks like
 
