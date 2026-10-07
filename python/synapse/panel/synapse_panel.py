@@ -2456,7 +2456,8 @@ class SynapsePanel(QtWidgets.QWidget):
         credit, flags, paths = [], [], []
         seen = set()
         for name, verb, detail in tools:
-            status = "ok" if verb == "ok" else "fail"
+            # A warn row (ran, reported misses) is a HOT_SOFT flag, never a credit.
+            status = verb if verb in ("ok", "warn") else "fail"
             flags.append((status, name if not detail else "%s — %s" % (name, str(detail)[:70])))
 
             # DECISION rows: only for tools that CHANGED something, and only
@@ -2607,15 +2608,17 @@ class SynapsePanel(QtWidgets.QWidget):
         return False
 
     def _on_commit(self):
-        # Commit is a consent moment — it routes through the gate; the panel
-        # never writes /stage itself (the substrate stays Gold's zone).
+        # PUX-03: no commit path exists yet. This raises no gate and writes
+        # nothing (the panel never writes /stage itself), so the chat line says
+        # exactly that instead of claiming a consent gate it never raises.
         try:
             self._chat.append_system_message(
-                "Commit to /stage requested — routing through the consent gate.")
+                "Commit to /stage is not available from the panel yet — "
+                "nothing was written to /stage.")
         except Exception:
             pass
-        # The gate lives in Work's done sub-state; the artist is already there
-        # (they clicked Commit). Keep it forward — never spawn or switch tabs.
+        # The artist is already in Work's done sub-state (they clicked Commit).
+        # Keep it forward — never spawn or switch tabs.
         self._set_work_substate("done")
 
     def _on_open_render(self):
@@ -4240,12 +4243,15 @@ class SynapsePanel(QtWidgets.QWidget):
                     self._last_tool_node = extract_node_path(_detail)
                 except Exception:
                     self._last_tool_node = None
-        verb = {"running": "running", "done": "ok", "error": "failed"}.get(phase, phase)
+        # TT-2: "warn" is a tool that ran but reported misses (cook_error,
+        # parms_missed, ...). It gets the HOT_SOFT dot and no DECISION credit.
+        verb = {"running": "running", "done": "ok", "warn": "warn",
+                "error": "failed"}.get(phase, phase)
         # P2: accumulate what the turn actually DID. Every terminal tool result
         # is recorded once, in order, so _populate_review has something real to
         # credit. Before this the result surface had no producer at all and five
         # of its eight setters were unreachable from product code.
-        if phase in ("done", "error"):
+        if phase in ("done", "warn", "error"):
             try:
                 self._turn_tools.append((name, verb, _detail))
             except Exception:

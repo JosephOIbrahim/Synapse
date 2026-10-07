@@ -8,8 +8,9 @@ the BL-007 (silent no-output) and BL-008 (silent material-binding loss)
 detections — embeds the graduated **GateWidget** for consent, and offers
 **accept / revert / commit** as the close.
 
-Panel-layer only: ``Commit to /stage`` *raises a gate*, it never writes the USD
-substrate itself. Every dependency is optional so the face always instantiates.
+Panel-layer only: ``Commit to /stage`` never writes the USD substrate itself.
+No commit path exists yet, so it raises no gate either: the panel says so in
+chat (PUX-03). Every dependency is optional so the face always instantiates.
 """
 
 import os

@@ -47,6 +47,7 @@ _PHASE = {
     "running": ("→", t.SIGNAL),
     "done":    ("✓", t.GROW),
     "ok":      ("✓", t.GROW),
+    "warn":    ("!", t.HOT_SOFT),   # TT-3: ran, but reported misses
     "error":   ("✗", t.ERROR),
     "failed":  ("✗", t.ERROR),
 }
@@ -269,7 +270,7 @@ class FaceWork(QtWidgets.QWidget):
         self._status.setText(tool_status(name, phase, detail))
         # BP9-WORKER: on the error phase the tooltip carries the full failure
         # reason (the worker's translated detail), so a hover shows why.
-        if phase in ("error", "failed") and detail:
+        if phase in ("error", "failed", "warn") and detail:
             self._status.setToolTip("%s\n%s" % (name, detail))
         else:
             self._status.setToolTip(str(name))

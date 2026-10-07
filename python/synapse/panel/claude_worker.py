@@ -34,7 +34,28 @@ from .retry_breaker import ABANDON_THRESHOLD, breaker_message
 from .tool_bridge import get_anthropic_tools_for_worker
 from .tool_executor import ToolRequest, try_mcp_tool_call
 from .worker_policy import denial_tool_result, is_tool_allowed_for_worker
-from synapse.core.tool_results import unpack_tool_result
+from synapse.core.tool_results import result_misses, unpack_tool_result
+
+
+#: Key the worker puts FIRST in a miss-carrying tool_result (TT-1).
+MISSES_NOTE_KEY = "synapse_reported_misses"
+
+
+def _result_content(payload, misses):
+    """The tool_result text for a landed call.
+
+    With misses, the payload leads with one key naming them, so the model
+    cannot skim past a miss buried inside a success payload (TT-1). It stays
+    one JSON object: history readers (recall_card) parse this text back.
+    """
+    if misses and isinstance(payload, dict):
+        noted = {MISSES_NOTE_KEY: {
+            "note": "This call ran but reported misses. Name each one to the artist.",
+            "misses": list(misses)}}
+        noted.update(payload)
+        payload = noted
+    return json.dumps(payload, default=str)
+
 
 # W5-PANEL item 3: fold each API call's real token usage into the per-task sink
 # so the Token tab (face_token) can read a receipt instead of a dead counter.
@@ -600,6 +621,19 @@ class ClaudeWorker(QThread):
                         _emit_token("I ran out of response budget before acting -- "
                                     "please send that again.")
                         return "truncated"
+                    # PUX-05: text was shown ("Building the network now...") but the
+                    # tool call after it was cut off and dropped above. Ending as
+                    # "completed" told the artist nothing; nothing ran in Houdini.
+                    if stop_reason in ("length", "max_tokens") and len(completed) < len(content_blocks):
+                        cut = [str(block.get("name") or "a tool call") for block in content_blocks
+                               if block.get("type") == "tool_use"]
+                        logger.warning(
+                            "Model hit its response token limit (stop_reason=%s) "
+                            "mid tool call; dropped unexecuted: %s", stop_reason, ", ".join(cut))
+                        _emit_token("\n\nThe response limit cut off my %s call before it ran -- "
+                                    "nothing changed in Houdini. Please send that again, or ask "
+                                    "for a smaller step." % ", ".join(cut))
+                        return "truncated"
                     # L9: record the sequential-turn count (the dominant latency
                     # term) so an imperative build (many turns) vs a one-shot
                     # declarative call (1 turn) is measurable on disk.
@@ -724,9 +758,9 @@ class ClaudeWorker(QThread):
                 # thread (this IS the worker thread — correct place for the
                 # manifest + EXR-header file I/O).
                 self._emit_render_receipt(tool_name, mcp_result)
-                self.tool_status.emit(tool_name, "done",
-                                      with_undo_receipt(summary, mcp_result))
-                content_str = json.dumps(mcp_result, default=str)
+                misses = result_misses(mcp_result)
+                self._emit_landed(tool_name, summary, mcp_result, misses)
+                content_str = _result_content(mcp_result, misses)
                 result = {
                     "type": "tool_result",
                     "tool_use_id": tool_use_id,
@@ -852,14 +886,14 @@ class ClaudeWorker(QThread):
             content_str = request.error
             is_error = True
         else:
-            self.tool_status.emit(tool_name, "done",
-                                  with_undo_receipt(summary, request.result))
+            misses = result_misses(request.result)
+            self._emit_landed(tool_name, summary, request.result, misses)
             self._retry_abandons.pop(cmd_key, None)  # F2: success clears
             if isinstance(request.result, dict):
                 self._track_integrity(request.result)
                 # RETINA T0 receipt on the fallback (Qt executor) path too.
                 self._emit_render_receipt(tool_name, request.result)
-                content_str = json.dumps(request.result, default=str)
+                content_str = _result_content(request.result, misses)
             elif request.result is not None:
                 content_str = str(request.result)
             else:
@@ -896,6 +930,21 @@ class ClaudeWorker(QThread):
         except Exception:
             pass
         return result
+
+    def _emit_landed(self, tool_name, summary, result, misses):
+        """Status for a tool that ran: 'done', or 'warn' when it reported misses.
+
+        TT-1: a result can succeed and still say part of it did not land
+        (cook_error, parms_missed, ...). That used to reach the panel as a clean
+        'done'. A miss is a 'warn' that names each miss; the tool_result stays
+        is_error False because the work it did exists and the model must still
+        read the payload. The warn detail is the misses, not the undo receipt:
+        the status line shows the receipt INSTEAD of the detail when one leads.
+        """
+        if misses:
+            self.tool_status.emit(tool_name, "warn", "; ".join(misses)[:120])
+        else:
+            self.tool_status.emit(tool_name, "done", with_undo_receipt(summary, result))
 
     def _checked_vision(self):
         """The same current capability decision applies to either tool route."""

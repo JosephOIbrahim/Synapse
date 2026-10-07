@@ -120,3 +120,69 @@ def cap_history(messages, limit=_MAX_TOOL_RESULT_CHARS):
             message = dict(message, content=cap_tool_results(message["content"], limit))
         out.append(message)
     return out
+
+
+# TT-1: a tool can succeed and still report that part of its work did not land.
+# v5.95.0 taught 17 tools to say so, but most say it INSIDE a success payload,
+# where an envelope-only check (isError) reads it as a clean result. These are
+# the keys that carry such a miss. Each is tested for TRUTHINESS, not presence:
+# an empty ``parms_missed`` is the claim that every guarded write landed
+# (core/parm_report.py), and ``"cook_error": None`` is no error.
+_MISS_TEXT_KEYS = ("cook_error", "settings_error", "background_error", "callback_error")
+_MISS_LIST_KEYS = (("parms_missed", "parms missed"), ("inputs_missed", "inputs missed"),
+                   ("handler_removal_errors", "handler removal errors"))
+# Lists of per-item results that carry their own misses (batch COP cook, the
+# progressive render's passes). ``None`` entries (a failed batch step) are skipped.
+_MISS_NESTED_KEYS = ("results", "passes")
+
+
+def _join(value):
+    if isinstance(value, (list, tuple, set)):
+        return ", ".join(str(item) for item in value)
+    return str(value)
+
+
+def _own_misses(payload):
+    misses = []
+    for key in _MISS_TEXT_KEYS:
+        value = payload.get(key)
+        if value:
+            misses.append(_join(value))
+    for key, label in _MISS_LIST_KEYS:
+        value = payload.get(key)
+        if value:
+            misses.append("%s: %s" % (label, _join(value)))
+    error = payload.get("error")
+    error_text = error.strip() if isinstance(error, str) else ""
+    if error_text:
+        misses.append(error_text)
+    if payload.get("status") == "error":
+        detail = payload.get("message") or payload.get("errors")
+        detail_text = _join(detail) if detail else ""
+        # status=error alongside an 'error' string already named above is one miss.
+        if not error_text:
+            misses.append("status error" + (": " + detail_text if detail_text else ""))
+    return misses
+
+
+def result_misses(payload):
+    """Name every miss a tool result reports inside a success, or ``[]``.
+
+    A miss is: a truthy ``cook_error`` / ``settings_error`` /
+    ``background_error`` / ``callback_error``; a non-empty ``parms_missed`` /
+    ``inputs_missed`` / ``handler_removal_errors``; ``status == "error"``; or a
+    non-empty top-level ``error`` string. Dict entries of a ``results`` or
+    ``passes`` list are scanned the same way and named by their index. Any
+    non-dict payload has no misses.
+    """
+    if not isinstance(payload, dict):
+        return []
+    misses = _own_misses(payload)
+    for key in _MISS_NESTED_KEYS:
+        items = payload.get(key)
+        if not isinstance(items, list):
+            continue
+        for index, item in enumerate(items):
+            if isinstance(item, dict):
+                misses.extend("%s[%d]: %s" % (key, index, miss) for miss in _own_misses(item))
+    return misses
