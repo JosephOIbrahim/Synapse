@@ -162,14 +162,28 @@ def translate_messages(messages: List[dict]) -> List[dict]:
                     tuid = block.get("tool_use_id", "")
                     name = id_to_name.get(tuid, tuid)
                     parts.append({"functionResponse": {
-                        "name": name, "response": _wrap_response(block.get("content", ""))}})
+                        "name": name, "response": _wrap_response(
+                            block.get("content", ""), bool(block.get("is_error")))}})
         if parts:
             contents.append({"role": g_role, "parts": parts})
     return contents
 
 
-def _wrap_response(content: Any) -> dict:
+def _wrap_response(content: Any, is_error: bool = False) -> dict:
+    """Tool_result content -> a Gemini ``functionResponse.response``.
+
+    TT-7: Gemini reads an ``error`` key as the call's error details and an
+    ``output`` key as its output; a dict with neither is all output. So a
+    failed call goes under ``error``, and a success whose payload has its own
+    top-level ``error``/``output`` key (a result reporting misses, see
+    core/tool_results.result_misses) goes under ``output``, so it is not read
+    as a failure. That matches the Anthropic path, where it is is_error False.
+    """
     parsed = _maybe_json(content) if isinstance(content, str) else content
+    if is_error:
+        return {"error": parsed}
     if isinstance(parsed, dict):
+        if "error" in parsed or "output" in parsed:
+            return {"output": parsed}
         return parsed
     return {"result": parsed}
