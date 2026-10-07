@@ -77,7 +77,7 @@ On today's code, natural rewordings mostly miss: 5 of 65 measured questions hit 
 
    - **Primary (Track B, only if the seat runs the recall fix):** **Use project scope. What did we decide about the hero sphere?**
 
-     This hit on the forge working tree with a clean store, and it misses on today's code. It still needs re-confirming on the forge commit before it goes on camera.
+     This hit on the forge working tree on both memory backends, in a clean store and in a 12-decision store that also mentions the hero sphere. It misses on today's code. It still needs re-confirming on the forge commit before it goes on camera.
    - **Fallback (Track A):** **Use project scope. What was the look decision?**
 
    The fallback hit on today's code on both memory backends, with and without a reopen. Only *look* has to survive in the stored decision; *decision* is always there, because every deposit is stored as "**Decision:** ...".
