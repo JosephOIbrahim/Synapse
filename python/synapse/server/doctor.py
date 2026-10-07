@@ -4,8 +4,8 @@ SYNAPSE install/ops doctor (M3-C) — the ``doctor`` command / synapse_doctor to
 NOT the artist-facing Scene Doctor (panel/scene_doctor.py — scene
 diagnostics). This one answers "is this SEAT healthy": version stamp, log
 file, telemetry freshness, memory encryption-key fingerprint, symbol-table
-build stamp, bridge endpoint, hou availability — plus an optional
-diagnostic zip bundle.
+build stamp, SideFX help-library readiness, bridge endpoint, hou
+availability — plus an optional diagnostic zip bundle.
 
 Truth contract: a check reports ok/fail ONLY if its probe actually
 executed; anything not probed is "skipped" with the reason. The bundle
@@ -666,6 +666,69 @@ def _check_symbol_table() -> Dict[str, Any]:
         return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
 
 
+_SIDEFX_LIBRARY_CONSEQUENCE = (
+    "Grounded SideFX help answers are OFF: Scout falls back to the repo rag/ "
+    "corpus only and Identify finds no node help pages."
+)
+
+
+def _check_sidefx_library() -> Dict[str, Any]:
+    """SC-02: is the configured SideFX help library actually readable?
+
+    The library root comes from ``$SYNAPSE_SIDEFX_CORPUS_ROOT`` or
+    ``<repo>/.synapse/sidefx_library.json`` (on the dev seat a ``G:`` path).
+    When it is unreachable every lookup degrades quietly to the repo corpus,
+    so the doctor is where the operator learns it.
+
+    The probe IS the library's own read path: ``query_library("", k=0)``
+    resolves the config, reads the pointer, opens the published sqlite
+    read-only and validates schema/generation/coverage, then returns before
+    any search. No second copy of the resolution logic lives here.
+
+    not configured -> skipped; configured but unreadable -> fail with the
+    library's reason; ready -> ok.
+    """
+    name = "sidefx_library"
+    try:
+        from ..cognitive.tools import sidefx_library as lib
+    except ImportError as e:
+        return {"name": name, "status": "skipped",
+                "detail": f"probe failed: sidefx_library not importable: {e}"}
+    source = (f"${lib.ROOT_ENV}" if os.environ.get(lib.ROOT_ENV) is not None
+              else str(lib.CONFIG_PATH))
+    try:
+        probe = lib.query_library("", k=0)
+    except Exception as e:  # noqa: BLE001 -- query_library absorbs the expected classes
+        logger.warning("sidefx_library doctor probe raised: %s", e)
+        return {"name": name, "status": "skipped",
+                "detail": f"probe failed: {type(e).__name__}: {e}"}
+    if probe is None:
+        return {"name": name, "status": "skipped",
+                "detail": (f"not configured (no ${lib.ROOT_ENV}, no "
+                           f"{lib.CONFIG_PATH}) — Scout uses the repo rag/ "
+                           "corpus only")}
+    status = dict(probe.get("source_status") or {})
+    status["config_source"] = source
+    root = status.get("root")
+    if status.get("status") == "ready":
+        coverage = status.get("coverage") or {}
+        counts = "".join(f", {coverage[key]} {key.replace('_', ' ')}"
+                         for key in ("indexed_pages", "chunks") if key in coverage)
+        return {"name": name, "status": "ok", "result": status,
+                "detail": (f"{root} (from {source}) ready: generation "
+                           f"{status.get('generation')}{counts}")}
+    if root and not Path(root).is_dir():
+        return {"name": name, "status": "fail", "result": status,
+                "detail": (f"SideFX library root {root} (from {source}) does not "
+                           "exist — drive not mounted or library moved. "
+                           f"{_SIDEFX_LIBRARY_CONSEQUENCE} Mount it or re-point "
+                           f"{source}.")}
+    where = f"root {root}" if root else "configuration"
+    return {"name": name, "status": "fail", "result": status,
+            "detail": (f"SideFX library {where} (from {source}) is unreadable: "
+                       f"{status.get('reason')}. {_SIDEFX_LIBRARY_CONSEQUENCE}")}
+
+
 def _check_bridge_endpoint(base: Path) -> Dict[str, Any]:
     name = "bridge_endpoint"
     try:
@@ -1004,6 +1067,7 @@ def run_doctor(payload: Dict, handler=None, home: Optional[Path] = None) -> Dict
         _check_vector_recall(),
         _check_use_real_usd(),
         _check_symbol_table(),
+        _check_sidefx_library(),
         _check_bridge_endpoint(base),
         _check_mcp_coexistence(base),
         _check_main_thread(),
