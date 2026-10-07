@@ -324,6 +324,50 @@ def refuse_item(st, it):
     return ""
 
 
+def held(st):
+    """Why no fixer may start, from the last preflight, or ''. Reads the state; runs nothing."""
+    pf = st.get("preflight") or {}
+    if pf.get("ok", True):
+        return ""
+    return "fixes held, ratchets red on the base tree: " + "; ".join(pf.get("failing") or ["?"])
+
+
+def preflight(st):
+    """Run the ratchets against the base tree once, before any fixer, and record the verdict.
+
+    Every fix's acceptance runs the ratchets in the root. A ratchet that is red before any
+    fixer starts (a stale local master ref turned tests/test_d_track.py red) discards every
+    fix, and nothing said why. A red that names no test is still red: a crash, a timeout or
+    a collection error must never read as green. Code decides; no model is asked.
+    """
+    ratchets = [t for t in RATCHETS if os.path.exists(os.path.join(ROOT, t))]
+    failing = []
+    if ratchets:
+        env_before = os.environ.get("PYTEST_ADDOPTS")
+        os.environ["PYTEST_ADDOPTS"] = NOT_HOUDINI      # the same tests the gate will run
+        try:
+            r = rope.sh([sys.executable, "-m", "pytest", *ratchets, "-q", "-p", "no:cacheprovider",
+                         "-rfE", "--tb=no"], timeout=1800)
+            out = r.stdout or ""
+            failing = re.findall(r"^(?:FAILED|ERROR) (\S+)", out, re.M)
+            if r.returncode not in (0, 5) and not failing:
+                failing = ["pytest exit %s: %s" % (r.returncode, _norm(out[-200:]))]
+        except subprocess.TimeoutExpired:
+            failing = ["the ratchets timed out on the base tree"]
+        except OSError as e:
+            failing = ["the ratchets could not run: %s" % e]
+        finally:
+            if env_before is None:
+                os.environ.pop("PYTEST_ADDOPTS", None)
+            else:
+                os.environ["PYTEST_ADDOPTS"] = env_before
+    st["preflight"] = {"ok": not failing, "failing": failing, "ratchets": ratchets,
+                       "head": git("rev-parse", "HEAD").stdout.strip()}
+    if failing:
+        ledger(st, "PREFLIGHT", "-", "ratchets-red", 0, 0, "-", "; ".join(failing))
+    return held(st)
+
+
 def add_items(st, items):
     """Returns [(id, reason)] for the ones refused. Refusals are loud, never silent."""
     refused, ids = [], {i["id"] for i in st["items"]}
@@ -664,6 +708,8 @@ def _ready(st, kinds):
     done = {i["id"] for i in st["items"] if i["status"] not in OPEN}
     cands = [i for i in st["items"] if i["status"] == "pending" and i["kind"] in kinds
              and all(d in done for d in i.get("deps", []))]
+    if held(st):
+        cands = [i for i in cands if i["kind"] != "fix"]
     cands.sort(key=lambda i: (-float(i.get("priority", 0)), i["id"]))
     return cands
 
@@ -681,6 +727,10 @@ def tick(st, kinds, parallel):
             ledger(st, it["id"], model_for(st, it), "lost", it["attempts"], 0, "-", "no exit file")
         save(st)
     running = sum(1 for i in st["items"] if i["status"] == "running")
+    if ("preflight" not in st and "fix" in kinds and not refuse_session(st)
+            and any(i["kind"] == "fix" for i in _ready(st, kinds))):
+        preflight(st)               # once per run, before the first fixer, never per tick
+        save(st)
     for it in _ready(st, kinds):
         if running >= parallel or refuse_session(st):
             break
@@ -717,10 +767,11 @@ def status_line(st):
         tally[i["kind"]][i["status"]] += 1
     parts = ["%s %s" % (k, " ".join("%d %s" % (n, s) for s, n in sorted(v.items())))
              for k, v in sorted(tally.items())]
-    why = refuse_session(st)
-    return "%s  sessions %d/%d  clock %.0fm left  |  %s%s" % (
+    why, hold = refuse_session(st), held(st)
+    return "%s  sessions %d/%d  clock %.0fm left  |  %s%s%s" % (
         time.strftime("%H:%M:%S"), st["sessions"], st["cap"], max(0.0, minutes_left(st)),
-        "  |  ".join(parts), ("  |  STOP: " + why) if why else "")
+        "  |  ".join(parts), ("  |  STOP: " + why) if why else "",
+        ("  |  " + hold) if hold else "")
 
 
 # ------------------------------------------------------------------ the route
@@ -1013,15 +1064,23 @@ def cmd_init(a):
           "cap": a.cap, "sessions": 0, "minutes": a.minutes, "started": None, "stop": "",
           "parallel": a.parallel, "models": models, "trailer": a.trailer, "slots": slots,
           "areas": areas, "items": plan_scouts(areas, a.scouts)}
+    hold = preflight(st)
     save(st)
     if alive:
         ledger(st, "INIT", "-", "live-seat-override", 0, 0, "-", a.live_seat_ok)
     print("graph ready: %d areas, %d scout items, cap %d, %d minutes, %d slots"
           % (len(areas), len(st["items"]), a.cap, a.minutes, len(slots)))
+    if hold:
+        print("WARNING " + hold + "\n  scouts may run; every fix item waits until the base is green "
+              "and `tick` is run again.")
 
 
 def cmd_tick(a):
     kinds = tuple(k for k in a.kinds.split(",") if k)
+    st = load(a.run)
+    if held(st):                    # a red base is re-checked once per `tick` command: the repair
+        del st["preflight"]         # (a refreshed master ref) need not move HEAD
+        save(st)
     while True:
         st = load(a.run)
         running = tick(st, kinds, a.parallel or st["parallel"])
