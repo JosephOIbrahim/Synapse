@@ -172,6 +172,10 @@ class ClaudeWorker(QThread):
         # iterations, so they bypass the WS stall gate's judgment — this is the
         # one hop that carries that information back into the retry path.
         self._retry_abandons: dict = {}
+        # TT-8: len(result_misses(...)) of the last result _execute_tool_block
+        # read, or None when it read none. The conversation loop copies it into
+        # the usage-ledger row; it never enters the tool_result the model sees.
+        self._last_tool_misses = None
         # The engine for this turn. Defaults to the Claude floor; the panel
         # passes a selected provider for the multi-provider switch. Transport +
         # request/response translation live in the provider — the loop below is
@@ -326,7 +330,8 @@ class ClaudeWorker(QThread):
             "model": getattr(self._provider, "model_identity", None),
             "turns": 0,
             "tool_calls_total": 0,
-            "tools": [],            # [{"name", "is_error"}] in dispatch order
+            "tools": [],            # [{"name", "is_error", "misses"}] in dispatch order;
+                                    # misses: int count from result_misses, None = unmeasured
             "stream_ms": [],        # perf_counter wall ms per provider.stream()
             "tool_ms": [],          # measured tool dispatch wall times, including errors
             "worker_first_token_ms": None,  # from this worker loop, not from the UI click
@@ -548,15 +553,19 @@ class ClaudeWorker(QThread):
                                     "is_error": True,
                                 })
                                 ledger["tools"].append(
-                                    {"name": block.get("name"), "is_error": True})
+                                    {"name": block.get("name"), "is_error": True,
+                                     "misses": None})
                                 continue
 
                             tool_t0 = _perf() if _perf is not None else None
+                            # TT-8: reset first, so a count can only come from THIS call.
+                            self._last_tool_misses = None
                             try:
                                 result_msg = self._execute_tool_block(block)
                             except BaseException:
                                 ledger["tools"].append(
-                                    {"name": block.get("name"), "is_error": True})
+                                    {"name": block.get("name"), "is_error": True,
+                                     "misses": None})
                                 # The dispatch boundary cannot infer whether a
                                 # failed call already changed Houdini. Keep prior
                                 # results and pair every remaining call truthfully.
@@ -580,10 +589,15 @@ class ClaudeWorker(QThread):
                             tool_results.append(result_msg)
                             tool_calls_total += 1
                             ledger["tool_calls_total"] = tool_calls_total
+                            _is_error = (bool(result_msg.get("is_error"))
+                                         if isinstance(result_msg, dict) else None)
                             ledger["tools"].append({
                                 "name": block.get("name"),
-                                "is_error": bool(result_msg.get("is_error"))
-                                if isinstance(result_msg, dict) else None,
+                                "is_error": _is_error,
+                                # TT-8: a warn result stays is_error False; its
+                                # miss count is what tells it apart from a clean one.
+                                "misses": (None if _is_error is not False
+                                           else getattr(self, "_last_tool_misses", None)),
                             })
                     finally:
                         # Also commit earlier results when a later dispatch raises.
@@ -759,6 +773,7 @@ class ClaudeWorker(QThread):
                 # manifest + EXR-header file I/O).
                 self._emit_render_receipt(tool_name, mcp_result)
                 misses = result_misses(mcp_result)
+                self._last_tool_misses = len(misses)
                 self._emit_landed(tool_name, summary, mcp_result, misses)
                 content_str = _result_content(mcp_result, misses)
                 result = {
@@ -887,6 +902,7 @@ class ClaudeWorker(QThread):
             is_error = True
         else:
             misses = result_misses(request.result)
+            self._last_tool_misses = len(misses)
             self._emit_landed(tool_name, summary, request.result, misses)
             self._retry_abandons.pop(cmd_key, None)  # F2: success clears
             if isinstance(request.result, dict):
