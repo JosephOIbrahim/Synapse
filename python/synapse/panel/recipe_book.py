@@ -500,7 +500,7 @@ RECIPES = {
                         ),
                     },
                 },
-                {"type": "trail", "name": "trail1", "parms": {"traillength": 10, "result": 1}},
+                {"type": "trail", "name": "trail1", "parms": {"length": 10, "result": 2}},
                 {
                     "type": "attribwrangle",
                     "name": "fade_alpha",
@@ -519,14 +519,15 @@ RECIPES = {
                 ["animate_pts", "trail1", 0],
                 ["trail1", "fade_alpha", 0],
             ],
-            "key_parms": ["traillength", "result", "npts"],
+            "key_parms": ["length", "result", "npts"],
             "explanation": (
                 "Scatters points on a sphere, animates them with VEX, then creates "
                 "trail lines from their motion. A second wrangle fades the alpha "
                 "along each trail so the tail disappears smoothly."
             ),
             "tips": [
-                "Set Trail result to 'Connect as Trails' (1) for line output",
+                "Result 'Connect as Polygons' (2) draws the trail lines; "
+                "'Connect as Mesh' (1) joins them into a mesh",
                 "Increase trail length for longer motion streaks",
                 "Use the Alpha attribute in a material for transparency rendering",
             ],

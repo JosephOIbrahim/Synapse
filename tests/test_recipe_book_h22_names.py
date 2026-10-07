@@ -79,3 +79,26 @@ def test_asset_structure_writes_through_the_usd_rop_lop():
 
 def test_asset_structure_resolves_in_the_lop_catalogue():
     _assert_recipe_resolves("usd", "asset_structure")
+
+
+# -- LX-04: trail_effect sets trail.length and draws lines ('poly'), not a mesh --
+
+def test_trail_effect_sets_the_real_length_parm_and_the_lines_result():
+    recipe = RECIPES["motion"]["trail_effect"]
+    parms = _node(recipe, "trail1")["parms"]
+    assert "traillength" not in parms
+    assert parms["length"] == 10
+    # The recipe draws trail lines and fades alpha along each one, so the
+    # result menu entry is 'poly' (Connect as Polygons), not 'mesh'.
+    tokens = _parm("SOP", "trail", "result")["menu_tokens"]
+    assert tokens[parms["result"]] == "poly", tokens
+    assert "traillength" not in recipe["key_parms"]
+    assert "length" in recipe["key_parms"]
+    assert not any("Connect as Trails" in tip for tip in recipe["tips"])
+    text = _message_text("motion", "trail_effect")
+    assert "length = 10" in text and "result = 2" in text
+    assert "traillength" not in text
+
+
+def test_trail_effect_resolves_in_the_sop_catalogue():
+    _assert_recipe_resolves("motion", "trail_effect")
