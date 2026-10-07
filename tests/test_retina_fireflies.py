@@ -185,3 +185,85 @@ def test_fireflies_rejects_bad_parameters(cv2):
         fireflies(flat(), max_blob_area=0)
     with pytest.raises(ValueError):
         fireflies(np.zeros((8, 8), dtype=np.float32))
+
+
+# --------------------------------------------------------------------------
+# Noise estimate (review of 65b02294, F1): black background, degenerate input
+# --------------------------------------------------------------------------
+
+
+def object_on_black(h=96, w=128, cover=0.45, noise=0.01, seed=11):
+    """Noisy 0.18 ellipse on an exactly black frame, ``cover`` of the area."""
+    rng = np.random.default_rng(seed)
+    yy, xx = np.mgrid[0:h, 0:w]
+    a = np.sqrt(cover * h * w / np.pi * (w / h))
+    b = a * h / w
+    obj = ((xx - w / 2) ** 2 / a**2 + (yy - h / 2) ** 2 / b**2) <= 1
+    lum = np.zeros((h, w), dtype=np.float32)
+    lum[obj] = 0.18 + rng.normal(0.0, noise, int(obj.sum()))
+    return np.repeat(lum[:, :, None], 3, axis=2), obj
+
+
+def test_fireflies_on_object_over_black_background(cv2):
+    # More than half the frame is exactly black, so a whole-frame MAD is 0 and
+    # the threshold collapses onto the object noise (found 0/3 at 65b02294).
+    img, obj = object_on_black()
+    assert obj.mean() < 0.5
+    on = [(64, 48), (50, 40), (80, 55)]
+    off = [(3, 3), (124, 92)]
+    assert all(obj[y, x] for x, y in on) and not any(obj[y, x] for x, y in off)
+    for x, y in on + off:
+        img[y, x] = 20.0
+    r = fireflies(img)
+    assert r["inconclusive"] is False
+    assert {(f["x"], f["y"]) for f in r["fireflies"]} == set(on + off)
+    assert r["count"] == 5
+    assert r["large_blobs_ignored"] == 0
+    assert r["sigma"] == pytest.approx(0.01, rel=0.35)
+    assert r["noise"]["black_sigma"] == pytest.approx(1e-6)
+    json.dumps(r)
+
+
+def test_fireflies_too_few_lit_pixels_is_inconclusive(cv2, tmp_path):
+    # A 6x6 noisy patch on black: 36 lit pixels cannot give a noise estimate,
+    # so there is no count at all, not a count against a guessed sigma.
+    rng = np.random.default_rng(3)
+    img = np.zeros((64, 64, 3), dtype=np.float32)
+    img[20:26, 20:26] = (0.18 + rng.normal(0, 0.01, (6, 6, 1))).astype(np.float32)
+    img[22, 22] = 20.0
+    out = tmp_path / "mask.png"
+    r = fireflies(img, mask_path=out)
+    assert r["inconclusive"] is True
+    assert "cannot be estimated" in r["note"]
+    assert r["count"] is None and r["pixel_count"] is None
+    assert r["sigma"] is None and r["threshold"] is None
+    assert r["worst"] is None and r["fireflies"] == []
+    assert 0 < r["noise"]["lit_pixels"] < r["noise"]["min_pixels"]
+    assert r["mask_path"] is None and not out.exists()
+    json.dumps(r)
+
+
+def test_fireflies_all_black_frame_is_judged_not_inconclusive(cv2):
+    # Nothing lit at all: the black class is exactly noise-free, so a spike on
+    # it is a confident firefly.
+    img = np.zeros((48, 64, 3), dtype=np.float32)
+    img[10, 10] = 5.0
+    r = fireflies(img)
+    assert r["inconclusive"] is False
+    assert r["count"] == 1 and (r["worst"]["x"], r["worst"]["y"]) == (10, 10)
+    assert r["noise"]["lit_pixels"] == 0
+
+
+@pytest.mark.parametrize("level", [0.0, 0.18])
+def test_fireflies_sigma_floor_ignores_sub_floor_bumps(cv2, level):
+    # Pins the 1e-6 sigma floor (a 'no floor' mutant survived every test at
+    # 65b02294): on an exactly flat frame the MAD is 0, and without the floor
+    # a +1e-7 bump would be a firefly. Only the real spike may be.
+    img = flat(value=level)
+    for x, y in [(5, 5), (20, 30), (50, 10), (33, 40)]:
+        img[y, x] += np.float32(1e-7)
+    img[24, 32] = 20.0
+    r = fireflies(img)
+    assert r["count"] == 1
+    assert (r["worst"]["x"], r["worst"]["y"]) == (32, 24)
+    assert r["attached_blobs_ignored"] == 0 and r["large_blobs_ignored"] == 0

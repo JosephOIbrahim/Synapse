@@ -10,17 +10,27 @@ only :class:`retina.t1.T1Unavailable` from the rest of ``retina``.
 Method, all on Rec.709 luminance:
 
 1. ``residual = L - median5x5(L)`` (``cv2.medianBlur``, border replicated).
-2. ``sigma`` = 1.4826 x the median absolute deviation of the residual over the
-   whole frame: a noise estimate that the fireflies themselves cannot inflate.
-   It is floored at ``1e-6`` so a noise-free frame does not flag float rounding.
-3. A pixel is a candidate when ``residual > threshold_sigma * sigma``.
+2. Noise is estimated as 1.4826 x the median absolute deviation (MAD) of the
+   residual, which the fireflies themselves cannot inflate, separately for
+   two classes of pixel. *Black* pixels have a 5x5 median at or below 0 (an
+   object on black or on a transparent background, Karma's canonical frame).
+   *Lit* pixels are the rest. One MAD over the whole frame is wrong whenever
+   black is at least half of it: the MAD is then 0 whatever the noise on the
+   object, the threshold collapses and object noise floods the mask. Each
+   class's sigma is floored at ``1e-6`` so a noise-free class does not flag
+   float rounding.
+   When lit pixels exist but fewer than ``_MIN_NOISE_PIXELS`` of them, their
+   noise cannot be estimated and the result is *inconclusive*: ``count`` is
+   ``None`` with a ``note``, never a number (the retina/t1.py honesty rule).
+3. A pixel is a candidate when ``residual > threshold_sigma * sigma`` of its
+   class.
 4. Candidates are grouped with ``cv2.connectedComponentsWithStats``
    (8-connected). A group of at most ``max_blob_area`` pixels is a firefly.
    Larger groups are bright features, not fireflies; they are counted in
    ``large_blobs_ignored`` so they never vanish silently.
 5. A small group is only a firefly if it is isolated: no pixel touching it
    (``cv2.dilate`` with a 3x3 kernel, minus the group) is brighter than the
-   local median at its peak plus the threshold. A group that touches a bright
+   local median at its peak plus the threshold there. A group that touches a bright
    region (the corner of a sharp highlight, say) is counted in
    ``attached_blobs_ignored`` instead.
 
@@ -86,10 +96,20 @@ def _luminance(np, arr):
 
 _SIGMA_FLOOR = 1e-6
 _MAD_TO_SIGMA = 1.4826
+# Fewest lit pixels a noise estimate is taken from. Below it (but above 0) the
+# answer is inconclusive rather than a count against a guessed sigma.
+_MIN_NOISE_PIXELS = 100
 
 
 def _r(x):
     return round(float(x), 6)
+
+
+def _mad_sigma(np, values):
+    """1.4826 x MAD of ``values``; 0.0 for an empty array."""
+    if values.size == 0:
+        return 0.0
+    return _MAD_TO_SIGMA * float(np.median(np.abs(values - np.median(values))))
 
 
 def fireflies(
@@ -104,11 +124,19 @@ def fireflies(
 
     Returns ``count`` (fireflies = small isolated blobs), ``pixel_count``
     (pixels in them), ``large_blobs_ignored``, ``attached_blobs_ignored``,
-    ``sigma``, ``threshold``, ``worst`` (the
+    ``sigma`` and ``threshold`` (the lit-pixel noise estimate and the
+    threshold it gives; the black-pixel ones when nothing is lit), ``noise``
+    (both classes: pixel counts and sigmas), ``inconclusive``, ``note``,
+    ``worst`` (the
     single pixel with the largest residual: ``x``, ``y``, ``rgb``,
     ``luminance``, ``sigmas``; ``None`` when there are no fireflies) and
     ``fireflies``: up to ``max_listed`` entries, brightest residual first, each
     with the peak pixel ``x``/``y``, ``area`` and ``sigmas``.
+
+    When the noise cannot be estimated (lit pixels exist but are too few, see
+    the module docstring) ``inconclusive`` is True, ``note`` says why, and
+    ``count``, ``pixel_count``, ``sigma``, ``threshold`` and ``worst`` are
+    ``None`` with an empty listing; no mask is written.
 
     Pixels with a NaN or infinite channel are set to 0 before analysis and
     counted in ``nonfinite_pixels``. When ``mask_path`` is given an 8-bit PNG
@@ -132,10 +160,35 @@ def fireflies(
     lum = np.ascontiguousarray(_luminance(np, arr), dtype=np.float32)
     local = cv2.medianBlur(lum, 5)
     residual = lum - local
-    mad = float(np.median(np.abs(residual - np.median(residual))))
-    sigma = max(_MAD_TO_SIGMA * mad, _SIGMA_FLOOR)
-    threshold = threshold_sigma * sigma
-    candidates = (residual > threshold).astype(np.uint8)
+    lit = local > 0
+    n_lit = int(lit.sum())
+    n_black = int(lit.size - n_lit)
+    base = {
+        "width": int(width),
+        "height": int(height),
+        "nonfinite_pixels": nonfinite,
+        "threshold_sigma": float(threshold_sigma),
+        "max_blob_area": int(max_blob_area),
+    }
+    if 0 < n_lit < _MIN_NOISE_PIXELS:
+        return _inconclusive(
+            base,
+            {
+                "lit_pixels": n_lit,
+                "lit_sigma": None,
+                "black_pixels": n_black,
+                "black_sigma": None,
+                "min_pixels": _MIN_NOISE_PIXELS,
+            },
+            f"only {n_lit} lit pixels (5x5 median above 0), fewer than "
+            f"{_MIN_NOISE_PIXELS}: their noise cannot be estimated",
+        )
+    lit_sigma = max(_mad_sigma(np, residual[lit]), _SIGMA_FLOOR)
+    black_sigma = max(_mad_sigma(np, residual[~lit]), _SIGMA_FLOOR)
+    sigma_px = np.where(lit, np.float32(lit_sigma), np.float32(black_sigma)).astype(np.float32)
+    sigma = lit_sigma if n_lit else black_sigma
+    thresh_px = np.float32(threshold_sigma) * sigma_px
+    candidates = (residual > thresh_px).astype(np.uint8)
 
     n_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
         candidates, connectivity=8, ltype=cv2.CV_32S
@@ -162,7 +215,8 @@ def fireflies(
         ys, xs = np.nonzero(blob)
         k = int(np.argmax(residual[y0:y1, x0:x1][ys, xs]))
         y, x = int(ys[k]) + y0, int(xs[k]) + x0
-        if ring.any() and float(lum[y0:y1, x0:x1][ring].max()) > float(local[y, x]) + threshold:
+        limit = float(local[y, x]) + float(thresh_px[y, x])
+        if ring.any() and float(lum[y0:y1, x0:x1][ring].max()) > limit:
             attached += 1
             continue
         mask[ys + y0, xs + x0] = 255
@@ -171,7 +225,7 @@ def fireflies(
                 "x": x,
                 "y": y,
                 "area": area,
-                "sigmas": _r(residual[y, x] / sigma),
+                "sigmas": _r(residual[y, x] / sigma_px[y, x]),
                 "_residual": float(residual[y, x]),
             }
         )
@@ -190,23 +244,30 @@ def fireflies(
         }
     listed = [{k: v for k, v in f.items() if k != "_residual"} for f in found[:max_listed]]
 
-    result = {
-        "width": int(width),
-        "height": int(height),
-        "nonfinite_pixels": nonfinite,
-        "threshold_sigma": float(threshold_sigma),
-        "sigma": _r(sigma),
-        "threshold": _r(threshold),
-        "max_blob_area": int(max_blob_area),
-        "count": len(found),
-        "pixel_count": int((mask > 0).sum()),
-        "large_blobs_ignored": large,
-        "attached_blobs_ignored": attached,
-        "worst": worst,
-        "fireflies": listed,
-        "fireflies_truncated": len(found) > len(listed),
-        "mask_path": None,
-    }
+    result = dict(base)
+    result.update(
+        {
+            "sigma": _r(sigma),
+            "threshold": _r(threshold_sigma * sigma),
+            "noise": {
+                "lit_pixels": n_lit,
+                "lit_sigma": _r(lit_sigma),
+                "black_pixels": n_black,
+                "black_sigma": _r(black_sigma),
+                "min_pixels": _MIN_NOISE_PIXELS,
+            },
+            "inconclusive": False,
+            "note": None,
+            "count": len(found),
+            "pixel_count": int((mask > 0).sum()),
+            "large_blobs_ignored": large,
+            "attached_blobs_ignored": attached,
+            "worst": worst,
+            "fireflies": listed,
+            "fireflies_truncated": len(found) > len(listed),
+            "mask_path": None,
+        }
+    )
     if mask_path is not None:
         path = os.path.abspath(os.fspath(mask_path))
         parent = os.path.dirname(path)
@@ -215,4 +276,27 @@ def fireflies(
         if not cv2.imwrite(path, mask):
             raise OSError(f"cv2.imwrite could not write the firefly mask to {path}")
         result["mask_path"] = path
+    return result
+
+
+def _inconclusive(base, noise, note):
+    """The honest result when the noise cannot be estimated: no count at all."""
+    result = dict(base)
+    result.update(
+        {
+            "sigma": None,
+            "threshold": None,
+            "noise": noise,
+            "inconclusive": True,
+            "note": note,
+            "count": None,
+            "pixel_count": None,
+            "large_blobs_ignored": None,
+            "attached_blobs_ignored": None,
+            "worst": None,
+            "fireflies": [],
+            "fireflies_truncated": False,
+            "mask_path": None,
+        }
+    )
     return result
