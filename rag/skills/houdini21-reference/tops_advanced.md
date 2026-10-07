@@ -347,30 +347,60 @@ import pdg, hou
 def inspect_cook_state(topnet_path="/obj/topnet1", node_name="ropfetch1"):
     topnet    = hou.node(topnet_path)
     tops_node = topnet.node(node_name)
-    graph     = tops_node.getPDGGraphContext()
+    ctx       = tops_node.getPDGGraphContext()
 
-    # pdg.workItemState: Waiting=0, Cooking=1, Cooked=2, Failed=3, Cancelled=4
+    # pdg.workItemState members and values (Houdini 22.0.400, live hython assay):
+    #   Uncooked=1 Waiting=2 Scheduled=3 Cooking=4 CookedSuccess=5
+    #   CookedCache=6 CookedFail=7 CookedCancel=8 Dirty=9
+    # There is no Cooked, Failed or Cancelled member - those names raise
+    # AttributeError. A finished item is CookedSuccess or CookedCache.
+    S = pdg.workItemState
     STATE_NAMES = {
-        pdg.workItemState.Waiting:   "Waiting",
-        pdg.workItemState.Cooking:   "Cooking",
-        pdg.workItemState.Cooked:    "Cooked",
-        pdg.workItemState.Failed:    "Failed",
-        pdg.workItemState.Cancelled: "Cancelled",
+        S.Uncooked:      "Uncooked",
+        S.Waiting:       "Waiting",
+        S.Scheduled:     "Scheduled",
+        S.Cooking:       "Cooking",
+        S.CookedSuccess: "CookedSuccess",
+        S.CookedCache:   "CookedCache",
+        S.CookedFail:    "CookedFail",
+        S.CookedCancel:  "CookedCancel",
+        S.Dirty:         "Dirty",
     }
 
+    # A GraphContext has no workItems. Walk the graph's nodes instead:
+    #   ctx.graph        -> property (pdg.Graph)
+    #   graph.nodes()    -> method   (list of pdg.Node)
+    #   node.workItems   -> property (list of pdg.WorkItem)
+    tally        = {}
     failed_items = []
-    for item in graph.workItems:
-        state_name = STATE_NAMES.get(item.state, "Unknown")
-        if item.state == pdg.workItemState.Failed:
-            error_msg   = item.stringAttrib("pdg_error", "")
-            error_count = item.intAttrib("pdg_errorcount", 0)
-            failed_items.append({
-                "name":    item.name,
-                "error":   error_msg,
-                "retries": error_count,
-            })
-            print(f"FAILED [{error_count} retries]: {item.name} — {error_msg}")
+    for pdg_node in ctx.graph.nodes():
+        for item in pdg_node.workItems:
+            state_name = STATE_NAMES.get(item.state, str(item.state))
+            tally[state_name] = tally.get(state_name, 0) + 1
+            if item.state != S.CookedFail:
+                continue
 
+            # Attribute reads: stringAttribValue / intAttribValue(name, index=0).
+            # They return None when the attribute is missing (no default
+            # argument), so supply the fallback with "or". There is no
+            # stringAttrib()/intAttrib() on pdg.WorkItem.
+            frame = item.intAttribValue("frame") or 0
+            shot  = item.stringAttribValue("shot_name") or ""
+
+            # A failed item carries no pdg_error / pdg_errorcount attribute.
+            # The error text is in logMessages - a property, so no parentheses.
+            log = item.logMessages or ""
+            failed_items.append({
+                "name":  item.name,
+                "node":  pdg_node.name,
+                "frame": frame,
+                "shot":  shot,
+                "log":   log,
+            })
+            last_line = log.strip().splitlines()[-1] if log.strip() else "(no log)"
+            print(f"FAILED: {item.name} ({pdg_node.name}) - {last_line}")
+
+    print("States:", tally)
     return failed_items
 ```
 
