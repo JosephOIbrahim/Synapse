@@ -132,8 +132,9 @@ _MISS_TEXT_KEYS = ("cook_error", "settings_error", "background_error", "callback
 _MISS_LIST_KEYS = (("parms_missed", "parms missed"), ("inputs_missed", "inputs missed"),
                    ("handler_removal_errors", "handler removal errors"))
 # Lists of per-item results that carry their own misses (batch COP cook, the
-# progressive render's passes). ``None`` entries (a failed batch step) are skipped.
-_MISS_NESTED_KEYS = ("results", "passes")
+# progressive render's passes, tops_batch_cook's per-node entries under "nodes",
+# handlers_tops/cook.py). ``None`` entries (a failed batch step) are skipped.
+_MISS_NESTED_KEYS = ("results", "passes", "nodes")
 
 
 def _join(value):
@@ -162,6 +163,12 @@ def _own_misses(payload):
         # status=error alongside an 'error' string already named above is one miss.
         if not error_text:
             misses.append("status error" + (": " + detail_text if detail_text else ""))
+    elif isinstance(payload.get("errors"), (list, tuple)):
+        # synapse_batch keeps one slot per step: a clean batch is [None, None],
+        # a failed step is a non-empty string in its slot.
+        for i, step_error in enumerate(payload["errors"]):
+            if isinstance(step_error, str) and step_error.strip():
+                misses.append("step %d: %s" % (i, step_error.strip()))
     return misses
 
 
