@@ -75,9 +75,9 @@ On today's code, natural rewordings mostly miss: 5 of 65 measured questions hit 
 
 6. **Recall.** Type in the panel chat:
 
-   - **Primary (Track B, only if the seat includes recall fix `38e4acb7`):** **Use project scope. What did we decide about the hero sphere?**
+   - **Primary (Track B, only if the seat includes recall fix `a71eca94`):** **Use project scope. What did we decide about the hero sphere?**
 
-     Measured at `38e4acb7` (branch `mem/recall-20261007`): returns the look deposit first on both memory backends, with and without save, close and reopen, in a 12-decision store. It misses on today's code. Keep it on the deposit's own nouns: a question with a word in no record returns nothing, and a later deposit sharing a word (like "light fog") can outrank a looser question.
+     Measured at `a71eca94` (branch `mem/recall-20261007`): returns the look deposit first on both memory backends, with and without save, close and reopen, in a 12-decision store. It misses on today's code. The fix widens recall but does not understand synonyms: natural questions hit 0.68 to 0.72 of the time on questions it was not tuned on (recall-eval). Synonyms like "how shiny" or "f-stop" still miss. Read the line as written. Keep it on the deposit's own nouns: a question with a word in no record returns nothing, and a later deposit sharing a word (like "light fog") can outrank a looser question.
    - **Fallback (Track A):** **Use project scope. What was the look decision?**
 
    The fallback hit on today's code on both memory backends, with and without a reopen. Only *look* has to survive in the stored decision; *decision* is always there, because every deposit is stored as "**Decision:** ...".
