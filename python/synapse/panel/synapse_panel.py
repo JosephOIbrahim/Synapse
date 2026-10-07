@@ -3936,6 +3936,9 @@ class SynapsePanel(QtWidgets.QWidget):
                   and not getattr(self, "_hip_loading", False)):
                 self._rebind_conversation()
             elif event == getattr(kinds, "AfterSave", None):
+                # No save happens mid-load: a load that failed or was cancelled
+                # without an AfterLoad no longer keeps File > New from rebinding.
+                self._hip_loading = False
                 self._follow_save_as()
         except Exception as exc:  # noqa: BLE001 -- a scene event must never break
             logger.warning("Conversation did not follow the scene change: %s", exc)

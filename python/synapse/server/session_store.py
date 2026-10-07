@@ -139,6 +139,18 @@ def same_store(path_a: Optional[str], path_b: Optional[str]) -> bool:
     return norm(path_a) == norm(path_b)
 
 
+# Stores this process has already followed into another folder: source store
+# dir -> destination store dir (PUX-01b). Every panel pinned to a scene follows
+# its Save As. The first carries the files (or parks the chat it finds there);
+# a second finds nothing left to carry and must not park the first one's chat
+# over the previous slot. Dropped when a panel binds to the source store again.
+_carried: dict = {}
+
+
+def _store_key(path: str) -> str:
+    return os.path.normcase(os.path.abspath(os.path.dirname(path)))
+
+
 def _carry(src: str, dst: str) -> bool:
     if not os.path.exists(src):
         return False
@@ -157,16 +169,23 @@ def move_conversation(src_path: str, dst_path: str) -> bool:
     Same folder: nothing to do. A conversation already at the destination is
     parked into the destination's previous slot, never overwritten (parking
     replaces an older previous, as a new boot does); the source's own previous
-    then stays where it is. Best-effort: returns ``True`` if anything moved.
+    then stays where it is. A second panel following the same Save As finds
+    its store already carried here and changes nothing, so the previous slot
+    survives. Best-effort: returns ``True`` if anything moved.
     """
     if not src_path or not dst_path or same_store(src_path, dst_path):
         return False
     src_prev, dst_prev = previous_path(src_path), previous_path(dst_path)
+    src_key, dst_key = _store_key(src_path), _store_key(dst_path)
     moved = False
     with _lock:
+        if (_carried.get(src_key) == dst_key and not os.path.exists(src_path)
+                and not os.path.exists(src_prev)):
+            return False
         try:
             os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-            if os.path.exists(dst_path):
+            parked = os.path.exists(dst_path)
+            if parked:
                 _carry(dst_path, dst_prev)
                 _carry(_owner_path(dst_path), _owner_path(dst_prev))
             pairs = [(src_path, dst_path),
@@ -176,6 +195,8 @@ def move_conversation(src_path: str, dst_path: str) -> bool:
                           (_owner_path(src_prev), _owner_path(dst_prev))]
             for src, dst in pairs:
                 moved = _carry(src, dst) or moved
+            if moved or parked:
+                _carried[src_key] = dst_key
         except OSError as exc:
             logger.warning("session store: move %s -> %s failed: %s",
                            src_path, dst_path, exc)
@@ -307,6 +328,7 @@ def load_conversation_scoped(path: Optional[str] = None,
     and the caller starts clean). Parking replaces any older previous: the slot
     always holds the most recent prior boot's work."""
     target = conversation_path(path)
+    _carried.pop(_store_key(target), None)  # bound afresh: no longer a follower
     messages = load_conversation(path)
     if not messages:
         return [], "empty"
