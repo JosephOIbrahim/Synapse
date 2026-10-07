@@ -48,11 +48,15 @@ That means:
 
 **Two recall lines.** Track B is the primary line once it is measured on the build the seat runs. Track A is the fallback: it matches on the code as it is today.
 
+On today's code, natural rewordings mostly miss: 5 of 65 measured questions hit (recall-eval, `memory/eval/results/baseline-d4a95d0c/`). Say the fallback line exactly as written. Never improvise a recall question on camera.
+
 ### Steps
 
 1. **Deposit.** Type in the panel chat:
 
-   > **Remember this for the project: the hero lens is 35mm because the set is tight.**
+   > **Remember this for the project: Hero sphere look: warm coral shader with roughness 0.35, copper torus beside it on a charcoal plinth. The client approved the warm palette at the Tuesday review.**
+
+   This is the deposit recall-eval measured. Keep its wording.
 
 2. **Check the tool call.** The panel shows a `synapse_decide` call. Confirm it reads **`scope: project`** and the result says **`recorded: true`**. Note the **`id`** in the result: that is the record id for the take sheet. Check that **`storage_dir`** is inside this take's folder.
 
@@ -71,7 +75,9 @@ That means:
 6. **Recall.** Type in the panel chat:
 
    - **Primary (Track B):** *pending recall-eval's measurement on the forge branch.*
-   - **Fallback (Track A):** **Use project scope. What was our hero lens?**
+   - **Fallback (Track A):** **Use project scope. What was the look decision?**
+
+   The fallback hit on today's code on both memory backends, with and without a reopen. Only *look* has to survive in the stored decision; *decision* is always there, because every deposit is stored as "**Decision:** ...".
 
 7. **Check the tool call.** The panel shows a `synapse_recall` call. Confirm it reads **`scope: project`**, and that its `query` holds only words from the stored decision. The model writes the query, not you; an extra word like *memory* or *search* in it is enough to miss.
 
