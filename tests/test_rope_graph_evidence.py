@@ -111,6 +111,19 @@ def test_a_line_gone_from_the_file_is_not_rescued_by_a_token_inside_it(G):
     assert G.veto(c) == "evidence not found in the file"
 
 
+def test_a_literal_inside_cited_code_is_not_a_span(G):
+    """Fails if a cited code line that is not in the file passes on a string literal inside it.
+
+    The cto run's TT-2 shape: unquoted code, a (file:line) suffix, a second segment. Its literal
+    "claude" occurs in this file on another line; the veto must not move the seed there.
+    """
+    c = {"file": "pkg/session_store.py", "line": 5,
+         "evidence": 'name = {"claude": "claude", "codex": "x"}.get(k, k)  (session_store.py:5); '
+                     'status = "ok" if name else "fail"  (:9)'}
+    assert G.veto(c) == "evidence not found in the file"
+    assert c["line"] == 5
+
+
 def test_spans_from_other_files_only_are_still_vetoed(G):
     """Fails if the normaliser lets evidence through that this file does not hold."""
     c = {"file": "pkg/session_store.py", "line": 5,

@@ -803,9 +803,9 @@ def _norm(s):
     return re.sub(r"\s+", " ", str(s)).strip()
 
 
-_SPAN = re.compile(r'`([^`]{6,})`|"((?:[^"\\]|\\.){6,})"')
 _FILE_LINE = re.compile(r"^\S+\.\w+:\d+(?::\d+)?\s*")
-_REF = re.compile(r"[\w./\\-]+\.[A-Za-z]\w*:\d+")
+# A quote that directly follows a file:line cite -- the compound shape -- never a literal in code.
+_SPAN = re.compile(r'[\w./\\-]+\.[A-Za-z]\w*:\d+\s*(?:`([^`]{6,})`|"((?:[^"\\]|\\.){6,})")')
 
 
 def _evidence_spans(raw):
@@ -814,12 +814,13 @@ def _evidence_spans(raw):
     Seeds and scouts often send compound evidence: a.py:12 "quote"; b.py:4 `quote`.
     The whole string comes first, then the string with a file:line prefix removed, so a clean
     line is never cut down to a quoted token inside it; then each quoted span in reading order.
-    Spans are only read out of evidence that cites a file:line: a plain code line that is gone
-    from the file must stay vetoed, not pass on a "token" quoted inside it.
+    A span counts only when it directly follows a file:line cite: a string literal inside a code
+    line ("running", "claude") never does, so a line gone from the file stays vetoed rather
+    than passing on a word quoted inside it.
     """
     raw = str(raw)
     out = [raw, _FILE_LINE.sub("", raw.strip(), count=1)]
-    for m in (_SPAN.finditer(raw) if _REF.search(raw) else ()):
+    for m in _SPAN.finditer(raw):
         out.append(m.group(1) if m.group(1) is not None else m.group(2).replace('\\"', '"'))
     seen, spans = set(), []
     for s in out:
