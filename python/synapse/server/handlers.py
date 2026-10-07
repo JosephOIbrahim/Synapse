@@ -1485,8 +1485,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 parent = None
                 if input_node:
                     src = hou.node(input_node)
-                    if src is not None:
-                        parent = src.parent()
+                    if src is None:
+                        raise NodeNotFoundError(input_node)
+                    parent = src.parent()
 
                 if parent is None:
                     # Default to /obj -- create a temp geo container
