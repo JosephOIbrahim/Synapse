@@ -1,6 +1,8 @@
 # OpenCV in SYNAPSE: render QC first
 
-**Status:** plan only. Building starts after the 2026-10-07 work in flight is finished: the demo merge set, improvement loops 1 to 3, and the code-block Copy button.
+**Status:** Phase 1 (the analysis module) is built on branch `feat/opencv-render-qc`, split along the RETINA host boundary. `python/synapse/cv/` (the OpenImageIO reader, `to_cv_bgr`, exposure) holds no cv2. The firefly detector needs cv2, so it is `retina/firefly_scan.py` in the RETINA worker tree. Tests: `tests/test_cv_analysis.py`, `tests/test_cv_reader.py`, `tests/test_retina_fireflies.py`, run on Python 3.14 with opencv-python-headless 5.0.0.93, numpy 2.5.3 and OpenImageIO 3.1.18. Not yet run in hython 22.0.400 (OpenImageIO 2.5.18, no cv2). Nothing is registered as a tool.
+
+**Conflict this plan missed, for Joe:** RETINA blueprint P5, pinned by `tests/test_retina_boundary.py`, already rules that cv2 is never imported host-side (`python/synapse`, `shared/`, `houdini/`, `mcp_server.py`), lazy imports included. That rules out the "cv2 on a worker thread inside Houdini" option below unless P5 is re-ratified. RETINA's `retina/t1.py` also already has a cruder firefly census (`firefly_count`: whole-frame mean + k*std, no positions) plus clip and black/blown checks, and `retina/ingest.py` reads EXR through OpenImageIO. Phase 2 should decide whether these tools are RETINA T1 metrics or a separate surface.
 
 **Why this exists:** Joe asked the panel how to bring OpenCV into SYNAPSE so Claude Code could build it. The answer it gave (model `ollama/kimi-k3:cloud`) had the right shape but two wrong facts. This plan keeps the shape, corrects the facts and fixes the order.
 
