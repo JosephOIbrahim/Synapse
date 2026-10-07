@@ -12,7 +12,7 @@ The old script in `docs/archive/DEMO_SCRIPT.md` is stale. It was written for an 
 
 Do these in order, before the recording starts. One take = one pass through this list.
 
-1. **Seat build.** Joe is fast-forwarding the seat to master before the demo. At master `ed01db41` the `VERSION` file reads `5.95.0`; if master moves again, read the commit and `VERSION` off the seat itself. Confirm the panel's installed code matches before anything else, in a fresh Houdini session (a running panel keeps its old code).
+1. **Seat build: fast-forward, then restart once, off camera.** After the memory fix passes, fast-forward the seat to master. Then quit and restart Houdini once, before rehearsal. A running panel keeps the code it loaded. Read the commit and the `VERSION` file off the seat and write them on the take sheet.
 
 2. **Worker tool mode.** `SYNAPSE_WORKER_TOOL_MODE` and `SYNAPSE_WORKER_TOOL_PROFILE` are both unset, or both `standard`. The `demo`, `strict` and `proposal` modes refuse `synapse_decide` (`python/synapse/panel/worker_policy.py`), so the deposit would never happen.
 
@@ -34,15 +34,17 @@ Do these in order, before the recording starts. One take = one pass through this
 
 **What it shows:** SYNAPSE remembers a project decision after the scene is closed and opened again.
 
-**How recall matches today (read this once).** Recall needs every meaningful word of the question to appear, spelled exactly, in the stored decision. Question words like *what, was, our, the, about, for, remember, recall* are ignored (`python/synapse/memory/store.py`, the recall matcher). Everything else must match letter for letter.
+**How recall matches on today's code (Track A, read this once).** Recall needs every meaningful word of the question to appear, spelled exactly, in the stored decision. Question words like *what, was, our, the, about, for, remember, recall* are ignored (`python/synapse/memory/store.py`, the recall matcher). Everything else must match letter for letter.
 
 That means:
 
 - *decide* is **not** ignored, and the stored text says *Decision*. So "What did we **decide**…" misses. Say "What was our **decision**…" or leave the verb out.
-- *project* is **not** ignored. Do not say "for the project" in the recall question unless the word *project* is in the decision itself.
+- *project* is **not** ignored. "Use project scope" is an instruction to the model, not part of the question. If the model puts *project* into the recall `query`, it misses.
 - *light* and *lights* are different words. Use exactly the same nouns in the deposit and the recall.
 
-> STATUS: the lines below are derived from the code and are **pending recall-eval's measured phrasings**. They will be replaced by phrasings that measured as hits on the seat's code.
+**Every recall says `scope=project`.** The default scope (`all`) adds a reference-docs article and reports a hit even when nothing was remembered (`python/synapse/server/handlers_memory.py`). That is not changing today.
+
+**Two recall lines.** Track B is the primary line once it is measured on the build the seat runs. Track A is the fallback: it matches on the code as it is today.
 
 ### Steps
 
@@ -64,11 +66,10 @@ That means:
 
 6. **Recall.** Type in the panel chat:
 
-   > **What was our hero lens?**
+   - **Primary (Track B):** *pending recall-eval's measurement on the forge branch.*
+   - **Fallback (Track A):** **Use project scope. What was our hero lens?**
 
 7. **Check the tool call.** The panel shows a `synapse_recall` call. Confirm it reads **`scope: project`**, and that its `query` holds only words from the stored decision. The model writes the query, not you; an extra word like *memory* or *search* in it is enough to miss.
-
-   This matters. With the default scope (`all`), recall adds a reference-docs article and reports a hit even when nothing was remembered (`python/synapse/server/handlers_memory.py`). Only `scope: project` proves the memory came back.
 
 ### What success looks like
 
@@ -79,8 +80,8 @@ That means:
 
 ### When it breaks
 
-- **NO HIT.** The model reworded the decision or the question. Open the `synapse_decide` result and read the stored decision. Ask again using only nouns that appear in it.
-- **Recall ran with `scope: all`.** The take does not count. Rehearsal decides the fix: either a recall line that reliably gets `scope: project`, or a different route. Open question for Joe.
+- **NO HIT on the primary line.** Use the fallback line. If that misses too, the model reworded the decision: open the `synapse_decide` result, read the stored decision, and ask again with only nouns that appear in it.
+- **Recall ran with `scope: all`.** The take does not count. Ask again, starting with "Use project scope."
 - **The deposit was refused.** Check pre-flight step 2: the worker tool mode.
 
 ---
