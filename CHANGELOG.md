@@ -24,15 +24,16 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.95.0 - A miss is reported, not hidden
 
-Three hardening loops on top of v5.94.3. Seventeen tools stop reporting success
-over work they did not do: the COPs, material, variant and HDA-package tools
-name a parm or input they could not apply, five USD tools fail when the prim
-does not exist, `safe_render` and `render_progressively` name a settings write
-that failed, `execute_vex` refuses an input path that does not resolve, and
+Three hardening loops on top of v5.94.3. Seventeen tools now report misses
+they used to hide: the COPs, material, variant and HDA-package tools name a
+parm or input they could not apply, five USD tools return a missing prim as
+`cook_error`, `safe_render` and `render_progressively` name a settings call
+that raised, `execute_vex` refuses an input path that does not resolve, and
 `router_stats` and `live_metrics` fail when their service is missing. A PDG
-rollback that raised is recorded as incomplete. The panel loses nine unused
-tokens and eight stylesheet rebinds without moving a pixel. Rope's graph mode
-learns three rules from its own runs. Nothing was run in a live Houdini session.
+cook that failed without timing out, and whose rollback raised, is recorded as
+incomplete. The panel loses nine unused tokens and eight stylesheet rebinds.
+Rope's graph mode gains three rules. Some misses still go unreported; the
+release notes list them. Nothing was run in a live Houdini session.
 This is a source release with no new Windows Setup.
 See [v5.95.0](docs/releases/v5.95.0.md).
 

@@ -2,7 +2,7 @@
 
 Three design rounds, run as part of the v5.95.0 hardening loops.
 
-**The rule both rounds held:** subtract before you add, and prove every change by identity. Nothing on screen moved. The composed stylesheet and the grabbed panel pixels hash the same before and after.
+**The rule both rounds held:** subtract before you add, and prove every change by identity. Nothing on screen was meant to move. The composed stylesheet hashes the same before and after for three changes; the wordmark change is checked by QFont equality. The offscreen panel grab was compared for the radius and composer changes only.
 
 ---
 
@@ -42,7 +42,7 @@ Three design rounds, run as part of the v5.95.0 hardening loops.
 
 **One composer builds the stylesheet.** Eight `stylesheet()` rebinds became plain section functions walked by one ordered tuple. The output string is byte-identical at every scale checked (0.75 to 2.25).
 
-**Proof.** Each change has its own new test. Hashes of the composed stylesheet at six scales and of the offscreen panel grab match on both sides of every change. The design reviewer and an adversarial reviewer each returned SOUND-WITH-NITS.
+**Proof.** Each change has its own new test. The radius and composer changes match on composed-stylesheet hashes at six scales and on the offscreen panel grab. The token deletion matches on the stylesheet hash alone; the wordmark change on QFont equality at 1.0 and 2.25. The design reviewer and an adversarial reviewer each returned SOUND-WITH-NITS.
 
 ---
 
