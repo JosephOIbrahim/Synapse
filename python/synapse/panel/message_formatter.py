@@ -5,6 +5,8 @@ The assistant has an open reading column; only user turns carry a leading rule.
 The formatter stays pure so it can run on the existing background worker.
 """
 
+import base64
+import binascii
 import html
 import re
 from urllib.parse import urlsplit
@@ -106,26 +108,89 @@ def _status_prefix(status):
     return ""
 
 
+# The Copy control on a fenced block (Joe, 2026-10-07: "a COPY button the way
+# Claude Desktop has one", so an artist can paste a snippet into a parameter by
+# hand). The code rides IN the href: this module runs on the format worker
+# thread and transcripts are re-rendered on reload, so a registry keyed by id
+# would be one more thing to keep alive across both. URL-safe base64 with the
+# padding dropped keeps the payload inside [A-Za-z0-9_-], which QUrl has no
+# reason to normalise on the way back to ChatDisplay._on_anchor_clicked.
+COPY_SCHEME = "synapse-copy:"
+_COPY_PAYLOAD_RE = re.compile(r"[A-Za-z0-9_-]*")
+
+
+def copy_href(code):
+    """The ``synapse-copy:`` href that carries *code* verbatim."""
+    # surrogatepass (both directions): a lone surrogate in model output must
+    # not raise here -- the formatter would take the whole reply down with it.
+    raw = base64.urlsafe_b64encode(
+        str(code).encode("utf-8", "surrogatepass")).decode("ascii")
+    return COPY_SCHEME + raw.rstrip("=")
+
+
+def decode_copy_href(href):
+    """The code a ``synapse-copy:`` href carries, or None if it is not one.
+
+    Pure, so the click path is testable without Qt. Anything malformed -- wrong
+    scheme, a character outside the URL-safe alphabet, an impossible length,
+    bytes that are not UTF-8 -- returns None rather than raising."""
+    if not isinstance(href, str) or not href.startswith(COPY_SCHEME):
+        return None
+    body = href[len(COPY_SCHEME):]
+    if not _COPY_PAYLOAD_RE.fullmatch(body):
+        return None
+    try:
+        data = base64.b64decode(body + "=" * (-len(body) % 4),
+                                altchars=b"-_", validate=True)
+        return data.decode("utf-8", "surrogatepass")
+    except (binascii.Error, ValueError):
+        return None
+
+
 def _format_code_block(match, font_scale=1.0):
-    """Render a fenced code block as a quiet inset (no heavy chrome)."""
+    """Render a fenced code block as a quiet inset (no heavy chrome).
+
+    The header row carries the language label on the left and a quiet Copy
+    control on the right. Qt rich text has no flex, so the row is a one-row,
+    two-cell table carrying the inset's GROUND itself. It sits BEFORE the
+    div, not inside it: a table as a div's first child makes Qt open an empty
+    block ahead of it, which painted as a blank GROUND band (measured
+    offscreen, 2026-10-07). The copied text is the code as written --
+    indentation, tabs and trailing spaces intact -- minus only the newline
+    before the closing fence.
+    """
     lang = match.group(1) or ""
+    source = match.group(2)
+    if source.endswith("\r\n"):
+        source = source[:-2]
+    elif source.endswith("\n"):
+        source = source[:-1]
     code = html.escape(match.group(2).rstrip())
+    sz = _scale(_SMALL_PX, font_scale)
     lang_label = ""
     if lang:
         lang_label = (
-            '<div style="color:{dim}; font-size:{sz}px; '
-            'margin-bottom:4px; font-family:{mono};">{lang}</div>'
-        ).format(dim=_TEXT_DIM, sz=_scale(_SMALL_PX, font_scale),
-                 mono=_MONO, lang=html.escape(lang))
-    return (
-        '<div style="background:{bg}; padding:10px; margin:6px 0;">'
-        "{label}"
+            '<span style="color:{dim}; font-size:{sz}px; '
+            'font-family:{mono};">{lang}</span>'
+        ).format(dim=_TEXT_DIM, sz=sz, mono=_MONO, lang=html.escape(lang))
+    copy_control = (
+        '<a href="{href}" style="text-decoration:none;">'
+        '<span style="color:{dim}; font-size:{sz}px;">Copy</span></a>'
+    ).format(href=html.escape(copy_href(source), quote=True), dim=_TEXT_DIM, sz=sz)
+    header = (
+        '<table border="0" cellspacing="0" cellpadding="0" width="100%" '
+        'bgcolor="{bg}" style="margin:6px 0 0 0;"><tr>'
+        "<td>{label}</td>"
+        '<td align="right">{copy}</td>'
+        "</tr></table>"
+    ).format(bg=_GROUND, label=lang_label, copy=copy_control)
+    return header + (
+        '<div style="background:{bg}; padding:10px; margin:0 0 6px 0;">'
         '<pre style="margin:0; color:{fg}; font-family:{mono}; '
         'font-size:{sz}px; white-space:pre-wrap;">{code}</pre>'
         "</div>"
     ).format(
-        bg=_GROUND, fg=_TEXT, mono=_MONO,
-        sz=_scale(_SMALL_PX, font_scale), label=lang_label, code=code,
+        bg=_GROUND, fg=_TEXT, mono=_MONO, sz=sz, code=code,
     )
 
 
