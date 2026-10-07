@@ -20,8 +20,18 @@ Method, all on Rec.709 luminance:
    region flags the bright one's noise. (One MAD over the whole frame is
    also wrong whenever black is at least half of it: the MAD is then 0
    whatever the noise on the object, the threshold collapses and object
-   noise floods the mask.) Every sigma is floored at ``1e-6`` so a
-   noise-free group does not flag float rounding.
+   noise floods the mask.) A lit stop's MAD is taken over its pixels that
+   are not *flat* (``cv2.dilate`` == ``cv2.erode`` of L over 3x3: the pixel
+   and its eight neighbours are one exact value), so a constant lit
+   backdrop at the object's stop (a constant-colour dome, a grey lookdev
+   backdrop, a flat emissive card) cannot collapse that stop's MAD the way
+   black would. The window is 3x3, not 5x5, because a backdrop pixel near
+   the silhouette has a residual of exactly 0 and carries no noise; a wider
+   window keeps a wider ring of those zeros and drags the MAD down. When
+   fewer than ``_MIN_NOISE_PIXELS`` of the stop are non-flat, the whole
+   stop is used (an all-flat frame is judged as before). Every sigma
+   is floored at ``1e-6`` so a noise-free group does not flag float
+   rounding.
    A stop with fewer than ``_MIN_NOISE_PIXELS`` pixels borrows the sigma of
    the nearest stop that has enough (the brighter one on a tie); ``noise``
    in the result lists every stop and what it borrowed. When lit pixels
@@ -43,13 +53,23 @@ Method, all on Rec.709 luminance:
 A 5x5 median sees through blobs up to about 3x3, so the default
 ``max_blob_area`` of 9 matches what step 1 can isolate.
 
-Known limits of the noise model (review of 65b02294, F2):
+Known limits of the noise model (reviews of 65b02294, F2, and d4c7ab11):
 
-- A noise-free plateau and a noisy region at the same stop share one MAD; if
-  the plateau is the larger, that stop's sigma is too low. This is the
-  black-background failure moved to a non-zero level; it needs an exactly
-  constant lit region (a flat emissive card, a denoised plate), not a
-  Monte Carlo render.
+- Only an *exactly* constant region is flat. A noise-free region that is not
+  constant (a smooth gradient, a denoised plate with a tiny residue) at the
+  same stop as a noisy one shares its MAD; if it is the larger, that stop's
+  sigma is too low and the noisy region's noise can be flagged.
+- An object pixel on the silhouette has background in its 5x5 window, so
+  its local median sits low and a high noise draw there can be one false
+  firefly. Rare on black (no false firefly in 30 noisy 270x480 frames in
+  the d4c7ab11 review), more frequent when the background is only a few
+  sigma below the object (a 0.15 backdrop under a 0.18 +- 0.01 object: a
+  false firefly on 1 to 6 of 30 96x128 frames, depending on coverage).
+- A stop with ``_MIN_NOISE_PIXELS`` pixels but fewer non-flat ones (a
+  small noisy object, under about 100 pixels with its one-pixel ring, on a
+  flat backdrop at its stop) falls back to the whole stop, whose MAD is
+  then about 0, so that object's noise can be flagged, as at d4c7ab11.
+  Such an object on black is inconclusive instead.
 - Noise that differs across the frame at the same level (a glossy and a
   diffuse surface of equal brightness) gets one sigma per stop.
 - Smooth noise-free gradients and half-float quantisation steps have a
@@ -145,8 +165,10 @@ def fireflies(
 
     Returns ``count`` (fireflies = small isolated blobs), ``pixel_count``
     (pixels in them), ``large_blobs_ignored``, ``attached_blobs_ignored``,
-    ``sigma`` and ``threshold`` (a frame-wide reference: one MAD over all lit
-    pixels, or over the black ones when nothing is lit, and the threshold it
+    ``sigma`` and ``threshold`` (a frame-wide reference: one MAD over the
+    lit pixels that are not flat, or over all lit pixels when fewer than
+    ``_MIN_NOISE_PIXELS`` are not flat, or over the black ones when nothing
+    is lit, and the threshold it
     gives; detection uses the per-stop sigmas), ``noise`` (pixel counts and
     sigmas for the black group and each lit stop, ``levels``),
     ``inconclusive``, ``note``, ``worst`` (the
@@ -204,7 +226,14 @@ def fireflies(
         "max_blob_area": int(max_blob_area),
         "origin": None if origin is None else [ox, oy],
     }
-    levels, lit_px_sigma = _stop_sigmas(np, residual[lit], local[lit])
+    # Flat: the pixel and its 8 neighbours are one exact value. A lit stop's
+    # MAD comes from its non-flat pixels, so a constant backdrop cannot zero
+    # it (3x3, not 5x5: see the module docstring, step 2).
+    k3 = np.ones((3, 3), dtype=np.uint8)
+    est = lit & (cv2.dilate(lum, k3) != cv2.erode(lum, k3))
+    levels, lit_px_sigma = _stop_sigmas(
+        np, residual[lit], local[lit], residual[est], local[est]
+    )
     if n_lit and lit_px_sigma is None:
         return _inconclusive(
             base,
@@ -219,7 +248,8 @@ def fireflies(
             f"{n_lit} lit pixels (5x5 median above 0) and no stop holds "
             f"{_MIN_NOISE_PIXELS} of them: their noise cannot be estimated",
         )
-    lit_sigma = max(_mad_sigma(np, residual[lit]), _SIGMA_FLOOR)
+    ref = est if int(est.sum()) >= _MIN_NOISE_PIXELS else lit
+    lit_sigma = max(_mad_sigma(np, residual[ref]), _SIGMA_FLOOR)
     black_sigma = max(_mad_sigma(np, residual[~lit]), _SIGMA_FLOOR)
     sigma_px = np.full(lum.shape, np.float32(black_sigma), dtype=np.float32)
     if n_lit:
@@ -321,8 +351,13 @@ def fireflies(
     return result
 
 
-def _stop_sigmas(np, res, loc):
+def _stop_sigmas(np, res, loc, eres, eloc):
     """Per-stop MAD sigmas for the lit pixels (``res`` and ``loc`` 1-D, loc > 0).
+
+    ``eres``/``eloc`` are the same for the lit pixels that are not flat
+    (3x3 neighbourhood not one exact value). A stop with
+    ``_MIN_NOISE_PIXELS`` pixels takes its MAD from its non-flat ones when
+    it has that many of them, else from all of them.
 
     Returns ``(levels, per_pixel)``: ``levels`` is a list of dicts (``stop``,
     ``pixels``, ``sigma``, ``borrowed_from``: None when the stop has
@@ -336,10 +371,14 @@ def _stop_sigmas(np, res, loc):
     uniq, inverse, counts = np.unique(stops, return_inverse=True, return_counts=True)
     order = np.argsort(inverse, kind="stable")
     groups = np.split(res[order], np.cumsum(counts)[:-1])
+    estops = np.floor(np.log2(eloc.astype(np.float64))).astype(np.int64)
     own = {}
     for i, (stop, n) in enumerate(zip(uniq.tolist(), counts.tolist())):
         if n >= _MIN_NOISE_PIXELS:
-            own[stop] = max(_mad_sigma(np, groups[i]), _SIGMA_FLOOR)
+            g = eres[estops == stop]
+            if g.size < _MIN_NOISE_PIXELS:
+                g = groups[i]  # too few non-flat pixels: the whole stop
+            own[stop] = max(_mad_sigma(np, g), _SIGMA_FLOOR)
     levels = []
     sig = np.zeros(len(uniq), dtype=np.float32)
     for i, (stop, n) in enumerate(zip(uniq.tolist(), counts.tolist())):

@@ -357,3 +357,189 @@ def test_fireflies_origin_adds_frame_positions(cv2):
     assert fireflies(planted())["origin"] is None
     with pytest.raises(ValueError, match="origin"):
         fireflies(flat(), origin=(1,))
+
+
+# --------------------------------------------------------------------------
+# Review of d4c7ab11: a constant LIT backdrop at the object's stop, and pins
+# for the mutants that survived every test at d4c7ab11
+# --------------------------------------------------------------------------
+
+
+def object_on_backdrop(cover, backdrop=0.18, h=96, w=128, noise=0.01, seed=31):
+    """Noisy 0.18 ellipse, ``cover`` of the area, on a constant lit backdrop."""
+    rng = np.random.default_rng(seed)
+    yy, xx = np.mgrid[0:h, 0:w]
+    a = np.sqrt(cover * h * w / np.pi * (w / h))
+    b = a * h / w
+    obj = ((xx - w / 2) ** 2 / a**2 + (yy - h / 2) ** 2 / b**2) <= 1
+    lum = np.full((h, w), backdrop, dtype=np.float32)
+    lum[obj] = 0.18 + rng.normal(0.0, noise, int(obj.sum()))
+    return np.repeat(lum[:, :, None], 3, axis=2), obj
+
+
+@pytest.mark.parametrize("cover", [0.1, 0.2, 0.5, 0.8])
+def test_fireflies_on_object_over_flat_lit_backdrop(cv2, cover):
+    # A constant 0.18 backdrop (a constant dome, a grey lookdev backdrop) is
+    # at the same stop as the noisy 0.18 object. At d4c7ab11 its zero
+    # residuals made that stop's MAD 0: sigma fell to the 1e-6 floor, object
+    # noise flooded the mask and the planted fireflies were lost, with
+    # inconclusive False. Flat pixels no longer feed the estimate.
+    img, obj = object_on_backdrop(cover)
+    on = [(64, 48), (60, 45), (68, 51)]
+    off = [(3, 3), (124, 92)]
+    assert all(obj[y, x] for x, y in on) and not any(obj[y, x] for x, y in off)
+    for x, y in on + off:
+        img[y, x] = 20.0
+    r = fireflies(img)
+    assert r["inconclusive"] is False
+    assert {(f["x"], f["y"]) for f in r["fireflies"]} == set(on + off)
+    assert r["count"] == 5
+    assert r["large_blobs_ignored"] == 0
+    assert r["sigma"] == pytest.approx(0.01, rel=0.35)
+    (level,) = r["noise"]["levels"]
+    assert level["stop"] == -3 and level["sigma"] == pytest.approx(0.01, rel=0.35)
+    json.dumps(r)
+
+
+def test_fireflies_small_object_on_flat_lit_backdrop_over_seeds(cv2):
+    # A 10% object on a 96x128 frame: backdrop pixels near the silhouette
+    # have a residual of exactly 0. A 5x5 flatness window keeps two rings of
+    # them in the estimate, which dragged the MAD down until object noise
+    # passed 6 sigma on 3 of these 30 seeds; 3x3 keeps one ring and no seed
+    # shows a false firefly.
+    wrong = []
+    for seed in range(30):
+        img, _ = object_on_backdrop(0.1, seed=seed)
+        img[48, 64] = 0.18 + 0.15
+        r = fireflies(img)
+        got = {(f["x"], f["y"]) for f in r["fireflies"]}
+        if r["inconclusive"] or got != {(64, 48)}:
+            wrong.append((seed, r["count"], r["sigma"]))
+    assert wrong == []
+
+
+def test_fireflies_object_of_about_150_lit_pixels_is_judged(cv2):
+    # _MIN_NOISE_PIXELS is 100: an object between 100 and 300 lit pixels is
+    # judged, not inconclusive (a 300 mutant survived every test at d4c7ab11).
+    rng = np.random.default_rng(2)
+    img = np.zeros((48, 64, 3), dtype=np.float32)
+    img[10:23, 20:33] = (0.18 + rng.normal(0, 0.01, (13, 13, 1))).astype(np.float32)
+    img[16, 26] = 20.0
+    r = fireflies(img)
+    assert 100 < r["noise"]["lit_pixels"] < 300
+    assert r["inconclusive"] is False
+    assert r["count"] == 1
+    assert (r["worst"]["x"], r["worst"]["y"]) == (26, 16)
+
+
+def three_regions(left, right, patch, noise_left, noise_right, seed=13):
+    """Two noisy halves (relative noise) and an 8x8 patch, under 100 pixels, in the left."""
+    rng = np.random.default_rng(seed)
+    h, w = 96, 128
+    xx = np.mgrid[0:h, 0:w][1]
+    base = np.where(xx < w // 2, left, right)
+    rel = np.where(xx < w // 2, noise_left, noise_right)
+    lum = base * (1 + rel * rng.normal(0.0, 1.0, (h, w)))
+    lum[40:48, 20:28] = patch
+    return np.repeat(lum.astype(np.float32)[:, :, None], 3, axis=2)
+
+
+def test_fireflies_sparse_stop_between_two_borrows_the_brighter_on_a_tie(cv2):
+    # Stops -3 (0.18) and -1 (0.7) are estimated; the 0.35 patch is stop -2,
+    # one stop from each. On the tie it borrows the brighter (-1), whose
+    # sigma differs from that of -3 (a 'darker' mutant survived at d4c7ab11).
+    r = fireflies(three_regions(0.18, 0.7, 0.35, 0.01, 0.04))
+    by_stop = {lv["stop"]: lv for lv in r["noise"]["levels"]}
+    assert set(by_stop) == {-3, -2, -1}
+    assert by_stop[-3]["borrowed_from"] is None and by_stop[-1]["borrowed_from"] is None
+    assert by_stop[-2]["pixels"] < 100
+    assert by_stop[-2]["borrowed_from"] == -1
+    assert by_stop[-2]["sigma"] == by_stop[-1]["sigma"] != by_stop[-3]["sigma"]
+
+
+def test_fireflies_sparse_stop_borrows_the_nearer_of_two(cv2):
+    # Stops -3 (0.18) and 0 (1.4) are estimated; the 0.35 patch is stop -2,
+    # one stop from -3 and two from 0. It borrows -3 (a 'farthest' mutant
+    # survived at d4c7ab11).
+    r = fireflies(three_regions(0.18, 1.4, 0.35, 0.01, 0.04))
+    by_stop = {lv["stop"]: lv for lv in r["noise"]["levels"]}
+    assert set(by_stop) == {-3, -2, 0}
+    assert by_stop[-2]["pixels"] < 100
+    assert by_stop[-2]["borrowed_from"] == -3
+    assert by_stop[-2]["sigma"] == by_stop[-3]["sigma"] != by_stop[0]["sigma"]
+
+
+def test_fireflies_sigmas_are_in_their_own_stop_sigma(cv2):
+    # Each firefly's ``sigmas`` is its residual over the sigma of ITS stop,
+    # not over the frame-wide reference (a mutant dividing by the frame-wide
+    # sigma survived at d4c7ab11). Recipe of the per-stop test above: each
+    # plant is about 12 of its own stop's sigmas over its neighbourhood.
+    rng = np.random.default_rng(5)
+    h, w = 96, 128
+    xx = np.mgrid[0:h, 0:w][1]
+    base = np.where(xx < w // 2, 0.05, 5.0)
+    lum = (base * (1 + rng.normal(0.0, 0.05, (h, w)))).astype(np.float32)
+    img = np.repeat(lum[:, :, None], 3, axis=2)
+    plants = {(20, 30): 0.05 * 1.6, (100, 60): 5.0 * 1.6}
+    for (x, y), v in plants.items():
+        img[y, x] = v
+    r = fireflies(img)
+    assert {(f["x"], f["y"]) for f in r["fireflies"]} == set(plants)
+    for f in r["fireflies"]:
+        assert f["sigmas"] == pytest.approx(12.0, rel=0.35), f
+    assert r["worst"]["sigmas"] == r["fireflies"][0]["sigmas"]
+
+
+def test_fireflies_black_sigma_ignores_the_lit_pixels(cv2):
+    # 80% of the frame is a noisy object, so a MAD over ALL pixels is the
+    # object's noise. The black class keeps its own MAD of exactly 0
+    # (floored), so a faint spike on black is a firefly (a mutant estimating
+    # the black sigma over every pixel survived at d4c7ab11 and missed it).
+    img, obj = object_on_black(cover=0.8)
+    assert not obj[0:7, 0:7].any()
+    img[2, 2] = 0.02
+    r = fireflies(img)
+    assert r["noise"]["black_sigma"] == pytest.approx(1e-6)
+    assert (2, 2) in {(f["x"], f["y"]) for f in r["fireflies"]}
+
+
+def test_fireflies_flat_stop_falls_back_to_its_own_pixels(cv2):
+    # A noisy 5.0 top half (stop 2) over a flat 0.05 bottom half (stop -5),
+    # 64 wide: stop -5 has under 100 non-flat pixels (the boundary row and
+    # the spike's ring), so it falls back to ALL of its own pixels, whose
+    # MAD is 0, and a 0.45 spike on it is a firefly. Taking the fallback
+    # from the wrong pixels (the noisy half) would hide it.
+    rng = np.random.default_rng(17)
+    h, w = 96, 64
+    lum = np.full((h, w), 0.05, dtype=np.float32)
+    lum[: h // 2] = (5.0 * (1 + rng.normal(0.0, 0.05, (h // 2, w)))).astype(np.float32)
+    img = np.repeat(lum[:, :, None], 3, axis=2)
+    img[72, 32] = 0.5
+    r = fireflies(img)
+    by_stop = {lv["stop"]: lv for lv in r["noise"]["levels"]}
+    assert set(by_stop) == {-5, 2}
+    assert by_stop[-5]["sigma"] == pytest.approx(1e-6)
+    assert by_stop[2]["sigma"] == pytest.approx(5.0 * 0.05, rel=0.35)
+    assert [(f["x"], f["y"]) for f in r["fireflies"]] == [(32, 72)]
+
+
+@pytest.mark.parametrize("frame", ["backdrop", "small_patch", "planted_on_flat"])
+def test_fireflies_reference_sigma_is_the_single_stop_sigma(cv2, frame):
+    # On a frame with one lit stop, the frame-wide reference ``sigma`` follows
+    # the same rule as that stop (non-flat pixels when there are
+    # _MIN_NOISE_PIXELS of them, else all), so it reports the sigma detection
+    # used. small_patch: a 6x6 noisy patch on a flat 0.18 backdrop has under
+    # 100 non-flat pixels, so both fall back to the whole stop (the limit in
+    # the module docstring: its noise can be flagged).
+    if frame == "backdrop":
+        img, _ = object_on_backdrop(0.3)
+    elif frame == "small_patch":
+        rng = np.random.default_rng(3)
+        img = np.full((64, 64, 3), 0.18, dtype=np.float32)
+        img[20:26, 20:26] = (0.18 + rng.normal(0, 0.01, (6, 6, 1))).astype(np.float32)
+    else:
+        img = planted()
+    r = fireflies(img)
+    (level,) = r["noise"]["levels"]
+    assert r["sigma"] == level["sigma"]
+    assert r["noise"]["lit_sigma"] == level["sigma"]

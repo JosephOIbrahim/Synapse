@@ -238,3 +238,28 @@ def test_windowed_exr_fireflies_in_frame_positions(oiio, cv2, tmp_path):
     f = r["fireflies"][0]
     assert (f["x"], f["y"]) == (7, 5)
     assert (f["frame_x"], f["frame_y"]) == (107, 55)
+
+
+def test_read_frame_origin_is_relative_to_the_display_window(oiio, tmp_path):
+    # The origin is the data window's position IN THE FRAME: x - full_x,
+    # y - full_y. Every other test has its display window at (0, 0), where a
+    # mutant returning the raw data-window corner survived (d4c7ab11 review).
+    from synapse.cv import read_frame
+
+    px = np.zeros((6, 8, 3), dtype=np.float32)
+    px[1, 2] = (5.0, 6.0, 7.0)
+    spec = oiio.ImageSpec(8, 6, 3, "float")
+    spec.channelnames = ("R", "G", "B")
+    spec.x, spec.y = 10, 20
+    spec.full_x, spec.full_y, spec.full_width, spec.full_height = 4, 6, 64, 48
+    path = tmp_path / "dwfull.exr"
+    out = oiio.ImageOutput.create(str(path))
+    assert out is not None, oiio.geterror()
+    assert out.open(str(path), spec), out.geterror()
+    assert out.write_image(np.ascontiguousarray(px)), out.geterror()
+    out.close()
+    img, window = read_frame(path)
+    assert (window["full_x"], window["full_y"]) == (4, 6)
+    assert (window["x"], window["y"]) == (10, 20)
+    assert window["origin"] == [6, 14]
+    assert img[1, 2].tolist() == [5.0, 6.0, 7.0]
