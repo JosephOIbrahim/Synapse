@@ -350,7 +350,7 @@ def preflight(st):
                          "-rfE", "--tb=no"], timeout=1800)
             out = r.stdout or ""
             failing = re.findall(r"^(?:FAILED|ERROR) (\S+)", out, re.M)
-            if r.returncode not in (0, 5) and not failing:
+            if r.returncode != 0 and not failing:     # the gate keeps only rc 0; 5 (none ran) is red
                 failing = ["pytest exit %s: %s" % (r.returncode, _norm(out[-200:]))]
         except subprocess.TimeoutExpired:
             failing = ["the ratchets timed out on the base tree"]
@@ -1078,7 +1078,7 @@ def cmd_init(a):
 def cmd_tick(a):
     kinds = tuple(k for k in a.kinds.split(",") if k)
     st = load(a.run)
-    if held(st):                    # a red base is re-checked once per `tick` command: the repair
+    if "fix" in kinds and held(st):  # a red base is re-checked once per `tick` command: the repair
         del st["preflight"]         # (a refreshed master ref) need not move HEAD
         save(st)
     while True:

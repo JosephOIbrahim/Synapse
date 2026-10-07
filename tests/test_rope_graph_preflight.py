@@ -111,7 +111,7 @@ class _Done:
         self.returncode, self.stdout = rc, out
 
 
-@pytest.mark.parametrize("outcome", ["unparsed", "timeout", "syntax"])
+@pytest.mark.parametrize("outcome", ["unparsed", "timeout", "syntax", "none_collected"])
 def test_a_red_that_names_no_test_is_still_red(world, monkeypatch, outcome):
     """Fails if a crashed, timed-out or uncollectable ratchet run reads as green."""
     G, st, repo, slot = world
@@ -126,6 +126,8 @@ def test_a_red_that_names_no_test_is_still_red(world, monkeypatch, outcome):
                 return real(args, *a, **kw)
             if outcome == "timeout":
                 raise subprocess.TimeoutExpired(args, 1)
+            if outcome == "none_collected":     # the gate's pytest check is rc == 0, so 5 is red there
+                return _Done(5, "no tests ran\n")
             return _Done(3, "INTERNALERROR> boom\n")
         monkeypatch.setattr(G.rope, "sh", broken)
     _pending_fix(st)
