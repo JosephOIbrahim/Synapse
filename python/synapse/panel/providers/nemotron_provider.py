@@ -145,6 +145,12 @@ def _to_openai_tools(tools):
     return out
 
 
+#: TT-7: leads the text of a tool message whose Anthropic tool_result had
+#: ``is_error`` set. A result with misses but no error stays unprefixed, as on
+#: the Anthropic path (is_error False, the misses note leads the payload).
+TOOL_ERROR_PREFIX = "ERROR: this tool call failed.\n"
+
+
 def _stringify(content):
     """Anthropic tool_result content → a plain string for an OpenAI tool message."""
     if isinstance(content, str):
@@ -243,10 +249,15 @@ def _to_openai_messages(messages, system, directive=_USE_DEFAULT_DIRECTIVE):
                         tool_images.append({"type": "text", "text": "Images returned by tool " + str(blk.get("tool_use_id", ""))})
                         tool_images.extend(_image_part(part) for part in images)
                         result_content = [part for part in result_content if part not in images]
+                text = _stringify(result_content)
+                if blk.get("is_error"):
+                    # TT-7: an OpenAI tool message has no error flag, so the
+                    # failure has to be in the text or it reads as success.
+                    text = TOOL_ERROR_PREFIX + text
                 tool_results.append({
                     "role": "tool",
                     "tool_call_id": blk.get("tool_use_id", ""),
-                    "content": _stringify(result_content),
+                    "content": text,
                 })
 
         if role == "assistant":
