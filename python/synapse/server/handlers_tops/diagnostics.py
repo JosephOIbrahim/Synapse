@@ -562,10 +562,14 @@ class TopsDiagnosticsMixin:
                 is_network = node.childTypeCategory() == hou.topNodeTypeCategory()
             except Exception as exc:
                 logger.debug("tops_monitor_stream: childTypeCategory unreadable on %s: %s", node_path, exc)
+            unmonitored: List[str] = []
             if is_network:
                 pdg_nodes = []
                 pdg_node_type = getattr(_pdg, "Node", None)
-                for child in node.children():
+                ctx = None
+                # Every TOP node under the network, including inside TOP
+                # subnets: a failed item anywhere in the cook must be counted.
+                for child in node.allSubChildren():
                     get_pdg = getattr(child, "getPDGNode", None)
                     pn = get_pdg() if get_pdg is not None else None
                     # A topnet's scheduler child also answers getPDGNode() with
@@ -573,13 +577,20 @@ class TopsDiagnosticsMixin:
                     # have work items.
                     if pn is None or (pdg_node_type is not None and not isinstance(pn, pdg_node_type)):
                         continue
+                    if ctx is None:
+                        ctx = pn.context
+                    if pn.context is not ctx:
+                        # A nested topnet cooks in its own graph; this monitor's
+                        # cook boundary cannot see it. Name it rather than
+                        # count part of it.
+                        unmonitored.append(child.path())
+                        continue
                     pdg_nodes.append(pn)
                 if not pdg_nodes:
                     raise ValueError(
                         f"The network at {node_path} has no TOP nodes set up for PDG "
                         "yet -- cook or generate it once, or monitor one of its TOP nodes"
                     )
-                ctx = pdg_nodes[0].context
                 if ctx is None:
                     raise RuntimeError(
                         f"Couldn't start monitoring {node_path} -- its TOP nodes have "
@@ -624,10 +635,16 @@ class TopsDiagnosticsMixin:
             }
             ws = _pdg.workItemState
             done_states = ("complete", "complete_with_errors")
-            # Cook-level events: on the graph context for a network (verified:
-            # exactly one CookComplete per cook), on the node for a single node
-            # (verified). CookStart, the cook boundary, comes from the context.
-            cook_ctx = ctx if is_network else getattr(pdg_nodes[0], "context", None)
+            # Cook-level events (CookStart, CookComplete, CookError) all come from
+            # one emitter, so a cook's start and end share a scope: the graph
+            # context for a network (verified: exactly one CookComplete per
+            # cook), the node itself for a single node (verified: H22 fires
+            # CookStart and CookComplete on each pdg.Node in the cook).
+            cook_emitter = ctx if is_network else pdg_nodes[0]
+            # Item states that mean this cook actually did work on our nodes.
+            # H22 fires CookStart/CookComplete for a generate-only pass too,
+            # with only Undefined->Uncooked transitions (live probe 2026-10-07).
+            active_states = (ws.Cooking, ws.CookedSuccess, ws.CookedCache, ws.CookedFail, ws.CookedCancel)
 
             def _total_items():
                 return sum(len(getattr(p, 'workItems', None) or []) for p in pdg_nodes)
@@ -647,10 +664,13 @@ class TopsDiagnosticsMixin:
                 }
 
             def _new_cook():
-                # Caller holds the lock.
+                # Caller holds the lock. Keep the previous cook's result, so a
+                # pass that turns out to cook nothing can give it back.
+                monitor["prev_cook"] = (monitor.get("cook_state"), monitor["cook_counts"])
                 monitor["cook_counts"] = dict(_zero)
                 monitor["cook_state"] = "cooking"
                 monitor["cook_ended"] = False
+                monitor["cook_active"] = False
 
             def _read_item(event):
                 """Every PDG read for a state change, done before the lock."""
@@ -726,6 +746,8 @@ class TopsDiagnosticsMixin:
 
                         if etype == _pdg.EventType.WorkItemStateChange:
                             item["timestamp"] = round_float(elapsed)
+                            if state in active_states:
+                                monitor["cook_active"] = True
                             if state == ws.Cooking:
                                 events_list.append({**item, "type": "work_item_started"})
                             elif state in (ws.CookedSuccess, ws.CookedCache):
@@ -752,7 +774,24 @@ class TopsDiagnosticsMixin:
                             events_list.append(_progress_row(progress_node, elapsed, total))
 
                         elif etype == _pdg.EventType.CookComplete:
-                            if not monitor.get("cook_ended"):
+                            if (not monitor.get("cook_ended") and not monitor.get("cook_active")
+                                    and monitor["cook_state"] != "error"):
+                                # A pass that cooked nothing here: a generate, or
+                                # a cook of other nodes. It is not this node's
+                                # cook, so the previous cook's result stands.
+                                monitor["cook_ended"] = True
+                                prev_state, prev_counts = monitor.get("prev_cook") or (None, None)
+                                monitor["cook_state"] = prev_state or "nothing_cooked"
+                                if prev_counts is not None:
+                                    monitor["cook_counts"] = prev_counts
+                                events_list.append({
+                                    "type": "cook_complete",
+                                    "cook_state": "nothing_cooked",
+                                    "processed": 0,
+                                    "total": total,
+                                    "timestamp": round_float(elapsed),
+                                })
+                            elif not monitor.get("cook_ended"):
                                 monitor["cook_ended"] = True
                                 cc = monitor["cook_counts"]
                                 # A failed item raises no CookError on H22, so the
@@ -796,16 +835,15 @@ class TopsDiagnosticsMixin:
                         logger.warning("tops_monitor_stream callback failed on %s: %s",
                                        node_path, monitor["callback_error"])
 
-            # Item and progress events on every monitored pdg.Node. pdg.EventType
-            # members do not combine with `|`, so it is one addEventHandler call
-            # per (emitter, type); each returns the handler object
+            # Item and progress events on every monitored pdg.Node; the three
+            # cook-level events on cook_emitter. pdg.EventType members do not
+            # combine with `|`, so it is one addEventHandler call per
+            # (emitter, type); each returns the handler object
             # removeEventHandler needs.
             item_types = (_pdg.EventType.WorkItemStateChange, _pdg.EventType.NodeProgressUpdate)
-            cook_types = (_pdg.EventType.CookComplete, _pdg.EventType.CookError)
+            cook_types = (_pdg.EventType.CookStart, _pdg.EventType.CookComplete, _pdg.EventType.CookError)
             plan = [(p, t) for p in pdg_nodes for t in item_types]
-            plan += [(ctx if is_network else pdg_nodes[0], t) for t in cook_types]
-            if cook_ctx is not None:
-                plan.append((cook_ctx, _pdg.EventType.CookStart))
+            plan += [(cook_emitter, t) for t in cook_types]
 
             def _remove_handlers(handlers):
                 for emitter, h in handlers:
@@ -839,6 +877,7 @@ class TopsDiagnosticsMixin:
                 "node": node_path,
                 "status": "monitoring",
                 "nodes_monitored": [getattr(p, 'name', None) for p in pdg_nodes],
+                **({"nodes_unmonitored": unmonitored} if unmonitored else {}),
                 "note": "Use tops_monitor_stream with action='status' to check events, "
                         "or action='stop' to end monitoring and get results",
             }
