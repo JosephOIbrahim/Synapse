@@ -490,26 +490,35 @@ class TopsDiagnosticsMixin:
                     "summary": _summary(monitor),
                 }
                 if removal_errors:
-                    # A handler still attached keeps firing; the monitor is kept
-                    # so the same monitor_id can retry the stop.
                     result["handler_removal_errors"] = removal_errors
-                    result["note"] = ("Some PDG handlers are still attached; call stop again "
-                                      "with this monitor_id to retry")
+                    if force:
+                        # The caller chose to drop the record anyway; say what is
+                        # still attached rather than pretend it was detached.
+                        result["status"] = "dropped_with_handlers_attached"
+                        result["handlers_still_attached"] = len(still_attached)
+                    else:
+                        # A handler still attached keeps firing; the monitor is
+                        # kept so the same monitor_id can retry the stop.
+                        result["note"] = ("Some PDG handlers are still attached; call stop again "
+                                          "with this monitor_id to retry, or with force=true to "
+                                          "drop the monitor anyway")
                 return _report_flags(monitor, result)
 
-            # Drop the record only once every handler is detached: a marshal
-            # that times out mid-cook, or a removal that fails, leaves handlers
-            # attached, and the caller must be able to retry with this id.
+            # Drop the record only once every handler is detached (or the caller
+            # forces it): a marshal that times out mid-cook, or a removal that
+            # fails, leaves handlers attached, and the caller must be able to
+            # retry with this id.
+            force = bool(resolve_param_with_default(payload, "force", False))
             result = _run_in_main_thread_pdg(_stop)
-            if result.get("status") == "stopped":
+            if result.get("status") != "stop_incomplete":
                 self._tops_monitors.pop(monitor_id, None)
             return result
 
         if action == "status":
             if not monitor_id or monitor_id not in self._tops_monitors:
                 raise ValueError(
-                    f"Couldn't find monitor '{monitor_id}' -- "
-                    "check the monitor_id returned when you started monitoring"
+                    f"Monitor '{monitor_id}' isn't active -- it may have been "
+                    "stopped already, or the monitor_id is wrong"
                 )
 
             monitor = self._tops_monitors[monitor_id]
@@ -555,11 +564,16 @@ class TopsDiagnosticsMixin:
                 logger.debug("tops_monitor_stream: childTypeCategory unreadable on %s: %s", node_path, exc)
             if is_network:
                 pdg_nodes = []
+                pdg_node_type = getattr(_pdg, "Node", None)
                 for child in node.children():
                     get_pdg = getattr(child, "getPDGNode", None)
                     pn = get_pdg() if get_pdg is not None else None
-                    if pn is not None:
-                        pdg_nodes.append(pn)
+                    # A topnet's scheduler child also answers getPDGNode() with
+                    # a pdg.Scheduler (live probe 2026-10-07); only pdg.Nodes
+                    # have work items.
+                    if pn is None or (pdg_node_type is not None and not isinstance(pn, pdg_node_type)):
+                        continue
+                    pdg_nodes.append(pn)
                 if not pdg_nodes:
                     raise ValueError(
                         f"The network at {node_path} has no TOP nodes set up for PDG "
@@ -579,6 +593,7 @@ class TopsDiagnosticsMixin:
                         "set up for PDG yet -- make sure it's inside a TOP network"
                     )
                 pdg_nodes = [pn]
+                ctx = None
 
             mid = f"monitor-{deterministic_uuid(f'tops_monitor_{node_path}')[:8]}"
             if mid in self._tops_monitors:
@@ -608,16 +623,19 @@ class TopsDiagnosticsMixin:
                 "lock": threading.Lock(),
             }
             ws = _pdg.workItemState
-            terminal = ("complete", "complete_with_errors", "error")
+            done_states = ("complete", "complete_with_errors")
+            # Cook-level events: on the graph context for a network (verified:
+            # exactly one CookComplete per cook), on the node for a single node
+            # (verified). CookStart, the cook boundary, comes from the context.
+            cook_ctx = ctx if is_network else getattr(pdg_nodes[0], "context", None)
 
             def _total_items():
                 return sum(len(getattr(p, 'workItems', None) or []) for p in pdg_nodes)
 
-            def _progress_row(name, elapsed):
-                # Caller holds the lock.
+            def _progress_row(name, elapsed, total):
+                # Caller holds the lock; total was read from PDG before taking it.
                 cc = monitor["cook_counts"]
                 processed = sum(cc.values())
-                total = _total_items()
                 return {
                     "type": "cook_progress",
                     "node": name,
@@ -628,108 +646,130 @@ class TopsDiagnosticsMixin:
                     "timestamp": round_float(elapsed),
                 }
 
+            def _new_cook():
+                # Caller holds the lock.
+                monitor["cook_counts"] = dict(_zero)
+                monitor["cook_state"] = "cooking"
+                monitor["cook_ended"] = False
+
+            def _read_item(event):
+                """Every PDG read for a state change, done before the lock."""
+                state = event.currentState
+                item_id = event.workItemId
+                wi = None
+                try:
+                    wi = event.context.graph.workItemById(item_id)
+                except Exception as exc:
+                    # The event still counts; only frame/duration/outputs go missing.
+                    logger.debug("tops_monitor_stream: workItemById(%s) failed: %s", item_id, exc)
+                item = {
+                    "item_id": item_id,
+                    "node": event.node.name if event.node else node_path,
+                    "frame": getattr(wi, 'frame', None),
+                }
+                extra: Dict[str, Any] = {}
+                if wi is not None and state in (ws.CookedSuccess, ws.CookedCache):
+                    duration = getattr(wi, 'cookDuration', None)
+                    if duration is not None:
+                        extra["duration_seconds"] = round_float(duration)
+                    try:
+                        outputs = wi.resultData
+                        if outputs:
+                            extra["output_path"] = str(outputs[0])
+                    except Exception as exc:
+                        logger.debug("tops_monitor_stream: resultData unreadable for %s: %s", item_id, exc)
+                if state == ws.CookedFail:
+                    # On H22.0.400 the failing event's message is empty and work
+                    # items have no lastError; the error text is in the item's
+                    # log (live probe 2026-10-07).
+                    text = getattr(event, 'message', None) or None
+                    if not text and wi is not None:
+                        text = str(getattr(wi, 'logMessages', None) or "").strip()[-500:] or None
+                    extra["error_message"] = text
+                return state, item, extra
+
             def _on_event(event):
                 """PDG event callback -- must not block the cook thread."""
                 try:
                     etype = event.type
                     elapsed = time.monotonic() - start_time
+                    # PDG reads happen here, outside the lock; the lock covers
+                    # only the monitor's own counters, state and event list.
+                    state = item = extra = None
+                    total = None
+                    if etype == _pdg.EventType.WorkItemStateChange:
+                        state, item, extra = _read_item(event)
+                    elif etype in (_pdg.EventType.NodeProgressUpdate, _pdg.EventType.CookComplete):
+                        total = _total_items()
+                    progress_node = (event.node.name if getattr(event, 'node', None) else node_path)
+                    message = getattr(event, 'message', None) or None
+
                     with monitor["lock"]:
                         # Cap event list to prevent unbounded memory growth.
                         # Keep the last 80% to avoid trimming on every single event.
                         if len(events_list) > _MAX_MONITOR_EVENTS:
                             events_list[:] = events_list[-(int(_MAX_MONITOR_EVENTS * 0.8)):]
                             monitor["was_truncated"] = True
-                        if (etype in (_pdg.EventType.WorkItemStateChange, _pdg.EventType.NodeProgressUpdate)
-                                and monitor.get("cook_state") in terminal):
-                            # The first item or progress event after a cook ended
-                            # starts a new cook: per-cook progress and state reset.
-                            monitor["cook_counts"] = dict(_zero)
-                            monitor["cook_state"] = "cooking"
-                        elif monitor.get("cook_state") is None and etype != _pdg.EventType.CookComplete:
-                            monitor["cook_state"] = "cooking"
+
+                        if etype == _pdg.EventType.CookStart:
+                            _new_cook()
+                            return
+                        if monitor.get("cook_state") is None:
+                            _new_cook()
+                        elif (state == ws.Cooking and monitor.get("cook_state") in done_states):
+                            # Fallback boundary if CookStart was not seen: an item
+                            # really cooking after a finished cook. Never on a
+                            # progress tick or a Dirty/Waiting change, which can
+                            # trail a cook; never out of "error", which must stick.
+                            _new_cook()
                         counts, cook_counts = monitor["counts"], monitor["cook_counts"]
 
                         if etype == _pdg.EventType.WorkItemStateChange:
-                            # H22 pdg.Event carries workItemId + currentState, not a
-                            # workItem object (probe 2026-10-06, hython 22.0.400).
-                            state = event.currentState
-                            item_id = event.workItemId
-                            wi = None
-                            try:
-                                wi = event.context.graph.workItemById(item_id)
-                            except Exception as exc:
-                                # The event still counts; only frame/duration/outputs go missing.
-                                logger.debug("tops_monitor_stream: workItemById(%s) failed: %s", item_id, exc)
-                                wi = None
-                            item_info = {
-                                "item_id": item_id,
-                                "node": event.node.name if event.node else node_path,
-                                "frame": getattr(wi, 'frame', None),
-                                "timestamp": round_float(elapsed),
-                            }
-
+                            item["timestamp"] = round_float(elapsed)
                             if state == ws.Cooking:
-                                item_info["type"] = "work_item_started"
-                                events_list.append(item_info)
-
+                                events_list.append({**item, "type": "work_item_started"})
                             elif state in (ws.CookedSuccess, ws.CookedCache):
                                 key = "cached" if state == ws.CookedCache else "completed"
                                 counts[key] += 1
                                 cook_counts[key] += 1
-                                item_info["type"] = "work_item_completed"
+                                row = {**item, **extra, "type": "work_item_completed"}
                                 if key == "cached":
-                                    item_info["cached"] = True
-                                duration = getattr(wi, 'cookDuration', None)
-                                if duration is not None:
-                                    item_info["duration_seconds"] = round_float(duration)
-                                # Try to get output path from result data
-                                try:
-                                    outputs = wi.resultData if wi is not None else None
-                                    if outputs:
-                                        item_info["output_path"] = str(outputs[0])
-                                except Exception as exc:
-                                    logger.debug("tops_monitor_stream: resultData unreadable for %s: %s", item_id, exc)
-                                events_list.append(item_info)
-
+                                    row["cached"] = True
+                                events_list.append(row)
                             elif state == ws.CookedFail:
                                 counts["failed"] += 1
                                 cook_counts["failed"] += 1
-                                item_info["type"] = "work_item_failed"
-                                # On H22.0.400 the failing event's message is empty
-                                # and work items have no lastError; the error text
-                                # is in the item's log (live probe 2026-10-07).
-                                text = getattr(event, 'message', None) or None
-                                if not text and wi is not None:
-                                    log_text = getattr(wi, 'logMessages', None) or ""
-                                    text = str(log_text).strip()[-500:] or None
-                                item_info["error_message"] = text
-                                events_list.append(item_info)
-
+                                events_list.append({**item, **extra, "type": "work_item_failed"})
                             elif state == ws.CookedCancel:
                                 counts["cancelled"] += 1
                                 cook_counts["cancelled"] += 1
-                                item_info["type"] = "work_item_cancelled"
-                                events_list.append(item_info)
+                                events_list.append({**item, "type": "work_item_cancelled"})
 
                         elif etype == _pdg.EventType.NodeProgressUpdate:
                             # H22 has no CookProgress event and pdg.Event carries no
                             # counts: processed comes from this cook's counters, the
                             # total from the monitored nodes' work item lists.
-                            pnode = event.node
-                            events_list.append(_progress_row(pnode.name if pnode else node_path, elapsed))
+                            events_list.append(_progress_row(progress_node, elapsed, total))
 
                         elif etype == _pdg.EventType.CookComplete:
-                            if monitor.get("cook_state") not in terminal:
-                                # A failed item does not raise CookError on H22, so the
-                                # end state says whether this cook had failures.
-                                failed = monitor["cook_state"] == "error" or monitor["cook_counts"]["failed"] > 0
-                                monitor["cook_state"] = "complete_with_errors" if failed else "complete"
+                            if not monitor.get("cook_ended"):
+                                monitor["cook_ended"] = True
+                                cc = monitor["cook_counts"]
+                                # A failed item raises no CookError on H22, so the
+                                # end state carries this cook's failures; an
+                                # "error" from CookError is never overwritten.
+                                if monitor["cook_state"] != "error":
+                                    bad = cc["failed"] > 0 or cc["cancelled"] > 0
+                                    monitor["cook_state"] = "complete_with_errors" if bad else "complete"
                                 # H22 coalesces progress updates when items finish
                                 # together; the cook's end always gets a final row.
-                                events_list.append(_progress_row(node_path, elapsed))
+                                row = _progress_row(node_path, elapsed, total)
+                                events_list.append(row)
                                 events_list.append({
                                     "type": "cook_complete",
                                     "cook_state": monitor["cook_state"],
+                                    "processed": row["processed"],
+                                    "total": row["total"],
                                     "total_time_seconds": round_float(elapsed),
                                     "results_summary": {
                                         "total_events": len(events_list),
@@ -743,8 +783,8 @@ class TopsDiagnosticsMixin:
                             monitor["cook_state"] = "error"
                             events_list.append({
                                 "type": "cook_error",
-                                "node": event.node.name if event.node else node_path,
-                                "message": getattr(event, 'message', None) or None,
+                                "node": progress_node,
+                                "message": message,
                                 "timestamp": round_float(elapsed),
                             })
 
@@ -756,16 +796,16 @@ class TopsDiagnosticsMixin:
                         logger.warning("tops_monitor_stream callback failed on %s: %s",
                                        node_path, monitor["callback_error"])
 
-            # Item and progress events on every monitored pdg.Node. Cook-level
-            # events on the node for a single node (verified live), and once
-            # on the graph context for a network, so each cook ends once.
-            # pdg.EventType members do not combine with `|`, so it is one
-            # addEventHandler call per (emitter, type); each returns the
-            # handler object removeEventHandler needs.
+            # Item and progress events on every monitored pdg.Node. pdg.EventType
+            # members do not combine with `|`, so it is one addEventHandler call
+            # per (emitter, type); each returns the handler object
+            # removeEventHandler needs.
             item_types = (_pdg.EventType.WorkItemStateChange, _pdg.EventType.NodeProgressUpdate)
             cook_types = (_pdg.EventType.CookComplete, _pdg.EventType.CookError)
             plan = [(p, t) for p in pdg_nodes for t in item_types]
             plan += [(ctx if is_network else pdg_nodes[0], t) for t in cook_types]
+            if cook_ctx is not None:
+                plan.append((cook_ctx, _pdg.EventType.CookStart))
 
             def _remove_handlers(handlers):
                 for emitter, h in handlers:

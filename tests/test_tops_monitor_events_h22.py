@@ -66,10 +66,15 @@ class _Member:
         return f"EventType.{self.name}"
 
 
+class _PdgNodeBase:
+    """Stands in for pdg.Node, so the monitor can tell a node from a scheduler."""
+
+
 def _fake_pdg():
     mod = types.ModuleType("pdg")
     mod.EventType = types.SimpleNamespace(**{n: _Member(n) for n in _EVENT_TYPES})
     mod.workItemState = types.SimpleNamespace(**{n: _Member(n) for n in _STATES})
+    mod.Node = _PdgNodeBase
     return mod
 
 
@@ -110,7 +115,7 @@ class _FakeContext(_Registry):
         self.graph = types.SimpleNamespace(workItemById=lambda i: self.items.get(i))
 
 
-class _FakePdgNode(_Registry):
+class _FakePdgNode(_Registry, _PdgNodeBase):
     def __init__(self, ctx, name="proc"):
         super().__init__()
         self.context = ctx
@@ -131,9 +136,15 @@ def env(monkeypatch):
                                  childTypeCategory=lambda: None)
     gen = types.SimpleNamespace(parent=lambda: None, getPDGNode=lambda: state.gen,
                                 childTypeCategory=lambda: None)
+    # A topnet's localscheduler child answers getPDGNode() with a scheduler,
+    # not a pdg.Node (live probe 2026-10-07); it has no work items.
+    state.scheduler = types.SimpleNamespace(context=ctx, name="localscheduler",
+                                            addEventHandler=None, removeEventHandler=None)
+    sched = types.SimpleNamespace(parent=lambda: None, getPDGNode=lambda: state.scheduler,
+                                  childTypeCategory=lambda: None)
     net = types.SimpleNamespace(parent=lambda: None, getPDGNode=lambda: None,
                                 childTypeCategory=lambda: _TOP_CATEGORY,
-                                children=lambda: [gen, proc])
+                                children=lambda: [sched, gen, proc])
     nodes = {_NODE: proc, _NET: net}
     fake_hou = types.SimpleNamespace(node=lambda p: nodes.get(p),
                                      topNodeTypeCategory=lambda: _TOP_CATEGORY)
@@ -199,17 +210,19 @@ def test_start_registers_on_the_pdg_node_not_the_context(env):
     assert result["status"] == "monitoring"
     assert env.pnode.types() == sorted(
         ["WorkItemStateChange", "NodeProgressUpdate", "CookComplete", "CookError"])
-    # The graph context never delivers the item/progress events on H22.
-    assert env.ctx.added == []
+    # The graph context never delivers the item/progress events on H22; it
+    # only marks where a cook starts.
+    assert env.ctx.types() == ["CookStart"]
 
 
 def test_network_path_watches_each_child_and_the_context_for_cook_end(env):
     result = _call(env, "start", node=_NET)
     assert result["status"] == "monitoring"
+    # The scheduler child is skipped: it is not a pdg.Node.
     assert sorted(result["nodes_monitored"]) == ["gen", "proc"]
     for child in (env.gen, env.pnode):
         assert child.types() == ["NodeProgressUpdate", "WorkItemStateChange"]
-    assert env.ctx.types() == ["CookComplete", "CookError"]
+    assert env.ctx.types() == ["CookComplete", "CookError", "CookStart"]
     mid = result["monitor_id"]
     ws = env.pdg.workItemState
     _item(env, 1, ws.CookedSuccess, on=env.gen)
@@ -220,7 +233,7 @@ def test_network_path_watches_each_child_and_the_context_for_cook_end(env):
     stopped = _call(env, "stop", node=_NET, monitor_id=mid)
     assert stopped["summary"]["completed"] == 2
     assert stopped["cook_state"] == "complete"
-    assert len(env.ctx.removed) == 2 and len(env.gen.removed) == 2 and len(env.pnode.removed) == 2
+    assert len(env.ctx.removed) == 3 and len(env.gen.removed) == 2 and len(env.pnode.removed) == 2
 
 
 def test_stop_removes_every_registered_handler(env):
@@ -347,10 +360,12 @@ def test_a_second_cook_starts_its_progress_and_state_over(env):
     _cook_event(env, "CookComplete", env.pnode)
     assert _call(env, "status", monitor_id=mid)["cook_state"] == "complete"
 
-    # Second cook of the same 3 items: the first progress update comes first.
-    _progress(env)
+    # Second cook of the same 3 items, opened by the context's CookStart.
+    _cook_event(env, "CookStart", env.ctx)
     status = _call(env, "status", monitor_id=mid)
     assert status["cook_state"] == "cooking"
+    assert status["last_cook"]["completed"] == 0
+    _progress(env)
     first = _events(env, mid, "cook_progress")[-1]
     assert first["processed"] == 0 and first["percent"] == 0.0
     _state_change(env, 0, ws.CookedSuccess)
@@ -360,6 +375,77 @@ def test_a_second_cook_starts_its_progress_and_state_over(env):
     status = _call(env, "status", monitor_id=mid)
     assert status["last_cook"]["completed"] == 1
     assert status["summary"]["completed"] == 4  # the summary spans both cooks
+
+
+def test_events_trailing_a_finished_cook_do_not_reopen_it(env):
+    """A late progress tick or a Dirty/Waiting change is not a new cook."""
+    mid = _call(env, "start")["monitor_id"]
+    ws = env.pdg.workItemState
+    _item(env, 0, ws.CookedSuccess)
+    _state_change(env, 0, ws.CookedSuccess)
+    _cook_event(env, "CookComplete", env.pnode)
+    _progress(env)                      # trailing tick
+    _state_change(env, 0, _Member("Dirty"))   # a dirty with no cook behind it
+    status = _call(env, "status", monitor_id=mid)
+    assert status["cook_state"] == "complete"
+    assert status["last_cook"]["completed"] == 1
+
+
+def test_a_cooking_item_after_a_finished_cook_opens_a_new_one(env):
+    """Fallback boundary when no CookStart was seen."""
+    mid = _call(env, "start")["monitor_id"]
+    ws = env.pdg.workItemState
+    _item(env, 0, ws.CookedSuccess)
+    _state_change(env, 0, ws.CookedSuccess)
+    _cook_event(env, "CookComplete", env.pnode)
+    _state_change(env, 0, ws.Cooking)
+    status = _call(env, "status", monitor_id=mid)
+    assert status["cook_state"] == "cooking" and status["last_cook"]["completed"] == 0
+
+
+def test_cook_error_sticks_through_cancelled_items(env):
+    mid = _call(env, "start")["monitor_id"]
+    ws = env.pdg.workItemState
+    _item(env, 1, ws.CookedCancel)
+    _cook_event(env, "CookError", env.pnode, message="scheduler died")
+    _state_change(env, 1, ws.CookedCancel)
+    _cook_event(env, "CookComplete", env.pnode)
+    assert _call(env, "status", monitor_id=mid)["cook_state"] == "error"
+
+
+def test_a_cook_with_only_cancelled_items_is_not_complete(env):
+    mid = _call(env, "start")["monitor_id"]
+    ws = env.pdg.workItemState
+    _item(env, 1, ws.CookedCancel)
+    _state_change(env, 1, ws.CookedCancel)
+    _cook_event(env, "CookComplete", env.pnode)
+    status = _call(env, "status", monitor_id=mid)
+    assert status["cook_state"] == "complete_with_errors"
+    done = _events(env, mid, "cook_complete")[-1]
+    assert done["processed"] == 1 and done["total"] == 1
+
+
+def test_one_cook_ends_once_even_if_cook_complete_repeats(env):
+    mid = _call(env, "start")["monitor_id"]
+    _cook_event(env, "CookComplete", env.pnode)
+    _cook_event(env, "CookComplete", env.pnode)
+    assert len(_events(env, mid, "cook_complete")) == 1
+
+
+def test_force_stop_drops_a_monitor_whose_handler_will_not_detach(env):
+    mid = _call(env, "start")["monitor_id"]
+
+    def _stuck(handler):
+        raise RuntimeError("node deleted")
+
+    env.pnode.removeEventHandler = _stuck
+    assert _call(env, "stop", monitor_id=mid)["status"] == "stop_incomplete"
+    forced = _call(env, "stop", monitor_id=mid, force=True)
+    assert forced["status"] == "dropped_with_handlers_attached"
+    assert forced["handlers_still_attached"] == 4
+    assert mid not in env.handler._tops_monitors
+    # The path can be monitored again.
+    assert _call(env, "start")["status"] == "monitoring"
 
 
 def test_second_start_on_the_same_node_attaches_nothing_new(env):
