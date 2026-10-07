@@ -27,6 +27,12 @@ except ImportError:
     class HoudiniUnavailableError(RuntimeError):
         def __init__(self): super().__init__("Houdini unavailable")
 
+try:
+    from synapse.core.parm_report import note_missing
+except ImportError:  # standalone/test mode
+    def note_missing(missed, node, *names):
+        missed.append("|".join(names))
+
 
 _SOURCE_PATTERN = "SOLARIS_P5_VARIANTS"
 _TOOL_NAME = "synapse_solaris_create_variants"
@@ -170,6 +176,7 @@ def execute(params: Dict) -> Dict:
     try:
         with hou.undos.group(f"SYNAPSE: Create {variant_type} variants"):
             created = []
+            parms_missed: List[str] = []  # B1
 
             if variant_type == "material":
                 # Find existing componentmaterial to duplicate
@@ -206,6 +213,8 @@ def execute(params: Dict) -> Dict:
                         p = new_mat.parm(pname)
                         if p:
                             p.set(pval)
+                        else:
+                            note_missing(parms_missed, new_mat, pname)
 
                     created.append(new_mat)
 
@@ -277,6 +286,7 @@ def execute(params: Dict) -> Dict:
                 "variant_set_name": f"{variant_type}_variants",
                 "variants_created": variant_names,
                 "explore_node": explore_path,
+                "parms_missed": parms_missed,
             }
 
     except Exception:
