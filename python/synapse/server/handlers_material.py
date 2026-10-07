@@ -236,19 +236,27 @@ class MaterialHandlerMixin:
 
         from .main_thread import run_on_main
 
+        parms_missed = []
+
         def _apply_shader_parm(shader, parm_name, value):
             """Set a scalar or color parm on a shader node."""
             if value is None:
                 return
             if isinstance(value, (list, tuple)) and len(value) >= 3:
+                landed = False
                 for i, ch in enumerate(("r", "g", "b")):
                     p = shader.parm(f"{parm_name}{ch}")
                     if p:
                         p.set(float(value[i]))
+                        landed = True
+                if not landed:
+                    parms_missed.append(parm_name)
             else:
                 p = shader.parm(parm_name)
                 if p:
                     p.set(float(value))
+                else:
+                    parms_missed.append(parm_name)
 
         def _on_main():
             node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
@@ -311,6 +319,7 @@ class MaterialHandlerMixin:
                     result["category"] = category
                 if preset_name:
                     result["preset"] = preset_name
+                result["parms_missed"] = parms_missed
                 return result
 
         return run_on_main(_on_main, label="material:_handle_create_material")
