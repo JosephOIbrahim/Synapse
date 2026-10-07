@@ -404,13 +404,13 @@ RECIPES = {
                 {"type": "materiallibrary", "name": "matlib1", "parms": {}},
                 {"type": "assignmaterial", "name": "assign1", "parms": {}},
                 {"type": "configureprimitive", "name": "configure1", "parms": {"setkind": 1}},
-                {"type": "usdrop", "name": "usdrop1", "parms": {}},
+                {"type": "usd_rop", "name": "usd_rop1", "parms": {}},
             ],
             "connections": [
                 ["import_geo", "assign1", 0],
                 ["matlib1", "assign1", 1],
                 ["assign1", "configure1", 0],
-                ["configure1", "usdrop1", 0],
+                ["configure1", "usd_rop1", 0],
             ],
             "key_parms": ["setkind"],
             "explanation": (
