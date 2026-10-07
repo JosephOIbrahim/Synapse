@@ -808,6 +808,30 @@ def collect(st):
     return out
 
 
+def _slug(s):
+    return re.sub(r"[^a-z0-9]+", "_", str(s).lower()).strip("_")
+
+
+def new_test_path(st, cid, claimed=()):
+    """A new test path no earlier run owns. Code decides, from the tree.
+
+    Seeds reuse ids run to run (SEED-1 again), so the id alone collided with a committed
+    test and refuse_item turned the item away as "an existing test is the exam". The run
+    folder's name tags the path; a numeric suffix then walks until the path is free by the
+    same check refuse_item uses (tracked in git) and on disk (an untracked leftover would
+    let the `exists` acceptance pass without the fixer writing anything).
+    """
+    tag, cid = _slug(os.path.basename(os.path.normpath(st["run"]))), _slug(cid) or "item"
+    stem = "tests/test_graph_%s_%s" % (tag, cid) if tag else "tests/test_graph_%s" % cid
+    n = 1
+    while True:
+        p = stem + (".py" if n == 1 else "_%d.py" % n)
+        if (p not in claimed and not os.path.exists(os.path.join(st["root"], p))
+                and git("ls-files", "--error-unmatch", "--", p).returncode != 0):
+            return p
+        n += 1
+
+
 def route(st):
     """Scout candidates -> veto -> jev_sweep -> proposed fix items. Writes two files, adds nothing."""
     sys.path.insert(0, os.path.join(ROOT, "harness", "jev"))
@@ -819,6 +843,7 @@ def route(st):
             c["decision"] = {"route": "vetoed", "tier": None, "priority": 0.0,
                              "reason": "rule: " + c["veto"], "jev": None}
     idx = _tests_index()
+    claimed = set()
     groups = {}
     for c in cands:
         if c["decision"]["route"] == "fix_now":
@@ -827,7 +852,8 @@ def route(st):
     for f, cs in groups.items():
         cs.sort(key=lambda c: -c["decision"]["priority"])
         tests = [t for t in tests_for(f, idx)]
-        new_test = "tests/test_graph_%s.py" % re.sub(r"[^a-z0-9]+", "_", cs[0]["id"].lower())
+        new_test = new_test_path(st, cs[0]["id"], claimed)
+        claimed.add(new_test)
         files = [f] + ([new_test] if f.endswith(".py") else [])
         run = [t for t in RATCHETS if os.path.exists(os.path.join(ROOT, t))] + tests
         accept = [{"kind": "pytest", "args": " ".join(run) + " -q -p no:cacheprovider"}] if run else []
