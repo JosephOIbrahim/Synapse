@@ -411,74 +411,80 @@ class TopsDiagnosticsMixin:
         if not hasattr(self, "_tops_monitors"):
             self._tops_monitors: Dict[str, Dict[str, Any]] = {}
 
+        def _summary(monitor):
+            # Running counters, never recomputed from the event buffer: the
+            # buffer is trimmed past _MAX_MONITOR_EVENTS and would undercount.
+            c = monitor["counts"]
+            return {
+                "completed": c["completed"],
+                "cached": c["cached"],
+                "failed": c["failed"],
+                "cancelled": c["cancelled"],
+                "total_processed": c["completed"] + c["cached"] + c["failed"] + c["cancelled"],
+            }
+
+        def _report_flags(monitor, result):
+            if monitor.get("cook_state"):
+                result["cook_state"] = monitor["cook_state"]
+            if monitor.get("was_truncated"):
+                result["events_truncated"] = True
+                result["events_truncated_note"] = (
+                    f"Event buffer exceeded {_MAX_MONITOR_EVENTS} — oldest "
+                    "events were dropped; the summary counts are unaffected. "
+                    "Increase SYNAPSE_MONITOR_EVENT_CAP or reduce cook complexity."
+                )
+            if monitor.get("callback_error"):
+                # The callback hit an event it could not read; say so instead
+                # of letting an empty event list look like a quiet cook.
+                result["callback_error"] = monitor["callback_error"]
+            return result
+
         if action == "stop":
             if not monitor_id:
                 raise ValueError(
                     "Couldn't find monitor -- "
                     "please provide the monitor_id returned when you started monitoring"
                 )
-            monitor = self._tops_monitors.pop(monitor_id, None)
+            monitor = self._tops_monitors.get(monitor_id)
             if monitor is None:
                 raise ValueError(
                     f"Couldn't find monitor '{monitor_id}' -- "
                     "it may have already been stopped"
                 )
 
-            # Unregister callback in main thread
+            # Unregister callbacks in main thread, from the object they were
+            # registered on (captured at start; never re-read from the node).
             def _stop():
-                handlers = monitor.get("callback_handlers") or []
-                pdg_node = monitor.get("pdg_node")
+                target = monitor.get("registered_on")
                 removal_errors: List[str] = []
-                if handlers and pdg_node is not None:
+                for h in monitor.get("callback_handlers") or []:
                     try:
-                        ctx = pdg_node.context
+                        target.removeEventHandler(h)
                     except Exception as exc:
-                        ctx = None
-                        removal_errors.append(f"graph context unreadable: {type(exc).__name__}: {exc}")
+                        # Keep going: one stuck handler must not leave the others attached.
+                        removal_errors.append(f"removeEventHandler failed: {type(exc).__name__}: {exc}")
                         logger.warning("tops_monitor_stream stop: %s", removal_errors[-1])
-                    if ctx is not None:
-                        for h in handlers:
-                            try:
-                                ctx.removeEventHandler(h)
-                            except Exception as exc:
-                                # Keep going: one stuck handler must not leave the others attached.
-                                removal_errors.append(f"removeEventHandler failed: {type(exc).__name__}: {exc}")
-                                logger.warning("tops_monitor_stream stop: %s", removal_errors[-1])
 
                 events = monitor.get("events", [])
                 elapsed = time.monotonic() - monitor.get("start_time", time.monotonic())
-
-                # Build summary from collected events
-                completed = sum(1 for e in events if e.get("type") == "work_item_completed")
-                failed = sum(1 for e in events if e.get("type") == "work_item_failed")
-                total = completed + failed
-
                 result = {
                     "monitor_id": monitor_id,
                     "status": "stopped",
                     "elapsed_seconds": round_float(elapsed),
                     "events_collected": len(events),
-                    "summary": {
-                        "completed": completed,
-                        "failed": failed,
-                        "total_processed": total,
-                    },
+                    "summary": _summary(monitor),
                 }
-                if monitor.get("was_truncated"):
-                    result["events_truncated"] = True
-                    result["events_truncated_note"] = (
-                        f"Event buffer exceeded {_MAX_MONITOR_EVENTS} — oldest "
-                        "events were dropped. Increase SYNAPSE_MONITOR_EVENT_CAP "
-                        "or reduce cook complexity."
-                    )
-                if monitor.get("callback_error"):
-                    result["callback_error"] = monitor["callback_error"]
                 if removal_errors:
                     # A handler still attached keeps firing into a dropped monitor.
                     result["handler_removal_errors"] = removal_errors
-                return result
+                return _report_flags(monitor, result)
 
-            return _run_in_main_thread_pdg(_stop)
+            # Drop the record only once the main thread has run _stop: if the
+            # marshal times out mid-cook, the handlers are still attached and
+            # the caller must be able to retry with the same monitor_id.
+            result = _run_in_main_thread_pdg(_stop)
+            self._tops_monitors.pop(monitor_id, None)
+            return result
 
         if action == "status":
             if not monitor_id or monitor_id not in self._tops_monitors:
@@ -488,28 +494,16 @@ class TopsDiagnosticsMixin:
                 )
 
             monitor = self._tops_monitors[monitor_id]
-            events = monitor.get("events", [])
+            events = list(monitor.get("events", []))  # snapshot; the cook thread appends
             elapsed = time.monotonic() - monitor.get("start_time", time.monotonic())
-            completed = sum(1 for e in events if e.get("type") == "work_item_completed")
-            failed = sum(1 for e in events if e.get("type") == "work_item_failed")
-
-            status = {
+            return _report_flags(monitor, {
                 "monitor_id": monitor_id,
                 "status": "active",
                 "elapsed_seconds": round_float(elapsed),
                 "events_collected": len(events),
                 "latest_events": events[-10:] if events else [],
-                "summary": {
-                    "completed": completed,
-                    "failed": failed,
-                    "total_processed": completed + failed,
-                },
-            }
-            if monitor.get("callback_error"):
-                # The callback hit an event it could not read; say so instead
-                # of letting an empty event list look like a quiet cook.
-                status["callback_error"] = monitor["callback_error"]
-            return status
+                "summary": _summary(monitor),
+            })
 
         # action == "start"
         def _start():
@@ -536,16 +530,31 @@ class TopsDiagnosticsMixin:
             import pdg as _pdg
 
             mid = f"monitor-{deterministic_uuid(f'tops_monitor_{node_path}')[:8]}"
+            existing = self._tops_monitors.get(mid)
+            if existing is not None:
+                # One monitor per node. A second start would otherwise attach
+                # a second set of handlers and orphan the first.
+                return {
+                    "monitor_id": mid,
+                    "node": node_path,
+                    "status": "already_monitoring",
+                    "note": "This node already has a monitor; use action='status' "
+                            "or action='stop' with this monitor_id",
+                }
+
             events_list: List[Dict] = []
             start_time = time.monotonic()
-            # The record stored in self._tops_monitors; the callback flags
-            # truncation on it, so it must exist before the callback does.
+            # The record stored in self._tops_monitors; the callback updates it,
+            # so it must exist before the callback does.
             monitor: Dict[str, Any] = {
                 "node_path": node_path,
                 "pdg_node": pdg_node,
                 "events": events_list,
                 "start_time": start_time,
+                "counts": {"completed": 0, "cached": 0, "failed": 0, "cancelled": 0},
             }
+            counts = monitor["counts"]
+            ws = _pdg.workItemState
 
             def _on_event(event):
                 """PDG event callback -- must not block the cook thread."""
@@ -557,8 +566,7 @@ class TopsDiagnosticsMixin:
                         monitor["was_truncated"] = True
 
                     etype = event.type
-                    now = time.monotonic()
-                    elapsed = now - start_time
+                    elapsed = time.monotonic() - start_time
 
                     if etype == _pdg.EventType.WorkItemStateChange:
                         # H22 pdg.Event carries workItemId + currentState, not a
@@ -569,7 +577,7 @@ class TopsDiagnosticsMixin:
                         try:
                             wi = event.context.graph.workItemById(item_id)
                         except Exception as exc:
-                            # The event still counts; only frame/cookTime/outputs go missing.
+                            # The event still counts; only frame/duration/outputs go missing.
                             logger.debug("tops_monitor_stream: workItemById(%s) failed: %s", item_id, exc)
                             wi = None
                         item_info = {
@@ -579,57 +587,77 @@ class TopsDiagnosticsMixin:
                             "timestamp": round_float(elapsed),
                         }
 
-                        if state == _pdg.workItemState.Cooking:
+                        if state == ws.Cooking:
                             item_info["type"] = "work_item_started"
                             events_list.append(item_info)
 
-                        elif state == _pdg.workItemState.CookedSuccess:
+                        elif state in (ws.CookedSuccess, ws.CookedCache):
+                            cached = state == ws.CookedCache
+                            counts["cached" if cached else "completed"] += 1
                             item_info["type"] = "work_item_completed"
-                            item_info["duration_seconds"] = round_float(
-                                getattr(wi, 'cookTime', 0.0)
-                            )
+                            if cached:
+                                item_info["cached"] = True
+                            duration = getattr(wi, 'cookDuration', None)
+                            if duration is not None:
+                                item_info["duration_seconds"] = round_float(duration)
                             # Try to get output path from result data
                             try:
-                                outputs = wi.resultData
+                                outputs = wi.resultData if wi is not None else None
                                 if outputs:
-                                    item_info["output_path"] = str(outputs[0]) if outputs else ""
+                                    item_info["output_path"] = str(outputs[0])
                             except Exception as exc:
                                 logger.debug("tops_monitor_stream: resultData unreadable for %s: %s", item_id, exc)
                             events_list.append(item_info)
 
-                        elif state == _pdg.workItemState.CookedFail:
+                        elif state == ws.CookedFail:
+                            counts["failed"] += 1
                             item_info["type"] = "work_item_failed"
-                            item_info["error_message"] = getattr(wi, 'lastError', "Unknown error")
+                            # H22 work items have no lastError; the event's own
+                            # message is the only error text it carries.
+                            item_info["error_message"] = getattr(event, 'message', None) or None
+                            events_list.append(item_info)
+
+                        elif state == ws.CookedCancel:
+                            counts["cancelled"] += 1
+                            item_info["type"] = "work_item_cancelled"
                             events_list.append(item_info)
 
                     elif etype == _pdg.EventType.NodeProgressUpdate:
                         # H22 has no CookProgress event and pdg.Event carries no
-                        # counts; derive them from the node's work items.
+                        # counts. Completed comes from the running counters; the
+                        # node's work item list only gives the total.
                         pnode = event.node
-                        items = list(getattr(pnode, 'workItems', None) or [])
-                        total = len(items)
-                        done_states = (
-                            _pdg.workItemState.CookedSuccess,
-                            _pdg.workItemState.CookedFail,
-                        )
-                        completed = sum(1 for w in items if w.state in done_states)
-                        pct = round_float((completed / total * 100.0) if total > 0 else 0.0)
+                        total = len(getattr(pnode, 'workItems', None) or [])
+                        done = sum(counts.values())
+                        pct = round_float(min(done / total, 1.0) * 100.0 if total > 0 else 0.0)
                         events_list.append({
                             "type": "cook_progress",
                             "node": pnode.name if pnode else node_path,
-                            "completed": completed,
+                            "completed": done,
                             "total": total,
                             "percent": pct,
                             "timestamp": round_float(elapsed),
                         })
 
                     elif etype == _pdg.EventType.CookComplete:
+                        monitor["cook_state"] = "complete"
                         events_list.append({
                             "type": "cook_complete",
                             "total_time_seconds": round_float(elapsed),
                             "results_summary": {
                                 "total_events": len(events_list),
                             },
+                            "timestamp": round_float(elapsed),
+                        })
+
+                    elif etype == _pdg.EventType.CookError:
+                        # A node or scheduler error can end a cook with no work
+                        # item reaching CookedFail; it is a terminal event too.
+                        monitor["cook_state"] = "error"
+                        events_list.append({
+                            "type": "cook_error",
+                            "node": event.node.name if event.node else node_path,
+                            "message": getattr(event, 'message', None) or None,
                             "timestamp": round_float(elapsed),
                         })
 
@@ -641,21 +669,17 @@ class TopsDiagnosticsMixin:
                         logger.warning("tops_monitor_stream callback failed on %s: %s",
                                        node_path, monitor["callback_error"])
 
-            # Register on the PDG graph context. pdg.EventType members do not
-            # combine with `|` (TypeError on H22.0.400), so it is one
-            # addEventHandler call per event type; each returns the handler
-            # object removeEventHandler needs.
-            ctx = pdg_node.context
-            if ctx is None:
-                raise RuntimeError(
-                    f"Couldn't start monitoring {node_path} -- its PDG node has "
-                    "no graph context, so no cook events can be received"
-                )
-
+            # Register on the pdg.Node itself. On H22.0.400 the graph context
+            # never delivers WorkItemStateChange or NodeProgressUpdate (live
+            # hython probe 2026-10-07: 0 events on the context, 130 and 11 on
+            # the node for the same cooks), and node-level handlers see only
+            # this node's items. pdg.EventType members do not combine with `|`,
+            # so it is one addEventHandler call per type; each returns the
+            # handler object removeEventHandler needs.
             def _remove_handlers(handlers):
                 for h in handlers:
                     try:
-                        ctx.removeEventHandler(h)
+                        pdg_node.removeEventHandler(h)
                     except Exception as exc:
                         # Rolling back a failed start; the original error is what gets raised.
                         logger.warning("tops_monitor_stream rollback: removeEventHandler failed: %s", exc)
@@ -666,8 +690,9 @@ class TopsDiagnosticsMixin:
                     _pdg.EventType.WorkItemStateChange,
                     _pdg.EventType.NodeProgressUpdate,
                     _pdg.EventType.CookComplete,
+                    _pdg.EventType.CookError,
                 ):
-                    handlers.append(ctx.addEventHandler(_on_event, etype))
+                    handlers.append(pdg_node.addEventHandler(_on_event, etype))
             except Exception as exc:
                 _remove_handlers(handlers)
                 raise RuntimeError(
@@ -677,6 +702,7 @@ class TopsDiagnosticsMixin:
 
             try:
                 monitor["callback_handlers"] = handlers
+                monitor["registered_on"] = pdg_node
                 self._tops_monitors[mid] = monitor
             except Exception:
                 # If storage fails, unregister the callbacks to prevent leak
