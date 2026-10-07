@@ -209,3 +209,31 @@ def test_changed_decision_beats_the_old_one_despite_incidental_overlap(memory):
 def test_which_side_asks_for_a_value(memory):
     decision = memory.decision("Key light stays warm from frame left; rim is a cool kicker.", "Look.")
     assert [m.id for m in memory.recall("Which side is the key light on?")] == [decision.id]
+
+
+def test_unknown_verb_does_not_trip_the_coverage_guard(memory):
+    decision = memory.decision("Backdrop is a charcoal grey infinity cyc with a slight vignette.", "Contrast.")
+    assert [m.id for m in memory.recall("how are we handling the backdrop?")] == [decision.id]
+    # An unknown NOUN still refuses.
+    assert memory.recall("how are we handling the turntable backdrop?") == []
+
+
+def test_word_forms_fold_on_both_sides(memory):
+    decision = memory.decision("Backdrop is a charcoal grey infinity cyc with a slight vignette.", "Contrast.")
+    assert [m.id for m in memory.recall("is there vignetting on the backdrop?")] == [decision.id]
+
+
+def test_decision_line_outweighs_reasoning_line(memory):
+    memory.store.add(Memory(
+        id="backdrop", created_at="2026-01-01", updated_at="2026-01-01",
+        content="**Decision:** Backdrop is a charcoal cyc behind the plinth.\n**Reasoning:** Contrast.",
+        memory_type=MemoryType.DECISION,
+    ))
+    memory.store.add(Memory(
+        id="fog", created_at="2026-09-09", updated_at="2026-09-09",
+        # Also opens on the backdrop (same subject score) and is newer, so
+        # only the decision-line weighting can put the backdrop record first.
+        content="**Decision:** Backdrop haze: light fog, density 0.02.\n**Reasoning:** Depth behind the plinth.",
+        memory_type=MemoryType.DECISION,
+    ))
+    assert memory.recall("what's behind the plinth backdrop?")[0].id == "backdrop"

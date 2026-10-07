@@ -179,6 +179,11 @@ _RECALL_FILLER = frozenset({
     "decide", "decided", "deciding", "decision", "decisions",
     "choose", "chose", "chosen", "choosing", "choice", "choices",
     "agree", "agreed",
+    # conversational padding: "is there a way to...", "too", "doing", "off"
+    "way", "too", "off", "out", "doing", "like", "really", "very", "bit",
+    "little", "lot", "got", "here", "then", "than", "if", "but", "not", "no",
+    "yes", "ok", "okay", "hey", "well", "quite", "pretty", "sort", "maybe",
+    "anything", "something", "everything", "ones",
 })
 
 # Spelling variants folded to one key, on the question and the record alike.
@@ -208,8 +213,10 @@ _RECALL_SYNONYMS_RAW = (
 
 def _stem_recall_word(word: str) -> str:
     """Crude stem of one lowercased word: spelling variant, plural, then
-    -ing/-ity/-ed/-er and a final -e, so render/renders/rendered/renderer
-    and dense/density each land on one key."""
+    -ing/-ity/-ion/-ness/-ed/-er/-ly, a final -e, a final -y read as -i and a
+    doubled final consonant, so render/renders/rendered/renderer,
+    dense/density, shiny/shininess and vignette/vignetting each land on one
+    key."""
     word = _RECALL_VARIANTS.get(word, word)
     if len(word) > 4 and word.endswith("ies"):
         word = word[:-3] + "y"
@@ -221,12 +228,17 @@ def _stem_recall_word(word: str) -> str:
     stripped = True
     while stripped:  # renderer -> render -> rend, the same key as render
         stripped = False
-        for suffix, keep in (("ing", 3), ("ity", 3), ("ed", 3), ("er", 4)):
+        for suffix, keep in (("ing", 3), ("ity", 3), ("ion", 4), ("ness", 3),
+                             ("ed", 3), ("er", 4), ("ly", 4)):
             if word.endswith(suffix) and len(word) - len(suffix) >= keep:
                 word = word[:-len(suffix)]
                 stripped = True
                 break
     if len(word) > 3 and word.endswith("e"):
+        word = word[:-1]
+    if len(word) > 3 and word.endswith("y"):
+        word = word[:-1] + "i"
+    if len(word) >= 5 and word[-1] == word[-2] and word[-1] not in "aeiouslfz":
         word = word[:-1]
     return word
 
@@ -278,11 +290,20 @@ _RECALL_VALUE_WORDS = frozenset(_fold_recall_word(w) for w in (
 
 
 def _recall_split_terms(query: str) -> tuple:
-    """(required terms, value terms) of a question. A question made only of
-    value words requires them all."""
+    """(required terms, value terms, loose terms) of a question. A question
+    made only of value words requires them all. Loose terms are the keys of
+    verb- and adverb-shaped words (-ing, -ed, -ly): they stay required when
+    the store knows them, but their absence never trips the coverage guard,
+    because "how are we handling the X" is still a question about X."""
     terms = _recall_terms(query)
     required = terms - _RECALL_VALUE_WORDS
-    return (required, terms - required) if required else (terms, set())
+    loose = {
+        _fold_recall_word(w) for w in re.findall(r"\w+", query.casefold())
+        if w.endswith(("ing", "ed", "ly"))
+    }
+    if not required:
+        return terms, set(), loose
+    return required, terms - required, loose
 
 
 def _recall_answered(terms: set, tokens) -> set:
@@ -302,11 +323,19 @@ def _recall_answered(terms: set, tokens) -> set:
 # replaced even when the old one carries more incidental words.
 _RECALL_SUBJECT_WORDS = 3
 
+# Where a decision record's reasoning starts (see SynapseMemory.decision).
+_RECALL_REASONING = re.compile(r"\*\*Reasoning:\*\*", re.IGNORECASE)
 
-def _recall_score(terms: set, tokens: list) -> tuple:
-    """(terms answered, terms answered within the record's subject words)."""
-    subject = [t for t in tokens if t not in _RECALL_FILLER_KEYS][:_RECALL_SUBJECT_WORDS]
-    return len(_recall_answered(terms, tokens)), len(_recall_answered(terms, subject))
+
+def _recall_score(terms: set, tokens: list, decision_tokens: list) -> tuple:
+    """(weighted terms answered, terms answered within the record's subject
+    words). A term the decision line answers counts twice; one only the
+    reasoning answers counts once, because the reasoning mentions neighbours
+    ("behind the plinth") that the decision is not about."""
+    answered = _recall_answered(terms, tokens)
+    in_decision = _recall_answered(terms, decision_tokens)
+    subject = [t for t in decision_tokens if t not in _RECALL_FILLER_KEYS][:_RECALL_SUBJECT_WORDS]
+    return len(answered) + len(in_decision), len(_recall_answered(terms, subject))
 
 
 def _recall_required(n_terms: int) -> int:
@@ -2098,16 +2127,22 @@ class SynapseMemory:
         # meaningful term finds nothing. Bounded typed-record lookup: no
         # vectors, no invented IDs.
         if q:
-            required, value = _recall_split_terms(q)
-            terms = required | value
-            need = _recall_required(len(required))
+            required, value, loose = _recall_split_terms(q)
             tokens = {m.id: _recall_tokens(m.content + " " + m.summary) for m in pool}
             known = _recall_answered(required, (t for toks in tokens.values() for t in toks))
+            absent = required - known
+            if absent and absent <= loose:
+                required = known  # an unknown verb or adverb is not a subject
+                absent = set()
+            terms = required | value
+            need = _recall_required(len(required))
             scored = []
-            if required and known == required:
+            if required and not absent:
                 for m in pool:
                     if len(_recall_answered(required, tokens[m.id])) >= need:
-                        hits, subject = _recall_score(terms, tokens[m.id])
+                        decision_line = _RECALL_REASONING.split(m.content, 1)[0]
+                        hits, subject = _recall_score(
+                            terms, tokens[m.id], _recall_tokens(decision_line))
                         scored.append((-hits, -subject, m))
             # Stable: an equal score keeps the fresher-first, id-asc order
             # above, so a changed decision outranks the one it replaced.
