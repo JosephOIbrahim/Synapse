@@ -53,6 +53,9 @@ htmlcov/
 MagicMock/
 tests/fixtures/.synapse/
 /.synapse/
+# Opening demo/synapse_demo.hip in place writes its memory store beside the
+# hip ($HIP/.synapse/). origin is public and auto-pushes: never track it.
+demo/.synapse/
 
 # Distribution
 *.tar.gz
