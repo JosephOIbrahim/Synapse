@@ -142,8 +142,10 @@ def same_store(path_a: Optional[str], path_b: Optional[str]) -> bool:
 # Stores this process has already followed into another folder: source store
 # dir -> destination store dir (PUX-01b). Every panel pinned to a scene follows
 # its Save As. The first carries the files (or parks the chat it finds there);
-# a second finds nothing left to carry and must not park the first one's chat
-# over the previous slot. Dropped when a panel binds to the source store again.
+# a second must not park the first one's chat over the previous slot. A source
+# previous the first left behind (the destination slot was taken) stays at the
+# source: no later follower could carry it without parking over that slot.
+# Dropped when a panel binds to the source store again.
 _carried: dict = {}
 
 
@@ -170,8 +172,9 @@ def move_conversation(src_path: str, dst_path: str) -> bool:
     parked into the destination's previous slot, never overwritten (parking
     replaces an older previous, as a new boot does); the source's own previous
     then stays where it is. A second panel following the same Save As finds
-    its store already carried here and changes nothing, so the previous slot
-    survives. Best-effort: returns ``True`` if anything moved.
+    its store already carried here and changes nothing, even when that source
+    previous was left behind, so the destination previous slot survives.
+    Best-effort: returns ``True`` if anything moved.
     """
     if not src_path or not dst_path or same_store(src_path, dst_path):
         return False
@@ -179,8 +182,7 @@ def move_conversation(src_path: str, dst_path: str) -> bool:
     src_key, dst_key = _store_key(src_path), _store_key(dst_path)
     moved = False
     with _lock:
-        if (_carried.get(src_key) == dst_key and not os.path.exists(src_path)
-                and not os.path.exists(src_prev)):
+        if _carried.get(src_key) == dst_key and not os.path.exists(src_path):
             return False
         try:
             os.makedirs(os.path.dirname(dst_path), exist_ok=True)
