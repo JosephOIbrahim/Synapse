@@ -105,3 +105,6 @@ def test_painted_meta_font_clears_floor_and_uses_bundled_mono(tmp_path):
     else:
         assert status.get("build_mismatch"), "unregistered bundle must be flagged"
     assert QtGui.QFontInfo(font).fixedPitch()
+    # The status role's third axis: DATA tracking, painted, not only named in source.
+    assert font.letterSpacingType() == QtGui.QFont.SpacingType.PercentageSpacing
+    assert font.letterSpacing() == 100 + t.TRACKING_EM["DATA"] * 100
