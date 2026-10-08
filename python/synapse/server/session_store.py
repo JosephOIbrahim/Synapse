@@ -145,7 +145,9 @@ def same_store(path_a: Optional[str], path_b: Optional[str]) -> bool:
 # a second must not park the first one's chat over the previous slot. A source
 # previous the first left behind (the destination slot was taken) stays at the
 # source: no later follower could carry it without parking over that slot.
-# Dropped when a panel binds to the source store again.
+# Recorded on every completed follow, even one that found nothing to carry or
+# park (an empty or never-written source): its follow-up save still puts a chat
+# at the destination. Dropped when a panel binds to the source store again.
 _carried: dict = {}
 
 
@@ -173,7 +175,8 @@ def move_conversation(src_path: str, dst_path: str) -> bool:
     replaces an older previous, as a new boot does); the source's own previous
     then stays where it is. A second panel following the same Save As finds
     its store already carried here and changes nothing, even when that source
-    previous was left behind, so the destination previous slot survives.
+    previous was left behind or there was nothing at the source to carry, so
+    the destination previous slot survives.
     Best-effort: returns ``True`` if anything moved.
     """
     if not src_path or not dst_path or same_store(src_path, dst_path):
@@ -197,8 +200,9 @@ def move_conversation(src_path: str, dst_path: str) -> bool:
                           (_owner_path(src_prev), _owner_path(dst_prev))]
             for src, dst in pairs:
                 moved = _carry(src, dst) or moved
-            if moved or parked:
-                _carried[src_key] = dst_key
+            # Recorded even when nothing moved: the follow-up save writes this
+            # panel's chat here, and a later follower must not park it.
+            _carried[src_key] = dst_key
         except OSError as exc:
             logger.warning("session store: move %s -> %s failed: %s",
                            src_path, dst_path, exc)
