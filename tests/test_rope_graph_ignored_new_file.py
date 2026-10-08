@@ -41,7 +41,7 @@ def world(tmp_path, monkeypatch):
     for k in [k for k in os.environ if k.upper().startswith("GIT_")]:
         monkeypatch.delenv(k)                     # graph.git inherits os.environ
     repo = tmp_path / "repo"
-    _write(repo / ".gitignore", "/.synapse/\n__pycache__/\n")
+    _write(repo / ".gitignore", "/.synapse/\n__pycache__/\ndemo/.synapse/\n")
     _write(repo / "pkg" / "a.py", "VALUE = 'old'\n")
     _write(repo / OLD, "name: demo-gate0\nsteps: [gui, headless]\n")
     assert _git(repo, "init", "-q").returncode == 0
@@ -131,6 +131,26 @@ def test_undeclared_ignored_files_are_still_out_of_view(world):
     assert verdict == "kept", note
     assert _committed(repo) == {"pkg/a.py"}
     assert _git(repo, "ls-files", "--", ".synapse/scratch.json").stdout.strip() == ""
+
+
+def test_force_add_only_follows_a_force_tracked_directory(world):
+    """Fails if `add -f` would track a new file in an ignored directory nothing is tracked from.
+
+    demo/.synapse/ is a memory store that must never be tracked (origin is public); a card that
+    declares a file there is the owner's call, and the gate says so without copying anything.
+    """
+    G, st, repo, slot = world
+    store = "demo/.synapse/memory.json"
+    it = _fix(st, slot, ["pkg/a.py", store])
+    _write(slot / "pkg" / "a.py", "VALUE = 'new'\n")
+    _write(slot / store, "{}")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    verdict, note = G.gate(st, it)
+    assert verdict == "ignored", note
+    assert store in note
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert not (repo / store).exists()
+    assert not (slot / store).exists()
 
 
 def test_a_failed_check_removes_the_ignored_file_it_copied(world):

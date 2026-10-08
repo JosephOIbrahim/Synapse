@@ -34,6 +34,7 @@ import glob
 import importlib.util
 import json
 import os
+import posixpath
 import re
 import shutil
 import subprocess
@@ -646,6 +647,14 @@ def gate(st, it):
         lost = _dropped_logging(slot, changed, "%s %s" % (it.get("change", ""), it.get("title", "")))
         if lost:
             return "dropped_log", "a fix removed logging its card never mentioned: " + "; ".join(lost[:3])
+        # `add -f` below may only follow a precedent: a new ignored file joins a directory that
+        # is already force-tracked (.synapse/contracts/). An ignored directory nothing is tracked
+        # from (demo/.synapse/, a memory store; origin is public) is the owner's call, not a fix's.
+        untracked_dirs = [rel for code, rel in changed if code == "!!"
+                          and not git("ls-files", "--", posixpath.dirname(rel) or ".", cwd=slot).stdout.strip()]
+        if untracked_dirs:
+            return "ignored", "new file under a gitignored path nothing there is tracked from: " \
+                + ", ".join(untracked_dirs[:4])
         existed ={p: os.path.exists(os.path.join(root, p)) for p in paths}
         for p in paths:
             os.makedirs(os.path.dirname(os.path.join(root, p)) or root, exist_ok=True)
