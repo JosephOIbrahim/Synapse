@@ -120,7 +120,12 @@ def reset() -> None:
 
 
 def is_trouble(outcome: Any) -> bool:
-    """True for an outcome after which the next change is checked again."""
+    """True for an outcome after which the next change is checked again.
+
+    A refusal by the gate itself needs no flag: it never clears ``preflight_due``, and a failing
+    probe is never cached, so a ``needs_artist`` refusal such as ``scene.undo_off`` is checked
+    again on the next change, and clears once the artist has fixed it.
+    """
     return isinstance(outcome, dict) and outcome.get("outcome") in ("retryable", "unrecoverable")
 
 

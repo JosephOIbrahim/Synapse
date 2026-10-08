@@ -46,6 +46,17 @@ def format_report(result):
     return summary + "\n\n" + "\n\n".join(lines)
 
 
+# Outcome lines whose call was never sent (Level 1, R-6): the check did not run.
+_NOT_RUN = ("refused: ", "retryable: ", "unrecoverable: ", "needs_artist: ")
+
+
+def failure_heading(message):
+    """The heading over a failure: a refusal means SYNAPSE did not run the check at all."""
+    if isinstance(message, str) and message.startswith(_NOT_RUN):
+        return "SYNAPSE did not run the check"
+    return "SYNAPSE check unavailable"
+
+
 try:
     from PySide6 import QtCore, QtWidgets
 except ImportError:
@@ -127,7 +138,7 @@ if QtWidgets is not None:
 
         @QtCore.Slot(str)
         def _show_failure(self, message):
-            self.report.setPlainText("SYNAPSE check unavailable\n\n" + message)
+            self.report.setPlainText(failure_heading(message) + "\n\n" + message)
             self.copy_button.setEnabled(True)
 
         @QtCore.Slot()
