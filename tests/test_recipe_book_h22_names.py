@@ -104,21 +104,21 @@ def test_trail_effect_resolves_in_the_sop_catalogue():
     _assert_recipe_resolves("motion", "trail_effect")
 
 
-# -- LX-05: bend_twist sets bend.bend and twist.strength (op 'twist') --
+# -- LX-05: bend_twist sets bend.bend and twists on the Bend SOP itself --
+# (the Twist SOP is deprecated in 22.0.400; see test_recipe_bend_twist_on_bend_sop)
 
 def test_bend_twist_sets_the_real_bend_and_twist_parms():
     recipe = RECIPES["deformation"]["bend_twist"]
     bend = _node(recipe, "bend1")["parms"]
-    twist = _node(recipe, "twist1")["parms"]
     assert "bendangle" not in bend and bend["bend"] == 45
-    assert "twist" not in twist and twist["strength"] == 180
-    tokens = _parm("SOP", "twist", "op")["menu_tokens"]
-    assert tokens[twist["op"]] == "twist", tokens
-    assert recipe["key_parms"] == ["bend", "strength"]
+    assert bend["enabletwist"] == 1 and bend["twist"] == 180
+    assert not any(n["type"] == "twist" for n in recipe["nodes"])
+    assert _parm("SOP", "bend", "enabletwist")["type"] == "Toggle"
+    assert recipe["key_parms"] == ["bend", "enabletwist", "twist"]
     text = _message_text("deformation", "bend_twist")
-    assert "bend = 45" in text and "strength = 180" in text
+    assert "bend = 45" in text and "twist = 180" in text
     assert "bendangle" not in text
-    assert "twist = 180" not in text
+    assert "strength" not in text
 
 
 def test_bend_twist_resolves_in_the_sop_catalogue():
