@@ -22,6 +22,21 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.97.1 - Post-demo follow-ups
+
+8 commits on top of v5.97.0, up to `7563491f`, four of them merges. Each answers
+a follow-up from the v5.97.0 CTO merge review. `docs/mcp/SETUP.md` now says undo
+off is `needs_artist` and that the readiness check skips `synapse_doctor`. The
+typing indicator's HTML moves to `message_formatter.format_typing_indicator`,
+byte-identical, so a CPython `html.parser` test checks its font attribute in CI
+without PySide6. The Review metadata test pins DATA letter spacing at 103%. In
+the development harness, loop 2's H-PD1 is re-landed with its repair: the rope
+gate refuses a declared ignored path whose file already exists untracked in the
+main checkout. Each item got a CTO `merge_with_followup`. No commit records a
+check in an interactive Houdini session, and no full suite ran for this release.
+This is a source release with no new Windows Setup.
+See [v5.97.1](docs/releases/v5.97.1.md).
+
 ## v5.97.0 - Post-demo repairs
 
 43 commits on top of v5.96.0, up to `f41e56cd`. The chat follows the scene: the
