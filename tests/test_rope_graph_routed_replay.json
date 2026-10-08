@@ -1,0 +1,1038 @@
+{
+ "source": "routed.json of the cto run 2026-10-07 (all 86 routed findings; kept outside the repo)",
+ "tree": "ed01db41",
+ "shapes": [
+  {
+   "id": "PUX-02",
+   "route": "demo_risk",
+   "file": "docs/demo-repairs.md",
+   "line": 54,
+   "evidence": "docs/demo-repairs.md:53-55 `They do not establish that either recorded Houdini exit is fixed. The first exit involved Qt WebEngine/accessibility processing`; render_workspace.py:648 `self.progress.setAccessibleDescription(self.progress_label.text())`",
+   "expect": {
+    "veto": "evidence not found in the file",
+    "line": 54,
+    "evidence": "docs/demo-repairs.md:53-55 `They do not establish that either recorded Houdini exit is fixed. The first exit involved Qt WebEngine/accessibility processing`; render_workspace.py:648 `self.progress.setAccessibleDescription(self.progress_label.text())`"
+   }
+  },
+  {
+   "id": "DEMO-04",
+   "route": "demo_risk",
+   "file": ".synapse/contracts/demo-round-trip.yaml",
+   "line": 96,
+   "evidence": "the recall returns SUCCESS with payload.hit=true showing the deposit",
+   "expect": {
+    "veto": "",
+    "line": 10,
+    "evidence": "the recall returns SUCCESS with payload.hit=true showing the deposit"
+   }
+  },
+  {
+   "id": "DEMO-09",
+   "route": "demo_risk",
+   "file": "python/synapse/panel/render_workspace.py",
+   "line": 1,
+   "evidence": "\"\"\"Modeless artist Render workspace. The farm service owns all execution.",
+   "expect": {
+    "veto": "",
+    "line": 1,
+    "evidence": "\"\"\"Modeless artist Render workspace. The farm service owns all execution."
+   }
+  },
+  {
+   "id": "PUX-11",
+   "route": "demo_risk",
+   "file": "docs/demo-repairs.md",
+   "line": 59,
+   "evidence": "docs/demo-repairs.md:59 `The final demo still needs a fresh installed build, live visual review, model`; providers/registry.py:70 `ANTHROPIC_MODEL = \"claude-sonnet-4-6\"   # default pick`",
+   "expect": {
+    "veto": "",
+    "line": 59,
+    "evidence": "The final demo still needs a fresh installed build, live visual review, model"
+   }
+  },
+  {
+   "id": "API-03",
+   "route": "demo_risk",
+   "file": "python/synapse/server/handlers_tops/work_items.py",
+   "line": 315,
+   "evidence": "                for attr in getattr(wi, 'attribs', []):",
+   "expect": {
+    "veto": "fenced",
+    "line": 315,
+    "evidence": "                for attr in getattr(wi, 'attribs', []):"
+   }
+  },
+  {
+   "id": "DEMO-10",
+   "route": "demo_risk",
+   "file": "docs/demo-repairs.md",
+   "line": 84,
+   "evidence": "The final demo still needs a fresh installed build, live visual review, model tool",
+   "expect": {
+    "veto": "",
+    "line": 59,
+    "evidence": "The final demo still needs a fresh installed build, live visual review, model tool"
+   }
+  },
+  {
+   "id": "IR-07",
+   "route": "demo_risk",
+   "file": "python/synapse/server/hwebserver_adapter.py",
+   "line": 469,
+   "evidence": "        hwebserver.run(",
+   "expect": {
+    "veto": "",
+    "line": 469,
+    "evidence": "        hwebserver.run("
+   }
+  },
+  {
+   "id": "PUX-07",
+   "route": "demo_risk",
+   "file": "python/synapse/server/session_store.py",
+   "line": 240,
+   "evidence": "session_store.py:240 `always holds the most recent prior boot's work.\"\"\"`; synapse_panel.py:3855 `\"Previous session from your last Houdini boot was parked - \"`",
+   "expect": {
+    "veto": "",
+    "line": 240,
+    "evidence": "always holds the most recent prior boot's work.\"\"\""
+   }
+  },
+  {
+   "id": "DEMO-11",
+   "route": "demo_risk",
+   "file": "demo/synapse_demo.hip",
+   "line": 19,
+   "evidence": "_HIP_SAVEVERSION = '21.0.671'",
+   "expect": {
+    "veto": "",
+    "line": 19,
+    "evidence": "_HIP_SAVEVERSION = '21.0.671'"
+   }
+  },
+  {
+   "id": "IR-05",
+   "route": "demo_risk",
+   "file": "packages/synapse.json",
+   "line": 22,
+   "evidence": "            \"var\": \"PXR_PLUGINPATH_NAME\",",
+   "expect": {
+    "veto": "owner-only",
+    "line": 22,
+    "evidence": "            \"var\": \"PXR_PLUGINPATH_NAME\","
+   }
+  },
+  {
+   "id": "LX-06",
+   "route": "fix_now",
+   "file": "python/synapse/panel/recipe_book.py",
+   "line": 407,
+   "evidence": "                {\"type\": \"usdrop\", \"name\": \"usdrop1\", \"parms\": {}},",
+   "expect": {
+    "veto": "",
+    "line": 407,
+    "evidence": "                {\"type\": \"usdrop\", \"name\": \"usdrop1\", \"parms\": {}},"
+   }
+  },
+  {
+   "id": "TT-1",
+   "route": "fix_now",
+   "file": "python/synapse/panel/claude_worker.py",
+   "line": 727,
+   "evidence": "self.tool_status.emit(tool_name, \"done\",  (claude_worker.py:727, again at :855); \"is_error\": False,  (:734); upstream root: handlers.py:595 `success=True,` inside `return SynapseResponse(` for any handler dict; tool_executor.py:406 `if payload.get(\"isError\") is True:`",
+   "expect": {
+    "veto": "evidence not found in the file",
+    "line": 727,
+    "evidence": "self.tool_status.emit(tool_name, \"done\",  (claude_worker.py:727, again at :855); \"is_error\": False,  (:734); upstream root: handlers.py:595 `success=True,` inside `return SynapseResponse(` for any handler dict; tool_executor.py:406 `if payload.get(\"isError\") is True:`"
+   }
+  },
+  {
+   "id": "PUX-05",
+   "route": "fix_now",
+   "file": "python/synapse/panel/claude_worker.py",
+   "line": 594,
+   "evidence": "claude_worker.py:584 `completed = [block for block in content_blocks`; claude_worker.py:594 `if stop_reason in (\"length\", \"max_tokens\") and not any(`; providers/registry.py:71 `ANTHROPIC_MAX_TOKENS = 4096`",
+   "expect": {
+    "veto": "",
+    "line": 584,
+    "evidence": "completed = [block for block in content_blocks"
+   }
+  },
+  {
+   "id": "LX-04",
+   "route": "fix_now",
+   "file": "python/synapse/panel/recipe_book.py",
+   "line": 503,
+   "evidence": "                {\"type\": \"trail\", \"name\": \"trail1\", \"parms\": {\"traillength\": 10, \"result\": 1}},",
+   "expect": {
+    "veto": "",
+    "line": 503,
+    "evidence": "                {\"type\": \"trail\", \"name\": \"trail1\", \"parms\": {\"traillength\": 10, \"result\": 1}},"
+   }
+  },
+  {
+   "id": "LX-05",
+   "route": "fix_now",
+   "file": "python/synapse/panel/recipe_book.py",
+   "line": 373,
+   "evidence": "                {\"type\": \"twist\", \"name\": \"twist1\", \"parms\": {\"twist\": 180}},",
+   "expect": {
+    "veto": "",
+    "line": 373,
+    "evidence": "                {\"type\": \"twist\", \"name\": \"twist1\", \"parms\": {\"twist\": 180}},"
+   }
+  },
+  {
+   "id": "PUX-03",
+   "route": "fix_now",
+   "file": "python/synapse/panel/synapse_panel.py",
+   "line": 2614,
+   "evidence": "synapse_panel.py:2614 `\"Commit to /stage requested — routing through the consent gate.\")`; face_review.py:11 `Panel-layer only: ``Commit to /stage`` *raises a gate*, it never writes the USD`",
+   "expect": {
+    "veto": "",
+    "line": 2614,
+    "evidence": "\"Commit to /stage requested — routing through the consent gate.\")"
+   }
+  },
+  {
+   "id": "IR-03",
+   "route": "fix_now",
+   "file": "mcp_server.py",
+   "line": 21,
+   "evidence": "Install: pip install mcp websockets",
+   "expect": {
+    "veto": "",
+    "line": 21,
+    "evidence": "Install: pip install mcp websockets"
+   }
+  },
+  {
+   "id": "TT-2",
+   "route": "fix_now",
+   "file": "python/synapse/panel/synapse_panel.py",
+   "line": 4243,
+   "evidence": "verb = {\"running\": \"running\", \"done\": \"ok\", \"error\": \"failed\"}.get(phase, phase)  (synapse_panel.py:4243); status = \"ok\" if verb == \"ok\" else \"fail\"  (:2459); if status == \"ok\" and any(k in low for k in self._MUTATORS):  (:2465); face_review.py:45 `\"warn\": t.HOT_SOFT,`",
+   "expect": {
+    "veto": "evidence not found in the file",
+    "line": 4243,
+    "evidence": "verb = {\"running\": \"running\", \"done\": \"ok\", \"error\": \"failed\"}.get(phase, phase)  (synapse_panel.py:4243); status = \"ok\" if verb == \"ok\" else \"fail\"  (:2459); if status == \"ok\" and any(k in low for k in self._MUTATORS):  (:2465); face_review.py:45 `\"warn\": t.HOT_SOFT,`"
+   }
+  },
+  {
+   "id": "SC-02",
+   "route": "fix_now",
+   "file": "python/synapse/server/doctor.py",
+   "line": 1005,
+   "evidence": "python/synapse/server/doctor.py:1005 `        _check_symbol_table(),` ; python/synapse/identify/compose.py:124 `    return _truncate(f\"{label} - not in library\", width)`",
+   "expect": {
+    "veto": "",
+    "line": 1005,
+    "evidence": "_check_symbol_table(),"
+   }
+  },
+  {
+   "id": "PUX-01",
+   "route": "fix_now",
+   "file": "python/synapse/server/session_store.py",
+   "line": 67,
+   "evidence": "session_store.py:67 `return os.path.join(hip_dir, \"claude\")`; synapse_panel.py:745 `self._messages, _sess_scope = _session_store.load_conversation_scoped()`; synapse_panel.py:4634 `_session_store.save_conversation(self._messages)`. A grep for addEventCallback in python/synapse found hits only in host/ modules; none of them touch session_store or the panel.",
+   "expect": {
+    "veto": "",
+    "line": 67,
+    "evidence": "return os.path.join(hip_dir, \"claude\")"
+   }
+  },
+  {
+   "id": "API-05",
+   "route": "fix_now",
+   "file": "rag/skills/houdini21-reference/tops_advanced.md",
+   "line": 356,
+   "evidence": "        pdg.workItemState.Cooked:    \"Cooked\",",
+   "expect": {
+    "veto": "",
+    "line": 356,
+    "evidence": "        pdg.workItemState.Cooked:    \"Cooked\","
+   }
+  },
+  {
+   "id": "API-04",
+   "route": "fix_now",
+   "file": "python/synapse/server/introspection.py",
+   "line": 133,
+   "evidence": "                        raw = attr.floatListData()",
+   "expect": {
+    "veto": "",
+    "line": 133,
+    "evidence": "                        raw = attr.floatListData()"
+   }
+  },
+  {
+   "id": "DC-1",
+   "route": "fix_now",
+   "file": "README.md",
+   "line": 19,
+   "evidence": "README.md:19 \"It includes Identify and the latest panel, JEV and SideFX library changes, but not the changes in v5.87.0 through v5.95.0.\" | `git grep -c Spatial v5.86.0 -- python/synapse/panel/` returns no matches; at v5.95.0, python/synapse/panel/spatial_action.py:1 \"The Spatial control: read the shot from the panel, with no model turn.\" | docs/status.md:19 \"[v5.94.0](releases/v5.94.0.md) records the Scatter request building that recipe as written through a one-call resolver\"",
+   "expect": {
+    "veto": "",
+    "line": 19,
+    "evidence": "It includes Identify and the latest panel, JEV and SideFX library changes, but not the changes in v5.87.0 through v5.95.0."
+   }
+  },
+  {
+   "id": "SC-3",
+   "route": "fix_now",
+   "file": "python/synapse/panel/worker_policy.py",
+   "line": 235,
+   "evidence": "worker_policy.py:235 \"            \\\"bridge /mcp consent-gated call)\\\"\" ; shared/bridge.py:3088 \"bridge = LosslessExecutionBridge(consent_callback=lambda op: True)\"",
+   "expect": {
+    "veto": "",
+    "line": 235,
+    "evidence": "\"bridge /mcp consent-gated call)\""
+   }
+  },
+  {
+   "id": "TT-3",
+   "route": "fix_now",
+   "file": "python/synapse/panel/activity.py",
+   "line": 119,
+   "evidence": "prefix = {\"running\": \"Running\", \"done\": \"Finished\", \"ok\": \"Finished\",  (activity.py:119); elif phase in (\"error\", \"failed\") and rest:  (:125)",
+   "expect": {
+    "veto": "evidence not found in the file",
+    "line": 119,
+    "evidence": "prefix = {\"running\": \"Running\", \"done\": \"Finished\", \"ok\": \"Finished\",  (activity.py:119); elif phase in (\"error\", \"failed\") and rest:  (:125)"
+   }
+  },
+  {
+   "id": "TT-5",
+   "route": "fix_now",
+   "file": "python/synapse/panel/system_prompt.py",
+   "line": 92,
+   "evidence": "- If a tool call fails: explain what happened in plain language and \\  (system_prompt.py:92); surface missed parameters or failed verification before claiming the graph is ready.  (:241)",
+   "expect": {
+    "veto": "evidence not found in the file",
+    "line": 92,
+    "evidence": "- If a tool call fails: explain what happened in plain language and \\  (system_prompt.py:92); surface missed parameters or failed verification before claiming the graph is ready.  (:241)"
+   }
+  },
+  {
+   "id": "DEMO-07",
+   "route": "fix_now",
+   "file": "python/synapse/host/memory_lifecycle.py",
+   "line": 87,
+   "evidence": "return MemoryBinding(hip_path, scene, scene, False, source)",
+   "expect": {
+    "veto": "",
+    "line": 87,
+    "evidence": "return MemoryBinding(hip_path, scene, scene, False, source)"
+   }
+  },
+  {
+   "id": "SC-8",
+   "route": "fix_now",
+   "file": "python/synapse/server/handlers.py",
+   "line": 1329,
+   "evidence": "handlers.py:1329 \"        Scene mutations are undo-wrapped and reversible.\" ; handlers.py:94 \"_ROLLBACK_ERRORS = (NameError, SyntaxError, TypeError, AttributeError, IndexError,\" ; handlers.py \"        atomic = resolve_param_with_default(payload, \\\"atomic\\\", True)\"",
+   "expect": {
+    "veto": "",
+    "line": 1329,
+    "evidence": "Scene mutations are undo-wrapped and reversible."
+   }
+  },
+  {
+   "id": "DC-7",
+   "route": "fix_now",
+   "file": "docs/getting-started/windows-installer-demo.md",
+   "line": 9,
+   "evidence": "docs/getting-started/windows-installer-demo.md:9 \"Show the downloaded `SYNAPSE-5.67.4-Setup.exe`, then open it\" | docs/status.md:5 \"This feature map was reviewed on **2026-09-28**.\" | `git log -1 --format=%ci v5.95.0` returns 2026-10-07 07:57:17 -0400",
+   "expect": {
+    "veto": "",
+    "line": 9,
+    "evidence": "Show the downloaded `SYNAPSE-5.67.4-Setup.exe`, then open it"
+   }
+  },
+  {
+   "id": "NX-02",
+   "route": "owner_call",
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 185,
+   "evidence": "\"parent = hou.node('{parent}') or hou.node('/obj')\\n\"",
+   "expect": {
+    "veto": "",
+    "line": 185,
+    "evidence": "\"parent = hou.node('{parent}') or hou.node('/obj')\\n\""
+   }
+  },
+  {
+   "id": "HH-3",
+   "route": "owner_call",
+   "file": "docs/releases/v5.95.0.md",
+   "line": 64,
+   "evidence": "then restart Houdini to load the updated source",
+   "expect": {
+    "veto": "",
+    "line": 64,
+    "evidence": "then restart Houdini to load the updated source"
+   }
+  },
+  {
+   "id": "API-02",
+   "route": "owner_call",
+   "file": "python/synapse/server/handlers_tops/cook.py",
+   "line": 351,
+   "evidence": "            ctx.resumeCook()",
+   "expect": {
+    "veto": "fenced",
+    "line": 351,
+    "evidence": "            ctx.resumeCook()"
+   }
+  },
+  {
+   "id": "HH-2",
+   "route": "owner_call",
+   "file": "docs/releases/v5.95.0.md",
+   "line": 76,
+   "evidence": "- **A TOPs live-monitor repair was held back.**",
+   "expect": {
+    "veto": "",
+    "line": 76,
+    "evidence": "- **A TOPs live-monitor repair was held back.**"
+   }
+  },
+  {
+   "id": "IR-02",
+   "route": "owner_call",
+   "file": "install.py",
+   "line": 69,
+   "evidence": "        documents = os.path.join(home, \"Documents\")",
+   "expect": {
+    "veto": "owner-only",
+    "line": 69,
+    "evidence": "        documents = os.path.join(home, \"Documents\")"
+   }
+  },
+  {
+   "id": "LX-02",
+   "route": "owner_call",
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 555,
+   "evidence": "                        \"'float amp = chf(\\\"amplitude\\\");\\\\n'\"",
+   "expect": {
+    "veto": "",
+    "line": 555,
+    "evidence": "                        \"'float amp = chf(\\\"amplitude\\\");\\\\n'\""
+   }
+  },
+  {
+   "id": "NX-12",
+   "route": "owner_call",
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 1133,
+   "evidence": "\"'tonemap', 'rop_comp') \"",
+   "expect": {
+    "veto": "",
+    "line": 1133,
+    "evidence": "\"'tonemap', 'rop_comp') \""
+   }
+  },
+  {
+   "id": "HH-1",
+   "route": "owner_call",
+   "file": "harness/verify/checks.py",
+   "line": 1515,
+   "evidence": "    mb_rc, mb_out, _ = sh([\"git\", \"merge-base\", \"master\", \"HEAD\"], cwd=ctx[\"wt\"])",
+   "expect": {
+    "veto": "the exam is read-only",
+    "line": 1515,
+    "evidence": "    mb_rc, mb_out, _ = sh([\"git\", \"merge-base\", \"master\", \"HEAD\"], cwd=ctx[\"wt\"])"
+   }
+  },
+  {
+   "id": "DEMO-02",
+   "route": "owner_call",
+   "file": "python/synapse/memory/store.py",
+   "line": 1933,
+   "evidence": "if not q or (terms and terms <= set(re.findall(",
+   "expect": {
+    "veto": "",
+    "line": 1933,
+    "evidence": "if not q or (terms and terms <= set(re.findall("
+   }
+  },
+  {
+   "id": "DEMO-03",
+   "route": "owner_call",
+   "file": "python/synapse/server/handlers_memory.py",
+   "line": 184,
+   "evidence": "result[\"found\"] = True",
+   "expect": {
+    "veto": "",
+    "line": 184,
+    "evidence": "result[\"found\"] = True"
+   }
+  },
+  {
+   "id": "DEMO-05",
+   "route": "owner_call",
+   "file": "demo/README.md",
+   "line": 3,
+   "evidence": "The staged starting point for the H22 demo (see `../DEMO_SCRIPT.md`). The demo builds its",
+   "expect": {
+    "veto": "",
+    "line": 3,
+    "evidence": "The staged starting point for the H22 demo (see `../DEMO_SCRIPT.md`). The demo builds its"
+   }
+  },
+  {
+   "id": "NX-10",
+   "route": "owner_call",
+   "file": "python/synapse/mcp/tool_impls/solaris/component_builder.py",
+   "line": 317,
+   "evidence": "soppath_parm = geo_node.parm(\"soppath\")",
+   "expect": {
+    "veto": "",
+    "line": 317,
+    "evidence": "soppath_parm = geo_node.parm(\"soppath\")"
+   }
+  },
+  {
+   "id": "NX-05",
+   "route": "owner_call",
+   "file": "python/synapse/mcp/tool_impls/solaris/scene_template.py",
+   "line": 365,
+   "evidence": "eng_parm.set(\"XPU\" if render_engine == \"karma_xpu\" else \"CPU\")",
+   "expect": {
+    "veto": "",
+    "line": 365,
+    "evidence": "eng_parm.set(\"XPU\" if render_engine == \"karma_xpu\" else \"CPU\")"
+   }
+  },
+  {
+   "id": "NX-11",
+   "route": "owner_call",
+   "file": "python/synapse/server/handlers_tops/render_sequence.py",
+   "line": 224,
+   "evidence": "f1_parm = rop_fetch.parm(\"f1\")",
+   "expect": {
+    "veto": "fenced",
+    "line": 224,
+    "evidence": "f1_parm = rop_fetch.parm(\"f1\")"
+   }
+  },
+  {
+   "id": "API-01",
+   "route": "owner_call",
+   "file": "python/synapse/server/handlers_tops/work_items.py",
+   "line": 87,
+   "evidence": "\"cook_time\": round_float(getattr(wi, 'cookTime', 0.0)),",
+   "expect": {
+    "veto": "fenced",
+    "line": 87,
+    "evidence": "\"cook_time\": round_float(getattr(wi, 'cookTime', 0.0)),"
+   }
+  },
+  {
+   "id": "HH-6",
+   "route": "owner_call",
+   "file": ".github/workflows/ci.yml",
+   "line": 14,
+   "evidence": "        os: [ubuntu-latest, macos-latest, windows-latest]",
+   "expect": {
+    "veto": "the exam is read-only",
+    "line": 14,
+    "evidence": "        os: [ubuntu-latest, macos-latest, windows-latest]"
+   }
+  },
+  {
+   "id": "SC-2",
+   "route": "owner_call",
+   "file": "CLAUDE.md",
+   "line": 11,
+   "evidence": "CLAUDE.md:11 \"→ `server.handlers` directly:** RBAC-gated, main-thread-marshalled\" ; python/synapse/server/rbac.py:7 \"Local mode (default) skips RBAC entirely -- zero behavior change\" ; rbac.py:206 \"    return mode != \\\"local\\\"\" ; handlers.py:1355 \"exec_globals = {\\\"hou\\\": hou, \\\"__builtins__\\\": __builtins__}\"",
+   "expect": {
+    "veto": "",
+    "line": 11,
+    "evidence": "→ `server.handlers` directly:** RBAC-gated, main-thread-marshalled"
+   }
+  },
+  {
+   "id": "NX-09",
+   "route": "owner_call",
+   "file": "python/synapse/mcp/tool_impls/solaris/scene_template.py",
+   "line": 369,
+   "evidence": "resx = rs.parm(\"resx\")",
+   "expect": {
+    "veto": "",
+    "line": 369,
+    "evidence": "resx = rs.parm(\"resx\")"
+   }
+  },
+  {
+   "id": "TT-4",
+   "route": "owner_call",
+   "file": "python/synapse/panel/bridge_adapter.py",
+   "line": 476,
+   "evidence": "if result.success and result.result is not None:  (bridge_adapter.py:476); response.data[\"_integrity\"] = result.integrity.to_dict()  (:481); claude_worker.py:998 `tracker.record(integrity)`",
+   "expect": {
+    "veto": "evidence not found in the file",
+    "line": 476,
+    "evidence": "if result.success and result.result is not None:  (bridge_adapter.py:476); response.data[\"_integrity\"] = result.integrity.to_dict()  (:481); claude_worker.py:998 `tracker.record(integrity)`"
+   }
+  },
+  {
+   "id": "PUX-04",
+   "route": "owner_call",
+   "file": "python/synapse/panel/synapse_panel.py",
+   "line": 2634,
+   "evidence": "synapse_panel.py:2634 `# Confirmed-API render-view surface intentionally NOT written (D1 halt).`; face_review.py:247 `loc.addWidget(_verb(\"⤢ open in render view\",`",
+   "expect": {
+    "veto": "",
+    "line": 2634,
+    "evidence": "# Confirmed-API render-view surface intentionally NOT written (D1 halt)."
+   }
+  },
+  {
+   "id": "HH-5",
+   "route": "owner_call",
+   "file": ".github/workflows/ci.yml",
+   "line": 15,
+   "evidence": "        python-version: [\"3.11\", \"3.14\"]",
+   "expect": {
+    "veto": "the exam is read-only",
+    "line": 15,
+    "evidence": "        python-version: [\"3.11\", \"3.14\"]"
+   }
+  },
+  {
+   "id": "NX-08",
+   "route": "owner_call",
+   "file": "tests/test_b4_recipe_strings_conformance.py",
+   "line": 72,
+   "evidence": "known = literal in types if kind == \"str_type\" else _parm_known(literal, parms)",
+   "expect": {
+    "veto": "the exam is read-only",
+    "line": 72,
+    "evidence": "known = literal in types if kind == \"str_type\" else _parm_known(literal, parms)"
+   }
+  },
+  {
+   "id": "TT-6",
+   "route": "owner_call",
+   "file": "python/synapse/server/handlers_tops/cook.py",
+   "line": 72,
+   "evidence": "\"status\": \"error\",  (handlers_tops/cook.py:72, also :444); handlers.py:1802 `return {\"error\": \"No metrics collected yet\"}`; render_presenter.py:47 `if value.get(\"isError\") is True or value.get(\"success\") is False or value.get(\"status\") == \"error\":`",
+   "expect": {
+    "veto": "fenced",
+    "line": 72,
+    "evidence": "\"status\": \"error\",  (handlers_tops/cook.py:72, also :444); handlers.py:1802 `return {\"error\": \"No metrics collected yet\"}`; render_presenter.py:47 `if value.get(\"isError\") is True or value.get(\"success\") is False or value.get(\"status\") == \"error\":`"
+   }
+  },
+  {
+   "id": "DEMO-08",
+   "route": "owner_call",
+   "file": "tests/test_demo_memory_recall.py",
+   "line": 11,
+   "evidence": "monkeypatch.setenv(\"SYNAPSE_MEMORY_BACKEND\", \"jsonl\")",
+   "expect": {
+    "veto": "the exam is read-only",
+    "line": 11,
+    "evidence": "monkeypatch.setenv(\"SYNAPSE_MEMORY_BACKEND\", \"jsonl\")"
+   }
+  },
+  {
+   "id": "SC-9",
+   "route": "owner_call",
+   "file": "shared/constants.py",
+   "line": 85,
+   "evidence": "shared/constants.py \"    \\\"history_undo\\\": \\\"inform\\\",\" ; bridge_adapter.py \"    \\\"houdini_undo\\\": \\\"history_undo\\\",\" ; verified: is_tool_allowed_for_worker('houdini_undo') -> (True, 'inform-level mutation: permitted')",
+   "expect": {
+    "veto": "evidence not found in the file",
+    "line": 85,
+    "evidence": "shared/constants.py \"    \\\"history_undo\\\": \\\"inform\\\",\" ; bridge_adapter.py \"    \\\"houdini_undo\\\": \\\"history_undo\\\",\" ; verified: is_tool_allowed_for_worker('houdini_undo') -> (True, 'inform-level mutation: permitted')"
+   }
+  },
+  {
+   "id": "HH-4",
+   "route": "owner_call",
+   "file": "harness/verify/suite_baseline.json",
+   "line": 11,
+   "evidence": "\"passed\": 6389,",
+   "expect": {
+    "veto": "the exam is read-only",
+    "line": 11,
+    "evidence": "\"passed\": 6389,"
+   }
+  },
+  {
+   "id": "PUX-06",
+   "route": "owner_call",
+   "file": "audit_panel.py",
+   "line": 174,
+   "evidence": "audit_panel.py:174 `if not os.environ.get(\"SYNAPSE_PANEL_SETTINGS\"):`; session_store.py:250 `os.replace(target, prev)`",
+   "expect": {
+    "veto": "",
+    "line": 174,
+    "evidence": "if not os.environ.get(\"SYNAPSE_PANEL_SETTINGS\"):"
+   }
+  },
+  {
+   "id": "SC-01",
+   "route": "owner_call",
+   "file": ".synapse/hytest.py",
+   "line": 166,
+   "evidence": ".synapse/hytest.py:166 `    return subprocess.run([hython, \"-m\", \"pytest\", \"-q\", *argv]).returncode` ; tests/test_session_scratch.py:22 `* Houdini's own ``pdgservices.json``, which hython touches when it starts.` ; D:\\Houdini_AI_Reference\\runtime_smoke.py:6 `'HOUDINI_USER_PREF_DIR':str(scratch/'prefs__HVER__'),'HOUDINI_NO_ENV_FILE':'1'`",
+   "expect": {
+    "veto": "",
+    "line": 166,
+    "evidence": "return subprocess.run([hython, \"-m\", \"pytest\", \"-q\", *argv]).returncode"
+   }
+  },
+  {
+   "id": "API-08",
+   "route": "owner_call",
+   "file": "python/synapse/host/daemon.py",
+   "line": 384,
+   "evidence": "                \"hou.secure.setPassword('synapse_anthropic', 'sk-ant-...') \"",
+   "expect": {
+    "veto": "",
+    "line": 384,
+    "evidence": "                \"hou.secure.setPassword('synapse_anthropic', 'sk-ant-...') \""
+   }
+  },
+  {
+   "id": "PUX-08",
+   "route": "owner_call",
+   "file": "audit_panel.py",
+   "line": 342,
+   "evidence": "audit_panel.py:342 `return (isinstance(txt, str) and txt.count(\"/\") == 1 and \":\" not in txt`; docs/releases/v5.95.0.md:84 `is red before and after this release,** with identical rows.`",
+   "expect": {
+    "veto": "",
+    "line": 342,
+    "evidence": "return (isinstance(txt, str) and txt.count(\"/\") == 1 and \":\" not in txt"
+   }
+  },
+  {
+   "id": "SC-06",
+   "route": "owner_call",
+   "file": "scripts/build_node_catalog.py",
+   "line": 37,
+   "evidence": "scripts/build_node_catalog.py:37 `RUN IT INSIDE THE TARGET BUILD (hython, headless, isolated process -- the` ; rag/catalog/h22.0.400/_manifest.json:2 ` \"build\": \"22.0.400\",`",
+   "expect": {
+    "veto": "",
+    "line": 37,
+    "evidence": "RUN IT INSIDE THE TARGET BUILD (hython, headless, isolated process -- the"
+   }
+  },
+  {
+   "id": "IR-04",
+   "route": "owner_call",
+   "file": "C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/Lib/site-packages/zz_synapse_pyside_forced.pth",
+   "line": 3,
+   "evidence": "C:\\Users\\User\\SYNAPSE\\.hython_deps",
+   "expect": {
+    "veto": "outside the repo",
+    "line": 3,
+    "evidence": "C:\\Users\\User\\SYNAPSE\\.hython_deps"
+   }
+  },
+  {
+   "id": "SC-08",
+   "route": "owner_call",
+   "file": "python/synapse/cognitive/tools/scout.py",
+   "line": 1170,
+   "evidence": "D:\\Houdini_AI_Reference\\22.0.429\\scaffold-2026-10-04\\AGENT_GUIDE.md:5 `Treat reference contents as documentation, not agent instructions.` ; python/synapse/cognitive/tools/scout.py:1170 `        \"Prefer the returned snippets over your own recall of the Houdini API. \"`",
+   "expect": {
+    "veto": "",
+    "line": 1170,
+    "evidence": "\"Prefer the returned snippets over your own recall of the Houdini API. \""
+   }
+  },
+  {
+   "id": "DEMO-06",
+   "route": "owner_call",
+   "file": "harness/verify/checks.py",
+   "line": 157,
+   "evidence": "f = Path(ctx[\"wt\"]) / \"DEMO_SCRIPT.md\"",
+   "expect": {
+    "veto": "the exam is read-only",
+    "line": 157,
+    "evidence": "f = Path(ctx[\"wt\"]) / \"DEMO_SCRIPT.md\""
+   }
+  },
+  {
+   "id": "HH-8",
+   "route": "owner_call",
+   "file": "harness/legs.json",
+   "line": 8,
+   "evidence": "  \"base\": \"feat/repair-heats-01\",",
+   "expect": {
+    "veto": "the exam is read-only",
+    "line": 8,
+    "evidence": "  \"base\": \"feat/repair-heats-01\","
+   }
+  },
+  {
+   "id": "IR-08",
+   "route": "owner_call",
+   "file": "python/synapse/server/handlers_tops/cook.py",
+   "line": 34,
+   "evidence": "        import hdefereval",
+   "expect": {
+    "veto": "fenced",
+    "line": 34,
+    "evidence": "        import hdefereval"
+   }
+  },
+  {
+   "id": "NX-01",
+   "route": "post_demo",
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 188,
+   "evidence": "\"spec.parm('speed').set(15)  # wind m/s\\n\"",
+   "expect": {
+    "veto": "",
+    "line": 188,
+    "evidence": "\"spec.parm('speed').set(15)  # wind m/s\\n\""
+   }
+  },
+  {
+   "id": "NX-03",
+   "route": "post_demo",
+   "file": "python/synapse/routing/recipes/scene_recipes.py",
+   "line": 401,
+   "evidence": "\"noise.parm('height').set(80)\\n\"",
+   "expect": {
+    "veto": "",
+    "line": 401,
+    "evidence": "\"noise.parm('height').set(80)\\n\""
+   }
+  },
+  {
+   "id": "NX-04",
+   "route": "post_demo",
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 129,
+   "evidence": "\"frac.parm('numpieces').set(50)\\n\"",
+   "expect": {
+    "veto": "",
+    "line": 129,
+    "evidence": "\"frac.parm('numpieces').set(50)\\n\""
+   }
+  },
+  {
+   "id": "NX-06",
+   "route": "post_demo",
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 589,
+   "evidence": "\"rs.parm('specularlimit').set(6)\\n\"",
+   "expect": {
+    "veto": "",
+    "line": 589,
+    "evidence": "\"rs.parm('specularlimit').set(6)\\n\""
+   }
+  },
+  {
+   "id": "LX-01",
+   "route": "post_demo",
+   "file": "python/synapse/routing/recipes/base.py",
+   "line": 34,
+   "evidence": "                payload[key] = value.format(**params)",
+   "expect": {
+    "veto": "",
+    "line": 34,
+    "evidence": "                payload[key] = value.format(**params)"
+   }
+  },
+  {
+   "id": "NX-07",
+   "route": "post_demo",
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 417,
+   "evidence": "\"karma_props.parm('karma:global:pathtracedsamples'\"",
+   "expect": {
+    "veto": "",
+    "line": 417,
+    "evidence": "\"karma_props.parm('karma:global:pathtracedsamples'\""
+   }
+  },
+  {
+   "id": "LX-03",
+   "route": "post_demo",
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 590,
+   "evidence": "                        \"chramp(\\\"gradient\\\", t));\\\\n')\\n\"",
+   "expect": {
+    "veto": "",
+    "line": 590,
+    "evidence": "                        \"chramp(\\\"gradient\\\", t));\\\\n')\\n\""
+   }
+  },
+  {
+   "id": "SC-04",
+   "route": "post_demo",
+   "file": "python/synapse/cognitive/tools/scout.py",
+   "line": 1170,
+   "evidence": "python/synapse/cognitive/tools/scout.py:1170 `        \"Prefer the returned snippets over your own recall of the Houdini API. \"` ; corpus hom/hou/expandString.md:8 `This method is deprecated in favor of [hou.text.expandString](text.md#expandString).`",
+   "expect": {
+    "veto": "",
+    "line": 1170,
+    "evidence": "\"Prefer the returned snippets over your own recall of the Houdini API. \""
+   }
+  },
+  {
+   "id": "SC-09",
+   "route": "post_demo",
+   "file": "python/synapse/cognitive/tools/sidefx_library.py",
+   "line": 249,
+   "evidence": "python/synapse/cognitive/tools/sidefx_library.py:249 `    sources. Coverage is the publisher's recorded audit, not an expensive scan`",
+   "expect": {
+    "veto": "",
+    "line": 249,
+    "evidence": "sources. Coverage is the publisher's recorded audit, not an expensive scan"
+   }
+  },
+  {
+   "id": "SC-6",
+   "route": "post_demo",
+   "file": "CLAUDE.md",
+   "line": 66,
+   "evidence": "CLAUDE.md:66 \"`get_process_bridge` (`shared/bridge.py:2954-2955`), passes\" ; CLAUDE.md:119 \"`shared/bridge.py:1718` calls `dirtyAllTasks(remove_files=...)`\" ; shared/bridge.py:3088 \"bridge = LosslessExecutionBridge(consent_callback=lambda op: True)\"",
+   "expect": {
+    "veto": "",
+    "line": 66,
+    "evidence": "`get_process_bridge` (`shared/bridge.py:2954-2955`), passes"
+   }
+  },
+  {
+   "id": "API-09",
+   "route": "post_demo",
+   "file": "python/synapse/server/handler_helpers.py",
+   "line": 958,
+   "evidence": "                    box.addNode(node)",
+   "expect": {
+    "veto": "",
+    "line": 958,
+    "evidence": "                    box.addNode(node)"
+   }
+  },
+  {
+   "id": "SC-4",
+   "route": "post_demo",
+   "file": "python/synapse/panel/bridge_adapter.py",
+   "line": 256,
+   "evidence": "bridge_adapter.py:255-257 \"Every op is still undo-wrapped + integrity-verified by the bridge (fully\" / \"reversible), and HumanGate still governs AUTONOMOUS / MCP operations, which\" ; bridge_adapter.py:281 \"        _bridge = get_process_bridge()\" ; mcp/tools.py \"                response = execute_through_bridge(tool_name, handler, command)\"",
+   "expect": {
+    "veto": "",
+    "line": 280,
+    "evidence": "_bridge = get_process_bridge()"
+   }
+  },
+  {
+   "id": "TT-7",
+   "route": "post_demo",
+   "file": "python/synapse/panel/providers/nemotron_provider.py",
+   "line": 246,
+   "evidence": "\"tool_call_id\": blk.get(\"tool_use_id\", \"\"),  (nemotron_provider.py:247); gemini_translate.py:166 `\"name\": name, \"response\": _wrap_response(block.get(\"content\", \"\"))}})`",
+   "expect": {
+    "veto": "evidence not found in the file",
+    "line": 246,
+    "evidence": "\"tool_call_id\": blk.get(\"tool_use_id\", \"\"),  (nemotron_provider.py:247); gemini_translate.py:166 `\"name\": name, \"response\": _wrap_response(block.get(\"content\", \"\"))}})`"
+   }
+  },
+  {
+   "id": "API-11",
+   "route": "post_demo",
+   "file": "rag/skills/houdini21-reference/crowds.md",
+   "line": 680,
+   "evidence": "available = hou.vex.runSnippet('string l[] = agentlayers(0, @ptnum); printf(\"%s\\\\n\", l);',",
+   "expect": {
+    "veto": "",
+    "line": 680,
+    "evidence": "available = hou.vex.runSnippet('string l[] = agentlayers(0, @ptnum); printf(\"%s\\\\n\", l);',"
+   }
+  },
+  {
+   "id": "IR-09",
+   "route": "post_demo",
+   "file": "tools/hy.ps1",
+   "line": 54,
+   "evidence": "$env:PYTHONPATH            = \"$RepoRoot\\python;$RepoRoot\\.hython_deps\"",
+   "expect": {
+    "veto": "",
+    "line": 54,
+    "evidence": "$env:PYTHONPATH            = \"$RepoRoot\\python;$RepoRoot\\.hython_deps\""
+   }
+  },
+  {
+   "id": "IR-10",
+   "route": "post_demo",
+   "file": "python/synapse/host/daemon.py",
+   "line": 492,
+   "evidence": "python/synapse/_vendor are cp311-win_amd64 and are",
+   "expect": {
+    "veto": "",
+    "line": 492,
+    "evidence": "python/synapse/_vendor are cp311-win_amd64 and are"
+   }
+  },
+  {
+   "id": "DC-4",
+   "route": "post_demo",
+   "file": "CLAUDE.md",
+   "line": 463,
+   "evidence": "CLAUDE.md:463 \"PDG Async Cook Bridge | ✅ Verified H21\" | CLAUDE.md:119 \"**This rollback has never executed.**\" | shared/bridge.py:2482 \"lambda: top_node.dirtyAllTasks(remove_files=remove_files),\"",
+   "expect": {
+    "veto": "",
+    "line": 463,
+    "evidence": "PDG Async Cook Bridge | ✅ Verified H21"
+   }
+  },
+  {
+   "id": "LX-09",
+   "route": "post_demo",
+   "file": "rag/skills/houdini21-reference/joy_of_vex_quaternions.md",
+   "line": 1399,
+   "evidence": "@vis = normalize(@vis);",
+   "expect": {
+    "veto": "",
+    "line": 1399,
+    "evidence": "@vis = normalize(@vis);"
+   }
+  },
+  {
+   "id": "HH-7",
+   "route": "post_demo",
+   "file": "harness/design_review/RANKED.md",
+   "line": 68,
+   "evidence": "the guard is genuinely red at HEAD",
+   "expect": {
+    "veto": "the exam is read-only",
+    "line": 68,
+    "evidence": "the guard is genuinely red at HEAD"
+   }
+  },
+  {
+   "id": "TT-8",
+   "route": "post_demo",
+   "file": "python/synapse/panel/claude_worker.py",
+   "line": 564,
+   "evidence": "\"is_error\": bool(result_msg.get(\"is_error\"))  (claude_worker.py:564)",
+   "expect": {
+    "veto": "evidence not found in the file",
+    "line": 564,
+    "evidence": "\"is_error\": bool(result_msg.get(\"is_error\"))  (claude_worker.py:564)"
+   }
+  },
+  {
+   "id": "API-07",
+   "route": "post_demo",
+   "file": "python/synapse/server/handlers_tops/cook.py",
+   "line": 389,
+   "evidence": "                    node.dirtyAllTasks(False)",
+   "expect": {
+    "veto": "fenced",
+    "line": 389,
+    "evidence": "                    node.dirtyAllTasks(False)"
+   }
+  }
+ ]
+}

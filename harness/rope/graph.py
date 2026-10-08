@@ -91,6 +91,7 @@ FIX_DENY = "NotebookEdit,WebFetch,WebSearch"
 QUOTA = ("session limit", "usage limit", "rate limit")
 OPEN = ("pending", "running")
 NOT_HOUDINI = '-m "not needs_houdini"'
+STALE_INDEX = "semantic index stale: run scripts/refresh_knowledge.py"
 
 
 def posix(p):
@@ -518,6 +519,19 @@ def json_in(text):
 
 # ------------------------------------------------------------------- the gate
 
+def stales_index(rel):
+    """True when a committed path feeds the embedding digest, so a kept edit leaves
+    rag/semantic_index/manifest.json stale. Mirrors the inputs of
+    harness/verify/checks.py::check_semantic_index_fresh exactly: the top-level *.md of
+    rag/skills/houdini21-reference/ (a glob, not a walk) and the topic metadata file.
+    Nothing else under rag/skills is read by that digest, so nothing else is flagged."""
+    rel = posix(rel)
+    head, _, name = rel.rpartition("/")
+    return ((head == "rag/skills/houdini21-reference" and name.endswith(".md"))
+            or rel == "rag/documentation/_metadata/semantic_index.json")
+
+
+
 def _changed(tree):
     out = []
     for ln in git("status", "--porcelain", "-uall", cwd=tree).stdout.splitlines():
@@ -645,7 +659,11 @@ def gate(st, it):
             rope.revert(task, existed)
             return "fail", "commit refused: " + (c.stdout + c.stderr).strip()[:160]
         it["sha"] = git("rev-parse", "--short", "HEAD").stdout.strip()
-        return "kept", it["sha"] + (" manual: " + "; ".join(manual) if manual else "")
+        note = it["sha"]
+        if any(stales_index(p) for p in paths):   # only the full gate sees this; say it here,
+            it["stale_index"] = True              # before the manual list, which the ledger
+            note += "; " + STALE_INDEX            # (300) and `status` (110) may truncate
+        return "kept", note + (" manual: " + "; ".join(manual) if manual else "")
     finally:
         _free_slot(st, slot, changed)
 
@@ -768,10 +786,14 @@ def status_line(st):
     parts = ["%s %s" % (k, " ".join("%d %s" % (n, s) for s, n in sorted(v.items())))
              for k, v in sorted(tally.items())]
     why, hold = refuse_session(st), held(st)
-    return "%s  sessions %d/%d  clock %.0fm left  |  %s%s%s" % (
+    # One batched refresh for the run, not one per lane. A dropped fix was reverted: not counted.
+    stale = [i["id"] for i in st["items"]
+             if i["kind"] == "fix" and i["status"] == "kept" and i.get("stale_index")]
+    return "%s  sessions %d/%d  clock %.0fm left  |  %s%s%s%s" % (
         time.strftime("%H:%M:%S"), st["sessions"], st["cap"], max(0.0, minutes_left(st)),
         "  |  ".join(parts), ("  |  STOP: " + why) if why else "",
-        ("  |  " + hold) if hold else "")
+        ("  |  " + hold) if hold else "",
+        ("  |  %s (%s)" % (STALE_INDEX, ", ".join(stale))) if stale else "")
 
 
 # ------------------------------------------------------------------ the route
@@ -806,6 +828,8 @@ def _norm(s):
 _FILE_LINE = re.compile(r"^\S+\.\w+:\d+(?::\d+)?\s*")
 # A quote that directly follows a file:line cite -- the compound shape -- never a literal in code.
 _SPAN = re.compile(r'[\w./\\-]+\.[A-Za-z]\w*:\d+\s*(?:`([^`]{6,})`|"((?:[^"\\]|\\.){6,})")')
+# One word, bare or quoted ("claude", `running`, running): never a line.
+_WORD = re.compile(r"""^["'`]?\w+["'`]?$""")
 
 
 def _evidence_spans(raw):
@@ -816,7 +840,9 @@ def _evidence_spans(raw):
     line is never cut down to a quoted token inside it; then each quoted span in reading order.
     A span counts only when it directly follows a file:line cite: a string literal inside a code
     line ("running", "claude") never does, so a line gone from the file stays vetoed rather
-    than passing on a word quoted inside it.
+    than passing on a word quoted inside it. Nor does one word on its own, bare or quoted, cited
+    or not: it is a substring of every line that holds it, so it anchors none, and the veto
+    would move the seed to whichever line held it first.
     """
     raw = str(raw)
     out = [raw, _FILE_LINE.sub("", raw.strip(), count=1)]
@@ -825,7 +851,7 @@ def _evidence_spans(raw):
     seen, spans = set(), []
     for s in out:
         n = _norm(s)
-        if len(n) >= 6 and n not in seen:
+        if len(n) >= 6 and n not in seen and not _WORD.match(n):
             seen.add(n)
             spans.append(n)
     return spans
@@ -834,6 +860,8 @@ def _evidence_spans(raw):
 def veto(c):
     """Deterministic reasons a candidate never reaches a fixer. Checked before any model."""
     f = posix(str(c.get("file", "")))
+    if re.match(r"(?:[A-Za-z]:)?/", f) or ".." in f.split("/"):
+        return "outside the repo"  # join() would drop ROOT and read, then fix, the host's file
     if not f or not os.path.isfile(os.path.join(ROOT, f)):
         return "no such file"
     if f.startswith(FENCES):
