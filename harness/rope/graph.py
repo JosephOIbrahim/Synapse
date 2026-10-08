@@ -91,6 +91,7 @@ FIX_DENY = "NotebookEdit,WebFetch,WebSearch"
 QUOTA = ("session limit", "usage limit", "rate limit")
 OPEN = ("pending", "running")
 NOT_HOUDINI = '-m "not needs_houdini"'
+STALE_INDEX = "semantic index stale: run scripts/refresh_knowledge.py"
 
 
 def posix(p):
@@ -518,6 +519,19 @@ def json_in(text):
 
 # ------------------------------------------------------------------- the gate
 
+def stales_index(rel):
+    """True when a committed path feeds the embedding digest, so a kept edit leaves
+    rag/semantic_index/manifest.json stale. Mirrors the inputs of
+    harness/verify/checks.py::check_semantic_index_fresh exactly: the top-level *.md of
+    rag/skills/houdini21-reference/ (a glob, not a walk) and the topic metadata file.
+    Nothing else under rag/skills is read by that digest, so nothing else is flagged."""
+    rel = posix(rel)
+    head, _, name = rel.rpartition("/")
+    return ((head == "rag/skills/houdini21-reference" and name.endswith(".md"))
+            or rel == "rag/documentation/_metadata/semantic_index.json")
+
+
+
 def _changed(tree):
     out = []
     for ln in git("status", "--porcelain", "-uall", cwd=tree).stdout.splitlines():
@@ -645,7 +659,11 @@ def gate(st, it):
             rope.revert(task, existed)
             return "fail", "commit refused: " + (c.stdout + c.stderr).strip()[:160]
         it["sha"] = git("rev-parse", "--short", "HEAD").stdout.strip()
-        return "kept", it["sha"] + (" manual: " + "; ".join(manual) if manual else "")
+        note = it["sha"] + (" manual: " + "; ".join(manual) if manual else "")
+        if any(stales_index(p) for p in paths):   # only the full gate sees this; say it here
+            it["stale_index"] = True
+            note += "; " + STALE_INDEX
+        return "kept", note
     finally:
         _free_slot(st, slot, changed)
 
@@ -768,10 +786,14 @@ def status_line(st):
     parts = ["%s %s" % (k, " ".join("%d %s" % (n, s) for s, n in sorted(v.items())))
              for k, v in sorted(tally.items())]
     why, hold = refuse_session(st), held(st)
-    return "%s  sessions %d/%d  clock %.0fm left  |  %s%s%s" % (
+    # One batched refresh for the run, not one per lane. A dropped fix was reverted: not counted.
+    stale = [i["id"] for i in st["items"]
+             if i["kind"] == "fix" and i["status"] == "kept" and i.get("stale_index")]
+    return "%s  sessions %d/%d  clock %.0fm left  |  %s%s%s%s" % (
         time.strftime("%H:%M:%S"), st["sessions"], st["cap"], max(0.0, minutes_left(st)),
         "  |  ".join(parts), ("  |  STOP: " + why) if why else "",
-        ("  |  " + hold) if hold else "")
+        ("  |  " + hold) if hold else "",
+        ("  |  %s (%s)" % (STALE_INDEX, ", ".join(stale))) if stale else "")
 
 
 # ------------------------------------------------------------------ the route
