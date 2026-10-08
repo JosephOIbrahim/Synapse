@@ -1067,12 +1067,13 @@ a plain git show <rev>:<path> breaks package imports.
 HYTHON_RULES = """HYTHON: Never import synapse, or any synapse.<sub> module, bare in hython or any Python with
 <worktree>/python on sys.path. A bare import runs python/synapse/__init__.py, which imports
 synapse.core, synapse.inspector and synapse.memory.store before your module. A probe that called
-itself read-only has already destroyed the artist's parked conversation. Stub the package first:
+itself read-only (it built SynapsePanel()) has already destroyed the artist's parked conversation,
+so treat every package-level side effect as live. Stub the package first:
     import sys, types
     pkg = types.ModuleType("synapse"); pkg.__path__ = ["<worktree>/python/synapse"]
     sys.modules.setdefault("synapse", pkg)
     import synapse.cv
-(precedent: tests/test_scene_memory.py). A new script or test meant for hython that skips the stub is
+(the same idea, without __path__: tests/test_scene_memory.py). A new script or test meant for hython that skips the stub is
 a defect, not a style choice.
 """
 SESSION_RULES = GIT_RULES + HYTHON_RULES

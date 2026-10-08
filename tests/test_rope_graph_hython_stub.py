@@ -83,13 +83,12 @@ def test_the_taught_stub_imports_a_submodule_without_running_the_package_init(tm
     (pkg / "cv" / "__init__.py").write_text("LOADED = 'cv'\n", encoding="utf-8")
     code = "\n".join(lines).replace("<worktree>", (tmp_path).as_posix())
     code += "\nprint(synapse.cv.LOADED)\n"
-    env = {k: v for k, v in os.environ.items() if k in ("SYSTEMROOT", "PATH", "TEMP", "TMP")}
     r = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True,
-                       cwd=str(tmp_path), env=env, timeout=60)
+                       cwd=str(tmp_path), timeout=60)
     assert r.returncode == 0, r.stdout + r.stderr
     assert r.stdout.strip() == "cv"
     # control: the same package imported bare does run its __init__, so the probe can fail
     bare = "import sys; sys.path.insert(0, %r); import synapse.cv" % (tmp_path / "python").as_posix()
     c = subprocess.run([sys.executable, "-I", "-c", bare], capture_output=True, text=True,
-                       cwd=str(tmp_path), env=env, timeout=60)
+                       cwd=str(tmp_path), timeout=60)
     assert c.returncode != 0 and "synapse/__init__.py ran" in (c.stdout + c.stderr)
