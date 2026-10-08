@@ -5,7 +5,6 @@ with styled HTML, clickable node paths, code block formatting, message
 grouping with timestamps, and animated typing indicator.
 """
 
-import html
 import logging
 import time
 
@@ -21,6 +20,7 @@ from synapse.panel.message_formatter import (
     format_synapse_message,
     format_system_message,
     format_timestamp_divider,
+    format_typing_indicator,
     COPY_SCHEME,
     decode_copy_href,
 )
@@ -1029,36 +1029,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setTextCursor(cursor)
 
     def _insert_typing_html(self):
-        """Insert or replace typing indicator HTML.
-
-        J3: the SYNAPSE name and its dots take CONIFEROUS - one colour per
-        speaker everywhere, the same one its label and rule carry."""
-        dots = "." * (self._typing_phase + 1)
-        html_str = (
-            '<div style="margin:{my}px 0; padding:{py}px {px}px;">'
-            # PNL-L5 (R3-D): the indicator's SYNAPSE speaks in the speaker
-            # row's voice — sans, no inline tracking. Tracking has one owner
-            # now (the tracked font in _apply_turn_rhythm); an inline 1px on
-            # top of it double-tracked the word.
-            '<span style="color:{who}; font-family:{sans}; '
-            'font-size:{sz}px; font-weight:{weight};">'
-            'SYNAPSE</span> '
-            '<span style="color:{dim}; font-style:italic; '
-            'font-size:{sz}px;">is thinking'
-            '<span style="color:{who};">{dots}</span>'
-            '</span></div>'
-        ).format(
-            who=t.CONIFEROUS,
-            dim=t.TEXT_SECONDARY,
-            sz=int(t.SIZE_SMALL * self._font_scale),
-            dots=dots,
-            my=_BUBBLE_MARGIN_Y,
-            py=t.SPACE_12 // 2, px=t.SPACE_SM + t.SPACE_XS // 2,
-            # Escaped: the stack quotes its names and sits inside style="..."
-            # (DES-D01) -- raw, it ended the attribute at 'font-family:'.
-            sans=html.escape(t.FONT_SANS_CSS, quote=True),
-            weight=t.WEIGHT_MEDIUM,
-        )
+        """Insert or replace typing indicator HTML (built Qt-free by
+        message_formatter.format_typing_indicator)."""
+        html_str = format_typing_indicator(
+            self._typing_phase, self._font_scale, _BUBBLE_MARGIN_Y)
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
         cursor.insertHtml(html_str)
