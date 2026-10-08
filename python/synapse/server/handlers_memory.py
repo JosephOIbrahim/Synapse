@@ -122,8 +122,9 @@ class MemoryHandlerMixin:
         result list, deduped by content hash and labeled by source.
 
         Best-effort: never raises, and only attaches when the RAG actually
-        found something. The separate ``knowledge`` key is preserved for
-        backward compatibility.
+        found something. A knowledge row never sets ``found``: on recall,
+        ``found`` reports a remembered decision only. The separate
+        ``knowledge`` key is preserved for backward compatibility.
         """
         if not query:
             return result
@@ -180,8 +181,8 @@ class MemoryHandlerMixin:
 
                 result.setdefault(target_key, []).append(knowledge_entry)
                 result["count"] = result.get("count", 0) + 1
-                if target_key == "matches":
-                    result["found"] = True
+                # A reference-docs row is context, not memory: ``found`` stays
+                # whatever the bridge said about remembered decisions.
 
             # Preserve the separate knowledge key for backward compat
             result["knowledge_found"] = True
@@ -224,6 +225,8 @@ class MemoryHandlerMixin:
         The bridge recall only matches prior DECISION memories. We additively
         bridge in the RAG corpus so a mid-session question like
         "vex @attrib promote" surfaces the VEX reference, not just decisions.
+        At scope=all the reference row rides along in ``matches``, but
+        ``found`` stays true only when a remembered decision matched.
         """
         def recall(bridge):
             result = bridge.handle_memory_recall(payload)
