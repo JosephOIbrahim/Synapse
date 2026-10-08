@@ -78,7 +78,8 @@ def test_recall_augments_with_knowledge(real_ki):
     h = _Handler(real_ki, _FakeBridge())
     out = h._handle_memory_recall({"query": "vex attribute promote"})
     # knowledge merged into matches list (unified result set)
-    assert out["found"] is True  # knowledge hit sets found
+    # found reports remembered decisions only; a knowledge row is context
+    assert out["found"] is False
     assert out["count"] == 1     # knowledge entry added
     assert "matches" in out
     assert len(out["matches"]) == 1
