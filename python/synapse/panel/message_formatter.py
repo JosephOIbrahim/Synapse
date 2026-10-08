@@ -551,3 +551,37 @@ def format_timestamp_divider(timestamp_text, font_scale=1.0):
     """Group breaks are carried by negative space now, not timestamp chrome.
     Returns empty — kept so ChatDisplay's grouping call site is unchanged."""
     return ""
+
+
+def format_typing_indicator(phase, font_scale, margin_y):
+    """The 'SYNAPSE is thinking...' row ChatDisplay animates; ``phase`` 0-2
+    picks one to three dots. Lives here, Qt-free, so the DES-D01 escape is
+    checked on stock CPython (tests/test_code_font_attr_escape.py).
+
+    J3: the SYNAPSE name and its dots take CONIFEROUS - one colour per
+    speaker everywhere, the same one its label and rule carry."""
+    return (
+        '<div style="margin:{my}px 0; padding:{py}px {px}px;">'
+        # PNL-L5 (R3-D): the indicator's SYNAPSE speaks in the speaker
+        # row's voice — sans, no inline tracking. Tracking has one owner
+        # now (the tracked font in _apply_turn_rhythm); an inline 1px on
+        # top of it double-tracked the word.
+        '<span style="color:{who}; font-family:{sans}; '
+        'font-size:{sz}px; font-weight:{weight};">'
+        'SYNAPSE</span> '
+        '<span style="color:{dim}; font-style:italic; '
+        'font-size:{sz}px;">is thinking'
+        '<span style="color:{who};">{dots}</span>'
+        '</span></div>'
+    ).format(
+        who=_t.CONIFEROUS,
+        dim=_t.TEXT_SECONDARY,
+        sz=int(_t.SIZE_SMALL * font_scale),
+        dots="." * (phase + 1),
+        my=margin_y,
+        py=_t.SPACE_12 // 2, px=_t.SPACE_SM + _t.SPACE_XS // 2,
+        # Escaped: the stack quotes its names and sits inside style="..."
+        # (DES-D01) -- raw, it ended the attribute at 'font-family:'.
+        sans=html.escape(_t.FONT_SANS_CSS, quote=True),
+        weight=_t.WEIGHT_MEDIUM,
+    )

@@ -66,3 +66,18 @@ def test_sized_code_faces_keep_their_font_size():
 
 def test_mono_constant_is_attribute_safe():
     assert '"' not in mf._MONO
+
+
+@pytest.mark.parametrize("phase", [0, 1, 2])
+def test_typing_indicator_keeps_sans_stack_and_weight_in_one_attribute(phase):
+    """DES-D01 follow-up: the typing indicator's SYNAPSE span, read back by a
+    parser, still holds the whole sans stack AND its font-weight in the same
+    style attribute (tests/panel/test_code_font_family_qt.py is the Qt half)."""
+    out = mf.format_typing_indicator(phase, 1.0, t.SPACE_XS // 2)
+    styles = _font_styles(out)
+    assert len(styles) == 1, styles
+    tag, style = styles[0]
+    assert tag == "span", (tag, style)
+    assert t.FONT_SANS_CSS in style, style
+    assert f"font-weight:{t.WEIGHT_MEDIUM};" in style, style
+    assert not style.rstrip().endswith("font-family:"), style
