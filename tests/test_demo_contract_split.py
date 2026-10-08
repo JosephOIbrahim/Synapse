@@ -1,8 +1,9 @@
 """Pins the 2026-10-07 amendment of the demo contracts (Jev rulings, cto-postdemo ledger).
 
 demo-round-trip.yaml adopts the three-part pass test and drops payload.hit; the Gate 0 GUI half and
-the Ctrl+Z receipt live in demo-gate0-gui.yaml of their own. Stop dates are Joe's call, so the
-ratified stop_when string is pinned unchanged. Pure Python: reads two yaml files, nothing else.
+the Ctrl+Z receipt live in demo-gate0-gui.yaml of their own. The stop window is Joe's 2026-10-08
+05:59 ruling: 7 days, branch point 2026-10-07 (the recording), deadline 2026-10-14 for two receipted
+takes under the three-part pass test. Pure Python: reads two yaml files, nothing else.
 """
 from __future__ import annotations
 
@@ -16,9 +17,9 @@ _CONTRACTS = Path(__file__).resolve().parent.parent / ".synapse" / "contracts"
 _ROUND_TRIP = _CONTRACTS / "demo-round-trip.yaml"
 _GATE0 = _CONTRACTS / "demo-gate0-gui.yaml"
 
-_RATIFIED_STOP_WHEN = (
-    "both takes HIT (branch: Sep 6 stands) OR Tue 18:00 passes without two HITs "
-    "(branch: Sep 13) — the decision is a receipt, not a feeling"
+_RULED_STOP_WHEN = (
+    "both takes HIT under the three-part pass test by 2026-10-14 (7-day window from the "
+    "2026-10-07 recording) OR 2026-10-14 passes without two HITs — the decision is a receipt, not a feeling"
 )
 _PREDICATE = (
     "found=true",
@@ -112,8 +113,16 @@ def test_both_stay_red_and_unflipped(which, request):
     assert isinstance(c["stop_when"], str) and c["stop_when"]
 
 
-def test_stop_dates_untouched_and_marked_joes_call(round_trip):
-    assert round_trip["stop_when"] == _RATIFIED_STOP_WHEN
+def test_stop_window_is_joes_7_day_ruling(round_trip):
+    stop = round_trip["stop_when"]
+    assert stop == _RULED_STOP_WHEN
+    assert "2026-10-07" in stop and "2026-10-14" in stop
+    for past in ("Sep 6", "Sep 13", "Tue 18:00"):
+        assert past not in stop, past
     text = _ROUND_TRIP.read_text(encoding="utf-8")
-    assert "# New stop dates are Joe's call" in text
+    # Lines 1-6 keep the 2026-08-31 ratification record ("Tue 18:00 BRANCH PREDICATE"); the past dates
+    # themselves and the "Joe's call" note must be gone from the whole file.
+    for gone in ("2026-09-01", "Sep 6", "Sep 13", "New stop dates are Joe's call"):
+        assert gone not in text, gone
+    assert "# AMENDED 2026-10-08" in text
     assert "Sep" not in _GATE0.read_text(encoding="utf-8").split("stop_when:", 1)[1]
