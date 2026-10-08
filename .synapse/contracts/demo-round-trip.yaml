@@ -6,28 +6,28 @@
 # agent-completable — the same class as W5-UNDO-GUI. No agent may mark any feature here passing.
 # This is the Tue 2026-09-01 18:00 branch predicate: HIT -> demo-ready Sun Sep 6 stands;
 # no HIT -> demo-ready moves to Sun Sep 13 and the week rolls into beta-W1 work.
+# AMENDED 2026-10-07 — Jev rulings, cto-postdemo ledger (source: CONTRACT_PROPOSAL.md, DEMO-04):
+#   * HIT is the three-part pass test: found=true AND matches[0].id == the take's synapse_decide
+#     deposit id AND no match with source=knowledge. scope=project on BOTH calls. payload.hit is
+#     dropped: the recall result is {query, found, count, matches[]} and has no such field (adopt p0.83).
+#   * The Gate 0 GUI half and the Ctrl+Z receipt moved to demo-gate0-gui.yaml, so a memory take is
+#     judged on memory alone (split p0.98).
 id: demo-round-trip
-goal: "In the live Houdini GUI, on camera: deposit a memory, close the scene, reopen it, recall the memory — and the recall returns SUCCESS with payload.hit=true showing the deposit. Repeat 2, both HIT. The GUI half of Gate 0 (probe_silent_recall.py pasted into the Python shell) has been run first and its four rows recorded. Footage is the receipt."
+goal: "In the live Houdini GUI, on camera: deposit a memory (synapse_decide, scope=project), close the scene, reopen it, recall the memory (synapse_recall, scope=project) — and the recall is a HIT: found=true AND matches[0].id == the deposit id AND no match with source=knowledge. Repeat 2, both HIT. Footage is the receipt."
 model: opus
 autonomy: red              # Joe's hands only; agents record UNKNOWN for every feature here
 owns:
-  - "harness/battleplan/runs/<date>/silent_recall_gui.json"       # Gate 0 GUI half, four rows
-  - "harness/battleplan/runs/<date>/demo_round_trip_<take>.json"  # per take: build, HIT/no-HIT, footage path
+  - "harness/battleplan/runs/<date>/demo_round_trip_<take>.json"  # per take: build, deposit_id, full recall result, recall scope, HIT/no-HIT, footage path
   - ".synapse/contracts/demo-round-trip.yaml"
 do_not_touch:
   - "python/**"                                    # this contract changes no code
   - "VERSION"
 features:
-  - description: "Gate 0 GUI half run at the rig: probe_silent_recall.py emits four rows in the GUI shell; the failing gate (if any) matches or refines BP1-TRIAGE's bucket"
-    verify: "silent_recall_gui.json exists with four rows, environment=gui, build runtime-observed"
-    passing: false
-  - description: "round-trip take 1: deposit -> close scene -> reopen -> recall returns SUCCESS, payload.hit=true, on screen recording"
-    verify: "demo_round_trip_1.json + footage path"
+  - description: "round-trip take 1: deposit (synapse_decide, scope=project, recorded=true) -> save -> File > New -> File > Open the same hip -> recall (synapse_recall, scope=project) returns found=true, matches[0].id == the deposit id, and no source=knowledge match; on screen recording"
+    verify: "demo_round_trip_1.json carries deposit_id, the full recall result, the recall scope, and the footage path"
     passing: false
   - description: "round-trip take 2: same sequence, same result (repeat-2 discipline)"
-    verify: "demo_round_trip_2.json + footage path"
+    verify: "demo_round_trip_2.json carries deposit_id, the full recall result, the recall scope, and the footage path"
     passing: false
-  - description: "Ctrl+Z GUI receipt captured in the same sitting (W5-UNDO-GUI, standing open item; feeds B2 reversibility claim)"
-    verify: "receipt named by Joe; footage path"
-    passing: false
+# New stop dates are Joe's call (Jev window ruling: owner p0.59, under the 0.7 bar): the dates below stay as ratified, though past.
 stop_when: "both takes HIT (branch: Sep 6 stands) OR Tue 18:00 passes without two HITs (branch: Sep 13) — the decision is a receipt, not a feeling"

@@ -1,0 +1,24 @@
+# DEMO-GATE0-GUI — split out of demo-round-trip.yaml 2026-10-07 (Jev ruling, cto-postdemo ledger,
+# split p0.98) so a memory take is judged on memory alone. The two features below are carried over
+# from that contract word for word, still passing:false. They gate nothing in demo-round-trip.
+# Autonomy RED: human hands at the rig, in the Houdini 22.0.400 GUI. Never simulatable, never
+# agent-completable — the same class as W5-UNDO-GUI. No agent may mark any feature here passing.
+id: demo-gate0-gui
+goal: "At the rig, in the live Houdini GUI: the GUI half of Gate 0 (probe_silent_recall.py pasted into the Python shell) is run and its four rows recorded, and the Ctrl+Z GUI receipt (W5-UNDO-GUI) is captured. Footage is the receipt."
+model: opus
+autonomy: red              # Joe's hands only; agents record UNKNOWN for every feature here
+owns:
+  - "harness/battleplan/runs/<date>/silent_recall_gui.json"       # Gate 0 GUI half, four rows
+  - ".synapse/contracts/demo-gate0-gui.yaml"
+do_not_touch:
+  - "python/**"                                    # this contract changes no code
+  - "VERSION"
+features:
+  - description: "Gate 0 GUI half run at the rig: probe_silent_recall.py emits four rows in the GUI shell; the failing gate (if any) matches or refines BP1-TRIAGE's bucket"
+    verify: "silent_recall_gui.json exists with four rows, environment=gui, build runtime-observed"
+    passing: false
+  - description: "Ctrl+Z GUI receipt captured in the same sitting (W5-UNDO-GUI, standing open item; feeds B2 reversibility claim)"
+    verify: "receipt named by Joe; footage path"
+    passing: false
+# No dates: a deadline for this contract is Joe's call.
+stop_when: "both receipts recorded (four Gate 0 rows + the Ctrl+Z receipt) — the decision is a receipt, not a feeling"
