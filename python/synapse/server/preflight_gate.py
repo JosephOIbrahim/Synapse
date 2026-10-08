@@ -7,8 +7,11 @@ bridge reaches (``server/hwebserver_adapter.py`` and ``server/websocket.py``).
 
 The gate applies to the calls read-only mode refuses (``read_only_mode.is_change``); reads and stop
 controls always pass, and so do farm controls, which never wait on Houdini's main thread (the stall
-gates exempt them for the same reason). It runs before a session's first change, and again after
-any retryable or unrecoverable outcome on that session. The session is the MCP session on ``/mcp``
+gates exempt them for the same reason), and ``synapse_doctor``, which never touches the scene and
+runs off Houdini's main thread (``mcp/server.py`` W2-S1); its ``bundle`` only writes a zip under
+``~/.synapse/diagnostics``. Read-only mode still refuses the doctor: its own fence is separate.
+The gate runs before a session's first change, and again after any retryable or unrecoverable
+outcome on that session, or a refusal of its own. The session is the MCP session on ``/mcp``
 and the connection on a WebSocket; each keeps a ``preflight_due`` flag. A refusal feeds neither the
 circuit breaker nor the stall detector: the hop's 250 ms budget is not a stall.
 
@@ -25,6 +28,11 @@ import types
 from typing import Any, Callable, Dict, Optional
 
 from ..core import preflight as _preflight
+
+#: Changes the gate lets through by name. synapse_doctor never touches the scene and runs off
+#: Houdini's main thread (mcp/server.py, _dispatch_doctor_off_main, W2-S1); it is a change only
+#: because ``bundle`` writes a zip under ~/.synapse/diagnostics. Owner ruling 2026-10-08.
+_PASSES_PREFLIGHT = frozenset({"synapse_doctor"})
 
 
 def _houdini():
@@ -152,6 +160,11 @@ def admit(holder: Any, tool_name: Optional[str],
     if is_farm_control(tool_name):
         # A farm launch or stop is file, journal and process work that never waits on Houdini's
         # main thread; the stall gates exempt it for the same reason.
+        return None
+    if tool_name in _PASSES_PREFLIGHT:
+        # Diagnostics are what an artist reaches for when Houdini is not ready, so they must not
+        # wait on it being ready. Returning here leaves preflight_due as it was: the next real
+        # change is still checked.
         return None
     hop = houdini_hop()
     if hop is None:

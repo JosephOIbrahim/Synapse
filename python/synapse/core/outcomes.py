@@ -7,7 +7,7 @@ Every SYNAPSE tool call, on every route, ends in exactly one of seven outcomes
   refused          a rule stopped it before dispatch; the same call gets the same answer
   retryable        nothing ran, and the cause is passing; the client may send it once more
   unrecoverable    nothing can succeed until something outside the call changes
-  needs_artist     it would run, but a person must approve it first
+  needs_artist     it would run, but a person must act first
   unknown_outcome  it may have run; the reply was lost, invalid or late
   failed           it ran and failed
 
@@ -71,7 +71,7 @@ CODES: Dict[str, Tuple[Outcome, str, str]] = {
                           "Houdini may still be working on it. Check the scene before trying again."),
     "scene.loading": (Outcome.RETRYABLE, "no",
                       "Wait for Houdini to finish loading the scene, then send it again."),
-    "scene.undo_off": (Outcome.UNRECOVERABLE, "no",
+    "scene.undo_off": (Outcome.NEEDS_ARTIST, "no",
                        "Turn undo back on: run undoctrl on in Houdini's Textport, then send it again."),
     "scene.node_not_found": (Outcome.FAILED, "yes", "Check the node path, then try again."),
     "cook.error": (Outcome.FAILED, "yes", "Read the cook error on the node, fix it, then try again."),

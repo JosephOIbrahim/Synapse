@@ -145,8 +145,8 @@ def test_a_loading_scene_is_retryable():
     _refused(PF.gate(Hop(dict(READY, loading=True))), "scene.loading", "retryable")
 
 
-def test_undo_off_is_unrecoverable_and_names_the_fix():
-    data = _refused(PF.gate(Hop(dict(READY, undo_enabled=False))), "scene.undo_off", "unrecoverable")
+def test_undo_off_needs_the_artist_and_names_the_fix():
+    data = _refused(PF.gate(Hop(dict(READY, undo_enabled=False))), "scene.undo_off", "needs_artist")
     assert "undoctrl on" in data["next"]
 
 
