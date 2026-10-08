@@ -71,7 +71,16 @@ _HEADING_TYPE = {
 # and the chrome were two type systems. If the transcript genuinely needs a
 # different code face, that is a token change, not a change here.
 # Body/prose carry no family (inherit).
-_MONO = _t.FONT_MONO_CSS
+#
+# ESCAPED for the attribute it lands in (DES-D01, 2026-10-08). The stack
+# quotes its family names ("Space Mono", ...) and every consumer below puts
+# it inside a double-quoted style="..." attribute, so the raw stack ended
+# the attribute at 'font-family:' -- Qt dropped the family AND everything
+# after it (font-size, white-space) and code fell back to the generic
+# 'monospace' face. Measured offscreen on hython 22.0.400; pinned by
+# tests/panel/test_code_font_family_qt.py. Qt decodes &quot; inside the
+# attribute, which is how the speaker timestamp already got Space Mono.
+_MONO = html.escape(_t.FONT_MONO_CSS, quote=True)
 
 # Regex patterns
 _CODE_BLOCK_RE = re.compile(r"```(\w*)\n(.*?)```", re.DOTALL)
@@ -455,7 +464,7 @@ def _speaker_label(who, timestamp, font_scale):
     # max(sz - 1, 8) shipped it at 10px — a size the 11 / 12 / 15 / 19 ramp
     # does not have. Same size as the speaker label, one step of colour apart.
     ts = ('<span style="color:{d}; font-family:{mono}; font-size:{s}px;">&#160;&#160;{t}</span>'
-          .format(d=_TEXT_DIM, mono=html.escape(_t.FONT_MONO_CSS, quote=True),
+          .format(d=_TEXT_DIM, mono=_MONO,
                   s=sz, t=html.escape(timestamp))
           if timestamp else "")
     colour = _speaker_colour(who)
