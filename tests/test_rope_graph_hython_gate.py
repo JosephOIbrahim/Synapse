@@ -90,6 +90,13 @@ def test_an_edited_package_module_is_not_flagged(run_gate):
     assert v == "fail" and len(calls) == 1
 
 
+def test_a_new_package_module_is_not_flagged(run_gate):
+    """A new module inside python/synapse runs after the package is loaded; a stub there would be wrong."""
+    guarded = "try:\n    import hou\nexcept ImportError:\n    hou = None\nfrom synapse.core import x\n"
+    (v, _), calls = run_gate("python/synapse/cv/helper.py", guarded)
+    assert v == "fail" and len(calls) == 1
+
+
 def test_the_referee_criterion_stays_beside_the_check():
     """The gate is added to the referee's DROP line, never a replacement for it."""
     with open(GRAPH, encoding="utf-8") as f:

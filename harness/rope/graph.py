@@ -624,7 +624,8 @@ def _dropped_logging(slot, changed, card_text):
 
 # Post-demo loop 3 shipped the HYTHON rule as prompt text and a referee DROP line: a model.
 # Law 3 says checks decide, so the gate now refuses the same thing in code. Only NEW .py files
-# are read: an edited module inside python/synapse/ imports hou and synapse.<sub> by right.
+# outside python/synapse/ are read: a package module, new or edited, imports hou (guarded) and
+# synapse.<sub> by right, because the package is already loaded when it runs.
 _HYTHON_MEANT = {"hou", "hdefereval"}
 _STUBBED = re.compile(r"""ModuleType\(\s*['"]synapse['"]|sys\.modules\[\s*['"]synapse['"]\s*\]"""
                       r"""|sys\.modules\.setdefault\(\s*['"]synapse['"]""")
@@ -636,7 +637,7 @@ def _bare_hython_import(slot, changed):
     already parsed every changed .py file, so a parse here cannot fail on a file it reads."""
     bad = []
     for code, rel in changed:
-        if code not in NEW or not rel.endswith(".py"):
+        if code not in NEW or not rel.endswith(".py") or rel.startswith("python/synapse/"):
             continue
         with open(os.path.join(slot, rel), encoding="utf-8") as f:
             text = f.read()
