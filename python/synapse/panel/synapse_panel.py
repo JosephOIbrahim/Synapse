@@ -4122,8 +4122,10 @@ class SynapsePanel(QtWidgets.QWidget):
             # The worker-policy allowlist (denies review/approve/critical gates:
             # execute_python/execute_vex, delete_node, renders, exports, prunes,
             # PDG cooks — fails closed on unknown tools) now binds this path too.
-            # Gated ops happen in the native Houdini UI or via a bridge /mcp
-            # consent-gated call, not through the panel worker.
+            # A denied op is refused with a reason (worker_policy) and the artist
+            # runs it in the native Houdini UI, not through the panel worker.
+            # The /mcp bridge is no consent gate either: get_process_bridge
+            # builds it auto-approve (shared/bridge.py; denial text d5d2b415).
             # BP9-WORKER: tools=None → the worker resolves its own filtered
             # roster (get_anthropic_tools_for_worker), so the LLM never sees a
             # schema the allowlist would deny at dispatch.
