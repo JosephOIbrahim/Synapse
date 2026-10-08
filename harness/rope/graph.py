@@ -806,6 +806,8 @@ def _norm(s):
 _FILE_LINE = re.compile(r"^\S+\.\w+:\d+(?::\d+)?\s*")
 # A quote that directly follows a file:line cite -- the compound shape -- never a literal in code.
 _SPAN = re.compile(r'[\w./\\-]+\.[A-Za-z]\w*:\d+\s*(?:`([^`]{6,})`|"((?:[^"\\]|\\.){6,})")')
+# One word, bare or quoted ("claude", `running`, running): never a line.
+_WORD = re.compile(r"""^["'`]?\w+["'`]?$""")
 
 
 def _evidence_spans(raw):
@@ -816,7 +818,9 @@ def _evidence_spans(raw):
     line is never cut down to a quoted token inside it; then each quoted span in reading order.
     A span counts only when it directly follows a file:line cite: a string literal inside a code
     line ("running", "claude") never does, so a line gone from the file stays vetoed rather
-    than passing on a word quoted inside it.
+    than passing on a word quoted inside it. Nor does one word on its own, bare or quoted, cited
+    or not: it is a substring of every line that holds it, so it anchors none, and the veto
+    would move the seed to whichever line held it first.
     """
     raw = str(raw)
     out = [raw, _FILE_LINE.sub("", raw.strip(), count=1)]
@@ -825,7 +829,7 @@ def _evidence_spans(raw):
     seen, spans = set(), []
     for s in out:
         n = _norm(s)
-        if len(n) >= 6 and n not in seen:
+        if len(n) >= 6 and n not in seen and not _WORD.match(n):
             seen.add(n)
             spans.append(n)
     return spans
@@ -834,6 +838,8 @@ def _evidence_spans(raw):
 def veto(c):
     """Deterministic reasons a candidate never reaches a fixer. Checked before any model."""
     f = posix(str(c.get("file", "")))
+    if re.match(r"(?:[A-Za-z]:)?/", f) or ".." in f.split("/"):
+        return "outside the repo"  # join() would drop ROOT and read, then fix, the host's file
     if not f or not os.path.isfile(os.path.join(ROOT, f)):
         return "no such file"
     if f.startswith(FENCES):
