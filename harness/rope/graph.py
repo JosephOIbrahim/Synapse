@@ -622,6 +622,38 @@ def _dropped_logging(slot, changed, card_text):
     return lost
 
 
+# Post-demo loop 3 shipped the HYTHON rule as prompt text and a referee DROP line: a model.
+# Law 3 says checks decide, so the gate now refuses the same thing in code. Only NEW .py files
+# outside python/synapse/ are read: a package module, new or edited, imports hou (guarded) and
+# synapse.<sub> by right, because the package is already loaded when it runs.
+_HYTHON_MEANT = {"hou", "hdefereval"}
+_STUBBED = re.compile(r"""ModuleType\(\s*['"]synapse['"]|sys\.modules\[\s*['"]synapse['"]\s*\]"""
+                      r"""|sys\.modules\.setdefault\(\s*['"]synapse['"]""")
+
+
+def _bare_hython_import(slot, changed):
+    """New .py files meant for hython (they import hou/hdefereval or name hython) that import
+    synapse or synapse.<sub> without first stubbing the package in sys.modules. The caller has
+    already parsed every changed .py file, so a parse here cannot fail on a file it reads."""
+    bad = []
+    for code, rel in changed:
+        if code not in NEW or not rel.endswith(".py") or rel.startswith("python/synapse/"):
+            continue
+        with open(os.path.join(slot, rel), encoding="utf-8") as f:
+            text = f.read()
+        mods = []
+        for n in ast.walk(ast.parse(text)):
+            if isinstance(n, ast.Import):
+                mods += [a.name for a in n.names]
+            elif isinstance(n, ast.ImportFrom) and not n.level and n.module:
+                mods.append(n.module)
+        top = {m.split(".", 1)[0] for m in mods}
+        meant = bool(top & _HYTHON_MEANT) or re.search(r"\bhython\b", text, re.I)
+        if meant and "synapse" in top and not _STUBBED.search(text):
+            bad.append(rel)
+    return bad
+
+
 def _force_tracked_dir(tree, rel):
     """True when rel's own directory (not the root, not a parent) holds a tracked file that is
     also gitignored: the only precedent under which the gate may `git add -f` a new ignored file."""
@@ -654,6 +686,10 @@ def gate(st, it):
                         ast.parse(f.read())
                 except (SyntaxError, ValueError, OSError) as e:
                     return "syntax", "%s does not parse: %s" % (p, e)
+        bare = _bare_hython_import(slot, changed)
+        if bare:
+            return "hython_bare", "a new hython script imports synapse without the HYTHON stub: " \
+                + ", ".join(bare[:4])
         lost = _dropped_logging(slot, changed, "%s %s" % (it.get("change", ""), it.get("title", "")))
         if lost:
             return "dropped_log", "a fix removed logging its card never mentioned: " + "; ".join(lost[:3])
