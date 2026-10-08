@@ -12,6 +12,8 @@ It is the same rope. The checks, the scoped revert and the executor command are 
 2. **Scout.** One read-only session per slice of the map. A scout returns candidates: a file, a line, the quoted line, the smallest fix, and how a program would prove it.
 3. **Route.** Code vetoes first: fenced paths, the exam, and any candidate whose quoted line is not in the file. Then `harness/jev/jev_sweep.py` asks Jev where each survivor goes.
 4. **Fix.** One session per file, each in its own slot worktree. A fixer may edit its card's files and run `python -m pytest`. Nothing else.
+
+   Every prompt the graph writes (scout, fixer, referee) carries `GIT_RULES`: never `git stash`, because stash refs live in the shared `.git` and every worktree sees them. Two lanes swapped patches that way on 2026-10-07. The safe way to run old code is `git archive <rev> python | tar -x -C <scratch>` with `PYTHONPATH` on the scratch copy. A plain `git show <rev>:<path>` breaks package imports. Pinned by `tests/test_rope_graph_nostash.py`.
 5. **Gate.** Checks decide. Keep is one scoped commit. Fail is a scoped restore. A fix that removes a logger call is refused (`dropped_log`) unless the same line was added in a declared file or the card quotes the call's message. Every fix also runs the four ratchets: catalog conformance, recipe-string conformance, the D-track TOPs quarantine, and the broad-except ratchet. A fix that breaks one of these composed gates is discarded, even when no judging test names its module.
 6. **Referee.** A read-only session reads the kept commits. A drop is a `git revert`, never a rewrite.
 
