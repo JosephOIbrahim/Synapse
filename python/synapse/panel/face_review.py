@@ -175,11 +175,16 @@ class RenderHero(QtWidgets.QWidget):
         vig.setColorAt(1.0, QtGui.QColor(0, 0, 0, 115))
         p.fillRect(r, QtGui.QBrush(vig))
 
+    @staticmethod
+    def _meta_font():
+        # DES-D06: the `status` role (TYPE_ROLES: mono, SIZE_SMALL, DATA
+        # tracking) on the bundled Space Mono, the same call this face's DATA
+        # rows use. It was setPixelSize(10) in a generic 'monospace' family:
+        # under FONT_FLOOR_PX and off the bundle (offscreen it resolved to Courier).
+        return fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True)
+
     def _paint_meta(self, p, r):
-        f = QtGui.QFont()
-        f.setPixelSize(10)
-        f.setFamily("monospace")
-        p.setFont(f)
+        p.setFont(self._meta_font())
         # inert metadata over the frame — the warm mushroom note, not a cool
         # grey literal, and not the live-text ramp (this is caption, not copy).
         p.setPen(QtGui.QColor(t.MUSHROOM))
