@@ -5,6 +5,7 @@ with styled HTML, clickable node paths, code block formatting, message
 grouping with timestamps, and animated typing indicator.
 """
 
+import html
 import logging
 import time
 
@@ -1053,7 +1054,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             dots=dots,
             my=_BUBBLE_MARGIN_Y,
             py=t.SPACE_12 // 2, px=t.SPACE_SM + t.SPACE_XS // 2,
-            sans=t.FONT_SANS_CSS, weight=t.WEIGHT_MEDIUM,
+            # Escaped: the stack quotes its names and sits inside style="..."
+            # (DES-D01) -- raw, it ended the attribute at 'font-family:'.
+            sans=html.escape(t.FONT_SANS_CSS, quote=True),
+            weight=t.WEIGHT_MEDIUM,
         )
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
