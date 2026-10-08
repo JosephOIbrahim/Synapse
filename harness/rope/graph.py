@@ -419,18 +419,18 @@ def build_prompt(st, it):
         listing = "\n".join("  " + f for f in it["files"])
         return SCOUT % {"id": it["id"], "areas": ", ".join(it["areas"]), "blast": blast,
                         "n": len(it["files"]), "lines": it.get("lines", 0), "files": listing,
-                        "turns": TURNS["scout"], "git": GIT_RULES,
+                        "turns": TURNS["scout"], "git": SESSION_RULES,
                         "brief": ("YOUR BRIEF (it narrows the search; the reply format does not change):\n%s\n"
                                   % it["brief"]) if it.get("brief") else ""}
     if k == "fix":
         card = {x: it[x] for x in ("id", "title", "files", "change", "accept") if x in it}
-        return _program() + FIX % {"card": json.dumps(card, indent=1), "id": it["id"], "git": GIT_RULES}
+        return _program() + FIX % {"card": json.dumps(card, indent=1), "id": it["id"], "git": SESSION_RULES}
     blocks = []
     for sha, fid in it["commits"]:
         f = by_id(st, fid)
         show = git("show", "--stat", "--patch", "--format=%h %s", sha).stdout
         blocks.append("--- %s : %s\nCARD: %s\n%s" % (fid, f["title"], f.get("change", ""), show[:14000]))
-    return REVIEW % {"id": it["id"], "git": GIT_RULES, "blocks": "\n\n".join(blocks)}
+    return REVIEW % {"id": it["id"], "git": SESSION_RULES, "blocks": "\n\n".join(blocks)}
 
 
 def _exec(run, iid):
@@ -1061,6 +1061,23 @@ git archive <rev> python | tar -x -C <scratch> with PYTHONPATH pointed at the sc
 a plain git show <rev>:<path> breaks package imports.
 """
 
+# Post-demo loop 2: a measurement under hython had <worktree>/python on sys.path, so a bare
+# `import synapse.cv` would have run python/synapse/__init__.py headless. That file imports
+# synapse.core, synapse.inspector, synapse.memory.models and synapse.memory.store eagerly.
+HYTHON_RULES = """HYTHON: Never import synapse, or any synapse.<sub> module, bare in hython or any Python with
+<worktree>/python on sys.path. A bare import runs python/synapse/__init__.py, which imports
+synapse.core, synapse.inspector and synapse.memory.store before your module. A probe that called
+itself read-only (it built SynapsePanel()) has already destroyed the artist's parked conversation,
+so treat every package-level side effect as live. Stub the package first:
+    import sys, types
+    pkg = types.ModuleType("synapse"); pkg.__path__ = ["<worktree>/python/synapse"]
+    sys.modules.setdefault("synapse", pkg)
+    import synapse.cv
+(the same idea, without __path__: tests/test_scene_memory.py). A new script or test meant for hython that skips the stub is
+a defect, not a style choice.
+"""
+SESSION_RULES = GIT_RULES + HYTHON_RULES
+
 SCOUT = """You are a read-only scout for SYNAPSE, an AI assistant that runs inside SideFX Houdini.
 You are node %(id)s of a work graph. You read. You never edit a file, never run code, never start a subagent.
 
@@ -1135,7 +1152,8 @@ DROP a commit when any of these is true:
 - it does more than its card says;
 - it changes what an artist would see or how a scene is built, beyond correcting the stated defect;
 - its new test cannot fail: it would pass with the fix removed;
-- the fix is wrong, or the original code was right.
+- the fix is wrong, or the original code was right;
+- it adds a script or test meant for hython that imports synapse or synapse.<sub> without the HYTHON stub.
 Otherwise KEEP it. When unsure, drop: a dropped fix is a line in a report, a wrong one ships.
 
 %(git)s
