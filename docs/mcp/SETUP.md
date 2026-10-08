@@ -220,19 +220,22 @@ failed response carries the outcome in its `data`.
 
 ## Readiness before a change
 
-Before a session's first change, and again after any `retryable` or `unrecoverable` outcome,
-SYNAPSE checks that Houdini can take a change. On `/mcp` the session is the MCP session; on the
-stdio bridge's WebSocket it is the connection. Stop controls, farm controls and reads (the tools
-read-only mode lets through) are not checked. The
-check costs one hop onto Houdini's main thread, with a 250 ms budget, and a ready answer is
-remembered for 10 seconds. A change it refuses is never sent, and the refusal names the fix:
+Before a session's first change, and again after any `retryable` or `unrecoverable` outcome or
+a refusal of its own, SYNAPSE checks that Houdini can take a change. On `/mcp` the session is
+the MCP session; on the stdio bridge's WebSocket it is the connection. Stop controls, farm
+controls and reads (the tools read-only mode lets through) are not checked. Nor is
+`synapse_doctor`, which never touches the scene and runs off Houdini's main thread, so it
+answers when Houdini is not ready; skipping it leaves the next change still due a check.
+Read-only mode still refuses the doctor. The check costs one hop onto Houdini's main thread,
+with a 250 ms budget, and a ready answer is remembered for 10 seconds. A change it refuses is
+never sent, the refusal names the fix, and the next change is checked again:
 
 | When | Outcome and code | What to do |
 |---|---|---|
 | Houdini's main thread does not answer within 250 ms | `retryable`, `houdini.busy` | Wait 5 s, then send it again. |
 | It misses a second time in a row | `needs_artist`, `houdini.not_answering` | Check Houdini for an open dialog or a running cook. |
 | Houdini is loading a scene | `retryable`, `scene.loading` | Wait for the load to finish. |
-| Undo is off | `unrecoverable`, `scene.undo_off` | Run `undoctrl on` in Houdini's Textport. |
+| Undo is off | `needs_artist`, `scene.undo_off` | Run `undoctrl on` in Houdini's Textport, then send it again. |
 | The stdio bridge runs another SYNAPSE release than Houdini | `unrecoverable`, `version.mismatch` | Restart the side on the older release, the MCP client or Houdini; the message names it. |
 | A check could not run | `unrecoverable`, `preflight.blocked` | The message names the check. |
 
