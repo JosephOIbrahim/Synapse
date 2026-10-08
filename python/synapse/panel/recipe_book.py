@@ -364,28 +364,32 @@ RECIPES = {
         },
         "bend_twist": {
             "title": "Bend + Twist Chain",
-            "description": "Chained bend and twist deformers for organic shapes",
+            "description": "Bend and twist on one Bend SOP for organic shapes",
             "context": "SOP",
             "difficulty": "beginner",
+            # The Twist SOP is deprecated in Houdini 22.0.400; the Bend SOP has
+            # its own twist, off by default (enabletwist). Probed live on
+            # hython 22.0.400: bend.enabletwist (Toggle) + bend.twist (Float).
             "nodes": [
                 {"type": "tube", "name": "tube1", "parms": {"rows": 30, "cols": 20, "height": 5}},
-                {"type": "bend", "name": "bend1", "parms": {"bend": 45}},
-                {"type": "twist", "name": "twist1", "parms": {"op": 0, "strength": 180}},
+                {"type": "bend", "name": "bend1",
+                 "parms": {"bend": 45, "enabletwist": 1, "twist": 180}},
             ],
             "connections": [
                 ["tube1", "bend1", 0],
-                ["bend1", "twist1", 0],
             ],
-            "key_parms": ["bend", "strength"],
+            "key_parms": ["bend", "enabletwist", "twist"],
             "explanation": (
-                "Chains a bend and twist deformer on a tube. The bend curves the "
-                "geometry along one axis, then the twist rotates points progressively "
-                "along the length, creating spiral-like organic forms."
+                "Bends and twists a tube with one Bend SOP. The bend curves the "
+                "geometry along one axis, and the Bend SOP's own twist (turned on "
+                "with Enable Twist) rotates points progressively along the length, "
+                "creating spiral-like organic forms."
             ),
             "tips": [
                 "Increase tube rows for smoother deformation (30+ recommended)",
                 "Try negative bend angles for opposite curvature",
-                "Add a Smooth SOP after twist to reduce faceting artifacts",
+                "Twist does nothing until Enable Twist (enabletwist) is on",
+                "Add a Smooth SOP after the Bend to reduce faceting artifacts",
             ],
         },
     },
