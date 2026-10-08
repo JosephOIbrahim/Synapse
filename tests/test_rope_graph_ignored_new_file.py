@@ -162,3 +162,75 @@ def test_a_failed_check_removes_the_ignored_file_it_copied(world):
     assert G.gate(st, it)[0] == "fail"
     assert not (repo / NEW).exists()
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+
+
+def _exclude(repo, *patterns):
+    """Ignore more names through the shared info/exclude, the way the real .gitignore ignores
+    .env, *.key and *.log; every worktree of the fixture repo reads it."""
+    info = _git(repo, "rev-parse", "--git-common-dir").stdout.strip()
+    path = os.path.join(str(repo), info) if not os.path.isabs(info) else info
+    with open(os.path.join(path, "info", "exclude"), "a", encoding="utf-8", newline="\n") as f:
+        f.write("".join(p + "\n" for p in patterns))
+
+
+def test_force_add_needs_a_force_tracked_sibling_in_the_same_directory(world):
+    """Fails if `add -f` would track a secret-like ignored file just because something is tracked nearby.
+
+    Four declared ignored files, none with precedent: one at the repo root (`ls-files -- .` is never
+    empty), one beside a tracked file that is not itself ignored (pkg/a.py licenses nothing), one
+    with a log extension, and one in .synapse/ whose only force-tracked file lives a level down in
+    contracts/. The whole card is refused, nothing is copied, and the slot is handed back clean.
+    """
+    G, st, repo, slot = world
+    _exclude(repo, ".env", "*.key", "*.log")
+    secrets = [".env", "pkg/secret.key", "pkg/run.log", ".synapse/memory.json"]
+    it = _fix(st, slot, ["pkg/a.py", *secrets])
+    _write(slot / "pkg" / "a.py", "VALUE = 'new'\n")
+    for rel in secrets:
+        _write(slot / rel, "token=abc\n")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    verdict, note = G.gate(st, it)
+    assert verdict == "ignored", note
+    for rel in secrets:
+        assert rel in note
+        assert not (repo / rel).exists()
+        assert not (slot / rel).exists()
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert _git(repo, "ls-files", "--", *secrets).stdout.strip() == ""
+
+
+def test_the_force_tracked_directory_is_still_a_precedent_beside_a_refused_file(world):
+    """Fails if the precedent rule refuses .synapse/contracts/ itself (the loop-1 split must still ship),
+    or names it as the offender when a root-level secret in the same card is what got refused."""
+    G, st, repo, slot = world
+    _exclude(repo, ".env")
+    it = _fix(st, slot, [NEW, ".env"])
+    _write(slot / NEW, "name: demo-gate0-gui\n")
+    _write(slot / ".env", "token=abc\n")
+    verdict, note = G.gate(st, it)
+    assert verdict == "ignored", note
+    assert ".env" in note and NEW not in note
+    assert G._force_tracked_dir(str(slot), NEW)
+    assert not G._force_tracked_dir(str(slot), ".env")
+    assert not G._force_tracked_dir(str(slot), "pkg/secret.key")
+
+
+def test_a_log_line_moved_into_a_new_ignored_file_is_not_dropped(world):
+    """Fails if a logger call moved INTO a new gitignored file reads as dropped_log.
+
+    A new ignored file has no HEAD side: every line in it is an added line, exactly as for an
+    untracked one. Read through `git diff HEAD` instead, it shows nothing and the move is lost.
+    """
+    G, st, repo, slot = world
+    line = 'log.info("gate split loaded")'
+    _write(repo / "pkg" / "a.py", "import logging\nlog = logging.getLogger(__name__)\nVALUE = 'old'\n%s\n" % line)
+    _git(repo, "add", "pkg/a.py")
+    assert _git(repo, "commit", "-q", "-m", "log").returncode == 0
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert _git(slot, "checkout", "-q", "--detach", head).returncode == 0
+    it = _fix(st, slot, ["pkg/a.py", NEW])
+    _write(slot / "pkg" / "a.py", "import logging\nlog = logging.getLogger(__name__)\nVALUE = 'new'\n")
+    _write(slot / NEW, "name: demo-gate0-gui\n%s\n" % line)
+    verdict, note = G.gate(st, it)
+    assert verdict == "kept", note
+    assert _committed(repo) == {"pkg/a.py", NEW}

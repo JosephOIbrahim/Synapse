@@ -622,6 +622,16 @@ def _dropped_logging(slot, changed, card_text):
     return lost
 
 
+def _force_tracked_dir(tree, rel):
+    """True when rel's own directory (not the root, not a parent) holds a tracked file that is
+    also gitignored: the only precedent under which the gate may `git add -f` a new ignored file."""
+    d = posixpath.dirname(rel)
+    if not d:
+        return False
+    r = git("ls-files", "-z", "-ci", "--exclude-standard", "--", d, cwd=tree)
+    return any(posixpath.dirname(posix(e)) == d for e in r.stdout.split("\0") if e)
+
+
 def gate(st, it):
     """Judge one finished fix. Returns (verdict, note). Checks decide; no model is asked."""
     slot, root = it["slot"], st["root"]
@@ -648,13 +658,15 @@ def gate(st, it):
         if lost:
             return "dropped_log", "a fix removed logging its card never mentioned: " + "; ".join(lost[:3])
         # `add -f` below may only follow a precedent: a new ignored file joins a directory that
-        # is already force-tracked (.synapse/contracts/). An ignored directory nothing is tracked
-        # from (demo/.synapse/, a memory store; origin is public) is the owner's call, not a fix's.
-        untracked_dirs = [rel for code, rel in changed if code == "!!"
-                          and not git("ls-files", "--", posixpath.dirname(rel) or ".", cwd=slot).stdout.strip()]
-        if untracked_dirs:
-            return "ignored", "new file under a gitignored path nothing there is tracked from: " \
-                + ", ".join(untracked_dirs[:4])
+        # ALREADY holds a force-tracked file, i.e. a tracked file in that same directory which is
+        # itself ignored (.synapse/contracts/). A tracked sibling that is not ignored is no
+        # precedent (pkg/a.py does not license pkg/secret.key), and an ignored file at the repo
+        # root (.env) is refused outright. Anything else is the owner's call, not a fix's: origin
+        # is public and auto-pushed.
+        no_precedent = [rel for code, rel in changed if code == "!!" and not _force_tracked_dir(slot, rel)]
+        if no_precedent:
+            return "ignored", "new gitignored file with no force-tracked sibling in its directory: " \
+                + ", ".join(no_precedent[:4])
         existed ={p: os.path.exists(os.path.join(root, p)) for p in paths}
         for p in paths:
             os.makedirs(os.path.dirname(os.path.join(root, p)) or root, exist_ok=True)
