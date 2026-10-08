@@ -659,11 +659,11 @@ def gate(st, it):
             rope.revert(task, existed)
             return "fail", "commit refused: " + (c.stdout + c.stderr).strip()[:160]
         it["sha"] = git("rev-parse", "--short", "HEAD").stdout.strip()
-        note = it["sha"] + (" manual: " + "; ".join(manual) if manual else "")
-        if any(stales_index(p) for p in paths):   # only the full gate sees this; say it here
-            it["stale_index"] = True
-            note += "; " + STALE_INDEX
-        return "kept", note
+        note = it["sha"]
+        if any(stales_index(p) for p in paths):   # only the full gate sees this; say it here,
+            it["stale_index"] = True              # before the manual list, which the ledger
+            note += "; " + STALE_INDEX            # (300) and `status` (110) may truncate
+        return "kept", note + (" manual: " + "; ".join(manual) if manual else "")
     finally:
         _free_slot(st, slot, changed)
 
