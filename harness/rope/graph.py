@@ -532,13 +532,27 @@ def stales_index(rel):
 
 
 
-def _changed(tree):
+NEW = ("??", "!!")      # untracked, or untracked AND gitignored: no HEAD side either way
+
+
+def _changed(tree, declared=()):
+    """What a worker changed. A NEW file under a gitignored path ('/.synapse/') is invisible
+    to plain `git status`, so the gate kept the rest of the card and shipped half a split
+    while local tests stayed green (post-demo loop 1). Declared paths are asked about with
+    --ignored and come back as '!!'; undeclared ignored files (caches) stay out of view."""
     out = []
     for ln in git("status", "--porcelain", "-uall", cwd=tree).stdout.splitlines():
         code, rel = ln[:2], ln[3:].strip()
         if " -> " in rel:
             rel = rel.split(" -> ", 1)[1]
         out.append((code, posix(rel.strip('"'))))
+    if declared:
+        seen = {rel for _, rel in out}
+        r = git("status", "--porcelain", "-uall", "--ignored", "--", *declared, cwd=tree)
+        for ln in r.stdout.splitlines():
+            rel = posix(ln[3:].strip().strip('"'))
+            if ln[:2] == "!!" and rel not in seen:
+                out.append(("!!", rel))
     return out
 
 
@@ -548,7 +562,7 @@ def _free_slot(st, slot_path, changed):
     slot["busy"] = ""
     for code, rel in changed:
         p = os.path.join(slot_path, rel)
-        if code.strip() == "??":
+        if code.strip() in NEW:
             if os.path.isdir(p):
                 shutil.rmtree(p, ignore_errors=True)
             elif os.path.exists(p):
@@ -578,7 +592,7 @@ def _dropped_logging(slot, changed, card_text):
     """
     removed, added = [], set()
     for code, rel in changed:
-        if code.strip() == "??":                      # new file: no HEAD side to lose,
+        if code.strip() in NEW:                       # new file: no HEAD side to lose,
             try:                                      # but every line in it is an added line
                 with open(os.path.join(slot, rel), encoding="utf-8", errors="replace") as f:
                     added.update(_norm(x) for x in f.read().splitlines())
@@ -610,7 +624,7 @@ def _dropped_logging(slot, changed, card_text):
 def gate(st, it):
     """Judge one finished fix. Returns (verdict, note). Checks decide; no model is asked."""
     slot, root = it["slot"], st["root"]
-    changed = _changed(slot)
+    changed = _changed(slot, it["files"])
     declared = set(it["files"])
     paths = [rel for _, rel in changed]
     try:
@@ -649,7 +663,15 @@ def gate(st, it):
         if not ok:
             rope.revert(task, existed)
             return "fail", "; ".join(fails)[:240]
-        git("add", "--", *paths)                      # never `add -A`
+        # Never `add -A`: only the named paths, every one of them declared (strays were refused
+        # above). `-f` because a declared file under a gitignored path is force-tracked the way
+        # .synapse/contracts/ is: a plain add refuses a new one (exit 1, which nobody checked)
+        # and exits 1 even while it stages an edit to a tracked one. So the exit is checked now.
+        a = git("add", "-f", "--", *paths)
+        if a.returncode != 0:
+            git("reset", "-q", "--", *paths)
+            rope.revert(task, existed)
+            return "fail", "git add refused: " + (a.stdout + a.stderr).strip()[:160]
         msg = "rope:%s %s [%s]" % (it["id"], it["title"][:72], it.get("law", "sweep"))
         if st.get("trailer"):
             msg += "\n\n" + st["trailer"]
@@ -681,7 +703,7 @@ def _finish(st, it):
         st["stop"] = "quota: a session hit a usage limit; the loop stops and is never retried"
         it["status"] = "pending"
         if it.get("slot"):
-            _free_slot(st, it["slot"], _changed(it["slot"]))
+            _free_slot(st, it["slot"], _changed(it["slot"], it.get("files", ())))
         ledger(st, it["id"], model, "quota-pause", it["attempts"], dur, toks, "usage limit hit; task unharmed")
         return
     if it["kind"] == "fix":
