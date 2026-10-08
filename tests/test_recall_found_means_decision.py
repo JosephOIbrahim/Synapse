@@ -5,8 +5,10 @@ when scope is ``all``. That row is context, not memory, so it must never turn
 ``found`` true on its own. An empty store asked at scope=all answers
 found=false and still carries the knowledge row.
 
-No sys.path insert here on purpose: the module is resolved through
-PYTHONPATH, so a fail-on-base run against an archived tree tests that tree.
+No sys.path insert here on purpose, so a fail-on-base run can test an
+archived tree. pyproject.toml's ``pythonpath = ["python"]`` puts this checkout
+ahead of PYTHONPATH, so that run must clear it: ``pytest -o pythonpath=``
+with PYTHONPATH pointing at the archived ``python`` directory.
 """
 
 from types import SimpleNamespace
