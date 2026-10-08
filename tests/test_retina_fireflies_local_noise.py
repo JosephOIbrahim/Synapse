@@ -197,3 +197,17 @@ def test_fireflies_stop_with_100_to_300_nonflat_pixels_uses_them(cv2):
     assert level["sigma"] == pytest.approx(0.01, rel=0.35)
     assert r["sigma"] == level["sigma"]
     assert [(f["x"], f["y"]) for f in r["fireflies"]] == [(32, 24)]
+
+
+def test_fireflies_noise_keys_are_the_same_when_inconclusive(cv2):
+    # ``noise`` carries the local-model keys on both paths, so a consumer can
+    # index them without first checking ``inconclusive``.
+    rng = np.random.default_rng(3)
+    img = np.zeros((64, 64, 3), dtype=np.float32)
+    img[20:26, 20:26] = (0.18 + rng.normal(0, 0.01, (6, 6, 1))).astype(np.float32)
+    judged = fireflies(rgb(backdrop("horizontal .13-.24")))
+    unjudged = fireflies(img)
+    assert unjudged["inconclusive"] is True and judged["inconclusive"] is False
+    assert set(unjudged["noise"]) == set(judged["noise"])
+    assert unjudged["noise"]["local_pixels"] == 0
+    assert unjudged["noise"]["local_window"] == judged["noise"]["local_window"] == 31

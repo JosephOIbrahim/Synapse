@@ -87,16 +87,18 @@ Known limits of the noise model (reviews of 65b02294, F2, d4c7ab11 and
   coverage). In the reviewer's 8490b80b grid this is the single false
   firefly on 1 or 2 of 5 frames that some covers of most backdrops show,
   before and after the local model.
-- A small noisy object on a flat or smooth backdrop at its own stop is
-  judged locally once its window holds ``_MIN_LOCAL_PIXELS`` live pixels.
-  Below that (a square of 7x7 or less, with its one-pixel ring) it falls
-  back to the stop and, when the stop has fewer than ``_MIN_NOISE_PIXELS``
-  live pixels, to the whole stop, whose MAD is about 0: its noise is then
-  flagged (5x5 and 7x7 squares on a 0.18 or 0.15 backdrop: 10 of 10 frames
-  wrong; 8x8 to 20x20: 0 or 1 of 10). At 8490b80b, with no local estimate,
-  the reviewer measured this well past "under about 100 pixels": up to 144
-  pixels on a 0.18 backdrop and 400 on a 0.15 one. Such an object on black
-  is inconclusive instead.
+- A small noisy object alone on a flat or smooth backdrop at its stop:
+  with fewer than ``_MIN_NOISE_PIXELS`` live pixels in the stop (a square
+  of 7x7 or less, with its one-pixel ring) the stop's MAD comes from the
+  whole stop and is about 0. Its window does hold ``_MIN_LOCAL_PIXELS``
+  live pixels, but the first local pass clips at four of that floored stop
+  sigma and two passes cannot climb back to the object's noise, which is
+  then flagged (5x5 and 7x7 squares on a 0.18 or 0.15 backdrop: 10 of 10
+  frames wrong). From 8x8 (100 live pixels) on, the stop has its own MAD
+  and the object is judged locally (8x8 to 20x20: 0 or 1 of 10 frames
+  wrong). At 8490b80b, with no local estimate, the reviewer measured this
+  well past "under about 100 pixels": up to 144 pixels on a 0.18 backdrop
+  and 400 on a 0.15 one. Such an object on black is inconclusive instead.
 - Two noise levels at one stop (a glossy and a diffuse surface of equal
   brightness) are judged apart only more than a window half-width (15 px)
   from where they meet; nearer, the window mixes them.
@@ -301,6 +303,9 @@ def fireflies(
                 "black_sigma": None,
                 "min_pixels": _MIN_NOISE_PIXELS,
                 "levels": levels,
+                "local_window": 2 * _LOCAL_RADIUS + 1,
+                "local_min_pixels": _MIN_LOCAL_PIXELS,
+                "local_pixels": 0,
             },
             f"{n_lit} lit pixels (5x5 median above 0) and no stop holds "
             f"{_MIN_NOISE_PIXELS} of them: their noise cannot be estimated",
