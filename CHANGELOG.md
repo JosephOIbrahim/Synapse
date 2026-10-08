@@ -22,6 +22,25 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **STILL TRUE, AND ONE STALE ROW.** Both tools take a fixture *name* (`apply_fixture.py` signature) - phrase routing (M6, "basic Solaris setup" -> fixture) is not claimed here and was not checked. No USD `customData` (RFC-gated). A second fixture, `fixtures/solaris.spine.json`, exists on master (canonicalizer `recipes-graph-v1+c3`) - its provenance is not covered by this entry. `harness/legs.json` still lists M5b as `"state": "ready"` although its receipt is green; that row is stale and is left for its owner.
 
+## v5.97.0 - Post-demo repairs
+
+43 commits on top of v5.96.0, up to `f41e56cd`. The chat follows the scene: the
+panel pins the conversation file it loaded from, Save As carries it to the new
+`$HIP/claude/`, File > Open and File > New load the new scene's chat, and every
+panel following one Save As keeps the parked previous chat. At `scope=all`,
+recall reports `found=true` only when a remembered decision matched; a
+knowledge-only recall now shows the panel's recall card as NO HIT. The Doctor
+runs with undo off, undo off is `needs_artist`, and a refused check says
+SYNAPSE did not run it. Code in the chat renders in the bundled Space Mono, the
+Review metadata moves off 10 px onto the caption token, and `bend_twist` twists
+on the Bend SOP instead of the deprecated Twist SOP. The demo contract gets a
+three-part pass test and Joe's 2026-10-07 to 2026-10-14 stop window. Five rope
+graph changes harden the development harness; loop 2's H-PD1 was held by the
+CTO review and reverted. The cited full suite ran at `ed734f58` on Python 3.14.2,
+not 3.13; no commit records a check in an interactive Houdini session. This is a
+source release with no new Windows Setup.
+See [v5.97.0](docs/releases/v5.97.0.md).
+
 ## v5.96.0 - Demo-day repairs
 
 62 commits on top of v5.95.0, up to `6df72b24`. `tops_monitor_stream` registers each H22
