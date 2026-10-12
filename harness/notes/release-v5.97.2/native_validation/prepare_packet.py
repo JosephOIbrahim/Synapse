@@ -42,12 +42,14 @@ def main():
         runtime.append({"path": str(path), "sha256": row["sha256"]})
     for name, expected in evidence["producer_sha256"].items():
         assert sha(PUBLIC / name) == expected, "Published producer changed: " + name
+    reproduction = evidence["reproduction_controller"]
+    assert sha(PUBLIC / reproduction["path"]) == reproduction["sha256"], "Reproduction controller changed"
     packet.mkdir(parents=True)
     for row in inputs["source_files"]:
         path = packet / "source" / row["path"]
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes((repo / row["path"]).read_bytes())
-    names = ("native_probe.py", "run_when_coordinated.ps1", "subject_loader.py", "input-pins.json", "native-evidence.json", "slot-template.json")
+    names = ("native_probe.py", "run_when_coordinated.ps1", "run_when_coordinated.ps1.txt", "subject_loader.py", "input-pins.json", "native-evidence.json", "slot-template.json")
     for name in names:
         (packet / name).write_bytes((PUBLIC / name).read_bytes())
     write(packet / "source-manifest.json", {"source_root": str(packet / "source"),

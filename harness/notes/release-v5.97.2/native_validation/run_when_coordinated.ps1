@@ -56,7 +56,7 @@ try{
   Require (-not (Test-Path -LiteralPath (Join-Path $runRoot 'CANCEL'))) 'Coordinator cancelled'
   Require ($clock.Elapsed.TotalSeconds -le 160 -and $receipt.expires_unix-[DateTimeOffset]::UtcNow.ToUnixTimeSeconds() -ge 140) 'No remaining child/cleanup window'
   $reachability=Read-LicenseReachability
-  $reachability|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $runRoot ($phase+'-license-reachability.json')) -Encoding utf8
+  [IO.File]::WriteAllText((Join-Path $runRoot ($phase+'-license-reachability.json')), ($reachability|ConvertTo-Json), [Text.UTF8Encoding]::new($false))
   Require ($reachability.connected -eq $true) 'Existing licence-service access unavailable; no native process may start'
   if($phase -ceq 'build'){Require ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() -le $receipt.handoff_launch_by_unix) 'Owner launch deadline elapsed before child creation'}
   $phaseDir=Join-Path $runRoot ($phase+'-environment');New-Item -ItemType Directory -Path $phaseDir | Out-Null
@@ -108,6 +108,6 @@ finally{
  if($null -ne $active -and -not $active.HasExited){$active.Kill();$active.WaitForExit(5000)|Out-Null}
  $scope=if($pins.execution_mode -ceq 'focused-state-diagnostics'){'Focused state diagnostics collected; strict equality outcomes remain explicit; no qualification PASS'}else{'candidate native assertions; separate product rollback gate and release gaps remain'}
  $result=[ordered]@{status=$status;commit=$receipt.commit;prepared_pins_sha256=$pinHash;slot_sha256=$SlotSha256;children=$records;wall_seconds=$clock.Elapsed.TotalSeconds;failure=$failure;scope=$scope;limits='sampled watchdog limits, not kernel resource caps; own root process only'}
- $result|ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $runRoot 'controller.json') -Encoding utf8
+ [IO.File]::WriteAllText((Join-Path $runRoot 'controller.json'), ($result|ConvertTo-Json -Depth 10), [Text.UTF8Encoding]::new($false))
 }
 if($status -notin @('NATIVE_ASSERTIONS_COMPLETE','DIAGNOSTIC_OBSERVATIONS_COMPLETE')){exit 2}

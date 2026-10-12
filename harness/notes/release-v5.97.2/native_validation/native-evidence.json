@@ -140,8 +140,8 @@
   "executed_prepared_manifest_sha256": "773fc255f79eb41922df319b680e0802053ac40cf1ad0ee125cba332d0a1b6e5",
   "producer_sha256": {
     "native_probe.py": "cc588b26c890c75415e69c446892645f5db7aebf3f28cadc433c5dbeea88a8c9",
-    "run_when_coordinated.ps1": "70c5c4f3a7d318081d6e3d596967dcb3b8a37aa4698a6f2b726260039d6766ea",
-    "subject_loader.py": "0806599feba02282de83a874df5146ecab5653f1637ba5693060daf349c1ebe4"
+    "subject_loader.py": "0806599feba02282de83a874df5146ecab5653f1637ba5693060daf349c1ebe4",
+    "run_when_coordinated.ps1.txt": "70c5c4f3a7d318081d6e3d596967dcb3b8a37aa4698a6f2b726260039d6766ea"
   },
   "limits": {
     "processes": 2,
@@ -180,5 +180,11 @@
       "verdict": "HARNESS captured pre-save reference; eight native version metadata additions independently measured"
     }
   ],
-  "reproduction": "Use the exact copied producer, input-pins.json and prepare_packet.py; fresh owner slot and reviewed execution required. No expired/private receipt is shipped."
+  "reproduction": "Use the exact copied producer, input-pins.json and prepare_packet.py; fresh owner slot and reviewed execution required. No expired/private receipt is shipped.",
+  "reproduction_controller": {
+    "path": "run_when_coordinated.ps1",
+    "sha256": "2121fb13709c0601954287562ed7ee3ac40768e66b7425c121d034377d7e12b0",
+    "native_execution": "UNRUN",
+    "change": "Exactly two JSON writes use explicit BOM-free UTF8Encoding instead of Set-Content -Encoding utf8; original executed controller remains byte-identical in run_when_coordinated.ps1.txt. Native worker, loader, assertions, launch/identity/resource gates and source closure are unchanged."
+  }
 }

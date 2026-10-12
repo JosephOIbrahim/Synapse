@@ -4,7 +4,14 @@
 at `b7301f3f985d1c0a9876b8ee629472392422bc26`. No user scene, HIP, private asset,
 key, licence report, host name or local user path is included. Measured outcomes
 and raw-report digests are retained; source/runtime input pins and the exact
-executed worker/controller/loader are supplied for reproduction.
+executed worker/loader and original controller archive are supplied.
+
+`run_when_coordinated.ps1.txt` retains the executed controller bytes and original
+SHA256. The runnable `run_when_coordinated.ps1` changes exactly two JSON writes
+to explicit BOM-free UTF-8, satisfying the repository encoding gate on Windows
+PowerShell 5.1 as well as PowerShell 7. Its separate digest is recorded in the
+receipt; this adaptation has not run a native child. Assertions, source and
+launch/resource/identity gates are unchanged.
 
 **Result:** 21 preflight controls, seven graph/USD cases, three native product
 rollbacks and seven independent-process reopen/replays passed. Both headless
@@ -30,7 +37,8 @@ Prepare a **new owned directory**, using a source checkout with the pinned bytes
 python harness/notes/release-v5.97.2/native_validation/prepare_packet.py --repo <source-checkout> --packet-root <new-owned-packet>
 ```
 
-This command verifies and copies only public source and original test code; it
+This command verifies and copies only public source, original test code and the separately pinned
+BOM-free reproduction controller; it
 creates no native process. Read its generated prepared-manifest SHA256.
 
 An operator/resource owner must then issue a **fresh** receipt based on
