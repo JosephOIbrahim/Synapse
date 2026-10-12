@@ -1,0 +1,40 @@
+{
+  "commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "pid": 50588,
+  "phase": "private-python-search-path",
+  "excluded_paths": [
+    "",
+    "$INSTALLED_USER_SYNapse\\.hython_deps"
+  ],
+  "actual_paths": [
+    "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\houdini\\python3.13libs",
+    "$PACKET",
+    "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages-forced",
+    "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages-forced",
+    "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages-ui-forced",
+    "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages-forced",
+    "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\python313.zip",
+    "C:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.400\\python313\\DLLs",
+    "C:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.400\\python313\\Lib",
+    "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin",
+    "C:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.400\\python313",
+    "C:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.400\\python313\\Lib\\site-packages",
+    "C:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.400\\python313\\lib\\site-packages-forced",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/packages/apex/python3.13libs",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/packages/kinefx/python3.13libs",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/packages/shotbuilder/python3.13libs",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/houdini/python3.13libs",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/packages/apex/viewer_states",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/packages/kinefx/viewer_states",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/packages/texturepaint/viewer_states",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/houdini/viewer_states",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/packages/kinefx/viewer_handles",
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/houdini/viewer_handles",
+    "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages",
+    "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/houdini/python3.13libs",
+    "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages",
+    "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/houdini/python3.13libs",
+    "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages"
+  ],
+  "inherited_user_modules": []
+}

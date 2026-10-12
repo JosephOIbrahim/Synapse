@@ -1,0 +1,657 @@
+{
+  "source": "Installed H22.0.400 runtime pins used for v486; fresh reproduction must match",
+  "files": [
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe",
+      "sha256": "fbe2a8e3f53ff04d2183310b2e8100a8e45097a51a7ceee3507ca40275f49959"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python313.dll",
+      "sha256": "f2f7c9a5a821312b95e20ae2bd4c4917d5c331718230a3b2ed72781b2f86cedf"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\houdini\\python3.13libs\\hou.py",
+      "sha256": "bd0b0564496570f99c068551dc3845ba203c5705e5083abf58656adeae8fe919"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\houdini\\python3.13libs\\_hou.pyd",
+      "sha256": "8fee952b02a2bbc6b78518178aaf063836c2d67974b67e8cbf25ceab380f1f36"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hserver.exe",
+      "sha256": "9cc44bef56f603d646ab77c4a3ad3050481121f8073463e9ef35ca501c895877"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\libTBBPROXY.dll",
+      "sha256": "ca4fcb44642f447e735e4a22e756fa2ea15e6744d24711cd1ff1254fcf64819e"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\tbb12.dll",
+      "sha256": "ab3483c1cc0c979992301dec3b7c469b837b0648d4fe9c505f27495127ddf655"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\houdini\\python3.13libs\\hdefereval.py",
+      "sha256": "cdcbf4f19b6c2a93afb5b3dff80dd43fbedaa473cdb9eed9db9f27f874be42bf"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\__init__.py",
+      "sha256": "4ec0ead57a0693a25f69c87fac4870022d3bcd1e4e29867a8615251b9063e808"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\__init__.py",
+      "sha256": "e505ef43f8dce57c7aa787526879d95cf65acc112e9ca0ca85b523c59d170f52"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\_markupbase.py",
+      "sha256": "3033d30b290bab827b01e6b73ef628b404c4134086e11fd28e5c5f25a2d74c93"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\datetime.py",
+      "sha256": "236d7856ed1c458f268bc27968872c0324099d698e29778b57e4135929fb5505"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\__init__.py",
+      "sha256": "787dc026bdc592e072fc3eb24b55762bbe90d8243ddf2db39803169a7f056c72"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\_encoded_words.py",
+      "sha256": "9b5bd345fc4041d83857258eecf17ed628759a6abded5f813f21c792e13048c1"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\_header_value_parser.py",
+      "sha256": "723ff571ed6fa0b9fc1fdf2bf5c2aa8922e07c54b10afdff50bdec4af8ea8239"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\_parseaddr.py",
+      "sha256": "29ec049e8b3460333e4985f9d37cfb13532655b1b955168a8f18dc9742298dbb"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\_policybase.py",
+      "sha256": "da5243f71a2e8b3e2e1ef58643a8f59f0970595406c30ce9cb9259a1e42a8547"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\base64mime.py",
+      "sha256": "b1ecba88903da4720e745828575a7b400c18563b7c0849038484eddf4e3e9f22"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\charset.py",
+      "sha256": "09f138895db302ae8c402d021d71cb9f04cd5bbd739a13484dbcce71fc44e2f6"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\encoders.py",
+      "sha256": "367e0f731d6b39d460a1223307a4f94561e5e73c4295b7f7db0804e83d2d52df"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\errors.py",
+      "sha256": "b515fc3cfe60ee69366c0c4bd634c262b6df843da03d914dae1e3f18944cf0e4"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\feedparser.py",
+      "sha256": "6ef9a16f871d63e8a97b1b4f2b62b6b0380cb0dbd3b299ae41f6320b1738cd27"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\generator.py",
+      "sha256": "96968b8591e77a0baf67642046eec58a09236fbce6636f001a18fd8994dd23bb"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\header.py",
+      "sha256": "b811db34a3becb1e48f4a05f95eae7269cb2ddf5f8808982075404ec8080a4bb"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\headerregistry.py",
+      "sha256": "64f6ef2ca5c3d0d30b494e235e55477c6c8670b32b166f86415511bbf5c78fcf"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\iterators.py",
+      "sha256": "90c458146cb7495569a3b1c6ec926bd990253a8697e8254fcca6300d2bcb7d5d"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\message.py",
+      "sha256": "23a596e5c643cdaeeec0b386252bec0e11990bd2bf439ef42e4da0b7fbc35173"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\mime\\__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\mime\\application.py",
+      "sha256": "9bee5ae264b1bb6137d970089a7a7dc7d78c557e5599eda23609f674c30dcacb"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\mime\\audio.py",
+      "sha256": "da88276a515169d72c51841831465b8efe62d7125b16140deb8ddda0cb88ecce"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\mime\\base.py",
+      "sha256": "c15dc2950c8cb0eaa69174976e4ff077fccfa0f4ef071f24008ceadeb74ce251"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\mime\\image.py",
+      "sha256": "0e9424d6c07e20c98ee37005e2e69db17c9fff2e53744cc92dfca1a91e3c6c8c"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\mime\\message.py",
+      "sha256": "a45b0c8575b4eda463b0bab5a5e3bce3b3c0a56140976f3e67667b04fd439fbe"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\mime\\multipart.py",
+      "sha256": "8f82dffec266bb04db7e0750e91df9fedd7f85ad83ca7241243be98f06cd39b1"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\mime\\nonmultipart.py",
+      "sha256": "0a26dad59f1ddb22c30e9c600c9ba4dc16fe4ea72913d1c277c29f6d6e6f825e"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\mime\\text.py",
+      "sha256": "cd5f7c063a11e12fe75fc738ef1e372e7b2789f7868487cd1b0480879ef96ecd"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\parser.py",
+      "sha256": "fb5d79482dc31d9ea52e28d6153c6e3a713e1a233604e61a512cfe4299af612a"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\policy.py",
+      "sha256": "82971b855457b82a2190ae8c52aa294ecd65bf8138f995543ba3959dca061091"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\quoprimime.py",
+      "sha256": "c3ddd6e5781d169c86683a83049ae75c5feffe7a47e6bdb45ae0319ab033c908"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\email\\utils.py",
+      "sha256": "be97cdd04f148cd6cdc3ed8d1414060a8e13360ae084cb2ace91185b90bf7c1b"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\html\\__init__.py",
+      "sha256": "14ac2a16d58c0a818d92153dece3e74757d94a1e9eb4029f375154d4abd7715f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\html\\entities.py",
+      "sha256": "933a119d0c8693fdc3828b9c1cb84be502f5a6094af67be6c613c81991434e77"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\html\\parser.py",
+      "sha256": "1b6b5439bbdb1d2a2d36dd3a24b63e04fd6cc1a64d7c360577f10d5838cf9918"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\http\\__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\http\\client.py",
+      "sha256": "efa11b84464eb6f74715c53e8eb8e2be87dfd77a10f4831b76464475fe644334"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\http\\cookiejar.py",
+      "sha256": "fd5cb804f4fe874653d11feeb46400157cee38076653d29e74615f7f25fdc0de"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\http\\cookies.py",
+      "sha256": "0ecc835060c46c25c003d26aeacbacc1273beae499a94bb7f5a7430cd8fc5c6c"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\http\\server.py",
+      "sha256": "d4268cc60cc77fd9588664c9c84eeda298234489489fd7278e0c3c604bf0255e"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\misc.py",
+      "sha256": "0246c40fa05d1ca9d80a6200a27b53e331ca4ea74f3df25f9f7e4722ce8b0eb8"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\socket.py",
+      "sha256": "0c7d55e888ca3e9274b659fc6d8bf1bd0eea9ef646f94a10b4c039c9595e1e25"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\socketserver.py",
+      "sha256": "4f0bf293916a56739e88d71b56cc8c0cf4c5d6636590a7f2a1f1bbb4ac53743f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\test\\__init__.py",
+      "sha256": "f5d5f12199e4234f7961f1c2f9721a545e9ddf51a3798d4083c4c4cdc1607a93"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\test\\pystone.py",
+      "sha256": "7efca827fb55a2f4cd6b16c999d24cc2bf45e929e063e53889b50b9ddff052a0"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\test\\ssl_servers.py",
+      "sha256": "fa977b1cc6658ee65f15101b0808803ffd86d38a2b2132458fe4bd75dafaa3ce"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\test\\support.py",
+      "sha256": "cc9adbfa9cfe5aed9d6709cda1d835bf7c3deb356aece46e37e84e18e1db740f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\total_ordering.py",
+      "sha256": "3b7339eff222b10fb35b9856db4bb191f9387d31acaf4105dad00ac77064b10a"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\urllib\\__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\urllib\\error.py",
+      "sha256": "92d8a4b8af5a838952e1ff19d24e69d45d75a85e343760223ad8db5e217dedec"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\urllib\\parse.py",
+      "sha256": "ebb6afad8a95d542bb8bfdb6828454aef27c49f7f38d17538daf70ceaff29d76"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\urllib\\request.py",
+      "sha256": "691f593337e15750b6424df016c1af930c6ab5d3d376c255191b790d40b0809f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\urllib\\response.py",
+      "sha256": "a28432b30c1b6fef4de88562d4ac23b2cd5a47e2af9bc64d7b3a32544a27a7c7"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\urllib\\robotparser.py",
+      "sha256": "a670064db2a175b0aaffdc8c669ee6f218f9abf349a72417ea840866e61c9e4c"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\xmlrpc\\__init__.py",
+      "sha256": "87ad5c8954dd56fbbca04517bf87477ff4dce575170c7dd1281d7ef1f4214ac8"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\xmlrpc\\client.py",
+      "sha256": "e9ae8fbf1fd1542f602070e414e55d44478669972438e89677b4fa1b2cd4dea5"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\backports\\xmlrpc\\server.py",
+      "sha256": "5bf456e618186cd5762c66e7be78339bb6a469c45d2be5c563e0b2d872feaac6"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\builtins\\__init__.py",
+      "sha256": "8d274eb9c59f0ac7e47d347c25de3e2ecf98429274027cd4a26071830ba8c4db"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\builtins\\disabled.py",
+      "sha256": "62cabbe1bb26c27b69abb7739304c00fb2072ab917cbaeaf2653ec855c205412"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\builtins\\iterators.py",
+      "sha256": "97565ac26db1f36a2a3ae186b4265113be848fdf2c3251d0c2ef5f64b2b946b0"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\builtins\\misc.py",
+      "sha256": "85cb6528a594c8dd04a28771838c9240712a0114ee90e2d1e0be4ae5ce8f5bd9"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\builtins\\new_min_max.py",
+      "sha256": "eea4388a21b8183811ce33f3cf39a0f6975bcb7e4cb6deb134e3accaa1e72066"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\builtins\\newnext.py",
+      "sha256": "a315c1f1b697a89bf6f581b8d1a092f545e4f7339bca83a3c9af0127b35d0493"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\builtins\\newround.py",
+      "sha256": "9761173c0154ddf02c662809c541fac7ae81ee384d681d3bebe2f9151eb5ed1f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\builtins\\newsuper.py",
+      "sha256": "2e689443f7fa3570c8cfabfab033e4a135a5fb665c732ecfa597d0298b6c71a7"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\__init__.py",
+      "sha256": "32c016ebd5e9fdfa94a38c4e0ee7dc28ce8065ffa8cc76b3e3858f65db031490"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\_dummy_thread.py",
+      "sha256": "73c65151df1f7efcaf18a18682f7b934a73c55db405aabaef3ee059ced8476f0"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\_markupbase.py",
+      "sha256": "5bdc21fc6bb78c300c2215415756670a427060b1d193fbffb2efc72c02c19194"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\_thread.py",
+      "sha256": "af063b2f80593053e5ae9fe2e93d949f8fe2298c27ad727ec95e8525937c603a"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\builtins.py",
+      "sha256": "e2c8e32a2ca579c25e2fd75afd1681663772997da3b4cb3ce2803d942a9be148"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\collections.py",
+      "sha256": "38a43e4df5209acff66e76519f886b7252c3a223768be1d259c8ecdc10b6898f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\configparser.py",
+      "sha256": "4cdcb6dbab826e58e353e0e3015a3b8fb11f7db8f9cf15ef0e1d127577a16f39"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\copyreg.py",
+      "sha256": "6375232d720c48ec598205edbd9b9c13dcafe2d90a66d55a9f8e73f1e8b1e2c5"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\dbm\\__init__.py",
+      "sha256": "fd592f4070b651c2206453d1ae8897fcfd05b3b1cda92ffaf5f951d3ea2ad81f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\dbm\\dumb.py",
+      "sha256": "1ca7638ed3b71323fd10a8b51e0c61fde514eb2090d1f057f4d3779fecdbf091"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\dbm\\gnu.py",
+      "sha256": "5e809212967641a3a0a368759bcd065bb354823fdbf7704ab5b72ec20b6768aa"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\dbm\\ndbm.py",
+      "sha256": "3859eb7b2a3fd581c3065e58526f600b32a53753078166df490019565b368da3"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\html\\__init__.py",
+      "sha256": "052505487c577f6906bc7a33967ac1d679fa6cf13aa783e93770f003f67981ea"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\html\\entities.py",
+      "sha256": "955bdc85d8cafd1cd18fbe7d7a0e1132f1961df8016e3d2d2863a867c75b4726"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\html\\parser.py",
+      "sha256": "5765e91cb28b0b142e9b737dc653b721471c003ec123291932a744716113def6"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\http\\__init__.py",
+      "sha256": "331d6ffd3724b38b9d1c2b4333cab6c67614890d35803ec4a4fc9e430b0fdfe4"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\http\\client.py",
+      "sha256": "86a101abb1835d989d77502c70a9d2ca34a831cba3f2b111a864e60fb5617834"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\http\\cookiejar.py",
+      "sha256": "16bafd6590a0fb5e39ca6cb4546a623c986f044a49b55a910583da2a1813d59e"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\http\\cookies.py",
+      "sha256": "3cfac76b5fe80dbbb70ff06124673a3ef3206352a8c7262ad63a9e27011c32f1"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\http\\server.py",
+      "sha256": "f184254824a18c0b01e6baf97e856f660a77233c1816f4e6199087841483b5a2"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\itertools.py",
+      "sha256": "3d5c451d1941425f44952d1cb8614f714b63e777875fb6750e6820cc67e043a7"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\pickle.py",
+      "sha256": "afc8fdb24cdf13c642787ca1fce07e5ae70e9114c81cdef3a5133b97b577a92e"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\queue.py",
+      "sha256": "bb1bcb082845fb3c565a0ad8d5aff0c6df2ba768c82ddc0ee0fae79015ba5531"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\reprlib.py",
+      "sha256": "36de6c520310de379522e92a4873af074508b25e98e6dfa6993ff5de6a599a26"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\socketserver.py",
+      "sha256": "bfc64bbab0f11ce82cb9b626d6279f8e5a679c941cc7656e4541adf4508907d9"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\subprocess.py",
+      "sha256": "a2a45231f15993133831792dde80f937a781c26989eab43d28f86f490293fe13"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\sys.py",
+      "sha256": "1ce3115f82e88a6ef914c6d66b0777a04c2e18d251f8294c444105915a41b11b"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\test\\__init__.py",
+      "sha256": "c81f45f9f0d0a73bb5bfc701a0a808acbd9271436a8e592a133b58ac654243ed"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\test\\support.py",
+      "sha256": "eb31a04d35dc111c81248434e3e5feb007bbf35b5580b547a771f39903f2e768"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\__init__.py",
+      "sha256": "8d5f6f0f1df0465d1bb2872553ca127bee52a8743762909b4ad9aab579ead69e"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\colorchooser.py",
+      "sha256": "929ae59a946dbc36d6e46ab8dc7d668b62a6349da4bb32d039b6b46b91300e45"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\commondialog.py",
+      "sha256": "99d51bab5219a8e19a480efff11dfaec8ba40c2b0c7f35e2547ad3410a69ed9d"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\constants.py",
+      "sha256": "d2a454ad92d13dd571b9e0012fd293cf311612c93ac4cd6b3a3c4ae8e1f15ed0"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\dialog.py",
+      "sha256": "92ca7ecefb3efc0f743fd44d1d2f12dbb7f593c7f8f331b605e9768f0655e72d"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\dnd.py",
+      "sha256": "0bf021d14ae7c9fd97284e6efa83fa9968b5e91ccc49780c035ba1052030298f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\filedialog.py",
+      "sha256": "4522450c638fd802784f466c709da1c85f6cb0e5a9f6dfd2fc3b673a64fe599f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\font.py",
+      "sha256": "4d76ab7e5849471a9ea5a44d483c3a2455151b3e4fd53d42e3fb85f5546a8f7c"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\messagebox.py",
+      "sha256": "589b78b7cde42e6aff527a42585b8ba326b366bdf001438497a0039f7a2ca040"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\scrolledtext.py",
+      "sha256": "0d1ccdf1a040943054a350762831f3769452cd705f1f8ace3b3d22b875db41c8"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\simpledialog.py",
+      "sha256": "e8c86e561642255e177cfa4f49458a9432cb1848b4636665190f536ec98914bd"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\tix.py",
+      "sha256": "68d78e7db5921a670debd5261067f8b49f902312d3e92539ca7ce6d625a07a90"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\tkinter\\ttk.py",
+      "sha256": "ad1ac9a438dc3f682340dba4102bb8174dba3fe0a45bedc26b6b4de8e89af85c"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\urllib\\__init__.py",
+      "sha256": "c81f45f9f0d0a73bb5bfc701a0a808acbd9271436a8e592a133b58ac654243ed"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\urllib\\error.py",
+      "sha256": "81facaceffba5b93a3ccd21f8ef25a424c400512f29b62b08df2855d274307ad"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\urllib\\parse.py",
+      "sha256": "c4b2d4308201e4cade09d633459e732115ab853442a0c3bc459107e163c54036"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\urllib\\request.py",
+      "sha256": "b6d233abad0fc23472acb41419d02d7d8bece1fce2570bdc2ded8ac3e86f1348"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\urllib\\response.py",
+      "sha256": "64464c2f41696c1fbe18878114fbd2cdbb65549e84b11e2d088e2a07b0fcb054"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\urllib\\robotparser.py",
+      "sha256": "8f6e29e9d30dcd4a4666d4f7050c7046813e17cf225a60692a0bb4b5157ad454"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\winreg.py",
+      "sha256": "db33401b9f5023bbc59428fb92a0e1d09ac0613a5ec4e9c8e793c40088d886aa"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\xmlrpc\\__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\xmlrpc\\client.py",
+      "sha256": "d8f7e72f921b295c1d28fec2f01d4e52f884b6e04e6f0a07e2900f7ef1c8bd07"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\moves\\xmlrpc\\server.py",
+      "sha256": "1120d77695204cac9e1660834a7266069f3338d8c9925b1124ebf2e0eb5a00b7"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\standard_library\\__init__.py",
+      "sha256": "02dfe4fbd190dce7171058e24d28db96bc4c30e96404f2ad8c992a3791467a0e"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\tests\\__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\tests\\base.py",
+      "sha256": "ecb4c02872605313b099f7c3d6481c12b56dd95a2e29c95d3e7ab88abbaa93f9"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\__init__.py",
+      "sha256": "e5f0715aa7ff39343c8d9ee4d934b7e2b147d78b6881e478f3c178cc11c843eb"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\newbytes.py",
+      "sha256": "0ff90d0c3f6c6cd262af6714c7178f880bb0d8e5b98abc559eee79b879ae2bd1"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\newdict.py",
+      "sha256": "d8decfe38716996b620c7be52b98abd79996e3dda083ab8fda7eb97796ec0f2e"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\newint.py",
+      "sha256": "8498aff6a503ae3975c647f334534bcda7ec44c3e815c44571ea22bd4cd521e9"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\newlist.py",
+      "sha256": "f87e7e7d7a1d77e51081316764125dc04ebc0ab8082ff8d589876fe30eeadab5"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\newmemoryview.py",
+      "sha256": "2e70118222aa436ccbc300d9de8c2ed5ab68a273d090e9de58c7f1242c01e3fa"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\newobject.py",
+      "sha256": "017fe7f06c250d1d8863ec48c190afbb43a58ff09ad9a4b9ee79538a19c5afe2"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\newopen.py",
+      "sha256": "95c44d1d6675523127ff4fd72a2b35640e54ea5fb873e087942d165f5b18e0d2"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\newrange.py",
+      "sha256": "eec809691682e16214b59e342be735779416aeec9a0961a04d515a74aa3ca980"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\types\\newstr.py",
+      "sha256": "7b46eb92eac8d082befb84e84043b80b3d4510265abf80b250630ac65adc98ae"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\utils\\__init__.py",
+      "sha256": "c2cbd7b0ac7e0d7662721435d1176697e09632a4bbf5134dca799dbdf212a425"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\future\\utils\\surrogateescape.py",
+      "sha256": "eeee15e17956f373f96120094b67fdd98505f2fb16b61b224e7980b213892ff3"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\__init__.py",
+      "sha256": "c08897680bd7977b2f0e2f9fceecba1c30f456cb8256be1c9ea9c2afc5c83462"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\builtins\\__init__.py",
+      "sha256": "ee3ff83ac52537aab678aaf5e1da3b9914351b05d1a1700c511d00d5f269025b"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\builtins\\misc.py",
+      "sha256": "a1ec56f407f3b14e857a71c11fadfbce59c9ffab7e0b5d12d514cda7c3005cca"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\builtins\\noniterators.py",
+      "sha256": "2ed7442e777b2b261d5e0ec6916db97209043d40b482067901832d0def4df792"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\translation\\__init__.py",
+      "sha256": "8f67ba98b78aef8284202a87e8fffeb692aa48d6683308a9dada138614a62a95"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\types\\__init__.py",
+      "sha256": "47226582a83db89f2817e9094fd4257e17dd9a188c8777d2866b6f776090c9c6"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\types\\basestring.py",
+      "sha256": "aab22672bdb8c2f74308cbc5f71d13cb1f12d650ade8623046fcee026be0fd38"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\types\\olddict.py",
+      "sha256": "d18b5f7d9e79558e80c90febc2ee03678bdc46ca7a773f9d4337337b237c84b9"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\types\\oldstr.py",
+      "sha256": "bec1a0ae61491c6ad6138c222caa79f4427175862518c94bcfe7b9f106cb17a5"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages\\past\\utils\\__init__.py",
+      "sha256": "7bc975b0e7dd8832777647240562cd5af0b56a10b9057e616870b64c674d800f"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\houdini.exe",
+      "sha256": "50f315d0c1f58e123c5a17cb558639d5c44e444fa82eaeffe288617008478162"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\basehoudini.exe",
+      "sha256": "8c3f734c7ad1fbf0ba636ca3e85fe784d3029fa6a92195c1ea72cb2d1a10fa15"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\apex.json",
+      "sha256": "ec875323f4e2c0fc9a921f227a7f6f5b4610ba16e08f985220a3d57bb5685773"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\apex_cop.json",
+      "sha256": "8220e4c77c46339de0b0a7a37b04b5e2a1fa93e76eb33794e4811398fd22fdba"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\kinefx.json",
+      "sha256": "5e0bc55b3480822d1a60b9e042f86bf7295b38ba45fd3c5e098cbb705928d67b"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\sculpt.json",
+      "sha256": "6e8d0ad975c8e39426dec652d8a59ec431eaa885ab42dd16a9476fa356edd6d0"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\shotbuilder.json",
+      "sha256": "b38bcb14bff261d162c1a313e099c0560041f0a6e5266ec09a96d7fc9c71e987"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\texturepaint.json",
+      "sha256": "d28c36ab27de45f28dec66c826fd885743940455734d3b96c8a84c11973c858c"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\ocio.json",
+      "sha256": "d0be36019b466785ec940246a6c5f6a2947ea4e9bfc711e1516f14bda2d41b5c"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\ocio\\houdini-config-v3.0.0_aces-v2.0_ocio-v2.5.ocio",
+      "sha256": "1bee9e5dbedd73bde04e647961e397994c6824a90f2e73b999b49a2f77eeed41"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\houdini\\python3.13libs\\ready.py",
+      "sha256": "16a1a30f804e3a8c762f2b7c83dd4b2cf3fa349387af640e98bcbe3210cd38ba"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages-forced\\PySide6\\__init__.py",
+      "sha256": "63eec7f8e6668648c7bfbb8f7b79e117e5977cf898a20d6cfecec04f54af201b"
+    },
+    {
+      "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\Lib\\site-packages-forced\\PySide6\\pyside6.abi3.dll",
+      "sha256": "f260064aa016797fbdcf27517b839e1638e9de4067b17c3fa5d65199ba43977d"
+    }
+  ]
+}

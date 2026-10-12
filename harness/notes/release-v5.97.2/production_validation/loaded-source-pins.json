@@ -1,0 +1,1006 @@
+{
+  "native_tested_commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "version": "5.97.2",
+  "modules": [
+    {
+      "module": "annotated_types",
+      "path": "python/synapse/_vendor/annotated_types/__init__.py",
+      "sha256": "4729cbb112941062342a2997c9d943d5f6447c4cd6c03a345289f7cce2a11b54"
+    },
+    {
+      "module": "cache_host_probe",
+      "path": "host/cache_host_probe.py",
+      "sha256": "a5911cb042674406fc65d4158b310c1c42ae989444018dea395fe985cff86a48"
+    },
+    {
+      "module": "pydantic",
+      "path": "python/synapse/_vendor/pydantic/__init__.py",
+      "sha256": "e62127278c07bf5384cdd2903f368a69929f3b8a524000bae4e0eb608ebf4bc6"
+    },
+    {
+      "module": "pydantic._internal",
+      "path": "python/synapse/_vendor/pydantic/_internal/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "module": "pydantic._internal._config",
+      "path": "python/synapse/_vendor/pydantic/_internal/_config.py",
+      "sha256": "473cacd49a1f7e7e097331257180eab192d18018079f69585aa0d1e79a0048f0"
+    },
+    {
+      "module": "pydantic._internal._core_metadata",
+      "path": "python/synapse/_vendor/pydantic/_internal/_core_metadata.py",
+      "sha256": "63f836b778bbba5b8afb05c266fcc97d114c3d4336dda0582df69ee05cc13f2d"
+    },
+    {
+      "module": "pydantic._internal._core_utils",
+      "path": "python/synapse/_vendor/pydantic/_internal/_core_utils.py",
+      "sha256": "d63aeee156c9d31eb747a76d55cb8e23e74a4130bf77f9529c9584050cc63444"
+    },
+    {
+      "module": "pydantic._internal._decorators",
+      "path": "python/synapse/_vendor/pydantic/_internal/_decorators.py",
+      "sha256": "443106fc96aee4d88971f3b4c60753ec43a0b14d4b816218957ef0379ad8b55b"
+    },
+    {
+      "module": "pydantic._internal._discriminated_union",
+      "path": "python/synapse/_vendor/pydantic/_internal/_discriminated_union.py",
+      "sha256": "24bc7f3152dea7b331975cdba5d3598ef1c3733f89dce116e9671d575f3875c3"
+    },
+    {
+      "module": "pydantic._internal._docs_extraction",
+      "path": "python/synapse/_vendor/pydantic/_internal/_docs_extraction.py",
+      "sha256": "7f2ce74801e1e40ce88675d94ad5741ef1fe9d16dabcd1cfca0fa49f1f92fc41"
+    },
+    {
+      "module": "pydantic._internal._fields",
+      "path": "python/synapse/_vendor/pydantic/_internal/_fields.py",
+      "sha256": "85779bfb3a1d1b04c3bc6f4e2b5ba6d7c3fae1bedca876f418e9e03f88eb81c6"
+    },
+    {
+      "module": "pydantic._internal._forward_ref",
+      "path": "python/synapse/_vendor/pydantic/_internal/_forward_ref.py",
+      "sha256": "e67dd8efedc028b9fcfc54b761cecabad2e23d48725e602d90464e6859e89f03"
+    },
+    {
+      "module": "pydantic._internal._generate_schema",
+      "path": "python/synapse/_vendor/pydantic/_internal/_generate_schema.py",
+      "sha256": "970e32d6de472880c1a2cafd42062d0bbf8606ee72d20f6a47b64edd752e7c10"
+    },
+    {
+      "module": "pydantic._internal._generics",
+      "path": "python/synapse/_vendor/pydantic/_internal/_generics.py",
+      "sha256": "0978dc22796f722f157a36969f57f7f64bf401c7c92f4479db7a912c56550feb"
+    },
+    {
+      "module": "pydantic._internal._import_utils",
+      "path": "python/synapse/_vendor/pydantic/_internal/_import_utils.py",
+      "sha256": "4d18710f93ae63a094a2c8a805d05c254b34a26ec820e36265d60057bcd0f233"
+    },
+    {
+      "module": "pydantic._internal._internal_dataclass",
+      "path": "python/synapse/_vendor/pydantic/_internal/_internal_dataclass.py",
+      "sha256": "fdb79d7355dbbaeca044688b66a914930c05a506a847584a2e5479d359f2c926"
+    },
+    {
+      "module": "pydantic._internal._known_annotated_metadata",
+      "path": "python/synapse/_vendor/pydantic/_internal/_known_annotated_metadata.py",
+      "sha256": "3f29d020543ad7fff819caf39f40f910d96583b8cfabf731a0b4e6b8540163cf"
+    },
+    {
+      "module": "pydantic._internal._mock_val_ser",
+      "path": "python/synapse/_vendor/pydantic/_internal/_mock_val_ser.py",
+      "sha256": "c2645115206fa9f70b6c8e353ec165881e2ed80677989a597a21116c3df1293a"
+    },
+    {
+      "module": "pydantic._internal._model_construction",
+      "path": "python/synapse/_vendor/pydantic/_internal/_model_construction.py",
+      "sha256": "2682a663826b0c1bb79c6fed088ac982d249135baaeafdbd4ef4f3e449471398"
+    },
+    {
+      "module": "pydantic._internal._namespace_utils",
+      "path": "python/synapse/_vendor/pydantic/_internal/_namespace_utils.py",
+      "sha256": "865dfe4d102bf365368d3c8f3f7b7e42ab2f28b8abc6d90b7cd7eb37e7e9d31f"
+    },
+    {
+      "module": "pydantic._internal._repr",
+      "path": "python/synapse/_vendor/pydantic/_internal/_repr.py",
+      "sha256": "8d07e726ec83c50a5244d846dbd208f4f5fc7b836fdaa599ac4c3696a8a1dd41"
+    },
+    {
+      "module": "pydantic._internal._schema_gather",
+      "path": "python/synapse/_vendor/pydantic/_internal/_schema_gather.py",
+      "sha256": "f2727eb8ce98e33eb1a5ab271a89c432e6ed3555ff9b179e44316677fa8c54b0"
+    },
+    {
+      "module": "pydantic._internal._schema_generation_shared",
+      "path": "python/synapse/_vendor/pydantic/_internal/_schema_generation_shared.py",
+      "sha256": "17fadb41bae4a289a0c6cb24747a4fd23509ed309f7b40400c0124aba089e273"
+    },
+    {
+      "module": "pydantic._internal._signature",
+      "path": "python/synapse/_vendor/pydantic/_internal/_signature.py",
+      "sha256": "8bf6fac2d96e895599461d5963c52f076519ce23f52a3a925d9802f87c70393d"
+    },
+    {
+      "module": "pydantic._internal._typing_extra",
+      "path": "python/synapse/_vendor/pydantic/_internal/_typing_extra.py",
+      "sha256": "743c6a178ea5ceea82a0a2eb007fe4f791036dac8478a6f69478ee4c9e4e0686"
+    },
+    {
+      "module": "pydantic._internal._utils",
+      "path": "python/synapse/_vendor/pydantic/_internal/_utils.py",
+      "sha256": "80de3c06c47e143ac90e26c29a8ebdb6d420ebb59bb85addcbfd4d40bddcbcb2"
+    },
+    {
+      "module": "pydantic._internal._validators",
+      "path": "python/synapse/_vendor/pydantic/_internal/_validators.py",
+      "sha256": "ec64e35d758530b89be1dc50f8779a8879406624760761bc6f2098306ae6438f"
+    },
+    {
+      "module": "pydantic._migration",
+      "path": "python/synapse/_vendor/pydantic/_migration.py",
+      "sha256": "545ef72d1094cf722b6f9c55b75de36f7340717567105e93d7e27438b7de6790"
+    },
+    {
+      "module": "pydantic.aliases",
+      "path": "python/synapse/_vendor/pydantic/aliases.py",
+      "sha256": "be1087ca84969d7f8427ec166f9aa3e31c91b2c8065a74d07f3429e06499f6e8"
+    },
+    {
+      "module": "pydantic.annotated_handlers",
+      "path": "python/synapse/_vendor/pydantic/annotated_handlers.py",
+      "sha256": "59fc854aac28108157061ed3ef73f270a9682350e25f8e465a2d3e24eb024786"
+    },
+    {
+      "module": "pydantic.config",
+      "path": "python/synapse/_vendor/pydantic/config.py",
+      "sha256": "a353faec53162101befd17c6b4a8ac9641f0a38a579bfea37ec478d4ff3cbfbf"
+    },
+    {
+      "module": "pydantic.errors",
+      "path": "python/synapse/_vendor/pydantic/errors.py",
+      "sha256": "0eb1023c25a1498ad0f016b83bc84acc800cda2f460474d75802f36850e92dfe"
+    },
+    {
+      "module": "pydantic.fields",
+      "path": "python/synapse/_vendor/pydantic/fields.py",
+      "sha256": "6bc66125f23c143e934030fbf9c58c9b5657950bdad3031d4f6132e55bd57be3"
+    },
+    {
+      "module": "pydantic.functional_validators",
+      "path": "python/synapse/_vendor/pydantic/functional_validators.py",
+      "sha256": "ee9fb88ef3ffffd8d9caf71d5e289d7b9a406bf26533b7c9d41824a9b8f14963"
+    },
+    {
+      "module": "pydantic.json_schema",
+      "path": "python/synapse/_vendor/pydantic/json_schema.py",
+      "sha256": "65524d81a2827276be33fa5ca280d00231572afc703b699a2872ca1ebb35af70"
+    },
+    {
+      "module": "pydantic.main",
+      "path": "python/synapse/_vendor/pydantic/main.py",
+      "sha256": "35b842cfe92ef300e060b40c062ef93afee1cb075cf0b7b0037a1434867c2554"
+    },
+    {
+      "module": "pydantic.plugin",
+      "path": "python/synapse/_vendor/pydantic/plugin/__init__.py",
+      "sha256": "6bb4f0dfae94e8ade496d08235963bea773db2cfbbb86190e344d769df4eca94"
+    },
+    {
+      "module": "pydantic.plugin._loader",
+      "path": "python/synapse/_vendor/pydantic/plugin/_loader.py",
+      "sha256": "8408e04a58e82211b1dc0569229baac3948fb6d04d35e181493aea48c9cd8899"
+    },
+    {
+      "module": "pydantic.plugin._schema_validator",
+      "path": "python/synapse/_vendor/pydantic/plugin/_schema_validator.py",
+      "sha256": "e4ce487356d99e384d0f1b510d529b44f4d0ea9a3a42e28c63b320b8c907796d"
+    },
+    {
+      "module": "pydantic.types",
+      "path": "python/synapse/_vendor/pydantic/types.py",
+      "sha256": "7e961c1a702770ae108da166de366da98c31258cc1eeb2493df025f3d7a6cf24"
+    },
+    {
+      "module": "pydantic.version",
+      "path": "python/synapse/_vendor/pydantic/version.py",
+      "sha256": "21953d86a346ad7ff7647fb38406ff9d65d50dad8c5e6e639bb21b031631ca7e"
+    },
+    {
+      "module": "pydantic.warnings",
+      "path": "python/synapse/_vendor/pydantic/warnings.py",
+      "sha256": "dd0c90a3a94ddf970eece5c36c511759c35a3e518245aade815640f86fa56702"
+    },
+    {
+      "module": "pydantic_core",
+      "path": "python/synapse/_vendor/pydantic_core/__init__.py",
+      "sha256": "9cad6292b75254af606a970aae9bff6e5ae9f0b08089cd63acafa391b60794d2"
+    },
+    {
+      "module": "pydantic_core._pydantic_core",
+      "path": "python/synapse/_vendor/pydantic_core/_pydantic_core.cp313-win_amd64.pyd",
+      "sha256": "354e74095baa60fcbfdc32ac151ec8ad88288ac58936bcbf355ef762a848f906"
+    },
+    {
+      "module": "pydantic_core.core_schema",
+      "path": "python/synapse/_vendor/pydantic_core/core_schema.py",
+      "sha256": "d4f337d727ff906a66fc7ec62e734546420f01018f2fdce1eab7f64b1a215718"
+    },
+    {
+      "module": "shared",
+      "path": "shared/__init__.py",
+      "sha256": "3c512aad0fa9cd0e19ba172d25bef0faabffe55584a8a91015e4ccfd5a5175f8"
+    },
+    {
+      "module": "shared.bridge",
+      "path": "shared/bridge.py",
+      "sha256": "8103e5333a7110e33b967379acea0951fc27dfea5940b96d5680ede7866a31f0"
+    },
+    {
+      "module": "shared.conductor_advisor",
+      "path": "shared/conductor_advisor.py",
+      "sha256": "5075f296da6870016c665469624813e6065fd00df7850c9d936be5d187e3055f"
+    },
+    {
+      "module": "shared.constants",
+      "path": "shared/constants.py",
+      "sha256": "38828ac5ee8bf63f4a70aba5b4bb4f9bff25c2c66a1a12fae35f4ade5fac7aaf"
+    },
+    {
+      "module": "shared.evolution",
+      "path": "shared/evolution.py",
+      "sha256": "189dd1de515da81d7df305271e68141743da410e91bf04ac90064e9bf740c744"
+    },
+    {
+      "module": "shared.router",
+      "path": "shared/router.py",
+      "sha256": "b788ea5368044715e982273c3d1184a6932fb8d28bf9b683190d00a30055cdce"
+    },
+    {
+      "module": "shared.types",
+      "path": "shared/types.py",
+      "sha256": "65428f00abb1be0a42a4411feff028351f776ea4897c4eaf6e8150204f447072"
+    },
+    {
+      "module": "synapse",
+      "path": "python/synapse/__init__.py",
+      "sha256": "a9fe035ea15ce6930bc30bc994fcaa1abbecb80695a84c7d16a2e85689d4ad6e"
+    },
+    {
+      "module": "synapse.cache_policy",
+      "path": "python/synapse/cache_policy/__init__.py",
+      "sha256": "4049ec6ce882d05cb344e5068372cb53ab92b512729f6d536f647fd73f44c029"
+    },
+    {
+      "module": "synapse.cache_policy.decision",
+      "path": "python/synapse/cache_policy/decision.py",
+      "sha256": "d96b39097a9256bb3edfb982ea4caa4e36cd889ee68c0760ec8a67a0c19ee633"
+    },
+    {
+      "module": "synapse.cache_policy.estimator",
+      "path": "python/synapse/cache_policy/estimator.py",
+      "sha256": "8de544eb50f571c1e1b4198bb48340563300056b9d72b14db6df76003052c6c3"
+    },
+    {
+      "module": "synapse.cache_policy.models",
+      "path": "python/synapse/cache_policy/models.py",
+      "sha256": "fa8cf79860dbd7db70d0760570757ab3b37d2f9d6a3dcefe8bb725e9da14fb48"
+    },
+    {
+      "module": "synapse.cache_policy.policy_loader",
+      "path": "python/synapse/cache_policy/policy_loader.py",
+      "sha256": "604ee5c74531ddea5aa5a594ca8a8f7876a2f6b2ba2d3f7c5b184fd7426b9ef6"
+    },
+    {
+      "module": "synapse.cache_policy.signatures",
+      "path": "python/synapse/cache_policy/signatures.py",
+      "sha256": "129394dc97dc308868775c72f9301c8e7f79dc1a628c33fc0ce458cb9a46fb72"
+    },
+    {
+      "module": "synapse.cache_policy.strategies",
+      "path": "python/synapse/cache_policy/strategies.py",
+      "sha256": "84ffd77dfbc5a013bfe0c045e0e3a9500bc5b63891406adff921d4c86f592baf"
+    },
+    {
+      "module": "synapse.cognitive",
+      "path": "python/synapse/cognitive/__init__.py",
+      "sha256": "83e02c117e11cd267029442a8d607ea6976613aef0f5ec2a2ca033e7a2f644bf"
+    },
+    {
+      "module": "synapse.cognitive.agent_loop",
+      "path": "python/synapse/cognitive/agent_loop.py",
+      "sha256": "899b44e377bc48825666c8b42fa04c20769bf470f95036a6e2d1ea1a16a8871d"
+    },
+    {
+      "module": "synapse.cognitive.dispatcher",
+      "path": "python/synapse/cognitive/dispatcher.py",
+      "sha256": "c355c3646d00adcad0ee1aa50b5a4814424839b8abb7f96cfb6728a146e31107"
+    },
+    {
+      "module": "synapse.cognitive.tools",
+      "path": "python/synapse/cognitive/tools/__init__.py",
+      "sha256": "46a9f24a03aa41661f199c586f93fde18df44d8297afe8b439b06ddafd3fe34c"
+    },
+    {
+      "module": "synapse.cognitive.tools.apply_fixture",
+      "path": "python/synapse/cognitive/tools/apply_fixture.py",
+      "sha256": "2d868c4f7cc6b916b7976c2ebf04eca371e26aba47184f32bb0c0ad2526ecf3a"
+    },
+    {
+      "module": "synapse.cognitive.tools.inspect_stage",
+      "path": "python/synapse/cognitive/tools/inspect_stage.py",
+      "sha256": "c56ac13ec2b091b64866cf5a26c4dc325e6d06287390d67c1e7dd16b60c88b7b"
+    },
+    {
+      "module": "synapse.cognitive.tools.write_report",
+      "path": "python/synapse/cognitive/tools/write_report.py",
+      "sha256": "fa3b56afbe14e89e54585221379d0d547a36177c75964419a7996f9134f13e4b"
+    },
+    {
+      "module": "synapse.core",
+      "path": "python/synapse/core/__init__.py",
+      "sha256": "1dd7cc30cd0bd61c274b15ec0dd26bf41bcce02ec563beba5fcc967694b3e1d7"
+    },
+    {
+      "module": "synapse.core.aliases",
+      "path": "python/synapse/core/aliases.py",
+      "sha256": "977bd70b95acb0dfe3671f9c048009b583a3fc3ab4561d0df320863adc63c025"
+    },
+    {
+      "module": "synapse.core.audit",
+      "path": "python/synapse/core/audit.py",
+      "sha256": "c2e6262007708618640f9a826436c01428cc8cfaa23d6ee7be7f523d74363734"
+    },
+    {
+      "module": "synapse.core.crypto",
+      "path": "python/synapse/core/crypto.py",
+      "sha256": "384bf4f8c1051da7e5efa22b28f9bea9e9233ef0429635963c05ee7ba2bd7271"
+    },
+    {
+      "module": "synapse.core.determinism",
+      "path": "python/synapse/core/determinism.py",
+      "sha256": "4d8c164c08d9e756509c3b12297c5904ffd9a10750fe70fd4c54eb3d740acf3d"
+    },
+    {
+      "module": "synapse.core.errors",
+      "path": "python/synapse/core/errors.py",
+      "sha256": "66e3fdf3865033d8a2aae0b3609050832856415d9f3ef6a7d7a811bb31336400"
+    },
+    {
+      "module": "synapse.core.farm_contract",
+      "path": "python/synapse/core/farm_contract.py",
+      "sha256": "76ab69ebc4021df929bda5a782dcfaf79186995ba1d7d8fad81ec085c0451391"
+    },
+    {
+      "module": "synapse.core.floor_gate",
+      "path": "python/synapse/core/floor_gate.py",
+      "sha256": "31455ffbf7a761a40ba2f2b95a0bc46829e09667c43e3f40555ad7679abcf7b9"
+    },
+    {
+      "module": "synapse.core.gates",
+      "path": "python/synapse/core/gates.py",
+      "sha256": "a2115644bcea8e3eda9510a5b107c87607bb98a2918572945a504949c9617503"
+    },
+    {
+      "module": "synapse.core.mtlx_types",
+      "path": "python/synapse/core/mtlx_types.py",
+      "sha256": "a9bdf3ab3f44e0d342866951bb65c855352adc43565d0281fe6616aeaa402317"
+    },
+    {
+      "module": "synapse.core.outcomes",
+      "path": "python/synapse/core/outcomes.py",
+      "sha256": "09357ea1b5e917aece5fcc1cba7666f132c4289544840cb420db95711643df29"
+    },
+    {
+      "module": "synapse.core.parm_report",
+      "path": "python/synapse/core/parm_report.py",
+      "sha256": "45812dbed3d422f739f9a403eef7ca60a34b8a66d58debbe6f2c7185eff50047"
+    },
+    {
+      "module": "synapse.core.protocol",
+      "path": "python/synapse/core/protocol.py",
+      "sha256": "05a36310c3d95b39e688c65902d2845ec2bd8fe9ba722aca46fd84e3e8fc440c"
+    },
+    {
+      "module": "synapse.core.queue",
+      "path": "python/synapse/core/queue.py",
+      "sha256": "63a043f9160a994e475ac76be2fae687b94140345910f79cd88a7c7b4afa1cae"
+    },
+    {
+      "module": "synapse.core.render_presets",
+      "path": "python/synapse/core/render_presets.py",
+      "sha256": "c3f5c58d9c57b6615b73ff35b55c234c8682db99e7abc16d6613ed42656750fc"
+    },
+    {
+      "module": "synapse.core.show_config",
+      "path": "python/synapse/core/show_config.py",
+      "sha256": "8e74d1cfa8dbd0b39ad4bf3b6fd320878146459aaafef063c9a64495faffb20d"
+    },
+    {
+      "module": "synapse.core.tool_results",
+      "path": "python/synapse/core/tool_results.py",
+      "sha256": "8541461bb921f766a377e1b409f9f08767dd6228e082ae3cef1cd9020aa27cdc"
+    },
+    {
+      "module": "synapse.core.usd_punycode",
+      "path": "python/synapse/core/usd_punycode.py",
+      "sha256": "b932fb2f17c87404316f5e9eb0208193c42c69b678e1d800b89093533be278ce"
+    },
+    {
+      "module": "synapse.host",
+      "path": "python/synapse/host/__init__.py",
+      "sha256": "0ad1c9ef68d46d2016a5bb9655deec7ec2d62da97dcb1a418e12e131080ddbec"
+    },
+    {
+      "module": "synapse.host.auth",
+      "path": "python/synapse/host/auth.py",
+      "sha256": "48ab02af3948bcf2cb1a87938f902efb062819fa98adadf55da4967a8420ee68"
+    },
+    {
+      "module": "synapse.host.daemon",
+      "path": "python/synapse/host/daemon.py",
+      "sha256": "5bbeac49102c05b852fd1820a34e61d9dbfcf9b3bad1582f620fdb6dd55def9d"
+    },
+    {
+      "module": "synapse.host.dialog_suppression",
+      "path": "python/synapse/host/dialog_suppression.py",
+      "sha256": "a719ab53b987c73ae1bfc2e8a259d06eb9d113c731a8f1001be900095f46bcfc"
+    },
+    {
+      "module": "synapse.host.main_thread_executor",
+      "path": "python/synapse/host/main_thread_executor.py",
+      "sha256": "60ef5d50ca81276ac9df94df84dc163d94cf8b10f1d4e160a857f6594ba8119d"
+    },
+    {
+      "module": "synapse.host.memory_lifecycle",
+      "path": "python/synapse/host/memory_lifecycle.py",
+      "sha256": "b298b1f4014759acf28425655fe46d2238530f66d1faf3d7d2bd391d3485a1cd"
+    },
+    {
+      "module": "synapse.host.memory_loop",
+      "path": "python/synapse/host/memory_loop.py",
+      "sha256": "046c66db22f535cdb550378d6248341001a34161183c818543aae7aa44949e4d"
+    },
+    {
+      "module": "synapse.host.scene_load_bridge",
+      "path": "python/synapse/host/scene_load_bridge.py",
+      "sha256": "9e4c3e36a8b8e03c4ec0dfc330049ebfcc018812204e8142b4d866246ccc0ff1"
+    },
+    {
+      "module": "synapse.host.tops_bridge",
+      "path": "python/synapse/host/tops_bridge.py",
+      "sha256": "da5d552c8723c935199e87a19eb4054b3fe65f040c77067e7e892afc2cc277c9"
+    },
+    {
+      "module": "synapse.host.transport",
+      "path": "python/synapse/host/transport.py",
+      "sha256": "f538e40fc19ac5a1e42eb894b4c62518e689d774f5913dce48832237d9346892"
+    },
+    {
+      "module": "synapse.host.turn_handle",
+      "path": "python/synapse/host/turn_handle.py",
+      "sha256": "9dfce722a2d81f03ad1fa627871ed15184aef2d968efe3ed2c4217d80c1a5f64"
+    },
+    {
+      "module": "synapse.inspector",
+      "path": "python/synapse/inspector/__init__.py",
+      "sha256": "4458b8ff5e48ede8f8d26d7e13eb5ecf5dbb31d7a0022a73305b7d8520871d95"
+    },
+    {
+      "module": "synapse.inspector.exceptions",
+      "path": "python/synapse/inspector/exceptions.py",
+      "sha256": "52f749970d6ee0de182356ec6563ba27d2806f53d592cf90884f1563b8e90be2"
+    },
+    {
+      "module": "synapse.inspector.models",
+      "path": "python/synapse/inspector/models.py",
+      "sha256": "2a322e1be1cdcd3808134c6509003bfda52c101b9b8285c730b3b49548fc29e0"
+    },
+    {
+      "module": "synapse.inspector.tool_inspect_stage",
+      "path": "python/synapse/inspector/tool_inspect_stage.py",
+      "sha256": "b2f3f076f4463d0857893c8408eb3ddace205cbad8db44f51b73407cad1be61b"
+    },
+    {
+      "module": "synapse.inspector.transport",
+      "path": "python/synapse/inspector/transport.py",
+      "sha256": "3b97dcf5b08f531ae7f23e7b5425d7440e09b3798a25017f82293a4ef3698f87"
+    },
+    {
+      "module": "synapse.loop",
+      "path": "python/synapse/loop/__init__.py",
+      "sha256": "8d84bd34cd65048753023db0bad5ca2a566121439f56a18f250bf30909bdea38"
+    },
+    {
+      "module": "synapse.loop.context",
+      "path": "python/synapse/loop/context.py",
+      "sha256": "09b972d4f74038f050ade6ab017a3db61993f45017770b3804e64cd8e4c1d8e9"
+    },
+    {
+      "module": "synapse.loop.coordinator",
+      "path": "python/synapse/loop/coordinator.py",
+      "sha256": "0bc599a62f0e07776b94576ce5a0e60d807f4a7ead60e10418ee75296a41a6da"
+    },
+    {
+      "module": "synapse.loop.ports",
+      "path": "python/synapse/loop/ports.py",
+      "sha256": "4cc7f986cf9857443d8e290ae280c35883dcf300a2c29e72c470298a0139e24a"
+    },
+    {
+      "module": "synapse.loop.subprocess_port",
+      "path": "python/synapse/loop/subprocess_port.py",
+      "sha256": "1211be251337c28cb31a4c68f4a0ed7d6e5def14800738521f3ece9566489341"
+    },
+    {
+      "module": "synapse.mcp",
+      "path": "python/synapse/mcp/__init__.py",
+      "sha256": "ce3052d82e82a3e218bf1640a4ccaf2f891ff88aa9367a3097188fa59a75c3f2"
+    },
+    {
+      "module": "synapse.mcp._tool_registry",
+      "path": "python/synapse/mcp/_tool_registry.py",
+      "sha256": "0cf7ea6fa0151597bb852c26f9b1b411c6163f01e00d6c3be840a640af0d12fa"
+    },
+    {
+      "module": "synapse.mcp.protocol",
+      "path": "python/synapse/mcp/protocol.py",
+      "sha256": "fe13b0c33833f073f5ea3f8e8683f5ea2e8d14376c7628cacc68c16b5c609dba"
+    },
+    {
+      "module": "synapse.mcp.read_only_mode",
+      "path": "python/synapse/mcp/read_only_mode.py",
+      "sha256": "a707d04573feabafabf67fe459d0eab37064334f9b92f85f43af79a1a85f951a"
+    },
+    {
+      "module": "synapse.mcp.resources",
+      "path": "python/synapse/mcp/resources.py",
+      "sha256": "ac709be5d90fd1584a023a51729e7ff61baa6ea6ad6054dd3f5d88e3764e44b1"
+    },
+    {
+      "module": "synapse.mcp.server",
+      "path": "python/synapse/mcp/server.py",
+      "sha256": "16e36f454d59e29875544277592c390475d9a2b4ea7a657c97c2f86179a94d43"
+    },
+    {
+      "module": "synapse.mcp.session",
+      "path": "python/synapse/mcp/session.py",
+      "sha256": "ac09185a0a3c947ee25ca7f623d11ac3969f1b462023d0297f34e184eb546163"
+    },
+    {
+      "module": "synapse.mcp.tool_impls",
+      "path": "python/synapse/mcp/tool_impls/__init__.py",
+      "sha256": "56c5781763b260fa0e761fcdc847f2b58c6924f87f273ff3ef5492333b8588d8"
+    },
+    {
+      "module": "synapse.mcp.tool_impls.solaris",
+      "path": "python/synapse/mcp/tool_impls/solaris/__init__.py",
+      "sha256": "30d5774056ed52938df5bf351c340d4c2b9304896312ae9f9ffb105a78ab16ff"
+    },
+    {
+      "module": "synapse.mcp.tool_impls.solaris.component_builder",
+      "path": "python/synapse/mcp/tool_impls/solaris/component_builder.py",
+      "sha256": "a339b7d9b913ba2465764ba4311f71466eaaedd02a611614171c0eabc350149d"
+    },
+    {
+      "module": "synapse.mcp.tool_impls.solaris.create_variants",
+      "path": "python/synapse/mcp/tool_impls/solaris/create_variants.py",
+      "sha256": "40a8b97b462d4a378f194d8e45970b8c5ddd26967c5ab4ac6c76e32c7321b4fd"
+    },
+    {
+      "module": "synapse.mcp.tool_impls.solaris.import_megascans",
+      "path": "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+      "sha256": "aab3b121a4a58db71f94b1f40e299c0b3a063316280caf538566eb6aa421d502"
+    },
+    {
+      "module": "synapse.mcp.tool_impls.solaris.scene_template",
+      "path": "python/synapse/mcp/tool_impls/solaris/scene_template.py",
+      "sha256": "341bdf85079db5f8fe3f42d3483c74c0f763b8be1fb2026aebe100d0c9c9ca64"
+    },
+    {
+      "module": "synapse.mcp.tool_impls.solaris.set_purpose",
+      "path": "python/synapse/mcp/tool_impls/solaris/set_purpose.py",
+      "sha256": "d7dcf930f2c4e1feb8740268bf613ffd8ef6663ce56122202e2819cabc80f6b4"
+    },
+    {
+      "module": "synapse.mcp.tools",
+      "path": "python/synapse/mcp/tools.py",
+      "sha256": "f020ee7e0ea0f3b59d6a1bd8dd27eaa7cb3ebbce1afb4b155cff10282f8389c4"
+    },
+    {
+      "module": "synapse.memory",
+      "path": "python/synapse/memory/__init__.py",
+      "sha256": "ee5790389efc0951b2f216ebca297736fb1bccdaaeb26a6485df35ba8b9d2f9e"
+    },
+    {
+      "module": "synapse.memory.context",
+      "path": "python/synapse/memory/context.py",
+      "sha256": "9b99d411769ca031636d5e1cb6e700b94c0ca57aed2cf8e44c654bd95627a517"
+    },
+    {
+      "module": "synapse.memory.embedding",
+      "path": "python/synapse/memory/embedding.py",
+      "sha256": "d98e0132226c3aa15af7638223c1ba724da7710216d486abcf441190ea659e80"
+    },
+    {
+      "module": "synapse.memory.markdown",
+      "path": "python/synapse/memory/markdown.py",
+      "sha256": "0f08baab33c1b43ecb80ae348908873d3a2095d49ec41aa506bed58bd23f1e93"
+    },
+    {
+      "module": "synapse.memory.models",
+      "path": "python/synapse/memory/models.py",
+      "sha256": "237f60ebcb0629cfb701f8f9a2b2f752af0681cb2506ce3561cc7ebbb9fa8a97"
+    },
+    {
+      "module": "synapse.memory.store",
+      "path": "python/synapse/memory/store.py",
+      "sha256": "cfff2b558772969cc805c805523a2aee6e0e8fd08e4fab69c1d1a86681435948"
+    },
+    {
+      "module": "synapse.model_access",
+      "path": "python/synapse/model_access.py",
+      "sha256": "cdbc90c3d14e7c8b3291bd57d7954ad412bfd724779cda4fa225ad246759b24f"
+    },
+    {
+      "module": "synapse.panel",
+      "path": "python/synapse/panel/__init__.py",
+      "sha256": "5f2d1bd64f189b863c38eca6976504745bef9d769e46e64cb98354587010d47b"
+    },
+    {
+      "module": "synapse.panel.bridge_adapter",
+      "path": "python/synapse/panel/bridge_adapter.py",
+      "sha256": "e4cc04b509fab4dfaeb84b6af99c183afe5462b7aa87d9770881349665554afd"
+    },
+    {
+      "module": "synapse.panel.connections",
+      "path": "python/synapse/panel/connections.py",
+      "sha256": "c6527de14992c12fdc7cec50db257c131fa97ca26fcce8089858d2b4e5bc354f"
+    },
+    {
+      "module": "synapse.panel.providers",
+      "path": "python/synapse/panel/providers/__init__.py",
+      "sha256": "a42a8e30442020e69e086a574f6471283c5f7b2b8a5ac861c9cb832cac9c7067"
+    },
+    {
+      "module": "synapse.panel.providers.metadata_probes",
+      "path": "python/synapse/panel/providers/metadata_probes.py",
+      "sha256": "f272897f341298e4a8d55499186030d74e8002251a0f6d1c0fc91de9e6315311"
+    },
+    {
+      "module": "synapse.request_handoff",
+      "path": "python/synapse/request_handoff.py",
+      "sha256": "98e3cbe288a75ea722fb99fbf7e84134fd0e68383258743a21280eea110dfb9f"
+    },
+    {
+      "module": "synapse.routing",
+      "path": "python/synapse/routing/__init__.py",
+      "sha256": "8fa06c9b94b19bdeebd27d4e549b0f762e966fd7da2b318eefd8fd45e3f818c2"
+    },
+    {
+      "module": "synapse.routing.adaptation",
+      "path": "python/synapse/routing/adaptation.py",
+      "sha256": "be174d020800eeb204d94826f54f2ff243793cd45c71161d8967d5ad817c0594"
+    },
+    {
+      "module": "synapse.routing.cache",
+      "path": "python/synapse/routing/cache.py",
+      "sha256": "a19855489efff00fecf22312264bd2e8e895f476d5046a1541c3eca468ba862f"
+    },
+    {
+      "module": "synapse.routing.context_enrichment",
+      "path": "python/synapse/routing/context_enrichment.py",
+      "sha256": "48d05369769e06a8cf7ba0dc6bfec797a438e233b0d428c47efd6a0534896218"
+    },
+    {
+      "module": "synapse.routing.knowledge",
+      "path": "python/synapse/routing/knowledge.py",
+      "sha256": "a21beec8c56d9a81a457593a207ea9e93b8235543b4e597e20218b91247f0325"
+    },
+    {
+      "module": "synapse.routing.parser",
+      "path": "python/synapse/routing/parser.py",
+      "sha256": "88822a56b618b6e79982fb7803057389b7b6c1f74196ba86a688e145e74e3f5b"
+    },
+    {
+      "module": "synapse.routing.planner",
+      "path": "python/synapse/routing/planner.py",
+      "sha256": "36b1607571051a59ab68488ed9d12023bf54f9653590840c17ee9e6e0a6905a2"
+    },
+    {
+      "module": "synapse.routing.recipes",
+      "path": "python/synapse/routing/recipes/__init__.py",
+      "sha256": "d25646e4b70f279da232844eca897afeab45621c629e55282040527d16b5e2ac"
+    },
+    {
+      "module": "synapse.routing.recipes.base",
+      "path": "python/synapse/routing/recipes/base.py",
+      "sha256": "7116e9ddcdcb2df5aef74c018f00b6380d89fa7dc010d5386fb3d302baeefef2"
+    },
+    {
+      "module": "synapse.routing.router",
+      "path": "python/synapse/routing/router.py",
+      "sha256": "7f3aee4e3b2c2c46a28b41820fa09b2a435c9b62dcfd52af7237910b5c576f34"
+    },
+    {
+      "module": "synapse.routing.solaris_recipes",
+      "path": "python/synapse/routing/solaris_recipes.py",
+      "sha256": "b3b197c5b60046daa3c54f9cbc3f33b4f29ec83ce52dee9377ef30379823435a"
+    },
+    {
+      "module": "synapse.server",
+      "path": "python/synapse/server/__init__.py",
+      "sha256": "41b63915151bd37adcdbe9f4d62cc85d0dd1f6fd5cc323a680f6584b4aa4e646"
+    },
+    {
+      "module": "synapse.server.auth",
+      "path": "python/synapse/server/auth.py",
+      "sha256": "56f9ef1228435a9640bf74a30e965b8d268663af21590eb00f3e13e434a19056"
+    },
+    {
+      "module": "synapse.server.bridge_endpoint",
+      "path": "python/synapse/server/bridge_endpoint.py",
+      "sha256": "424da7d9187ac2de790a1749a9544597c7d7ca68e3b700aed5002ec9620569a7"
+    },
+    {
+      "module": "synapse.server.guards",
+      "path": "python/synapse/server/guards.py",
+      "sha256": "a1cf8bf14e4d4eaf758087e8a144cd58a2be2725285814daf119ff224858639a"
+    },
+    {
+      "module": "synapse.server.handler_helpers",
+      "path": "python/synapse/server/handler_helpers.py",
+      "sha256": "ff834d0fc3d9b71f32a6c5e1d2bea1417db7ce05d8d0915c3ef64c9b8badabdc"
+    },
+    {
+      "module": "synapse.server.handlers",
+      "path": "python/synapse/server/handlers.py",
+      "sha256": "7ea9e66bd30c6dc29b81a369f940ff92c6592fceaf82090ddf1064e718de6eee"
+    },
+    {
+      "module": "synapse.server.handlers_cache",
+      "path": "python/synapse/server/handlers_cache.py",
+      "sha256": "dd5cb417b11782d6bd4372064741fccaaec8bde5c072c85d5dc45319a7cfa235"
+    },
+    {
+      "module": "synapse.server.handlers_cops",
+      "path": "python/synapse/server/handlers_cops.py",
+      "sha256": "40c3f02fb22aa7a7277dd603840b373151489e77af3f9aa249a8f424df3a0a7c"
+    },
+    {
+      "module": "synapse.server.handlers_farm",
+      "path": "python/synapse/server/handlers_farm.py",
+      "sha256": "68ba30d1a5bdbb7b7377e5184b0334ffb3ad3aeec64dc042be41798259256ca7"
+    },
+    {
+      "module": "synapse.server.handlers_graph_synth",
+      "path": "python/synapse/server/handlers_graph_synth.py",
+      "sha256": "f7437ceff7c75b6b3a0ac191e1471dee294617ba9720e96a465a4529eac15ad6"
+    },
+    {
+      "module": "synapse.server.handlers_hda",
+      "path": "python/synapse/server/handlers_hda.py",
+      "sha256": "4979436ff12458e8ea96b02078ccc8671cd27ccd18f185a1b83dd7dd6274dc16"
+    },
+    {
+      "module": "synapse.server.handlers_material",
+      "path": "python/synapse/server/handlers_material.py",
+      "sha256": "8de148e69b65885dcc0967fc1a406c84494016c78694bde4a4f523c2537fbcf2"
+    },
+    {
+      "module": "synapse.server.handlers_memory",
+      "path": "python/synapse/server/handlers_memory.py",
+      "sha256": "54fdcaac5a0664131827e4402d67763964e3bc4fadc259a09ed583ccc91aa565"
+    },
+    {
+      "module": "synapse.server.handlers_network_layout",
+      "path": "python/synapse/server/handlers_network_layout.py",
+      "sha256": "02e7d41c62bdcdbf4b35ba0af54a2834d8c54d589963b903df70ae268cbada0f"
+    },
+    {
+      "module": "synapse.server.handlers_node",
+      "path": "python/synapse/server/handlers_node.py",
+      "sha256": "c0f1fadc2f25a477f60a177425bc9235f3201abbd7a6d9c7ca3cc09cdab19cdc"
+    },
+    {
+      "module": "synapse.server.handlers_render",
+      "path": "python/synapse/server/handlers_render.py",
+      "sha256": "ca54c24df0bbc6d1a9c37d27103dda0416ad33c2446b6d926276c260f06d5564"
+    },
+    {
+      "module": "synapse.server.handlers_solaris_assemble",
+      "path": "python/synapse/server/handlers_solaris_assemble.py",
+      "sha256": "edb462f2e20376a960c41ab5f4a6a918688e947a1ca8ba258e3ab4d3ef13fa04"
+    },
+    {
+      "module": "synapse.server.handlers_solaris_compose",
+      "path": "python/synapse/server/handlers_solaris_compose.py",
+      "sha256": "22390c88edfed155c37310c90c224b07e0c75ce00f408315c0ddc15ae8471539"
+    },
+    {
+      "module": "synapse.server.handlers_solaris_graph",
+      "path": "python/synapse/server/handlers_solaris_graph.py",
+      "sha256": "8479339fb85f8e902d9c792af96be1773efd94877459a6e6cf23e3aa7a8c1c55"
+    },
+    {
+      "module": "synapse.server.handlers_solaris_tools",
+      "path": "python/synapse/server/handlers_solaris_tools.py",
+      "sha256": "c03b4bda63d594c92630b0c88c5e2b34a518990fc18c46c601935e7ce4756d17"
+    },
+    {
+      "module": "synapse.server.handlers_spatial",
+      "path": "python/synapse/server/handlers_spatial.py",
+      "sha256": "2d400dd38ed100f59bc71aec1fe1579c6ea84a32d9f05945e9a27e0557f8adf8"
+    },
+    {
+      "module": "synapse.server.handlers_tops",
+      "path": "python/synapse/server/handlers_tops/__init__.py",
+      "sha256": "3172bec432dabe18421f322e0e38ac0fb1f085f9adf8a70ad821466fbb2622aa"
+    },
+    {
+      "module": "synapse.server.handlers_tops._common",
+      "path": "python/synapse/server/handlers_tops/_common.py",
+      "sha256": "8a9d69ddba8973f43b43a4299873eeb66c88b03e1d46c491889c998b60bf865d"
+    },
+    {
+      "module": "synapse.server.handlers_tops.cook",
+      "path": "python/synapse/server/handlers_tops/cook.py",
+      "sha256": "c348f61e519d10c0790a7d2e3329fd0a10a05197f1189f313cd337f722ec3334"
+    },
+    {
+      "module": "synapse.server.handlers_tops.diagnostics",
+      "path": "python/synapse/server/handlers_tops/diagnostics.py",
+      "sha256": "3b16dee33e30a180e45992206db3a08ebfd4b22df8c4d9b708f7d3610252fe87"
+    },
+    {
+      "module": "synapse.server.handlers_tops.render_sequence",
+      "path": "python/synapse/server/handlers_tops/render_sequence.py",
+      "sha256": "43e048d5c7795cd70ccc7725eaf023273b57c66127168066b57aa4d2f5183c98"
+    },
+    {
+      "module": "synapse.server.handlers_tops.wedge",
+      "path": "python/synapse/server/handlers_tops/wedge.py",
+      "sha256": "a1854254d89305944e8c6dc851b7bab755c6218a1cd3a138cdaebe966a907b24"
+    },
+    {
+      "module": "synapse.server.handlers_tops.work_items",
+      "path": "python/synapse/server/handlers_tops/work_items.py",
+      "sha256": "a712b907131e3336d9d3fde885cf8ee955d4d0f534eb8e5c16e0a39bf1dfe788"
+    },
+    {
+      "module": "synapse.server.handlers_usd",
+      "path": "python/synapse/server/handlers_usd.py",
+      "sha256": "1d534aacd59c69841d58a191cb6fbc7110750174b0d0ebd223c17462db9be383"
+    },
+    {
+      "module": "synapse.server.integrity_envelope",
+      "path": "python/synapse/server/integrity_envelope.py",
+      "sha256": "bc80082838d67a30e7a01bdfa485f77a5439c211f064ef0bb6f44e33c0854c3f"
+    },
+    {
+      "module": "synapse.server.live_metrics",
+      "path": "python/synapse/server/live_metrics.py",
+      "sha256": "6a5acb4d9f2094443bfa7240ef308b581982cb5993d4ce55ec5bf4196a9d0e47"
+    },
+    {
+      "module": "synapse.server.main_thread",
+      "path": "python/synapse/server/main_thread.py",
+      "sha256": "5f0a2b0da52e08f676d1dbc75ebfad5174ac3022aa195b744f00ec8747c0b62f"
+    },
+    {
+      "module": "synapse.server.marshal_guard",
+      "path": "python/synapse/server/marshal_guard.py",
+      "sha256": "f3a749eae4be02b42d5eda5d2f5d28155e0700e14f2df0add05b67f3094615c8"
+    },
+    {
+      "module": "synapse.server.network_layout",
+      "path": "python/synapse/server/network_layout.py",
+      "sha256": "91467ecdd871dcb634db5868756539a9b2c5b890f9a004800a84939d708b2ce4"
+    },
+    {
+      "module": "synapse.server.rbac",
+      "path": "python/synapse/server/rbac.py",
+      "sha256": "00e0e71999e4b06c5da6cb807e2330a912777162a1da3d3f953f1cf47aa7ff44"
+    },
+    {
+      "module": "synapse.server.resilience",
+      "path": "python/synapse/server/resilience.py",
+      "sha256": "ff24b3fa843b7fde027986385ca1582a1186fabbbb381481efcc849e0875a8fb"
+    },
+    {
+      "module": "synapse.server.sessions",
+      "path": "python/synapse/server/sessions.py",
+      "sha256": "b9a9b51feacdbe0c476c5df2b0b3de7e18014d9904d1c0d7ad0eada3e6bba5a3"
+    },
+    {
+      "module": "synapse.server.solaris_compose",
+      "path": "python/synapse/server/solaris_compose.py",
+      "sha256": "016e15c92ceca3a8ddef27fd3520071b19ff10b0bb2b891e2616073d69067c89"
+    },
+    {
+      "module": "synapse.server.solaris_compose_tools",
+      "path": "python/synapse/server/solaris_compose_tools.py",
+      "sha256": "aae96df5cc2130c852fffc5916768602d9c8879492f6cc2c1904ab201363c293"
+    },
+    {
+      "module": "synapse.server.solaris_graph_plan",
+      "path": "python/synapse/server/solaris_graph_plan.py",
+      "sha256": "e8340800974dae482633fa156567fe3defdb3ea4bd46a33942aacd9f34ace90a"
+    },
+    {
+      "module": "synapse.server.solaris_graph_templates",
+      "path": "python/synapse/server/solaris_graph_templates.py",
+      "sha256": "695809d39df9442c7c8faa66db0e8c4bfa0a6f7cffa48ccef21ebc44838144c9"
+    },
+    {
+      "module": "synapse.server.update_mode",
+      "path": "python/synapse/server/update_mode.py",
+      "sha256": "560d36e515e175e52535258771ad8aa620b31ce0c36bc03dc22767811676119c"
+    },
+    {
+      "module": "synapse.server.websocket",
+      "path": "python/synapse/server/websocket.py",
+      "sha256": "ea4bf7233d12eacd5392970ee65c7bccd7e3c0579ee9d310bf9f8aca0660d290"
+    },
+    {
+      "module": "synapse.session",
+      "path": "python/synapse/session/__init__.py",
+      "sha256": "e06cfa4631bf125518aa4a068d5c7778b5c2703197c1fce6674a5a34c2f7013c"
+    },
+    {
+      "module": "synapse.session.summary",
+      "path": "python/synapse/session/summary.py",
+      "sha256": "f1d2742275ae6de6e2afe9c5044a9a10eec8791ef8084a2f80c2282668a3e96b"
+    },
+    {
+      "module": "synapse.session.tracker",
+      "path": "python/synapse/session/tracker.py",
+      "sha256": "52ed572443017930e302368ca2a5f9b6270baf6dbdf97493923b865392635735"
+    },
+    {
+      "module": "synapse.spatial",
+      "path": "python/synapse/spatial/__init__.py",
+      "sha256": "cbd8a1afc3a754df2a879f351700bb69e45771ea5b572adb195c3b589bc13d0d"
+    },
+    {
+      "module": "synapse.spatial.path",
+      "path": "python/synapse/spatial/path.py",
+      "sha256": "f3e105ffe898f189ce352e11a026e59960a7e127b5826c1b888d9116f2bbd0e8"
+    },
+    {
+      "module": "synapse.spatial.queries",
+      "path": "python/synapse/spatial/queries.py",
+      "sha256": "6632baaaaae6115ccbe93c2677626d64b9286d2afee50a04d17c276d7f92fc65"
+    },
+    {
+      "module": "synapse.validation.catalog",
+      "path": "python/synapse/validation/catalog.py",
+      "sha256": "b674799c17f7dde30fd6b1154915e1dcda6655ca310cf445728189421476fba4"
+    },
+    {
+      "module": "synapse.validation.parm_gate",
+      "path": "python/synapse/validation/parm_gate.py",
+      "sha256": "5da8419a3a699eece0454e5456b77ff9538d8d4df74d92b67d9d47dcdf833c1c"
+    },
+    {
+      "module": "typing_extensions",
+      "path": "python/synapse/_vendor/typing_extensions.py",
+      "sha256": "433d11d170d3a24d2eb065ebc1bfe848cea7e3d7ce68567ab52bea2d4c2f7ed8"
+    },
+    {
+      "module": "typing_inspection",
+      "path": "python/synapse/_vendor/typing_inspection/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "module": "typing_inspection.introspection",
+      "path": "python/synapse/_vendor/typing_inspection/introspection.py",
+      "sha256": "743e4077827a8407c5e9407304ee2ca92b35876c9b4154e1910a1f2d659504fd"
+    },
+    {
+      "module": "typing_inspection.typing_objects",
+      "path": "python/synapse/_vendor/typing_inspection/typing_objects.py",
+      "sha256": "91a8d5821f09ed467bc1389d571cc53298f04a71460680e84ea7d5000bce1d9f"
+    }
+  ]
+}

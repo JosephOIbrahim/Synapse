@@ -24,7 +24,9 @@ This feature map was reviewed on **2026-09-28**. For the published version and i
 
 [v5.97.2](releases/v5.97.2.md) preserves exact output sockets during insertion, reserves explicit merge inputs before implicit appends, rejects malformed request controls before mutation and reads final wires before claiming verified connections.
 
-The complete copied handler passed scoped headless H22.0.400 graph/USD, native rollback and fresh-process reopen/replay checks. [The receipt and original reproduction code](../harness/notes/release-v5.97.2/native_validation/README.md) state what ran and what did not. Production panel/transport/bridge behavior and copied-scene benefit are not qualified by that assay.
+The complete copied handler passed scoped headless H22.0.400 graph/USD, native rollback and fresh-process reopen/replay checks. [The receipt and original reproduction code](../harness/notes/release-v5.97.2/native_validation/README.md) state what ran and what did not.
+
+A separate graphical session passed the real production package, registered handler and bridge: preview, apply, repeat, honest wire-drift refusal and exact artist Undo after the outer group closed, followed by recovery replay. [Production evidence](../harness/notes/release-v5.97.2/production_validation/README.md) includes the unchanged native graph/USD snapshots. Natural panel/transport interactions and copied-scene benefit remain unqualified.
 ## Artist control
 
 The default panel worker mode is `standard`. It allows classified reads and edits, plus explicitly permitted composite builders. It refuses higher-risk tools such as node deletion, arbitrary Python/VEX, rendering, exporting and PDG cooking. Unknown tools fail closed.

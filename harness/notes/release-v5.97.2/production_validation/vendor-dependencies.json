@@ -1,0 +1,45 @@
+{
+  "packages": [
+    {
+      "package": "apex",
+      "manifest": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\apex.json",
+      "sha256": "ec875323f4e2c0fc9a921f227a7f6f5b4610ba16e08f985220a3d57bb5685773",
+      "hpath": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\apex"
+    },
+    {
+      "package": "apex_cop",
+      "manifest": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\apex_cop.json",
+      "sha256": "8220e4c77c46339de0b0a7a37b04b5e2a1fa93e76eb33794e4811398fd22fdba",
+      "hpath": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\apex_cop"
+    },
+    {
+      "package": "kinefx",
+      "manifest": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\kinefx.json",
+      "sha256": "5e0bc55b3480822d1a60b9e042f86bf7295b38ba45fd3c5e098cbb705928d67b",
+      "hpath": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\kinefx"
+    },
+    {
+      "package": "sculpt",
+      "manifest": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\sculpt.json",
+      "sha256": "6e8d0ad975c8e39426dec652d8a59ec431eaa885ab42dd16a9476fa356edd6d0",
+      "hpath": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\sculpt"
+    },
+    {
+      "package": "shotbuilder",
+      "manifest": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\shotbuilder.json",
+      "sha256": "b38bcb14bff261d162c1a313e099c0560041f0a6e5266ec09a96d7fc9c71e987",
+      "hpath": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\shotbuilder"
+    },
+    {
+      "package": "texturepaint",
+      "manifest": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\texturepaint.json",
+      "sha256": "d28c36ab27de45f28dec66c826fd885743940455734d3b96c8a84c11973c858c",
+      "hpath": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\texturepaint"
+    }
+  ],
+  "ocio": {
+    "path": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\packages\\ocio\\houdini-config-v3.0.0_aces-v2.0_ocio-v2.5.ocio",
+    "sha256": "1bee9e5dbedd73bde04e647961e397994c6824a90f2e73b999b49a2f77eeed41"
+  },
+  "excluded": "User/site packages and package_dirs.json redirection; unrelated USD importer packages unused by synthetic stage"
+}

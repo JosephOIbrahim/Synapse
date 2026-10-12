@@ -69,13 +69,13 @@ The normal panel worker blocks node deletion, arbitrary Python/VEX, rendering, e
 ```mermaid
 flowchart LR
     accTitle: A Solaris graph request is checked before it changes the scene
-    accDescr: Check the request and existing sockets. An invalid request is refused without an edit. Preview returns a plan without an edit. Apply builds on Houdini's thread and reads the final connections. A mismatch reports an error; a match returns verified connections.
+    accDescr: Check the request and existing sockets. An invalid request is refused without an edit. Preview returns a plan without an edit. Apply builds on Houdini's thread and reads the final connections. A mismatch reports an error, leaving partial work for the artist to inspect or undo; a match returns verified connections.
     C["Check request +<br/>existing sockets"] -->|"invalid"| N["Refuse<br/>without edits"]
     C -->|"preview"| P["Plan only<br/>without edits"]
     C -->|"apply"| A["Build on<br/>Houdini's thread"]
     A --> F["Read final<br/>connections"]
     F -->|"match"| V["Verified<br/>connections"]
-    F -->|"mismatch"| E["Error<br/>inspect the scene"]
+    F -->|"mismatch"| E["Error<br/>inspect or Undo"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
@@ -84,7 +84,9 @@ flowchart LR
     linkStyle default stroke:#D07020
 ```
 
-The scoped native checks ran in fresh headless Houdini sessions. They do not establish interactive panel behavior or a complex scene's time savings. See [release notes and evidence](docs/releases/v5.97.2.md#what-was-measured).
+**Checked in Houdini 22.0.400:** the seven-fix controls passed in fresh headless sessions. A separate graphical session then passed the real production bridge checks, including repeat builds and artist Undo after a refused wire change.
+
+These checks do not measure a complex scene's time savings or qualify every panel interaction. See [release notes and evidence](docs/releases/v5.97.2.md#what-was-measured).
 
 ## Build from a verified recipe
 

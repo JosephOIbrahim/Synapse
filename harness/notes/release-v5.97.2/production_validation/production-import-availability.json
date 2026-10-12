@@ -1,0 +1,9 @@
+{
+  "commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "pid": 50588,
+  "phase": "production-import-availability",
+  "adapter_bridge_available": true,
+  "bridge_hou_available": true,
+  "actual_hou_identity": true,
+  "bridge_hdefereval_origin": "C:\\PROGRA~1/SIDEEF~1/HOUDIN~1.400/houdini/python3.13libs\\hdefereval.py"
+}

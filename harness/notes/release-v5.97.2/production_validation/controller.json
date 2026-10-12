@@ -1,0 +1,21 @@
+{
+  "status": "NATIVE_ASSERTIONS_COMPLETE",
+  "commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "prepared_pins_sha256": "58b4a55209d0ff544fdbfe05ae461511a07be129452a1e59d09447b3ebaca396",
+  "slot_sha256": "eff11ca50eb523682c606653d9c993d3a57e7a37ea137b86c470bab73fc53c20",
+  "children": [
+    {
+      "phase": "production",
+      "pid": 50588,
+      "exit_code": 0,
+      "wall_seconds": 32.716631,
+      "max_private_bytes": 6199967744,
+      "max_working_bytes": 2686578688,
+      "limit_reason": null
+    }
+  ],
+  "wall_seconds": 33.9723981,
+  "failure": null,
+  "scope": "Real-package production bridge/outer undo seam only; no GUI/transport/installer/benchmark approval",
+  "limits": "sampled watchdog limits, not kernel resource caps; own root process only"
+}

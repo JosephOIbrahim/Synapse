@@ -1,0 +1,132 @@
+param(
+ [Parameter(Mandatory=$true)][string]$SlotReceipt,
+ [Parameter(Mandatory=$true)][string]$SlotSha256,
+ [switch]$ValidateOnly
+)
+$ErrorActionPreference='Stop'
+$prepRoot=$PSScriptRoot
+function Require($value,[string]$message){if(-not $value){throw $message}}
+function Hash([string]$path){(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()}
+$pinPath=Join-Path $prepRoot 'prepared-pins.json'
+$pinHash=Hash $pinPath
+$pins=Get-Content -LiteralPath $pinPath -Raw | ConvertFrom-Json
+$receiptPath=[IO.Path]::GetFullPath($SlotReceipt)
+Require ((Hash $receiptPath) -ceq $SlotSha256) 'Receipt hash differs'
+$receipt=Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+Require ($receipt.commit -ceq '945df057aa1e6b3f4849d80332f762bf56911ca2') 'Wrong candidate'
+Require ($receipt.prepared_pins_sha256 -ceq $pinHash) 'Unapproved test pins'
+Require ($receipt.native_clearance -eq $true -and $receipt.indie_clearance -eq $true -and $receipt.resource_owner_clearance -eq $true -and $receipt.live_gui_preserved_clearance -eq $true -and $receipt.graphical_clearance -eq $true -and $receipt.desktop_owner_clearance -eq $true) 'Coordinated native/Indie/resource-owner/live-GUI preservation clearance absent'
+Require (@($receipt.phases).Count -eq 1 -and 'production' -cin $receipt.phases) 'Need precisely one production phase'
+Require ($receipt.run_id -match '^[a-z0-9][a-z0-9-]{0,48}$') 'Unsafe run identifier'
+Require ($receipt.limits.processes -eq 1 -and $receipt.limits.threads -eq 2 -and $receipt.limits.child_seconds -eq 120 -and $receipt.limits.aggregate_seconds -eq 180 -and $receipt.limits.memory_bytes -eq 8GB -and $receipt.limits.artifact_bytes -eq 64MB) 'Receipt limit mismatch'
+Require ($receipt.resource_snapshot.free_memory_bytes -ge 16GB -and $receipt.resource_snapshot.cpu_load_percent -le 50 -and $receipt.resource_snapshot.cpu_load_percent -ge 0 -and $receipt.resource_snapshot.artifact_free_bytes -ge 256MB) 'Insufficient supplied resource headroom'
+$now=[DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+Require ($receipt.resource_snapshot.checked_unix -le $now -and $now-$receipt.resource_snapshot.checked_unix -le 60) 'Parent resource snapshot older than sixty seconds'
+Require ($receipt.not_before_unix -le $now -and $receipt.expires_unix-$now -ge 180) 'Need fresh three-minute slot'
+Require ($receipt.handoff_launch_by_unix -ge $now) 'Owner launch deadline absent/missed'
+function Assert-Pins{
+ Require ((Hash $pinPath) -ceq $pinHash -and (Hash $receiptPath) -ceq $SlotSha256) 'Pins/slot revoked or changed'
+ foreach($row in $pins.files){Require ((Hash (Join-Path $prepRoot $row.path)) -ceq $row.sha256) ('Changed preparation pin: '+$row.path)}
+ foreach($row in $pins.runtime_files){Require ((Hash $row.path) -ceq $row.sha256) 'Changed runtime file'}
+ $source=Get-Content -LiteralPath (Join-Path $prepRoot 'source-manifest.json') -Raw|ConvertFrom-Json
+ Require ($source.commit -ceq $receipt.commit -and $pins.execution_mode -ceq 'production-seam') 'Wrong source/production execution mode'
+ $sourceRoot=[IO.Path]::GetFullPath($source.source_root).TrimEnd('\')
+ foreach($row in $source.files){
+  $path=[IO.Path]::GetFullPath((Join-Path $sourceRoot $row.path))
+  Require ($path.StartsWith($sourceRoot+'\',[StringComparison]::OrdinalIgnoreCase) -and (Hash $path) -ceq $row.sha256) ('Changed candidate source: '+$row.path)
+ }
+}
+Assert-Pins
+if($ValidateOnly){[pscustomobject]@{status='STATIC_RECEIPT_PINS_ONLY';native_processes=0;prepared_pins_sha256=$pinHash}|ConvertTo-Json;exit 0}
+$runRoot=Join-Path $prepRoot ('runs/'+$receipt.run_id)
+Require (-not (Test-Path -LiteralPath $runRoot)) 'Run root already exists; no automatic retries'
+New-Item -ItemType Directory -Path $runRoot | Out-Null
+$nativePython='C:\Program Files\Side Effects Software\Houdini 22.0.400\bin\houdini.exe'
+$hfs='C:\Program Files\Side Effects Software\Houdini 22.0.400'
+$clock=[Diagnostics.Stopwatch]::StartNew()
+$active=$null;$records=@();$status='FAILED_OR_BLOCKED';$failure=$null
+function Read-LicenseReachability{
+ $client=[Net.Sockets.TcpClient]::new()
+ $timer=[Diagnostics.Stopwatch]::StartNew()
+ $observation=[ordered]@{utc=[DateTimeOffset]::UtcNow.ToString('o');endpoint='127.0.0.1:1714';connected=$false;error=$null;elapsed_seconds=0;scope='TCP connect only; no licensing request, native import or service start'}
+ try{
+  $task=$client.ConnectAsync('127.0.0.1',1714)
+  if(-not $task.Wait(2000)){throw 'Existing licence service reachability timed out'}
+  $observation.connected=$client.Connected
+ }catch{$observation.error=$_.Exception.ToString()}
+ finally{$observation.elapsed_seconds=$timer.Elapsed.TotalSeconds;$client.Dispose()}
+ return [pscustomobject]$observation
+}
+try{
+ foreach($phase in @('production')){
+  Assert-Pins
+  Require (-not (Test-Path -LiteralPath (Join-Path $runRoot 'CANCEL'))) 'Coordinator cancelled'
+  Require ($clock.Elapsed.TotalSeconds -le 160 -and $receipt.expires_unix-[DateTimeOffset]::UtcNow.ToUnixTimeSeconds() -ge 140) 'No remaining child/cleanup window'
+  $reachability=Read-LicenseReachability
+  [IO.File]::WriteAllText((Join-Path $runRoot ($phase+'-license-reachability.json')), ($reachability|ConvertTo-Json), [Text.UTF8Encoding]::new($false))
+  Require ($reachability.connected -eq $true) 'Existing licence-service access unavailable; no native process may start'
+  if($phase -ceq 'production'){Require ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() -le $receipt.handoff_launch_by_unix) 'Owner launch deadline elapsed before child creation'}
+  $phaseDir=Join-Path $runRoot ($phase+'-environment');New-Item -ItemType Directory -Path $phaseDir | Out-Null
+  $start=[Diagnostics.ProcessStartInfo]::new($nativePython)
+  $start.UseShellExecute=$false;$start.CreateNoWindow=$true;$start.WorkingDirectory=$phaseDir
+  $start.RedirectStandardOutput=$true;$start.RedirectStandardError=$true
+  New-Item -ItemType Directory -Path (Join-Path $phaseDir 'scripts')|Out-Null
+  [IO.File]::WriteAllText((Join-Path $phaseDir 'scripts/123.cmd'),'# Isolated GUI empty startup', [Text.UTF8Encoding]::new($false))
+  [IO.File]::WriteAllText((Join-Path $phaseDir 'scripts/456.cmd'),'# Isolated GUI scene-load startup', [Text.UTF8Encoding]::new($false))
+  foreach($arg in @('-foreground','-indie','-j2','-n','waitforui',(Join-Path $prepRoot 'graphical_entry.py'))){$start.ArgumentList.Add($arg)}
+  $start.WindowStyle=[Diagnostics.ProcessWindowStyle]::Normal
+  $start.Environment['SYNAPSE_GUI_PROBE_ARGUMENTS']=(@('--phase',$phase,'--slot',$receiptPath,'--slot-sha256',$SlotSha256,'--run-root',$runRoot)|ConvertTo-Json -Compress)
+  $start.Environment['SYNAPSE_GUI_PACKET']=$prepRoot
+  $start.Environment['SYNAPSE_GUI_RUN_ROOT']=$runRoot
+  
+  foreach($key in @('PYTHONPATH','PYTHONHOME','HSITE','HOUDINI_PACKAGE_DIR','HOUDINI_DSO_PATH','HOUDINI_OTLSCAN_PATH','HOUDINI_SCRIPT_PATH','PXR_PLUGINPATH_NAME','HOUDINI_DISABLE_PDG','SYNAPSE_MEMORY_BACKEND','HOUDINI_LIC_OPT','HOUDINI_CORE_LIC_OPT','HOUDINI_FX_LIC_OPT','HOUDINI_INDIE_LIC_OPT','HOUDINI_NC_LIC_OPT','HOUDINI_EXPER_LIC_OPT')){$start.Environment.Remove($key)|Out-Null}
+  foreach($key in @($start.Environment.Keys|Where-Object {$_ -like 'SYNAPSE_*'})){$start.Environment.Remove($key)|Out-Null}
+  $values=@{SYNAPSE_ROOT=$phaseDir;SYNAPSE_PROVENANCE_DIR=($phaseDir+'\provenance');SYNAPSE_LEDGER_DIR=($phaseDir+'\ledger');SYNAPSE_LOOP_LEDGER_DIR=($phaseDir+'\loop-ledger');SYNAPSE_JEV_LEDGER_DIR=($phaseDir+'\jev-ledger');SYNAPSE_REPORTS_DIR=($phaseDir+'\reports');SYNAPSE_LOOP_ENABLED='0';SYNAPSE_AUTO_MEMORY='0';HFS=$hfs;HOUDINI_PATH=(([string[]]@($phaseDir,($hfs+'\packages\apex'),($hfs+'\packages\apex_cop'),($hfs+'\packages\kinefx'),($hfs+'\packages\sculpt'),($hfs+'\packages\shotbuilder'),($hfs+'\packages\texturepaint'),($hfs+'\houdini'))) -join ';');OCIO=($hfs+'\packages\ocio\houdini-config-v3.0.0_aces-v2.0_ocio-v2.5.ocio');HOUDINI_PACKAGE_SKIP='1';HOUDINI_NO_ENV_FILE='1';HOUDINI_MAXTHREADS='2';OMP_NUM_THREADS='2';TBB_NUM_THREADS='2';HOUDINI_NOHKEY='1';HOUDINI_SCRIPT_LICENSE='hbatch';HOUDINI_HYTHON_LIC_OPT='--skip-license-modes=commercial,education,apprentice';HOUDINI_ANONYMOUS_STATISTICS='0';HOUDINI_PROMPT_ON_CRASHES='0';HOUDINI_DISABLE_CONSOLE='1';HOUDINI_NO_START_PAGE_SPLASH='1';HOUDINI_USER_PREF_DIR=($phaseDir+'\prefs__HVER__');HOUDINI_TEMP_DIR=$phaseDir;HOUDINI_BACKUP_DIR=$phaseDir;TEMP=$phaseDir;TMP=$phaseDir;SYNAPSE_LOG_DIR=($phaseDir+'\logs');SYNAPSE_BRIDGE_FILE=($phaseDir+'\unused-bridge.json')}
+  foreach($key in $values.Keys){$start.Environment[$key]=$values[$key]}
+  $start.Environment['SYNAPSE_GUI_PROBE_ARGUMENTS']=(@('--phase',$phase,'--slot',$receiptPath,'--slot-sha256',$SlotSha256,'--run-root',$runRoot)|ConvertTo-Json -Compress)
+  $start.Environment['SYNAPSE_GUI_PACKET']=$prepRoot
+  $start.Environment['SYNAPSE_GUI_RUN_ROOT']=$runRoot
+  $start.Environment['SYNAPSE_GUI_LAUNCH_MODE']='owned-indie-waitforui'
+  $start.Environment['PYTHONNOUSERSITE']='1'
+  $start.Environment['PYTHONDONTWRITEBYTECODE']='1'
+
+  # Child-local vendor startup requirements. Parent process/system environment unchanged.
+  $start.Environment['PATH']=(Join-Path $hfs 'bin')+';'+$start.Environment['PATH']
+  $start.Environment['HB']=Join-Path $hfs 'bin'
+  $start.Environment['HHP']=Join-Path $hfs 'houdini/python3.13libs'
+  $phaseClock=[Diagnostics.Stopwatch]::StartNew()
+  $launchNow=[DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+  Require ($receipt.resource_snapshot.checked_unix -le $launchNow -and $launchNow-$receipt.resource_snapshot.checked_unix -le 60 -and $launchNow -le $receipt.handoff_launch_by_unix) 'Freshness/owner deadline elapsed at child creation'
+  $active=[Diagnostics.Process]::Start($start)
+  $active.PriorityClass=[Diagnostics.ProcessPriorityClass]::BelowNormal
+  $stdout=$active.StandardOutput.ReadToEndAsync();$stderr=$active.StandardError.ReadToEndAsync()
+  $maxPrivate=0L;$maxWorking=0L;$limitReason=$null
+  while(-not $active.WaitForExit(500)){
+   $active.Refresh();$maxPrivate=[Math]::Max($maxPrivate,$active.PrivateMemorySize64);$maxWorking=[Math]::Max($maxWorking,$active.WorkingSet64)
+   $bytes=(Get-ChildItem -LiteralPath $runRoot -File -Recurse | Measure-Object -Property Length -Sum).Sum
+   if($phaseClock.Elapsed.TotalSeconds -gt 120 -or $clock.Elapsed.TotalSeconds -gt 160){$limitReason='time ceiling'}
+   elseif($maxPrivate -gt 8GB -or $maxWorking -gt 8GB){$limitReason='sampled memory ceiling'}
+   elseif($bytes -gt 64MB){$limitReason='artifact ceiling'}
+   elseif((Test-Path -LiteralPath (Join-Path $runRoot 'CANCEL')) -or (Hash $receiptPath) -cne $SlotSha256){$limitReason='slot revoked'}
+   if($limitReason){$active.Kill();Require ($active.WaitForExit(5000)) 'Owned worker termination unconfirmed';break}
+  }
+  [IO.File]::WriteAllText((Join-Path $runRoot ($phase+'-stdout.log')),$stdout.GetAwaiter().GetResult())
+  [IO.File]::WriteAllText((Join-Path $runRoot ($phase+'-stderr.log')),$stderr.GetAwaiter().GetResult())
+  $records+=[pscustomobject]@{phase=$phase;pid=$active.Id;exit_code=$active.ExitCode;wall_seconds=$phaseClock.Elapsed.TotalSeconds;max_private_bytes=$maxPrivate;max_working_bytes=$maxWorking;limit_reason=$limitReason}
+  Require (-not $limitReason -and $active.ExitCode -eq 0) ('Native phase failed: '+$phase)
+  $result=Get-Content -LiteralPath (Join-Path $runRoot ($phase+'.json')) -Raw | ConvertFrom-Json
+  Require ($result.status -ceq 'ASSERTIONS_PASSED' -and $result.production_path -ceq 'REAL_PACKAGE_REAL_BRIDGE' -and $result.artist_undo_restoration -ceq 'PASS' -and @($result.calls).Count -eq 5 -and $result.post_fault_verified_delta -eq 0) 'Production seam assertions incomplete'
+  $gatePath=Join-Path $runRoot ($phase+'-native-gate.json')
+  $gate=Get-Content -LiteralPath $gatePath -Raw | ConvertFrom-Json
+  Require ($gate.status -ceq 'PASSED' -and $gate.actual_build -ceq '22.0.400' -and $gate.actual_license_category -ceq 'licenseCategoryType.Indie' -and $gate.candidate_imported -eq $false -and $gate.is_ui_available -eq $true -and $gate.actual_main_thread -eq $true -and $result.early_native_gate_sha256 -ceq (Hash $gatePath)) 'Missing/unexpected persisted early native identity gate'
+  $active=$null
+ }
+ $status='NATIVE_ASSERTIONS_COMPLETE'
+}catch{$failure=$_.Exception.Message}
+finally{
+ if($null -ne $active -and -not $active.HasExited){$active.Kill();$active.WaitForExit(5000)|Out-Null}
+ $scope='Real-package production bridge/outer undo seam only; no GUI/transport/installer/benchmark approval'
+ $result=[ordered]@{status=$status;commit=$receipt.commit;prepared_pins_sha256=$pinHash;slot_sha256=$SlotSha256;children=$records;wall_seconds=$clock.Elapsed.TotalSeconds;failure=$failure;scope=$scope;limits='sampled watchdog limits, not kernel resource caps; own root process only'}
+ [IO.File]::WriteAllText((Join-Path $runRoot 'controller.json'), ($result|ConvertTo-Json -Depth 10), [Text.UTF8Encoding]::new($false))
+}
+if($status -notin @('NATIVE_ASSERTIONS_COMPLETE','DIAGNOSTIC_OBSERVATIONS_COMPLETE')){exit 2}

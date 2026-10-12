@@ -1,0 +1,360 @@
+{
+  "graph": {
+    "/stage/production_bridge_fixture": {
+      "type": "subnet",
+      "inputs": {},
+      "parms": {},
+      "templates": "{\n    name\tparameters\n}\n",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "comment": "",
+      "user_data": {
+        "___Version___": "22.0.400"
+      },
+      "display": true,
+      "selected": false,
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929
+      ]
+    },
+    "/stage/production_bridge_fixture/source": {
+      "type": "subnet",
+      "inputs": {},
+      "parms": {},
+      "templates": "{\n    name\tparameters\n}\n",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "comment": "",
+      "user_data": {
+        "___Version___": "22.0.400"
+      },
+      "display": false,
+      "selected": false,
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929
+      ]
+    },
+    "/stage/production_bridge_fixture/source/marker_0": {
+      "type": "pythonscript",
+      "inputs": {},
+      "parms": {
+        "python": "from pxr import Sdf\nstage = hou.pwd().editableStage()\nprim = stage.DefinePrim('/NativeMarker', 'Scope')\nprim.CreateAttribute('test:output', Sdf.ValueTypeNames.Int).Set(0)\n",
+        "maintainstate": "off"
+      },
+      "templates": "{\n    name\tparameters\n    parm {\n        name    \"python\"\n        baseparm\n        label   \"Python Code\"\n        export  none\n    }\n    parm {\n        name    \"maintainstate\"\n        baseparm\n        label   \"Maintain State\"\n        export  none\n    }\n}\n",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "comment": "",
+      "user_data": {
+        "___Version___": "22.0.400"
+      },
+      "display": false,
+      "selected": false,
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929
+      ]
+    },
+    "/stage/production_bridge_fixture/source/out_0": {
+      "type": "output",
+      "inputs": {
+        "0": [
+          "/stage/production_bridge_fixture/source/marker_0",
+          0
+        ]
+      },
+      "parms": {
+        "outputidx": "max(opdigits(\".\"),0)",
+        "modifiedprims": "`lopinputprims(\".\", 0)`"
+      },
+      "templates": "{\n    name\tparameters\n    parm {\n        name    \"outputidx\"\n        baseparm\n        label   \"Output Index\"\n        export  none\n    }\n    parm {\n        name    \"modifiedprims\"\n        baseparm\n        label   \"Subnet Modified Primitives\"\n        export  none\n    }\n}\n",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "comment": "",
+      "user_data": {
+        "___Version___": "22.0.400"
+      },
+      "display": false,
+      "selected": false,
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929
+      ]
+    },
+    "/stage/production_bridge_fixture/source/marker_1": {
+      "type": "pythonscript",
+      "inputs": {},
+      "parms": {
+        "python": "from pxr import Sdf\nstage = hou.pwd().editableStage()\nprim = stage.DefinePrim('/NativeMarker', 'Scope')\nprim.CreateAttribute('test:output', Sdf.ValueTypeNames.Int).Set(1)\n",
+        "maintainstate": "off"
+      },
+      "templates": "{\n    name\tparameters\n    parm {\n        name    \"python\"\n        baseparm\n        label   \"Python Code\"\n        export  none\n    }\n    parm {\n        name    \"maintainstate\"\n        baseparm\n        label   \"Maintain State\"\n        export  none\n    }\n}\n",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "comment": "",
+      "user_data": {
+        "___Version___": "22.0.400"
+      },
+      "display": false,
+      "selected": false,
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929
+      ]
+    },
+    "/stage/production_bridge_fixture/source/out_1": {
+      "type": "output",
+      "inputs": {
+        "0": [
+          "/stage/production_bridge_fixture/source/marker_1",
+          0
+        ]
+      },
+      "parms": {
+        "outputidx": "max(opdigits(\".\"),0)",
+        "modifiedprims": "`lopinputprims(\".\", 0)`"
+      },
+      "templates": "{\n    name\tparameters\n    parm {\n        name    \"outputidx\"\n        baseparm\n        label   \"Output Index\"\n        export  none\n    }\n    parm {\n        name    \"modifiedprims\"\n        baseparm\n        label   \"Subnet Modified Primitives\"\n        export  none\n    }\n}\n",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "comment": "",
+      "user_data": {
+        "___Version___": "22.0.400"
+      },
+      "display": false,
+      "selected": false,
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929
+      ]
+    },
+    "/stage/production_bridge_fixture/sink": {
+      "type": "null",
+      "inputs": {
+        "0": [
+          "/stage/production_bridge_fixture/source",
+          1
+        ]
+      },
+      "parms": {
+        "native_gain": "0"
+      },
+      "templates": "{\n    name\tparameters\n    parm {\n        name    \"native_gain\"\n        label   \"Native Gain\"\n        type    float\n        default { \"0\" }\n        range   { 0 10 }\n    }\n}\n",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "comment": "",
+      "user_data": {
+        "___Version___": "22.0.400"
+      },
+      "display": true,
+      "selected": false,
+      "color": [
+        0.6000000238418579,
+        0.699999988079071,
+        0.7699999809265137
+      ]
+    },
+    "/stage/production_bridge_fixture/sentry": {
+      "type": "null",
+      "inputs": {
+        "0": [
+          "/stage/production_bridge_fixture/source",
+          0
+        ]
+      },
+      "parms": {},
+      "templates": "{\n    name\tparameters\n}\n",
+      "position": [
+        14.0,
+        9.0
+      ],
+      "comment": "artist sentry",
+      "user_data": {
+        "___Version___": "22.0.400",
+        "native_sentry": "unchanged"
+      },
+      "display": false,
+      "selected": false,
+      "color": [
+        0.6000000238418579,
+        0.699999988079071,
+        0.7699999809265137
+      ]
+    },
+    "/stage/production_bridge_fixture/merge": {
+      "type": "merge",
+      "inputs": {
+        "0": [
+          "/stage/production_bridge_fixture/source",
+          1
+        ]
+      },
+      "parms": {
+        "mergestyle": "flattenloplayers",
+        "ineditblocklabel": "First input is in an Edit Layer Block. Flattening Into First Input's Active Layer.",
+        "alwaysstriplabel": "Layers above layer breaks will be stripped",
+        "multistriplabel": "Layers above layer breaks will be stripped for all but the first input",
+        "striplayerbreaks": "off"
+      },
+      "templates": "{\n    name\tparameters\n    parm {\n        name    \"mergestyle\"\n        baseparm\n        label   \"Merge Style\"\n        export  none\n    }\n    parm {\n        name    \"ineditblocklabel\"\n        baseparm\n        label   \"ineditblocklabel\"\n        export  none\n    }\n    parm {\n        name    \"alwaysstriplabel\"\n        baseparm\n        label   \"alwaysstriplabel\"\n        export  none\n    }\n    parm {\n        name    \"multistriplabel\"\n        baseparm\n        label   \"multistriplabel\"\n        export  none\n    }\n    parm {\n        name    \"striplayerbreaks\"\n        baseparm\n        label   \"Strip Layers Above Layer Breaks\"\n        export  none\n    }\n}\n",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "comment": "",
+      "user_data": {
+        "___Version___": "22.0.400"
+      },
+      "display": false,
+      "selected": false,
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929
+      ]
+    },
+    "/stage/production_bridge_fixture/fixture_output": {
+      "type": "output",
+      "inputs": {
+        "0": [
+          "/stage/production_bridge_fixture/sink",
+          0
+        ]
+      },
+      "parms": {
+        "outputidx": "max(opdigits(\".\"),0)",
+        "modifiedprims": "`lopinputprims(\".\", 0)`"
+      },
+      "templates": "{\n    name\tparameters\n    parm {\n        name    \"outputidx\"\n        baseparm\n        label   \"Output Index\"\n        export  none\n    }\n    parm {\n        name    \"modifiedprims\"\n        baseparm\n        label   \"Subnet Modified Primitives\"\n        export  none\n    }\n}\n",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "comment": "",
+      "user_data": {
+        "___Version___": "22.0.400"
+      },
+      "display": false,
+      "selected": false,
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929
+      ]
+    }
+  },
+  "usd": {
+    "source": {
+      "/HoudiniLayerInfo": {
+        "type": "HoudiniLayerInfo",
+        "attributes": {},
+        "relationships": {}
+      },
+      "/NativeMarker": {
+        "type": "Scope",
+        "attributes": {
+          "purpose": "default",
+          "test:output": 0,
+          "visibility": "inherited"
+        },
+        "relationships": {
+          "proxyPrim": []
+        }
+      }
+    },
+    "sink": {
+      "/HoudiniLayerInfo": {
+        "type": "HoudiniLayerInfo",
+        "attributes": {},
+        "relationships": {}
+      },
+      "/NativeMarker": {
+        "type": "Scope",
+        "attributes": {
+          "purpose": "default",
+          "test:output": 1,
+          "visibility": "inherited"
+        },
+        "relationships": {
+          "proxyPrim": []
+        }
+      }
+    },
+    "sentry": {
+      "/HoudiniLayerInfo": {
+        "type": "HoudiniLayerInfo",
+        "attributes": {},
+        "relationships": {}
+      },
+      "/NativeMarker": {
+        "type": "Scope",
+        "attributes": {
+          "purpose": "default",
+          "test:output": 0,
+          "visibility": "inherited"
+        },
+        "relationships": {
+          "proxyPrim": []
+        }
+      }
+    },
+    "merge": {
+      "/HoudiniLayerInfo": {
+        "type": "HoudiniLayerInfo",
+        "attributes": {},
+        "relationships": {}
+      },
+      "/NativeMarker": {
+        "type": "Scope",
+        "attributes": {
+          "purpose": "default",
+          "test:output": 1,
+          "visibility": "inherited"
+        },
+        "relationships": {
+          "proxyPrim": []
+        }
+      }
+    },
+    "fixture_output": {
+      "/HoudiniLayerInfo": {
+        "type": "HoudiniLayerInfo",
+        "attributes": {},
+        "relationships": {}
+      },
+      "/NativeMarker": {
+        "type": "Scope",
+        "attributes": {
+          "purpose": "default",
+          "test:output": 1,
+          "visibility": "inherited"
+        },
+        "relationships": {
+          "proxyPrim": []
+        }
+      }
+    }
+  }
+}
