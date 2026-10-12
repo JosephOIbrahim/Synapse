@@ -1,0 +1,33 @@
+{
+  "status": "TEMPLATE_NOT_CLEARED",
+  "commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "prepared_pins_sha256": "PARENT_MUST_INSERT_SEALED_PIN_SHA256",
+  "native_clearance": false,
+  "indie_clearance": false,
+  "live_gui_preserved_clearance": false,
+  "resource_owner_clearance": false,
+  "phases": [
+    "production"
+  ],
+  "run_id": "parent-chosen-fresh-run",
+  "not_before_unix": 0,
+  "expires_unix": 0,
+  "resource_snapshot": {
+    "checked_unix": 0,
+    "free_memory_bytes": 0,
+    "artifact_free_bytes": 0,
+    "cpu_load_percent": 100
+  },
+  "limits": {
+    "processes": 1,
+    "threads": 2,
+    "child_seconds": 120,
+    "aggregate_seconds": 180,
+    "memory_bytes": 8589934592,
+    "artifact_bytes": 67108864
+  },
+  "owner_note": "Fresh sole-owner graphical Indie, memory and desktop reservation; preserve existing Kestrel PID/scene/install; no interruption, reclaim or service changes. NEW allocation: sampled 8 GiB ceiling, fresh free physical RAM >=16 GiB. Prior 4 GiB v475 cap is unchanged.",
+  "handoff_launch_by_unix": 0,
+  "graphical_clearance": false,
+  "desktop_owner_clearance": false
+}

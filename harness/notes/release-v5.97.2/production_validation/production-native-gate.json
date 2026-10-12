@@ -1,0 +1,30 @@
+{
+  "commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "phase": "production",
+  "pid": 50588,
+  "status": "PASSED",
+  "candidate_imported": false,
+  "expected_build": "22.0.400",
+  "expected_category": "Indie",
+  "actual_build": "22.0.400",
+  "actual_version": [
+    22,
+    0,
+    400
+  ],
+  "actual_license_category": "licenseCategoryType.Indie",
+  "is_ui_available": true,
+  "python_version": "3.13.10 (main, Mar  4 2026, 17:45:46) [MSC v.1942 64 bit (AMD64)]",
+  "license_request": {
+    "HOUDINI_SCRIPT_LICENSE": "hbatch",
+    "HOUDINI_HYTHON_LIC_OPT": "--skip-license-modes=commercial,education,apprentice"
+  },
+  "native_environment": {
+    "HFS": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400",
+    "HB": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin",
+    "HHP": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\houdini\\python3.13libs",
+    "PATH_first": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\lib\\site-packages-forced\\PySide6"
+  },
+  "seat_scope": "HOM category is not a seat identifier; owner reserves separate graphical availability and protects GUI; no release/reclaim API used",
+  "actual_main_thread": true
+}

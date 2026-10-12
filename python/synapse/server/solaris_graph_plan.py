@@ -74,27 +74,29 @@ def _reject_live_cycles(bindings, paths, planned, hou):
 def _reject_cutting_splices(splices, planned):
     """An insert:true wire may only re-route a stream, never cut it.
 
-    For each splice (displaced, new_source, target, index) the displaced node
-    must feed the new source through this graph's planned wires -- i.e. the
-    new nodes sit between the displaced node and the target.
+    For each splice (displaced_socket, new_source, target, index) the exact
+    displaced (node path, output index) must feed the new source through this
+    graph's planned wires. Different outputs can carry different stages.
     """
     feeds = {}
     for link in planned:
-        feeds.setdefault(link["to"], set()).add(link["from"])
+        feeds.setdefault(link["to"], set()).add((link["from"], link["output"]))
     for displaced, new_source, target, index in splices:
         pending, visited = [new_source], set()
         while pending:
             path = pending.pop()
-            if path == displaced:
-                break
             if path not in visited:
                 visited.add(path)
-                pending.extend(feeds.get(path, ()))
+                upstream = feeds.get(path, ())
+                if displaced in upstream:
+                    break
+                pending.extend(source for source, _output in upstream)
         else:
             raise SynapseUserError(
-                "insert:true on %s input %d would cut %s out of the stream" % (target, index, displaced),
-                suggestion=("Wire %s into the first new node so the inserted nodes sit between it and %s. "
-                            "Nothing was changed." % (displaced, target)))
+                "insert:true on %s input %d would cut %s output %d out of the stream"
+                % (target, index, displaced[0], displaced[1]),
+                suggestion=("Wire %s output %d into the first new node so the inserted nodes sit between it and %s. "
+                            "Nothing was changed." % (displaced[0], displaced[1], target)))
 
 
 def observed_inputs(node):
@@ -161,7 +163,9 @@ def resolve_plan(parent, node_map, sorted_ids, connections, hou, resolve_existin
         if protected and "input" not in conn:
             # Reserve explicit slots first, so input order in the JSON cannot
             # make an implicit append steal a later explicit destination.
-            matching = [index for index, value in slots.items() if value == desired]
+            # An existing match is reusable only if no explicit wire reserves it.
+            matching = [index for index, value in slots.items()
+                        if value == desired and index not in reserved.get(target, set())]
             if matching:
                 index = min(matching)
             else:
@@ -194,7 +198,7 @@ def resolve_plan(parent, node_map, sorted_ids, connections, hou, resolve_existin
                                                "existing:true and mark the wire into the downstream one insert:true. "
                                                "Nothing was changed."))
         if splice:
-            splices.append((prior[0], desired[0], paths[target], index))
+            splices.append((prior, desired[0], paths[target], index))
         claimed.add(key)
         slots[index] = desired
         planned.append({"from_id": source, "to_id": target, "from": paths[source],

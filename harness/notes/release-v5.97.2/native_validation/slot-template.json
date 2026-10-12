@@ -1,0 +1,32 @@
+{
+  "status": "TEMPLATE_NOT_CLEARED",
+  "commit": "b7301f3f985d1c0a9876b8ee629472392422bc26",
+  "prepared_pins_sha256": "PARENT_MUST_INSERT_SEALED_PIN_SHA256",
+  "native_clearance": false,
+  "indie_clearance": false,
+  "live_gui_preserved_clearance": false,
+  "resource_owner_clearance": false,
+  "phases": [
+    "build",
+    "reopen"
+  ],
+  "run_id": "parent-chosen-fresh-run",
+  "not_before_unix": 0,
+  "expires_unix": 0,
+  "resource_snapshot": {
+    "checked_unix": 0,
+    "free_memory_bytes": 0,
+    "artifact_free_bytes": 0,
+    "cpu_load_percent": 100
+  },
+  "limits": {
+    "processes": 2,
+    "threads": 2,
+    "child_seconds": 120,
+    "aggregate_seconds": 300,
+    "memory_bytes": 4294967296,
+    "artifact_bytes": 67108864
+  },
+  "owner_note": "Parent must freshly reserve Indie-compatible headless availability and preserve the live GUI session; no seat release/reclaim/configuration change. HOM category cannot prove a separate physical seat allocation. Old slot expired.",
+  "handoff_launch_by_unix": 0
+}

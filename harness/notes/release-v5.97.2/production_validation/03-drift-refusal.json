@@ -1,0 +1,145 @@
+{
+  "commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "pid": 50588,
+  "phase": "03-drift-refusal",
+  "fault": [
+    {
+      "after_real_cook": true,
+      "actual_socket": {
+        "0": [
+          "/stage/production_bridge_fixture/source",
+          0
+        ]
+      },
+      "artifact": {
+        "path": "$RUN\\fault-injected-after-real-cook.json",
+        "sha256": "1e8c124459a2ddfee22b5f0e9fa5b24d89a1a1c872109295f8a4fa5305ae83bf"
+      }
+    }
+  ],
+  "before": {
+    "path": "$RUN\\before-fault-saved-reference.json",
+    "sha256": "a83aee55613c146bab995311079e4b4c2b683f6997cb1b9c0c0b1a2b83e1abc6"
+  },
+  "after": {
+    "path": "$RUN\\after-failure-outer-group-closed.json",
+    "sha256": "1e8c124459a2ddfee22b5f0e9fa5b24d89a1a1c872109295f8a4fa5305ae83bf"
+  },
+  "failure": {
+    "data": {
+      "_integrity": {
+        "agent": "HANDS",
+        "anchors_hold": true,
+        "composition": true,
+        "composition_applicable": true,
+        "composition_checks_reduced": false,
+        "consent": true,
+        "consent_applicable": true,
+        "delta_hash": "20df5525143ee196",
+        "execution_path": "mcp",
+        "external_change_detected": false,
+        "fidelity": 1.0,
+        "hash_target": "",
+        "operation": "build_from_manifest",
+        "scene_hash_after": "601383823676f6ad",
+        "scene_hash_before": "accf8ff3e86267cf",
+        "stage_hash_full_fidelity": true,
+        "stage_hash_mode": "full",
+        "thread": true,
+        "timestamp": "2026-10-12T09:24:59.433397",
+        "undo": true,
+        "undo_applicable": true
+      },
+      "outcome": {
+        "code": "tool.failed",
+        "dispatched": "yes",
+        "message": "Bridge: Final connection readback did not match /stage/production_bridge_fixture/inserted input 0 -- Inspect the network; no verified connection is claimed.",
+        "next": "Read the error; it names what failed.",
+        "outcome": "failed"
+      }
+    },
+    "error": "Bridge: Final connection readback did not match /stage/production_bridge_fixture/inserted input 0 -- Inspect the network; no verified connection is claimed.",
+    "id": "native-production-fault",
+    "protocol_version": "4.0.0",
+    "sequence": 0,
+    "success": false,
+    "timestamp": 1791811499.4407759
+  },
+  "save_effect": {
+    "strict_equal": false,
+    "difference_count": 1,
+    "differences": [
+      {
+        "path": "/graph/~1stage~1production_bridge_fixture~1inserted/user_data/___Version___",
+        "kind": "unexpected_field",
+        "actual": "22.0.400"
+      }
+    ],
+    "artifact": "$RUN\\checkpoint-save-effect-diff.json",
+    "sha256": "feeb6b5857a392c16e0ff1c490db73e9b0f74802211be53618fa900b8b9e0d74"
+  },
+  "checkpoint_sha256": "afe662a1f623914d2884414e3d21b6f01488ee02faaad946b65a601bd3e95518",
+  "labels_before": [
+    "SYNAPSE TEST: private artist history sentry",
+    "SYNAPSE: synapse_solaris_build_graph: {'parent': '/stage/production_bridge_fixture', 'frame': False, 'sections': False",
+    "hou.Node.setInput",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Node.setInput",
+    "hou.Node.createNode",
+    "Set user data",
+    "hou.NetworkMovableItem.setPosition",
+    "Change Comment",
+    "hou.Node.setInput",
+    "hou.Node.createNode",
+    "hou.Node.setParmTemplateGroup",
+    "Change Display Flag",
+    "hou.Node.setInput",
+    "hou.Node.createNode",
+    "hou.Node.setInput",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Node.setInput",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Node.createNode",
+    "hou.Node.createNode"
+  ],
+  "labels_after": [
+    "SYNAPSE: synapse_solaris_build_graph: {'parent': '/stage/production_bridge_fixture', 'frame': False, 'sections': False",
+    "SYNAPSE TEST: private artist history sentry",
+    "SYNAPSE: synapse_solaris_build_graph: {'parent': '/stage/production_bridge_fixture', 'frame': False, 'sections': False",
+    "hou.Node.setInput",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Node.setInput",
+    "hou.Node.createNode",
+    "Set user data",
+    "hou.NetworkMovableItem.setPosition",
+    "Change Comment",
+    "hou.Node.setInput",
+    "hou.Node.createNode",
+    "hou.Node.setParmTemplateGroup",
+    "Change Display Flag",
+    "hou.Node.setInput",
+    "hou.Node.createNode",
+    "hou.Node.setInput",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Node.setInput",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Parm.set",
+    "hou.Node.createNode",
+    "hou.Node.createNode",
+    "hou.Node.createNode"
+  ],
+  "post_fault_verified_delta": 0,
+  "automatic_product_restoration": "NOT_RESTORED_OUTER_GROUP; honest refusal"
+}

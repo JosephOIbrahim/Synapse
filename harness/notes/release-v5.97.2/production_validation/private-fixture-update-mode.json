@@ -1,0 +1,8 @@
+{
+  "commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "pid": 50588,
+  "phase": "private-fixture-update-mode",
+  "before": "updateMode.Manual",
+  "actual": "updateMode.AutoUpdate",
+  "scope": "Owned synthetic <=32-node CPU LOP fixture only; no render/simulation/live scene"
+}

@@ -554,6 +554,9 @@ def validate_graph(
     errors: List[str] = []
     warnings: List[str] = []
 
+    if display_node is not None and not isinstance(display_node, str):
+        return False, ["display_node must be a string node id or None"], warnings
+
     if not isinstance(nodes, list) or not isinstance(connections, list):
         return False, ["nodes and connections must be lists"], warnings
     if not nodes:
@@ -566,6 +569,8 @@ def validate_graph(
         if "existing" in spec and not isinstance(spec["existing"], bool):
             errors.append("Node '%s': existing must be a boolean" % spec["id"])
         if not spec.get("existing"):
+            if "parms" in spec and not isinstance(spec["parms"], dict):
+                errors.append("Node '%s': parms must be an object" % spec["id"])
             if not isinstance(spec.get("type"), str) or not spec["type"]:
                 errors.append("Node '%s' needs a node type" % spec["id"])
             name = spec.get("name") or spec["id"]
@@ -686,11 +691,10 @@ def _check_merge_input_gaps(connections: List[Dict[str, Any]]) -> List[str]:
     for nid, inputs in target_inputs.items():
         if len(inputs) > 1:
             sorted_inputs = sorted(inputs)
-            expected = list(range(sorted_inputs[0], sorted_inputs[-1] + 1))
-            if sorted_inputs != expected:
+            if any(right != left + 1 for left, right in zip(sorted_inputs, sorted_inputs[1:])):
                 warnings.append(
                     f"Node '{nid}' has input gap: indices {sorted_inputs} "
-                    f"(expected contiguous {expected})"
+                    f"(expected contiguous indices from {sorted_inputs[0]} to {sorted_inputs[-1]})"
                 )
 
     return warnings
@@ -907,6 +911,8 @@ class SolarisGraphMixin:
         template_name = payload.get("template", None)
         template_params = payload.get("template_params", {})
         dry_run = payload.get("dry_run", False)
+        if not isinstance(dry_run, bool):
+            raise SynapseUserError("dry_run must be a boolean")
         orientation = payload.get("layout", "vertical")
         relayout = payload.get("relayout", False)
         if orientation not in ("vertical", "horizontal"):
@@ -1323,6 +1329,30 @@ class SolarisGraphMixin:
                                 % (len({p for p, _ in fatal}),
                                    "; ".join("%s: %s" % (p, m) for p, m in fatal)))
                         badge_report["checked"] = True
+
+                    # Later layout/display/cook callbacks can change a wire.
+                    # Build the success receipt from the final observed sockets,
+                    # while a failure still follows the existing undo boundary.
+                    connections_made.clear()
+                    for link in plan["connections"]:
+                        target = id_to_hou[link["to_id"]]
+                        try:
+                            actual = observed_inputs(target).get(link["input"])
+                            desired = (id_to_hou[link["from_id"]].path(), link["output"])
+                        except SynapseUserError:
+                            raise
+                        except Exception as error:
+                            raise SynapseUserError(
+                                "Cannot verify final connection on %s input %d"
+                                % (target.path(), link["input"]),
+                                suggestion="Inspect the network; no verified connection is claimed.") from error
+                        if actual != desired:
+                            raise SynapseUserError(
+                                "Final connection readback did not match %s input %d"
+                                % (target.path(), link["input"]),
+                                suggestion="Inspect the network; no verified connection is claimed.")
+                        connections_made.append({"from": actual[0], "to": target.path(),
+                                                 "input": link["input"], "output": actual[1]})
 
             except Exception as build_exc:
                 # Safe undo fallback — the C++ undo layer for LOP nodes

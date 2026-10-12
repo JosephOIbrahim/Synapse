@@ -1,0 +1,15 @@
+# Original measured oracle/archive bytes must survive Git on every platform.
+# Raw CRLF JSON retains all normal whitespace checks, recognizing CR as EOL.
+# Executed controller is an immutable archive, never the runnable source.
+after-apply.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+after-artist-undo.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+after-failure-outer-group-closed.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+after-preview.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+after-repeat.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+artist-undo-restoration-diff.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+baseline-before-preview.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+before-fault-saved-reference.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+fault-injected-after-real-cook.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+preview-diff.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+repeat-diff.json -text -eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+run_when_coordinated.ps1.txt -text -eol -diff

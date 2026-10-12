@@ -1,0 +1,37 @@
+{
+  "commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "pid": 50588,
+  "phase": "02-positive-outcomes",
+  "baseline": {
+    "path": "$RUN\\baseline-before-preview.json",
+    "sha256": "df147acbf88e92fb824b55fb0c6c37757cbda365bfd1e9716f4a7ba7b7a295a1"
+  },
+  "preview": {
+    "path": "$RUN\\after-preview.json",
+    "sha256": "df147acbf88e92fb824b55fb0c6c37757cbda365bfd1e9716f4a7ba7b7a295a1"
+  },
+  "preview_diff": {
+    "strict_equal": true,
+    "difference_count": 0,
+    "differences": [],
+    "artifact": "$RUN\\preview-diff.json",
+    "sha256": "6e878a73add89f1e6315a25b6c955d58abdb1886efe62ad8ebc32e581de9b7f2"
+  },
+  "apply": {
+    "path": "$RUN\\after-apply.json",
+    "sha256": "3f03670ccb0f08ccba42a63b531c5e3c0cc70de83a24a972c0e3cf8737d1df5b"
+  },
+  "repeat": {
+    "path": "$RUN\\after-repeat.json",
+    "sha256": "3f03670ccb0f08ccba42a63b531c5e3c0cc70de83a24a972c0e3cf8737d1df5b"
+  },
+  "repeat_diff": {
+    "strict_equal": true,
+    "difference_count": 0,
+    "differences": [],
+    "artifact": "$RUN\\repeat-diff.json",
+    "sha256": "6e878a73add89f1e6315a25b6c955d58abdb1886efe62ad8ebc32e581de9b7f2"
+  },
+  "native_socket_checks": "PASS",
+  "native_usd_checks": "PASS"
+}

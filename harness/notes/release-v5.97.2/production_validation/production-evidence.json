@@ -1,0 +1,280 @@
+{
+  "schema": "synapse-graphical-production-evidence/1",
+  "status": "SCOPED_PRODUCTION_NATIVE_PASS",
+  "tested_commit": "945df057aa1e6b3f4849d80332f762bf56911ca2",
+  "release_version": "5.97.2",
+  "actor": "External Codex preparation/evaluation, independently reviewed; no installation self-training",
+  "run": "v486",
+  "build": "22.0.400",
+  "python": "3.13.10",
+  "licence_category": "Indie",
+  "ui_available": true,
+  "main_thread": true,
+  "candidate_imported_before_gate": false,
+  "candidate_source_files_pinned": 6060,
+  "actual_module_origins_verified": 200,
+  "checks": {
+    "preview_graph_usd_history": "PASS",
+    "apply_socket_usd": "PASS",
+    "repeat_full_state": "PASS",
+    "final_drift_refusal": "PASS",
+    "artist_undo_restoration": "PASS"
+  },
+  "native_pid": 50588,
+  "exit_code": 0,
+  "controller_seconds": 33.9723981,
+  "child": {
+    "phase": "production",
+    "pid": 50588,
+    "exit_code": 0,
+    "wall_seconds": 32.716631,
+    "max_private_bytes": 6199967744,
+    "max_working_bytes": 2686578688,
+    "limit_reason": null
+  },
+  "probe_seconds": 5.778738300024997,
+  "limits": {
+    "processes": 1,
+    "threads": 2,
+    "child_seconds": 120,
+    "aggregate_seconds": 180,
+    "memory_bytes": 8589934592,
+    "artifact_bytes": 67108864
+  },
+  "mode_restored": true,
+  "calls": [
+    {
+      "name": "preview",
+      "success": true,
+      "status": "preview",
+      "wall_seconds": 0.0897732000448741
+    },
+    {
+      "name": "apply",
+      "success": true,
+      "status": "created",
+      "wall_seconds": 0.006199199997354299
+    },
+    {
+      "name": "repeat",
+      "success": true,
+      "status": "unchanged",
+      "wall_seconds": 0.002762200019787997
+    },
+    {
+      "name": "fault",
+      "success": false,
+      "status": null,
+      "wall_seconds": 0.007740499975625426
+    },
+    {
+      "name": "recovery-repeat",
+      "success": true,
+      "status": "unchanged",
+      "wall_seconds": 0.003131599980406463
+    }
+  ],
+  "bridge_stats": {
+    "operations_total": 5,
+    "operations_verified": 4,
+    "anchor_violations": 0,
+    "success_rate": 0.8,
+    "log_size": 5,
+    "log_capacity": 1000,
+    "per_agent": {
+      "HANDS": 5
+    },
+    "per_agent_verified": {
+      "HANDS": 4
+    },
+    "per_agent_success_rate": {
+      "HANDS": 0.8
+    },
+    "per_operation_type": {
+      "build_from_manifest": 5
+    },
+    "session_id": "bridge_20261012_092458",
+    "stage_hash_reduced_ops": 0,
+    "composition_checks_reduced_ops": 0
+  },
+  "post_fault_verified_delta": 0,
+  "automatic_product_restoration": "NOT_RESTORED_OUTER_GROUP; honest refusal; artist undo restores",
+  "scope_note": "Original producer scope header predates GUI approval; actual persisted gate establishes isolated graphical execution. Natural callbacks/live transport remain unqualified.",
+  "prepared_pins_sha256": "58b4a55209d0ff544fdbfe05ae461511a07be129452a1e59d09447b3ebaca396",
+  "owner_receipt_sha256": "eff11ca50eb523682c606653d9c993d3a57e7a37ea137b86c470bab73fc53c20",
+  "reconciled_receipt_sha256": "0f5631650b010dce1182feb8bdd2f1fe0240fce5b4aac4bdfb768d617332f186",
+  "independent_review": "GO after raw gate/module/state/history/counter verification",
+  "wrapper_mismatch": {
+    "raw_status": "PINNED_CONTROLLER_FAILED_OR_BLOCKED",
+    "raw_controller_exit_code": null,
+    "raw_sha256": "f511560c3870172e23ac1d63339e718106baaee078ca7b9b3d94717cf7c8fa82",
+    "cause": "Successful PowerShell script did not set LASTEXITCODE; native/controller receipts PASS; raw preserved, no rerun"
+  },
+  "owner_postflight": {
+    "reported_saved_unchanged": true,
+    "test_and_waiter_exited": true,
+    "installed_version_unchanged": "5.97.1",
+    "licences_recovered": true,
+    "physical_seat_identity": "NOT_CLAIMED",
+    "closure_sha256": "2a41f08182190addee056691accb08e3a24c96cd258a6de5d60a1ac477aa6f7c",
+    "observed_utc": "2026-10-12T13:27:50.7894035Z",
+    "confirmed_installed_unchanged": true,
+    "licence_usage_matches_pre_admission": true
+  },
+  "executed_producer_hashes": {
+    "worker": "73a4fbce4ea9b379d2fba652ac2126e0f806b35b610e85f4f3b351612d55823b",
+    "entry": "676b46b4f42d19628e1b050b6dcbae0ca5d85ddc49a1adddea51b280567c5004",
+    "controller": "ed1bdf5bcf8c77daa0128437e87ae99b3b066e8e0a60cdfa0835fa6ec82d4189",
+    "wrapper": "5b2b3b9ec4c4265b3e315fe93e2c7e8a1c5e5da3aed9c0a7424ca5953c2ce216"
+  },
+  "public_reproduction": {
+    "native": "UNRUN_ADAPTATION",
+    "worker_sha256": "d67da44eaf96aa70723f8508c71247d6a5c39fbe517fdb3930422de0e1b94073",
+    "entry_sha256": "3e3027b92b201390980a60cbebdf70245c5dec4ef52f50299eb13fd68f6a6c78",
+    "controller_sha256": "1288441ba97537addf4ae4653ccab63da528dd19b98025ef6d9d23579ba5755c",
+    "original_controller_archive_sha256": "ed1bdf5bcf8c77daa0128437e87ae99b3b066e8e0a60cdfa0835fa6ec82d4189",
+    "changes": "One installed user-root constant becomes Path.home; controller appends explicit exit0; adapted source uses Git LF and empty blank lines. Full run_case AST and controller assertions unchanged. Adaptation native UNRUN."
+  },
+  "earlier_attempts_preserved": {
+    "v470": "Headless production import unavailable; original caught exception absent",
+    "v472": "Actual hdefereval GUI-only guard; missing-future hypothesis disproved",
+    "v475": "4GiB GUI startup memory limit, no gate",
+    "v482": "GUI PATH-first inherited headless expectation, no candidate imports",
+    "v484": "GUI identity PASS, private fixture unevaluated in manual mode"
+  },
+  "unverified": [
+    "Natural GUI callbacks and transport",
+    "whole-catalog/strict probe battery",
+    "new installer or physical seat identity",
+    "copied-scene net benefit",
+    "live installation switch"
+  ],
+  "artifacts": [
+    {
+      "path": "baseline-before-preview.json",
+      "raw_sha256": "df147acbf88e92fb824b55fb0c6c37757cbda365bfd1e9716f4a7ba7b7a295a1",
+      "published_sha256": "df147acbf88e92fb824b55fb0c6c37757cbda365bfd1e9716f4a7ba7b7a295a1",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "after-preview.json",
+      "raw_sha256": "df147acbf88e92fb824b55fb0c6c37757cbda365bfd1e9716f4a7ba7b7a295a1",
+      "published_sha256": "df147acbf88e92fb824b55fb0c6c37757cbda365bfd1e9716f4a7ba7b7a295a1",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "after-apply.json",
+      "raw_sha256": "3f03670ccb0f08ccba42a63b531c5e3c0cc70de83a24a972c0e3cf8737d1df5b",
+      "published_sha256": "3f03670ccb0f08ccba42a63b531c5e3c0cc70de83a24a972c0e3cf8737d1df5b",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "after-repeat.json",
+      "raw_sha256": "3f03670ccb0f08ccba42a63b531c5e3c0cc70de83a24a972c0e3cf8737d1df5b",
+      "published_sha256": "3f03670ccb0f08ccba42a63b531c5e3c0cc70de83a24a972c0e3cf8737d1df5b",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "before-fault-saved-reference.json",
+      "raw_sha256": "a83aee55613c146bab995311079e4b4c2b683f6997cb1b9c0c0b1a2b83e1abc6",
+      "published_sha256": "a83aee55613c146bab995311079e4b4c2b683f6997cb1b9c0c0b1a2b83e1abc6",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "fault-injected-after-real-cook.json",
+      "raw_sha256": "1e8c124459a2ddfee22b5f0e9fa5b24d89a1a1c872109295f8a4fa5305ae83bf",
+      "published_sha256": "1e8c124459a2ddfee22b5f0e9fa5b24d89a1a1c872109295f8a4fa5305ae83bf",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "after-failure-outer-group-closed.json",
+      "raw_sha256": "1e8c124459a2ddfee22b5f0e9fa5b24d89a1a1c872109295f8a4fa5305ae83bf",
+      "published_sha256": "1e8c124459a2ddfee22b5f0e9fa5b24d89a1a1c872109295f8a4fa5305ae83bf",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "after-artist-undo.json",
+      "raw_sha256": "a83aee55613c146bab995311079e4b4c2b683f6997cb1b9c0c0b1a2b83e1abc6",
+      "published_sha256": "a83aee55613c146bab995311079e4b4c2b683f6997cb1b9c0c0b1a2b83e1abc6",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "preview-diff.json",
+      "raw_sha256": "6e878a73add89f1e6315a25b6c955d58abdb1886efe62ad8ebc32e581de9b7f2",
+      "published_sha256": "6e878a73add89f1e6315a25b6c955d58abdb1886efe62ad8ebc32e581de9b7f2",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "repeat-diff.json",
+      "raw_sha256": "6e878a73add89f1e6315a25b6c955d58abdb1886efe62ad8ebc32e581de9b7f2",
+      "published_sha256": "6e878a73add89f1e6315a25b6c955d58abdb1886efe62ad8ebc32e581de9b7f2",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "artist-undo-restoration-diff.json",
+      "raw_sha256": "6e878a73add89f1e6315a25b6c955d58abdb1886efe62ad8ebc32e581de9b7f2",
+      "published_sha256": "6e878a73add89f1e6315a25b6c955d58abdb1886efe62ad8ebc32e581de9b7f2",
+      "raw_bytes_unchanged": true
+    },
+    {
+      "path": "production-native-gate.json",
+      "raw_sha256": "f00e926c1f384b7c27cb901d299b0dbf553f60b581732565d65afd33e9813e5e",
+      "published_sha256": "63b7542f408123ba79af5914ee49d2e668aec1e041c4eee4fac790cbe7978f70",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    },
+    {
+      "path": "production-import-availability.json",
+      "raw_sha256": "b17785817f4120934c0330b40bed8730f391e4e119da7d14a5c605cc890d3c60",
+      "published_sha256": "4c975fe284c42464de079ab8a4b841ccae3a58a5e5fabb562af16dba55efd5c5",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    },
+    {
+      "path": "01-real-package.json",
+      "raw_sha256": "aa8389b15ee79a411bb2e3016eea50cceedf9766dcb3c80ceaee636e06ef2405",
+      "published_sha256": "58b0eb4f72d98488a0b1f33ce2aa4de37a891526127fe239d43239f305cda49e",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    },
+    {
+      "path": "02-positive-outcomes.json",
+      "raw_sha256": "f1fa7dbe57d88d1df0957024c3eb4a1feb41fc539faa7f9bab1f2709d08f5267",
+      "published_sha256": "b8157563f36da6a9e0a108a7126994b5cb44bf2747895f92f19a54399b3b3caa",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    },
+    {
+      "path": "03-drift-refusal.json",
+      "raw_sha256": "7238f121409f907acc660d5fc08d2ef4ea3067ce1c95b1249f10c223af23588d",
+      "published_sha256": "e2a99d0d579d5e355ea1aeb38faca53d68b074d435798f70043386acbf1e4879",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    },
+    {
+      "path": "04-artist-recovery.json",
+      "raw_sha256": "004a2e9f9b00e2ff589f454ebd0246839cdda8af12c9de3e9c52d61f4de8394d",
+      "published_sha256": "f59ca89c624376d50d72c6b3bc569c57c90760226b72f8178c2ef14f8606e8a3",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    },
+    {
+      "path": "production.json",
+      "raw_sha256": "a982723bdcc753361d93f1c4aba1639a597e729a868a149346d26b6a100e393c",
+      "published_sha256": "cfe28da8a9af26bf4efce02086fb38a4a6a4a332b4e2780d6e26431907df5936",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    },
+    {
+      "path": "controller.json",
+      "raw_sha256": "86c3e53db27e3889044a610f2d2796f2cde1c3d11093188e27715f0cbd4ae9e7",
+      "published_sha256": "9b219c37f1c154ff59be2bfc8bf85ccb053424190360fb8ea9cea21d90da6ee1",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    },
+    {
+      "path": "private-fixture-update-mode.json",
+      "raw_sha256": "3f29347ee92c54ec35dfda0b77014b5b30876b1b7f256d55efa22189a4307aa7",
+      "published_sha256": "28a7a5990d87b62932b0f9eb6224ed4d76006cd3bd94cc3a9841d5232832b27f",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    },
+    {
+      "path": "private-python-search-path.json",
+      "raw_sha256": "d1f37b1b5dafc8a795e5a9805a2c818b98896797daa134595fdbee520bb7fa1b",
+      "published_sha256": "686c7f40a6ee57e4cfa3609d6181bad9f6b733e043402876ffa7ebfcd0673d39",
+      "sanitization": "Owned filesystem reference prefixes and repository LF serialization only; no outcome/state removal"
+    }
+  ]
+}
