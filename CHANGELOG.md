@@ -2,6 +2,13 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.97.2 - Safer Solaris wiring
+
+Source release; no new Windows Setup. Seven reviewed builder fixes preserve displaced output sockets, reserve explicit merge inputs, reject malformed display/preview/parameter controls, bound sparse-gap diagnostics and verify final observed wires.
+
+**Measured on exact source `b7301f3f985d1c0a9876b8ee629472392422bc26`:** 21 preflight controls, seven native graph/USD cases, three actual product rollbacks and seven fresh-process reopen/replays passed in headless H22.0.400. All snapshot fields remain; restoration/replay use the actual saved-state boundary. [Release notes](docs/releases/v5.97.2.md) and [sanitized reproducible evidence](harness/notes/release-v5.97.2/native_validation/native-evidence.json).
+
+Production package/panel/transport/bridge runtime, outer GUI undo groups and copied-scene benefit are not established by the scoped native assay. Native code and its loaded dependency closure are unchanged by the release metadata.
 ## Unreleased — backfill: BLOCKS, deterministic scene setups
 
 *Documentation only; nothing that runs changed. The BLOCKS engine landed on master at `87927076` (2026-08-06) and first shipped in **v5.43.0** (`git tag --contains 87927076 -l 'v*' | sort -V | head -1`); the M5b rulings closed on top of it (`harness/notes/receipts/M5b.json`, status green). This changelog never recorded either: at v5.70.1 (`329bd5b3`, the tree before this entry) a case-sensitive `git grep -nE '\bBLOCKS\b|apply_fixture' 329bd5b3 -- CHANGELOG.md` returned nothing while the code shipped. Salvaged from the unmerged `rope/gate-a` branch per `harness/notes/closeout-2026-09-15/PLAN.md` (rope/gate-a, Salvage 1), every claim re-checked against the tree at v5.70.1; what was not re-checked is marked.*

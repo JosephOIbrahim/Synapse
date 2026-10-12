@@ -1,0 +1,93 @@
+{
+  "schema": "scoped-solaris-native-inputs/1",
+  "tested_commit": "b7301f3f985d1c0a9876b8ee629472392422bc26",
+  "baseline": "54cbe14264c29792678d9fd12a11b36ac5f2fd90",
+  "source_files": [
+    {
+      "path": "python/synapse/core/aliases.py",
+      "sha256": "977bd70b95acb0dfe3671f9c048009b583a3fc3ab4561d0df320863adc63c025"
+    },
+    {
+      "path": "python/synapse/core/errors.py",
+      "sha256": "66e3fdf3865033d8a2aae0b3609050832856415d9f3ef6a7d7a811bb31336400"
+    },
+    {
+      "path": "python/synapse/core/tool_results.py",
+      "sha256": "8541461bb921f766a377e1b409f9f08767dd6228e082ae3cef1cd9020aa27cdc"
+    },
+    {
+      "path": "python/synapse/core/usd_punycode.py",
+      "sha256": "b932fb2f17c87404316f5e9eb0208193c42c69b678e1d800b89093533be278ce"
+    },
+    {
+      "path": "python/synapse/routing/solaris_recipes.py",
+      "sha256": "b3b197c5b60046daa3c54f9cbc3f33b4f29ec83ce52dee9377ef30379823435a"
+    },
+    {
+      "path": "python/synapse/server/handler_helpers.py",
+      "sha256": "ff834d0fc3d9b71f32a6c5e1d2bea1417db7ce05d8d0915c3ef64c9b8badabdc"
+    },
+    {
+      "path": "python/synapse/server/handlers_solaris_assemble.py",
+      "sha256": "edb462f2e20376a960c41ab5f4a6a918688e947a1ca8ba258e3ab4d3ef13fa04"
+    },
+    {
+      "path": "python/synapse/server/handlers_solaris_graph.py",
+      "sha256": "8479339fb85f8e902d9c792af96be1773efd94877459a6e6cf23e3aa7a8c1c55"
+    },
+    {
+      "path": "python/synapse/server/main_thread.py",
+      "sha256": "5f0a2b0da52e08f676d1dbc75ebfad5174ac3022aa195b744f00ec8747c0b62f"
+    },
+    {
+      "path": "python/synapse/server/marshal_guard.py",
+      "sha256": "f3a749eae4be02b42d5eda5d2f5d28155e0700e14f2df0add05b67f3094615c8"
+    },
+    {
+      "path": "python/synapse/server/solaris_graph_plan.py",
+      "sha256": "e8340800974dae482633fa156567fe3defdb3ea4bd46a33942aacd9f34ace90a"
+    },
+    {
+      "path": "python/synapse/server/solaris_graph_templates.py",
+      "sha256": "695809d39df9442c7c8faa66db0e8c4bfa0a6f7cffa48ccef21ebc44838144c9"
+    },
+    {
+      "path": "python/synapse/server/update_mode.py",
+      "sha256": "560d36e515e175e52535258771ad8aa620b31ce0c36bc03dc22767811676119c"
+    },
+    {
+      "path": "tests/test_solaris_evolution_regressions.py",
+      "sha256": "3a81141be4151d91d45cf965e3af59b5dfbdd575132c7e35353f0b3be533d40a"
+    }
+  ],
+  "runtime_files": [
+    {
+      "relative_to_hfs": "python313/python.exe",
+      "sha256": "fbe2a8e3f53ff04d2183310b2e8100a8e45097a51a7ceee3507ca40275f49959"
+    },
+    {
+      "relative_to_hfs": "python313/python313.dll",
+      "sha256": "f2f7c9a5a821312b95e20ae2bd4c4917d5c331718230a3b2ed72781b2f86cedf"
+    },
+    {
+      "relative_to_hfs": "houdini/python3.13libs/hou.py",
+      "sha256": "bd0b0564496570f99c068551dc3845ba203c5705e5083abf58656adeae8fe919"
+    },
+    {
+      "relative_to_hfs": "houdini/python3.13libs/_hou.pyd",
+      "sha256": "8fee952b02a2bbc6b78518178aaf063836c2d67974b67e8cbf25ceab380f1f36"
+    },
+    {
+      "relative_to_hfs": "bin/hserver.exe",
+      "sha256": "9cc44bef56f603d646ab77c4a3ad3050481121f8073463e9ef35ca501c895877"
+    },
+    {
+      "relative_to_hfs": "bin/libTBBPROXY.dll",
+      "sha256": "ca4fcb44642f447e735e4a22e756fa2ea15e6744d24711cd1ff1254fcf64819e"
+    },
+    {
+      "relative_to_hfs": "bin/tbb12.dll",
+      "sha256": "ab3483c1cc0c979992301dec3b7c469b837b0648d4fe9c505f27495127ddf655"
+    }
+  ]
+}

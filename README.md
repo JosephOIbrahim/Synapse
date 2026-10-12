@@ -4,25 +4,25 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.97.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.1 is Latest</sub></p>
+<p align="center"><sub>v5.97.2 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.2 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Install](docs/getting-started/installation.md)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.97.1.md)
+**[Install](docs/getting-started/installation.md)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.97.2.md)
 
 ## Start here
 
-**The current release is v5.97.1, and it installs from source.** It runs on **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md).
+**The current release is v5.97.2, and it installs from source.** It runs on **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md).
 
-**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the panel as of v5.86.0, with its JEV and SideFX library changes, but not the changes in v5.87.0 through v5.97.1. Spatial, the Render footer row and the Scatter recipe that reads the scene need the v5.97.1 source install.
+**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the panel as of v5.86.0, with its JEV and SideFX library changes, but not the changes in v5.87.0 through v5.97.2. Spatial, the Render footer row and the Scatter recipe that reads the scene need the v5.97.2 source install.
 
 The Setup is unsigned, so check it against that release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt) before you run it.
 
 **Pick one path, then follow these four steps.**
 
-1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.97.1, or run the v5.86.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
+1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.97.2, or run the v5.86.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
 2. Restart Houdini. Open **New Pane Tab → Synapse**.
 3. Open **Connect models**. Choose a provider and model; add its key if needed.
 4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
@@ -57,6 +57,34 @@ flowchart LR
 **Undo covers a recorded operation.** It does not reverse a whole conversation or files written to disk. A failed build can leave partial nodes until you deliberately undo them.
 
 The normal panel worker blocks node deletion, arbitrary Python/VEX, rendering, exporting and PDG cooking. See [tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries).
+
+## Safer Solaris wiring
+
+**An insertion keeps the exact upstream output.** Existing merge inputs reserve explicit slots before appending other wires.
+
+**Invalid requests stop before scene changes.** Preview must be a boolean. Managed parameters must be an object. A supplied display selector must be a node name.
+
+**Verified connections come from the final wires.** If a later cook changes a wire, the builder reports an error instead of returning a stale success receipt.
+
+```mermaid
+flowchart LR
+    accTitle: A Solaris graph request is checked before it changes the scene
+    accDescr: Check the request and existing sockets. An invalid request is refused without an edit. Preview returns a plan without an edit. Apply builds on Houdini's thread and reads the final connections. A mismatch reports an error; a match returns verified connections.
+    C["Check request +<br/>existing sockets"] -->|"invalid"| N["Refuse<br/>without edits"]
+    C -->|"preview"| P["Plan only<br/>without edits"]
+    C -->|"apply"| A["Build on<br/>Houdini's thread"]
+    A --> F["Read final<br/>connections"]
+    F -->|"match"| V["Verified<br/>connections"]
+    F -->|"mismatch"| E["Error<br/>inspect the scene"]
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    class C,A,F synapse
+    class N,P,V,E artist
+    linkStyle default stroke:#D07020
+```
+
+The scoped native checks ran in fresh headless Houdini sessions. They do not establish interactive panel behavior or a complex scene's time savings. See [release notes and evidence](docs/releases/v5.97.2.md#what-was-measured).
 
 ## Build from a verified recipe
 
@@ -157,7 +185,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.97.1.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.97.2.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -199,7 +227,7 @@ Moneta's USD mirror is an inspection view, not the storage owner. Missing servic
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
-**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.1.md) before relying on it.
+**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.2.md) before relying on it.
 
 </details>
 

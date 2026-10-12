@@ -1,0 +1,184 @@
+{
+  "schema": "scoped-solaris-native-evidence/1",
+  "status": "SCOPED_NATIVE_PASS",
+  "tested_commit": "b7301f3f985d1c0a9876b8ee629472392422bc26",
+  "baseline": "54cbe14264c29792678d9fd12a11b36ac5f2fd90",
+  "tested_tree": "7c08dfcad035551d31f6277c30486a92e6eb5c48",
+  "release_version": "5.97.2",
+  "actor": "External Codex preparation and evaluation",
+  "houdini_build": "22.0.400",
+  "python": "3.13.10",
+  "usd_version": [
+    0,
+    26,
+    5
+  ],
+  "licence_category": "Indie",
+  "headless": true,
+  "main_thread": true,
+  "preflight_controls": 21,
+  "positive_and_recovered_cases": 7,
+  "native_product_rollbacks": 3,
+  "fresh_process_reopen_replays": 7,
+  "handler_calls": {
+    "build": 45,
+    "reopen": 28,
+    "total": 73
+  },
+  "controller_wall_seconds": 5.6373359,
+  "children": [
+    {
+      "phase": "build",
+      "exit_code": 0,
+      "wall_seconds": 2.6950997,
+      "max_private_bytes": 393867264,
+      "max_working_bytes": 401559552,
+      "limit_reason": null
+    },
+    {
+      "phase": "reopen",
+      "exit_code": 0,
+      "wall_seconds": 2.67365,
+      "max_private_bytes": 393838592,
+      "max_working_bytes": 402350080,
+      "limit_reason": null
+    }
+  ],
+  "controls_by_fix": {
+    "1": 1,
+    "3": 9,
+    "4": 1,
+    "5": 6,
+    "6": 4
+  },
+  "product_rollback_gate": "PASS",
+  "recovery": [
+    {
+      "kind": "wrong_output",
+      "product_rollback": "RESTORED",
+      "undo_enabled": true,
+      "undo_history_unchanged": true,
+      "full_state_restored": true,
+      "tester_checkpoint_recovery": "PASS",
+      "repeat": "unchanged"
+    },
+    {
+      "kind": "wrong_source",
+      "product_rollback": "RESTORED",
+      "undo_enabled": true,
+      "undo_history_unchanged": true,
+      "full_state_restored": true,
+      "tester_checkpoint_recovery": "PASS",
+      "repeat": "unchanged"
+    },
+    {
+      "kind": "disconnected",
+      "product_rollback": "RESTORED",
+      "undo_enabled": true,
+      "undo_history_unchanged": true,
+      "full_state_restored": true,
+      "tester_checkpoint_recovery": "PASS",
+      "repeat": "unchanged"
+    }
+  ],
+  "reopen_replay": [
+    {
+      "case": "managed_preview_repeat",
+      "reopen": "PASS",
+      "replay": "PASS",
+      "different_process": true,
+      "full_state_differences": 0
+    },
+    {
+      "case": "splice",
+      "reopen": "PASS",
+      "replay": "PASS",
+      "different_process": true,
+      "full_state_differences": 0
+    },
+    {
+      "case": "merge_0",
+      "reopen": "PASS",
+      "replay": "PASS",
+      "different_process": true,
+      "full_state_differences": 0
+    },
+    {
+      "case": "merge_1",
+      "reopen": "PASS",
+      "replay": "PASS",
+      "different_process": true,
+      "full_state_differences": 0
+    },
+    {
+      "case": "recovery_wrong_output",
+      "reopen": "PASS",
+      "replay": "PASS",
+      "different_process": true,
+      "full_state_differences": 0
+    },
+    {
+      "case": "recovery_wrong_source",
+      "reopen": "PASS",
+      "replay": "PASS",
+      "different_process": true,
+      "full_state_differences": 0
+    },
+    {
+      "case": "recovery_disconnected",
+      "reopen": "PASS",
+      "replay": "PASS",
+      "different_process": true,
+      "full_state_differences": 0
+    }
+  ],
+  "raw_report_sha256": {
+    "build": "6c1ccd7954844a277fdfaf10c53c184162d8c1a0c0a39d00b5a16bcaa54649ba",
+    "reopen": "6cb8de0739516f4aefe0f4d0686649bbf798ea20e6821fe22f7fca38a71dcfe8",
+    "controller": "740c555552dc039814e535b05407c7a21101fa90c78a97240d498e4b10ffb0b9"
+  },
+  "executed_prepared_manifest_sha256": "773fc255f79eb41922df319b680e0802053ac40cf1ad0ee125cba332d0a1b6e5",
+  "producer_sha256": {
+    "native_probe.py": "cc588b26c890c75415e69c446892645f5db7aebf3f28cadc433c5dbeea88a8c9",
+    "run_when_coordinated.ps1": "70c5c4f3a7d318081d6e3d596967dcb3b8a37aa4698a6f2b726260039d6766ea",
+    "subject_loader.py": "0806599feba02282de83a874df5146ecab5653f1637ba5693060daf349c1ebe4"
+  },
+  "limits": {
+    "processes": 2,
+    "threads": 2,
+    "child_seconds": 120,
+    "aggregate_seconds": 300,
+    "sampled_memory_bytes": 4294967296,
+    "artifact_bytes": 67108864,
+    "nodes_per_fixture": 32
+  },
+  "snapshot_policy": "All fields retained; compare actual saved-checkpoint and saved-replay states. Pre-save state and all save-effect diffs retained.",
+  "installation_changed": false,
+  "private_scene_assets_included": false,
+  "benchmark_benefit": "UNMEASURED",
+  "production_release_approval": false,
+  "not_qualified": [
+    "Production package startup/panel/transport/dispatcher/bridge runtime",
+    "Natural GUI callbacks and outer undo groups",
+    "Nonempty unrelated artist undo history",
+    "Conflicting merge opinion-strength variants",
+    "Whole catalog/strict companion battery",
+    "Installer/seat qualification",
+    "Copied-scene net benefit"
+  ],
+  "prior_attempts": [
+    {
+      "stage": "initialization",
+      "verdict": "FAILED before candidate import; child PATH and executor socket access corrected"
+    },
+    {
+      "stage": "sparse-port control",
+      "verdict": "HARNESS assertion expected input rather than valid port-count diagnostic"
+    },
+    {
+      "stage": "checkpoint equality",
+      "verdict": "HARNESS captured pre-save reference; eight native version metadata additions independently measured"
+    }
+  ],
+  "reproduction": "Use the exact copied producer, input-pins.json and prepare_packet.py; fresh owner slot and reviewed execution required. No expired/private receipt is shipped."
+}
