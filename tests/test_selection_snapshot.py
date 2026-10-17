@@ -358,3 +358,16 @@ def test_handler_keeps_main_thread_dispatch_and_forwards_fields(monkeypatch):
     assert capture["payload"]["node_paths"] == ["/stage/a"]
     assert capture["payload"]["include_geometry"] is False
     assert capture["payload"]["depth"] == 0
+
+
+def test_child_category_is_advisory_not_a_topology_or_creation_pin(host):
+    """Additive metadata does not silently redefine existing topology pins."""
+    native, values = host
+    before = introspection.inspect_selection()
+    values["a"].childTypeCategory = lambda: SimpleNamespace(name=lambda: "Sop")
+    after = introspection.inspect_selection()
+    assert after["nodes"][0]["child_category"] == {
+        "status": "available", "name": "Sop", "reason": None}
+    assert after["topology_hash"] == before["topology_hash"]
+    assert after["can_pin"] == before["can_pin"]
+    assert after["complete"] == before["complete"]

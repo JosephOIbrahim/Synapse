@@ -174,7 +174,7 @@ git checkout <your-branch>
 git branch master origin/master     # test_d_track + test_perf_ratchet anchor on master
 
 uv venv --python 3.14 .venv && uv pip install --python .venv/Scripts/python.exe -e ".[dev,websocket,mcp]"
-uv pip install --python .venv/Scripts/python.exe C:/path/to/Moneta   # the v1.2.0-rc3 pin
+uv pip install --python .venv/Scripts/python.exe C:/path/to/Moneta   # exact c33bbd96dd9c21d84096f147554eaaa3e2197a92 source
 
 .venv/Scripts/python.exe -m pytest tests/ -m "not needs_houdini" -rs
 ```

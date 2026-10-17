@@ -176,12 +176,15 @@ def _make_geometry(points=10, prims=5, vertices=20):
 class TestNodeBasic:
     def test_returns_path_type_name_category(self):
         node = _make_node("/obj/geo1/mountain1", "mountain", "Sop")
+        node.childTypeCategory.return_value = None
         result = introspection._node_basic(node)
         assert result == {
             "path": "/obj/geo1/mountain1",
             "name": "mountain1",
             "type": "mountain",
             "category": "Sop",
+            "child_category": {"status": "none", "name": None,
+                               "reason": "Node reports no child type category."},
         }
 
 

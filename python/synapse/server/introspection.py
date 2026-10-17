@@ -33,12 +33,14 @@ DEPTH_CAP = 5
 # ---------------------------------------------------------------------------
 
 def _node_basic(node) -> Dict[str, Any]:
-    """Path, type, name, and network category for a node."""
+    """Identity, own category, and separately observed creatable child category."""
+    from synapse.server.selection_snapshot import child_category_fact
     return {
         "path": node.path(),
         "name": node.name(),
         "type": node.type().name(),
         "category": node.type().category().name(),
+        "child_category": child_category_fact(node),
     }
 
 

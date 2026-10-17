@@ -8,12 +8,15 @@ inspection precondition, never a mutation sandbox or a scene revision lock.
 from collections import deque
 import hashlib
 import json
+import logging
 import os
 import re
 import sys
 from types import ModuleType
 import uuid
 
+
+_log = logging.getLogger(__name__)
 
 _ANCHOR = "_synapse_selection_process_identity"
 
@@ -38,6 +41,26 @@ def _read(value, method):
 
 def _text(value):
     return value if isinstance(value, str) and value else None
+
+
+def child_category_fact(node):
+    """Observe creatable child category, distinct from the node's own category.
+
+    This is a type fact, not permission to create children or a guarantee that
+    any particular type is installed. No category is inferred from paths/types.
+    """
+    try:
+        category = node.childTypeCategory()
+        if category is None:
+            return {"status": "none", "name": None,
+                    "reason": "Node reports no child type category."}
+        name = category.name()
+        if isinstance(name, str) and name.strip():
+            return {"status": "available", "name": name, "reason": None}
+    except Exception:
+        _log.debug("Could not read child type category.")
+    return {"status": "unavailable", "name": None,
+            "reason": "Could not read child type category."}
 
 
 def _integer(value):
@@ -153,6 +176,7 @@ class _Scan:
         # subnets advertise one output name while their type allows ten outputs.
         row = {"path": path, "session_id": sid, "name": _text(_read(node, "name")),
                "type": _text(_read(typ, "name")), "category": _text(_read(category, "name")),
+               "child_category": child_category_fact(node),
                "parent": _path(_read(node, "parent")), "ports": ports,
                "input_capacity": ports["max_inputs"], "output_capacity": ports["max_outputs"],
                "connections": {"inputs": [], "outputs": []}}

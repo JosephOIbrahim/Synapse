@@ -110,6 +110,60 @@ def test_search_rejects_closed_owner_before_engine_access(text):
     assert calls == []
 
 
+def test_closed_search_rejects_before_invoking_the_embedder():
+    store, _, calls = _fixture()
+
+    def embed(text):
+        calls.append("embed")
+        raise AssertionError("a closed store must not invoke embedding")
+
+    store._embedder = SimpleNamespace(embed=embed)
+    store.close()
+    calls.clear()
+    with pytest.raises(RuntimeError, match="Memory store is closed"):
+        store.search(MemoryQuery(text="coral"))
+    assert calls == []
+
+
+@pytest.mark.parametrize("require_durable", [False, True])
+def test_closed_add_rejects_before_embedding_or_deposit(require_durable):
+    store, memory, calls = _fixture()
+    store._handle.deposit = lambda *args, **kwargs: calls.append("deposit")
+    store._handle.durability = SimpleNamespace(
+        snapshot_ecs=lambda ecs: calls.append("snapshot")
+    )
+
+    def embed(text):
+        calls.append("embed")
+        return [0.0] * 8
+
+    store._embedder = SimpleNamespace(embed=embed)
+    store.close()
+    calls.clear()
+    with pytest.raises(RuntimeError, match="Memory store is closed"):
+        store.add(memory, require_durable=require_durable)
+    assert calls == []
+
+
+@pytest.mark.parametrize("require_durable", [False, True])
+def test_close_during_add_embedding_prevents_deposit(require_durable):
+    store, memory, calls = _fixture()
+    store._handle.deposit = lambda *args, **kwargs: calls.append("deposit")
+    store._handle.durability = SimpleNamespace(
+        snapshot_ecs=lambda ecs: calls.append("snapshot")
+    )
+
+    def embed(text):
+        calls.append("embed")
+        store.close()
+        return [0.0] * 8
+
+    store._embedder = SimpleNamespace(embed=embed)
+    with pytest.raises(RuntimeError, match="Memory store is closed"):
+        store.add(memory, require_durable=require_durable)
+    assert calls == ["embed", "snapshot", "close"]
+
+
 def test_vector_failure_falls_back_without_reentrant_deadlock():
     store, memory, calls = _fixture()
 
@@ -135,3 +189,66 @@ def test_attention_failure_preserves_search_result_and_releases_owner():
     _join(_start(store.close))
     assert [hit.memory.id for hit in results] == [memory.id]
     assert calls == ["query", "attention", "close"]
+
+
+def test_strict_add_rechecks_failed_state_after_concurrent_embedding():
+    store, _, calls = _fixture()
+    paused = Memory(id="strict_paused", content="paused")
+    failing = Memory(id="strict_failing", content="failing")
+    entered, release = threading.Event(), threading.Event()
+    attempts, snapshots, embeds, errors = [], [], [], []
+    failure = RuntimeError("fixture partial backend deposit")
+
+    def embed(text):
+        embeds.append(text)
+        if text == "paused":
+            entered.set()
+            assert release.wait(2), "challenge did not release paused embedding"
+        return [0.0] * 8
+
+    def deposit(payload, embedding, *, protected_floor):
+        memory = Memory.from_json(payload)
+        attempts.append(memory.id)
+        if memory.id == failing.id:
+            raise failure
+
+    store._embedder = SimpleNamespace(embed=embed)
+    store._handle.deposit = deposit
+    store._handle.durability = SimpleNamespace(
+        snapshot_ecs=lambda ecs: snapshots.append("snapshot")
+    )
+
+    def add_paused():
+        try:
+            store.add(paused, require_durable=True)
+        except BaseException as exc:
+            errors.append(exc)
+
+    worker = threading.Thread(target=add_paused, daemon=True)
+    worker.start()
+    try:
+        assert entered.wait(2), "strict add did not reach embedding"
+        with pytest.raises(RuntimeError) as caught:
+            store.add(failing, require_durable=True)
+        assert caught.value is failure
+        assert attempts == [failing.id]
+        assert store._strict_deposit_failed is True
+        release.set()
+        worker.join(2)
+        assert not worker.is_alive(), "paused strict add did not finish"
+        assert len(errors) == 1 and isinstance(errors[0], RuntimeError)
+        assert str(errors[0]) == (
+            "A partial backend deposit requires restart before checked memory can continue"
+        )
+        assert attempts == [failing.id], "another deposit occurred after strict failure"
+        assert snapshots == [], "a failed strict add must not checkpoint or acknowledge"
+        with pytest.raises(RuntimeError, match="partial backend deposit requires restart"):
+            store.add(Memory(id="strict_retry", content="retry"), require_durable=True)
+        assert embeds == ["paused", "failing"]
+        assert attempts == [failing.id]
+        assert store._strict_deposit_failed is True
+    finally:
+        release.set()
+        worker.join(2)
+        assert not worker.is_alive()
+        store.close()

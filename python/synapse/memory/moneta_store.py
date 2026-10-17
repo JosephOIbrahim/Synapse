@@ -777,13 +777,21 @@ class MonetaBackedStore:
             raise RuntimeError("Checked experience requires persistent Moneta storage")
 
     def add(self, memory: Memory, *, require_durable: bool = False) -> str:
-        if require_durable:
-            self._require_durable()
+        with self._lock:
+            if getattr(self, "_closed", False):
+                raise RuntimeError("Memory store is closed")
+            if require_durable:
+                self._require_durable()
         text = memory.content or memory.summary or ""
         embedding = self._embedder.embed(text)
         payload = memory.to_json()
         floor = self._protected_floor if self._is_protected(memory) else 0.0
         with self._lock:
+            # Close or a strict failure can race embedding; recheck before deposit.
+            if getattr(self, "_closed", False):
+                raise RuntimeError("Memory store is closed")
+            if require_durable:
+                self._require_durable()
             try:
                 self._handle.deposit(payload, embedding, protected_floor=floor)
             except Exception as exc:  # ProtectedQuotaExceededError, etc.
@@ -1186,6 +1194,11 @@ class MonetaBackedStore:
         return [m for m in all_mems if m.id in targets]
 
     def search(self, query: MemoryQuery) -> List[MemorySearchResult]:
+        # Reject an already closed owner before invoking an expensive embedder.
+        # Close can still race embedding, so check again under the engine lock.
+        with self._lock:
+            if getattr(self, "_closed", False):
+                raise RuntimeError("Memory store is closed")
         # Embedding touches no engine state and can be expensive. Querying the
         # engine and signaling attention, however, must share its existing
         # owner lock with add/prune/save/close. Text search previously bypassed
@@ -1206,6 +1219,7 @@ class MonetaBackedStore:
         # keyword/tag/text-match relevance. Over-fetching ensures the reranker has
         # enough candidates to produce a meaningful ordering, not just the top-N
         # that happened to be closest in embedding space.
+        # Non-positive limits mean unbounded recall, so retain all candidates.
         # For non-text queries (tags/keywords only), fall back to the full scan.
         if query.text:
             # Map SYNAPSE memory id -> Moneta entity_id (UUID). Only the vector
@@ -1213,8 +1227,11 @@ class MonetaBackedStore:
             # will not signal attention (correct -- there is nothing to key on).
             entity_by_syn_id: Dict[str, object] = {}
             try:
+                candidate_limit = (
+                    max(query.limit * 3, 50) if query.limit > 0 else self._handle.ecs.n
+                )
                 vector_results = self._handle.query(
-                    embedding, limit=max(query.limit * 3, 50)
+                    embedding, limit=candidate_limit
                 )
                 memories = []
                 for r in vector_results:
@@ -1223,7 +1240,7 @@ class MonetaBackedStore:
                     entity_by_syn_id[str(syn.id)] = r.entity_id
                 logger.info(
                     "Vector recall: %d candidates from query (limit=%d, overfetch=%d)",
-                    len(vector_results), query.limit, max(query.limit * 3, 50),
+                    len(vector_results), query.limit, candidate_limit,
                 )
             except Exception as exc:
                 logger.warning(

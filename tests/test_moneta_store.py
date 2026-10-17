@@ -114,6 +114,31 @@ def test_search_ranking_parity_with_jsonl_store(tmp_path, query):
     assert rank(moneta.search(query)) == rank(jsonl.search(query))
 
 
+@pytest.mark.parametrize("limit", [0, -1])
+def test_unlimited_text_recall_matches_complete_jsonl_corpus(tmp_path, limit):
+    moneta = _store()
+    jsonl = MemoryStore(tmp_path / "jsonl")
+    corpus = [
+        Memory(id=f"mem_unlimited_{index:03}", content=f"coral specimen {index:03}",
+               created_at=f"2026-01-01T00:{index // 60:02}:{index % 60:02}Z")
+        for index in range(64)
+    ]
+    try:
+        for memory in corpus:
+            moneta.add(memory)
+            jsonl.add(memory)
+        query = MemoryQuery(text="coral", limit=limit)
+        expected = jsonl.search(query)
+        actual = moneta.search(query)
+        assert len(expected) == 64
+        assert len(actual) == 64
+        assert [(r.memory.to_json(), r.score, r.match_reasons) for r in actual] == [
+            (r.memory.to_json(), r.score, r.match_reasons) for r in expected
+        ]
+    finally:
+        moneta.close()
+
+
 def test_protected_floor_mapping():
     from synapse.memory.moneta_store import MonetaBackedStore
     handle = mr.make_ephemeral(embedding_dim=DIM)
