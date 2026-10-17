@@ -320,12 +320,15 @@ class MonetaBackedStore:
             embedding_dim=dim,
             quota_override=protected_quota,
             snapshot_path=snapshot_path,
-            # wal_path is configured but INERT under SYNAPSE: Moneta's only WAL
-            # writer is signal_attention, which SYNAPSE never calls. Durability
-            # therefore rests entirely on snapshots (save() + the atexit hook in
-            # from_storage_dir), NOT on this log. Kept so an upstream deposit-WAL
-            # can light it up without a config change -- do not read it as
-            # "deposits are journalled today," because they are not.
+            # wal_path is LIVE under SYNAPSE: Moneta's only WAL writer is
+            # signal_attention, which _search_locked calls on every
+            # vector-backed text search that returns results, and every
+            # snapshot (Moneta's durability.snapshot_ecs, taken by save() and by
+            # a completed sleep pass) unlinks it again. It holds attention
+            # signals only, so deposit durability still rests entirely on
+            # snapshots (save() + the atexit hook in from_storage_dir), NOT on
+            # this log -- do not read it as "deposits are journalled today,"
+            # because they are not.
             wal_path=base / "wal.log",
             # Phase 4: author typed MonetaMemory prims to USD sublayers.
             # Requires the MonetaMemory schema to be registered
@@ -1300,6 +1303,11 @@ class MonetaBackedStore:
         then diff the survivors to recover exactly which entities were pruned —
         so data loss is logged, never silent. Held under the lock (the prune
         mutates the ECS and must not interleave with deposit/iterate).
+
+        A pass that RAISES is audited too (PRUNE-AUDIT-ON-FAILURE): Moneta
+        prunes before it stages and snapshots, so rows can already be gone when
+        it fails. The same diff is logged, marked FAILED, and the original
+        exception is re-raised unchanged -- see :meth:`_log_failed_pass_audit`.
         """
         with self._lock:
             ecs = self._handle.ecs
@@ -1314,11 +1322,42 @@ class MonetaBackedStore:
                     before_mem[eid] = None  # keep the raw payload for forensics
             count_before = ecs.n
 
-            result = self._handle.run_sleep_pass()
+            try:
+                result = self._handle.run_sleep_pass()
+            except (KeyboardInterrupt, SystemExit):
+                raise  # an operator interrupt is never held up by an audit
+            except BaseException as exc:  # noqa: BLE001 -- pyo3's PanicException is a BaseException
+                self._log_failed_pass_audit(ecs, before_payload, before_mem, count_before, exc)
+                raise
 
             survivors = {str(row.entity_id) for row in ecs.iter_rows()}
             count_after = ecs.n
 
+        audit = self._diff_prune_audit(
+            before_payload, before_mem, survivors, count_before, count_after, result,
+        )
+        if audit.pruned:
+            logger.warning(
+                "moneta.prune lossless-audit pruned=%d staged=%d before=%d after=%d ids=%s",
+                audit.pruned, audit.staged, count_before, count_after, audit.pruned_ids,
+            )
+        else:
+            logger.info(
+                "moneta.sleep_pass pruned=0 staged=%d attended=%d n=%d",
+                audit.staged, audit.attention_updated, count_after,
+            )
+        return audit
+
+    @staticmethod
+    def _diff_prune_audit(before_payload, before_mem, survivors, count_before,
+                          count_after, result) -> PruneAudit:
+        """The lossless prune record: every pre-pass row that is gone afterwards.
+
+        One builder for the success path and the failed-pass audit, so the two
+        records cannot drift apart. ``result`` is Moneta's ConsolidationResult,
+        or None for a pass that raised; its staged / attention counts are then
+        unreported and read as 0.
+        """
         pruned_eids = [eid for eid in before_payload if eid not in survivors]
         pruned_ids: List[str] = []
         pruned_types: Dict[str, str] = {}
@@ -1328,7 +1367,7 @@ class MonetaBackedStore:
                 pruned_ids.append(mem.id)
                 pruned_types[mem.id] = getattr(mem.memory_type, "value", str(mem.memory_type))
 
-        audit = PruneAudit(
+        return PruneAudit(
             pruned_ids=pruned_ids,
             pruned_entity_ids=pruned_eids,
             pruned_payloads={eid: before_payload[eid] for eid in pruned_eids},
@@ -1338,17 +1377,51 @@ class MonetaBackedStore:
             attention_updated=getattr(result, "attention_updated", 0),
             staged=getattr(result, "staged", 0),
         )
-        if audit.pruned:
+
+    def _log_failed_pass_audit(self, ecs, before_payload, before_mem, count_before,
+                               exc: BaseException) -> None:
+        """PRUNE-AUDIT-ON-FAILURE: the lossless record of a pass that RAISED.
+
+        Moneta's ``run_pass`` removes the prune set (``ecs.remove`` +
+        ``vector_index.delete``) BEFORE it stages, authors and snapshots, so a
+        pass that fails late has already deleted rows, and the next ``save()``
+        persists them as gone. Before this guard that path built no audit at
+        all. The survivors are now diffed exactly as on success (same builder)
+        and logged with the success line's fields, marked FAILED-PASS. A
+        failed pass returns nothing that could carry the payloads, so this
+        record carries them itself.
+
+        Runs inside ``run_sleep_pass``'s ``except`` with ``self._lock`` held, so
+        the diff cannot interleave with deposit/iterate. Never raises: the
+        caller re-raises the ORIGINAL exception, and a second failure here (an
+        ECS the failed pass left unreadable, which a native panic can do) must
+        not replace it. KeyboardInterrupt and SystemExit are let through.
+        """
+        import json
+        failure = type(exc).__name__
+        try:
+            survivors = {str(row.entity_id) for row in ecs.iter_rows()}
+            count_after = ecs.n
+            audit = self._diff_prune_audit(
+                before_payload, before_mem, survivors, count_before, count_after, None,
+            )
             logger.warning(
-                "moneta.prune lossless-audit pruned=%d staged=%d before=%d after=%d ids=%s",
-                audit.pruned, audit.staged, count_before, count_after, pruned_ids,
+                "moneta.prune lossless-audit FAILED-PASS (%s: %s) pruned=%d "
+                "staged=%d before=%d after=%d ids=%s payloads=%s",
+                failure, exc, audit.pruned, audit.staged, count_before,
+                count_after, audit.pruned_ids,
+                json.dumps(audit.pruned_payloads, default=str),
             )
-        else:
-            logger.info(
-                "moneta.sleep_pass pruned=0 staged=%d attended=%d n=%d",
-                audit.staged, audit.attention_updated, count_after,
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except BaseException as audit_exc:  # noqa: BLE001 -- must never mask exc
+            logger.error(
+                "moneta.prune lossless-audit FAILED-PASS (%s) could not be diffed "
+                "(%s: %s): which rows the pass removed is UNKNOWN. Pre-pass live "
+                "set before=%d ids=%s",
+                failure, type(audit_exc).__name__, audit_exc, count_before,
+                [mem.id for mem in before_mem.values() if mem is not None],
             )
-        return audit
 
     def close(self) -> None:
         # Idempotent: registered with atexit AND callable explicitly, so a
