@@ -625,6 +625,47 @@ NOT_PROBED_REASON = (
     "not a check that failed."
 )
 
+#: The ``native`` block of :func:`moneta_provenance`: the module half of
+#: :func:`synapse.memory.native_status.native_status`, and its ``error``. The
+#: handle half (``handle_via``, ``vector_backend``, ``native_decay``) needs a
+#: live store; ``synapse_memory_status`` reports it.
+_NATIVE_FIELDS = ("state", "file", "version", "size", "mtime",
+                  "env_MONETA_NATIVE", "error")
+
+
+def _native_provenance() -> Dict[str, Any]:
+    """Which ``moneta_native`` this process holds (FM7 + FM12). Never raises.
+
+    Reuses :func:`synapse.memory.native_status.native_status` rather than
+    reading ``sys.modules`` a second way. ``state`` is ``not_loaded``,
+    ``blocked`` (a ``None`` entry: what :func:`_apply_native_kill_switch`
+    leaves for ``MONETA_NATIVE=0``) or ``loaded``. A loaded module's ``file``
+    and ``version`` come from its namespace dict, and ``size`` and ``mtime``
+    from one ``os.stat`` of that file. No hashing: the file is never opened.
+    Nothing is imported: a provenance read that imported the wheel would be
+    the load it reports. For the maturin package layout ``file`` is the
+    package ``__init__.py``, not the ``.pyd``.
+
+    The helper is imported inside the call, not at module level, for two
+    reasons: a helper that cannot be imported then degrades this block instead
+    of the whole module, and ``tests/test_moneta_native_kill_switch.py``
+    executes this file with no parent package, where a module-level relative
+    import would fail. If the helper cannot be imported, or raises, every
+    field is ``None`` and ``error`` says why: the block is present on every
+    path.
+    """
+    try:
+        from .native_status import native_status
+        reading = native_status()
+        return {field: reading.get(field) for field in _NATIVE_FIELDS}
+    except Exception as exc:  # noqa: BLE001 -- provenance never raises
+        block: Dict[str, Any] = dict.fromkeys(_NATIVE_FIELDS)
+        block["error"] = (
+            f"could not check: native_status() itself raised "
+            f"({type(exc).__name__}: {exc})"
+        )
+        return block
+
 
 def moneta_provenance(usd_root: Optional[Any] = None, *,
                       probe_schema: bool = True) -> dict:
@@ -645,6 +686,16 @@ def moneta_provenance(usd_root: Optional[Any] = None, *,
 
     Condition 5 (a memory round-trips typed) is 3 AND 4 together; it gets no
     field of its own because it has no measurement of its own.
+
+    ``native`` is not one of R64's conditions. It names the ``moneta_native``
+    this process holds (FM7 + FM12), because Moneta switches its Rust kernels
+    on by default once that module imports: ``state`` (``not_loaded`` /
+    ``blocked`` / ``loaded``), ``file``, ``version``, ``size``, ``mtime``,
+    ``env_MONETA_NATIVE`` and ``error`` -- the module half of
+    :func:`synapse.memory.native_status.native_status`; see
+    :func:`_native_provenance`. It is read whatever *probe_schema* says and
+    whether or not the package imported, and costs one ``sys.modules`` lookup
+    plus, when the module is loaded, one ``os.stat``.
 
     ``version`` cannot discriminate builds -- ``importlib.metadata`` reports the
     same ``1.2.0rc1`` for rc1, rc2 and rc2+N, and reports nothing at all for a
@@ -718,6 +769,12 @@ def moneta_provenance(usd_root: Optional[Any] = None, *,
                 f"could not check: probe itself raised "
                 f"({type(exc).__name__}: {exc})"
             )
+
+    # Not one of R64's conditions. Like conditions 3 and 4 it does not depend
+    # on the package importing -- MONETA_NATIVE=0 can block the native module
+    # whether or not moneta then loads -- so it is read before the early
+    # return.
+    prov["native"] = _native_provenance()
 
     if not _MONETA_AVAILABLE:
         return prov
