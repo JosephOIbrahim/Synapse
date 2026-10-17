@@ -149,6 +149,7 @@ from .models import (
     MemoryQuery,
     MemorySearchResult
 )
+from .native_panic import is_native_panic
 
 
 # =============================================================================
@@ -1713,6 +1714,31 @@ class SynapseMemory:
                     "moneta", storage_dir,
                     f"init failed: {type(exc).__name__}: {exc}",
                 )
+            except BaseException as exc:  # noqa: BLE001 -- re-raised unless a native panic
+                # PANIC-FENCE-CONSTRUCTION. PyO3 turns a Rust panic into
+                # pyo3_runtime.PanicException, a BaseException, so it passes
+                # the arm above (and from_storage_dir's own retry arm). It used
+                # to escape here: no jsonl served, no fallback recorded,
+                # _global_synapse never published, and every later
+                # get_synapse_memory() built the store and panicked again.
+                # Only that class is served. KeyboardInterrupt, SystemExit,
+                # GeneratorExit and CancelledError still propagate.
+                if not is_native_panic(exc):
+                    raise
+                logger.error(
+                    "SYNAPSE_MEMORY_BACKEND=moneta is installed but its native "
+                    "core PANICKED during initialization (%s: %s); attempted "
+                    "storage: %s. The memory backend FELL BACK to jsonl — the "
+                    "selected backend is NOT serving. This is a defect in the "
+                    "native core, not a missing dependency.",
+                    type(exc).__name__, exc, storage_dir,
+                )
+                # "init failed" keeps backend_health() at BLOCKED: installed
+                # but faulted, exactly like the arm above.
+                _record_backend_fallback(
+                    "moneta", storage_dir,
+                    f"init failed: native panic: {type(exc).__name__}: {exc}",
+                )
         elif backend == "shadow":
             try:
                 from .moneta_store import MonetaBackedStore
@@ -1729,6 +1755,22 @@ class SynapseMemory:
                 )
                 _record_backend_fallback(
                     "shadow", storage_dir, f"shadow unavailable: {exc}",
+                )
+            except BaseException as exc:  # noqa: BLE001 -- re-raised unless a native panic
+                # PANIC-FENCE-CONSTRUCTION: the same fence as the moneta
+                # branch. Only a native panic is served; anything else that is
+                # not an Exception still propagates.
+                if not is_native_panic(exc):
+                    raise
+                logger.warning(
+                    "SYNAPSE_MEMORY_BACKEND=shadow unavailable: the moneta "
+                    "native core panicked (%s: %s); attempted storage: %s. The "
+                    "memory backend fell back to jsonl.",
+                    type(exc).__name__, exc, storage_dir,
+                )
+                _record_backend_fallback(
+                    "shadow", storage_dir,
+                    f"shadow unavailable: native panic: {type(exc).__name__}: {exc}",
                 )
         if backend not in ("jsonl", "moneta", "shadow", ""):
             logger.warning(
