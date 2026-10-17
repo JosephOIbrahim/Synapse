@@ -374,6 +374,7 @@ class MemoryHandlerMixin:
         rather than omitting the key -- and an omitted key reads as "fine",
         which is how two days of discarded memories stayed invisible.
         """
+        from ..memory.native_status import native_status
         from ..memory.scene_memory import get_memory_status
         from .write_plane import read_store_write_health
 
@@ -388,6 +389,13 @@ class MemoryHandlerMixin:
             "rejected_writes": None,
             "sources": {},
         }
+
+        # NATIVE-STATUS: which Moneta native path this process is on. Seeded the
+        # same way as health, so a failed hop cannot drop the key: this first
+        # reading needs no store (sys.modules, MONETA_NATIVE, one os.stat). The
+        # hop below replaces it with a reading that also names the live store's
+        # vector backend and decay kernel. native_status() never raises.
+        status["native"] = native_status()
 
         # Single source of truth (Contract 1): the live entry store (Store A,
         # the JSONL-backed SynapseMemory) is the authority for "how many
@@ -407,15 +415,17 @@ class MemoryHandlerMixin:
                     # than leaving the seeded "was not read" reason standing —
                     # "no store is loaded" is a different (and answerable) fact
                     # from "we never checked".
-                    return None, read_store_write_health(None)
+                    return None, read_store_write_health(None), None
                 store = getattr(memory, "store", None)
                 count = store.count() if store is not None else None
-                return count, read_store_write_health(store)
-            entries, health = self._memory_on_main(read)
+                return count, read_store_write_health(store), native_status(store)
+            entries, health, native = self._memory_on_main(read)
             if entries is not None:
                 status["entries_total"] = entries
             if health is not None:
                 status["health"] = health
+            if native is not None:
+                status["native"] = native
         except Exception as exc:  # noqa: BLE001 -- status must not raise
             # Do NOT swallow this into silence the way the old bare `pass` did.
             # A status call that could not reach the store must SAY so, because
