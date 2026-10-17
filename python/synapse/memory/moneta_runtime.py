@@ -94,6 +94,13 @@ _MONETA_IMPORT_ERROR: Optional[str] = None
 Moneta = None
 MonetaConfig = None
 
+#: What :func:`_apply_native_kill_switch` found on its last call.
+#: ``"not_requested"`` -- ``MONETA_NATIVE`` is not ``"0"``; nothing touched.
+#: ``"applied"`` -- ``MONETA_NATIVE=0`` and ``import moneta_native`` now raises
+#: ImportError in this process. ``"already_loaded"`` -- ``MONETA_NATIVE=0`` but
+#: the native module was loaded before the switch ran, and it stays loaded.
+_NATIVE_KILL_SWITCH = "not_requested"
+
 #: The concrete typed schema Moneta authors. Moneta's schema/plugInfo.json
 #: declares ``schemaIdentifier="MonetaMemory"``, ``schemaKind="concreteTyped"``,
 #: ``bases=["UsdTyped"]`` -- an IsA schema, not an applied API schema -- so
@@ -160,12 +167,63 @@ def _dist_version() -> Optional[str]:
 # every ledger deposit, so a per-call filesystem walk would be a real cost.
 _REVISION_CACHE: Dict[str, Dict[str, Optional[str]]] = {}
 
+#: Moneta's Rust extension module, imported by the ``moneta`` package itself.
+_NATIVE_MODULE = "moneta_native"
+
+
+def _apply_native_kill_switch() -> str:
+    """Make ``MONETA_NATIVE=0`` keep the native extension out of this process.
+
+    Moneta imports ``moneta_native`` eagerly when the package loads and reads
+    ``MONETA_NATIVE`` only later, when objects are constructed. So
+    ``MONETA_NATIVE=0``, Moneta's "use the pure-Python oracle" switch, chose
+    the oracle with the DLL already loaded into Houdini: no native code ran,
+    but the library was in the process all the same.
+
+    :func:`_try_import` calls this before its first ``from moneta import``.
+    A ``None`` entry in ``sys.modules`` makes ``import moneta_native`` raise
+    ImportError, the same outcome as the extension not being installed, which
+    leaves Moneta its pure-Python oracle. A ``moneta_native`` that is already
+    loaded is left exactly as it is, because a DLL cannot be unloaded; the
+    state says so.
+
+    Only the exact value ``"0"`` arms it. Any other value, or none, changes
+    nothing. Records and returns :data:`_NATIVE_KILL_SWITCH`. Never raises:
+    ``os.environ.get`` and ``sys.modules.setdefault`` cannot fail here, so
+    there is no handler for a defect to hide behind.
+    """
+    global _NATIVE_KILL_SWITCH
+    if os.environ.get("MONETA_NATIVE") != "0":
+        state = "not_requested"
+    # One dict operation, so the check and the write cannot interleave with an
+    # import on another thread. Finding None there is the switch holding: a
+    # repeat call (moneta_available() re-enters _try_import while moneta is
+    # unavailable) must still read "applied", not "already_loaded".
+    elif sys.modules.setdefault(_NATIVE_MODULE, None) is None:
+        state = "applied"
+    else:
+        state = "already_loaded"
+    if state != _NATIVE_KILL_SWITCH:
+        if state == "applied":
+            logger.info("MONETA_NATIVE=0: %s import blocked in this process",
+                        _NATIVE_MODULE)
+        elif state == "already_loaded":
+            logger.warning("MONETA_NATIVE=0 requested, but %s was already "
+                           "loaded in this process and cannot be unloaded",
+                           _NATIVE_MODULE)
+    _NATIVE_KILL_SWITCH = state
+    return state
+
 
 def _try_import() -> bool:
     """Attempt to bind ``Moneta``/``MonetaConfig``. Idempotent and cheap."""
     global _MONETA_AVAILABLE, _MONETA_IMPORT_ERROR, Moneta, MonetaConfig
     if _MONETA_AVAILABLE:
         return True
+    # Before the first import, not after it: moneta imports moneta_native as
+    # the package loads, so MONETA_NATIVE=0 has to be in force by then. The
+    # sys.modules entry it leaves also covers the $MONETA_SRC retry below.
+    _apply_native_kill_switch()
     try:
         from moneta import Moneta as _M, MonetaConfig as _C
         Moneta, MonetaConfig = _M, _C
