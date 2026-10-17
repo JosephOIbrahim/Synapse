@@ -32,6 +32,37 @@ from synapse.server.handlers import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _no_live_store_and_no_backend_selected(monkeypatch):
+    """Every test here starts with no memory store loaded and no backend chosen.
+
+    ``write_plane_state()`` reads process state that no test in this file sets.
+    ``store_health()`` asks the live store, ``store._global_synapse``, and
+    compares its class with ``$SYNAPSE_MEMORY_BACKEND``. Both can come from
+    outside the file. A test that reaches ``get_synapse_memory()`` publishes the
+    singleton, and it stays until something calls ``reset_synapse_memory()``:
+    ``test_moneta_substrate_truth.py::test_doctor_runs_the_substrate_check``
+    leaves one behind through ``doctor.run_doctor()``, built while that test had
+    the backend set to jsonl. The variable is this machine's ambient
+    ``SYNAPSE_MEMORY_BACKEND=moneta``. Together they read as "backend 'moneta'
+    was selected but a jsonl MemoryStore is the live store". After that test,
+    seven tests here failed, while the file alone passed 26/26. Clearing either
+    the singleton or the variable fixes that order on its own. Both are cleared,
+    so the verdicts here depend on neither the run order nor the machine.
+
+    ``from synapse.memory import store`` has the same shape as write_plane's own
+    ``from ..memory import store``, so this patches the module object that
+    ``_live_store()`` and ``_backend_fallback()`` read. monkeypatch restores the
+    old values afterwards. A store an earlier test left behind is put back, not
+    closed, because it is not this file's to close.
+    """
+    from synapse.memory import store as store_mod
+
+    monkeypatch.setattr(store_mod, "_global_synapse", None)
+    monkeypatch.setattr(store_mod, "_BACKEND_FALLBACK", None)
+    monkeypatch.delenv("SYNAPSE_MEMORY_BACKEND", raising=False)
+
+
 @pytest.fixture
 def targets(tmp_path, monkeypatch):
     """Point both write targets at real, writable tmp dirs."""
