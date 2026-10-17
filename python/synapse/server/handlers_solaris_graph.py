@@ -7,7 +7,7 @@ sublayer stacks, parallel streams. Complements assemble_chain (linear only).
 
 import contextlib
 from collections import defaultdict, deque
-from typing import Dict, List, Any, Optional, Tuple
+from typing import AbstractSet, Dict, List, Any, Optional, Tuple
 import logging
 import re
 
@@ -642,7 +642,7 @@ def validate_graph(
 
     # Check for merge input gaps
     if not errors:
-        gap_warnings = _check_merge_input_gaps(connections)
+        gap_warnings = _check_merge_input_gaps(connections, existing_ids)
         warnings.extend(gap_warnings)
 
     return len(errors) == 0, errors, warnings
@@ -678,13 +678,26 @@ def _detect_cycle(node_ids: set, connections: List[Dict[str, Any]]) -> Optional[
     return None
 
 
-def _check_merge_input_gaps(connections: List[Dict[str, Any]]) -> List[str]:
-    """Warn if a target node has input indices with gaps (e.g. 0 and 2 but not 1)."""
+def _check_merge_input_gaps(connections: List[Dict[str, Any]],
+                            existing_ids: AbstractSet[str] = frozenset()) -> List[str]:
+    """Warn if a target node has input indices with gaps (e.g. 0 and 2 but not 1).
+
+    Only the indices this request fixes are compared. A missing ``input`` on a
+    NEW node is input 0, as in resolve_plan. A missing ``input`` on an existing
+    node (``existing_ids``) is an append: resolve_plan gives it the lowest live
+    input that is neither occupied nor explicitly reserved, so it never opens a
+    gap, and where it lands depends on live inputs this pure check cannot see.
+    Such wires are left out. Reading them as 0 warned "indices [0, 0]" for two
+    appends the planner wires to 0 and 1. The live check for unordered inputs
+    is solaris_graph_plan._check_unordered_gaps.
+    """
     warnings = []
     target_inputs: Dict[str, List[int]] = defaultdict(list)
 
     for conn in connections:
         to_id = conn["to"]
+        if "input" not in conn and to_id in existing_ids:
+            continue  # an append into a live node: the planner picks its input
         input_idx = conn.get("input", 0)
         target_inputs[to_id].append(input_idx)
 
