@@ -33,7 +33,11 @@ DEPTH_CAP = 5
 # ---------------------------------------------------------------------------
 
 def _node_basic(node) -> Dict[str, Any]:
-    """Identity, own category, and separately observed creatable child category."""
+    """Identity, own category, and separately observed child category.
+
+    The child category is advisory: the category the node type reports, not a
+    creation permission.
+    """
     from synapse.server.selection_snapshot import child_category_fact
     return {
         "path": node.path(),

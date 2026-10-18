@@ -44,10 +44,11 @@ def _text(value):
 
 
 def child_category_fact(node):
-    """Observe creatable child category, distinct from the node's own category.
+    """Observe the child category, distinct from the node's own category.
 
-    This is a type fact, not permission to create children or a guarantee that
-    any particular type is installed. No category is inferred from paths/types.
+    Advisory: the category the node type reports, not a creation permission or
+    a guarantee that any particular type is installed. No category is inferred
+    from paths/types.
     """
     try:
         category = node.childTypeCategory()

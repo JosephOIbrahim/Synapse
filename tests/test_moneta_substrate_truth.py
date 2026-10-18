@@ -646,7 +646,13 @@ def test_doctor_runs_the_substrate_check(monkeypatch, tmp_path):
     """The check must be WIRED, not merely defined. Fails if
     ``_check_moneta_substrate`` is dropped from ``run_doctor``'s list — the
     'implemented but never called' failure this repo keeps finding."""
+    import importlib
     from synapse.server import doctor
+    # run_doctor's memory check publishes a jsonl SynapseMemory into the
+    # process-wide store._global_synapse; monkeypatch puts the prior value back
+    # at teardown so it cannot leak into later tests.
+    monkeypatch.setattr(importlib.import_module("synapse.memory.store"),
+                        "_global_synapse", None)
     monkeypatch.setenv("SYNAPSE_MEMORY_BACKEND", "jsonl")
     report = doctor.run_doctor({}, home=tmp_path)
     names = [c["name"] for c in report["checks"]]

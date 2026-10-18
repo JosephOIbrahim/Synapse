@@ -1,11 +1,33 @@
 """Read-only category facts; no Houdini, model or scene mutation."""
+import sys
 from types import SimpleNamespace
 import pytest
 from synapse.server import introspection, selection_snapshot
 
+# The closeout's forbidden-call set (child-category-source-closeout-001).
+FORBIDDEN = {"createNode", "cook", "geometry", "stage", "parms", "setInput", "destroy", "setParms"}
+
+
+@pytest.fixture
+def no_hom(monkeypatch):
+    """A None import sentinel forbids loading a native HOM module, while
+    preserving the product's documented ImportError/unavailable path.
+
+    The closeout set ``sys.modules['hou'] = None`` before importing; under this
+    suite's conftest that would leave later modules bound to ``hou = None``, so
+    it is a per-test patch here. It proves the observed calls need no HOM, not
+    import-time absence. Only the fake-node tests request it.
+    """
+    monkeypatch.setitem(sys.modules, "hou", None)
+    monkeypatch.setattr(introspection, "hou", None)
+    with pytest.raises(ImportError):
+        import hou  # noqa: F401
+
+
 class Node:
     def __init__(self, own="Object", child="Sop"):
         self.own, self.child = own, child
+        self.forbidden = []
     def path(self): return "/obj/artist_container"
     def name(self): return "artist_container"
     def sessionId(self): return 7
@@ -16,20 +38,24 @@ class Node:
         if isinstance(self.child, Exception): raise self.child
         return None if self.child is None else SimpleNamespace(name=lambda: self.child)
     def __getattr__(self, name):
-        if name in {"createNode", "cook", "geometry", "stage", "parms", "setInput"}:
+        if name in FORBIDDEN:
+            self.forbidden.append(name)
             raise AssertionError("inspection must not call " + name)
         raise AttributeError(name)
 
+@pytest.mark.usefixtures("no_hom")
 @pytest.mark.parametrize("surface", ["basic", "selection"])
 @pytest.mark.parametrize("own,child", [("Object", "Sop"), ("Object", "Lop"), ("Sop", "Vop"), ("Lop", "Lop")])
-def test_distinct_own_and_creatable_child_category(surface, own, child):
+def test_distinct_own_and_advisory_child_category(surface, own, child):
     node = Node(own, child)
     row = (introspection._node_basic(node) if surface == "basic" else
            selection_snapshot._Scan(10, 10, {}).metadata(node))
     assert {k: row[k] for k in ("path", "name", "type", "category")} == {
         "path": node.path(), "name": node.name(), "type": "geo", "category": own}
     assert row["child_category"] == {"status": "available", "name": child, "reason": None}
+    assert node.forbidden == []
 
+@pytest.mark.usefixtures("no_hom")
 @pytest.mark.parametrize("surface", ["basic", "selection"])
 @pytest.mark.parametrize("child,status,reason", [
     (None, "none", "Node reports no child type category."),
@@ -44,7 +70,9 @@ def test_absence_is_not_inferred_from_own_category(surface, child, status, reaso
            selection_snapshot._Scan(10, 10, {}).metadata(node))
     assert row["category"] == "Object"
     assert row["child_category"] == {"status": status, "name": None, "reason": reason}
+    assert node.forbidden == []
 
+@pytest.mark.usefixtures("no_hom")
 @pytest.mark.parametrize("surface", ["basic", "selection"])
 def test_missing_api_is_unavailable(surface):
     node = Node()
@@ -53,21 +81,26 @@ def test_missing_api_is_unavailable(surface):
            selection_snapshot._Scan(10, 10, {}).metadata(node))
     assert row["child_category"]["status"] == "unavailable"
     assert row["child_category"]["name"] is None
+    assert node.forbidden == []
 
+@pytest.mark.usefixtures("no_hom")
 @pytest.mark.parametrize("category", [object(), SimpleNamespace(name=lambda: (_ for _ in ()).throw(RuntimeError("secret")))])
 def test_missing_or_throwing_category_name(category):
     node = Node()
     node.childTypeCategory = lambda: category
     assert selection_snapshot.child_category_fact(node) == {
         "status": "unavailable", "name": None, "reason": "Could not read child type category."}
+    assert node.forbidden == []
 
 
+@pytest.mark.usefixtures("no_hom")
 @pytest.mark.parametrize("surface", ["basic", "selection"])
 @pytest.mark.parametrize("initial", ["raise", "bad_name", "invalid", "none"])
 def test_read_recovers_without_rewriting_an_earlier_view(surface, initial):
     """The eight preserved pure transitions now import this candidate normally."""
     import copy
 
+    assert introspection.hou is None
     node = Node()
     state, reads = [initial], [0]
 
@@ -98,6 +131,7 @@ def test_read_recovers_without_rewriting_an_earlier_view(surface, initial):
     assert {key: after[key] for key in ("path", "name", "type", "category")} == {
         key: before[key] for key in ("path", "name", "type", "category")}
     assert reads == [2]
+    assert node.forbidden == []
     assert before["child_category"] is not after["child_category"]
 
 

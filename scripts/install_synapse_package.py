@@ -53,9 +53,15 @@ def build_package(repo_root: Path) -> dict:
     sys.path.insert(0, str(repo_root_for_installer() / "installer"))
     from synapse_setup.registration import package
     src = moneta_src_for(repo_root)
-    return package(repo_root, moneta_src=src,
-                   moneta_schema=moneta_schema_for(repo_root) if src else None,
-                   backend="moneta" if src else None)
+    pkg = package(repo_root, moneta_src=src,
+                  moneta_schema=moneta_schema_for(repo_root) if src else None,
+                  backend="moneta" if src else None)
+    # D6a: packages/synapse.json pins the MONETA_NATIVE=0 kill switch, and
+    # test_install_package_parity holds both env-name sets together. Only this
+    # resolver reaches a prefs dir, so it authors the pin too (native stays off
+    # until a moneta_native wheel is qualified under hython).
+    pkg["env"].append({"var": "MONETA_NATIVE", "value": "0"})
+    return pkg
 
 
 def repo_root_for_installer():

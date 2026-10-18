@@ -56,6 +56,34 @@ from synapse.panel import bridge_adapter as ba
 
 
 @pytest.fixture(autouse=True)
+def _hermetic_home(monkeypatch, tmp_path):
+    """Keep this file's audit, key and gate writes out of the real home.
+
+    handle() audits through AuditLog (default dir Path.home()/.synapse/audit),
+    and its CryptoEngine falls back to ~/.synapse/encryption.key, minting one
+    if absent. Point USERPROFILE (what Path.home() reads on Windows) and HOME
+    at tmp_path, hand the engine a throwaway Fernet key, and rebuild both
+    singletons inside the redirect; drop them again so none outlives the test.
+    """
+    from synapse.core.audit import AuditLog
+    from synapse.core.crypto import CryptoEngine
+    try:
+        from cryptography.fernet import Fernet
+    except ImportError:  # no cryptography: the audit trail is not encrypted
+        Fernet = None
+
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    monkeypatch.setenv("HOME", str(tmp_path))
+    if Fernet is not None:
+        monkeypatch.setenv("SYNAPSE_ENCRYPTION_KEY", Fernet.generate_key().decode("ascii"))
+    AuditLog.reset_instance()
+    CryptoEngine.reset_instance()
+    yield
+    AuditLog.reset_instance()
+    CryptoEngine.reset_instance()
+
+
+@pytest.fixture(autouse=True)
 def _fresh_process_bridge():
     """Isolate the process-wide singleton (and the panel alias) per test."""
     b.reset_process_bridge()

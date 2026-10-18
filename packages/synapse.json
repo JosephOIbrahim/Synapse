@@ -27,6 +27,11 @@
             "var": "SYNAPSE_MEMORY_BACKEND",
             "comment": "moneta, not the jsonl default. Moneta as the memory substrate is the point of the integration - evolution.py:14 anticipates this becoming the default, and backfill.py exists for the cutover. Safe to set: _make_store falls back to JSONL with a warning if Moneta cannot be imported, so the flag can never break startup, and store.py:830 distinguishes 'not installed' from 'installed but broken' so a drifted adapter is loud rather than silently serving jsonl.",
             "value": "moneta"
+        },
+        {
+            "var": "MONETA_NATIVE",
+            "comment": "Native Moneta stays off until a moneta_native wheel is qualified under hython; 0 is the kill switch that keeps the native DLL out of the Houdini process.",
+            "value": "0"
         }
     ],
     "hpath": "$SYNAPSE_ROOT/houdini"
