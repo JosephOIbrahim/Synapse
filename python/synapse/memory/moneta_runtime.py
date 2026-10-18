@@ -659,6 +659,9 @@ def _native_provenance() -> Dict[str, Any]:
         reading = native_status()
         return {field: reading.get(field) for field in _NATIVE_FIELDS}
     except Exception as exc:  # noqa: BLE001 -- provenance never raises
+        logger.warning("moneta provenance: native_status() raised; the native "
+                       "block reports every field as None (%s: %s)",
+                       type(exc).__name__, exc)
         block: Dict[str, Any] = dict.fromkeys(_NATIVE_FIELDS)
         block["error"] = (
             f"could not check: native_status() itself raised "
