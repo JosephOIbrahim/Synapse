@@ -71,7 +71,7 @@ It is not a default.
                                                     From a worktree, HEAD:..., never
                                                     `master`: local master can be an
                                                     old release (v5.97.3)
-16a python scriptselease_ci_gate.py vX.Y.Z --wait-minutes 45
+16a python scripts\release_ci_gate.py vX.Y.Z --wait-minutes 45
                                                     CI on the exact commit. Exit 1 =
                                                     red OR timed out: read the line
 16b git push origin vX.Y.Z                          no variable; only after 16 + 16a.
