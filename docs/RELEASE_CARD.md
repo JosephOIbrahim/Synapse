@@ -48,7 +48,10 @@ It is not a default.
     -> 19 of 19 PASS, exit 0
 
 --- gates -----------------------------------------------------------------
-10  pytest tests\                                   full stock suite, alone
+10  pytest tests\                                   full stock suite, alone; with a
+                                                    seat live, redirect HOME, TEMP,
+                                                    HOUDINI_TEMP_DIR, SYNAPSE_LOG_DIR
+                                                    and unset HYTHON first (v5.97.3)
 11  hytest tests/panel  (SYNAPSE_HYTHON pinned)     seat suite, ALONE. see traps
 12  pytest installer\tests
 
@@ -62,9 +65,18 @@ It is not a default.
                                                     un-bumped HEAD
 14  python scripts\tag_release.py --check-only      preflight, always safe
 15  python scripts\tag_release.py                   creates vX.Y.Z (annotated)
-16  SYNAPSE_GATE_C=1 git push origin master vX.Y.Z  scoped to ONE command,
-                                                    cleared immediately, never
-                                                    unattended
+16  SYNAPSE_GATE_C=1 git push origin HEAD:refs/heads/master
+                                                    the ONLY Gate C push, scoped to
+                                                    ONE command, never unattended.
+                                                    From a worktree, HEAD:..., never
+                                                    `master`: local master can be an
+                                                    old release (v5.97.3)
+16a python scriptselease_ci_gate.py vX.Y.Z --wait-minutes 45
+                                                    CI on the exact commit. Exit 1 =
+                                                    red OR timed out: read the line
+16b git push origin vX.Y.Z                          no variable; only after 16 + 16a.
+                                                    Pushed earlier, the hook refuses
+                                                    it on VERSION
 --- publish ---------------------------------------------------------------
 17  compose SHA256SUMS.txt
     compose <Setup>.public-build.json               REDACTED: drop payload.path,
@@ -93,6 +105,7 @@ anything   UNKNOWN             a file can't be read -- fix the file, never the g
 tag_free   vX.Y.Z exists       this number is already released
 fixtures   RuntimeError        you passed the PRODUCTION report; use --test-build
 harness    "use a new dir"     the qual root must not pre-exist; it makes its own
+tag        identity unknown    tag_release ran under a scratch HOME; rerun with the real one
 ```
 
 The gate never pushes. `--check-only` is always safe. Untracked files do not block.
