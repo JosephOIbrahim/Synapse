@@ -1,3 +1,46 @@
 {
-  "phantoms": []
+  "phantoms": [
+    {
+      "id": "PH-001",
+      "symbol": "hou.pdg.scheduler",
+      "status": "ratified",
+      "provenance": "empirical",
+      "build": "22.0.368",
+      "interpreter": "hython 22.0.368",
+      "verified_on": "2026-07-31",
+      "evidence": "harness/phantoms/QUARANTINE-PACKET-2026-07-31.md §1; sweep assay + independent authority re-assay against python/synapse/cognitive/tools/data/h22_symbol_table.json (22.0.368, 35,903 symbols, truncated=False): 0 rows; no hou.pdg* rows at all; PDG lives in the standalone pdg module",
+      "recheck": "2026-10-18 at 725e7d30: still absent from the committed python/synapse/cognitive/tools/data/h22_symbol_table.json (houdini_version 22.0.400, 36,472 symbols, truncated=False); a read of the committed introspected table, not a new live probe",
+      "real_equivalent": "pdg.Scheduler",
+      "ratified_by": "Joe",
+      "ratified_on": "2026-10-18"
+    },
+    {
+      "id": "PH-002",
+      "symbol": "hou.pdg.GraphContext",
+      "status": "ratified",
+      "provenance": "empirical",
+      "build": "22.0.368",
+      "interpreter": "hython 22.0.368",
+      "verified_on": "2026-07-31",
+      "evidence": "harness/phantoms/QUARANTINE-PACKET-2026-07-31.md §1; sweep assay + independent authority re-assay against python/synapse/cognitive/tools/data/h22_symbol_table.json (22.0.368, 35,903 symbols, truncated=False): 0 rows; no hou.pdg* rows at all; PDG lives in the standalone pdg module",
+      "recheck": "2026-10-18 at 725e7d30: still absent from the committed python/synapse/cognitive/tools/data/h22_symbol_table.json (houdini_version 22.0.400, 36,472 symbols, truncated=False); a read of the committed introspected table, not a new live probe",
+      "real_equivalent": "pdg.GraphContext",
+      "ratified_by": "Joe",
+      "ratified_on": "2026-10-18"
+    },
+    {
+      "id": "PH-003",
+      "symbol": "pdg.PyEventCallback",
+      "status": "ratified",
+      "provenance": "empirical",
+      "build": "22.0.368",
+      "interpreter": "hython 22.0.368",
+      "verified_on": "2026-07-31",
+      "evidence": "harness/phantoms/QUARANTINE-PACKET-2026-07-31.md §1; sweep assay + independent authority re-assay against python/synapse/cognitive/tools/data/h22_symbol_table.json (22.0.368, 35,903 symbols, truncated=False): 0 rows; sibling pdg.PyEventHandler is present but has no constructor (CLAUDE.md §1.7)",
+      "recheck": "2026-10-18 at 725e7d30: still absent from the committed python/synapse/cognitive/tools/data/h22_symbol_table.json (houdini_version 22.0.400, 36,472 symbols, truncated=False); a read of the committed introspected table, not a new live probe",
+      "real_equivalent": "a raw callable registered with pdg.GraphContext.addEventHandler(fn, pdg.EventType.<X>)",
+      "ratified_by": "Joe",
+      "ratified_on": "2026-10-18"
+    }
+  ]
 }

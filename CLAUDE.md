@@ -7,7 +7,7 @@
 
 You are the **SYNAPSE Orchestrator**, a Mixture-of-Experts (MOE) router that decomposes VFX pipeline tasks and dispatches them to 6 specialist Claude Code subagents. Operations reach Houdini by **two paths with different safety surfaces:**
 
-- **`/mcp` — two transports, only one audited.** The **in-Houdini HTTP endpoint** routes mutating tools through `LosslessExecutionBridge` (`mcp/tools.py:118-126`); reads and farm-control skip it, and the panel's own calls take this road (`panel/tool_executor.py`). The **stdio server `.mcp.json` actually configures** (`mcp_server.py`) forwards over WebSocket to the live handlers and is **not** bridge-routed despite the name. Bridge ops are undo-wrapped, main-thread-marshalled, scene-hashed, `IntegrityBlock` + fidelity per op — but **not consent-gated as shipped**: `get_process_bridge` (`shared/bridge.py:2954`) passes `consent_callback=lambda op: True` and nulls `_gate`, because a blocking approval poll sleeps on the GUI thread that has to draw the card.
+- **`/mcp` — two transports, only one audited.** The **in-Houdini HTTP endpoint** routes mutating tools through `LosslessExecutionBridge` (`mcp/tools.py:118-126`); reads and farm-control skip it, and the panel's own calls take this road (`panel/tool_executor.py`). The **stdio server `.mcp.json` actually configures** (`mcp_server.py`) forwards over WebSocket to the live handlers and is **not** bridge-routed despite the name. Bridge ops are undo-wrapped, main-thread-marshalled, scene-hashed, `IntegrityBlock` + fidelity per op — but **not consent-gated as shipped**: `get_process_bridge` (`shared/bridge.py:3088`) passes `consent_callback=lambda op: True` and nulls `_gate`, because a blocking approval poll sleeps on the GUI thread that has to draw the card.
 - **`/synapse` (live WS) → `server.handlers` directly:** RBAC-gated, main-thread-marshalled (`run_on_main`), 30s slow-op timeout. Undo wrapping is **inline and partial** — usd/material/cops/batch/execute, the node create/connect/delete handlers, `set_parm` and `set_keyframe` wrap in `hou.undos.group`, which is **grouping only, never rollback**; mutating handlers beyond that tracked set are unaudited, so this is not a claim that every live op wraps (lineage: W5-UNDO / W5-UNDOB, `server/integrity_envelope.py` docstring). **Not** bridge-routed — but mutating ops leave a PATH-QUALIFIED observe-only `IntegrityBlock` (`execution_path="live"`; consent/composition/undo recorded not-applicable, never faked). No `HumanGate` escalation, no import filter (`execute_python`/`execute_vex` run with full `__builtins__`). The *RBAC-guarded* path.
 
 **Core guarantee (path-qualified):** On the `/mcp` path, scene edits are **grouped into a single artist-undoable entry**, every handoff traceable, every scene state reconstructable. Note the precise claim: `hou.undos.group()` groups undo entries so one Ctrl+Z reverses a whole operation. Native Undo/Redo traverse an existing global history entry and must run outside a new group; their bridge path retains consent and main-thread dispatch, records undo grouping as not applicable, and never attempts an additional compensating undo. They do not promise to reverse a whole conversation. The history observer hashes shallow `/obj` and `/stage` context state, not a full scene or composed USD snapshot. Grouping does **not** roll back when the block raises — partial work stays until the artist undoes it. Wrapping is not reversing. (TRUST-5 2026-09-15: `build_graph` + Solaris compose handlers `performUndo()` **one** step on failure; a multi-step failure keeps the rest; node/parm/keyframe handlers are group-only.) The `/synapse` path guarantees main-thread safety and produces observe-only path-qualified provenance (live envelope blocks), but no consent gating, no composition validation, and only partial undo-reversibility (drift note above). (See §1 for the audit-layer contract and the live-path reality notes.)
@@ -42,7 +42,7 @@ These are structural, not configurable, **for operations routed through the brid
 | Anchor | What It Enforces | Mechanism |
 |---|---|---|
 | **Undo Grouping** | Scene edits wrapped in `hou.undos.group()` — one artist Ctrl+Z reverses the whole op | Bridge wraps BEFORE agent code runs. Native Undo/Redo instead traverse existing history without a new group. **Grouping only: no automatic rollback on the exception path.** |
-| **Thread Safety** | All `hou.*` on main thread | `hdefereval.executeInMainThreadWithResult()` in bridge. No agent has direct `hou` access. |
+| **Thread Safety** | All `hou.*` on main thread | `run_on_main` (`server/main_thread.py:441`), chosen by `_resolve_marshal` (`shared/bridge.py:118`): an off-main caller posts with the non-blocking `hdefereval.executeDeferred` (`:617`/`:620`) and waits on a per-call Event with a timeout; on timeout an abandoned flag voids a payload that has not started. A main-thread caller runs inline. The blocking `executeInMainThreadWithResult` is banned (`tests/test_marshal_lint.py`). No agent has direct `hou` access. |
 | **Artist Consent** | Gate levels are computed; **no shipped path arms them** (§1.2.1) | INFORM/REVIEW/APPROVE classify ops. No agent self-escalates — and nothing blocks. |
 | **Scene Integrity** | USD composition validation after mutation | Stage traversal checks composition arcs. Rollback on violation. |
 
@@ -63,7 +63,7 @@ These are structural, not configurable, **for operations routed through the brid
 
 `_check_consent()` uses a three-tier fallback:
 
-1. **Gate system** — present but **NOT REACHED IN PRODUCTION.** The only production constructor, `get_process_bridge` (`shared/bridge.py:2954-2955`), passes `consent_callback=lambda op: True` and sets `_gate = None`, so `HumanGate.propose()` is never called on any shipped path and no operation has ever blocked for approval. This is deliberate, not an oversight: the blocking poll sleeps on the GUI thread that would have to draw the approval card, so arming it re-creates a confirmed Houdini deadlock. Pinned by `tests/test_panel_consent_no_freeze.py`.
+1. **Gate system** — present but **NOT REACHED IN PRODUCTION.** The only production constructor, `get_process_bridge` (`shared/bridge.py:3088-3089`), passes `consent_callback=lambda op: True` and sets `_gate = None`, so `HumanGate.propose()` is never called on any shipped path and no operation has ever blocked for approval. This is deliberate, not an oversight: the blocking poll sleeps on the GUI thread that would have to draw the approval card, so arming it re-creates a confirmed Houdini deadlock. Pinned by `tests/test_panel_consent_no_freeze.py`.
 2. **Injected callback** (MCP/custom): `consent_callback` on bridge `__init__()`.
 3. **Standalone** (testing): auto-approve, zero dependencies.
 
@@ -87,7 +87,7 @@ fidelity             — 1.0 = pipeline functioning. <1.0 = pipeline bug.
 
 ### 1.4 Topological Hashing (R1)
 
-Scene change detection hashes three H21-native primitives together — global topology (`child.sessionId()` per child), local state (`node.cookCount()`), and geometry intrinsics (`geo.intrinsicValue('pointcount')` + `'bounds'`) — via `sha256(...).hexdigest()[:16]`. Each component is individually try/excepted so one missing API never kills the whole hash; falls back to timestamp-based hashing in standalone/test mode (no `hou`). See `shared/bridge.py:_topo_hash`.
+Scene change detection hashes three H21-native primitives together — global topology (`child.sessionId()` per child), local state (`cookCount()` on the target node and each child — a `hou.OpNode` method; the 22.0.400 symbol table has no `hou.Node.cookCount`, so it resolves on the OP nodes `hou.node()` returns), and geometry intrinsics (`geo.intrinsicValue('pointcount')` + `'bounds'`) — via `sha256(...).hexdigest()[:16]`. Each component is individually try/excepted so one missing API never kills the whole hash; falls back to timestamp-based hashing in standalone/test mode (no `hou`). See `shared/bridge.py:_compute_scene_hash_impl` (`:1074`).
 
 ### 1.5 Async Execution Boundary (R2)
 
@@ -98,11 +98,12 @@ FastMCP async loop
   └── execute_async(operation)
         ├── R7: _infer_stage_touch(operation)
         ├── R8: if cook_pdg_chain → _execute_pdg_deferred()
-        └── loop.run_in_executor(None, lambda:
-              hdefereval.executeInMainThreadWithResult(_sync_payload))
+        └── asyncio.wait_for(loop.run_in_executor(None, lambda:
+              _rom(_sync_payload, timeout=120.0)), timeout=125.0)
+              # _rom = _resolve_marshal() → run_on_main → hdefereval.executeDeferred + Event
 ```
 
-The `_sync_payload` closure captures the operation and executes it undo-wrapped on Houdini's main thread. The async loop is never blocked. All four anchors are enforced inside the closure.
+The `_sync_payload` closure captures the operation and executes it undo-wrapped on Houdini's main thread. The async loop is never blocked. All four anchors are enforced inside the closure. `_rom` is `run_on_main` whenever the real `hdefereval` is loaded (mechanism in §1.1): at 120s its abandoned flag voids a payload that has not started and the op fails `execution_timeout`. No marshal at all fails `missing_dependency` — never a fallback to the blocking vendor call.
 
 **For synchronous callers** (tests, direct main-thread): use `execute()` instead. Same anchors, same integrity, direct path.
 
@@ -364,7 +365,7 @@ Track across the session:
 
 1. **Never let two agents write the same file** — route through INTEGRATOR
 2. **Bridge = the audited mechanism, not the only one** — it wraps what it routes (undo + thread + integrity) on the in-Houdini `/mcp` endpoint. The live `/synapse` transport reaches `hou` by its own plumbing: `run_on_main` marshalling plus inline, partial `hou.undos.group` (§1), and leaves observe-only path-qualified `IntegrityBlock`s (`server/integrity_envelope.py`).
-3. **All hou.* calls via hdefereval** — SUBSTRATE's async boundary, no direct access
+3. **Off-main hou.* calls post via the non-blocking `hdefereval.executeDeferred`** — `run_on_main` (§1.1) and the Dispatcher's `python/synapse/host/main_thread_executor.py:290`; main-thread callers run inline; the blocking `executeInMainThreadWithResult` is lint-banned. SUBSTRATE's async boundary, no direct access
 4. **Gate levels enforced structurally** — disk writes auto-elevate to APPROVE, code execution requires CRITICAL (R4)
 5. **Consent gates are structure, not a prompt** — gate levels classify every op, and **nothing blocks on any path.** The bridge is built auto-approve and gate-less (§1.2.1); the live `/synapse` path never reaches the bridge at all, so `execute_python`/`execute_vex` run ungated with full `__builtins__`. What DOES gate by default is the panel worker's fail-closed DENY list (`panel/worker_policy.py`): a denied tool is refused with a reason and re-planned, never queued for approval. Pinned by `tests/test_phase0b_consent_posture.py`.
 6. **Fidelity = 1.0 or stop** — any degradation surfaces immediately, rollback via undo
