@@ -16,7 +16,9 @@
 
 **The current release is v5.97.3, and it installs from source.** It runs on **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md).
 
-**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the panel as of v5.86.0, with its JEV and SideFX library changes, but not the changes in v5.87.0 through v5.97.2. Spatial, the Render footer row and the Scatter recipe that reads the scene need the v5.97.2 source install.
+**v5.97.3 has not run in Houdini.** No hython seat run or Houdini session was made for this release. Its checks ran in standalone Python. See [what was tested](docs/releases/v5.97.3.md#tests).
+
+**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the panel as of v5.86.0, with its JEV and SideFX library changes, but not the changes in v5.87.0 through v5.97.3. Spatial, the Render footer row and the Scatter recipe that reads the scene need the v5.97.3 source install.
 
 The Setup is unsigned, so check it against that release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt) before you run it.
 
@@ -87,6 +89,8 @@ flowchart LR
 **Checked in Houdini 22.0.400:** the seven-fix controls passed in fresh headless sessions. A separate graphical session then passed the real production bridge checks, including repeat builds and artist Undo after a refused wire change.
 
 These checks do not measure a complex scene's time savings or qualify every panel interaction. See [release notes and evidence](docs/releases/v5.97.2.md#what-was-measured).
+
+**v5.97.3 drops a false merge warning.** A wire that names no input appends to an existing merge's lowest free input. The check used to warn `input gap: indices [0, 0]` for two such wires. It no longer does. The fix has a standalone test only and has not run in Houdini ([notes](docs/releases/v5.97.3.md#solaris-merge-warning-side-fix)).
 
 ## Build from a verified recipe
 
@@ -227,9 +231,17 @@ Only what you ask it to remember is stored. Automatic session and action rows ar
 
 Moneta's USD mirror is an inspection view, not the storage owner. Missing services and unknown outcomes remain visible. A memory store that cannot be read is reported as a failure, not as an empty answer.
 
+**Moneta's native module stays out unless you opt in.** `MONETA_NATIVE=0`, set before Moneta first loads, keeps it out of the Houdini process. The module is not qualified under hython, so [`packages/synapse.json`](packages/synapse.json) sets `MONETA_NATIVE=0`. Memory status and provenance report the module as `loaded`, `blocked` or `not_loaded`.
+
+**A native panic is caught in two places.** If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside a sleep pass returns `ran=False`. The WebSocket connection handler has no such guard.
+
+**`synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set.** It prunes memory, and a request cannot opt in. When it runs, it opens no undo group, so it cannot take back your last edit. A pass that fails after pruning is still audited.
+
+**Risk B is not fixed.** After a save, Moneta attention that has not been drained is lost at the next store switch or quit. Nothing drains it automatically, and no error is shown. The fix is planned for the next Moneta release ([limits that remain](docs/releases/v5.97.3.md#limits-that-remain)).
+
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
-**CI covers stock Python on Linux, macOS and Windows.** Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.3.md) before relying on it.
+**CI covers stock Python on Linux, macOS and Windows.** It does not exercise Moneta until `MONETA_DEPLOY_KEY` is provisioned. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.3.md) before relying on it.
 
 </details>
 
