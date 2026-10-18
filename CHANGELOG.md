@@ -4,9 +4,9 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.97.3 - Native Moneta guards and an opt-in sleep pass
 
-Source release; no new Windows Setup. Eleven commits on top of v5.97.2. The Moneta native module stays out of the Houdini process unless opted in, is reported when present, and a native panic during store construction falls back instead of escaping. A failed sleep pass is audited, and `synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set. Also: a Solaris merge warning fix, the additive `child_category` inspection field, the rc1 Moneta pin to `c33bbd96`, and a CLAUDE.md drift fix. Risk B (undrained attention lost on save) and the WebSocket panic arm are not fixed here. No hython run is recorded for this range.
+Source release; no new Windows Setup. Sixteen commits on top of v5.97.2. The Moneta native module stays out of the Houdini process unless opted in, is reported when present, and a native panic during store construction falls back instead of escaping. A failed sleep pass is audited, and `synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set. Also: a Solaris merge warning fix, the additive `child_category` inspection field, the rc1 Moneta pin to `c33bbd96`, and a CLAUDE.md drift fix. Risk B (undrained attention lost on save) and the WebSocket panic arm are not fixed here. No hython run is recorded for this range.
 
-**Measured at the integrated tip `725e7d30`:** 954 passed, 16 skipped, 5 xfailed, 0 failed in two orders (takeover record, `TAKEOVER_REPORT.frozen-e6717419.md:662`). The composed tip `d459f406` has no union run of its own yet. [Release notes](docs/releases/v5.97.3.md).
+**Measured at the integrated tip `725e7d30`:** 954 passed, 16 skipped, 5 xfailed, 0 failed in two orders (takeover record, `TAKEOVER_REPORT.frozen-e6717419.md:662`). **Measured at the code-final commit `98eaf2d6`:** the 54-file union gave 976 passed, 20 skipped, 5 xfailed, 0 failed, and a hermetic run of 656 test files gave 11,008 passed, 452 skipped, 11 xfailed and 2 failed (two salience tests that fail only under `SYNAPSE_JEV=off`). The merge review there returned `merge_with_followup`. [Release notes](docs/releases/v5.97.3.md).
 
 ## v5.97.2 - Safer Solaris wiring
 

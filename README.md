@@ -4,7 +4,7 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.97.3 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.2 is Latest</sub></p>
+<p align="center"><sub>v5.97.3 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.3 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
@@ -18,7 +18,7 @@
 
 **v5.97.3 has not run in Houdini.** No hython seat run or Houdini session was made for this release. Its checks ran in standalone Python. See [what was tested](docs/releases/v5.97.3.md#tests).
 
-**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the panel as of v5.86.0, with its JEV and SideFX library changes, but not the changes in v5.87.0 through v5.97.3. Spatial, the Render footer row and the Scatter recipe that reads the scene need the v5.97.3 source install.
+**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the panel as of v5.86.0, with its JEV and SideFX library changes, but not the changes in v5.87.0 through v5.97.3. Spatial, the Render footer row and the Scatter recipe that reads the scene need a source install; v5.97.3 is the current one.
 
 The Setup is unsigned, so check it against that release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt) before you run it.
 
@@ -233,15 +233,15 @@ Moneta's USD mirror is an inspection view, not the storage owner. Missing servic
 
 **Moneta's native module stays out unless you opt in.** `MONETA_NATIVE=0`, set before Moneta first loads, keeps it out of the Houdini process. The module is not qualified under hython, so [`packages/synapse.json`](packages/synapse.json) sets `MONETA_NATIVE=0`. Memory status and provenance report the module as `loaded`, `blocked` or `not_loaded`.
 
-**A native panic is caught in two places.** If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside a sleep pass returns `ran=False`. The WebSocket connection handler has no such guard.
+**A native panic is caught in two places.** If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside `synapse_sleep_pass` returns `ran=False`. The WebSocket connection handler has no such guard.
 
-**`synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set.** It prunes memory, and a request cannot opt in. When it runs, it opens no undo group, so it cannot take back your last edit. A pass that fails after pruning is still audited.
+**`synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set.** It prunes memory, and a request cannot opt in. Over the WebSocket connection it opens no undo group, so it cannot take back your last edit. On the in-Houdini HTTP `/mcp` route and the panel's tool route, an opted-in pass still runs inside the bridge's undo group. A pass that fails after pruning is still audited.
 
 **Risk B is not fixed.** After a save, Moneta attention that has not been drained is lost at the next store switch or quit. Nothing drains it automatically, and no error is shown. The fix is planned for the next Moneta release ([limits that remain](docs/releases/v5.97.3.md#limits-that-remain)).
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
-**CI covers stock Python on Linux, macOS and Windows.** It does not exercise Moneta until `MONETA_DEPLOY_KEY` is provisioned. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.3.md) before relying on it.
+**CI covers stock Python on Linux, macOS and Windows.** Its Moneta step shows that Moneta imports, not that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.3.md) before relying on it.
 
 </details>
 

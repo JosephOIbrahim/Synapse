@@ -222,7 +222,7 @@ Recording a decision retains context for later recall. It does not reconstruct a
 ```mermaid
 flowchart TD
     accTitle: Saved decisions, notes and advisory recall
-    accDescr: A decision is written to the configured record store and may also produce a scene note. Search and recall read the record store. Project setup and context queries read the scene and project notes. Both return advisory context. Moneta can also write a USD inspection mirror, separate from the storage owner.
+    accDescr: A decision is written to the configured record store and may also produce a scene note. Search and recall read the record store. Project setup and context queries read the scene and project notes. Both return advisory context. Moneta can also write a USD inspection mirror, separate from the storage owner. MONETA_NATIVE=0 keeps Moneta's native module out of the process, and a native panic while the Moneta store is built falls back to the JSONL store with the reason recorded. The sleep pass, which prunes the record store, is refused unless SYNAPSE_ALLOW_SLEEP_PASS=1.
     D["Record a decision"] --> S["Configured record store"]
     D -.->|"also attempts"| N["Scene / project notes"]
     S --> R["Search and<br/>typed recall"]
@@ -232,6 +232,9 @@ flowchart TD
     P --> C
     Q --> C
     S -.->|"Moneta secondary write"| V["USD inspection mirror"]
+    K["MONETA_NATIVE=0<br/>set before Moneta loads"] -.->|"keeps the native<br/>module out"| S
+    S -.->|"native panic while built:<br/>fallback recorded"| J["JSONL record store"]
+    G["synapse_sleep_pass<br/>prunes records"] -->|"refused unless<br/>SYNAPSE_ALLOW_SLEEP_PASS=1"| S
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class S synapse
@@ -245,7 +248,7 @@ flowchart TD
 | `.synapse/.moneta/cortex_root.usda` | Inspectable USD mirror when Moneta and USD authoring are available. |
 | `$HIP/claude/memory.md`, `$JOB/claude/project.md` | Human-readable scene and project notes. |
 
-Unsaved scenes or unwritable projects can use fallback locations. `SYNAPSE_MEMORY_BACKEND=moneta` selects Moneta; initialization failure falls back to JSONL with the reason recorded. Closing the USD view does not control persistence.
+Unsaved scenes or unwritable projects can use fallback locations. `SYNAPSE_MEMORY_BACKEND=moneta` selects Moneta; initialization failure falls back to JSONL with the reason recorded. Since v5.97.3 that includes a native panic while the store is built, and `MONETA_NATIVE=0`, set before Moneta first loads, keeps the native module out of the process. `synapse_sleep_pass` prunes the record store and is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set. Closing the USD view does not control persistence.
 
 `synapse_recall` retrieves typed records, defaulting to decisions. `synapse_memory_query` searches loaded scene/project content. `synapse_project_setup` loads starting context, including the scene's notes end to end.
 

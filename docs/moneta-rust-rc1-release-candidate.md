@@ -5,7 +5,7 @@ approved by this document. The isolated SYNAPSE candidate starts at published
 `e7a2e1e023b2788eb077b569f6f9500d3a0d9e2c` and includes the six-file inspection
 change from `4ee8f2589f4865e63f3d54dca028a112aa1c343a`, plus its focused recovery
 and first-party consumer controls. External consumers remain unknown. `VERSION`
-remains `5.97.2` until combined scope review.
+was `5.97.2` until combined scope review. It shipped in v5.97.3.
 
 ## Exact Moneta input
 
