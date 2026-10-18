@@ -7,6 +7,8 @@ Extracted from handlers.py -- contains memory bridge handlers and Living Memory
 
 import logging
 import os
+import threading
+from datetime import datetime
 from typing import Dict
 
 try:
@@ -48,6 +50,71 @@ def _fail_on_error(result):
     if text.startswith(_MEMORY_CALLER_ERRORS):
         raise SynapseUserError(text)
     raise SynapseServiceError(text)
+
+
+#: D4 (2026-10-18). The sleep pass permanently prunes unprotected memories, and
+#: the APPROVE class it carries on the bridge cannot block: the process bridge
+#: is built auto-approve with its gate nulled (CLAUDE.md 1.2.1). So the handler
+#: refuses unless the PROCESS ENVIRONMENT holds exactly "1" here. The request
+#: payload is never consulted, so no caller can opt itself in.
+SLEEP_PASS_OPT_IN_ENV = "SYNAPSE_ALLOW_SLEEP_PASS"
+
+_SLEEP_PASS_REFUSAL = (
+    "synapse_sleep_pass is refused by default because it permanently prunes "
+    "unprotected memories; set SYNAPSE_ALLOW_SLEEP_PASS=1 in the environment "
+    "of the process that runs the SYNAPSE server to opt in."
+)
+
+#: delta_hash of the observe-only block. The pass touches no scene, so no scene
+#: hash is taken. An empty delta would score a mutating op whose delta was never
+#: computed (FIDELITY_DEGRADED); this sentinel says why there is none.
+SLEEP_PASS_DELTA = "scene_free"
+
+
+def _record_sleep_pass_block(main_thread_executed: bool) -> None:
+    """Append one observe-only IntegrityBlock for a sleep pass that ran.
+
+    Built the way the live envelope builds its blocks
+    (``integrity_envelope.record_live_block``) and appended with
+    ``record_external_block``. No gate ran, nothing was undo-wrapped and no
+    composition check ran, so those anchors are recorded False AND not
+    applicable, never claimed. ``main_thread_executed`` is the identity of the
+    thread that ran the pass, measured by the caller, never asserted.
+    Attributed to CONDUCTOR, the agent the pass ran as inside
+    ``bridge.execute()`` before D4.
+
+    Never raises. The pass has already pruned, so its audit must reach the
+    caller even when this record cannot be made; the failure is logged.
+    """
+    try:
+        from . import integrity_envelope as envelope
+        if envelope.IntegrityBlock is None or envelope.get_process_bridge is None:
+            raise RuntimeError("shared.bridge is not importable in this process")
+        from shared.types import AgentID
+        block = envelope.IntegrityBlock(
+            undo_group_active=False,
+            main_thread_executed=main_thread_executed,
+            consent_verified=False,
+            composition_valid=False,
+            agent_id=AgentID.CONDUCTOR.value,
+            operation_type="sleep_pass",
+            timestamp=datetime.now().isoformat(),
+            scene_hash_before="",
+            scene_hash_after="",
+            delta_hash=SLEEP_PASS_DELTA,
+            execution_path="live",
+            consent_applicable=False,
+            composition_applicable=False,
+            undo_applicable=False,
+            hash_target="",
+        )
+        envelope.get_process_bridge().record_external_block(block)
+    except Exception:  # noqa: BLE001 -- the pass result must still be returned
+        logger.warning(
+            "sleep pass ran, but its observe-only integrity block was not "
+            "recorded; returning the pass result anyway",
+            exc_info=True,
+        )
 
 
 class MemoryHandlerMixin:
@@ -444,23 +511,47 @@ class MemoryHandlerMixin:
         return status
 
     def _handle_sleep_pass(self, payload: Dict) -> Dict:
-        """Trigger Moneta consolidation/decay. DESTRUCTIVE — permanently prunes
-        unprotected memories, so this command is gated APPROVE via the bridge
-        (operation 'sleep_pass'; the gate fires in execute_through_bridge before
-        this handler runs). Returns the prune audit so any data loss is visible.
+        """Run one Moneta sleep pass (consolidation/decay) and return its audit.
+        DESTRUCTIVE: the pass permanently prunes unprotected memories.
+
+        Refused by default (D4, 2026-10-18). The pass runs only when the
+        process environment has SYNAPSE_ALLOW_SLEEP_PASS set to exactly "1";
+        anything else returns ``{"ran": False, "refused": True, "reason": ...}``
+        and logs one INFO line. This check is the gate that actually holds:
+        the 'sleep_pass' APPROVE class on the bridge cannot block, because the
+        process bridge auto-approves, and the panel worker's DENY covers the
+        panel alone. ``payload`` is never read, so no request can opt in.
+
+        When opted in, the pass is called directly, not through
+        ``bridge.execute()``. It touches no scene, so it opens no undo group
+        and nothing can ``performUndo`` the artist's last edit. A pass that
+        ran appends one observe-only IntegrityBlock to the process bridge
+        trail: consent, undo and composition are recorded not applicable,
+        and the thread it ran on is measured.
+
+        A pass that raises returns ``{"ran": False, "error": ...}``. It is not
+        retried and no fallback runs it again. A native Moneta (PyO3) panic is
+        answered the same way. KeyboardInterrupt, SystemExit, GeneratorExit
+        and asyncio.CancelledError propagate untouched.
 
         No-op (with a clear reason) when the active store isn't Moneta-backed,
         so it is safe under the default jsonl backend.
         """
+        if os.environ.get(SLEEP_PASS_OPT_IN_ENV) != "1":
+            logger.info(
+                "sleep pass refused: %s is not set to 1 in this process",
+                SLEEP_PASS_OPT_IN_ENV,
+            )
+            return {"ran": False, "refused": True, "reason": _SLEEP_PASS_REFUSAL}
+
         bridge = self._get_bridge()  # type: ignore[attr-defined]
         synapse_mem = getattr(bridge, "_synapse", None)
         store = getattr(synapse_mem, "store", None) if synapse_mem is not None else None
         if store is None or not hasattr(store, "run_sleep_pass"):
             return {"ran": False, "reason": "active memory backend is not Moneta-backed"}
 
-        # Wrap the prune in an Operation so the APPROVE gate fires before
-        # execution.  The LosslessExecutionBridge handles consent, undo
-        # grouping, and integrity verification.
+        from ..memory.native_panic import is_native_panic
+
         def _do_prune() -> Dict:
             before = store.count()
             audit = store.run_sleep_pass()
@@ -475,26 +566,46 @@ class MemoryHandlerMixin:
             }
 
         try:
-            from shared.bridge import Operation, get_process_bridge
-            from shared.types import AgentID
-            exec_bridge = get_process_bridge()
-            op = Operation(
-                agent_id=AgentID.CONDUCTOR,
-                operation_type="sleep_pass",
-                summary="Moneta sleep pass: consolidate/decay unprotected memories",
-                fn=_do_prune,
-            )
-            result = exec_bridge.execute(op)
-            if result.success and result.result is not None:
-                return result.result
-            return {"ran": False, "error": result.error or "Bridge execution failed"}
-        except ImportError:
-            # Fallback: direct execution (standalone/test mode, no bridge)
-            return _do_prune()
-        except Exception as exc:
+            result = _do_prune()
+        except Exception as exc:  # noqa: BLE001 -- answered once, never retried
             logger.warning(
-                "Bridge unavailable for sleep pass (%s: %s); "
-                "falling back to direct execution",
+                "sleep pass failed (%s: %s); returning ran=False with no retry "
+                "and no fallback pass",
                 type(exc).__name__, exc,
+                exc_info=True,
             )
-            return _do_prune()
+            return {
+                "ran": False,
+                "error": (
+                    "sleep pass failed (%s: %s); it was not retried. Rows may "
+                    "already be pruned: a Moneta-backed store logs the failed "
+                    "pass's prune audit" % (type(exc).__name__, exc)
+                ),
+            }
+        except BaseException as exc:
+            # PyO3 raises a Rust panic as pyo3_runtime.PanicException, which
+            # derives from BaseException, so the arm above never sees it.
+            # Anything else here is interpreter control flow (KeyboardInterrupt,
+            # SystemExit, GeneratorExit, asyncio.CancelledError): re-raised as is.
+            if not is_native_panic(exc):
+                raise
+            logger.error(
+                "sleep pass hit a native Moneta panic (%s: %s); returning "
+                "ran=False with no retry and no fallback pass",
+                type(exc).__name__, exc,
+                exc_info=True,
+            )
+            return {
+                "ran": False,
+                "error": (
+                    "sleep pass hit a native Moneta panic (%s: %s); it was not "
+                    "retried. Rows may already be pruned: a Moneta-backed "
+                    "store logs the failed pass's prune audit"
+                    % (type(exc).__name__, exc)
+                ),
+            }
+
+        _record_sleep_pass_block(
+            threading.current_thread() is threading.main_thread()
+        )
+        return result
