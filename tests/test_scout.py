@@ -589,7 +589,11 @@ def test_external_process_warns_that_its_authority_is_unverified(
     assert syms_live == {"hou.LopNode"}
     assert "verified_against_running_build" not in status_live
     assert status_live["reason"] is None
-    assert not quiet and not scout._WARN
+    # A ResourceWarning here is a garbage-collected sqlite connection from an
+    # earlier test landing inside this window (ubuntu 3.14 CI, v5.97.3 attempt
+    # 1), not something the scout said. Every other category still fails.
+    said = [w for w in quiet if not issubclass(w.category, ResourceWarning)]
+    assert not said and not scout._WARN
 
 
 def test_external_process_is_not_refused_under_the_fail_closed_policy(

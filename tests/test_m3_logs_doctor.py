@@ -224,9 +224,19 @@ def test_escalate_dumps_evidence(tmp_path, monkeypatch):
     chain = _chain()
     try:
         chain.heartbeat()                       # arm monitoring
-        # Wait for the DUMP, not for the `escalated` latch that precedes it.
-        assert _wait_until(lambda: bool(list(tmp_path.glob("freeze_dump_*.json")))), \
-            "no freeze dump appeared"
+        # Wait for the DUMP, not for the `escalated` latch that precedes it,
+        # and for its CONTENT, not its name: the writer creates the file and
+        # then fills it, and a reader between the two sees an empty file
+        # (macOS CI, v5.97.3 attempt 1: JSONDecodeError at char 0).
+        def _dump_complete():
+            for p in tmp_path.glob("freeze_dump_*.json"):
+                try:
+                    json.loads(p.read_text(encoding="utf-8"))
+                    return True
+                except (OSError, ValueError):
+                    return False
+            return False
+        assert _wait_until(_dump_complete), "no complete freeze dump appeared"
         assert chain.escalated is True
         dumps = list(tmp_path.glob("freeze_dump_*.json"))
         assert len(dumps) == 1
