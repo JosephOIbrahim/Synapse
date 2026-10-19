@@ -19,6 +19,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..memory.store import SynapseMemory, get_synapse_memory, reset_synapse_memory
+from ..memory.native_panic import is_native_panic
 from ..memory.models import Memory, MemoryType, MemoryQuery, MemoryTier
 from ..memory.markdown import MarkdownSync, load_context
 from .summary import generate_session_summary
@@ -176,12 +177,21 @@ class SynapseBridge:
 
         # Log session start to memory
         if self._synapse and _auto_memory_enabled():
-            self._synapse.add(
-                content=f"AI session started (client: {client_id})",
-                memory_type=MemoryType.NOTE,
-                tags=["session", "start"],
-                source="auto"
-            )
+            try:
+                self._synapse.add(
+                    content=f"AI session started (client: {client_id})",
+                    memory_type=MemoryType.NOTE,
+                    tags=["session", "start"],
+                    source="auto"
+                )
+            except BaseException as exc:  # noqa: BLE001 -- PyO3's PanicException is a BaseException
+                if not is_native_panic(exc):
+                    raise
+                logger.error(
+                    "A native (Rust) extension panicked while writing the session "
+                    "start row (%s: %s); the row was not written and the session "
+                    "continues", type(exc).__name__, exc, exc_info=True,
+                )
 
         return session_id
 
@@ -203,18 +213,27 @@ class SynapseBridge:
 
         # Log session summary to memory
         if self._synapse and session.commands_executed > 0 and _auto_memory_enabled():
-            self._synapse.add(
-                content=summary,
-                memory_type=MemoryType.SUMMARY,
-                tags=["session", "summary"],
-                source="auto",
-                # H-4: an explicit, session-distinguishing summary. Without it,
-                # Memory.__post_init__ auto-derives summary from the first content
-                # line — always the literal "## Session Summary" heading — so
-                # recent_activity shows N identical rows to the AI on every connect.
-                summary=f"Session summary — {session.commands_executed} cmds, "
-                        f"{len(getattr(session, 'nodes_created', []) or [])} nodes ({session_id})",
-            )
+            try:
+                self._synapse.add(
+                    content=summary,
+                    memory_type=MemoryType.SUMMARY,
+                    tags=["session", "summary"],
+                    source="auto",
+                    # H-4: an explicit, session-distinguishing summary. Without it,
+                    # Memory.__post_init__ auto-derives summary from the first content
+                    # line — always the literal "## Session Summary" heading — so
+                    # recent_activity shows N identical rows to the AI on every connect.
+                    summary=f"Session summary — {session.commands_executed} cmds, "
+                            f"{len(getattr(session, 'nodes_created', []) or [])} nodes ({session_id})",
+                )
+            except BaseException as exc:  # noqa: BLE001 -- PyO3's PanicException is a BaseException
+                if not is_native_panic(exc):
+                    raise
+                logger.error(
+                    "A native (Rust) extension panicked while writing the session "
+                    "summary row (%s: %s); the row was not written and the session "
+                    "continues", type(exc).__name__, exc, exc_info=True,
+                )
 
         return summary
 
@@ -353,13 +372,22 @@ class SynapseBridge:
 
         # Log to memory
         if _auto_memory_enabled():
-            self._synapse.add(
-                content=action,
-                memory_type=MemoryType.ACTION,
-                tags=["action", "ai"],
-                node_paths=node_paths or [],
-                source="ai"
-            )
+            try:
+                self._synapse.add(
+                    content=action,
+                    memory_type=MemoryType.ACTION,
+                    tags=["action", "ai"],
+                    node_paths=node_paths or [],
+                    source="ai"
+                )
+            except BaseException as exc:  # noqa: BLE001 -- PyO3's PanicException is a BaseException
+                if not is_native_panic(exc):
+                    raise
+                logger.error(
+                    "A native (Rust) extension panicked while writing the session "
+                    "action row (%s: %s); the row was not written and the session "
+                    "continues", type(exc).__name__, exc, exc_info=True,
+                )
         self.invalidate_context_cache()
 
     def log_node_created(self, node_path: str, node_type: str, session_id: str = None):
