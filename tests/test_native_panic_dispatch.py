@@ -19,8 +19,15 @@ fake. The command is ``ping``, which is read-only, so the C5 lock, the live
 integrity envelope and ``_submit_logs`` stay out of the way.
 
 Bite. Against the unguarded handlers.py the five answer cases fail, each
-because the ``PanicException`` escapes. The six re-raise cases are pins: they
-pass on both sides, because what is not a native panic must still propagate.
+because the ``PanicException`` escapes. The re-raise cases are pins: what is
+not a native panic must still propagate.
+
+Follow-up pins (the build -> cut edge gate). The arm's ERROR record carries
+the panic's traceback. When the classifier module cannot be imported, the arm
+logs that at ERROR and re-raises the exception it caught, not the import
+error. The re-raise table keeps two near misses apart: a ``BaseException``
+subclass from another module, and a class from ``pyo3_runtime`` that is not
+named ``PanicException``.
 """
 
 import ast
@@ -28,6 +35,7 @@ import asyncio
 import importlib
 import json
 import logging
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -43,9 +51,13 @@ PanicException = type("PanicException", (BaseException,), {"__module__": "pyo3_r
 ForeignPanicException = type(
     "PanicException", (BaseException,), {"__module__": "not_pyo3_runtime"})
 
-#: A BaseException subclass with another name, from PyO3's own module.
+#: From PyO3's own module, under another name: not a panic either.
+Pyo3OtherBaseException = type(
+    "Pyo3OtherBaseException", (BaseException,), {"__module__": "pyo3_runtime"})
+
+#: A BaseException subclass from another module, under another name.
 UnrelatedBaseException = type(
-    "UnrelatedBaseException", (BaseException,), {"__module__": "pyo3_runtime"})
+    "UnrelatedBaseException", (BaseException,), {"__module__": "some_other_extension"})
 
 #: Any non-None handler, so handle() never takes the alias fallback.
 _FOUND = object()
@@ -105,6 +117,42 @@ def test_handle_answers_a_native_panic_under_the_request_id(caplog):
     errors = [r for r in caplog.records
               if r.name == "synapse.server.handlers" and r.levelno == logging.ERROR]
     assert len(errors) == 1
+
+
+def _handler_errors(caplog):
+    return [r for r in caplog.records
+            if r.name == "synapse.server.handlers" and r.levelno == logging.ERROR]
+
+
+def test_handle_logs_the_panic_with_its_traceback(caplog):
+    panic = _panic()
+    handler = _real_handler(panic)
+    caplog.set_level(logging.ERROR, logger="synapse.server.handlers")
+
+    handler.handle(_ping("req-t"))
+
+    errors = _handler_errors(caplog)
+    assert len(errors) == 1
+    assert errors[0].exc_info is not None and errors[0].exc_info[1] is panic
+
+
+def test_handle_reraises_the_panic_when_the_classifier_cannot_be_imported(monkeypatch, caplog):
+    # The arm imports the classifier when it runs. If that import fails, the
+    # arm cannot tell a panic from anything else, so it logs at ERROR and
+    # re-raises what it caught, never the import error.
+    panic = _panic()
+    handler = _real_handler(panic)  # build it first: importing handlers may import the classifier
+    monkeypatch.setitem(sys.modules, "synapse.memory.native_panic", None)
+    caplog.set_level(logging.ERROR, logger="synapse.server.handlers")
+
+    with pytest.raises(PanicException) as caught:
+        handler.handle(_ping("req-c"))
+
+    assert caught.value is panic
+    errors = _handler_errors(caplog)
+    assert len(errors) == 1
+    assert "native-panic classifier" in errors[0].getMessage()
+    assert errors[0].exc_info is not None and issubclass(errors[0].exc_info[0], ImportError)
 
 
 # ---------------------------------------------------------------------------
@@ -215,13 +263,15 @@ def test_bridge_route_through_a_bridge_answers_a_panic(monkeypatch):
     GeneratorExit(),
     asyncio.CancelledError(),
     ForeignPanicException("not pyo3's"),
-    UnrelatedBaseException("not a panic"),
+    Pyo3OtherBaseException("pyo3's module, not a panic"),
+    UnrelatedBaseException("not pyo3's, not a panic"),
 ], ids=[
     "KeyboardInterrupt",
     "SystemExit",
     "GeneratorExit",
     "CancelledError",
     "foreign-PanicException",
+    "pyo3_runtime-other-name",
     "unrelated-BaseException",
 ])
 def test_handle_reraises_what_is_not_a_native_panic(exc):

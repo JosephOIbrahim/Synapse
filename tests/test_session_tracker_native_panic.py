@@ -21,10 +21,17 @@ backend. Not run under hython.
 
 Bite. On the unguarded tracker the four panic cases fail with the
 ``PanicException`` escaping; the ordinary-error pin passes on both sides.
+
+Follow-up pins (the build -> cut edge gate). The summary and action rows
+re-raise ordinary errors too, not only the start row. On all three rows the
+ERROR record carries the panic's traceback. And with ``enveloped=True``, a
+panic in the action row still lets ``_submit_logs`` write the audit row and
+land the live integrity block.
 """
 
 import logging
 import threading
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -163,3 +170,88 @@ def test_tracker_still_raises_ordinary_errors(bridge):
 
     with pytest.raises(RuntimeError, match="store is down"):
         bridge.start_session("c1")
+
+
+# ---------------------------------------------------------------------------
+# follow-up pins: all three rows, and the enveloped caller
+# ---------------------------------------------------------------------------
+
+def _write_row(bridge, row, error):
+    """Run the call that writes ``row``, with that row's add raising ``error``.
+
+    For the summary and action rows, the start row is written normally first.
+    """
+    if row == "start":
+        bridge._synapse.add.side_effect = error
+        return bridge.start_session("c1")
+    sid = bridge.start_session("c1")
+    if row == "summary":
+        bridge.get_session(sid).commands_executed = 1  # no summary row at 0 commands
+        bridge._synapse.add.side_effect = error
+        return bridge.end_session(sid)
+    bridge._synapse.add.side_effect = error
+    return bridge.log_action("Executed: create_node", session_id=sid)
+
+
+@pytest.mark.parametrize("row", ["summary", "action"])
+def test_summary_and_action_rows_still_raise_ordinary_errors(bridge, row):
+    # The start row's pin is test_tracker_still_raises_ordinary_errors.
+    error = RuntimeError("store is down")
+
+    with pytest.raises(RuntimeError) as caught:
+        _write_row(bridge, row, error)
+
+    assert caught.value is error
+
+
+@pytest.mark.parametrize("row", ["start", "summary", "action"])
+def test_each_row_logs_the_panic_with_its_traceback(bridge, caplog, row):
+    panic = _rust_panic()
+
+    with caplog.at_level(logging.ERROR, logger="synapse.session"):
+        _write_row(bridge, row, panic)
+
+    errors = _session_errors(caplog)
+    assert len(errors) == 1, [r.getMessage() for r in caplog.records]
+    assert f"session {row} row" in errors[0].getMessage()
+    assert errors[0].exc_info is not None and errors[0].exc_info[1] is panic
+
+
+def test_submit_logs_keeps_the_live_integrity_block_when_the_action_row_panics(
+        bridge, monkeypatch):
+    import synapse.server.handlers as handlers
+    import synapse.server.main_thread as main_thread
+
+    # record_live_block does nothing when shared.bridge cannot be imported.
+    # Fail here rather than pass on a no-op.
+    assert handlers._envelope._ENVELOPE_AVAILABLE
+    sid = bridge.start_session("c1")
+    bridge._synapse.add.side_effect = _rust_panic()
+
+    handler = object.__new__(handlers.SynapseHandler)
+    handler._bridge = bridge  # never None: _get_bridge() would open a real store
+    handler._session_id = sid
+    handler._user_id = "pytest"
+
+    class _InlineExecutor:
+        def submit(self, fn, *args, **kwargs):
+            return fn(*args, **kwargs)
+
+    audited, landed = [], []
+    monkeypatch.setattr(handlers, "_log_executor", _InlineExecutor())
+    # _do_log imports run_on_main from the module at call time.
+    monkeypatch.setattr(main_thread, "run_on_main", lambda fn, *a, **k: fn())
+    monkeypatch.setattr(handlers, "audit_log",
+                        lambda: SimpleNamespace(log=lambda **entry: audited.append(entry)))
+    # The block lands here instead of in the process-wide bridge trail.
+    monkeypatch.setattr(handlers._envelope, "get_process_bridge",
+                        lambda: SimpleNamespace(record_external_block=landed.append))
+
+    handler._submit_logs("create_node", {"node": "/obj/x"}, {},
+                         hash_before="aaaa", hash_after="bbbb", enveloped=True)
+
+    assert bridge._synapse.add.call_args.kwargs["content"] == "Executed: create_node"
+    assert [entry["operation"] for entry in audited] == ["create_node"]
+    assert [(blk.operation_type, blk.execution_path) for blk in landed] == [
+        ("create_node", "live")]
+    assert (landed[0].scene_hash_before, landed[0].scene_hash_after) == ("aaaa", "bbbb")
