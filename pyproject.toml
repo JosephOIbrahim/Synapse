@@ -86,10 +86,10 @@ moneta = [
     # Default backend is jsonl; without this extra, moneta is never imported and
     # SYNAPSE runs unchanged. Private repo (License: Proprietary, not on PyPI)
     # and Requires-Python >=3.11, so this extra only resolves with repo credentials
-    # on 3.11+; on 3.9/3.10 pip correctly refuses it. Published v1.3.0-rc1
-    # reports distribution version 1.3.0rc1. Pin its exact source commit:
+    # on 3.11+; on 3.9/3.10 pip correctly refuses it. Published v1.3.0 (stable)
+    # reports distribution version 1.3.0. Pin its exact source commit:
     # the separately qualified moneta_native wheel is still required for Rust.
-    "moneta @ git+https://github.com/JosephOIbrahim/Moneta.git@c33bbd96dd9c21d84096f147554eaaa3e2197a92",
+    "moneta @ git+https://github.com/JosephOIbrahim/Moneta.git@4f7afc73736aecce6d55d5e03f28fb3137d474d3",
 ]
 
 [project.urls]

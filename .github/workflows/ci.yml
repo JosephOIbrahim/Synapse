@@ -71,10 +71,10 @@ jobs:
           # given day, and the ratchet suite baseline (harness/verify/
           # suite_baseline.json) is measured against it. CI pins a specific
           # commit independently of pyproject.toml's version range. This is
-          # published v1.3.0-rc1, not the later unpublished hardening branch.
+          # published v1.3.0 (stable); the v1.3.0 tag peels to this commit.
           # Installing the Python package alone does not qualify Rust execution;
           # see docs/moneta-rust-rc1-release-candidate.md for the native gate.
-          ref: c33bbd96dd9c21d84096f147554eaaa3e2197a92
+          ref: 4f7afc73736aecce6d55d5e03f28fb3137d474d3
           ssh-key: ${{ secrets.MONETA_DEPLOY_KEY }}
           path: _moneta
 
