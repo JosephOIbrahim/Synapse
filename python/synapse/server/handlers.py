@@ -628,6 +628,35 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 error=f"Hit a snag processing that request: {e}",
                 sequence=command.sequence,
             )
+        except BaseException as exc:  # noqa: BLE001 -- PyO3's PanicException is a BaseException
+            # L-PANIC-WS.1: PyO3 raises a Rust panic as pyo3_runtime.PanicException,
+            # which no arm above sees. Answer it under this request's id so the
+            # caller gets a reply; re-raise everything else (KeyboardInterrupt,
+            # SystemExit, GeneratorExit, asyncio.CancelledError) unchanged.
+            try:
+                from ..memory.native_panic import is_native_panic
+            except Exception:
+                _log.error("could not load the native-panic classifier; re-raising", exc_info=True)
+                raise exc from None
+            if not is_native_panic(exc):
+                raise
+            _log.error(
+                "A native (Rust) extension panicked while handling %r (%s: %s); "
+                "answering this request with an error",
+                command.type, type(exc).__name__, exc,
+                exc_info=True,
+            )
+            return SynapseResponse(
+                id=command.id,
+                success=False,
+                sequence=command.sequence,
+                error=(
+                    "A native (Rust) extension panicked while handling '%s' (%s: %s). "
+                    "SYNAPSE kept running and answered this request. If Moneta's "
+                    "native module is loaded, MONETA_NATIVE=0 set before Houdini "
+                    "starts keeps it out." % (command.type, type(exc).__name__, exc)
+                ),
+            )
 
     def _submit_logs(self, cmd_type: str, payload: Dict, result: Any,
                      hash_before: Optional[str] = None,
