@@ -6,9 +6,9 @@ Publication links and wording reviewed on **2026-10-19** against published v5.97
 
 ## At a glance
 
-- **Published source:** [v5.97.3](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.3).
+- **Published source:** [v5.97.4](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.4).
 - **Windows Setup:** v5.86.0, not the current source release.
-- **Houdini 22.0.400:** the target runtime. v5.97.3 has no Houdini or hython run; [its release notes](releases/v5.97.3.md) record standalone-Python checks.
+- **Houdini 22.0.400:** the target runtime. v5.97.4 has no Houdini or hython run; [its release notes](releases/v5.97.4.md) record standalone-Python checks.
 - **Installed version:** separate from the published source. An open Houdini session keeps its loaded modules until reload or restart.
 
 [Install](getting-started/installation.md) · [Solaris evidence](#solaris-wiring-validation) · [Artist control](#artist-control) · [Stop and Undo](#undo-stop-and-rendering) · [Memory limits](#memory-and-suggestions)
@@ -23,7 +23,7 @@ Publication links and wording reviewed on **2026-10-19** against published v5.97
 | World Labs | Artist-triggered import of an existing API-accessible world or supported local Gaussian PLY. | [Import flow and limits](architecture/overview.md#world-labs-import). |
 | SideFX help | Resumable installed-help/Markdown ingestion, published SQLite search generations and bounded local Scout retrieval. | [Build and connect](studio/SIDEFX_LIBRARY.md). |
 
-**Installation:** the current source release, **v5.97.3**, is a source release. The latest Windows Setup is **v5.86.0**; it contains the changes above but not the changes in v5.87.0 through v5.97.3. See [installation](getting-started/installation.md).
+**Installation:** the current source release, **v5.97.4**, is a source release. The latest Windows Setup is **v5.86.0**; it contains the changes above but not the changes in v5.87.0 through v5.97.4. See [installation](getting-started/installation.md).
 
 ### Validation by release
 

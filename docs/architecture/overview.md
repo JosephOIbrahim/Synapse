@@ -254,7 +254,7 @@ Unsaved scenes or unwritable projects can use fallback locations. `SYNAPSE_MEMOR
 
 **A fact that lives only in the notes is not found by search or recall.** A scene's landing record is one such fact. Since v5.94.0 the panel's prompt sends questions about what is remembered of a scene to `synapse_project_setup` first.
 
-**Automatic rows are opt-in.** The session tracker writes "AI session started", "Executed: <command>" and a session summary only when `SYNAPSE_AUTO_MEMORY=1`. Decisions, explicit memory writes and error rows are always written.
+**Automatic rows are opt-in.** The session tracker writes "AI session started", "Executed: <command>" and a session summary only when `SYNAPSE_AUTO_MEMORY=1`. Decisions, explicit memory writes and error rows are always written. Since v5.97.4, a native panic while one of these automatic rows is written is logged and that row is skipped; the session, and the command's audit entry, go on.
 
 **An error is reported as a failure.** When the store reports an error, search, add, decide and recall fail; they do not return the error as data inside a success.
 

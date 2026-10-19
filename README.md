@@ -4,19 +4,21 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.97.3 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.3 is Latest</sub></p>
+<p align="center"><sub>v5.97.4 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.4 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Install](docs/getting-started/installation.md)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.97.3.md)
+**[Install](docs/getting-started/installation.md)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.97.4.md)
 
 ## Start here
 
-- **Published source:** [v5.97.3](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.3). Targets **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13.
-- **Houdini qualification:** v5.97.3 has **not** run in Houdini or hython. Its checks ran in standalone Python. [What was tested](docs/releases/v5.97.3.md#tests).
-- **One-click installer:** [Windows Setup v5.86.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe). It does **not** include v5.87.0 through v5.97.3.
+- **Published source:** [v5.97.4](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.4). Targets **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13.
+- **Houdini qualification:** v5.97.4 has **not** run in Houdini or hython. Its checks ran in standalone Python. [What was tested](docs/releases/v5.97.4.md#tests).
+- **One-click installer:** [Windows Setup v5.86.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe). It does **not** include v5.87.0 through v5.97.4.
+
+**New in 5.97.4: a native panic during a command gets an answer.** If a native (Rust) extension panics while SYNAPSE runs a command, that request now gets a failed reply, and the next request is answered. Before, the WebSocket connection sent no reply. SYNAPSE answers the panic; it does not repair the module, and a failed reply does not mean nothing was written. Tested with fakes only, and not run under hython ([what changed](docs/releases/v5.97.4.md#what-changes)).
 
 **Want the current changes? Use the [source installation](docs/getting-started/installation.md#source-installation).** Spatial, the Render footer row and the Scatter recipe that reads the scene need a source install.
 
@@ -26,7 +28,7 @@ Published source, an installed version and a qualified Houdini session are diffe
 
 **Pick one path, then follow these four steps.**
 
-1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.97.3, or run the v5.86.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
+1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.97.4, or run the v5.86.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
 2. Restart Houdini. Open **New Pane Tab → Synapse**.
 3. Open **Connect models**. Choose a provider and model; add its key if needed.
 4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
@@ -195,7 +197,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.97.3.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.97.4.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -237,15 +239,15 @@ Moneta's USD mirror is an inspection view, not the storage owner. Missing servic
 
 **Moneta's native module stays out unless you opt in.** `MONETA_NATIVE=0`, set before Moneta first loads, keeps it out of the Houdini process. The module is not qualified under hython, so [`packages/synapse.json`](packages/synapse.json) sets `MONETA_NATIVE=0`. Memory status and provenance report the module as `loaded`, `blocked` or `not_loaded`.
 
-**A native panic is caught in two places.** If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside `synapse_sleep_pass` returns `ran=False`. The WebSocket connection handler has no such guard.
+**A native panic is caught in four places.** If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside `synapse_sleep_pass` returns `ran=False`. Since 5.97.4, a panic that reaches the command dispatcher gets a failed reply under its request id, and with `SYNAPSE_AUTO_MEMORY=1` a panic in an automatic session row is logged and that row is skipped. The connection handlers themselves still catch `Exception` only.
 
 **`synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set.** It prunes memory, and a request cannot opt in. Over the WebSocket connection it opens no undo group, so it cannot take back your last edit. On the in-Houdini HTTP `/mcp` route and the panel's tool route, an opted-in pass still runs inside the bridge's undo group. A pass that fails after pruning is still audited.
 
-**Risk B is not fixed.** After a save, Moneta attention that has not been drained is lost at the next store switch or quit. Nothing drains it automatically, and no error is shown. The fix is planned for the next Moneta release ([limits that remain](docs/releases/v5.97.3.md#limits-that-remain)).
+**Risk B is not fixed.** After a save, Moneta attention that has not been drained is lost at the next store switch or quit. Nothing drains it automatically, and no error is shown. The fix is planned for the next Moneta release ([limits that remain](docs/releases/v5.97.4.md#limits-that-remain)).
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
-**CI covers stock Python on Linux, macOS and Windows.** Its Moneta step shows that Moneta imports, not that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.3.md) before relying on it.
+**CI covers stock Python on Linux, macOS and Windows.** Its Moneta step shows that Moneta imports, not that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.4.md) before relying on it.
 
 </details>
 

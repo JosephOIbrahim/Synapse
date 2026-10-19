@@ -2,6 +2,12 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.97.4 - A native panic during a command gets an answer
+
+Source release; no new Windows Setup. Eight commits on top of v5.97.3, plus the release commit. When a native (Rust) extension panics while SYNAPSE runs a command, `SynapseHandler.handle()` now returns a failed reply under that request's id, and the server answers the next request; before, the panic passed every `except Exception` arm. With `SYNAPSE_AUTO_MEMORY=1` (off by default), a native panic in one of the session tracker's three automatic rows is logged and that row is skipped. Also: test pins for the coverage gaps the verifiers found, two CI-flake test fixes, release-card corrections and PR #115's README and status rewrite. The panic is answered, not repaired; the connection handlers still catch `Exception` only; nothing in this range ran under hython.
+
+**Measured on `545c13ee`, each fix commit alone:** 5 of 11 cases in `tests/test_native_panic_dispatch.py` and 4 of 5 in `tests/test_session_tracker_native_panic.py` fail before the fix, each because `PanicException` escapes, and all pass with it (takeover record, `results/REL5974_BUILD_PARTIAL.json`). **At the release tree** (`a7eac233` with the release files), the full suite gives 12,117 passed against 12,092 on `545c13ee`: all 25 cases of the two files pass, after `a7eac233` adds 9, and the same two `tests/test_identify_salience.py` tests fail as on the base (takeover record, `release/targeted_full_cut_a7eac233.txt`). [Release notes](docs/releases/v5.97.4.md).
+
 ## v5.97.3 - Native Moneta guards and an opt-in sleep pass
 
 Source release; no new Windows Setup. Sixteen commits on top of v5.97.2. The Moneta native module stays out of the Houdini process unless opted in, is reported when present, and a native panic during store construction falls back instead of escaping. A failed sleep pass is audited, and `synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set. Also: a Solaris merge warning fix, the additive `child_category` inspection field, the rc1 Moneta pin to `c33bbd96`, and a CLAUDE.md drift fix. Risk B (undrained attention lost on save) and the WebSocket panic arm are not fixed here. No hython run is recorded for this range.
