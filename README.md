@@ -14,13 +14,15 @@
 
 ## Start here
 
-**The current release is v5.97.3, and it installs from source.** It runs on **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13. See [installation requirements and steps](docs/getting-started/installation.md).
+- **Published source:** [v5.97.3](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.3). Targets **Windows + Houdini 22.0.400**, using Houdini's bundled Python 3.13.
+- **Houdini qualification:** v5.97.3 has **not** run in Houdini or hython. Its checks ran in standalone Python. [What was tested](docs/releases/v5.97.3.md#tests).
+- **One-click installer:** [Windows Setup v5.86.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe). It does **not** include v5.87.0 through v5.97.3.
 
-**v5.97.3 has not run in Houdini.** No hython seat run or Houdini session was made for this release. Its checks ran in standalone Python. See [what was tested](docs/releases/v5.97.3.md#tests).
+**Want the current changes? Use the [source installation](docs/getting-started/installation.md#source-installation).** Spatial, the Render footer row and the Scatter recipe that reads the scene need a source install.
 
-**There is also an older one-click installer.** The latest [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe) is v5.86.0. It includes Identify and the panel as of v5.86.0, with its JEV and SideFX library changes, but not the changes in v5.87.0 through v5.97.3. Spatial, the Render footer row and the Scatter recipe that reads the scene need a source install; v5.97.3 is the current one.
+**Prefer the older Setup?** It includes Identify and the panel as of v5.86.0, with that release's JEV and SideFX library changes. It is unsigned: check its [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt) before running it.
 
-The Setup is unsigned, so check it against that release's [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt) before you run it.
+Published source, an installed version and a qualified Houdini session are different states. Updating this page does not update an open Houdini session.
 
 **Pick one path, then follow these four steps.**
 
@@ -30,6 +32,8 @@ The Setup is unsigned, so check it against that release's [SHA-256 checksums](ht
 4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
 
 Using Ollama? Start its service first. **Connect** starts the separate Houdini bridge; **Doctor** checks the setup without a model.
+
+**Jump to:** [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [Troubleshooting](#when-you-get-stuck)
 
 ## Your first build
 
@@ -227,7 +231,7 @@ Configured memory and scene/project notes supply recalled context. Recall is adv
 
 A scene's notes come back through `synapse_project_setup`. Search and recall read saved decisions, and they do not cover those notes. The panel asks for the notes first when you ask what it remembers about a scene.
 
-Only what you ask it to remember is stored. Automatic session and action rows are off unless `SYNAPSE_AUTO_MEMORY=1`.
+Explicit memory writes, decisions and error rows are recorded. Automatic session and action rows are off unless `SYNAPSE_AUTO_MEMORY=1`. A returned record ID alone does not prove that it will survive a restart; [storage and recall limits](docs/architecture/overview.md#project-and-scene-memory) explain the separate writes.
 
 Moneta's USD mirror is an inspection view, not the storage owner. Missing services and unknown outcomes remain visible. A memory store that cannot be read is reported as a failure, not as an empty answer.
 
