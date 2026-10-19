@@ -343,13 +343,15 @@ The [staged workflow guides](../../rag/corpus/guides) retain upstream provenance
 ```mermaid
 flowchart TD
     accTitle: Publish only the reviewed and checked release commit
-    accDescr: Review changes and independent evidence, prepare an authorized version commit, push it, and require CI for that exact commit. When a release ships a Windows Setup, build and qualify it from the reviewed tree. Publish the tag, release, Setup and checksums only after the checks pass, then verify the remote references, release state and download links.
-    A["Review scoped changes<br/>and independent evidence"] --> B["Authorized version update<br/>and release commit"]
-    A --> I["Build and qualify<br/>Windows Setup, if shipped"]
+    accDescr: Review changes and independent evidence, prepare an authorized version commit, push it, and require CI for that exact commit. Choose source-only publication or build and qualify a Windows Setup from the reviewed tree before the release commit. Publish the tag and release only after exact-commit CI passes; include Setup and checksums only for the installer path. Then verify the remote references, release state and any download links.
+    A["Review scoped changes<br/>and independent evidence"] --> K{"Shipping a<br/>Windows Setup?"}
+    K -->|"yes"| I["Build and qualify<br/>Windows Setup"]
+    K -->|"no"| O["Source-only release<br/>no new Setup"]
+    I --> B["Authorized version update<br/>and release commit"]
+    O --> B
     B --> P["Push reviewed commit"]
     P --> C{"CI passes for this commit?"}
-    C -->|"yes"| T["Verify and publish tag,<br/>release, Setup and checksums"]
-    I --> T
+    C -->|"yes"| T["Publish verified tag and release<br/>include only qualified assets"]
     C -->|"no / unknown"| H["Hold publication;<br/>investigate"]
     T --> V["Verify remote commit, tag,<br/>release and download links"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
