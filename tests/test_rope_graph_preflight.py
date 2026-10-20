@@ -14,6 +14,7 @@ import importlib.util
 import json
 import os
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 
@@ -149,7 +150,10 @@ def test_a_red_hold_ends_a_looping_tick_instead_of_spinning(world, monkeypatch):
 
     def no_sleep(s):
         raise AssertionError("the loop waited on work that can never start")
-    monkeypatch.setattr(G.time, "sleep", no_sleep)
+    # Keep the trap local: subprocess also uses the shared stdlib time module
+    # while waiting for the ratchet child on POSIX.
+    monkeypatch.setattr(G, "time", SimpleNamespace(
+        time=G.time.time, strftime=G.time.strftime, sleep=no_sleep))
     G.cmd_tick(argparse.Namespace(run=st["run"], kinds="fix", parallel=0, loop=1))
     assert started == []
 
