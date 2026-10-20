@@ -5,6 +5,9 @@ does not establish external custody, host measurement or crash-safe recovery.
 """
 from __future__ import annotations
 
+import logging as _boundary_logging
+_boundary_log = _boundary_logging.getLogger(__name__)
+
 from dataclasses import asdict, dataclass, field, replace
 import hashlib
 import json
@@ -329,7 +332,8 @@ class SyntheticLightGate:
             self.mutator.rollback(before, attempt_id)
             restored = self.observer.capture()
             return isinstance(restored, SyntheticLightSnapshot) and restored.sha256 == before.sha256
-        except Exception:
+        except Exception as _boundary_error:
+            _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light._recover', type(_boundary_error).__name__[:120])
             return False
 
     def run_fixture(self, request, run_id):
@@ -344,14 +348,16 @@ class SyntheticLightGate:
         try:
             run_profile = replace(self.profile)  # complete revalidated frozen copy; never reread policy for arithmetic
             profile_sha256 = run_profile.sha256
-        except Exception:
+        except Exception as _boundary_error:
+            _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light.run_fixture', type(_boundary_error).__name__[:120])
             return result("BLOCKED", "Complete validated fixture profile required.")
 
         def policy_current():
             try:
                 return (type(self.profile) is SyntheticCalibrationProfile and self.profile.sha256 == profile_sha256
                         and run_profile.sha256 == profile_sha256)
-            except Exception:
+            except Exception as _boundary_error:
+                _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light.policy_current', type(_boundary_error).__name__[:120])
                 return False
 
         if type(self.cancellation) is not SyntheticCancellation:
@@ -375,7 +381,8 @@ class SyntheticLightGate:
             if not run_profile.minimum_exposure <= request.target_exposure <= run_profile.maximum_exposure:
                 raise ValueError("target outside explicit profile bounds")
             best_loss = _loss(before.exposure(request.key_light_binding), request.target_exposure)
-        except Exception:
+        except Exception as _boundary_error:
+            _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light.run_fixture', type(_boundary_error).__name__[:120])
             return result("UNAVAILABLE", "Complete in-scope prestate and tracking required; no mutation.")
         stagnant = 0
         for index in range(run_profile.max_attempts):
@@ -395,15 +402,17 @@ class SyntheticLightGate:
                     raise ValueError("prestate changed before dispatch")
                 if not policy_current():
                     raise ValueError("fixture policy changed before dispatch")
-            except Exception:
+            except Exception as _boundary_error:
+                _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light.run_fixture', type(_boundary_error).__name__[:120])
                 return result("BLOCKED", "Forecast seal/identity/replay check failed before dispatch.")
             if self.cancellation.cancelled:
                 return result("FIXTURE_CANCELLED", "Cancelled after forecast, before dispatch.")
             mutation_failed = False
             try:
                 self.mutator.apply(request, attempt_id)  # ignore all mutator self-reports
-            except Exception:
+            except Exception as _boundary_error:
                 mutation_failed = True
+                _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light.run_fixture', type(_boundary_error).__name__[:120])
             try:
                 measured = self.observer.measure(before, request, attempt_id)
                 if not isinstance(measured, SyntheticMeasurement):
@@ -412,24 +421,28 @@ class SyntheticLightGate:
                 metrics = observed_metrics(request, before, measured, attempt_id, run_profile)
                 xi = tension(forecast, metrics, run_profile)
                 total_ms += measured.execution_ms
-            except Exception:
+            except Exception as _boundary_error:
+                _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light.run_fixture', type(_boundary_error).__name__[:120])
                 trials.append(FixtureTrial(attempt_id, "MEASUREMENT_UNAVAILABLE", None, None))
                 try:
                     after = self.observer.capture()
                     restored = isinstance(after, SyntheticLightSnapshot) and self._recover(before, after, attempt_id)
-                except Exception:
+                except Exception as _boundary_error:
                     restored = False
+                    _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light.run_fixture', type(_boundary_error).__name__[:120])
                 verdict = "FIXTURE_CANCELLED" if restored and self.cancellation.cancelled else "FIXTURE_ROLLED_BACK" if restored else "FIXTURE_QUARANTINED"
                 return result(verdict, "Incomplete measurement cannot converge.")
             try:
                 bound = self.ledger.verify(ack, record)
-            except Exception:
+            except Exception as _boundary_error:
                 bound = False
+                _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light.run_fixture', type(_boundary_error).__name__[:120])
             try:
                 current = self.observer.capture()
                 still_current = isinstance(current, SyntheticLightSnapshot) and current.sha256 == after.sha256
-            except Exception:
+            except Exception as _boundary_error:
                 still_current = False
+                _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_light.run_fixture', type(_boundary_error).__name__[:120])
             policy_bound = policy_current()
             if self.cancellation.cancelled or mutation_failed or not bound or not still_current or not policy_bound or metrics.invariant_violation or total_ms > run_profile.max_measured_execution_ms:
                 reason = ("Cancelled after fixture dispatch." if self.cancellation.cancelled else "Mutation failed." if mutation_failed else "Forecast changed after dispatch." if not bound

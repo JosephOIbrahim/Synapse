@@ -16,10 +16,14 @@ entering a context manager is not rollback evidence.
 """
 from __future__ import annotations
 
+import logging as _boundary_logging
+_boundary_log = _boundary_logging.getLogger(__name__)
+
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 import threading
+import time
 from typing import Any, Callable, ContextManager, Mapping, Protocol, Sequence
 from uuid import uuid4
 
@@ -50,6 +54,21 @@ class PreparedOperation:
     value: Any = None
     field: str | None = None
     writes: tuple[tuple[str, ...], ...] = ()
+
+
+@dataclass(frozen=True)
+class ProvisionalDecision:
+    """A trusted local evaluator's decision, before lifecycle acceptance.
+
+    This is not human consent. LIGHT still requires its existing approval.
+    Callbacks receive detached authored state, never a host/store handle.
+    """
+    accepted: bool
+    reason: str
+
+    def __post_init__(self):
+        if type(self.accepted) is not bool or not isinstance(self.reason, str) or not self.reason.strip():
+            raise ValueError("explicit provisional decision and reason required")
 
 
 class TransactionBackend(Protocol):
@@ -212,11 +231,19 @@ class BuildTransaction:
                  operations: Sequence[PreparedOperation], expected_revision: int,
                  dependencies: Mapping[str, str], action: ActionId = ActionId.BUILD,
                  slots: Mapping[str, Any] | None = None, approved: bool = False,
-                 dispatch: Callable = on_main, ownership: Ownership = PROCESS_OWNERSHIP):
+                 dispatch: Callable = on_main, ownership: Ownership = PROCESS_OWNERSHIP,
+                 precommit: Callable[[Mapping, Mapping], ProvisionalDecision] | None = None,
+                 deadline_ns: int | None = None):
         if not request_id:
             raise ValueError("request_id required")
         if action not in (ActionId.BUILD, ActionId.LIGHT, ActionId.MATERIAL):
             raise ValueError("a render is a job, never a build transaction")
+        if precommit is not None and (action != ActionId.LIGHT or not callable(precommit)):
+            raise ValueError("provisional evaluation is supported only for LIGHT")
+        if deadline_ns is not None and (type(deadline_ns) is not int or deadline_ns <= 0 or precommit is None):
+            raise ValueError("a positive monotonic deadline requires provisional LIGHT evaluation")
+        self.deadline_ns = deadline_ns
+        self.precommit = precommit
         self.instance = deepcopy(instance)
         self.lifecycle, self.backend = lifecycle, backend
         self.operations = tuple(deepcopy(tuple(operations)))
@@ -240,6 +267,9 @@ class BuildTransaction:
         self._foreign = None
         self._instance_before = deepcopy(instance)
         self._metadata_saved = False
+        self._instance_committed = None
+        self._provisional_drift = False
+        self._commit_started = False
 
     def _state(self, value):
         self.state = value
@@ -257,8 +287,20 @@ class BuildTransaction:
         self.result.verdict = TerminalVerdict.REFUSED
 
     def cancel(self):
-        """Cooperative request only; never pretend an in-flight apply stopped."""
-        self._cancel.set()
+        """Accept before the atomic commit decision; False means already decided.
+
+        No in-flight HOM call is interrupted. A True request is observed before
+        committing metadata; a later request cannot claim the committed edit stopped.
+        """
+        with self._guard:
+            if self._commit_started or self._terminal.is_set():
+                return False
+            self._cancel.set()
+            return True
+
+    def _check_deadline(self):
+        if self.deadline_ns is not None and time.perf_counter_ns() >= self.deadline_ns:
+            raise RuntimeError("provisional LIGHT operation deadline reached")
 
     def await_terminal(self, timeout: float | None = None) -> BuildResult | None:
         return self.result if self._terminal.wait(timeout) else None
@@ -368,6 +410,7 @@ class BuildTransaction:
                 for operation in self.operations:
                     if self._cancel.is_set():
                         raise _Cancelled("cancelled during mutation")
+                    self._check_deadline()
                     self._mutated = True  # apply may partially mutate and then raise
                     self.backend.apply(deepcopy(operation))
                     self.result.applied_operations += 1
@@ -385,10 +428,50 @@ class BuildTransaction:
                     raise _Cancelled("cancelled during verification")
                 if self._foreign is None or self.backend.foreign_epoch() != self._foreign:
                     raise RuntimeError("unrelated edit tracking unavailable or changed")
+                if self.precommit is not None:
+                    # Retain ownership and the open undo group. Evaluating a
+                    # completed transaction cannot establish rejection recovery.
+                    try:
+                        decision = self.precommit(deepcopy(self._before), deepcopy(self._after))
+                    finally:
+                        # A callback exception/rejection must not skip ownership
+                        # evidence. Do not replace the old observed ownership
+                        # relation with a later foreign state and then undo it.
+                        try:
+                            self._provisional_drift = (
+                                deepcopy(dict(self.backend.snapshot())) != self._after or
+                                self.backend.foreign_epoch() != self._foreign or
+                                dict(self.backend.dependencies()) != self.dependencies or
+                                self.lifecycle.check_revision(self.instance, self.expected_revision) is not None)
+                        except Exception as _boundary_error:
+                            self._provisional_drift = True
+                            _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'transaction._execute_on_main', type(_boundary_error).__name__[:120])
+                        if self._provisional_drift:
+                            raise RuntimeError("state or ownership changed during provisional evaluation; recovery quarantined")
+                    if type(decision) is not ProvisionalDecision or not decision.accepted:
+                        reason = decision.reason if type(decision) is ProvisionalDecision else "typed local decision unavailable"
+                        raise RuntimeError("provisional LIGHT rejected: " + reason)
+                    if self._cancel.is_set():
+                        raise _Cancelled("cancelled during provisional evaluation")
+                    if dict(self.backend.dependencies()) != self.dependencies:
+                        self._provisional_drift = True
+                        raise RuntimeError("dependencies changed during provisional evaluation")
+                    refusal = self.lifecycle.check_revision(self.instance, self.expected_revision)
+                    if refusal:
+                        self._provisional_drift = True
+                        raise RuntimeError("identity/revision changed during provisional evaluation: " + refusal.reason)
+                # Cancellation and commit have one linearization point. The
+                # lock covers only the decision; no HOM call runs under it.
+                with self._guard:
+                    if self._cancel.is_set():
+                        raise _Cancelled("cancelled before metadata commit decision")
+                    self._check_deadline()
+                    self._commit_started = True
                 # Metadata is part of the SAME undo item for persistent stores.
                 committed = self.lifecycle.commit(self.instance, action=self.action, slots=self.slots,
                                                    approved=self.approved,
                                                    expected_revision=self.expected_revision)
+                self._instance_committed = deepcopy(committed) if self.precommit is not None else None
                 self._metadata_saved = True
             labels_after = self.backend.undo_labels()
             self.result.undo_evidence["labels_after"] = labels_after
@@ -442,14 +525,28 @@ class BuildTransaction:
             self.result.reason += "; recovery wait ended: " + str(exc)
         return self.result.recovery
 
+    def _provisional_recovery_bound(self, *records):
+        if self.precommit is None:
+            return True
+        live = self.lifecycle.discover()
+        return (dict(self.backend.dependencies()) == self.dependencies
+                and any(record is not None and live == record for record in records))
+
     def _recover_on_main(self):
         try:
             current = deepcopy(dict(self.backend.snapshot()))
             self.result.residual_diff = state_diff(self._before, current)
+            owned_metadata = self._instance_committed if self._metadata_saved else self._instance_before
+            if self._provisional_drift or not self._provisional_recovery_bound(owned_metadata):
+                self.result.recovery = RecoveryVerdict.RESIDUE
+                return  # unexplained provisional-window edits are not ours to undo
             if not self.result.residual_diff:
                 if self._metadata_saved:
                     self.lifecycle.restore_metadata_after_undo(self._instance_before)
                     self.instance = deepcopy(self._instance_before)
+                if not self._provisional_recovery_bound(self._instance_before):
+                    self.result.recovery = RecoveryVerdict.RESIDUE
+                    return
                 self.result.recovery = RecoveryVerdict.RESTORED
                 self._release()
                 return
@@ -463,12 +560,18 @@ class BuildTransaction:
                 self.result.recovery = RecoveryVerdict.RESIDUE
                 return  # no writes, retain quarantine
             self.backend.perform_undo()  # exactly once; only our proven latest item
+            # HIP metadata may already be undone; session metadata can still be
+            # our exact saved record. Neither state permits overwriting a foreign record.
+            if not self._provisional_recovery_bound(self._instance_before, self._instance_committed):
+                self.result.recovery = RecoveryVerdict.RESIDUE
+                return
             if self._metadata_saved:
                 self.lifecycle.restore_metadata_after_undo(self._instance_before)
                 self.instance = deepcopy(self._instance_before)
             restored = deepcopy(dict(self.backend.snapshot()))
             self.result.residual_diff = state_diff(self._before, restored)
             self.result.recovery = (RecoveryVerdict.RESIDUE if self.result.residual_diff
+                                    or not self._provisional_recovery_bound(self._instance_before)
                                     else RecoveryVerdict.RESTORED)
             if self.result.recovery == RecoveryVerdict.RESTORED:
                 self._release()

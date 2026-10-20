@@ -6,6 +6,9 @@ LedgerPort and LoopCoordinator remain the owners of their current behavior.
 """
 from __future__ import annotations
 
+import logging as _boundary_logging
+_boundary_log = _boundary_logging.getLogger(__name__)
+
 from dataclasses import asdict, dataclass
 import math
 import re
@@ -94,6 +97,7 @@ class SubstrateSeams:
         try:
             result = self.stage.compose_sanitized_stage(stage_identifier)
         except Exception as exc:
+            _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_ports.compose_sanitized_stage', type(exc).__name__[:120])
             return PortResult.unavailable("Composition observation failed: " + type(exc).__name__)
         return _checked(result, "compose")
 
@@ -103,6 +107,7 @@ class SubstrateSeams:
         try:
             result = self.ledger.author_precommit(claim_predicate, probability, world_ref)
         except Exception as exc:
+            _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_ports.author_precommit', type(exc).__name__[:120])
             return PortResult.unavailable("Forecast observation failed: " + type(exc).__name__)
         return _checked(result, "forecast")
 
@@ -112,6 +117,7 @@ class SubstrateSeams:
         try:
             result = self.ledger.settle(turn_id)
         except Exception as exc:
+            _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_ports.settle', type(exc).__name__[:120])
             return PortResult.unavailable("Settlement observation failed: " + type(exc).__name__)
         return _checked(result, "settle")
 
@@ -171,6 +177,7 @@ class RcxiObservationPort:
         try:
             observation = self.provider.observe(attempt_id, input_sha256)
         except Exception as exc:
+            _boundary_log.warning("Bounded LIGHT boundary %s caught %s", 'rcxi_ports.observe', type(exc).__name__[:120])
             return PortResult.unavailable("Six-component observation failed: " + type(exc).__name__)
         if not isinstance(observation, TelemetryObservation):
             return PortResult.blocked("Observer returned no typed six-component measurement.")
