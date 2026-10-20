@@ -20,6 +20,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--moneta-bundle", type=Path)
     parser.add_argument("--moneta-sha256")
+    parser.add_argument("--native-bundle", type=Path)
+    parser.add_argument("--native-sha256")
     parser.add_argument("--test-build", action="store_true")
     args = parser.parse_args()
     lock = json.loads((ROOT / "installer/toolchain.lock.json").read_text())
@@ -43,19 +45,25 @@ def main():
     shutil.copytree(ROOT / "installer/synapse_setup", maintenance / "synapse_setup", dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     shutil.copyfile(ROOT / "installer/windows/getting-started.html", maintenance / "getting-started.html")
     shutil.copyfile(ROOT / "installer/moneta_license.json", maintenance / "synapse_setup/moneta_license.json")
+    shutil.copyfile(ROOT / "installer/native_artifact.json", maintenance / "synapse_setup/native_artifact.json")
     shutil.copytree(ROOT / "installer/licenses", maintenance / "synapse_setup/licenses")
     helper_files = {p.relative_to(maintenance).as_posix(): digest(p.read_bytes())
                     for p in sorted(maintenance.rglob("*")) if p.is_file()}
     (maintenance / "maintenance-manifest.json").write_bytes(json_bytes({"schema": "synapse-maintenance-1", "files": helper_files}))
-    payload = build(stage / "payload.zip", args.downloads, args.moneta_bundle, args.moneta_sha256)
+    payload = build(stage / "payload.zip", args.downloads, args.moneta_bundle, args.moneta_sha256,
+                    native_bundle=args.native_bundle, native_sha256=args.native_sha256)
     license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
     if payload["moneta"]:
         license_text += "\n\n" + payload["moneta"]["license_notice"]
+    if payload["native"]:
+        with zipfile.ZipFile(stage / "payload.zip") as bundle:
+            license_text += "\n\n" + bundle.read("dependencies/moneta-native/THIRD_PARTY_NOTICES.txt").decode("utf-8")
     (stage / "license.txt").write_text(license_text, encoding="utf-8-sig")
     (stage / "before.txt").write_text(
         f"SYNAPSE {payload['version']}\n\nValidation target: Windows, Houdini 22.0.400, Python 3.13.\n\n"
         "This setup installs SYNAPSE for your Windows account. It includes the model SDK, WebSocket support and file locking. Houdini provides Qt and OpenUSD.\n\n"
         + (f"Moneta {payload['moneta']['version']} memory and its USD schema are bundled under the {payload['moneta']['license']} License by the copyright holder's written grant ({payload['moneta']['grant_date']}). Upstream metadata still declares {payload['moneta']['source_license']}; see the included Moneta license notice.\n\n" if payload["moneta"] else "JSONL project memory is included. Optional Moneta is not bundled in this build.\n\n")
+        + ("A verified optional native artifact is included. Fresh supported installations enable it only after actual disposable headless Houdini checks. Existing OFF choices are preserved; unsupported hosts remain OFF. Failed native qualification does not activate an ON package.\n\n" if payload["native"] else "No native artifact is bundled. Fresh installations keep native mode OFF; an existing ON setting requires a verified compatible local artifact and execution checks.\n\n")
         + "Save and close Houdini before installing, upgrading or uninstalling. Setup never terminates Houdini.\n\n"
         "You will connect a model after installation. No model, API key or internet connection is required by Setup.\n\n"
         "This installer is unsigned. Verify its published checksum before running it.\n", encoding="utf-8-sig")

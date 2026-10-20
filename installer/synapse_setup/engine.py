@@ -10,7 +10,7 @@ import uuid
 import xml.etree.ElementTree as ET
 import zipfile
 
-from . import discovery
+from . import discovery, native_policy
 from .moneta_grant import validate_payload as validate_moneta_payload, license_policy as moneta_policy
 from .registration import installed_package, UI_CORE
 from .safety import (SetupError, atomic_write, change, check_writable, current, decode,
@@ -43,6 +43,7 @@ def load_manifest(archive):
             if sum(x.file_size for x in package.infolist()) > 1024 * 1024 * 1024:
                 raise SetupError("Payload exceeds the 1 GiB installer limit.")
             validate_moneta_payload(package, data, moneta_policy() if data.get("moneta") else None)
+            native_policy.validate_payload(package, data)
     except (OSError, ValueError, KeyError, zipfile.BadZipFile) as exc:
         raise SetupError(f"Cannot read complete installation payload: {exc}") from exc
     required = {
@@ -274,6 +275,35 @@ def guard_paths(app, prefs, home, sandbox=None):
     return app, prefs, home
 
 
+def previous_package(pref, state, conflicts, snapshots=None):
+    owned = [Path(row["path"]) for row in state["registrations"] if Path(row["pref"]) == pref] if state else []
+    candidates = list(dict.fromkeys([*owned, *(Path(name) for name in conflicts
+        if Path(name).parent == pref / "packages" and Path(name).suffix.lower() == ".json")]))
+    if len(candidates) > 1:
+        raise SetupError("Multiple existing SYNAPSE packages have ambiguous settings; no configuration was changed.")
+    if not candidates:
+        return None
+    if snapshots is None:
+        data = read_json(candidates[0])
+    else:
+        try:
+            data = json.loads(snapshots[str(candidates[0])])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise SetupError("Existing package changed or cannot be bound to its preserved snapshot.") from exc
+    if not isinstance(data, dict):
+        raise SetupError("Existing SYNAPSE package cannot be preserved safely; review it before migration.")
+    return data
+
+
+def package_namespace(prefs):
+    """Bind package additions/deletions as well as edits during qualification."""
+    result = {}
+    for pref in prefs:
+        directory = no_links(pref / "packages")
+        result[str(directory)] = {path.name: file_hash(no_links(path)) for path in sorted(directory.glob("*.json"))}
+    return result
+
+
 def preflight(app, prefs, home, *, archive=None, hfs=None, allow_unverified=False,
               migrate=False, sandbox=None, uninstall=False):
     app, prefs, home = guard_paths(app, prefs, home, sandbox)
@@ -338,9 +368,19 @@ def preflight(app, prefs, home, *, archive=None, hfs=None, allow_unverified=Fals
             dup = registrations(directory, dict(os.environ, HFS=str(hfs or "")))
             if dup:
                 raise SetupError("External/studio SYNAPSE registration also loads for this Houdini. Remove it from the launch configuration before setup; no external files were changed:\n" + "\n".join(map(str, dup)))
+    choices = []
+    if manifest and not uninstall:
+        runtime = app / "versions" / manifest["payload_id"]
+        for pref in prefs:
+            previous = previous_package(pref, state, conflicts)
+            choice = native_policy.resolve(manifest, target, runtime, previous)
+            # Validate preservation before staging files; never print user env values.
+            installed_package(runtime, manifest, home, previous=previous,
+                              native_value=choice["value"], native_site=choice.get("site"))
+            choices.append({"preference": str(pref), **native_policy.report(choice)})
     return {"app": str(app), "preferences": list(map(str, prefs)), "houdini": target,
             "conflicts": list(map(str, conflicts)), "version": manifest["version"] if manifest else None,
-            "status": "PASS"}
+            "native": choices, "status": "PASS"}
 
 
 def install(app, prefs, home, *, archive, hfs, allow_unverified=False, migrate=False, sandbox=None):
@@ -355,8 +395,26 @@ def install(app, prefs, home, *, archive, hfs, allow_unverified=False, migrate=F
         prior = state_for(app)
         # Upgrade all registrations managed by this installation, plus new targets.
         all_prefs = list(dict.fromkeys([*(Path(x["pref"]) for x in prior["registrations"])] + prefs)) if prior else prefs
+        namespace = package_namespace(all_prefs)
         plan = preflight(app, all_prefs, home, archive=archive, hfs=hfs,
                          allow_unverified=allow_unverified, migrate=migrate, sandbox=sandbox)
+        # Bind configuration before staging or a potentially long native probe.
+        # A later edit must never become an installer transaction's new 'before'.
+        watched = {app / STATE, home / ".synapse/install_stamp.json",
+                   *(pref / "packages/synapse.json" for pref in all_prefs),
+                   *(Path(name) for name in plan["conflicts"])}
+        snapshots = {str(path): current(path) for path in watched}
+        if package_namespace(all_prefs) != namespace:
+            raise SetupError("Package namespace changed during setup preflight; activation refused and user edits preserved.")
+        observed_state = snapshots[str(app / STATE)]
+        if (json.loads(observed_state) if observed_state else None) != prior:
+            raise SetupError("Installation receipt changed while setup was running; activation refused.")
+        if prior and any(digest(snapshots[row["path"]]) != row["sha256"]
+                         for row in prior["registrations"] if snapshots[row["path"]] is not None):
+            raise SetupError("A registered package changed while setup was running; activation refused.")
+        def bound_change(path, after):
+            path = no_links(path)
+            return {"path": str(path), "before": encode(snapshots[str(path)]), "after": encode(after)}
         runtime = inside(app / "versions" / manifest["payload_id"], app)
         if not runtime.exists():
             runtime.mkdir(parents=True)
@@ -388,34 +446,52 @@ def install(app, prefs, home, *, archive, hfs, allow_unverified=False, migrate=F
             if name in backup_paths:
                 raise SetupError(f"A previously migrated file has been recreated: {name}. Keep it or move it before retrying; the original backup is preserved.")
             if name not in backup_paths:
-                original = current(name)
+                original = snapshots[name]
                 state["backups"].append({"path": name, "original": encode(original)})
                 backup_paths.add(name)
             # The canonical filename is overwritten once below, not deleted first.
             if name not in {str(p / "packages/synapse.json") for p in all_prefs}:
-                changes.append(change(name, None))
-        package = installed_package(runtime, manifest, home)
-        package["synapse_setup_owner"] = state["id"]
-        package_data = json_bytes(package)
+                changes.append(bound_change(name, None))
         state["registrations"] = []
+        native_reports, native_choices = [], []
         for pref in all_prefs:
+            previous = previous_package(pref, prior, plan["conflicts"], snapshots)
+            choice = native_policy.resolve(manifest, plan["houdini"], runtime, previous)
+            package = installed_package(runtime, manifest, home, previous=previous,
+                                        native_value=choice["value"], native_site=choice.get("site"))
+            package["synapse_setup_owner"] = state["id"]
+            if choice["status"] == "PENDING_EXECUTION":
+                from .native_check import qualify
+                proof = qualify(runtime, manifest, plan["houdini"], package, choice)
+                choice.update(status="PASS_AT_INSTALL", reason="Actual isolated primary Moneta scan/decay and fresh encrypted-mirror reopen passed.", execution=proof)
+            native_choices.append(choice)
+            native_reports.append({"preference": str(pref), **native_policy.report(choice)})
+            package_data = json_bytes(package)
             path = pref / "packages/synapse.json"
-            changes.append(change(path, package_data))
+            changes.append(bound_change(path, package_data))
             state["registrations"].append({"pref": str(pref), "path": str(path), "sha256": digest(package_data)})
         stamp = home / ".synapse/install_stamp.json"
         if "stamp" not in state:
-            state["stamp"] = {"path": str(stamp), "original": encode(current(stamp))}
+            state["stamp"] = {"path": str(stamp), "original": encode(snapshots[str(stamp)])}
         elif file_hash(stamp) != state["stamp"]["sha256"]:
             raise SetupError(f"Another installer changed the diagnostic stamp: {stamp}. Existing content is preserved.")
         stamp_data = json_bytes({"schema": "synapse_install_stamp/v1", "synapse_version": manifest["version"],
                                  "repo_root": runtime.as_posix(), "installed_at": datetime.now(timezone.utc).isoformat(),
                                  "targets": [x["path"] for x in state["registrations"]]})
-        changes.append(change(stamp, stamp_data))
+        changes.append(bound_change(stamp, stamp_data))
         state["stamp"]["sha256"] = digest(stamp_data)
         state["checks"] = checks
-        changes.append(change(app / STATE, json_bytes(state)))
-        # Repeat the process guard at the last possible point before activation.
-        guard_paths(app, all_prefs, home, sandbox)
+        state["native"] = native_reports
+        changes.append(bound_change(app / STATE, json_bytes(state)))
+        # Recheck process, external package links and conflict classification.
+        final_plan = preflight(app, all_prefs, home, archive=archive, hfs=hfs,
+                               allow_unverified=allow_unverified, migrate=migrate, sandbox=sandbox)
+        if final_plan["conflicts"] != plan["conflicts"] or package_namespace(all_prefs) != namespace:
+            raise SetupError("Package namespace changed during qualification; activation refused and user edits preserved.")
+        for choice in native_choices:
+            native_policy.recheck(choice)
+        if any(current(op["path"]) != decode(op["before"]) for op in changes):
+            raise SetupError("Configuration changed during setup qualification; activation refused and user edits preserved.")
         transact(app / JOURNAL, changes)
         try:
             report = verify(app)
@@ -449,6 +525,7 @@ def verify(app):
         raise SetupError("Diagnostic installation stamp differs from the installed receipt.")
     return {"status": "PASS", "version": state["version"], "runtime": str(root),
             "checks": checks, "registrations_checked": len(state["registrations"]),
+            "native": state.get("native", [{"status": "UNKNOWN", "reason": "Legacy receipt has no native execution qualification."}]),
             "memory": "Moneta bundled" if state["runtimes"][str(root)].get("moneta") else "JSONL; Moneta not bundled",
             "manual": ["Launch Houdini to verify package loading and open New Pane Tab > Synapse.",
                        "Use Doctor for live components and USD schema diagnostics.",

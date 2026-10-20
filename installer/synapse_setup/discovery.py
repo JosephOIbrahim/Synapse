@@ -89,18 +89,26 @@ def validate_houdini(hfs):
         raise ValueError(f"Cannot read Houdini's executable version: {hfs}")
     interpreters = sorted(hfs.glob("python*/python.exe"), reverse=True)
     actual = None
+    details = {}
     for exe in interpreters:
         # Houdini includes empty compatibility directories: execute the candidate.
         try:
-            result = run([str(exe), "-I", "-S", "-c", "import sys; print('%d.%d' % sys.version_info[:2])"])
-            if result.returncode == 0 and re.fullmatch(r"3\.\d+", result.stdout.strip()):
-                actual = result.stdout.strip()
+            code = "import json,sys,struct;print(json.dumps(dict(python='%d.%d'%sys.version_info[:2],python_full='.'.join(map(str,sys.version_info[:3])),platform=sys.platform,bits=struct.calcsize('P')*8)))"
+            result = run([str(exe), "-I", "-S", "-c", code])
+            if result.returncode == 0:
+                raw = result.stdout.strip()
+                details = {"python": raw} if re.fullmatch(r"3\.\d+", raw) else json.loads(raw)
+                if not isinstance(details, dict) or not re.fullmatch(r"3\.\d+", str(details.get("python", ""))):
+                    continue
+                actual = details["python"]
                 break
-        except (OSError, subprocess.TimeoutExpired):
+        except (OSError, ValueError, KeyError, subprocess.TimeoutExpired):
             continue
     if actual not in {"3.11", "3.13"}:
         raise ValueError(f"Houdini Python {actual or 'unavailable'} has no bundled SYNAPSE native SDK. Supported payload ABIs: 3.11 and 3.13.")
     return {"hfs": str(hfs), "version": version, "python": actual,
+            "houdini": version, "python_full": details.get("python_full"),
+            "platform": details.get("platform"), "bits": details.get("bits"),
             "tested": version == TESTED_BUILD and actual == "3.13"}
 
 

@@ -1,0 +1,104 @@
+{
+  "bundle_sha256": "f0c67e0642305ce9db5f71d355712b6af9eb7d5db05e0d72c65d44403e47bb1e",
+  "execution_required": true,
+  "external_artifacts": [
+    {
+      "files": {
+        "moneta_native-0.1.0.dist-info/METADATA": "4e411d641449e0dc8f897acee3de42b0de3f677bc9fd2e2f2620c00dd4c29671",
+        "moneta_native-0.1.0.dist-info/WHEEL": "9b2d99bf7680130d33c200b7c780c63286b8fc48d09c526a1bc39dcd5d434f18",
+        "moneta_native/__init__.py": "18db23ed1e72e056108a30f2b3aa7d3dec6294504f0e7c567d2d6d57aa3a9d33",
+        "moneta_native/moneta_native.pyd": "ec6d7f0c35c5b345f983f4aa80cfea086f3aca454e9cd74a58b6208227b02833"
+      },
+      "wheel_sha256": "fc86cc488ce84f3162d85d4893b11c0ceff7dca6d6bdec7cc456291e645098e7"
+    },
+    {
+      "files": {
+        "moneta_native-0.1.0.dist-info/METADATA": "4e411d641449e0dc8f897acee3de42b0de3f677bc9fd2e2f2620c00dd4c29671",
+        "moneta_native-0.1.0.dist-info/WHEEL": "9b2d99bf7680130d33c200b7c780c63286b8fc48d09c526a1bc39dcd5d434f18",
+        "moneta_native/__init__.py": "18db23ed1e72e056108a30f2b3aa7d3dec6294504f0e7c567d2d6d57aa3a9d33",
+        "moneta_native/moneta_native.pyd": "76789dd486619da9e0484eadd34f7143bd75340602de8860270276a7f24efac6"
+      },
+      "wheel_sha256": "1153788f4f113ce0ccfbbf03aee71e680aef44614aa1bf9f37c114c09a3148fc"
+    }
+  ],
+  "manifest": {
+    "files": {
+      "NATIVE_ARTIFACT.json": "bb61125ea66b936e996ef702484d39f08ac378bc93bc5d93da4eb19d164608d2",
+      "THIRD_PARTY_NOTICES.txt": "eafff7ec7cf0f52e2713086df32ec626f2bc9f01b11dfd9887fe036f3b61dd96",
+      "moneta_native-0.1.0.dist-info/METADATA": "4e411d641449e0dc8f897acee3de42b0de3f677bc9fd2e2f2620c00dd4c29671",
+      "moneta_native-0.1.0.dist-info/RECORD": "c1f624d1ac133359faaa2b10e3b55696b54c97b50f96794ed4cb01b6fca2fec4",
+      "moneta_native-0.1.0.dist-info/WHEEL": "9b2d99bf7680130d33c200b7c780c63286b8fc48d09c526a1bc39dcd5d434f18",
+      "moneta_native-0.1.0.dist-info/sboms/moneta_native.cyclonedx.json": "6fcd6abf9edeef6ad0ad5e6f5d5138d6542b2cdbac97747985ada1191e1fd0a9",
+      "moneta_native.portable.cyclonedx.json": "6fcd6abf9edeef6ad0ad5e6f5d5138d6542b2cdbac97747985ada1191e1fd0a9",
+      "moneta_native/__init__.py": "18db23ed1e72e056108a30f2b3aa7d3dec6294504f0e7c567d2d6d57aa3a9d33",
+      "moneta_native/moneta_native.pyd": "76789dd486619da9e0484eadd34f7143bd75340602de8860270276a7f24efac6",
+      "native-source-inventory.json": "be7e0fc7c245317ac90da072745de0b574d1c87f41c2e6a1b6b07c5c381dbac3",
+      "owner-grant/moneta-MIT.txt": "9d24b5b6703338e88daca6394dd586158d5089418ce123f6c5e633c79cc82b98",
+      "owner-grant/moneta-source-grant.json": "d64ab39e992c424f79529bd4dddcde9799e30ffd3b9c5d58cd72f6fbac666836",
+      "source/Cargo.lock": "c922404f6c86dba96e03dd9177c0fe624af27173acc137969fe18e93f4fdffb1",
+      "source/Cargo.toml": "51316cef46a8d394f62be2e59c33566a21e965d17c6ebda7505dd0efd0e78612",
+      "source/pyproject.toml": "f0f61a397f0eb30a0752dce2672c57c7fec28e9e048a983039347b1bc46a2fbb",
+      "source/src/lib.rs": "76cb5b1fce14bed003d33553389c8431ffc9e0b4771dce14d0d8256c493c33dd",
+      "third-party-inventory.json": "cae2ee71a0800b861a1264375b4fe0f1cc428ba89be8b3785236c26d0981fe4a",
+      "third_party/heck-0.5.0/LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+      "third_party/heck-0.5.0/LICENSE-MIT": "7b63ecd5f1902af1b63729947373683c32745c16a10e8e6292e2e2dcd7e90ae0",
+      "third_party/libc-0.2.190/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+      "third_party/libc-0.2.190/LICENSE-MIT": "123a331b5dbf04c30097fa43b8f858bc85df671fe776de498d01f3d6b7c1f69e",
+      "third_party/once_cell-1.21.4/LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+      "third_party/once_cell-1.21.4/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "third_party/portable-atomic-1.15.0/LICENSE-APACHE": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "third_party/portable-atomic-1.15.0/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "third_party/proc-macro2-1.0.107/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+      "third_party/proc-macro2-1.0.107/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "third_party/pyo3-0.30.1/LICENSE-APACHE": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9",
+      "third_party/pyo3-0.30.1/LICENSE-MIT": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6",
+      "third_party/pyo3-0.30.1/pyo3-runtime/LICENSE-APACHE": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9",
+      "third_party/pyo3-0.30.1/pyo3-runtime/LICENSE-MIT": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6",
+      "third_party/pyo3-build-config-0.30.1/LICENSE-APACHE": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9",
+      "third_party/pyo3-build-config-0.30.1/LICENSE-MIT": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6",
+      "third_party/pyo3-ffi-0.30.1/LICENSE-APACHE": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9",
+      "third_party/pyo3-ffi-0.30.1/LICENSE-MIT": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6",
+      "third_party/pyo3-macros-0.30.1/LICENSE-APACHE": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9",
+      "third_party/pyo3-macros-0.30.1/LICENSE-MIT": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6",
+      "third_party/pyo3-macros-backend-0.30.1/LICENSE-APACHE": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9",
+      "third_party/pyo3-macros-backend-0.30.1/LICENSE-MIT": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6",
+      "third_party/quote-1.0.47/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+      "third_party/quote-1.0.47/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "third_party/syn-3.0.9/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+      "third_party/syn-3.0.9/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "third_party/target-lexicon-0.13.5/LICENSE": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5",
+      "third_party/unicode-ident-1.0.27/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+      "third_party/unicode-ident-1.0.27/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "third_party/unicode-ident-1.0.27/LICENSE-UNICODE": "f7db81051789b729fea528a63ec4c938fdcb93d9d61d97dc8cc2e9df6d47f2a1",
+      "toolchain/rust-1.99.1/COPYRIGHT-library.html": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27",
+      "toolchain/rust-1.99.1/LICENSE-APACHE.txt": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+      "toolchain/rust-1.99.1/LICENSE-MIT.txt": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0",
+      "toolchain/rust-1.99.1/compiler-identity.txt": "341fed434cf52bd9ba5ab2f3507dbd943a2062212028574e529fc3e7e5ecd7a8",
+      "upstream/METADATA": "4e411d641449e0dc8f897acee3de42b0de3f677bc9fd2e2f2620c00dd4c29671",
+      "upstream/WHEEL": "9b2d99bf7680130d33c200b7c780c63286b8fc48d09c526a1bc39dcd5d434f18"
+    },
+    "grant_date": "2026-10-19",
+    "input_wheel_sha256": "1153788f4f113ce0ccfbbf03aee71e680aef44614aa1bf9f37c114c09a3148fc",
+    "license": "MIT",
+    "moneta_commit": "4f7afc73736aecce6d55d5e03f28fb3137d474d3",
+    "moneta_version": "1.3.0",
+    "name": "moneta-native",
+    "pyd_sha256": "76789dd486619da9e0484eadd34f7143bd75340602de8860270276a7f24efac6",
+    "schema": "synapse-native-bundle-1",
+    "source_commit": "UNKNOWN",
+    "source_license": "Proprietary",
+    "source_tree_sha256": "427805aa1a4b6b4639d01b760cd6d52a30bf554ea5ae86aa3884c8b6ffd23c5e",
+    "supported_hosts": [
+      {
+        "bits": 64,
+        "houdini": "22.0.400",
+        "platform": "win32",
+        "python_full": "3.13.10"
+      }
+    ],
+    "version": "0.1.0",
+    "wheel_tag": "cp311-abi3-win_amd64"
+  },
+  "manifest_sha256": "589e4c98049b21576b8604ff94c85ad291c0578282d8dbf168e6197732581090",
+  "schema": "synapse-native-policy-1"
+}

@@ -10,7 +10,7 @@ import tomllib
 import zipfile
 
 from synapse_setup.registration import ui_assets
-from synapse_setup import moneta_grant
+from synapse_setup import moneta_grant, native_policy
 from synapse_setup.moneta_grant import source_identity, declared_license, moneta_notice
 from synapse_setup.safety import SetupError, digest, json_bytes, member_path, no_links
 
@@ -126,7 +126,7 @@ def validate_moneta_grant(bundle, moneta):
     return moneta_grant.validate_moneta_grant(bundle, moneta, license_policy())
 
 
-def build(output, wheel_dir, moneta_bundle=None, moneta_sha256=None, source=ROOT):
+def build(output, wheel_dir, moneta_bundle=None, moneta_sha256=None, source=ROOT, *, native_bundle=None, native_sha256=None):
     source, output = Path(source), Path(output)
     result = subprocess.run(["git", "-c", "safe.directory=" + source.as_posix(), "-C", str(source), "ls-files", "-z"], capture_output=True, check=True)
     names = result.stdout.decode().split("\0")
@@ -170,6 +170,14 @@ def build(output, wheel_dir, moneta_bundle=None, moneta_sha256=None, source=ROOT
                   "distribution": moneta["distribution"], "license": moneta["license"],
                   "source_license": moneta["source_license"], "source_revision": moneta["source_revision"],
                   "grant_date": moneta["grant_date"], "license_notice": license_notice}
+    native = None
+    if bool(native_bundle) != bool(native_sha256):
+        raise SetupError("Native bundling requires both an explicit archive and SHA-256.")
+    if native_bundle:
+        copied, native = native_policy.bundle_files(native_bundle, native_sha256)
+        if not native_policy.compatible_moneta({"moneta": moneta}, native_policy.policy()):
+            raise SetupError("Native bundling requires the reviewed compatible Moneta Python bundle.")
+        files.update({native_policy.PREFIX + name: content for name, content in copied.items()})
     version = files["VERSION"].decode().strip()
     project_version = tomllib.loads(files["pyproject.toml"].decode())["project"]["version"]
     module_version = re.search(r'__version__\s*=\s*"([^"]+)"', files["python/synapse/__init__.py"].decode()).group(1)
@@ -184,16 +192,20 @@ def build(output, wheel_dir, moneta_bundle=None, moneta_sha256=None, source=ROOT
               "Hanish, SALUS, Octavius, dense retrieval and optional image-analysis tools. "
               "Optional capabilities report unavailable when their substrate is absent.\n"
               + (f"Moneta {moneta['version']} and USD schema: {moneta['license']} by its copyright holder's written grant ({moneta['grant_date']}); see dependencies/moneta/LICENSE-NOTICE.txt. Upstream metadata retains its {moneta['source_license']} declaration.\n" if moneta else "Moneta not included; JSONL project memory is selected.\n"))
+    if native:
+        notice += ("Moneta native 0.1.0: MIT under the same copyright holder's written grant; upstream Proprietary metadata is retained. "
+                   "The exact rebuilt binary, source inventory, portable SBOM and third-party licenses are under dependencies/moneta-native/. "
+                   "Native activation requires an exact supported host and actual isolated primary-Moneta/native execution checks. Explicit OFF choices remain OFF.\n")
     files["DEPENDENCIES.txt"] = notice.encode()
     revision = subprocess.check_output(["git", "-c", "safe.directory=" + source.as_posix(), "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
     manifest = {"schema": "synapse-payload-1", "version": version, "source_revision": revision,
-                "tested_houdini": "22.0.400", "tested_python": "3.13", "moneta": moneta,
+                "tested_houdini": "22.0.400", "tested_python": "3.13", "moneta": moneta, "native": native,
                 "wheels": WHEELS, "files": {name: digest(content) for name, content in sorted(files.items())}}
     files["payload-manifest.json"] = json_bytes(manifest)
     zip_bytes(output, files)
     from synapse_setup.engine import load_manifest
     validated = load_manifest(output)
-    return {"path": str(output), "version": version, "sha256": digest(output.read_bytes()), "files": len(manifest["files"]), "payload_id": validated["payload_id"], "moneta": moneta}
+    return {"path": str(output), "version": version, "sha256": digest(output.read_bytes()), "files": len(manifest["files"]), "payload_id": validated["payload_id"], "moneta": moneta, "native": native}
 
 
 if __name__ == "__main__":
@@ -202,7 +214,9 @@ if __name__ == "__main__":
     parser.add_argument("--wheel-dir", type=Path)
     parser.add_argument("--moneta-bundle", type=Path)
     parser.add_argument("--moneta-sha256")
+    parser.add_argument("--native-bundle", type=Path)
+    parser.add_argument("--native-sha256")
     parser.add_argument("--export-moneta", type=Path)
     args = parser.parse_args()
-    result = export_moneta(args.export_moneta, args.output) if args.export_moneta else build(args.output, args.wheel_dir, args.moneta_bundle, args.moneta_sha256)
+    result = export_moneta(args.export_moneta, args.output) if args.export_moneta else build(args.output, args.wheel_dir, args.moneta_bundle, args.moneta_sha256, native_bundle=args.native_bundle, native_sha256=args.native_sha256)
     print(json.dumps(result, indent=2))

@@ -182,7 +182,11 @@ class InstallerAdversarialTests(unittest.TestCase):
     def test_repeat_migration_never_discards_recreated_legacy_file(self):
         legacy = self.pref / "packages/legacy-synapse.json"
         legacy.parent.mkdir(parents=True)
-        first = safety.json_bytes({"name": "synapse", "hpath": "first-artist-location"})
+        # The first registration is a supported canonical migration. A custom
+        # hpath is now refused before any migration, preserving that choice.
+        first_root = self.sandbox / "first-artist-location"
+        first = safety.json_bytes({"name": "synapse", "hpath": (first_root / "houdini").as_posix(),
+                                   "env": [{"var": "SYNAPSE_ROOT", "value": first_root.as_posix()}]})
         second = safety.json_bytes({"name": "synapse", "hpath": "new-artist-location"})
         legacy.write_bytes(first)
         self.install(migrate=True)
