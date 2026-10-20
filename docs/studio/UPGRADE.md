@@ -1,5 +1,10 @@
 # Houdini Upgrade Runbook
 
+**Current release: [SYNAPSE 5.97.5](../releases/v5.97.5.md), measured on
+Windows Houdini 22.0.400 / Python 3.13.** Updating SYNAPSE and upgrading Houdini
+are separate actions. This contributor runbook does not qualify another Houdini
+build. For ordinary installation, use the [user instructions](../../INSTRUCTIONS.md).
+
 **A Houdini build change can disarm the phantom-API gate.** The symbol
 table is build-stamped; the moment `hou.applicationVersionString()` differs
 from the table stamp the corpus/table reads stale — precisely the week API
@@ -34,9 +39,9 @@ The generator is `host/introspect_runtime.py`. From the repo root:
 
 Success looks like `TABLE: version=<NEW_BUILD> symbols=~33000
 truncated=False` plus five `check ... True` lines. The output overwrites
-the committed authority
-`python/synapse/cognitive/tools/data/h21_symbol_table.json` — **commit
-it** (expect a full-file ~1.1 MB diff per build; that is normal).
+the matching major's committed authority under
+`python/synapse/cognitive/tools/data/` (`h22_symbol_table.json` for H22).
+Review and commit that generated table as part of the separately authorized upgrade.
 Regeneration is **per-build mandatory**.
 
 Drift policy: the default is `SYNAPSE_SCOUT_DRIFT_POLICY=refuse` (fail-closed)
@@ -56,49 +61,33 @@ hits + null verdicts with a warning) during a controlled upgrade.
 & "...\bin\hython.exe" -c "import sys; print(sys.version_info[:2])"
 ```
 
-- `(3, 11)` → nothing to do (the version gate covers H20.5/21.0/21.5).
-- Anything else → follow `python/synapse/_vendor/README.md` ("Future
-  cliff"): re-vendor via its refresh command, widen the version gate in
-  `python/synapse/__init__.py`, update tests in lockstep.
+- `(3, 11)` or `(3, 13)` on Windows x64: matching native SDK files are already
+  bundled. Confirm the actual imports in the new Houdini build; a matching ABI
+  alone does not qualify the build.
+- Another ABI or platform: inspect
+  [the vendor inventory](../../python/synapse/_vendor/README.md) and arrange a
+  separately reviewed dependency refresh. Do not widen a gate without matching binaries.
 
 Either way, verify: `python -m pytest tests/test_vendored_deps.py -v`.
 
-### Step 2a — Re-vendor runbook (gate-0.1, in-process path)
+### Step 2a - Changing bundled dependencies
 
-Only the two **native** wheels are ABI-locked (`pydantic_core`, `jiter` —
-cp311, NOT abi3); the other ~13 vendored packages are pure Python. If the
-new build's `sys.version_info[:2]` moved off `(3, 11)`:
+The native SDK dependencies `pydantic_core` and `jiter` have CPython-specific
+Windows binaries for 3.11 and 3.13. This is separate from the optional Moneta Rust
+wheel: published 5.97.5 Setup does not bundle that wheel or enable native mode.
 
-1. **Pre-cache wheels** (do this BEFORE drop day so the day has no network
-   dependency; both 3.12 and 3.13 sets cost a few MB):
-
-   ```powershell
-   pip download pydantic_core jiter --python-version 3.12 --platform win_amd64 `
-       --only-binary=:all: -d harness/state/wheel_cache/cp312
-   pip download pydantic_core jiter --python-version 3.13 --platform win_amd64 `
-       --only-binary=:all: -d harness/state/wheel_cache/cp313
-   ```
-
-2. **Place the `.pyd`s**: unzip the matching wheels and copy the
-   `pydantic_core/` and `jiter/` binary payloads into
-   `python/synapse/_vendor/`, keeping the pure-Python tree unchanged
-   (layout examples in `python/synapse/_vendor/README.md`).
-3. **Widen the activation gate** in `python/synapse/__init__.py` (the
-   `(3, 11)` equality) — prefer deriving acceptance from which ABI tags are
-   actually present in `_vendor` so the next re-vendor needs no code change.
-4. **Lockstep tests**: `tests/test_vendored_deps.py` pins the ABI tag
-   (single-sourced via `tests/conftest.py`'s `VENDOR_ABI_TAG` once the 1.3
-   parametrization lands); flip it with the wheels, same commit.
-5. **Prove the brain wakes**: `"<new build>\bin\hython.exe" -c "import synapse"`
-   then the harness `check_brain_answers`. Rollback = `git revert` (wheels
-   and gate travel in one commit).
-
-The **sidecar** alternative (brain in its own pinned cp311 process — immune
-to every future Python bump) is the other gate-0.1 arm; see
-`harness/notes/gate-0.1-sidecar-vs-abi3.md`. Decision owner: human, with the
-IPC-latency spike numbers in hand.
+For an approved new ABI, pin exact dependency versions and artifact hashes,
+include required notices, update the activation logic/tests together, and verify
+imports in a fresh target Houdini process. Stock-Python tests are an additional
+check, not a substitute for that execution. See the
+[vendor instructions](../../python/synapse/_vendor/README.md) and
+[installer build inputs](../../installer/README.md).
 
 ## Step 3 — Re-run the package installer
+
+For a Setup-managed installation, use a reviewed Setup and choose the new
+build's actual preference folder. Do not run the source scripts over its owned
+registration. The steps below apply to source installations only.
 
 The new build's pref dir **does not exist until first launch**, and
 auto-detect **silently skips** missing dirs. Either:
@@ -116,7 +105,10 @@ Facts worth knowing:
   also requires a re-run.
 - Old-version pref dirs keep a working `synapse.json` (harmless; delete it
   to uninstall).
-- The legacy root `install.py` is retired — never run it.
+- Source installation uses **both** `scripts/install_synapse_package.py` for
+  package registration and root `install.py` for the panel, shelf and icons.
+  Give both the same explicit preference folder; see
+  [source installation](../getting-started/installation.md#source-installation).
 - The run writes `~/.synapse/install_stamp.json` (read by
   `synapse_doctor`).
 
@@ -144,6 +136,6 @@ scene changes. It distinguishes passed, failed, and unrun checks. Use
 | # | Step | Command | Pass signal |
 |---|------|---------|-------------|
 | 1 | Regen symbol table | `hython host\introspect_runtime.py` | `TABLE: version=<NEW_BUILD> ... truncated=False`; commit the JSON |
-| 2 | Verify vendor ABI | `hython -c "import sys; print(sys.version_info[:2])"` | `(3, 11)` (else: `_vendor/README.md` cliff procedure) |
-| 3 | Re-run installer | `python scripts/install_synapse_package.py` | `wrote: .../packages/synapse.json` + `stamp: ~/.synapse/install_stamp.json` |
+| 2 | Verify vendor ABI | `hython -c "import sys; print(sys.version_info[:2])"` | Bundled ABI plus successful imports in the actual new build |
+| 3 | Install for the new prefs | Reviewed Setup, or both source scripts with the same prefs | Correct registration, UI assets and diagnostic stamp |
 | 4 | Confirm gate | `synapse_scout` query `hou.LopNode` | `gate_armed: true`, footer clean |

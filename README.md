@@ -4,34 +4,33 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.97.5 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.5 is Latest</sub></p>
+<p align="center"><sub>Published v5.97.5 · Windows · Houdini 22.0.400 · Python 3.13</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Install](docs/getting-started/installation.md)** · [First session](docs/getting-started/quickstart.md) · [JEV key setup](docs/getting-started/jev-setup.md) · [Help](#when-you-get-stuck) · [What's new](docs/releases/v5.97.5.md)
+**[▶️ Instructions](INSTRUCTIONS.md)** · [🏷️ Versions and tags](TAGS.md) · [What's new](docs/releases/v5.97.5.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
-- **Release:** [v5.97.5](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.5), targeting **Windows + Houdini 22.0.400** and Houdini's bundled Python 3.13.
-- **Windows Setup:** [Download 5.97.5](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SYNAPSE-5.97.5-Setup.exe). It is unsigned; verify the [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SHA256SUMS.txt) before running it.
-Setup includes the panel as of v5.97.5, including Spatial, the Render footer row and the scene-reading Scatter recipe.
+- 📦 **Get 5.97.5:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SYNAPSE-5.97.5-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SYNAPSE-5.97.5-source.zip).
+- 🔎 **Check the download:** Setup is **unsigned**. Compare its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SHA256SUMS.txt).
+- 🦀 **Public Rust default:** no native wheel is bundled. A separately verified local Rust-ON setup is a different configuration. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
+- ✅ **Measured:** six stock-Python CI jobs and isolated checks of the actual final installer. The interactive Windows wizard, registry/shortcuts and clean-machine installation remain untested. [Evidence and limits](docs/releases/v5.97.5.md#tests).
 
-- **What was checked:** [Release notes and limits](docs/releases/v5.97.5.md#tests), including actual headless H22 execution and the downloadable installer verification record.
+**New in 5.97.5:** pinned Moneta 1.3.0, reviewed packaging and one experimental LIGHT operation for explicitly approved disposable headless tests. LIGHT is not a new panel command or the full RC+ξ framework. [Release notes](docs/releases/v5.97.5.md).
 
-**New in 5.97.5:** a pinned Moneta 1.3.0 dependency, reviewed packaging and a narrowly qualified experimental LIGHT operation. The LIGHT operation is available to explicit disposable headless tests; it is not a new panel command. Native Rust remains an optional local setting; Setup does not bundle the native wheel or turn it on. [What changed](docs/releases/v5.97.5.md#what-changes).
+**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. A proposed installer correction is **unreleased**; the 5.97.5 download remains unchanged.
 
-Published source, an installed version and a qualified Houdini session are different states. Updating this page does not update an open Houdini session.
-
-**Pick one path, then follow these four steps.**
+**🚀 Pick one install path, then take four steps.**
 
 1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.97.5, or run the v5.97.5 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
 2. Restart Houdini. Open **New Pane Tab → Synapse**.
 3. Open **Connect models**. Choose a provider and model; add its key if needed.
 4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
 
-Using Ollama? Start its service first. **Connect** starts the separate Houdini bridge; **Doctor** checks the setup without a model.
+💡 Using Ollama? Start its service first. **Connect** starts the separate Houdini bridge; **Doctor** checks the setup without a model.
 
 **Jump to:** [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [Troubleshooting](#when-you-get-stuck)
 
@@ -94,7 +93,7 @@ flowchart LR
 
 These checks do not measure a complex scene's time savings or qualify every panel interaction. See [release notes and evidence](docs/releases/v5.97.2.md#what-was-measured).
 
-**v5.97.3 drops a false merge warning.** A wire that names no input appends to an existing merge's lowest free input. The check used to warn `input gap: indices [0, 0]` for two such wires. It no longer does. The fix has a standalone test only and has not run in Houdini ([notes](docs/releases/v5.97.3.md#solaris-merge-warning-side-fix)).
+The inherited merge-warning fix has standalone tests; its original limits remain in the [5.97.3 notes](docs/releases/v5.97.3.md#solaris-merge-warning-side-fix).
 
 ## Build from a verified recipe
 
@@ -138,16 +137,16 @@ A short bubble appears beside each node, drawn over the network editor. It says 
 
 The bubble comes from the node itself and its page in your local SideFX help library, found the way Houdini's own help finds it, or from an HDA's own help when the library has no page for it. No model runs, and nothing leaves your machine.
 
-Click **Identify** again, or send `/identify off`, to clear the bubbles. They are drawn over the editor, so nothing is written to your scene.
+Click **Identify** again, or send `/identify off`, to clear the bubbles. The overlay is not saved into your scene. Identify can also remove its own old-format comment blocks in one undo group while preserving artist text. [Cleanup details](docs/architecture/overview.md#identify).
 
 ```mermaid
 flowchart LR
     accTitle: How Identify explains selected nodes
-    accDescr: You select nodes and click Identify. SYNAPSE reads each node and finds its exact page in the local SideFX help library, the way Houdini's own help does, or uses an HDA's own help, without a model. A short bubble appears beside each node, drawn over the network editor. Nothing is written to the scene.
+    accDescr: You select nodes and click Identify. SYNAPSE reads each node and finds its exact local help page, or uses an HDA's help, without a model. A short bubble appears over the editor. The overlay is not saved; old Identify-generated comment blocks can be removed in an undo group while artist text is preserved.
     S["Select nodes"] --> I["Click Identify"]
     I --> R["Read the node +<br/>its exact help page"]
     R --> N["Short bubble<br/>beside each node"]
-    N --> F["Nothing written<br/>to the scene"]
+    N --> F["Overlay not saved<br/>legacy cleanup is undoable"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000

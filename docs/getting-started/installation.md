@@ -13,6 +13,13 @@ Setup packages this release's source and the pinned Moneta 1.3.0 Python backend.
 Setup includes the panel as of v5.97.5, including Spatial, the Render footer row and the scene-reading Scatter recipe.
 Native Rust is optional and remains off by default; no native wheel is bundled.
 
+**Already using native Rust or custom package settings?** Read the
+[existing-setup instructions](../../INSTRUCTIONS.md#existing-native-on-or-off-setups)
+before migration. Published 5.97.5 backs up a manual registration but generates a
+new one without its native/custom environment entries. An edited installer-owned
+registration instead blocks maintenance and is preserved. The proposed
+correction is unreleased; the current download has not been replaced.
+
 [Release notes and validation limits](../releases/v5.97.5.md) ·
 [SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SHA256SUMS.txt)
 
@@ -44,14 +51,14 @@ Python does not replace Houdini's own runtime.
 
 ### 1. Keep a copy of the repository
 
-Download the source ZIP from the [latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest)
+Download the source ZIP from [release 5.97.5](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.5)
 and extract it into a permanent folder. Open a terminal in the folder containing
 `install.py`.
 
 If you use Git instead:
 
 ```shell
-git clone https://github.com/JosephOIbrahim/Synapse.git
+git clone --branch v5.97.5 https://github.com/JosephOIbrahim/Synapse.git
 cd Synapse
 ```
 
@@ -159,6 +166,8 @@ The shipped SDK wheels target Windows Python 3.11/3.13. Other interpreter/OS
 combinations use installed dependencies and require their own native qualification.
 See [the two test environments](../CI_TWO_WORLDS.md).
 
-Optional Moneta, Hanish and Octavius setup is separate from the basic install:
+Windows Setup includes pinned Moneta 1.3.0. Source installs need a separately
+available Moneta checkout for that backend. Optional Hanish and Octavius setup
+is separate from the basic install:
 [LOOP configuration](../MEMORY_LOOP_REPAIR.md) and
 [Stage 0 experience setup](../development/rsi_stage0.md).

@@ -2,13 +2,13 @@
 
 [Back to README](../README.md) · [Architecture](architecture/overview.md) · [Latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 
-Publication links and wording reviewed on **2026-10-19** against published v5.97.3. The feature evidence below retains each release's original scope; this is not a new runtime qualification. For the published version and its validation, use the [README banner](../README.md) and matching release notes. A documentation update does not qualify a new installer or a live scene.
+Publication links and wording reviewed on **2026-10-20** against published **v5.97.5**. The feature evidence below retains each release's original scope; this is not a new runtime qualification. [Exact tags and commits](../TAGS.md) identify the published code. A documentation update does not qualify a new installer or a live scene.
 
 ## At a glance
 
-- **Published source:** [v5.97.4](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.4).
-- **Windows Setup:** v5.86.0, not the current source release.
-- **Houdini 22.0.400:** the target runtime. v5.97.4 has no Houdini or hython run; [its release notes](releases/v5.97.4.md) record standalone-Python checks.
+- **Published source and Windows Setup:** [v5.97.5](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.5).
+- **Public Setup:** unsigned, pinned Moneta 1.3.0 Python backend, no native Rust wheel. A verified local Rust-ON seat is separate.
+- **Houdini 22.0.400 / Python 3.13:** actual scoped headless release checks and isolated final-installer checks are recorded in the [5.97.5 notes](releases/v5.97.5.md#tests). The interactive wizard, registry/shortcuts and clean-machine installation remain untested. Eight panel failures match the prior baseline; the full panel suite is not green.
 - **Installed version:** separate from the published source. An open Houdini session keeps its loaded modules until reload or restart.
 
 [Install](getting-started/installation.md) · [Solaris evidence](#solaris-wiring-validation) · [Artist control](#artist-control) · [Stop and Undo](#undo-stop-and-rendering) · [Memory limits](#memory-and-suggestions)
@@ -17,15 +17,17 @@ Publication links and wording reviewed on **2026-10-19** against published v5.97
 
 | Area | Available now | Read next |
 |---|---|---|
-| Identify | Select nodes, then **Identify** or `/identify`: a short local bubble beside each node, drawn over the network editor, from its type, changed parameters, state and the SideFX library. No model call, and nothing is written to the scene. | [Identify release](releases/v5.85.0.md), [overlay and help paths](releases/v5.86.0.md), [how it works](architecture/overview.md#identify). |
+| Identify | Select nodes, then **Identify** or `/identify`: local overlay bubbles from node facts and help, without a model call. The overlay is not saved; recognized old Identify comments can be cleaned in one undo group. | [Identify release](releases/v5.85.0.md), [overlay and help paths](releases/v5.86.0.md), [cleanup details](architecture/overview.md#identify). |
 | Panel | Shared dark-gray/coral styling, welcome motion, inset footer controls and a taller prompt with **Resize**. | [Panel release](releases/v5.83.0.md), [resize and library update](releases/v5.84.0.md), [shorter Resize label](releases/v5.84.1.md). |
 | JEV / TypeSafe | Discoverable key setup with masked entry and explicit session save/clear. Ranking and routing measurement remain optional. | [Key setup](getting-started/jev-setup.md), [JEV release](releases/v5.84.2.md). |
 | World Labs | Artist-triggered import of an existing API-accessible world or supported local Gaussian PLY. | [Import flow and limits](architecture/overview.md#world-labs-import). |
 | SideFX help | Resumable installed-help/Markdown ingestion, published SQLite search generations and bounded local Scout retrieval. | [Build and connect](studio/SIDEFX_LIBRARY.md). |
 
-**Installation:** the current source release, **v5.97.4**, is a source release. The latest Windows Setup is **v5.86.0**; it contains the changes above but not the changes in v5.87.0 through v5.97.4. See [installation](getting-started/installation.md).
+**Installation:** both the source ZIP and Windows Setup are published for **v5.97.5**. Existing native/custom package settings need attention during manual-install migration; see [user instructions](../INSTRUCTIONS.md#existing-native-on-or-off-setups). A proposed installer correction is unreleased, and the published 5.97.5 assets remain unchanged.
 
 ### Validation by release
+
+- [v5.97.5](releases/v5.97.5.md) records stable Moneta packaging, bounded LIGHT headless qualification, baseline panel equivalence and the actual final-installer evidence. [Exact-commit CI](https://github.com/JosephOIbrahim/Synapse/actions/runs/39439531389) passed all six stock-Python jobs.
 
 - [v5.85.0](releases/v5.85.0.md) records live Identify gates in Houdini 22.0.400 and two independent reviews.
 - [v5.86.0](releases/v5.86.0.md) records the Windows Setup qualification.

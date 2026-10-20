@@ -4,6 +4,36 @@
 
 These diagrams describe implemented behavior. Each section links to its source. Future modes in `INTENT.md` are not implied by an arrow here.
 
+The current published code is **[5.97.5](../releases/v5.97.5.md)**.
+[Tag identities](../../TAGS.md) distinguish it from later default-branch edits.
+
+## Published 5.97.5 installation
+
+```mermaid
+flowchart TD
+    accTitle: Published 5.97.5 installation and existing settings
+    accDescr: Fresh Setup installs Moneta Python without a native Rust wheel. Maintenance of an edited installer-owned registration stops and preserves its bytes. Migration from a manual installation backs up the original package but writes a new registration without its native or custom environment settings. A future correction is not included in this published installer.
+    S["Published 5.97.5 Setup<br/>unsigned; no native wheel"] --> K{"Existing registration?"}
+    K -->|"none"| F["Fresh Moneta Python setup<br/>native wheel not installed"]
+    K -->|"installer-owned, unchanged"| U["Switch verified runtime<br/>and registration"]
+    K -->|"installer-owned, edited"| B["Refuse maintenance<br/>preserve package bytes"]
+    K -->|"manual, migration selected"| M["Back up original package"]
+    M --> N["Generate new registration<br/>native/custom entries not carried"]
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    linkStyle default stroke:#D07020
+```
+
+This describes the current download, not the proposed installer correction.
+An existing independently qualified Rust-ON seat is a separate configuration.
+Final-installer extraction and isolated embedded-engine/runtime checks passed;
+the interactive wizard, registry/shortcuts and clean-machine installation remain
+untested. No full RC+ξ activation follows from the bounded LIGHT release tests.
+
+Sources at the published tag: [maintenance and migration](https://github.com/JosephOIbrahim/Synapse/blob/v5.97.5/installer/synapse_setup/engine.py),
+[generated registration](https://github.com/JosephOIbrahim/Synapse/blob/v5.97.5/installer/synapse_setup/registration.py),
+[build inputs](https://github.com/JosephOIbrahim/Synapse/blob/v5.97.5/installer/build_payload.py),
+[actual final-installer verification](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/installer-verification.json).
+
 | Follow a workflow | Start here |
 |---|---|
 | A model calls a tool | [Execution paths](#execution-paths) |
@@ -164,12 +194,12 @@ Select nodes in a network editor, then click **Identify** or send `/identify`. T
 ```mermaid
 flowchart LR
     accTitle: Identify draws a short local bubble beside each selected node
-    accDescr: The panel reads facts for up to 60 selected nodes on Houdini's main thread. A worker thread finds each node type's exact help page once in the local SideFX library, building the page path the way Houdini's own help does, falls back to an HDA's own help when the library has no page, and builds each bubble without a model. The main thread draws the bubbles in a click-through overlay above the network editor, which follows pan and zoom. Nothing is written to the scene.
+    accDescr: The panel reads facts for up to 60 selected nodes on Houdini's main thread. A worker finds each type's exact local help page, or an HDA's own help, and builds each bubble without a model. The main thread draws an overlay that follows pan and zoom. The overlay is not saved; old Identify-generated comment blocks can be removed in an undo group while artist text is preserved.
     S["Selected nodes<br/>(up to 60)"] --> F["Read node facts<br/>on the main thread"]
     F --> L["Find each type's exact<br/>help page once"]
     L --> C["Build each bubble<br/>without a model"]
     C --> W["Draw an overlay<br/>above the editor"]
-    W --> V["Follow pan and zoom,<br/>scene untouched"]
+    W --> V["Follow pan and zoom<br/>overlay not saved"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
@@ -276,7 +306,7 @@ The optional LOOP observes eligible operations. **It does not choose the scene a
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#F6B26B','primaryTextColor':'#000000','primaryBorderColor':'#D07020','lineColor':'#D07020','textColor':'#000000','actorBkg':'#F6B26B','actorBorder':'#D07020','actorTextColor':'#000000','actorLineColor':'#D07020','signalColor':'#D07020','signalTextColor':'#000000','labelBoxBkgColor':'#F6B26B','labelBoxBorderColor':'#D07020','labelTextColor':'#000000','loopTextColor':'#000000','noteBkgColor':'#F6B26B','noteTextColor':'#000000','noteBorderColor':'#D07020'}}}%%
 sequenceDiagram
     accTitle: Optional observation around an existing scene action
-    accDescr: The host borrows memory, composes context and records a forecast before the authorized action. It then records the result and retains settled feedback. Missing evidence remains unknown.
+    accDescr: The host borrows memory and composes context around an existing authorized action. Hanish can acknowledge a forecast or report UNAVAILABLE with a retained outbox. The observer does not make an absent acknowledgement into a completed write or grant scene permission. Terminal evidence can remain pending; only settled feedback is retained as settled.
     participant Host as SYNAPSE host
     participant M as Moneta
     participant O as Octavius
@@ -288,7 +318,7 @@ sequenceDiagram
         Host->>O: Compose allowlisted context
         O-->>Host: Context and provenance
         Host->>H: Record EXPOSED forecast
-        H-->>Host: Durable acknowledgement
+        H-->>Host: Durable acknowledgement or UNAVAILABLE + outbox
         Host->>S: Use existing authorized route
         S-->>Host: Result or uncertainty
         Host->>H: Submit measured observation
@@ -304,6 +334,7 @@ Enable with `SYNAPSE_LOOP_ENABLED=1`. The main-thread host borrows the existing 
 The forecast concerns whether a synchronous handler returns without explicit failure. It does not predict an artist's next node or image quality.
 
 - Missing Octavius can yield narrower local context, with the limit named.
+- Missing Hanish retains an outbox and reports UNAVAILABLE. The observer does not gate the existing action route or claim settlement without an acknowledgement.
 - Missing Moneta ownership can leave the action uninstrumented.
 - Recovery cannot invent a pre-action forecast after dispatch.
 - Unknown stays unknown. Recovery retries observations, never scene actions.
@@ -343,17 +374,17 @@ The [staged workflow guides](../../rag/corpus/guides) retain upstream provenance
 ```mermaid
 flowchart TD
     accTitle: Publish only the reviewed and checked release commit
-    accDescr: Review changes and independent evidence, prepare an authorized version commit, push it, and require CI for that exact commit. Choose source-only publication or build and qualify a Windows Setup from the reviewed tree before the release commit. Publish the tag and release only after exact-commit CI passes; include Setup and checksums only for the installer path. Then verify the remote references, release state and any download links.
-    A["Review scoped changes<br/>and independent evidence"] --> K{"Shipping a<br/>Windows Setup?"}
+    accDescr: Review scoped changes and independent evidence, then prepare the authorized final version commit. If shipping an installer, build and qualify it from that exact clean commit and bind its hashes. Push that commit and require exact-commit CI. Publish only after both CI and artifact qualification pass. Any later source change repeats the relevant gates. Verify the remote references and downloaded asset bytes; existing tags and assets are preserved.
+    A["Review scoped changes<br/>and independent evidence"] --> B["Authorized version update<br/>and final reviewed commit"]
+    B --> K{"Shipping a<br/>Windows Setup?"}
     K -->|"yes"| I["Build and qualify<br/>Windows Setup"]
     K -->|"no"| O["Source-only release<br/>no new Setup"]
-    I --> B["Authorized version update<br/>and release commit"]
-    O --> B
-    B --> P["Push reviewed commit"]
+    I --> P["Push the same reviewed commit"]
+    O --> P
     P --> C{"CI passes for this commit?"}
     C -->|"yes"| T["Publish verified tag and release<br/>include only qualified assets"]
     C -->|"no / unknown"| H["Hold publication;<br/>investigate"]
-    T --> V["Verify remote commit, tag,<br/>release and download links"]
+    T --> V["Verify remote commit, tag,<br/>release and downloaded hashes"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class I,T synapse

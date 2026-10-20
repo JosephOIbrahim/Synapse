@@ -5,6 +5,11 @@ inspect the real nodes, and build confidence in the workflow.
 
 ## Start here
 
+📦 **Published release: [5.97.5](releases/v5.97.5.md)**.
+[User instructions](../INSTRUCTIONS.md) · [Exact versions and tags](../TAGS.md).
+Public Setup is unsigned and bundles no native Rust wheel. Local Rust-ON
+qualification is separate; a proposed installer correction is unreleased.
+
 | Your next step | Read |
 |---|---|
 | Get SYNAPSE into Houdini | [Installation](getting-started/installation.md) |
