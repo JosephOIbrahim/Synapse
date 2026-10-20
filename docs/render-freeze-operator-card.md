@@ -23,9 +23,9 @@
 
 ```
 1.  Launch Houdini 22.0.368 fresh.
-2.  Python Shell:   exec(open(r'C:\Users\User\SYNAPSE\scripts\build_freeze_repro.py').read())
-3.  PowerShell:     pwsh -File C:\Users\User\SYNAPSE\scripts\render_watch.ps1
-4.  Python Shell:   exec(open(r'C:\Users\User\SYNAPSE\scripts\husk_spike.py').read())
+2.  Python Shell:   exec(open(r'C:\Users\Example\SYNAPSE\scripts\build_freeze_repro.py').read())
+3.  PowerShell:     pwsh -File C:\Users\Example\SYNAPSE\scripts\render_watch.ps1
+4.  Python Shell:   exec(open(r'C:\Users\Example\SYNAPSE\scripts\husk_spike.py').read())
 5.  Read the VERDICT the spike prints + cross-check the watcher.
 ```
 

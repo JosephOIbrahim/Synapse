@@ -25,7 +25,7 @@
 | Python version | 3.11.7 |
 | Operator | Joe Ibrahim |
 | Script run | ``docs/sprint3/spike_3_0_pdg_audit_script.py`` |
-| Full report file | ``C:\Users\User\spike_3_0_pdg_audit_20260426-104422.txt`` |
+| Full report file | ``C:\Users\Example\spike_3_0_pdg_audit_20260426-104422.txt`` |
 | Audit summary | 14 surfaces resolved · 6 missing · 0 errors |
 
 ---
@@ -1020,4 +1020,4 @@ Spike 3.0 closes when **all** of the following are true:
 
 All five boxes checked. **Spike 3.1 design opens.**
 
-*End of audit document. Script: ``spike_3_0_pdg_audit_script.py``. Full report: ``C:\Users\User\spike_3_0_pdg_audit_20260426-104422.txt``.*
+*End of audit document. Script: ``spike_3_0_pdg_audit_script.py``. Full report: ``C:\Users\Example\spike_3_0_pdg_audit_20260426-104422.txt``.*

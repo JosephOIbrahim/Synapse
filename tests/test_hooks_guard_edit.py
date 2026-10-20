@@ -140,7 +140,7 @@ def test_worktree_absolute_path_inside_worktree_allowed(tmp_path):
 # narrowed fence (BP9-STOPGATE): deny the main checkout, allow ~/.claude
 # --------------------------------------------------------------------------
 
-FAKE_HOME = "C:/Users/User" if os.name == "nt" else "/home/user"
+FAKE_HOME = "C:/Users/Example" if os.name == "nt" else "/home/user"
 
 
 def test_narrowed_fence_denies_main_checkout_from_worktree_cwd(tmp_path):
@@ -158,7 +158,7 @@ def test_narrowed_fence_allows_auto_memory_file_from_worktree_cwd(tmp_path):
     every worktree agent (crucible finding). Outside both trees -> allowed."""
     ledger = tmp_path / "hooks.jsonl"
     wt = FAKE_MAIN + "/.claude/worktrees/wf_narrow-2"
-    memory = FAKE_HOME + "/.claude/projects/C--Users-User-SYNAPSE/memory/MEMORY.md"
+    memory = FAKE_HOME + "/.claude/projects/C--Users-Example-SYNAPSE/memory/MEMORY.md"
     proc = _run(GUARD, _hook_json(memory, cwd=wt), ledger)
     assert proc.returncode == 0
     assert proc.stdout == "", proc.stdout  # byte-identical allow
@@ -194,9 +194,9 @@ def test_narrowed_fence_pattern_list_still_applies_outside_both_trees(tmp_path):
 # --------------------------------------------------------------------------
 
 @pytest.mark.parametrize("path", [
-    "C:\\Users\\User\\Documents\\houdini22.0\\packages\\synapse.json",
+    "C:\\Users\\Example\\Documents\\houdini22.0\\packages\\synapse.json",
     "/home/user/houdini22.0/packages/synapse.json",
-    "C:\\Users\\User\\Documents\\houdini21.0\\packages\\synapse.json",
+    "C:\\Users\\Example\\Documents\\houdini21.0\\packages\\synapse.json",
 ])
 def test_houdini_prefs_path_denied(tmp_path, path):
     ledger = tmp_path / "hooks.jsonl"

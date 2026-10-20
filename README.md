@@ -253,6 +253,14 @@ Moneta's USD mirror is an inspection view, not the storage owner. Missing servic
 
 ## License
 
-[MIT](LICENSE). Bundled Moneta retains its separate proprietary terms.
+[MIT](LICENSE).
+
+Moneta 1.3.0 is bundled under the MIT License by its copyright holder's written
+grant of 2026-10-19. Its pinned upstream metadata still declares "Proprietary";
+the bundle includes the grant notice and full MIT text.
+
+Third-party packages retain their own licenses. The installer's `DEPENDENCIES.txt`
+lists the included components and license-text locations. The SideFX PDF, MPM
+masterclass transcripts and rewritten guides are excluded from this release.
 
 Patent applications pending on the USD cognitive-state substrate, digital injection, and predictive lighting — see [PATENTS](PATENTS).

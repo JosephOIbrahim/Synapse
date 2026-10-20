@@ -180,7 +180,7 @@ worth less than one closed leg.
 
 **Work in a worktree.** Code legs run in `<board>/<rung>-<leg>` worktrees, one
 atomic commit per leg. Run `git worktree list` first — the repo root
-`C:\Users\User\SYNAPSE` is a *separate* checkout on `master`, and an absolute
+`C:\Users\Example\SYNAPSE` is a *separate* checkout on `master`, and an absolute
 repo-root path written from inside a worktree lands on master's tree, not your
 branch. Evidence artifacts land in the main tree as untracked files.
 

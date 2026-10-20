@@ -1485,7 +1485,7 @@ flowchart LR
     classDef ok fill:#5e5e5e,stroke:#000000,color:#FFFFFF
 ```
 
-Standing it up surfaced + fixed real product hygiene under full-suite gating: hardcoded `C:\Users\User\SYNAPSE` fallbacks in the panel bootstraps (plus an off-by-one repo-root derivation the hardcode was masking), a single-sourced `VERSION`, and a staged demo scaffold. The `ui/` → `panel/` consolidation is fully mapped and deferred — the live UI source of truth is already `panel/`.
+Standing it up surfaced + fixed real product hygiene under full-suite gating: hardcoded `C:\Users\Example\SYNAPSE` fallbacks in the panel bootstraps (plus an off-by-one repo-root derivation the hardcode was masking), a single-sourced `VERSION`, and a staged demo scaffold. The `ui/` → `panel/` consolidation is fully mapped and deferred — the live UI source of truth is already `panel/`.
 
 ### Verified capability — what actually cooks (per-context audit)
 

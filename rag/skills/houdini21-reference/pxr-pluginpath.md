@@ -46,7 +46,7 @@ A `plugInfo.json` can reference subdirectories:
 ### Discovery Example (hdCarWash)
 
 ```
-PXR_PLUGINPATH_NAME = C:/Users/User/houdini21.0/dso/usd
+PXR_PLUGINPATH_NAME = C:/Users/YourName/houdini21.0/dso/usd
 
 dso/usd/
 +-- plugInfo.json                       <- {"Includes": ["*/resources/"]}
@@ -74,7 +74,7 @@ $HOUDINI_USER_PREF_DIR/dso/usd/        <- User plugins (if exists)
 
 Where:
 - `$HFS` = Houdini install dir (e.g., `C:\Program Files\Side Effects Software\Houdini 21.0.512`)
-- `$HOUDINI_USER_PREF_DIR` = User prefs (e.g., `C:\Users\User\houdini21.0`)
+- `$HOUDINI_USER_PREF_DIR` = User prefs (e.g., `C:\Users\YourName\houdini21.0`)
 
 ## Houdini Package System
 
@@ -84,8 +84,8 @@ JSON files in `packages/` directories that set environment variables before Houd
 
 **Search locations (in order):**
 ```
-$HOUDINI_USER_PREF_DIR/packages/        <- C:\Users\User\houdini21.0\packages\
-$HOUDINI_USER_PREF_DIR/../packages/     <- C:\Users\User\Documents\houdini21.0\packages\
+$HOUDINI_USER_PREF_DIR/packages/        <- C:\Users\YourName\houdini21.0\packages\
+$HOUDINI_USER_PREF_DIR/../packages/     <- C:\Users\YourName\Documents\houdini21.0\packages\
 $HFS/packages/                          <- System-wide (rare)
 ```
 
@@ -143,7 +143,7 @@ $HFS/packages/                          <- System-wide (rare)
 
 ### Example: hdCarWash Dual Deployment
 ```
-C:\Users\User\Downloads\HDCARWAASH\HdCarWash\plugin\
+C:\Users\YourName\Downloads\HDCARWAASH\HdCarWash\plugin\
 +-- plugInfo.json                   <- Includes + delegate
 +-- lib\hdCarWash.dll
 +-- usdCarWash\resources\
@@ -163,7 +163,7 @@ Package: `Documents\houdini21.0\packages\hdCarWash.json`
 
 **Location 2: Runtime (user prefs)**
 ```
-C:\Users\User\houdini21.0\dso\usd\
+C:\Users\YourName\houdini21.0\dso\usd\
 +-- plugInfo.json                   <- Includes
 +-- hdCarWash\resources\...
 +-- usdCarWash\resources\...
@@ -174,7 +174,7 @@ Package: `houdini21.0\packages\hdCarWash.json`
 {
     "env": [{
         "PXR_PLUGINPATH_NAME": {
-            "value": "C:/Users/User/houdini21.0/dso/usd",
+            "value": "C:/Users/YourName/houdini21.0/dso/usd",
             "method": "append"
         }
     }]
@@ -338,7 +338,7 @@ def create_houdini_package(plugin_name, plugin_path,
     return out_path
 
 
-create_houdini_package("hdCarWash", "C:/Users/User/Downloads/HDCARWAASH/HdCarWash/plugin")
+create_houdini_package("hdCarWash", "C:/Users/YourName/Downloads/HDCARWAASH/HdCarWash/plugin")
 ```
 
 ```python

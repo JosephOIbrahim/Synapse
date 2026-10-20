@@ -147,7 +147,7 @@ Each spike has a binary pass/fail gate. **Do not start the next spike on a red p
 
 ```bash
 # Terminal 1 — Houdini
-cd C:\Users\User\SYNAPSE
+cd C:\Users\Example\SYNAPSE
 
 # API key — pick one:
 # Option A (fastest for Spike 0):
@@ -162,7 +162,7 @@ set ANTHROPIC_API_KEY=sk-ant-...
 
 ```bash
 # Terminal 2 — Parallel (runs in 5 seconds)
-cd C:\Users\User\SYNAPSE
+cd C:\Users\Example\SYNAPSE
 rg -l websocket tests/
 ```
 
@@ -297,7 +297,7 @@ If tests spin up actual `pytest-asyncio` client on `ws://localhost:9999`:
 
 1. **`synapse.cognitive.stage`** — Stage-per-session manager
 2. Anonymous `pxr.Usd.Stage` instantiated at agent init
-3. Agent Asset stage at `C:\Users\User\SYNAPSE\assets\agents\synapse_base.usda`
+3. Agent Asset stage at `C:\Users\Example\SYNAPSE\assets\agents\synapse_base.usda`
    - Stable, versioned, read-only during active sessions
 4. Session stage references Agent Asset by path
 5. **Turn prims as siblings** under `/Session/Turns/`:

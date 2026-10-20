@@ -1,12 +1,12 @@
 # Build the Windows installer
 
 This directory builds a conventional per-user Inno Setup wizard. Users run the
-resulting EXE; the commands below are for builders. The reviewed product version
-remains 5.68.0. These build commands do not change the product version, create
-release tags, upload artifacts or sign the EXE.
+resulting EXE; the commands below are for builders. Builds use the canonical root
+`VERSION`. Final artifact validation, release tags, uploads and signing are
+separate release steps.
 
-The reviewed build is available as an
-[unsigned Windows installer](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.68.0).
+Published builds and their qualification notes are available in
+[SYNAPSE releases](https://github.com/JosephOIbrahim/Synapse/releases).
 Artists can follow the [installation guide](../docs/getting-started/installation.md);
 the commands below reproduce a build.
 
@@ -21,7 +21,7 @@ All fetched inputs have SHA-256 pins in [toolchain.lock.json](toolchain.lock.jso
 For a new build workspace, fetch the compiler and maintenance runtime:
 
 ```powershell
-$buildRoot = 'C:\synapse-build'
+$buildRoot = 'C:\path\to\build-staging'
 $downloads = Join-Path $buildRoot 'downloads'
 New-Item -ItemType Directory -Force -Path $downloads | Out-Null
 $lock = Get-Content -LiteralPath installer/toolchain.lock.json -Raw | ConvertFrom-Json
@@ -70,11 +70,13 @@ from Houdini. No developer virtual environment is copied into the product.
 
 ### Explicit Moneta artifact
 
-The reviewed bundle contains Moneta 1.2.0rc1 and was initially built for local
-evaluation. Its inclusion in the published preview was subsequently authorized.
-Moneta retains its proprietary terms; obtain the necessary rights for any
-independently distributed bundle. The builder never probes for or quietly
-includes a sibling checkout.
+The 5.97.5 bundle uses Moneta 1.3.0 at commit
+`4f7afc73736aecce6d55d5e03f28fb3137d474d3`, under the MIT License by its
+copyright holder's written grant of 2026-10-19. The upstream metadata still
+declares "Proprietary"; the bundle preserves that metadata and includes the
+grant notice and full MIT text. `installer/moneta_license.json` binds the grant
+to the exact source content. The builder never probes for or quietly includes
+a sibling checkout.
 
 Export an explicitly selected source into a portable archive:
 
@@ -87,7 +89,8 @@ $monetaHash = (Get-FileHash -LiteralPath $monetaArchive -Algorithm SHA256).Hash.
 The exporter includes only `src/moneta/*.py` (recursively), the three schema
 resources, generated distribution metadata, and provenance/license notices.
 For the provided local archive, the expected SHA-256 is
-`81a3d8735c7da49ca81302725acab6a3324311091e850c34afcea92e87ea31f7`.
+`a0ac38e10abc62ef6cc26118d7c80ad206be6393014f6b38b76ba8d88327daba`
+for `moneta-1.3.0-4f7afc73-canonical.zip`.
 Record the digest of any independently approved archive rather than substituting
 unreviewed contents under this digest.
 
@@ -97,7 +100,7 @@ Build the real installer:
 python -B installer/build_windows.py --downloads $downloads --iscc $iscc --output $buildRoot --moneta-bundle $monetaArchive --moneta-sha256 $monetaHash
 ```
 
-Output: `C:\synapse-build\output\SYNAPSE-5.68.0-Setup.exe` and its
+Output: `C:\path\to\build-staging\output\SYNAPSE-<version>-Setup.exe` and its
 `.build.json` report with installer hash, payload hash, maintenance file hashes,
 component identity and toolchain pins. Each invocation creates a fresh staging
 directory; the builder never deletes an earlier stage. The output EXE is unsigned.
@@ -150,7 +153,8 @@ python -m pytest tests/test_install_package.py tests/test_install_package_parity
 
 The
 [verification record](../docs/getting-started/windows-installer-verification.md)
-records the exact command used for this build.
+records historical test-build commands. Release-specific qualification must bind
+the actual final EXE, extracted payload and maintenance files to their hashes.
 
 Build a separate TestSetup with `--test-build` added to the build command. It has
 a distinct Windows AppId and requires `/TESTROOT`. Engine destinations must be
@@ -162,7 +166,8 @@ Only one compiled test installation can be registered at a time.
 Create intentionally synthetic previous/missing-dependency installers:
 
 ```powershell
-$testReport = Join-Path $buildRoot 'output\SYNAPSE-5.68.0-TestSetup.build.json'
+$version = (Get-Content -LiteralPath VERSION -Raw).Trim()
+$testReport = Join-Path $buildRoot ("output\SYNAPSE-" + $version + "-TestSetup.build.json")
 python -B installer/create_test_fixture.py --build-report $testReport --iscc $iscc --kind previous
 python -B installer/create_test_fixture.py --build-report $testReport --iscc $iscc --kind missing-dependency
 ```
@@ -173,7 +178,7 @@ payload bytes to exercise upgrade and retirement of old files.
 Run the compiled sequence using a new, empty test root:
 
 ```powershell
-python -B installer/test_executable.py --expected-version 5.68.0 --setup "$buildRoot\output\SYNAPSE-5.68.0-TestSetup.exe" --previous-setup "$buildRoot\output\SYNAPSE-fixture-previous.exe" --broken-setup "$buildRoot\output\SYNAPSE-fixture-missing-dependency.exe" --root "$buildRoot\test-seat-01" --hfs 'C:\Program Files\Side Effects Software\Houdini 22.0.400'
+python -B installer/test_executable.py --expected-version $version --setup "$buildRoot\output\SYNAPSE-$version-TestSetup.exe" --previous-setup "$buildRoot\output\SYNAPSE-fixture-previous.exe" --broken-setup "$buildRoot\output\SYNAPSE-fixture-missing-dependency.exe" --root "$buildRoot\test-seat-01" --hfs 'C:\Program Files\Side Effects Software\Houdini 22.0.400'
 ```
 
 This runs compiled fresh/repeat/upgrade/uninstall/reinstall, failures, Windows
@@ -199,9 +204,11 @@ they are never converted to blanket PASS. No artist GUI or model request is used
 
 ## Release follow-through
 
-The reviewed EXE is published as the unsigned preview linked above. Native wizard visual
-inspection, a clean Windows machine/VM, a full artist GUI session, model access,
-and genuine historical installer upgrades remain separate qualification work.
+The separate TestSetup does not certify a production Setup. Extract and verify
+the actual final EXE without executing its Windows integration on an artist seat,
+and exercise its exact embedded maintenance engine/payload in disposable folders.
+Wizard visuals, Windows registration/shortcuts, a clean Windows machine/VM, a full
+artist GUI session and model access require their own measured qualification.
 Signing requires an approved publisher certificate/process; no key is embedded.
 Publication of another build, version changes, merge/push/tag and redistribution
 of a different Moneta bundle require their own authorization.

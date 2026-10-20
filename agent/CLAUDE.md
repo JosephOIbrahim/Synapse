@@ -110,9 +110,9 @@ Common USD node types in Solaris/LOPs:
 - Final renders: scene resolution, 128+ samples
 
 ### File Paths
-- Synapse home: `C:/Users/User/.synapse/`
-- Render output: `C:/Users/User/.synapse/renders/`
-- Houdini projects: `D:/HOUDINI_PROJECTS_2025/`
+- Synapse home: `C:/Users/Example/.synapse/`
+- Render output: `C:/Users/Example/.synapse/renders/`
+- Houdini projects: `D:/HoudiniProjects/`
 - Use forward slashes in Houdini Python, or raw strings with backslashes
 
 ## Error Recovery Patterns

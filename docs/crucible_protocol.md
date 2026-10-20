@@ -58,7 +58,7 @@ referenceable in a prompt.
 
 ```python
 import sys
-sys.path.insert(0, r"C:\Users\User\SYNAPSE\python")
+sys.path.insert(0, r"C:\Users\Example\SYNAPSE\python")
 
 from synapse.host.daemon import SynapseDaemon
 
@@ -81,7 +81,7 @@ Then load the fixture scene:
 ```python
 import hou
 hou.hipFile.clear(suppress_save_prompt=True)
-hou.hipFile.load(r"C:\Users\User\SYNAPSE\tests\fixtures\inspector_week1_flat.hip",
+hou.hipFile.load(r"C:\Users\Example\SYNAPSE\tests\fixtures\inspector_week1_flat.hip",
                  suppress_save_prompt=True)
 ```
 

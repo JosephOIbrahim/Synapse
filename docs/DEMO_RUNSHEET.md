@@ -22,7 +22,7 @@ Do these in order, before the recording starts. One take = one pass through this
 
    **Every hip in the same folder shares one memory store,** and so does every hip under the same `JOB`. A rehearsal deposit will show up during the show unless the show hip sits in its own new folder. Rehearse in a different folder from the show.
 
-5. **JOB.** `JOB` is unset, or set to this take's folder. Check it in the Python shell: `hou.getenv("JOB")`. If it names a folder **above** the take folder (`C:\`, `C:\Users\User`), set `JOB` to the take folder. Memory goes to `$JOB/.synapse` when `JOB` contains the hip, otherwise to `.synapse` next to the hip (seam-guard, live hython on master `ed01db41`).
+5. **JOB.** `JOB` is unset, or set to this take's folder. Check it in the Python shell: `hou.getenv("JOB")`. If it names a folder **above** the take folder (`C:\`, `C:\Users\Example`), set `JOB` to the take folder. Memory goes to `$JOB/.synapse` when `JOB` contains the hip, otherwise to `.synapse` next to the hip (seam-guard, live hython on master `ed01db41`).
 
 6. **Open the take hip first.** File > Open the hip in the take folder before the first deposit, so the panel works in the take scene from the start. Never deposit in an untitled scene and then Save As.
 

@@ -104,7 +104,7 @@
     }
   ],
   "canonicalizer": "recipes-graph-v1+c3",
-  "catalog_digest": "1b0c813933374e2f61b1f3ba906c9ee91e3e27319920ca146841ad4e71e33d40",
+  "catalog_digest": "0f3cd467a5702d8e72a5b78b599fa7bc4c530fd9b7dcd7bc35c6782d99e08f78",
   "connections": [
     {
       "dst_id": "ground",
@@ -1190,7 +1190,7 @@
       "version": "recipes-stage-v1+c3"
     },
     "title": "Solaris spine",
-    "vop_catalog_digest": "f3912e8a68527a76259b3514c018f3897f71decc52e44b17bb0f6831ad310cf4"
+    "vop_catalog_digest": "d0ae1dd0ae233a35fe2d7bfce68b2a03b54414dead1de755796669401a2594fb"
   },
   "recipe_id": "solaris.spine",
   "schema_version": "2",

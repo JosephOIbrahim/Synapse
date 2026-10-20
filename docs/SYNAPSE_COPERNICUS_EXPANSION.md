@@ -1,6 +1,6 @@
 # SYNAPSE COPERNICUS EXPANSION — frozen build spec (C.3 · C.4 · C.10)
 
-**`docs/SYNAPSE_COPERNICUS_EXPANSION.md`** · Repo: `C:\Users\User\SYNAPSE` (branch per orchestrator). All paths repo-relative.
+**`docs/SYNAPSE_COPERNICUS_EXPANSION.md`** · Repo: `C:\Users\Example\SYNAPSE` (branch per orchestrator). All paths repo-relative.
 **Status: RATIFIED SCOPE, BUILD-READY PAPER.** The three cycles this spec covers — `C.3-H22-neural-cops`, `C.4-H22-scaffold-rebuild`, `C.10-H22-terrain-exposure` — are `ratified: true` in `harness/state/flywheel_queue.json` (human: Joe, 2026-07-16 Copernicus-expansion directive, verbatim in each cycle's `note`; all other C.x cycles remain held). This spec is the MODE A paper that makes them executable with no design decisions left open except the OPEN DECISIONS block below.
 **Governing gate:** merge-to-main, **per cycle, human** (blueprint §8 gate registry, mechanized in `docs/H22_AGENT_HARNESS.md` — same gate the port manifest names). No agent merges.
 **Relay leg:** Leg 3-adjacent — MODE B feature cycles under the CTO roadmap's NEW-CAPABILITY lane (`docs/reviews/h22-cto-roadmap-2026-07-16.md` rows C-3/C-4; C.10 deposited directly to the queue), sequenced against the G1 `cops-1`/`cops-2` port waves per §Sequencing.

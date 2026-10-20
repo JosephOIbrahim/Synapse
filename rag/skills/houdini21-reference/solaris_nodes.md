@@ -588,7 +588,7 @@ stage = hou.node("/stage")
 
 # reference: import an external USD file as a reference under a target prim
 ref = stage.createNode("reference", "asset_ref")
-ref.parm("filepath1").set("D:/HOUDINI_PROJECTS_2025/assets/rubbertoy.usdc")
+ref.parm("filepath1").set("D:/VFX_PROJECTS/assets/rubbertoy.usdc")
 ref.parm("primpath").set("/World/rubbertoy")
 # reftype: "Reference" (always loaded) or "Payload" (deferred / loadable on demand)
 ref.parm("reftype").set("Reference")
@@ -597,7 +597,7 @@ ref.parm("reftype").set("Reference")
 # Best for: lighting rigs, animation caches, department overrides
 # Use sublayer for Karma — assetreference is invisible to Karma.
 sub = stage.createNode("sublayer", "lighting_rig")
-sub.parm("filepath1").set("D:/HOUDINI_PROJECTS_2025/lighting/three_point_rig.usda")
+sub.parm("filepath1").set("D:/VFX_PROJECTS/lighting/three_point_rig.usda")
 # Layer position: "strongest" (later / wins conflicts) or "weakest" (base layer)
 sub.parm("position").set("strongest")
 
@@ -747,7 +747,7 @@ cfg.parm("instanceable").set(False)
 
 # componentoutput: package into a self-contained USD asset file
 comp_out = stage.createNode("componentoutput", "publish_asset")
-comp_out.parm("lopoutput").set("D:/HOUDINI_PROJECTS_2025/assets/my_asset/my_asset.usdc")
+comp_out.parm("lopoutput").set("D:/VFX_PROJECTS/assets/my_asset/my_asset.usdc")
 comp_out.parm("componentname").set("my_asset")
 comp_out.parm("thumbnail").set(True)   # generate thumbnail image on export
 # Automatically sets kind=component on root prim, embeds materials

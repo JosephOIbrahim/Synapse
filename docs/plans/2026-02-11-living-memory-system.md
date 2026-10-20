@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10+ (Houdini embedded), `pxr.Usd`/`pxr.Sdf` (USD API from Houdini), `os`/`json`/`shutil`/`datetime` (stdlib). No new pip dependencies for Phase 1-4.
 
-**Blueprint:** `C:/Users/User/SYNAPSE_SCENE_MEMORY_BLUEPRINT.md` (1672 lines, authoritative spec)
+**Blueprint:** `C:/Users/Example/SYNAPSE_SCENE_MEMORY_BLUEPRINT.md` (1672 lines, authoritative spec)
 
 **Codebase entry points:**
 - Core memory: `python/synapse/memory/store.py` (MemoryStore, SynapseMemory)
@@ -1184,7 +1184,7 @@ in try/except to preserve existing behavior if scene memory fails."
 ### Task 5: Shelf tool — `synapse_connect.py`
 
 **Files:**
-- Create: `C:/Users/User/.synapse/houdini/scripts/python/synapse_connect.py`
+- Create: `C:/Users/Example/.synapse/houdini/scripts/python/synapse_connect.py`
 
 **Step 1: Write the shelf tool script**
 
@@ -1329,7 +1329,7 @@ def _build_handshake(context, full_ctx):
 **Step 2: Commit**
 
 ```bash
-git add C:/Users/User/.synapse/houdini/scripts/python/synapse_connect.py
+git add C:/Users/Example/.synapse/houdini/scripts/python/synapse_connect.py
 git commit -m "feat(shelf): add synapse_connect shelf tool for one-click shot login
 
 Creates claude/ directories, loads memory, copies handshake to clipboard.

@@ -1,6 +1,6 @@
 # PORT WAVE MANIFEST — frozen spec (G1)
 
-**`docs/PORT_WAVE_MANIFEST.md`** · Repo: `C:\Users\User\SYNAPSE` (branch per orchestrator). All paths repo-relative.
+**`docs/PORT_WAVE_MANIFEST.md`** · Repo: `C:\Users\Example\SYNAPSE` (branch per orchestrator). All paths repo-relative.
 **Status: PROPOSAL — MODE A paper.** This is the Leg-0 design artifact that makes `h22-port-wave` (G1) executable. It becomes binding only when a human **merges it to main** (the harness playbook's Leg-0 gate) AND `harness/state/drop.json` exists (MODE B). Until both, every wave dispatch REFUSES at the gate — verified: `.claude/workflows/h22-port-wave.js:4` whenToUse = "MODE B only (drop.json exists) and docs/PORT_WAVE_MANIFEST.md is merged."
 
 **Governing gate:** merge-to-main, **per wave, human** (`docs/H22_AGENT_HARNESS.md:55` gate registry — "Merge-to-main | no file — always human, per commit" — whose §2 header states that table "renders blueprint §8 made mechanical"; `docs/H22_AGENT_HARNESS.md:73` port-wave exit = "merge the worktree"). No agent — gatewarden, forge, assayer, crucible — merges. The workflow returns `MERGE_READY`; the human merges. `[The blueprint is now committed at docs/SYNAPSE_H22_GAP_BLUEPRINT.md §8 (gate registry: "Merge-to-main | Every wave, every doc PR | Human, per commit"); the playbook cited above mechanizes it.]`

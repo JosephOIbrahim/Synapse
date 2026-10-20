@@ -69,7 +69,7 @@ def _make_session(proj, sid, *, age_s=3600, with_agent=True, **transcript_kw):
 
 
 def test_project_dir_sanitization():
-    assert br.project_dir_for(r"C:\Users\User\SYNAPSE").name == "C--Users-User-SYNAPSE"
+    assert br.project_dir_for(r"C:\Users\Example\SYNAPSE").name == "C--Users-Example-SYNAPSE"
 
 
 def test_pick_session_skips_live_transcripts(tmp_path):

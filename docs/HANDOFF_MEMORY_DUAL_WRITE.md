@@ -28,7 +28,7 @@ Executed against the live GUI seat (Houdini 22.0.400, pid 32804, started
 ### 1. Live store — located
 
 ```
-C:\Users\User\AppData\Local\Temp\houdini_temp\untitled\.synapse\.moneta\
+C:\Users\Example\AppData\Local\Temp\houdini_temp\untitled\.synapse\.moneta\
   snapshot.json        7,826,160 B   1131 rows   0 duplicated inner ids
   cortex_root.usda     1,729,255 B   (mtime 2026-09-17 16:30 — stale vs snapshot)
   usd/
@@ -138,7 +138,7 @@ against the live seat today:
 ```
 # SYNAPSE - memory dual-write: diagnose, then land the hython contract
 
-Repo: C:\Users\User\SYNAPSE   Build pins: GUI 22.0.400 (running, SYNAPSE server live
+Repo: C:\Users\Example\SYNAPSE   Build pins: GUI 22.0.400 (running, SYNAPSE server live
 on :9999 path /synapse), hython lane 22.0.417 (Python 3.13.10).
 
 ## Ground rules
@@ -194,7 +194,7 @@ V0 (unproven, do not build on):
   inside server/handlers.py handle(). Verify; do not assume.
 - Location of the LIVE store. ~/.synapse/memory.jsonl is 0 bytes from February,
   a legacy stub. The live backend takes the `_iter_memories` strict path and is
-  USD (cortex_root.usda / cortex_protected.usda). Not under C:\Users\User\Moneta.
+  USD (cortex_root.usda / cortex_protected.usda). Not under C:\Users\Example\Moneta.
   Find it before reasoning about live data.
 
 ## Tasks, in order

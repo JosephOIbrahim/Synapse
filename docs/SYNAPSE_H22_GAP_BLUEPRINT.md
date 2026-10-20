@@ -260,7 +260,7 @@ Two external documents were adjudicated this week; the blueprint's deltas were o
 
 ## 11 · Open verifications carried out of this pass
 
-Cheap, local, non-blocking — each one `ls`/grep at `C:\Users\User\SYNAPSE`:
+Cheap, local, non-blocking — each one `ls`/grep at `C:\Users\Example\SYNAPSE`:
 
 - `authoring_domains.json` allowlist contents (gates G8b).
 - Quarantine list exact membership and storage location (runbook step 3).

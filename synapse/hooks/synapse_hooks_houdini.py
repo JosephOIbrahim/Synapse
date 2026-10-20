@@ -5,7 +5,7 @@ file that the Claude Code-side bridge reads on each prompt.
 
 Usage from Houdini Python Shell:
     import sys
-    sys.path.insert(0, "C:/Users/User/SYNAPSE/synapse")
+    sys.path.insert(0, "C:/Users/Example/SYNAPSE/synapse")
     from hooks.synapse_hooks_houdini import register_scene_callbacks
     register_scene_callbacks()
 

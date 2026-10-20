@@ -185,7 +185,7 @@ All claims verified against live code. I have what I need. Writing the report as
 - **Iteration-cap-hit fires `stream_done` (success).** Worth fixing for correctness (a truncated scene shouldn't look "finished") but it doesn't change the turn count of a *successful* declarative path — not a latency lever.
 - **lighting_rig light-groups / light-linking; assemble_chain "can't create".** Real gaps but orthogonal to the one-shot convergence; assemble_chain's create-inability is *why* build_graph is the lever, not a thing to fix on assemble_chain.
 
-**Files cited (all line numbers verified live this session):** `system_prompt.py`, `agent_prompts.py`, `_tool_registry.py`, `solaris_graph_templates.py`, `handlers_solaris_graph.py`, `handlers_solaris_assemble.py`, `solaris_compose_tools.py`, `handlers.py`, `handlers_render.py`, `worker_policy.py`, `claude_worker.py`, `synapse_panel.py`, `core/timeouts.py`, `mcp/server.py`, `server/main_thread.py` (all under `C:/Users/User/SYNAPSE/python/synapse/`).
+**Files cited (all line numbers verified live this session):** `system_prompt.py`, `agent_prompts.py`, `_tool_registry.py`, `solaris_graph_templates.py`, `handlers_solaris_graph.py`, `handlers_solaris_assemble.py`, `solaris_compose_tools.py`, `handlers.py`, `handlers_render.py`, `worker_policy.py`, `claude_worker.py`, `synapse_panel.py`, `core/timeouts.py`, `mcp/server.py`, `server/main_thread.py` (all under `C:/Users/Example/SYNAPSE/python/synapse/`).
 
 ---
 

@@ -403,7 +403,7 @@ CTO unlocked agent teams + dynamic workflows. A **recon workflow** (`wiqu7nm7m`,
 
 ### Confirmation — invariant Q satisfied (quarantine-before-touch, Mile 1 gate)
 - **kind:** Confirmation · **verified_by:** V1 (md5-identical copies on disk) · **against_build:** n/a (filesystem) · **ts:** 2026-06-09
-- **change_applied:** before any Mile-1 code that can write the store, copied the memory artifacts to an outside-repo / outside-`$HOUDINI_TEMP` vault `C:\Users\User\synapse_quarantine_2026-06-09\`: `LIVE_untitled.hip_memory.jsonl` (977,253 B — md5-identical to the live store), `REPO_untitled.hip_memory.jsonl` (31,478 B sibling), `HOME_memory.jsonl` (0 B sibling) + `HOME_index.json`, and `encryption.key` (44 B). The live store had no sibling `index.json`.
+- **change_applied:** before any Mile-1 code that can write the store, copied the memory artifacts to an outside-repo / outside-`$HOUDINI_TEMP` vault `C:\Users\Example\synapse_quarantine_2026-06-09\`: `LIVE_untitled.hip_memory.jsonl` (977,253 B — md5-identical to the live store), `REPO_untitled.hip_memory.jsonl` (31,478 B sibling), `HOME_memory.jsonl` (0 B sibling) + `HOME_index.json`, and `encryption.key` (44 B). The live store had no sibling `index.json`.
 - **measured_delta:** Q gate green — Mile 1 authorized to mutate the persistence path.
 
 ### Confirmation — C1 degraded-load guard (memory-loss chain, link 1/3)
@@ -496,6 +496,6 @@ CTO unlocked agent teams + dynamic workflows. A **recon workflow** (`wiqu7nm7m`,
 
 ### RUN CLOSE — C-item scoreboard + suite floor + owed residuals
 - **kind:** Confirmation · **verified_by:** V1_cook (per-item entries above) · **against_build:** stock-py 3.14 / hython 671 (C8) · **ts:** 2026-06-09
-- **measured_delta:** **9 of 9 in-scope C-items landed** (C1 b5a4d4b→0b66aa1, C2 85eecea, C3 19d65b3, C4 9f90a1c, C5 66973fa, C9 ae07ec8, C8 4d4d9cc, C6-instrument 66ecbd1, C7+C11 786215f). Suite floor **3,377 → 3,406** (+29 pins, 0 failures at every HEAD, no test weakened; 2 pins relocated at equal strength). Quarantine vault intact at `C:\Users\User\synapse_quarantine_2026-06-09\`.
+- **measured_delta:** **9 of 9 in-scope C-items landed** (C1 b5a4d4b→0b66aa1, C2 85eecea, C3 19d65b3, C4 9f90a1c, C5 66973fa, C9 ae07ec8, C8 4d4d9cc, C6-instrument 66ecbd1, C7+C11 786215f). Suite floor **3,377 → 3,406** (+29 pins, 0 failures at every HEAD, no test weakened; 2 pins relocated at equal strength). Quarantine vault intact at `C:\Users\Example\synapse_quarantine_2026-06-09\`.
 - **OWED on bridge restore (671 live tier):** (1) C6 measurement — ≥30 mutating calls → adjudicate T1/T2/T3 → wake fix only if T1, second-session repro (invariant M held: no wake fix written); (2) Mile-1 live second-fresh-session wrong-key proof via real Houdini restart; (3) C8 in-flight cancel dispatch (tops_cancel_cook off the UI thread); (4) the Mile-0 transport finding itself (8912 WS handshake dead; MCP tools hardwired 9999 + stale sidecar — fixed-by-restart per 3fcdb54, re-verify). **Outside this harness's scope (still V0-leads):** C16, C24, C25 and the other spend-limit-cut review verdicts; C12–C35 P2/P3 backlog.
 - **artifact_path:** (this Ledger; per-item entries above)

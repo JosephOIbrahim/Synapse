@@ -48,7 +48,7 @@ Every leg also owns `harness/panel_pd/STATUS_<LEG>.md` (append a dated line per 
 
 ## Laws
 
-1. **Worktree only.** Never write to `C:\Users\User\SYNAPSE`. Never use absolute repo paths in code.
+1. **Worktree only.** Never write to `C:\Users\Example\SYNAPSE`. Never use absolute repo paths in code.
 2. **Zero new hex, zero new font family, zero new widget** except the recall card (plan §1-6). Tokens come from `designsystem/tokens.py`; the 4-pt ladder (`SPACE_GRID`, `gap()`, `ROW_MIN_H`, `RADIUS_CARD/ROUND`) is the vocabulary. `fontload.py` untouched.
 3. **Density carries gaps only.** Density-keyed QSS never carries colour/font/size/radius/border; standard emits no density block (`tests/test_bp2_paneldesign_density.py` rule). Expert stays structurally pinned (`tests/test_rope_expert_pin.py`).
 4. **Docking is a constraint.** Every region at 380 px in airy/standard/tight must satisfy `.synapse/contracts/docking-minimums.yaml`.

@@ -181,8 +181,8 @@ def _env(**kw):
 def test_c3_normalizes_an_env_derived_path_back_to_its_token():
     """R-M5-1. Fails if rule 5 stops firing -- at which point every fixture
     baseline silently goes back to pinning the directory it was cut in."""
-    a = "C:/Users/User/SYNAPSE/.claude/worktrees/m5b-rulings"
-    b = "C:/Users/User/SYNAPSE"
+    a = "C:/Users/Example/SYNAPSE/.claude/worktrees/m5b-rulings"
+    b = "C:/Users/Example/SYNAPSE"
     line = '        asset[] f = @%s/render/untitled.render_settings.0001.exr@'
     ca = canonical.canonicalize_usda(line % a + "\n", env=_env(**{"$HIP": a}))
     cb = canonical.canonicalize_usda(line % b + "\n", env=_env(**{"$HIP": b}))
@@ -230,7 +230,7 @@ def test_c3_substitution_order_is_deterministic():
     canonical text. Fails if the ordering stops being pinned, at which point
     the same stage could hash two ways in two processes -- a baseline that
     disagrees with itself."""
-    same = "C:/Users/User/SYNAPSE"
+    same = "C:/Users/Example/SYNAPSE"
     env = _env(**{"$HIP": same, "$JOB": same})
     out = {canonical.canonicalize_usda("  p = %s/render/x.exr\n" % same,
                                        env=env) for _ in range(8)}

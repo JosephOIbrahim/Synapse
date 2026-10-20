@@ -3,7 +3,7 @@
 Date: 2026-09-21 · HEAD 845da18e (v5.78.0) · authored by the CTO seat (Fable 5.1) on Joe's word
 Lens: the working rules of J. Abbott Miller (Pentagram), stated below as rules, not quotations.
 
-**How it was produced.** One dynamic workflow: three read-only cartographers (a typography census of the token file, the stylesheet, the transcript and the test pins; a census of every "/" and command road; the ruling backlog in `harness/design_review/RANKED.md`), one designer composing a single spec from the three maps, one crucible attacking the spec against the code. The crucible's verdict was SOUND-WITH-NITS with ten findings; every one is folded into the text below and listed in section 8. Nothing here changed a line of panel code. Producer: workflow run `wf_b828ff70-b09`; parsed result `Claude outputs/panel_design_scout.json`.
+**How it was produced.** One dynamic workflow: three read-only cartographers (a typography census of the token file, the stylesheet, the transcript and the test pins; a census of every "/" and command road; the ruling backlog in `harness/design_review/RANKED.md`), one designer composing a single spec from the three maps, one crucible attacking the spec against the code. The crucible's verdict was SOUND-WITH-NITS with ten findings; every one is folded into the text below and listed in section 8. Nothing here changed a line of panel code. Producer: workflow run `wf_b828ff70-b09`; parsed result `private-recovery-records/panel_design_scout.json`.
 
 **What this document is.** A build plan of seven worktree legs and a recommendation, with its measured basis, for each open ruling the backlog already marks as yours. Two legs need no ruling. Five do not open until the named ruling is recorded. Nothing in it settles a ruling.
 

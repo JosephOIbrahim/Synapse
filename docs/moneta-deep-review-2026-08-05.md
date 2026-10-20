@@ -169,7 +169,7 @@ Every deposit writes to Moneta's vector index. Nothing reads it. SYNAPSE's `scor
 **Severity:** MEDIUM  
 **Status:** Deliberately deferred
 
-`PXR_PLUGINPATH_NAME` is unset. The schema assets exist at `C:/Users/User/Moneta/schema/` (plugInfo.json, generatedSchema.usda, MonetaSchema.usda) but are not wired. `synapse_doctor` reports `moneta_substrate` status = `fail` because `registered=False`.
+`PXR_PLUGINPATH_NAME` is unset. The schema assets exist at `C:/Users/Example/Moneta/schema/` (plugInfo.json, generatedSchema.usda, MonetaSchema.usda) but are not wired. `synapse_doctor` reports `moneta_substrate` status = `fail` because `registered=False`.
 
 **Fix:** One env var in `packages/synapse.json`. Deferred because it adds a hard `pxr` import to the memory path and buys nothing while `use_real_usd` is False.
 

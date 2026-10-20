@@ -87,8 +87,8 @@ sys.path.insert(0, os.path.join(sys.prefix, 'Lib', 'site-packages'))
 import runpy
 sys.argv = [
     'pip', 'install',
-    '--target', r'C:/Users/User/SYNAPSE/python/synapse/_vendor',
-    '--cert', r'C:/Users/User/AppData/Roaming/Python/Python311/site-packages/certifi/cacert.pem',
+    '--target', os.path.join(os.getcwd(), 'python', 'synapse', '_vendor'),
+    '--cert', r'C:/path/to/certifi/cacert.pem',
     '--upgrade',
     '--no-compile',
     'anthropic',

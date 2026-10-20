@@ -5,7 +5,7 @@
 # Synapse Codebase Inventory
 
 **Version:** 5.4.0 | **Protocol:** v4.0.0 (WS) / v5.0.0 (MCP bridge) / MCP 2025-06-18 (HTTP)
-**Location:** `C:/Users/User/Synapse/` | **License:** MIT
+**Location:** `C:/Users/Example/Synapse/` | **License:** MIT
 **Updated:** 2026-02-15
 
 ---

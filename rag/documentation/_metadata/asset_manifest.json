@@ -1,7 +1,6 @@
 {
   "asset_manifest": {
     "description": "Maps MPM Masterclass demo scenes to required assets and file paths",
-    "project_root": "D:/HOUDINI_PROJECTS_2025/MPM_MASTERCLASS_FILES",
     "hip_file": "h21_mpm_masterclass_scenes_v01.hip",
     "scenes": {
       "mpm_overview": {

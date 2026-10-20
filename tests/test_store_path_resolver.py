@@ -1,6 +1,6 @@
 """W1 store-path resolver: never join an UNEXPANDED env token to disk.
 
-The literal ``C:/Users/User/Synapse/$HOUDINI_TEMP_DIR/untitled/.synapse`` store
+The literal ``C:/Users/Example/Synapse/$HOUDINI_TEMP_DIR/untitled/.synapse`` store
 that W1 recovered was created by joining a raw ``$HOUDINI_TEMP_DIR`` token (which
 ``expandString`` returns UNCHANGED when the variable is undefined) as a path
 segment. These tests feed literal-unexpanded inputs to the resolver and assert it
@@ -35,9 +35,9 @@ def test_has_literal_env_segment_detects_all_forms(literal):
 
 
 @pytest.mark.parametrize("clean", [
-    r"C:/Users/User/.synapse",
+    r"C:/Users/Example/.synapse",
     "/tmp/synapse/untitled",
-    r"C:/Users/User/AppData/Local/Temp/houdini_temp/untitled/.synapse",
+    r"C:/Users/Example/AppData/Local/Temp/houdini_temp/untitled/.synapse",
 ])
 def test_has_literal_env_segment_passes_resolved_paths(clean):
     assert not store_mod._has_literal_env_segment(clean)

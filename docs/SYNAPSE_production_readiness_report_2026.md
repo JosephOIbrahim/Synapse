@@ -21,7 +21,7 @@ The report is organized from first principles: **where the data lives, how the t
 ### 1.1 Memory is stored in a temp directory
 Observed storage path:
 ```
-C:\Users\User\AppData\Local\Temp\houdini_temp\untitled\.synapse
+C:\Users\Example\AppData\Local\Temp\houdini_temp\untitled\.synapse
 ```
 This is a **per-machine, per-HIP-file temp location**. Consequences for a studio:
 

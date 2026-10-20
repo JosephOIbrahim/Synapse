@@ -27,7 +27,7 @@
 
 3. **Verify TOPS is available** before starting:
    ```bash
-   grep -c "tops_" C:/Users/User/SYNAPSE/mcp_server.py
+   grep -c "tops_" C:/Users/Example/SYNAPSE/mcp_server.py
    # Must return 14+ (all TOPS tools registered)
    ```
 

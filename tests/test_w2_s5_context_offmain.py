@@ -203,7 +203,7 @@ _BYTE_EQUAL_CASES = [
       "scene_file": "/p/lookdev.hip", "frame": 48.0},
      "lookdev.hip · f48", "lookdev.hip"),
     ({"selected_nodes": [], "current_network": "/stage",
-      "scene_file": "C:/Users/User/untitled.hip", "frame": 1.0},
+      "scene_file": "C:/Users/Example/untitled.hip", "frame": 1.0},
      "untitled.hip · f1", None),                 # untitled → project stays None
 ]
 

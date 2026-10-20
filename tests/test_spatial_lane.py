@@ -72,7 +72,7 @@ def _find_fixture(env_var, rel_names):
     if p and Path(p).exists():
         return Path(p)
     roots = [_REPO, _REPO.parent / "bp3-probe",
-             Path("C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe")]
+             Path("C:/Users/Example/SYNAPSE/.claude/worktrees/bp3-probe")]
     for root in roots:
         for rel in rel_names:
             cand = root / rel

@@ -26,7 +26,7 @@
 | Python version | 3.11.7 |
 | Operator | Joe Ibrahim |
 | Script run | ``docs/sprint3/spike_3_2_scene_load_audit_script.py`` |
-| Full report file | ``C:\Users\User\spike_3_2_scene_load_audit_20260426-130108.txt`` |
+| Full report file | ``C:\Users\Example\spike_3_2_scene_load_audit_20260426-130108.txt`` |
 | Audit summary | 6 surfaces resolved · 0 missing · 0 errors · 4 events captured |
 | Probe finalization | afterload_captured |
 | Events captured | 4 |
@@ -404,7 +404,7 @@ path() -> str
 ### 5.2.1 hou.hipFile.path() — live call result
 
 ```
-  hou.hipFile.path() = 'C:/Users/User/untitled.hip'
+  hou.hipFile.path() = 'C:/Users/Example/untitled.hip'
 ```
 
 ### 5.3 hou.hipFile.removeEventCallback

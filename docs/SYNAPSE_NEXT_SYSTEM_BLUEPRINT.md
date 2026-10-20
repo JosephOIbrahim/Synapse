@@ -1154,4 +1154,4 @@ A re-stamp is complete only when stale prior-build pins are zeroed or declared h
 **Verification record (2026-08-08, mobile DC session):**
 - Version split confirmed live: `VERSION`=5.44.0, `__version__`=5.43.0, README banner v5.42.0.
 - Build-pin distribution measured: 422× `22.0.368`, 18× `22.0.397`, 2× `22.0.382`.
-- Persisted Moneta store state: UNKNOWN from this session; `C:\Users\User\Moneta` is the backend source repository, not the store. W1 step 1 locates and verifies the store before any mutation.
+- Persisted Moneta store state: UNKNOWN from this session; `C:\Users\Example\Moneta` is the backend source repository, not the store. W1 step 1 locates and verifies the store before any mutation.

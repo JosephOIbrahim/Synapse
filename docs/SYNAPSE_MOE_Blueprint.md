@@ -3,7 +3,7 @@
 
 > **Purpose:** Actionable execution plan transforming the Gap Research Report into parallelizable agent workstreams using Mixture-of-Experts routing.
 >
-> **Execution model:** Each agent team is a specialist with a defined scope, entry gate, exit criteria, and handoff protocol. The Orchestrator routes tasks based on signal fingerprints. Agents operate on the SYNAPSE codebase at `C:\Users\User\SYNAPSE`.
+> **Execution model:** Each agent team is a specialist with a defined scope, entry gate, exit criteria, and handoff protocol. The Orchestrator routes tasks based on signal fingerprints. Agents operate on the SYNAPSE codebase at `C:\Users\Example\SYNAPSE`.
 
 ---
 
@@ -759,7 +759,7 @@ Phase 3 (Depends on Phase 2)
 cat SYNAPSE_MOE_Blueprint.md
 
 # Verify codebase state
-cd C:\Users\User\SYNAPSE
+cd C:\Users\Example\SYNAPSE
 python -m pytest tests/ -x --tb=short  # ensure green baseline
 
 # Check current RAG inventory

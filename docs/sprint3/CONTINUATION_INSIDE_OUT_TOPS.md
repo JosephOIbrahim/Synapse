@@ -49,7 +49,7 @@
 The capsule is 5 days cold. Confirm reality before the plan touches code.
 
 ```bash
-cd C:\Users\User\SYNAPSE
+cd C:\Users\Example\SYNAPSE
 git status
 git log --oneline -20
 git tag --list 'v5.*' | sort

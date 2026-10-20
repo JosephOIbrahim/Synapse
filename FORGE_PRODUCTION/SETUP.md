@@ -6,15 +6,15 @@
 
 ```powershell
 # From wherever you downloaded this:
-Copy-Item -Path "docs\forge" -Destination "C:\Users\User\SYNAPSE\docs\forge" -Recurse
-Copy-Item -Path ".claude\tasks" -Destination "C:\Users\User\SYNAPSE\.claude\tasks" -Recurse
-Copy-Item -Path ".claude\agent.md" -Destination "C:\Users\User\SYNAPSE\.claude\agent.md" -Force
+Copy-Item -Path "docs\forge" -Destination "C:\Users\Example\SYNAPSE\docs\forge" -Recurse
+Copy-Item -Path ".claude\tasks" -Destination "C:\Users\Example\SYNAPSE\.claude\tasks" -Recurse
+Copy-Item -Path ".claude\agent.md" -Destination "C:\Users\Example\SYNAPSE\.claude\agent.md" -Force
 ```
 
 ### 2. Verify file placement
 
 ```
-C:\Users\User\SYNAPSE\
+C:\Users\Example\SYNAPSE\
 ├── .claude\
 │   ├── agent.md                          ← Updated for FORGE-PRODUCTION
 │   └── tasks\

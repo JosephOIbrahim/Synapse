@@ -73,8 +73,8 @@ even a deploy would not have registered the schema. Fixed 2026-08-09:
 installer parity restored + `schema env` verify row + parity pinned by
 `tests/test_install_package_parity.py`. Live pref dir observed via
 `hou.text.expandString("$HOUDINI_USER_PREF_DIR")` =
-`C:/Users/User/OneDrive/Documents/houdini22.0` (OneDrive known-folder
-redirect); the sibling `C:/Users/User/houdini22.0` is NOT scanned by H22.
+`C:/Users/Example/OneDrive/Documents/houdini22.0` (OneDrive known-folder
+redirect); the sibling `C:/Users/Example/houdini22.0` is NOT scanned by H22.
 
 
 ## Wave-3 memory-substrate contracts — 2026-08-13 (observed scope; durability-gated)

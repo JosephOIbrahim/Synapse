@@ -34,7 +34,7 @@
       "verified_run": "harness/autoresearch/runs/fixture_verify_20260805_182646",
       "superseded_on": "2026-08-06",
       "superseded_by": "R-M5-1",
-      "reason": "MACHINE-LOCAL. karmarendersettings authors $HIP/render/$HIPNAME.$OS.$F4.exr, which reaches the composed stage already EXPANDED, so this hash pinned the directory it was cut in (C:/Users/User/SYNAPSE) rather than the fixture. Finding M5-F1. c3 adds rule 5, normalize_houdini_env_paths, which rewrites environment-derived absolute paths back to their variable token; a canonicalizer rule change is a re-baseline event for every fixture, so the number moved. Reproducible: this exact sha256 is still emitted by the c3 producer as the 'c2' hash when built under $HIP=C:/Users/User/SYNAPSE - see harness/blocks/runs/m5b_baseline_cut/baseline_c3.json, builds.b.c2."
+      "reason": "MACHINE-LOCAL. karmarendersettings authors $HIP/render/$HIPNAME.$OS.$F4.exr, which reaches the composed stage already EXPANDED, so this hash pinned the directory it was cut in (historical path redacted) rather than the fixture. Finding M5-F1. c3 adds rule 5, normalize_houdini_env_paths, which rewrites environment-derived absolute paths back to their variable token; a canonicalizer rule change is a re-baseline event for every fixture, so the number moved. The original path-dependent c2 reproduction is preserved in Git history and the referenced baseline receipt; this redacted description does not provide that path."
     }
   ],
   "nodes": [

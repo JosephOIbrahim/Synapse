@@ -1509,7 +1509,7 @@ def _read_on_main(fn, label="synapse_store_resolve"):
 # STORE-PATH SAFETY (W1): never join an UNEXPANDED env token as a path segment
 # =============================================================================
 #
-# The literal ``C:/Users/User/Synapse/$HOUDINI_TEMP_DIR/untitled/.synapse`` store
+# The literal ``<checkout>/$HOUDINI_TEMP_DIR/untitled/.synapse`` store
 # found on disk was born here: ``_resolve_project_path`` joined the raw
 # ``$HOUDINI_TEMP_DIR`` token -- returned UNCHANGED by ``expandString`` when the
 # variable is undefined -- as a RELATIVE segment, so it landed under the process

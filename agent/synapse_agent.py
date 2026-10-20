@@ -8,7 +8,7 @@ inspect, execute, verify, and iterate on VFX tasks.
 Uses the anthropic SDK (0.75.0) with standard tool-use message loop.
 
 USAGE:
-    cd C:/Users/User/.synapse/agent
+    cd C:/Users/Example/.synapse/agent
     python synapse_agent.py "Set up three-point lighting for the cave scene"
 """
 

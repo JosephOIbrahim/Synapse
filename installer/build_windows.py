@@ -42,21 +42,23 @@ def main():
     shutil.copyfile(ROOT / "installer/setup_cli.py", maintenance / "setup_cli.py")
     shutil.copytree(ROOT / "installer/synapse_setup", maintenance / "synapse_setup", dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     shutil.copyfile(ROOT / "installer/windows/getting-started.html", maintenance / "getting-started.html")
+    shutil.copyfile(ROOT / "installer/moneta_license.json", maintenance / "synapse_setup/moneta_license.json")
+    shutil.copytree(ROOT / "installer/licenses", maintenance / "synapse_setup/licenses")
     helper_files = {p.relative_to(maintenance).as_posix(): digest(p.read_bytes())
                     for p in sorted(maintenance.rglob("*")) if p.is_file()}
     (maintenance / "maintenance-manifest.json").write_bytes(json_bytes({"schema": "synapse-maintenance-1", "files": helper_files}))
     payload = build(stage / "payload.zip", args.downloads, args.moneta_bundle, args.moneta_sha256)
     license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
     if payload["moneta"]:
-        license_text += "\n\nMONETA: PROPRIETARY. This build is for local evaluation. Public redistribution rights have not been confirmed.\n"
+        license_text += "\n\n" + payload["moneta"]["license_notice"]
     (stage / "license.txt").write_text(license_text, encoding="utf-8-sig")
     (stage / "before.txt").write_text(
         f"SYNAPSE {payload['version']}\n\nValidation target: Windows, Houdini 22.0.400, Python 3.13.\n\n"
         "This setup installs SYNAPSE for your Windows account. It includes the model SDK, WebSocket support and file locking. Houdini provides Qt and OpenUSD.\n\n"
-        + ("Moneta memory and its USD schema are bundled for this local evaluation build. Proprietary redistribution rights remain unconfirmed.\n\n" if payload["moneta"] else "JSONL project memory is included. Optional Moneta is not bundled in this build.\n\n")
+        + (f"Moneta {payload['moneta']['version']} memory and its USD schema are bundled under the {payload['moneta']['license']} License by the copyright holder's written grant ({payload['moneta']['grant_date']}). Upstream metadata still declares {payload['moneta']['source_license']}; see the included Moneta license notice.\n\n" if payload["moneta"] else "JSONL project memory is included. Optional Moneta is not bundled in this build.\n\n")
         + "Save and close Houdini before installing, upgrading or uninstalling. Setup never terminates Houdini.\n\n"
         "You will connect a model after installation. No model, API key or internet connection is required by Setup.\n\n"
-        "This local installer is unsigned. Public distribution and code signing are separate release steps.\n", encoding="utf-8-sig")
+        "This installer is unsigned. Verify its published checksum before running it.\n", encoding="utf-8-sig")
     command = [str(args.iscc.resolve()), "--quiet", "/DStageDir=" + str(stage), "/DAppVersion=" + payload["version"]]
     if args.test_build:
         command.append("/DTestBuild=1")

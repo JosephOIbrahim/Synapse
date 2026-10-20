@@ -1,0 +1,13 @@
+{
+  "schema": "synapse.moneta-license-grant.v1",
+  "name": "moneta",
+  "version": "1.3.0",
+  "source_commit": "4f7afc73736aecce6d55d5e03f28fb3137d474d3",
+  "source_identity_sha256": "67c75f178a081c10141013cd3e99f48a7868088af42b078a33615a5d90ab89a2",
+  "source_identity_algorithm": "sha256 of UTF-8 JSON mapping original relative file paths to SHA-256, sorted keys, compact separators; Python sources, three schema files, pyproject.toml and any upstream license/notice files",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2026 Joseph Ibrahim",
+  "grant_date": "2026-10-19",
+  "grant_scope": "Redistribution of this Moneta source as part of SYNAPSE under the MIT License, by its copyright holder's written grant.",
+  "license_text_file": "licenses/moneta-MIT.txt"
+}

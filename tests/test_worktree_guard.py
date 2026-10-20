@@ -4,7 +4,7 @@
 Because they sit inside the main repo, git run from one resolves upward:
 
     git -C .claude/worktrees/h2-requalify rev-parse --show-toplevel
-        -> C:/Users/User/SYNAPSE          (the MAIN tree)
+        -> C:/Users/Example/SYNAPSE          (the MAIN tree)
     git -C .claude/worktrees/h2-requalify rev-parse --abbrev-ref HEAD
         -> feat/repair-heats-01           (the LIVE branch)
 

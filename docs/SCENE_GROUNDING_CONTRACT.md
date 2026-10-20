@@ -1,6 +1,6 @@
 # G5 — SCENE-GROUNDING CONTRACT (frozen spec)
 
-**`docs/SCENE_GROUNDING_CONTRACT.md`** · Repo: `C:\Users\User\SYNAPSE` · Grounded against HEAD `314acd6` (2026-07-10) / Houdini 21.0.671.
+**`docs/SCENE_GROUNDING_CONTRACT.md`** · Repo: `C:\Users\Example\SYNAPSE` · Grounded against HEAD `314acd6` (2026-07-10) / Houdini 21.0.671.
 **Status: PROPOSAL — Leg-0 paper artifact (Mile 0.3).** This is MODE A paper: it specifies the four manifest tools; it does not build them. It becomes binding only when merged to main (the human gate, blueprint harness §2).
 
 > **Governing gate:** the *build* of these tools is **MODE B** work — gated on `harness/state/drop.json` existing (blueprint harness §2 gate registry) plus a verbatim `h22-gatewarden` `ALLOW` block in the FORGE dispatch (§4). The **Michael Gold RFC** (gate row: *"any USD-schema write — off the critical path"*, `docs/H22_AGENT_HARNESS.md:60`) stays **OFF** this critical path — see §6. Merge-to-main is the human gate per artifact.

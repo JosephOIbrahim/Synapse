@@ -44,7 +44,7 @@ so G3/G4 under hython may legitimately render UNAVAILABLE — that is a measurem
 
 | Gate | Check | Fails → bucket |
 |---|---|---|
-| **G1 ENV** | `PXR_PLUGINPATH_NAME` set, pointing at the Moneta `schema\` dir; package file under `OneDrive\Documents\houdini22.0`, absent from `C:\Users\User\houdini22.0` | Environment — the plugin never loads in the session the demo runs in |
+| **G1 ENV** | `PXR_PLUGINPATH_NAME` set, pointing at the Moneta `schema\` dir; package file under `OneDrive\Documents\houdini22.0`, absent from `C:\Users\Example\houdini22.0` | Environment — the plugin never loads in the session the demo runs in |
 | **G2 PLUGIN** | `pxr.Plug.Registry().GetAllPlugins()` has a `moneta`-named plugin | Schema not registered — attribute reads return `None`, no exception |
 | **G3 LAYER** | after close → reopen, the memory layer is in `stage.GetLayerStack()` | Store reopened without composing its own layer — handle-law territory |
 | **G4 RECALL** | `MemoryPort.query_and_filter(...)` of a known deposit returns it | Predicate / scope: wake predicate, `protected_floor`, quota, query shape |

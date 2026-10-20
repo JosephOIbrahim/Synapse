@@ -92,9 +92,11 @@ does not extend the native qualification below.
 
 ## Unverified or limited
 
-- The installer EXE is unsigned. Moneta remains proprietary. The original
-  build-time evaluation notices are retained; publication of this preview was
-  authorized separately, as recorded above.
+- The installer EXE is unsigned. Earlier preview builds retain their original
+  evaluation notices. From 5.97.5, the Moneta bundle notice records its copyright
+  holder's MIT grant of 2026-10-19 and includes the full MIT text; the pinned
+  upstream source metadata still declares "Proprietary". This changes the bundle
+  licensing notice and does not expand the historical runtime checks above.
 - Native wizard visual inspection hit a computer-use app approval timeout. No
   successful screenshot review or native click-through is claimed.
 - Full live artist GUI, shelf clicks, model access, scene-building behavior,

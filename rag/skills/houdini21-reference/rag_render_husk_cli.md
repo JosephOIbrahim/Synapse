@@ -17,8 +17,8 @@ import os
 hfs = os.environ.get("HFS", r"C:\Program Files\Side Effects Software\Houdini 21.0.596")
 husk = os.path.join(hfs, "bin", "husk.exe")
 
-usd_file = r"D:\HOUDINI_PROJECTS_2025\myshot\render\scene.usd"
-output = r"D:\HOUDINI_PROJECTS_2025\myshot\render\beauty.<F4>.exr"
+usd_file = r"D:\VFX_PROJECTS\myshot\render\scene.usd"
+output = r"D:\VFX_PROJECTS\myshot\render\beauty.<F4>.exr"
 
 # Single frame (frame 1)
 result = subprocess.run([
@@ -43,8 +43,8 @@ import os
 hfs = os.environ.get("HFS", r"C:\Program Files\Side Effects Software\Houdini 21.0.596")
 husk = os.path.join(hfs, "bin", "husk.exe")
 
-usd_file = r"D:\HOUDINI_PROJECTS_2025\myshot\render\scene.usd"
-output = r"D:\HOUDINI_PROJECTS_2025\myshot\render\beauty.<F4>.exr"
+usd_file = r"D:\VFX_PROJECTS\myshot\render\scene.usd"
+output = r"D:\VFX_PROJECTS\myshot\render\beauty.<F4>.exr"
 
 # Frame range: frames 1-100, step 1
 result = subprocess.run([
@@ -113,7 +113,7 @@ import glob
 hfs = os.environ.get("HFS", r"C:\Program Files\Side Effects Software\Houdini 21.0.596")
 iconvert = os.path.join(hfs, "bin", "iconvert.exe")
 
-render_dir = r"D:\HOUDINI_PROJECTS_2025\myshot\render"
+render_dir = r"D:\VFX_PROJECTS\myshot\render"
 
 # Convert all EXR files to JPEG for preview
 exr_files = sorted(glob.glob(os.path.join(render_dir, "beauty.*.exr")))
@@ -176,8 +176,8 @@ def render_and_preview(usd_file, output_dir, frame, resolution=(1920, 1080), sam
 
 # Usage
 result = render_and_preview(
-    usd_file=r"D:\HOUDINI_PROJECTS_2025\myshot\scene.usd",
-    output_dir=r"D:\HOUDINI_PROJECTS_2025\myshot\render",
+    usd_file=r"D:\VFX_PROJECTS\myshot\scene.usd",
+    output_dir=r"D:\VFX_PROJECTS\myshot\render",
     frame=1,
     resolution=(1920, 1080),
     samples=64,
@@ -187,8 +187,8 @@ result = render_and_preview(
 ## Expected Output
 ```
 Rendering frame 1...
-EXR: D:\HOUDINI_PROJECTS_2025\myshot\render\beauty.0001.exr (4523 KB)
-Preview: D:\HOUDINI_PROJECTS_2025\myshot\render\beauty.0001.jpg
+EXR: D:\VFX_PROJECTS\myshot\render\beauty.0001.exr (4523 KB)
+Preview: D:\VFX_PROJECTS\myshot\render\beauty.0001.jpg
 ```
 
 ## Common Mistakes

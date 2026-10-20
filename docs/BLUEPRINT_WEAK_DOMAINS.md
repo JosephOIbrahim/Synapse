@@ -1,7 +1,7 @@
 # SYNAPSE — Weak-Domain Production Blueprint
 
 **Scope:** DOPs, VOPs, KineFX (moderate) · CHOPs, APEX, L-systems, Copernicus COPs (weak)
-**Date:** 2026-08-16 · **Against:** SYNAPSE v5.42.x @ `C:\Users\User\SYNAPSE` · Houdini 22.0.400
+**Date:** 2026-08-16 · **Against:** SYNAPSE v5.42.x @ `C:\Users\Example\SYNAPSE` · Houdini 22.0.400
 **Basis:** live investigation of the repo, the local help cache, and the existing knowledge/verification infrastructure — not recall. Phase-0 probe receipts folded in.
 
 ---
@@ -32,7 +32,7 @@ KineFX joint placement, APEX control feel, rig hierarchy taste — these are *in
 
 | Source | Location | State |
 |---|---|---|
-| Help cache | `C:\Users\User\OneDrive\Documents\houdini22.0\config\Help\cache` | **Pre-parsed doc ASTs as JSON** — typed inputs/outputs (`inxform: Matrix4`), summaries, per-parm semantics, shared parm-include fragments (`nodes/dop/standard_*_parms.json`, `bullet_solver_parms.json`). Machine-readable with zero wiki-markup parsing. **Partial**: contains only visited pages (e.g. `nodes/apex/` holds 18 files, not the full callback library). Categories present: `apex, chop, cop, cop2, dop, vop, sop, lop, top, vex, …` |
+| Help cache | `C:\Users\Example\OneDrive\Documents\houdini22.0\config\Help\cache` | **Pre-parsed doc ASTs as JSON** — typed inputs/outputs (`inxform: Matrix4`), summaries, per-parm semantics, shared parm-include fragments (`nodes/dop/standard_*_parms.json`, `bullet_solver_parms.json`). Machine-readable with zero wiki-markup parsing. **Partial**: contains only visited pages (e.g. `nodes/apex/` holds 18 files, not the full callback library). Categories present: `apex, chop, cop, cop2, dop, vop, sop, lop, top, vex, …` |
 | H21 RAG system | `G:\HOUDINI21_RAG_SYSTEM` | Full prior-generation corpus + semantic index + skills. The *pattern* for full-corpus extraction exists; it needs the H22 pass. |
 | SYNAPSE K-track | `rag/` → `scripts/refresh_knowledge.py` (K.5) | One-command resync: dense embedding index (MiniLM) + scout BM25 corpus + K.0 baseline, with a **freshness gate** that reads RED on staleness. New domain corpora slot in here — the pipeline exists. |
 | `$HFS` help zips | `C:\Program Files\Side Effects Software\Houdini 22.0.400` (probe 1, 2026-08-16) | Canonical complete corpus at `$HFS/houdini/help`. |

@@ -342,7 +342,7 @@ fixed prefix; if `tokens_in` on a trivial leg exceeds ~10k, trim `CLAUDE.md` to 
 - [ ] `_rr.ps1` → pass `--mode B` for release verifies (one-line hygiene).
 
 ```
-git -C C:\Users\User\SYNAPSE status --short                                  position
+git -C C:\Users\Example\SYNAPSE status --short                                  position
 python harness\battleplan\mission_schema.py --all                            validate the six missions
 python harness\battleplan\compile_wave.py bp2 → make_control.py bp2 → build_manifest_bp2.py   in order, always
 powershell -File harness\battleplan\arm_bp2.ps1                              arm (detached; pid file; -Budget inside)

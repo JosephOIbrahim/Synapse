@@ -406,7 +406,7 @@ If FAIL → back to AGENT-ENG with specific bug report. Max 3 cycles (Commandmen
 | — | `mcp_server.py` | MODIFY (tool registration) |
 
 **Fixture HIP file (already on disk):**
-`C:\Users\User\SYNAPSE\tests\fixtures\inspector_week1_flat.hip`
+`C:\Users\Example\SYNAPSE\tests\fixtures\inspector_week1_flat.hip`
 
 ---
 

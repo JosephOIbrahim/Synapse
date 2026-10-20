@@ -1,6 +1,6 @@
 """test_memory_seam_defects.py — pins the memory-seam review's reproduced defects.
 
-Source: ``Claude outputs/memory-seam-review-2026-09-16.md`` (1,800 lines). Every
+Source: ``private-recovery-records/memory-seam-review-2026-09-16.md`` (1,800 lines). Every
 "fails today" verdict in that document was a *prediction* — the review ran no
 tests. A probe pass then executed seven of them and refuted two. This file
 converts the survivors from prose into executable claims.

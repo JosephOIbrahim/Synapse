@@ -48,7 +48,7 @@ def enrich_error_message(error: str, code: str) -> str:
     elif "permission" in error.lower() or "writable" in error.lower():
         enriched = (
             "Couldn't write to the output path — might be a permissions issue. "
-            "I'll try using C:/Users/User/.synapse/ instead."
+            "I'll try using ~/.synapse/ instead."
         )
 
     # Type errors

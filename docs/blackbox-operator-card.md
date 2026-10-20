@@ -31,8 +31,8 @@ claude-logged
 ```
 
 Same as `claude`, but the next silent abort leaves its message in
-`%USERPROFILE%\.claude\stderr-crash.log`. Lives at `C:\Users\User\claude-logged.cmd`.
-Escalation for a suspicious session: `claude --debug --debug-file C:\Users\User\claude-debug.log`
+`%USERPROFILE%\.claude\stderr-crash.log`. Lives at `C:\Users\Example\claude-logged.cmd`.
+Escalation for a suspicious session: `claude --debug --debug-file C:\Users\Example\claude-debug.log`
 
 ---
 

@@ -162,7 +162,7 @@ No version pin in `pyproject.toml`. CI checks out branch tip, not a tagged relea
 Add the `packages/` directory to Houdini's package search path:
 
 ```
-set HOUDINI_PACKAGE_DIR=%HOUDINI_PACKAGE_DIR%;C:\Users\User\SYNAPSE\packages
+set HOUDINI_PACKAGE_DIR=%HOUDINI_PACKAGE_DIR%;C:\Users\Example\SYNAPSE\packages
 ```
 
 Or run the install script:

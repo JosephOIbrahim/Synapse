@@ -329,13 +329,34 @@ class SpecTests(unittest.TestCase):
         with self.assertRaises(fixtures.FixtureError):
             fixtures.load_fixture("solaris.spine")
 
-    def test_v1_file_and_existing_function_outputs_unchanged(self):
-        # Read HEAD's v1 source and fixture as an independent backward-
-        # compatibility oracle, without creating another worktree or module.
+    def test_v1_bytes_and_outputs_preserved_except_approved_historical_note_redaction(self):
+        # Fixed pre-v2 Git source is the independent backward-compatibility
+        # oracle. The owner-approved privacy work changes one historical note;
+        # every other byte and the original v1 behavioral comparisons stay pinned.
         old_code = subprocess.check_output(["git", "show", "83ec6330:python/synapse/blocks/fixtures.py"], cwd=ROOT).decode("utf-8")
         old_bytes = subprocess.check_output(["git", "show", "83ec6330:fixtures/solaris.basic.json"], cwd=ROOT)
         actual = (ROOT / "fixtures/solaris.basic.json").read_bytes()
-        self.assertEqual(actual.replace(b"\r\n", b"\n"), old_bytes.replace(b"\r\n", b"\n"))
+        historical = json.loads(old_bytes)
+        published = json.loads(actual)
+        old_reason = historical["superseded_baselines"][0]["reason"]
+        # Pin this independently of the candidate. Reading the replacement from
+        # the fixture would also bless a changed claim or an appended private path.
+        new_reason = (
+            "MACHINE-LOCAL. karmarendersettings authors $HIP/render/$HIPNAME.$OS.$F4.exr, "
+            "which reaches the composed stage already EXPANDED, so this hash pinned the "
+            "directory it was cut in (historical path redacted) rather than the fixture. "
+            "Finding M5-F1. c3 adds rule 5, normalize_houdini_env_paths, which rewrites "
+            "environment-derived absolute paths back to their variable token; a canonicalizer "
+            "rule change is a re-baseline event for every fixture, so the number moved. "
+            "The original path-dependent c2 reproduction is preserved in Git history and "
+            "the referenced baseline receipt; this redacted description does not provide that path."
+        )
+        self.assertEqual(published["superseded_baselines"][0]["reason"], new_reason)
+        old_encoded = json.dumps(old_reason, ensure_ascii=False).encode("utf-8")
+        new_encoded = json.dumps(new_reason, ensure_ascii=False).encode("utf-8")
+        self.assertEqual(old_bytes.count(old_encoded), 1, "Historical note must be unambiguous")
+        expected = old_bytes.replace(old_encoded, new_encoded, 1)
+        self.assertEqual(actual.replace(b"\r\n", b"\n"), expected.replace(b"\r\n", b"\n"))
         namespace = {"__file__": str(ROOT / "python/synapse/blocks/fixtures.py"), "__name__": "baseline_fixtures"}
         exec(compile(old_code, "HEAD:blocks/fixtures.py", "exec"), namespace)
         current = fixtures.load_fixture("solaris.basic")

@@ -10,8 +10,8 @@ DISCIPLINE THESE TESTS FOLLOW
 
 * **R60 — the reader gets its own control.** ``parse_rps`` is the reader every
   other pin depends on. If it were blind, all of them would pass vacuously. It
-  is calibrated against rps text captured VERBATIM from live Houdini
-  22.0.368 (2026-07-28) and given explicit negative cases.
+  is calibrated against rps text captured from live Houdini 22.0.368
+  (2026-07-28), with workstation paths redacted, and explicit negative cases.
 
 * **No mock ``hou``.** The constitution bans mock-hou for host-behaviour
   assertions. Everything here is pure-Python parsing and mapping, which is why
@@ -32,8 +32,9 @@ from synapse.server import render_stop as rs
 
 
 # ---------------------------------------------------------------------------
-# Fixtures — captured VERBATIM from live Houdini 22.0.368 on 2026-07-28.
+# Fixtures - captured from live Houdini 22.0.368 on 2026-07-28; paths redacted.
 # Producer: the H3b probe session; see harness/notes/receipts/H3b.json.
+# Original fixture bytes remain in Git history; process IDs and syntax are intact.
 # ---------------------------------------------------------------------------
 
 RPS_IDLE = "No background renders currently running\n"
@@ -54,11 +55,11 @@ RPS_HUSK_TWO = (
     "PID Command\n"
     "   66252 husk --make-output-path -f 1 --purpose 'geometry,render' "
     "--complexity 'veryhigh' --snapshot 300 --mplay-session 'untitled' "
-    "'C:/Users/User/AppData/Local/Temp/houdini_temp/usd_renders/"
+    "'C:/Users/Example/AppData/Local/Temp/houdini_temp/usd_renders/"
     "usdrender_40868_113_4/__render__.usd'\n"
     "   61360 husk --make-output-path -f 1 --purpose 'geometry,render' "
     "--complexity 'veryhigh' --snapshot 300 --mplay-session 'untitled' "
-    "'C:/Users/User/AppData/Local/Temp/houdini_temp/usd_renders/"
+    "'C:/Users/Example/AppData/Local/Temp/houdini_temp/usd_renders/"
     "usdrender_40868_339_1/__render__.usd'\n"
 )
 

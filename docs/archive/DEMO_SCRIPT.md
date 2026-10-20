@@ -180,7 +180,7 @@ Synapse is already registered for this repo via `.mcp.json` (stdio → `python m
 
 Show git log:
 ```bash
-cd C:\Users\User\SYNAPSE
+cd C:\Users\Example\SYNAPSE
 git log --oneline -10
 ```
 

@@ -10,6 +10,8 @@ import tomllib
 import zipfile
 
 from synapse_setup.registration import ui_assets
+from synapse_setup import moneta_grant
+from synapse_setup.moneta_grant import source_identity, declared_license, moneta_notice
 from synapse_setup.safety import SetupError, digest, json_bytes, member_path, no_links
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +40,14 @@ def zip_bytes(path, files):
 
 
 def permitted(name):
+    # Owner-approved exclusion of the SideFX reference material from new releases.
+    if (name.startswith("rag/documentation/_raw_documentation/")
+            or name == "rag/documentation/_metadata/asset_manifest.json"
+            or (name.startswith("rag/documentation/tutorials/workflow_guides/mpm_")
+                and name.endswith(".md"))):
+        return False
+    if name.startswith("rag/catalog/") and Path(name).name in {"dump_receipt.txt", "_docs_report.json"}:
+        return False  # Build-machine diagnostic records are not runtime inputs.
     parts = Path(name).parts
     if any(p in {"__pycache__", "tests", ".synapse", ".git", ".pytest_cache"} for p in parts):
         return False
@@ -50,28 +60,70 @@ def permitted(name):
             or (name.startswith("fixtures/") and name.endswith(".json")))
 
 
+def license_policy():
+    return moneta_grant.license_policy(ROOT / "installer")
+
+
+
+
+
+
+
+
+def committed_source_bytes(source, path, revision):
+    path = no_links(path)
+    relative = path.relative_to(source).as_posix()
+    committed = subprocess.check_output(["git", "--no-optional-locks", "-C", str(source), "show", revision + ":" + relative], timeout=30)
+    working = path.read_bytes()
+    if working != committed and working.replace(b"\r\n", b"\n") != committed:
+        raise SetupError("Moneta source is not exact content in the reviewed commit: " + relative)
+    return committed
+
+
 def export_moneta(source, output):
     source = no_links(source)
-    meta = tomllib.loads((source / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    policy = license_policy()
+    revision = subprocess.check_output(["git", "--no-optional-locks", "-C", str(source), "rev-parse", "HEAD"], text=True, timeout=30).strip()
+    if revision != policy["source_commit"]:
+        raise SetupError("Moneta source is not the exact content covered by the reviewed bundle grant.")
+    upstream_meta = committed_source_bytes(source, source / "pyproject.toml", revision)
+    meta = tomllib.loads(upstream_meta.decode("utf-8"))["project"]
     if meta["name"] != "moneta":
         raise SetupError("The explicit dependency source is not Moneta.")
     files = {}
     for item in sorted((source / "src/moneta").rglob("*.py")):
         no_links(item)
-        files[item.relative_to(source).as_posix()] = item.read_bytes()
+        files[item.relative_to(source).as_posix()] = committed_source_bytes(source, item, revision)
     for name in ("plugInfo.json", "generatedSchema.usda", "MonetaSchema.usda"):
         item = no_links(source / "schema" / name)
-        files["schema/" + name] = item.read_bytes()
+        files["schema/" + name] = committed_source_bytes(source, item, revision)
+    for pattern in ("LICENSE*", "LICENCE*", "COPYING*", "NOTICE*"):
+        for item in sorted(source.glob(pattern)):
+            if item.is_file():
+                files[item.name] = committed_source_bytes(source, item, revision)
+    original_hashes = {name: digest(content) for name, content in files.items()}
+    original_hashes["pyproject.toml"] = digest(upstream_meta)
+    if (meta["version"] != policy["version"]
+            or source_identity(original_hashes) != policy["source_identity_sha256"]):
+        raise SetupError("Moneta source is not the exact content covered by the reviewed bundle grant.")
+    source_license = declared_license(meta)
+    files["upstream/pyproject.toml"] = upstream_meta
     # The exporter creates real distribution metadata from the source project.
     files[f"src/moneta-{meta['version']}.dist-info/METADATA"] = (
-        f"Metadata-Version: 2.1\nName: moneta\nVersion: {meta['version']}\nLicense: Proprietary\n").encode()
-    provenance = {"name": "moneta", "version": meta["version"], "license": meta.get("license"),
-                  "distribution": "Local evaluation only. Public redistribution rights have not been confirmed.",
+        f"Metadata-Version: 2.1\nName: moneta\nVersion: {meta['version']}\nLicense: {source_license}\n").encode()
+    provenance = {"name": "moneta", "version": meta["version"], "license": policy["license"],
+                  "source_license": source_license, "source_revision": revision,
+                  "source_files": original_hashes, "source_identity_sha256": source_identity(original_hashes),
+                  "distribution": policy["grant_scope"], "grant_date": policy["grant_date"],
                   "files": {name: digest(content) for name, content in files.items()}}
     files["moneta-bundle.json"] = json_bytes(provenance)
-    files["LICENSE-NOTICE.txt"] = b"Moneta is proprietary. This local evaluation artifact does not grant redistribution rights.\n"
+    files["LICENSE-NOTICE.txt"] = moneta_notice(policy, source_license).encode("utf-8")
     zip_bytes(Path(output), files)
     return {"path": str(output), "sha256": digest(Path(output).read_bytes()), "version": meta["version"]}
+
+
+def validate_moneta_grant(bundle, moneta):
+    return moneta_grant.validate_moneta_grant(bundle, moneta, license_policy())
 
 
 def build(output, wheel_dir, moneta_bundle=None, moneta_sha256=None, source=ROOT):
@@ -105,28 +157,33 @@ def build(output, wheel_dir, moneta_bundle=None, moneta_sha256=None, source=ROOT
             if len(bundle.namelist()) != len(set(n.lower() for n in bundle.namelist())):
                 raise SetupError("Duplicate files in Moneta archive.")
             moneta = json.loads(bundle.read("moneta-bundle.json"))
-            for name, expected in moneta["files"].items():
+            license_notice, copied_files = validate_moneta_grant(bundle, moneta)
+            for name, expected in copied_files.items():
                 content = bundle.read(name)
                 member_path(output.parent / "moneta-check", name)
                 if digest(content) != expected:
                     raise SetupError(f"Moneta dependency checksum failed: {name}")
                 files["dependencies/moneta/" + name] = content
-            files["dependencies/moneta/moneta-bundle.json"] = bundle.read("moneta-bundle.json")
+            files["dependencies/moneta/moneta-bundle.json"] = json_bytes(moneta)
             files["dependencies/moneta/LICENSE-NOTICE.txt"] = bundle.read("LICENSE-NOTICE.txt")
         moneta = {"name": moneta["name"], "version": moneta["version"], "archive_sha256": moneta_sha256,
-                  "distribution": moneta["distribution"]}
+                  "distribution": moneta["distribution"], "license": moneta["license"],
+                  "source_license": moneta["source_license"], "source_revision": moneta["source_revision"],
+                  "grant_date": moneta["grant_date"], "license_notice": license_notice}
     version = files["VERSION"].decode().strip()
     project_version = tomllib.loads(files["pyproject.toml"].decode())["project"]["version"]
     module_version = re.search(r'__version__\s*=\s*"([^"]+)"', files["python/synapse/__init__.py"].decode()).group(1)
     if version != project_version or version != module_version:
         raise SetupError("SYNAPSE version surfaces disagree; use the repository version process before packaging.")
     notice = ("SYNAPSE " + version + "\n\nIncluded: Anthropic SDK and dependencies (see _vendor/*dist-info licenses), "
-              "websockets 15.0.1, filelock 3.20.0, and bundled fonts (OFL licenses included).\n"
-              "Houdini supplies Python, Qt and OpenUSD. Setup has its own CPython maintenance runtime.\n"
+              "websockets 15.0.1 and filelock 3.20.0. License texts are under python/synapse/_vendor.\n"
+              "FXHoudini-MCP workflow guides and their rag/corpus/guides chunks: MIT; see python/synapse/_vendor/fxhoudinimcp/LICENSE.\n"
+              "Bundled fonts retain their OFL license texts. Native SDK wheel Rust dependencies retain the upstream CycloneDX SBOM notices in their dist-info folders.\n"
+              "Houdini supplies Python, Qt and OpenUSD. Setup's CPython maintenance runtime license is maintenance/python/LICENSE.txt.\n"
               "Optional components not installed: external MCP SDK/server environment, semantic models, "
               "Hanish, SALUS, Octavius, dense retrieval and optional image-analysis tools. "
               "Optional capabilities report unavailable when their substrate is absent.\n"
-              + ("Moneta and USD schema included for local evaluation; proprietary redistribution rights unconfirmed.\n" if moneta else "Moneta not included; JSONL project memory is selected.\n"))
+              + (f"Moneta {moneta['version']} and USD schema: {moneta['license']} by its copyright holder's written grant ({moneta['grant_date']}); see dependencies/moneta/LICENSE-NOTICE.txt. Upstream metadata retains its {moneta['source_license']} declaration.\n" if moneta else "Moneta not included; JSONL project memory is selected.\n"))
     files["DEPENDENCIES.txt"] = notice.encode()
     revision = subprocess.check_output(["git", "-c", "safe.directory=" + source.as_posix(), "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
     manifest = {"schema": "synapse-payload-1", "version": version, "source_revision": revision,

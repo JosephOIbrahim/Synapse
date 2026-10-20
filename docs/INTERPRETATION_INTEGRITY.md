@@ -1,7 +1,7 @@
 # Interpretation Integrity — closing the "I asked for one, I got four" gap
 
 **Status:** spec, not yet built. Written 2026-08-03 from a live seat observation.
-**Audience:** Claude Code, working in `C:\Users\User\SYNAPSE`, branch `rope/gate-a`.
+**Audience:** Claude Code, working in `C:\Users\Example\SYNAPSE`, branch `rope/gate-a`.
 **Origin:** Joe typed *"create an areA LIGHT IN SOLARIS"* in the Curious profile
 against Nemotron Nano 30B. Three `AreaLight` prims appeared on the stage. The
 panel reported success.
@@ -78,7 +78,7 @@ boundary**, not the verb rail:
    regardless of provider or model.
 2. The panel says so visibly. A dead control with no explanation is its own
    trust problem.
-3. Confirm against `C:\Users\User\.synapse\logs\synapse.log` that the 08-03
+3. Confirm against `C:\Users\Example\.synapse\logs\synapse.log` that the 08-03
    incident actually took this path. The mechanism is proven to exist; the
    incident is not yet proven to be an instance of it. **Do not record this as
    the cause until the log says so** — a plausible mechanism standing in for

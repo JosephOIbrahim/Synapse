@@ -22,7 +22,7 @@ It is not a default.
 ## The ritual
 
 ```
-0   cd C:\Users\User\SYNAPSE                        every step runs from repo root
+0   cd C:\Users\Example\SYNAPSE                        every step runs from repo root
 
 --- version ---------------------------------------------------------------
 1   edit VERSION                                    set X.Y.Z, one line

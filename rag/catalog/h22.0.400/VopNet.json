@@ -4,7 +4,7 @@
  "category": "VopNet",
  "count": 17,
  "docs_join": {
-  "cache_root": "C:/Users/User/OneDrive/Documents/houdini22.0/config/Help/cache",
+  "cache_root": "<local documentation cache>",
   "context": null,
   "joined": 0,
   "note": "visited-pages-only; absent docs stay absent, never synthesized; each doc records its join tier ('match'); a namespaced node never borrows a bare sibling's page. Binary blake2b above is unchanged by this join.",

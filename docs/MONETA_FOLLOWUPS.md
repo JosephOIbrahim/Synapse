@@ -19,8 +19,8 @@ write path is Moneta-backed (i.e. at cutover). Backfill is unaffected (existing
 ids are already unique).
 
 **Files**
-- `C:\Users\User\SYNAPSE\python\synapse\memory\models.py` — `Memory.__post_init__` / `_generate_id`
-- `C:\Users\User\SYNAPSE\tests\test_moneta_crucible.py` — `test_duplicate_content_id_collision_is_documented` (the tripwire to invert)
+- `C:\Users\Example\SYNAPSE\python\synapse\memory\models.py` — `Memory.__post_init__` / `_generate_id`
+- `C:\Users\Example\SYNAPSE\tests\test_moneta_crucible.py` — `test_duplicate_content_id_collision_is_documented` (the tripwire to invert)
 
 **Fix (minimal, low-risk).** Reorder `__post_init__` to default `created_at`
 before generating the id:
@@ -65,10 +65,10 @@ when it is wired to a tool it should route through `HumanGate` at APPROVE
 (matching `prune_memory`).
 
 **Files**
-- `C:\Users\User\SYNAPSE\shared\constants.py` — `OPERATION_GATES`
-- `C:\Users\User\SYNAPSE\python\synapse\panel\bridge_adapter.py` — `_TOOL_TO_OPERATION` map
-- `C:\Users\User\SYNAPSE\python\synapse\server\handlers_memory.py` — new `_handle_sleep_pass`
-- `C:\Users\User\SYNAPSE\python\synapse\memory\moneta_store.py` — `run_sleep_pass` (unchanged; reached via the handler)
+- `C:\Users\Example\SYNAPSE\shared\constants.py` — `OPERATION_GATES`
+- `C:\Users\Example\SYNAPSE\python\synapse\panel\bridge_adapter.py` — `_TOOL_TO_OPERATION` map
+- `C:\Users\Example\SYNAPSE\python\synapse\server\handlers_memory.py` — new `_handle_sleep_pass`
+- `C:\Users\Example\SYNAPSE\python\synapse\memory\moneta_store.py` — `run_sleep_pass` (unchanged; reached via the handler)
 
 **Design (additive, non-invasive — gate at the tool layer, not in the store).**
 1. `OPERATION_GATES["sleep_pass"] = "approve"`.
@@ -100,8 +100,8 @@ GitHub CI (the `moneta` package isn't there). AP9 ("CI runs the memory path with
 no pxr") is only truly exercised locally.
 
 **Files**
-- `C:\Users\User\SYNAPSE\.github\workflows\ci.yml` — the test workflow
-- `C:\Users\User\SYNAPSE\python\synapse\memory\moneta_runtime.py` — existing `$MONETA_SRC` seam
+- `C:\Users\Example\SYNAPSE\.github\workflows\ci.yml` — the test workflow
+- `C:\Users\Example\SYNAPSE\python\synapse\memory\moneta_runtime.py` — existing `$MONETA_SRC` seam
 
 **Recommended (Option B1 — deploy key).** Moneta is zero-dep, pxr-free, and
 same-owner (`JosephOIbrahim/Moneta`).

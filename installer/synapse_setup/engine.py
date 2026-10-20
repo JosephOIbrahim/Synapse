@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 from . import discovery
+from .moneta_grant import validate_payload as validate_moneta_payload, license_policy as moneta_policy
 from .registration import installed_package, UI_CORE
 from .safety import (SetupError, atomic_write, change, check_writable, current, decode,
                      digest, encode, file_hash, inside, json_bytes, maintenance_lock,
@@ -41,6 +42,7 @@ def load_manifest(archive):
                     raise SetupError(f"Payload checksum failed: {name}")
             if sum(x.file_size for x in package.infolist()) > 1024 * 1024 * 1024:
                 raise SetupError("Payload exceeds the 1 GiB installer limit.")
+            validate_moneta_payload(package, data, moneta_policy() if data.get("moneta") else None)
     except (OSError, ValueError, KeyError, zipfile.BadZipFile) as exc:
         raise SetupError(f"Cannot read complete installation payload: {exc}") from exc
     required = {

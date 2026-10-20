@@ -39,7 +39,7 @@ Files nobody in a stream edits: `python/synapse/recipes/contracts.py`, `python/s
 
 ## Laws (every stream)
 
-1. **Worktree only.** Work in the worktree path you were given. Never write to `C:\Users\User\SYNAPSE` (that is master's checkout). Never use absolute repo-root paths in code; use `blocks.fixtures.repo_root()` style resolution.
+1. **Worktree only.** Work in the worktree path you were given. Never write to `C:\Users\Example\SYNAPSE` (that is master's checkout). Never use absolute repo-root paths in code; use `blocks.fixtures.repo_root()` style resolution.
 2. **No third recipe engine.** Extend `blocks/fixtures.py` + BLOCKS runtime. `synapse.loop.recipe` (THE LOOP v0.0) is a *different* contract — do not extend it, do not import it.
 3. **Phantom-API guard.** Before any `hou.*` / `pxr.*` call you are not certain exists on H22.0.400: check `rulebook/phantoms.json` and `python/synapse/cognitive/tools/data/h22_symbol_table.json`. Known phantoms: `hou.updateGraphTick`, `hou.lopNetworks`, `hou.secure`, `hou.pdg.*`, `hdefereval.executeInMainThread` (non-Result variant). Camera relationship: `UsdRender.Settings.GetCameraRel()`, never `winning_layer()`.
 4. **Import guards.** Every new module imports cleanly with no `hou` and no `pxr` (try/except → `*_AVAILABLE = False`). Pure-Python tests run under plain `python -m pytest`.

@@ -76,9 +76,9 @@ def _touch(path, mtime_epoch):
 
 
 def _synapse_session(profile):
-    """<profile>/.claude/projects/C--Users-User-SYNAPSE/<session>"""
+    """<profile>/.claude/projects/C--Users-Example-SYNAPSE/<session>"""
     return os.path.join(str(profile), ".claude", "projects",
-                        "C--Users-User-SYNAPSE", "sess-0001")
+                        "C--Users-Example-SYNAPSE", "sess-0001")
 
 
 def test_subagent_workflow_write_moves_last_write(tmp_path):
@@ -146,7 +146,7 @@ def test_non_synapse_project_is_not_counted(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
     other = os.path.join(str(profile), ".claude", "projects",
-                         "C--Users-User-Octavius", "sess", "subagents",
+                         "C--Users-Example-Octavius", "sess", "subagents",
                          "agent-z.jsonl")
     _touch(other, int(time.time()) - 60)
 

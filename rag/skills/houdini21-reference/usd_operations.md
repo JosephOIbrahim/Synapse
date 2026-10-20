@@ -334,7 +334,7 @@ ref_prim.GetReferences().AddReference(
 # --- Payloads: lazy-loaded heavy assets ---
 heavy_prim = stage.DefinePrim(Sdf.Path("/World/geo/hero"))
 heavy_prim.GetPayloads().AddPayload(
-    assetPath="D:/HOUDINI_PROJECTS_2025/assets/hero_char.usd",
+    assetPath="D:/VFX_PROJECTS/assets/hero_char.usd",
     primPath=Sdf.Path("/hero")
 )
 # Load/unload payload at runtime for memory management

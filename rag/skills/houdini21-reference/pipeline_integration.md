@@ -54,7 +54,7 @@ def setup_shot_env(shot_name, job_path):
         print(f"  {key}: {template.format(shot=shot_name)}")
 
 
-setup_shot_env("SH010", "D:/HOUDINI_PROJECTS_2025/show_01")
+setup_shot_env("SH010", "D:/VFX_PROJECTS/show_01")
 ```
 
 ```python

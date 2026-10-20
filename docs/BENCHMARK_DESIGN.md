@@ -1,6 +1,6 @@
 # G6 — BENCHMARK DESIGN (frozen spec, MODE A paper)
 
-**`docs/BENCHMARK_DESIGN.md`** · Repo: `C:\Users\User\SYNAPSE` · Grounded against HEAD `314acd6` (v5.22.0) / Houdini 21.0.671. All paths repo-relative.
+**`docs/BENCHMARK_DESIGN.md`** · Repo: `C:\Users\Example\SYNAPSE` · Grounded against HEAD `314acd6` (v5.22.0) / Houdini 21.0.671. All paths repo-relative.
 
 **Status: PROPOSAL.** This is the design of the meter, not the meter. Per the harness rule (`docs/H22_AGENT_HARNESS.md` §5): *"G6 benchmark execution (workflow to be authored only after `docs/BENCHMARK_DESIGN.md` survives crucible — write the spec before the meter)."* Nothing here executes until this document survives adversarial review and a human merges it.
 

@@ -1,6 +1,6 @@
 # H22 Phase-0 Reconciliation — `SYNAPSE_H22_DROP_HARNESS v1.0` vs. disk
 
-**`docs/H22_PHASE0_RECONCILIATION.md`** · Repo: `C:\Users\User\SYNAPSE` · Branch `feat/h22-phase0-reconcile` · Authored 2026-07-14 against HEAD `68b1cba` (v5.23.0) / H21.0.671.
+**`docs/H22_PHASE0_RECONCILIATION.md`** · Repo: `C:\Users\Example\SYNAPSE` · Branch `feat/h22-phase0-reconcile` · Authored 2026-07-14 against HEAD `68b1cba` (v5.23.0) / H21.0.671.
 
 **Status: reconciliation record (MODE A paper).** Every load-bearing claim carries a `VERIFIED` (checked file:line this dispatch), `CORRECTED` (blueprint claim proven wrong), or `INFERENCE` (labelled judgment) tag per the blueprint's own truth contract (G-4). No H22 symbol is asserted; no gate is flipped.
 

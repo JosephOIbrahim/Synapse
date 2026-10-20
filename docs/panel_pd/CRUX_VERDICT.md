@@ -248,7 +248,7 @@ Suggested entries for `harness/notes/panel_nits_pd.md` (not written by CRUX):
 ## Delivery and honest limits
 
 The three authorized outputs are written. Milestone staging attempts failed:
-`fatal: Unable to create 'C:/Users/User/SYNAPSE/.git/worktrees/pd-panel-integrate/index.lock': Permission denied`.
+`fatal: Unable to create 'C:/Users/Example/SYNAPSE/.git/worktrees/pd-panel-integrate/index.lock': Permission denied`.
 This is a Git filesystem denial, not a human merge gate or an automatic approval
 review rejection. **No CRUX commit exists.** Required prefix/trailer were kept
 ready for the authorized commit; no alternate index, ACL change or bypass was

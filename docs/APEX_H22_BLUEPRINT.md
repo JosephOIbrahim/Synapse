@@ -1,6 +1,6 @@
 # APEX × H22 — Harness Blueprint, from first principles
 
-**Grounded** 2026-08-17 against the live repo (`C:\Users\User\SYNAPSE`, v5.42.x),
+**Grounded** 2026-08-17 against the live repo (`C:\Users\Example\SYNAPSE`, v5.42.x),
 `harness/DESIGN.md` (2026-08-03, H22.0.400), `python/synapse/science/apex_probes.py`
 (re-seeded 2026-06-02 against **H21.0.671** — that stamp is itself a finding, see §4),
 `python/synapse/science/apex_mcp_surface.json` (mock-recorded, re-record human-gated),

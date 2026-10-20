@@ -15,7 +15,7 @@
   Mode = SIMULATED TEAM, SOLO spine. Marathon-mile structure; gate criteria cite line numbers.
 
 ## VERIFIED GROUND TRUTH — do NOT re-verify (confirmed live in H21.0.671)
-- **Moneta imports from:** `C:\Users\User\Moneta\src` — **NOT** on graphical Houdini's path by
+- **Moneta imports from:** `C:\Users\Example\Moneta\src` — **NOT** on graphical Houdini's path by
   default (separate site-packages). Added via `sys.path.insert` for now. Packaging is a Mile 3 item.
 - **L0 PASSED 10/10:** `Moneta`, `MonetaConfig`, `MonetaConfig.ephemeral`, `deposit`, `query`,
   `signal_attention`, `get_consolidation_manifest`, `run_sleep_pass`, `MockUsdTarget` all present.

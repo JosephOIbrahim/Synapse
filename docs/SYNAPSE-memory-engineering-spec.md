@@ -31,10 +31,10 @@ write_plane: degraded
 
 ## 1. Where the code lives (map the repo first)
 
-The repo root is `C:\Users\User\SYNAPSE`. Before editing, run a file map to confirm exact paths (the tree may have moved since this doc was written):
+The repo root is `C:\Users\Example\SYNAPSE`. Before editing, run a file map to confirm exact paths (the tree may have moved since this doc was written):
 
 ```bash
-cd C:\Users\User\SYNAPSE
+cd C:\Users\Example\SYNAPSE
 find . -name '*.py' -not -path '*/.git/*' -not -path '*/__pycache__/*' | sort
 ```
 
@@ -60,9 +60,9 @@ find . -name '*.py' -not -path '*/.git/*' -not -path '*/__pycache__/*' | sort
 
 **Find the source of the error:**
 ```bash
-grep -rn "embedding dim mismatch" C:\Users\User\SYNAPSE
-grep -rn "expected 384" C:\Users\User\SYNAPSE
-grep -rn "got 256" C:\Users\User\SYNAPSE
+grep -rn "embedding dim mismatch" C:\Users\Example\SYNAPSE
+grep -rn "expected 384" C:\Users\Example\SYNAPSE
+grep -rn "got 256" C:\Users\Example\SYNAPSE
 ```
 
 **Likely fix (one of these, confirm which):**
@@ -88,7 +88,7 @@ grep -rn "got 256" C:\Users\User\SYNAPSE
 **Where:** the Moneta backend module (found in Phase 0).
 
 **Work items:**
-- [ ] On init, after the dim check passes, create the stage at the resolved `usd_root` (the doctor showed `C:\Users\User\AppData\Local\Temp\houdini_temp\untitled\.synapse\.moneta\cortex_root.usda`). Create a `MonetaMemory` root prim with a `version` attribute.
+- [ ] On init, after the dim check passes, create the stage at the resolved `usd_root` (the doctor showed `C:\Users\Example\AppData\Local\Temp\houdini_temp\untitled\.synapse\.moneta\cortex_root.usda`). Create a `MonetaMemory` root prim with a `version` attribute.
 - [ ] Implement `write(kind, id, payload)` → a typed USD prim under the root, keyed by `(kind, id)`.
 - [ ] Implement `query(...)` → walk the typed prims.
 - [ ] **Dual-write:** for this phase, every write also goes to JSONL so nothing is at risk. The JSONL path is the safety net; it never goes away.
