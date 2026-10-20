@@ -70,7 +70,7 @@ from Houdini. No developer virtual environment is copied into the product.
 
 ### Explicit Moneta artifact
 
-The 5.97.5 bundle uses Moneta 1.3.0 at commit
+The 5.97.6 bundle uses Moneta 1.3.0 at commit
 `4f7afc73736aecce6d55d5e03f28fb3137d474d3`, under the MIT License by its
 copyright holder's written grant of 2026-10-19. The upstream metadata still
 declares "Proprietary"; the bundle preserves that metadata and includes the
@@ -111,6 +111,27 @@ byte-identical across times or machines.
 Omit both Moneta options to build the explicit JSONL-only variant. That variant
 has not received the native Moneta-enabled probe reported for this review.
 Different native Houdini/Python builds need their own qualification.
+
+## Optional native artifact
+
+The public 5.97.6 build adds the reviewed `moneta-native-0.1.0-win64-clean.zip`.
+Its SHA-256 is `f0c67e0642305ce9db5f71d355712b6af9eb7d5db05e0d72c65d44403e47bb1e`,
+independently bound in [native_artifact.json](native_artifact.json). Pass both
+`--native-bundle <archive>` and `--native-sha256 <digest>` to the build command.
+The builder refuses a different artifact, inventory, compatible Moneta identity
+or missing hash. Omitting native options produces a separate native-OFF variant.
+
+The native bundle retains upstream metadata and includes the owner's MIT grant,
+four exact Rust source files, portable SBOM and third-party notices. Native source
+Git HEAD is UNKNOWN; source-file hashes and tested binary identity are recorded
+instead of inventing a commit. Known private paths were removed by a remapped
+offline build; this is not a complete reproducible-build or universal secret scan.
+
+Activation is restricted to Windows x64 / H22.0.400 / Python 3.13.10 and actual
+disposable primary-Moneta/native write/reopen checks. Explicit OFF and existing
+default-OFF remain OFF. Failed/unsupported explicit ON, including inherited ON, refuses activation. The
+installer snapshots registrations and package namespace and checks them again
+before switching. Uninstall restores exact supported migration backups.
 
 ## Payload and ownership
 

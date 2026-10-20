@@ -4,35 +4,44 @@
 
 These diagrams describe implemented behavior. Each section links to its source. Future modes in `INTENT.md` are not implied by an arrow here.
 
-The current published code is **[5.97.5](../releases/v5.97.5.md)**.
+The current release is **[5.97.6](../releases/v5.97.6.md)**.
 [Tag identities](../../TAGS.md) distinguish it from later default-branch edits.
 
-## Published 5.97.5 installation
+## Published 5.97.6 installation
 
 ```mermaid
 flowchart TD
-    accTitle: Published 5.97.5 installation and existing settings
-    accDescr: Fresh Setup installs Moneta Python without a native Rust wheel. Maintenance of an edited installer-owned registration stops and preserves its bytes. Migration from a manual installation backs up the original package but writes a new registration without its native or custom environment settings. A future correction is not included in this published installer.
-    S["Published 5.97.5 Setup<br/>unsigned; no native wheel"] --> K{"Existing registration?"}
-    K -->|"none"| F["Fresh Moneta Python setup<br/>native wheel not installed"]
-    K -->|"installer-owned, unchanged"| U["Switch verified runtime<br/>and registration"]
-    K -->|"installer-owned, edited"| B["Refuse maintenance<br/>preserve package bytes"]
-    K -->|"manual, migration selected"| M["Back up original package"]
-    M --> N["Generate new registration<br/>native/custom entries not carried"]
+    accTitle: Native activation preserves choices and requires real execution
+    accDescr: Setup validates and snapshots the configuration. Explicit OFF and legacy default OFF stay OFF. Fresh supported hosts and existing ON setups need a pinned compatible artifact and actual disposable Moneta scan, decay and encrypted mirror reopen. Failure preserves registration. Configuration or namespace edits refuse activation. Default fresh hosts without explicit ON stay OFF when unsupported; explicit ON refuses when qualification is unavailable.
+    S["5.97.6 Setup<br/>unsigned; pinned native artifact"] --> V{"Valid, unambiguous<br/>configuration?"}
+    V -->|"no"| B["Refuse activation<br/>preserve user files"]
+    V -->|"explicit or legacy OFF"| O["Keep OFF<br/>preserve custom settings"]
+    V -->|"fresh or existing ON"| H{"Exact supported host<br/>and compatible artifact?"}
+    H -->|"unsupported default fresh"| O
+    H -->|"unsupported explicit ON"| B
+    H -->|"yes"| E["Fresh disposable processes<br/>primary Moneta + Rust scan/decay<br/>encrypted mirror save/reopen"]
+    E -->|"fail or fallback"| B
+    E -->|"pass"| C{"Config and package<br/>namespace unchanged?"}
+    C -->|"no"| B
+    C -->|"yes"| A["Activate verified ON<br/>retain original backup"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
-    linkStyle default stroke:#D07020
+    linkStyle default stroke:#D07020,fill:none
 ```
 
-This describes the current download, not the proposed installer correction.
-An existing independently qualified Rust-ON seat is a separate configuration.
-Final-installer extraction and isolated embedded-engine/runtime checks passed;
-the interactive wizard, registry/shortcuts and clean-machine installation remain
-untested. No full RC+ξ activation follows from the bounded LIGHT release tests.
+Sources: [configuration and transaction](../../installer/synapse_setup/engine.py),
+[native policy](../../installer/synapse_setup/native_policy.py),
+[actual execution check](../../installer/synapse_setup/native_probe.py),
+[registration](../../installer/synapse_setup/registration.py),
+[final installer verification](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/installer-verification.json).
+The source-install scripts retain their separate OFF default. Interactive wizard,
+clean-machine and arbitrary artist-scene qualification remain separate.
 
-Sources at the published tag: [maintenance and migration](https://github.com/JosephOIbrahim/Synapse/blob/v5.97.5/installer/synapse_setup/engine.py),
-[generated registration](https://github.com/JosephOIbrahim/Synapse/blob/v5.97.5/installer/synapse_setup/registration.py),
-[build inputs](https://github.com/JosephOIbrahim/Synapse/blob/v5.97.5/installer/build_payload.py),
-[actual final-installer verification](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/installer-verification.json).
+### Published 5.97.5 installation
+
+The [unchanged 5.97.5 installer](../releases/v5.97.5.md) contains no native wheel.
+It refuses edited installer-owned packages, but manual migration generates a new
+registration without the old native/custom entries. Use the separate 5.97.6
+correction for the policy shown above; older tags and assets are preserved.
 
 | Follow a workflow | Start here |
 |---|---|

@@ -4,30 +4,30 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.97.5 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.5 is Latest</sub></p>
+<p align="center"><sub>v5.97.6 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.6 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[▶️ Instructions](INSTRUCTIONS.md)** · [🏷️ Versions and tags](TAGS.md) · [What's new](docs/releases/v5.97.5.md) · [Help](#when-you-get-stuck)
+**[▶️ Instructions](INSTRUCTIONS.md)** · [🏷️ Versions and tags](TAGS.md) · [What's new](docs/releases/v5.97.6.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
-- 📦 **Get 5.97.5:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SYNAPSE-5.97.5-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SYNAPSE-5.97.5-source.zip).
-- 🔎 **Check the download:** Setup is **unsigned**. Compare its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SHA256SUMS.txt).
-- 🦀 **Public Rust default:** no native wheel is bundled. A separately verified local Rust-ON setup is a different configuration. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
-- ✅ **Measured:** six stock-Python CI jobs and isolated checks of the actual final installer. The interactive Windows wizard, registry/shortcuts and clean-machine installation remain untested. [Evidence and limits](docs/releases/v5.97.5.md#tests).
+- 📦 **Get 5.97.6:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/SYNAPSE-5.97.6-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/SYNAPSE-5.97.6-source.zip).
+- 🔎 **Check the download:** Setup is **unsigned**. Compare its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/SHA256SUMS.txt).
+- 🦀 **Rust when verified:** Setup includes a pinned native artifact. Fresh supported setups enable it after actual execution checks. Explicit OFF stays OFF. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
+- ✅ **Checks:** native execution, encrypted-mirror reopen and migration/restoration controls. Read the [final artifact evidence and limits](docs/releases/v5.97.6.md#tests); interactive wizard and clean-machine checks remain separate.
 
-Setup includes the panel as of v5.97.5, including Spatial, the Render footer row and the scene-reading Scatter recipe.
+Setup includes the panel as of v5.97.6, including Spatial, the Render footer row and the scene-reading Scatter recipe.
 
-**New in 5.97.5:** pinned Moneta 1.3.0, reviewed packaging and one experimental LIGHT operation for explicitly approved disposable headless tests. LIGHT is not a new panel command or the full RC+ξ framework. [Release notes](docs/releases/v5.97.5.md).
+**New in 5.97.6:** preserve native/custom package choices, verify the exact bundled Rust artifact and run real Moneta scan/decay before activating ON. The existing Moneta 1.3.0 and bounded LIGHT scope from [5.97.5](docs/releases/v5.97.5.md) are unchanged.
 
-**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. A proposed installer correction is **unreleased**; the 5.97.5 download remains unchanged.
+**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately and restart Houdini to load the update. The 5.97.5 tag and assets remain unchanged.
 
 **🚀 Pick one install path, then take four steps.**
 
-1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.97.5, or run the v5.97.5 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
+1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.97.6, or run the v5.97.6 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
 2. Restart Houdini. Open **New Pane Tab → Synapse**.
 3. Open **Connect models**. Choose a provider and model; add its key if needed.
 4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
@@ -196,7 +196,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.97.5.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.97.6.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -236,17 +236,17 @@ Explicit memory writes, decisions and error rows are recorded. Automatic session
 
 Moneta's USD mirror is an inspection view, not the storage owner. Missing services and unknown outcomes remain visible. A memory store that cannot be read is reported as a failure, not as an empty answer.
 
-**Moneta's native module stays out unless you opt in.** `MONETA_NATIVE=0`, set before Moneta first loads, keeps it out of the Houdini process, and [`packages/synapse.json`](packages/synapse.json) retains that default. Separate disposable H22 probes qualify a local opt-in, actual native scan/decay and persistent-key reopen; they do not qualify every artist store or turn on the public installer's native-off default. See [the measured limits](docs/releases/v5.97.5.md#tests). Memory status and provenance report the module as `loaded`, `blocked` or `not_loaded`.
+**Native policy depends on the installation route.** The [source package](packages/synapse.json) retains OFF. Windows Setup 5.97.6 can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks. Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host/artifact/execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.6.md#tests).
 
 **A native panic is caught in four places.** If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside `synapse_sleep_pass` returns `ran=False`. Since 5.97.4, a panic that reaches the command dispatcher gets a failed reply under its request id, and with `SYNAPSE_AUTO_MEMORY=1` a panic in an automatic session row is logged and that row is skipped. The connection handlers themselves still catch `Exception` only.
 
 **`synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set.** It prunes memory, and a request cannot opt in. Over the WebSocket connection it opens no undo group, so it cannot take back your last edit. On the in-Houdini HTTP `/mcp` route and the panel's tool route, an opted-in pass still runs inside the bridge's undo group. A pass that fails after pruning is still audited.
 
-**Attention durability has a bounded contract.** Moneta 1.3.0 implements preservation of undrained attention in attached keyed snapshots; its degraded/keyless and unattached save paths have separate limits. The local reopen probes do not establish every attention/save/switch/quit path. See [current storage limits](docs/releases/v5.97.5.md#limits).
+**Attention durability has a bounded contract.** Moneta 1.3.0 implements preservation of undrained attention in attached keyed snapshots; its degraded/keyless and unattached save paths have separate limits. The local reopen probes do not establish every attention/save/switch/quit path. See [current storage limits](docs/releases/v5.97.6.md#limits).
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
-**CI covers stock Python on Linux, macOS and Windows.** Its Moneta step shows that Moneta imports, not that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.5.md) before relying on it.
+**CI covers stock Python on Linux, macOS and Windows.** Its Moneta step shows that Moneta imports, not that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.6.md) before relying on it.
 
 </details>
 

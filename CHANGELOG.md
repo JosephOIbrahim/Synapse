@@ -2,6 +2,16 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.97.6 - Preserve package choices and qualify native activation
+
+Windows Setup preserves explicit OFF, existing default-OFF and supported custom
+settings. Fresh supported-host ON and existing ON require a pinned compatible
+native artifact plus actual primary-Moneta/native execution and encrypted mirror
+reopen. Changed/ambiguous registrations refuse activation. The rebuilt native
+artifact carries exact source/license/SBOM bindings with native source Git HEAD
+UNKNOWN. Setup remains unsigned: no publisher signing identity is configured.
+[Tests, final artifact verification and limits](docs/releases/v5.97.6.md).
+
 ## v5.97.5 - Stable Moneta, bounded LIGHT and reviewed packaging
 
 Pins Moneta 1.3.0 to `4f7afc73736aecce6d55d5e03f28fb3137d474d3` and carries its explicit redistribution grant and MIT notice. Packaging verifies the exact dependency inventory, excludes the 37 SideFX reference files and historical/local orchestration records from new archives, and removes personal paths from active release inputs. Older Git history, tags and assets are preserved.

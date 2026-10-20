@@ -7,21 +7,20 @@ Houdini runs SYNAPSE with its own Python.
 
 ## Windows installer
 
-**[Download Windows Setup v5.97.5](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SYNAPSE-5.97.5-Setup.exe)**
+**[Download Windows Setup v5.97.6](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/SYNAPSE-5.97.6-Setup.exe)**
 
 Setup packages this release's source and the pinned Moneta 1.3.0 Python backend.
-Setup includes the panel as of v5.97.5, including Spatial, the Render footer row and the scene-reading Scatter recipe.
-Native Rust is optional and remains off by default; no native wheel is bundled.
+Setup includes the panel as of v5.97.6, including Spatial, the Render footer row and the scene-reading Scatter recipe.
+Setup includes a pinned native Rust artifact. Fresh supported Windows x64 / H22.0.400 / Python 3.13.10 setups receive ON only after actual isolated native execution and encrypted-mirror reopen checks. Explicit OFF and existing default-OFF registrations remain OFF. An existing ON setup must pass qualification; unsupported ON or failed checks refuse activation.
 
 **Already using native Rust or custom package settings?** Read the
-[existing-setup instructions](../../INSTRUCTIONS.md#existing-native-on-or-off-setups)
-before migration. Published 5.97.5 backs up a manual registration but generates a
-new one without its native/custom environment entries. An edited installer-owned
-registration instead blocks maintenance and is preserved. The proposed
-correction is unreleased; the current download has not been replaced.
+[existing-setup instructions](../../INSTRUCTIONS.md#existing-native-on-or-off-setups).
+Supported custom environment entries and extra paths are retained. Edited managed
+packages, multiple registrations, conditional settings and custom Houdini paths
+stop automatic migration. The previous 5.97.5 tag and downloads are preserved.
 
-[Release notes and validation limits](../releases/v5.97.5.md) ·
-[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SHA256SUMS.txt)
+[Release notes and validation limits](../releases/v5.97.6.md) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/SHA256SUMS.txt)
 
 1. Save your scene and close Houdini.
 2. Open Setup. This installer is unsigned, so Windows may show an unknown publisher.
@@ -35,30 +34,32 @@ bundle; it needs no terminal, Git or system Python. Model credentials and option
 external services are separate.
 
 **Read the downloaded installer's own validation record.** The
-[5.97.5 verification asset](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/installer-verification.json)
+[5.97.6 verification asset](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/installer-verification.json)
 binds its checks to the actual Setup hash and source commit. Extraction and
 isolated execution of its embedded maintenance engine are distinct from the
 interactive Windows wizard, registry/shortcut integration and clean-machine
-qualification. See the [release limits](../releases/v5.97.5.md#limits).
+qualification. See the [release limits](../releases/v5.97.6.md#limits).
 
 The source installation steps below are an alternative route. Avoid running
 the source scripts over a registration managed by the Setup wizard.
 
 ## Source installation
 
+Source scripts do not install or automatically enable the optional native Rust artifact.
+
 Use a terminal with Python available for these scripts. Installing a system
 Python does not replace Houdini's own runtime.
 
 ### 1. Keep a copy of the repository
 
-Download the source ZIP from [release 5.97.5](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.5)
+Download the source ZIP from [release 5.97.6](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.6)
 and extract it into a permanent folder. Open a terminal in the folder containing
 `install.py`.
 
 If you use Git instead:
 
 ```shell
-git clone --branch v5.97.5 https://github.com/JosephOIbrahim/Synapse.git
+git clone --branch v5.97.6 https://github.com/JosephOIbrahim/Synapse.git
 cd Synapse
 ```
 

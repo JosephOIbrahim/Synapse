@@ -5,10 +5,11 @@ inspect the real nodes, and build confidence in the workflow.
 
 ## Start here
 
-📦 **Published release: [5.97.5](releases/v5.97.5.md)**.
+📦 **Published release: [5.97.6](releases/v5.97.6.md)**.
 [User instructions](../INSTRUCTIONS.md) · [Exact versions and tags](../TAGS.md).
-Public Setup is unsigned and bundles no native Rust wheel. Local Rust-ON
-qualification is separate; a proposed installer correction is unreleased.
+Public Setup remains unsigned. Its pinned native artifact activates only after
+checks on an exact supported host; explicit OFF and existing default-OFF choices
+remain OFF. [Policy and limits](releases/v5.97.6.md).
 
 | Your next step | Read |
 |---|---|

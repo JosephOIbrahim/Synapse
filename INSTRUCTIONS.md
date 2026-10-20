@@ -1,17 +1,17 @@
-# Start using SYNAPSE 5.97.5
+# Start using SYNAPSE 5.97.6
 
 [README](README.md) · [Versions and tags](TAGS.md) · [Full installation guide](docs/getting-started/installation.md)
 
 ## 1. 📦 Choose one install path
 
-Save your scene and close Houdini before installing. The measured target is **Windows x64, Houdini 22.0.400 and its Python 3.13 runtime**.
+Save your scene and close Houdini before installing. The native qualification target is **Windows x64, Houdini 22.0.400 and Python 3.13.10**. Setup never closes Houdini for you.
 
 | I want… | Use… |
 |---|---|
-| The packaged installation | [Windows Setup 5.97.5](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SYNAPSE-5.97.5-Setup.exe), then the [wizard steps](docs/getting-started/installation.md#windows-installer). |
-| A source installation | The [5.97.5 source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SYNAPSE-5.97.5-source.zip), then [both source scripts](docs/getting-started/installation.md#source-installation). |
+| The packaged installation | [Windows Setup 5.97.6](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/SYNAPSE-5.97.6-Setup.exe), then the [wizard steps](docs/getting-started/installation.md#windows-installer). |
+| A source installation | The [5.97.6 source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/SYNAPSE-5.97.6-source.zip), then [both source scripts](docs/getting-started/installation.md#source-installation). Source scripts do not provision the optional native artifact. |
 
-🔎 Setup is **unsigned**. Check [SHA256SUMS.txt](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SHA256SUMS.txt) before running it. Isolated final-installer checks passed; the interactive wizard, Windows registration/shortcuts and a clean-machine install remain untested. [Verification record](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/installer-verification.json).
+🔎 Setup is **unsigned**: the inspected local signing setup has no configured publisher identity. Check [SHA256SUMS.txt](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/SHA256SUMS.txt). Do not bypass a security warning. The [verification record](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.6/installer-verification.json) states exactly which final-installer checks ran.
 
 ## 2. 🔌 Connect and check
 
@@ -30,17 +30,14 @@ In a scratch scene, send `make a box`. Inspect the nodes, change a parameter and
 
 ## Existing native ON or OFF setups
 
-🦀 **5.97.5 Setup bundles the Moneta Python backend, not the native Rust wheel.** A separately verified local Rust-ON setup is not the public default.
+- **Explicit OFF stays OFF.** Existing registrations without an explicit opt-in also remain OFF.
+- **Existing ON is preserved only after qualification.** Setup checks the pinned compatible artifact, actual primary Moneta backend, Rust scan/decay, encrypted mirror and fresh-process reopen on disposable data. An unsupported host or failed check refuses activation; it does not hide fallback.
+- **Manual/source migration:** select “Back up and replace” only for the intended registration. Supported custom environment entries and extra import paths are retained; the original bytes are backed up and restored by uninstall.
+- **Edited managed packages, multiple registrations in one preference folder, conditional settings or custom Houdini paths:** Setup refuses automatic migration. Preserve the files and resolve the reported ambiguity. Do not discard a deliberate OFF setting to pass a check.
+- **Edits during qualification:** Setup rechecks package contents and namespace before activation; it refuses a changed plan.
 
-- **Installer-owned package edited outside Setup:** maintenance refuses it before changing the registration. Save the edited package; do not discard your choices just to pass maintenance.
-- **Manual/source installation migrated with “Back up and replace”:** 5.97.5 saves the old package, then generates a new registration. Explicit `MONETA_NATIVE`, extra native import paths and other custom environment entries are not carried into that new registration.
+Fresh installations receive ON only on the exact supported host after the same execution checks. Without an explicit ON choice, missing native artifacts or unsupported fresh hosts keep native mode OFF and report the reason. An explicit inherited ON choice requires qualification and refuses installation if unavailable. These checks use disposable data/keys and do not qualify every artist store, scene or future configuration.
 
-If you rely on these settings, retain your working setup and review the migration before proceeding. The proposed preservation/native-artifact correction is **unreleased**. No replacement 5.97.5 download is implied. [Published installer code](https://github.com/JosephOIbrahim/Synapse/blob/v5.97.5/installer/synapse_setup/engine.py) · [Installation flow diagram](docs/architecture/overview.md#published-5975-installation).
+[Installer flow](docs/architecture/overview.md#published-5976-installation) · [Release tests and limits](docs/releases/v5.97.6.md) · [Current status](docs/status.md).
 
-## What 5.97.5 adds
-
-- Moneta 1.3.0 pinned and packaged with its redistribution notice.
-- One experimental LIGHT operation qualified in disposable headless fixtures. It is not a panel command or full RC+ξ activation.
-- Reviewed release-content exclusions and downloadable verification reports.
-
-[Release tests and limits](docs/releases/v5.97.5.md) · [Current status](docs/status.md) · [Troubleshooting](README.md#when-you-get-stuck).
+The original [5.97.5 release](docs/releases/v5.97.5.md) remains unchanged and contains no native wheel.
