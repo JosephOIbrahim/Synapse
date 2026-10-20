@@ -50,7 +50,7 @@ Set `SYNAPSE_SCOUT_DRIFT_POLICY=warn` to opt into graceful degradation (serve
 hits + null verdicts with a warning) during a controlled upgrade.
 
 > **Per-major tables:** the regen inside an H22 build writes
-> `h22_symbol_table.json` ALONGSIDE the committed H21 file (never overwrites
+> `h22_symbol_table.json` ALONGSIDE the committed `h21_symbol_table.json` (never overwrites
 > it), and scout auto-selects the table matching the running major —
 > dual-build support is free. (Doctor's artifact check follows the same
 > per-major rule.)

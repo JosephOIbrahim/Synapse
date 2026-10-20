@@ -4,7 +4,7 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>Published v5.97.5 · Windows · Houdini 22.0.400 · Python 3.13</sub></p>
+<p align="center"><sub>v5.97.5 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.5 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
@@ -18,6 +18,8 @@
 - 🔎 **Check the download:** Setup is **unsigned**. Compare its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SHA256SUMS.txt).
 - 🦀 **Public Rust default:** no native wheel is bundled. A separately verified local Rust-ON setup is a different configuration. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
 - ✅ **Measured:** six stock-Python CI jobs and isolated checks of the actual final installer. The interactive Windows wizard, registry/shortcuts and clean-machine installation remain untested. [Evidence and limits](docs/releases/v5.97.5.md#tests).
+
+Setup includes the panel as of v5.97.5, including Spatial, the Render footer row and the scene-reading Scatter recipe.
 
 **New in 5.97.5:** pinned Moneta 1.3.0, reviewed packaging and one experimental LIGHT operation for explicitly approved disposable headless tests. LIGHT is not a new panel command or the full RC+ξ framework. [Release notes](docs/releases/v5.97.5.md).
 
