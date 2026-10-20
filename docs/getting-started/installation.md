@@ -7,17 +7,14 @@ Houdini runs SYNAPSE with its own Python.
 
 ## Windows installer
 
-**[Download Windows Setup v5.86.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SYNAPSE-5.86.0-Setup.exe)**
+**[Download Windows Setup v5.97.5](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SYNAPSE-5.97.5-Setup.exe)**
 
-This is the latest packaged installer, v5.86.0. It includes Identify and the
-panel as of v5.86.0, with its JEV and SideFX library changes. Spatial, the Render
-footer row and the Scatter recipe that reads the scene are not in it; they need
-the source installation. Newer source releases, including
-v5.87.0, v5.88.0, v5.89.0, v5.90.0, v5.91.0, v5.92.0, v5.92.1, v5.93.0, v5.93.1, v5.93.2, v5.93.3, v5.94.0, v5.94.1, v5.94.2, v5.94.3 and v5.95.0, do not contain a new Setup executable. For the current
-version, use [source installation](#source-installation) below.
+Setup packages this release's source and the pinned Moneta 1.3.0 Python backend.
+Setup includes the panel as of v5.97.5, including Spatial, the Render footer row and the scene-reading Scatter recipe.
+Native Rust is optional and remains off by default; no native wheel is bundled.
 
-[Installer release notes and build report](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.86.0) ·
-[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.86.0/SHA256SUMS.txt)
+[Release notes and validation limits](../releases/v5.97.5.md) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/SHA256SUMS.txt)
 
 1. Save your scene and close Houdini.
 2. Open Setup. This installer is unsigned, so Windows may show an unknown publisher.
@@ -31,10 +28,11 @@ bundle; it needs no terminal, Git or system Python. Model credentials and option
 external services are separate.
 
 **Read the downloaded installer's own validation record.** The
-[v5.86.0 notes](../releases/v5.86.0.md) describe its checks and remaining limits.
-Tests of later source releases do not qualify this executable. Native wizard
-inspection, clean-machine testing, model/scene behavior and Moneta persistence
-are separate checks recorded per release.
+[5.97.5 verification asset](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.5/installer-verification.json)
+binds its checks to the actual Setup hash and source commit. Extraction and
+isolated execution of its embedded maintenance engine are distinct from the
+interactive Windows wizard, registry/shortcut integration and clean-machine
+qualification. See the [release limits](../releases/v5.97.5.md#limits).
 
 The source installation steps below are an alternative route. Avoid running
 the source scripts over a registration managed by the Setup wizard.

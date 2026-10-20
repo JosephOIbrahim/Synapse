@@ -1,8 +1,8 @@
-"""The installation page dates the Windows Setup's panel instead of calling it the latest.
+"""Both install pages date the panel to the current Setup version.
 
-The v5.86.0 Setup predates Spatial, the Render footer row and the scene-reading
-Scatter recipe. README was corrected in 3645b2b5; docs/getting-started/installation.md
-carried the same "latest panel" wording. Both pages must describe the Setup the same way.
+Current Setup includes Spatial, the Render footer row and the scene-reading
+Scatter recipe. Keep the version and named surfaces explicit on both pages.
+This wording check does not claim graphical runtime qualification.
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def test_installation_dates_the_panel_to_the_setup_version():
     assert f"panel as of v{_setup_version(text)}" in text
 
 
-def test_installation_names_what_the_setup_lacks():
+def test_installation_names_features_in_the_pinned_setup():
     text = _flat(INSTALL)
     for feature in ("Spatial", "Render footer row", "Scatter recipe"):
         assert feature in text, feature

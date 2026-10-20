@@ -2,6 +2,14 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.97.5 - Stable Moneta, bounded LIGHT and reviewed packaging
+
+Pins Moneta 1.3.0 to `4f7afc73736aecce6d55d5e03f28fb3137d474d3` and carries its explicit redistribution grant and MIT notice. Packaging verifies the exact dependency inventory, excludes the 37 SideFX reference files and historical/local orchestration records from new archives, and removes personal paths from active release inputs. Older Git history, tags and assets are preserved.
+
+Adds one experimental, explicitly approved headless LIGHT operation for a closed disposable H22 fixture. Provisional rejection keeps transaction ownership until exact restoration is proved; unknown foreign ownership quarantines without automatic undo. Durable local acknowledgement, run replay protection, bounded measured fuel and cancellation/commit ordering are tested. No panel command, full RC+xi activation, blueprint ratification or external settlement is added. The normal recipe contract remains pending human ratification.
+
+Measured current headless composition: 185 passed and 14 skipped (199 actual test cases); a separate matrix covers 19 behavioral cases, cancellation/foreign ownership four, and the reproduced review regressions 10. These batches overlap. The full panel baseline and candidate each report 573 passed and the same eight failures out of 581; this is baseline equivalence, not a green panel suite. [Release notes, producers and limits](docs/releases/v5.97.5.md).
+
 ## v5.97.4 - A native panic during a command gets an answer
 
 Source release; no new Windows Setup. Eight commits on top of v5.97.3, plus the release commit. When a native (Rust) extension panics while SYNAPSE runs a command, `SynapseHandler.handle()` now returns a failed reply under that request's id, and the server answers the next request; before, the panic passed every `except Exception` arm. With `SYNAPSE_AUTO_MEMORY=1` (off by default), a native panic in one of the session tracker's three automatic rows is logged and that row is skipped. Also: test pins for the coverage gaps the verifiers found, two CI-flake test fixes, release-card corrections and PR #115's README and status rewrite. The panic is answered, not repaired; the connection handlers still catch `Exception` only; nothing in this range ran under hython.
