@@ -1,0 +1,205 @@
+{
+  "_comment": "JEV question graph for HARNESS2 - the compose guard and the graph guard. Harness2 (google-research/harness2) proposes harness edits, probes them on the same task, compares behaviour and composes a refined harness, but it does NOT specify an acceptance threshold, a scoring formula, or a candidate-ranking algorithm. This file IS that missing specification, expressed as System One judgments. A tuning pass is a text diff of this file. The two guards below are the two places a decision is made: WHICH harness candidate to adopt (compose), and WHICH graph node lands first (graph).",
+  "_schema": "jev-questions/v1",
+  "model": "jev-latest",
+  "_invariants": [
+    "The state sent to the API is scrubbed by compositor.py: no absolute paths, no hashes, no usernames, no pids.",
+    "Every question is answered by a judgment, not by a vote. The threshold lives in `policy`, in code, not in the prompt.",
+    "A Score with N criteria returns a probability-weighted POSITION in 0..N-1. It is a position, not a row index: a value of 2 against 4 criteria is two thirds of the way up the scale (range 0..3), and the same raw value of 2 against 3 criteria is the very top of the scale (range 0..2) - which is why a threshold is only comparable to another rubric as a FRACTION OF RANGE. A threshold above N-1 is a DEAD GATE and is refused at load time.",
+    "Noul returns the probability that the answer is TRUE, 0..1.",
+    "A JEV question id is NOT sent to the model. An instruction that says 'this candidate' or 'this node' therefore names nothing, and the state carries every item, so the model averages over all of them. Every per-item question is bound at BUILD time to that item's own text - see `bind` and `subject_shape`."
+  ],
+  "guards": {
+    "compose": {
+      "edge": "candidate harness variants + their probe evidence -> adoption decision (Harness2 Propose-Probe-Compare-Compose)",
+      "state_fields": {
+        "harness": "what the harness under improvement IS, and the one rule it must enforce",
+        "candidates": "the proposed harness edits, one entry per candidate, each with id, claim, change, files, probe, exclusion",
+        "standards": "the repo rules a candidate must satisfy, quoted from harness/AGENT_CONSTITUTION.md and harness/cto/SPEC.md",
+        "evidence": "what was actually observed while probing, in the prober's own words"
+      },
+      "criteria_shape": {
+        "what": "{claim}\nCHANGE: {change}\nFILES: {files}\nPROBE: {probe}",
+        "not_for": "{exclusion}"
+      },
+      "subject_shape": {
+        "_comment": "The text substituted INTO a per-candidate instruction at build time. A JEV question id is never sent to the model, so an instruction that says 'this candidate' names nothing. This block is what makes the question answerable on its own.",
+        "label": "CANDIDATE",
+        "subject": "{id}: {claim}\nCHANGE: {change}\nFILES: {files}\nPROBE: {probe}",
+        "others": "{id}: files {files}"
+      },
+      "questions": {
+        "adopt": {
+          "type": "choice",
+          "_comment": "criteria are built at RUNTIME from the candidate set, one per candidate id, using criteria_shape. The model answers with a candidate id.",
+          "instructions": {
+            "task": "Choose the ONE candidate harness edit to adopt as the primary refinement of the harness described in `harness`. Every candidate is a change to the MACHINERY AROUND the model - a prompt, a schema, a ledger field, a check, a routing rule - not to the answer the harness produces.",
+            "consider": [
+              "Does the candidate close a gap that was MEASURED, or does it close a gap that sounds plausible? A candidate with no probe evidence has not earned adoption.",
+              "Does the candidate make the rule STRUCTURAL - a check that can fail, an enum, an assertion - or does it only INSTRUCT a model to behave? An instructed rule is a rule that fails silently when the model is tired.",
+              "What is the blast radius? A change to the harness changes every future run of it.",
+              "Does the candidate fit the standards in `standards`, and does it keep the harness's own evidence law intact?",
+              "If two candidates are equally good, prefer the one that is smaller and reversible."
+            ],
+            "rules": [
+              "Judge the CANDIDATE, not the codebase. Do not pick a candidate for the fame of the problem it addresses.",
+              "A candidate whose probe returned UNKNOWN has not been shown to work. It may still be the best available choice, but only if no candidate has evidence.",
+              "If no candidate is worth adopting, the correct answer is the candidate that would be WORTH adopting once probed - that is, the one whose gap is real and whose probe is cheapest to run. Never invent a candidate that is not in the list."
+            ]
+          }
+        },
+        "strength": {
+          "type": "score",
+          "_comment": "instantiated once per candidate as strength_<id>",
+          "bind": ["subject"],
+          "instructions": "How much does adopting the candidate under judgment improve the harness? Judge that candidate's change against the gap it closes, not the size of the diff.",
+          "criteria": [
+            "Cosmetic: the harness reads better but behaves the same. No new check, no new failure mode, no new evidence.",
+            "Useful: the harness catches one more real defect or produces one more trustworthy record. A check that can fail and did not.",
+            "Important: the harness stops producing a class of wrong answer, and the stop is structural - a gate, an enum, an assertion, a cross-check that reads a machine-written file rather than a model's word.",
+            "Critical: the harness currently produces a FALSE RECORD - a number with no producer path, a verdict no one can re-run, an artifact that looks measured but is not. The candidate makes the record honest."
+          ]
+        },
+        "probe": {
+          "type": "noul",
+          "_comment": "instantiated once per candidate as probe_<id>",
+          "bind": ["subject"],
+          "instructions": "Does the probe evidence for the candidate under judgment show that the change does what it claims - namely that the failure it targets actually occurs before the change and does not occur after? A probe that shows only the change was applied, without the before and the after, does not support adoption. If that candidate's PROBE line reads NOT PROBED, the answer is false: there is no evidence to support anything.",
+          "criteria": {
+            "true": "The evidence shows the before-state failing and the after-state passing, or it shows the new check firing on a seeded bad case.",
+            "false": "The evidence shows only that the change was written, or only the after-state, or nothing was run."
+          }
+        },
+        "composable": {
+          "type": "noul",
+          "_comment": "instantiated once per candidate as composable_<id>",
+          "bind": ["subject", "others"],
+          "instructions": "Can the candidate under judgment be composed with the other candidates listed below at the same time - that is, do they touch DISJOINT files, and does neither one depend on a change the other one makes to the same file? Two candidates that edit the same file compete; the board's rule is one owner per file, and a conflict is a finding, not a race. Compare the candidate under judgment's file list against EACH of the other candidates' file lists.",
+          "criteria": {
+            "true": "This candidate's files are disjoint from the others, and it does not require a change another candidate makes to a shared file.",
+            "false": "This candidate and another candidate both write the same file, or one depends on the other's edit to that file."
+          }
+        }
+      },
+      "policy": {
+        "adopt_min_confidence": 0.6,
+        "min_strength": 2,
+        "min_probe_support": 0.6,
+        "min_composable": 0.5,
+        "max_adoptions": 3,
+        "fallback": "NO ADOPTION - the composition seat reports the candidates as needs_joe and names the probe each one still owes"
+      },
+      "calibration": {
+        "min_strength": {
+          "policy_key": "min_strength",
+          "value": 2,
+          "criteria": 4,
+          "max_score": 3,
+          "fraction_of_range": 0.6667,
+          "verdict": "LIVE",
+          "reachable_fraction": 0.1778,
+          "why": "fires on 17.8% of observed rows, so it is a real gate - not a dead one",
+          "reference_rubric": "novelty (3 criteria, range 0..2), n=45",
+          "reference_distribution": {"min": 0.01, "p50": 0.92, "p75": 1.15, "p90": 1.60, "max": 1.87},
+          "measured_at": "2026-10-22",
+          "producer": "python harness/harness2/calibrate.py --check",
+          "note": "The same raw value 2.0 on the 3-criteria novelty rubric would be DEAD - no observed row reaches the top of a 0..2 range (0 rows of 45). This threshold is live ONLY because the compose rubric has 4 criteria. That is why the comparable quantity is the fraction of range, not the raw number."
+        }
+      }
+    },
+    "graph": {
+      "edge": "unified graph -> first landing + land/park split (the strategic graph engineering decision)",
+      "state_fields": {
+        "objective": "one paragraph: what the graph is for, in the requester's words",
+        "nodes": "the candidate nodes, each with id, title, owner_files, depends_on, edges, why",
+        "edges": "the typed edges between nodes",
+        "seams": "the seams the SEAM phase ranked, with blast radius",
+        "standards": "the repo rules a landing must satisfy"
+      },
+      "criteria_shape": {
+        "what": "{title}\nFILES: {owner_files}\nDEPENDS ON: {depends_on}\nWHY: {why}",
+        "not_for": "A node whose dependencies are unsatisfied, or whose files another node also owns."
+      },
+      "subject_shape": {
+        "_comment": "The text substituted INTO a per-node instruction at build time. A JEV question id is never sent to the model, so an instruction that says 'this node' names nothing.",
+        "label": "NODE",
+        "subject": "{id}: {title}\nFILES: {owner_files}\nDEPENDS ON: {depends_on}\nWHY: {why}",
+        "others": "{id}: files {owner_files}"
+      },
+      "questions": {
+        "first_landing": {
+          "type": "choice",
+          "_comment": "criteria are built at RUNTIME from the node set, one per node id, using criteria_shape.",
+          "instructions": {
+            "task": "Choose the node that should land FIRST. It is the node whose landing unblocks the most downstream work while being the least risky to land on its own.",
+            "consider": [
+              "A node with unsatisfied dependencies cannot land first no matter how valuable it is.",
+              "A node that owns files another node also owns cannot land without a resolution - prefer the node that is uncontested, or the one whose files are more central.",
+              "Prefer a node whose landing is cheap to VERIFY: a change with a re-runnable proof is a better first landing than one that needs judgement to accept.",
+              "Prefer a node that removes a false record - a number nobody can produce, a version that lies, an identity that is asserted rather than checked - over a node that adds capability."
+            ],
+            "rules": [
+              "A node whose dependencies are unsatisfied is not a legal answer. If every node is blocked, choose the node that unblocks the most others and say so in the reason.",
+              "Judge the graph as given. Do not invent nodes that are not in `nodes`."
+            ]
+          }
+        },
+        "lands": {
+          "type": "noul",
+          "_comment": "instantiated once per node as lands_<id>",
+          "bind": ["subject"],
+          "instructions": "Can the node under judgment land right now? That is: are all of its dependencies satisfied by work that already exists, and does it own files that no other node in `nodes` also owns? A node that is blocked by an unresolved file conflict is not landable, whatever its value.",
+          "criteria": {
+            "true": "Every dependency is satisfied and this node's files are exclusive to it.",
+            "false": "A dependency is unsatisfied, or another node claims one of its files."
+          }
+        },
+        "value": {
+          "type": "score",
+          "_comment": "instantiated once per node as value_<id>",
+          "bind": ["subject"],
+          "instructions": "How much does landing the node under judgment improve the system the graph is for? Judge the problem that node names, not the size of the change.",
+          "criteria": [
+            "Cosmetic: nobody would notice. A wording fix, a comment, a path nothing reaches.",
+            "Useful: removes a real but minor wrong - a misleading message, a stale help line, an error path that is rarely hit.",
+            "Important: on a path people actually hit, it currently fails, misleads or loses information - a crash, a swallowed error, a wrong result, a fallback that can never run.",
+            "Critical: the system currently makes a claim it cannot back - two code sets both declare the same version, a peer is recorded without being verified, an install is never re-checked. The node makes the claim true or the system admits it is false."
+          ]
+        },
+        "joe_decides": {
+          "type": "noul",
+          "_comment": "instantiated once per node as joe_decides_<id>",
+          "bind": ["subject"],
+          "instructions": "Does landing the node under judgment require a value judgement between defensible options that only Joe can make - a choice between designs, a policy, a product decision - rather than a fact provable from the tree or a live probe? Facts and provable defects do not need Joe. Choosing between two defensible designs does.",
+          "criteria": {
+            "true": "Landing requires a choice between defensible options, a policy, or a product decision that is Joe's to make.",
+            "false": "The node is a provable defect or a mechanical change; the tree or a probe settles it."
+          }
+        }
+      },
+      "policy": {
+        "first_landing_min_confidence": 0.6,
+        "min_value": 2,
+        "joe_escalate_min": 0.5,
+        "blocked_max": 0.5,
+        "fallback_first_landing": "the first node in the caller's given order that JEV judged landable"
+      },
+      "calibration": {
+        "min_value": {
+          "policy_key": "min_value",
+          "value": 2,
+          "criteria": 4,
+          "max_score": 3,
+          "fraction_of_range": 0.6667,
+          "verdict": "LIVE",
+          "reachable_fraction": 0.1778,
+          "why": "fires on 17.8% of observed rows, so it is a real gate - not a dead one",
+          "reference_rubric": "novelty (3 criteria, range 0..2), n=45",
+          "reference_distribution": {"min": 0.01, "p50": 0.92, "p75": 1.15, "p90": 1.60, "max": 1.87},
+          "measured_at": "2026-10-22",
+          "producer": "python harness/harness2/calibrate.py --check"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+ "adopted": [],
+ "reason": "fallback: strength 1.32 < 2 for A",
+ "needs_joe": [
+  "A",
+  "B"
+ ],
+ "per_candidate": {
+  "A": {
+   "strength": 1.32,
+   "probe_support": 0.71,
+   "composable": 0.93
+  },
+  "B": {
+   "strength": 1.34,
+   "probe_support": 0.73,
+   "composable": 0.93
+  }
+ },
+ "jev": {
+  "choice": "A",
+  "confidence": 1.0,
+  "probabilities": {
+   "A": 1.0,
+   "B": 0.0
+  }
+ },
+ "candidates": [
+  "A",
+  "B"
+ ],
+ "wave": "h2smoke",
+ "state_scrubbed": true
+}

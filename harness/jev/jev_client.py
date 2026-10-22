@@ -76,7 +76,9 @@ def build_questions(spec: dict):
         elif t == "score":
             out[qid] = Score(instructions=q["instructions"], criteria=q["criteria"])
         elif t == "noul":
-            out[qid] = Noul(instructions=q["instructions"])
+            # A Noul may carry optional {true, false} outcome descriptions. Passing
+            # None keeps every pre-existing spec byte-identical in behaviour.
+            out[qid] = Noul(instructions=q["instructions"], criteria=q.get("criteria"))
         else:
             raise ValueError(f"unknown question type {t!r} for {qid}")
     return out
