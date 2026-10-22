@@ -19,7 +19,7 @@ This audit ran that probe. The blueprint's script was executed call by call in `
 
 1. **The script dies on line 109.** Not at the end — mid-build, inside the wrangle setup. Everything after that line never runs.
 2. **The prose outruns the code.** The "Corrected Error Audit" section claims five fixes. The script implements none of them.
-3. **The catalogue in this repo is wrong for three node types.** Anyone who builds from `rag/catalog/h22.0.400/` for `gltf`, `distantlight` or `usdrender` writes a broken script. This is the highest-impact finding, because it is not about the blueprint.
+3. **The node catalogue in this repo is faithful, but it has a trap in it.** `rag/catalog/h22.0.400/` matches the live build exactly. What bites a script is that `createNode("gltf")` returns a `gltf::2.0` node — so parm names read from the unversioned entry do not exist on the node you get. This is the highest-impact finding, because it is not about the blueprint. (§4.1, corrected 2026-10-22.)
 
 ---
 
@@ -41,7 +41,7 @@ It prints one line per correction, writes `harness/probes/worldlabs_pipeline_ver
 - `rag/catalog/h22.0.400/` — the repo's live node catalogue (5,140 types indexed, 18 per-category JSONs).
 - `python/synapse/cognitive/tools/data/h22_symbol_table.json` — the introspected dotted symbol table for build 22.0.400 (36,472 names).
 
-Both were used as *hypothesis sources*. The live run overrode them where they disagreed — which is the point, and where the catalogue turned out to be wrong (§4).
+Both were used as *hypothesis sources*. The live run overrode them where they disagreed — which is the point, and where the catalogue's **alias behaviour** turned out to matter (§4.1).
 
 ---
 
@@ -133,15 +133,48 @@ The blast node targets a point group named `call`. **No node in the graph create
 
 These are not about the blueprint. They are about **this repo**, and they matter more.
 
-### 4.1 The node catalogue mis-describes three types
+### 4.1 The node catalogue is faithful; the trap is an alias, not a wrong entry
+
+> **Corrected 2026-10-22.** This section originally read "The node catalogue mis-describes three types". That claim was **wrong**, and the probe that disproves it is now standing evidence: `harness/probes/catalog_types_check.py`. The original wording is kept out of this document because it would mislead a reader into regenerating a catalogue that does not need regenerating.
 
 `rag/catalog/h22.0.400/` is the repo's node-type authority per `CLAUDE.md` (*"the **node-type** authority is the live catalogue `rag/catalog/h22.0.400/`"*).
 
-It carries **unversioned** entries for `gltf`, `distantlight` and `usdrender` whose parm names raise `Invalid parameter name` on the live build, and whose `usdrender` entry does not resolve at all.
+**The catalogue matches the live build exactly.** For every audited type, the catalogue's parm-name set equals the live type's `parmTemplateGroup()`, flattened through folders the same way `scripts/build_node_catalog.py` flattens it:
 
-The live defaults resolve to `gltf::2.0` and `distantlight::2.0` — 203 parms on the light, with USD-exposed names like `xn__inputsintensity_i0a`. The catalogue describes the superseded variants.
+| Type | Catalogue parms | Live template parms | Match |
+|---|---|---|---|
+| Sop `gltf` | 17 | 17 | exact |
+| Sop `gltf::2.0` | 42 | 42 | exact |
+| Lop `distantlight` | 131 | 131 | exact |
+| Lop `distantlight::2.0` | 123 | 123 | exact |
+| Driver `usdrender` | 194 | 194 | exact |
+| Top `usdrender` | 73 | 73 | exact |
 
-**Anyone building from the catalogue for these three types writes a broken script.** That is a live trap in the repo's own authority file.
+A Jaccard identity match returns **1.000** for each entry against the type it names. The unversioned `gltf` entry describes the live `gltf` type (17/17); the unversioned `distantlight` entry describes the live `distantlight` type (131/131). Those types are **registered on the build** — they are not stale rows.
+
+**`usdrender` does resolve.** The Driver `usdrender` creates in `/out`; the Top `usdrender` creates inside a `topnet`. The original observation came from creating a TOP node directly under `/tasks` — but `/tasks` is the *scheduler*, a Manager node, not a TOP network. That was a context error, not evidence about the type.
+
+**The real trap is alias resolution.** `createNode()` does not always give you the type the catalogue key names:
+
+| `createNode(key)` | Type you get |
+|---|---|
+| `gltf` | `gltf::2.0` |
+| `distantlight` | `distantlight::2.0` |
+| `gltf::2.0` | `gltf::2.0` |
+| `distantlight::2.0` | `distantlight::2.0` |
+| `usdrender` (in `/out`) | `usdrender` |
+| `usdrender` (in a `topnet`) | `usdrender` |
+
+So a script that reads the catalogue's unversioned `gltf` entry — 17 parms including `filename`, `geotype`, `meshchooser` — and then calls `createNode("gltf")` gets a **`gltf::2.0`** node, on which **14 of those 17 names do not exist**. The same for `distantlight`: **58 of 123** names are absent on the `distantlight::2.0` node you actually got. That is the `Invalid parameter name` the audit observed — and it is a **consumer** error, not a catalogue error. The fix is to read the catalogue entry for the type `createNode()` returned, or to create the versioned type explicitly.
+
+**Second, separate convention: `#` in parm names.** Parm names containing `#` — `animid#`, `expectedoutputfile#`, `husk_sc_cop#` — are Houdini's **spare-parameter** slots. They are present in the node's own parameter interface (the instance's `parmTemplateGroup()` carries them, and Houdini's own label ends in `#`), but the node exposes no value for them, so a script cannot set them. This is a **Houdini-wide convention, not a defect of these three types**: **7,155 of 152,918** catalogue parm names (4.7%) carry a `#`, spread across ten category files. A catalogue consumer that treats every name as settable will hit this on many types, not three.
+
+**Net:** no catalogue regeneration is warranted. The correct guidance for a consumer of `rag/catalog/h22.0.400/` is:
+
+1. `createNode()` the key, then read the catalogue entry for **the type it returned** — never assume the key is the type.
+2. Treat a `#`-suffixed name as an interface slot, not a settable parameter.
+
+`harness/probes/catalog_types_check.py` asserts both of those against the live build and exits non-zero if the catalogue ever diverges from it.
 
 ### 4.2 `dir(hou.Node)` is not a valid phantom test
 
@@ -196,7 +229,7 @@ The corrected shape:
 What it does do:
 
 1. **Confirms the intake's epistemics were right.** The intake said every node name is V0 until probed. The blueprint's script had not been probed. Probing it broke it. The rule held.
-2. **Adds two defects the intake's risk register should now carry** — the catalogue's three wrong types, and the class-level `dir()` trap. Both are repo-side and both affect any future World Labs work.
+2. **Adds two things the intake's risk register should now carry** — the catalogue's alias behaviour, and the class-level `dir()` trap. Both are repo-side and both affect any future World Labs work. (The catalogue was originally listed here as "three wrong types"; §4.1 corrects that — the catalogue is faithful, the alias is the hazard.)
 3. **Leaves F-OPEN-1..5 open on purpose.** They are unproven claims, and the probe that would settle each one is written down in §3.
 
 ---
@@ -208,7 +241,7 @@ What it does do:
 | The eleven defects and their corrections | **VERIFIED-RUNTIME** — live exception text on 22.0.400 |
 | The blueprint's script dies at F7 (line 109) | **VERIFIED-RUNTIME** |
 | The five unimplemented claims (§3) | **VERIFIED-RUNTIME** — absence of the mechanism in the source, read directly |
-| The catalogue's three wrong types (§4.1) | **VERIFIED-RUNTIME** — live `Invalid parameter name` on the catalogue's own names |
+| The catalogue matches the live build; the trap is an alias (§4.1) | **VERIFIED-RUNTIME** — exact parm-set equality per type; `createNode` resolution read live |
 | `dir(hou.Node)` under-representation (§4.2) | **VERIFIED-RUNTIME** — 146 class members, `hasattr` False, instance True |
 | The blueprint's *intent* for each stage | **STATED** — the document's claim, not the code's behaviour |
 | The correct up-axis conversion for Marble | **UNKNOWN** — F-OPEN-1 |
@@ -224,7 +257,7 @@ What it does do:
 | F-OPEN-3 | Is there anything to disconnect? | No | Read the graph — there is not |
 | F-OPEN-4 | What produces the `.mp4`, given `usdrender_rop` has no video parm? | Yes — the deliverable | Render 2 frames, assert the file on disk |
 | F-OPEN-5 | Does a group named `call` exist? | Yes — the blast may remove nothing | Cook the collider, list point groups |
-| CAT-1 | The catalogue's `gltf` / `distantlight` / `usdrender` entries | No | Regenerate the catalogue against live defaults |
+| CAT-1 | ~~The catalogue's `gltf` / `distantlight` / `usdrender` entries are wrong~~ — **closed 2026-10-22: they are not.** The catalogue matches the live build exactly. The open residue is the alias trap, which is a *consumer* rule, not a catalogue defect. | No | `harness/probes/catalog_types_check.py` — asserts the equality live and exits non-zero on divergence |
 | PHANT-1 | The class-level `dir()` false-positive/negative class | No | Add an instance-probe rule to the phantom lint |
 
 **No World Labs asset was available to this audit.** Every F-OPEN row is a claim the *code* fails to support — not a claim the *asset* would refute. The distinction matters: with a real export, F-OPEN-1 and F-OPEN-5 could close either way.
