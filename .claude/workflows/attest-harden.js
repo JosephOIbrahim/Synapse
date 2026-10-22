@@ -140,11 +140,19 @@ const GROUND = [
 
 const READONLY = 'You are READ-ONLY. You read, grep, and run read-only probes. You change no file in the repo and you make no commit.'
 
+// ---------------- cluster registry ----------------
+// AF2: a MAP seat's cluster identity must be structural, not self-asserted.
+// This list is the single source of truth for the cluster enum in MAP_SCHEMA.
+// The CLUSTERS registry further down carries the briefs; the assertion after it
+// fails the wave loudly if the two ever name different clusters, rather than
+// letting a seat be briefed on a cluster the schema does not know.
+const CLUSTER_IDS = ['C1-carriers', 'C2-identity', 'C3-provenance', 'C4-install', 'C5-harness']
+
 // ---------------- schemas ----------------
 const MAP_SCHEMA = {
   type: 'object',
   properties: {
-    cluster: { type: 'string' },
+    cluster: { type: 'string', enum: CLUSTER_IDS },
     seed_confirmed: { type: 'string', enum: ['CONFIRMED', 'REFUTED', 'PARTIAL', 'UNKNOWN'] },
     seed_evidence: { type: 'array', items: { type: 'string' } },
     carriers: {
@@ -210,6 +218,20 @@ const MAP_SCHEMA = {
   },
   required: ['cluster', 'seed_confirmed', 'seed_evidence', 'carriers', 'identity_primitives', 'nodes', 'edges', 'unknowns'],
 }
+
+// AF2: the shared schema names the five known ids; each seat is handed the SAME
+// schema with its own id pinned to a single allowed value. The tool-call layer
+// rejects any other value and the seat retries, so a seat cannot report a cluster
+// it was not given. The enum makes the label well-formed; the pin makes it
+// CHECKABLE. A seat that answers "C2-identity" when it was given "C1-carriers"
+// now fails validation instead of passing a claim the board cannot verify.
+const mapSchemaFor = (clusterId) => ({
+  ...MAP_SCHEMA,
+  properties: {
+    ...MAP_SCHEMA.properties,
+    cluster: { type: 'string', enum: [clusterId] },
+  },
+})
 
 const SEAM_SCHEMA = {
   type: 'object',
@@ -400,6 +422,17 @@ const CLUSTERS = [
   },
 ]
 
+// The registry and the schema enum must name the same five clusters. Fail the wave
+// loudly here rather than dispatching a seat whose brief names a cluster the
+// schema would refuse.
+const _registryIds = CLUSTERS.map(c => c.id)
+const _registryMismatch = CLUSTER_IDS
+  .filter(i => !_registryIds.includes(i))
+  .concat(_registryIds.filter(i => !CLUSTER_IDS.includes(i)))
+if (_registryMismatch.length) {
+  throw new Error('CLUSTER_IDS and the CLUSTERS registry disagree: ' + _registryMismatch.join(', '))
+}
+
 const mapBudget = budgetCheck('map', BUDGET.map)
 if (mapBudget) return { refused: mapBudget, spawned: 0, spent_so_far: SPAWNED_SO_FAR }
 charge('map', BUDGET.map)
@@ -412,6 +445,10 @@ const mapReports = await parallel(CLUSTERS.map(c => () => seat([
   lensFor('map'),
   '',
   'ROLE: MAP analyst — ' + c.id + '.',
+  '',
+  'YOUR ASSIGNED CLUSTER ID IS: ' + c.id,
+  'The "cluster" field of your report MUST be exactly that string, character for character. Do not restate a cluster name from a brief, from a document you read, or from your own impression of the subject - the assigned id is the only accepted value and the schema refuses anything else.',
+  'Name every node id you emit as "' + c.id + '-N<k>" - for example "' + c.id + '-N1", "' + c.id + '-N2". The prefix is the assigned id above, never a cluster number you read somewhere else.',
   c.brief,
   '',
   'METHOD:',
@@ -420,8 +457,8 @@ const mapReports = await parallel(CLUSTERS.map(c => () => seat([
   '  3. Do NOT trust the SEED text. It may be wrong, stale, or overstated. Verify it, then set seed_confirmed to CONFIRMED / REFUTED / PARTIAL / UNKNOWN with the evidence that decided it.',
   '  4. Cap yourself at about 30 file reads. If you are still reading at 30, report what you have and mark the rest UNKNOWN.',
   '',
-  'Return: the carriers, the identity primitives, the candidate nodes (each with its owned file set), the typed edges between them, and your explicit unknowns. Nodes are work items — a node names a problem and the files that would fix it, with a single owner.',
-].join('\n'), { label: 'attest:map:' + c.id, phase: 'Map', schema: MAP_SCHEMA, effort: effortFor('map', 'low'), model: modelFor('map') })))
+  'Return: the carriers, the identity primitives, the candidate nodes (each with its owned file set), the typed edges between them, and your explicit unknowns. Nodes are work items — a node names a problem and the files that would fix it, with a single owner. Set "cluster" to "' + c.id + '" and prefix every node id with "' + c.id + '-".',
+].join('\n'), { label: 'attest:map:' + c.id, phase: 'Map', schema: mapSchemaFor(c.id), effort: effortFor('map', 'low'), model: modelFor('map') })))
 
 const mapOk = mapReports.filter(Boolean)
 log('Map complete: ' + mapOk.length + '/' + CLUSTERS.length + ' analysts returned')
