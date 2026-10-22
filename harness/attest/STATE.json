@@ -40,7 +40,7 @@
   "spawned": 6,
   "cap": 30,
   "reserve": 2,
-  "available": 28,
+  "available": 24,
   "waves": [
    {
     "wave": "attest-20261022-w1",
@@ -49,7 +49,11 @@
     "routing_ledger": "attest-20261022.route.jsonl (14 rows, 0 fallbacks)",
     "seats_dispatched": 6,
     "seats_returned": 5,
-    "by_phase": {
+    "dispatched_by_phase": {
+     "map": 5,
+     "seam": 1
+    },
+    "returned_by_phase": {
      "map": 5
     },
     "status": "RUNNING",
@@ -205,11 +209,1340 @@
   }
  ],
  "graph": {
-  "nodes": [],
-  "edges": [],
-  "file_ownership": [],
-  "spanning_order": [],
-  "note": "Empty until the first wave's SYNTH returns. The graph is produced by measurement, not asserted here."
+  "status": "PRE-SYNTH CANDIDATE GRAPH - the unified graph SYNTH will produce does not exist yet",
+  "produced_by": "extraction from the five MAP seat reports in workflow journal wf_d1494930-f0c",
+  "not_produced_by": "SYNTH (not run)",
+  "wave": "attest-20261022-w1",
+  "workflow_run": "wf_d1494930-f0c",
+  "node_count": 32,
+  "edge_count": 39,
+  "nodes": [
+   {
+    "id": "C1::C2-N1",
+    "seat_reported_id": "C2-N1",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "title": "Version gate is a string compare; it cannot see a content divergence that already exists on this host",
+    "problem": "The version gate compares release LABELS, so it cannot detect content divergence between two trees that both declare 5.97.6. On this host that divergence already exists: the installed houdini/python_panels/synapse_panel.pypanel (git blob 865cb35b…, present in no commit) differs from the working tree's copy, and the gate still reports version.match = pass.",
+    "owner_files": [
+     "python/synapse/core/preflight.py",
+     "python/synapse/server/preflight_gate.py"
+    ],
+    "file_count": 2,
+    "evidence": "python/synapse/core/preflight.py:202-227 version_check compares strings only; python/synapse/core/preflight.py:208-211 returns NOT_APPLICABLE when client_version is None. Live: raw_ws_health.py returned version.match status 'not_applicable' with message 'Only the stdio bridge carries a SYNAPSE version, and this caller does not.'",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C1::C2-N2",
+    "seat_reported_id": "C2-N2",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "title": "Two version carriers, never cross-checked, and the /mcp HTTP path carries neither",
+    "problem": "One truth travels in two fields that are never cross-checked: payload['client_version'] (health path) and top-level 'synapse_version' (gate path). A peer sending one but not the other gets a health report computed from a different value than the one the gate enforced. Separately, python/synapse/mcp/server.py:244 calls admit() with no client_version at all, so the in-Houdini /mcp HTTP endpoint can never refuse on a mismatch.",
+    "owner_files": [
+     "python/synapse/core/protocol.py",
+     "python/synapse/server/websocket.py",
+     "python/synapse/server/hwebserver_adapter.py",
+     "python/synapse/mcp/server.py"
+    ],
+    "file_count": 4,
+    "evidence": "python/synapse/core/protocol.py:224 (client_version attr), :235-236 (to_json writes 'synapse_version'), :242/:252 (from_json); python/synapse/server/handlers.py:994 (payload['client_version']); python/synapse/server/websocket.py:126 and python/synapse/server/hwebserver_adapter.py:109 (command.client_version). No comparison between the two carriers exists anywhere in python/, shared/, mcp_server.py.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C1::C2-N3",
+    "seat_reported_id": "C2-N3",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "title": "No canonical tree-digest algorithm exists, and a naive one produces false drift on CRLF",
+    "problem": "There is no shared, canonical, cross-platform tree-digest routine. Measured trap: hashing raw bytes over the same file list on the two sides gives DIFFERENT digests (working tree e143c9c3… vs installed 64cd947c…) purely because 34 text files are CRLF in the git checkout and LF in the installed payload. Any identity primitive must normalise line endings on UTF-8-decodable files and pass binaries through untouched (14 of the payload files are binary: .png, .pyd, .ttf — a naive replace corrupts them and produces false mismatches).",
+    "owner_files": [
+     "shared/identity.py",
+     "tests/test_identity_digest.py"
+    ],
+    "file_count": 2,
+    "evidence": "Measured on this host: 1805 shared files; 1771 byte-identical; 34 differ only by CRLF (raw digest MISMATCH: e143c9c3… vs 64cd947c…); 1 genuinely differs (the pypanel). Normalised (CRLF->LF on UTF-8 decodable files only) the digests agree on all 1804 shared-and-matching files. Cost measured: full-tree sha256 0.264 s / 98.4 MB / 1972 files; .py-only 0.166 s / 1552 files; both sides 0.236-0.244 s for the 1805-file subset.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C1::C2-N4",
+    "seat_reported_id": "C2-N4",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "title": "Runtime-side content identity exists but is scoped to two files of one workflow",
+    "problem": "The only content identity the Houdini side computes at runtime covers two files for one workflow. It proves the capability but cannot discriminate two SYNAPSE trees. A tree-scoped identity over a declared file list (the same list both sides can derive) is the missing piece.",
+    "owner_files": [
+     "python/synapse/memory/experience.py",
+     "python/synapse/host/lookdev_suggestion.py"
+    ],
+    "file_count": 2,
+    "evidence": "python/synapse/memory/experience.py:73-90 capture_environment computes implementation_sha256 from the RUNNING package's own bytes at runtime (solaris_lookdev.py, copernicus_texture.py) and dependency_sha256 from the dependency file; called from python/synapse/host/lookdev_suggestion.py:150. This is the existing proof that the Houdini side can hash its own files at runtime, and the template for a wider one.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C1::C2-N5",
+    "seat_reported_id": "C2-N5",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "title": "doctor compares labels and paths where it could compare bytes, and never checks the installed tree against its own manifest",
+    "problem": "doctor reports the install stamp's version label against the running label and escapes on path identity, and never compares the installed tree's bytes against the manifest that already sits in the runtime root. The drift is already present and the doctor cannot see it.",
+    "owner_files": [
+     "python/synapse/server/doctor.py"
+    ],
+    "file_count": 1,
+    "evidence": "Grep across python/, shared/, mcp_server.py, host/, scripts/ for 'payload-manifest|payload_id|installation.json' returns zero runtime consumers. python/synapse/server/doctor.py:145-150 compares install_stamp's synapse_version to the running __version__ and its escape path (doctor.py:117-122 _same_tree) is a PATH comparison, not a content comparison.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C1::C2-N6",
+    "seat_reported_id": "C2-N6",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "title": "The installer has a per-file manifest and checks it once; the installed tree has already drifted undetected",
+    "problem": "The installer verifies the tree against the manifest at install time and then never again; the tree has already drifted by one file since 2026-10-20 13:50 with no signal anywhere. The runtime root holds payload-manifest.json and the runtime dir name holds the content-derived payload_id — so a runtime-side verification is available without shipping anything new.",
+    "owner_files": [
+     "installer/synapse_setup/engine.py",
+     "installer/verify_houdini.py"
+    ],
+    "file_count": 2,
+    "evidence": "installer/synapse_setup/engine.py:442 stores the whole manifest (with the 1972-entry files map) into state['runtimes'][str(runtime)], and engine.py:80 verify_runtime returns {status: PASS, files_checked: 1972, xml: PASS}. Measured: exactly 1 of 1972 installed files now fails that check (houdini/python_panels/synapse_panel.pypanel, mtime 2026-10-22 11:59, post-install). engine.py:373 names the runtime dir with the payload_id, so the runtime already has a content-derived name.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C2::N1",
+    "seat_reported_id": "N1",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "title": "One wire field for the client release",
+    "problem": "One client release travels in two wire fields (top-level \"synapse_version\" for the refusal gate, payload \"client_version\" for the health/readiness report). The gate and the health check read different fields of the same message and never cross-check them, so the same connection can be reported 'ready' by health while the gate would refuse the same version, and a stale top-level value is invisible to health.",
+    "owner_files": [
+     "python/synapse/core/protocol.py",
+     "python/synapse/server/websocket.py",
+     "python/synapse/server/hwebserver_adapter.py",
+     "python/synapse/server/handlers.py",
+     "mcp_server.py"
+    ],
+    "file_count": 5,
+    "evidence": "Two carriers, one truth, never cross-checked. Written mcp_server.py:506-509 (top-level) and :511 (payload, get_health only). Read python/synapse/server/websocket.py:126 and python/synapse/server/hwebserver_adapter.py:109 (gate) vs python/synapse/server/handlers.py:994 (health). Live probe c1_carrier_probe.py: A) top-level 5.97.4 alone -> health not_applicable; B) conflicting top-level 5.97.6 + payload 5.97.4 -> health fail on 5.97.4.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C2::N2",
+    "seat_reported_id": "N2",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "title": "Give the /mcp HTTP endpoint a client-version carrier",
+    "problem": "The in-Houdini HTTP /mcp endpoint has no client-version carrier at all: the preflight gate is invoked without one, so the version check is permanently NOT_APPLICABLE there and a version-mismatched bridge cannot be refused. The MCP client's own declared version (clientInfo) is captured and discarded.",
+    "owner_files": [
+     "python/synapse/mcp/server.py",
+     "python/synapse/mcp/session.py"
+    ],
+    "file_count": 2,
+    "evidence": "python/synapse/mcp/server.py:244 admit(holder, tool_name) with no client_version -> python/synapse/core/preflight.py:208-211 returns NOT_APPLICABLE, so version_check can never run on /mcp. The MCP handshake's clientInfo (mcp/server.py:562-563 -> mcp/session.py:44-46) is stored and never used. The same file also carries a hardcoded '5.8.0' version fallback (mcp/server.py:310) reported as serverInfo.version (:621).",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C2::N3",
+    "seat_reported_id": "N3",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "title": "Compare content identity, not a version label",
+    "problem": "version_check compares two version STRINGS, so two different code sets that both declare 5.97.6 report green. A content identity that can carry the comparison (payload source_revision / payload_id / per-file digests) exists in the installed payload but is never read at runtime.",
+    "owner_files": [
+     "python/synapse/core/preflight.py",
+     "python/synapse/server/preflight_gate.py",
+     "python/synapse/core/payload_identity.py"
+    ],
+    "file_count": 3,
+    "evidence": "python/synapse/core/preflight.py:216 is the only comparison and it is a string compare of two labels. The payload already ships a content identity (payload-manifest.json: 1972 sha256 entries + source_revision 0c5a800d) that nothing under python/synapse/ reads (grep 'payload-manifest' hits only installer/build_payload.py:204, installer/synapse_setup/engine.py:22, installer/synapse_setup/native_probe.py:35). Measured: working tree vs installed payload — 1569 identical, 34 differ, 71 payload-only; the 2 first-party differences are CRLF-only.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C2::N4",
+    "seat_reported_id": "N4",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "title": "Reported identity surfaces must read one source and be able to name the code set",
+    "problem": "Several surfaces report the release by reading the label independently (telemetry dump, cache host profile, memory experience environment, and the 7 mirrored label surfaces the version-sync tool keeps in step). None of them can report WHICH code set answered, so a behavioural divergence between two trees both labelled 5.97.6 is invisible in every report.",
+    "owner_files": [
+     "python/synapse/server/telemetry_dump.py",
+     "python/synapse/server/handlers_cache.py",
+     "python/synapse/memory/experience.py",
+     "scripts/sync_version.py"
+    ],
+    "file_count": 4,
+    "evidence": "python/synapse/server/telemetry_dump.py:122, python/synapse/server/handlers_cache.py:812, python/synapse/memory/experience.py:86 each read the label independently; scripts/sync_version.py:41-55 shows 7 mirrored label surfaces with VERSION canonical, and no content digest among them.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C2::N5",
+    "seat_reported_id": "N5",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "title": "Doctor must verify the peer and the stamp, not echo them",
+    "problem": "_check_bridge_endpoint reads the bridge stamp file and reports it as status ok without verifying the peer, so the doctor's answer is an echo of a file rather than an observation. The install-stamp comparison in the same module (doctor.py:150-160) likewise compares labels and stamp repo_root by path equality.",
+    "owner_files": [
+     "python/synapse/server/doctor.py"
+    ],
+    "file_count": 1,
+    "evidence": "python/synapse/server/doctor.py:732-747 reads ~/.synapse/bridge.json and returns status 'ok' with host/port/pid/ts without contacting the peer. Live: bridge.json pid 52896; Get-NetTCPConnection shows the single 9999 listener owned by 52896 — matching today, but only by luck: three houdini.exe processes exist (32832, 52896, 65468) and the check cannot tell which one served the connection.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C2::N6",
+    "seat_reported_id": "N6",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "title": "Make the recorded payload identity verifiable at runtime",
+    "problem": "The installer records a content identity (payload-manifest.json: 1972 sha256 + source_revision 0c5a800d) and an installation.json runtime block, but the stamp it writes carries only a version label, and no runtime component ever re-verifies the tree it is running from. The two version derivations (manifest version vs regex-scraped __init__.py) can disagree silently.",
+    "owner_files": [
+     "installer/synapse_setup/engine.py",
+     "installer/synapse_setup/native_probe.py",
+     "scripts/install_synapse_package.py",
+     "installer/build_payload.py"
+    ],
+    "file_count": 4,
+    "evidence": "installer/build_payload.py:204 writes payload-manifest.json (1972 sha256 entries, source_revision); installer/synapse_setup/engine.py:22,478 and scripts/install_synapse_package.py:139 write the install stamp; engine.py:478 stamps manifest['version'] while install_synapse_package.py:122-130 regex-scrapes python/synapse/__init__.py — two different derivations of the same value. No module under python/synapse/ reads the manifest (grep 'payload-manifest' in python/, installer/, scripts/ returns installer + tests only).",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N1",
+    "seat_reported_id": "C3-N1",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "Sidecar must record and re-verify the pid that owns the bound socket",
+    "problem": "bridge.json records a peer pid that is only checked for liveness, never for socket ownership — a live-but-different Houdini on the same port passes the stale-pid guard and the recorded peer is false.",
+    "owner_files": [
+     "python/synapse/server/bridge_endpoint.py"
+    ],
+    "file_count": 1,
+    "evidence": "publish_endpoint (bridge_endpoint.py:157-214) writes {host,port,pid,ts,protocol} with pid=os.getpid() and no check that the pid owns the bound socket. resolve_endpoint (bridge_endpoint.py:217-260) validates only _pid_alive (:81-154, :255). Measured: bridge.json pid 52896; two LISTEN sockets on 0.0.0.0:9999 (52896 and 32832); the established peer was 32832 in 4/4 probe runs.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N2",
+    "seat_reported_id": "C3-N2",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "Doctor must verify the peer it reports, not echo the sidecar",
+    "problem": "doctor's bridge_endpoint and mcp_coexistence checks echo the sidecar and assert port liveness; neither identifies WHICH process answered, so the doctor reports ok on a misidentified peer.",
+    "owner_files": [
+     "python/synapse/server/doctor.py"
+    ],
+    "file_count": 1,
+    "evidence": "doctor.py:732-747 _check_bridge_endpoint reads and formats the file, returning status='ok'. Measured live output: 'ws://localhost:9999 (pid 52896, published 2026-10-22T18:13:46.578534+00:00)' while the answering socket was 32832. _check_mcp_coexistence (doctor.py:756+) prefers the raw sidecar host/port (:769-777) and only asserts the port ACCEPTS (:786-791), which a wrong peer also does; it never fails.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N3",
+    "seat_reported_id": "C3-N3",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "version.match must compare code-set identity, not a version label",
+    "problem": "version.match compares version STRINGS, so it cannot detect a behavioural divergence between two code sets that share a version label.",
+    "owner_files": [
+     "python/synapse/core/preflight.py"
+    ],
+    "file_count": 1,
+    "evidence": "preflight.version_check (preflight.py:202-228) compares `client_version != server_version` (:216); server side is getattr(synapse,'__version__') (preflight_gate.py:88-92). Two divergent code sets both declaring 5.97.6 compare EQUAL. The content primitives that could carry identity (payload-manifest source_revision/payload_id) are never read by this module.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N4",
+    "seat_reported_id": "C3-N4",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "One version carrier on the wire, not two",
+    "problem": "One version truth is carried by two wire fields (top-level 'synapse_version' and payload['client_version']) that are never cross-checked, so the gate path and the health path can disagree silently.",
+    "owner_files": [
+     "python/synapse/core/protocol.py"
+    ],
+    "file_count": 1,
+    "evidence": "protocol.py:224 declares client_version; to_json emits top-level 'synapse_version' at :235-236; from_json reads it back at :252. Meanwhile mcp_server.py:509 writes the top-level field on every command and :511 writes payload['client_version'] only for get_health — two carriers for one truth, neither cross-checked.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N5",
+    "seat_reported_id": "C3-N5",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "Transports must read the single carrier and refuse on mismatch",
+    "problem": "Transports read the version from two different carriers (payload for health, command field for the gate) and never assert the two agree.",
+    "owner_files": [
+     "python/synapse/server/handlers.py",
+     "python/synapse/server/preflight_gate.py"
+    ],
+    "file_count": 2,
+    "evidence": "handlers.py:994 reads payload['client_version']; preflight_gate.py:174 passes it into _preflight.gate; websocket.py:126 and hwebserver_adapter.py:109 pass command.client_version (the top-level field). Two read sites, two sources, one compare.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N6",
+    "seat_reported_id": "C3-N6",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "The /mcp HTTP path must carry a client identity into the preflight gate",
+    "problem": "admit() is called with no client_version, so the version check is NOT_APPLICABLE and a mismatched-version bridge is never refused on the in-Houdini HTTP endpoint.",
+    "owner_files": [
+     "python/synapse/mcp/server.py"
+    ],
+    "file_count": 1,
+    "evidence": "mcp/server.py:244 `refused = preflight_gate.admit(_preflight_holder(server, session_id), tool_name)` — no client_version; preflight_gate.py:148 defaults it to None, so preflight.version_check returns NOT_APPLICABLE (preflight.py:208-210) and a mismatched-version bridge is never refused on POST /mcp.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N7",
+    "seat_reported_id": "C3-N7",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "Stdio relay should stamp one carrier and re-read its identity per connection",
+    "problem": "The stdio relay stamps the version on two different carriers and caches the value once at import, so a bridge left running across an update keeps stamping a stale identity.",
+    "owner_files": [
+     "mcp_server.py"
+    ],
+    "file_count": 1,
+    "evidence": "mcp_server.py:189-213 _bridge_version() reads synapse.__version__ once at import and caches it in _SYNAPSE_VERSION (:213). :509 stamps top-level 'synapse_version' on every command; :511 additionally stamps payload client_version but only for get_health. Two write sites for one truth.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N8",
+    "seat_reported_id": "C3-N8",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "Runtime must verify the installed code set against the shipped manifest",
+    "problem": "The installed tree carries a full per-file content manifest but no runtime ever verifies the tree against it, so installed-tree drift is undetectable at runtime.",
+    "owner_files": [
+     "python/synapse/server/install_manifest.py",
+     "installer/synapse_setup/engine.py"
+    ],
+    "file_count": 2,
+    "evidence": "payload-manifest.json (1972 sha256, source_revision 0c5a800d == repo HEAD, payload_id 5.97.6-5536b2e21d03e14b) has zero readers under python/. installation.json records checks.files_checked=1972 / status=PASS with only a 10-entry native runtimes hash map; install_stamp.json records no file hashes. Nothing re-checks the installed tree after install.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N9",
+    "seat_reported_id": "C3-N9",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "The peer handshake must state who is answering",
+    "problem": "With no auth key on the host the peer is unauthenticated and the handshake carries no peer identity, so 'which process is this' is unanswerable by the protocol itself.",
+    "owner_files": [
+     "python/synapse/server/auth.py",
+     "python/synapse/server/websocket.py",
+     "python/synapse/server/hwebserver_adapter.py"
+    ],
+    "file_count": 3,
+    "evidence": "~/.synapse/auth.key does not exist; server/auth.py:40-84 returns None; websocket.py:502-512 and hwebserver_adapter.py:157-168 skip auth_required. Measured: no greeting on connect (TimeoutError). The peer can be any local process, and nothing in the handshake states which process or code set it is.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C3::C3-N10",
+    "seat_reported_id": "C3-N10",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "title": "Client-side consumers must confirm the peer they connect to",
+    "problem": "Client-side consumers of the sidecar trust it and connect to whatever answers, so a false peer propagates into the panel and dashboard with no alarm.",
+    "owner_files": [
+     "python/synapse/panel/ws_bridge.py",
+     "python/synapse/panel/tool_executor.py",
+     "python/synapse/server/dashboard.py"
+    ],
+    "file_count": 3,
+    "evidence": "panel/ws_bridge.py:50-53 and server/dashboard.py:329-330 call resolve_endpoint() (pid-liveness only). panel/tool_executor.py:202-209 is the sole site that checks `endpoint.get('pid') == os.getpid()` before trusting the port — the pattern the other two sites lack.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C4::C5-N1",
+    "seat_reported_id": "C5-N1",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "title": "Make the rails ledger record the EFFECTIVE model read from the transcript it already measures, not the requested tier string",
+    "problem": "The rails ledger's 'model' field is the REQUESTED tier model, never the model that actually served. measure_transcript_usage already parses every transcript record and could read message.model at zero extra I/O, but it reads only message.usage. A leg settled from a transcript served by a different model still receipts the requested string, so a tier claim that did not execute reads green.",
+    "owner_files": [
+     "harness/rails.py",
+     "harness/battleplan/meter_transcript.py"
+    ],
+    "file_count": 2,
+    "evidence": "rails.py:262-311 measure_transcript_usage walks every transcript record and pulls message.usage via _usage_of (rails.py:234-243) — the sibling field message.model sits in the same dict. The ledger's \"model\" is set only from the dispatcher's argument: charge(leg, model) rails.py:414, entry at :457/:478; settle(leg, model=...) rails.py:519, 'if model: target[\"model\"] = model' at :596-597. So the receipt can name a tier model that never served. The product tree already has the discipline the harness lacks (python/synapse/panel/providers/anthropic_provider.py:342; python/synapse/model_access.py:618).",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C4::C5-N2",
+    "seat_reported_id": "C5-N2",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "title": "Carry the Jev response's reported model into the harness ledger instead of only the requested model string",
+    "problem": "The harness Jev client discards the effective model the API reports. The SDK response carries model='the model used to answer the request'; the harness writes only the requested 'jev-latest'. A tier decision routed by a Jev that was actually served by a different model is indistinguishable from one served by the requested model.",
+    "owner_files": [
+     "harness/jev/jev_client.py",
+     "harness/jev/tests/test_jev_guards.py"
+    ],
+    "file_count": 2,
+    "evidence": "jev_client.py:100-110 _answers_to_dict copies choices/scores/nouls/request_id and never touches resp.model; :140 sets model = model or questions['model'] ('jev-latest', questions.json:4); :152 ledgers {\"model\": model}. The SDK type carries the served model (typesafe_sdk.SystemOneResponse.model, docstring 'The model used to answer the request.'). The product adapter validates the same field against _REPORTED_MODEL (python/synapse/jev/adapter.py:154-157) and ledgers reported_model (adapter.py:353). The harness ledger therefore cannot tell 'jev-latest was served' from 'jev-latest was requested'.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C4::C5-N3",
+    "seat_reported_id": "C5-N3",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "title": "Make the attest board's model_served_by a MEASURED value (and keep the board's own routing record self-contained)",
+    "problem": "The board records which model a seat ran on as a hand-authored table, and the only in-repo copy of the routing record omits the model facts entirely. model_reachable / model_served_by are literals in an out-of-repo script; STATE.json keeps only tier+confidence. A reader of the board cannot tell a measured substitution from an asserted one, and cannot replay the decision from the repo.",
+    "owner_files": [
+     "harness/attest/STATE.json"
+    ],
+    "file_count": 1,
+    "evidence": "harness/attest/STATE.json routing.seats[*] carry tier/conf/novelty/blast_radius/reason only. The model fields the workflow consumes live in an out-of-repo file: C:/Users/User/Claude outputs/attest-jev-20261022/route_attest.py:40-42 hardcodes REACHABLE_ALIAS={'haiku':True,'opus':True,'fable':False} and :311-325 derives model_served_by from it. .claude/workflows/attest-harden.js:708-721 copies those values into the wave result as if they were observed. The live measurement that contradicts 'fable unreachable' is in wf_8a6aa562-c16.json (haiku-alias served minimax-m3.1-flash:cloud; fable and the explicit ids error).",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C4::C5-N4",
+    "seat_reported_id": "C5-N4",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "title": "Give the attest seat schema and prompt an effective-model field, so the SPEC's reporting promise is implemented rather than asserted",
+    "problem": "SPEC promises 'Every seat reports the model it actually read out of its own transcript, not the alias in meta.json' — the workflow implements neither half. No schema field carries the served model, no prompt asks for it, and the alias in meta.json is what survives into the record.",
+    "owner_files": [
+     ".claude/workflows/attest-harden.js"
+    ],
+    "file_count": 1,
+    "evidence": "harness/attest/SPEC.md:159 states 'Every seat reports the model it actually read out of its own transcript, not the alias in meta.json', but MAP_SCHEMA (.claude/workflows/attest-harden.js:144-214) declares no model property and the seat prompt never asks for one; the workflow's own meta.json for the map seats records \"model\":\"haiku\" while the transcripts record \"model\":\"minimax-m3.1-flash\". The lane source is available at runtime (message.model, attachment identity.modelId) but no lane asks for it.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C4::C5-N5",
+    "seat_reported_id": "C5-N5",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "title": "Make the rails tier reachability check cover the dispatch ALIAS and be re-runnable, instead of a one-off dated receipt",
+    "problem": "Tier reachability is probed for the full model ids only, and the shipped receipt is dated 2026-09-03; nothing probes the ALIASES the workflow actually dispatches, and no gate consumes the probe. The full-id probe is a different question from the alias question: an alias can resolve to a reachable session model (silently serving the wrong tier) while the full id errors, and vice versa.",
+    "owner_files": [
+     "harness/battleplan/preflight_bp4.py",
+     "harness/rails_exec.json"
+    ],
+    "file_count": 2,
+    "evidence": "harness/battleplan/preflight_bp4.py:19-32 pings the FULL ids from rails_exec.json and writes runs/<today>/preflight_bp4.json; the shipped receipt harness/battleplan/runs/2026-09-03/preflight_bp4.json shows all three resolved on 2026-09-03 (claude_code_version 2.1.259). The live 2026-10-22 probe (wf_8a6aa562-c16.json) shows claude-fable-5-1, claude-haiku-5-5 and claude-opus-5-5 all error while ALIAS 'haiku' silently served the session model. rails.py:739-751 resolve_model is a pure lookup and orchestrate.ps1:589-601 trusts it.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C4::C5-N6",
+    "seat_reported_id": "C5-N6",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "title": "Surface the effective model (and the requested-vs-served divergence) in the harness progress board for live workflow runs",
+    "problem": "The all-harness board reads agent-<id>.meta.json's 'agentType' and the workflow journal's 'lane', but never the 'model' field that the same sidecar carries — so a live run whose alias collapsed to the session model is displayed as a normal agent row with no indication of which tier it actually ran on.",
+    "owner_files": [
+     "harness/progress.py"
+    ],
+    "file_count": 1,
+    "evidence": "harness/progress.py:276-285 _agent_type reads meta.json 'agentType' and explicitly documents that this field 'is recorded by the runtime, not inferred'; the sibling 'model' field carries the REQUESTED alias and the transcript's message.model carries the served one. scripts/blackbox_recover.py:125-137 reads agent-<id>.meta.json for agentType/description only. No shipped code reads either model field.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C5::C4-N1",
+    "seat_reported_id": "C4-N1",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "title": "Add an installed-tree identity/drift check to the runtime doctor",
+    "problem": "No runtime surface ever re-derives the installed tree's integrity. The drift verdict exists only inside the maintenance CLI (engine.verify -> verify_runtime, engine.py:517), which the product never calls and no artist runs. A check the running system can produce and surface (doctor is the shipped diagnostic surface: python/synapse/server/doctor.py:1050 run_doctor, surfaced by the panel's Doctor button at python/synapse/panel/synapse_panel.py:1278 and panel/doctor_dialog.py:121) does not exist. A new check 'installed_tree' should compare the manifest-listed files of the active runtime against the manifest already shipped inside the tree (payload-manifest.json) and report the drifted file names, with the files-map digest as the cheap headline.",
+    "owner_files": [
+     "python/synapse/server/doctor.py",
+     "python/synapse/server/install_identity.py",
+     "tests/test_install_identity.py"
+    ],
+    "file_count": 3,
+    "evidence": "installer/synapse_setup/engine.py:68-80 defines verify_runtime; engine.py:437 calls it at install; engine.py:517 re-runs it inside engine.verify(). Live run of the shipped front door: C:/Users/User/AppData/Local/Programs/SYNAPSE-5.97.6/maintenance/python/python.exe -I setup_cli.py verify --app C:/Users/User/AppData/Local/Programs/SYNAPSE-5.97.6 → {\"status\": \"FAIL\", \"error\": \"Installed file check failed: houdini/python_panels/synapse_panel.pypanel\", \"exception\": \"SetupError\"}. The capability is present and correct; the defect is that it is reachable only by hand (Start-menu entry at installer/windows/Synapse.iss:57) and its FAIL never reaches the artist, the panel, the doctor, or the server.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C5::C4-N2",
+    "seat_reported_id": "C4-N2",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "title": "Make the installation receipt carry the tree's content identity, not just a check summary",
+    "problem": "The per-file identity of the installed tree has no canonical, cheap, quotable carrier. The per-file map exists (payload-manifest.json + installation.json.runtimes[active].files) but a consumer wanting 'is this tree the tree we installed?' must re-hash 1972 files (0.224 s) or reimplement digest conventions. The installer should compute and record a single tree identity (files-map digest 81ab387bd7d86dea, plus payload_id) in installation.json and in ~/.synapse/install_stamp.json, so the runtime can compare a stored value against a recomputed one in one comparison, and so 'the installed tree changed' is a state change with a timestamp rather than an inference.",
+    "owner_files": [
+     "installer/synapse_setup/engine.py",
+     "installer/synapse_setup/safety.py"
+    ],
+    "file_count": 2,
+    "evidence": "installer/synapse_setup/engine.py:437 (checks = verify_runtime(runtime, manifest)), :442 (state['runtimes'][str(runtime)] = manifest), :472 (registrations[].sha256), :475-482 (stamp{path,sha256,original}), :483 (state['checks'] = checks). Live installation.json: checks={'files_checked': 1972, 'status': 'PASS', 'xml': 'PASS'}, one registration (packages/synapse.json, de23d2c2...), stamp with path/sha256/original. The receipt already carries the full per-file map, so the fix is to promote ONE derived value (files-map digest + payload_id) into the receipt and the stamp rather than leaving every consumer to re-derive it, and to make that value the cross-surface identity both sides can quote.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C5::C4-N3",
+    "seat_reported_id": "C4-N3",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "title": "Classify host-mutable interface assets so a drift verdict is sound, not noisy",
+    "problem": "A naive drift check would report a false positive on the one file Houdini is designed to rewrite in place. The installer already owns a whitelist concept for user-owned pref files (engine.py:155-160 authorized_pref_file), but there is no equivalent list for HOST-MUTATED files inside the installed tree. The drift verdict must classify houdini/python_panels/synapse_panel.pypanel and houdini/toolbar/synapse.shelf (Houdini rewrites these in place when the artist registers them) separately from genuine tampering, and must tolerate the 474 legitimate non-manifest files (pycache, .synapse/agent_health_history.jsonl) without flagging them.",
+    "owner_files": [
+     "installer/synapse_setup/registration.py",
+     "installer/synapse_setup/host_writable.py"
+    ],
+    "file_count": 2,
+    "evidence": "installer/synapse_setup/registration.py:8-14 UI_CORE maps 'houdini/python_panels/synapse_panel.pypanel' -> pref destination 'python_panels/synapse_panel.pypanel', and the installed tree's houdini/ subtree is on HOUDINI_PATH via hpath (registration.py:38) — so the mutable copy inside the content-addressed tree is the one Houdini loads. The drifted file's diff against the repo copy is exactly the includeInPaneTabMenu + ASCII-only signature of Houdini's own .pypanel files (8 sampled under C:/Program Files/Side Effects Software/Houdini 22.0.400/houdini/python_panels/: nonascii=0, 7/8 with includeInPaneTabMenu). Also 474 non-manifest files exist in the tree (473 __pycache__/*.pyc + .synapse/agent_health_history.jsonl written by python/synapse/panel/agent_health.py:185 into $SYNAPSE_ROOT/.synapse/), so a strict tree==manifest predicate would false-positive on a clean machine.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   },
+   {
+    "id": "C5::C4-N4",
+    "seat_reported_id": "C4-N4",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "title": "Bring the source-install path up to the same install-state contract as the installer",
+    "problem": "The source-install path writes a stamp with a different shape and no manifest at all, so a drift check that assumes the installer receipt exists will report UNKNOWN/false-fail for source installs. The two install paths must agree on what the seat's 'installed tree' is and on what the stamp asserts, so one drift check can serve both without a special case per path.",
+    "owner_files": [
+     "scripts/install_synapse_package.py"
+    ],
+    "file_count": 1,
+    "evidence": "scripts/install_synapse_package.py:112 STAMP_NAME, :116-118 stamp_path(), :132-143 write_stamp() (schema synapse_install_stamp/v1, synapse_version, repo_root, installed_at, targets), :504 verify() (probe-based checks only). No per-file manifest is produced on this path (grep 'manifest|sha256' over the file → no hits). The two install paths therefore leave the seat with two different install states and one stamp schema whose content differs by path, so 'the installed tree' is not a single well-defined object across install methods.",
+    "fix": null,
+    "verification": null,
+    "blast_radius": null,
+    "needs_joe": null
+   }
+  ],
+  "edges": [
+   {
+    "from": "C1::C2-N1",
+    "to": "C1::C2-N3",
+    "type": "dep",
+    "why": "The gate cannot compare content until a canonical digest algorithm exists to compare with. preflight.py:202-227 has no digest to feed; a raw-bytes digest across the two sides produces a false mismatch (measured: e143c9c3… vs 64cd947c…) because 34 files differ only by CRLF.",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C1::C2-N2",
+    "to": "C1::C2-N1",
+    "type": "contract",
+    "why": "The gate path (websocket.py:126, hwebserver_adapter.py:109) reads command.client_version while the health path (handlers.py:994) reads payload['client_version']; a content identity added to one carrier and not the other would produce two different answers to the same question.",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C1::C2-N4",
+    "to": "C1::C2-N3",
+    "type": "contract",
+    "why": "experience.py:73-90 already computes a content digest from the running package at runtime; a tree-scoped identity must reuse the same canonicalisation rules (text normalised, binary untouched) or the two identities will not be comparable.",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C1::C2-N3",
+    "to": "C1::C2-N4",
+    "type": "dep",
+    "why": "The widened runtime identity needs the shared digest routine and a declared file list both sides can derive — the working tree can only cover the 1805 payload files it has, not the 167 moneta/wheel artifacts.",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C1::C2-N6",
+    "to": "C1::C2-N1",
+    "type": "seam",
+    "why": "The installed side already holds a content-derived identity for free (payload_id in the runtime directory name, per engine.py:373) and the full 1972-file sha256 map in payload-manifest.json; the gate needs only to read it. Nothing needs to be shipped for the Houdini half.",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C1::C2-N5",
+    "to": "C1::C2-N6",
+    "type": "dep",
+    "why": "The doctor's drift check is only meaningful if the install-time verification (engine.py:68-80) and the runtime re-check agree on the same canonical manifest semantics; otherwise doctor reports a different truth than the installer.",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C1::C2-N2",
+    "to": "C1::C2-N5",
+    "type": "invariant",
+    "why": "doctor's install-stamp comparison (doctor.py:149-150) and the gate's version_check (preflight.py:216) must ultimately agree on one identity definition; today they compare two different label sources with a path-based escape (doctor.py:117-122).",
+    "seat": "attest:map:C1-carriers",
+    "cluster": "C2 — identity vs label (content identity primitives inventory)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C2::N1",
+    "to": "C2::N2",
+    "type": "contract",
+    "why": "/mcp must be able to carry the SAME single client-release field the WS transports use; today it carries none, so the two transports cannot share a check.",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C2::N1",
+    "to": "C2::N3",
+    "type": "dep",
+    "why": "The identity check can only read one carrier; the two-field split (top-level vs payload) must be collapsed before the check can be trusted on any transport.",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C2::N2",
+    "to": "C2::N3",
+    "type": "dep",
+    "why": "A content-identity comparison on /mcp needs a carrier there; without one the check stays NOT_APPLICABLE on the in-Houdini HTTP endpoint.",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C2::N6",
+    "to": "C2::N3",
+    "type": "dep",
+    "why": "The payload manifest (source_revision + per-file sha256) is the content identity the runtime check would compare; it is produced by the installer and currently unread by python/synapse/.",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C2::N3",
+    "to": "C2::N6",
+    "type": "contract",
+    "why": "The installer must stamp the same identity the runtime verifies, instead of a label; the two must be one value or the comparison is theatre.",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C2::N4",
+    "to": "C2::N1",
+    "type": "dep",
+    "why": "Reporting surfaces (telemetry, cache profile, memory experience) can only name the code set once there is one carrier to read and one source of truth for it.",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C2::N5",
+    "to": "C2::N3",
+    "type": "seam",
+    "why": "doctor's version check and bridge check are the human-facing surface of the same identity question; they should consume the same identity primitive the gate uses, not a stamp-file echo.",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C2::N5",
+    "to": "C2::N6",
+    "type": "dep",
+    "why": "The doctor compares the install stamp label against the running label (doctor.py:150-160); that comparison is only meaningful once the stamp carries the content identity the installer records.",
+    "seat": "attest:map:C2-identity",
+    "cluster": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N1",
+    "to": "C3::C3-N2",
+    "type": "dep",
+    "why": "doctor's bridge_endpoint check (doctor.py:735) reads the file C3-N1 writes; until the file carries a verifiable owner, the doctor can only echo it.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N1",
+    "to": "C3::C3-N9",
+    "type": "seam",
+    "why": "publish_endpoint is called from the same server startup paths (websocket.py:425, hwebserver_adapter.py:508) that perform the handshake; the peer identity a handshake asserts must agree with the pid the sidecar records, or the two carriers become a second H2 split.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N1",
+    "to": "C3::C3-N10",
+    "type": "dep",
+    "why": "ws_bridge.py:51 and dashboard.py:330 both call resolve_endpoint (bridge_endpoint.py:217); tool_executor.py:202-209 shows the ownership check that resolve_endpoint omits.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N3",
+    "to": "C3::C3-N4",
+    "type": "contract",
+    "why": "preflight.version_check consumes a single value (preflight.py:202-228); it can only compare code-set identity if the wire carries exactly one such value, so the two-carrier split (protocol.py:235-236 vs handlers.py:994) must be collapsed first.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N4",
+    "to": "C3::C3-N7",
+    "type": "contract",
+    "why": "mcp_server.py:509-511 writes both the top-level field and the payload field; with one carrier defined by C3-N4 there is exactly one write site.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N4",
+    "to": "C3::C3-N5",
+    "type": "dep",
+    "why": "handlers.py:994 and websocket.py:126/hwebserver_adapter.py:109 are the two read sites that must converge on the single carrier.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N4",
+    "to": "C3::C3-N6",
+    "type": "dep",
+    "why": "mcp/server.py:244 has no carrier to pass; once one exists it can be forwarded into admit() so the /mcp path stops being NOT_APPLICABLE.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N3",
+    "to": "C3::C3-N8",
+    "type": "dep",
+    "why": "Making version.match compare code-set identity requires a runtime-computable content identity for the peer; C3-N8 is where that identity comes from (payload-manifest source_revision / payload_id, currently unread at runtime).",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N8",
+    "to": "C3::C3-N5",
+    "type": "contract",
+    "why": "doctor._check_version (doctor.py:138-176) compares install_stamp's version string to the running __version__; the manifest check would give it a content-level answer instead of a string echo.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N9",
+    "to": "C3::C3-N10",
+    "type": "invariant",
+    "why": "Clients can only confirm the peer if the peer states its identity during the handshake (auth.py, websocket.py, hwebserver_adapter.py); otherwise they are trusting the sidecar file, which C3-N1 can misname.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C3::C3-N2",
+    "to": "C3::C3-N10",
+    "type": "invariant",
+    "why": "Both the doctor and the client consumers need the same peer-identification primitive; duplicating the check in each would create a third source of truth for peer identity, which the brief forbids.",
+    "seat": "attest:map:C3-provenance",
+    "cluster": "C3-provenance — peer and session provenance",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C4::C5-N1",
+    "to": "C4::C5-N3",
+    "type": "contract",
+    "why": "A board that must record model_served_by needs ONE definition of the effective model; if rails.py and the attest board each define their own, the board's number and the ledger's number can disagree. N1 is the natural home for that definition.",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C4::C5-N2",
+    "to": "C4::C5-N3",
+    "type": "contract",
+    "why": "The board's tier claim rests on a Jev decision. If the Jev that answered was served by an unrecorded model, the tier's provenance is unproven — the same requested-vs-served distinction N2 closes for Jev.",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C4::C5-N3",
+    "to": "C4::C5-N4",
+    "type": "dep",
+    "why": "The workflow reads args.routing.seats[].model_served_by / model_reachable at .claude/workflows/attest-harden.js:78-82 and 708-721. The board's routing record (N3) and the workflow's consumption (N4) are one contract; changing the carrier shape in STATE.json without changing the consumer breaks the wave result.",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C4::C5-N4",
+    "to": "C4::C5-N3",
+    "type": "seam",
+    "why": "SPEC.md:159 promises a per-seat reported effective model that the schema does not carry. The seam between the promise and the artifact is exactly where a tier claim can be recorded without a fact.",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C4::C5-N5",
+    "to": "C4::C5-N3",
+    "type": "dep",
+    "why": "model_reachable in the board's routing record is currently a hand-written constant; a shipped reachability probe (alias-level) is the only thing that can make it a fact rather than an assertion.",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C4::C5-N1",
+    "to": "C4::C5-N5",
+    "type": "contract",
+    "why": "rails_exec.json is the source of the tier strings that N1's ledger compares the effective model against; both must agree on what 'the tier's model' means, and the alias/full-id split (N5) decides whether that comparison is even meaningful.",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C4::C5-N6",
+    "to": "C4::C5-N1",
+    "type": "seam",
+    "why": "The board displays live workflow runs; the ledger it would have to display is produced by rails' settle. Without a shared effective-model definition the board shows a request while the receipt shows a fact, or vice versa.",
+    "seat": "attest:map:C4-install",
+    "cluster": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C5::C4-N2",
+    "to": "C5::C4-N1",
+    "type": "dep",
+    "why": "The runtime check needs a stable carrier to compare against. Today the only per-file map lives in installation.json (outside the tree) and payload-manifest.json (inside the tree); N2 promotes a single derived tree identity (files-map digest + payload_id) into the receipt/stamp so N1 compares one stored value to one recomputed value instead of re-deriving conventions.",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C5::C4-N3",
+    "to": "C5::C4-N1",
+    "type": "dep",
+    "why": "Without a host-mutable exclusion set the runtime check would report the one file Houdini rewrites by design (the drifted .pypanel) as indistinguishable from tampering, and would false-positive on the 474 non-manifest files. The verdict's soundness depends on the classification, so the check cannot land first.",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C5::C4-N4",
+    "to": "C5::C4-N2",
+    "type": "seam",
+    "why": "One truth, two carriers: installer/synapse_setup/engine.py:473-482 and scripts/install_synapse_package.py:132-143 both write ~/.synapse/install_stamp.json, one with a manifest-derived tree identity, the other with none. One canonical carrier must be chosen or the receipt and the stamp will disagree about what 'the installed tree' is.",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C5::C4-N2",
+    "to": "C5::C4-N4",
+    "type": "contract",
+    "why": "The source-install path must produce the same stamp fields (schema, synapse_version, repo_root, installed_at, targets, plus whatever tree identity N2 defines) or the runtime check in N1 will be unable to interpret a source-installed seat's state.",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C5::C4-N1",
+    "to": "C5::C4-N2",
+    "type": "invariant",
+    "why": "The receipt's recorded tree identity must always equal the identity recomputed from the files on disk at the time the receipt was written — install-time, upgrade-time and verify-time — or the receipt becomes a second, disagreeing truth. This is the property a shared test must pin across both files.",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "endpoints_resolved": true
+   },
+   {
+    "from": "C5::C4-N1",
+    "to": "C5::C4-N3",
+    "type": "invariant",
+    "why": "Host-mutability classification must be identical in the installer and in the runtime check; if the installer excludes a file from drift but the runtime does not (or the reverse), the two surfaces give contradictory verdicts on the same tree.",
+    "seat": "attest:map:C5-harness",
+    "cluster": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "endpoints_resolved": true
+   }
+  ],
+  "file_ownership": [
+   {
+    "file": ".claude/workflows/attest-harden.js",
+    "owner": "C4::C5-N4"
+   },
+   {
+    "file": "harness/attest/STATE.json",
+    "owner": "C4::C5-N3"
+   },
+   {
+    "file": "harness/battleplan/meter_transcript.py",
+    "owner": "C4::C5-N1"
+   },
+   {
+    "file": "harness/battleplan/preflight_bp4.py",
+    "owner": "C4::C5-N5"
+   },
+   {
+    "file": "harness/jev/jev_client.py",
+    "owner": "C4::C5-N2"
+   },
+   {
+    "file": "harness/jev/tests/test_jev_guards.py",
+    "owner": "C4::C5-N2"
+   },
+   {
+    "file": "harness/progress.py",
+    "owner": "C4::C5-N6"
+   },
+   {
+    "file": "harness/rails.py",
+    "owner": "C4::C5-N1"
+   },
+   {
+    "file": "harness/rails_exec.json",
+    "owner": "C4::C5-N5"
+   },
+   {
+    "file": "installer/build_payload.py",
+    "owner": "C2::N6"
+   },
+   {
+    "file": "installer/synapse_setup/engine.py",
+    "owner": "C1::C2-N6"
+   },
+   {
+    "file": "installer/synapse_setup/host_writable.py",
+    "owner": "C5::C4-N3"
+   },
+   {
+    "file": "installer/synapse_setup/native_probe.py",
+    "owner": "C2::N6"
+   },
+   {
+    "file": "installer/synapse_setup/registration.py",
+    "owner": "C5::C4-N3"
+   },
+   {
+    "file": "installer/synapse_setup/safety.py",
+    "owner": "C5::C4-N2"
+   },
+   {
+    "file": "installer/verify_houdini.py",
+    "owner": "C1::C2-N6"
+   },
+   {
+    "file": "mcp_server.py",
+    "owner": "C2::N1"
+   },
+   {
+    "file": "python/synapse/core/payload_identity.py",
+    "owner": "C2::N3"
+   },
+   {
+    "file": "python/synapse/core/preflight.py",
+    "owner": "C1::C2-N1"
+   },
+   {
+    "file": "python/synapse/core/protocol.py",
+    "owner": "C1::C2-N2"
+   },
+   {
+    "file": "python/synapse/host/lookdev_suggestion.py",
+    "owner": "C1::C2-N4"
+   },
+   {
+    "file": "python/synapse/mcp/server.py",
+    "owner": "C1::C2-N2"
+   },
+   {
+    "file": "python/synapse/mcp/session.py",
+    "owner": "C2::N2"
+   },
+   {
+    "file": "python/synapse/memory/experience.py",
+    "owner": "C1::C2-N4"
+   },
+   {
+    "file": "python/synapse/panel/tool_executor.py",
+    "owner": "C3::C3-N10"
+   },
+   {
+    "file": "python/synapse/panel/ws_bridge.py",
+    "owner": "C3::C3-N10"
+   },
+   {
+    "file": "python/synapse/server/auth.py",
+    "owner": "C3::C3-N9"
+   },
+   {
+    "file": "python/synapse/server/bridge_endpoint.py",
+    "owner": "C3::C3-N1"
+   },
+   {
+    "file": "python/synapse/server/dashboard.py",
+    "owner": "C3::C3-N10"
+   },
+   {
+    "file": "python/synapse/server/doctor.py",
+    "owner": "C1::C2-N5"
+   },
+   {
+    "file": "python/synapse/server/handlers.py",
+    "owner": "C2::N1"
+   },
+   {
+    "file": "python/synapse/server/handlers_cache.py",
+    "owner": "C2::N4"
+   },
+   {
+    "file": "python/synapse/server/hwebserver_adapter.py",
+    "owner": "C1::C2-N2"
+   },
+   {
+    "file": "python/synapse/server/install_identity.py",
+    "owner": "C5::C4-N1"
+   },
+   {
+    "file": "python/synapse/server/install_manifest.py",
+    "owner": "C3::C3-N8"
+   },
+   {
+    "file": "python/synapse/server/preflight_gate.py",
+    "owner": "C1::C2-N1"
+   },
+   {
+    "file": "python/synapse/server/telemetry_dump.py",
+    "owner": "C2::N4"
+   },
+   {
+    "file": "python/synapse/server/websocket.py",
+    "owner": "C1::C2-N2"
+   },
+   {
+    "file": "scripts/install_synapse_package.py",
+    "owner": "C2::N6"
+   },
+   {
+    "file": "scripts/sync_version.py",
+    "owner": "C2::N4"
+   },
+   {
+    "file": "shared/identity.py",
+    "owner": "C1::C2-N3"
+   },
+   {
+    "file": "tests/test_identity_digest.py",
+    "owner": "C1::C2-N3"
+   },
+   {
+    "file": "tests/test_install_identity.py",
+    "owner": "C5::C4-N1"
+   }
+  ],
+  "file_ownership_overlaps": [
+   {
+    "file": "python/synapse/core/protocol.py",
+    "nodes": [
+     "C1::C2-N2",
+     "C2::N1"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/websocket.py",
+    "nodes": [
+     "C1::C2-N2",
+     "C2::N1"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/hwebserver_adapter.py",
+    "nodes": [
+     "C1::C2-N2",
+     "C2::N1"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/mcp/server.py",
+    "nodes": [
+     "C1::C2-N2",
+     "C2::N2"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/core/preflight.py",
+    "nodes": [
+     "C1::C2-N1",
+     "C2::N3"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/preflight_gate.py",
+    "nodes": [
+     "C1::C2-N1",
+     "C2::N3"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/memory/experience.py",
+    "nodes": [
+     "C1::C2-N4",
+     "C2::N4"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/doctor.py",
+    "nodes": [
+     "C1::C2-N5",
+     "C2::N5"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "installer/synapse_setup/engine.py",
+    "nodes": [
+     "C1::C2-N6",
+     "C2::N6"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/doctor.py",
+    "nodes": [
+     "C1::C2-N5",
+     "C3::C3-N2"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/core/preflight.py",
+    "nodes": [
+     "C1::C2-N1",
+     "C3::C3-N3"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/core/protocol.py",
+    "nodes": [
+     "C1::C2-N2",
+     "C3::C3-N4"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/handlers.py",
+    "nodes": [
+     "C2::N1",
+     "C3::C3-N5"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/preflight_gate.py",
+    "nodes": [
+     "C1::C2-N1",
+     "C3::C3-N5"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/mcp/server.py",
+    "nodes": [
+     "C1::C2-N2",
+     "C3::C3-N6"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "mcp_server.py",
+    "nodes": [
+     "C2::N1",
+     "C3::C3-N7"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "installer/synapse_setup/engine.py",
+    "nodes": [
+     "C1::C2-N6",
+     "C3::C3-N8"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/websocket.py",
+    "nodes": [
+     "C1::C2-N2",
+     "C3::C3-N9"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/hwebserver_adapter.py",
+    "nodes": [
+     "C1::C2-N2",
+     "C3::C3-N9"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "python/synapse/server/doctor.py",
+    "nodes": [
+     "C1::C2-N5",
+     "C5::C4-N1"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "installer/synapse_setup/engine.py",
+    "nodes": [
+     "C1::C2-N6",
+     "C5::C4-N2"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   },
+   {
+    "file": "scripts/install_synapse_package.py",
+    "nodes": [
+     "C2::N6",
+     "C5::C4-N4"
+    ],
+    "finding": "BLOCKED - two nodes claim the same file. The board's rule: overlap is a finding, not a race."
+   }
+  ],
+  "spanning_order_provisional": [
+   "C1::C2-N1",
+   "C1::C2-N2",
+   "C1::C2-N3",
+   "C1::C2-N4",
+   "C1::C2-N5",
+   "C1::C2-N6",
+   "C2::N2",
+   "C2::N4",
+   "C2::N1",
+   "C2::N5",
+   "C2::N6",
+   "C2::N3",
+   "C3::C3-N1",
+   "C3::C3-N10",
+   "C3::C3-N2",
+   "C3::C3-N3",
+   "C3::C3-N4",
+   "C3::C3-N5",
+   "C3::C3-N6",
+   "C3::C3-N7",
+   "C3::C3-N8",
+   "C3::C3-N9",
+   "C4::C5-N1",
+   "C4::C5-N2",
+   "C4::C5-N5",
+   "C4::C5-N3",
+   "C4::C5-N4",
+   "C4::C5-N6",
+   "C5::C4-N2",
+   "C5::C4-N3",
+   "C5::C4-N1",
+   "C5::C4-N4"
+  ],
+  "spanning_order_caveat": "PROVISIONAL. Computed by the recorder over the union of the MAP seats' dep edges, using the seats' own node ids namespaced per seat. It is NOT SYNTH's spanning order: SYNTH unifies the graph, drops nodes it parks, and may introduce edges the MAP seats could not see. Treat this as the recorder's arithmetic over measured candidates, not as a ratified implementation order.",
+  "nodes_not_in_a_total_order": [],
+  "dep_endpoints_not_in_the_union": [],
+  "edge_type_histogram": {
+   "contract": 11,
+   "dep": 17,
+   "invariant": 5,
+   "seam": 6
+  }
  },
  "adjacent_findings": [
   {
@@ -238,6 +1571,18 @@
     "behaviour_change": "none - runV01() still returns a refusal and still spawns zero agents; _spawned: 0 unchanged; node --check passes",
     "gate": "merge/promotion to master is Joe’s word; the commit is not pushed"
    }
+  },
+  {
+   "id": "AF2",
+   "title": "A MAP seat can mislabel its own cluster and the board has no guard against it",
+   "status": "OPEN",
+   "severity": "medium",
+   "found": "2026-10-22, by the recorder while extracting the candidate graph from wf_d1494930-f0c",
+   "evidence": "Four of the five MAP seats returned a `cluster` string that does not match the cluster they were briefed on, in two clean swap pairs: seat attest:map:C1-carriers (briefed CLUSTER C1 - the version carrier graph) reported 'C2 - identity vs label', and seat attest:map:C2-identity (briefed CLUSTER C2) reported 'C1 - the version carrier graph'; seat attest:map:C4-install (briefed CLUSTER C4) reported 'C5-harness', and seat attest:map:C5-harness (briefed CLUSTER C5) reported 'C4-install'. Only attest:map:C3-provenance matched. The node id prefixes follow the mislabel, not the brief: the C1-carriers seat numbered its nodes C2-N1..C2-N6.",
+   "mechanism": "MAP_SCHEMA.cluster is `{ type: 'string' }` - free text, no enum, and the seat prompt never asks the seat to echo the cluster id it was given. The seat's content is CORRECT (each seat's findings match the brief it received); only the self-declared label is wrong.",
+   "consequence": "Any consumer that groups the map reports by the reported `cluster` field, or that parses the node-id prefix as a cluster name, will attribute findings to the wrong cluster. The first extraction attempt by this recorder did exactly that and produced a false 3-node dependency cycle (C2-N1 -> C2-N3 -> C2-N4 -> C2-N1) that does not exist - it was an artifact of conflating two different seats' N1/N3/N4.",
+   "fix_direction": "Make the cluster identity structural rather than self-asserted: give the schema a `cluster_id` enum of the five known cluster ids, or better, have the recorder key the reports by the seat label (which the dispatcher controls) and treat the seat's `cluster` string as a label to be CHECKED against the brief rather than trusted.",
+   "note": "This is the same defect class the board exists to catch, one level up: identity carried by an ambient label instead of a verified fact. The board's own first consumer of a seat's self-declared identity was fooled by it."
   }
  ],
  "standing_caveats": [
@@ -301,7 +1646,7 @@
     "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
     "effective_model_from_transcript": "minimax-m3.1-flash",
     "alias_resolved_to_session_model": true,
-    "transcript_records": 65
+    "transcript_records": 489
    }
   ],
   "honest_reading": "Every seat on this host ran on the session model. The JEV tier bought a LENS injected into the prompt, not a different model. A receipt saying model=haiku is a request, not a fact; the effective model is the session model in all cases."
@@ -313,53 +1658,78 @@
    "map"
   ],
   "phases_running": [
-   "?"
+   "seam"
   ],
   "seats": [
    {
     "seat": "attest:map:C1-carriers",
     "phase": "map",
     "ok": true,
-    "cluster": null,
-    "node_id": null,
-    "verdict": null,
-    "status": null
+    "agent_id": "a1e8fa6d38f5c159c",
+    "cluster_reported": "C2 — identity vs label (content identity primitives inventory)",
+    "seed_confirmed": "PARTIAL",
+    "nodes_returned": 6,
+    "edges_returned": 7,
+    "unknowns_returned": 8,
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash"
    },
    {
     "seat": "attest:map:C2-identity",
     "phase": "map",
     "ok": true,
-    "cluster": null,
-    "node_id": null,
-    "verdict": null,
-    "status": null
+    "agent_id": "a3760b3e7811735ba",
+    "cluster_reported": "C1 — the version carrier graph (version / identity values across the live tree)",
+    "seed_confirmed": "PARTIAL",
+    "nodes_returned": 6,
+    "edges_returned": 8,
+    "unknowns_returned": 7,
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash"
    },
    {
     "seat": "attest:map:C3-provenance",
     "phase": "map",
     "ok": true,
-    "cluster": null,
-    "node_id": null,
-    "verdict": null,
-    "status": null
+    "agent_id": "a7401295fd8e868d9",
+    "cluster_reported": "C3-provenance — peer and session provenance",
+    "seed_confirmed": "PARTIAL",
+    "nodes_returned": 10,
+    "edges_returned": 11,
+    "unknowns_returned": 8,
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash"
    },
    {
     "seat": "attest:map:C4-install",
     "phase": "map",
     "ok": true,
-    "cluster": null,
-    "node_id": null,
-    "verdict": null,
-    "status": null
+    "agent_id": "a7e0c7f24d88f8956",
+    "cluster_reported": "C5-harness — the harness tier-collapse gap (how the repo records which model a seat ACTUALLY ran on)",
+    "seed_confirmed": "PARTIAL",
+    "nodes_returned": 6,
+    "edges_returned": 7,
+    "unknowns_returned": 6,
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash"
    },
    {
     "seat": "attest:map:C5-harness",
     "phase": "map",
     "ok": true,
-    "cluster": null,
-    "node_id": null,
-    "verdict": null,
-    "status": null
+    "agent_id": "abd5353918f3af573",
+    "cluster_reported": "C4-install — installed-tree integrity (installer, installation.json, payload manifest, runtime drift detection)",
+    "seed_confirmed": "PARTIAL",
+    "nodes_returned": 4,
+    "edges_returned": 6,
+    "unknowns_returned": 9,
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash"
    }
   ]
  },
@@ -421,5 +1791,87 @@
    "34 files differ between installed and working tree by line endings alone (installed LF, working tree CRLF). A naive byte digest false-positives on them."
   ],
   "unknowns_aggregate": "29 explicit UNKNOWNs were recorded across the five legs (who rewrote the .pypanel, whether it is the file Houdini loads, whether the drift breaks the artist, which of two WS servers served the probes, why two processes can both bind 9999 on Windows, what a start-time drift check would report given a live session mutates the tree, and more). The full per-leg lists are in the workflow journal at wf_d1494930-f0c/journal.jsonl."
+ },
+ "wave_final_record": {
+  "wave": "attest-20261022-w1",
+  "workflow_run": "wf_d1494930-f0c",
+  "state": "IN_FLIGHT",
+  "recorded_at_note": "This block was written while the wave was still running. It is the honest snapshot, not the final record.",
+  "phases_complete": [
+   "map"
+  ],
+  "phases_running": [
+   "seam"
+  ],
+  "phases_not_started": [
+   "design",
+   "crucible",
+   "synth",
+   "forge",
+   "verify"
+  ],
+  "what_exists_now": {
+   "candidate_graph": "The five MAP seats each returned candidate nodes with an owned file set and typed edges. Extracted, namespaced per seat, and recorded under graph. It is a CANDIDATE graph: five independent views of the same surface, not one reconciled graph.",
+   "spawn_accounting": "Complete and live under spawn_ledger.",
+   "model_attribution": "Complete for every seat that has started, read from the transcripts.",
+   "seed_corrections": "Under map_phase - three of the seed defects' stated forms were refuted by the MAP legs."
+  },
+  "not_yet_produced": [
+   {
+    "artifact": "final unified graph (SYNTH)",
+    "produced_by_phase": "synth",
+    "status": "NOT_YET_PRODUCED",
+    "why": "That phase has not run in this wave. Writing it now would be fabrication; the board's evidence law forbids it."
+   },
+   {
+    "artifact": "spanning order (SYNTH)",
+    "produced_by_phase": "synth",
+    "status": "NOT_YET_PRODUCED",
+    "why": "That phase has not run in this wave. Writing it now would be fabrication; the board's evidence law forbids it."
+   },
+   {
+    "artifact": "forge_now vs park split (SYNTH)",
+    "produced_by_phase": "synth",
+    "status": "NOT_YET_PRODUCED",
+    "why": "That phase has not run in this wave. Writing it now would be fabrication; the board's evidence law forbids it."
+   },
+   {
+    "artifact": "per-node crucible verdict: SOUND | SOUND-WITH-NITS | BROKEN | COULD-NOT-ASSESS",
+    "produced_by_phase": "crucible",
+    "status": "NOT_YET_PRODUCED",
+    "why": "That phase has not run in this wave. Writing it now would be fabrication; the board's evidence law forbids it."
+   },
+   {
+    "artifact": "per-design proposal: single-writer map, invariant, proof, back-compat",
+    "produced_by_phase": "design",
+    "status": "NOT_YET_PRODUCED",
+    "why": "That phase has not run in this wave. Writing it now would be fabrication; the board's evidence law forbids it."
+   },
+   {
+    "artifact": "needs_joe (verbatim list)",
+    "produced_by_phase": "design then synth",
+    "status": "NOT_YET_PRODUCED",
+    "why": "That phase has not run in this wave. Writing it now would be fabrication; the board's evidence law forbids it."
+   },
+   {
+    "artifact": "honest unproven list",
+    "produced_by_phase": "synth",
+    "status": "NOT_YET_PRODUCED",
+    "why": "That phase has not run in this wave. Writing it now would be fabrication; the board's evidence law forbids it."
+   },
+   {
+    "artifact": "forge branch names and commit SHAs",
+    "produced_by_phase": "forge",
+    "status": "NOT_YET_PRODUCED",
+    "why": "That phase has not run in this wave. Writing it now would be fabrication; the board's evidence law forbids it."
+   },
+   {
+    "artifact": "verify proof per forged node",
+    "produced_by_phase": "verify",
+    "status": "NOT_YET_PRODUCED",
+    "why": "That phase has not run in this wave. Writing it now would be fabrication; the board's evidence law forbids it."
+   }
+  ],
+  "when_it_lands": "Re-run the recorder against the journal after the wave returns. The same script picks up SYNTH's graph, the crucible verdicts, the forge SHAs, needs_joe and the unproven list if and only if the journal contains them."
  }
 }
