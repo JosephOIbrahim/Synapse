@@ -1,0 +1,62 @@
+{
+ "first_landing": "WL-EVIDENCE",
+ "land_now": [
+  "WL-EVIDENCE"
+ ],
+ "park": [
+  "CAT-TYPES",
+  "PHANT-DIR",
+  "WL-UP-AXIS",
+  "WL-DELIVERABLE",
+  "WL-INTAKE"
+ ],
+ "needs_joe": [],
+ "reason": "jev: WL-EVIDENCE @ 1.00 (lands 0.77, value 2.81)",
+ "per_node": {
+  "WL-EVIDENCE": {
+   "lands": 0.77,
+   "value": 2.81,
+   "joe_decides": 0.04
+  },
+  "CAT-TYPES": {
+   "lands": 0.2,
+   "value": 2.35,
+   "joe_decides": 0.05
+  },
+  "PHANT-DIR": {
+   "lands": 0.18,
+   "value": 2.37,
+   "joe_decides": 0.08
+  },
+  "WL-UP-AXIS": {
+   "lands": 0.11,
+   "value": 2.44,
+   "joe_decides": 0.21
+  },
+  "WL-DELIVERABLE": {
+   "lands": 0.12,
+   "value": 2.79,
+   "joe_decides": 0.06
+  },
+  "WL-INTAKE": {
+   "lands": 0.06,
+   "value": 2.4,
+   "joe_decides": 0.19
+  }
+ },
+ "jev": {
+  "choice": "WL-EVIDENCE",
+  "confidence": 1.0,
+  "probabilities": {
+   "WL-EVIDENCE": 1.0,
+   "CAT-TYPES": 0.0,
+   "PHANT-DIR": 0.0,
+   "WL-UP-AXIS": 0.0,
+   "WL-DELIVERABLE": 0.0,
+   "WL-INTAKE": 0.0
+  }
+ },
+ "wave": "worldlabs-intake",
+ "objective": "The repo's node-type authority is wrong for three Houdini 22 node types, and a World Labs Gaussian splat pipeline proposed for SYNAPSE does not run. Land the evidence first, then the repo-side truth fixes, then the lane that needs a real World Labs export.",
+ "state_scrubbed": true
+}

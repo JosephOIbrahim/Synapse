@@ -1,0 +1,103 @@
+{
+ "houdini": "22.0.400",
+ "results": [
+  {
+   "fix": "F1",
+   "label": "hou.Node.disconnect is absent; setInput(0, None) unhooks",
+   "ok": true,
+   "detail": "no disconnect member; setInput(0, None) unhooks cleanly"
+  },
+  {
+   "fix": "F2",
+   "label": "bakegsplat resolves (labs::bake_gsplat does not)",
+   "ok": true,
+   "detail": "live type bakegsplat"
+  },
+  {
+   "fix": "F3",
+   "label": "labs::normals_from_gsplats::1.0 resolves",
+   "ok": true,
+   "detail": "live type labs::normals_from_gsplats::1.0"
+  },
+  {
+   "fix": "F4",
+   "label": "normals node has one input; relight is a LOP",
+   "ok": true,
+   "detail": "one input only; setInput(1, ...) -> InvalidInput"
+  },
+  {
+   "fix": "F5",
+   "label": "gltf::2.0 file parm is 'gltffile'",
+   "ok": true,
+   "detail": "gltffile set ok"
+  },
+  {
+   "fix": "F6",
+   "label": "gltf flatten parm is 'importnodegeometryas'",
+   "ok": true,
+   "detail": "tokens ('packedprimitive', 'flattenedgeometry')"
+  },
+  {
+   "fix": "F7",
+   "label": "wrangle float parms are created, not assumed",
+   "ok": true,
+   "detail": "created and settable"
+  },
+  {
+   "fix": "F8",
+   "label": "karma engine parm is 'engine' with token 'xpu'",
+   "ok": true,
+   "detail": "engine=xpu"
+  },
+  {
+   "fix": "F9",
+   "label": "karma sample count parm is 'samplesperpixel'",
+   "ok": true,
+   "detail": "samplesperpixel=256"
+  },
+  {
+   "fix": "F10",
+   "label": "usdrender_rop resolves; trange index 1 = 'normal'",
+   "ok": true,
+   "detail": "trange index 1 -> normal"
+  },
+  {
+   "fix": "F11",
+   "label": "distantlight has no inputs; intensity is a USD-exposed parm",
+   "ok": true,
+   "detail": "intensity parm xn__inputsintensity_i0a = 15.0"
+  }
+ ],
+ "unproven": [
+  [
+   "F-OPEN-1",
+   "Coordinate-space mismatches fixed with UsdGeom.XformOp transform matrices",
+   "the script contains no XformOp, no up-axis handling and no coordinate conversion. The repo's own intake records Marble as +Y-down (WL-EX-05) and rejects a prior blueprint for assuming Y-up - the same defect, now claimed as fixed.",
+   "cook one World Labs export, read the point cloud's up axis, and diff the pre- and post-conversion bounds"
+  ],
+  [
+   "F-OPEN-2",
+   "VEX syntax fragility eliminated by a pre-compiled VEX AST with Moneta v5 schema gates",
+   "the script sets a raw VEX string on a wrangle - exactly the 'manual string-typed VEX wrangle' it claims to remove. There is no AST and no schema gate.",
+   "assert that a VEX fragment is compiled from a template, not concatenated from a string"
+  ],
+  [
+   "F-OPEN-3",
+   "Graph disconnection via programmatic traversal",
+   "the only disconnection API the script names is the phantom in F1, and the script contains no traversal and no disconnection at all.",
+   "the graph as written has nothing to disconnect - prove it or drop the claim"
+  ],
+  [
+   "F-OPEN-4",
+   "Karma XPU 4D time-sample render and FFmpeg export to .mp4",
+   "usdrender_rop has no video or ffmpeg output parm ('outputimage' is an image sequence), and the script never writes output_mov - it only prints a line saying it is exporting. The deliverable is never produced.",
+   "render 2 frames to a real path and assert the file exists on disk afterwards"
+  ],
+  [
+   "F-OPEN-5",
+   "The blast targets a point group named 'call'",
+   "no node in the graph creates a group named 'call'; nothing in the script names a collider group. The blast removes whatever happens to be there - possibly nothing.",
+   "cook the collider import and list the point groups it produces"
+  ]
+ ]
+}
