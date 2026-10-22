@@ -1,0 +1,425 @@
+{
+ "board": "attest",
+ "title": "Attestation-hardening refinement loop",
+ "spec": "harness/attest/SPEC.md",
+ "workflow": ".claude/workflows/attest-harden.js",
+ "status": "DRAFT",
+ "status_note": "DRAFT until Joe's word ratifies harness/attest/SPEC.md. No gate on this board is open. Spawn accounting below is live; the board itself is not ratified.",
+ "seeded": "2026-10-22",
+ "seeded_from": {
+  "run_id": "wf_54c4c93b-4f3",
+  "what": "9-leg Jev-routed adversarial verification of SYNAPSE version.match",
+  "verdict": "CONFIRMED",
+  "outcome": "4x GREEN_CONFIRMED, 4x SURVIVED, 1x CONFIRMED",
+  "seed_is": "the judge's `unproven` list, not the verified claim"
+ },
+ "relation_to_loop_ladder": {
+  "board": "harness/loop (THE LOOP v5.1)",
+  "shared_ledger": false,
+  "why": "The v5.1 ladder is ratified and blocked at v01 on a SALUS scope mismatch. Re-sorting it is forbidden. This board is separate work with its own ledger, and it does not advance, close, or reorder any rung of the ladder.",
+  "ladder_spawn_ledger_untouched": true,
+  "arm_receipt": {
+   "date": "2026-10-22",
+   "rung_evaluated": "v01",
+   "dispatched": false,
+   "spawns": 0,
+   "loop_ledger_delta": "3 -> 3 (unchanged)",
+   "reason": "rung-readiness step 3: v01 is listed blocked in harness/loop/STATE.json",
+   "gate_text_verbatim": "blocked: SCOPE MISMATCH, not a missing install. Verified 2026-08-20: SALUS 0.3.1 @16e9d5b clones, imports zero-dep and self-verifies 5/5, but its public surface is a memory wake-predicate engine over Moneta's vitals (SalusEngine, wake/predicate.py:46) — there is no evaluate_path counterpart anywhere in the repo. Installing more does not close this rung. Either SALUS grows a path-policy surface, or this rung's substrate assignment changes. SafetyPort stays honestly UNAVAILABLE meanwhile.",
+   "verified_by": "loop-orchestrator, read-only; independently confirmed harness/loop/STATE.json contains zero occurrences of 'attest' and its spawned count is still 3",
+   "ladder_resorted": false
+  }
+ },
+ "caps": {
+  "spawn_cap": 30,
+  "spawn_reserve": 2,
+  "available": 28,
+  "contract": "The cap is a contract, not a tuneable. A phase that would breach it is REFUSED with its reason, never silently shrunk."
+ },
+ "spawn_ledger": {
+  "spawned": 6,
+  "cap": 30,
+  "reserve": 2,
+  "available": 28,
+  "waves": [
+   {
+    "wave": "attest-20261022-w1",
+    "workflow_run": "wf_d1494930-f0c",
+    "script": ".claude/workflows/attest-harden.js",
+    "routing_ledger": "attest-20261022.route.jsonl (14 rows, 0 fallbacks)",
+    "seats_dispatched": 6,
+    "seats_returned": 5,
+    "by_phase": {
+     "map": 5
+    },
+    "status": "RUNNING",
+    "note": "Spawn accounting is live: the board's ledger counts every agent this board dispatches. harness/loop/STATE.json's ledger is a different board and is untouched (spawned 3 -> 3)."
+   }
+  ],
+  "note": "One wave per run. Each wave records prior + this-wave spawns and the per-phase breakdown."
+ },
+ "gates": {
+  "blueprint_ratification": {
+   "state": "OPEN_AWAITING_JOE",
+   "what": "harness/attest/SPEC.md is the blueprint. Joe's word ratifies it.",
+   "may_be_relayed_by": "nobody"
+  },
+  "contract_ratification": {
+   "state": "NOT_REACHED",
+   "what": "Any new shared interface (a canonical version carrier contract, an attestation record shape) needs Joe's word before it is treated as law."
+  },
+  "merges_pushes_tags_version": {
+   "state": "ALWAYS_HALT",
+   "what": "Every forge branch, every push, every tag, every VERSION edit, every pyproject version sync. Joe's word, per act.",
+   "may_be_relayed_by": "nobody"
+  },
+  "product_decisions": {
+   "state": "PARK_AND_PRESENT",
+   "what": "A design whose needs_joe is non-empty is presented verbatim and parked. It is never quietly implemented."
+  },
+  "live_session_mutation": {
+   "state": "ALWAYS_HALT",
+   "what": "Any step that would mutate the live artist session stops and reports."
+  },
+  "substrate_install": {
+   "state": "NOT_APPLICABLE",
+   "what": "This board installs nothing. It hardens the attestation substrate of the tree already on disk."
+  }
+ },
+ "model_policy": {
+  "routing": "JEV-ROUTE via the shipped guard harness/jev/jev_route.py, decided 2026-10-22",
+  "why": "The tier comes from a judgment (Jev), not from a hand-written seat table. On this host the mechanical and reasoning aliases resolve to the session model and the referee alias resolves to a model the host cannot reach, so a referee seat runs the referee LENS on the reachable alias and the substitution is recorded in routing.*.model_served_by rather than hidden.",
+  "differentiation": "the tier supplies a LENS (injected into the seat's prompt) and a dispatch alias; effort is the tier's floor",
+  "reporting": "every seat reports the model read out of its own transcript, not the alias in meta.json",
+  "fallback": "a seat whose routed alias dies on a terminal API error is re-dispatched once with no override; BOTH attempts are recorded in the wave's faults list"
+ },
+ "routing": {
+  "wave": "attest-20261022",
+  "jev_model": "jev-latest",
+  "ledger": "C:/Users/User/Claude outputs/attest-jev-20261022/ledger/attest-20261022.route.jsonl",
+  "ledger_rows": 14,
+  "ledger_fallbacks": 0,
+  "seats": {
+   "map": {
+    "tier": "mechanical",
+    "conf": 0.94,
+    "novelty": 0.04,
+    "blast_radius": 0.14,
+    "reason": "jev: mechanical @ 0.94"
+   },
+   "seam": {
+    "tier": "reasoning",
+    "conf": 0.74,
+    "novelty": 1.64,
+    "blast_radius": 0.3,
+    "reason": "jev: reasoning @ 0.74"
+   },
+   "design": {
+    "tier": "reasoning",
+    "conf": 0.98,
+    "novelty": 1.82,
+    "blast_radius": 1.38,
+    "reason": "jev: reasoning @ 0.98"
+   },
+   "crucible": {
+    "tier": "referee",
+    "conf": 0.95,
+    "novelty": 1.26,
+    "blast_radius": 0.7,
+    "reason": "rule: TRUST/crucible is the referee seat",
+    "corroboration": "Jev independently chose referee @ 0.95 when asked"
+   },
+   "synth": {
+    "tier": "reasoning",
+    "conf": 0.64,
+    "novelty": 1.67,
+    "blast_radius": 0.57,
+    "reason": "jev: reasoning @ 0.64"
+   },
+   "forge": {
+    "tier": "reasoning",
+    "conf": 1.0,
+    "novelty": 1.91,
+    "blast_radius": 1.71,
+    "reason": "jev: reasoning @ 1.00"
+   },
+   "verify": {
+    "tier": "referee",
+    "conf": 0.95,
+    "novelty": 0.48,
+    "blast_radius": 0.75,
+    "reason": "rule: TRUST/crucible is the referee seat",
+    "corroboration": "Jev independently chose referee @ 0.95 when asked"
+   }
+  },
+  "note": "Jev is a judgment, not a constant: two runs of the same seven missions gave seam 0.77 and 0.74, map blast_radius 0.18 and 0.14. The tier assignment was identical across both runs."
+ },
+ "seed_defects": [
+  {
+   "id": "H1",
+   "title": "the label is not the identity",
+   "claim": "version_check compares version STRINGS; the working tree and the Houdini-installed package are different code sets that both declare 5.97.6",
+   "evidence": "python/synapse/core/preflight.py:202",
+   "status": "SEEDED_UNVERIFIED_BY_THIS_BOARD",
+   "cluster": "C2-identity"
+  },
+  {
+   "id": "H2",
+   "title": "one truth, three carriers, no cross-check",
+   "claim": "payload['client_version'] (health path) and top-level 'synapse_version' (gate path) are two fields carrying one truth, never cross-checked; the HTTP /mcp path has neither",
+   "evidence": "mcp_server.py:504-511 -> server/handlers.py:994; core/protocol.py:235-236 -> server/websocket.py:126, server/hwebserver_adapter.py:109; absent at python/synapse/mcp/server.py:244",
+   "status": "SEEDED_UNVERIFIED_BY_THIS_BOARD",
+   "cluster": "C1-carriers"
+  },
+  {
+   "id": "H3",
+   "title": "the HTTP /mcp path has no version carrier",
+   "claim": "preflight_gate.admit() is called with no client_version, so version_check is NOT_APPLICABLE and does not block a mismatched bridge",
+   "evidence": "python/synapse/mcp/server.py:244",
+   "status": "SEEDED_UNVERIFIED_BY_THIS_BOARD",
+   "cluster": "C1-carriers"
+  },
+  {
+   "id": "H4",
+   "title": "peer provenance is a stamp echo",
+   "claim": "doctor reads ~/.synapse/bridge.json and echoes host/port/pid/ts back as status ok without verifying the peer. Measured 2026-10-22: two houdini.exe both LISTEN on 0.0.0.0:9999; bridge.json named 52896, the connection was served by 32832.",
+   "evidence": "python/synapse/server/doctor.py:732-747",
+   "status": "SEEDED_UNVERIFIED_BY_THIS_BOARD",
+   "cluster": "C3-provenance"
+  },
+  {
+   "id": "H5",
+   "title": "the installed tree can drift after install",
+   "claim": "installation.json records checks.files_checked=1972 status=PASS at install time and a sha for packages/synapse.json only; no per-file manifest for the tree body, no runtime check. Measured: an installed file had an mtime ~21h after the install completed.",
+   "evidence": "C:/Users/User/AppData/Local/Programs/SYNAPSE-5.97.6/installation.json",
+   "status": "SEEDED_UNVERIFIED_BY_THIS_BOARD",
+   "cluster": "C4-install"
+  },
+  {
+   "id": "H6",
+   "title": "tier collapse is invisible in the harness",
+   "claim": "nothing shipped reads the EFFECTIVE model out of a transcript and fails a tier claim that did not execute; a receipt saying model=fable is a request, not a fact",
+   "evidence": "harness/jev/, harness/rails_exec.json, .claude/workflows/",
+   "status": "SEEDED_UNVERIFIED_BY_THIS_BOARD",
+   "cluster": "C5-harness"
+  }
+ ],
+ "graph": {
+  "nodes": [],
+  "edges": [],
+  "file_ownership": [],
+  "spanning_order": [],
+  "note": "Empty until the first wave's SYNTH returns. The graph is produced by measurement, not asserted here."
+ },
+ "adjacent_findings": [
+  {
+   "id": "AF1",
+   "board": "harness/loop (THE LOOP v5.1)",
+   "not_a_seed_defect_of_this_board": true,
+   "title": "the v01 refusal text in the workflow is stale on both clauses",
+   "detail": ".claude/workflows/loop.js runV01() returns a refusal demanding 'v00 closed (merge loop/v0.0-forge)' — that merge is already CLOSED per harness/loop/STATE.json:rungs.v00.gates_closed — and citing substrate_presence.salus = 'absent' where STATE.json says 'absent-for-purpose'. If v01 were ever dispatched, the machine-readable reason would contradict the ladder's own state file.",
+   "impact": "a refusal that states a false gate. It spawns nothing, so no agent is misled, but a receipt read by a human or a tool would carry the wrong reason.",
+   "found_by": "loop-orchestrator, 2026-10-22, read-only",
+   "status": "FIXED_PENDING_MERGE",
+   "resolution": {
+    "fixed_by": "Claude Code, on Joe’s explicit instruction, 2026-10-22",
+    "branch": "fix/loop-v01-refusal-quote-state",
+    "commit": "857d2734",
+    "pushed": false,
+    "merged": false,
+    "file": ".claude/workflows/loop.js",
+    "lines_changed": "2 lines (refused + gates_open)",
+    "what_changed": [
+     "refused now quotes harness/loop/STATE.json rungs.v01.status verbatim between double quotes; the stale “needs v00 closed (merge loop/v0.0-forge)” and “salus = absent” clauses are gone.",
+     "the blueprint clause is retained and now anchored to docs/THE_LOOP_v5.1.md:154 instead of an unanchored §§5.",
+     "gates_open was corrected in the same commit because it carried the same two stale clauses; it now states that v00 is already closed and names the real open decision (SALUS grows a path-policy surface, or this rung’s substrate assignment changes)."
+    ],
+    "provenance": "The 491-character status was injected programmatically from STATE.json and then re-extracted from the written file and compared to the source string: byte-identical, 491/491. Not retyped.",
+    "behaviour_change": "none - runV01() still returns a refusal and still spawns zero agents; _spawned: 0 unchanged; node --check passes",
+    "gate": "merge/promotion to master is Joe’s word; the commit is not pushed"
+   }
+  }
+ ],
+ "standing_caveats": [
+  "The host mcp__synapse__* channel still needs a human /mcp reconnect; the tree-vs-installed comparison cannot be refreshed from this board.",
+  "THE LOOP v5.1 ladder remains blocked at v01 on the SALUS scope mismatch. This board does not change that.",
+  "H4's two-listener provenance defect is a live fact on this machine until the peer is actually verified.",
+  "H5's installed-tree drift is a live fact on this machine until a per-file manifest exists."
+ ],
+ "model_attribution": {
+  "measured": "2026-10-22",
+  "method": "requestedModel and message.model read out of each seat's own transcript; meta.json's model field records the alias ASKED FOR, not the model that ran",
+  "host_reachability": {
+   "haiku": "reachable - resolves to the session model",
+   "opus": "reachable - resolves to the session model",
+   "fable": "UNREACHABLE - claude-fable-5-1 fails with 'There is an issue with the selected model'"
+  },
+  "seats": [
+   {
+    "agent_id": "a1e8fa6d38f5c159c",
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash",
+    "alias_resolved_to_session_model": true,
+    "transcript_records": 321
+   },
+   {
+    "agent_id": "a3760b3e7811735ba",
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash",
+    "alias_resolved_to_session_model": true,
+    "transcript_records": 186
+   },
+   {
+    "agent_id": "a7401295fd8e868d9",
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash",
+    "alias_resolved_to_session_model": true,
+    "transcript_records": 462
+   },
+   {
+    "agent_id": "a7e0c7f24d88f8956",
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash",
+    "alias_resolved_to_session_model": true,
+    "transcript_records": 503
+   },
+   {
+    "agent_id": "abd5353918f3af573",
+    "alias_requested": "haiku",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash",
+    "alias_resolved_to_session_model": true,
+    "transcript_records": 522
+   },
+   {
+    "agent_id": "af0eb0b743814685e",
+    "alias_requested": "opus",
+    "requested_model_from_transcript": "minimax-m3.1-flash:cloud",
+    "effective_model_from_transcript": "minimax-m3.1-flash",
+    "alias_resolved_to_session_model": true,
+    "transcript_records": 65
+   }
+  ],
+  "honest_reading": "Every seat on this host ran on the session model. The JEV tier bought a LENS injected into the prompt, not a different model. A receipt saying model=haiku is a request, not a fact; the effective model is the session model in all cases."
+ },
+ "wave_status": {
+  "wave": "attest-20261022-w1",
+  "workflow_run": "wf_d1494930-f0c",
+  "phases_complete": [
+   "map"
+  ],
+  "phases_running": [
+   "?"
+  ],
+  "seats": [
+   {
+    "seat": "attest:map:C1-carriers",
+    "phase": "map",
+    "ok": true,
+    "cluster": null,
+    "node_id": null,
+    "verdict": null,
+    "status": null
+   },
+   {
+    "seat": "attest:map:C2-identity",
+    "phase": "map",
+    "ok": true,
+    "cluster": null,
+    "node_id": null,
+    "verdict": null,
+    "status": null
+   },
+   {
+    "seat": "attest:map:C3-provenance",
+    "phase": "map",
+    "ok": true,
+    "cluster": null,
+    "node_id": null,
+    "verdict": null,
+    "status": null
+   },
+   {
+    "seat": "attest:map:C4-install",
+    "phase": "map",
+    "ok": true,
+    "cluster": null,
+    "node_id": null,
+    "verdict": null,
+    "status": null
+   },
+   {
+    "seat": "attest:map:C5-harness",
+    "phase": "map",
+    "ok": true,
+    "cluster": null,
+    "node_id": null,
+    "verdict": null,
+    "status": null
+   }
+  ]
+ },
+ "map_phase": {
+  "wave": "attest-20261022-w1",
+  "workflow_run": "wf_d1494930-f0c",
+  "seats": 5,
+  "all_returned": true,
+  "seed_verdicts": {
+   "C1-carriers": "PARTIAL",
+   "C2-identity": "PARTIAL",
+   "C3-provenance": "PARTIAL",
+   "C4-install": "PARTIAL",
+   "C5-harness": "PARTIAL"
+  },
+  "note": "Every cluster came back PARTIAL, not CONFIRMED. The seed defects are real but three of their stated forms are wrong. The board's own rule - the seed is a claim to attack - held.",
+  "seed_corrections": [
+   {
+    "seed": "H5 - \"no per-file manifest for the tree body, and no runtime check\"",
+    "verdict": "REFUTED as stated (four clusters agree: C1, C2, C3, C4)",
+    "truth": "A 1972-entry {path: sha256} manifest exists in the installed payload-manifest.json AND in installation.json -> runtimes[active].files. A runtime check exists too: the shipped setup_cli.py verify re-hashes the tree and FAILS today. The manifest is unread by python/synapse/ and the verify command is never invoked automatically. The real defect is the missing automatic invocation, not the missing manifest.",
+    "measured_drift": "Exactly 1 of 1972 files mismatches: houdini/python_panels/synapse_panel.pypanel. Interval 46.147 h, not ~21 h. Drift content: <includeInPaneTabMenu menu_position=\"0\" create_separator=\"false\"/> added; 3 UTF-8 em-dashes replaced by plain spaces (installed non-ASCII count 0, repo count 9) - matching the Houdini .pypanel signature byte-pattern-for-byte-pattern."
+   },
+   {
+    "seed": "H4 - the two-listener measurement",
+    "verdict": "CONFLICT BETWEEN LEGS - unresolved, carried to SEAM",
+    "truth": "C3 re-measured with netstat and found TWO listeners (52896 and 32832) and doctor reporting pid 52896 while the socket belonged to 32832. C1 re-measured with Get-NetTCPConnection and found exactly ONE listener. C3 additionally found a third houdini.exe (65468, started 10/22 15:12, on 127.0.0.1:10099). The disagreement is itself a finding and is NOT resolved here."
+   },
+   {
+    "seed": "H1 - a behavioural divergence between the two trees would still report green",
+    "verdict": "PARTIAL",
+    "truth": "The mechanism is confirmed - preflight.version_check compares version STRINGS only (preflight.py:216); no content hash is in the compare. But on this host the two code sets are currently content-identical, so no live divergence exists to observe. A naive byte digest would false-positive: 34 files differ only by line endings (installed LF, working tree CRLF) and 71 payload files are absent from the working tree."
+   },
+   {
+    "seed": "H2 / H3",
+    "verdict": "CONFIRMED, live, by every cluster that looked",
+    "truth": "H2: top-level synapse_version (protocol.py:235-236) and payload['client_version'] (mcp_server.py:511) are two carriers never cross-checked, read at websocket.py:126 / hwebserver_adapter.py:109 and handlers.py:994 respectively. H3: mcp/server.py:244 calls preflight_gate.admit(holder, tool_name) with no client_version, so version_check returns NOT_APPLICABLE and cannot refuse on the in-Houdini HTTP endpoint."
+   },
+   {
+    "seed": "H6 - tier collapse",
+    "verdict": "CONFIRMED, and measured against this wave itself",
+    "truth": "C5 read this wave's own transcripts: meta.json records model=haiku for all five MAP seats while the transcripts record the session model. It also found the capability ALREADY EXISTS in the product tree - anthropic_provider.py:342 sets reported_model from the live SSE message_start, model_access.py:618 finish_attempt(reported_model=...) - and ZERO readers of it anywhere in harness/."
+   }
+  ],
+  "carriers_beyond_the_seed": [
+   "mcp/server.py:302-310 derives a FOURTH version with a hardcoded fallback \"5.8.0\", reported at mcp/server.py:621.",
+   "The WebSocket handshake publishes only protocol_version (websocket.py:511,531,550,573,698; hwebserver_adapter.py:163,187,196,219,236) and never the server's SYNAPSE version - peer identity is one-way: the client asserts, the server never answers.",
+   "cache_policy.models synapse_version (models.py:415, :654) is a declared field with no producer found.",
+   "~/.synapse/auth.key does not exist on this host, so server/auth.py:40-84 returns None and the WS greeting path (websocket.py:502-512) is never exercised - the root enabler for a false peer."
+  ],
+  "measured_costs": {
+   "rehash_1972_files_warm_cache_s": 0.224,
+   "rehash_1972_files_inside_hython": "UNKNOWN - not measured",
+   "cold_cache": "UNKNOWN",
+   "canonical_payload_id_digest": "81ab387bd7d86dea, reproducible from the manifest alone"
+  },
+  "known_false_positive_traps": [
+   "474 files in the installed tree are NOT manifest-listed (473 __pycache__/*.pyc plus .synapse/agent_health_history.jsonl, written by panel/agent_health.py:185 into $SYNAPSE_ROOT/.synapse/). A naive tree==manifest predicate false-positives on a clean tree.",
+   "34 files differ between installed and working tree by line endings alone (installed LF, working tree CRLF). A naive byte digest false-positives on them."
+  ],
+  "unknowns_aggregate": "29 explicit UNKNOWNs were recorded across the five legs (who rewrote the .pypanel, whether it is the file Houdini loads, whether the drift breaks the artist, which of two WS servers served the probes, why two processes can both bind 9999 on Windows, what a start-time drift check would report given a live session mutates the tree, and more). The full per-leg lists are in the workflow journal at wf_d1494930-f0c/journal.jsonl."
+ }
+}
