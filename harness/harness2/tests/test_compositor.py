@@ -7,8 +7,9 @@ fail is deleted rather than kept green.
 Run:  python -m pytest harness/harness2/tests/test_compositor.py -q
 """
 import json
+import hashlib
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 
@@ -21,10 +22,17 @@ import compositor as C  # noqa: E402
 # --------------------------------------------------------------- scrubbing
 
 def test_scrub_removes_absolute_path_hash_and_pid():
-    s = ("read C:\\Users\\User\\SYNAPSE\\python\\synapse\\core\\protocol.py and "
+    # The in-repo path is derived from the ACTUAL checkout, not written down.
+    # A literal machine path made this test pass in exactly one checkout and
+    # fail in every other one - a linked worktree, a CI runner, a second
+    # clone - because the scrubber relativises against THIS repo's root. The
+    # assertion below is unchanged in strength: the repo-relative part must
+    # survive, the absolute prefix must not.
+    inside = str(C.REPO / "python" / "synapse" / "core" / "protocol.py")
+    s = (f"read {inside} and "
          "/home/someone/secret.txt sha=deadbeefdeadbeefdeadbeefdeadbeefdeadbeef pid 32832")
     out = C.scrub_text(s)
-    assert "C:\\Users\\User" not in out
+    assert str(C.REPO) not in out
     assert "/home/someone" not in out
     assert "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef" not in out
     assert "32832" not in out
@@ -37,9 +45,40 @@ def test_scrub_keeps_repo_relative_path_readable():
     assert out == "python/synapse/core/preflight.py:202"
 
 
+def test_scrub_keeps_a_posix_repo_path_readable(monkeypatch):
+    """A repo path must survive on POSIX too, not only on Windows.
+
+    The Windows branch relativised against the repo root; the POSIX branch
+    replaced the whole path with "<path>". So a checkout on Linux or macOS
+    lost every byte of the path - and the assertion that would have caught it
+    could only ever be run on the machine that wrote it, because the in-repo
+    path there is spelled with backslashes.
+
+    The repo root is stubbed to a POSIX path so this fails on ANY platform
+    against the old code, and passes against the fix everywhere.
+    """
+    monkeypatch.setattr(C, "REPO", PurePosixPath("/opt/synapse"))
+    out = C.scrub_text("read /opt/synapse/python/synapse/core/protocol.py now")
+    assert "python/synapse/core/protocol.py" in out
+    assert "/opt/synapse" not in out
+
+
+def test_scrub_still_scrubs_a_posix_path_outside_the_repo(monkeypatch):
+    """The other half of the same fix: a path OUTSIDE the repo must not leak."""
+    monkeypatch.setattr(C, "REPO", PurePosixPath("/opt/synapse"))
+    out = C.scrub_text("read /home/someone/secret.txt now")
+    assert "secret.txt" not in out
+    assert "/home/someone" not in out
+
+
 def test_scrub_is_recursive():
-    out = C.scrub({"a": ["C:\\Users\\User\\x.py"], "b": {"c": "pid 99"}})
-    assert "C:\\Users\\User" not in json.dumps(out)
+    # "Example" is the repo's placeholder convention, not this account.
+    # The assertion checks the SCRUBBED VALUE, not the JSON text: json.dumps
+    # doubles every backslash, so a substring test against the dumped form
+    # could never match and the assertion could never fail.
+    out = C.scrub({"a": ["C:\\Users\\Example\\x.py"], "b": {"c": "pid 99"}})
+    assert out["a"][0] == "<path>"
+    assert "Example" not in json.dumps(out)
     assert "99" not in json.dumps(out)
 
 
@@ -336,12 +375,82 @@ def test_graph_falls_back_when_the_chosen_node_is_blocked():
     assert "not landable" in d["reason"]
 
 
+def test_graph_does_not_adopt_a_node_by_its_position_in_the_caller_list():
+    """The fail-open this guard used to carry.
+
+    Jev's choice is unusable, another node qualifies on the per-node judgments -
+    and the guard must NOT designate that node as the first landing. The caller's
+    given order is not evidence, and a default dressed as a judgment is the
+    failure the compositor's own header forbids.
+
+    This test FAILS against the old code, which fell back to the first
+    landable-and-valued node in the given order and set first_landing to it.
+    """
+    nodes = [_node("A", ["a.py"]), _node("B", ["b.py"])]
+    pol = C.load_questions()["guards"]["graph"]["policy"]
+    answers = _ganswers(choice="A", lands=0.9)
+    answers["nouls"]["lands_A"] = {"noul": 0.1}   # A is not landable
+    d = C.decide_graph(answers, nodes, pol)
+    assert d["first_landing"] is None
+    assert "not landable" in d["reason"]
+    # B still qualifies - that list comes from the per-node judgments, not from
+    # the choice - but nothing is designated as landing FIRST.
+    assert d["land_now"] == ["B"]
+
+
+def test_graph_treats_a_missing_confidence_as_missing_not_as_maximum():
+    """The old code read a missing confidence as MAXIMUM confidence, and then
+    formatted it - so the fail-open could not even report itself, it raised a
+    TypeError instead. A missing confidence is a missing confidence."""
+    nodes = [_node("A", ["a.py"])]
+    pol = C.load_questions()["guards"]["graph"]["policy"]
+    d = C.decide_graph(_ganswers(conf=None), nodes, pol)
+    assert d["first_landing"] is None
+    assert "no confidence" in d["reason"]
+
+
 def test_graph_fails_closed_without_jev():
     nodes = [_node("A", ["a.py"])]
     pol = C.load_questions()["guards"]["graph"]["policy"]
     d = C.decide_graph(None, nodes, pol)
     assert d["first_landing"] is None
     assert d["park"] == ["A"]
+
+
+# --------------------------------------------------------------- provenance
+
+def test_provenance_names_the_input_and_hashes_its_bytes(tmp_path):
+    """A committed receipt has to say what produced it."""
+    src = tmp_path / "graph.json"
+    src.write_text('{"nodes": []}', encoding="utf-8")
+    p = C.provenance(src, "graph", "wave-1")
+    assert p["mode"] == "graph" and p["wave"] == "wave-1"
+    assert p["input_sha256"] == hashlib.sha256(b'{"nodes": []}').hexdigest()
+    assert p["generated_utc"].endswith("+00:00")
+
+
+def test_provenance_hash_detects_drift_in_the_input(tmp_path):
+    """The case this exists for: the graph was corrected, the receipt was not.
+
+    A receipt that cannot say whether its input changed is a receipt that can
+    quietly describe a decision that was never made.
+    """
+    src = tmp_path / "graph.json"
+    src.write_text('{"nodes": []}', encoding="utf-8")
+    before = C.provenance(src, "graph", "wave-1")["input_sha256"]
+    src.write_text('{"nodes": [{"id": "A"}]}', encoding="utf-8")
+    after = C.provenance(src, "graph", "wave-1")["input_sha256"]
+    assert before != after
+
+
+def test_provenance_carries_no_absolute_path(tmp_path, monkeypatch):
+    """A receipt is committed. It must not carry a machine's directory layout."""
+    monkeypatch.setattr(C, "REPO", PurePosixPath("/opt/synapse"))
+    src = tmp_path / "graph.json"
+    src.write_text("{}", encoding="utf-8")
+    p = C.provenance(src, "graph", "wave-1")
+    assert "/opt/synapse" not in p["input"]
+    assert str(tmp_path) not in p["input"]
 
 
 # --------------------------------------------------------------- dead gates
@@ -380,7 +489,7 @@ def test_every_shipped_question_is_in_a_documented_primitive():
                 assert "instructions" in spec, f"{name}.{qid} needs instructions"
 
 
-def test_scrubbed_state_is_what_reaches_the_api(monkeypatch):
+def test_scrubbed_state_is_what_reaches_the_api(monkeypatch, tmp_path):
     """The scrubber is not decoration: the state handed to jc.ask carries no path."""
     seen = {}
 
@@ -390,8 +499,34 @@ def test_scrubbed_state_is_what_reaches_the_api(monkeypatch):
         return None
 
     monkeypatch.setattr(C.jc, "ask", fake_ask)
-    C.compose([_cand("A", ["a.py"])], "test", {"harness": "at C:\\Users\\User\\SYNAPSE"},
-              ["no absolute paths"], ["wrote C:\\Users\\User\\SYNAPSE\\x.py"])
+    src = tmp_path / "candidates.json"
+    src.write_text("{}", encoding="utf-8")
+    C.compose([_cand("A", ["a.py"])], "test", {"harness": "at C:\\Users\\Example\\SYNAPSE"},
+              ["no absolute paths"], ["wrote C:\\Users\\Example\\SYNAPSE\\x.py"], source=src)
     blob = json.dumps(seen["state"])
-    assert "C:\\Users\\User" not in blob
+    # Same trap as above: the backslash-doubled path never appears in a JSON
+    # dump, so assert on the account name and the directory, which would.
+    assert "Example" not in blob
     assert "SYNAPSE" not in blob
+
+
+def test_a_decision_carries_the_provenance_of_the_file_it_came_from(monkeypatch, tmp_path):
+    """Law 2: a decision names the file it was made from.
+
+    The provenance used to be attached by the CLI wrapper, AFTER the decision came
+    back - so any library caller could produce a decision with no producer path at
+    all, and nothing would have said so. It is attached by the entry point now,
+    and `source` is a required argument, so there is no way to make a decision
+    without saying what made it.
+    """
+    src = tmp_path / "graph.json"
+    src.write_text('{"nodes": []}', encoding="utf-8")
+    monkeypatch.setattr(C.jc, "ask", lambda state, spec, **kw: None)
+    d = C.graph_decision([_node("A", ["a.py"])], "wave-1", "an objective", [], source=src)
+    assert d["provenance"]["input_sha256"] == hashlib.sha256(b'{"nodes": []}').hexdigest()
+    assert d["provenance"]["mode"] == "graph"
+    assert d["provenance"]["wave"] == "wave-1"
+    # and the compose side, which is the other way to publish a decision
+    d2 = C.compose([_cand("A", ["a.py"])], "wave-2", {"harness": "h"}, ["s"], source=src)
+    assert d2["provenance"]["mode"] == "compose"
+    assert d2["provenance"]["input_sha256"] == hashlib.sha256(b'{"nodes": []}').hexdigest()

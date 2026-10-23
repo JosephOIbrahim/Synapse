@@ -182,7 +182,7 @@
         "min_value": 2,
         "joe_escalate_min": 0.5,
         "blocked_max": 0.5,
-        "fallback_first_landing": "the first node in the caller's given order that JEV judged landable"
+        "fallback_first_landing": "NO FIRST LANDING - when Jev's answer cannot be used (no confidence at all, an id that is not a node, a confidence below the gate, or a node that is not landable-and-valued), no node is designated as the first landing. The caller's given order is not evidence. The nodes that independently qualify are still listed in land_now, computed from the per-node judgments, not from the choice."
       },
       "calibration": {
         "min_value": {

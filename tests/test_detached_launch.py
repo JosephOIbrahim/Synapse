@@ -63,11 +63,22 @@ def test_start_detached_runs_outside_the_callers_tree_with_the_given_env(tmp_pat
     ]))
     child = int(info["CHILD"])
     try:
+        # The child creates the marker before it has finished writing it, and
+        # Windows refuses a read while the writer still holds the handle, so
+        # "the file exists" is not "the file is readable". Wait for the
+        # marker to be readable AND complete. The assertions below are
+        # unchanged - only the wait for the evidence changed.
         deadline = time.time() + 30
-        while not marker.exists() and time.time() < deadline:
-            time.sleep(0.2)
-        assert marker.exists(), "the detached child never ran"
-        pid_text, probe = marker.read_text(encoding="utf-8-sig").strip().split("|", 1)
+        payload = ""
+        while time.time() < deadline and "|" not in payload:
+            try:
+                payload = marker.read_text(encoding="utf-8-sig")
+            except (FileNotFoundError, PermissionError):
+                payload = ""
+            if "|" not in payload:
+                time.sleep(0.2)
+        assert "|" in payload, "the detached child never wrote its marker: %r" % (payload,)
+        pid_text, probe = payload.strip().split("|", 1)
         assert probe == "probe-ok", "the environment was not handed to the child"
         assert int(pid_text) == child, "the returned pid is not the process running the command"
         facts = _ps("$p = Get-CimInstance Win32_Process -Filter \"ProcessId=%d\"\n"

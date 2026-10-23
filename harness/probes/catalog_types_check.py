@@ -27,28 +27,43 @@ bites a script, and it can be caused by (3) even when (2) is perfect.
 
 WHAT THIS PROBE ESTABLISHED (Houdini 22.0.400):
 
+  The committed receipt is harness/probes/catalog_types_check_receipt.json.
+  Every number below is in it, with the build, the catalogue directory and the
+  comparison that produced it. This docstring summarises; the receipt is the
+  evidence.
+
   - The catalogue is FAITHFUL. All six audited entries match their live type's
-    parm template exactly: gltf 17/17, gltf::2.0 42/42, distantlight 131/131,
-    distantlight::2.0 123/123, Driver usdrender 194/194, Top usdrender 73/73.
+    parm template exactly (Jaccard 1.000 on each): gltf 17/17, gltf::2.0 42/42,
+    distantlight 131/131, distantlight::2.0 123/123, Driver usdrender 194/194,
+    Top usdrender 73/73.
   - The real trap is ALIAS RESOLUTION. createNode("gltf") returns a gltf::2.0
     node, so parm names read from the catalogue's unversioned "gltf" entry do
-    not exist on the node you got. createNode("distantlight") behaves the same
-    way (-> distantlight::2.0). The catalogue is right; the CONSUMER has to
-    know the unversioned key is an alias.
+    not exist on the node you got (3 of 17 settable, 14 absent). createNode
+    ("distantlight") behaves the same way (-> distantlight::2.0; 65 of 123
+    settable, 58 absent). The catalogue is right; the CONSUMER has to know the
+    unversioned key is an alias. Against the catalogue entry for the type
+    createNode() actually returned, the absent count is ZERO for all six.
   - usdrender DOES resolve. The Driver usdrender creates in /out; the Top
     usdrender creates inside a topnet. A TOP type created directly under
     /tasks fails because /tasks is the scheduler, not a TOP network.
   - Parm names containing '#' are Houdini's SPARE-PARAMETER convention. They
     are present in the node's own parameter interface (Houdini's own label
     ends in '#') but the node exposes no value for them. 7,155 of 152,918
-    catalogue parm names (4.7%) carry one, across ten category files - it is
-    a Houdini-wide convention, not a defect of the three audited types.
+    catalogue parm names (4.68%) carry one, across eleven category files - it
+    is a Houdini-wide convention, not a defect of the three audited types.
 
 Run:
   hython -s -P harness/probes/catalog_types_check.py --catalog rag/catalog/h22.0.400
 
 Exit code 0 means every catalogue entry that names a live type agrees with it.
 Exit code 1 means at least one entry disagrees.
+
+THE RECEIPT:
+  --receipt <path> writes the same findings as JSON, so the numbers quoted in
+  this docstring and in the audit have a committed producer. The receipt
+  records the build, the catalogue directory, and every comparison it made.
+  Without it, the six parm counts below are prose - true as far as anyone can
+  tell, and re-derivable only by someone with a 22.0.400 seat.
 """
 from __future__ import annotations
 
@@ -64,6 +79,13 @@ def _catalog_dir() -> Path:
         if arg == "--catalog" and i + 1 < len(sys.argv):
             return Path(sys.argv[i + 1])
     return ROOT / "rag/catalog/h22.0.400"
+
+
+def _receipt_path():
+    for i, arg in enumerate(sys.argv):
+        if arg == "--receipt" and i + 1 < len(sys.argv):
+            return Path(sys.argv[i + 1])
+    return None
 
 
 def load_entry(catalog: Path, category: str, key: str):
@@ -187,6 +209,23 @@ def main() -> int:
     problems = []
     checked = 0
 
+    # Everything below is recorded as it is measured, so --receipt can write a
+    # finding the reader can check rather than a number they have to trust.
+    rec = {
+        "probe": "catalog_types_check",
+        "houdini": None,
+        "catalogue": None,
+        "targets": [],
+        "resolution": [],
+        "template_fidelity": [],
+        "alias_resolution": [],
+        "set_ability": [],
+        "spare_name_scope": {},
+        "identity": [],
+        "checked": 0,
+        "problems": [],
+    }
+
     print("=" * 78)
     print("Q1 RESOLUTION  -  does the catalogue key name a live type in that category?")
     print("=" * 78)
@@ -194,10 +233,14 @@ def main() -> int:
         entry = load_entry(catalog, category, key)
         if entry is None:
             print("  %-8s %-18s not in the catalogue at all" % (category, key))
+            rec["resolution"].append({"category": category, "key": key,
+                                      "in_catalogue": False, "live_type_exists": False})
             continue
         types = live_types.get(category, {})
         print("  %-8s %-18s catalogue: yes    live type with this exact name: %s"
               % (category, key, "YES" if key in types else "NO"))
+        rec["resolution"].append({"category": category, "key": key,
+                                  "in_catalogue": True, "live_type_exists": key in types})
         checked += 1
 
     print()
@@ -216,6 +259,13 @@ def main() -> int:
         live_p = set(live_template_parms(node_type))
         missing = sorted(cat_p - live_p)
         extra = sorted(live_p - cat_p)
+        rec["template_fidelity"].append({
+            "category": category, "key": key,
+            "catalogue_parms": len(cat_p), "live_template_parms": len(live_p),
+            "missing_from_live": missing, "extra_in_live": extra,
+            "jaccard": round(len(cat_p & live_p) / float(len(cat_p | live_p)), 6)
+            if (cat_p | live_p) else 1.0,
+        })
         print("  %-8s %-18s catalogue: %3d   live template: %3d" % (category, key, len(cat_p), len(live_p)))
         if missing:
             print("        catalogue names, live type lacks : %s" % (missing[:8] or "none"))
@@ -247,6 +297,8 @@ def main() -> int:
             actual = node.type().name()
             same = "same" if actual == key else "DIFFERENT"
             print("  %-8s %-18s -> %-20s (%s)" % (category, key, actual, same))
+            rec["alias_resolution"].append({"category": category, "key": key,
+                                           "resolved_type": actual, "aliased": actual != key})
             if actual != key:
                 aliases.append((category, key, actual))
         finally:
@@ -307,6 +359,15 @@ def main() -> int:
             spare = [n for n in names if n not in settable and "#" in n]
             absent = [n for n in names if n not in settable and "#" not in n]
             aliased = resolved != key
+            entry_rec = {
+                "category": category, "key": key, "resolved_type": resolved,
+                "aliased": aliased,
+                "catalogue_parms": len(names), "settable": len(settable),
+                "spare": len(spare), "absent": len(absent),
+                "absent_names": absent,
+                "like_for_like": None,
+            }
+            rec["set_ability"].append(entry_rec)
             if aliased:
                 # createNode(KEY) handed back a DIFFERENT type. A name from
                 # KEY's entry that is not on the node is the ALIAS effect, not
@@ -342,6 +403,14 @@ def main() -> int:
                       "%d spare, %d ABSENT"
                       % (resolved, len(r_names), len(r_names) - len(r_spare) - len(r_absent),
                          len(r_spare), len(r_absent)))
+                entry_rec["like_for_like"] = {
+                    "catalogue_key": resolved,
+                    "parms": len(r_names),
+                    "settable": len(r_names) - len(r_spare) - len(r_absent),
+                    "spare": len(r_spare),
+                    "absent": len(r_absent),
+                    "absent_names": r_absent,
+                }
                 if r_absent:
                     print("          ABSENT : %s" % (r_absent[:10] or "none"))
                     problems.append("%s/%s: %d parm name(s) in the catalogue entry for the "
@@ -362,6 +431,7 @@ def main() -> int:
     # three types are not special and no per-type fix is warranted.
     total_hash = 0
     total_names = 0
+    per_file = {}
     for cat_file in sorted(catalog.glob("*.json")):
         if cat_file.name.startswith("_"):
             continue
@@ -386,10 +456,16 @@ def main() -> int:
                     n_hash += 1
         total_hash += n_hash
         total_names += n_names
+        per_file[cat_file.name] = {"spare": n_hash, "parms": n_names}
         if n_hash:
             print("  %-22s %5d of %6d parm names carry '#'" % (cat_file.name, n_hash, n_names))
     print("  %-22s %5d of %6d parm names carry '#'  (%.1f%% catalogue-wide)"
           % ("TOTAL", total_hash, total_names, 100.0 * total_hash / max(total_names, 1)))
+    rec["spare_name_scope"] = {
+        "total_spare": total_hash, "total_parms": total_names,
+        "percent": round(100.0 * total_hash / max(total_names, 1), 3),
+        "per_file": per_file,
+    }
     print("  -> the '#' convention is Houdini-wide; these three types are not special.")
 
     print()
@@ -421,6 +497,11 @@ def main() -> int:
             if ratio >= 0.85:
                 best.append((ratio, overlap, tname, len(live_set)))
         best.sort(reverse=True)
+        rec["identity"].append({
+            "category": category, "key": key, "catalogue_parms": len(cat_set),
+            "matches": [{"type": tname, "overlap": ov, "jaccard": round(r, 6),
+                         "live_parms": nl} for (r, ov, tname, nl) in best[:3]],
+        })
         print("  %-8s %-18s catalogue parms: %d" % (category, key, len(cat_set)))
         if not best:
             print("        NO live type in this category matches (best overlap below 85%%)")
@@ -437,6 +518,22 @@ def main() -> int:
     print("SUMMARY")
     print("=" * 78)
     print("checked %d catalogue entries" % checked)
+
+    rec["houdini"] = hou.applicationVersionString()
+    rec["catalogue"] = str(catalog)
+    rec["targets"] = [list(t) for t in targets]
+    rec["checked"] = checked
+    rec["problems"] = list(problems)
+    rec["verdict"] = "AGREEMENT" if not problems else "DISAGREEMENT"
+
+    receipt = _receipt_path()
+    if receipt is not None:
+        receipt.parent.mkdir(parents=True, exist_ok=True)
+        receipt.write_text(json.dumps(rec, indent=1, ensure_ascii=False, sort_keys=False) + "\n",
+                           encoding="utf-8", newline="")
+        print()
+        print("receipt: %s" % receipt)
+
     if problems:
         print("DISAGREEMENTS (%d):" % len(problems))
         for p in problems:

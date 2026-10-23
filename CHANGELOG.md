@@ -2,6 +2,51 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.97.7 - Audit the Gaussian-splat blueprint and correct the catalogue finding
+
+**No product behaviour changes.** The shipped product diff from v5.97.6 is the
+version string plus two documentation lines inside the installer's own README:
+`python scripts/product_surface.py --diff v5.97.6 HEAD` names exactly
+`python/synapse/__init__.py` and `installer/README.md`.
+
+An external World Labs Gaussian-splat blueprint was audited call by call
+against Houdini 22.0.400. Its script does not run: it dies on **line 27** — the
+third node creation it makes, and the first that raises, since a `geo` and a
+`file` are created successfully first; **six** of its calls raise; and **ten** of its
+parameter writes name parameters that were never created. **Eight** of its own
+prose claims are not implemented by its code — six of them measured by counting
+the terms each claim would need, not by reading the claim, among them an
+FFmpeg export it never writes and a USD coordinate conversion it never
+performs. A corrected script ships as a probe and verifies **11/11** live; the
+eight unproven claims stay open with the probe that would settle each one.
+
+The audit's own strongest claim was wrong and is corrected: the shipped node
+catalogue matches the live build exactly (17/17, 42/42, 131/131, 123/123,
+194/194, 73/73; Jaccard 1.000 per entry), and `usdrender` resolves in both its
+contexts. The hazards that remain are consumer rules — `createNode("gltf")`
+returns `gltf::2.0` and `createNode("distantlight")` returns
+`distantlight::2.0`, so 14 of 17 and 58 of 123 unversioned parameter names do
+not exist on the node you get; and 7,155 of 152,918 catalogue parameter names
+(4.7%) carry Houdini's `#` spare-slot convention across eleven category files.
+A standing probe now compares the catalogue against the live build and exits
+non-zero on divergence. Also recorded: class-level
+`dir(hou.Node)` is not a valid phantom test.
+
+Two harness boards land, neither ratified: the attest board (DRAFT, no open
+gate, all five seed clusters returned PARTIAL, and the seam leg refuted several
+of the map legs' stated forms against the tree — the landed crucible verdicts
+are SOUND-WITH-NITS, SOUND-WITH-NITS and BROKEN) and harness2's compose and
+graph guards (fail closed with no Jev answer). The attest wave **completed**
+before the cut — 17 seats dispatched, 17 returned, every phase from map
+through verify — and the recorder that writes its record now ships with its own
+test suite, which caught three defects in the recorder itself: a scrub that
+replaced SYNAPSE's own vocabulary (`/mcp`, `/version.mismatch`) with `<path>`
+and ate the port out of a `ws://` URL, a verify section that recorded both
+PASS verdicts with `proof: null` because the seats had written their evidence
+under a different key, and a per-phase count that filed the seam and synth
+seats under "unknown" while the same file said they had returned.
+[Release notes, tests and limits](docs/releases/v5.97.7.md).
+
 ## v5.97.6 - Preserve package choices and qualify native activation
 
 Windows Setup preserves explicit OFF, existing default-OFF and supported custom

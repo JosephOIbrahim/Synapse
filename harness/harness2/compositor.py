@@ -46,7 +46,7 @@ _PID = re.compile(r"(?i)\b(pid|process id)\s*[:=]?\s*\d+")
 def scrub_text(s: str) -> str:
     """Strip machine-specific detail out of a string before it leaves the box."""
     s = _WIN_ABS.sub(lambda m: _relativise(m.group(0)), s)
-    s = _POSIX_ABS.sub("<path>", s)
+    s = _POSIX_ABS.sub(lambda m: _relativise(m.group(0)), s)
     s = _USERDIR.sub(lambda m: "<path>/" + m.group(1) + "/", s)
     s = _HEX40.sub("<sha>", s)
     s = _HEX8.sub("<hash>", s)
@@ -55,7 +55,15 @@ def scrub_text(s: str) -> str:
 
 
 def _relativise(p: str) -> str:
-    """A path inside the repo stays readable (repo-relative); anything else becomes <path>."""
+    """A path inside the repo stays readable (repo-relative); anything else becomes <path>.
+
+    BOTH absolute-path branches go through here. The POSIX branch used to
+    substitute a bare "<path>", which meant a repo path on a Linux or macOS
+    checkout lost every byte of it - while the same path on Windows survived,
+    because the Windows branch was the only one that relativised. The scrubber
+    has to treat the two platforms the same way, or the evidence it keeps
+    depends on which machine produced it.
+    """
     try:
         norm = p.replace("\\", "/")
         root = str(REPO).replace("\\", "/")
@@ -365,21 +373,36 @@ def decide_graph(answers: dict | None, nodes: list[dict], policy: dict) -> dict:
 
     first = None
     reason = ""
-    if choice in by_id and (conf is None or conf >= policy["first_landing_min_confidence"]):
-        if landable(choice) and valued(choice):
-            first = choice
-            reason = f"jev: {choice} @ {conf:.2f} (lands {per[choice]['lands']}, value {per[choice]['value']})"
-        else:
-            reason = f"fallback: Jev chose {choice} but it is not landable-and-valued (lands {per[choice]['lands']}, value {per[choice]['value']})"
-    else:
+    # The first landing is a JUDGMENT, so it is only ever set from a judgment that
+    # holds up. Four ways the answer can fail to hold up, and none of them is a
+    # licence to pick a node by its position in the caller's list.
+    #
+    #   - no confidence at all: a missing confidence is NOT maximum confidence.
+    #     The old code read it as maximum, then formatted it - and crashed on the
+    #     None, so the fail-open could never even report itself.
+    #   - an id that is not a node
+    #   - a confidence below the gate
+    #   - a node that is not landable-and-valued
+    #
+    # In every failing case the first landing is simply not established. The nodes
+    # that independently qualify are still listed in land_now, because that list is
+    # computed from the per-node judgments, not from the choice. What is removed is
+    # the old "fell back to the first landable-and-valued node in the given order":
+    # the caller's order is not evidence, and a default dressed as a judgment is
+    # the exact failure this file's header forbids.
+    if conf is None:
+        reason = "fallback: Jev's answer carried no confidence, so no first landing is designated"
+    elif choice not in by_id:
         reason = f"fallback: Jev chose {choice!r} @ {conf}, not a confident node id"
-
-    if first is None:
-        for n in nodes:
-            if landable(n["id"]) and valued(n["id"]):
-                first = n["id"]
-                reason += f"; fell back to {first} (first landable-and-valued node in the given order)"
-                break
+    elif conf < policy["first_landing_min_confidence"]:
+        reason = (f"fallback: Jev chose {choice} @ {conf}, below the confidence gate "
+                  f"{policy['first_landing_min_confidence']}")
+    elif not (landable(choice) and valued(choice)):
+        reason = (f"fallback: Jev chose {choice} but it is not landable-and-valued "
+                  f"(lands {per[choice]['lands']}, value {per[choice]['value']})")
+    else:
+        first = choice
+        reason = f"jev: {choice} @ {conf:.2f} (lands {per[choice]['lands']}, value {per[choice]['value']})"
 
     land_now = [n["id"] for n in nodes
                 if landable(n["id"]) and valued(n["id"]) and not needs_joe(n["id"])]
@@ -392,7 +415,7 @@ def decide_graph(answers: dict | None, nodes: list[dict], policy: dict) -> dict:
 # ---------------------------------------------------------------- entry points
 
 def compose(candidates: list[dict], wave: str, harness: dict, standards: list[str],
-            evidence: list[str] | None = None) -> dict:
+            evidence: list[str] | None = None, *, source: Path) -> dict:
     q = load_questions()
     guard = q["guards"]["compose"]
     spec = compose_spec(candidates, guard)
@@ -410,11 +433,18 @@ def compose(candidates: list[dict], wave: str, harness: dict, standards: list[st
     decision["candidates"] = [c["id"] for c in candidates]
     decision["wave"] = wave
     decision["state_scrubbed"] = True
+    # Law 2: a decision names the file it was made from. The CLI used to attach
+    # this AFTER the decision came back, so a library caller could produce a
+    # decision with no producer path at all. It is attached here, where the
+    # decision is made, and `source` is REQUIRED - there is no way to make one
+    # without saying what made it.
+    decision["provenance"] = provenance(source, "compose", wave)
     return decision
 
 
 def graph_decision(nodes: list[dict], wave: str, objective: str, standards: list[str],
-                   edges: list[dict] | None = None, seams: list[dict] | None = None) -> dict:
+                   edges: list[dict] | None = None, seams: list[dict] | None = None,
+                   *, source: Path) -> dict:
     q = load_questions()
     guard = q["guards"]["graph"]
     spec = graph_spec(nodes, guard)
@@ -433,7 +463,36 @@ def graph_decision(nodes: list[dict], wave: str, objective: str, standards: list
     decision["wave"] = wave
     decision["objective"] = objective
     decision["state_scrubbed"] = True
+    # Attached here, not in the CLI wrapper: see compose().
+    decision["provenance"] = provenance(source, "graph", wave)
     return decision
+
+
+def provenance(input_path: Path, mode: str, wave: str) -> dict:
+    """What produced this receipt, recorded in the receipt itself.
+
+    A committed decision that cannot say which input produced it is a claim
+    without a producer path. The input bytes are hashed, so a later reader can
+    tell whether the graph was edited AFTER the decision was made - which is
+    exactly the failure the World Labs receipt had: the decision was still
+    filed under the graph's filename, but the graph had been corrected and the
+    receipt had not been re-judged. The hash makes that state visible instead
+    of invisible.
+
+    The path is relativised, not absolute: a receipt is a committed artifact
+    and must not carry a machine's directory layout.
+    """
+    import hashlib
+    import datetime
+
+    raw = input_path.read_bytes()
+    return {
+        "input": scrub_text(str(input_path)),
+        "input_sha256": hashlib.sha256(raw).hexdigest(),
+        "mode": mode,
+        "wave": wave,
+        "generated_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+    }
 
 
 def write_decision(decision: dict, wave: str, name: str = "decision") -> Path:
@@ -456,6 +515,7 @@ def _main(argv: list[str]) -> int:
     a = ap.parse_args(argv)
 
     payload = json.loads(Path(a.input).read_text(encoding="utf-8"))
+    source = Path(a.input)
     if a.mode == "compose":
         candidates = payload.get("candidates") or payload
         decision = compose(
@@ -463,6 +523,7 @@ def _main(argv: list[str]) -> int:
             payload.get("harness") or {},
             payload.get("standards") or [],
             payload.get("evidence") or [],
+            source=source,
         )
         name = "decision"
     else:
@@ -473,6 +534,7 @@ def _main(argv: list[str]) -> int:
             payload.get("standards") or [],
             payload.get("edges") or [],
             payload.get("seams") or [],
+            source=source,
         )
         name = "graph_decision"
     out = Path(a.out) if a.out else write_decision(decision, a.wave, name)

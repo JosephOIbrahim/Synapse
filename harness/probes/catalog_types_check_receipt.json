@@ -1,0 +1,527 @@
+{
+ "probe": "catalog_types_check",
+ "houdini": "22.0.400",
+ "catalogue": "rag\\catalog\\h22.0.400",
+ "targets": [
+  [
+   "Sop",
+   "gltf"
+  ],
+  [
+   "Sop",
+   "gltf::2.0"
+  ],
+  [
+   "Lop",
+   "distantlight"
+  ],
+  [
+   "Lop",
+   "distantlight::2.0"
+  ],
+  [
+   "Driver",
+   "usdrender"
+  ],
+  [
+   "Top",
+   "usdrender"
+  ]
+ ],
+ "resolution": [
+  {
+   "category": "Sop",
+   "key": "gltf",
+   "in_catalogue": true,
+   "live_type_exists": true
+  },
+  {
+   "category": "Sop",
+   "key": "gltf::2.0",
+   "in_catalogue": true,
+   "live_type_exists": true
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight",
+   "in_catalogue": true,
+   "live_type_exists": true
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight::2.0",
+   "in_catalogue": true,
+   "live_type_exists": true
+  },
+  {
+   "category": "Driver",
+   "key": "usdrender",
+   "in_catalogue": true,
+   "live_type_exists": true
+  },
+  {
+   "category": "Top",
+   "key": "usdrender",
+   "in_catalogue": true,
+   "live_type_exists": true
+  }
+ ],
+ "template_fidelity": [
+  {
+   "category": "Sop",
+   "key": "gltf",
+   "catalogue_parms": 17,
+   "live_template_parms": 17,
+   "missing_from_live": [],
+   "extra_in_live": [],
+   "jaccard": 1.0
+  },
+  {
+   "category": "Sop",
+   "key": "gltf::2.0",
+   "catalogue_parms": 42,
+   "live_template_parms": 42,
+   "missing_from_live": [],
+   "extra_in_live": [],
+   "jaccard": 1.0
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight",
+   "catalogue_parms": 131,
+   "live_template_parms": 131,
+   "missing_from_live": [],
+   "extra_in_live": [],
+   "jaccard": 1.0
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight::2.0",
+   "catalogue_parms": 123,
+   "live_template_parms": 123,
+   "missing_from_live": [],
+   "extra_in_live": [],
+   "jaccard": 1.0
+  },
+  {
+   "category": "Driver",
+   "key": "usdrender",
+   "catalogue_parms": 194,
+   "live_template_parms": 194,
+   "missing_from_live": [],
+   "extra_in_live": [],
+   "jaccard": 1.0
+  },
+  {
+   "category": "Top",
+   "key": "usdrender",
+   "catalogue_parms": 73,
+   "live_template_parms": 73,
+   "missing_from_live": [],
+   "extra_in_live": [],
+   "jaccard": 1.0
+  }
+ ],
+ "alias_resolution": [
+  {
+   "category": "Sop",
+   "key": "gltf",
+   "resolved_type": "gltf::2.0",
+   "aliased": true
+  },
+  {
+   "category": "Sop",
+   "key": "gltf::2.0",
+   "resolved_type": "gltf::2.0",
+   "aliased": false
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight",
+   "resolved_type": "distantlight::2.0",
+   "aliased": true
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight::2.0",
+   "resolved_type": "distantlight::2.0",
+   "aliased": false
+  },
+  {
+   "category": "Driver",
+   "key": "usdrender",
+   "resolved_type": "usdrender",
+   "aliased": false
+  },
+  {
+   "category": "Top",
+   "key": "usdrender",
+   "resolved_type": "usdrender",
+   "aliased": false
+  }
+ ],
+ "set_ability": [
+  {
+   "category": "Sop",
+   "key": "gltf",
+   "resolved_type": "gltf::2.0",
+   "aliased": true,
+   "catalogue_parms": 17,
+   "settable": 3,
+   "spare": 0,
+   "absent": 14,
+   "absent_names": [
+    "addpathattribute",
+    "filename",
+    "geotype",
+    "loadnames",
+    "materialassigns",
+    "meshchooser",
+    "nodechooser",
+    "pathattribute",
+    "pointconsolidatedist",
+    "primitiveindex",
+    "promotepointattrs",
+    "scene",
+    "scenechooser",
+    "usecustomattribs"
+   ],
+   "like_for_like": {
+    "catalogue_key": "gltf::2.0",
+    "parms": 34,
+    "settable": 33,
+    "spare": 1,
+    "absent": 0,
+    "absent_names": []
+   }
+  },
+  {
+   "category": "Sop",
+   "key": "gltf::2.0",
+   "resolved_type": "gltf::2.0",
+   "aliased": false,
+   "catalogue_parms": 34,
+   "settable": 33,
+   "spare": 1,
+   "absent": 0,
+   "absent_names": [],
+   "like_for_like": {
+    "catalogue_key": "gltf::2.0",
+    "parms": 34,
+    "settable": 33,
+    "spare": 1,
+    "absent": 0,
+    "absent_names": []
+   }
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight",
+   "resolved_type": "distantlight::2.0",
+   "aliased": true,
+   "catalogue_parms": 123,
+   "settable": 65,
+   "spare": 0,
+   "absent": 58,
+   "absent_names": [
+    "angle",
+    "angle_control",
+    "color",
+    "colorTemperature",
+    "colorTemperature_control",
+    "color_control",
+    "diffuse",
+    "diffuse_control",
+    "enableColorTemperature",
+    "enableColorTemperature_control",
+    "exposure",
+    "exposure_control",
+    "geometry",
+    "geometry_control",
+    "height",
+    "height_control",
+    "intensity",
+    "intensity_control",
+    "length",
+    "length_control",
+    "lighttype",
+    "normalize",
+    "normalize_control",
+    "radius",
+    "radius_control",
+    "specular",
+    "specular_control",
+    "treatAsPoint",
+    "treatAsPoint_control",
+    "width",
+    "width_control",
+    "xn__shadowcolor_control_06a",
+    "xn__shadowcolor_zta",
+    "xn__shadowdistance_control_wcb",
+    "xn__shadowdistance_vya",
+    "xn__shadowenable_control_n8a",
+    "xn__shadowenable_mva",
+    "xn__shadowfalloffGamma_control_fjb",
+    "xn__shadowfalloffGamma_e5a",
+    "xn__shadowfalloff_8wa",
+    "xn__shadowfalloff_control_99a",
+    "xn__shapingconeangle_51ae",
+    "xn__shapingconeangle_control_6fbe",
+    "xn__shapingconefactor_s3ae",
+    "xn__shapingconesoftness_16ae",
+    "xn__shapingconesoftness_control_2kbe",
+    "xn__shapingfocusTint_51a",
+    "xn__shapingfocusTint_control_6fb",
+    "xn__shapingfocus_control_o8a",
+    "xn__shapingfocus_nva",
+    "xn__shapingiesangleScale_control_pmbd",
+    "xn__shapingiesangleScale_o8ad",
+    "xn__shapingiesfile_control_xcbd",
+    "xn__shapingiesfile_wyad",
+    "xn__shapingiesnormalize_16ad",
+    "xn__shapingiesnormalize_control_2kbd",
+    "xn__texturefile_0ta",
+    "xn__texturefile_control_16a"
+   ],
+   "like_for_like": {
+    "catalogue_key": "distantlight::2.0",
+    "parms": 115,
+    "settable": 115,
+    "spare": 0,
+    "absent": 0,
+    "absent_names": []
+   }
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight::2.0",
+   "resolved_type": "distantlight::2.0",
+   "aliased": false,
+   "catalogue_parms": 115,
+   "settable": 115,
+   "spare": 0,
+   "absent": 0,
+   "absent_names": [],
+   "like_for_like": {
+    "catalogue_key": "distantlight::2.0",
+    "parms": 115,
+    "settable": 115,
+    "spare": 0,
+    "absent": 0,
+    "absent_names": []
+   }
+  },
+  {
+   "category": "Driver",
+   "key": "usdrender",
+   "resolved_type": "usdrender",
+   "aliased": false,
+   "catalogue_parms": 164,
+   "settable": 146,
+   "spare": 18,
+   "absent": 0,
+   "absent_names": [],
+   "like_for_like": {
+    "catalogue_key": "usdrender",
+    "parms": 164,
+    "settable": 146,
+    "spare": 18,
+    "absent": 0,
+    "absent_names": []
+   }
+  },
+  {
+   "category": "Top",
+   "key": "usdrender",
+   "resolved_type": "usdrender",
+   "aliased": false,
+   "catalogue_parms": 61,
+   "settable": 60,
+   "spare": 1,
+   "absent": 0,
+   "absent_names": [],
+   "like_for_like": {
+    "catalogue_key": "usdrender",
+    "parms": 61,
+    "settable": 60,
+    "spare": 1,
+    "absent": 0,
+    "absent_names": []
+   }
+  }
+ ],
+ "spare_name_scope": {
+  "total_spare": 7155,
+  "total_parms": 152918,
+  "percent": 4.679,
+  "per_file": {
+   "Chop.json": {
+    "spare": 30,
+    "parms": 3545
+   },
+   "ChopNet.json": {
+    "spare": 0,
+    "parms": 0
+   },
+   "Cop.json": {
+    "spare": 333,
+    "parms": 7447
+   },
+   "Cop2.json": {
+    "spare": 73,
+    "parms": 3778
+   },
+   "CopNet.json": {
+    "spare": 0,
+    "parms": 34
+   },
+   "Data.json": {
+    "spare": 0,
+    "parms": 0
+   },
+   "Director.json": {
+    "spare": 0,
+    "parms": 0
+   },
+   "Dop.json": {
+    "spare": 233,
+    "parms": 16951
+   },
+   "Driver.json": {
+    "spare": 180,
+    "parms": 4958
+   },
+   "Lop.json": {
+    "spare": 883,
+    "parms": 11025
+   },
+   "Manager.json": {
+    "spare": 0,
+    "parms": 0
+   },
+   "Object.json": {
+    "spare": 66,
+    "parms": 24433
+   },
+   "Shop.json": {
+    "spare": 37,
+    "parms": 4995
+   },
+   "Sop.json": {
+    "spare": 4610,
+    "parms": 53150
+   },
+   "Top.json": {
+    "spare": 645,
+    "parms": 7982
+   },
+   "TopNet.json": {
+    "spare": 0,
+    "parms": 32
+   },
+   "Vop.json": {
+    "spare": 65,
+    "parms": 14550
+   },
+   "VopNet.json": {
+    "spare": 0,
+    "parms": 38
+   }
+  }
+ },
+ "identity": [
+  {
+   "category": "Sop",
+   "key": "gltf",
+   "catalogue_parms": 17,
+   "matches": [
+    {
+     "type": "gltf",
+     "overlap": 17,
+     "jaccard": 1.0,
+     "live_parms": 17
+    }
+   ]
+  },
+  {
+   "category": "Sop",
+   "key": "gltf::2.0",
+   "catalogue_parms": 42,
+   "matches": [
+    {
+     "type": "gltf::2.0",
+     "overlap": 42,
+     "jaccard": 1.0,
+     "live_parms": 42
+    }
+   ]
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight",
+   "catalogue_parms": 131,
+   "matches": [
+    {
+     "type": "distantlight",
+     "overlap": 131,
+     "jaccard": 1.0,
+     "live_parms": 131
+    },
+    {
+     "type": "light",
+     "overlap": 131,
+     "jaccard": 0.977612,
+     "live_parms": 134
+    }
+   ]
+  },
+  {
+   "category": "Lop",
+   "key": "distantlight::2.0",
+   "catalogue_parms": 123,
+   "matches": [
+    {
+     "type": "distantlight::2.0",
+     "overlap": 123,
+     "jaccard": 1.0,
+     "live_parms": 123
+    },
+    {
+     "type": "light::2.0",
+     "overlap": 123,
+     "jaccard": 0.866197,
+     "live_parms": 142
+    }
+   ]
+  },
+  {
+   "category": "Driver",
+   "key": "usdrender",
+   "catalogue_parms": 194,
+   "matches": [
+    {
+     "type": "usdrender",
+     "overlap": 194,
+     "jaccard": 1.0,
+     "live_parms": 194
+    }
+   ]
+  },
+  {
+   "category": "Top",
+   "key": "usdrender",
+   "catalogue_parms": 73,
+   "matches": [
+    {
+     "type": "usdrender",
+     "overlap": 73,
+     "jaccard": 1.0,
+     "live_parms": 73
+    }
+   ]
+  }
+ ],
+ "checked": 18,
+ "problems": [],
+ "verdict": "AGREEMENT"
+}

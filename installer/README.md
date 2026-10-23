@@ -70,7 +70,7 @@ from Houdini. No developer virtual environment is copied into the product.
 
 ### Explicit Moneta artifact
 
-The 5.97.6 bundle uses Moneta 1.3.0 at commit
+The 5.97.7 bundle uses Moneta 1.3.0 at commit
 `4f7afc73736aecce6d55d5e03f28fb3137d474d3`, under the MIT License by its
 copyright holder's written grant of 2026-10-19. The upstream metadata still
 declares "Proprietary"; the bundle preserves that metadata and includes the
@@ -114,7 +114,7 @@ Different native Houdini/Python builds need their own qualification.
 
 ## Optional native artifact
 
-The public 5.97.6 build adds the reviewed `moneta-native-0.1.0-win64-clean.zip`.
+The public 5.97.7 build adds the reviewed `moneta-native-0.1.0-win64-clean.zip`.
 Its SHA-256 is `f0c67e0642305ce9db5f71d355712b6af9eb7d5db05e0d72c65d44403e47bb1e`,
 independently bound in [native_artifact.json](native_artifact.json). Pass both
 `--native-bundle <archive>` and `--native-sha256 <digest>` to the build command.

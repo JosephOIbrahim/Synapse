@@ -1,6 +1,6 @@
 # Houdini Upgrade Runbook
 
-**Current release: [SYNAPSE 5.97.6](../releases/v5.97.6.md), measured on
+**Current release: [SYNAPSE 5.97.7](../releases/v5.97.7.md), measured on
 Windows Houdini 22.0.400 / Python 3.13.** Updating SYNAPSE and upgrading Houdini
 are separate actions. This contributor runbook does not qualify another Houdini
 build. For ordinary installation, use the [user instructions](../../INSTRUCTIONS.md).
@@ -74,7 +74,7 @@ Either way, verify: `python -m pytest tests/test_vendored_deps.py -v`.
 
 The native SDK dependencies `pydantic_core` and `jiter` have CPython-specific
 Windows binaries for 3.11 and 3.13. This is separate from the optional Moneta Rust
-artifact: 5.97.6 Setup bundles one pinned artifact, qualifies only exact H22.0.400 / Python 3.13.10 / Windows x64, and preserves explicit OFF. Other native hosts need independent qualification; an ABI match alone is insufficient.
+artifact: 5.97.7 Setup bundles one pinned artifact, qualifies only exact H22.0.400 / Python 3.13.10 / Windows x64, and preserves explicit OFF. Other native hosts need independent qualification; an ABI match alone is insufficient.
 
 For an approved new ABI, pin exact dependency versions and artifact hashes,
 include required notices, update the activation logic/tests together, and verify

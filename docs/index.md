@@ -5,11 +5,11 @@ inspect the real nodes, and build confidence in the workflow.
 
 ## Start here
 
-📦 **Published release: [5.97.6](releases/v5.97.6.md)**.
+📦 **Published release: [5.97.7](releases/v5.97.7.md)**.
 [User instructions](../INSTRUCTIONS.md) · [Exact versions and tags](../TAGS.md).
 Public Setup remains unsigned. Its pinned native artifact activates only after
 checks on an exact supported host; explicit OFF and existing default-OFF choices
-remain OFF. [Policy and limits](releases/v5.97.6.md).
+remain OFF. [Policy and limits](releases/v5.97.7.md).
 
 | Your next step | Read |
 |---|---|

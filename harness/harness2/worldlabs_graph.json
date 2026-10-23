@@ -1,7 +1,9 @@
 {
   "_comment": "The World Labs Gaussian splat lane, as a graph the JEV graph guard judges. The strategic decision - which node lands FIRST - is made by JEV from the evidence, not asserted by the seat. Run: python harness/harness2/compositor.py --mode graph --input harness/harness2/worldlabs_graph.json --wave worldlabs-intake",
-  "_evidence": "docs/intake/worldlabs-gaussian-pipeline-audit.md (VERIFIED-RUNTIME, 11/11 corrections hold on 22.0.400)",
-  "objective": "The repo's node-type authority is wrong for three Houdini 22 node types, and a World Labs Gaussian splat pipeline proposed for SYNAPSE does not run. Land the evidence first, then the repo-side truth fixes, then the lane that needs a real World Labs export.",
+  "_evidence": "docs/intake/worldlabs-gaussian-pipeline-audit.md (VERIFIED-RUNTIME, 11/11 corrections hold on 22.0.400). The raw records are harness/probes/worldlabs_blueprint_records.json (68 calls, STRICT run dies at line 27) and harness/probes/worldlabs_pipeline_verification.json.",
+  "_probes_not_yet_written": "Four nodes name a probe in owner_files that DOES NOT EXIST YET: harness/probes/worldlabs_wiring_probe.py (WIRE-INPUTS), worldlabs_upaxis_probe.py (WL-UP-AXIS), worldlabs_deliverable_probe.py (WL-DELIVERABLE) and worldlabs_desert_probe.py (WL-DESERT). owner_files names the file a node WILL own, so the path is the work item's target, not a record of a shipped probe. Every other file listed in this graph is in the tree. The four open questions stay open because their probes have not been written - and because WL-UP-AXIS, WL-DELIVERABLE and WL-DESERT additionally need a real World Labs export, which no probe can conjure.",
+  "_correction_2026_10_22": "The first version of this graph said the repo's node catalogue is 'wrong for three Houdini 22 node types'. That was the audit's own retracted claim. The catalogue is FAITHFUL - every audited type matches the live build exactly, Jaccard 1.000. The hazard is a CONSUMER one: createNode() hands back a different type than the catalogue key names. The graph below carries the corrected premise, and CAT-TYPES is the corrected work item.",
+  "objective": "A World Labs Gaussian splat pipeline proposed for SYNAPSE does not run: its script dies on the third node creation it makes, and eight of its prose claims are not implemented by its own code. The repo's node catalogue needs no correction - but three consumer rules do, and the lane's remaining open questions need a real World Labs export. Land the evidence first, then the repo-side truth, then the lane.",
   "standards": [
     "Law 1: every check must be able to fail. A check that cannot fail is deleted rather than kept green.",
     "Law 2: no number without a producer path. Every figure names the command or probe that produces it.",
@@ -14,25 +16,28 @@
   "nodes": [
     {
       "id": "WL-EVIDENCE",
-      "title": "Land the World Labs audit and the self-verifying corrected pipeline",
+      "title": "Land the World Labs audit, the transcribed blueprint and the self-verifying corrected pipeline",
       "owner_files": [
         "docs/intake/worldlabs-gaussian-pipeline-audit.md",
+        "harness/probes/worldlabs_blueprint_original.py",
+        "harness/probes/worldlabs_blueprint_probe.py",
+        "harness/probes/worldlabs_blueprint_records.json",
         "harness/probes/worldlabs_pipeline_corrected.py",
         "harness/probes/worldlabs_pipeline_verification.json"
       ],
       "depends_on": [],
-      "why": "Eleven defects were confirmed by executing the blueprint's own calls on 22.0.400, and the corrected pipeline proves all eleven fixes on every run (--verify, 11/11). Nothing else about this lane can be judged until the evidence is in the tree, because every other node cites it."
+      "why": "The blueprint's own script was transcribed into the tree and executed against 22.0.400. It dies at line 27 - the third node creation it makes, and the first that raises - and six of its calls raise while ten of its parameter writes name parameters that do not exist. Eight prose claims are unimplemented; six of those are measured by counting the terms each claim would need in the source. The corrected pipeline proves all eleven ledger entries on every run (--verify, 11/11). Nothing else about this lane can be judged until the evidence is in the tree, because every other node cites it."
     },
     {
-      "id": "CAT-TYPES",
-      "title": "Correct the node catalogue's three wrong entries: gltf, distantlight, usdrender",
+      "id": "CAT-RULES",
+      "title": "Publish the node catalogue's CONSUMER RULES: alias resolution and the spare-parm convention",
       "owner_files": [
-        "rag/catalog/h22.0.400/"
+        "harness/probes/catalog_types_check.py"
       ],
       "depends_on": [
         "WL-EVIDENCE"
       ],
-      "why": "The catalogue is the repo's node-type authority and it describes superseded variants. It carries an unversioned usdrender entry that does not resolve in /stage at all, and gltf and distantlight entries whose parm names raise Invalid parameter name on the live build. Anyone building from the catalogue for these three types writes a broken script. The live defaults are gltf::2.0 and distantlight::2.0."
+      "why": "The catalogue is the repo's node-type authority and it is FAITHFUL: six audited types match the live build exactly, Jaccard 1.000, so no regeneration is warranted. The hazard is a consumer one. createNode('gltf') hands back gltf::2.0 and createNode('distantlight') hands back distantlight::2.0, so 14 of 17 and 58 of 123 parm names read from the unversioned entries do not exist on the node you actually get. Separately, 7,155 of 152,918 catalogue parm names (4.7%) carry a '#', Houdini's spare-parameter convention, and a script cannot set them. Consumers need both rules written down; the catalogue needs no change."
     },
     {
       "id": "PHANT-DIR",
@@ -47,26 +52,52 @@
       "why": "Class-level dir(hou.Node) exposes 146 members and hasattr(hou.Node, 'parm') is False, while the instance call works. The same method says no about parm, setParms, cook and addParm, which all work. A phantom check built on class-level dir() produces false positives and false negatives on the same class, so absence from the symbol table is not conclusive for hou.Node members."
     },
     {
-      "id": "WL-UP-AXIS",
-      "title": "Settle the up-axis conversion for a World Labs export (WL-EX-05)",
+      "id": "WIRE-INPUTS",
+      "title": "Record that a node reports ZERO inputs until one is wired, and stop reading input counts off a fresh node",
       "owner_files": [
-        "harness/probes/"
+        "harness/probes/worldlabs_wiring_probe.py"
       ],
+      "_probe_status": "TO BE WRITTEN - harness/probes/worldlabs_wiring_probe.py is not in the tree yet",
       "depends_on": [
         "WL-EVIDENCE"
       ],
-      "why": "The blueprint claims a UsdGeom.XformOp fix that its own code does not contain, and the repo's intake already rejected a prior blueprint for assuming Y-up where Marble is +Y-down. No World Labs asset was available to the audit, so the correct conversion is UNKNOWN. Inventing one would be worse than leaving it open."
+      "why": "distantlight::2.0, karmarendersettings and usdrender_rop all report inputs() == [] while unwired, and all three accept the blueprint's connection. The first version of the audit read that zero as 'the call will fail' and filed three working connections as defects; a second draft of the corrected script dropped two more edges on the same false premise. A node's input count is not knowable from a fresh instance - read it after wiring, or read the catalogue's inputLabels."
+    },
+    {
+      "id": "WL-UP-AXIS",
+      "title": "Settle the up-axis conversion for a World Labs export (WL-EX-05)",
+      "owner_files": [
+        "harness/probes/worldlabs_upaxis_probe.py"
+      ],
+      "_probe_status": "TO BE WRITTEN - harness/probes/worldlabs_upaxis_probe.py is not in the tree yet",
+      "depends_on": [
+        "WL-EVIDENCE"
+      ],
+      "why": "The blueprint claims a UsdGeom.XformOp fix that its own code does not contain - the term scan finds no XformOp, no xform, no upaxis and no convert in its 140 lines - and the repo's intake already rejected a prior blueprint for assuming Y-up where Marble is +Y-down. No World Labs asset was available to the audit, so the correct conversion is UNKNOWN. Inventing one would be worse than leaving it open."
     },
     {
       "id": "WL-DELIVERABLE",
       "title": "Settle what produces the .mp4 the blueprint promises",
       "owner_files": [
-        "harness/probes/"
+        "harness/probes/worldlabs_deliverable_probe.py"
       ],
+      "_probe_status": "TO BE WRITTEN - harness/probes/worldlabs_deliverable_probe.py is not in the tree yet",
       "depends_on": [
         "WL-EVIDENCE"
       ],
       "why": "usdrender_rop has no video or ffmpeg output parm - only an image sequence - and the blueprint never writes output_mov, it prints a line saying it is exporting. The headline deliverable does not exist. Whether a real export or a different ROP is the answer is a fact provable from a probe, not a judgement."
+    },
+    {
+      "id": "WL-DESERT",
+      "title": "Settle what consumes the desert half of the transition the blueprint promises",
+      "owner_files": [
+        "harness/probes/worldlabs_desert_probe.py"
+      ],
+      "_probe_status": "TO BE WRITTEN - harness/probes/worldlabs_desert_probe.py is not in the tree yet",
+      "depends_on": [
+        "WL-EVIDENCE"
+      ],
+      "why": "The deliverable is a desert-to-jungle TRANSITION, but only the jungle side is ever connected: the wrangle takes normals_jungle, normals_desert has no consumer, and desert_collider_glb is accepted by the blueprint's own signature and never used by its body. The desert half of the transition is never rendered. What consumes it is a fact provable from a probe, not a judgement."
     },
     {
       "id": "WL-INTAKE",
@@ -75,25 +106,30 @@
         "docs/intake/blueprint-h22-worldlabs-intent.md"
       ],
       "depends_on": [
-        "CAT-TYPES",
+        "CAT-RULES",
         "WL-UP-AXIS",
-        "WL-DELIVERABLE"
+        "WL-DELIVERABLE",
+        "WL-DESERT"
       ],
       "why": "The repo's own intent document is ratified:false and says every node name is V0 until a probe prints it. The audit has now produced that probe for the external blueprint. Folding the result in is the point of the intake - but it waits on the open questions, because writing the answer before it is known is how a false record gets made."
     }
   ],
   "edges": [
-    {"from": "WL-EVIDENCE", "to": "CAT-TYPES", "type": "evidence", "why": "the catalogue's wrongness is demonstrated by the live errors in the audit"},
-    {"from": "WL-EVIDENCE", "to": "PHANT-DIR", "type": "evidence", "why": "the dir() methodology finding is one of the audit's two repo-level results"},
+    {"from": "WL-EVIDENCE", "to": "CAT-RULES", "type": "evidence", "why": "the alias trap is demonstrated by the live errors in the audit, and the catalogue's own fidelity is proven by the probe"},
+    {"from": "WL-EVIDENCE", "to": "PHANT-DIR", "type": "evidence", "why": "the dir() methodology finding is one of the audit's three repo-level results"},
+    {"from": "WL-EVIDENCE", "to": "WIRE-INPUTS", "type": "evidence", "why": "the zero-inputs trap is the third repo-level result, and the audit fell into it twice"},
     {"from": "WL-EVIDENCE", "to": "WL-UP-AXIS", "type": "evidence", "why": "F-OPEN-1 is stated as unproven only because the audit did the rest"},
     {"from": "WL-EVIDENCE", "to": "WL-DELIVERABLE", "type": "evidence", "why": "F-OPEN-4 needs the corrected pipeline to render a real frame range"},
-    {"from": "CAT-TYPES", "to": "WL-INTAKE", "type": "unblocks", "why": "the intake cites node types; a wrong catalogue makes the intake wrong"},
+    {"from": "WL-EVIDENCE", "to": "WL-DESERT", "type": "evidence", "why": "F-OPEN-8 is only visible once the graph is built, and the corrected pipeline builds it"},
+    {"from": "CAT-RULES", "to": "WL-INTAKE", "type": "unblocks", "why": "the intake cites node types; a consumer who reads the wrong catalogue entry writes a broken script"},
     {"from": "WL-UP-AXIS", "to": "WL-INTAKE", "type": "unblocks", "why": "the up-axis rule is a repo rule (WL-EX-05) that the intake must state accurately"},
-    {"from": "WL-DELIVERABLE", "to": "WL-INTAKE", "type": "unblocks", "why": "the intake must name the real deliverable path"}
+    {"from": "WL-DELIVERABLE", "to": "WL-INTAKE", "type": "unblocks", "why": "the intake must name the real deliverable path"},
+    {"from": "WL-DESERT", "to": "WL-INTAKE", "type": "unblocks", "why": "the intake must say which half of the transition is actually built"}
   ],
   "seams": [
-    {"seam": "the catalogue is the repo's node-type authority", "blast_radius": "any H22 script built from it for gltf, distantlight or usdrender is broken on arrival"},
+    {"seam": "the catalogue is the repo's node-type authority, and consumers read the entry for the key they passed rather than the type they got", "blast_radius": "any H22 script built from it for gltf or distantlight writes 14 or 58 parameter names that raise Invalid parameter name"},
     {"seam": "phantom membership is decided by class-level introspection", "blast_radius": "every phantom check over hou.Node, in the lint and in the scout"},
-    {"seam": "the external blueprint's script cannot run", "blast_radius": "any plan built on it inherits eleven defects"}
+    {"seam": "input membership is read off a fresh node", "blast_radius": "any audit or probe that reports 'this node has no inputs' before wiring one - which silently deletes working connections"},
+    {"seam": "the external blueprint's script cannot run", "blast_radius": "any plan built on it inherits a graph that dies on the third node creation it makes, and a deliverable - the desert-to-jungle transition - that is only half wired"}
   ]
 }

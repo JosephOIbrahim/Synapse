@@ -39,9 +39,9 @@
   },
   {
    "fix": "F7",
-   "label": "wrangle float parms are created, not assumed",
+   "label": "the seven channels the VEX reads are created, not assumed",
    "ok": true,
-   "detail": "created and settable"
+   "detail": "7 channels created, and a cook read all 7 back through chf()/chv() with the values set"
   },
   {
    "fix": "F8",
@@ -63,10 +63,89 @@
   },
   {
    "fix": "F11",
-   "label": "distantlight has no inputs; intensity is a USD-exposed parm",
+   "label": "the blueprint's three LOP edges bind; intensity is a USD-exposed parm",
    "ok": true,
-   "detail": "intensity parm xn__inputsintensity_i0a = 15.0"
+   "detail": "3 LOP edges bind (fog->light, light->krs, krs->rop); intensity parm xn__inputsintensity_i0a = 15.0"
   }
+ ],
+ "fixes": [
+  [
+   "F1",
+   "hou.Node.disconnect() removes a node input",
+   "hou.Node has no 'disconnect' member; unhook with node.setInput(i, None)",
+   "node.disconnect(0) -> AttributeError: 'SopNode' object has no attribute 'disconnect'",
+   "PROSE, NOT CODE - the blueprint's script never calls disconnect(). The name appears only in its section 2 prose, where it is claimed as a fix (F-OPEN-3)."
+  ],
+  [
+   "F2",
+   "createNode('labs::bake_gsplat')",
+   "createNode('bakegsplat') - a built-in H22 SOP, not a Labs node",
+   "createNode('labs::bake_gsplat') -> OperationFailed: Invalid node type name",
+   "SCRIPT - line 27. This is the FIRST call that raises, so it is where a real run of the blueprint stops."
+  ],
+  [
+   "F3",
+   "createNode('labs::normals_from_gsplat')",
+   "createNode('labs::normals_from_gsplats::1.0') - plural, versioned",
+   "createNode('labs::normals_from_gsplat') -> OperationFailed: Invalid node type name",
+   "SCRIPT - lines 31 and 48."
+  ],
+  [
+   "F4",
+   "normals node takes the collider colour on input 1",
+   "labs::normals_from_gsplats::1.0 has ONE input; relighting is a LOP (labs::relight_gsplats::1.1), not a second SOP input",
+   "normals.setInput(1, file) -> InvalidInput: Invalid input.",
+   "INTENT - the blueprint's own call at line 50 is UNREACHABLE: the node it names does not exist, so the call never runs. The evidence is about the corrected type, and it is what makes the blueprint's two-input relight unachievable."
+  ],
+  [
+   "F5",
+   "gltf.setParms({'filepath': ...})",
+   "gltf::2.0 spells the file parm 'gltffile'",
+   "gltf::2.0 parm list contains 'gltffile'; 'filepath' is absent",
+   "SCRIPT - line 41."
+  ],
+  [
+   "F6",
+   "gltf.setParms({'import_geometry_as': 1})",
+   "gltf::2.0 spells it 'importnodegeometryas', token 'flattenedgeometry'",
+   "setParms({'import_geometry_as':1}) -> Invalid parameter name; menu tokens are ('packedprimitive','flattenedgeometry')",
+   "SCRIPT - line 41. A dict with two bad names raises on the first, so this one is only visible when the keys are set one at a time."
+  ],
+  [
+   "F7",
+   "wrangle.parm('strength'|'spin'|'radius'|'falloff'|'drag'|'timestep') and chv('axis')",
+   "the six float parameters and the one vector channel do not exist and must be CREATED on a ParmTemplateGroup",
+   "wrangle.parm('strength') -> None; .set() -> AttributeError: 'NoneType' ...",
+   "SCRIPT - lines 90-95. The first defect REACHED once F2 and F3 are corrected, and the one the original audit called the death point. The blueprint's own VEX reads a SEVENTH channel, chv('axis'), which the blueprint never creates either, so its spin branch is dead code until that vector parm is created too. Houdini has NO hou.VectorParmTemplate - the vector is a FloatParmTemplate with three components, and chv() reads it as a vector."
+  ],
+  [
+   "F8",
+   "karmarendersettings.parm('renderer').set('XPU')",
+   "the parm is 'engine' and the token is 'xpu' (lower case)",
+   "parm('renderer') -> None; parm('engine').set('xpu') -> ok",
+   "SCRIPT - line 121."
+  ],
+  [
+   "F9",
+   "karmarendersettings.parm('samples').set(256)",
+   "the parm is 'samplesperpixel'",
+   "parm('samples') -> None; parm('samplesperpixel').set(256) -> ok",
+   "SCRIPT - line 122."
+  ],
+  [
+   "F10",
+   "stage.createNode('usdrender')",
+   "stage.createNode('usdrender_rop') - 'usdrender' does not resolve in /stage",
+   "createNode('usdrender') -> OperationFailed: Invalid node type name",
+   "SCRIPT - line 124. 'usdrender' resolves in NEITHER context; 'usdrender_rop' resolves in /stage only."
+  ],
+  [
+   "F11",
+   "distantlight.setInput(0, fog_box)",
+   "the call SUCCEEDS - distantlight::2.0 reports zero inputs only until one is wired. The same is true of the other two Stage 3 edges: karmarendersettings and usdrender_rop also report zero inputs while unwired, and both accept the blueprint's connection. The intensity/exposure parms are USD-exposed, and that part does not exist under the names the blueprint uses.",
+   "setInput(0, fog_box) -> ok; inputs() 0 -> 1; input(0) = /stage/fog_box; krs.setInput(0, light) -> ok; rop.setInput(0, krs) -> ok",
+   "REFUTED AS A DEFECT - the original audit read 'inputs() == []' on an UNWIRED node and concluded the call fails. It does not. The corrected graph keeps all three of the blueprint's LOP edges."
+  ]
  ],
  "unproven": [
   [
@@ -98,6 +177,33 @@
    "The blast targets a point group named 'call'",
    "no node in the graph creates a group named 'call'; nothing in the script names a collider group. The blast removes whatever happens to be there - possibly nothing.",
    "cook the collider import and list the point groups it produces"
+  ],
+  [
+   "F-OPEN-6",
+   "Static path hardcoding replaced with automated absolute path resolution",
+   "the script's __main__ block hardcodes five absolute paths - /project/splats/desert_env.ply, /project/splats/jungle_rock.ply, /project/colliders/desert_collider.glb, /project/colliders/jungle_collider.glb and /project/renders/synapse_transition_v1.mp4. There is no path resolution anywhere in the file. The claim is the exact inverse of what the code does.",
+   "run the script's __main__ block with no arguments and assert it does not depend on a /project tree existing on the artist's machine"
+  ],
+  [
+   "F-OPEN-7",
+   "Lighting linker desynchronization enforced by an automated relationship-linking pass",
+   "the script contains no UsdShade binding, no LOP collection binding, no relationship linker and no lighting pass of any kind. It creates one distantlight and sets two USD-exposed values on it. There is no pass.",
+   "cook a stage containing the light and the fog box and list the UsdShade relationships the script claims to have enforced"
+  ],
+  [
+   "F-OPEN-8",
+   "The deliverable is a TRANSITION between the desert and the jungle",
+   "only the jungle side is ever connected. The wrangle takes normals_jungle; normals_desert has no consumer, and desert_collider_glb is accepted by the blueprint's own signature and never used by its body. The desert half of the transition is never rendered.",
+   "name the node that consumes the desert side, then build it and assert the desert geometry reaches the render ROP"
   ]
- ]
+ ],
+ "blueprint_record": {
+  "record": "harness/probes/worldlabs_blueprint_records.json",
+  "houdini": "22.0.400",
+  "blueprint_lines": 140,
+  "died": true,
+  "line": 27,
+  "statement": "bake_desert = env_net.createNode(\"labs::bake_gsplat\", \"bake_desert\")",
+  "exception_type": "OperationFailed"
+ }
 }

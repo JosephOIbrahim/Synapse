@@ -1,47 +1,59 @@
 {
  "first_landing": "WL-EVIDENCE",
  "land_now": [
-  "WL-EVIDENCE"
- ],
- "park": [
-  "CAT-TYPES",
+  "WL-EVIDENCE",
+  "CAT-RULES",
   "PHANT-DIR",
   "WL-UP-AXIS",
   "WL-DELIVERABLE",
+  "WL-DESERT"
+ ],
+ "park": [
+  "WIRE-INPUTS",
   "WL-INTAKE"
  ],
  "needs_joe": [],
- "reason": "jev: WL-EVIDENCE @ 1.00 (lands 0.77, value 2.81)",
+ "reason": "jev: WL-EVIDENCE @ 1.00 (lands 0.85, value 2.75)",
  "per_node": {
   "WL-EVIDENCE": {
-   "lands": 0.77,
-   "value": 2.81,
+   "lands": 0.85,
+   "value": 2.75,
    "joe_decides": 0.04
   },
-  "CAT-TYPES": {
-   "lands": 0.2,
-   "value": 2.35,
-   "joe_decides": 0.05
+  "CAT-RULES": {
+   "lands": 0.57,
+   "value": 2.09,
+   "joe_decides": 0.09
   },
   "PHANT-DIR": {
-   "lands": 0.18,
-   "value": 2.37,
-   "joe_decides": 0.08
+   "lands": 0.56,
+   "value": 2.24,
+   "joe_decides": 0.07
+  },
+  "WIRE-INPUTS": {
+   "lands": 0.43,
+   "value": 2.15,
+   "joe_decides": 0.05
   },
   "WL-UP-AXIS": {
-   "lands": 0.11,
-   "value": 2.44,
-   "joe_decides": 0.21
+   "lands": 0.58,
+   "value": 2.36,
+   "joe_decides": 0.15
   },
   "WL-DELIVERABLE": {
-   "lands": 0.12,
-   "value": 2.79,
-   "joe_decides": 0.06
+   "lands": 0.54,
+   "value": 2.72,
+   "joe_decides": 0.05
+  },
+  "WL-DESERT": {
+   "lands": 0.64,
+   "value": 2.59,
+   "joe_decides": 0.04
   },
   "WL-INTAKE": {
-   "lands": 0.06,
-   "value": 2.4,
-   "joe_decides": 0.19
+   "lands": 0.04,
+   "value": 2.2,
+   "joe_decides": 0.14
   }
  },
  "jev": {
@@ -49,14 +61,23 @@
   "confidence": 1.0,
   "probabilities": {
    "WL-EVIDENCE": 1.0,
-   "CAT-TYPES": 0.0,
+   "CAT-RULES": 0.0,
    "PHANT-DIR": 0.0,
+   "WIRE-INPUTS": 0.0,
    "WL-UP-AXIS": 0.0,
    "WL-DELIVERABLE": 0.0,
+   "WL-DESERT": 0.0,
    "WL-INTAKE": 0.0
   }
  },
  "wave": "worldlabs-intake",
- "objective": "The repo's node-type authority is wrong for three Houdini 22 node types, and a World Labs Gaussian splat pipeline proposed for SYNAPSE does not run. Land the evidence first, then the repo-side truth fixes, then the lane that needs a real World Labs export.",
- "state_scrubbed": true
+ "objective": "A World Labs Gaussian splat pipeline proposed for SYNAPSE does not run: its script dies on the third node creation it makes, and eight of its prose claims are not implemented by its own code. The repo's node catalogue needs no correction - but three consumer rules do, and the lane's remaining open questions need a real World Labs export. Land the evidence first, then the repo-side truth, then the lane.",
+ "state_scrubbed": true,
+ "provenance": {
+  "input": "harness\\harness2\\worldlabs_graph.json",
+  "input_sha256": "2b84d277edc3b7a3f841b464b048fc2de02773d0db2d2d9151df3e4547a6aead",
+  "mode": "graph",
+  "wave": "worldlabs-intake",
+  "generated_utc": "2026-10-23T17:10:19+00:00"
+ }
 }
