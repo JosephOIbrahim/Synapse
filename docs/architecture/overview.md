@@ -12,14 +12,16 @@ The current release is **[5.97.7](../releases/v5.97.7.md)**.
 ```mermaid
 flowchart TD
     accTitle: Native activation preserves choices and requires real execution
-    accDescr: Setup validates and snapshots the configuration. Explicit OFF and legacy default OFF stay OFF. Fresh supported hosts and existing ON setups need a pinned compatible artifact and actual disposable Moneta scan, decay and encrypted mirror reopen. Failure preserves registration. Configuration or namespace edits refuse activation. Default fresh hosts without explicit ON stay OFF when unsupported; explicit ON refuses when qualification is unavailable.
+    accDescr: Setup validates and snapshots the configuration. Explicit OFF and legacy default OFF stay OFF. Fresh supported hosts and existing ON setups need a pinned compatible artifact and actual disposable Moneta scan, decay and encrypted mirror reopen. Failure preserves registration. Configuration or namespace edits refuse activation. An incompatible artifact, or a primary backend that is not Moneta, refuses activation whatever the choice was made. An unsupported host keeps a default-fresh install OFF and refuses an explicit ON.
     S["5.97.7 Setup<br/>unsigned; pinned native artifact"] --> V{"Valid, unambiguous<br/>configuration?"}
     V -->|"no"| B["Refuse activation<br/>preserve user files"]
     V -->|"explicit or legacy OFF"| O["Keep OFF<br/>preserve custom settings"]
-    V -->|"fresh or existing ON"| H{"Exact supported host<br/>and compatible artifact?"}
-    H -->|"unsupported default fresh"| O
-    H -->|"unsupported explicit ON"| B
-    H -->|"yes"| E["Fresh disposable processes<br/>primary Moneta + Rust scan/decay<br/>encrypted mirror save/reopen"]
+    V -->|"fresh or existing ON"| H{"Compatible artifact<br/>and Moneta backend?"}
+    H -->|"no"| B
+    H -->|"yes"| S2{"Exact supported host?"}
+    S2 -->|"unsupported, default fresh"| O
+    S2 -->|"unsupported, explicit ON"| B
+    S2 -->|"yes"| E["Fresh disposable processes<br/>primary Moneta + Rust scan/decay<br/>encrypted mirror save/reopen"]
     E -->|"fail or fallback"| B
     E -->|"pass"| C{"Config and package<br/>namespace unchanged?"}
     C -->|"no"| B
@@ -30,6 +32,7 @@ flowchart TD
 
 Sources: [configuration and transaction](../../installer/synapse_setup/engine.py),
 [native policy](../../installer/synapse_setup/native_policy.py),
+[disposable native check](../../installer/synapse_setup/native_check.py),
 [actual execution check](../../installer/synapse_setup/native_probe.py),
 [registration](../../installer/synapse_setup/registration.py),
 [final installer verification](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.7/installer-verification.json).
@@ -130,6 +133,7 @@ flowchart TD
     R -->|"missing or ambiguous"| U["UNKNOWN<br/>no node created"]
     R -->|"dry_run"| D["Bindings returned<br/>no build"]
     R -->|"all known"| B["Build the<br/>canonical graph"]
+    B --> C["Receipt"]
     G["build_graph<br/>model-supplied graph"] --> E{"Authors the<br/>recipe's prim?"}
     E -->|"yes"| F["Fixed parameters win<br/>corrections reported"]
     E -->|"no"| S["Built as sent"]
@@ -141,7 +145,7 @@ flowchart TD
     linkStyle default stroke:#D07020
 ```
 
-The reader supports one scene shape: the `/stage` network, exactly one camera, a Camera LOP feeding a Render Settings or Karma Render Settings node directly, and one imported world that still carries its import record. Anything else is UNKNOWN.
+The reader supports one scene shape: the `/stage` network, exactly one camera, a Camera LOP feeding a Render Settings or Karma Render Settings node directly, and one imported world that still carries its import record, with its source `.ply` and a sibling collider `.glb` beside it. Anything else is UNKNOWN.
 
 Enforcement is keyed on the prim path. A Scatter Instances node that authors `/World/scatter_rocks` is the recipe's node; any other is an artist's own scatter and is built exactly as sent.
 
@@ -203,17 +207,19 @@ Select nodes in a network editor, then click **Identify** or send `/identify`. T
 ```mermaid
 flowchart LR
     accTitle: Identify draws a short local bubble beside each selected node
-    accDescr: The panel reads facts for up to 60 selected nodes on Houdini's main thread. A worker finds each type's exact local help page, or an HDA's own help, and builds each bubble without a model. The main thread draws an overlay that follows pan and zoom. The overlay is not saved; old Identify-generated comment blocks can be removed in an undo group while artist text is preserved.
-    S["Selected nodes<br/>(up to 60)"] --> F["Read node facts<br/>on the main thread"]
+    accDescr: The panel reads facts for up to 60 selected nodes on Houdini's main thread. A worker finds each type's exact local help page, or an HDA's own help, and builds each bubble without a model. Old Identify-generated comment blocks are removed in one undo group, artist text kept. The main thread then draws an overlay that follows pan and zoom. The overlay is not saved.
+    S["Selected nodes<br/>(up to 60)"] --> I["Click Identify"]
+    I --> F["Read node facts<br/>on the main thread"]
     F --> L["Find each type's exact<br/>help page once"]
     L --> C["Build each bubble<br/>without a model"]
-    C --> W["Draw an overlay<br/>above the editor"]
-    W --> V["Follow pan and zoom<br/>overlay not saved"]
+    C --> K["Remove old comment blocks<br/>in one undo group"]
+    K --> W["Draw an overlay<br/>above the editor"]
+    W --> V["Follow pan and zoom;<br/>overlay not saved"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
-    class S artist
-    class C,W synapse
+    class S,I artist
+    class F,L,C,K,W,V synapse
     linkStyle default stroke:#D07020
 ```
 
@@ -261,11 +267,11 @@ Recording a decision retains context for later recall. It does not reconstruct a
 ```mermaid
 flowchart TD
     accTitle: Saved decisions, notes and advisory recall
-    accDescr: A decision is written to the configured record store and may also produce a scene note. Search and recall read the record store. Project setup and context queries read the scene and project notes. Both return advisory context. Moneta can also write a USD inspection mirror, separate from the storage owner. MONETA_NATIVE=0 keeps Moneta's native module out of the process, and a native panic while the Moneta store is built falls back to the JSONL store with the reason recorded. The sleep pass, which prunes the record store, is refused unless SYNAPSE_ALLOW_SLEEP_PASS=1.
+    accDescr: A decision is written to the configured record store and may also produce a scene note. Search and recall read the record store. Project setup and context queries read the scene and project notes. Both return advisory context. Moneta can also write a USD inspection mirror, separate from the storage owner. MONETA_NATIVE=0 keeps Moneta's native module out of the process, and a native panic while the Moneta store is built falls back to the JSONL store with the reason recorded. The sleep pass, which prunes the record store, is refused unless SYNAPSE_ALLOW_SLEEP_PASS=1, and it only prunes when the active store is Moneta-backed. A second, separate prune runs inside ordinary writes, armed only by SYNAPSE_AUTO_CONSOLIDATE, and is independent of the sleep pass.
     D["Record a decision"] --> S["Configured record store"]
     D -.->|"also attempts"| N["Scene / project notes"]
     S --> R["Search and<br/>typed recall"]
-    N --> P["Project setup<br/>reads notes end to end"]
+    N --> P["Project setup<br/>reads notes, truncated"]
     N --> Q["Context queries"]
     R --> C["Advisory context<br/>for later work"]
     P --> C
@@ -273,7 +279,8 @@ flowchart TD
     S -.->|"Moneta secondary write"| V["USD inspection mirror"]
     K["MONETA_NATIVE=0<br/>set before Moneta loads"] -.->|"keeps the native<br/>module out"| S
     S -.->|"native panic while built:<br/>fallback recorded"| J["JSONL record store"]
-    G["synapse_sleep_pass<br/>prunes records"] -->|"refused unless<br/>SYNAPSE_ALLOW_SLEEP_PASS=1"| S
+    G["synapse_sleep_pass<br/>prunes records"] -->|"refused unless<br/>SYNAPSE_ALLOW_SLEEP_PASS=1<br/>and the store is Moneta-backed"| S
+    AC["SYNAPSE_AUTO_CONSOLIDATE<br/>set"] -.->|"arms a separate prune<br/>inside ordinary writes"| S
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class S synapse
@@ -287,9 +294,9 @@ flowchart TD
 | `.synapse/.moneta/cortex_root.usda` | Inspectable USD mirror when Moneta and USD authoring are available. |
 | `$HIP/claude/memory.md`, `$JOB/claude/project.md` | Human-readable scene and project notes. |
 
-Unsaved scenes or unwritable projects can use fallback locations. `SYNAPSE_MEMORY_BACKEND=moneta` selects Moneta; initialization failure falls back to JSONL with the reason recorded. Since v5.97.3 that includes a native panic while the store is built, and `MONETA_NATIVE=0`, set before Moneta first loads, keeps the native module out of the process. `synapse_sleep_pass` prunes the record store and is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set. Closing the USD view does not control persistence.
+Unsaved scenes or unwritable projects can use fallback locations. `SYNAPSE_MEMORY_BACKEND=moneta` selects Moneta; initialization failure falls back to JSONL with the reason recorded. Since v5.97.3 that includes a native panic while the store is built, and `MONETA_NATIVE=0`, set before Moneta first loads, keeps the native module out of the process. `synapse_sleep_pass` prunes the record store and is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set; it only prunes when the active store is Moneta-backed, so under the default JSONL store it is a no-op. A second, separate prune runs inside ordinary writes, armed only by `SYNAPSE_AUTO_CONSOLIDATE`, and is independent of the sleep pass. Closing the USD view does not control persistence.
 
-`synapse_recall` retrieves typed records, defaulting to decisions. `synapse_memory_query` searches loaded scene/project content. `synapse_project_setup` loads starting context, including the scene's notes end to end.
+`synapse_recall` retrieves typed records, defaulting to decisions. `synapse_memory_query` searches loaded scene/project content. `synapse_project_setup` loads starting context, including the scene's notes, truncated to 2,000 (project) and 3,000 (scene) characters.
 
 **A fact that lives only in the notes is not found by search or recall.** A scene's landing record is one such fact. Since v5.94.0 the panel's prompt sends questions about what is remembered of a scene to `synapse_project_setup` first.
 
@@ -357,12 +364,13 @@ Stage 0 supports a fixed lookdev procedure with a developer-imported checked rec
 ```mermaid
 flowchart TD
     accTitle: A checked lookdev suggestion becomes an editable draft
-    accDescr: A saved suggestion requires a matching scene, store and exact environment. A compatible record can be placed into a draft by the artist. Missing compatibility is reported without inventing a suggestion.
+    accDescr: A saved suggestion requires a matching scene, store and exact environment. A compatible record can be placed into a draft by the artist, dismissed, or requested again. Missing compatibility is reported without inventing a suggestion.
     A["Request saved suggestion"] --> B{"Compatible checked record?"}
     B -->|"yes"| C["Show settings<br/>and verification limits"]
     B -->|"no / unavailable"| N["Explain the reason"]
     C -->|"Use in prompt"| D["Append editable text"]
     C -->|"Dismiss"| X["Close suggestion"]
+    C -->|"Ask again"| A
     D --> S["Artist edits and sends"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
@@ -383,17 +391,17 @@ The [staged workflow guides](../../rag/corpus/guides) retain upstream provenance
 ```mermaid
 flowchart TD
     accTitle: Publish only the reviewed and checked release commit
-    accDescr: Review scoped changes and independent evidence, then prepare the authorized final version commit. If shipping an installer, build and qualify it from that exact clean commit and bind its hashes. Push that commit and require exact-commit CI. Publish only after both CI and artifact qualification pass. Any later source change repeats the relevant gates. Verify the remote references and downloaded asset bytes; existing tags and assets are preserved.
+    accDescr: Review scoped changes and independent evidence, then prepare the authorized final version commit. If shipping an installer, build and qualify it from that exact clean commit and bind its hashes. Push that commit and require CI for the full 40-character commit. Publish only after both CI and artifact qualification pass. Any later source change repeats the relevant gates. The operator then publishes and verifies the remote references and downloaded asset bytes; existing tags are preserved by the tag gate, published assets by operator practice.
     A["Review scoped changes<br/>and independent evidence"] --> B["Authorized version update<br/>and final reviewed commit"]
     B --> K{"Shipping a<br/>Windows Setup?"}
-    K -->|"yes"| I["Build and qualify<br/>Windows Setup"]
+    K -->|"yes"| I["Build and qualify<br/>Windows Setup<br/>a TestSetup twin stands in<br/>for the shipped bytes"]
     K -->|"no"| O["Source-only release<br/>no new Setup"]
     I --> P["Push the same reviewed commit"]
     O --> P
-    P --> C{"CI passes for this commit?"}
-    C -->|"yes"| T["Publish verified tag and release<br/>include only qualified assets"]
+    P --> C{"CI passes for the full<br/>40-character commit?"}
+    C -->|"yes"| T["Operator publishes the tag<br/>and the release<br/>include only qualified assets"]
     C -->|"no / unknown"| H["Hold publication;<br/>investigate"]
-    T --> V["Verify remote commit, tag,<br/>release and downloaded hashes"]
+    T --> V["Operator verifies the remote<br/>commit, tag, release<br/>and downloaded hashes"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
     classDef synapse fill:#D07020,stroke:#D07020,color:#000000
     class I,T synapse
@@ -401,6 +409,10 @@ flowchart TD
 ```
 
 [Version agreement](../../scripts/sync_version.py), [tag gate](../../scripts/tag_release.py) and [CI publication gate](../../scripts/release_ci_gate.py) support this workflow. Historical tags retain their original commits.
+
+**What the shipped gates actually check.** The builder stamps `HEAD` into the manifest without a clean-worktree check; the clean-commit requirement is enforced downstream, by the payload-versus-tag comparison. The CI gate matches the **first** run whose `headSha` starts with the commit's 8-character prefix, with no workflow-name filter and no job inspection — the release card's own rule is the full 40-character SHA and all six expected jobs, and that rule is the operator's, not the script's. The tag gate creates the tag at whatever `HEAD` is, so it must be run with that `HEAD` equal to the qualified revision; the script does not check that itself. It does refuse a dirty tracked worktree and an existing tag, so existing tags are protected by the gate, while published assets are protected by operator practice only.
+
+**What the published record contains.** The published CI block is operator-supplied: the publisher writes the run id and the conclusion it was given; nothing in the tree queries the CI service. The shipped Setup's own embedded tree is never extracted on the host, so the qualification record is produced from a TestSetup twin and stands in for the production executable's bytes.
 
 Stock-Python [CI](../../.github/workflows/ci.yml), native Houdini qualification and Windows installer checks prove different things. A source release does not imply a new Setup executable. Read the release's recorded limits.
 

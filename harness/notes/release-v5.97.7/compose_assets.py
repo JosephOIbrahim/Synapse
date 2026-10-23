@@ -54,6 +54,12 @@ ap.add_argument("--qual", required=True, help="qualification dir with the report
 ap.add_argument("--stock", required=True)
 ap.add_argument("--seat", required=True)
 ap.add_argument("--seat-master", required=True)
+ap.add_argument("--seat-alt", required=True,
+                help="a SECOND run of the SAME release tree: the host's own run-to-run spread")
+ap.add_argument("--seat-master-alt", required=True,
+                help="a SECOND run of the SAME published master commit")
+ap.add_argument("--load-disclosure", required=True,
+                help="what else was running on the host during each seat leg")
 ap.add_argument("--installer-tests", required=True)
 ap.add_argument("--previous", required=True)
 ap.add_argument("--previous-verification", required=True)
@@ -106,7 +112,8 @@ prod_record_path = os.path.join(args.build, "output", "SYNAPSE-%s-Setup.build.js
 test_exe = os.path.join(args.build, "output", "SYNAPSE-%s-TestSetup.exe" % VERSION)
 test_record_path = os.path.join(args.build, "output", "SYNAPSE-%s-TestSetup.build.json" % VERSION)
 for path in (prod_exe, prod_record_path, test_exe, test_record_path,
-             args.stock, args.seat, args.seat_master, args.installer_tests, args.previous,
+             args.stock, args.seat, args.seat_master, args.seat_alt, args.seat_master_alt,
+             args.installer_tests, args.previous,
              args.previous_verification, args.source_archive, args.native_bundle):
     if not os.path.exists(path):
         raise SystemExit("compose: missing input %s" % os.path.basename(path))
@@ -149,16 +156,42 @@ def checks_of(path):
 executable_report = os.path.join(args.qual, "executable-report.json")
 upgrade_report = os.path.join(args.qual, "upgrade-report.json")
 production_report = os.path.join(args.qual, "production-qualification.json")
+extracted_report = os.path.join(args.qual, "extracted-bytes.json")
 houdini_report = os.path.join(args.qual, "houdini-probe.json")
-for path in (executable_report, upgrade_report, production_report, houdini_report):
+for path in (executable_report, upgrade_report, production_report, extracted_report,
+             houdini_report):
     if not os.path.exists(path):
         raise SystemExit("compose: missing qualification report %s" % os.path.basename(path))
 executable_checks = checks_of(executable_report)
 upgrade_checks = checks_of(upgrade_report)
 production_checks = checks_of(production_report)
+extracted_checks = checks_of(extracted_report)
+production_body = load(production_report)
 houdini = load(houdini_report)
 if houdini.get("status") != "PASS":
     raise SystemExit("compose: the headless Houdini probe did not pass")
+
+
+# ---- what the engine's bytes actually were -----------------------------------
+#
+# The published record must name the source the qualification MEASURED, not
+# the one a template expected. The qualification report carries the value it
+# used, and an unrecognised value is a stop, not a default.
+ENGINE_SOURCE_TEXT = {
+    "builder-staging-directory":
+        "the builder's staging directory, whose bytes the builder hashed into the private "
+        "build record",
+    "extracted-from-the-compiled-setup":
+        "the tree the compiled Setup extracted at run time",
+}
+engine_source_value = production_body.get("engine_source")
+if engine_source_value not in ENGINE_SOURCE_TEXT:
+    raise SystemExit("compose: the qualification report names an unknown engine source: %r"
+                     % (engine_source_value,))
+engine_source_text = ENGINE_SOURCE_TEXT[engine_source_value]
+setup_executed = bool(production_body.get("production_setup_executed"))
+embedded_engine_executed = bool(production_body.get("production_setup_embedded_engine_executed"))
+embedded_files_read_back = bool(production_body.get("production_setup_embedded_files_survived_extraction"))
 
 
 # ---- the suites, from their own summary lines ---------------------------------
@@ -178,17 +211,27 @@ def suite_counts(path):
 
 
 stock_line, stock_counts = suite_counts(args.stock)
-seat_line, seat_counts = suite_counts(args.seat)
-master_line, master_counts = suite_counts(args.seat_master)
 if stock_counts.get("failed") or stock_counts.get("error"):
     raise SystemExit("compose: the stock suite reported failures: %s" % stock_line)
 # The seat leg is a real host and it is allowed to be red. It is never called
-# green. The control is the same seat on the published master commit: a
-# failure that is in both is the host, a failure only in the release tree is
-# the release.
-seat_failed = seat_counts.get("failed", 0) + seat_counts.get("error", 0)
-master_failed = master_counts.get("failed", 0) + master_counts.get("error", 0)
-seat_delta = seat_failed - master_failed
+# green. The control is the same seat on the published master commit.
+#
+# A failure that is in both is the host. A DIFFERENCE is not automatically the
+# tree: the same unchanged tree does not give the same count twice on this
+# host, so a difference is compared against the host's own run-to-run spread
+# before it is called a tree difference. The two "alt" legs are a second run
+# of each unchanged tree, and they are what make that comparison possible.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import seat_attribution as sa  # noqa: E402
+
+seat_line, seat_counts = suite_counts(args.seat)
+master_line, master_counts = suite_counts(args.seat_master)
+seat_alt_line, seat_alt_counts = suite_counts(args.seat_alt)
+master_alt_line, master_alt_counts = suite_counts(args.seat_master_alt)
+attribution = sa.attribute(seat_counts, master_counts, seat_alt_counts,
+                           master_alt_counts, VERSION)
+seat_failed = attribution["release_failing"]
+master_failed = attribution["master_failing"]
 
 inst = read(args.installer_tests)
 m = re.search(r"Ran (\d+) tests?", inst)
@@ -309,8 +352,24 @@ verification = {
     },
     "actual_final_exe": {
         "integrity_and_extraction": "PASS",
-        "engine_source": "the engine the compiled production Setup itself extracts, "
-                         "byte-compared against the builder's private record",
+        "engine_source": "%s; every maintenance file byte-compared against the builder's "
+                         "private record" % engine_source_text,
+        "production_setup_executed": setup_executed,
+        "production_setup_embedded_engine_executed": embedded_engine_executed,
+        "production_setup_embedded_files_read_back_from_the_executable": embedded_files_read_back,
+        "embedded_bytes_proof": (
+            "The production Setup was executed on the qualification host and its own "
+            "embedded engine ran: the Setup refused to install because a Houdini session "
+            "was open, which is the product's correct behaviour. It refuses in "
+            "PrepareToInstall, which runs BEFORE Inno copies any file, and Inno deletes "
+            "its temporary directory when it deinitialises, so the production "
+            "executable's own embedded file tree was not readable back from the "
+            "executable afterwards. The bytes the production executable embeds are "
+            "qualified by the chain the qualification measured: the production and "
+            "TestSetup build records agree on every embedded byte, the installer's "
+            "[Files] section carries no TestBuild conditional, and the bytes Inno "
+            "extracted from the compiled TestSetup were byte-compared to the production "
+            "build record."),
         "embedded_engine_cases": [
             {"case": "fresh", "operations": ["install", "verify", "reinstall", "uninstall"],
              "unrelated_data_preserved": True,
@@ -323,6 +382,7 @@ verification = {
         "production_engine_checks": names(production_checks),
         "compiled_test_installer_checks": names(executable_checks),
         "upgrade_from_previous_checks": names(upgrade_checks),
+        "extracted_bytes_checks": names(extracted_checks),
         "maintenance_files_verified": len(prod["maintenance_files"]),
         "payload_files_verified": prod["payload"]["files"],
     },
@@ -339,11 +399,20 @@ verification = {
         "seat_control_on_published_master": {
             "summary": master_line,
             "counts": master_counts,
-            "note": ("the same host on the published master commit. %d failing test(s) on the "
-                     "release tree against %d on master: a difference of %d is attributable "
-                     "to the tree, a shared failure is attributable to the host"
-                     % (seat_failed, master_failed, seat_delta)),
+            "trees_separated_by_the_seat_numbers":
+                attribution["trees_separated_by_the_seat_numbers"],
+            "between_tree_gap": attribution["between_tree_gap"],
+            "host_run_to_run_spread": {
+                "release_tree": attribution["release_run_to_run_spread"],
+                "master_tree": attribution["master_run_to_run_spread"],
+            },
+            "second_leg_on_the_same_release_tree": {
+                "summary": seat_alt_line, "counts": seat_alt_counts},
+            "second_leg_on_the_same_master_tree": {
+                "summary": master_alt_line, "counts": master_alt_counts},
+            "note": attribution["note"],
         },
+        "load_disclosure": args.load_disclosure,
         "headless_houdini_probe": houdini.get("status"),
     },
     "publication_hygiene": {
@@ -360,6 +429,12 @@ verification = {
         "Universal failure or panic containment beyond the measured controls",
         "Full native Git and bit-reproducible-build provenance",
         "Live installed-normal evidence is separate from public artifact qualification",
+        "The production Setup's own embedded file tree could not be read back from the "
+        "executable on the qualification host: it refuses in PrepareToInstall, before "
+        "Inno copies any file, and Inno deletes its temporary directory afterwards. The "
+        "embedded bytes are qualified through the two-build twin equality, the [Files] "
+        "section check and the byte comparison of what Inno extracted from the compiled "
+        "TestSetup, not by reading the production executable's own tree back.",
     ],
     "native_policy": dict(previous_verification.get("native_policy") or {},
                           native_bundle_sha256=native_artifact["bundle_sha256"],

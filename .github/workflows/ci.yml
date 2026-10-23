@@ -126,6 +126,21 @@ jobs:
         # only trustworthy if its scrub is pinned. The suite is hermetic -
         # it writes a synthetic journal to a tmp dir and reads back what
         # the recorder wrote. No Houdini, no model, no network.
+      - run: python -m pytest harness/notes/release-v5.97.7/tests -v -rs --tb=short
+        # The v5.97.7 release qualification gate ships in this release with its
+        # own test suite, for the same reason as the two above. The gate is
+        # what qualifies the final executable, and four of its checks were
+        # defective: a set comparison that could not pass for ANY build, a
+        # verdict read from a directory Inno deletes on deinit, a tamper test
+        # aimed at a tree the guard never reads, and a published sentence
+        # about where the engine came from that was not true. A gate that
+        # cannot fail is a gate that prints PASS forever. The suite is
+        # hermetic - it writes synthetic trees into a tmp dir and reads back
+        # the gate's own comparison, the engine's own guard and the shipped
+        # source. No Houdini, no model, no network, no compiled executable.
+        #
+        # It is deliberately NOT in testpaths, so the stock suite collected
+        # set stays exactly what the release receipts recorded.
 
       - name: Exercise the production memory env (SYNAPSE_MEMORY_BACKEND=moneta)
         # B5 (2026-09-05). packages/synapse.json ships SYNAPSE_MEMORY_BACKEND=moneta

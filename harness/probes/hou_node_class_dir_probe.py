@@ -39,11 +39,12 @@ WHAT THIS PROBE ESTABLISHED (Houdini 22.0.400):
     authority itself, not only in an ad-hoc probe.
 
 Run:
-  hython -s -P harness/probes/hou_node_class_dir_probe.py
+  hython -s -P harness/probes/hou_node_class_dir_probe.py --receipt harness/probes/hou_node_class_dir_receipt.json
 
-Exit code 0 means the build was measured and the receipt was written.
-Exit code 1 means the build could not be measured - the receipt is then not
-written, because a receipt nobody can stand behind is worse than none.
+Exit code 0 means the build was measured. The receipt is written only when
+--receipt names a path; without it the probe prints its findings and writes
+nothing. Exit code 1 means the build could not be measured - the receipt is
+then not written, because a receipt nobody can stand behind is worse than none.
 
 THE RECEIPT:
   --receipt <path> writes the findings as JSON. The receipt records the
