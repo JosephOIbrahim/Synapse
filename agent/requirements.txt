@@ -1,3 +1,7 @@
-anthropic>=0.75.0
+# The agent's model surface is the guarded one (agent/model_rules.py imports
+# synapse.model_access.guarded_create), so it needs the same SDK window as
+# pyproject.toml: 1.x passes the guard, 0.75.0 and 2.x do not. See the `dev`
+# extra in pyproject.toml for the full evidence.
+anthropic>=1.0.0,<2
 websockets>=12.0
 anyio>=4.0

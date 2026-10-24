@@ -40,7 +40,21 @@ dev = [
     #    vendored SDK is Windows-only binaries, unusable on the Linux CI runner.
     "pytest-asyncio>=0.21",
     "numpy>=1.24",
-    "anthropic>=0.40.0",
+    # Pinned: the model-access guard (python/synapse/model_access.py) checks the
+    # API key in the `x-api-key` header and refuses any request that carries
+    # an `Authorization` header. anthropic 2.x moved the key to
+    # `Authorization: Bearer <key>` and moved `anthropic-version` to
+    # 2026-10-21, so under 2.x EVERY guarded request is denied with "The model
+    # request changed after permission was checked." That is not a test
+    # artifact: it is the shipped product refusing to talk to the model.
+    # anthropic 2.3.0 landed on 2026-10-23 and turned 5 of the 6 CI jobs red
+    # (all but windows/3.11, which still uses the vendored 0.96.0 SDK) - the
+    # one job that stayed green was the one not using the pip-installed SDK.
+    # Measured against the guard: 0.75.0 fails, 0.96.0 passes, 1.0.0 passes,
+    # 1.15.0 passes, 2.3.0 fails. Relax the ceiling only after the guard
+    # accepts the 2.x auth convention AND the panel is verified against the
+    # 2026-10-21 wire protocol. See docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md.
+    "anthropic>=1.0.0,<2",
     #  - pyyaml: test_agent_roster parses .claude/agents frontmatter with yaml.safe_load
     "pyyaml>=6.0",
 ]
@@ -61,7 +75,12 @@ mcp = [
     "websockets>=11.0",
 ]
 routing = [
-    "anthropic>=0.40.0",
+    # Same constraint as the `dev` extra, and for the same reason: this is the
+    # extra the shipped product installs, so an unpinned SDK here is a product
+    # that refuses every model call the moment the SDK ships a major. The
+    # guard's reasoning and the measured support window are documented in the
+    # `dev` extra above.
+    "anthropic>=1.0.0,<2",
 ]
 fast-hash = [
     "xxhash>=3.0.0",
