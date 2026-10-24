@@ -52,6 +52,26 @@ and ate the port out of a `ws://` URL, a verify section that recorded both
 PASS verdicts with `proof: null` because the seats had written their evidence
 under a different key, and a per-phase count that filed the seam and synth
 seats under "unknown" while the same file said they had returned.
+
+The release qualification itself was rebuilt in the same cut, because the
+gate that certifies the shipped executable had **four checks that could not
+fail** and the composer that writes the public record had two more of the same
+kind. A file-set comparison no build could pass, a verdict read from a
+directory the installer deletes on deinit, a tamper test aimed at a tree the
+guard never reads, and a published sentence about where the engine came from
+that was not true: all four are fixed, and the gate now carries **19 hermetic
+tests** of its own. The composer's fifth defect was a claim it could not
+measure — that a difference between two trees' seat-suite counts was
+"attributable to the tree" — and it now measures the host's own run-to-run
+spread instead; on the legs measured for this release the between-tree gap is
+2 and the spread is 7, so the record says the numbers do **not** separate the
+trees. The sixth was a reader that required pytest's `==` framing, which a
+long summary no longer has: it was about to publish a failure detail as a
+suite's result, carrying a local interpreter path into a public artefact, and
+the record's own redaction check stopped the release over it. Both fixes ship
+with hermetic tests of their own, and the proof chain gained a leg — the bytes
+the installer actually extracted from the compiled TestSetup are byte-compared
+against the production build record.
 [Release notes, tests and limits](docs/releases/v5.97.7.md).
 
 ## v5.97.6 - Preserve package choices and qualify native activation

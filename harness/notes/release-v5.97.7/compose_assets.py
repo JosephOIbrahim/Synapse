@@ -195,22 +195,16 @@ embedded_files_read_back = bool(production_body.get("production_setup_embedded_f
 
 
 # ---- the suites, from their own summary lines ---------------------------------
-def suite_counts(path):
-    text = read(path)
-    line = ""
-    for candidate in reversed(text.splitlines()):
-        if re.search(r"\d+ (passed|failed)", candidate) and "==" in candidate:
-            line = candidate.strip().strip("= ").strip()
-            break
-    if not line:
-        raise SystemExit("compose: %s has no summary line" % os.path.basename(path))
-    counts = {k: int(v) for v, k in re.findall(r"(\d+) (passed|failed|error|errors|skipped|deselected|xfailed|xpassed)", line)}
-    if not counts.get("passed"):
-        raise SystemExit("compose: %s names no passed count" % os.path.basename(path))
-    return line, counts
+# The summary line of a pytest run is not always framed the same way: the "="
+# padding shrinks as the summary grows, so a long summary is framed "= ... ="
+# and a short one "== ... ===". A reader that looks for "==" reads the wrong
+# line - a failure detail carrying a nested run's counts and the local path of
+# the interpreter that ran it. The rule lives in suite_counts.py, and it is
+# pinned by tests, because the record publishes these counts.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import suite_counts as sc  # noqa: E402
 
-
-stock_line, stock_counts = suite_counts(args.stock)
+stock_line, stock_counts = sc.suite_counts(args.stock)
 if stock_counts.get("failed") or stock_counts.get("error"):
     raise SystemExit("compose: the stock suite reported failures: %s" % stock_line)
 # The seat leg is a real host and it is allowed to be red. It is never called
@@ -224,10 +218,10 @@ if stock_counts.get("failed") or stock_counts.get("error"):
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import seat_attribution as sa  # noqa: E402
 
-seat_line, seat_counts = suite_counts(args.seat)
-master_line, master_counts = suite_counts(args.seat_master)
-seat_alt_line, seat_alt_counts = suite_counts(args.seat_alt)
-master_alt_line, master_alt_counts = suite_counts(args.seat_master_alt)
+seat_line, seat_counts = sc.suite_counts(args.seat)
+master_line, master_counts = sc.suite_counts(args.seat_master)
+seat_alt_line, seat_alt_counts = sc.suite_counts(args.seat_alt)
+master_alt_line, master_alt_counts = sc.suite_counts(args.seat_master_alt)
 attribution = sa.attribute(seat_counts, master_counts, seat_alt_counts,
                            master_alt_counts, VERSION)
 seat_failed = attribution["release_failing"]
