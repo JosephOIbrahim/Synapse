@@ -8,7 +8,7 @@ Publication links and wording reviewed on **2026-10-22** for **v5.97.7**. The fe
 
 - **Source and Windows Setup:** [v5.97.7](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.7).
 - **Public Setup:** unsigned, pinned Moneta 1.3.0 plus a pinned native artifact. Fresh supported-host ON requires actual checks; explicit OFF and existing default-OFF remain OFF.
-- **Houdini 22.0.400 / Python 3.13:** the shipped product differs from v5.97.6 only by the version string and two documentation lines in the installer's own README, so its runtime evidence carries forward unchanged; this release's own checks are recorded in the [5.97.7 notes](releases/v5.97.7.md#tests). The interactive wizard, registry/shortcuts and clean-machine installation remain untested. The panel suite is not green: **9 of its 581 tests fail on this host**, all nine of them also fail on the published master commit, which fails a tenth that did not reproduce here.
+- **Houdini 22.0.400 / Python 3.13:** the shipped product code differs from v5.97.6 only by the version string and two documentation lines in the installer's own README, so its runtime evidence carries forward unchanged; this release's own checks are recorded in the [5.97.7 notes](releases/v5.97.7.md#tests). The product's **dependency set does change**: the Anthropic SDK is now capped below 2.0, because the model-access guard checks the 1.x auth header, and 2.x remains unsupported. The interactive wizard, registry/shortcuts and clean-machine installation remain untested. The panel suite is not green: **9 of its 581 tests fail on this host**, all nine of them also fail on the published master commit, which fails a tenth that did not reproduce here.
 - **Installed version:** separate from the published source. An open Houdini session keeps its loaded modules until reload or restart.
 
 [Install](getting-started/installation.md) · [Solaris evidence](#solaris-wiring-validation) · [Artist control](#artist-control) · [Stop and Undo](#undo-stop-and-rendering) · [Memory limits](#memory-and-suggestions)
@@ -27,7 +27,7 @@ Publication links and wording reviewed on **2026-10-22** for **v5.97.7**. The fe
 
 ### Validation by release
 
-- [v5.97.7](releases/v5.97.7.md) records the World Labs Gaussian-splat blueprint audit, the node-catalogue correction, the two harness boards, the stock-suite and installer-control counts, and the final-installer evidence bound to the versioned Setup. The shipped product differs from v5.97.6 only by the version string and two documentation lines in the installer's own README.
+- [v5.97.7](releases/v5.97.7.md) records the World Labs Gaussian-splat blueprint audit, the node-catalogue correction, the two harness boards, the stock-suite and installer-control counts, and the final-installer evidence bound to the versioned Setup. The shipped product code differs from v5.97.6 only by the version string and two documentation lines in the installer's own README. The dependency set does change: the Anthropic SDK is now capped below 2.0, and 2.x remains unsupported.
 
 - [v5.97.6](releases/v5.97.6.md) records 84 installer controls, 14 independent adversarial controls and the rebuilt native binary’s 907-test qualification (all 71 required native cases). Its final installer record separately binds the versioned EXE and runtime checks.
 

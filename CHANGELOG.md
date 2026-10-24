@@ -4,10 +4,17 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 ## v5.97.7 - Audit the Gaussian-splat blueprint and correct the catalogue finding
 
-**No product behaviour changes.** The shipped product diff from v5.97.6 is the
+**No product code changes.** The shipped product diff from v5.97.6 is the
 version string plus two documentation lines inside the installer's own README:
 `python scripts/product_surface.py --diff v5.97.6 HEAD` names exactly
-`python/synapse/__init__.py` and `installer/README.md`.
+`python/synapse/__init__.py` and `installer/README.md`. That pathspec does not
+cover `pyproject.toml`, and one thing does change: the Anthropic SDK is now
+capped below 2.0, because the model-access guard checks the key in the
+`x-api-key` header and refuses any request carrying an `Authorization` header,
+and anthropic 2.x moved the key to `Authorization: Bearer <key>`. Under 2.x
+the guard refuses every model call. The pin is `anthropic>=1.0.0,<2`, measured
+across six SDK versions; 2.x remains unsupported until the guard learns the
+convention, which is deferred to v5.98.
 
 An external World Labs Gaussian-splat blueprint was audited call by call
 against Houdini 22.0.400. Its script does not run: it dies on **line 27** — the

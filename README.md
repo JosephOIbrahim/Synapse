@@ -14,7 +14,7 @@
 
 ## Start here
 
-**5.97.7 changes no product behaviour.** The panel, the Setup behaviour, Moneta 1.3.0 and the native-artifact policy are unchanged from [5.97.6](docs/releases/v5.97.6.md). What this release adds is evidence. [What changed in 5.97.7](#what-changed-in-5977) walks through it.
+**5.97.7 changes no product code.** The panel, the Setup behaviour, Moneta 1.3.0 and the native-artifact policy are unchanged from [5.97.6](docs/releases/v5.97.6.md). One thing does change: the Anthropic SDK is now capped below 2.0, because the model-access guard needs the 1.x auth header. What this release adds is evidence. [What changed in 5.97.7](#what-changed-in-5977) walks through it.
 
 ### Get 5.97.7
 
@@ -40,7 +40,17 @@ Setup includes the panel as of v5.97.7, including Spatial, the Render footer row
 
 ## What changed in 5.97.7
 
-Four things landed. None of them changes what SYNAPSE does.
+Five things landed. Four of them change nothing about what SYNAPSE does. The fifth changes what it installs.
+
+### The Anthropic SDK is now capped below 2.0
+
+The model-access guard checks the API key in the `x-api-key` header and refuses any request that carries an `Authorization` header. That is the **1.x** convention. **anthropic 2.x changed it** — the key becomes `Authorization: Bearer <key>`, and no `x-api-key` header is sent at all — so under 2.x the guard refuses **every** model call. That is not a test failing. It is the product refusing to talk to the model.
+
+anthropic 2.3.0 landed on 2026-10-23 and turned **five of the six CI jobs** red. The sixth stayed green because it still resolved the vendored SDK. The pin is `anthropic>=1.0.0,<2`, and it was measured across six SDK versions: 0.75.0 fails, 0.96.0 through 1.17.0 pass, 2.3.0 fails.
+
+Teaching the guard the 2.x convention is deferred to v5.98. It is a security-control change, and it needs its own tests plus live panel verification against the new wire protocol.
+
+Producers: [the release note](docs/releases/v5.97.7.md) · [the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md)
 
 ### An external blueprint was audited, and its script does not run
 
@@ -83,7 +93,7 @@ Each of those suites now pins a defect it was written for. The compose guard ref
 
 Producers: [`pyproject.toml`](pyproject.toml) `testpaths` · [the CI workflow](.github/workflows/ci.yml) · [the fixed test](tests/test_detached_launch.py) · [the release's evidence](docs/releases/v5.97.7.md#tests)
 
-**What this release does not change.** The audit is of an external blueprint, not of SYNAPSE's own World Labs import path, which is unchanged and unqualified here. The corrected pipeline script is a probe: it verifies the eleven corrections on the live build, and it has not rendered a World Labs export, because no export was available. The attest board's verdicts carry no authority over the product — its blueprint is DRAFT. Setup remains unsigned.
+**What this release does not change.** The audit is of an external blueprint, not of SYNAPSE's own World Labs import path, which is unchanged and unqualified here. The corrected pipeline script is a probe: it verifies the eleven corrections on the live build, and it has not rendered a World Labs export, because no export was available. The attest board's verdicts carry no authority over the product — its blueprint is DRAFT. Setup remains unsigned. The SDK ceiling is a containment, not a resolution: **2.x remains unsupported.**
 
 ## Your first build
 
