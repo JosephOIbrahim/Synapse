@@ -85,7 +85,7 @@ Producers: [the wave record](harness/attest/WAVE-RECORD.md), written by `harness
 
 ### Four test suites are now collected, and one test was fixed
 
-`harness/harness2/tests` (47 tests), `harness/attest/tests` (20), `harness/notes/release-v5.97.7/tests` (26) and `harness/probes/tests` (5) were collected by nothing before this release, so every assertion in them had been decorative. All four are in CI now. `harness/jev/tests` (97) was already wired, and `installer/tests` (84) is a changed-area control the release measured.
+`harness/harness2/tests` (47 tests), `harness/attest/tests` (20), `harness/notes/release-v5.97.7/tests` (36) and `harness/probes/tests` (5) were collected by nothing before this release, so every assertion in them had been decorative. All four are in CI now. `harness/jev/tests` (97) was already wired, and `installer/tests` (84) is a changed-area control the release measured.
 
 Each of those suites now pins a defect it was written for. The compose guard refused to adopt a candidate whose probe was never answered, and adopted two secondaries that claimed the same file. The attest recorder printed `state: IN_FLIGHT` beside `seats_outstanding: 0` when two seats shared a label, and dropped the second seat's payload. The catalogue probe skipped a target the catalogue did not name and still printed `AGREEMENT`.
 
