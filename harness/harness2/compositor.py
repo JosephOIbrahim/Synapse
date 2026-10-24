@@ -160,28 +160,78 @@ def _bind(instructions: str, bind: list[str] | None, subject: str, others: str,
     return instructions + "\n\n" + "\n\n".join(blocks)
 
 
+# Which policy key thresholds which question. The tables are EXHAUSTIVE over the
+# shipped guards, and the coverage test below fails if a guard grows a question
+# that is not in one of them.
+#
+# They exist because the detector used to walk a hardcoded list of two Noul keys
+# ("min_probe_support", "joe_escalate_min") and every OTHER threshold the guard
+# reads was unchecked: "min_composable" and "blocked_max" were used to decide
+# adoption and landability, and a value outside 0..1 - or a missing key - was
+# never reported. A gate whose width nobody checks is a gate that can be
+# vacuous or dead without anything saying so.
+SCORE_POLICY_KEY = {
+    "strength": "min_strength",
+    "value": "min_value",
+}
+NOUL_POLICY_KEY = {
+    "probe": "min_probe_support",
+    "composable": "min_composable",
+    "lands": "blocked_max",
+    "joe_decides": "joe_escalate_min",
+}
+# The confidence gates are thresholds too, on the same 0..1 scale: at 0 they
+# gate nothing, above 1 they gate everything.
+CONFIDENCE_POLICY_KEYS = ("adopt_min_confidence", "first_landing_min_confidence")
+
+
 def check_policy(guard_name: str, guard: dict, spec: dict) -> list[str]:
     """Refuse a DEAD GATE. A Score with N criteria ranges 0..N-1, so a threshold above
-    N-1 can never fire; and a Noul threshold outside 0..1 can never fire. Both are
-    reported rather than silently ignored."""
+    N-1 can never fire; a Noul threshold outside 0..1 can never fire; and a
+    threshold the policy does not carry at all is a gate that is not there. All
+    three are reported rather than silently ignored.
+
+    The questions are read from the GUARD, not from the spec. The spec's ids are
+    the per-candidate expansion ("probe_A"), and a candidate id may itself carry
+    an underscore, so the base name is read where it is declared.
+    """
     problems = []
     policy = guard.get("policy", {})
-    for qid, q in spec.items():
+    asked = set(spec.keys())
+    for qid, q in (guard.get("questions") or {}).items():
+        if not any(k == qid or k.startswith(qid + "_") for k in asked):
+            # this guard's question is not asked in this spec
+            continue
         t = q.get("type")
         if t == "score":
-            n = len(q.get("criteria") or [])
-            threshold = policy.get("min_strength" if "strength" in qid else "min_value")
-            if threshold is None:
+            key = SCORE_POLICY_KEY.get(qid)
+            if key is None:
+                problems.append(f"{guard_name}.{qid}: no policy threshold is checked for this Score question - DEAD GATE")
                 continue
+            threshold = policy.get(key)
+            if threshold is None:
+                problems.append(f"{guard_name}.{qid}: the policy carries no {key} for this Score question - DEAD GATE")
+                continue
+            n = len(q.get("criteria") or [])
             if n and threshold > n - 1:
                 problems.append(f"{guard_name}.{qid}: threshold {threshold} exceeds max score {n - 1} (N={n} criteria) - DEAD GATE")
-        if t == "noul":
-            for key in ("min_probe_support", "joe_escalate_min"):
-                threshold = policy.get(key)
-                if threshold is None:
-                    continue
-                if not (0.0 <= threshold <= 1.0):
-                    problems.append(f"{guard_name}.{qid}: {key}={threshold} is outside 0..1 - DEAD GATE")
+        elif t == "noul":
+            key = NOUL_POLICY_KEY.get(qid)
+            if key is None:
+                problems.append(f"{guard_name}.{qid}: no policy threshold is checked for this Noul question - DEAD GATE")
+                continue
+            threshold = policy.get(key)
+            if threshold is None:
+                problems.append(f"{guard_name}.{qid}: the policy carries no {key} for this Noul question - DEAD GATE")
+                continue
+            if not (0.0 <= threshold <= 1.0):
+                problems.append(f"{guard_name}.{qid}: {key}={threshold} is outside 0..1 - DEAD GATE")
+    for key in CONFIDENCE_POLICY_KEYS:
+        if key not in policy:
+            continue
+        threshold = policy[key]
+        if not (0.0 <= threshold <= 1.0):
+            problems.append(f"{guard_name}: {key}={threshold} is outside 0..1 - DEAD GATE")
     return problems
 
 
@@ -240,6 +290,10 @@ def decide_compose(answers: dict | None, candidates: list[dict], policy: dict) -
                 "needs_joe": [c["id"] for c in candidates], "per_candidate": {}}
     if answers is None:
         fallback["reason"] = "fallback: no Jev answer (see the ledger row) - " + fallback["reason"]
+        # The header's promise: the candidates are reported as needing Joe, WITH
+        # the probe each one still owes. The owed probe is in the candidate, so
+        # it is named here rather than left for the reader to find.
+        fallback["probe_owed"] = {c["id"]: c.get("probe") for c in candidates}
         return fallback
 
     ch = answers["choices"].get("adopt") or {}
@@ -270,33 +324,60 @@ def decide_compose(answers: dict | None, candidates: list[dict], policy: dict) -
     if ps["strength"] is None or ps["strength"] < policy["min_strength"]:
         return {**fallback, "reason": f"fallback: strength {ps['strength']} < {policy['min_strength']} for {choice}",
                 "jev": jev, "per_candidate": per}
-    if ps["probe_support"] is not None and ps["probe_support"] < policy["min_probe_support"]:
+    if ps["probe_support"] is None:
+        # A MISSING probe answer is not a passing probe. The old guard compared
+        # only when the answer was present, so a candidate nobody probed was
+        # adopted on its strength score alone - and the receipt then read
+        # "probe None" in a field that otherwise carries a measurement. That is
+        # a silent default dressed as a judgment, which this file's header
+        # forbids.
+        return {**fallback, "reason": f"fallback: {choice} has no probe answer, so the probe it owes is unproven",
+                "jev": jev, "per_candidate": per}
+    if ps["probe_support"] < policy["min_probe_support"]:
         return {**fallback, "reason": f"fallback: probe support {ps['probe_support']} < {policy['min_probe_support']} for {choice}",
                 "jev": jev, "per_candidate": per}
 
     adopted = [primary]
     conflicts = []
+    skipped = []
     for c in candidates:
         if c["id"] == choice:
             continue
         pc = per[c["id"]]
         if pc["strength"] is None or pc["strength"] < policy["min_strength"]:
+            skipped.append("%s: strength %s" % (c["id"], pc["strength"]))
             continue
-        if pc["probe_support"] is not None and pc["probe_support"] < policy["min_probe_support"]:
+        if pc["probe_support"] is None:
+            skipped.append("%s: no probe answer" % c["id"])
             continue
-        if pc["composable"] is not None and pc["composable"] < policy["min_composable"]:
+        if pc["probe_support"] < policy["min_probe_support"]:
+            skipped.append("%s: probe support %s" % (c["id"], pc["probe_support"]))
             continue
-        if not files_disjoint(primary, c):
-            conflicts.append({"candidate": c["id"], "with": choice, "why": "code check: the two candidates claim the same file"})
+        if pc["composable"] is None:
+            skipped.append("%s: no composability answer" % c["id"])
+            continue
+        if pc["composable"] < policy["min_composable"]:
+            skipped.append("%s: composable %s" % (c["id"], pc["composable"]))
+            continue
+        # The single-writer rule is checked against EVERY candidate already
+        # adopted, not only against the primary. Two secondaries claiming one
+        # file used to be co-adopted, because each was compared with the
+        # primary and never with the other.
+        clash = next((a for a in adopted if not files_disjoint(a, c)), None)
+        if clash is not None:
+            conflicts.append({"candidate": c["id"], "with": clash["id"], "why": "code check: the two candidates claim the same file"})
             continue
         adopted.append(c)
         if len(adopted) >= policy["max_adoptions"]:
             break
 
+    reason = (f"jev: {choice} @ {conf:.2f} (strength {ps['strength']}, probe {ps['probe_support']}); "
+              f"{len(adopted)} adopted, {len(conflicts)} file conflict(s)")
+    if skipped:
+        reason += ", %d not adopted (%s)" % (len(skipped), "; ".join(skipped))
     return {
         "adopted": adopted,
-        "reason": f"jev: {choice} @ {conf:.2f} (strength {ps['strength']}, probe {ps['probe_support']}); "
-                  f"{len(adopted)} adopted, {len(conflicts)} file conflict(s)",
+        "reason": reason,
         "needs_joe": [],
         "primary": choice,
         "conflicts": conflicts,

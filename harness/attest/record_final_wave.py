@@ -161,12 +161,23 @@ def _phase_from_label(label: str) -> str:
 
 
 def index(rows: list[dict]) -> dict:
-    """label -> result payload, plus the started rows and their phase."""
+    """label -> result payload, plus the started rows and their phase.
+
+    Two mappings are kept, and the difference matters. `results` is
+    label -> the FIRST payload for that label, which is what the single-seat
+    phases (synth, seam) want. `results_all` is label -> EVERY payload for
+    that label, because two seats can share a label: a retry, or two waves in
+    one journal. The old code kept only the first, so the second seat's
+    payload was dropped on the floor and the record showed one seat where the
+    journal had two. Evidence that was gathered and then not recorded is
+    evidence the board cannot cite.
+    """
     labels = {}
     phases = {}
     started = []
     result_rows = []
     results = {}
+    results_all = {}
     for r in rows:
         t = r.get("type")
         if t == "started":
@@ -179,8 +190,10 @@ def index(rows: list[dict]) -> dict:
                 # A result whose started row we never saw. Recorded as its
                 # agent id rather than dropped.
                 label = "unknown:" + str(r.get("agentId"))
+            payload = scrub(r.get("result"))
             result_rows.append(label)
-            results.setdefault(label, scrub(r.get("result")))
+            results.setdefault(label, payload)
+            results_all.setdefault(label, []).append(payload)
     # label -> the phase its seat was dispatched in. The STARTED row is
     # authoritative; the label is the fallback for a result whose started
     # row never arrived.
@@ -190,7 +203,22 @@ def index(rows: list[dict]) -> dict:
     for label in result_rows:
         label_phase.setdefault(label, _phase_from_label(label))
     return {"labels": labels, "phases": phases, "label_phase": label_phase,
-            "started": started, "result_rows": result_rows, "results": results}
+            "started": started, "result_rows": result_rows, "results": results,
+            "results_all": results_all}
+
+
+def _seats(idx: dict, prefix: str):
+    """Every seat whose label starts with `prefix`, in journal order.
+
+    A label can carry more than one seat, so this yields per PAYLOAD, not
+    per label. The old code iterated a label -> payload dict and therefore
+    saw one seat where the journal had two.
+    """
+    for label, payloads in (idx.get("results_all") or {}).items():
+        if not label.startswith(prefix):
+            continue
+        for payload in payloads:
+            yield label, payload
 
 
 def spawn_accounting(idx: dict, caps: dict) -> dict:
@@ -250,11 +278,18 @@ def not_yet(artifact: str, phase: str) -> dict:
 
 def build_record(idx: dict, journal_meta: dict, caps: dict) -> dict:
     results = idx["results"]
+    accounting = spawn_accounting(idx, caps)
+    # The state is read off the SAME accounting the record publishes. The old
+    # state line compared the number of DISTINCT LABELS with the number of
+    # started rows, while the accounting compared RESULT ROWS with started
+    # rows - so two seats sharing a label produced "state: IN_FLIGHT" beside
+    # "seats_returned: 2, seats_outstanding: 0". A record that contradicts
+    # itself is worse than one that is pessimistic, because a reader cannot
+    # tell which half to believe.
     record = {
         "wave": "attest-20261022-w1",
         "workflow_run": journal_meta["run_id"],
-        "state": "IN_FLIGHT" if idx["started"] and len(idx["results"]) < len(idx["started"])
-                 else "COMPLETE",
+        "state": "IN_FLIGHT" if accounting["seats_outstanding"] > 0 else "COMPLETE",
         "recorded_at_note": "Written by harness/attest/record_final_wave.py from the "
                             "wave's journal. Every value below came out of a journal "
                             "row; anything the journal does not contain is marked "
@@ -263,7 +298,12 @@ def build_record(idx: dict, journal_meta: dict, caps: dict) -> dict:
         "phases_complete": [],
         "phases_running": [],
         "phases_not_started": [],
-        "spawn_accounting": spawn_accounting(idx, caps),
+        "spawn_accounting": accounting,
+        # Labels carried by more than one seat. Named rather than collapsed,
+        # so a reader can see that a label is not a seat.
+        "duplicate_labels": sorted(label for label, payloads
+                                   in (idx.get("results_all") or {}).items()
+                                   if len(payloads) > 1),
     }
 
     for phase in PHASE_ORDER:
@@ -312,9 +352,7 @@ def build_record(idx: dict, journal_meta: dict, caps: dict) -> dict:
 
     # ---- crucible verdicts, from their own seats ------------------------
     verdicts = []
-    for label, payload in results.items():
-        if not label.startswith("attest:crucible:"):
-            continue
+    for label, payload in _seats(idx, "attest:crucible:"):
         if not isinstance(payload, dict):
             continue
         verdicts.append({
@@ -330,9 +368,7 @@ def build_record(idx: dict, journal_meta: dict, caps: dict) -> dict:
 
     # ---- forge branches and SHAs -----------------------------------------
     forges = []
-    for label, payload in results.items():
-        if not label.startswith("attest:forge:"):
-            continue
+    for label, payload in _seats(idx, "attest:forge:"):
         if not isinstance(payload, dict):
             continue
         forges.append({
@@ -349,9 +385,7 @@ def build_record(idx: dict, journal_meta: dict, caps: dict) -> dict:
 
     # ---- verify proofs ---------------------------------------------------
     verifies = []
-    for label, payload in results.items():
-        if not label.startswith("attest:verify:"):
-            continue
+    for label, payload in _seats(idx, "attest:verify:"):
         if not isinstance(payload, dict):
             continue
         # The verify seats write their proof under ONE of two keys: "proof"
@@ -386,8 +420,8 @@ def build_record(idx: dict, journal_meta: dict, caps: dict) -> dict:
     record["verify_proofs"] = verifies or not_yet("verify proof per forged node", "verify")
 
     # ---- the seed, attacked ----------------------------------------------
-    map_seats = {label: payload for label, payload in results.items()
-                 if label.startswith("attest:map:") and isinstance(payload, dict)}
+    map_seats = [(label, payload) for label, payload in _seats(idx, "attest:map:")
+                 if isinstance(payload, dict)]
     record["map_seats"] = [{
         "seat": label,
         "cluster": payload.get("cluster"),
@@ -395,7 +429,7 @@ def build_record(idx: dict, journal_meta: dict, caps: dict) -> dict:
         "nodes_returned": len(payload.get("nodes") or []),
         "edges_returned": len(payload.get("edges") or []),
         "unknowns_returned": len(payload.get("unknowns") or []),
-    } for label, payload in sorted(map_seats.items())]
+    } for label, payload in sorted(map_seats, key=lambda t: t[0])]
 
     seam = results.get("attest:seam")
     record["seam"] = ({

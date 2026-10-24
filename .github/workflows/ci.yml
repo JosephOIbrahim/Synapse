@@ -141,6 +141,22 @@ jobs:
         #
         # It is deliberately NOT in testpaths, so the stock suite collected
         # set stays exactly what the release receipts recorded.
+      - run: python -m pytest harness/probes/tests -v -rs --tb=short
+        # The catalogue-types probe is the standing evidence behind the
+        # World Labs audit's central claim - that the node-type catalogue
+        # matches the live build, and that the "three mis-described types"
+        # claim was wrong - and the audit cites it and its committed receipt.
+        # So the probe has to fail when it cannot answer. It used to SKIP a
+        # target the catalogue did not name at all and still print
+        # "AGREEMENT ... the catalogue is FAITHFUL": the subject was absent,
+        # so nothing had established anything about it, and the probe
+        # reported success anyway. An abstention printed as a pass is the
+        # worst kind of green. The suite is hermetic - it calls the probe's
+        # own pure decision function with a fake loader, so it needs no
+        # Houdini seat, no catalogue on disk, no model and no network.
+        #
+        # It is deliberately NOT in testpaths, for the same reason as the
+        # suite above.
 
       - name: Exercise the production memory env (SYNAPSE_MEMORY_BACKEND=moneta)
         # B5 (2026-09-05). packages/synapse.json ships SYNAPSE_MEMORY_BACKEND=moneta

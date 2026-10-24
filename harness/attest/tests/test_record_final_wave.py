@@ -231,6 +231,64 @@ def test_a_single_segment_phase_is_counted_in_its_own_phase():
     assert "synth" in record["phases_complete"]
 
 
+# ------------------------------------------------------- the duplicate label
+
+def test_the_state_agrees_with_the_accounting_when_two_seats_share_a_label():
+    """A label is not a seat.
+
+    The old state line compared the number of DISTINCT LABELS with the number
+    of started rows, while the accounting it published compared RESULT ROWS
+    with started rows. Two seats under one label therefore produced
+    "state: IN_FLIGHT" printed directly above "seats_returned: 2,
+    seats_outstanding: 0" - a record contradicting itself, with no way for a
+    reader to tell which half to believe.
+    """
+    rows = [_started("a1", "attest:crucible:S7", "crucible"),
+            _started("a2", "attest:crucible:S7", "crucible"),
+            _result("a1", {"node_id": "S7", "verdict": "SOUND"}),
+            _result("a2", {"node_id": "S7", "verdict": "BROKEN"})]
+    record = R.build_record(R.index(rows),
+                            {"run_id": "wf_test", "path": "j", "sha256": "x", "rows": 4},
+                            {"spawn_cap": 30, "spawn_reserve": 2})
+    acct = record["spawn_accounting"]
+    assert acct["seats_returned"] == 2
+    assert acct["seats_outstanding"] == 0
+    assert record["state"] == "COMPLETE"
+    # and the collapse is named rather than hidden
+    assert record["duplicate_labels"] == ["attest:crucible:S7"]
+
+
+def test_a_second_seat_under_a_shared_label_is_not_dropped():
+    """The second seat's payload was gathered, and the old recorder threw it
+    away: `results` was a label -> payload dict, so the second seat under
+    the same label never reached the record. Evidence that was collected and
+    then not recorded is evidence the board cannot cite."""
+    rows = [_started("a1", "attest:crucible:S7", "crucible"),
+            _started("a2", "attest:crucible:S7", "crucible"),
+            _result("a1", {"node_id": "S7", "verdict": "SOUND", "summary": "first"}),
+            _result("a2", {"node_id": "S7", "verdict": "BROKEN", "summary": "second"})]
+    record = R.build_record(R.index(rows),
+                            {"run_id": "wf_test", "path": "j", "sha256": "x", "rows": 4},
+                            {"spawn_cap": 30, "spawn_reserve": 2})
+    verdicts = record["crucible_verdicts"]
+    assert len(verdicts) == 2
+    assert {v["verdict"] for v in verdicts} == {"SOUND", "BROKEN"}
+
+
+def test_a_label_that_carries_one_seat_is_not_called_a_duplicate():
+    """The duplicate list is a finding, not a decoration. A wave whose labels
+    are unique must not be reported as carrying duplicates."""
+    rows = [_started("a1", "attest:crucible:S7", "crucible"),
+            _started("a2", "attest:crucible:S9", "crucible"),
+            _result("a1", {"node_id": "S7", "verdict": "SOUND"}),
+            _result("a2", {"node_id": "S9", "verdict": "SOUND"})]
+    record = R.build_record(R.index(rows),
+                            {"run_id": "wf_test", "path": "j", "sha256": "x", "rows": 4},
+                            {"spawn_cap": 30, "spawn_reserve": 2})
+    assert record["duplicate_labels"] == []
+    assert len(record["crucible_verdicts"]) == 2
+
+
 # --------------------------------------------------------------- the scrub
 
 def test_a_machine_path_in_a_seat_payload_does_not_reach_the_record(tmp_path):

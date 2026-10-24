@@ -55,10 +55,18 @@ WHAT THIS PROBE ESTABLISHED (Houdini 22.0.400):
 Run:
   hython -s -P harness/probes/catalog_types_check.py --catalog rag/catalog/h22.0.400
 
-Exit code 0 means every catalogue entry that names a live type agrees with it.
-Exit code 1 means at least one entry disagrees.
+Exit code 0 means every audited target was FOUND in the catalogue, and every
+comparison that could be made agreed with the live type.
+Exit code 1 means at least one entry disagrees - or at least one target was
+absent from the catalogue, which is a disagreement too: the probe's subject
+was missing, so nothing established anything about it.
 
 THE RECEIPT:
+  The receipt's "checked" counts ANSWERED COMPARISONS across the five
+  questions, not catalogue entries. There are six targets and three
+  comparable questions, so a healthy run records 18. The old summary printed
+  that number as "checked 18 catalogue entries", which is off by a factor of
+  three and mislabelled the unit.
   --receipt <path> writes the same findings as JSON, so the numbers quoted in
   this docstring and in the audit have a committed producer. The receipt
   records the build, the catalogue directory, and every comparison it made.
@@ -104,6 +112,64 @@ def load_entry(catalog: Path, category: str, key: str):
         raise SystemExit("catalogue %s has no 'types' map (top-level keys: %s)"
                          % (path, sorted(data)))
     return types.get(key)
+
+
+def resolution_check(category: str, key: str, entry, live_types: dict) -> dict:
+    """Q1 for one target: was the question ANSWERED, and does the answer disagree?
+
+    Pure - no hou, no I/O - so it can be tested without a Houdini seat.
+
+    The old loop SKIPPED a target the catalogue does not name at all: it
+    printed "not in the catalogue at all", wrote a resolution row saying
+    `in_catalogue: False`, and moved on - no finding, no count. The run then
+    printed "AGREEMENT: every catalogue entry that names a live type matches
+    the live type. The catalogue is FAITHFUL to the live build." The subject
+    of the probe - the audited type - was absent, so nothing had established
+    anything about it, and the probe said AGREEMENT anyway. An abstention
+    printed as a pass is the worst kind: it is a green that means nothing.
+
+    A target that IS in the catalogue but has no live type under that exact
+    name is NOT reported here. That is a different question, and the probe
+    answers it downstream: Q3 shows what createNode() actually returns (an
+    unversioned key often resolves to a versioned type - the CONSUMER TRAP
+    the docstring describes), and Q4 shows which parm names are absent on the
+    node you get. Calling that a catalogue defect would mislabel it.
+    """
+    if entry is None:
+        return {
+            "answered": True,
+            "row": {"category": category, "key": key,
+                    "in_catalogue": False, "live_type_exists": False},
+            "problems": ["%s/%s: the catalogue does not name this type at all, so the "
+                         "comparison this probe exists to make cannot be made - nothing "
+                         "established that the catalogue describes it" % (category, key)],
+        }
+    exists = key in (live_types or {})
+    return {
+        "answered": True,
+        "row": {"category": category, "key": key,
+                "in_catalogue": True, "live_type_exists": exists},
+        "problems": [],
+    }
+
+
+def resolution_pass(targets, load, live_types: dict) -> dict:
+    """Q1 over every target. Pure: the caller supplies the loader and the registry.
+
+    Returns the receipt rows, the findings, and how many comparisons were
+    made. Every target is counted, including one the catalogue does not
+    name: a target that was not compared has not been cleared.
+    """
+    rows = []
+    problems = []
+    checked = 0
+    for category, key in targets:
+        entry = load(category, key)
+        outcome = resolution_check(category, key, entry, live_types.get(category) or {})
+        rows.append(outcome["row"])
+        problems.extend(outcome["problems"])
+        checked += 1
+    return {"rows": rows, "problems": problems, "checked": checked}
 
 
 def catalogue_parms(entry):
@@ -229,19 +295,17 @@ def main() -> int:
     print("=" * 78)
     print("Q1 RESOLUTION  -  does the catalogue key name a live type in that category?")
     print("=" * 78)
-    for category, key in targets:
-        entry = load_entry(catalog, category, key)
-        if entry is None:
-            print("  %-8s %-18s not in the catalogue at all" % (category, key))
-            rec["resolution"].append({"category": category, "key": key,
-                                      "in_catalogue": False, "live_type_exists": False})
-            continue
-        types = live_types.get(category, {})
-        print("  %-8s %-18s catalogue: yes    live type with this exact name: %s"
-              % (category, key, "YES" if key in types else "NO"))
-        rec["resolution"].append({"category": category, "key": key,
-                                  "in_catalogue": True, "live_type_exists": key in types})
-        checked += 1
+    q1 = resolution_pass(targets, lambda c, k: load_entry(catalog, c, k), live_types)
+    for row in q1["rows"]:
+        if not row["in_catalogue"]:
+            print("  %-8s %-18s NOT IN THE CATALOGUE AT ALL - the comparison cannot be made"
+                  % (row["category"], row["key"]))
+        else:
+            print("  %-8s %-18s catalogue: yes    live type with this exact name: %s"
+                  % (row["category"], row["key"], "YES" if row["live_type_exists"] else "NO"))
+    rec["resolution"].extend(q1["rows"])
+    problems.extend(q1["problems"])
+    checked += q1["checked"]
 
     print()
     print("=" * 78)
@@ -517,7 +581,7 @@ def main() -> int:
     print("=" * 78)
     print("SUMMARY")
     print("=" * 78)
-    print("checked %d catalogue entries" % checked)
+    print("checked %d comparison(s) over %d target(s)" % (checked, len(targets)))
 
     rec["houdini"] = hou.applicationVersionString()
     rec["catalogue"] = str(catalog)

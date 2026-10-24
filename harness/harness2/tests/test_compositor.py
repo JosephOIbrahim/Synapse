@@ -95,13 +95,14 @@ def _cand(cid, files, probe="PROBED: before fails, after passes", strength=3, pr
     }
 
 
-def _answers(choice="A", conf=0.9, strength=3, probe=0.9, comp=0.9):
+def _answers(choice="A", conf=0.9, strength=3, probe=0.9, comp=0.9, ids=("A", "B")):
     return {
         "choices": {"adopt": {"choice": choice, "confidence": conf, "probabilities": {choice: conf}}},
-        "scores": {"strength_A": {"score": strength, "confidence": 1.0},
-                   "strength_B": {"score": strength, "confidence": 1.0}},
-        "nouls": {"probe_A": {"noul": probe}, "probe_B": {"noul": probe},
-                  "composable_A": {"noul": comp}, "composable_B": {"noul": comp}},
+        "scores": {("strength_" + i): {"score": strength, "confidence": 1.0} for i in ids},
+        "nouls": dict(
+            {("probe_" + i): {"noul": probe} for i in ids},
+            **{("composable_" + i): {"noul": comp} for i in ids},
+        ),
     }
 
 
@@ -160,6 +161,60 @@ def test_compose_never_co_adopts_two_candidates_claiming_one_file():
     d = C.decide_compose(_answers(), cands, C.load_questions()["guards"]["compose"]["policy"])
     assert {c["id"] for c in d["adopted"]} == {"A"}
     assert d["conflicts"] and d["conflicts"][0]["candidate"] == "B"
+
+
+def test_compose_never_co_adopts_two_SECONDARIES_claiming_one_file():
+    """The single-writer rule, for the case the old check did not reach.
+
+    The old guard compared every candidate with the PRIMARY only. Two
+    secondaries that claim the same file were each disjoint from the primary,
+    so they were both adopted - and two seats then write one file. The rule is
+    "one writer per file", not "one writer per file among the primary and its
+    rivals".
+    """
+    cands = [_cand("A", ["a.py"]), _cand("B", ["shared.py"]), _cand("C", ["shared.py"])]
+    d = C.decide_compose(_answers(ids=("A", "B", "C")), cands,
+                          C.load_questions()["guards"]["compose"]["policy"])
+    assert {c["id"] for c in d["adopted"]} == {"A", "B"}
+    assert [c["candidate"] for c in d["conflicts"]] == ["C"]
+    assert d["conflicts"][0]["with"] == "B"
+
+
+def test_compose_refuses_a_candidate_whose_probe_was_never_answered():
+    """A MISSING probe answer is not a passing probe.
+
+    The old guard compared the probe answer only when it was present, so a
+    candidate nobody probed passed on its strength score alone - and the
+    receipt then read "probe None" in a field that otherwise carries a
+    measurement. That is the "silent default dressed as a judgment" this file
+    forbids at the top.
+    """
+    cands = [_cand("A", ["a.py"])]
+    answers = _answers()
+    del answers["nouls"]["probe_A"]
+    d = C.decide_compose(answers, cands, C.load_questions()["guards"]["compose"]["policy"])
+    assert d["adopted"] == []
+    assert "no probe answer" in d["reason"]
+
+
+def test_compose_never_adopts_a_secondary_whose_probe_was_never_answered():
+    """The same hole, one level down: a secondary with no probe answer."""
+    cands = [_cand("A", ["a.py"]), _cand("B", ["b.py"])]
+    answers = _answers()
+    del answers["nouls"]["probe_B"]
+    d = C.decide_compose(answers, cands, C.load_questions()["guards"]["compose"]["policy"])
+    assert {c["id"] for c in d["adopted"]} == {"A"}
+    assert "B: no probe answer" in d["reason"]
+
+
+def test_compose_names_the_probe_each_candidate_owes_when_jev_is_unavailable():
+    """The header's promise: the candidates are reported as needing Joe, WITH
+    the probe each one still owes. The old record named the candidate and
+    dropped the probe, so the reader had to go and find it."""
+    cands = [_cand("A", ["a.py"], probe="PROBED: before fails, after passes")]
+    d = C.decide_compose(None, cands, C.load_questions()["guards"]["compose"]["policy"])
+    assert d["adopted"] == []
+    assert d["probe_owed"]["A"] == "PROBED: before fails, after passes"
 
 
 def test_compose_spec_builds_one_criterion_per_candidate():
@@ -464,6 +519,71 @@ def test_dead_gate_is_refused_at_load_time():
     spec = C.compose_spec([_cand("A", ["a.py"])], guard)
     problems = C.check_policy("compose", {**guard, "policy": bad}, spec)
     assert problems and "DEAD GATE" in problems[0]
+
+
+def test_dead_gate_is_refused_for_the_composability_threshold():
+    """min_composable decides whether a secondary is adopted. The old detector
+    walked a hardcoded list of TWO Noul keys, so this one was never checked:
+    a value of 1.5 (unreachable) or -1 (always true) was as acceptable as a
+    real threshold. A gate whose width nobody checks is a gate that can be
+    vacuous or dead without anything saying so."""
+    guard = C.load_questions()["guards"]["compose"]
+    bad = dict(guard["policy"])
+    bad["min_composable"] = 1.5
+    spec = C.compose_spec([_cand("A", ["a.py"])], guard)
+    problems = C.check_policy("compose", {**guard, "policy": bad}, spec)
+    assert problems and "min_composable" in problems[0] and "DEAD GATE" in problems[0]
+
+
+def test_dead_gate_is_refused_for_the_landability_threshold():
+    """blocked_max decides whether a node is allowed to land. Same hole."""
+    q = C.load_questions()
+    guard = q["guards"]["graph"]
+    bad = dict(guard["policy"])
+    bad["blocked_max"] = 2.0
+    spec = C.graph_spec([_node("A", ["a.py"])], guard)
+    problems = C.check_policy("graph", {**guard, "policy": bad}, spec)
+    assert problems and "blocked_max" in problems[0] and "DEAD GATE" in problems[0]
+
+
+def test_a_threshold_the_policy_does_not_carry_is_a_dead_gate():
+    """A gate that is not there is not a gate that passes. The old detector
+    skipped a missing Noul key with `continue` and moved on to the next
+    question, so a guard that read a threshold nobody supplied was reported
+    clean."""
+    q = C.load_questions()
+    guard = q["guards"]["graph"]
+    bad = {k: v for k, v in guard["policy"].items() if k != "blocked_max"}
+    spec = C.graph_spec([_node("A", ["a.py"])], guard)
+    problems = C.check_policy("graph", {**guard, "policy": bad}, spec)
+    assert problems and "blocked_max" in problems[0] and "DEAD GATE" in problems[0]
+
+
+def test_a_question_nobody_checks_a_threshold_for_is_a_dead_gate():
+    """A guard that grows a question nobody has mapped a threshold for is a
+    question whose answer is read by nobody. The old detector read the SPEC,
+    so it could only ever check the two key names it had hardcoded."""
+    q = C.load_questions()
+    guard = q["guards"]["compose"]
+    questions = dict(guard["questions"])
+    questions["vigour"] = {"type": "score", "instructions": "how vigorous",
+                           "criteria": ["none", "some", "very"]}
+    spec = {"vigour_A": {"type": "score", "criteria": ["none", "some", "very"]}}
+    problems = C.check_policy("compose", {**guard, "questions": questions}, spec)
+    assert problems and "vigour" in problems[0] and "DEAD GATE" in problems[0]
+
+
+def test_every_shipped_question_has_a_threshold_somebody_checks():
+    """Coverage. The tables that map a question to its policy key are
+    exhaustive over the shipped guards, so a guard that grows a question
+    without a threshold is caught here rather than in production."""
+    q = C.load_questions()
+    for name in ("compose", "graph"):
+        for qid, spec in q["guards"][name]["questions"].items():
+            if spec["type"] == "score":
+                assert qid in C.SCORE_POLICY_KEY, "%s.%s has no checked threshold" % (name, qid)
+            elif spec["type"] == "noul":
+                assert qid in C.NOUL_POLICY_KEY, "%s.%s has no checked threshold" % (name, qid)
 
 
 def test_shipped_policy_has_no_dead_gate():
