@@ -56,7 +56,7 @@ Producers: [the audit](docs/intake/worldlabs-gaussian-pipeline-audit.md) · [the
 
 The audit's own strongest claim was wrong, and the audit is corrected in place. The shipped node catalogue matches the live build: 17/17, 42/42, 131/131, 123/123, 194/194 and 73/73, with a Jaccard match of 1.000 on each.
 
-A standing probe now reads the live build and compares the catalogue against it. It exits non-zero on divergence. It exits zero today.
+A standing probe now reads the live build and compares the catalogue against it. It exits non-zero on divergence, and it also fails when the catalogue does not name an audited type at all — a target it could not compare is not a target it cleared. It exits zero today.
 
 Two hazards remain, and both are rules for whoever *reads* the catalogue:
 
@@ -67,15 +67,17 @@ Producers: [the standing probe](harness/probes/catalog_types_check.py) · [its r
 
 ### Two harness boards land
 
-`harness/attest/` is a refinement loop that attacks its own seed defects. Its blueprint is DRAFT and unratified — its own ratification gate reads `OPEN_AWAITING_JOE` — so no gate on that board is open. Its first wave completed: **17** seats dispatched, **17** returned, **11** seats of headroom left.
+`harness/attest/` is a refinement loop that attacks its own seed defects. Its blueprint is DRAFT and unratified. Its own gate block reads `blueprint_ratification: OPEN_AWAITING_JOE`, `contract_ratification: NOT_REACHED`, and `merges_pushes_tags_version: ALWAYS_HALT` — so nothing on that board merges, pushes, tags or touches `VERSION` without your word, per act. Its first wave completed: **17** seats dispatched, **17** returned, **11** seats of headroom left.
 
 `harness/harness2/` now carries a compose guard, a graph guard and a threshold calibration. It has no spec and no gate, so it fails closed: with no Jev answer the decision is "adopt nothing".
 
 Producers: [the wave record](harness/attest/WAVE-RECORD.md), written by `harness/attest/record_final_wave.py`, which names the journal's SHA-256 · [the attest board](harness/attest/) · [harness2](harness/harness2/)
 
-### Three test suites are now collected, and one test was fixed
+### Four test suites are now collected, and one test was fixed
 
-`harness/harness2/tests` (38 tests), `harness/attest/tests` (17) and `harness/notes/release-v5.97.7/tests` (19) were collected by nothing before this release, so every assertion in them had been decorative. All three are in CI now. `harness/jev/tests` (97) was already wired, and `installer/tests` (84) is a changed-area control the release measured.
+`harness/harness2/tests` (47 tests), `harness/attest/tests` (20), `harness/notes/release-v5.97.7/tests` (26) and `harness/probes/tests` (5) were collected by nothing before this release, so every assertion in them had been decorative. All four are in CI now. `harness/jev/tests` (97) was already wired, and `installer/tests` (84) is a changed-area control the release measured.
+
+Each of those suites now pins a defect it was written for. The compose guard refused to adopt a candidate whose probe was never answered, and adopted two secondaries that claimed the same file. The attest recorder printed `state: IN_FLIGHT` beside `seats_outstanding: 0` when two seats shared a label, and dropped the second seat's payload. The catalogue probe skipped a target the catalogue did not name and still printed `AGREEMENT`.
 
 `tests/test_detached_launch.py` polled for a detached child's marker file and read it the instant it appeared. Windows refuses a read while the writer still holds the handle, so the gate is now "readable **and** complete". Both content assertions are unchanged, and no assertion was weakened.
 
@@ -290,7 +292,7 @@ Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution brid
 
 ### What CI runs
 
-CI runs the suite in five pytest invocations: `tests/`, `harness/jev/tests`, `harness/harness2/tests`, `harness/attest/tests` and `harness/notes/release-v5.97.7/tests`, plus one targeted re-check of the Moneta-backed memory tests. The first four are also in `testpaths` in [`pyproject.toml`](pyproject.toml), so a bare `pytest` run collects them. See [the workflow](.github/workflows/ci.yml).
+CI runs the suite in six pytest invocations: `tests/`, `harness/jev/tests`, `harness/harness2/tests`, `harness/attest/tests`, `harness/notes/release-v5.97.7/tests` and `harness/probes/tests`, plus one targeted re-check of the Moneta-backed memory tests. The first four are also in `testpaths` in [`pyproject.toml`](pyproject.toml), so a bare `pytest` run collects them. See [the workflow](.github/workflows/ci.yml).
 
 **CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so the **186** tests under `tests/` that need one are deselected there and never execute — 12,519 of the 12,705 collected in that directory run. Those tests are measured by hand on a maintainer's machine, not by CI.
 
