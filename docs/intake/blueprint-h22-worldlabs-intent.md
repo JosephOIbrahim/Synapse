@@ -1,8 +1,8 @@
 # SYNAPSE Blueprint — H22 Solaris and World Labs World Building, as Intent
 
 **Status:** PROPOSAL · `ratified:false` · authorizes no code change, no corpus write, no version bump.
-**Revision:** v0.3 (2026-09-02). v0.2 → v0.3: first-principles performance review — reading map (§0.0), §0.4/§0.5 order fixed, §1.2 wording, performance properties in §2.5, budgets on D2.4 / D3.3 / session 1, probe script: vectorised B-3/S-2, B-6 no longer cascades, S-3 eye from floor, B-6 writes the component to disk and prints its size. Nothing added to scope.
-**Revision history:** v0.2 (2026-09-02). v0.1 → v0.2: CTO recommendations applied — rules D-1..D-4 (§0.3), strategic note (§0.5), gated done-conditions D1.7 / D2.7 / D3.6, demo fallback F-1 (§4.2), gate check in miles (§5), gate status in session 1 (§6), gated extensions (§9), risk register (§10), dependency decisions (§11). No intent changed.
+**Revision:** v0.3.1 (2026-10-14). v0.3 → v0.3.1: definition only — §3.9 states that training a splat is not an edit (human ruling); §2.9 points to it. Re-encoding left open. Nothing added to scope (D-3).
+**Revision history:** v0.3 (2026-09-02). v0.2 → v0.3: first-principles performance review — reading map (§0.0), §0.4/§0.5 order fixed, §1.2 wording, performance properties in §2.5, budgets on D2.4 / D3.3 / session 1, probe script: vectorised B-3/S-2, B-6 no longer cascades, S-3 eye from floor, B-6 writes the component to disk and prints its size. Nothing added to scope. · v0.2 (2026-09-02). v0.1 → v0.2: CTO recommendations applied — rules D-1..D-4 (§0.3), strategic note (§0.5), gated done-conditions D1.7 / D2.7 / D3.6, demo fallback F-1 (§4.2), gate check in miles (§5), gate status in session 1 (§6), gated extensions (§9), risk register (§10), dependency decisions (§11). No intent changed.
 **Compiled:** 2026-09-02, Claude (Fable 5.1) with the human, outside Houdini. No probe in this document has been run.
 **Build referenced by SYNAPSE artifacts:** H22.0.368 (drop), symbol table 22.0.400 (later recon). Pin the build in every probe output.
 **Companions (same project):** `Dossier - H22 Solaris and Karma (SYNAPSE Intake).md` (claims register, probes P-1..P-9, buckets), `Coffee Shop Notes - Solaris and Karma in Houdini 22.md` (digest), `H22 - Solaris - Houdini 22 HIVE.md` (transcript), `frames/hires_t_MMSS.jpg` (parameter panes).
@@ -244,7 +244,7 @@ The manifest's `frame.applied` block records which of steps 2–3 have been bake
 
 ### 2.9 Non-goals for Intent 2
 
-No World API client in SYNAPSE (vendor skill). No SPZ decoder in SYNAPSE (convert to PLY upstream; BLU-C-01 decides where). No splat *editing* tools (GSOPs' lane). No robotics/sim (World Labs' own Isaac Sim path is not ours).
+No World API client in SYNAPSE (vendor skill). No SPZ decoder in SYNAPSE (convert to PLY upstream; BLU-C-01 decides where). No splat *editing* tools (GSOPs' lane; training is not editing, §3.9). No robotics/sim (World Labs' own Isaac Sim path is not ours).
 
 ---
 
@@ -328,6 +328,8 @@ S-1 kind/purpose walk on the fixture component; S-2 normal-vs-up classification 
 ### 3.9 Non-goals
 
 Physics, robotics, sim-to-real, navmesh solvers, ML semantic labelling, anything that edits the splat, APEX/CFX.
+
+**Training is not an edit** (human ruling, 2026-10-14). Training a splat — optimising its parameters against posed images, e.g. the `ml_traingsplats` TOP — *creates* the splat; it is not an edit. "Edits the splat" means changing an existing splat's data after it exists: positions, scales, rotations, opacity or SH colour (cleaning, deforming, simulating, relighting). Re-encoding an existing splat (e.g. PLY → SPZ quantisation) is **not** ruled on here and stays open. This clarifies the non-goal; it adds no tool, lane, gate or mile, and the substrate line in §3.2 ("Never the splat") is unchanged.
 
 ---
 
