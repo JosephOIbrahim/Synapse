@@ -1,0 +1,47 @@
+{
+  "_note": "The memory substrates the loop may improve. Repos are expected as siblings of the SYNAPSE checkout; set SUBSTRATE_ROOT if they live elsewhere. Gates must all pass, before and after every change. 'frozen' paths can never be edited by a worker. 'downstream' runs SYNAPSE's own tests against the candidate, with downstream_pythonpath put first so the candidate is what gets imported (checked every time via import_name).",
+
+  "houdini_processes": ["houdini", "houdinifx", "houdinicore", "happrentice", "hindie",
+                        "hython", "hbatch", "husk", "mantra"],
+
+  "targets": {
+    "moneta": {
+      "repo": "${SUBSTRATE_ROOT}/Moneta",
+      "gates": [{"name": "pytest", "cmd": ["{python}", "-m", "pytest", "tests", "-q", "-p", "no:cacheprovider"]}],
+      "frozen": ["tests/**", "ARCHITECTURE.md", "MONETA.md", "CLAUDE.md", "docs/**", "schema/**", "pyproject.toml"],
+      "import_name": "moneta",
+      "downstream_pythonpath": ["{worktree}/src"],
+      "downstream": [{"name": "moneta-integration", "cmd": ["{python}", "-m", "pytest", "-q", "-p", "no:cacheprovider",
+                      "tests/test_moneta_integration.py", "tests/test_moneta_substrate_truth.py"]}]
+    },
+    "salus": {
+      "repo": "${SUBSTRATE_ROOT}/SALUS",
+      "gates": [
+        {"name": "unit", "cmd": ["{python}", "-m", "unittest", "discover", "-s", "tests"]},
+        {"name": "determinism", "cmd": ["{python}", "verify/determinism.py"]},
+        {"name": "adapter-equivalence", "cmd": ["{python}", "verify/adapter_equivalence.py"]},
+        {"name": "success-signature", "cmd": ["{python}", "verify/success_signature.py"]}
+      ],
+      "frozen": ["tests/**", "verify/**", "harness/**", "BLUEPRINT.md", "DESIGN.md", "CLAUDE.md", "docs/**", "pyproject.toml"]
+    },
+    "hanish": {
+      "repo": "${SUBSTRATE_ROOT}/Hanish",
+      "gates": [{"name": "pytest", "cmd": ["{python}", "-m", "pytest", "-q", "-p", "no:cacheprovider"]}],
+      "frozen": ["tests/**", "harness/**", "HARNESS.md", "docs/**", "pyproject.toml"],
+      "import_name": "hanish",
+      "downstream_pythonpath": ["{worktree}"],
+      "downstream": [{"name": "hanish-worker", "cmd": ["{python}", "-m", "pytest", "-q", "-p", "no:cacheprovider",
+                      "tests/test_loop_hanish_worker.py"]}]
+    },
+    "octavius": {
+      "repo": "${SUBSTRATE_ROOT}/Octavius",
+      "gates": [{"name": "pytest", "cmd": ["{python}", "-m", "pytest", "-q", "-p", "no:cacheprovider"]}],
+      "frozen": ["tests/**", "ARCHITECTURE.md", "CLAUDE.md", "docs/**", "pyproject.toml"]
+    },
+    "salus-moneta-shim": {
+      "repo": "${SUBSTRATE_ROOT}/Salus-Moneta-Shim",
+      "gates": [{"name": "pytest", "cmd": ["{python}", "-m", "pytest", "tests", "-q", "-p", "no:cacheprovider"]}],
+      "frozen": ["tests/**", "README.md"]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "_note": "Model names live HERE only. Code references tiers, never model strings. Swap a model by editing this file; nothing else changes. A mission picks its worker with \"worker_tier\" (default \"worker\").",
+
+  "worker": {
+    "_what": "Default. The loop drives the local model over Ollama's /api/chat and applies its SEARCH/REPLACE edits. 32k context is Ollama's default on a 24 GB card.",
+    "backend": "lean",
+    "model": "qwen3-coder:30b",
+    "num_ctx": 32768,
+    "temperature": 0.3,
+    "keep_alive": "30m",
+    "timeout_s": 900
+  },
+
+  "worker_claude_code": {
+    "_what": "Claude Code itself as the worker, on the local model via Ollama's Anthropic-compatible endpoint. More agency, bigger prompt. Ollama recommends 64k+ context for this: start the server with OLLAMA_CONTEXT_LENGTH=65536 and check `ollama ps` shows 100% GPU.",
+    "backend": "claude-code",
+    "provider": "ollama",
+    "model": "qwen3-coder:30b",
+    "max_turns": 25,
+    "timeout_s": 1800,
+    "extra_args": ["--permission-prompts", "none"]
+  },
+
+  "worker_haiku": {
+    "_what": "The swap for when a local model stalls: the same Claude Code worker on Haiku, using your Claude login. Spends real tokens; pair it with reviewer_budget_usd on the mission.",
+    "backend": "claude-code",
+    "provider": "anthropic",
+    "model": "haiku",
+    "max_turns": 25,
+    "timeout_s": 1800,
+    "extra_args": ["--permission-prompts", "none", "--max-budget-usd", "0.50"]
+  },
+
+  "reviewer": {
+    "_what": "Only used when a mission sets review_each_keep. One short Claude call per kept change, capped per call.",
+    "provider": "anthropic",
+    "model": "haiku",
+    "max_budget_usd": 0.25
+  }
+}
