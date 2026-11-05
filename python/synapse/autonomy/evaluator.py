@@ -327,13 +327,34 @@ class RenderEvaluator:
         """
         frame_evals: List[FrameEvaluation] = []
 
+        # Load each frame once, and keep only the previous one, so the motion
+        # check can compare real pixels on the driver path, which never hands
+        # frames over in memory. One frame of storage, whatever the range.
+        prev_pixels: Optional[Any] = None
+        jump_frames: List[int] = []
+
         for fr in frame_results:
+            pixels = fr.get("image_data")
+            if pixels is None and NUMPY_AVAILABLE:
+                pixels = self._load_frame(fr.get("output_path") or "")
             fe = self.evaluate_frame(
                 frame=fr["frame"],
                 output_path=fr["output_path"],
-                image_data=fr.get("image_data"),
+                pixels=pixels,
             )
             frame_evals.append(fe)
+
+            if NUMPY_AVAILABLE and pixels is not None:
+                arr = np.asarray(pixels, dtype=np.float64)
+                if (
+                    prev_pixels is not None
+                    and arr.shape == prev_pixels.shape
+                    and float(np.mean(np.abs(arr - prev_pixels))) > self._continuity_threshold
+                ):
+                    jump_frames.append(fr["frame"])
+                prev_pixels = arr
+            else:
+                prev_pixels = None
 
         # Temporal / sequence-level checks
         temporal_issues: List[str] = []
@@ -348,7 +369,7 @@ class RenderEvaluator:
             if flicker:
                 temporal_issues.append(flicker)
 
-            continuity = self._check_motion_continuity(frame_results)
+            continuity = self._motion_issue(jump_frames)
             if continuity:
                 temporal_issues.append(continuity)
 
@@ -636,13 +657,11 @@ class RenderEvaluator:
 
         jump_frames: List[int] = []
         prev_arr = None
-        prev_frame = None
 
         for fr in frame_results:
             data = fr.get("image_data")
             if data is None or not NUMPY_AVAILABLE:
                 prev_arr = None
-                prev_frame = fr["frame"]
                 continue
 
             arr = np.asarray(data, dtype=np.float64)
@@ -651,8 +670,11 @@ class RenderEvaluator:
                 if diff > self._continuity_threshold:
                     jump_frames.append(fr["frame"])
             prev_arr = arr
-            prev_frame = fr["frame"]
 
+        return self._motion_issue(jump_frames)
+
+    def _motion_issue(self, jump_frames: List[int]) -> Optional[str]:
+        """Describe the motion-discontinuity issue, if any frames jumped."""
         if jump_frames:
             frames_str = ", ".join(str(f) for f in jump_frames[:10])
             return (

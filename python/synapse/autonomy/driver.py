@@ -170,6 +170,11 @@ class AutonomousDriver:
         # frames; grading against that would compare a full render to a
         # subset and call every good frame unplanned.
         planned_frames = self._planned_frames(plan)
+        # Results accumulate across attempts, keyed by frame. A replan retries
+        # only the failed frames; grading the retry on its own would lose the
+        # frames that already succeeded and report them as missing from the
+        # plan. Each retry replaces its frame's entry, and its failure state.
+        accumulated: Dict[int, Dict[str, Any]] = {}
         self._log_decision(
             context="initial_plan",
             decision=f"Created render plan with {len(plan.steps)} step(s) "
@@ -312,8 +317,14 @@ class AutonomousDriver:
 
             # Step 5: Collect render results and evaluate
             render_results = await self._collect_results(plan)
+            for fr in render_results:
+                try:
+                    frame_no = int(fr.get("frame", 0))
+                except (TypeError, ValueError):
+                    frame_no = 0
+                accumulated[frame_no] = fr
             evaluation = self._evaluator.evaluate_sequence(
-                render_results,
+                [accumulated[k] for k in sorted(accumulated)],
                 planned_frames=planned_frames,
                 farm_failed_frames=self._farm_failed_frames(plan),
             )

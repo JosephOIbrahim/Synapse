@@ -358,6 +358,42 @@ class TestSequenceVerdictBeyondTheMean:
         assert seq.passed is True
         assert seq.temporal_issues == []
 
+    def test_motion_continuity_sees_loaded_frames(self, monkeypatch):
+        """A spatial jump must be caught when the driver only gives paths.
+
+        The patterns invert each other, so the mean luminance is identical and
+        the brightness check cannot see them. Only the pixel comparison can,
+        and on the driver path the pixels come from the loader, not the caller.
+        """
+        assert HAS_NUMPY
+        evaluator = RenderEvaluator()
+
+        left_right = np.zeros((10, 10, 3), dtype=np.float32)
+        left_right[:, ::2] = 1.0
+        patterns = [left_right, 1.0 - left_right, left_right]
+
+        def fake_load(path):
+            index = int(path.rsplit("f", 1)[1].split(".")[0]) - 1
+            return patterns[index]
+
+        monkeypatch.setattr(evaluator, "_load_frame", fake_load)
+        loaded_frames = [
+            {"frame": i, "output_path": f"/tmp/f{i}.exr", "image_data": None}
+            for i in range(1, 4)
+        ]
+        inline_frames = [
+            {"frame": i, "output_path": f"/tmp/f{i}.exr", "image_data": patterns[i - 1]}
+            for i in range(1, 4)
+        ]
+
+        loaded = evaluator.evaluate_sequence(loaded_frames)
+        inline = evaluator.evaluate_sequence(inline_frames)
+
+        # Parity: the driver path must see what an inline caller sees.
+        assert any("discontinuity" in i.lower() for i in loaded.temporal_issues)
+        assert any("discontinuity" in i.lower() for i in inline.temporal_issues)
+        assert not any("flicker" in i.lower() for i in loaded.temporal_issues)
+
     def test_temporal_checks_see_luminance_from_loaded_frames(self, monkeypatch):
         """The driver never holds frames; flicker must still be measurable.
 
