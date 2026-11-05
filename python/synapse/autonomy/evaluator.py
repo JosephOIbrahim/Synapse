@@ -267,6 +267,10 @@ class RenderEvaluator:
             if clipping_result:
                 issues.append(clipping_result)
 
+            # Per-frame mean luminance, so the temporal checks can run on the
+            # driver path where full frames are never held in memory.
+            metrics["mean_luminance"] = self._mean_luminance(arr)
+
         elif resolved_pixels is not None and not NUMPY_AVAILABLE:
             logger.warning(
                 "numpy not available — can't run pixel-level quality checks for frame %d",
@@ -298,6 +302,8 @@ class RenderEvaluator:
     def evaluate_sequence(
         self,
         frame_results: List[Dict[str, Any]],
+        planned_frames: Optional[Any] = None,
+        farm_failed_frames: int = 0,
     ) -> SequenceEvaluation:
         """Evaluate an entire rendered sequence.
 
@@ -306,9 +312,18 @@ class RenderEvaluator:
                 - frame (int): frame number
                 - output_path (str): path to rendered file
                 - image_data (optional): numpy array or None
+                - error (optional): the farm's per-frame error, "" for a good frame
+                - failed (optional): True when the farm marked the frame failed
+            planned_frames: Optional iterable of frame numbers the plan asked
+                for. When given, a sequence that evaluated different frames
+                fails, whatever its mean score.
+            farm_failed_frames: The farm's own failure count for this render.
+                Above zero fails the sequence, whatever its mean score.
 
         Returns:
-            SequenceEvaluation with per-frame and temporal analysis.
+            SequenceEvaluation with per-frame and temporal analysis. A missing
+            output, a failed frame or a plan mismatch fails the sequence; the
+            mean score governs soft issues only.
         """
         frame_evals: List[FrameEvaluation] = []
 
@@ -322,19 +337,71 @@ class RenderEvaluator:
 
         # Temporal / sequence-level checks
         temporal_issues: List[str] = []
+        hard_failures: List[str] = []
 
         missing = self._check_missing_frames(frame_evals)
         if missing:
             temporal_issues.append(missing)
 
         if NUMPY_AVAILABLE and len(frame_evals) >= 2:
-            flicker = self._check_flickering(frame_results)
+            flicker = self._check_flickering_from_evals(frame_evals, frame_results)
             if flicker:
                 temporal_issues.append(flicker)
 
             continuity = self._check_motion_continuity(frame_results)
             if continuity:
                 temporal_issues.append(continuity)
+
+        # Hard failures: a frame that never produced an output, a frame the
+        # farm reported as failed, or a sequence that does not match the plan.
+        # None of these may be averaged away.
+        missing_output = [
+            fe.frame for fe in frame_evals
+            if any("couldn't find rendered output" in i.lower() for i in fe.issues)
+        ]
+        if missing_output:
+            hard_failures.append(
+                f"Missing rendered output for {len(missing_output)} frame(s): "
+                + ", ".join(str(f) for f in sorted(missing_output)[:20])
+            )
+
+        farm_failed = sorted({
+            int(fr.get("frame", 0))
+            for fr in frame_results
+            if fr.get("error") or fr.get("failed")
+        })
+        if farm_failed:
+            hard_failures.append(
+                f"The farm reported {len(farm_failed)} failed frame(s): "
+                + ", ".join(str(f) for f in farm_failed[:20])
+            )
+        try:
+            failed_count = int(farm_failed_frames or 0)
+        except (TypeError, ValueError):
+            failed_count = 0
+        if failed_count > len(farm_failed):
+            hard_failures.append(
+                f"The farm reported {failed_count} failed frame(s) "
+                f"for this render."
+            )
+
+        if planned_frames is not None:
+            planned = sorted({int(f) for f in planned_frames})
+            evaluated = sorted({fe.frame for fe in frame_evals})
+            missing_planned = sorted(set(planned) - set(evaluated))
+            unplanned = sorted(set(evaluated) - set(planned))
+            if missing_planned:
+                hard_failures.append(
+                    f"Missing planned frame(s): "
+                    + ", ".join(str(f) for f in missing_planned[:20])
+                )
+            if unplanned:
+                hard_failures.append(
+                    f"Evaluated frame(s) the plan did not ask for: "
+                    + ", ".join(str(f) for f in unplanned[:20])
+                )
+
+        temporal_issues.extend(hard_failures)
 
         # Overall score — only verified frames can vouch for quality
         verified_evals = [fe for fe in frame_evals if fe.verified]
@@ -352,6 +419,7 @@ class RenderEvaluator:
 
         passed = (
             unverified_count == 0
+            and not hard_failures
             and overall_score >= self._pass_threshold
             and not any(
                 not fe.passed for fe in frame_evals
@@ -410,6 +478,14 @@ class RenderEvaluator:
                 f"camera, lights, or materials aren't set up correctly."
             )
         return None
+
+    def _mean_luminance(self, arr: Any) -> float:
+        """Mean pixel value of a frame, ignoring NaN. 0.0 when unmeasurable."""
+        if not NUMPY_AVAILABLE:
+            return 0.0
+        with np.errstate(invalid="ignore"):
+            value = float(np.nanmean(arr))
+        return value if np.isfinite(value) else 0.0
 
     def _compute_black_ratio(self, arr: Any) -> float:
         """Compute fraction of near-black pixels."""
@@ -490,6 +566,25 @@ class RenderEvaluator:
     # Sequence-level checks
     # ------------------------------------------------------------------
 
+    def _check_flickering_from_evals(
+        self,
+        frame_evals: List[FrameEvaluation],
+        frame_results: List[Dict[str, Any]],
+    ) -> Optional[str]:
+        """Detect flicker from the per-frame mean luminance evaluate_frame measured.
+
+        This is the path the driver takes: it never holds full frames in memory,
+        so before this existed the temporal checks saw nothing.
+        """
+        luminances = [fe.metrics.get("mean_luminance") for fe in frame_evals]
+        # Every frame must have been measured. Compressing the list past an
+        # unverified frame would compare frames that are not adjacent.
+        if len(luminances) >= 3 and all(v is not None for v in luminances):
+            return self._flicker_from_luminances(luminances)  # type: ignore[arg-type]
+        # No measured luminance (unverified frames, or an old caller) — fall
+        # back to whatever pixel data the results carry.
+        return self._check_flickering(frame_results)
+
     def _check_flickering(
         self,
         frame_results: List[Dict[str, Any]],
@@ -500,10 +595,17 @@ class RenderEvaluator:
             data = fr.get("image_data")
             if data is not None and NUMPY_AVAILABLE:
                 arr = np.asarray(data, dtype=np.float64)
-                luminances.append(float(np.mean(arr)))
+                luminances.append(self._mean_luminance(arr))
             else:
                 luminances.append(0.0)
 
+        return self._flicker_from_luminances(luminances)
+
+    def _flicker_from_luminances(
+        self,
+        luminances: List[float],
+    ) -> Optional[str]:
+        """Detect high-frequency luminance changes between consecutive frames."""
         if len(luminances) < 3:
             return None
 

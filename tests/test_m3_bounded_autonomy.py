@@ -107,7 +107,7 @@ def _wire_stages(d):
 
     d._validator = SimpleNamespace(validate=_validate)
     d._evaluator = SimpleNamespace(
-        evaluate_sequence=lambda r: SequenceEvaluation(passed=False)
+        evaluate_sequence=lambda r, **kw: SequenceEvaluation(passed=False)
     )
 
     async def _call(tool, params):
@@ -125,7 +125,7 @@ def test_wall_clock_exceeded_stops_honestly(monkeypatch):
     clock = {"t": 0.0}
     monkeypatch.setattr(driver_mod.time, "monotonic", lambda: clock["t"])
 
-    def _eval(results):
+    def _eval(results, **kwargs):
         clock["t"] = 700.0  # past the 600s default deadline
         return SequenceEvaluation(passed=False)
 
@@ -150,7 +150,7 @@ def test_exhausted_run_reports_max_iterations():
 def test_passing_run_has_empty_stop_reason():
     d = _wire_stages(_driver(max_iterations=2))
     d._evaluator = SimpleNamespace(
-        evaluate_sequence=lambda r: SequenceEvaluation(passed=True)
+        evaluate_sequence=lambda r, **kw: SequenceEvaluation(passed=True)
     )
     report = asyncio.run(d.execute("t"))
     assert report.success is True

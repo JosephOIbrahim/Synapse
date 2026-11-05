@@ -215,7 +215,7 @@ class TestIterations:
         """Failed evaluation should trigger a replan attempt."""
         call_count = 0
 
-        def _eval_sequence(frame_results):
+        def _eval_sequence(frame_results, *args, **kwargs):
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -337,3 +337,24 @@ class TestEmergencyStop:
         driver.emergency_stop()
         # After emergency stop, the driver should be in a stopped state
         # No exception means success
+
+    @pytest.mark.asyncio
+    async def test_cancel_during_execution_fails_the_report(
+        self, driver, mock_handler_interface, mock_evaluator
+    ):
+        """A cancel mid-render must not be reported as a passed sequence.
+
+        The frames after the cancel never rendered; the ones that did may
+        all be clean, which is exactly how a cancel used to read as a pass.
+        """
+        async def cancel_then_return(name, params):
+            driver.emergency_stop()
+            return {"status": "ok"}
+
+        mock_handler_interface.call = AsyncMock(side_effect=cancel_then_return)
+
+        report = await driver.execute("render frame 1")
+
+        assert report.success is False
+        assert report.stop_reason == "cancelled"
+        mock_evaluator.evaluate_sequence.assert_not_called()
