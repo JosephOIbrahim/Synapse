@@ -469,6 +469,7 @@ print(json.dumps(result, sort_keys=True))
         for fe in evaluation.frame_evaluations:
             all_issues.extend(fe.issues)
         all_issues.extend(evaluation.temporal_issues)
+        all_issues.extend(evaluation.hard_failures)
 
         # Fireflies are very fixable with more samples
         if any("firefly" in i.lower() or "fireflies" in i.lower() for i in all_issues):

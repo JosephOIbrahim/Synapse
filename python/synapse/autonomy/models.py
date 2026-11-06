@@ -93,6 +93,10 @@ class SequenceEvaluation:
     passed: bool = False
     unverified_count: int = 0
     pass_threshold: float = 0.7
+    # A missing output, a farm-failed frame or a plan mismatch. These fail the
+    # sequence outright and are kept apart from temporal_issues so they do not
+    # also move the soft score through the temporal factor.
+    hard_failures: List[str] = field(default_factory=list)
 
 
 @dataclass

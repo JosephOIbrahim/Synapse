@@ -325,7 +325,7 @@ class TestFullPipelineMock:
         """Bad frames on first render -> replan -> re-render -> passes on second try."""
         call_count = 0
 
-        def _eval_sequence(frame_results):
+        def _eval_sequence(frame_results, *args, **kwargs):
             nonlocal call_count
             call_count += 1
             if call_count == 1:
