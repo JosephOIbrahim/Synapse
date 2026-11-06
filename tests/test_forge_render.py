@@ -21,6 +21,7 @@ test_upstream_karma_lop_picture_discovered that lives next to it.
 Mock-based -- no Houdini required.
 """
 
+import itertools
 import sys
 import types
 from pathlib import Path
@@ -99,6 +100,20 @@ def handler():
 # Helpers: build conftest _MockNode-style LOP nodes with MagicMock
 # ---------------------------------------------------------------------------
 
+def _stat_that_ages(size):
+    """Path.stat() stand-in whose mtime advances per call.
+
+    G32: the render handler proves a frame by the product's identity changing,
+    so a frozen stat models a render that wrote nothing.
+    """
+    ticks = itertools.count(1_000_000)
+
+    def _stat():
+        return types.SimpleNamespace(st_size=size, st_mtime_ns=next(ticks))
+
+    return _stat
+
+
 def _make_lop(path, *, picture=None, inputs=None):
     """Build a MagicMock LOP node honoring the _MockNode contract.
 
@@ -138,7 +153,7 @@ class TestForgeBranchWalk:
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("time.sleep", return_value=None), \
              patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+             patch("pathlib.Path.stat", side_effect=_stat_that_ages(1024)), \
              patch("pathlib.Path.mkdir", return_value=None):
             return handler._handle_render({"node": rop_path})
 

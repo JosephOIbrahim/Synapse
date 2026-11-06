@@ -44,14 +44,19 @@ def _named_check(event, name):
 
 
 def _write_product(tmp_path, name="beauty.0001.exr", *, done=True,
-                   fingerprint=FP, width=960, height=540, data=None):
+                   fingerprint=FP, width=960, height=540, data=None,
+                   nonce="render-1"):
     product = tmp_path / name
     if data is None:
         data = exr_synth.multipart_exr_bytes(
             width=width, height=height, fingerprint=fingerprint)
     exr_synth.write_bytes(product, data)
     if done:
-        exr_synth.write_done(product)
+        # G32/H3-9: a current sentinel names the render it belongs to; a bare
+        # .done cannot be matched and is inconclusive by design.
+        (tmp_path / (name + ".done")).write_text(
+            json.dumps({"status": "rendered", "render_nonce": nonce}),
+            encoding="utf-8")
     return str(product)
 
 
@@ -62,6 +67,7 @@ def _write_manifest(tmp_path, products, name="beauty.0001.retina.json", **extra)
         "products": list(products),
         "claim": "render:file_truth",
         "manifest_path": manifest_path,
+        "render_nonce": "render-1",
     }
     manifest.update(extra)
     with open(manifest_path, "w", encoding="utf-8") as fh:

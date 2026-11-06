@@ -36,6 +36,11 @@ class FrameResult:
     issues: List[str] = field(default_factory=list)
     fixes_applied: List[str] = field(default_factory=list)
     image_path: str = ""
+    # The product this frame actually wrote (the EXR or artist format).
+    # image_path may be a preview or a GL flipbook grab; output_file is what
+    # the render is proved by (H3-2).
+    output_file: str = ""
+    flipbook_fallback: bool = False
     error: str = ""
 
 
@@ -90,6 +95,8 @@ class BatchReport:
                     "issues": fr.issues,
                     "fixes_applied": fr.fixes_applied,
                     "image_path": fr.image_path,
+                    "output_file": fr.output_file,
+                    "flipbook_fallback": fr.flipbook_fallback,
                     "error": fr.error,
                 }
                 for fr in self.frame_results

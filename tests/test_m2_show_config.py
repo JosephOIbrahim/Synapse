@@ -13,6 +13,7 @@ header); handler-module globals are patched directly via monkeypatch --
 never sys.modules residency (docs/HARDENING_RUN_2026-06-10.md Mile 3).
 """
 
+import itertools
 import json
 import os
 import re
@@ -281,6 +282,17 @@ def _render_harness(monkeypatch, tmp_path, cfg):
     return handler, out_parm, dirs
 
 
+def _stat_that_ages(size):
+    """Path.stat() stand-in whose mtime advances per call (G32: a frozen stat
+    models a render that wrote nothing)."""
+    ticks = itertools.count(1_000_000)
+
+    def _stat():
+        return SimpleNamespace(st_size=size, st_mtime_ns=next(ticks))
+
+    return _stat
+
+
 def test_render_default_path_byte_identical_without_config(monkeypatch, tmp_path):
     """ZERO-CHANGE PIN: no config files -> the default render path is
     byte-identical to today's render_<timestamp>.$F4.exr under the
@@ -289,7 +301,7 @@ def test_render_default_path_byte_identical_without_config(monkeypatch, tmp_path
     handler, out_parm, dirs = _render_harness(monkeypatch, tmp_path, cfg)
 
     with patch("pathlib.Path.exists", return_value=True), \
-         patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+         patch("pathlib.Path.stat", side_effect=_stat_that_ages(1024)), \
          patch("pathlib.Path.mkdir", return_value=None):
         result = handler._handle_render({"node": "/stage/karma1"})
 
@@ -317,7 +329,7 @@ def test_render_versioned_when_increment(monkeypatch, tmp_path):
     dirs.render_root.mkdir(exist_ok=True)
 
     with patch("pathlib.Path.exists", return_value=True), \
-         patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+         patch("pathlib.Path.stat", side_effect=_stat_that_ages(1024)), \
          patch("pathlib.Path.mkdir", return_value=None):
         handler._handle_render({"node": "/stage/karma1"})
         first = out_parm.set.call_args_list[0][0][0]

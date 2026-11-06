@@ -32,6 +32,7 @@ T0 imports zero ``hou`` and (at M1) zero ``cv2`` — it reads bytes, not pixels.
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List
@@ -52,13 +53,27 @@ ExrReader = Callable[[str], ExrHeader]
 
 def _declared_products(manifest: Dict[str, Any]) -> List[str]:
     """Product paths from the manifest, tolerant of both the string-list and the
-    ``[{"path": ...}]`` object forms the host writer may emit."""
+    ``[{"path": ...}]`` object forms the host writer may emit.
+
+    ``output_file`` is the product the render actually wrote; it wins over the
+    ``products`` list when both name a path (H3-2/H3-9).
+    """
     out: List[str] = []
+    output_file = manifest.get("output_file")
+    if isinstance(output_file, str) and output_file:
+        # The file this render wrote is the subject. The products list can
+        # name paths from a previous manifest; grading those would fail a good
+        # render on a file it never claimed.
+        return [output_file]
     for entry in manifest.get("products") or []:
         if isinstance(entry, str):
-            out.append(entry)
+            path = entry
         elif isinstance(entry, dict) and entry.get("path"):
-            out.append(str(entry["path"]))
+            path = str(entry["path"])
+        else:
+            continue
+        if path not in out:
+            out.append(path)
     return out
 
 
@@ -134,15 +149,63 @@ def check_manifest_against_disk(
             _check("products_nonzero", None, "no products on disk to size-check")
         )
 
-    # 3) done_sentinels — the pixels-landed signal.
-    missing_done = [p for p in products if not os.path.isfile(_done_path(p))]
+    # 3) done_sentinels — the pixels-landed signal for THIS render.
+    #
+    # Three honest outcomes (H3-9): a sentinel that was never wired makes the
+    # check inconclusive rather than failing a good frame; a .done whose
+    # render_nonce is not the manifest's belongs to another attempt; and a
+    # sentinel without a nonce on either side cannot be matched, so it is
+    # inconclusive, never a pass.
+    render_nonce = manifest.get("render_nonce")
+    done_wired = manifest.get("done_wired")
+    missing_done: List[str] = []
+    stale_done: List[str] = []
+    unjudged_done: List[str] = []
+    for product in products:
+        done = _done_path(product)
+        if not os.path.isfile(done):
+            missing_done.append(product)
+            continue
+        if not render_nonce:
+            unjudged_done.append(f"{Path(product).name}: manifest has no render_nonce")
+            continue
+        try:
+            with open(done, "r", encoding="utf-8") as fh:
+                receipt = json.load(fh)
+        except (OSError, ValueError):
+            unjudged_done.append(f"{Path(product).name}: .done unreadable")
+            continue
+        got = receipt.get("render_nonce") if isinstance(receipt, dict) else None
+        if got is None:
+            unjudged_done.append(f"{Path(product).name}: .done carries no render_nonce")
+        elif got != render_nonce:
+            stale_done.append(f"{Path(product).name}: {got!r} != {render_nonce!r}")
+
+    if done_wired is False:
+        done_verdict = None
+        done_detail = ("sentinel was never wired for this render "
+                       f"({manifest.get('honesty', {}).get('done_sentinel', 'done_wired False')})")
+    elif missing_done:
+        done_verdict = False
+        done_detail = f"{len(missing_done)} product(s) missing .done: {missing_done[:4]}"
+    elif stale_done:
+        done_verdict = False
+        done_detail = "stale .done from another render: " + "; ".join(stale_done[:3])
+    elif unjudged_done:
+        done_verdict = None
+        done_detail = "; ".join(unjudged_done[:3])
+    else:
+        done_verdict = True
+        done_detail = "all .done sentinels present and match this render's nonce"
     checks.append(
         _check(
             "done_sentinels",
-            not missing_done,
-            "all .done sentinels present" if not missing_done
-            else f"{len(missing_done)} product(s) missing .done: {missing_done[:4]}",
+            done_verdict,
+            done_detail,
             missing_done=missing_done,
+            stale_done=stale_done,
+            unjudged_done=unjudged_done,
+            done_wired=done_wired,
         )
     )
 

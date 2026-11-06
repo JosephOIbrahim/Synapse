@@ -4,9 +4,11 @@ Mock-based — no Houdini required.
 """
 
 import importlib.util
+import itertools
 import sys
 import time
 import types
+from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -199,7 +201,7 @@ class TestHandleRender:
              patch.object(_handlers_hou, "frame", return_value=frame, create=True), \
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+             patch("pathlib.Path.stat", side_effect=_stat_that_ages(1024)), \
              patch("pathlib.Path.mkdir", return_value=None):
             return handler._handle_render(payload)
 
@@ -267,18 +269,10 @@ class TestHandleRender:
         out_parm = MagicMock()
         fake_node.parm.side_effect = lambda n: out_parm if n in ("outputimage", "picture") else None
 
-        # Track how many times Path.exists is called to simulate:
-        # - node.render() output poll: always False (60 iterations)
-        # - flipbook output check: True
-        call_count = {"n": 0}
-
-        def _fake_exists(self_path):
-            call_count["n"] += 1
-            # First 60 calls are the render poll loop — all fail
-            if call_count["n"] <= 60:
-                return False
-            # After that, flipbook output exists
-            return True
+        # G32: the render poll proves a frame by stat identity. The render
+        # wrote nothing, so stat raises for the snapshot plus every poll; the
+        # flipbook sidecar then exists.
+        fake_exists = MagicMock(return_value=True)
 
         # Mock the Scene Viewer for flipbook
         mock_vp = MagicMock()
@@ -295,8 +289,8 @@ class TestHandleRender:
              patch.object(_handlers_hou, "ui", MagicMock(curDesktop=MagicMock(return_value=mock_desktop)), create=True), \
              patch.object(_handlers_hou, "paneTabType", MagicMock(SceneViewer="SceneViewer"), create=True), \
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
-             patch("pathlib.Path.exists", _fake_exists), \
-             patch("pathlib.Path.stat", return_value=MagicMock(st_size=2048)), \
+             patch("pathlib.Path.exists", fake_exists), \
+             patch("pathlib.Path.stat", side_effect=_stat_missing_then_present(61, 2048)), \
              patch("pathlib.Path.mkdir", return_value=None), \
              patch("time.sleep"):
             result = handler._handle_render({"node": "/stage/usdrender_rop1"})
@@ -319,11 +313,8 @@ class TestHandleRender:
         out_parm = MagicMock()
         fake_node.parm.side_effect = lambda n: out_parm if n in ("outputimage", "picture") else None
 
-        call_count = {"n": 0}
-
-        def _fake_exists(self_path):
-            call_count["n"] += 1
-            return call_count["n"] > 60  # render poll fails; flipbook file exists
+        # G32: stat, not exists, drives the render poll.
+        fake_exists = MagicMock(return_value=True)
 
         mock_fb_settings = MagicMock()
         mock_sv = MagicMock()
@@ -338,8 +329,8 @@ class TestHandleRender:
              patch.object(_handlers_hou, "ui", MagicMock(curDesktop=MagicMock(return_value=mock_desktop)), create=True), \
              patch.object(_handlers_hou, "paneTabType", MagicMock(SceneViewer="SceneViewer"), create=True), \
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
-             patch("pathlib.Path.exists", _fake_exists), \
-             patch("pathlib.Path.stat", return_value=MagicMock(st_size=2048)), \
+             patch("pathlib.Path.exists", fake_exists), \
+             patch("pathlib.Path.stat", side_effect=_stat_missing_then_present(61, 2048)), \
              patch("pathlib.Path.mkdir", return_value=None), \
              patch("time.sleep"):
             result = handler._handle_render({"node": "/stage/usdrender_rop1"})
@@ -372,7 +363,7 @@ class TestHandleRender:
              patch.object(_handlers_hou, "frame", return_value=1.0, create=True), \
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", return_value=False), \
-             patch("pathlib.Path.stat", return_value=MagicMock(st_size=0)), \
+             patch("pathlib.Path.stat", side_effect=_stat_that_ages(0)), \
              patch("pathlib.Path.mkdir", return_value=None), \
              patch("time.sleep"):
             with pytest.raises(RuntimeError, match="output wasn't created"):
@@ -425,7 +416,7 @@ class TestRenderEXRPersistence:
              patch.object(_handlers_hou, "frame", return_value=frame, create=True), \
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", exists_fn), \
-             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+             patch("pathlib.Path.stat", side_effect=_stat_that_ages(1024)), \
              patch("pathlib.Path.mkdir", return_value=None):
             return handler._handle_render(payload)
 
@@ -481,7 +472,7 @@ class TestRenderEXRPersistence:
              patch.object(_handlers_hou, "frame", return_value=1.0, create=True), \
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+             patch("pathlib.Path.stat", side_effect=_stat_that_ages(1024)), \
              patch("pathlib.Path.mkdir", return_value=None):
             handler._handle_render({"node": "/stage/karma1"})
 
@@ -540,7 +531,7 @@ class TestRenderEXRPersistence:
              patch.object(_handlers_hou, "frame", return_value=1.0, create=True), \
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+             patch("pathlib.Path.stat", side_effect=_stat_that_ages(1024)), \
              patch("pathlib.Path.mkdir", return_value=None):
             result = handler._handle_render({"node": "/out/usdrender1"})
 
@@ -740,6 +731,37 @@ class TestRenderAliases:
 # ---------------------------------------------------------------------------
 # Tests: _handle_safe_render
 # ---------------------------------------------------------------------------
+
+def _stat_missing_then_present(missing_calls, size=2048):
+    """Path.stat() raises for the render poll, then reports the flipbook file.
+
+    G32: the poll proves a frame by stat identity, so "the render wrote
+    nothing" is modelled by a missing stat, not by Path.exists.
+    """
+    state = {"n": 0}
+
+    def _stat():
+        state["n"] += 1
+        if state["n"] <= missing_calls:
+            raise FileNotFoundError("render wrote nothing")
+        return SimpleNamespace(st_size=size, st_mtime_ns=10_000 + state["n"])
+
+    return _stat
+
+
+def _stat_that_ages(size):
+    """A Path.stat() stand-in whose mtime advances on every call.
+
+    G32: the handler proves a frame by the product's identity CHANGING, so a
+    stat that returns one frozen mtime models a render that wrote nothing.
+    """
+    ticks = itertools.count(1_000_000)
+
+    def _stat():
+        return SimpleNamespace(st_size=size, st_mtime_ns=next(ticks))
+
+    return _stat
+
 
 class TestSafeRender:
     """Tests for the safe_render handler (pre-flight validation + auto-background)."""

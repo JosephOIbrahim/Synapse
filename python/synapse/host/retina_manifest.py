@@ -39,6 +39,7 @@ import hashlib
 import json
 import logging
 import os
+import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -168,7 +169,10 @@ def manifest_fingerprint(manifest: Dict[str, Any]) -> str:
     the same declared work. Excludes ``generated_at`` (a clock read) and any
     prior ``fingerprint`` so the value is a pure function of the declared render.
     """
-    stable = {k: v for k, v in manifest.items() if k not in ("generated_at", "fingerprint")}
+    # Volatile per render, not content: the clock, the nonce that proves WHICH
+    # render this is, and the sentinel wiring fact.
+    stable = {k: v for k, v in manifest.items()
+              if k not in ("generated_at", "fingerprint", "render_nonce", "done_wired")}
     return "rm1" + hashlib.sha256(_canonical_bytes(stable)).hexdigest()[:16]
 
 
@@ -404,8 +408,13 @@ def install_retina_hooks(
     retina_payload: Optional[Dict[str, Any]] = None,
     houdini_build: str = "unknown",
     hip_path: Optional[str] = None,
+    nonce: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Assemble + write the manifest and wire the ``.done`` sentinel/receipt.
+
+    ``nonce`` identifies THIS render. It is written into the manifest and into
+    every ``.done`` the sentinel drops, so T0 can tell this render's sentinel
+    from a previous attempt's (H3-9). Generated here when the caller has none.
 
     Returns a report dict (attached by the handler under a new ``retina``
     result key). Best-effort and total: any failure is caught and reported as
@@ -454,6 +463,7 @@ def install_retina_hooks(
         scene_inputs = {"hip": hip_path} if hip_path else {}
 
         manifest_path = manifest_path_for(product_path)
+        render_nonce = nonce or uuid.uuid4().hex[:12]
         manifest = assemble_manifest(
             rop_path=_safe_path(node),
             products=[product_path],
@@ -473,6 +483,8 @@ def install_retina_hooks(
         )
         # Record where the manifest lives so T0's proof line can point at it.
         manifest["manifest_path"] = manifest_path
+        manifest["output_file"] = product_path
+        manifest["render_nonce"] = render_nonce
 
         written = write_manifest_atomic(manifest, manifest_path)
         if not written:
@@ -493,6 +505,14 @@ def install_retina_hooks(
                 restore=restore,
                 honesty=honesty,
             )
+            # H3-9: record whether the sentinel was actually wired, so T0 can
+            # say "not wired" instead of failing a good frame whose husk path
+            # (or a space in the script path) never drops a .done.
+            manifest["done_wired"] = bool(sentinel_report.get("done_wired"))
+            if not write_manifest_atomic(manifest, manifest_path):
+                honesty["manifest"] = (
+                    "inconclusive: manifest could not be rewritten with done_wired"
+                )
         else:
             sentinel_report = {
                 "done_wired": False,
@@ -506,6 +526,8 @@ def install_retina_hooks(
             "manifest_written": written,
             "fingerprint": manifest["fingerprint"],
             "scene_fingerprint": manifest["scene_fingerprint"],
+            "render_nonce": render_nonce,
+            "done_wired": bool(sentinel_report.get("done_wired")),
             "sentinel": sentinel_report,
             "honesty": honesty,
         }

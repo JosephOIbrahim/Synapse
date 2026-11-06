@@ -102,11 +102,15 @@ def run(manifest_env: str = MANIFEST_ENV_VAR) -> int:
 
     written = 0
     fingerprint = manifest.get("fingerprint")
+    # Which render this sentinel belongs to: T0 compares it with the manifest
+    # so a .done left by a previous attempt cannot pass for this frame (H3-9).
+    render_nonce = manifest.get("render_nonce")
     for product in products:
         payload = {
             "status": "rendered",
             "product": product,
             "fingerprint": fingerprint,
+            "render_nonce": render_nonce,
             "written_at": now,
             "written_by": "retina_sentinel_postframe",
         }

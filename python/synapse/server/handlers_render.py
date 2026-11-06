@@ -9,6 +9,7 @@ SynapseHandler class.
 import logging
 import os
 import time
+from pathlib import Path
 from typing import Dict
 
 logger = logging.getLogger(__name__)
@@ -201,6 +202,35 @@ def _parm_raw(parm):
         return parm.unexpandedString()
     except Exception:
         return parm.eval()  # noqa: S307 -- hou.Parm.eval, not Python eval
+
+
+def _product_identity(path: str):
+    """What the product is on disk right now: ``(exists, size, mtime_ns)``.
+
+    A render is proved by this changing. Existence alone is not proof: a husk
+    that fails without raising leaves yesterday's frame at the path, and the
+    old poll counted any non-empty file as fresh (H3-1).
+    """
+    try:
+        stat = Path(path).stat()
+    except OSError:
+        return (False, 0, 0)
+    try:
+        size = int(stat.st_size)
+    except (AttributeError, TypeError, ValueError):
+        size = 0
+    try:
+        mtime_ns = int(stat.st_mtime_ns)
+    except (AttributeError, TypeError, ValueError):
+        # An object without the nanosecond field (a fake, or a pre-3.3 stat):
+        # the identity is then existence + size only.
+        mtime_ns = 0
+    return (True, size, mtime_ns)
+
+
+def _product_changed(before, after) -> bool:
+    """Did the render write something new at the product path?"""
+    return bool(after[0] and after[1] > 0 and after != before)
 
 
 def _parm_eval_at(parm, frame):
@@ -924,10 +954,30 @@ class RenderHandlerMixin:
                             "(non-blocking): %s", _r_exc,
                         )
 
+                    # H3-9: the sentinel is a pixels-landed signal for THIS
+                    # render. A .done left by the previous attempt would let a
+                    # stale frame read as fresh, so it goes before the render.
+                    try:
+                        Path(render_path_resolved + ".done").unlink(missing_ok=True)
+                    except OSError as _done_exc:
+                        logger.warning(
+                            "SYNAPSE RETINA: couldn't clear the previous .done "
+                            "sentinel (non-blocking): %s", _done_exc)
+
+                    # H3-1: what the product is BEFORE the render. Proved
+                    # afterwards by this identity changing.
+                    identity_before = _product_identity(render_path_resolved)
+
                     node.render(
                         frame_range=(cur, cur),
                         verbose=False,
                     )
+
+                    # H3-1: the ROP's own errors, for the failure diagnostic.
+                    try:
+                        render_errors = [str(e) for e in node.errors()]
+                    except (AttributeError, TypeError):
+                        render_errors = []
                 finally:
                     # Restore-in-finally is safe: everything downstream consumes
                     # the captured strings, never re-reads the parms.
@@ -969,7 +1019,7 @@ class RenderHandlerMixin:
             }
             return (node.path(), node_type, engine, cur, render_path_resolved,
                     preview_path, hfs, show_cfg_advisory, artist_output_raw,
-                    color_cfg)
+                    color_cfg, identity_before, render_errors)
 
         # THE freeze. executeInMainThreadWithResult here meant every
         # main-thread caller (panel Qt slot, /mcp read-only dispatch, any
@@ -982,17 +1032,20 @@ class RenderHandlerMixin:
         # 10s would false-fail real renders).
         from .main_thread import run_on_main
         (used_rop, used_type, engine, cur, render_path_resolved, preview_path,
-         hfs, show_cfg_advisory, artist_output_raw, color_cfg) = run_on_main(
+         hfs, show_cfg_advisory, artist_output_raw, color_cfg,
+         identity_before, render_errors) = run_on_main(
             _render_on_main, timeout=_RENDER_MAIN_TIMEOUT_S
         , label="render:_handle_render")
 
         # -- Off-main from here (pure file IO / subprocess, zero hou) ---------
-        # Karma XPU has a delayed file flush -- poll up to ~15s
+        # Karma XPU has a delayed file flush -- poll up to ~15s. A frame is
+        # proved by its identity CHANGING: existence alone accepts the stale
+        # frame a failed render left behind (H3-1).
         used_flipbook = False
         render_ok = False
         out_path = render_path_resolved
         for _ in range(60):
-            if Path(out_path).exists() and Path(out_path).stat().st_size > 0:
+            if _product_changed(identity_before, _product_identity(out_path)):
                 render_ok = True
                 break
             time.sleep(0.25)
@@ -1099,10 +1152,21 @@ class RenderHandlerMixin:
                 render_ok = True
 
         if not render_ok:
-            raise RuntimeError(
-                f"The render finished but the output wasn't created at {out_path} -- "
-                "check if the output directory is writable and the renderer didn't error"
-            )
+            existing = _product_identity(out_path)
+            if identity_before[0] and existing == identity_before:
+                problem = (
+                    f"the file at {out_path} is unchanged since before the render "
+                    f"({identity_before[1]} bytes), so this is the previous frame, "
+                    "not this render's output"
+                )
+            else:
+                problem = (
+                    f"the output wasn't created at {out_path} -- check if the "
+                    "output directory is writable and the renderer didn't error"
+                )
+            if render_errors:
+                problem += f"; the ROP reported: {'; '.join(render_errors[:3])}"
+            raise RuntimeError(f"The render finished but {problem}")
         result_path = out_path
         render_file = render_path_resolved
         # M2-G: format reflects what image_path actually IS -- the EXR used
@@ -1139,18 +1203,21 @@ class RenderHandlerMixin:
             # viewport applied -- recorded honestly as unverified.
             result["color_transform"] = "viewport_display (GL flipbook, unverified)"
             result["color_managed"] = False
-        elif artist_file_written or render_file != result_path:
-            # Always report the disk-written file path (EXR or artist format)
+        else:
+            # H3-2: every non-flipbook success names the product it wrote, so
+            # the farm validates the EXR and not the preview JPEG.
             result["output_file"] = render_file
-            # M2-G truth contract: record the transform the preview actually
-            # got; color_managed=True ONLY on the verified OCIO leg. A
-            # recorded error survives even when a later leg succeeded (a
-            # broken $OCIO that silently fell back stays visible).
-            result["color_transform"] = conv["color_transform"]
-            result["color_managed"] = conv["color_managed"]
-            result["preview_tool"] = conv["tool"]
-            if conv["error"]:
-                result["preview_error"] = conv["error"]
+            if artist_file_written or render_file != result_path:
+                # M2-G truth contract: record the transform the preview
+                # actually got; color_managed=True ONLY on the verified OCIO
+                # leg. A recorded error survives even when a later leg
+                # succeeded (a broken $OCIO that silently fell back stays
+                # visible).
+                result["color_transform"] = conv["color_transform"]
+                result["color_managed"] = conv["color_managed"]
+                result["preview_tool"] = conv["tool"]
+                if conv["error"]:
+                    result["preview_error"] = conv["error"]
         # RETINA M1: attach the perception host-hook report (manifest path,
         # fingerprint, sentinel wiring, honesty flags) as a NEW key. Additive —
         # never overwrites an existing render-result field.
