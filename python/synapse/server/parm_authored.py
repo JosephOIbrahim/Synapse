@@ -29,6 +29,10 @@ if not (isinstance(_OPERATION_FAILED, type)
 # swallowed.
 _READ_ERRORS = (_OPERATION_FAILED, AttributeError, TypeError)
 
+# A restore must never mask the write failure it is answering, so it also
+# absorbs the errors a setter can raise for a bad value.
+_RESTORE_ERRORS = _READ_ERRORS + (RuntimeError, ValueError)
+
 
 def raw_string(parm, evaluated) -> Optional[str]:
     """The string a string parm holds as written, when it differs from
@@ -187,26 +191,76 @@ def _set_key_at_frame(parm, value) -> None:
     parm.setKeyframe(key)
 
 
-def _replace(parm, value) -> None:
-    """Clear the keys, write the value, and put the keys back if that fails."""
+def _snapshot(parm) -> Dict[str, Any]:
+    """Everything a failed write must put back: value, keys, extrapolation.
+
+    The keys alone are not enough. Houdini 22.0.400 resets a channel's
+    extrapolation to Extend when keys are re-added (probed), so a Cycle
+    channel restored from keys alone evaluates differently outside its keyed
+    range.
+    """
+    snap: Dict[str, Any] = {"value": None, "keys": [], "extrapolation": (None, None)}
     try:
-        captured = list(parm.keyframes())
+        snap["value"] = parm.eval()
     except _READ_ERRORS:
-        captured = []
-    if captured:
-        parm.deleteAllKeyframes()
+        pass
     try:
-        parm.set(value, follow_parm_reference=False)
-    except Exception:
-        # The value was refused after the keys were removed. Put the
-        # animation back before raising: the undo group does not roll back.
-        for key in captured:
+        keys = parm.keyframes()
+    except _READ_ERRORS:
+        keys = ()
+    if isinstance(keys, (list, tuple)):
+        snap["keys"] = list(keys)
+    extrap = []
+    for before in (True, False):
+        try:
+            extrap.append(parm.keyframeExtrapolation(before))
+        except _READ_ERRORS:
+            extrap.append(None)
+    snap["extrapolation"] = tuple(extrap)
+    return snap
+
+
+def _restore(parm, snap: Dict[str, Any]) -> None:
+    """Put the snapshot back. Best effort: the original failure is what the
+    caller sees."""
+    if snap["keys"]:
+        try:
+            parm.deleteAllKeyframes()
+        except _RESTORE_ERRORS:
+            pass
+        for key in snap["keys"]:
             try:
                 parm.setKeyframe(key)
-            except _READ_ERRORS:
-                # Best effort; the original failure is what the caller gets.
+            except _RESTORE_ERRORS:
                 pass
-        raise
+        for before, value in zip((True, False), snap["extrapolation"]):
+            if value is None:
+                continue
+            try:
+                parm.setKeyframeExtrapolation(before, value)
+            except _RESTORE_ERRORS:
+                pass
+    elif snap["value"] is not None:
+        try:
+            parm.set(snap["value"], follow_parm_reference=False)
+        except _RESTORE_ERRORS:
+            pass
+
+
+def _replace(parm, value) -> None:
+    """Clear the keys, then write the value.
+
+    Restoration is the caller's: it snapshots every target before the first
+    write and puts all of them back when any write fails, because a tuple
+    replacement can fail on a later component after earlier ones committed.
+    """
+    try:
+        keys = parm.keyframes()
+    except _READ_ERRORS:
+        keys = ()
+    if keys:
+        parm.deleteAllKeyframes()
+    parm.set(value, follow_parm_reference=False)
 
 
 def _close(a, b) -> bool:
@@ -245,18 +299,29 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None) -> D
     plain = all(
         target[0] is parm and target[1] == "set"
         for parm, target in zip(parms, targets))
-    if parm_tuple is not None and len(parms) > 1 and plain:
-        # Nothing to unwrap or clear: keep the tuple write as one call, the
-        # shape the handler has always used.
-        parm_tuple.set(values)
-    else:
-        for (parm, action), value in zip(targets, values):
-            if action == "replace":
-                _replace(parm, value)
-            elif action == "key_at_frame":
-                _set_key_at_frame(parm, value)
-            else:
-                _set_plain(parm, value)
+
+    # Snapshot every target before the first write. A tuple write commits each
+    # component in turn, so a value the last component refuses must not cost
+    # the earlier ones their value or their animation.
+    target_parms = [target[0] for target in targets]
+    snapshots = [_snapshot(parm) for parm in target_parms]
+    try:
+        if parm_tuple is not None and len(parms) > 1 and plain:
+            # Nothing to unwrap or clear: keep the tuple write as one call, the
+            # shape the handler has always used.
+            parm_tuple.set(values)
+        else:
+            for (parm, action), value in zip(targets, values):
+                if action == "replace":
+                    _replace(parm, value)
+                elif action == "key_at_frame":
+                    _set_key_at_frame(parm, value)
+                else:
+                    _set_plain(parm, value)
+    except Exception:
+        for parm, snap in zip(target_parms, snapshots):
+            _restore(parm, snap)
+        raise
 
     observed = [parm.eval() for parm, _ in targets]  # noqa: S307
     mismatch = [not _close(requested, held)

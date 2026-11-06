@@ -86,6 +86,7 @@ class _Parm:
         self._frame = frame
         self._rejects = rejects
         self._id = object()
+        self._extrap = ("extend", "extend")
         self.writes = []
 
     def __eq__(self, other):
@@ -126,6 +127,19 @@ class _Parm:
     def unexpandedString(self):
         raise parm_authored._OPERATION_FAILED("Only string parms have unexpanded strings")
 
+    def keyframeExtrapolation(self, before):
+        if not self._keys:
+            raise parm_authored._OPERATION_FAILED("no animation channel")
+        return self._extrap[0 if before else 1]
+
+    def setKeyframeExtrapolation(self, before, value):
+        if not self._keys:
+            raise parm_authored._OPERATION_FAILED("no animation channel")
+        if before:
+            self._extrap = (value, self._extrap[1])
+        else:
+            self._extrap = (self._extrap[0], value)
+
     # -- writes --------------------------------------------------------
     def _store_key(self, key):
         self._keys = [k for k in self._keys if k.frame() != key.frame()]
@@ -149,6 +163,7 @@ class _Parm:
 
     def setKeyframe(self, key):
         self._store_key(key)
+        self._extrap = ("extend", "extend")  # probed on 22.0.400
 
     def deleteAllKeyframes(self):
         self._keys = []
@@ -204,6 +219,38 @@ def test_replace_puts_the_keys_back_when_the_value_is_refused():
         author_parm_write([parm], ["not-a-number"], mode="replace")
 
     assert [(k.frame(), k.value()) for k in parm.keyframes()] == [(1.0, 1.0), (10.0, 100.0)]
+
+
+def test_replace_restores_a_cycle_channel_extrapolation():
+    """Keys alone are not the animation: 22.0.400 resets extrapolation to Extend."""
+    parm = _Parm(2.0, keys=[(1.0, 1.0), (10.0, 100.0)],
+                 rejects=lambda v: not isinstance(v, (int, float)))
+    parm.setKeyframeExtrapolation(True, "cycle")
+    parm.setKeyframeExtrapolation(False, "cycle")
+
+    with pytest.raises(TypeError):
+        author_parm_write([parm], ["not-a-number"], mode="replace")
+
+    assert [(k.frame(), k.value()) for k in parm.keyframes()] == [(1.0, 1.0), (10.0, 100.0)]
+    assert parm.keyframeExtrapolation(True) == "cycle"
+    assert parm.keyframeExtrapolation(False) == "cycle"
+
+
+def test_tuple_replace_restores_earlier_components():
+    """A later component's refusal must not keep an earlier component's write."""
+    good = _Parm(2.0, keys=[(1.0, 1.0), (10.0, 100.0)], name="tx")
+    good.setKeyframeExtrapolation(True, "cycle")
+    good.setKeyframeExtrapolation(False, "cycle")
+    bad = _Parm(5.0, name="ty",
+                rejects=lambda v: not isinstance(v, (int, float)))
+
+    with pytest.raises(TypeError):
+        author_parm_write([good, bad], [7.0, "not-a-number"], mode="replace")
+
+    assert [(k.frame(), k.value()) for k in good.keyframes()] == [(1.0, 1.0), (10.0, 100.0)]
+    assert good.keyframeExtrapolation(True) == "cycle"
+    assert good.keyframeExtrapolation(False) == "cycle"
+    assert bad.eval() == 5.0
 
 
 def test_key_at_frame_keeps_the_other_keys(monkeypatch):

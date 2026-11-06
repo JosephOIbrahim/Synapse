@@ -247,7 +247,9 @@ def test_set_parm_propagates_and_closes_group_on_error(set_parm_call):
         call({"node": "/obj/geo", "parm": "tx", "value": 0.5})
 
     assert rec.groups == ["synapse_set_parm"]   # opened around the mutation
-    assert rec.mutations == [("parm.set", 1)]    # raised while inside the group
+    # The write, then the rollback attempt, both inside the group. The restore
+    # cannot mask the failure it is answering.
+    assert rec.mutations == [("parm.set", 1), ("parm.set", 1)]
     assert rec.depth == 0                         # closed on the exception path
 
 
