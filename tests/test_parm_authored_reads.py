@@ -73,7 +73,8 @@ def test_non_string_parm_adds_nothing():
 def test_keyframed_parm_returns_its_expression():
     tx = _Parm(2.0, expression="$F * 2", string=False)
     assert authored_fields(tx, 2.0) == {
-        "expression": "$F * 2", "expression_language": "exprLanguage.Hscript"}
+        "expression": "$F * 2", "expression_language": "exprLanguage.Hscript",
+        "keyframe_count": 1}
     assert raw_string(tx, 2.0) is None
 
 
