@@ -1,0 +1,192 @@
+{
+  "_comment": "The next-release lane as a graph the JEV graph guard judges. The strategic decision - which node lands FIRST - is made by JEV from the evidence, not asserted by the seat. Run: python harness/harness2/compositor.py --mode graph --input harness/next-release/graph.json --wave next-release",
+  "_evidence": "docs/intake/next-release-intake-2026-11-06.md (adjudicated 2026-11-06) and docs/intake/src/synapse_next_release_blueprint.md (SHA-256 167ca678f620e6a0)",
+  "objective": "Deliver one trustworthy loop: prove which render products this attempt produced, report authored writes truthfully through every installed route, and qualify one useful OpenCV 5.1 CUDA vision chain on the RTX 4090 behind a supervised worker, with durable evidence. Land the evidence and the contract fixes first, then the GPU feasibility, then the integrated slice; qualify the final artifact pair last.",
+  "standards": [
+    "Law 1: every check must be able to fail. A check that cannot fail is deleted rather than kept green.",
+    "Law 2: no number without a producer path. Every figure names the command or probe that produces it.",
+    "Law 3: status describes what happened, not what was intended.",
+    "Probe truth beats pinned constants: where the live build disagrees with a document, the live build wins.",
+    "One owner per file. Two nodes that claim the same file are serialized by plain code; a conflict is a finding, not a race.",
+    "Absence of a symbol from a table is not proof of absence. The decisive test is calling it on an instance.",
+    "No hardcoded user paths. Every probe and the installer must work on a clean machine.",
+    "A GPU flag, device count or utilisation percentage is not a CUDA-success receipt. The executed dispatch branch is.",
+    "A result file is not success; a committed terminal receipt is. An orphan after a crash is evidence, not a pass."
+  ],
+  "nodes": [
+    {
+      "id": "NR-PLAN-TRUTH",
+      "title": "Make the original render plan immutable and reconcile sparse, missing and unsupported shapes",
+      "owner_files": [
+        "python/synapse/autonomy/planner.py",
+        "python/synapse/autonomy/driver.py",
+        "tests/test_render_plan_truth.py"
+      ],
+      "depends_on": [],
+      "why": "G101 and G32 prove per-attempt product truth; neither keeps the original plan immutable nor computes retry targets from it. Sparse [1,3] with a retry [3], a missing terminal product with no evaluation row, and a multi-render-step plan that is silently truncated to the first step are all still reachable. The blueprint's adversarial cases in section 12.2 are the fixtures.",
+      "predicate": "grep -q 'OUTPUT_MISSING' python/synapse/autonomy/planner.py",
+      "gate": "crux",
+      "effort": "M"
+    },
+    {
+      "id": "NR-WRITE-RECEIPT",
+      "title": "Give authored writes a receipt that survives success, failure and every installed route",
+      "owner_files": [
+        "python/synapse/server/parm_authored.py",
+        "python/synapse/server/handlers.py",
+        "python/synapse/core/tool_results.py",
+        "python/synapse/mcp/tools.py",
+        "tests/test_parm_write_receipt.py"
+      ],
+      "depends_on": [],
+      "why": "G25 returns observed, mismatch and a refusal, but a lost transport loses the detail, an uninspectable parm can read as no animation, and queued mutations carry no precondition. The blueprint's section 6 receipt (request, write, readback, recovery, error) and the raw-authored comparison domain are the contract; the legacy observed value stays evaluated.",
+      "predicate": "grep -q 'raw_authored' python/synapse/server/parm_authored.py",
+      "gate": "crux",
+      "effort": "M"
+    },
+    {
+      "id": "NR-GPU-FEASIBILITY",
+      "title": "Prove one useful OpenCV 5.1 CUDA chain on the RTX 4090 and freeze its build",
+      "owner_files": [
+        "harness/next-release/gpu/",
+        "harness/next-release/gpu_feasibility.json"
+      ],
+      "depends_on": [],
+      "why": "Nothing in the repo establishes a working OpenCV 5.1 CUDA build on Windows. The official wheels are CPU-only. This node answers the only question that can stop the release: does the named chain execute, with which exact commits, toolchain, module flags and CUDA runtime, and what does it cost. It is a probe plus a build lock, not a product change.",
+      "predicate": "test -f harness/next-release/gpu_feasibility.json",
+      "gate": "joe",
+      "effort": "L"
+    },
+    {
+      "id": "NR-GPU-QUALIFICATION",
+      "title": "Qualify the GPU chain against analytic fixtures and an independent CPU reference",
+      "owner_files": [
+        "harness/next-release/gpu/",
+        "harness/next-release/gpu_qualification.json"
+      ],
+      "depends_on": [
+        "NR-GPU-FEASIBILITY"
+      ],
+      "why": "Source support, a built module, an executed call and a release-qualified operation are four different states. The blueprint's hand-computable fixtures (neutral RGB ramps, the 11x11 census, signed HDR, NaN/Inf counts, equality at the FP32 threshold) and the backend witness are what turn the second state into the fourth.",
+      "predicate": "test -f harness/next-release/gpu_qualification.json",
+      "gate": "crux",
+      "effort": "M"
+    },
+    {
+      "id": "NR-IMAGE-CONTRACT",
+      "title": "Freeze one image and evidence contract: named RGB, derived Y, invalid-sample policy",
+      "owner_files": [
+        "retina/events.py",
+        "retina/ingest.py",
+        "retina/t1.py",
+        "retina/qc_profiles.toml"
+      ],
+      "depends_on": [
+        "NR-GPU-FEASIBILITY"
+      ],
+      "why": "T1 averages channels and the beauty ingest defaults to a subimage, so alpha and data channels can enter luminance. The Y coefficients must come from the declared RGB-to-XYZ transform, not from Rec.709 weights applied to ACEScg. Source-invalid pixels must block dependent statistics with exact counts rather than being dropped or zeroed.",
+      "predicate": "grep -q 'scene_linear_range_y_v1' retina/events.py",
+      "gate": "crux",
+      "effort": "M"
+    },
+    {
+      "id": "NR-WORKER-SUPERVISED",
+      "title": "Run the vision chain in a supervised worker through one thin host adapter",
+      "owner_files": [
+        "retina/worker_entrypoint.py",
+        "python/synapse/host/retina_worker.py",
+        "tests/test_retina_worker_contract.py"
+      ],
+      "depends_on": [
+        "NR-IMAGE-CONTRACT",
+        "NR-GPU-QUALIFICATION"
+      ],
+      "why": "RETINA has modules and a designed process boundary, not a deployed executable path. The worker must own its cv2/OIIO/CUDA binaries outside Houdini's DLL search path, take allowlisted operations and read-only roots, and run off the main thread. This is also the first place the evidence envelope crosses a process boundary.",
+      "predicate": "test -f retina/worker_entrypoint.py",
+      "gate": "crux",
+      "effort": "L"
+    },
+    {
+      "id": "NR-RECOVERY-RECEIPTS",
+      "title": "Publish results durably: one terminal receipt, restart-rebuildable, late replies never win",
+      "owner_files": [
+        "retina/publication.py",
+        "python/synapse/loop/coordinator.py",
+        "tests/test_retina_publication.py"
+      ],
+      "depends_on": [
+        "NR-WORKER-SUPERVISED"
+      ],
+      "why": "Without a terminal selection receipt, a result file after a crash, a lost acknowledgement or a superseded request can all read as success. The repo already has the atomic publication pattern in loop/coordinator.py; this node applies it to RETINA requests and results, including cancellation ordering and orphan quarantine.",
+      "predicate": "grep -q 'terminal_receipt' python/synapse/loop/coordinator.py",
+      "gate": "crux",
+      "effort": "M"
+    },
+    {
+      "id": "NR-PACKAGE-PAIR",
+      "title": "Ship an independently versioned worker artifact and qualify the host/worker pair and rollback",
+      "owner_files": [
+        "installer/build_payload.py",
+        "installer/worker_lock.json",
+        "installer/synapse_setup/engine.py",
+        "docs/releases/"
+      ],
+      "depends_on": [
+        "NR-RECOVERY-RECEIPTS"
+      ],
+      "why": "The payload builder ships an allowlist; adding worker sources does not ship them. The release needs a worker build lock, a host/worker compatibility handshake, and a tested data-preserving rollback. Current Setup refuses ordinary downgrades and refuses maintenance while Houdini runs, so rollback is a procedure to qualify, not a flag to flip.",
+      "predicate": "test -f installer/worker_lock.json",
+      "gate": "joe",
+      "effort": "L"
+    },
+    {
+      "id": "NR-LICENSE-GATE",
+      "title": "Make the third-party notice set, CUDA EULA compliance and Qt relinkability a release gate",
+      "owner_files": [
+        "installer/licenses/",
+        "installer/build_payload.py",
+        "docs/reviews/next-release-licensing-2026-11-06.md"
+      ],
+      "depends_on": [],
+      "why": "SYNAPSE is MIT and OpenCV/contrib are Apache-2.0, so nothing blocks commercial use. The obligations are concrete: Apache/BSD notices, the NVIDIA Attachment A binaries and EULA text, OPENCV_ENABLE_NONFREE=OFF in the build lock, and the pre-existing PySide6 LGPLv3 relinkability duty. A release that misses them is a legal defect, not a documentation one.",
+      "predicate": "test -f installer/licenses/THIRD_PARTY_NOTICES.md",
+      "gate": "joe",
+      "effort": "S"
+    },
+    {
+      "id": "NR-FOLLOW-ON",
+      "title": "Curated memory handoff and the isolated SL0 pilot, after the core release",
+      "owner_files": [
+        "python/synapse/memory/",
+        "harness/next-release/"
+      ],
+      "depends_on": [
+        "NR-PACKAGE-PAIR"
+      ],
+      "why": "The blueprint keeps these explicitly out of the release. They are listed so the graph does not silently drop them, and parked so plain code does not schedule them.",
+      "predicate": "test -f harness/next-release/follow_on_done.json",
+      "gate": "joe",
+      "effort": "L",
+      "parked": "Follow-on. Neither blocks the core release."
+    }
+  ],
+  "edges": [
+    {"from": "NR-GPU-FEASIBILITY", "to": "NR-GPU-QUALIFICATION", "type": "dep", "why": "there is nothing to qualify until a build and a chain exist"},
+    {"from": "NR-GPU-FEASIBILITY", "to": "NR-IMAGE-CONTRACT", "type": "evidence", "why": "the contract must name operations the qualified build actually dispatches"},
+    {"from": "NR-IMAGE-CONTRACT", "to": "NR-WORKER-SUPERVISED", "type": "dep", "why": "the worker implements a contract; it does not invent one"},
+    {"from": "NR-GPU-QUALIFICATION", "to": "NR-WORKER-SUPERVISED", "type": "dep", "why": "a worker that cannot prove its backend has nothing to ship"},
+    {"from": "NR-WORKER-SUPERVISED", "to": "NR-RECOVERY-RECEIPTS", "type": "dep", "why": "publication rules are meaningful only once a worker writes results"},
+    {"from": "NR-RECOVERY-RECEIPTS", "to": "NR-PACKAGE-PAIR", "type": "dep", "why": "the pair is qualified against committed receipts, not against ad-hoc files"},
+    {"from": "NR-PLAN-TRUTH", "to": "NR-IMAGE-CONTRACT", "type": "seam", "why": "the product key and attempt identity the envelope carries come from the plan"},
+    {"from": "NR-WRITE-RECEIPT", "to": "NR-WORKER-SUPERVISED", "type": "seam", "why": "vision proposals may only mutate through the authored-write receipt path"},
+    {"from": "NR-LICENSE-GATE", "to": "NR-PACKAGE-PAIR", "type": "invariant", "why": "no artifact pair ships without its notices and EULA compliance"},
+    {"from": "NR-PACKAGE-PAIR", "to": "NR-FOLLOW-ON", "type": "dep", "why": "follow-ons start after the release, not beside it"}
+  ],
+  "seams": [
+    {"seam": "the render plan is the only source of what was asked for", "blast_radius": "every retry, every coverage denominator, every 'missing' claim"},
+    {"seam": "the evidence envelope crosses the process boundary", "blast_radius": "T0/T1 verdicts, the worker result, the panel readout"},
+    {"seam": "the worker owns native binaries outside Houdini's search path", "blast_radius": "the DCC's image I/O, every render, the panel's import graph"},
+    {"seam": "the installer allowlist decides what ships", "blast_radius": "the worker exists in development and is absent in the release"},
+    {"seam": "the GPU profile is persisted state", "blast_radius": "a silent CPU fallback can satisfy nothing while reporting success"}
+  ]
+}

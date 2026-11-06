@@ -1,0 +1,98 @@
+{
+ "first_landing": null,
+ "land_now": [
+  "NR-PLAN-TRUTH",
+  "NR-WRITE-RECEIPT"
+ ],
+ "park": [
+  "NR-GPU-FEASIBILITY",
+  "NR-GPU-QUALIFICATION",
+  "NR-IMAGE-CONTRACT",
+  "NR-WORKER-SUPERVISED",
+  "NR-RECOVERY-RECEIPTS",
+  "NR-LICENSE-GATE",
+  "NR-FOLLOW-ON"
+ ],
+ "needs_joe": [
+  "NR-PACKAGE-PAIR"
+ ],
+ "reason": "fallback: Jev chose NR-PLAN-TRUTH @ 0.43, below the confidence gate 0.6",
+ "per_node": {
+  "NR-PLAN-TRUTH": {
+   "lands": 0.89,
+   "value": 2.91,
+   "joe_decides": 0.15
+  },
+  "NR-WRITE-RECEIPT": {
+   "lands": 0.88,
+   "value": 2.72,
+   "joe_decides": 0.16
+  },
+  "NR-GPU-FEASIBILITY": {
+   "lands": 0.37,
+   "value": 2.83,
+   "joe_decides": 0.17
+  },
+  "NR-GPU-QUALIFICATION": {
+   "lands": 0.1,
+   "value": 2.88,
+   "joe_decides": 0.16
+  },
+  "NR-IMAGE-CONTRACT": {
+   "lands": 0.14,
+   "value": 2.59,
+   "joe_decides": 0.2
+  },
+  "NR-WORKER-SUPERVISED": {
+   "lands": 0.09,
+   "value": 2.6,
+   "joe_decides": 0.27
+  },
+  "NR-RECOVERY-RECEIPTS": {
+   "lands": 0.14,
+   "value": 2.79,
+   "joe_decides": 0.19
+  },
+  "NR-PACKAGE-PAIR": {
+   "lands": 0.08,
+   "value": 2.73,
+   "joe_decides": 0.5
+  },
+  "NR-LICENSE-GATE": {
+   "lands": 0.13,
+   "value": 2.55,
+   "joe_decides": 0.14
+  },
+  "NR-FOLLOW-ON": {
+   "lands": 0.08,
+   "value": 0.34,
+   "joe_decides": 0.3
+  }
+ },
+ "jev": {
+  "choice": "NR-PLAN-TRUTH",
+  "confidence": 0.43,
+  "probabilities": {
+   "NR-PLAN-TRUTH": 0.49,
+   "NR-WRITE-RECEIPT": 0.05,
+   "NR-GPU-FEASIBILITY": 0.35,
+   "NR-GPU-QUALIFICATION": 0.0,
+   "NR-IMAGE-CONTRACT": 0.0,
+   "NR-WORKER-SUPERVISED": 0.0,
+   "NR-RECOVERY-RECEIPTS": 0.0,
+   "NR-PACKAGE-PAIR": 0.0,
+   "NR-LICENSE-GATE": 0.11,
+   "NR-FOLLOW-ON": 0.0
+  }
+ },
+ "wave": "next-release",
+ "objective": "Deliver one trustworthy loop: prove which render products this attempt produced, report authored writes truthfully through every installed route, and qualify one useful OpenCV 5.1 CUDA vision chain on the RTX 4090 behind a supervised worker, with durable evidence. Land the evidence and the contract fixes first, then the GPU feasibility, then the integrated slice; qualify the final artifact pair last.",
+ "state_scrubbed": true,
+ "provenance": {
+  "input": "harness\\next-release\\graph.json",
+  "input_sha256": "0c4e52dae81df1aa0783a0b813caf56390a123ecd56aa9989e358176d29539e3",
+  "mode": "graph",
+  "wave": "next-release",
+  "generated_utc": "2026-11-06T23:27:02+00:00"
+ }
+}
