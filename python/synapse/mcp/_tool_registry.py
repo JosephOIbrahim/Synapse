@@ -220,15 +220,29 @@ TOOL_DEFS: list[tuple] = [
      True, False, True),
 
     ("houdini_set_parm", "set_parm",
-     _filter_keys(("node", "parm", "value")),
+     _filter_keys(("node", "parm", "value", "mode")),
      "Set a parameter value on a Houdini node. "
      "For USD/Solaris nodes, parameter names are encoded "
      "(e.g. xn__inputsintensity_i0a not 'intensity'). "
-     "Use houdini_inspect_node first to discover exact names.",
+     "Use houdini_inspect_node first to discover exact names. "
+     "The reply carries `observed`, the value the parameter holds after the "
+     "write, and `mismatch` when the parameter did not take it. An animated "
+     "or channel-referenced parameter is refused unless `mode` says how to "
+     "meet it, so no stray key is added and no other node is written by "
+     "accident.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "Node path"},
          "parm": {"type": "string", "description": "Parameter name"},
          "value": {"description": "Value to set"},
+         "mode": {
+             "type": "string",
+             "enum": ["refuse", "replace", "key_at_frame", "write_source"],
+             "description": "How to meet an animated or referenced parameter: "
+                            "refuse (default, write nothing), replace (clear "
+                            "the keys, then set), key_at_frame (add a key at "
+                            "the current frame), write_source (write the "
+                            "parameter this one is driven by)",
+         },
      }, "required": ["node", "parm", "value"]},
      False, True, True),
 

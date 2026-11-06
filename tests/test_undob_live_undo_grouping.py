@@ -71,9 +71,14 @@ class _MockParm:
 
     def __init__(self, rec):
         self._rec = rec
+        self._value = 0.0
 
-    def set(self, value):
+    def set(self, value, follow_parm_reference=True):
         self._rec.mutations.append(("parm.set", self._rec.depth))
+        self._value = value
+
+    def eval(self):
+        return self._value
 
     def setKeyframe(self, key):
         self._rec.mutations.append(("parm.setKeyframe", self._rec.depth))
@@ -83,9 +88,13 @@ class _MockParmTuple:
     def __init__(self, rec, length=3):
         self._rec = rec
         self._length = length
+        self._parms = [_MockParm(rec) for _ in range(length)]
 
     def __len__(self):
         return self._length
+
+    def __iter__(self):
+        return iter(self._parms)
 
     def set(self, value):
         self._rec.mutations.append(("parm_tuple.set", self._rec.depth))
@@ -227,7 +236,7 @@ def test_set_parm_propagates_and_closes_group_on_error(set_parm_call):
     call, hou_mock, rec = set_parm_call
 
     class _BoomParm(_MockParm):
-        def set(self, value):
+        def set(self, value, follow_parm_reference=True):
             self._rec.mutations.append(("parm.set", self._rec.depth))
             raise RuntimeError("parm.set failed")
 

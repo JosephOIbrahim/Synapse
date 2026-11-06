@@ -1223,6 +1223,15 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     )
 
         from .main_thread import run_on_main
+        from .parm_authored import WRITE_MODES, author_parm_write
+
+        # How a write meets an animated or referenced parm. Refusing is the
+        # default: a plain set over an expression or a reference reports a
+        # value the scene does not hold (H1-1).
+        mode = payload.get("mode", "refuse")
+        if mode not in WRITE_MODES:
+            raise ValueError(
+                f"Unknown mode {mode!r}. Use one of: {', '.join(WRITE_MODES)}.")
 
         def _on_main():
             nonlocal parm_name
@@ -1249,13 +1258,15 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     parm_tuple = node.parmTuple(parm_name)
                     if parm_tuple is not None and len(parm_tuple) > 1:
                         with hou.undos.group("synapse_set_parm"):
-                            parm_tuple.set(value)
-                        return {"node": node_path, "parm": parm_name, "value": value,
-                                **undo_receipt("synapse_set_parm")}
+                            applied = author_parm_write(
+                                list(parm_tuple), list(value), mode,
+                                parm_tuple=parm_tuple)
+                        return {"node": node_path, "parm": parm_name,
+                                **applied, **undo_receipt("synapse_set_parm")}
                 with hou.undos.group("synapse_set_parm"):
-                    parm.set(value)
-                result = {"node": node_path, "parm": parm_name, "value": value,
-                          **undo_receipt("synapse_set_parm")}
+                    applied = author_parm_write([parm], [value], mode)
+                result = {"node": node_path, "parm": parm_name,
+                          **applied, **undo_receipt("synapse_set_parm")}
                 # Lighting Law: soft warning when intensity > 1.0 on light nodes
                 if ("intensity" in parm_name.lower()
                         and isinstance(value, (int, float)) and value > 1.0):
@@ -1279,13 +1290,13 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     parm_name = usd_encoded
             if parm_tuple is not None:
                 # W5-UNDOB: group the tuple write (grouping only, not rollback).
+                values = (list(value) if isinstance(value, (list, tuple))
+                          else [value] * len(parm_tuple))
                 with hou.undos.group("synapse_set_parm"):
-                    if isinstance(value, (list, tuple)):
-                        parm_tuple.set(value)
-                    else:
-                        parm_tuple.set([value] * len(parm_tuple))
-                result = {"node": node_path, "parm": parm_name, "value": value,
-                          **undo_receipt("synapse_set_parm")}
+                    applied = author_parm_write(list(parm_tuple), values, mode,
+                                                parm_tuple=parm_tuple)
+                result = {"node": node_path, "parm": parm_name,
+                          **applied, **undo_receipt("synapse_set_parm")}
                 # Lighting Law: soft warning when intensity > 1.0 on light nodes
                 if ("intensity" in parm_name.lower()
                         and isinstance(value, (int, float)) and value > 1.0):

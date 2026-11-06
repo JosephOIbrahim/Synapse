@@ -130,6 +130,19 @@ def _make_command(cmd_type, payload=None, cmd_id="test-001", seq=0):
 # HANDLER DISPATCH TESTS
 # =============================================================================
 
+def _readback_parm(value=None):
+    """A MagicMock parm that answers the readback the way a real hou.Parm does.
+
+    set_parm now reads the value back and checks for keyframes and a channel
+    reference; a bare MagicMock invents all three.
+    """
+    parm = MagicMock()
+    parm.keyframes.return_value = ()
+    parm.getReferencedParm.return_value = parm
+    parm.eval.return_value = value
+    return parm
+
+
 class TestHandlerDispatch:
     """Test that SynapseHandler.handle() dispatches to correct handlers."""
 
@@ -564,7 +577,7 @@ class TestSetParmNanInfGuard:
     def test_normal_float_passes_through(self):
         """Normal float values are not blocked by the guard."""
         mock_node = MagicMock()
-        mock_parm = MagicMock()
+        mock_parm = _readback_parm()
         mock_node.parm.return_value = mock_parm
         with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
             cmd = _make_command("set_parm", {
@@ -572,12 +585,12 @@ class TestSetParmNanInfGuard:
             })
             resp = self.handler.handle(cmd)
         assert resp.success is True
-        mock_parm.set.assert_called_once_with(2.5)
+        mock_parm.set.assert_called_once_with(2.5, follow_parm_reference=False)
 
     def test_int_passes_through(self):
         """Integer values are not affected (ints can't be NaN/Inf)."""
         mock_node = MagicMock()
-        mock_parm = MagicMock()
+        mock_parm = _readback_parm()
         mock_node.parm.return_value = mock_parm
         with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
             cmd = _make_command("set_parm", {
@@ -585,12 +598,12 @@ class TestSetParmNanInfGuard:
             })
             resp = self.handler.handle(cmd)
         assert resp.success is True
-        mock_parm.set.assert_called_once_with(64)
+        mock_parm.set.assert_called_once_with(64, follow_parm_reference=False)
 
     def test_string_passes_through(self):
         """String values are not affected by the numeric guard."""
         mock_node = MagicMock()
-        mock_parm = MagicMock()
+        mock_parm = _readback_parm()
         mock_node.parm.return_value = mock_parm
         with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
             cmd = _make_command("set_parm", {
@@ -599,12 +612,12 @@ class TestSetParmNanInfGuard:
             })
             resp = self.handler.handle(cmd)
         assert resp.success is True
-        mock_parm.set.assert_called_once_with("/path/to/hdri.exr")
+        mock_parm.set.assert_called_once_with("/path/to/hdri.exr", follow_parm_reference=False)
 
     def test_zero_float_passes_through(self):
         """0.0 is a valid float, not caught by the guard."""
         mock_node = MagicMock()
-        mock_parm = MagicMock()
+        mock_parm = _readback_parm()
         mock_node.parm.return_value = mock_parm
         with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
             cmd = _make_command("set_parm", {
@@ -643,7 +656,7 @@ class TestSetParmLightingLaw:
     def _make_light_node(self, node_type="distantlight"):
         """Create a mock light node with type name."""
         mock_node = MagicMock()
-        mock_parm = MagicMock()
+        mock_parm = _readback_parm()
         mock_node.parm.return_value = mock_parm
         mock_type = MagicMock()
         mock_type.name.return_value = node_type
@@ -661,7 +674,7 @@ class TestSetParmLightingLaw:
             })
             resp = self.handler.handle(cmd)
         assert resp.success is True
-        mock_parm.set.assert_called_once_with(5.0)  # Value still set
+        mock_parm.set.assert_called_once_with(5.0, follow_parm_reference=False)  # Value still set
         assert "warning" in resp.data
         assert "Lighting Law" in resp.data["warning"]
         assert "exposure" in resp.data["warning"]
@@ -755,5 +768,5 @@ class TestSetParmLightingLaw:
             })
             resp = self.handler.handle(cmd)
         assert resp.success is True
-        mock_parm.set.assert_called_once_with(100.0)
+        mock_parm.set.assert_called_once_with(100.0, follow_parm_reference=False)
         assert "warning" in resp.data
