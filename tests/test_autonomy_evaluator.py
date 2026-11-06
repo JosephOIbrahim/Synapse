@@ -273,3 +273,193 @@ class TestSequenceEvaluation:
         assert isinstance(seq, SequenceEvaluation)
         assert seq.overall_score > 0
         assert len(seq.frame_evaluations) == 1
+
+
+class TestSequenceVerdictBeyondTheMean:
+    """A sequence fails on a lost or failed frame whatever its mean score says.
+
+    The pass threshold is set to 0.0 in these tests on purpose: the only
+    thing that can fail the sequence is the hard condition under test, so a
+    green run cannot come from the score.
+    """
+
+    @staticmethod
+    def _permissive():
+        return RenderEvaluator(pass_threshold=0.0)
+
+    def test_missing_output_fails_sequence_with_a_perfect_mean(self):
+        """7 of 48 frames never produced a file; the rest are perfect."""
+        evaluator = self._permissive()
+        missing = set(range(5, 40, 5))
+        frames = []
+        for f in range(1, 49):
+            if f in missing:
+                frames.append(_frame_result(f, ""))  # no path, no pixels
+            else:
+                frames.append(_frame_result(f, f"/tmp/f{f}.exr", _make_clean_frame()))
+
+        seq = evaluator.evaluate_sequence(frames)
+
+        assert seq.passed is False
+        assert any("missing rendered output" in i.lower() for i in seq.temporal_issues)
+        # The mean over what came back is high; that is the point.
+        assert seq.overall_score > 0.0
+
+    def test_farm_failed_frames_fail_sequence(self):
+        """The farm's own failed_frames count is enough to fail the sequence."""
+        evaluator = self._permissive()
+        frames = [
+            _frame_result(f, f"/tmp/f{f}.exr", _make_clean_frame())
+            for f in range(1, 11)
+        ]
+
+        seq = evaluator.evaluate_sequence(frames, farm_failed_frames=2)
+
+        assert seq.passed is False
+        assert any("failed frame" in i.lower() for i in seq.temporal_issues)
+
+    def test_per_frame_error_fails_sequence(self):
+        """A frame the farm marked failed fails the sequence."""
+        evaluator = self._permissive()
+        frames = [
+            _frame_result(f, f"/tmp/f{f}.exr", _make_clean_frame())
+            for f in range(1, 6)
+        ]
+        frames[2]["error"] = "boom"
+
+        seq = evaluator.evaluate_sequence(frames)
+
+        assert seq.passed is False
+        assert any("failed frame" in i.lower() for i in seq.temporal_issues)
+
+    def test_planned_frames_mismatch_fails_sequence(self):
+        """A short sequence against the plan fails even when every frame passes."""
+        evaluator = self._permissive()
+        frames = [
+            _frame_result(f, f"/tmp/f{f}.exr", _make_clean_frame())
+            for f in range(1, 5)  # the plan asked for 1..5
+        ]
+
+        seq = evaluator.evaluate_sequence(frames, planned_frames=range(1, 6))
+
+        assert seq.passed is False
+        assert any("missing planned frame" in i.lower() for i in seq.temporal_issues)
+
+    def test_matching_plan_still_passes(self):
+        """The new checks must not fail a complete, clean sequence."""
+        evaluator = self._permissive()
+        frames = [
+            _frame_result(f, f"/tmp/f{f}.exr", _make_clean_frame())
+            for f in range(1, 6)
+        ]
+
+        seq = evaluator.evaluate_sequence(frames, planned_frames=range(1, 6))
+
+        assert seq.passed is True
+        assert seq.temporal_issues == []
+
+    def test_motion_continuity_sees_loaded_frames(self, monkeypatch):
+        """A spatial jump must be caught when the driver only gives paths.
+
+        The patterns invert each other, so the mean luminance is identical and
+        the brightness check cannot see them. Only the pixel comparison can,
+        and on the driver path the pixels come from the loader, not the caller.
+        """
+        assert HAS_NUMPY
+        evaluator = RenderEvaluator()
+
+        left_right = np.zeros((10, 10, 3), dtype=np.float32)
+        left_right[:, ::2] = 1.0
+        patterns = [left_right, 1.0 - left_right, left_right]
+
+        def fake_load(path):
+            index = int(path.rsplit("f", 1)[1].split(".")[0]) - 1
+            return patterns[index]
+
+        monkeypatch.setattr(evaluator, "_load_frame", fake_load)
+        loaded_frames = [
+            {"frame": i, "output_path": f"/tmp/f{i}.exr", "image_data": None}
+            for i in range(1, 4)
+        ]
+        inline_frames = [
+            {"frame": i, "output_path": f"/tmp/f{i}.exr", "image_data": patterns[i - 1]}
+            for i in range(1, 4)
+        ]
+
+        loaded = evaluator.evaluate_sequence(loaded_frames)
+        inline = evaluator.evaluate_sequence(inline_frames)
+
+        # Parity: the driver path must see what an inline caller sees.
+        assert any("discontinuity" in i.lower() for i in loaded.temporal_issues)
+        assert any("discontinuity" in i.lower() for i in inline.temporal_issues)
+        assert not any("flicker" in i.lower() for i in loaded.temporal_issues)
+
+    def test_recovered_load_cannot_hide_a_discontinuity(self, monkeypatch, tmp_path):
+        """A transient read failure must not turn this sequence into a pass.
+
+        The first read of frame 2 fails and a later read would succeed. There
+        is no later read: pixels are resolved once for the per-frame and the
+        motion checks, so the frame stays unverified and the sequence fails
+        instead of scoring 1.0 with no temporal issues.
+        """
+        assert HAS_NUMPY
+        evaluator = RenderEvaluator(pass_threshold=0.95)
+
+        left_right = np.zeros((10, 10, 3), dtype=np.float32)
+        left_right[:, ::2] = 1.0
+        patterns = [left_right, 1.0 - left_right, left_right]
+
+        paths = []
+        for i in range(1, 4):
+            p = tmp_path / f"f{i}.exr"
+            p.write_bytes(b"")  # the file exists; only the read is flaky
+            paths.append(str(p))
+
+        reads = {"f2": 0}
+
+        def flaky_load(path):
+            if path == paths[1]:
+                reads["f2"] += 1
+                if reads["f2"] == 1:
+                    return None
+            return patterns[paths.index(path)]
+
+        monkeypatch.setattr(evaluator, "_load_frame", flaky_load)
+        frames = [
+            {"frame": i, "output_path": paths[i - 1], "image_data": None}
+            for i in range(1, 4)
+        ]
+
+        seq = evaluator.evaluate_sequence(frames)
+
+        assert reads["f2"] == 1, "pixels must be resolved once, by one shared path"
+        assert seq.passed is False
+        assert seq.unverified_count >= 1
+
+    def test_temporal_checks_see_luminance_from_loaded_frames(self, monkeypatch):
+        """The driver never holds frames; flicker must still be measurable.
+
+        _load_frame stands in for the image reader the driver path uses, and
+        every frame result carries no pixels, exactly as the driver produces.
+        """
+        assert HAS_NUMPY
+        evaluator = self._permissive()
+        luminances = [0.1, 0.9, 0.1, 0.9, 0.1, 0.9]
+        pixels = [
+            np.full((10, 10, 3), v, dtype=np.float32) for v in luminances
+        ]
+
+        def fake_load(path):
+            index = int(path.rsplit("f", 1)[1].split(".")[0]) - 1
+            return pixels[index]
+
+        monkeypatch.setattr(evaluator, "_load_frame", fake_load)
+        frames = [
+            {"frame": i, "output_path": f"/tmp/f{i}.exr", "image_data": None}
+            for i in range(1, 7)
+        ]
+
+        seq = evaluator.evaluate_sequence(frames)
+
+        assert all("mean_luminance" in fe.metrics for fe in seq.frame_evaluations)
+        assert any("flicker" in i.lower() for i in seq.temporal_issues)

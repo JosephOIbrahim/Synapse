@@ -166,6 +166,15 @@ class AutonomousDriver:
 
         # Step 1: Plan
         plan = self._planner.plan(intent)
+        # The frames the artist asked for. A replan narrows to the failed
+        # frames; grading against that would compare a full render to a
+        # subset and call every good frame unplanned.
+        planned_frames = self._planned_frames(plan)
+        # Results accumulate across attempts, keyed by frame. A replan retries
+        # only the failed frames; grading the retry on its own would lose the
+        # frames that already succeeded and report them as missing from the
+        # plan. Each retry replaces its frame's entry, and its failure state.
+        accumulated: Dict[int, Dict[str, Any]] = {}
         self._log_decision(
             context="initial_plan",
             decision=f"Created render plan with {len(plan.steps)} step(s) "
@@ -277,6 +286,19 @@ class AutonomousDriver:
 
             # Step 4: Execute render steps
             execution_ok = await self._execute_steps(plan)
+            # A cancel during execution must not be reported as a pass: the
+            # steps that never ran leave no frames, and a partial sequence is
+            # not a finished render.
+            if self._cancelled:
+                self._log_decision(
+                    context="cancelled_during_execution",
+                    decision="Render sequence cancelled while steps were running",
+                    reasoning="emergency_stop() was called during execution; "
+                              "frames after the cancel never rendered",
+                    gate=GateLevel.INFORM,
+                )
+                stop_reason = "cancelled"
+                break
             if not execution_ok:
                 self._log_decision(
                     context="execution_failed",
@@ -295,7 +317,17 @@ class AutonomousDriver:
 
             # Step 5: Collect render results and evaluate
             render_results = await self._collect_results(plan)
-            evaluation = self._evaluator.evaluate_sequence(render_results)
+            for fr in render_results:
+                try:
+                    frame_no = int(fr.get("frame", 0))
+                except (TypeError, ValueError):
+                    frame_no = 0
+                accumulated[frame_no] = fr
+            evaluation = self._evaluator.evaluate_sequence(
+                [accumulated[k] for k in sorted(accumulated)],
+                planned_frames=planned_frames,
+                farm_failed_frames=self._farm_failed_frames(plan),
+            )
 
             self._log_decision(
                 context="evaluation_complete",
@@ -370,7 +402,10 @@ class AutonomousDriver:
             decisions=list(self._decisions),
             iterations=iteration,
             total_time_seconds=total_time,
-            success=evaluation.passed if evaluation else False,
+            # A run that stopped for a reason (cancel, wall clock, iteration
+            # cap, execution failure) did not succeed, whatever the mean of
+            # the frames that did come back says.
+            success=bool(evaluation and evaluation.passed and not stop_reason),
             stop_reason=stop_reason,
         )
 
@@ -442,6 +477,45 @@ class AutonomousDriver:
 
         return True
 
+    def _render_step(self, plan: RenderPlan):
+        """The step that renders, or None."""
+        for step in plan.steps:
+            if step.handler in ("render_sequence", "render"):
+                return step
+        return None
+
+    def _planned_frames(self, plan: RenderPlan) -> Optional[List[int]]:
+        """The frames the plan asked for, or None when the plan does not say.
+
+        This is what the sequence is graded against. Without it a render that
+        lost frames is scored on the frames that happened to come back.
+        """
+        step = self._render_step(plan)
+        if step is None:
+            return None
+        params = step.params or {}
+        try:
+            if "start_frame" in params and "end_frame" in params:
+                start, end = int(params["start_frame"]), int(params["end_frame"])
+                if end < start:
+                    return None
+                return list(range(start, end + 1))
+            if "frame" in params:
+                return [int(params["frame"])]
+        except (TypeError, ValueError):
+            return None
+        return None
+
+    def _farm_failed_frames(self, plan: RenderPlan) -> int:
+        """The farm's own failed-frame count for this render, 0 when unknown."""
+        step = self._render_step(plan)
+        if step is None or not isinstance(step.result, dict):
+            return 0
+        try:
+            return int(step.result.get("failed_frames", 0) or 0)
+        except (TypeError, ValueError):
+            return 0
+
     async def _collect_results(
         self,
         plan: RenderPlan,
@@ -454,23 +528,21 @@ class AutonomousDriver:
         results: List[Dict[str, Any]] = []
 
         # Find the render step to get frame range
-        render_step = None
-        for step in plan.steps:
-            if step.handler in ("render_sequence", "render"):
-                render_step = step
-                break
+        render_step = self._render_step(plan)
 
         if render_step is None or render_step.result is None:
             return results
 
         # Extract output info from the published BatchReport.to_dict() shape
-        # (render_farm.py): frame_results entries carry frame + image_path.
+        # (render_farm.py): frame_results entries carry frame + image_path,
+        # and the farm's per-frame error when the frame failed.
         for fr in render_step.result.get("frame_results", []):
             if isinstance(fr, dict):
                 results.append({
                     "frame": fr.get("frame", 0),
                     "output_path": fr.get("image_path", ""),
                     "image_data": None,
+                    "error": fr.get("error", ""),
                 })
 
         # Single-frame handlers return a bare image_path instead
