@@ -301,7 +301,7 @@ class TestSequenceVerdictBeyondTheMean:
         seq = evaluator.evaluate_sequence(frames)
 
         assert seq.passed is False
-        assert any("missing rendered output" in i.lower() for i in seq.temporal_issues)
+        assert any("missing rendered output" in i.lower() for i in seq.hard_failures)
         # The mean over what came back is high; that is the point.
         assert seq.overall_score > 0.0
 
@@ -316,7 +316,7 @@ class TestSequenceVerdictBeyondTheMean:
         seq = evaluator.evaluate_sequence(frames, farm_failed_frames=2)
 
         assert seq.passed is False
-        assert any("failed frame" in i.lower() for i in seq.temporal_issues)
+        assert any("failed frame" in i.lower() for i in seq.hard_failures)
 
     def test_per_frame_error_fails_sequence(self):
         """A frame the farm marked failed fails the sequence."""
@@ -330,7 +330,7 @@ class TestSequenceVerdictBeyondTheMean:
         seq = evaluator.evaluate_sequence(frames)
 
         assert seq.passed is False
-        assert any("failed frame" in i.lower() for i in seq.temporal_issues)
+        assert any("failed frame" in i.lower() for i in seq.hard_failures)
 
     def test_planned_frames_mismatch_fails_sequence(self):
         """A short sequence against the plan fails even when every frame passes."""
@@ -343,7 +343,7 @@ class TestSequenceVerdictBeyondTheMean:
         seq = evaluator.evaluate_sequence(frames, planned_frames=range(1, 6))
 
         assert seq.passed is False
-        assert any("missing planned frame" in i.lower() for i in seq.temporal_issues)
+        assert any("missing planned frame" in i.lower() for i in seq.hard_failures)
 
     def test_matching_plan_still_passes(self):
         """The new checks must not fail a complete, clean sequence."""
@@ -357,6 +357,7 @@ class TestSequenceVerdictBeyondTheMean:
 
         assert seq.passed is True
         assert seq.temporal_issues == []
+        assert seq.hard_failures == []
 
     def test_motion_continuity_sees_loaded_frames(self, monkeypatch):
         """A spatial jump must be caught when the driver only gives paths.

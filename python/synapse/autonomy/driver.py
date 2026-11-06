@@ -335,6 +335,7 @@ class AutonomousDriver:
                          f"passed: {evaluation.passed}",
                 reasoning=f"{len(evaluation.frame_evaluations)} frame(s) evaluated, "
                           f"{len(evaluation.temporal_issues)} temporal issue(s)"
+                          f", {len(evaluation.hard_failures)} hard failure(s)"
                           f", {evaluation.unverified_count} unverified",
                 gate=GateLevel.INFORM,
             )

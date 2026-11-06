@@ -330,8 +330,9 @@ class RenderEvaluator:
 
         Returns:
             SequenceEvaluation with per-frame and temporal analysis. A missing
-            output, a failed frame or a plan mismatch fails the sequence; the
-            mean score governs soft issues only.
+            output, a failed frame or a plan mismatch fails the sequence and is
+            reported in hard_failures; the mean score governs soft issues only,
+            so a hard failure does not also move the score.
         """
         frame_evals: List[FrameEvaluation] = []
 
@@ -435,8 +436,6 @@ class RenderEvaluator:
                     + ", ".join(str(f) for f in unplanned[:20])
                 )
 
-        temporal_issues.extend(hard_failures)
-
         # Overall score — only verified frames can vouch for quality
         verified_evals = [fe for fe in frame_evals if fe.verified]
         unverified_count = len(frame_evals) - len(verified_evals)
@@ -468,6 +467,7 @@ class RenderEvaluator:
             passed=passed,
             unverified_count=unverified_count,
             pass_threshold=self._pass_threshold,
+            hard_failures=hard_failures,
         )
 
     def evaluate_sequence_from_disk(
