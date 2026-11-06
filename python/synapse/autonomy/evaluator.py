@@ -198,6 +198,7 @@ class RenderEvaluator:
         output_path: str,
         pixels: Optional[Any] = None,
         image_data: Optional[Any] = None,
+        load_if_missing: bool = True,
     ) -> FrameEvaluation:
         """Evaluate a single rendered frame.
 
@@ -208,6 +209,12 @@ class RenderEvaluator:
                     in [0, 1] range. If not provided, attempts to load
                     from output_path automatically.
             image_data: Legacy alias for pixels (backwards compatibility).
+            load_if_missing: Load from disk when no pixels were handed in.
+                    evaluate_sequence resolves pixels once for both the
+                    per-frame and the temporal checks, so it passes False: a
+                    second read here could succeed after the first failed,
+                    and the frame would be judged on pixels the motion check
+                    never saw.
 
         Returns:
             FrameEvaluation with issues list and per-check metrics.
@@ -219,30 +226,31 @@ class RenderEvaluator:
         metrics: Dict[str, float] = {}
 
         # Auto-load from disk if no pixel data provided
-        if resolved_pixels is None:
+        if resolved_pixels is None and load_if_missing:
             resolved_pixels = self._load_frame(output_path)
-            if resolved_pixels is None:
-                # Couldn't load — check if the file exists at all
-                # (isfile so a directory path counts as a missing frame)
-                if not os.path.isfile(output_path):
-                    return FrameEvaluation(
-                        frame=frame,
-                        output_path=output_path,
-                        passed=False,
-                        issues=[f"Couldn't find rendered output at {output_path}"],
-                        metrics={"quality_score": 0.0},
-                    )
-                # File exists but couldn't load pixels — quality is UNKNOWN.
-                # An unanalyzed frame must never report as passed.
+
+        if resolved_pixels is None:
+            # Couldn't load — check if the file exists at all
+            # (isfile so a directory path counts as a missing frame)
+            if not os.path.isfile(output_path):
                 return FrameEvaluation(
                     frame=frame,
                     output_path=output_path,
                     passed=False,
-                    verified=False,
-                    issues=["Couldn't load frame for pixel analysis — quality unverified "
-                            "(install OpenImageIO, pyexr, or Pillow)"],
-                    metrics={"unverified": 1.0},
+                    issues=[f"Couldn't find rendered output at {output_path}"],
+                    metrics={"quality_score": 0.0},
                 )
+            # File exists but couldn't load pixels — quality is UNKNOWN.
+            # An unanalyzed frame must never report as passed.
+            return FrameEvaluation(
+                frame=frame,
+                output_path=output_path,
+                passed=False,
+                verified=False,
+                issues=["Couldn't load frame for pixel analysis — quality unverified "
+                        "(install OpenImageIO, pyexr, or Pillow)"],
+                metrics={"unverified": 1.0},
+            )
 
         if resolved_pixels is not None and NUMPY_AVAILABLE:
             arr = np.asarray(resolved_pixels, dtype=np.float64)
@@ -341,6 +349,11 @@ class RenderEvaluator:
                 frame=fr["frame"],
                 output_path=fr["output_path"],
                 pixels=pixels,
+                # Resolved once here, for both the per-frame checks and the
+                # motion comparison. A second read inside evaluate_frame could
+                # succeed after this one failed, and the frame would be judged
+                # on pixels the motion check never saw.
+                load_if_missing=False,
             )
             frame_evals.append(fe)
 

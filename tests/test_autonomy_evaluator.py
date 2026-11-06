@@ -394,6 +394,48 @@ class TestSequenceVerdictBeyondTheMean:
         assert any("discontinuity" in i.lower() for i in inline.temporal_issues)
         assert not any("flicker" in i.lower() for i in loaded.temporal_issues)
 
+    def test_recovered_load_cannot_hide_a_discontinuity(self, monkeypatch, tmp_path):
+        """A transient read failure must not turn this sequence into a pass.
+
+        The first read of frame 2 fails and a later read would succeed. There
+        is no later read: pixels are resolved once for the per-frame and the
+        motion checks, so the frame stays unverified and the sequence fails
+        instead of scoring 1.0 with no temporal issues.
+        """
+        assert HAS_NUMPY
+        evaluator = RenderEvaluator(pass_threshold=0.95)
+
+        left_right = np.zeros((10, 10, 3), dtype=np.float32)
+        left_right[:, ::2] = 1.0
+        patterns = [left_right, 1.0 - left_right, left_right]
+
+        paths = []
+        for i in range(1, 4):
+            p = tmp_path / f"f{i}.exr"
+            p.write_bytes(b"")  # the file exists; only the read is flaky
+            paths.append(str(p))
+
+        reads = {"f2": 0}
+
+        def flaky_load(path):
+            if path == paths[1]:
+                reads["f2"] += 1
+                if reads["f2"] == 1:
+                    return None
+            return patterns[paths.index(path)]
+
+        monkeypatch.setattr(evaluator, "_load_frame", flaky_load)
+        frames = [
+            {"frame": i, "output_path": paths[i - 1], "image_data": None}
+            for i in range(1, 4)
+        ]
+
+        seq = evaluator.evaluate_sequence(frames)
+
+        assert reads["f2"] == 1, "pixels must be resolved once, by one shared path"
+        assert seq.passed is False
+        assert seq.unverified_count >= 1
+
     def test_temporal_checks_see_luminance_from_loaded_frames(self, monkeypatch):
         """The driver never holds frames; flicker must still be measurable.
 
