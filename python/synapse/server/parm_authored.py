@@ -199,11 +199,20 @@ def _snapshot(parm) -> Dict[str, Any]:
     channel restored from keys alone evaluates differently outside its keyed
     range.
     """
-    snap: Dict[str, Any] = {"value": None, "keys": [], "extrapolation": (None, None)}
+    snap: Dict[str, Any] = {"value": None, "raw": None, "keys": [],
+                            "extrapolation": (None, None)}
     try:
         snap["value"] = parm.eval()
     except _READ_ERRORS:
         pass
+    try:
+        raw = parm.unexpandedString()
+    except _READ_ERRORS:
+        raw = None
+    if isinstance(raw, str):
+        # The authored string, not the expanded one: restoring the expanded
+        # path would strip $HIP/$OS/$F4 and freeze a frame-dependent output.
+        snap["raw"] = raw
     try:
         keys = parm.keyframes()
     except _READ_ERRORS:
@@ -241,8 +250,9 @@ def _restore(parm, snap: Dict[str, Any]) -> None:
             except _RESTORE_ERRORS:
                 pass
     elif snap["value"] is not None:
+        restore = snap["raw"] if snap["raw"] is not None else snap["value"]
         try:
-            parm.set(snap["value"], follow_parm_reference=False)
+            parm.set(restore, follow_parm_reference=False)
         except _RESTORE_ERRORS:
             pass
 

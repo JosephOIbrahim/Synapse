@@ -77,8 +77,10 @@ class _Parm:
     """A parm that behaves the way the H22 probe showed."""
 
     def __init__(self, value, keys=(), source=None, clamp=None, name="tx",
-                 frame=1.0, rejects=None):
+                 frame=1.0, rejects=None, raw=None, string=False):
         self._value = value
+        self._raw = raw
+        self._string = string
         self._keys = [_Key(f, v) for f, v in keys]
         self._source = source
         self._clamp = clamp
@@ -125,7 +127,12 @@ class _Parm:
         return "exprLanguage.Hscript"
 
     def unexpandedString(self):
-        raise parm_authored._OPERATION_FAILED("Only string parms have unexpanded strings")
+        if self._keys:
+            raise parm_authored._OPERATION_FAILED(
+                "Cannot get unexpanded string for parms with keyframes")
+        if not self._string:
+            raise parm_authored._OPERATION_FAILED("Only string parms have unexpanded strings")
+        return self._raw if self._raw is not None else self._value
 
     def keyframeExtrapolation(self, before):
         if not self._keys:
@@ -149,6 +156,8 @@ class _Parm:
     def set(self, value, follow_parm_reference=True):
         if follow_parm_reference and self._source is not None:
             return self._source.set(value, follow_parm_reference=False)
+        if self._string and not isinstance(value, str):
+            raise TypeError("not a string")
         if self._rejects is not None and self._rejects(value):
             raise TypeError("not a number")
         self.writes.append(value)
@@ -159,7 +168,11 @@ class _Parm:
                 self._keys = []                            # clears the animation
                 self._value = value
         else:
-            self._value = self._clamp(value) if self._clamp else value
+            if self._string:
+                self._raw = value
+                self._value = value.replace("$HIP", "/proj")
+            else:
+                self._value = self._clamp(value) if self._clamp else value
 
     def setKeyframe(self, key):
         self._store_key(key)
@@ -234,6 +247,29 @@ def test_replace_restores_a_cycle_channel_extrapolation():
     assert [(k.frame(), k.value()) for k in parm.keyframes()] == [(1.0, 1.0), (10.0, 100.0)]
     assert parm.keyframeExtrapolation(True) == "cycle"
     assert parm.keyframeExtrapolation(False) == "cycle"
+
+
+def test_failed_write_restores_the_authored_string():
+    """Rollback must put back $HIP/$OS/$F4, not an expanded absolute path."""
+    parm = _Parm("/proj/render/geo.0001.exr", raw="$HIP/render/$OS.$F4.exr",
+                 string=True, name="picture")
+
+    with pytest.raises(TypeError):
+        author_parm_write([parm], [[1, 2]])
+
+    assert parm.unexpandedString() == "$HIP/render/$OS.$F4.exr"
+
+
+def test_partial_tuple_restores_the_authored_string():
+    picture = _Parm("/proj/render/geo.0001.exr", raw="$HIP/render/$OS.$F4.exr",
+                    string=True, name="picture")
+    bad = _Parm(1.0, rejects=lambda v: not isinstance(v, (int, float)), name="tx")
+
+    with pytest.raises(TypeError):
+        author_parm_write([picture, bad], ["$HIP/new.exr", "not-a-number"])
+
+    assert picture.unexpandedString() == "$HIP/render/$OS.$F4.exr"
+    assert bad.eval() == 1.0
 
 
 def test_tuple_replace_restores_earlier_components():
