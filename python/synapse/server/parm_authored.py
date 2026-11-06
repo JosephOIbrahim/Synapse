@@ -44,20 +44,29 @@ def raw_string(parm, evaluated) -> Optional[str]:
 
 def authored_fields(parm, evaluated) -> Dict[str, Any]:
     """Extra read fields for one parm: ``expression`` and
-    ``expression_language`` when keyframes drive it, ``keyframe_count`` for the
-    number of keys, ``raw`` when its string as written differs from
-    ``evaluated``, otherwise nothing."""
+    ``expression_language`` when exactly one key drives it, ``keyframe_count``
+    for the number of keys, ``raw`` when its string as written differs from
+    ``evaluated``, otherwise nothing.
+
+    The count is measured on its own: ``expression()`` raises for a parameter
+    with several keys, and the count must survive that (a multi-key parameter
+    is the case H1-1 was about).
+    """
     try:
         keyframes = parm.keyframes()
-        if isinstance(keyframes, (list, tuple)) and keyframes:
-            expression = parm.expression()
-            if not isinstance(expression, str):
-                return {}
-            return {"expression": expression,
-                    "expression_language": str(parm.expressionLanguage()),
-                    "keyframe_count": len(keyframes)}
     except _READ_ERRORS:
-        return {}
+        keyframes = ()
+    count = len(keyframes) if isinstance(keyframes, (list, tuple)) else 0
+    if count:
+        fields: Dict[str, Any] = {"keyframe_count": count}
+        try:
+            expression = parm.expression()
+        except _READ_ERRORS:
+            return fields
+        if isinstance(expression, str):
+            fields["expression"] = expression
+            fields["expression_language"] = str(parm.expressionLanguage())
+        return fields
     raw = raw_string(parm, evaluated)
     return {"raw": raw} if raw is not None else {}
 
@@ -95,12 +104,24 @@ def keyframe_count(parm) -> int:
 
 
 def reference_source(parm):
-    """The parm this one is driven by, or None when it is its own source."""
+    """The parm this one is driven by, or None when it is its own source.
+
+    Compared by equality, not identity: Houdini 22.0.400 returns a distinct
+    wrapper for the same parameter (probed in hython — ``getReferencedParm()
+    is parm`` is False for a plain parm, ``==`` is True), so an identity check
+    would call every parameter a reference to itself.
+    """
     try:
         source = parm.getReferencedParm()
     except _READ_ERRORS:
         return None
-    return None if source is None or source is parm else source
+    if source is None:
+        return None
+    try:
+        return None if source == parm else source
+    except _READ_ERRORS:
+        # A comparison that cannot answer is not a reference.
+        return None
 
 
 def _label(parm) -> str:
@@ -129,13 +150,63 @@ def _plan_write(parm, mode):
         parm = source
 
     keys = keyframe_count(parm)
-    if keys and mode in ("refuse", "write_source"):
+    if keys and mode == "refuse":
         raise ParmWriteRefused(
-            f"{_label(parm)} has {keys} keyframe(s), so a plain write would "
-            "add a key or be ignored. Nothing was written. Pass "
-            "mode='replace' to clear the keys, mode='key_at_frame' to add a "
+            f"{_label(parm)} has {keys} keyframe(s). Nothing was written. "
+            "Pass mode='replace' to clear them, mode='key_at_frame' to add a "
             "key at the current frame, or edit the expression instead.")
-    return parm, ("replace" if keys and mode == "replace" else "set")
+    if mode == "replace":
+        return parm, "replace"
+    if mode == "key_at_frame":
+        return parm, "key_at_frame"
+    if keys:
+        # write_source landed on an animated source; refuse rather than
+        # replace its animation without being asked.
+        raise ParmWriteRefused(
+            f"{_label(parm)} has {keys} keyframe(s); write_source will not "
+            "replace them. Nothing was written.")
+    return parm, "set"
+
+
+def _set_plain(parm, value) -> None:
+    parm.set(value, follow_parm_reference=False)
+
+
+def _set_key_at_frame(parm, value) -> None:
+    """Add a key at the current frame, keeping the ones already there.
+
+    ``parm.set(value, follow_parm_reference=False)`` clears the animation on
+    22.0.400 (probed), so it is never used for this mode.
+    """
+    if hou is None or not hasattr(hou, "Keyframe"):
+        raise ParmWriteRefused(
+            f"Cannot add a key to {_label(parm)}: Houdini is not available.")
+    key = hou.Keyframe()
+    key.setFrame(hou.frame())
+    key.setValue(value)
+    parm.setKeyframe(key)
+
+
+def _replace(parm, value) -> None:
+    """Clear the keys, write the value, and put the keys back if that fails."""
+    try:
+        captured = list(parm.keyframes())
+    except _READ_ERRORS:
+        captured = []
+    if captured:
+        parm.deleteAllKeyframes()
+    try:
+        parm.set(value, follow_parm_reference=False)
+    except Exception:
+        # The value was refused after the keys were removed. Put the
+        # animation back before raising: the undo group does not roll back.
+        for key in captured:
+            try:
+                parm.setKeyframe(key)
+            except _READ_ERRORS:
+                # Best effort; the original failure is what the caller gets.
+                pass
+        raise
 
 
 def _close(a, b) -> bool:
@@ -163,6 +234,12 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None) -> D
 
     parms = list(parms)
     values = list(values)
+    if len(values) != len(parms):
+        # A tuple of 3 refuses [7, 8] with InvalidSize; refuse it here, before
+        # anything is written, rather than letting zip truncate.
+        raise ValueError(
+            f"{len(values)} value(s) for {len(parms)} parameter(s). Nothing "
+            "was written.")
     targets = [_plan_write(p, mode) for p in parms]
 
     plain = all(
@@ -175,8 +252,11 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None) -> D
     else:
         for (parm, action), value in zip(targets, values):
             if action == "replace":
-                parm.deleteAllKeyframes()
-            parm.set(value, follow_parm_reference=False)
+                _replace(parm, value)
+            elif action == "key_at_frame":
+                _set_key_at_frame(parm, value)
+            else:
+                _set_plain(parm, value)
 
     observed = [parm.eval() for parm, _ in targets]  # noqa: S307
     mismatch = [not _close(requested, held)
