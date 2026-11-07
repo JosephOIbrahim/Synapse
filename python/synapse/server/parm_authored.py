@@ -643,9 +643,15 @@ def _readback_key(targets, values, frame) -> Dict[str, Any]:
     parm whose only key is elsewhere, as an unrelated value). ``evalAtFrame``
     is in the introspected H22 symbol table for ``hou.Parm``; a stand-in
     without it falls back to ``eval()`` rather than failing the write.
+
+    ``observed`` keeps the meaning every read has: ``eval()`` at the playhead.
+    The at-frame value is ``observed_at_frame``, and the match is decided
+    there — the write is judged at the frame it declared, while the legacy
+    field keeps the domain its callers were promised.
     """
     requested = list(values)
     observed: List[Any] = []
+    observed_at_frame: List[Any] = []
     present: List[bool] = []
     try:
         for target, _ in targets:
@@ -653,7 +659,8 @@ def _readback_key(targets, values, frame) -> Dict[str, Any]:
                 held = target.evalAtFrame(frame)
             except AttributeError:
                 held = target.eval()  # noqa: S307
-            observed.append(held)
+            observed_at_frame.append(held)
+            observed.append(target.eval())  # noqa: S307
             keys = target.keyframes()
             present.append(any(_close(key.frame(), frame)
                                for key in (keys or ())))
@@ -665,13 +672,15 @@ def _readback_key(targets, values, frame) -> Dict[str, Any]:
             "key_present": None,
             "requested": _values(requested),
             "observed": None,
+            "observed_at_frame": None,
             "raw_authored": None,
             "evaluated_equal": None,
             "error": str(exc),
         }
 
     match = [_close(value, held) and has_key
-             for value, held, has_key in zip(requested, observed, present)]
+             for value, held, has_key in zip(requested, observed_at_frame,
+                                             present)]
     return {
         "state": "match" if all(match) else "mismatch",
         "domain": "numeric-at-frame",
@@ -679,6 +688,7 @@ def _readback_key(targets, values, frame) -> Dict[str, Any]:
         "key_present": _values(present),
         "requested": _values(requested),
         "observed": _values(observed),
+        "observed_at_frame": _values(observed_at_frame),
         "raw_authored": None,
         "evaluated_equal": _values(
             [_close(value, held) for value, held in zip(requested, observed)]),
@@ -780,9 +790,17 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
             values=values, frame=frame, queued=queued, expect=expect)
 
     # A declared frame is the frame. Only an immediate legacy call with none
-    # reads the playhead, and the frame it used is reported.
+    # reads the playhead, and the frame it used is reported. A queued write
+    # carries no such licence: the playhead is not evidence of the frame the
+    # write was planned at, so it must declare one or be refused.
     declared_frame = frame
     if mode == "key_at_frame" and declared_frame is None:
+        if queued:
+            raise write_refusal(
+                "A queued key write must declare the frame it was planned at; "
+                "the playhead is not evidence of it. Nothing was written.",
+                code="parm.frame_unknown", request=request, mode=mode,
+                values=values, frame=None, queued=True, expect=expect)
         if hou is None or not hasattr(hou, "frame"):
             raise write_refusal(
                 "Cannot add a key: Houdini is not available and no frame was "

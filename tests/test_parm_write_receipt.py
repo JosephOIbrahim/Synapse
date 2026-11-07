@@ -750,7 +750,8 @@ def test_key_at_frame_reads_back_at_the_declared_frame(monkeypatch):
     assert readback["frame"] == 12
     assert readback["domain"] == "numeric-at-frame"
     assert readback["key_present"] is True
-    assert readback["observed"] == 7.0
+    # The at-frame value is its own field; the legacy `observed` is eval().
+    assert readback["observed_at_frame"] == 7.0
     assert readback["state"] == "match"
 
 
@@ -892,6 +893,84 @@ def test_queued_raw_authored_expect_is_honoured():
                           expect={"raw_authored": "$HIP/other.exr"})
     assert caught.value.receipt["error"]["code"] == "parm.precondition_failed"
     assert stuck.writes == []
+
+
+# ---------------------------------------------------------------------------
+# 14. A queued key write never lands at the playhead (round 2.5, blocker 2)
+# ---------------------------------------------------------------------------
+
+def _no_playhead():
+    raise AssertionError(
+        "hou.frame() must not stand in for a queued write's declared frame")
+
+
+def test_queued_key_write_without_a_declared_frame_refuses(monkeypatch):
+    """Probe: queued=True, mode=key_at_frame, no frame, playhead 5 -> keys [1,5]."""
+    from synapse.server import handlers
+
+    parm = _Parm(0.0, keys=[(1.0, 0.0)], frame=5.0)
+    _install_fake_hou(monkeypatch, parm, frame=5.0)
+    monkeypatch.setattr(parm_authored, "hou",
+                        SimpleNamespace(Keyframe=_Key, frame=_no_playhead))
+
+    with pytest.raises(ParmWriteRefused) as caught:
+        handlers.SynapseHandler._handle_set_parm(
+            None, {"node": "/obj/geo1", "parm": "tx", "value": 7.0,
+                   "mode": "key_at_frame", "queued": True,
+                   "expect": {"value": 0.0}})
+
+    assert caught.value.receipt["error"]["code"] == "parm.frame_unknown"
+    assert caught.value.receipt["write"] == "not_attempted"
+    assert [key.frame() for key in parm.keyframes()] == [1.0]
+    assert parm.writes == []
+
+
+def test_queued_key_write_with_a_declared_frame_lands_there(monkeypatch):
+    from synapse.server import handlers
+
+    parm = _Parm(0.0, keys=[(1.0, 0.0)], frame=5.0)
+    _install_fake_hou(monkeypatch, parm, frame=5.0)
+    monkeypatch.setattr(parm_authored, "hou",
+                        SimpleNamespace(Keyframe=_Key, frame=_no_playhead))
+
+    out = handlers.SynapseHandler._handle_set_parm(
+        None, {"node": "/obj/geo1", "parm": "tx", "value": 7.0,
+               "mode": "key_at_frame", "frame": 12, "queued": True,
+               "expect": {"value": 0.0}})
+
+    assert [key.frame() for key in parm.keyframes()] == [1.0, 12.0]
+    assert out["receipt"]["request"]["frame"] == 12
+    assert out["receipt"]["readback"]["state"] == "match"
+
+
+# ---------------------------------------------------------------------------
+# 15. The legacy observed keeps its published domain (round 2.5, blocker 3)
+# ---------------------------------------------------------------------------
+
+def test_key_at_frame_keeps_the_legacy_observed_at_the_playhead(monkeypatch):
+    """Probe: frame=12 on a playhead of 5 reported observed 7.0 while eval() 0.0.
+
+    ``observed`` is the legacy field every read returns, and the node's why
+    promises it stays ``eval()``. The at-frame value belongs in its own field.
+    """
+    from synapse.server import handlers
+
+    parm = _Parm(0.0, keys=[(1.0, 0.0)], frame=5.0)  # playhead 5
+    _install_fake_hou(monkeypatch, parm, frame=5.0)
+    monkeypatch.setattr(parm_authored, "hou",
+                        SimpleNamespace(Keyframe=_Key, frame=lambda: 5.0))
+
+    out = handlers.SynapseHandler._handle_set_parm(
+        None, {"node": "/obj/geo1", "parm": "tx", "value": 7.0,
+               "mode": "key_at_frame", "frame": 12})
+
+    readback = out["receipt"]["readback"]
+    assert parm.eval() == 0.0
+    assert out["observed"] == 0.0                 # legacy: eval() at the playhead
+    assert readback["observed"] == 0.0
+    assert readback["observed_at_frame"] == 7.0   # what the write landed
+    assert readback["evaluated_equal"] is False   # the old comparison, from eval()
+    assert readback["state"] == "match"
 
 
 # ---------------------------------------------------------------------------

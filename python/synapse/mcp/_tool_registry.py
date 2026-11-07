@@ -249,8 +249,10 @@ TOOL_DEFS: list[tuple] = [
              "type": "number",
              "description": "Frame the write is declared to happen at. "
                             "key_at_frame keys this frame and reads it back "
-                            "there; a queued write must declare it or an "
-                            "expected authored state.",
+                            "there. A queued key_at_frame write MUST declare "
+                            "it: the playhead is not evidence of the frame the "
+                            "write was planned at, so it is refused without "
+                            "one (parm.frame_unknown).",
          },
          "queued": {
              "type": "boolean",
