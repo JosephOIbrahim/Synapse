@@ -10,78 +10,77 @@
   "NR-IMAGE-CONTRACT",
   "NR-WORKER-SUPERVISED",
   "NR-RECOVERY-RECEIPTS",
+  "NR-PACKAGE-PAIR",
   "NR-LICENSE-GATE",
   "NR-FOLLOW-ON"
  ],
- "needs_joe": [
-  "NR-PACKAGE-PAIR"
- ],
- "reason": "fallback: Jev chose NR-PLAN-TRUTH @ 0.43, below the confidence gate 0.6",
+ "needs_joe": [],
+ "reason": "fallback: Jev chose NR-PLAN-TRUTH @ 0.44, below the confidence gate 0.6",
  "per_node": {
   "NR-PLAN-TRUTH": {
    "lands": 0.89,
-   "value": 2.91,
+   "value": 2.88,
    "joe_decides": 0.15
   },
   "NR-WRITE-RECEIPT": {
-   "lands": 0.88,
-   "value": 2.72,
-   "joe_decides": 0.16
+   "lands": 0.89,
+   "value": 2.71,
+   "joe_decides": 0.18
   },
   "NR-GPU-FEASIBILITY": {
-   "lands": 0.37,
-   "value": 2.83,
+   "lands": 0.28,
+   "value": 2.85,
    "joe_decides": 0.17
   },
   "NR-GPU-QUALIFICATION": {
-   "lands": 0.1,
+   "lands": 0.08,
    "value": 2.88,
-   "joe_decides": 0.16
+   "joe_decides": 0.17
   },
   "NR-IMAGE-CONTRACT": {
    "lands": 0.14,
    "value": 2.59,
-   "joe_decides": 0.2
+   "joe_decides": 0.24
   },
   "NR-WORKER-SUPERVISED": {
    "lands": 0.09,
    "value": 2.6,
-   "joe_decides": 0.27
+   "joe_decides": 0.28
   },
   "NR-RECOVERY-RECEIPTS": {
-   "lands": 0.14,
+   "lands": 0.15,
    "value": 2.79,
-   "joe_decides": 0.19
+   "joe_decides": 0.17
   },
   "NR-PACKAGE-PAIR": {
    "lands": 0.08,
-   "value": 2.73,
-   "joe_decides": 0.5
+   "value": 2.72,
+   "joe_decides": 0.43
   },
   "NR-LICENSE-GATE": {
-   "lands": 0.13,
+   "lands": 0.11,
    "value": 2.55,
-   "joe_decides": 0.14
+   "joe_decides": 0.13
   },
   "NR-FOLLOW-ON": {
    "lands": 0.08,
-   "value": 0.34,
-   "joe_decides": 0.3
+   "value": 0.41,
+   "joe_decides": 0.29
   }
  },
  "jev": {
   "choice": "NR-PLAN-TRUTH",
-  "confidence": 0.43,
+  "confidence": 0.44,
   "probabilities": {
-   "NR-PLAN-TRUTH": 0.49,
+   "NR-PLAN-TRUTH": 0.5,
    "NR-WRITE-RECEIPT": 0.05,
-   "NR-GPU-FEASIBILITY": 0.35,
+   "NR-GPU-FEASIBILITY": 0.33,
    "NR-GPU-QUALIFICATION": 0.0,
    "NR-IMAGE-CONTRACT": 0.0,
    "NR-WORKER-SUPERVISED": 0.0,
    "NR-RECOVERY-RECEIPTS": 0.0,
    "NR-PACKAGE-PAIR": 0.0,
-   "NR-LICENSE-GATE": 0.11,
+   "NR-LICENSE-GATE": 0.12,
    "NR-FOLLOW-ON": 0.0
   }
  },
@@ -93,6 +92,6 @@
   "input_sha256": "0c4e52dae81df1aa0783a0b813caf56390a123ecd56aa9989e358176d29539e3",
   "mode": "graph",
   "wave": "next-release",
-  "generated_utc": "2026-11-06T23:27:02+00:00"
+  "generated_utc": "2026-11-07T01:58:14+00:00"
  }
 }
