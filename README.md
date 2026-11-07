@@ -285,11 +285,11 @@ Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution brid
 
 CI runs the suite in six pytest invocations: `tests/`, `harness/jev/tests`, `harness/harness2/tests`, `harness/attest/tests`, `harness/notes/release-v5.97.7/tests` and `harness/probes/tests`, plus one targeted re-check of the Moneta-backed memory tests. The first four are also in `testpaths` in [`pyproject.toml`](pyproject.toml), so a bare `pytest` run collects them. See [the workflow](.github/workflows/ci.yml).
 
-**CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so the **186** tests under `tests/` that need one are deselected there and never execute — 12,641 of the 12,827 collected in that directory run. Those tests are measured by hand on a maintainer's machine, not by CI.
+**CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so the **186** tests under `tests/` that need one are deselected there and never execute — 12,647 of the 12,833 collected in that directory run. Those tests are measured by hand on a maintainer's machine, not by CI.
 
-CI runs stock Python 3.11 and 3.14 on Linux, macOS and Windows. On the release host the stock suite is **{{README_STOCK}}** ([the release's evidence](docs/releases/v5.98.0.md#tests)).
+CI runs stock Python 3.11 and 3.14 on Linux, macOS and Windows. On the release host the stock suite is **12,366 passed, 474 skipped, 11 xfailed, 0 failed** ([the release's evidence](docs/releases/v5.98.0.md#tests)).
 
-**The suites that need Houdini are not green on the release host.** {{README_SEAT}} **Those counts move between runs** — the same unchanged tree gives different numbers on different days, because the host stalls under load and the panel-timing tests answer to that. The measured numbers, the commit each was measured on, and the load the box was under are in [the release's evidence](docs/releases/v5.98.0.md#tests).
+**The suites that need Houdini are not green on the release host.** Under hython 22.0.400 the release tree gives **115 and 118 failed** in two runs, and the v5.97.7 tree gives **116 and 114** on the same host; the one failure only the release tree has is a new test that cannot import the stdio server under Houdini's interpreter. The seat runs do not exercise Moneta. **Those counts move between runs** — the same unchanged tree gives different numbers on different days, because the host stalls under load and the panel-timing tests answer to that. The measured numbers, the commit each was measured on, and the load the box was under are in [the release's evidence](docs/releases/v5.98.0.md#tests).
 
 The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.98.0.md) before relying on it.
 
