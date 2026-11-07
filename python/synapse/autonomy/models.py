@@ -162,8 +162,16 @@ class VerificationResult:
 
 @dataclass
 class RenderReport:
-    """Final report from an autonomous render execution."""
+    """Final report from an autonomous render execution.
+
+    ``plan`` is the artist's request exactly as the planner declared it and is
+    never rewritten by execution. ``executed`` is the execution copy: the
+    validation results and each step's status/result from the attempt (all
+    pending when the attempt stopped before dispatch). Ask ``plan`` what was
+    requested; ask ``executed`` what happened.
+    """
     plan: RenderPlan
+    executed: Optional[RenderPlan] = None
     evaluation: Optional[SequenceEvaluation] = None
     prediction: Optional[RenderPrediction] = None
     verification: Optional[VerificationResult] = None

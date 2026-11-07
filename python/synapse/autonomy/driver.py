@@ -198,6 +198,7 @@ class AutonomousDriver:
             )
             return RenderReport(
                 plan=original_plan,
+                executed=plan,
                 decisions=list(self._decisions),
                 iterations=0,
                 total_time_seconds=time.monotonic() - start_time,
@@ -235,7 +236,8 @@ class AutonomousDriver:
                     gate=plan.gate_level,
                 )
                 return RenderReport(
-                    plan=plan,
+                    plan=original_plan,
+                    executed=plan,
                     decisions=list(self._decisions),
                     iterations=0,
                     total_time_seconds=time.monotonic() - start_time,
@@ -285,7 +287,8 @@ class AutonomousDriver:
                     gate=GateLevel.INFORM,
                 )
                 return RenderReport(
-                    plan=plan,
+                    plan=original_plan,
+                    executed=plan,
                     decisions=list(self._decisions),
                     iterations=iteration,
                     total_time_seconds=time.monotonic() - start_time,
@@ -448,9 +451,12 @@ class AutonomousDriver:
         # Step 7: Compile report
         # The report carries the artist's plan. A retry plan is an execution
         # detail: a consumer recomputing the product set from report.plan
-        # must not see the last retry's subset.
+        # must not see the last retry's subset. What actually ran -- the
+        # validation results and each step's status/result -- rides on
+        # ``executed`` instead, so neither half is discarded.
         report = RenderReport(
             plan=original_plan,
+            executed=plan,
             evaluation=evaluation,
             prediction=prediction if self._predictor is not None else None,
             verification=verification if self._predictor is not None else None,
@@ -543,6 +549,7 @@ class AutonomousDriver:
         return replace(
             plan,
             steps=[replace(step) for step in plan.steps],
+            validation_checks=list(plan.validation_checks),
         )
 
     def _render_step(self, plan: RenderPlan):

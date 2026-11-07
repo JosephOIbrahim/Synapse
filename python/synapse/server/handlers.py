@@ -1979,8 +1979,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         Best-effort provenance writer for the live autonomous-render path. Closes
         the lifecycle a prior ``create_task(...)`` opened: sets the task status to
         ``completed``/``failed`` and writes a verification_log entry derived from the
-        unconditionally-populated report fields (``plan.validation_checks`` and
-        ``evaluation``).
+        unconditionally-populated report fields (``executed.validation_checks`` and
+        ``evaluation``). The artist's ``plan`` keeps the planner's declared checks
+        and must not be read as evidence of what ran.
 
         Note: ``before_state``/``after_state`` here carry **render-quality**
         semantics (pre-flight check summary -> sequence-evaluation score), NOT the
@@ -2005,8 +2006,15 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
             # Verification entry from render-quality fields (always populated).
             try:
-                plan = getattr(report, "plan", None)
-                checks_list = list(getattr(plan, "validation_checks", []) or [])
+                # The executed plan carries the checks that actually ran.
+                # ``report.plan`` is the artist's immutable request and holds
+                # the planner's declared (never-executed) checks. Fall back to
+                # ``plan`` only for report shapes that predate ``executed``.
+                executed = (
+                    getattr(report, "executed", None)
+                    or getattr(report, "plan", None)
+                )
+                checks_list = list(getattr(executed, "validation_checks", []) or [])
                 # CheckSeverity.HARD_FAIL.value == "hard_fail" (autonomy/models.py:38)
                 # is the live blocking-check value — match it exactly, not a guess.
                 hard_fail = sum(

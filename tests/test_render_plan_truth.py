@@ -269,6 +269,221 @@ async def test_original_plan_is_not_mutated():
     )
 
 
+@pytest.mark.asyncio
+async def test_report_carries_the_declared_plan_and_the_executed_state():
+    """The report must separate what was asked for from what actually ran.
+
+    Fails today: ``report.plan`` is the artist's unexecuted plan, and the
+    validation results and step status/result that execution wrote live only
+    on the discarded execution copy. A consumer reading ``report.plan`` sees
+    the planner's declared checks (``passed=False``) and no proof a step ran.
+    """
+    handler = _ScriptedRenderHandler(failures={1: {3}})
+    driver = _make_driver(handler)
+
+    report = await driver.execute("re-render frames 1, 3")
+
+    # The artist's plan keeps the planner's declarations, untouched.
+    declared = {c.name: c for c in report.plan.validation_checks}
+    assert len(declared) == 8
+    assert all(c.passed is False for c in report.plan.validation_checks)
+
+    # The executed state carries the results of the checks that actually ran.
+    executed = {c.name: c for c in report.executed.validation_checks}
+    assert set(executed) == set(declared)
+    assert executed["camera"].passed is True
+    assert executed["camera"].message, "an executed check carries the run's message"
+    assert executed["output_path"].passed is False  # no output path in the fake scene
+
+    assert report.executed is not report.plan
+
+
+@pytest.mark.asyncio
+async def test_executed_state_reports_the_step_statuses_that_ran():
+    """The executed copy must show completed steps, not the planner's pending ones.
+
+    Fails today: there is no executed state on the report, so a consumer reads
+    the artist's plan -- every step still ``PENDING`` as if nothing had run.
+    """
+    handler = _ScriptedRenderHandler(failures={1: {3}})
+    driver = _make_driver(handler)
+
+    report = await driver.execute("re-render frames 1, 3")
+
+    assert report.executed.steps
+    assert all(
+        step.status != StepStatus.PENDING for step in report.executed.steps
+    ), "executed steps must report what happened, not what was planned"
+
+    render_step = report.executed.steps[0]
+    assert render_step.status == StepStatus.COMPLETED
+    assert render_step.result is not None
+    assert render_step.result["frame_results"], "the step result carries the render"
+
+    # The artist's plan still shows nothing ran.
+    assert all(step.status == StepStatus.PENDING for step in report.plan.steps)
+
+
+@pytest.mark.asyncio
+async def test_executed_state_reports_a_skipped_step_after_cancel():
+    """A cancelled run leaves completed/skipped steps in the executed copy.
+
+    Fails today: with no executed state, a cancelled report shows every step
+    pending, so a consumer cannot tell a cancelled render from an unstarted one.
+    """
+
+    class _TwoStepPlanner(RenderPlanner):
+        def _resolve_steps(self, intent, parsed, scene_context):
+            return [
+                RenderStep(
+                    handler="set_render_settings",
+                    params={"action": "get"},
+                    description="Read settings",
+                ),
+                RenderStep(
+                    handler="render_sequence",
+                    params={"start_frame": 1, "end_frame": 1, "frames": [1]},
+                    description="Render frame 1",
+                ),
+            ]
+
+    class _CancellingHandler:
+        def __init__(self):
+            self.driver = None
+
+        async def call(self, name, params):
+            if name == "get_stage_info":
+                return {"cameras": ["/c"], "renderable_prims": 1}
+            if name == "set_render_settings":
+                self.driver.emergency_stop()
+            return {}
+
+    from synapse.autonomy.validator import PreFlightValidator
+
+    handler = _CancellingHandler()
+    driver = AutonomousDriver(
+        planner=_TwoStepPlanner(),
+        validator=PreFlightValidator(handler),
+        evaluator=_stub_evaluator(),
+        handler_interface=handler,
+        max_iterations=3,
+    )
+    handler.driver = driver
+
+    report = await driver.execute("render frame 1")
+
+    assert report.stop_reason == "cancelled"
+    statuses = [step.status for step in report.executed.steps]
+    assert statuses == [StepStatus.COMPLETED, StepStatus.SKIPPED]
+
+
+@pytest.mark.asyncio
+async def test_original_plan_is_unchanged_after_two_attempts():
+    """Two attempts must leave the artist's plan byte-for-byte as it was planned.
+
+    Stronger than the identity check above: it snapshots every step's params,
+    status and result plus every check's verdict at plan time, then proves a
+    full retry cycle wrote none of it.
+    """
+
+    class _SnapshottingPlanner(RenderPlanner):
+        def __init__(self):
+            super().__init__()
+            self.captured = None
+            self.snapshot = None
+
+        def plan(self, intent, scene_context=None):
+            self.captured = super().plan(intent, scene_context)
+            self.snapshot = self._snapshot(self.captured)
+            return self.captured
+
+        @staticmethod
+        def _snapshot(plan):
+            return (
+                [
+                    (dict(step.params), step.status, step.result, step.error)
+                    for step in plan.steps
+                ],
+                [
+                    (check.name, check.passed, check.message)
+                    for check in plan.validation_checks
+                ],
+                plan.estimated_frames,
+                plan.intent,
+            )
+
+    planner = _SnapshottingPlanner()
+    handler = _ScriptedRenderHandler(failures={1: {3}})
+    driver = _make_driver(handler, planner=planner)
+
+    report = await driver.execute("re-render frames 1, 3")
+
+    assert report.iterations == 2, "the first attempt must fail and the second pass"
+    assert report.plan is planner.captured
+    assert _SnapshottingPlanner._snapshot(planner.captured) == planner.snapshot
+
+
+def test_record_autonomy_task_reads_the_executed_state():
+    """The agent.usd receipt must describe what ran, not the planner's wish.
+
+    Fails today: ``_record_autonomy_task`` reads ``report.plan``, which after
+    the immutability fix carries the planner's declared checks
+    (``passed=False``) -- so every autonomy task records an empty verification.
+    """
+    from synapse.autonomy.models import (
+        CheckSeverity,
+        PreFlightCheck,
+        RenderReport,
+    )
+    from synapse.memory import agent_state
+
+    declared = RenderPlan(
+        intent="render frame 1",
+        validation_checks=[
+            PreFlightCheck(
+                name="camera",
+                description="Verify a render camera exists",
+                severity=CheckSeverity.HARD_FAIL,
+            )
+        ],
+    )
+    executed = RenderPlan(
+        intent="render frame 1",
+        validation_checks=[
+            PreFlightCheck(
+                name="camera",
+                description="Verify a render camera exists",
+                severity=CheckSeverity.HARD_FAIL,
+                passed=True,
+                message="Found 1 camera(s): /c",
+            )
+        ],
+    )
+    report = RenderReport(plan=declared, executed=executed, success=True)
+
+    captured = {}
+
+    def _update_status(agent_usd, task_id, status):
+        captured["status"] = status
+
+    def _write_verification(agent_usd, task_id, before, after, checks, result):
+        captured.update(before=before, after=after, checks=checks, result=result)
+
+    from unittest.mock import patch
+
+    with patch.object(agent_state, "update_task_status", _update_status), \
+         patch.object(agent_state, "write_verification", _write_verification):
+        from synapse.server.handlers import SynapseHandler
+        SynapseHandler._record_autonomy_task("/tmp/agent.usd", "task-1", report)
+
+    assert captured["checks"] == ["camera:pass"], (
+        "the receipt must read the executed checks, not the planner's "
+        "unexecuted declarations"
+    )
+    assert captured["before"] == "checks=1 hard_fail=0"
+    assert captured["result"] == "pass"
+
+
 def test_failed_retry_does_not_replace_known_good():
     """A failed retry row must not overwrite an accepted product.
 
