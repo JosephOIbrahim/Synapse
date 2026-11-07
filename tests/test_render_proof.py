@@ -283,7 +283,8 @@ def _progressive_handler(monkeypatch, render_result, seen):
 
     handler = handlers_mod.SynapseHandler()
     handler._handle_render_settings = lambda payload: {}
-    handler._handle_render = lambda payload: render_result
+    handler._handle_render = (
+        render_result if callable(render_result) else (lambda payload: render_result))
     handler._handle_validate_frame = lambda payload: (
         seen.append(payload) or {"valid": True})
     return handler
@@ -306,3 +307,88 @@ def test_a_progressive_pass_validates_the_product(monkeypatch):
     assert out["passes"][0]["status"] == "passed"
     assert seen and seen[0]["image_path"] == "/tmp/f.exr"
     assert out["final_image"] == "/tmp/f.exr"
+
+
+def test_a_manifest_is_per_attempt(tmp_path):
+    """B writing its manifest must not change what A's receipt reads."""
+    from synapse.host import retina_manifest as rm
+    from synapse.panel.render_receipt import compute_receipt
+
+    product = tmp_path / "f.exr"
+    product.write_bytes(b"pixels")
+    path_a = rm.manifest_path_for(str(product), "attempt-A")
+    path_b = rm.manifest_path_for(str(product), "attempt-B")
+    assert path_a != path_b
+
+    Path(path_a).write_text(json.dumps({
+        "output_file": str(product), "render_nonce": "attempt-A",
+        "done_wired": True, "receipt_wired": True,
+    }), encoding="utf-8")
+    result = {"retina": {"manifest_path": path_a, "render_nonce": "attempt-A"}}
+
+    first = compute_receipt("houdini_render", result, now="2026-11-06T00:00:00Z")
+    assert first is not None
+
+    Path(path_b).write_text(json.dumps({
+        "output_file": str(product), "render_nonce": "attempt-B",
+    }), encoding="utf-8")
+    again = compute_receipt("houdini_render", result, now="2026-11-06T00:00:00Z")
+    assert again is not None and again["verdict"] == first["verdict"]
+
+
+def test_a_receipt_from_another_nonce_is_refused(tmp_path):
+    from synapse.host import retina_manifest as rm
+    from synapse.panel.render_receipt import compute_receipt
+
+    product = tmp_path / "f.exr"
+    product.write_bytes(b"pixels")
+    path_a = rm.manifest_path_for(str(product), "attempt-A")
+    Path(path_a).write_text(json.dumps({
+        "output_file": str(product), "render_nonce": "attempt-B",
+    }), encoding="utf-8")
+
+    result = {"retina": {"manifest_path": path_a, "render_nonce": "attempt-A"}}
+    assert compute_receipt("houdini_render", result, now="t") is None
+
+
+def test_a_refused_final_pass_fails_the_run(monkeypatch):
+    seen = []
+    calls = {"n": 0}
+
+    def render(payload):
+        calls["n"] += 1
+        if calls["n"] == 3:
+            return {"image_path": "x_glpreview.0001.jpg", "flipbook_fallback": True}
+        return {"image_path": f"/tmp/p{calls['n']}.preview.jpg",
+                "output_file": f"/tmp/p{calls['n']}.exr"}
+
+    handler = _progressive_handler(monkeypatch, render, seen)
+    out = handler._handle_render_progressively({"rop_path": "/stage/karma1"})
+
+    assert out["success"] is False
+    assert out["final_image"] is None
+    assert out["last_product"] == "/tmp/p2.exr"
+    assert [p["status"] for p in out["passes"]] == ["passed", "passed", "failed"]
+
+
+def test_a_final_pass_validation_failure_fails_the_run(monkeypatch):
+    seen = []
+    calls = {"n": 0}
+
+    def render(payload):
+        calls["n"] += 1
+        return {"image_path": f"/tmp/p{calls['n']}.preview.jpg",
+                "output_file": f"/tmp/p{calls['n']}.exr"}
+
+    def validate(payload):
+        seen.append(payload)
+        valid = len(seen) < 3
+        return {"valid": valid, "summary": "ok" if valid else "black frame"}
+
+    handler = _progressive_handler(monkeypatch, render, seen)
+    handler._handle_validate_frame = validate
+    out = handler._handle_render_progressively({"rop_path": "/stage/karma1"})
+
+    assert out["success"] is False
+    assert out["final_image"] is None
+    assert out["passes"][-1]["status"] == "failed"

@@ -2572,7 +2572,7 @@ class RenderHandlerMixin:
                         "summary": f"Couldn't run full validation: {val_exc}",
                         "oiio_available": False,
                     }
-                    final_image = image_path
+                    final_image = product_path
 
             except Exception as render_exc:
                 pass_result["status"] = "failed"
@@ -2585,12 +2585,20 @@ class RenderHandlerMixin:
 
             passes.append(pass_result)
 
+        # A final pass that was refused must not inherit the previous pass's
+        # product as the run's result (H3-2). Success requires every requested
+        # pass to have passed.
+        all_passed = (
+            len(passes) == len(pass_configs)
+            and all(p.get("status") == "passed" for p in passes)
+        )
         result = {
             "passes": passes,
-            "final_image": final_image,
+            "final_image": final_image if all_passed else None,
+            "last_product": final_image,
             "completed_passes": len(passes),
             "total_passes": len(pass_configs),
-            "success": final_image is not None and len(passes) == len(pass_configs),
+            "success": all_passed,
             "show_config": {"default_used": _defaults_used},
         }
         if use_presets:

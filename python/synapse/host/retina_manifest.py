@@ -191,7 +191,8 @@ def manifest_path_for(product_path: str, nonce: str = "") -> str:
             break
     else:
         stem = os.path.splitext(filename)[0] or filename
-    return os.path.join(directory, stem + MANIFEST_SUFFIX)
+    attempt = f".{nonce}" if nonce else ""
+    return os.path.join(directory, stem + attempt + MANIFEST_SUFFIX)
 
 
 # ---------------------------------------------------------------------------
