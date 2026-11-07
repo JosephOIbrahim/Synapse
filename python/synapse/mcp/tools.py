@@ -138,10 +138,17 @@ def dispatch_tool(handler, tool_name: str, arguments: dict) -> dict:
             return {"content": [{"type": "text", "text": text}]}
         else:
             error_text = response.error or "Unknown error"
-            return {
+            result = {
                 "content": [{"type": "text", "text": error_text}],
                 "isError": True,
             }
+            # A failing handler may carry a machine-readable receipt (the
+            # parm-write record is one). Keep it beside the human error; the
+            # text block stays the outcome line and callers that only read
+            # text are unaffected.
+            if isinstance(response.data, dict) and response.data:
+                result["structuredContent"] = response.data
+            return result
     except Exception as e:
         error_text = str(e)
         raise
