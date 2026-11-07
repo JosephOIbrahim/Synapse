@@ -1596,8 +1596,15 @@ class RenderHandlerMixin:
         """
         from .render_farm import RenderFarmOrchestrator, RenderCallbacks
 
-        start_frame = resolve_param(payload, "start_frame")
-        end_frame = resolve_param(payload, "end_frame")
+        explicit_frames = resolve_param(payload, "frames", required=False)
+        if explicit_frames is not None:
+            # An explicit frame list is authoritative: start/end are derived
+            # from it by the farm, so they stay optional here.
+            frame_range = None
+        else:
+            start_frame = resolve_param(payload, "start_frame")
+            end_frame = resolve_param(payload, "end_frame")
+            frame_range = (int(start_frame), int(end_frame))
         rop = resolve_param(payload, "rop", required=False)
         step = int(resolve_param_with_default(payload, "step", 1))
         auto_fix = resolve_param_with_default(payload, "auto_fix", True)
@@ -1695,12 +1702,16 @@ class RenderHandlerMixin:
         except Exception as e:
             logger.debug("Render-farm memory init failed: %s", e)
 
-        # Run the sequence (blocks until complete)
-        report = self._render_farm.render_sequence(
-            rop=rop or "",
-            frame_range=(int(start_frame), int(end_frame)),
-            step=step,
-        )
+        # Run the sequence (blocks until complete). The contiguous call is
+        # unchanged when no explicit frame list was named.
+        sequence_kwargs = {
+            "rop": rop or "",
+            "frame_range": frame_range,
+            "step": step,
+        }
+        if explicit_frames is not None:
+            sequence_kwargs["frames"] = explicit_frames
+        report = self._render_farm.render_sequence(**sequence_kwargs)
 
         return report.to_dict()
 

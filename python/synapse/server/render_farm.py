@@ -18,11 +18,12 @@ GPU/CPU Pipeline Overlap:
 """
 
 import logging
+import math
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, Future
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 from ..core.determinism import round_float
 from ..memory.models import MemoryType, MemoryQuery
@@ -43,6 +44,52 @@ from .render_notify import (
 )
 
 logger = logging.getLogger("synapse.render_farm")
+
+
+def _coerce_frame(frame) -> int:
+    """Int-coerce one entry, refusing anything that is not really a frame.
+
+    ``bool`` is an ``int`` subclass, so ``True`` would silently render frame 1
+    instead of being rejected. A non-finite float is not a frame number at all:
+    ``int(inf)`` raises OverflowError (which the caller's ValueError contract
+    does not cover) and ``int(nan)`` raises a ValueError whose message never
+    names frames. Both become the documented ValueError here, before any state
+    is touched.
+    """
+    if isinstance(frame, bool):
+        raise ValueError("a boolean is not a frame number")
+    if isinstance(frame, float) and not math.isfinite(frame):
+        raise ValueError(f"{frame!r} is not a finite frame number")
+    try:
+        return int(frame)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(str(exc)) from exc
+    except OverflowError as exc:
+        # A non-float numeric that cannot fit an int (Decimal('Infinity'),
+        # a custom __int__, an out-of-range big value) is equally non-integer.
+        raise ValueError(str(exc)) from exc
+
+
+def _normalize_explicit_frames(frames: Sequence[int]) -> List[int]:
+    """Dedupe, sort and int-coerce an explicit frame list.
+
+    Raises ValueError on an empty list or a non-integer entry -- including a
+    bool (``True`` would silently mean frame 1) and a non-finite float
+    (``int(inf)`` raises OverflowError, and ``inf`` is not a frame number).
+    An explicit list is a promise about exactly which frames render, so it must
+    never fall back to a contiguous range.
+    """
+    if isinstance(frames, (str, bytes)):
+        raise ValueError("frames must be a list of integers, not a string")
+    try:
+        ordered = sorted({_coerce_frame(frame) for frame in frames})
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"frames must contain integers: {exc}") from exc
+    if not ordered:
+        raise ValueError(
+            "frames is empty; omit it to render a contiguous range instead"
+        )
+    return ordered
 
 
 # =========================================================================
@@ -448,24 +495,38 @@ class RenderFarmOrchestrator:
     def render_sequence(
         self,
         rop: str,
-        frame_range: Tuple[int, int],
+        frame_range: Optional[Tuple[int, int]] = None,
         step: int = 1,
+        frames: Optional[Sequence[int]] = None,
     ) -> BatchReport:
-        """Render a frame range with per-frame validation and auto-fix.
+        """Render frames with per-frame validation and auto-fix.
 
         Args:
             rop: ROP node path (auto-discovers if empty).
-            frame_range: (start_frame, end_frame) inclusive.
-            step: Frame step (default: 1).
+            frame_range: (start_frame, end_frame) inclusive. Required unless
+                ``frames`` names an explicit list.
+            step: Frame step (default: 1). Ignored when ``frames`` is given.
+            frames: Explicit frame list. When present it is authoritative:
+                entries are int-coerced, deduped and sorted, and exactly those
+                frames render. An empty list is refused.
 
         Returns:
             BatchReport with per-frame results and summary.
         """
+        if frames is not None:
+            frames = _normalize_explicit_frames(frames)
+            start_frame, end_frame = frames[0], frames[-1]
+        else:
+            if frame_range is None:
+                raise ValueError(
+                    "frame_range is required when frames is not given"
+                )
+            start_frame, end_frame = frame_range
+            frames = list(range(start_frame, end_frame + 1, step))
+        total = len(frames)
+
         self._running = True
         self._cancelled = False
-        start_frame, end_frame = frame_range
-        frames = list(range(start_frame, end_frame + 1, step))
-        total = len(frames)
 
         report = BatchReport(
             start_frame=start_frame,
