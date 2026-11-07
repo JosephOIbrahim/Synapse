@@ -249,6 +249,23 @@ def _plan_write(parm, mode, frame=None):
     if mode == "replace":
         return parm, "replace"
     if mode == "key_at_frame":
+        # A key writes a number onto an animation channel. A text parameter
+        # has no numeric domain, so accepting one here only produces a
+        # numeric readback mismatch after the setter — a write that "ran" but
+        # could never have landed. Refuse before the first setter.
+        try:
+            held = parm.eval()  # noqa: S307
+        except _READ_ERRORS as exc:
+            raise ParmWriteRefused(
+                f"Cannot read {_label(parm)} to decide its key domain: {exc}. "
+                "Nothing was written.",
+                code="parm.inspection_unknown")
+        if isinstance(held, str):
+            raise ParmWriteRefused(
+                f"{_label(parm)} is a text parameter. key_at_frame writes "
+                "numeric keys; nothing was written. Set the text value "
+                "directly, or key a numeric parameter.",
+                code="parm.key_domain")
         if hou is None or not hasattr(hou, "Keyframe"):
             raise ParmWriteRefused(
                 f"Cannot add a key to {_label(parm)}: Houdini is not "
@@ -614,6 +631,56 @@ def _readback(targets, values) -> Dict[str, Any]:
     }
 
 
+def _readback_key(targets, values, frame) -> Dict[str, Any]:
+    """What the targets hold at the declared frame, and whether a key is there.
+
+    ``eval()`` answers for the playhead, so a key written at frame 12 while the
+    artist sits on frame 5 would be reported against the wrong frame (or, on a
+    parm whose only key is elsewhere, as an unrelated value). ``evalAtFrame``
+    is in the introspected H22 symbol table for ``hou.Parm``; a stand-in
+    without it falls back to ``eval()`` rather than failing the write.
+    """
+    requested = list(values)
+    observed: List[Any] = []
+    present: List[bool] = []
+    try:
+        for target, _ in targets:
+            try:
+                held = target.evalAtFrame(frame)
+            except AttributeError:
+                held = target.eval()  # noqa: S307
+            observed.append(held)
+            keys = target.keyframes()
+            present.append(any(_close(key.frame(), frame)
+                               for key in (keys or ())))
+    except _READ_ERRORS as exc:
+        return {
+            "state": "unknown",
+            "domain": "numeric-at-frame",
+            "frame": frame,
+            "key_present": None,
+            "requested": _values(requested),
+            "observed": None,
+            "raw_authored": None,
+            "evaluated_equal": None,
+            "error": str(exc),
+        }
+
+    match = [_close(value, held) and has_key
+             for value, held, has_key in zip(requested, observed, present)]
+    return {
+        "state": "match" if all(match) else "mismatch",
+        "domain": "numeric-at-frame",
+        "frame": frame,
+        "key_present": _values(present),
+        "requested": _values(requested),
+        "observed": _values(observed),
+        "raw_authored": None,
+        "evaluated_equal": _values(
+            [_close(value, held) for value, held in zip(requested, observed)]),
+    }
+
+
 def _check_expect(targets, expect) -> None:
     """Revalidate a queued write's precondition on the main thread, pre-write."""
     if expect is None:
@@ -664,17 +731,22 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
     original exception is re-raised unchanged.
     """
     if mode not in WRITE_MODES:
-        raise ValueError(
-            f"Unknown mode {mode!r}. Use one of: {', '.join(WRITE_MODES)}.")
+        raise write_refusal(
+            f"Unknown mode {mode!r}. Use one of: {', '.join(WRITE_MODES)}. "
+            "Nothing was written.",
+            code="parm.mode_invalid", request=request, mode=mode,
+            values=values, frame=frame, queued=queued)
 
     parms = list(parms)
     values = list(values)
     if len(values) != len(parms):
         # A tuple of 3 refuses [7, 8] with InvalidSize; refuse it here, before
         # anything is written, rather than letting zip truncate.
-        raise ValueError(
+        raise write_refusal(
             f"{len(values)} value(s) for {len(parms)} parameter(s). Nothing "
-            "was written.")
+            "was written.",
+            code="parm.arity_mismatch", request=request, mode=mode,
+            values=values, frame=frame, queued=queued)
 
     # A declared frame is the frame. Only an immediate legacy call with none
     # reads the playhead, and the frame it used is reported.
@@ -763,8 +835,10 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         ))
         raise
 
+    key_write = any(action == "key_at_frame" for _, action in targets)
     try:
-        readback = _readback(targets, values)
+        readback = (_readback_key(targets, values, declared_frame)
+                    if key_write else _readback(targets, values))
     except Exception as exc:
         # A setter may have landed; without a readback it is applied but
         # unverified. Do not auto-restore an ambiguous result.

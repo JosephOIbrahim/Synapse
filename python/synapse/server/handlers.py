@@ -1254,8 +1254,18 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         # value the scene does not hold (H1-1).
         mode = payload.get("mode", "refuse")
         if mode not in WRITE_MODES:
-            raise ValueError(
-                f"Unknown mode {mode!r}. Use one of: {', '.join(WRITE_MODES)}.")
+            # A refusal is still a write outcome: it carries the same receipt
+            # shape as a write that reached Houdini and failed, with a stable
+            # code (see author_parm_write's own mode guard).
+            raise write_refusal(
+                f"Unknown mode {mode!r}. Use one of: {', '.join(WRITE_MODES)}. "
+                "Nothing was written.",
+                code="parm.mode_invalid",
+                request={"request_id": payload.get("request_id"),
+                         "node": node_path, "parm": parm_name,
+                         "expected_session": getattr(self, "_session_id", None)},
+                mode=mode, values=[value], frame=payload.get("frame"),
+                queued=bool(payload.get("queued")))
 
         # Preflight the optional precondition before the main-thread hop, so an
         # unknown or malformed one refuses with zero setters and zero Houdini

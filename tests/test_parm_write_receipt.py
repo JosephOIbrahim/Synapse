@@ -124,6 +124,14 @@ class _Parm:
                 return key.value()
         return self._keys[0].value()
 
+    def evalAtFrame(self, frame):
+        if not self._keys:
+            return self._value
+        for key in self._keys:
+            if key.frame() == frame:
+                return key.value()
+        return self._keys[0].value()
+
     def unexpandedString(self):
         raise _FAILED("Only string parms have unexpanded strings")
 
@@ -680,4 +688,110 @@ def test_queued_write_with_frame_but_no_expect_refuses(monkeypatch):
 
     assert caught.value.receipt["error"]["code"] == "parm.precondition_missing"
     assert caught.value.receipt["write"] == "not_attempted"
+    assert parm.writes == []
+
+
+# ---------------------------------------------------------------------------
+# 11. key_at_frame's domain and readback (round two, item 4)
+# ---------------------------------------------------------------------------
+
+class _KeyableStringParm(_StringParm):
+    """A text parm with a key setter, so a stray key write is observable."""
+
+    def __init__(self, name="picture"):
+        super().__init__(name=name)
+        self.key_writes = []
+
+    def setKeyframe(self, key):
+        self.key_writes.append(key)
+
+    def evalAtFrame(self, frame):
+        return self._value
+
+
+def test_key_at_frame_refuses_a_text_parameter(monkeypatch):
+    """A numeric key domain is refused before the first setter."""
+    from synapse.server import handlers
+
+    parm = _KeyableStringParm()
+    _install_fake_hou(monkeypatch, parm)
+    monkeypatch.setattr(parm_authored, "hou",
+                        SimpleNamespace(Keyframe=_Key, frame=lambda: 1.0))
+
+    with pytest.raises(ParmWriteRefused) as caught:
+        handlers.SynapseHandler._handle_set_parm(
+            None, {"node": "/stage/lookdev/preview_settings",
+                   "parm": "picture", "value": 1.0,
+                   "mode": "key_at_frame", "frame": 1})
+
+    assert caught.value.receipt["error"]["code"] == "parm.key_domain"
+    assert caught.value.receipt["write"] == "not_attempted"
+    assert caught.value.receipt["readback"]["state"] == "not_attempted"
+    assert parm.key_writes == []
+    assert parm.writes == []
+
+
+def test_key_at_frame_reads_back_at_the_declared_frame(monkeypatch):
+    """The receipt proves the key at the declared frame, not the playhead."""
+    from synapse.server import handlers
+
+    parm = _Parm(0.0, keys=[(1.0, 0.0)], frame=1.0)
+    _install_fake_hou(monkeypatch, parm, frame=5.0)
+    monkeypatch.setattr(parm_authored, "hou",
+                        SimpleNamespace(Keyframe=_Key, frame=lambda: 5.0))
+
+    out = handlers.SynapseHandler._handle_set_parm(
+        None, {"node": "/obj/geo1", "parm": "tx", "value": 7.0,
+               "mode": "key_at_frame", "frame": 12})
+
+    readback = out["receipt"]["readback"]
+    assert readback["frame"] == 12
+    assert readback["domain"] == "numeric-at-frame"
+    assert readback["key_present"] is True
+    assert readback["observed"] == 7.0
+    assert readback["state"] == "match"
+
+
+# ---------------------------------------------------------------------------
+# 12. Refusals carry a receipt (round two, item 5)
+# ---------------------------------------------------------------------------
+
+def test_mode_and_arity_refusals_carry_a_receipt():
+    parm = _Parm(0.0)
+
+    with pytest.raises(ParmWriteRefused) as mode_exc:
+        author_parm_write([parm], [1.0], mode="bogus", request={"request_id": "r"})
+    assert mode_exc.value.receipt["error"]["code"] == "parm.mode_invalid"
+    assert mode_exc.value.receipt["write"] == "not_attempted"
+    assert parm.writes == []
+
+    with pytest.raises(ParmWriteRefused) as arity_exc:
+        author_parm_write([parm], [1.0, 2.0])
+    assert arity_exc.value.receipt["error"]["code"] == "parm.arity_mismatch"
+    assert arity_exc.value.receipt["write"] == "not_attempted"
+    assert parm.writes == []
+
+
+def test_handler_mode_refusal_carries_a_receipt(monkeypatch):
+    from synapse.core.protocol import SynapseCommand
+    from synapse.server import handlers
+
+    parm = _Parm(0.0)
+    _install_fake_hou(monkeypatch, parm)
+    monkeypatch.setattr(handlers._envelope, "envelope_active",
+                        lambda _cmd_type: False)
+
+    handler = handlers.SynapseHandler()
+    monkeypatch.setattr(handler._registry, "invoke",
+                        lambda cmd_type, payload, ctx=None:
+                        handler._handle_set_parm(payload))
+
+    response = handler.handle(SynapseCommand(
+        type="set_parm", id="req-12",
+        payload={"node": "/obj/geo1", "parm": "tx", "value": 1.0,
+                 "mode": "bogus"}))
+
+    assert response.success is False
+    assert response.data["receipt"]["error"]["code"] == "parm.mode_invalid"
+    assert response.data["receipt"]["write"] == "not_attempted"
     assert parm.writes == []
