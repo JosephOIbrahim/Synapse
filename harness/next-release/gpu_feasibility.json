@@ -7,10 +7,10 @@
     "gate": "joe",
     "effort": "L",
     "depends_on": [],
-    "predicate": "test -f harness/next-release/gpu_feasibility.json"
+    "predicate": "python -m pytest harness/next-release/gpu/test_probe_contract.py -q"
   },
   "generated_utc": "2026-11-07T02:24:22Z",
-  "updated_utc": "2026-11-07T13:06:56Z",
+  "updated_utc": "2026-11-07T13:32:04Z",
   "round_two_base_commit": "1e17e2ea",
   "base_commit": "3024f76bd3381005a2f1de2849ba995fbcac10f9",
   "branch": "nr/gpu-feasibility",
@@ -136,7 +136,7 @@
     "absent": {
       "opencv_sources": "C:/ocv does not exist; no *opencv* directory under the worktree",
       "worker_venv": "retina/.venv does not exist",
-      "gpu_dir": "harness/next-release/gpu/ does not exist"
+      "gpu_dir": "round one: harness/next-release/gpu/ did not exist; round two created it and it now holds test_probe_contract.py, this receipt's closure test"
     }
   },
   "observed_commands": [
@@ -424,9 +424,9 @@
     "the exact minimum driver for the CUDA 13.3 runtime"
   ],
   "closure": {
-    "graph_predicate": "test -f harness/next-release/gpu_feasibility.json",
+    "graph_predicate": "python -m pytest harness/next-release/gpu/test_probe_contract.py -q",
     "graph_predicate_rc_after_write": 0,
-    "graph_predicate_is": "a file-exists gate, not a success gate; harness/next-release/README.md section 5 says a result file is not success and only the committed terminal receipt is",
+    "graph_predicate_is": "a behavioural gate over this receipt (pytest asserts B1, the round-two compile/run evidence, the verdict state and the build pins), not a success gate; harness/next-release/README.md section 5 says a result file is not success and only the committed terminal receipt is",
     "proposed_real_closure": "the chosen worker venv's python imports cv2, cv2.__file__ resolves inside that venv, cv2.cuda.getCudaEnabledDeviceCount() equals 1, and cv2.cuda.meanStdDev(src, mask) executes and returns the masked mean/std for the 11x11 fixture, matches an independent CPU reference within a frozen FP32 tolerance, and the receipt records the executed dispatch branch plus artifact digests",
     "real_closure_state": "UNMET: no build, no device count, no executed masked meanStdDev",
     "wp1_exit_alignment": "blueprint:292 allows WP1's exit receipt to be 'a useful 4090 chain ... or named blocker'. This receipt supplies the named blockers and the build route; it does not claim the useful chain.",

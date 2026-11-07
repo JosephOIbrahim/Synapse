@@ -115,3 +115,51 @@ def test_not_proven_is_a_non_empty_list(receipt):
     not_proven = receipt.get("verdict", {}).get("not_proven")
     assert isinstance(not_proven, list), "verdict.not_proven must be a list"
     assert not_proven, "verdict.not_proven must not be empty"
+
+
+def test_probe_scope_mode_names_the_compile_run_probe(receipt):
+    """Law 3: reverting the mode to 'read-only feasibility probe' must fail."""
+    scope = receipt.get("probe_scope")
+    assert isinstance(scope, dict), "probe_scope block is missing"
+    mode = scope.get("mode")
+    assert isinstance(mode, str), "probe_scope.mode must be a string"
+    lowered = mode.lower()
+    assert "compile" in lowered and "probe" in lowered, (
+        f"probe_scope.mode is {mode!r}; it must name the round-two compile/run probe"
+    )
+
+
+def test_probe_scope_performed_records_the_round_two_probe(receipt):
+    """performed must point at the round-two evidence, not only round one."""
+    performed = receipt.get("probe_scope", {}).get("performed")
+    assert isinstance(performed, list), "probe_scope.performed must be a list"
+    assert any("round_two_probe" in str(entry) for entry in performed), (
+        "no probe_scope.performed entry references round_two_probe"
+    )
+
+
+def test_build_route_is_a_non_empty_object_with_the_pinned_revisions(receipt):
+    """The predicate also guards the 'freeze its build' half of the title."""
+    build_route = receipt.get("build_route")
+    assert isinstance(build_route, dict) and build_route, (
+        "build_route must be a non-empty object"
+    )
+
+    rendered = json.dumps(build_route)
+    pinned = receipt.get("sources_pinned")
+    assert isinstance(pinned, dict), "sources_pinned must be an object"
+    for repo in ("opencv", "opencv_contrib"):
+        sha = pinned.get(repo, {}).get("commit_sha")
+        assert isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{40}", sha), (
+            f"sources_pinned.{repo}.commit_sha must be a 40-char lowercase revision"
+        )
+        assert sha in rendered, (
+            f"build_route does not carry the pinned {repo} revision {sha}"
+        )
+
+
+def test_sources_pinned_is_non_empty(receipt):
+    """Deleting the source pins must fail closure, not pass silently."""
+    pinned = receipt.get("sources_pinned")
+    assert isinstance(pinned, dict), "sources_pinned must be an object"
+    assert pinned, "sources_pinned must not be empty"
