@@ -162,8 +162,27 @@ class VerificationResult:
 
 @dataclass
 class RenderReport:
-    """Final report from an autonomous render execution."""
+    """Final report from an autonomous render execution.
+
+    ``plan`` is the artist's request exactly as the planner declared it and is
+    never rewritten by execution. ``executed`` is the execution copy of the
+    **last attempt** -- the most recent copy the driver validated or
+    dispatched -- carrying that attempt's validation results and each step's
+    status/result. It is not an attempt history: after a two-attempt success
+    only the retry's step and checks are here, and the first attempt's result
+    is gone.
+
+    A run that stopped before any attempt did anything (gate rejected,
+    unsupported shape, or a cancel or wall-clock stop before the first
+    validate) carries an **empty** ``validation_checks`` list and leaves
+    every step ``PENDING``. The planner's declared checks are a to-do list
+    and are never presented as results, so an empty list means "no check
+    ran", never "every check passed". A stop that lands between attempts
+    keeps the attempt that ran. Ask ``plan`` what was requested; ask
+    ``executed`` what last happened.
+    """
     plan: RenderPlan
+    executed: Optional[RenderPlan] = None
     evaluation: Optional[SequenceEvaluation] = None
     prediction: Optional[RenderPrediction] = None
     verification: Optional[VerificationResult] = None
@@ -172,5 +191,7 @@ class RenderReport:
     total_time_seconds: float = 0.0
     success: bool = False
     # M3-E: why the loop ended -- "" (passed), "max_iterations", "cancelled",
-    # "wall_clock_exceeded", "gate_rejected", "validation_failed"
+    # "wall_clock_exceeded", "gate_rejected", "validation_failed",
+    # "unsupported_plan_shape" (more than one render step: no single product
+    # set to grade)
     stop_reason: str = ""

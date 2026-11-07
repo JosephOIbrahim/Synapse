@@ -7,10 +7,12 @@ automatic re-planning on evaluation failure (up to max_iterations).
 """
 
 import asyncio
+import copy
 import json
 import logging
 import threading
 import time
+from dataclasses import replace
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Protocol
 
@@ -27,7 +29,12 @@ from .models import (
     VerificationResult,
 )
 from ..core.timeouts import timeout_for
-from .planner import RenderPlanner
+from .planner import (
+    RENDER_HANDLERS,
+    RenderPlanner,
+    requested_frames,
+    retry_targets,
+)
 from .validator import PreFlightValidator
 from .evaluator import RenderEvaluator
 from .predictor import RenderPredictor
@@ -165,11 +172,54 @@ class AutonomousDriver:
         verification: Optional[VerificationResult] = None
 
         # Step 1: Plan
-        plan = self._planner.plan(intent)
-        # The frames the artist asked for. A replan narrows to the failed
-        # frames; grading against that would compare a full render to a
-        # subset and call every good frame unplanned.
-        planned_frames = self._planned_frames(plan)
+        #
+        # ``original_plan`` is the artist's request and is never rebound or
+        # written to. The plan is mutated in three places below (validation
+        # checks, step status/result, the retry rebind); if execution ran
+        # against it directly, by iteration 2 the "original" handed to replan
+        # would already be the previous retry.
+        original_plan = self._planner.plan(intent)
+        plan = self._execution_copy(original_plan)
+
+        # The execution copy the report describes. It is reassigned below,
+        # immediately before dispatch, and never rebound by a replan: a
+        # replan leaves a fresh, unrun copy in ``plan``, and a cancel or
+        # wall-clock stop at the top of the next iteration would otherwise
+        # report that unrun copy as the attempt -- saying nothing ran while a
+        # render was dispatched and failed.
+        last_executed = plan
+
+        # A plan with more than one render step has no single product set.
+        # Refuse it before dispatch rather than silently grading the first
+        # render and ignoring the rest.
+        render_steps = [
+            step for step in original_plan.steps
+            if step.handler in RENDER_HANDLERS
+        ]
+        if len(render_steps) > 1:
+            self._log_decision(
+                context="unsupported_plan_shape",
+                decision=f"Refusing a plan with {len(render_steps)} render steps",
+                reasoning="The driver grades a single render product set; "
+                          "a plan with more than one render step would "
+                          "silently grade only the first",
+                gate=GateLevel.INFORM,
+            )
+            return RenderReport(
+                plan=original_plan,
+                executed=plan,
+                decisions=list(self._decisions),
+                iterations=0,
+                total_time_seconds=time.monotonic() - start_time,
+                success=False,
+                stop_reason="unsupported_plan_shape",
+            )
+
+        # The frames the artist asked for, captured from the original plan and
+        # never recomputed. A replan narrows to the failed frames; grading
+        # against that would compare a full render to a subset and call every
+        # good frame unplanned.
+        planned_frames = self._planned_frames(original_plan)
         # Results accumulate across attempts, keyed by frame. A replan retries
         # only the failed frames; grading the retry on its own would lose the
         # frames that already succeeded and report them as missing from the
@@ -195,7 +245,8 @@ class AutonomousDriver:
                     gate=plan.gate_level,
                 )
                 return RenderReport(
-                    plan=plan,
+                    plan=original_plan,
+                    executed=plan,
                     decisions=list(self._decisions),
                     iterations=0,
                     total_time_seconds=time.monotonic() - start_time,
@@ -245,7 +296,8 @@ class AutonomousDriver:
                     gate=GateLevel.INFORM,
                 )
                 return RenderReport(
-                    plan=plan,
+                    plan=original_plan,
+                    executed=plan,
                     decisions=list(self._decisions),
                     iterations=iteration,
                     total_time_seconds=time.monotonic() - start_time,
@@ -285,6 +337,10 @@ class AutonomousDriver:
                     logger.warning("Prediction failed (non-blocking): %s", exc)
 
             # Step 4: Execute render steps
+            # From here this copy is the attempt that ran. If a later
+            # iteration rebinds ``plan`` to a fresh replan copy and stops
+            # before dispatching it, ``last_executed`` keeps this attempt.
+            last_executed = plan
             execution_ok = await self._execute_steps(plan)
             # A cancel during execution must not be reported as a pass: the
             # steps that never ran leave no frames, and a partial sequence is
@@ -310,19 +366,18 @@ class AutonomousDriver:
                     # Build a minimal evaluation so replan has something to work with
                     if evaluation is None:
                         evaluation = SequenceEvaluation(passed=False)
-                    plan = self._planner.replan(plan, evaluation)
+                    # Reconcile against the artist's plan, never against the
+                    # previous retry.
+                    plan = self._execution_copy(
+                        self._planner.replan(original_plan, evaluation)
+                    )
                     continue
                 stop_reason = "max_iterations"
                 break
 
             # Step 5: Collect render results and evaluate
             render_results = await self._collect_results(plan)
-            for fr in render_results:
-                try:
-                    frame_no = int(fr.get("frame", 0))
-                except (TypeError, ValueError):
-                    frame_no = 0
-                accumulated[frame_no] = fr
+            self._accumulate(accumulated, render_results)
             evaluation = self._evaluator.evaluate_sequence(
                 [accumulated[k] for k in sorted(accumulated)],
                 planned_frames=planned_frames,
@@ -376,13 +431,25 @@ class AutonomousDriver:
                             "Evaluation failed but verification suggests rerender may not help "
                             f"(score: {verification.score:.2f}). Attempting anyway."
                         )
+                # Name the retry reason codes in the readable trail: a
+                # missing product and an unreadable one are different
+                # problems and should not both read as "evaluation failed".
+                target_reasons = retry_targets(original_plan, evaluation)
+                if target_reasons:
+                    codes = ", ".join(
+                        f"frame {frame}: {code}"
+                        for frame, code in sorted(target_reasons.items())
+                    )
+                    replan_reasoning += f" Retry targets -- {codes}"
                 self._log_decision(
                     context="replan",
                     decision=f"Re-planning (iteration {iteration}/{self._max_iterations})",
                     reasoning=replan_reasoning,
                     gate=GateLevel.INFORM,
                 )
-                plan = self._planner.replan(plan, evaluation)
+                plan = self._execution_copy(
+                    self._planner.replan(original_plan, evaluation)
+                )
             else:
                 self._log_decision(
                     context="max_iterations",
@@ -395,8 +462,16 @@ class AutonomousDriver:
         total_time = time.monotonic() - start_time
 
         # Step 7: Compile report
+        # The report carries the artist's plan. A retry plan is an execution
+        # detail: a consumer recomputing the product set from report.plan
+        # must not see the last retry's subset. What actually ran -- the last
+        # dispatched attempt's validation results and each step's
+        # status/result -- rides on ``executed`` instead, so neither half is
+        # discarded. A stop that lands between attempts (cancel, wall clock)
+        # reports the attempt that ran, not the fresh copy the replan left.
         report = RenderReport(
-            plan=plan,
+            plan=original_plan,
+            executed=last_executed,
             evaluation=evaluation,
             prediction=prediction if self._predictor is not None else None,
             verification=verification if self._predictor is not None else None,
@@ -478,34 +553,101 @@ class AutonomousDriver:
 
         return True
 
+    @staticmethod
+    def _execution_copy(plan: RenderPlan) -> RenderPlan:
+        """A mutable copy to execute against.
+
+        Execution writes step status/result and fills in the plan's validation
+        checks. Doing that on the artist's plan would make the "original"
+        handed to replan a rewritten plan by iteration 2. Copying the step
+        objects is not enough on its own: ``replace(step)`` leaves ``params``
+        pointing at the plan's own dict, so a handler that writes into the
+        params it was handed would rewrite the artist's request. The params
+        are deep-copied for exactly that reason.
+
+        The copy starts with no validation checks. The planner's declared
+        checks are a to-do list, not results. Every path that runs validation
+        replaces the empty list with the validator's verdicts; every path that
+        stops before dispatch (gate rejected, unsupported shape, or a cancel
+        or wall-clock stop before the first validate) reports the absence
+        honestly instead of presenting declared ``passed=False`` checks as
+        hard failures that never happened (ruling R4b).
+        """
+        return replace(
+            plan,
+            steps=[
+                replace(step, params=copy.deepcopy(step.params))
+                for step in plan.steps
+            ],
+            validation_checks=[],
+        )
+
     def _render_step(self, plan: RenderPlan):
-        """The step that renders, or None."""
-        for step in plan.steps:
-            if step.handler in ("render_sequence", "render"):
-                return step
-        return None
+        """The single step that renders, or None when there isn't exactly one.
+
+        Ambiguity returns None rather than picking the first: a caller that
+        cannot identify the render step has no product set, and guessing one
+        is how the second render gets silently ignored.
+        """
+        renders = [
+            step for step in plan.steps if step.handler in RENDER_HANDLERS
+        ]
+        if len(renders) != 1:
+            return None
+        return renders[0]
 
     def _planned_frames(self, plan: RenderPlan) -> Optional[List[int]]:
         """The frames the plan asked for, or None when the plan does not say.
 
         This is what the sequence is graded against. Without it a render that
-        lost frames is scored on the frames that happened to come back.
+        lost frames is scored on the frames that happened to come back. The
+        product set is derived by the planner, so a sparse request stays
+        sparse instead of being re-expanded into a range here.
         """
-        step = self._render_step(plan)
-        if step is None:
-            return None
-        params = step.params or {}
-        try:
-            if "start_frame" in params and "end_frame" in params:
-                start, end = int(params["start_frame"]), int(params["end_frame"])
-                if end < start:
-                    return None
-                return list(range(start, end + 1))
-            if "frame" in params:
-                return [int(params["frame"])]
-        except (TypeError, ValueError):
-            return None
-        return None
+        frames = requested_frames(plan)
+        return list(frames) if frames is not None else None
+
+    def _accumulate(
+        self,
+        accumulated: Dict[int, Dict[str, Any]],
+        render_results: List[Dict[str, Any]],
+    ) -> None:
+        """Fold a batch of frame results into the cross-attempt accumulator.
+
+        A full-plan re-run (an execution-failure retry, or a replan that
+        returns the original plan) can come back with a failed row for a
+        frame whose product was already accepted. That row must not replace
+        the known-good selection; the retry is reported, not the regression.
+        """
+        for row in render_results:
+            try:
+                frame_no = int(row.get("frame", 0))
+            except (TypeError, ValueError):
+                frame_no = 0
+
+            incoming_failed = self._row_failed(row)
+            existing = accumulated.get(frame_no)
+            if (
+                existing is not None
+                and incoming_failed
+                and not self._row_failed(existing)
+            ):
+                self._log_decision(
+                    context="accumulated_product_preserved",
+                    decision=f"Kept the accepted product for frame {frame_no}",
+                    reasoning="A retry returned a failed row for a frame that "
+                              "already has a known-good output; the "
+                              "known-good product is kept",
+                    gate=GateLevel.INFORM,
+                )
+                continue
+
+            accumulated[frame_no] = row
+
+    @staticmethod
+    def _row_failed(row: Dict[str, Any]) -> bool:
+        """A rendered-frame row that carries no usable product."""
+        return bool(row.get("error")) or not row.get("output_path")
 
     def _farm_failed_frames(self, plan: RenderPlan) -> int:
         """The farm's own failed-frame count for this render, 0 when unknown."""
