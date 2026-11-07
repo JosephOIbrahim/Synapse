@@ -220,7 +220,8 @@ TOOL_DEFS: list[tuple] = [
      True, False, True),
 
     ("houdini_set_parm", "set_parm",
-     _filter_keys(("node", "parm", "value", "mode")),
+     _filter_keys(("node", "parm", "value", "mode", "frame", "queued",
+                   "expect", "request_id")),
      "Set a parameter value on a Houdini node. "
      "For USD/Solaris nodes, parameter names are encoded "
      "(e.g. xn__inputsintensity_i0a not 'intensity'). "
@@ -240,8 +241,55 @@ TOOL_DEFS: list[tuple] = [
              "description": "How to meet an animated or referenced parameter: "
                             "refuse (default, write nothing), replace (clear "
                             "the keys, then set), key_at_frame (add a key at "
-                            "the current frame), write_source (write the "
+                            "the declared frame, or at the current frame when "
+                            "none is declared), write_source (write the "
                             "parameter this one is driven by)",
+         },
+         "frame": {
+             "type": "number",
+             "description": "Frame the write is declared to happen at. "
+                            "key_at_frame keys this frame and reads it back "
+                            "there. A queued key_at_frame write MUST declare "
+                            "it: the playhead is not evidence of the frame the "
+                            "write was planned at, so it is refused without "
+                            "one (parm.frame_unknown).",
+         },
+         "queued": {
+             "type": "boolean",
+             "description": "The write was planned earlier and is being "
+                            "replayed now. Requires `expect` (the authored "
+                            "state it was planned against), revalidated on "
+                            "Houdini's main thread before the first setter.",
+         },
+         "expect": {
+             "type": "object",
+             "description": "The authored state a queued write requires: "
+                            "{\"value\": ...} and/or {\"raw_authored\": ...}. "
+                            "A different state refuses the write; a key this "
+                            "server does not evaluate refuses it too.",
+             "properties": {
+                 "value": {
+                     "description": "The value the parameter must still hold "
+                                    "(compared after eval()): a JSON scalar "
+                                    "(string, number or boolean).",
+                 },
+                 "raw_authored": {
+                     "type": "string",
+                     "description": "The string the parameter must still hold "
+                                    "as written (unexpandedString()). The "
+                                    "parameter must be a string parameter that "
+                                    "can report authored text, or the write is "
+                                    "refused as unverifiable.",
+                 },
+             },
+             "additionalProperties": False,
+             "minProperties": 1,
+         },
+         "request_id": {
+             "type": "string",
+             "description": "Caller's request id, echoed in the write receipt "
+                            "so a queued proposal and its replay can be "
+                            "matched.",
          },
      }, "required": ["node", "parm", "value"]},
      False, True, True),

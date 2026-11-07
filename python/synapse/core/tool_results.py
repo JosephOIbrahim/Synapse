@@ -33,6 +33,10 @@ def unpack_tool_result(value):
     that dictionary in one JSON text block; external structured content has the
     same role. Other content blocks remain intact rather than being discarded.
     A malformed envelope is an error, never evidence that dispatch did not run.
+
+    A failed envelope that carries only a receipt (in ``structuredContent`` or
+    in ``_meta["synapse/outcome"]``) returns that receipt as its payload: the
+    transport lost the detail, not the failure or its evidence.
     """
     if not isinstance(value, dict):
         return value, False
@@ -65,8 +69,95 @@ def unpack_tool_result(value):
         try:
             return json.loads(text), is_error
         except (ValueError, TypeError):
+            receipt = failure_receipt(value)
+            if is_error and receipt is not None:
+                return {"receipt": receipt}, True
             return text, is_error
     return value, is_error
+
+
+def failure_receipt(value):
+    """The structured write receipt a failed result or exception carries.
+
+    Every advertised route can lose the text detail and still keep this record:
+    the ``/mcp`` producer puts the handler payload in ``structuredContent``; a
+    failure serialized by ``core.outcomes.tool_result`` keeps it under
+    ``_meta["synapse/outcome"]["evidence"]["receipt"]``; a direct handler
+    payload or a raised exception (``.receipt``) carries it at the top. Returns
+    None when there is no receipt — never an empty stand-in.
+    """
+    if isinstance(value, BaseException):
+        direct = getattr(value, "receipt", None)
+        if isinstance(direct, dict):
+            return direct
+        outcome = getattr(value, "outcome", None)
+        if isinstance(outcome, dict):
+            return _receipt_from_outcome(outcome)
+        return None
+    if not isinstance(value, dict):
+        return None
+    structured = value.get("structuredContent")
+    if isinstance(structured, dict) and isinstance(structured.get("receipt"), dict):
+        return structured["receipt"]
+    meta = value.get("_meta")
+    if isinstance(meta, dict):
+        found = _receipt_from_outcome(meta.get("synapse/outcome"))
+        if found is not None:
+            return found
+    direct = value.get("receipt")
+    return direct if isinstance(direct, dict) else None
+
+
+def failure_detail(value, message=None):
+    """The text a refused tool result carries, with its receipt beside it.
+
+    A consumer that only owns a message channel — a Qt ``failed(str)`` signal,
+    a tool_result ``content`` string — still owes the caller the machine
+    readable receipt, or the write's evidence dies at the last hop. Returns
+    *message* unchanged when there is no receipt: never an empty stand-in, and
+    never an envelope that pretends to carry one.
+    """
+    text = str(value) if message is None else message
+    receipt = failure_receipt(value)
+    if receipt is None:
+        return text
+    return json.dumps({"error": text, "receipt": receipt}, default=str)
+
+
+def _receipt_from_outcome(outcome):
+    if not isinstance(outcome, dict):
+        return None
+    evidence = outcome.get("evidence")
+    if isinstance(evidence, dict) and isinstance(evidence.get("receipt"), dict):
+        return evidence["receipt"]
+    return None
+
+
+def unpack_with_receipt(value):
+    """``(payload, is_error, receipt)`` for a caller that needs all three."""
+    payload, is_error = unpack_tool_result(value)
+    receipt = failure_receipt(value)
+    if receipt is None and isinstance(payload, dict):
+        receipt = failure_receipt(payload)
+    return payload, is_error, receipt
+
+
+def carry_structured(target, source):
+    """Give a rewrapped result the failed source's ``structuredContent``.
+
+    ``core.outcomes.tool_result`` builds a fresh MCP result and copies only the
+    non-text content blocks, so a handler payload that rode in
+    ``structuredContent`` (the parm-write receipt is one) is dropped by every
+    rewrap even though the failure itself survives. The /mcp transport,
+    its marshalled path and the read-only fast path all rewrap with that
+    builder; each hands the source here. Returns *target* so a call site can
+    wrap the builder inline.
+    """
+    if isinstance(target, dict) and isinstance(source, dict):
+        structured = source.get("structuredContent")
+        if isinstance(structured, dict):
+            target["structuredContent"] = structured
+    return target
 
 
 #: The opening words of every artist-facing undo receipt. Minted by
@@ -143,8 +234,36 @@ def _join(value):
     return str(value)
 
 
-def _own_misses(payload):
+def _receipt_misses(payload):
+    """A parm-write receipt that did not cleanly land, named for the worker.
+
+    ``write`` of ``partial`` or ``unknown`` means the scene may hold half the
+    request; a ``readback`` of ``unknown`` means an applied write could not be
+    verified, and ``mismatch`` means it took a different value. Each must reach
+    the common warning policy rather than render as a clean panel "done". The
+    receipt shape is ``parm_authored.PARM_WRITE_RECEIPT_SCHEMA``.
+    """
+    receipt = payload.get("receipt")
+    if not isinstance(receipt, dict):
+        return []
     misses = []
+    write = receipt.get("write")
+    if write in ("partial", "unknown"):
+        error = receipt.get("error")
+        detail = error.get("message") if isinstance(error, dict) else ""
+        misses.append("write %s%s" % (write, ": " + detail if detail else ""))
+    readback = receipt.get("readback")
+    if isinstance(readback, dict):
+        state = readback.get("state")
+        if state == "unknown":
+            misses.append("readback unknown")
+        elif state == "mismatch":
+            misses.append("readback mismatch")
+    return misses
+
+
+def _own_misses(payload):
+    misses = _receipt_misses(payload)
     for key in _MISS_TEXT_KEYS:
         value = payload.get(key)
         if value:
@@ -177,10 +296,11 @@ def result_misses(payload):
 
     A miss is: a truthy ``cook_error`` / ``settings_error`` /
     ``background_error`` / ``callback_error``; a non-empty ``parms_missed`` /
-    ``inputs_missed`` / ``handler_removal_errors``; ``status == "error"``; or a
-    non-empty top-level ``error`` string. Dict entries of a ``results`` or
-    ``passes`` list are scanned the same way and named by their index. Any
-    non-dict payload has no misses.
+    ``inputs_missed`` / ``handler_removal_errors``; ``status == "error"``; a
+    non-empty top-level ``error`` string; or a parm-write ``receipt`` whose
+    write was ``partial``/``unknown`` or whose readback was ``unknown`` or
+    ``mismatch``. Dict entries of a ``results`` or ``passes`` list are scanned
+    the same way and named by their index. Any non-dict payload has no misses.
     """
     if not isinstance(payload, dict):
         return []

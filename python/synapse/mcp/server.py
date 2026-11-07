@@ -46,6 +46,7 @@ from .resources import get_resources, get_resource_templates, resolve_resource
 from .tools import dispatch_tool, get_tools, has_tool
 from . import read_only_mode
 from ..core.outcomes import info as _outcome, outcome_line as _outcome_line, tool_result as _tool_result
+from ..core.tool_results import carry_structured
 from synapse.core.farm_contract import is_farm_control
 
 # Resilience layer — shared with WebSocket server
@@ -712,7 +713,9 @@ class MCPServer:
             # A handler failure comes back as a result flagged isError with its outcome
             # line (Level 1, R-6), as on the path below; the breaker records no success.
             if isinstance(result, dict) and result.get("isError"):
-                return _tool_result(_outcome("tool.failed", _isError_text(result)), result)
+                return carry_structured(
+                    _tool_result(_outcome("tool.failed", _isError_text(result)), result),
+                    result)
             if self._circuit_breaker:
                 self._circuit_breaker.record_success()
             return result
@@ -885,8 +888,10 @@ class MCPServer:
             # artist checks the scene first. Anything else ran and failed. (Level 1, M1)
             infra = any(k in error_text.lower()
                         for k in ("timeout", "main thread", "crashed", "unresponsive"))
-            return _tool_result(_outcome(
-                "transport.timeout" if infra else "tool.failed", error_text), result)
+            return carry_structured(
+                _tool_result(_outcome(
+                    "transport.timeout" if infra else "tool.failed", error_text), result),
+                result)
 
         if self._circuit_breaker:
             self._circuit_breaker.record_success()

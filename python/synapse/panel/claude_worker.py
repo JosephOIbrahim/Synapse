@@ -34,7 +34,7 @@ from .retry_breaker import ABANDON_THRESHOLD, breaker_message
 from .tool_bridge import get_anthropic_tools_for_worker
 from .tool_executor import ToolRequest, try_mcp_tool_call
 from .worker_policy import denial_tool_result, is_tool_allowed_for_worker
-from synapse.core.tool_results import result_misses, unpack_tool_result
+from synapse.core.tool_results import failure_detail, result_misses, unpack_tool_result
 
 
 #: Key the worker puts FIRST in a miss-carrying tool_result (TT-1).
@@ -834,10 +834,13 @@ class ClaudeWorker(QThread):
                 self._note_abandon(cmd_key)
             self.tool_status.emit(
                 tool_name, "error", translate_tool_error(tool_name, str(exc))[:120])
+            # The exception can carry the write's machine-readable receipt
+            # (tool_executor attaches it). Stringifying it here dropped the
+            # evidence at the last hop before the model.
             return {
                 "type": "tool_result",
                 "tool_use_id": tool_use_id,
-                "content": str(exc),
+                "content": failure_detail(exc),
                 "is_error": True,
             }
         except Exception:
@@ -898,7 +901,10 @@ class ClaudeWorker(QThread):
             self.tool_status.emit(
                 tool_name, "error",
                 translate_tool_error(tool_name, str(request.error))[:120])
-            content_str = request.error
+            # ``request.failure`` is the handler payload (or exception) the
+            # executor kept beside the message; a parm-write refusal's receipt
+            # lives there. Without it the fallback returned a sentence only.
+            content_str = failure_detail(request.failure, request.error)
             is_error = True
         else:
             misses = result_misses(request.result)

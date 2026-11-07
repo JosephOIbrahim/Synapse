@@ -447,6 +447,18 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
+def _failure_receipt_data(exc: BaseException) -> Optional[Dict]:
+    """The structured receipt an exception carries, wrapped for response.data.
+
+    Handlers that can fail with a machine-readable record attach it to the
+    exception (``ParmWriteRefused.receipt``) because the failure arm that
+    formats the response does not know the handler. Returning None keeps the
+    response shape of every exception that carries no receipt.
+    """
+    receipt = getattr(exc, "receipt", None)
+    return {"receipt": receipt} if isinstance(receipt, dict) else None
+
+
 class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, FarmHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, SpatialHandlerMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
     """
     Main command handler for the Synapse server.
@@ -602,14 +614,19 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             return SynapseResponse(
                 id=command.id,
                 success=False,
+                data=_failure_receipt_data(e),
                 error=str(e),
                 sequence=command.sequence,
             )
         except ValueError as e:
             # Legacy ValueError path -- still user error, don't trip CB.
+            # A ParmWriteRefused carries the structured write receipt the
+            # caller needs to tell "not attempted" from "applied but
+            # unverified"; keep it beside the human error, never instead of it.
             return SynapseResponse(
                 id=command.id,
                 success=False,
+                data=_failure_receipt_data(e),
                 error=str(e),
                 sequence=command.sequence,
             )
@@ -622,9 +639,14 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 sequence=command.sequence,
             )
         except Exception as e:
+            # A setter can fail with an exception that is not a ValueError
+            # (hou.OperationFailed is a RuntimeError). The receipt rides on the
+            # exception; dropping it here is what lost the record for exactly
+            # the failures that reached Houdini and failed.
             return SynapseResponse(
                 id=command.id,
                 success=False,
+                data=_failure_receipt_data(e),
                 error=f"Hit a snag processing that request: {e}",
                 sequence=command.sequence,
             )
@@ -1223,18 +1245,89 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     )
 
         from .main_thread import run_on_main
-        from .parm_authored import WRITE_MODES, author_parm_write
+        from .parm_authored import (
+            WRITE_MODES, ParmWriteRefused, author_parm_write, validate_expect,
+            write_refusal,
+        )
 
         # How a write meets an animated or referenced parm. Refusing is the
         # default: a plain set over an expression or a reference reports a
         # value the scene does not hold (H1-1).
         mode = payload.get("mode", "refuse")
         if mode not in WRITE_MODES:
-            raise ValueError(
-                f"Unknown mode {mode!r}. Use one of: {', '.join(WRITE_MODES)}.")
+            # A refusal is still a write outcome: it carries the same receipt
+            # shape as a write that reached Houdini and failed, with a stable
+            # code (see author_parm_write's own mode guard).
+            raise write_refusal(
+                f"Unknown mode {mode!r}. Use one of: {', '.join(WRITE_MODES)}. "
+                "Nothing was written.",
+                code="parm.mode_invalid",
+                request={"request_id": payload.get("request_id"),
+                         "node": node_path, "parm": parm_name,
+                         "expected_session": getattr(self, "_session_id", None)},
+                mode=mode, values=[value], frame=payload.get("frame"),
+                queued=bool(payload.get("queued")),
+                expect=payload.get("expect"))
+
+        # Preflight the optional precondition before the main-thread hop, so an
+        # unknown or malformed one refuses with zero setters and zero Houdini
+        # work. A queued/evidence-derived mutation cannot fall through to
+        # "whatever the playhead says".
+        queued = payload.get("queued", False)
+        frame = payload.get("frame")
+        expect = payload.get("expect")
+        request_context = {"request_id": payload.get("request_id"),
+                           "node": node_path, "parm": parm_name,
+                           # The session the write is authorized under. The
+                           # session observed when it actually runs is added
+                           # on the main thread; a mismatch is evidence.
+                           "expected_session": getattr(self, "_session_id", None)}
+        if not isinstance(queued, bool):
+            raise write_refusal(
+                "'queued' must be true or false. Nothing was written.",
+                code="parm.precondition_invalid", request=request_context,
+                mode=mode, values=[value], frame=frame, queued=bool(queued))
+        if frame is not None and (isinstance(frame, bool)
+                                  or not isinstance(frame, (int, float))):
+            raise write_refusal(
+                "'frame' must be a number. Nothing was written.",
+                code="parm.precondition_invalid", request=request_context,
+                mode=mode, values=[value], frame=None, queued=queued)
+        # The precondition is validated before the hop, not merely counted. A
+        # misspelled key ("value_typo") used to pass a truthiness test while
+        # checking nothing, so the write landed unguarded and reported applied.
+        try:
+            validate_expect(expect)
+        except ParmWriteRefused as exc:
+            raise write_refusal(
+                str(exc), code=exc.code, request=request_context, mode=mode,
+                values=[value], frame=frame, queued=queued, expect=expect
+            ) from None
+        if queued and not expect:
+            # A declared frame alone is not proof the scene is the one the
+            # write was planned against: the playhead can be set to any frame
+            # and the parm may have moved. A queued write carries the authored
+            # state it was planned against, revalidated below on main.
+            raise write_refusal(
+                "A queued write needs an expected authored state (`expect`); "
+                "a declared frame alone does not prove the scene is the one "
+                "the write was planned against. Nothing was written.",
+                code="parm.precondition_missing", request=request_context,
+                mode=mode, values=[value], frame=frame, queued=queued)
 
         def _on_main():
             nonlocal parm_name
+            # What the write ran under, read here and now. Never the
+            # pre-hop values: a session can expire or switch between them.
+            request_context["observed_session"] = getattr(
+                self, "_session_id", None)
+            try:
+                request_context["observed_frame"] = hou.frame()
+            except Exception as exc:
+                # Best-effort context: the write still runs, and the receipt
+                # records the frame as unknown rather than inventing one.
+                _log.debug("observed frame unavailable for the receipt: %s", exc)
+                request_context["observed_frame"] = None
             node = hou.node(node_path)
             if node is None:
                 raise NodeNotFoundError(node_path)
@@ -1260,11 +1353,15 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                         with hou.undos.group("synapse_set_parm"):
                             applied = author_parm_write(
                                 list(parm_tuple), list(value), mode,
-                                parm_tuple=parm_tuple)
+                                parm_tuple=parm_tuple,
+                                request=request_context, frame=frame,
+                                queued=queued, expect=expect)
                         return {"node": node_path, "parm": parm_name,
                                 **applied, **undo_receipt("synapse_set_parm")}
                 with hou.undos.group("synapse_set_parm"):
-                    applied = author_parm_write([parm], [value], mode)
+                    applied = author_parm_write(
+                        [parm], [value], mode, request=request_context,
+                        frame=frame, queued=queued, expect=expect)
                 result = {"node": node_path, "parm": parm_name,
                           **applied, **undo_receipt("synapse_set_parm")}
                 # Lighting Law: soft warning when intensity > 1.0 on light nodes
@@ -1293,8 +1390,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 values = (list(value) if isinstance(value, (list, tuple))
                           else [value] * len(parm_tuple))
                 with hou.undos.group("synapse_set_parm"):
-                    applied = author_parm_write(list(parm_tuple), values, mode,
-                                                parm_tuple=parm_tuple)
+                    applied = author_parm_write(
+                        list(parm_tuple), values, mode, parm_tuple=parm_tuple,
+                        request=request_context, frame=frame, queued=queued,
+                        expect=expect)
                 result = {"node": node_path, "parm": parm_name,
                           **applied, **undo_receipt("synapse_set_parm")}
                 # Lighting Law: soft warning when intensity > 1.0 on light nodes
@@ -1979,8 +2078,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         Best-effort provenance writer for the live autonomous-render path. Closes
         the lifecycle a prior ``create_task(...)`` opened: sets the task status to
         ``completed``/``failed`` and writes a verification_log entry derived from the
-        unconditionally-populated report fields (``plan.validation_checks`` and
-        ``evaluation``).
+        unconditionally-populated report fields (``executed.validation_checks`` and
+        ``evaluation``). The artist's ``plan`` keeps the planner's declared checks
+        and must not be read as evidence of what ran.
 
         Note: ``before_state``/``after_state`` here carry **render-quality**
         semantics (pre-flight check summary -> sequence-evaluation score), NOT the
@@ -2005,8 +2105,14 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
             # Verification entry from render-quality fields (always populated).
             try:
-                plan = getattr(report, "plan", None)
-                checks_list = list(getattr(plan, "validation_checks", []) or [])
+                # The executed state carries the checks that actually ran.
+                # ``report.plan`` is the artist's immutable request and holds
+                # the planner's declared (never-executed) checks. The getattr
+                # fallback keeps this correct whichever of the two report
+                # shapes is live: one branch may not carry ``executed`` yet.
+                executed = (getattr(report, "executed", None)
+                            or getattr(report, "plan", None))
+                checks_list = list(getattr(executed, "validation_checks", []) or [])
                 # CheckSeverity.HARD_FAIL.value == "hard_fail" (autonomy/models.py:38)
                 # is the live blocking-check value — match it exactly, not a guess.
                 hard_fail = sum(

@@ -82,7 +82,12 @@ class FarmToolCall(QtCore.QThread):
                 transport = try_mcp_tool_call
             result = perform_farm_call(self.tool_name, self.arguments, transport)
         except Exception as exc:
-            self.failed.emit(str(exc)[:2000] or "The render service could not be reached.")
+            # Keep the message bound, and keep the machine-readable receipt a
+            # refusal may carry (the write receipt) beside it.
+            from synapse.core.tool_results import failure_detail
+            message = (str(exc)[:2000]
+                       or "The render service could not be reached.")
+            self.failed.emit(failure_detail(exc, message))
         else:
             self.succeeded.emit(result)
 
