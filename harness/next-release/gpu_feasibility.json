@@ -1,0 +1,511 @@
+{
+  "schema": "synapse.next_release.gpu_feasibility/1",
+  "node": "NR-GPU-FEASIBILITY",
+  "title": "Prove one useful OpenCV 5.1 CUDA chain on the RTX 4090 and freeze its build",
+  "graph": {
+    "file": "harness/next-release/graph.json",
+    "gate": "joe",
+    "effort": "L",
+    "depends_on": [],
+    "predicate": "python -m pytest harness/next-release/gpu/test_probe_contract.py -q"
+  },
+  "generated_utc": "2026-11-07T02:24:22Z",
+  "updated_utc": "2026-11-07T13:32:04Z",
+  "round_two_base_commit": "1e17e2ea",
+  "base_commit": "3024f76bd3381005a2f1de2849ba995fbcac10f9",
+  "branch": "nr/gpu-feasibility",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/nr-gpu-feas",
+  "probe_scope": {
+    "mode": "read-only inspection plus a B1 compile/run probe",
+    "performed": [
+      "machine and toolchain probes: nvidia-smi, nvcc, cmake, py -0p, python, MSVC/vswhere, cl version banner, Windows SDK, CUDA arch lists, cuDNN search, disk, cpu/ram",
+      "installed-cv2 inspection: version, resolved path, installed distributions, cuda device count, presence of the cudaarithm masked meanStdDev overload",
+      "independent source-pin verification with git ls-remote (refs only, no clone)",
+      "read of blueprint sections 8.1, 8.2, 10 and 11, and of RULING-2026-11-06",
+      "round two (2026-11-07): B1 compile/run probe — sourced vcvars64, compiled .scratch/gpu_probe/vectorAdd.cu with nvcc 13.3 -arch=sm_89 (exit 0), and ran vectorAdd.exe on the RTX 4090 (exit 0, 0 mismatches); see round_two_probe",
+      "round two (2026-11-07): wrote the probe source, batch file and binary to .scratch/gpu_probe/ (gitignored at every depth)"
+    ],
+    "not_performed": [
+      "no git clone of opencv or opencv_contrib",
+      "no cmake configure",
+      "round one only: no compiler invocation on any .cu or .cpp source file (SUPERSEDED in round two — see round_two_probe)",
+      "round one only: no build, no install, no pip install, no venv creation",
+      "round one only: no file write outside this receipt (round two wrote .scratch/gpu_probe/, which is gitignored)"
+    ],
+    "network_touched": "github.com via git ls-remote (read-only, refs only, no clone)"
+  },
+  "verdict": {
+    "state": "feasible-unproven",
+    "one_line": "B1 is closed: nvcc 13.3 compiles with MSVC 19.44 and the resulting sm_89 binary runs on the RTX 4090. Every other input the route needs is present (CUDA 13.3, CMake 4.2.1, 48 cores, 1.13 TiB free), but no OpenCV source build exists, so no CUDA chain is proven.",
+    "proven_by_observation": [
+      "the target GPU is an RTX 4090 (sm_89) and nvcc 13.3 lists compute_89 and sm_89",
+      "CUDA toolkit 13.3 (V13.3.73) is installed and is first on PATH; CUDA_PATH points at v13.3",
+      "a VS 2022 BuildTools toolset (14.44.35207, cl 19.44.35222, x64, Windows SDK 10.0.26100.0) is installed; cl is not on PATH until vcvars64 is sourced",
+      "CMake 4.2.1 is installed and resolves first to C:/Python314/Scripts/cmake.exe",
+      "the machine has 48 logical processors, 127.5 GiB RAM, and 1131.1 GiB free on C:",
+      "the installed OpenCV is a CPU-only wheel: cv2.cuda.getCudaEnabledDeviceCount() is 0 and cv2.cuda.meanStdDev does not exist on it",
+      "the pinned upstream tag 5.1.0 in both repositories peels to the blueprint's exact commits (verified by git ls-remote)",
+      "there are no OpenCV sources, no build cache and no worker venv on this box",
+      "nvcc 13.3 (V13.3.73) accepts MSVC 19.44.35222 / toolset 14.44.35207 as its host compiler: vectorAdd.cu compiled with -arch=sm_89 (exit 0) and the binary ran on the RTX 4090 (exit 0, 0 mismatches) — see round_two_probe"
+    ],
+    "not_proven": [
+      "that CMake 4.2.1 configures OpenCV 5.1 plus its vendored dependencies",
+      "that BUILD_LIST=core,cudaarithm,python3 generates the python3 bindings and the CUDA arithmetic module",
+      "that a Python binding for the chosen interpreter builds at all",
+      "that the masked Python cv2.cuda.meanStdDev overload exists, or its output shape, precision, mask type, empty/singleton behaviour and population convention",
+      "that the named useful chain (split + addWeighted -> masked meanStdDev -> compare/mask/countNonZero -> sync) executes on the GPU",
+      "build duration, artifact size, and final native-file digests"
+    ]
+  },
+  "machine": {
+    "os": "Windows 11 Pro for Workstations 10.0.26300",
+    "logical_processors": 48,
+    "ram_bytes": 136910020608,
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 4090",
+      "memory_total_mib": 24564,
+      "target_architecture": "sm_89"
+    },
+    "driver": {
+      "version": "621.14",
+      "kmd_version": "621.14",
+      "cuda_umd_version": "13.5",
+      "note": "the driver reports a CUDA user-mode version newer than the 13.3 toolkit; the exact minimum driver for a CUDA 13.3 runtime was not independently verified"
+    },
+    "cuda": {
+      "cuda_path_env": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3",
+      "toolkits_installed": ["v13.1", "v13.2", "v13.3"],
+      "nvcc_resolved_first": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3/bin/nvcc.exe",
+      "nvcc_version": "release 13.3, V13.3.73",
+      "nvcc_build": "Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026",
+      "compute_89_supported": true,
+      "sm_89_supported": true,
+      "arch_entries_listed": 12,
+      "cudnn": "absent: recursive search for cudnn* under CUDA/v13.3 returns nothing"
+    },
+    "compiler": {
+      "vswhere_installation_version": "17.14.36811.4",
+      "installation_path": "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools",
+      "toolset": "14.44.35207",
+      "cl_version": "19.44.35222",
+      "cl_target": "x64",
+      "windows_sdk": "10.0.26100.0",
+      "cl_on_path": false,
+      "cl_available_via": "VC/Auxiliary/Build/vcvars64.bat (exit 0; emits a non-fatal 'vswhere.exe' not-recognized line)",
+      "nvcc_accepts_cl_pairing": true
+    },
+    "cmake": {
+      "version": "4.2.1",
+      "resolved_first": "C:/Python314/Scripts/cmake.exe",
+      "also_installed": "C:/Program Files/CMake/bin/cmake.exe"
+    },
+    "python": {
+      "default": {
+        "selector": "-V:3.14 *",
+        "executable": "C:/Python314/python.exe",
+        "version": "3.14.2",
+        "numpy": "2.2.6"
+      },
+      "other_interpreters": [
+        {"selector": "-V:3.12", "executable": "C:/Users/User/AppData/Local/Programs/Python/Python312/python.exe", "version": "3.12.10"},
+        {"selector": "-V:3.13", "executable": "C:/Users/User/AppData/Local/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/python.exe", "note": "Microsoft Store alias; not a build substrate"},
+        {"selector": "-V:Astral/CPython3.11.15", "executable": "C:/Users/User/AppData/Roaming/uv/python/cpython-3.11.15-windows-x86_64-none/python.exe", "note": "uv-managed"}
+      ],
+      "hython": {
+        "status": "not probed",
+        "note": "not on PATH; blueprint line 61 forbids seeding the release worker from hython, and it is not a candidate build ABI"
+      },
+      "installed_cv2": {
+        "distributions_present": ["opencv-python 4.12.0.88", "opencv-python-headless"],
+        "version": "4.12.0",
+        "resolved_file": "C:/Users/User/AppData/Roaming/Python/Python314/site-packages/cv2/__init__.py",
+        "cuda_enabled_device_count": 0,
+        "has_cuda_module": true,
+        "has_cuda_meanstddev_overload": false,
+        "note": "two OpenCV distributions are visible to the default interpreter (user site-packages); both are CPU wheels, and cv2 resolves from the user site, not the interpreter's own site-packages"
+      }
+    },
+    "git": {"version": "2.55.0.windows.3"},
+    "ninja": {"version": "1.13.0.git.kitware.jobserver-pipe-1"},
+    "storage": {
+      "c_free_bytes": 1214559014912,
+      "c_size_bytes": 3999731281920,
+      "c_free_gib": 1131.1,
+      "note": "disk is not a constraint for two shallow clones plus a 10-20 GiB build/install tree"
+    },
+    "absent": {
+      "opencv_sources": "C:/ocv does not exist; no *opencv* directory under the worktree",
+      "worker_venv": "retina/.venv does not exist",
+      "gpu_dir": "round one: harness/next-release/gpu/ did not exist; round two created it and it now holds test_probe_contract.py, this receipt's closure test"
+    }
+  },
+  "observed_commands": [
+    {
+      "cmd": "nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv",
+      "output_trimmed": "name, driver_version, memory.total [MiB]\nNVIDIA GeForce RTX 4090, 621.14, 24564 MiB"
+    },
+    {
+      "cmd": "nvidia-smi (header lines)",
+      "output_trimmed": "NVIDIA-SMI 621.14    KMD Version: 621.14    CUDA UMD Version: 13.5"
+    },
+    {
+      "cmd": "where.exe nvcc",
+      "output_trimmed": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3/bin/nvcc.exe\nC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/bin/nvcc.exe\nC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.1/bin/nvcc.exe"
+    },
+    {
+      "cmd": "nvcc --version",
+      "output_trimmed": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2026 NVIDIA Corporation\nBuilt on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026\nCuda compilation tools, release 13.3, V13.3.73\nBuild cuda_13.3.r13.3/compiler.38244171_0"
+    },
+    {
+      "cmd": "nvcc --list-gpu-arch | Select-String 89  /  nvcc --list-gpu-code | Select-String sm_89",
+      "output_trimmed": "compute_89\nsm_89\n(12 arch entries listed)"
+    },
+    {
+      "cmd": "cmake --version",
+      "output_trimmed": "cmake version 4.2.1"
+    },
+    {
+      "cmd": "where.exe cmake",
+      "output_trimmed": "C:/Python314/Scripts/cmake.exe\nC:/Program Files/CMake/bin/cmake.exe"
+    },
+    {
+      "cmd": "py -0p ; python --version",
+      "output_trimmed": " -V:3.14 *        C:/Python314/python.exe\n -V:3.13          .../WindowsApps/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/python.exe\n -V:3.12          C:/Users/User/AppData/Local/Programs/Python/Python312/python.exe\n -V:Astral/CPython3.11.15 .../uv/python/cpython-3.11.15-windows-x86_64-none/python.exe\nPython 3.14.2"
+    },
+    {
+      "cmd": "python -c \"import numpy;print(numpy.__version__)\"",
+      "output_trimmed": "2.2.6"
+    },
+    {
+      "cmd": "vswhere -latest -products * -property installationVersion / -property installationPath",
+      "output_trimmed": "17.14.36811.4\nC:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools"
+    },
+    {
+      "cmd": "cl.exe (no input, version banner)",
+      "output_trimmed": "Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35222 for x64"
+    },
+    {
+      "cmd": "Get-ChildItem 'C:/Program Files (x86)/Windows Kits/10/Include' -Directory",
+      "output_trimmed": "10.0.26100.0"
+    },
+    {
+      "cmd": "recursive cudnn* search under CUDA/v13.3",
+      "output_trimmed": "NO_CUDNN_FILES"
+    },
+    {
+      "cmd": "Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='C:'\"",
+      "output_trimmed": "FreeBytes 1214559014912 / SizeBytes 3999731281920"
+    },
+    {
+      "cmd": "[System.Environment]::ProcessorCount ; (Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory",
+      "output_trimmed": "48\n136910020608"
+    },
+    {
+      "cmd": "python -c \"import cv2;print(cv2.__version__);print(cv2.__file__);print(cv2.cuda.getCudaEnabledDeviceCount())\"",
+      "output_trimmed": "cv2 4.12.0\nC:/Users/User/AppData/Roaming/Python/Python314/site-packages/cv2/__init__.py\ncuda_devices 0"
+    },
+    {
+      "cmd": "python -c \"import cv2;print(hasattr(cv2,'cuda'), hasattr(cv2.cuda,'meanStdDev'))\"",
+      "output_trimmed": "has_cuda_module True\nhas_cudaarithm_ops False"
+    },
+    {
+      "cmd": "python -c \"import importlib.metadata as m; print([d.metadata['Name'] for d in m.distributions() if 'opencv' in (d.metadata['Name'] or '').lower()])\"",
+      "output_trimmed": "['opencv-python', 'opencv-python-headless']"
+    },
+    {
+      "cmd": "git ls-remote https://github.com/opencv/opencv.git 'refs/tags/5.1.0*'",
+      "output_trimmed": "dd8d9c3833e6fbda076660cfbf2ae45611723481\trefs/tags/5.1.0\ne4f78fbcf1a773fbed69e14500e8b734963eb585\trefs/tags/5.1.0^{}"
+    },
+    {
+      "cmd": "git ls-remote https://github.com/opencv/opencv_contrib.git 'refs/tags/5.1.0*'",
+      "output_trimmed": "583c6a62d816f0cb696a61ee718c389022848bd0\trefs/tags/5.1.0\nb67a855188a3d683813731010f6d39ac614733a4\trefs/tags/5.1.0^{}"
+    },
+    {
+      "cmd": "call vcvars64.bat ; where cl.exe ; cl.exe",
+      "output_trimmed": "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe\nMicrosoft (R) C/C++ Optimizing Compiler Version 19.44.35222 for x64\n(all exit 0; vcvars emitted a non-fatal 'vswhere.exe' not-recognized line)"
+    },
+    {
+      "cmd": "nvcc.exe -arch=sm_89 -o vectorAdd.exe vectorAdd.cu",
+      "output_trimmed": "vectorAdd.cu\ntmpxft_00001b3c_00000000-7_vectorAdd.cudafe1.cpp\nexit 0"
+    },
+    {
+      "cmd": "./vectorAdd.exe",
+      "output_trimmed": "device=0 name=NVIDIA GeForce RTX 4090 cc=8.9\nn=1024 expected=3.0 mismatches=0 first=3.0\nexit 0"
+    }
+  ],
+  "sources_pinned": {
+    "opencv": {
+      "repo": "https://github.com/opencv/opencv.git",
+      "tag": "5.1.0",
+      "tag_object_sha": "dd8d9c3833e6fbda076660cfbf2ae45611723481",
+      "commit_sha": "e4f78fbcf1a773fbed69e14500e8b734963eb585",
+      "verified_by": "git ls-remote refs/tags/5.1.0^{} on 2026-11-07",
+      "blueprint_citation": "docs/intake/src/synapse_next_release_blueprint.md:192"
+    },
+    "opencv_contrib": {
+      "repo": "https://github.com/opencv/opencv_contrib.git",
+      "tag": "5.1.0",
+      "tag_object_sha": "583c6a62d816f0cb696a61ee718c389022848bd0",
+      "commit_sha": "b67a855188a3d683813731010f6d39ac614733a4",
+      "verified_by": "git ls-remote refs/tags/5.1.0^{} on 2026-11-07",
+      "blueprint_citation": "docs/intake/src/synapse_next_release_blueprint.md:193"
+    },
+    "note": "the blueprint and both live tags agree exactly; no source revision is guessed"
+  },
+  "build_route": {
+    "route": "native CMake source build of OpenCV 5.1 plus matching opencv_contrib with CUDA; never the opencv-python wheel",
+    "decided_by": "RULING-2026-11-06 D6 (source-built OpenCV 5.1 + opencv_contrib with CUDA)",
+    "why_not_the_wheel": "the installed wheel is CPU-only: cv2.cuda.getCudaEnabledDeviceCount() is 0 and cv2.cuda.meanStdDev is absent; published opencv-python wheels remain a CPU-only route (blueprint:188)",
+    "build_root": "C:/ocv",
+    "build_root_reason": "short path keeps the tree under the Windows 260-character limit; clone, build and install stay siblings",
+    "interpreter_abi": {
+      "state": "undecided",
+      "owner": "WP1 output, per RULING-2026-11-06 D1 caveat (ABI is recorded from the probe, never guessed)",
+      "candidates": [
+        {"id": "cpython-3.12", "python": "3.12.10", "selector": "-V:3.12", "executable": "C:/Users/User/AppData/Local/Programs/Python/Python312/python.exe", "numpy": "not probed", "status": "candidate, NOT chosen", "note": "real CPython install; longer-settled ABI"},
+        {"id": "cpython-3.13", "python": "3.13", "selector": "-V:3.13", "executable": "C:/Users/User/AppData/Local/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/python.exe", "numpy": "not probed", "status": "candidate, NOT chosen", "note": "the only 3.13 on this box is the Microsoft Store alias, which is not itself a build substrate; a python.org or uv CPython 3.13 must be provisioned before configure if 3.13 is picked"}
+      ],
+      "recorded_not_in_candidate_set": [
+        {"python": "3.14.2", "executable": "C:/Python314/python.exe", "numpy": "2.2.6", "note": "host default recorded in round one; not part of the round-two candidate set"}
+      ],
+      "forbidden": "hython 3.13 (blueprint:61); the Microsoft Store 3.13 alias is not a build substrate (a provisioned CPython 3.13 is)",
+      "consequence": "the Python binding is interpreter-ABI-specific; the venv must exist before configure and PYTHON3_EXECUTABLE must be pinned to it, or the generated module will not import",
+      "recommendation": "decide before any build work; the choice is a product decision, not something this probe can settle"
+    },
+    "commands": [
+      "git clone --depth 1 --branch 5.1.0 https://github.com/opencv/opencv.git C:/ocv/opencv",
+      "git clone --depth 1 --branch 5.1.0 https://github.com/opencv/opencv_contrib.git C:/ocv/opencv_contrib",
+      "git -C C:/ocv/opencv rev-parse HEAD   # must equal e4f78fbcf1a773fbed69e14500e8b734963eb585",
+      "git -C C:/ocv/opencv_contrib rev-parse HEAD   # must equal b67a855188a3d683813731010f6d39ac614733a4",
+      "<chosen-interpreter> -m venv C:/ocv/venv   # keep build state out of the repo and out of global site-packages",
+      "C:/ocv/venv/Scripts/python.exe -m pip install \"numpy==<pin>\"   # headers needed by the python3 binding build; pin the version in the receipt",
+      "cmake -S C:/ocv/opencv -B C:/ocv/build -G \"Visual Studio 17 2022\" -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:/ocv/install -DOPENCV_EXTRA_MODULES_PATH=C:/ocv/opencv_contrib/modules -DWITH_CUDA=ON -DCUDA_ARCH_BIN=8.9 -DCUDA_ARCH_PTX= -DWITH_CUDNN=OFF -DBUILD_opencv_python3=ON -DPYTHON3_EXECUTABLE=C:/ocv/venv/Scripts/python.exe -DBUILD_LIST=core,cudaarithm,python3 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF",
+      "cmake --build C:/ocv/build --config Release --target install -- /m:32",
+      "C:/ocv/venv/Scripts/python.exe -c \"import cv2;print(cv2.__file__);print(cv2.cuda.getCudaEnabledDeviceCount())\"",
+      "C:/ocv/venv/Scripts/python.exe -c \"import cv2,numpy as np;src=np.arange(121,dtype=np.uint8).reshape(11,11);mask=np.ones((11,11),np.uint8);print(cv2.cuda.meanStdDev(cv2.cuda_GpuMat(src),mask=cv2.cuda_GpuMat(mask)))\"",
+      "Get-FileHash C:/ocv/install/bin/opencv_world*.dll, C:/ocv/venv/Lib/site-packages/cv2/*.pyd -Algorithm SHA256   # record final digests in the next receipt"
+    ],
+    "flags": {
+      "generator": "Visual Studio 17 2022",
+      "arch": "x64",
+      "CMAKE_BUILD_TYPE": "Release",
+      "CMAKE_INSTALL_PREFIX": "C:/ocv/install",
+      "OPENCV_EXTRA_MODULES_PATH": "C:/ocv/opencv_contrib/modules",
+      "WITH_CUDA": "ON",
+      "CUDA_ARCH_BIN": "8.9",
+      "CUDA_ARCH_PTX": "",
+      "WITH_CUDNN": "OFF",
+      "BUILD_opencv_python3": "ON",
+      "PYTHON3_EXECUTABLE": "<worker venv python>",
+      "BUILD_LIST": "core,cudaarithm,python3",
+      "compile_trim": ["BUILD_TESTS=OFF", "BUILD_PERF_TESTS=OFF", "BUILD_EXAMPLES=OFF"],
+      "parallelism": "/m:32 chosen to leave headroom; 48 logical cores are available, so /m:48 is possible only when the box is otherwise idle (RULING operating rule 1: development in tandem, never displacing a running task)",
+      "fallback_1": "add -DCMAKE_POLICY_VERSION_MINIMUM=3.5 if CMake 4.2.1 rejects a vendored dependency's cmake_minimum_required(<3.5)",
+      "fallback_2": "drop BUILD_LIST and build the default module set with CUDA ON if BUILD_LIST does not generate both python3 and cudaarithm"
+    },
+    "rationale": {
+      "cuda_arch_bin_89": "sm_89 is the RTX 4090; nvcc 13.3 lists compute_89 and sm_89, so it is buildable. Building all 12 listed architectures would cost hours for no benefit",
+      "cudaarithm": "it lives in opencv_contrib and supplies the arithmetic the blueprint's chain names (addWeighted, meanStdDev, compare, countNonZero)",
+      "with_cudnn_off": "no cuDNN exists on this box, and blueprint:278 excludes DNN/cuDNN from the first classical-QC slice",
+      "build_list_trim": "core + cudaarithm + python3 is the smallest module set that can answer the question; a full default build is the fallback only"
+    },
+    "cost": {
+      "state": "unmeasured",
+      "reason": "no configure, compile or install was performed in this probe; no duration is quoted from core count",
+      "disk_estimate_gib": "10-20 (estimate, not measured; 1131.1 GiB free)"
+    },
+    "hard_rules": [
+      "never install the built cv2 into Houdini's Python",
+      "never install into C:/Users/User/AppData/Roaming/Python/Python314/site-packages (the CPU wheel already lives there)",
+      "keep worker cv2/OIIO/CUDA binaries outside Houdini's Python and DLL search path (blueprint:238)",
+      "the zero-host-cv2 lint tests/test_retina_boundary.py:67 must stay green"
+    ]
+  },
+  "blockers": [
+    {
+      "id": "B1",
+      "severity": "critical-unknown",
+      "statement": "MSVC 19.44.35222 / toolset 14.44 (VS 17.14) against CUDA 13.3 is unverified. nvcc's host_config.h may reject _MSC_VER 1944.",
+      "evidence": "round one: cl reports 19.44.35222 for x64; toolset dir is 14.44.35207; nvcc is V13.3.73. ROUND TWO (2026-11-07): sourced vcvars64, compiled .scratch/gpu_probe/vectorAdd.cu with nvcc 13.3 -arch=sm_89 — exit 0, vectorAdd.exe produced (172544 bytes); the exe ran on the RTX 4090 (cc 8.9) with exit 0 and 0 mismatches. nvcc does NOT reject _MSC_VER 1944.",
+      "resolution": "resolved by observation on 2026-11-07; no toolset pin and no CUDA downgrade is needed for B1. Evidence: round_two_probe.",
+      "status": "resolved"
+    },
+    {
+      "id": "B2",
+      "severity": "blocking-decision",
+      "statement": "The worker Python ABI is not chosen. The binding is ABI-specific and retina/.venv does not exist.",
+      "evidence": "ROUND TWO candidate set recorded, NOT chosen: CPython 3.12 (3.12.10, real install) and CPython 3.13 (only a Microsoft Store alias exists on this box; a provisioned 3.13 would be required). 3.14.2 was recorded in round one but is not a round-two candidate. retina/.venv is absent; RULING D1 caveat makes the ABI a WP1 output; blueprint:61 forbids hython. See build_route.interpreter_abi.",
+      "resolution": "owner/WP1 picks between CPython 3.12 and CPython 3.13; then create the venv and pin PYTHON3_EXECUTABLE before configure.",
+      "status": "open"
+    },
+    {
+      "id": "B3",
+      "severity": "work-not-risk",
+      "statement": "There are no OpenCV sources, no build cache and no worker venv on this box.",
+      "evidence": "C:/ocv does not exist; no *opencv* directory under the worktree; retina/.venv absent.",
+      "resolution": "two shallow clones (about 1-2 GB) then configure; disk is not a constraint (1131.1 GiB free) and GitHub is reachable (ls-remote succeeded).",
+      "status": "open"
+    },
+    {
+      "id": "B4",
+      "severity": "medium-unknown",
+      "statement": "CMake 4.2.1 removed compatibility with cmake_minimum_required(VERSION <3.5), which vendored third-party dependencies can trip.",
+      "evidence": "cmake --version is 4.2.1; OpenCV 5.1's vendored deps were not configured.",
+      "resolution": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5, or pin CMake 3.31 in the build venv.",
+      "status": "open"
+    },
+    {
+      "id": "B5",
+      "severity": "medium-unknown",
+      "statement": "BUILD_LIST=core,cudaarithm,python3 may not generate the Python bindings as expected; OpenCV's BUILD_LIST / BUILD_opencv_python3 interaction is a known configure-time trap.",
+      "evidence": "not configured; the interaction was not probed.",
+      "resolution": "inspect the configure summary for the python3 module; on failure drop BUILD_LIST and build the default module set with CUDA ON.",
+      "status": "open"
+    },
+    {
+      "id": "B6",
+      "severity": "high-unknown",
+      "statement": "Source support is not binding support. The blueprint requires a Python masked cv2.cuda.meanStdDev with a CV_8UC1 mask, its output shape and precision, empty/singleton behaviour and population convention.",
+      "evidence": "the installed CPU wheel has a cv2.cuda module but no cv2.cuda.meanStdDev attribute at all, so the overload's Python shape cannot be read off the wheel; C++ source support does not establish a working binding (blueprint:217).",
+      "resolution": "after the build, execute the masked probe on the 11x11 fixture and record the actual signature, dtype and semantics; qualification is NR-GPU-QUALIFICATION's job.",
+      "status": "open"
+    },
+    {
+      "id": "B7",
+      "severity": "medium-mitigated",
+      "statement": "Global site-packages pollution: cv2 4.12.0 already resolves from the user site, and two OpenCV distributions are installed there.",
+      "evidence": "cv2 resolves to C:/Users/User/AppData/Roaming/Python/Python314/site-packages/cv2; distributions are opencv-python and opencv-python-headless; the zero-cv2 host lint is tests/test_retina_boundary.py:67.",
+      "resolution": "build and install only inside the isolated worker venv; never pip install there into global site-packages.",
+      "status": "mitigated-by-route"
+    },
+    {
+      "id": "B8",
+      "severity": "low",
+      "statement": "Windows path length: OpenCV build trees can exceed 260 characters.",
+      "evidence": "repository depth plus a build tree under a nested path would be long.",
+      "resolution": "use the short root C:/ocv with clone, build and install as siblings.",
+      "status": "mitigated-by-route"
+    },
+    {
+      "id": "B9",
+      "severity": "low",
+      "statement": "Build time and artifact size are unmeasured.",
+      "evidence": "no configure or compile was run. graph.json rates the node effort L.",
+      "resolution": "time the configure and the compile; do not convert 48 cores into an estimate.",
+      "status": "open"
+    },
+    {
+      "id": "B10",
+      "severity": "low",
+      "statement": "The minimum driver for a CUDA 13.3 runtime was not independently verified.",
+      "evidence": "driver 621.14 reports CUDA UMD 13.5, which is newer than the 13.3 toolkit build, so the direction is favourable but not proven by a vendor table.",
+      "resolution": "record the driver range actually tested in the build receipt.",
+      "status": "open"
+    },
+    {
+      "id": "B11",
+      "severity": "constraint-satisfied",
+      "statement": "No cuDNN on the box.",
+      "evidence": "recursive cudnn* search under CUDA/v13.3 returns nothing.",
+      "resolution": "WITH_CUDNN=OFF; no cuda-dnn module. The named classical chain does not need it and blueprint:278 excludes it from the first slice.",
+      "status": "constrained-by-route"
+    }
+  ],
+  "unknowns": [
+    "whether nvcc 13.3 accepts _MSC_VER 1944 — RESOLVED 2026-11-07: it does (compiled and ran an sm_89 kernel; see round_two_probe)",
+    "whether CMake 4.2.1 configures OpenCV 5.1 plus vendored dependencies",
+    "whether BUILD_LIST yields both python3 and cudaarithm",
+    "which interpreter ABI the release worker will use — candidate set recorded as CPython 3.12 / CPython 3.13, not chosen",
+    "whether the Python binding builds for that interpreter at all",
+    "whether the masked Python cv2.cuda.meanStdDev overload exists and matches the blueprint's contract",
+    "whether the useful chain executes on the GPU (device count 1, real dispatch, synchronized result)",
+    "build duration, artifact size, final native-file digests",
+    "the OIIO version and numpy pin for the delivered worker",
+    "the exact minimum driver for the CUDA 13.3 runtime"
+  ],
+  "closure": {
+    "graph_predicate": "python -m pytest harness/next-release/gpu/test_probe_contract.py -q",
+    "graph_predicate_rc_after_write": 0,
+    "graph_predicate_is": "a behavioural gate over this receipt (pytest asserts B1, the round-two compile/run evidence, the verdict state and the build pins), not a success gate; harness/next-release/README.md section 5 says a result file is not success and only the committed terminal receipt is",
+    "proposed_real_closure": "the chosen worker venv's python imports cv2, cv2.__file__ resolves inside that venv, cv2.cuda.getCudaEnabledDeviceCount() equals 1, and cv2.cuda.meanStdDev(src, mask) executes and returns the masked mean/std for the 11x11 fixture, matches an independent CPU reference within a frozen FP32 tolerance, and the receipt records the executed dispatch branch plus artifact digests",
+    "real_closure_state": "UNMET: no build, no device count, no executed masked meanStdDev",
+    "wp1_exit_alignment": "blueprint:292 allows WP1's exit receipt to be 'a useful 4090 chain ... or named blocker'. This receipt supplies the named blockers and the build route; it does not claim the useful chain.",
+    "scheduling": "what runs next is JEV's call (RULING operating rule 2); this receipt does not reorder the graph"
+  },
+  "next_actions_ordered": [
+    "1. [DONE 2026-11-07 — B1 resolved] Compile a trivial .cu with nvcc 13.3 from a vcvars64 shell; compiled and ran on the 4090 (round_two_probe).",
+    "2. Decide the worker interpreter ABI (B2); this is an owner/WP1 decision.",
+    "3. Shallow-clone both repositories at tag 5.1.0 and assert both HEADs equal the pinned SHAs.",
+    "4. Create the isolated venv, pin numpy, and record its version in the build receipt.",
+    "5. Configure with CMAKE_POLICY_VERSION_MINIMUM=3.5 available as the fallback; inspect that cudaarithm and python3 both generated.",
+    "6. Build with /m:32 (tandem) and time the configure and compile.",
+    "7. Run the import and masked meanStdDev probes; only then may a CUDA-success claim be written.",
+    "8. Record digests, driver range, toolset, flags and OIIO/numpy identity for the WP1 build lock."
+  ],
+  "round_two_probe": {
+    "performed_utc": "2026-11-07T12:54:23Z",
+    "scope": "B1 only: does nvcc 13.3 accept the installed MSVC 19.44 as its host compiler, and does the resulting binary run on the RTX 4090?",
+    "shell": "cmd.exe via .scratch/gpu_probe/probe.bat, driven from Git Bash",
+    "environment": {
+      "vcvars_command": "call \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"",
+      "vcvars_exit_code": 0,
+      "vcvars_stderr_line": "'vswhere.exe' is not recognized as an internal or external command, operable program or batch file.",
+      "vcvars_note": "the vswhere line is non-fatal; vcvarsall still printed 'Environment initialized for: x64' and resolved cl.exe",
+      "cl_resolved": "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe",
+      "cl_banner": "Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35222 for x64",
+      "cl_exit_code": 0,
+      "nvcc_resolved": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3/bin/nvcc.exe",
+      "nvcc_version": "Cuda compilation tools, release 13.3, V13.3.73"
+    },
+    "source": {
+      "path": ".scratch/gpu_probe/vectorAdd.cu",
+      "tracked": false,
+      "why_not_tracked": ".scratch/ is gitignored at every depth; the full source is embedded below and hashed, so the probe is reproducible from this receipt",
+      "sha256": "65ea0871f003c4da93395b29182ba957a64d0c2ddf83e819232ec8260bd06180",
+      "bytes": 2300,
+      "content": "// Trivial CUDA kernel used only to test whether nvcc 13.3 accepts the\n// installed MSVC 19.44 (toolset 14.44) host compiler. Not a product artifact.\n#include <cstdio>\n#include <cuda_runtime.h>\n\n__global__ void vectorAdd(const float* a, const float* b, float* c, int n) {\n    int i = blockIdx.x * blockDim.x + threadIdx.x;\n    if (i < n) c[i] = a[i] + b[i];\n}\n\nint main() {\n    const int n = 1024;\n    const size_t bytes = n * sizeof(float);\n\n    float* h_a = (float*)malloc(bytes);\n    float* h_b = (float*)malloc(bytes);\n    float* h_c = (float*)malloc(bytes);\n    if (!h_a || !h_b || !h_c) { printf(\"host alloc failed\\n\"); return 2; }\n    for (int i = 0; i < n; ++i) { h_a[i] = 1.0f; h_b[i] = 2.0f; h_c[i] = 0.0f; }\n\n    int device = 0;\n    cudaError_t err = cudaGetDevice(&device);\n    if (err != cudaSuccess) { printf(\"cudaGetDevice failed: %s\\n\", cudaGetErrorString(err)); return 3; }\n    cudaDeviceProp prop;\n    err = cudaGetDeviceProperties(&prop, device);\n    if (err != cudaSuccess) { printf(\"cudaGetDeviceProperties failed: %s\\n\", cudaGetErrorString(err)); return 3; }\n    printf(\"device=%d name=%s cc=%d.%d\\n\", device, prop.name, prop.major, prop.minor);\n\n    float *d_a, *d_b, *d_c;\n    err = cudaMalloc(&d_a, bytes); if (err != cudaSuccess) { printf(\"cudaMalloc d_a: %s\\n\", cudaGetErrorString(err)); return 4; }\n    err = cudaMalloc(&d_b, bytes); if (err != cudaSuccess) { printf(\"cudaMalloc d_b: %s\\n\", cudaGetErrorString(err)); return 4; }\n    err = cudaMalloc(&d_c, bytes); if (err != cudaSuccess) { printf(\"cudaMalloc d_c: %s\\n\", cudaGetErrorString(err)); return 4; }\n\n    cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);\n    cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);\n\n    const int threads = 256;\n    const int blocks = (n + threads - 1) / threads;\n    vectorAdd<<<blocks, threads>>>(d_a, d_b, d_c, n);\n\n    err = cudaDeviceSynchronize();\n    if (err != cudaSuccess) { printf(\"kernel failed: %s\\n\", cudaGetErrorString(err)); return 5; }\n\n    cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);\n    int bad = 0;\n    for (int i = 0; i < n; ++i) if (h_c[i] != 3.0f) ++bad;\n    printf(\"n=%d expected=3.0 mismatches=%d first=%.1f\\n\", n, bad, h_c[0]);\n\n    cudaFree(d_a); cudaFree(d_b); cudaFree(d_c);\n    free(h_a); free(h_b); free(h_c);\n    return bad == 0 ? 0 : 1;\n}\n"
+    },
+    "commands": [
+      {
+        "cmd": "nvcc.exe -arch=sm_89 -o vectorAdd.exe vectorAdd.cu",
+        "cwd": "C:/Users/User/SYNAPSE/.claude/worktrees/nr-gpu-feas/.scratch/gpu_probe",
+        "stdout": "vectorAdd.cu\ntmpxft_00001b3c_00000000-7_vectorAdd.cudafe1.cpp",
+        "stderr": "",
+        "exit_code": 0,
+        "artifact": "vectorAdd.exe, 172544 bytes, sha256 0bd455031e584b744526d38bbbcd82ab5694d9bc3aec22486a87852e634314ad"
+      },
+      {
+        "cmd": "vectorAdd.exe   (bare name, inside probe.bat)",
+        "cwd": "C:/Users/User/SYNAPSE/.claude/worktrees/nr-gpu-feas/.scratch/gpu_probe",
+        "stdout": "'vectorAdd.exe' is not recognized as an internal or external command,\noperable program or batch file.",
+        "stderr": "",
+        "exit_code": 9009,
+        "note": "shell lookup failure on the bare name, not a program failure; the file existed and ran on the next invocation"
+      },
+      {
+        "cmd": "./vectorAdd.exe   (explicit path, same binary)",
+        "cwd": "C:/Users/User/SYNAPSE/.claude/worktrees/nr-gpu-feas/.scratch/gpu_probe",
+        "stdout": "device=0 name=NVIDIA GeForce RTX 4090 cc=8.9\nn=1024 expected=3.0 mismatches=0 first=3.0",
+        "stderr": "",
+        "exit_code": 0
+      }
+    ],
+    "verdict": "nvcc 13.3 ACCEPTS MSVC 19.44.35222 (toolset 14.44.35207) as its host compiler. It compiled a sm_89 kernel with exit 0 and the binary executed on the RTX 4090 with exit 0 and 0 mismatches.",
+    "closes": "B1",
+    "does_not_prove": [
+      "that CMake 4.2.1 configures OpenCV 5.1 plus vendored dependencies (B4)",
+      "that OpenCV's cudaarithm module compiles with this toolchain — only that a trivial .cu does",
+      "that OpenCV's Python binding builds for either B2 candidate interpreter",
+      "that the masked cv2.cuda.meanStdDev overload exists or matches the blueprint contract (B6)",
+      "that the named useful chain executes on the GPU"
+    ]
+  },
+  "references": [
+    {"file": "harness/next-release/graph.json", "lines": "47-59", "what": "node definition, owner_files, predicate, gate joe, effort L"},
+    {"file": "harness/next-release/README.md", "lines": "15-24, 91-97", "what": "do not start rules, D1/D6 requirement, result-file-is-not-success"},
+    {"file": "harness/next-release/RULING-2026-11-06.md", "lines": "15-23, 32-43", "what": "D6 source build, D1 support row, ABI is a WP1 output, tandem rule"},
+    {"file": "docs/intake/src/synapse_next_release_blueprint.md", "lines": "186-219", "what": "8.1 established vs not, pinned SHAs, 8.2 the useful chain and binding qualification"},
+    {"file": "docs/intake/src/synapse_next_release_blueprint.md", "lines": "276-306", "what": "10 packaging record fields, 11 WP1 exit receipt"},
+    {"file": "tests/test_retina_boundary.py", "lines": "67", "what": "zero-host-cv2 lint that the route must keep green"}
+  ]
+}
