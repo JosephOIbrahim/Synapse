@@ -131,6 +131,11 @@ def requested_frames(plan: RenderPlan) -> Optional[Tuple[int, ...]]:
     ``start_frame``/``end_frame``: a sparse request ("frames 1, 3") carries
     start=1 and end=3, and expanding that range would invent frame 2.
 
+    ``params["step"]`` is honoured, because the render handler and the farm
+    both honour it: start=1, end=10, step=2 is five frames (1, 3, 5, 7, 9),
+    not ten. A step the farm cannot act on (zero, negative, non-integer)
+    makes the product set unknowable, which is None -- never a guessed range.
+
     Returns a de-duplicated, sorted tuple, or None when the product set is
     absent, ambiguous, or unparseable. None means "no denominator", never
     "guess one".
@@ -158,12 +163,13 @@ def requested_frames(plan: RenderPlan) -> Optional[Tuple[int, ...]]:
             start = end = int(params["frame"])
         else:
             return None
+        step = int(params.get("step", 1))
     except (TypeError, ValueError):
         return None
 
-    if end < start:
+    if end < start or step < 1:
         return None
-    return tuple(range(start, end + 1))
+    return tuple(range(start, end + 1, step))
 
 
 def retry_targets(
@@ -177,6 +183,13 @@ def retry_targets(
     with no ``FrameEvaluation`` row at all is a target: the terminal product
     is missing, and an absent row is exactly what "missing" looks like when
     the farm never reported it.
+
+    Frames the plan never asked for are never targets, whatever the farm
+    reported. A stray failure row (a frame outside the requested set) would
+    otherwise become the whole retry plan and re-render a product the artist
+    never asked for. When the plan has no product set (``requested_frames``
+    is None) there is nothing to intersect against, so the evaluation's own
+    failures stand.
 
     A row is accepted only when it passed, was verified, and has an output
     path. Returns an empty dict when the plan and the evaluation agree.
@@ -192,7 +205,11 @@ def retry_targets(
         fe.frame for fe in evaluation.frame_evaluations if not fe.passed
     }
 
-    requested = set(requested_frames(plan) or ())
+    frames = requested_frames(plan)
+    requested = set(frames or ())
+    if frames is not None:
+        failed &= requested
+
     targets = failed | (requested - accepted)
 
     reasons: Dict[int, str] = {}

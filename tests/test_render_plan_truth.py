@@ -22,10 +22,18 @@ python_dir = os.path.join(package_root, "python")
 sys.path.insert(0, python_dir)
 
 from synapse.autonomy.models import (
+    FrameEvaluation,
+    RenderPlan,
     RenderStep,
+    SequenceEvaluation,
     StepStatus,
 )
-from synapse.autonomy.planner import RenderPlanner, requested_frames, retry_targets
+from synapse.autonomy.planner import (
+    OUTPUT_MISSING,
+    RenderPlanner,
+    requested_frames,
+    retry_targets,
+)
 from synapse.autonomy.driver import AutonomousDriver
 
 
@@ -194,6 +202,134 @@ async def test_missing_terminal_product_without_evaluation_row_is_a_retry_target
     ), "the retry reason must be observable in the decision trail"
     assert 3 in [fe.frame for fe in report.evaluation.frame_evaluations]
     assert report.success is True
+
+
+@pytest.mark.asyncio
+async def test_retry_targets_ignore_frames_the_plan_never_asked_for():
+    """A failed farm row outside the requested set is not a retry target.
+
+    Fails today: every failed frame is unioned into the target set, so a row
+    for frame 99 on a 'render frames 1-3' request becomes a retry target and
+    the next attempt re-renders a product the artist never asked for.
+    """
+    plan = RenderPlanner().plan("render frames 1-3")
+    evaluation = SequenceEvaluation(
+        frame_evaluations=[
+            FrameEvaluation(
+                frame=99,
+                output_path="",
+                passed=False,
+                issues=["Couldn't find rendered output for frame 99"],
+            ),
+            FrameEvaluation(frame=2, output_path="", passed=False),
+        ]
+    )
+
+    targets = retry_targets(plan, evaluation)
+
+    assert 99 not in targets, "frame 99 was never requested"
+    assert sorted(targets) == [1, 2, 3]
+    assert targets[1] == OUTPUT_MISSING
+
+
+@pytest.mark.asyncio
+async def test_retry_never_dispatches_a_frame_the_plan_never_asked_for():
+    """End-to-end: attempt two stays inside the requested set.
+
+    Fails today: the stray frame 99 row joins the target set, and the retry
+    plan becomes start=2/end=99/frames=[2, 99].
+    """
+
+    class _StrayFrameHandler:
+        """Reports a frame nobody asked for alongside the real results."""
+
+        def __init__(self):
+            self.calls = []
+
+        async def call(self, name, params):
+            if name == "get_stage_info":
+                return {"cameras": ["/c"], "renderable_prims": 1}
+            if name != "render_sequence":
+                return {}
+
+            self.calls.append(dict(params))
+            if len(self.calls) == 1:
+                return {
+                    "total_frames": 4,
+                    "successful_frames": 2,
+                    "failed_frames": 2,
+                    "frame_results": [
+                        {"frame": 1, "image_path": "/tmp/f1.exr", "error": ""},
+                        {"frame": 2, "image_path": "", "error": "boom"},
+                        {"frame": 3, "image_path": "/tmp/f3.exr", "error": ""},
+                        {"frame": 99, "image_path": "", "error": "not ours"},
+                    ],
+                }
+
+            frames = sorted({int(f) for f in (params.get("frames") or [])})
+            return {
+                "total_frames": len(frames),
+                "successful_frames": len(frames),
+                "failed_frames": 0,
+                "frame_results": [
+                    {"frame": f, "image_path": f"/tmp/f{f}.exr", "error": ""}
+                    for f in frames
+                ],
+            }
+
+    handler = _StrayFrameHandler()
+    driver = _make_driver(handler)
+
+    report = await driver.execute("render frames 1-3")
+
+    assert len(handler.calls) >= 2, "the failed frame must be retried"
+    assert handler.calls[1] == {
+        "start_frame": 2,
+        "end_frame": 2,
+        "frames": [2],
+    }, "the retry must stay inside the frames the artist asked for"
+    assert report.plan.intent == "render frames 1-3"
+
+
+def test_step_range_counts_only_the_frames_it_asks_for():
+    """start=1, end=10, step=2 asks for five frames, not ten.
+
+    Fails today: ``requested_frames`` expands the range with
+    ``range(start, end + 1)`` and ignores ``step``, so the sequence is graded
+    against five frames the farm will never render. handlers_render.py and
+    the render farm both honour ``step``.
+    """
+
+    class _StepPlanner(RenderPlanner):
+        def _resolve_steps(self, intent, parsed, scene_context):
+            return [
+                RenderStep(
+                    handler="render_sequence",
+                    params={"start_frame": 1, "end_frame": 10, "step": 2},
+                    description="Render every other frame",
+                )
+            ]
+
+    plan = _StepPlanner().plan("render frames 1-10")
+
+    assert requested_frames(plan) == (1, 3, 5, 7, 9)
+    assert _mock_driver()._planned_frames(plan) == [1, 3, 5, 7, 9]
+
+
+def test_unusable_step_has_no_product_set():
+    """A step the farm cannot honour yields None, never a guessed range."""
+    plan = RenderPlan(
+        intent="render frames 1-10",
+        steps=[
+            RenderStep(
+                handler="render_sequence",
+                params={"start_frame": 1, "end_frame": 10, "step": 0},
+                description="Render every zeroth frame",
+            )
+        ],
+    )
+
+    assert requested_frames(plan) is None
 
 
 @pytest.mark.asyncio
