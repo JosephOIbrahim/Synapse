@@ -140,3 +140,43 @@ def test_a_bridge_failure_before_the_handler_invents_no_receipt(monkeypatch):
     assert response.success is False
     assert set(response.data) == {"_integrity"}
     assert response.error.startswith("Bridge: ")
+
+
+class _SucceedingHandler:
+    """A handler whose write landed: its receipt says write=applied."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def handle(self, command):
+        self.calls += 1
+        return SynapseResponse(id=command.id, success=True,
+                               data={"receipt": {"write": "applied",
+                                                 "readback": "match"}})
+
+
+class _BridgeFailsAfterTheHandler:
+    """The bridge fails an op the handler completed (a composition violation
+    that rolls the write back, or a fidelity failure): shared/bridge.py's
+    except arm and _finalize both return ExecutionResult.fail after fn ran."""
+
+    def execute(self, op):
+        op.fn(*op.args, **op.kwargs)
+        return ExecutionResult.fail(
+            error="composition violation; rolled back",
+            error_type="composition_invalid",
+        ).with_integrity(IntegrityBlock())
+
+
+def test_a_completed_write_the_bridge_failed_carries_no_applied_receipt(monkeypatch):
+    monkeypatch.setattr(bridge_adapter, "get_bridge", lambda: _BridgeFailsAfterTheHandler())
+    handler = _SucceedingHandler()
+
+    response = bridge_adapter.execute_through_bridge("houdini_set_parm", handler, _command())
+
+    assert handler.calls == 1
+    assert response.success is False
+    # The handler's receipt says the write landed; the bridge failed (and may
+    # have undone) it. Repeating "applied" on a failure reply would be false.
+    assert "receipt" not in response.data
+    assert set(response.data) == {"_integrity"}

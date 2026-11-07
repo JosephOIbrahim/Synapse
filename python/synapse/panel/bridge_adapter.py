@@ -500,8 +500,12 @@ def execute_through_bridge(
         # drops the handler's response, so the receipt is carried from the
         # response the handler actually returned. Only a real dict receipt is
         # carried, and only when the handler ran: a failure the bridge raised
-        # before dispatch has no handler response and gets no receipt.
-        if handler_response:
+        # before dispatch has no handler response and gets no receipt. A
+        # handler that SUCCEEDED is not carried either: its receipt says the
+        # write landed, and the bridge has just failed - and may have undone -
+        # that write (a composition violation rolls back; a fidelity failure
+        # does not), so repeating "applied" on a failure reply would be false.
+        if handler_response and getattr(handler_response[-1], "success", None) is False:
             handler_data = getattr(handler_response[-1], "data", None)
             receipt = handler_data.get("receipt") if isinstance(handler_data, dict) else None
             if isinstance(receipt, dict):
