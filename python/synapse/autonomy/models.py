@@ -172,5 +172,7 @@ class RenderReport:
     total_time_seconds: float = 0.0
     success: bool = False
     # M3-E: why the loop ended -- "" (passed), "max_iterations", "cancelled",
-    # "wall_clock_exceeded", "gate_rejected", "validation_failed"
+    # "wall_clock_exceeded", "gate_rejected", "validation_failed",
+    # "unsupported_plan_shape" (more than one render step: no single product
+    # set to grade)
     stop_reason: str = ""

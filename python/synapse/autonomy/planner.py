@@ -9,7 +9,7 @@ into concrete handler sequences. stdlib-only.
 """
 
 import re
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 from .models import (
     CheckSeverity,
@@ -102,6 +102,114 @@ def _parse_intent(intent: str) -> Dict[str, Any]:
         }
 
     return {"kind": "unknown", "frames": [], "start": 1, "end": 1}
+
+
+# ---------------------------------------------------------------------------
+# The plan's product set
+# ---------------------------------------------------------------------------
+
+# Handlers that actually render a product. Everything else in a plan (render
+# settings, bookkeeping) says nothing about which frames were asked for.
+RENDER_HANDLERS = ("render_sequence", "render")
+
+# Retry reason codes. They ride alongside the readable decision text so a
+# runtime observer can tell OUTPUT_MISSING (the product never existed) from
+# PRODUCT_UNREADABLE (a file exists but pixels were never analyzed) from
+# QUALITY_FAILED (pixels were analyzed and failed).
+OUTPUT_MISSING = "OUTPUT_MISSING"
+PRODUCT_UNREADABLE = "PRODUCT_UNREADABLE"
+QUALITY_FAILED = "QUALITY_FAILED"
+
+_MISSING_OUTPUT_MARKER = "couldn't find rendered output"
+
+
+def requested_frames(plan: RenderPlan) -> Optional[Tuple[int, ...]]:
+    """The exact frames a plan asks for, or None when the plan does not say.
+
+    A plan is unambiguous only when it carries exactly one render-handler
+    step. An explicit ``params["frames"]`` list wins over
+    ``start_frame``/``end_frame``: a sparse request ("frames 1, 3") carries
+    start=1 and end=3, and expanding that range would invent frame 2.
+
+    Returns a de-duplicated, sorted tuple, or None when the product set is
+    absent, ambiguous, or unparseable. None means "no denominator", never
+    "guess one".
+    """
+    renders = [step for step in plan.steps if step.handler in RENDER_HANDLERS]
+    if len(renders) != 1:
+        return None
+
+    params = renders[0].params or {}
+
+    explicit = params.get("frames")
+    if explicit is not None:
+        try:
+            frames = {int(f) for f in explicit}
+        except (TypeError, ValueError):
+            return None
+        if not frames:
+            return None
+        return tuple(sorted(frames))
+
+    try:
+        if "start_frame" in params and "end_frame" in params:
+            start, end = int(params["start_frame"]), int(params["end_frame"])
+        elif "frame" in params:
+            start = end = int(params["frame"])
+        else:
+            return None
+    except (TypeError, ValueError):
+        return None
+
+    if end < start:
+        return None
+    return tuple(range(start, end + 1))
+
+
+def retry_targets(
+    plan: RenderPlan,
+    evaluation: SequenceEvaluation,
+) -> Dict[int, str]:
+    """Frames that still need a product, mapped to the reason code.
+
+    The target set is every frame the evaluation failed plus every frame the
+    original plan asked for that never produced an accepted product. A frame
+    with no ``FrameEvaluation`` row at all is a target: the terminal product
+    is missing, and an absent row is exactly what "missing" looks like when
+    the farm never reported it.
+
+    A row is accepted only when it passed, was verified, and has an output
+    path. Returns an empty dict when the plan and the evaluation agree.
+    """
+    rows = {fe.frame: fe for fe in evaluation.frame_evaluations}
+
+    accepted = {
+        fe.frame
+        for fe in evaluation.frame_evaluations
+        if fe.passed and fe.verified and fe.output_path
+    }
+    failed = {
+        fe.frame for fe in evaluation.frame_evaluations if not fe.passed
+    }
+
+    requested = set(requested_frames(plan) or ())
+    targets = failed | (requested - accepted)
+
+    reasons: Dict[int, str] = {}
+    for frame in sorted(targets):
+        fe = rows.get(frame)
+        if fe is None:
+            reasons[frame] = OUTPUT_MISSING
+        elif any(_MISSING_OUTPUT_MARKER in issue.lower() for issue in fe.issues):
+            reasons[frame] = OUTPUT_MISSING
+        elif not fe.output_path:
+            reasons[frame] = OUTPUT_MISSING
+        elif not fe.verified:
+            reasons[frame] = PRODUCT_UNREADABLE
+        else:
+            reasons[frame] = QUALITY_FAILED
+
+    return reasons
 
 
 # ---------------------------------------------------------------------------
@@ -214,33 +322,49 @@ class RenderPlanner:
         original_plan: RenderPlan,
         evaluation: SequenceEvaluation,
     ) -> RenderPlan:
-        """Create a revised plan based on evaluation results.
+        """Create a revised plan from what the evaluation proves is missing.
 
-        Only re-renders failed frames and adjusts quality settings if
-        the evaluation flagged specific issues (fireflies, clipping, etc.).
+        Targets are the frames the evaluation failed plus every frame the
+        original plan asked for that never produced an accepted product. A
+        frame with no evaluation row at all is a target, not an absence.
+
+        The revised plan carries the exact frame set. The parameters are
+        derived directly rather than formatted into an intent string and
+        re-parsed: ``_RERENDER_RE`` reconstructs start=min/end=max, which
+        re-expands a sparse set into a contiguous range and re-asks for
+        frames that already succeeded.
         """
-        failed_frames = [
-            fe.frame
-            for fe in evaluation.frame_evaluations
-            if not fe.passed
-        ]
+        targets = retry_targets(original_plan, evaluation)
 
-        if not failed_frames:
-            # Everything passed — nothing to replan
+        if not targets:
+            # Everything the plan asked for was accepted — nothing to replan.
             return original_plan
 
-        # Build re-render intent
-        frames_str = ", ".join(str(f) for f in sorted(failed_frames))
-        replan_intent = f"re-render frames {frames_str}"
-        parsed = _parse_intent(replan_intent)
+        retry_frames = sorted(targets)
+        parsed: Dict[str, Any] = {
+            "kind": "rerender",
+            "frames": retry_frames,
+            "start": retry_frames[0],
+            "end": retry_frames[-1],
+        }
 
         # Collect issue-based parameter adjustments
         adjustments = self._adjustments_from_evaluation(evaluation)
 
         steps = self._build_render_steps(parsed, adjustments)
 
+        # Carry the reason codes alongside the readable description so the
+        # retry plan and the decision trail agree about why each frame is
+        # being retried.
+        reason_codes = ", ".join(sorted({targets[f] for f in retry_frames}))
+        for step in steps:
+            if step.handler in RENDER_HANDLERS:
+                step.description = f"{step.description} [{reason_codes}]"
+
+        frames_str = ", ".join(str(f) for f in retry_frames)
+
         return RenderPlan(
-            intent=replan_intent,
+            intent=f"re-render frames {frames_str}",
             steps=steps,
             validation_checks=[
                 PreFlightCheck(
@@ -250,7 +374,7 @@ class RenderPlanner:
                 )
                 for c in _STANDARD_CHECKS
             ],
-            estimated_frames=len(failed_frames),
+            estimated_frames=len(retry_frames),
             gate_level=GateLevel.INFORM,  # Re-renders are lower gate
         )
 
