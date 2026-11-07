@@ -41,7 +41,7 @@
       "depends_on": [
         "NR-SPARSE-RENDER"
       ],
-      "why": "G101 and G32 prove per-attempt product truth; neither keeps the original plan immutable nor computes retry targets from it. Sparse [1,3] with a retry [3], a missing terminal product with no evaluation row, and a multi-render-step plan that is silently truncated to the first step are all still reachable. The blueprint's adversarial cases in section 12.2 are the fixtures. Round-two ruling R2: models.py joins the node because the report must carry executed state; the predicate is behavioural (R4) after the attack proved the grep could not fail.",
+      "why": "G101 and G32 prove per-attempt product truth; neither keeps the original plan immutable nor computes retry targets from it. Sparse [1,3] with a retry [3], a missing terminal product with no evaluation row, and a multi-render-step plan that is silently truncated to the first step are all still reachable. The blueprint's adversarial cases in section 12.2 are the fixtures. Round-two ruling R2: models.py joins the node because the report must carry executed state; the predicate is behavioural (R4) after the attack proved the grep could not fail. Round 2.5 (R2b): handlers.py stays with NR-WRITE-RECEIPT; plan-truth does not write it.",
       "predicate": "python -m pytest tests/test_render_plan_truth.py -q",
       "gate": "crux",
       "effort": "M"
@@ -58,10 +58,13 @@
         "python/synapse/mcp/_tool_registry.py",
         "python/synapse/mcp/server.py",
         "mcp_server.py",
-        "python/synapse/panel/tool_executor.py"
+        "python/synapse/panel/tool_executor.py",
+        "python/synapse/panel/claude_worker.py",
+        "python/synapse/panel/direct_tool.py",
+        "python/synapse/panel/render_workspace.py"
       ],
       "depends_on": [],
-      "why": "G25 returns observed, mismatch and a refusal, but a lost transport loses the detail, an uninspectable parm can read as no animation, and queued mutations carry no precondition. The blueprint's section 6 receipt (request, write, readback, recovery, error) and the raw-authored comparison domain are the contract; the legacy observed value stays evaluated. Round-two ruling R3: the contract is every installed route, so the rewrap, stdio server and panel executor join the node; the predicate is behavioural (R4).",
+      "why": "G25 returns observed, mismatch and a refusal, but a lost transport loses the detail, an uninspectable parm can read as no animation, and queued mutations carry no precondition. The blueprint's section 6 receipt (request, write, readback, recovery, error) and the raw-authored comparison domain are the contract; the legacy observed value stays evaluated. Round-two ruling R3: the contract is every installed route, so the rewrap, stdio server and panel executor join the node; the predicate is behavioural (R4). Round 2.5 (R3b): the panel consumers that stringify the exception join the node, because a receipt the consumer drops did not survive the route. R2b: the _record_autonomy_task repoint lands here, with a getattr fallback.",
       "predicate": "python -m pytest tests/test_parm_write_receipt.py -q",
       "gate": "crux",
       "effort": "M"

@@ -51,3 +51,24 @@ Each follow-up carries the head SHA, and the adversarial verdict names that SHA.
 Round two adds one real probe: does nvcc 13.3 accept MSVC 19.44 (B1). It does not
 clone sources or start a build. B2 (worker Python ABI) is the owner's decision and
 stays open; the receipt records the two candidate runtimes rather than choosing.
+
+---
+
+## Addendum — round 2.5 (the attacks' ownership findings)
+
+**R2b — `handlers.py` stays with NR-WRITE-RECEIPT.** NR-PLAN-TRUTH's round-two
+commit edited `_record_autonomy_task` to read the new `executed` field. The file
+belongs to NR-WRITE-RECEIPT. Plan-truth reverts that hunk; write-receipt applies
+the reader repoint with a `getattr(report, "executed", None) or report.plan`
+fallback, so it is correct whichever branch merges first, and pins it with a test.
+
+**R3b — the panel consumers join NR-WRITE-RECEIPT.** The receipt is attached to the
+exception in `panel/tool_executor.py`, but the only production consumers —
+`panel/claude_worker.py`, `panel/direct_tool.py`, `panel/render_workspace.py` —
+stringify the exception and drop it. "Survives every installed route" includes the
+consumer that turns it into a tool result. Those three files join the node.
+
+**R4b — pre-dispatch returns carry no executed checks.** A report that stopped
+before dispatch must not present the planner's declared `passed=False` checks as
+if they had run. `executed.validation_checks` is empty on gate_rejected and
+unsupported_plan_shape, and the reader reports the absence honestly.
