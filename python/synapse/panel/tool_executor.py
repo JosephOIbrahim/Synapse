@@ -405,8 +405,16 @@ class _MCPLocalClient:
             )
         if payload.get("isError") is True:
             # The server answered, so the call is never sent again; the panel shows
-            # the outcome line, as it does for a JSON-RPC error.
-            raise RuntimeError(self._failure_text(payload))
+            # the outcome line, as it does for a JSON-RPC error. The failure's
+            # machine-readable receipt (a parm-write record) rides on the
+            # exception so a caller that only catches it still has the evidence.
+            from synapse.core.tool_results import failure_receipt
+
+            exc = RuntimeError(self._failure_text(payload))
+            receipt = failure_receipt(payload)
+            if receipt is not None:
+                exc.receipt = receipt
+            raise exc
         return payload
 
     def _call_once(self, tool_name: str, arguments: dict) -> dict:

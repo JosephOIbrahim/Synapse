@@ -639,9 +639,14 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 sequence=command.sequence,
             )
         except Exception as e:
+            # A setter can fail with an exception that is not a ValueError
+            # (hou.OperationFailed is a RuntimeError). The receipt rides on the
+            # exception; dropping it here is what lost the record for exactly
+            # the failures that reached Houdini and failed.
             return SynapseResponse(
                 id=command.id,
                 success=False,
+                data=_failure_receipt_data(e),
                 error=f"Hit a snag processing that request: {e}",
                 sequence=command.sequence,
             )

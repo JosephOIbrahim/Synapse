@@ -263,9 +263,23 @@ def _fallback_code(exc_type: type | None, cmd_type: str | None = None) -> str:
 
 
 def _exc_outcome(exc: BaseException, cmd_type: str | None = None) -> dict | None:
-    """The outcome an exception carries, else the one its class names."""
+    """The outcome an exception carries, else the one its class names.
+
+    A failure's machine-readable receipt rides on the exception (``.receipt``)
+    because not every failure is a ValueError: ``hou.OperationFailed`` is a
+    RuntimeError, and the handler's generic arm is the only one that sees it.
+    Fold it into the outcome's evidence so ``_failure`` puts it on the wire in
+    ``_meta["synapse/outcome"]``.
+    """
     found = None if _attached is None else _attached(exc)
-    return found or _outcome_dict(_fallback_code(type(exc), cmd_type), str(exc))
+    outcome = found or _outcome_dict(_fallback_code(type(exc), cmd_type), str(exc))
+    receipt = getattr(exc, "receipt", None)
+    if isinstance(outcome, dict) and isinstance(receipt, dict):
+        outcome = dict(outcome)
+        evidence = dict(outcome.get("evidence") or {})
+        evidence.setdefault("receipt", receipt)
+        outcome["evidence"] = evidence
+    return outcome
 
 
 _UNBUILT = object()  # call_tool's marker for a payload its builder never returned
@@ -610,7 +624,14 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
         if isinstance(data, dict) and "retry_after" in data:
             error_msg += f" (retry after {data['retry_after']}s)"
         outcome = data.get("outcome") if isinstance(data, dict) else None
-        raise _tagged(RuntimeError, outcome if isinstance(outcome, dict) else "tool.failed", error_msg)
+        exc = _tagged(RuntimeError, outcome if isinstance(outcome, dict) else "tool.failed", error_msg)
+        # The handler's failure payload (a parm-write receipt, say) is not part
+        # of the outcome. Keep it on the exception so _exc_outcome/_failure can
+        # put it in _meta instead of losing it with response["data"].
+        receipt = data.get("receipt") if isinstance(data, dict) else None
+        if isinstance(receipt, dict):
+            exc.receipt = receipt
+        raise exc
 
     return response.get("data", {})
 

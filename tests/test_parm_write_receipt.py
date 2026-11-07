@@ -16,14 +16,40 @@ These pins are pure Python. The parms follow Houdini 22.0.400 where it matters
 equal reference wrapper) and raise the same ``_OPERATION_FAILED`` class the
 module catches.
 """
+import asyncio
 import sys
+import types
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python"))
+
+# Qt stub -- the established sibling convention (tests/test_timeouts_c7.py).
+# The panel's tool_executor imports PySide6.QtCore at module top; in bare stock
+# python this import-only stub keeps the route pin deterministic. Real PySide6
+# (hython) wins when it is already loaded.
+if "PySide6" not in sys.modules:
+    class _QObject:
+        def __init__(self, *a, **k):
+            pass
+
+    class _QThread:
+        def __init__(self, *a, **k):
+            pass
+
+    _qtcore = types.ModuleType("PySide6.QtCore")
+    _qtcore.QObject = _QObject
+    _qtcore.QThread = _QThread
+    _qtcore.Slot = lambda *a, **k: (lambda f: f)
+    _qtcore.Signal = lambda *a, **k: MagicMock()
+    _pyside6 = types.ModuleType("PySide6")
+    _pyside6.QtCore = _qtcore
+    sys.modules["PySide6"] = _pyside6
+    sys.modules["PySide6.QtCore"] = _qtcore
 
 from synapse.core.tool_results import (  # noqa: E402
     failure_receipt,
@@ -437,3 +463,148 @@ def test_partial_write_is_a_miss_for_the_warning_policy():
     # A true mismatch is a miss too: the scene holds a different value.
     assert result_misses({"receipt": {"write": "applied", "readback": {"state": "mismatch"}}})
     assert result_misses({"receipt": {"write": "applied", "readback": {"state": "match"}}}) == []
+
+
+# ---------------------------------------------------------------------------
+# 7. The receipt across every installed route (round two, item 1)
+# ---------------------------------------------------------------------------
+
+def _failed_result():
+    return {
+        "content": [{"type": "text", "text": "failed: cannot inspect"}],
+        "isError": True,
+        "structuredContent": {"receipt": _RECEIPT},
+    }
+
+
+def test_outcomes_rewrap_carries_structured_content(monkeypatch):
+    """Both /mcp rewraps keep the handler payload, not only its text."""
+    from synapse.mcp import server as server_mod
+
+    server = server_mod.MCPServer(handler=SimpleNamespace())
+    server._enable_resilience = False
+    server._rate_limiter = None
+    server._circuit_breaker = None
+    monkeypatch.setattr(server_mod.read_only_mode, "refusal_for_tool",
+                        lambda name: None)
+    monkeypatch.setattr(server_mod, "dispatch_tool",
+                        lambda handler, name, args: _failed_result())
+
+    # The read-only fast path (server.py:715 class of site).
+    monkeypatch.setattr(server_mod, "is_transport_fast_path", lambda name: True)
+    fast = server._handle_tools_call(
+        {"name": "houdini_get_parm", "arguments": {}})
+    assert fast["isError"] is True
+    assert fast["structuredContent"] == {"receipt": _RECEIPT}
+    assert failure_receipt(fast) == _RECEIPT
+
+    # The marshalled path (server.py:888 class of site).
+    monkeypatch.setattr(server_mod, "is_transport_fast_path", lambda name: False)
+    monkeypatch.setattr(server_mod, "_preflight_refusal", lambda *a, **k: None)
+    import synapse.server.main_thread as main_thread
+    import synapse.host.memory_loop as memory_loop
+
+    monkeypatch.setattr(main_thread, "run_on_main", lambda fn, **kw: fn())
+    monkeypatch.setattr(memory_loop, "observe_operation",
+                        lambda op, args, fn, **kw: fn())
+    marshalled = server._handle_tools_call(
+        {"name": "houdini_get_parm", "arguments": {}})
+    assert marshalled["isError"] is True
+    assert marshalled["structuredContent"] == {"receipt": _RECEIPT}
+    assert failure_receipt(marshalled) == _RECEIPT
+
+
+def test_stdio_failure_paths_carry_the_receipt(monkeypatch):
+    """mcp_server.send_command keeps a failed response's receipt."""
+    import mcp_server as stdio
+
+    async def drive():
+        response = {"success": False, "error": "cannot inspect",
+                    "data": {"receipt": _RECEIPT}}
+
+        class _WS:
+            async def send(self, _text):
+                loop = asyncio.get_running_loop()
+                for future in list(stdio._pending.values()):
+                    if not future.done():
+                        loop.call_soon(future.set_result, response)
+
+            async def close(self):
+                return None
+
+        async def _connection():
+            return _WS()
+
+        monkeypatch.setattr(stdio, "_get_connection", _connection)
+        try:
+            await stdio.send_command("set_parm", {"node": "/obj/geo1"})
+        except RuntimeError as exc:
+            return exc
+        return None
+
+    stdio._pending.clear()
+    exc = asyncio.run(drive())
+    assert exc is not None
+    # A setter failure is not a ValueError; the receipt must not depend on it.
+    assert not isinstance(exc, ValueError)
+    assert failure_receipt(exc) == _RECEIPT
+    assert stdio._exc_outcome(exc)["evidence"]["receipt"] == _RECEIPT
+
+
+def test_panel_mcp_client_failure_carries_the_receipt(monkeypatch):
+    """The panel's local MCP client keeps the receipt when it raises."""
+    from synapse.panel.tool_executor import _MCPLocalClient
+
+    client = _MCPLocalClient()
+    monkeypatch.setattr(client, "_call_once",
+                        lambda name, args: {"result": _failed_result()})
+
+    with pytest.raises(RuntimeError) as caught:
+        client.call_tool("houdini_set_parm", {})
+
+    assert failure_receipt(caught.value) == _RECEIPT
+
+
+# ---------------------------------------------------------------------------
+# 8. A non-ValueError setter failure (round two, item 2)
+# ---------------------------------------------------------------------------
+
+class _OperationFailed(RuntimeError):
+    """Stands in for hou.OperationFailed, which is not a ValueError."""
+
+    def __init__(self, message="cannot set this parm"):
+        super().__init__(message)
+
+
+class _FailingSetterParm(_Parm):
+    """A numeric parm whose setter raises a non-ValueError."""
+
+    def set(self, value, follow_parm_reference=True):
+        raise _OperationFailed()
+
+
+def test_non_valueerror_setter_failure_keeps_the_receipt(monkeypatch):
+    from synapse.core.protocol import SynapseCommand
+    from synapse.server import handlers
+
+    parm = _FailingSetterParm(0.0)
+    _install_fake_hou(monkeypatch, parm)
+    monkeypatch.setattr(handlers._envelope, "envelope_active",
+                        lambda _cmd_type: False)
+
+    assert not issubclass(_OperationFailed, ValueError)
+
+    handler = handlers.SynapseHandler()
+    monkeypatch.setattr(handler._registry, "invoke",
+                        lambda cmd_type, payload, ctx=None:
+                        handler._handle_set_parm(payload))
+
+    response = handler.handle(SynapseCommand(
+        type="set_parm", id="req-2",
+        payload={"node": "/obj/geo1", "parm": "tx", "value": 1.0}))
+
+    assert response.success is False
+    assert response.data["receipt"]["write"] == "unknown"
+    assert response.data["receipt"]["error"]["code"] == "parm.write_failed"
+    # The original message still reaches the caller.
+    assert "cannot set this parm" in response.error

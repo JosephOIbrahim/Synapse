@@ -126,6 +126,24 @@ def unpack_with_receipt(value):
     return payload, is_error, receipt
 
 
+def carry_structured(target, source):
+    """Give a rewrapped result the failed source's ``structuredContent``.
+
+    ``core.outcomes.tool_result`` builds a fresh MCP result and copies only the
+    non-text content blocks, so a handler payload that rode in
+    ``structuredContent`` (the parm-write receipt is one) is dropped by every
+    rewrap even though the failure itself survives. The /mcp transport,
+    its marshalled path and the read-only fast path all rewrap with that
+    builder; each hands the source here. Returns *target* so a call site can
+    wrap the builder inline.
+    """
+    if isinstance(target, dict) and isinstance(source, dict):
+        structured = source.get("structuredContent")
+        if isinstance(structured, dict):
+            target["structuredContent"] = structured
+    return target
+
+
 #: The opening words of every artist-facing undo receipt. Minted by
 #: ``synapse.server.handler_helpers.undo_receipt``; read back by the panel
 #: (``synapse.panel.activity``). One spelling, shared, so the two never drift.
