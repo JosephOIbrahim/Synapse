@@ -608,3 +608,76 @@ def test_non_valueerror_setter_failure_keeps_the_receipt(monkeypatch):
     assert response.data["receipt"]["error"]["code"] == "parm.write_failed"
     # The original message still reaches the caller.
     assert "cannot set this parm" in response.error
+
+
+# ---------------------------------------------------------------------------
+# 9. The canonical payload and schema (round two, item 3)
+# ---------------------------------------------------------------------------
+
+def test_set_parm_payload_and_schema_carry_write_context():
+    """A queued write's frame, precondition and id must reach the handler."""
+    from synapse.mcp._tool_registry import TOOL_DISPATCH, TOOL_JSON
+
+    cmd_type, builder = TOOL_DISPATCH["houdini_set_parm"]
+    assert cmd_type == "set_parm"
+    arguments = {
+        "node": "/obj/geo1",
+        "parm": "tx",
+        "value": 1.0,
+        "mode": "key_at_frame",
+        "frame": 120,
+        "queued": True,
+        "expect": {"value": 0.0},
+        "request_id": "req-9",
+        "not_a_parm_field": "dropped",
+    }
+    payload = builder(arguments)
+    assert payload == {key: value for key, value in arguments.items()
+                      if key != "not_a_parm_field"}
+
+    properties = TOOL_JSON["houdini_set_parm"]["inputSchema"]["properties"]
+    for key in ("frame", "queued", "expect", "request_id"):
+        assert key in properties
+
+
+# ---------------------------------------------------------------------------
+# 10. The request block's session and observed state (round two, item 5)
+# ---------------------------------------------------------------------------
+
+def test_request_block_carries_session_and_observed_fields(monkeypatch):
+    from synapse.server import handlers
+
+    parm = _Parm(0.0, frame=5.0)
+    _install_fake_hou(monkeypatch, parm, frame=5.0)
+    handler = handlers.SynapseHandler()
+    handler.set_session_id("sess-live")
+
+    out = handler._handle_set_parm({
+        "node": "/obj/geo1", "parm": "tx", "value": 1.0,
+        "request_id": "req-10",
+    })
+
+    request = out["receipt"]["request"]
+    assert request["request_id"] == "req-10"
+    assert request["expected_session"] == "sess-live"
+    assert request["observed_session"] == "sess-live"
+    # The frame the write actually ran under, beside the declared one.
+    assert request["observed_frame"] == 5.0
+    assert request["observed_target"] == "/obj/geo1/tx"
+
+
+def test_queued_write_with_frame_but_no_expect_refuses(monkeypatch):
+    """A declared frame is not proof the scene is the planned one."""
+    from synapse.server import handlers
+
+    parm = _Parm(0.0)
+    _install_fake_hou(monkeypatch, parm)
+
+    with pytest.raises(ParmWriteRefused) as caught:
+        handlers.SynapseHandler._handle_set_parm(
+            None, {"node": "/obj/geo1", "parm": "tx", "value": 1.0,
+                   "queued": True, "frame": 1})
+
+    assert caught.value.receipt["error"]["code"] == "parm.precondition_missing"
+    assert caught.value.receipt["write"] == "not_attempted"
+    assert parm.writes == []

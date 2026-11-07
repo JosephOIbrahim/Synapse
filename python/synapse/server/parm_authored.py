@@ -470,9 +470,20 @@ def _values(items):
     return items if len(items) > 1 else items[0]
 
 
-def _request_fields(request, mode, values, frame, queued) -> Dict[str, Any]:
+def _request_fields(request, mode, values, frame, queued,
+                    targets=None) -> Dict[str, Any]:
+    """The receipt's request block: what was asked, and in which context.
+
+    ``expected_session`` is the session the write was authorized under;
+    ``observed_session`` is the session read when it actually ran; and
+    ``observed_frame`` is the frame Houdini was on at that moment (never the
+    declared one — ``frame`` above is the declaration). ``observed_target`` is
+    the parameter the write actually reached, which differs from the requested
+    name under ``mode='write_source'``. A context the route could not read is
+    ``None``, never a stand-in.
+    """
     request = request if isinstance(request, dict) else {}
-    return {
+    fields: Dict[str, Any] = {
         "request_id": request.get("request_id"),
         "node": request.get("node"),
         "parm": request.get("parm"),
@@ -480,7 +491,15 @@ def _request_fields(request, mode, values, frame, queued) -> Dict[str, Any]:
         "value": _values(values),
         "frame": frame,
         "queued": bool(queued),
+        "expected_session": request.get("expected_session"),
+        "observed_session": request.get("observed_session"),
+        "observed_frame": request.get("observed_frame"),
+        "observed_target": None,
     }
+    if targets:
+        fields["observed_target"] = _values(
+            [_label(target) for target, _ in targets])
+    return fields
 
 
 def _not_attempted_readback(values) -> Dict[str, Any]:
@@ -677,7 +696,7 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         if not isinstance(exc.receipt, dict):
             _attach_receipt(exc, _receipt(
                 request=_request_fields(request, mode, values,
-                                        declared_frame, queued),
+                                        declared_frame, queued, targets=[]),
                 write="not_attempted",
                 targets=[],
                 readback=_not_attempted_readback(values),
@@ -698,7 +717,7 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         if not isinstance(exc.receipt, dict):
             _attach_receipt(exc, _receipt(
                 request=_request_fields(request, mode, values,
-                                        declared_frame, queued),
+                                        declared_frame, queued, targets=targets),
                 write="not_attempted",
                 targets=_target_mapping(parms, targets),
                 readback=_not_attempted_readback(values),
@@ -734,7 +753,7 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         recovery = _restore_all(target_parms, snapshots)
         _attach_receipt(exc, _receipt(
             request=_request_fields(request, mode, values,
-                                    declared_frame, queued),
+                                    declared_frame, queued, targets=targets),
             write="partial" if applied else "unknown",
             targets=_target_mapping(parms, targets),
             readback=_not_attempted_readback(values),
@@ -751,7 +770,7 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         # unverified. Do not auto-restore an ambiguous result.
         _attach_receipt(exc, _receipt(
             request=_request_fields(request, mode, values,
-                                    declared_frame, queued),
+                                    declared_frame, queued, targets=targets),
             write="applied",
             targets=_target_mapping(parms, targets),
             readback={
@@ -769,7 +788,8 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         raise
 
     receipt = _receipt(
-        request=_request_fields(request, mode, values, declared_frame, queued),
+        request=_request_fields(request, mode, values, declared_frame, queued,
+                                targets=targets),
         write="applied",
         targets=_target_mapping(parms, targets),
         readback=readback,

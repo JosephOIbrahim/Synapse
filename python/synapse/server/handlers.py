@@ -1265,7 +1265,11 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         frame = payload.get("frame")
         expect = payload.get("expect")
         request_context = {"request_id": payload.get("request_id"),
-                           "node": node_path, "parm": parm_name}
+                           "node": node_path, "parm": parm_name,
+                           # The session the write is authorized under. The
+                           # session observed when it actually runs is added
+                           # on the main thread; a mismatch is evidence.
+                           "expected_session": getattr(self, "_session_id", None)}
         if not isinstance(queued, bool):
             raise write_refusal(
                 "'queued' must be true or false. Nothing was written.",
@@ -1283,15 +1287,28 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 "Nothing was written.", code="parm.precondition_invalid",
                 request=request_context, mode=mode, values=[value],
                 frame=frame, queued=queued)
-        if queued and frame is None and not expect:
+        if queued and not expect:
+            # A declared frame alone is not proof the scene is the one the
+            # write was planned against: the playhead can be set to any frame
+            # and the parm may have moved. A queued write carries the authored
+            # state it was planned against, revalidated below on main.
             raise write_refusal(
-                "A queued write needs its declared frame or an expected "
-                "authored state; neither was supplied. Nothing was written.",
+                "A queued write needs an expected authored state (`expect`); "
+                "a declared frame alone does not prove the scene is the one "
+                "the write was planned against. Nothing was written.",
                 code="parm.precondition_missing", request=request_context,
-                mode=mode, values=[value], frame=None, queued=queued)
+                mode=mode, values=[value], frame=frame, queued=queued)
 
         def _on_main():
             nonlocal parm_name
+            # What the write ran under, read here and now. Never the
+            # pre-hop values: a session can expire or switch between them.
+            request_context["observed_session"] = getattr(
+                self, "_session_id", None)
+            try:
+                request_context["observed_frame"] = hou.frame()
+            except Exception:
+                request_context["observed_frame"] = None
             node = hou.node(node_path)
             if node is None:
                 raise NodeNotFoundError(node_path)
