@@ -110,3 +110,35 @@ UNMET and B2-B6 stay open. A scheduler that keys only on the predicate's exit
 code could advance NR-GPU-QUALIFICATION before any build. The node's gate is
 `joe`, and any workflow consuming the graph must read the receipt's verdict and
 closure, not only rc.
+
+---
+
+## Addendum — round 2.6 (the verdicts' residual findings)
+
+All four wave-2 heads returned PASS. These are what the round-two attacks found
+still open and did not treat as blockers. None is fixed here; each is bounded,
+recorded, and left for a node that has a caller for it.
+
+**W8 — a boolean expectation passes on a numeric parm (severity 2, document
+only).** `_close` in `parm_authored.py` compares booleans as `a == b`, so
+`expect={"value": True}` is satisfied by a float parm holding `1.0`, and
+`False` by `0.0`. This is a real comparison — not the `None == None` defect the
+node fixed — and it matches Houdini's toggle semantics, where the toggle's value
+is int 1. Tightening it would refuse a write the application's own semantics
+accept. Do not reopen a reviewed head for it.
+
+**W9 — no per-component tuple precondition (severity 1, fails closed).**
+`expect={"value": [1.0, 0.0]}` is refused `precondition_invalid`. A uniform
+tuple can be pinned by checking the scalar against every component; a
+non-uniform tuple cannot, and is refused rather than half-checked. It fails
+closed, so there is no false pass. A later node adds per-component pinning if a
+real caller needs it.
+
+**Merge note — the graph predicate that counts is master's, not the branch's.**
+Every wave-2 branch was cut before master's behavioural predicates landed, so
+several still *display* the old `grep` predicate in their working copy of
+`harness/next-release/graph.json`. None of them modifies that file —
+`git diff --name-only master...<branch> -- harness/next-release/` is empty for
+plan-truth, sparse-render and write-receipt, and names only the two GPU files
+for gpu-feasibility — so the merge keeps master's behavioural predicates. Check
+that diff after each merge rather than trusting the branch's working copy.
