@@ -709,8 +709,9 @@ def validate_expect(expect) -> None:
 
     Called before the main-thread hop (so a typo costs zero setters) and again
     inside ``_check_expect`` (so a direct caller gets the same answer). At
-    least one entry must be present, and every entry must be one of
-    ``value`` / ``raw_authored`` — anything else is a precondition nobody will
+    least one entry must be present, every entry must be one of ``value`` /
+    ``raw_authored``, and every value must name something comparable — a key
+    name alone is not a check. Anything else is a precondition nobody will
     check, which is worse than none because it reads as protection.
     """
     if expect is None:
@@ -726,6 +727,22 @@ def validate_expect(expect) -> None:
             f"A queued write's precondition names {named}; the states this "
             f"module evaluates are {' and '.join(repr(k) for k in _EXPECT_KEYS)}. "
             "Nothing was written.", code="parm.precondition_invalid")
+    # A key is not a check. ``raw_authored: null`` names no text, and
+    # ``raw_authored()`` returns None for a numeric or keyframed parameter, so
+    # the comparison below was None == None: schema-legal protection that
+    # protected nothing.
+    if "raw_authored" in expect and not isinstance(expect["raw_authored"], str):
+        raise ParmWriteRefused(
+            "A queued write's `raw_authored` precondition must be the authored "
+            "text as a string; a null or a non-string names no text to compare. "
+            "Nothing was written.", code="parm.precondition_invalid")
+    if "value" in expect and (expect["value"] is None
+                              or isinstance(expect["value"], (dict, list, tuple))):
+        raise ParmWriteRefused(
+            "A queued write's `value` precondition must be a JSON scalar "
+            "(string, number or boolean); a null or a collection names no "
+            "value a parameter can hold. Nothing was written.",
+            code="parm.precondition_invalid")
 
 
 def _check_expect(targets, expect) -> None:
@@ -749,6 +766,14 @@ def _check_expect(targets, expect) -> None:
                     "was written.", code="parm.precondition_failed")
         if "raw_authored" in expect:
             held_raw = raw_authored(target)
+            if held_raw is None:
+                # Not a string parameter, or a keyframed one: it cannot report
+                # authored text, so the precondition cannot be evaluated.
+                raise ParmWriteRefused(
+                    f"Cannot revalidate the authored-text precondition on "
+                    f"{_label(target)}: the parameter cannot report its "
+                    "authored text. Nothing was written.",
+                    code="parm.precondition_invalid")
             if held_raw != expect["raw_authored"]:
                 raise ParmWriteRefused(
                     f"The authored-text precondition on {_label(target)} did "

@@ -270,11 +270,16 @@ TOOL_DEFS: list[tuple] = [
              "properties": {
                  "value": {
                      "description": "The value the parameter must still hold "
-                                    "(compared after eval()).",
+                                    "(compared after eval()): a JSON scalar "
+                                    "(string, number or boolean).",
                  },
                  "raw_authored": {
+                     "type": "string",
                      "description": "The string the parameter must still hold "
-                                    "as written (unexpandedString()).",
+                                    "as written (unexpandedString()). The "
+                                    "parameter must be a string parameter that "
+                                    "can report authored text, or the write is "
+                                    "refused as unverifiable.",
                  },
              },
              "additionalProperties": False,

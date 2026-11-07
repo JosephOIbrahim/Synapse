@@ -843,6 +843,75 @@ def test_author_write_refuses_an_expect_that_names_no_state():
     assert parm.writes == []
 
 
+def test_expect_that_names_an_uncheckable_state_refuses():
+    """Probe: expect={"raw_authored": None} wrote 5.0 and reported applied.
+
+    ``raw_authored()`` returns None for a numeric or keyframed parm, so the
+    comparison was None == None: a schema-legal precondition that checked
+    nothing. A key is not a check; the VALUE has to name something comparable.
+    """
+    parm = _Parm(0.0)
+
+    with pytest.raises(ParmWriteRefused) as null_expect:
+        author_parm_write([parm], [5.0], queued=True,
+                          expect={"raw_authored": None})
+    assert null_expect.value.receipt["error"]["code"] == "parm.precondition_invalid"
+    assert null_expect.value.receipt["write"] == "not_attempted"
+    assert parm.writes == []
+
+    # A string expectation on a parm that cannot report authored text is
+    # equally unverifiable. It used to refuse as "did not hold", which reads as
+    # a scene mismatch rather than a precondition nobody could check.
+    with pytest.raises(ParmWriteRefused) as unverifiable:
+        author_parm_write([parm], [5.0], queued=True,
+                          expect={"raw_authored": AUTHORED})
+    assert unverifiable.value.receipt["error"]["code"] == "parm.precondition_invalid"
+    assert parm.writes == []
+
+
+def test_expect_value_must_be_a_scalar():
+    """A null or a collection names no value a parameter can hold."""
+    parm = _Parm(0.0)
+
+    for bad in (None, {"a": 1}, [1.0], (1.0,)):
+        with pytest.raises(ParmWriteRefused) as caught:
+            author_parm_write([parm], [5.0], queued=True,
+                              expect={"value": bad})
+        assert caught.value.receipt["error"]["code"] == "parm.precondition_invalid"
+    assert parm.writes == []
+
+    # A JSON scalar is comparable, and still compared.
+    out = author_parm_write([_Parm(0.0)], [5.0], queued=True,
+                            expect={"value": 0})
+    assert out["receipt"]["write"] == "applied"
+
+
+def test_handler_route_refuses_a_null_authored_precondition(monkeypatch):
+    """The probe's pure-Python route: handle() reported success true, applied."""
+    from synapse.core.protocol import SynapseCommand
+    from synapse.server import handlers
+
+    parm = _Parm(1.0)
+    _install_fake_hou(monkeypatch, parm)
+    monkeypatch.setattr(handlers._envelope, "envelope_active",
+                        lambda _cmd_type: False)
+
+    handler = handlers.SynapseHandler()
+    monkeypatch.setattr(handler._registry, "invoke",
+                        lambda cmd_type, payload, ctx=None:
+                        handler._handle_set_parm(payload))
+
+    response = handler.handle(SynapseCommand(
+        type="set_parm", id="req-25c",
+        payload={"node": "/obj/geo1", "parm": "tx", "value": 1.0,
+                 "queued": True, "expect": {"raw_authored": None}}))
+
+    assert response.success is False
+    assert response.data["receipt"]["error"]["code"] == "parm.precondition_invalid"
+    assert response.data["receipt"]["write"] == "not_attempted"
+    assert parm.writes == []
+
+
 def test_queued_expect_that_holds_proceeds_and_is_recorded(monkeypatch):
     from synapse.server import handlers
 
