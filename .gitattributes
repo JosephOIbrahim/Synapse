@@ -74,6 +74,7 @@ harness/githooks/*	text eol=lf
 "/harness/memory/bus" export-ignore
 "/harness/memory/runs" export-ignore
 "/harness/networks-20260906/bus" export-ignore
+"/harness/next-release" export-ignore
 "/harness/notes" export-ignore
 "/harness/notifications-20260906/bus" export-ignore
 "/harness/panel_pd/runs" export-ignore

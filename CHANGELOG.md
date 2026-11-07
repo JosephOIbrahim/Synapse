@@ -11,30 +11,38 @@ instead of reporting that a call returned. The full note, with every limit, is
 - **Parameter writes.** `houdini_set_parm` returns `observed` (from
   `parm.eval()` after the write) and a `mismatch` flag. An animated or
   channel-referenced parameter is refused unless `mode` says how to meet it
-  (`replace`, `key_at_frame`, `write_source`), and the write does not follow a
-  channel reference. A refused write restores values, keys, Cycle
-  extrapolation and authored strings. A queued write must carry `expect`; a
-  different state refuses it, and an expectation the server cannot check
-  refuses it too (`parm.precondition_invalid`). The receipt reaches the caller
-  through the handler, both MCP transports and the panel.
+  (`replace` or `key_at_frame` for keys, `write_source` for a reference). A
+  refused write writes nothing; a write whose setter fails part-way restores
+  what it snapshotted. A queued write must carry `expect`; a different state
+  refuses it, and an expectation the server cannot check refuses it too
+  (`parm.precondition_invalid`, or `parm.inspection_unknown` when the value
+  cannot be read). A refused or failed write's receipt reaches the
+  caller through the handler, the stdio server, the panel, and the
+  in-Houdini `/mcp` endpoint's execution-bridge failure path
+  (`panel/bridge_adapter.py` now carries a handler-reported failure's receipt
+  past `_fail_with_integrity`; a write the bridge fails after it landed
+  returns no receipt).
 - **Render proof.** A product counts only if its identity changed across
-  `node.render()`. The farm refuses a flipbook preview or an absent product
-  and validates the EXR; the progressive ladder requires every pass and
-  refuses an empty chain; RETINA grades by a per-render nonce, and an unwired
-  check is inconclusive.
+  `node.render()` (a flagged GL flipbook on a usdrender ROP is the one
+  exception). The farm refuses a flipbook preview or an absent product and
+  validates the product file; the progressive ladder requires every pass and
+  refuses an empty chain; RETINA grades by a per-render nonce, and a check
+  with no nonce is inconclusive. A validator that raises does not fail the
+  frame.
 - **Sequence verdict.** A missing output, a farm-failed frame or a plan
   mismatch fails a sequence whatever the mean score says. A cancel stops with
   `success=False`; frames completed before a retry survive it.
 - **Explicit frame lists.** `synapse_render_sequence` accepts `frames`, which
-  is authoritative end to end. A step of 0, a negative or non-numeric step and
-  an empty list are refused.
+  the handler carries to the farm. An empty list is refused; entries are
+  converted to whole numbers.
 - **Plan truth.** `report.plan` is the declared request and `report.executed`
-  the last attempt; pre-dispatch stops report no executed checks.
+  the last attempt; a stop before the first validation reports no executed
+  checks.
 - **Harness.** The next-release lane's graph and rulings, and a GPU
   feasibility probe whose receipt records the build itself as UNMET. No GPU
   image path ships.
 
-**Not changed:** anthropic 2.x is still unsupported - the migration v5.97.7
+**Not changed:** anthropic 2.x is still unsupported — the migration v5.97.7
 deferred to v5.98 has not started, and the pin stays `anthropic>=1.0.0,<2`.
 Setup remains unsigned.
 

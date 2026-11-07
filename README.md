@@ -52,15 +52,15 @@ Producers: [the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md) ·
 
 `houdini_set_parm` now returns **`observed`** — what the parameter holds after the write — beside the value you asked for, and a **`mismatch`** flag when it did not take.
 
-An animated or channel-referenced parameter is **refused by default**, so no stray key is added and no other node is written by accident. `mode` says how to meet it: `replace`, `key_at_frame` or `write_source`. A refused write puts back everything it touched.
+An animated or channel-referenced parameter is **refused by default**, so no stray key is added and no other node is written by accident. `mode` says how to meet it: `replace` or `key_at_frame` for keys, `write_source` for a reference. A refused write writes nothing, and a write that fails part-way puts back what it snapshotted.
 
-A queued write must say what state it expects. If the parameter no longer matches, or the expectation cannot be checked, nothing is written. The receipt now reaches you through every installed route: the handler, both MCP transports and the panel.
+A queued write must say what state it expects. If the parameter no longer matches, or the expectation cannot be checked, nothing is written. A refused or failed write's receipt reaches you on every installed route: the handler, both MCP transports and the panel, including when the execution bridge reports the refusal.
 
 Producers: [the release note](docs/releases/v5.98.0.md#a-parameter-write-reads-itself-back) · [`parm_authored.py`](python/synapse/server/parm_authored.py) · [the receipt tests](tests/test_parm_write_receipt.py)
 
 ### A render proves it produced this frame
 
-A file that exists is no longer proof. The render snapshots the product before it runs and requires it to change. The farm refuses a flipbook preview or a missing product. RETINA stamps a per-render nonce, and a check it cannot wire is *inconclusive*, never a pass.
+A file that exists is no longer proof. The render snapshots the product before it runs and requires it to change; the one exception is a flagged GL flipbook on a usdrender ROP. The farm refuses a flipbook preview or a missing product. RETINA stamps a per-render nonce, and a check it cannot wire is *inconclusive*, never a pass.
 
 A **sequence** now fails on a lost or failed frame, whatever the mean score says. A cancel stops with `success=False`, and frames finished before a retry survive it.
 
@@ -68,9 +68,9 @@ Producers: [the release note](docs/releases/v5.98.0.md#a-render-proves-it-produc
 
 ### Name the frames, get those frames
 
-`synapse_render_sequence` takes an explicit **`frames`** list. Ask for 1, 5 and 9, and exactly 1, 5 and 9 render — before this release a sparse request reached the farm as an invented contiguous range. A frame set the farm cannot act on is refused, not coerced.
+`synapse_render_sequence` takes an explicit **`frames`** list. Ask for 1, 5 and 9, and 1, 5 and 9 render — before this release a sparse request reached the farm as an invented contiguous range. An empty list is refused.
 
-The report now keeps what you asked for (`plan`) apart from what ran (`executed`). A run that stopped before dispatch reports no checks as if they had run.
+The report now keeps what you asked for (`plan`) apart from what ran (`executed`). A run that stopped before its first validation reports no executed checks.
 
 Producers: [the release note](docs/releases/v5.98.0.md#name-the-frames-get-those-frames) · [the sparse-render tests](tests/test_sparse_render_contract.py) · [the plan-truth tests](tests/test_render_plan_truth.py)
 
