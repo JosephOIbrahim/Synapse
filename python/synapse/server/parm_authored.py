@@ -12,8 +12,11 @@ strings") and for a keyframed one ("Cannot get unexpanded string for parms
 with keyframes"), and ``expression()`` raises it for a parm that is not
 animated. Those are the only errors swallowed here.
 """
+import logging
 import math
 from typing import Any, Dict, List, Optional
+
+_log = logging.getLogger(__name__)
 
 try:
     import hou
@@ -556,8 +559,8 @@ def _attach_receipt(exc, receipt) -> None:
     """
     try:
         exc.receipt = receipt
-    except Exception:
-        pass
+    except Exception as err:
+        _log.debug("receipt could not be attached to %r: %s", type(exc), err)
 
 
 def write_refusal(message, code="parm.refused", request=None, mode="refuse",

@@ -1323,7 +1323,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 self, "_session_id", None)
             try:
                 request_context["observed_frame"] = hou.frame()
-            except Exception:
+            except Exception as exc:
+                # Best-effort context: the write still runs, and the receipt
+                # records the frame as unknown rather than inventing one.
+                _log.debug("observed frame unavailable for the receipt: %s", exc)
                 request_context["observed_frame"] = None
             node = hou.node(node_path)
             if node is None:
