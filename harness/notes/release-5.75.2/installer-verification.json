@@ -1,0 +1,79 @@
+{
+  "build_revision": "8843a5bbebce6a08b389d6a92700bbcae9796dc6",
+  "ci": {
+    "note": "resolved against the tagged commit by scripts/release_ci_gate.py before the tag is pushed; four required contexts",
+    "run_id": "35382808806"
+  },
+  "compiled_installer": {
+    "checks": [
+      "Missing required dependency blocks compiled setup",
+      "Failure explains the missing dependency in readable text",
+      "Windows write-denied destination is rejected",
+      "Fresh installation through compiled Setup",
+      "Windows uninstall registration and shortcuts exist",
+      "Repeat installation",
+      "Upgrade switches active payload",
+      "One registration points at installed files",
+      "Bundled maintenance runtime verifies installation",
+      "No user-data changes during upgrade",
+      "Windows uninstaller preserves changed registration",
+      "Windows uninstaller preserves changed maintenance file",
+      "Generated Windows uninstaller",
+      "Uninstall preserves projects, memory, credentials and custom files",
+      "Uninstall removes unchanged payload and maintenance files",
+      "Windows uninstall registration and shortcuts removed",
+      "Reinstall after uninstall with retained data",
+      "Runtime uninstall can finish before Windows cleanup",
+      "Windows cleanup resumes after runtime uninstall completed"
+    ],
+    "checks_passed": 19,
+    "checks_total": 19,
+    "houdini": "22.0.400",
+    "note": "real install / upgrade / uninstall / reinstall cycle against an installed Houdini. HOUDINI_PACKAGE_DIR was sandboxed to an empty directory for the qualification process only -- the dev machine registers the source tree there, which Setup correctly refuses. discovery.py reads os.environ, so nothing on the machine was changed.",
+    "status": "PASS"
+  },
+  "known": [
+    "The id-hash collision mechanism is TICKETED, NOT FIXED (harness/notes/findings/id-hash-collision.md). Two memory writes of identical content and memory_type inside one wall-clock second still collide on id, because created_at carries whole-second resolution. The fix exists behind a default-off flag; promoting it is an operator decision.",
+    "Four memory records -- the entire v4 studio-lookdev recipe generation -- exist in the encrypted JSONL mirror and NOT in the Moneta primary. Recall therefore answers \"Create a Solaris Network\" with the v3 simple-sphere recipe. Not repaired in this release; a store write is an operator decision.",
+    "CLAUDE.md still carries the /mcp-goes-through-the-bridge claim that README.md corrects in this release. The two disagree until CLAUDE.md is updated.",
+    "Nothing that runs automatically can see the runtime this product ships into: CI is ubuntu/macos on Python 3.11 and 3.14, while production is hython on Windows inside Houdini. There is no Windows leg, no Houdini leg and no scheduled run. The qualification above is a human-triggered act, not an automatic backstop."
+  ],
+  "payload_audit": {
+    "builds": [
+      {
+        "bytes": 31961406,
+        "name": "SYNAPSE-5.75.2-Setup.exe",
+        "sha256": "9a6df4d1aa4f48b787136d1ffdee5cdcde37facb0fdc59b38d6c134987004946"
+      },
+      {
+        "name": "SYNAPSE-5.75.2-TestSetup.exe",
+        "sha256": "f1204573f09680bcb8e26b3e119ed7fba135098e43d13ffc4bea71b297f732d3"
+      }
+    ],
+    "maintenance_files_vs_prev": {
+      "compared": 41,
+      "differing": 0,
+      "note": "embedded Python and setup engine byte-identical to v5.75.1"
+    },
+    "payload_id": "5.75.2-0e801e0abed79fd6",
+    "payload_sha256": "b0644806e6a17a67cb8a732691d5d6d4088a88a63a1692f4af58fd47ff5aba3b",
+    "product_change_since_v5.75.1": {
+      "check": "git diff --stat v5.75.1 8843a5bbebce6a08b389d6a92700bbcae9796dc6 -- python installer mcp_server.py mcp_tools_*.py install.py run_panel.py",
+      "definition": "scripts/product_surface.py (PRODUCT_PATHSPEC)",
+      "files_changed": [
+        "python/synapse/__init__.py"
+      ],
+      "note": "The pathspec is NEW in this release. Every release since v5.70.1 used `-- python installer`, which is blind to the nineteen tracked .py files at the repository root -- seven of them the shipped MCP surface, including mcp_server.py, the file .mcp.json launches. Measured: c6221f3b moved 65 lines of mcp_server.py and returns EMPTY under the old pathspec.",
+      "result": " python/synapse/__init__.py | 4 ++--\n 1 file changed, 2 insertions(+), 2 deletions(-)"
+    },
+    "status": "PASS"
+  },
+  "schema": "synapse-release-verification-1",
+  "source_revision": "8843a5bbebce6a08b389d6a92700bbcae9796dc6",
+  "status": "PASS",
+  "suites": {
+    "note": "The full pytest suite was NOT run for this cut and no suite figure is published here. A number with no producer does not go in an asset. CI green on the four required contexts is the gate that did run, resolved against the tagged commit. Six contract feature flags in .synapse/contracts/hython-verbs.yaml remain false for the same reason.",
+    "status": "NOT_RUN"
+  },
+  "version": "5.75.2"
+}

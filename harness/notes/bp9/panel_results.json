@@ -1,0 +1,194 @@
+{
+ "PNL-L1": {
+  "leg": "PNL-L1",
+  "receipt": {
+   "status": "partial",
+   "branch": "worktree-wf_70a5bbfa-0dd-1",
+   "commit_sha": "836b492c9a1ed300fb5954f579a381039ecc676e",
+   "files_changed": [
+    "python/synapse/panel/designsystem/tokens.py",
+    "python/synapse/panel/designsystem/rhythm.py",
+    "python/synapse/panel/message_formatter.py",
+    "harness/design_review/2026-09-15/READABILITY.md"
+   ],
+   "acceptance": [
+    {
+     "predicate": "grep -c 'nothing in the panel scales' python/synapse/panel/designsystem/tokens.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0"
+    },
+    {
+     "predicate": "python -c import tokens; FONT_FLOOR_PROVENANCE startswith 'measured'; FONT_FLOOR_PX == 11; LABEL_RHYTHM and TAG_RHYTHM in TRACKING_EM",
+     "verdict": "pass",
+     "evidence": "exit 0 with PYTHONPATH=<worktree>/python (synapse.__file__ confirmed to resolve to the worktree). NOTE: without PYTHONPATH the editable .pth shadows to C:/Users/User/Synapse/python (main tree) and the assertion fails against the unmodified file - the verifier must pin PYTHONPATH the same way."
+    },
+    {
+     "predicate": "grep -cE 'TRACKING_EM\\[\"(SEND|DATA)\"\\]' python/synapse/panel/designsystem/rhythm.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0; rhythm now reads TRACKING_EM[\"LABEL_RHYTHM\"] / [\"TAG_RHYTHM\"], both values confirmed 0.08 / 0.06 at import"
+    },
+    {
+     "predicate": "grep -c '_scale(10,' python/synapse/panel/message_formatter.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0; signed note now _scale(_SMALL_PX, ...), rendered font-size:11px in smoke test"
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_typography.py tests/test_panel_readability_defects.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "29 passed, 3 skipped, 2 warnings in 0.52s; exit 0 (SYNAPSE_LOG_DIR=.scratch/logs, PYTHONPATH=<worktree>/python)"
+    },
+    {
+     "predicate": "QT_QPA_PLATFORM=offscreen hython audit_panel.py --strict exits 0",
+     "verdict": "fail",
+     "evidence": "exit 1: AttributeError at audit_panel.py:101 'module tokens has no attribute SIZE_MICRO'. PRE-EXISTING on master: `git show master:audit_panel.py` line 101 reads t.SIZE_MICRO and `git show master:.../tokens.py` has no SIZE_MICRO assignment (CRIT.md 2026-09-15 ranked change 1 deleted it; tokens.py:397 comment records the deletion). All contrast rows above the crash print ok. audit_panel.py is not in this leg's TARGETS so it was not edited."
+    }
+   ],
+   "tests_run": "python -m pytest tests/test_panel_typography.py tests/test_panel_readability_defects.py -q -p no:cacheprovider -> 29 passed, 3 skipped. hython audit_panel.py --strict (offscreen) -> exit 1 on pre-existing SIZE_MICRO reference at audit_panel.py:101 (fails identically on master). Formatter smoke via python -c: _scale(10,1.0)=11, _scale(12,0.5)=11, _scale(12,2.25)=27; headings render h1 15px/700, h2 12px/700, h3 12px/500, h4 falls to h3 spec. git diff --diff-filter=D --name-only master -- tests/ is empty.",
+   "notes": "All four spec changes landed with zero value changes in tokens.py (diff is the provenance string, comments, and the one new TRACKING_EM line). No test pinned any of the affected strings or sizes, so no pins were amended and no test was touched. The formatter floor applies to text only: every _scale call site in message_formatter.py is a font-size (verified by grep; margins use _GROUP_MARGIN_Y/_MSG_MARGIN_Y directly). No comment called the margins dead, so I added a note declaring them live and describing the chat_display top-margin override rather than changing behaviour. The spec doc docs/design/PANEL_TYPE_AND_COMMANDS_2026-09-21.md is untracked in the fenced main tree and absent from the worktree, so the mission text served as the spec. Status is partial solely because acceptance 6 cannot exit 0 on any branch until audit_panel.py:101 drops SIZE_MICRO; that file is outside this leg's targets. Untracked scratch files (.scratch/pnl_l1_edit.py, .scratch/commit-msg.txt, .scratch/logs/) were left uncommitted.",
+   "for_next_leg": "The offscreen strict audit is red on master independent of this leg: audit_panel.py:101 still reads t.SIZE_MICRO after CRIT.md deleted the token, so whoever owns audit_panel.py needs a one-line fix (drop the MICRO entry) before any leg can claim acceptance-6 green. When verifying with stock python, pin PYTHONPATH=<worktree>/python; otherwise the editable .pth imports the main tree and your checks silently run against unmodified files. Markdown headings now carry font-weight inline (h1 15/700, h2 12/700, h3 12/500) and _scale floors at FONT_FLOOR_PX=11, so any leg that snapshots formatter HTML should expect those strings."
+  },
+  "verdict": {
+   "leg": "PNL-L1",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "grep -c 'nothing in the panel scales' python/synapse/panel/designsystem/tokens.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0 (worktree ../pnl-verify-PNL-L1 @ 836b492c)"
+    },
+    {
+     "predicate": "python -c import tokens; FONT_FLOOR_PROVENANCE startswith 'measured'; FONT_FLOOR_PX == 11; LABEL_RHYTHM and TAG_RHYTHM in TRACKING_EM",
+     "verdict": "pass",
+     "evidence": "exit=0 with PYTHONPATH=<worktree>/python; synapse.__file__ resolved to C:\\Users\\User\\pnl-verify-PNL-L1\\python\\synapse\\__init__.py; printed 0.08 0.06 15 12 11 700 500 (LABEL_RHYTHM, TAG_RHYTHM, SIZE_TITLE, SIZE_BODY, SIZE_SMALL, WEIGHT_BOLD, WEIGHT_MEDIUM)"
+    },
+    {
+     "predicate": "grep -cE 'TRACKING_EM\\[\"(SEND|DATA)\"\\]' python/synapse/panel/designsystem/rhythm.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0; rhythm.py:75-76 now reads TRACKING_EM[\"LABEL_RHYTHM\"] / [\"TAG_RHYTHM\"]"
+    },
+    {
+     "predicate": "grep -c '_scale(10,' python/synapse/panel/message_formatter.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0; message_formatter.py:174 now _scale(_SMALL_PX, font_scale); all 12 _scale call sites (135,145,157,168,174,300,366,402,443,471,474,483) are font-size args (474 feeds _ruled_turn's body_sz param)"
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_typography.py tests/test_panel_readability_defects.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "29 passed, 3 skipped, 2 warnings in 0.47s; exit=0. Full suite (gate 4) also run: 9701 passed, 429 skipped, 5 xfailed, 0 failed in 445.24s, exit=0"
+    },
+    {
+     "predicate": "QT_QPA_PLATFORM=offscreen hython audit_panel.py --strict exits 0",
+     "verdict": "fail",
+     "evidence": "exit=1: audit_panel.py:101 AttributeError: module 'synapse.panel.designsystem.tokens' has no attribute 'SIZE_MICRO'. Reproduced identically on master in the main tree (exit=1, same traceback). git show master:audit_panel.py line 101 reads t.SIZE_MICRO; master tokens.py has no SIZE_MICRO assignment. Contrast rows above the crash all print ok; the A3 seeded-contrast sweep at audit_panel.py:111+ never executes on any branch. Not caused by this leg; not fixable inside this leg's targets (and warden rules forbid editing audit_panel.py to pass a gate)."
+    }
+   ],
+   "findings": [
+    "audit_panel.py:101 \u2014 pre-existing red on master: reads t.SIZE_MICRO, deleted from tokens.py by CRIT.md 2026-09-15 change 1. Blocks acceptance 6 AND gate 2 (the seeded-contrast sweep at audit_panel.py:111 sits after the crash). Owner of audit_panel.py must drop the (\"MICRO\", t.SIZE_MICRO) entry; not a gate weakening since the token no longer exists. Pytest proxy tests/panel/test_seeded_contrast.py passes (3 passed).",
+    "python/synapse/panel/message_formatter.py:104-111 \u2014 the new FONT_FLOOR_PX floor in _scale has zero test coverage: deliberate break (floor removed) left 35 tests green across test_panel_typography / test_panel_readability_defects / test_j3_panel_formatter / test_first_session_readability. Mission allowed this (no existing pin to amend) but the change is unguarded.",
+    "python/synapse/panel/designsystem/rhythm.py:75-76 and tokens.py:565 \u2014 LABEL_RHYTHM/TAG_RHYTHM rename is likewise unpinned; reverting to SEND/DATA*2 would not go red. Numbers verified 0.08/0.06 at import; zero-pixel claim holds.",
+    "python/synapse/panel/designsystem/tokens.py:456 \u2014 provenance first-word pin verified live: breaking 'measured' to 'guessed' turned tests/test_panel_typography.py red (1 failed, 5 passed); restored.",
+    "python/synapse/panel/designsystem/tokens.py diff: only the FONT_FLOOR_PROVENANCE string and the two new TRACKING_EM entries changed; no numeric token value moved. Criterion met.",
+    "python/synapse/panel/synapse_panel.py:552 \u2014 citation in both the provenance string and READABILITY.md:86 verified accurate: self._chrome_scale = self._host_font_scale() (defined :1622) feeds qss.stylesheet().",
+    "python/synapse/panel/message_formatter.py:290-301 \u2014 headings now h1 SIZE_TITLE(15)/700, h2 SIZE_BODY(12)/700, h3 SIZE_BODY(12)/500; regex #{1,6} with .get(n, _HEADING_TYPE[3]) so h4-h6 sit on h3 as documented. _GROUP_MARGIN_Y/_MSG_MARGIN_Y retained and annotated live (:68-73).",
+    "git diff master...HEAD -- tests/ audit_panel.py is empty: no test deleted, no gate touched."
+   ],
+   "merge_ready": false,
+   "notes": "Five of six acceptance lines pass in my own rerun and every criterion holds against the code; the full pytest suite (the real merge gate) is green at 9701/0. merge_ready is false only because acceptance 6 cannot exit 0 on this or any branch until audit_panel.py:101 drops the SIZE_MICRO reference, a one-line fix owned outside this leg. That same crash also masks gate 2 (the seeded-contrast sweep) for the whole repo, which is worse than the builder receipt states. Recommend: land the audit_panel.py MICRO-entry fix first (or in the same merge train), then this leg merges as-is. Nits: the _scale floor and the tracking rename are unpinned; a follow-up pin (formatter floor at scale 0.5 -> 11px; rhythm reads LABEL_RHYTHM not SEND) would cost two small tests. Verification hygiene: PYTHONPATH must be pinned to the worktree or the editable .pth silently imports the main tree; note pytest here has no --timeout plugin (my first full-suite attempt died on a usage error behind a pipe, re-run clean). Worktree removed; main tree untouched."
+  },
+  "first_receipt": {
+   "status": "partial",
+   "branch": "worktree-wf_70a5bbfa-0dd-1",
+   "commit_sha": "836b492c9a1ed300fb5954f579a381039ecc676e",
+   "files_changed": [
+    "python/synapse/panel/designsystem/tokens.py",
+    "python/synapse/panel/designsystem/rhythm.py",
+    "python/synapse/panel/message_formatter.py",
+    "harness/design_review/2026-09-15/READABILITY.md"
+   ],
+   "acceptance": [
+    {
+     "predicate": "grep -c 'nothing in the panel scales' python/synapse/panel/designsystem/tokens.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0"
+    },
+    {
+     "predicate": "python -c import tokens; FONT_FLOOR_PROVENANCE startswith 'measured'; FONT_FLOOR_PX == 11; LABEL_RHYTHM and TAG_RHYTHM in TRACKING_EM",
+     "verdict": "pass",
+     "evidence": "exit 0 with PYTHONPATH=<worktree>/python (synapse.__file__ confirmed to resolve to the worktree). NOTE: without PYTHONPATH the editable .pth shadows to C:/Users/User/Synapse/python (main tree) and the assertion fails against the unmodified file - the verifier must pin PYTHONPATH the same way."
+    },
+    {
+     "predicate": "grep -cE 'TRACKING_EM\\[\"(SEND|DATA)\"\\]' python/synapse/panel/designsystem/rhythm.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0; rhythm now reads TRACKING_EM[\"LABEL_RHYTHM\"] / [\"TAG_RHYTHM\"], both values confirmed 0.08 / 0.06 at import"
+    },
+    {
+     "predicate": "grep -c '_scale(10,' python/synapse/panel/message_formatter.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0; signed note now _scale(_SMALL_PX, ...), rendered font-size:11px in smoke test"
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_typography.py tests/test_panel_readability_defects.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "29 passed, 3 skipped, 2 warnings in 0.52s; exit 0 (SYNAPSE_LOG_DIR=.scratch/logs, PYTHONPATH=<worktree>/python)"
+    },
+    {
+     "predicate": "QT_QPA_PLATFORM=offscreen hython audit_panel.py --strict exits 0",
+     "verdict": "fail",
+     "evidence": "exit 1: AttributeError at audit_panel.py:101 'module tokens has no attribute SIZE_MICRO'. PRE-EXISTING on master: `git show master:audit_panel.py` line 101 reads t.SIZE_MICRO and `git show master:.../tokens.py` has no SIZE_MICRO assignment (CRIT.md 2026-09-15 ranked change 1 deleted it; tokens.py:397 comment records the deletion). All contrast rows above the crash print ok. audit_panel.py is not in this leg's TARGETS so it was not edited."
+    }
+   ],
+   "tests_run": "python -m pytest tests/test_panel_typography.py tests/test_panel_readability_defects.py -q -p no:cacheprovider -> 29 passed, 3 skipped. hython audit_panel.py --strict (offscreen) -> exit 1 on pre-existing SIZE_MICRO reference at audit_panel.py:101 (fails identically on master). Formatter smoke via python -c: _scale(10,1.0)=11, _scale(12,0.5)=11, _scale(12,2.25)=27; headings render h1 15px/700, h2 12px/700, h3 12px/500, h4 falls to h3 spec. git diff --diff-filter=D --name-only master -- tests/ is empty.",
+   "notes": "All four spec changes landed with zero value changes in tokens.py (diff is the provenance string, comments, and the one new TRACKING_EM line). No test pinned any of the affected strings or sizes, so no pins were amended and no test was touched. The formatter floor applies to text only: every _scale call site in message_formatter.py is a font-size (verified by grep; margins use _GROUP_MARGIN_Y/_MSG_MARGIN_Y directly). No comment called the margins dead, so I added a note declaring them live and describing the chat_display top-margin override rather than changing behaviour. The spec doc docs/design/PANEL_TYPE_AND_COMMANDS_2026-09-21.md is untracked in the fenced main tree and absent from the worktree, so the mission text served as the spec. Status is partial solely because acceptance 6 cannot exit 0 on any branch until audit_panel.py:101 drops SIZE_MICRO; that file is outside this leg's targets. Untracked scratch files (.scratch/pnl_l1_edit.py, .scratch/commit-msg.txt, .scratch/logs/) were left uncommitted.",
+   "for_next_leg": "The offscreen strict audit is red on master independent of this leg: audit_panel.py:101 still reads t.SIZE_MICRO after CRIT.md deleted the token, so whoever owns audit_panel.py needs a one-line fix (drop the MICRO entry) before any leg can claim acceptance-6 green. When verifying with stock python, pin PYTHONPATH=<worktree>/python; otherwise the editable .pth imports the main tree and your checks silently run against unmodified files. Markdown headings now carry font-weight inline (h1 15/700, h2 12/700, h3 12/500) and _scale floors at FONT_FLOOR_PX=11, so any leg that snapshots formatter HTML should expect those strings."
+  }
+ },
+ "PNL-L2": {
+  "leg": "PNL-L2",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "receipt": null,
+  "verdict": null
+ },
+ "PNL-L3A": {
+  "leg": "PNL-L3A",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "receipt": null,
+  "verdict": null
+ },
+ "PNL-L3B": {
+  "leg": "PNL-L3B",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "receipt": null,
+  "verdict": null
+ },
+ "PNL-L4": {
+  "leg": "PNL-L4",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "receipt": null,
+  "verdict": null
+ },
+ "PNL-L5": {
+  "leg": "PNL-L5",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "receipt": null,
+  "verdict": null
+ },
+ "PNL-L6": {
+  "leg": "PNL-L6",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "receipt": null,
+  "verdict": null
+ },
+ "PNL-L7": {
+  "leg": "PNL-L7",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "receipt": null,
+  "verdict": null
+ }
+}

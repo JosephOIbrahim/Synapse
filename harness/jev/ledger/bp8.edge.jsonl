@@ -1,0 +1,3 @@
+{"ts": "2026-09-20T13:39:50", "guard": "edge", "leg": "BP8-TIMEOUTS", "result": "decision", "mode": "shadow", "decision": {"action": "continue", "reason": "screen REFEREE: no edge change", "applied": false, "inserted": null, "dependents": []}}
+{"ts": "2026-09-20T13:43:33", "guard": "edge", "leg": "BP8-WATCHDOG", "result": "decision", "mode": "shadow", "decision": {"action": "continue", "reason": "screen REFEREE: no edge change", "applied": false, "inserted": null, "dependents": []}}
+{"ts": "2026-09-20T14:18:18", "guard": "edge", "leg": "BP8-CRUX", "result": "decision", "mode": "shadow", "decision": {"action": "continue", "reason": "rule: referee and tidy receipts are not screened for edges", "applied": false, "inserted": null, "dependents": []}}

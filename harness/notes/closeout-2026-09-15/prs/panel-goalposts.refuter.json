@@ -1,0 +1,12 @@
+{
+ "ok": true,
+ "blockers": [],
+ "secret_scan": "git diff master..park/panel-goalposts | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\\\\\Users|/Users/\" -> NO HITS. The added file contains only repo-relative paths, SHAs, and a PowerShell block of human-run git steps (tag/push/branch -D) copied from PLAN.md:425-428; nothing executed.",
+ "composed": [
+  "tests/test_hytest_build_pin.py -- pins exactly the hytest.py behaviour the note describes (rule-3 stamp preference, _candidates() plain-string shape); builder did not run it; PASS (part of 66 passed)",
+  "tests/test_solaris_v3_acceptance_runner.py -- the _candidates() consumer contract (hython_candidates); PASS",
+  "tests/test_phase0c_doc1_toolcount.py -- run although CLAUDE.md/README.md are untouched by this branch; PASS (tool-count literal check N/A: neither file in the diff)",
+  "tests/test_corpus_encoding_conformance.py -- PASS, but it rglobs rag/ only (line 154), so it did NOT exercise the new markdown; no test in tests/ scans harness/notes/backlog/ (grep -rln 'harness/notes|backlog' tests/ hits only path-specific tests)",
+  "NOT CHECKED: tests/panel/test_hython_matrix.py was not run (fails by design on master, and the note is explicit about that); no hython spawned; wip test lines 170-182 (the unresolvable-target hard-error assertion the note's section 3 attributes to the tests) were not read -- that clause is at least stated in the test's own docstring at :113-116; harness/cto/BACKLOG.json schema not inspected"
+ ]
+}

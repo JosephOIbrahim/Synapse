@@ -1,0 +1,33 @@
+{
+  "id": "BP10-TIDY",
+  "band": "TRUST",
+  "class": "tidy",
+  "tier": "mechanical",
+  "readonly": true,
+  "deps": [
+    "BP10-CRUX"
+  ],
+  "name": "TIDY: BP10 worktree, receipt and Jev ledger census",
+  "note": "Tier: mechanical. Read-only. Self-cap: 8 turns. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0.",
+  "targets": [
+    "T1) harness/battleplan/notes/BP10_TIDY.md: a table of BP10 worktrees (branch, HEAD, clean?), receipts (leg, status) and harness/jev/ledger/bp10.*.jsonl row counts per guard (route, team, screen, edge, drift, rerank, harvest, bench), ending in a count line per table."
+  ],
+  "touches": [],
+  "acceptance": [
+    {
+      "predicate": "every table ends with a count line that equals its row count",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "harness/battleplan/notes/JEV_HARVEST_BLUEPRINT.md",
+    "anchor": "sec. 'Order of work and gates' (done criteria)"
+  }
+}

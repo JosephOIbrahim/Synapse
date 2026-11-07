@@ -1,0 +1,75 @@
+{
+  "run": "orch_20260928-165617",
+  "date": "2026-09-28",
+  "cap": {
+    "turns": 1,
+    "tokens": 11950820
+  },
+  "status": "open",
+  "reason": null,
+  "enforced_unit": "tokens",
+  "token_meter": "measured",
+  "totals": {
+    "turns": 1,
+    "tokens_in": 15057676,
+    "tokens_out": 443527,
+    "usage": {
+      "input_tokens": 2248,
+      "cache_creation_input_tokens": 1159820,
+      "cache_read_input_tokens": 13895608,
+      "output_tokens": 443527
+    },
+    "rails_total": 15501203,
+    "cost_weighted": 5059219,
+    "cost_basis": "weighted",
+    "max_ctx": 277232,
+    "cost_weights": {
+      "input": 1.0,
+      "cache_create": 1.25,
+      "cache_read": 0.1,
+      "output": 5.0
+    },
+    "enforced_on": "cost_weighted"
+  },
+  "remaining": {
+    "turns": 0,
+    "tokens": -3550383,
+    "cost_weighted": 6891601,
+    "enforced_on": "cost_weighted"
+  },
+  "legs": [
+    {
+      "leg": "BP11-CRUX2",
+      "model": "claude-fable-5-1",
+      "tokens_in": 15057676,
+      "tokens_out": 443527,
+      "wall_ms": 1435259,
+      "usage": {
+        "input_tokens": 2248,
+        "cache_creation_input_tokens": 1159820,
+        "cache_read_input_tokens": 13895608,
+        "output_tokens": 443527
+      },
+      "cost_weighted": 5059219,
+      "cost_basis": "weighted",
+      "max_ctx": 277232,
+      "cap": {
+        "turns": 1,
+        "tokens": 11950820
+      },
+      "remaining": {
+        "turns": 0,
+        "tokens": -3550383,
+        "cost_weighted": 6891601,
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux2\\9632b88f-853b-43f9-b299-af39d2618ca9.jsonl",
+      "settled": true
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}

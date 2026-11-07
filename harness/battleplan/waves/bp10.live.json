@@ -1,0 +1,163 @@
+{
+  "_comment": "BP10 wave - HARVEST: fxhoudinimcp help-archive loader pattern -> H22 prose corpus, 31 workflow guides gated into retrieval with provenance, outside-in benchmark harness, plus three Jev shadow guards (rerank / harvest / bench). Serial chain by design (one Opus leg live at a time). Tiers for the three builders were chosen by JEV-ROUTE at compile. Base=master 845da18e. ARMED only on Joe word, WITH -Budget (rails turn = leg dispatch). Merge/push remain Joe words per act. Own bus (battleplan/bus/bp10), own worktree prefix (bp10-*). JEV-EDGE and JEV-DRIFT run in SHADOW.",
+  "_schema": "legs/v1",
+  "repo": "C:\\Users\\User\\SYNAPSE",
+  "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
+  "effort": "max",
+  "base": "master",
+  "model": "claude-opus-4-8",
+  "wave": "bp10",
+  "legs": [
+    {
+      "id": "BP10-BENCH",
+      "name": "M3: outside-in benchmark harness (SYNAPSE vs fxhoudinimcp, isolated hython per arm) + JEV-BENCH verifier + prompt leak check; plumbing proven on 1 prompt, G5 held for Joe",
+      "state": "ready",
+      "receipt": "BP10-BENCH.json",
+      "branch": "bp10/bench",
+      "base": "master",
+      "worktree": ".claude/worktrees/bp10-bench",
+      "prompt": "harness/battleplan/prompts/BP10-BENCH.md",
+      "deps": [
+        "BP10-GUIDES"
+      ],
+      "readonly": false,
+      "touches": [
+        "harness/outside_in/",
+        "harness/jev/jev_bench.py",
+        "harness/jev/jev_grade.py",
+        "harness/notes/outside_in/",
+        "harness/jev/tests/"
+      ],
+      "note": "BATTLEPLAN harness/battleplan/notes/HARVEST_SPEC.md :: sec. 'Target 3: outside-in benchmark'; sec. 'Gates' G5; JEV_HARVEST_BLUEPRINT sec. 'Site 3'. Self-cap: 30 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Read HARVEST_SPEC.md sec. 'Target 3' first: the fairness rules are the contract and are written down BEFORE the first run. Isolation is the whole design: each arm gets its own hython, own port (pin both explicitly: SYNAPSE 9999, fxhoudinimcp 8100), own scene copy. fxhoudinimcp installs via `pip install fxhoudinimcp` into a SEPARATE venv + its Houdini package file pointed at a scratch packages dir - never into SYNAPSE's env, never vendored. The full G5 run (24 prompts x 2 arms x 3 runs) is SPEND and is Joe's word: this leg runs exactly ONE prompt per arm on the empty scene to prove the plumbing and STOPS. Jev invariants (JEV_BLUEPRINT.md sec. 4 + adapter.py): questions are DATA in harness/jev/questions.json; code owns every decision; fail closed (no key / timeout -> the pre-Jev output, ledgered as fallback, no fabricated probability); every call ledgered under harness/jev/ledger/bp10.<guard>.jsonl; nothing under python/synapse/ imports harness/jev (pinned by tests/test_jev_product_boundary.py). A Jev answer never promotes a chunk, never names a model, never grants consent.",
+      "tier": "reasoning",
+      "team": {
+        "max_subagents": 0,
+        "subagent_tier": "mechanical"
+      }
+    },
+    {
+      "id": "BP10-CORPUS",
+      "name": "M1: H22 prose corpus from the shipped help archives, stamped and gated, H21 kept as fallback; JEV-RERANK shadow before/after",
+      "state": "ready",
+      "receipt": "BP10-CORPUS.json",
+      "branch": "bp10/corpus",
+      "base": "master",
+      "worktree": ".claude/worktrees/bp10-corpus",
+      "prompt": "harness/battleplan/prompts/BP10-CORPUS.md",
+      "deps": [
+        "BP10-SCAFFOLD"
+      ],
+      "readonly": false,
+      "touches": [
+        "rag/ingest/",
+        "rag/retrieval/",
+        "rag/corpus/h22_prose/STAMP.json",
+        "rag/quarantine/",
+        "tests/",
+        "harness/jev/jev_rerank.py",
+        "harness/jev/jev_grade.py",
+        "harness/notes/harvest/",
+        "python/synapse/"
+      ],
+      "note": "BATTLEPLAN harness/battleplan/notes/HARVEST_SPEC.md :: sec. 'Target 1: H22 prose corpus'; sec. 'Gates and verification' G0-G4; JEV_HARVEST_BLUEPRINT sec. 'Site 2'. Self-cap: 30 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Read HARVEST_SPEC.md sec. 'Target 1' and 'Gates' first; the chunk record and STAMP.json fields are the contract. SideFX help text ships under the Houdini EULA: the generated corpus is NEVER committed (gitignored by SCAFFOLD); commit the builder, the stamp, the probe results. Clean-room reader: you may read fxhoudinimcp's help_handlers.py for the three path rules (zips + loose dirs; forward-slash zip-relative key with extension dropped; utf-8 with replacement) and nothing else. The 25 adversarial probes are the ones tests/test_knowledge_retrieval_repair.py and harness/verify/checks.py already run - locate them by grep, do not invent a new set. Jev invariants (JEV_BLUEPRINT.md sec. 4 + adapter.py): questions are DATA in harness/jev/questions.json; code owns every decision; fail closed (no key / timeout -> the pre-Jev output, ledgered as fallback, no fabricated probability); every call ledgered under harness/jev/ledger/bp10.<guard>.jsonl; nothing under python/synapse/ imports harness/jev (pinned by tests/test_jev_product_boundary.py). A Jev answer never promotes a chunk, never names a model, never grants consent.",
+      "tier": "reasoning",
+      "team": {
+        "max_subagents": 0,
+        "subagent_tier": "mechanical"
+      }
+    },
+    {
+      "id": "BP10-CRUX",
+      "name": "CRUX: adversarial re-verification of the four BP10 builder legs",
+      "state": "ready",
+      "receipt": "BP10-CRUX.json",
+      "branch": "bp10/crux",
+      "base": "master",
+      "worktree": ".claude/worktrees/bp10-crux",
+      "prompt": "harness/battleplan/prompts/BP10-CRUX.md",
+      "deps": [
+        "BP10-SCAFFOLD",
+        "BP10-CORPUS",
+        "BP10-GUIDES",
+        "BP10-BENCH"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "BATTLEPLAN harness/battleplan/notes/HARVEST_SPEC.md :: sec. 'Gates and verification' (all gates); sec. 'Mission split'. Tier: referee (Fable 5.1). Read-only on product files. Self-cap: 25 turns. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. The JEV-SCREEN line in your brief (if present) tells you where evidence is thin; it never removes a read. Nothing merges on a BROKEN.",
+      "tier": "referee"
+    },
+    {
+      "id": "BP10-GUIDES",
+      "name": "M2: 31 workflow guides through the phantom gate into retrieval, with provenance; JEV-HARVEST triage of the quarantine",
+      "state": "ready",
+      "receipt": "BP10-GUIDES.json",
+      "branch": "bp10/guides",
+      "base": "master",
+      "worktree": ".claude/worktrees/bp10-guides",
+      "prompt": "harness/battleplan/prompts/BP10-GUIDES.md",
+      "deps": [
+        "BP10-CORPUS"
+      ],
+      "readonly": false,
+      "touches": [
+        "rag/ingest/guides.py",
+        "rag/ingest/tool_map.json",
+        "rag/corpus/guides/",
+        "rag/quarantine/guides/",
+        "rag/retrieval/scope_weights.py",
+        "tests/",
+        "harness/jev/jev_harvest.py",
+        "harness/jev/jev_grade.py",
+        "harness/notes/harvest/",
+        "README.md"
+      ],
+      "note": "BATTLEPLAN harness/battleplan/notes/HARVEST_SPEC.md :: sec. 'Target 2: workflow guides'; sec. 'Gates' G2-G3; JEV_HARVEST_BLUEPRINT sec. 'Site 1'. Self-cap: 30 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Read HARVEST_SPEC.md sec. 'Target 2' first: the four-step transform is the contract. Promotion out of quarantine is Joe's word - this leg sorts and writes triage.md, it NEVER moves a guide from rag/quarantine/ to rag/corpus/. tool_map.json values are the Opus-worthy hour: a wrong mapping is a wrong answer in every chunk; mark any mapping you are unsure of with \"_unsure\": true. Jev invariants (JEV_BLUEPRINT.md sec. 4 + adapter.py): questions are DATA in harness/jev/questions.json; code owns every decision; fail closed (no key / timeout -> the pre-Jev output, ledgered as fallback, no fabricated probability); every call ledgered under harness/jev/ledger/bp10.<guard>.jsonl; nothing under python/synapse/ imports harness/jev (pinned by tests/test_jev_product_boundary.py). A Jev answer never promotes a chunk, never names a model, never grants consent.",
+      "tier": "reasoning",
+      "team": {
+        "max_subagents": 0,
+        "subagent_tier": "mechanical"
+      }
+    },
+    {
+      "id": "BP10-SCAFFOLD",
+      "name": "Harvest scaffold: vendor tree + attribution, ADR-0001, three Jev guard stubs, jev tests into CI",
+      "state": "ready",
+      "receipt": "BP10-SCAFFOLD.json",
+      "branch": "bp10/scaffold",
+      "base": "master",
+      "worktree": ".claude/worktrees/bp10-scaffold",
+      "prompt": "harness/battleplan/prompts/BP10-SCAFFOLD.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/_vendor/fxhoudinimcp/",
+        "docs/decisions/",
+        "harness/jev/questions.json",
+        "pyproject.toml",
+        ".github/workflows/ci.yml",
+        "harness/battleplan/notes/JEV_BLUEPRINT.md",
+        ".gitignore",
+        "rag/ingest/tool_map.json"
+      ],
+      "note": "BATTLEPLAN harness/battleplan/notes/JEV_HARVEST_BLUEPRINT.md :: sec. 'Scaffolded documents' (scaffold now rows); sec. 'Order of work' step 0; HARVEST_SPEC sec. 'Provenance and attribution'. Tier: mechanical (Haiku 4.5) - this leg copies, stubs and wires; it designs nothing. Self-cap: 15 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Source pin: https://github.com/healkeiser/fxhoudinimcp @ 29b6695b6726b90537eab3f02411e05d7c6760a5 (MIT, 'Copyright (c) 2026 FXHoudini-MCP Contributors'). Shallow-clone it to a temp dir outside the repo; never add it as a submodule or a pip dependency. Jev invariants (JEV_BLUEPRINT.md sec. 4 + adapter.py): questions are DATA in harness/jev/questions.json; code owns every decision; fail closed (no key / timeout -> the pre-Jev output, ledgered as fallback, no fabricated probability); every call ledgered under harness/jev/ledger/bp10.<guard>.jsonl; nothing under python/synapse/ imports harness/jev (pinned by tests/test_jev_product_boundary.py). A Jev answer never promotes a chunk, never names a model, never grants consent.",
+      "tier": "mechanical"
+    },
+    {
+      "id": "BP10-TIDY",
+      "name": "TIDY: BP10 worktree, receipt and Jev ledger census",
+      "state": "ready",
+      "receipt": "BP10-TIDY.json",
+      "branch": "bp10/tidy",
+      "base": "master",
+      "worktree": ".claude/worktrees/bp10-tidy",
+      "prompt": "harness/battleplan/prompts/BP10-TIDY.md",
+      "deps": [
+        "BP10-CRUX"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "BATTLEPLAN harness/battleplan/notes/JEV_HARVEST_BLUEPRINT.md :: sec. 'Order of work and gates' (done criteria). Tier: mechanical. Read-only. Self-cap: 8 turns. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0.",
+      "tier": "mechanical"
+    }
+  ]
+}

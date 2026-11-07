@@ -1,0 +1,52 @@
+{
+  "id": "BP11-CRUX",
+  "band": "TRUST",
+  "class": "crucible",
+  "tier": "referee",
+  "readonly": true,
+  "deps": [
+    "BP11-FIXFWD",
+    "BP11-FIXFWD2",
+    "BP11-IDCORE",
+    "BP11-IDSURF",
+    "BP11-SALIENCE",
+    "BP11-HARDEN"
+  ],
+  "name": "CRUX: adversarial re-verification of the five BP11 builder legs, one JEV-SCREEN line per leg",
+  "note": "START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-CRUX.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 30 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Read-only on product files. Re-run every row in a fresh `git clone --shared` of each leg branch; bp11/harden carries the whole Identify chain. Every Identify rule in IDENTIFY_BLUEPRINT.md sec. 3 gets at least one mutation of your own. gui_probe rows stay UNKNOWN: the seat closes them by computer use after the wave. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+  "targets": [
+    "T1) harness/battleplan/notes/BP11-CRUX_verdicts.md: SOUND / SOUND-WITH-NITS / BROKEN per leg, every row with the crucible's own anchor and a SCREEN-vs-CRUX agreement line.",
+    "T2) harness/battleplan/notes/BP11-CRUX_mutations.json: every mutation with its target row and outcome."
+  ],
+  "touches": [
+    "harness/battleplan/notes/BP11-CRUX_verdicts.md",
+    "harness/battleplan/notes/BP11-CRUX_mutations.json"
+  ],
+  "acceptance": [
+    {
+      "predicate": "every builder acceptance row has a CRUX verdict with a crucible anchor",
+      "evidence": "check"
+    },
+    {
+      "predicate": "the mutation record holds at least one crucible-authored mutation per Identify rule 1-9, each labelled bite, survived or crash",
+      "evidence": "check"
+    },
+    {
+      "predicate": "each leg's verdict carries its SCREEN-vs-CRUX agreement line",
+      "evidence": "check"
+    },
+    {
+      "predicate": "gui_probe rows are UNKNOWN in the verdicts, never pass",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible flips no contract feature and edits no product file",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "any hash of a committed file is taken over git blob bytes (`git cat-file blob`), never a Windows checkout"
+  ],
+  "source": {
+    "doc": "harness/battleplan/notes/IDENTIFY_BLUEPRINT.md",
+    "anchor": "sec. 3 Rules (the crucible re-checks each one)"
+  }
+}

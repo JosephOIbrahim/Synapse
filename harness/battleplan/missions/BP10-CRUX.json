@@ -1,0 +1,51 @@
+{
+  "id": "BP10-CRUX",
+  "band": "TRUST",
+  "class": "crucible",
+  "tier": "referee",
+  "readonly": true,
+  "deps": [
+    "BP10-SCAFFOLD",
+    "BP10-CORPUS",
+    "BP10-GUIDES",
+    "BP10-BENCH"
+  ],
+  "name": "CRUX: adversarial re-verification of the four BP10 builder legs",
+  "note": "Tier: referee (Fable 5.1). Read-only on product files. Self-cap: 25 turns. Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. The JEV-SCREEN line in your brief (if present) tells you where evidence is thin; it never removes a read. Nothing merges on a BROKEN.",
+  "targets": [
+    "T1) Per builder receipt: re-run every non-GUI acceptance predicate in a fresh checkout of the leg branch; verdict rows pass|fail|UNKNOWN with your own anchors.",
+    "T2) >= 2 self-authored mutations per builder leg, each named with the check it reddens -> harness/battleplan/notes/BP10-CRUX_mutations.json",
+    "T3) harness/battleplan/notes/BP10-CRUX_verdicts.md: one verdict per leg (SOUND | SOUND-WITH-NITS | BROKEN) plus the screen-vs-CRUX agreement line per leg.",
+    "T4) Licence audit row: confirm no SideFX help text is tracked by git and the vendored LICENSE is byte-identical to upstream."
+  ],
+  "touches": [],
+  "acceptance": [
+    {
+      "predicate": "one verdict per builder leg (four) with independently re-run rows and the crucible's own anchors",
+      "evidence": "receipt"
+    },
+    {
+      "predicate": ">= 2 self-authored mutations per builder leg, each named with the check it reddens",
+      "evidence": "test"
+    },
+    {
+      "predicate": "screen-vs-CRUX agreement line present for all four legs",
+      "evidence": "receipt"
+    },
+    {
+      "predicate": "licence audit row present: no EULA text tracked, LICENSE hash matches upstream",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "harness/battleplan/notes/HARVEST_SPEC.md",
+    "anchor": "sec. 'Gates and verification' (all gates); sec. 'Mission split'"
+  }
+}

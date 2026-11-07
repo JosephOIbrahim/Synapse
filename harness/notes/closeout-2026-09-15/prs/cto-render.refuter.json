@@ -1,0 +1,29 @@
+{
+ "ok": false,
+ "blockers": [
+  "COMPOSED REGRESSION (branch-induced): tests/test_loop_mcp_observation.py -> 9 failed, 5 passed on a16e34ca (`NameError: name 'is_farm_control' is not defined`, e.g. test_disabled_loop_dispatches_without_substrate, test_second_mcp_action_gets_its_own_observation, test_import_failure_after_operation_entry_never_replays); the SAME file on master 841f742e -> 14 passed. The branch did not touch this test. Cause: the rig at tests/test_loop_mcp_observation.py:92 stubs sys.modules['synapse.panel.bridge_adapter'] with SimpleNamespace(execute_through_bridge=..., is_read_only=...) only; python/synapse/panel/tool_executor.py:630-633 now does `from synapse.panel.bridge_adapter import (execute_through_bridge, is_read_only, execute_farm_control, is_farm_control,)` and then calls is_farm_control unconditionally, so every non-farm dispatch under that rig breaks. Same bug-class the builder fixed in tests/test_loop_hweb_dispatch.py (a16e34ca) -- the neighbouring rig was not audited.",
+  "PUBLIC-REPO PATH LEAK (task scan rule: any hit blocks): `git diff master..HEAD | grep -nE \"...|/Users/\"` hits 10 ADDED lines carrying `C:/Users/User/OneDrive/Documents/ChatGPT/SYNAPSE_Refactor/...` and `C:/Users/User/OneDrive/Documents/houdini22.0/python_panels/tops_farm.pypanel` link targets: docs/tops/TRIAGE_FARM_BLUEPRINT.md:33,76,86,126,208,210; docs/tops/TRIAGE_FARM_COFFEE_TALK.md:13,15,45; docs/tops/TRIAGE_FARM_MIGRATION.md:9. Also local-drive links `G:/KARMA_TRIAGE_FARM/...` at TRIAGE_FARM_MIGRATION.md:11,23 and ARTIST_RENDER_IMPLEMENTATION.md:54. (The one `C:\\Users` backslash hit, diff line 1255, is a master-side `-` line from harness/notes/release-5.70.1 -- not branch content.)"
+ ],
+ "secret_scan": "`git diff master..HEAD | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\Users|/Users/\"` -> exit 0 (HITS). No credential patterns (sk-/AKIA/ghp_/xox/PRIVATE KEY: none). 10 ADDED lines match `/Users/`: absolute `C:/Users/User/OneDrive/Documents/ChatGPT/SYNAPSE_Refactor/...` and `C:/Users/User/OneDrive/Documents/houdini22.0/python_panels/tops_farm.pypanel` link targets in docs/tops/TRIAGE_FARM_BLUEPRINT.md (33,76,86,126,208,210), TRIAGE_FARM_COFFEE_TALK.md (13,15,45), TRIAGE_FARM_MIGRATION.md (9); plus `G:/KARMA_TRIAGE_FARM` local-drive links (MIGRATION.md:11,23; ARTIST_RENDER_IMPLEMENTATION.md:54). The single backslash `C:\\Users` hit (diff line 1255) is a master-side `-` line (harness/notes/release-5.70.1, deleted only because master moved past the base) -- not branch content. BLOCKS per the task rule (public origin).",
+ "composed": [
+  "tests/test_loop_mcp_observation.py (FAILS 9/14 on branch, 14/14 on master -- the refuting file)",
+  "tests/test_activity_labels.py (pass; PLAN Stop-5 blocker 3 'no synapse_farm_* labels' does not trip this test)",
+  "tests/test_rbac.py (pass; rbac.py +2)",
+  "tests/test_mcp_protocol.py (pass; registry/server touched)",
+  "tests/test_panel_sweep_b_widgets.py (pass; branch MODIFIED this test but never ran it)",
+  "tests/test_panel_sweep_b_hex.py (pass; qss.py +28)",
+  "tests/test_websocket_cancel_reachable.py (pass; websocket.py +26)",
+  "tests/test_solaris_tool_registration.py (pass)",
+  "tests/test_panel_consent_no_freeze.py (pass)",
+  "tests/test_worker_policy_demo.py (pass)",
+  "tests/test_f6_hygiene.py (pass)",
+  "tests/test_m1_truth_contract.py (pass)",
+  "tests/test_compose_offmain_wp3.py (pass)",
+  "tests/test_undob_live_undo_grouping.py (pass)",
+  "tests/test_m2_display_policy.py (pass)",
+  "tests/test_pipeline_efficiency.py (pass)",
+  "tests/test_parity_promotions.py (pass)",
+  "tests/test_sessions.py (pass)",
+  "NOT CHECKED: hython 22.0.400 import probe (not re-run), Qt/panel offscreen behaviour, full `pytest tests/` and the hython seat suite (shared-log law), tests/native_render_workspace.py (uncollected by design), the remaining ~45 candidate files from the module-reference grep (tests/test_tops.py, test_cops.py, test_studio_integration.py, test_port_wave_scene1.py, test_r306_reduced_mode_surfacing.py, test_blocks_seam.py, ...), and the full text of the 6 new docs/tops files beyond the path scan."
+ ]
+}

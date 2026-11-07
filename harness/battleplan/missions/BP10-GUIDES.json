@@ -1,0 +1,71 @@
+{
+  "id": "BP10-GUIDES",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "auto",
+  "team": "auto",
+  "readonly": false,
+  "deps": [
+    "BP10-CORPUS"
+  ],
+  "name": "M2: 31 workflow guides through the phantom gate into retrieval, with provenance; JEV-HARVEST triage of the quarantine",
+  "note": "Self-cap: 30 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Read HARVEST_SPEC.md sec. 'Target 2' first: the four-step transform is the contract. Promotion out of quarantine is Joe's word - this leg sorts and writes triage.md, it NEVER moves a guide from rag/quarantine/ to rag/corpus/. tool_map.json values are the Opus-worthy hour: a wrong mapping is a wrong answer in every chunk; mark any mapping you are unsure of with \"_unsure\": true. Jev invariants (JEV_BLUEPRINT.md sec. 4 + adapter.py): questions are DATA in harness/jev/questions.json; code owns every decision; fail closed (no key / timeout -> the pre-Jev output, ledgered as fallback, no fabricated probability); every call ledgered under harness/jev/ledger/bp10.<guard>.jsonl; nothing under python/synapse/ imports harness/jev (pinned by tests/test_jev_product_boundary.py). A Jev answer never promotes a chunk, never names a model, never grants consent.",
+  "targets": [
+    "T1) rag/ingest/guides.py: for each of the 31 vendored guides - strip the Goal:{description} line and the opening 'You are ...' sentence; rewrite tool refs from rag/ingest/tool_map.json (null -> drop, logged with file:line); resolve every backticked token: (1) h22_symbol_table.json exact, (2) datasheet parm/attribute names, (3) difflib cutoff 0.85; any unresolved token quarantines the WHOLE guide to rag/quarantine/guides/<name>.md with the failing tokens at the top; chunk by ## section; write rag/corpus/guides/<name>.jsonl with the spec's record plus origin=fxhoudinimcp@29b6695b:<path> and licence=mit.",
+    "T2) Fill rag/ingest/tool_map.json: every key -> a SYNAPSE equivalent name + one-line docstring, or null with a reason.",
+    "T3) rag/retrieval/scope_weights.py: activate the guide scope per the spec's rule (guide above prose for how-to phrasing, below for reference phrasing; H22 above H21 always). tests/test_guides_ingest.py with one deliberately failing fixture guide.",
+    "T4) harness/jev/jev_harvest.py + shadow CLI per JEV_HARVEST_BLUEPRINT sec. Site 1: token_kind Choice + rename_target_k Nouls over ONLY the residual tokens (after the three code lookups), and equivalent_does_the_job Noul per tool ref. Policy in decide() reads thresholds from questions.json. Writes harness/notes/harvest/triage.md (sorted groups, header judged/unjudged) and harness/notes/harvest/answer_key.json as an EMPTY template for Joe's reads. jev_grade.py --guard harvest.",
+    "T5) README.md 'What it knows' gains the one attribution line from HARVEST_SPEC sec. 'Provenance' item 2; nothing else in README changes."
+  ],
+  "touches": [
+    "rag/ingest/guides.py",
+    "rag/ingest/tool_map.json",
+    "rag/corpus/guides/",
+    "rag/quarantine/guides/",
+    "rag/retrieval/scope_weights.py",
+    "tests/",
+    "harness/jev/jev_harvest.py",
+    "harness/jev/jev_grade.py",
+    "harness/notes/harvest/",
+    "README.md"
+  ],
+  "acceptance": [
+    {
+      "predicate": "G2: every one of the 31 guides is in exactly one of rag/corpus/guides/ or rag/quarantine/guides/; every quarantined guide lists its failing tokens",
+      "evidence": "check"
+    },
+    {
+      "predicate": "G0: pytest tests/test_guides_ingest.py green; the deliberately broken fixture lands in quarantine",
+      "evidence": "test"
+    },
+    {
+      "predicate": "G3: the 25 adversarial probes still read 0/25 confident-wrong with the guide scope active",
+      "evidence": "test"
+    },
+    {
+      "predicate": "every chunk in rag/corpus/guides/ carries origin and licence fields; a one-line query by origin prefix lists them all",
+      "evidence": "check"
+    },
+    {
+      "predicate": "triage.md exists; header says judged or unjudged; no file moved from quarantine to corpus by this leg (git diff proves it)",
+      "evidence": "check"
+    },
+    {
+      "predicate": "README diff is exactly one added line",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file",
+    "the crucible flips one tool_map.json value to a wrong tool and shows the affected chunk text changes and the test reddens",
+    "the crucible confirms no guide text reached rag/corpus/guides/ without passing the symbol-table step (plant a fake node name)"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "harness/battleplan/notes/HARVEST_SPEC.md",
+    "anchor": "sec. 'Target 2: workflow guides'; sec. 'Gates' G2-G3; JEV_HARVEST_BLUEPRINT sec. 'Site 1'"
+  }
+}

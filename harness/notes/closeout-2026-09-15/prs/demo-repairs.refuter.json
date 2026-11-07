@@ -1,0 +1,17 @@
+{
+ "ok": true,
+ "blockers": [],
+ "secret_scan": "git diff master..HEAD | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\Users|/Users/\" -> no hits (exit 1); repeated on added lines only (^\\+) -> no hits. Clean for a public repo.",
+ "composed": [
+  "tests/test_mcp_protocol.py",
+  "tests/test_panel_reload_memory_owner.py",
+  "tests/test_scene_memory.py (write_decision signature changed on this branch)",
+  "tests/test_g1a_scene_memory_address.py",
+  "tests/test_cto_mcp_contract.py (registry contract; TOOL_DEFS grew to 129)",
+  "tests/test_history_bridge.py",
+  "tests/test_w2s1_doctor_offmain.py",
+  "-> 199 passed, 12 skipped",
+  "SENSITIVE-SURFACE AUDIT (all present in the original tip 72de0881, none introduced by the rebase): rbac.py adds 'layout_network' to _ARTIST_COMMANDS (RBAC gate list); handlers.py _do_log now hops run_on_main('memory:automatic_action') for the memory log and wraps it in try/except; handlers_memory.py adds _memory_on_main; session_journal.py hops run_on_main for hou.hipFile.path; handlers_network_layout.py runs apply_layout under run_on_main(timeout=_SLOW_TIMEOUT) inside `native.undos.group(...)` and refuses when undos are disabled. run_on_main has a same-thread short-circuit at python/synapse/server/main_thread.py:484 (`threading.current_thread().ident == _MAIN_THREAD_ID`), so the new from-main calls cannot self-deadlock. No VERSION, harness/state, .claude, or settings files touched.",
+  "NOT CHECKED (say so): memory/store.py rewrite body, host/memory_lifecycle.py (+394), server/network_layout.py planner, scripts/probe_network_layout.py -- only grepped for hou./undo/thread/file-write lines, not read line-by-line; hython seat suite and `hython scripts/probe_network_layout.py` not run (live H22 undo/artist-box contract unproven here, as the builder admitted); full `pytest tests/` not run per LAW; CI not run; PLAN.md/verdicts.json not opened (call budget) so whether the plan pre-authorized this branch's gate/thread/undo content is taken from the closeout ruling, not re-derived here. Tool-call budget: 14 Bash calls issued (4 refused by the worktree guard for shell substitutions, 10 executed) plus this report."
+ ]
+}

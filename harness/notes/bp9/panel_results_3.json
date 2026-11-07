@@ -1,0 +1,609 @@
+{
+ "PNL-L3B": {
+  "leg": "PNL-L3B",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_0e734049-e9f-1",
+   "commit_sha": "d8fa9195903a77692e0a0e7fa1479ce66c7c86aa",
+   "files_changed": [
+    "python/synapse/panel/command_palette.py",
+    "python/synapse/panel/tool_palette.py",
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/scripts/probe_first_click.py",
+    "tests/test_palette_ranking.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "QT_QPA_PLATFORM=offscreen hython python/synapse/panel/scripts/probe_first_click.py exits 0 and prints eight row titles",
+     "verdict": "pass",
+     "evidence": "EXIT=0. Printed: 1. Open the render workspace / 2. Show updates / 3. Saved networks / 4. Saved lookdev suggestion / 5. Restore last session / 6. Explain / 7. Fix / 8. Optimize; then \"sends beginning with '/': 5\" and \"first click: all eight rows lead somewhere on an empty scene.\" The probe also demonstrated it fails on a dead end: an earlier run exited 1 with \"DEAD ENDS (1): row 5 (Restore last session) said ['Restored 3 messages...'], expected the 'No parked previous session' line\"."
+    },
+    {
+     "predicate": "hython -c count of palette sends beginning with '/' prints 5 (entry builder name recorded)",
+     "verdict": "pass",
+     "evidence": "The real entry builder is synapse.panel.tool_palette._load_entries (not build_palette_entries, which is command_palette's data->PaletteEntry step). Ran: from synapse.panel.tool_palette import _load_entries; rows=_load_entries(); sum(1 for r in rows if str(r.get('send','')).startswith('/')) -> 'literal sends: 5'. Same process printed synapse.__file__ = C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_0e734049-e9f-1\\python\\synapse\\__init__.py"
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_finesse.py tests/test_first_session_panel.py tests/test_palette_ranking.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "32 passed, 2 warnings in 1.47s"
+    },
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0",
+     "verdict": "pass",
+     "evidence": "EXIT=0. tree under test = the worktree; hython imports the worktree __init__.py [OK]; anthropic key present. audit: 1 failing, 1 baselined, ratchet holds. seat suite summary: 6 failed, 203 passed, 38 warnings in 81.08s; 6 failing, 6 baselined, ratchet holds. 'panel gate: GREEN (no new failure)'. No baseline row started passing, so no baseline edit was owed."
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "command printed no paths (only my own [deleted-tests: none above] marker)"
+    },
+    {
+     "predicate": "crucible: exactly five sends begin with '/'",
+     "verdict": "pass",
+     "evidence": "counted 5 on the real rows via _load_entries, re-counted 5 inside the probe against the live palette, and pinned in tests/test_palette_ranking.py::test_exactly_five_palette_sends_are_still_literals"
+    },
+    {
+     "predicate": "crucible: every dropped or rewritten row is named in the receipt",
+     "verdict": "pass",
+     "evidence": "all 21 non-panel rows listed in notes below and declared in command_palette.COMMAND_PROMPTS / DROPPED_COMMANDS, each drop carrying its own reason string"
+    },
+    {
+     "predicate": "crucible: the probe is read-only and fails on a dead end",
+     "verdict": "pass",
+     "evidence": "probe builds offscreen against a temp SYNAPSE_PANEL_SETTINGS, never touches the scene, swaps in recorders for the four local-view openers, forces session_store.restore_previous_conversation to [] so it cannot consume the artist's parked session, and only INSPECTS rows 6-8 rather than sending them. It exited 1 on a real mismatch before that last fix."
+    },
+    {
+     "predicate": "crucible: group heads still SPACE_48 tall",
+     "verdict": "pass",
+     "evidence": "heads are still built by the unchanged tool_palette.group_head_item (QSize(0, t.SPACE_48)); only the head TEXT source changed in _populate. tests/panel/test_bc_wave.py BC-3 passes in the gate's seat suite (not among the 6 baselined failures)."
+    }
+   ],
+   "tests_run": "python -m pytest tests/test_panel_finesse.py tests/test_first_session_panel.py tests/test_palette_ranking.py -q -p no:cacheprovider -> 32 passed. python harness/notes/bp9/panel_gate.py -> GREEN, exit 0 (audit 1 failing/1 baselined; seat suite 6 failed / 203 passed, 6 baselined). hython probe_first_click.py -> exit 0.",
+   "notes": "Merged worktree-wf_27091aaa-db8-2 cleanly (no conflicts) before starting.\n\nENV PROOF: python -c import synapse printed C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_0e734049-e9f-1\\python\\synapse\\__init__.py — but ONLY when hython is launched the way panel_gate.env_for_this_tree() builds the env. Setting the same variables by hand from the PowerShell tool still imported C:\\Users\\User\\SYNAPSE\\python\\synapse\\__init__.py (the main tree), twice, with both forward and backslash paths. I did not chase the root cause; I routed every hython line through .scratch/run_hython.py, which imports panel_gate and reuses its env + cwd, and each run reprints synapse.__file__ so the tree is proved per command. .scratch/ is untracked and not committed.\n\nBRIEF CORRECTION. The brief says \"the 20 rows of _SLASH_COMMANDS that have no panel handler\". The list held 25 rows of which only FOUR were panel-answered: /restore-session had never been listed, though the panel has intercepted it since W7-SESSCOPE. I added it (that is what makes the panel group five) which leaves 21 rows to decide, not 20.\n\nROW DECISIONS (all 21). Rewritten as real prompts, each stating its own empty-selection fallback (command -> row title): /diagnose -> \"Check the scene for problems\"; /preflight -> \"Pre-render check\"; /journal -> \"Recap this session\"; /trace -> \"Trace what feeds this node\"; /hda -> \"Make a digital asset\"; /apex explain -> \"Explain this APEX graph\"; /apex trace -> \"Trace APEX evaluation order\"; /apex overview -> \"How APEX rigging works\"; /apex migrate -> \"Move a KineFX rig to APEX\"; /scene -> \"Summarize the scene\"; /inspect -> \"Inspect the selected node\". Dropped (reason): /help (the palette IS the help surface; the model cannot enumerate the panel's own affordances); /fix (duplicate of the ASK Fix row); /explain (duplicate of the ASK Explain row); /vex (bare verb, no object; the /vex help <function> rows stay); /recipes (the RECIPES group is the browse surface); /login (shot login was never implemented anywhere — a dead row); /apex (bare overview, superseded by \"How APEX rigging works\"); /apex recipes (the APEX rig rows in RECIPES are the browse surface); /apex build (the per-recipe /apex build <name> rows are the real thing); /search (the palette's own search field does this). The five PANEL rows keep their literal send and are titled by outcome: /render -> Open the render workspace, /events -> Show updates, /saved-recipes -> Saved networks, /lookdev-suggestion -> Saved lookdev suggestion, /restore-session -> Restore last session.\n\nAn unlisted command now falls through to \"dropped\" rather than shipping as a bare literal, so the five-literal property cannot silently rot when data is added.\n\nORDER. Entries carry group/head/order and sort by (group rank, hand order, context rank, verb, title): PANEL, ASK, RECIPES, TOOLS-by-context, PRESETS. _populate heads a row by e[\"head\"], falling back to the context label for the TOOLS band, so SOP/LOP/COP/Karma/USD still read as their own heads. All new logic inside _load_entries is LOCAL on purpose — tests/test_panel_finesse.py AST-extracts that function into a hand-built namespace, and a new module-level helper on the command path would have broken an unrelated pin.\n\nTESTS. tests/test_palette_ranking.py: the L3a assertion \"marked == PANEL_ANSWERED_COMMANDS - {/restore-session}\" is AMENDED BY DECLARATION (comment cites PNL-L3B) to the full set. Added test_refilter_ranks_through_the_shared_scorer — this closes the nit L3a flagged: _refilter's use of command_palette.rank_rows is now pinned behaviourally (AST-lifted, no Qt), including that a ranked list is drawn ungrouped and an empty query is drawn grouped. Added test_exactly_five_palette_sends_are_still_literals, which also refuses an undecided command. No test file or test was deleted.\n\nKNOWN LIMIT, stated rather than hidden: the five-literal pin in stock pytest measures command-category PaletteEntry.command (the only category whose command becomes the send verbatim); the row-level count over real sends is proved by the hython acceptance line and re-counted inside the probe, not by stock pytest, because importing tool_palette needs Qt.",
+   "for_next_leg": "The Commands list order is now data-driven: every row carries group/head/order and tool_palette._load_entries sorts on (group rank, hand order, context, verb, title) — add a new band by giving its rows a group and putting it in the local group_rank map, not by re-sorting. Every slash command must be declared in exactly one of command_palette.PANEL_ROW_TITLES / COMMAND_PROMPTS / DROPPED_COMMANDS or it is silently dropped, and tests/test_palette_ranking.py fails on an undecided one; if you add a panel-answered literal, add it to PANEL_ANSWERED_COMMANDS, PANEL_ROW_ORDER and PANEL_ROW_TITLES together or the five-literal pin and the probe both go red. Run hython through the gate's own env (panel_gate.env_for_this_tree) — setting HOUDINI_PACKAGE_DIR/PYTHONPATH by hand from PowerShell still imported the MAIN tree on this machine, so any bare hython line you write should reprint synapse.__file__."
+  },
+  "verdict": {
+   "leg": "PNL-L3B",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "QT_QPA_PLATFORM=offscreen hython python/synapse/panel/scripts/probe_first_click.py exits 0 and prints eight row titles",
+     "verdict": "pass",
+     "evidence": "My rerun in worktree ../pnl-verify-PNL-L3B at d8fa9195, env from panel_gate.env_for_this_tree: EXIT=0, printed 1. Open the render workspace / 2. Show updates / 3. Saved networks / 4. Saved lookdev suggestion / 5. Restore last session / 6. Explain / 7. Fix / 8. Optimize, then \"sends beginning with '/': 5\" and \"first click: all eight rows lead somewhere on an empty scene.\""
+    },
+    {
+     "predicate": "hython count of palette sends beginning with '/' prints 5 (real entry builder recorded)",
+     "verdict": "pass",
+     "evidence": "synapse.__file__ = C:\\Users\\User\\pnl-verify-PNL-L3B\\python\\synapse\\__init__.py (my tree, not main). tool_palette._load_entries() -> 305 rows, SLASH SENDS 5, exactly /render /events /saved-recipes /lookdev-suggestion /restore-session. Group sequence over the whole list: ['PANEL','ASK','RECIPES','TOOLS','PRESETS'] = the spec order."
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_finesse.py tests/test_first_session_panel.py tests/test_palette_ranking.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "32 passed, 2 warnings in 2.38s"
+    },
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0",
+     "verdict": "pass",
+     "evidence": "GATE EXIT=0. tree under test = C:\\Users\\User\\pnl-verify-PNL-L3B, hython imports that tree [OK], key present. audit: 1 failing / 1 baselined, ratchet holds. seat suite: 6 failed / 203 passed in 81.79s, 6 failing / 6 baselined, ratchet holds. 'panel gate: GREEN (no new failure)'. No baseline row started passing (no exit 2), so no baseline edit was owed. BC-3 head test is not among the 6 baselined failures."
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "no paths printed"
+    },
+    {
+     "predicate": "crucible: exactly five sends begin with '/'",
+     "verdict": "pass",
+     "evidence": "5 on real rows via _load_entries, 5 re-counted inside the probe, and pinned by tests/test_palette_ranking.py::test_exactly_five_palette_sends_are_still_literals. Scoped to the Commands list; see finding on the other palette."
+    },
+    {
+     "predicate": "crucible: every dropped or rewritten row is named in the receipt",
+     "verdict": "pass",
+     "evidence": "26 listed commands = 5 PANEL + 11 COMMAND_PROMPTS + 10 DROPPED, no overlap between tables, no table key missing from the list (checked programmatically). Receipt names all 21 decisions with per-row reasons."
+    },
+    {
+     "predicate": "crucible: the probe is read-only and fails on a dead end",
+     "verdict": "fail",
+     "evidence": "Fails-on-dead-end: PROVEN — I reverted command_palette.PANEL_ROW_TITLES['/events'] to a literal and removed the head fallback; pytest went red (1 failed). Read-only: DISPROVEN. Ran the probe with cwd=an isolated temp dir seeded with conversation.json ({\"content\":\"ARTIST-LIVE\"}, owner boot=otherboot) and conversation.previous.json ({\"content\":\"ARTIST-PARKED-OLD\"}). After EXIT=0: conversation.json == [], previous == ARTIST-LIVE, and ARTIST-PARKED-OLD was DESTROYED. Chain: probe_first_click.py:98 SynapsePanel() -> synapse_panel.py:581 load_conversation_scoped() -> session_store.py:250 os.replace(target, prev). A clean run also creates <hip>/claude/conversation.json + .owner.json."
+    },
+    {
+     "predicate": "crucible: group heads still SPACE_48 tall",
+     "verdict": "pass",
+     "evidence": "tool_palette.py:61 head.setSizeHint(QtCore.QSize(0, t.SPACE_48)) — group_head_item is untouched by this commit; only the head TEXT source changed at the _populate call site. BC-3 passes inside the gate's seat suite."
+    }
+   ],
+   "findings": [
+    "python/synapse/panel/scripts/probe_first_click.py:98 — SynapsePanel() construction reaches synapse_panel.py:581 load_conversation_scoped(), which at session_store.py:250 os.replace()s an existing conversation.json into the previous slot; proven in an isolated temp cwd to park a live conversation AND destroy an already-parked previous one. The probe's SYNAPSE_PANEL_SETTINGS temp file isolates panel settings only — the conversation store resolves from the HIP dir (session_store.py:57 _resolve_store_dir), not from that var. Fix (3 lines in _prepare_env): stub session_store.conversation_path/previous_path at a temp dir, or chdir to one, before building the panel.",
+    "python/synapse/panel/scripts/probe_first_click.py:214 — a clean run still leaves <hip>/claude/conversation.json + conversation.json.owner.json on disk (panel close saves), so the docstring's 'READ-ONLY' at :21 overclaims even in the harmless case.",
+    "python/synapse/panel/command_palette.py:766 — the OTHER palette (CommandPaletteWidget) still sends entry.command verbatim, and the apex/vex entries built at :385 and :417 carry literal commands '/apex build <name>' / '/vex help <fn>' with no panel handler. Activating one there ships a bare literal to the model — the same dead-end class this leg killed in the Commands list. Out of scope of the brief (which scoped _SLASH_COMMANDS), log as a known limitation.",
+    "tests/test_palette_ranking.py (test_exactly_five_palette_sends_are_still_literals comment) — 'these five are every literal send in the palette' is true only under the category=='command' filter the test applies; it is false for the ⌘K widget per the finding above. Comment overclaims; the assertion itself is correct.",
+    "python/synapse/panel/tool_palette.py — the probe is blind to row TITLES and head names: with /events' title reverted to the literal and the e.get('head') fallback removed, the probe still exited 0 (pytest caught it). The 'first click' proof covers sends, not what the artist reads.",
+    "python/synapse/panel/command_palette.py:428 — classify_tool(e.command, ...) now receives a whole prompt sentence for the 11 rewritten rows, so their verb/context tags are derived from prose. No observed misplacement (all land in the TOOLS band), but the classifier input silently changed meaning.",
+    "python/synapse/panel/command_palette.py:140-250 — no test forbids a command appearing in two of the three decision tables (DROPPED silently wins). Currently no overlap exists (verified), so this is a latent rot path only.",
+    "Deliberate breaks both bit: adding an undecided row to _SLASH_COMMANDS -> test_exactly_five_palette_sends_are_still_literals FAILED; reverting a PANEL row title to its literal -> same test FAILED. Restored, git status clean afterward."
+   ],
+   "merge_ready": false,
+   "notes": "All five acceptance lines reproduced independently in a fresh detached worktree at d8fa9195, gate GREEN with the tree proof pointing at my worktree — the build itself is sound and the receipt is honest, including its brief correction (21 rows, not 20; /restore-session genuinely was unlisted and genuinely is intercepted at synapse_panel.py:3199). merge_ready is false on one line only: the crucible criterion 'the probe is read-only' is disproven with a reproduced data-loss case, and the rule couples merge_ready to zero criterion violations. This is a BOUNDED WEAKNESS, not a showstopper for the shipped panel code — no production path changed; the damage is confined to whoever runs the probe with cwd inside a dir holding a real conversation store. A 3-line isolation in probe_first_click._prepare_env closes it, after which this is SOUND and mergeable without re-running the graph. Everything else is a nit or an out-of-scope limitation to log."
+  },
+  "ready": false,
+  "branch": "worktree-wf_0e734049-e9f-1",
+  "for_next_leg": "The Commands list order is now data-driven: every row carries group/head/order and tool_palette._load_entries sorts on (group rank, hand order, context, verb, title) — add a new band by giving its rows a group and putting it in the local group_rank map, not by re-sorting. Every slash command must be declared in exactly one of command_palette.PANEL_ROW_TITLES / COMMAND_PROMPTS / DROPPED_COMMANDS or it is silently dropped, and tests/test_palette_ranking.py fails on an undecided one; if you add a panel-answered literal, add it to PANEL_ANSWERED_COMMANDS, PANEL_ROW_ORDER and PANEL_ROW_TITLES together or the five-literal pin and the probe both go red. Run hython through the gate's own env (panel_gate.env_for_this_tree) — setting HOUDINI_PACKAGE_DIR/PYTHONPATH by hand from PowerShell still imported the MAIN tree on this machine, so any bare hython line you write should reprint synapse.__file__."
+ },
+ "PNL-L4": {
+  "leg": "PNL-L4",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_0e734049-e9f-2",
+   "commit_sha": "ec1bc3ba022ed32d35fa61f9d4fb8ac4d92e3ccc",
+   "files_changed": [
+    "harness/notes/bp9/seat_baseline.json",
+    "python/synapse/panel/designsystem/components.py",
+    "python/synapse/panel/designsystem/tokens.py",
+    "python/synapse/panel/face_review.py",
+    "python/synapse/panel/synapse_panel.py",
+    "tests/panel/test_type_scale_native.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "python -c \"...print(len({t.SIZE_SMALL,t.SIZE_UI,t.SIZE_BODY,t.SIZE_TITLE,t.SIZE_HERO}))\" prints 3",
+     "verdict": "pass",
+     "evidence": "printed `3`. Ramp is 12 / 15 / 19; SIZE_SMALL = SIZE_BODY, SIZE_LABEL = SIZE_SMALL."
+    },
+    {
+     "predicate": "TYPE_ROLES sizes all >= FONT_FLOOR_PX, exits 0 (real one-liner recorded)",
+     "verdict": "pass",
+     "evidence": "Real line (TYPE_ROLES is a dict of 4-tuples, size at index 1): python -c \"from synapse.panel.designsystem import tokens as t; assert all(spec[1] >= t.FONT_FLOOR_PX for spec in t.TYPE_ROLES.values()); print('ROLES>=FLOOR ok', t.FONT_FLOOR_PX, sorted({s[1] for s in t.TYPE_ROLES.values()}))\" -> `ROLES>=FLOOR ok 11 [12, 15, 19]`, exit 0."
+    },
+    {
+     "predicate": "grep -cE '\\b(21|11)\\s*(px|,)' python/synapse/panel/face_review.py prints 0",
+     "verdict": "pass",
+     "evidence": "printed `0`. 21 -> t.SIZE_HERO at the verdict, three 11s -> t.SIZE_SMALL, and the two comments that spelled the numbers now name the tokens."
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_typography.py tests/test_panel_readability_defects.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "29 passed, 3 skipped, 2 warnings in 0.48s."
+    },
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0",
+     "verdict": "pass",
+     "evidence": "GREEN. hython imports C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_0e734049-e9f-2\\python\\synapse\\__init__.py [OK]; key present. audit: 1 failing / 1 baselined, ratchet holds. seat suite: 5 failed, 204 passed in 75.25s; 5 failing / 5 baselined, ratchet holds. (Before the leg: 6 failed / 203 passed.) The one FIXED row was deleted from seat_baseline.json in this same commit."
+    },
+    {
+     "predicate": "git diff master -- tokens.py | grep -cE '^[-+].*TEXT_(SECONDARY|TERTIARY)' prints 0",
+     "verdict": "pass",
+     "evidence": "printed `0`. No colour token moved anywhere in the leg."
+    },
+    {
+     "predicate": "crucible: distinct sizes is 3 and the floor pin moved by declaration naming R3-A",
+     "verdict": "pass",
+     "evidence": "tests/panel/test_type_scale_native.py::test_type_scale_monotonic_and_distinct floor edited >= 4 -> >= 3 with an in-file declaration citing PNL-L4 / ruling R3-A. Not deleted: git diff --diff-filter=D --name-only master -- tests/ is empty."
+    },
+    {
+     "predicate": "crucible: mono roles never ask for weight 500",
+     "verdict": "pass",
+     "evidence": "Dumped live: code mono 12 400, status mono 12 400. Sans-only 500s are label and caption."
+    },
+    {
+     "predicate": "crucible: the wordmark untouched",
+     "verdict": "pass",
+     "evidence": "git diff master -- synapse_panel.py | grep -iE '^[-+].*(WORDMARK|word\\.)' returns nothing. tracked_font(\"WORDMARK\", 15, weight=600) is byte-identical."
+    },
+    {
+     "predicate": "crucible: seeded contrast green under hython",
+     "verdict": "pass",
+     "evidence": "tests/panel/test_seeded_contrast.py + test_type_scale_native.py + test_bc_wave.py under hython: 1 failed, 19 passed -- the single red is the already-baselined test_profile_row_retired; seeded contrast all green."
+    },
+    {
+     "predicate": "Weight 700 only at SIZE_TITLE and SIZE_HERO",
+     "verdict": "pass",
+     "evidence": "TYPE_ROLES dump: display sans 19 700, title sans 15 700; every other role is 400 or 500."
+    },
+    {
+     "predicate": "R3-B caption in ALL CAPS",
+     "verdict": "fail",
+     "evidence": "DELIBERATE, declared, one-word reversible. tokens.ROLE_CAPS and the QFont capitalization branch in components.apply_font_role ship wired and working, but ROLE_CAPS is EMPTY. Measured first: `caption` is not the tiny-label role the ruling describes -- ~20 call sites hand it whole sentences (connection_dialog, project_rules, notifications, saved_recipes, tool_palette empty state). Upper-casing a paragraph is the opposite of this leg's purpose. Reasoning is in the token comment and the commit body."
+    }
+   ],
+   "tests_run": "python harness/notes/bp9/panel_gate.py (GREEN: audit 1/1 baselined; seat 5 failed / 204 passed, all 5 baselined) · python -m pytest tests/test_panel_typography.py tests/test_panel_readability_defects.py -q (29 passed, 3 skipped) · python -m pytest tests/ -q -k \"panel or type_scale or sweep or font\" (690 passed, 275 skipped) · hython tests/panel/test_seeded_contrast.py test_type_scale_native.py test_bc_wave.py (19 passed, 1 baselined red) · hython tests/panel/test_j5_rail_air.py (2 passed) · import proof: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_0e734049-e9f-2\\python\\synapse\\__init__.py",
+   "notes": "Merged worktree-wf_27091aaa-db8-1 cleanly before starting.\n\nWHAT THE LEG ACTUALLY COST, and it is the interesting part. Folding SIZE_SMALL 11 -> 12 plus the new caption voice pushed the composer's footer strip (Commands / Render / Saved networks / Updates) onto a second row, which ate 36px out of the conversation and turned test_j5_rail_air::test_expert_rail_has_space_md_air_above_the_identity_row red (chat 370/760 = 0.487 against its >= 0.5 floor). It only shows up in a FULL seat run: alone the strip's 4th label reads \"Updates\", after the suite's event traffic it reads \"Updates (1)\". Measured widths on this branch at 340x760 offscreen: 67 + 45 + 99 + 74 = 285 against a 280px strip -- over budget before a single gap is drawn, so _ShortcutLayout._row_gap cannot rescue it. Two moves fixed it: the footer links came off `caption` onto the sans `label` role (which the mission asks for anyway -- \"Commands\" is a word, not metadata), and their tracking is explicitly zeroed at the call site with the measurement written next to it. Untracked the strip is 265 + 12 = 277 in 280 and holds one row; chat is 406 against 407 upstream.\n\nGATE EXIT 2 HANDLED. tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks was baselined to PNL-L7 and now passes, so its row is deleted from harness/notes/bp9/seat_baseline.json in this same commit, with the reproduction written into the file's _why. Verified both directions by checking the upstream tree back in and running that test alone under hython: upstream RED with ('curious', [0, 2, 13, 14]) against a 3-bucket limit, this branch GREEN. Cause is honest but incidental -- the guard buckets every chromatic pixel of a widget grab including anti-aliased glyph fringes, and moving the chrome off mono changed the fringes. The hue it was written for (the Doctor yellow, R2-B1) is still PNL-L7's to remove, and I said so in the baseline note.\n\nOFF-TARGET FILE, declared: python/synapse/panel/designsystem/components.py is not in the mission's `targets` list. I touched it for 12 lines -- the QFont capitalization branch in apply_font_role that ROLE_CAPS drives. Without it the caps half of R3-B has no mechanism at all. Nothing else in that file changed.\n\nStructural notes: TRACKING_EM + tracking_px moved above TYPE_ROLES (pure move, no value changed) so caption/status can derive their tracking from the em table instead of carrying hand-picked 0.0 / 0.5 px. The SWEEP_A structural freeze and the PNL_20260921_QSS_AMENDMENTS pins are untouched -- tests/test_panel_sweep_a.py is green -- because nothing in qss.py's source text changed and the face_review edits sit inside .setFont(...) calls that _structure() does not inventory. No colour token moved; no QSS rule edited.",
+   "for_next_leg": "The type ramp is now 12 / 15 / 19 and chrome text is one pixel bigger everywhere, which means the composer's footer strip has almost no width headroom left: 265px of content in a 280px strip, holding one row only because its tracking is zeroed at the call site in _build_footer. Any new footer link, any longer label state, or any further size bump will wrap it and redden test_j5_rail_air -- measure that strip before you widen anything near it. tokens.ROLE_CAPS is a wired but empty mechanism: R3-B's ALL CAPS for `caption` is deliberately not applied because ~20 call sites hand that role whole sentences; if a ruling wants the caps, split `caption` into a chip role and a prose role first, then add the chip role to ROLE_CAPS (one word). PNL-L7 should also know its seat-baseline row (test_chat_face_monochrome...) is already gone -- it went green here on anti-aliasing, not because the Doctor yellow left, so R2-B1 still has real work to do."
+  },
+  "verdict": {
+   "leg": "PNL-L4",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "python -c \"...print(len({t.SIZE_SMALL,t.SIZE_UI,t.SIZE_BODY,t.SIZE_TITLE,t.SIZE_HERO}))\" prints 3",
+     "verdict": "pass",
+     "evidence": "My rerun in the detached verify worktree printed `3`, exit 0. Dump confirms the ramp: SIZE_SMALL 12 = SIZE_BODY 12 = SIZE_UI 12, SIZE_TITLE 15, SIZE_HERO 19. SIZE_LABEL 12 < SIZE_TITLE 15 holds."
+    },
+    {
+     "predicate": "TYPE_ROLES sizes all >= FONT_FLOOR_PX, exits 0 (real one-liner recorded)",
+     "verdict": "pass",
+     "evidence": "Reran the builder's real line (TYPE_ROLES values are 4-tuples, size at index 1): `ROLES>=FLOOR ok 11 [12, 15, 19]`, exit=0. FONT_FLOOR_PX is still 11, unmoved."
+    },
+    {
+     "predicate": "grep -cE '\\b(21|11)\\s*(px|,)' python/synapse/panel/face_review.py prints 0",
+     "verdict": "pass",
+     "evidence": "My rerun printed `0`. Diff confirms face_review.py:229 21 -> t.SIZE_HERO, and :328/:372/:382 11 -> t.SIZE_SMALL, with the two comments that spelled the numbers renamed to the tokens. face_work.py has no numeric tracked_font literal left (grep empty)."
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_typography.py tests/test_panel_readability_defects.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "My rerun: `29 passed, 3 skipped, 2 warnings in 0.51s`, exit=0. Matches the receipt exactly."
+    },
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0 (ratchets audit + seat suite; exit 2 = baseline row now passes)",
+     "verdict": "pass",
+     "evidence": "My own run from the verify worktree: `tree under test : C:\\Users\\User\\pnl-verify-PNL-L4` / `hython imports : ...\\pnl-verify-PNL-L4\\python\\synapse\\__init__.py [OK]` / `anthropic key : present` / `audit: 1 failing, 1 baselined ... ratchet holds` / `seat suite summary: 5 failed, 204 passed, 31 warnings in 79.39s` / `seat suite: 5 failing, 5 baselined ... ratchet holds` / `panel gate: GREEN (no new failure)` GATE_EXIT=0. The deleted baseline row is NOT in the 5 known-failing list, and I ran it alone under hython to prove the fix rather than trust the deletion: tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks -> `1 passed`."
+    },
+    {
+     "predicate": "git diff master -- tokens.py | grep -cE '^[-+].*TEXT_(SECONDARY|TERTIARY)' prints 0",
+     "verdict": "pass",
+     "evidence": "My rerun printed `0`. Widened the check across the whole leg commit and the whole panel/ tree: `git show ec1bc3ba -- python/synapse/panel/ | grep -cE '^[-+].*(TEXT_SECONDARY|TEXT_TERTIARY|ACCENT|#[0-9a-fA-F]{6})'` -> 0. No colour token or hex literal moved anywhere in the leg."
+    },
+    {
+     "predicate": "crucible: distinct sizes is 3 and the floor pin moved by declaration naming R3-A",
+     "verdict": "pass",
+     "evidence": "tests/panel/test_type_scale_native.py:24-34 carries an in-file declaration citing PNL-L4 / ruling R3-A above `assert len(set(sizes)) >= 3`. Monotonic pin unchanged. No test file deleted: `git diff --diff-filter=D --name-only master...HEAD -- tests/` is empty. DELIBERATE BREAK: forcing SIZE_TITLE 15 -> 12 turned that test RED (`1 failed, 3 passed`), so the amended floor still guards. Restored."
+    },
+    {
+     "predicate": "crucible: no colour token changed",
+     "verdict": "pass",
+     "evidence": "0 matches for TEXT_SECONDARY/TEXT_TERTIARY/ACCENT/hex across the leg's panel diff (see acceptance line 6). Seeded-contrast sweep green under hython (below)."
+    },
+    {
+     "predicate": "crucible: mono roles never ask for weight 500",
+     "verdict": "pass",
+     "evidence": "Live TYPE_ROLES dump from the verify tree: `code mono 12 400 0.0`, `status mono 12 400 0.36`. Both mono roles are WEIGHT_REGULAR. The only 500s are sans: `label sans 12 500 0.5`, `caption sans 12 500 1.44`. Weight 700 appears only at `title sans 15 700` and `display sans 19 700`."
+    },
+    {
+     "predicate": "crucible: the wordmark untouched",
+     "verdict": "pass",
+     "evidence": "`git show ec1bc3ba -- python/synapse/panel/synapse_panel.py | grep -icE '^[-+].*(WORDMARK|word\\.)'` -> 0. The BRAND/WORDMARK 0.16em gesture is byte-identical."
+    },
+    {
+     "predicate": "crucible: seeded contrast green under hython",
+     "verdict": "pass",
+     "evidence": "Ran tests/panel/test_seeded_contrast.py + tests/panel/test_type_scale_native.py through the gate's own env (HOUDINI_PACKAGE_DIR pinned at the verify tree, QT_QPA_PLATFORM=offscreen, hython 22.0.400): `7 passed, 1 warning in 0.27s`, RC=0."
+    },
+    {
+     "predicate": "WARDEN GATE 4: full python -m pytest tests/ (never a panel-only subset)",
+     "verdict": "pass",
+     "evidence": "The builder only ran a -k subset, which lies (sibling PySide stubs leak module-globals). I ran the whole suite from the verify worktree: `9707 passed, 429 skipped, 5 xfailed, 625 warnings in 470.22s`. Zero failures."
+    },
+    {
+     "predicate": "R3-B caption in ALL CAPS (mission note: caption -> sans 12 / 500 / all caps / LABEL_SM 0.12em)",
+     "verdict": "fail",
+     "evidence": "CONFIRMED NOT APPLIED, and the builder's account of it is honest. tokens.ROLE_CAPS ships as frozenset(). I probed the mechanism live under hython offscreen against a genuine PySide6.QtWidgets.QApplication: shipped -> caption font capitalization is `Capitalization.MixedCase`; with 'caption' injected into ROLE_CAPS -> `Capitalization.AllUppercase` and `w.text()` still returns 'Commands' (no string rewrite). So the wiring is real and one word from armed. I also verified the stated reason rather than accepting it: 26 caption call sites in panel/, including privacy PROSE at connection_dialog.py:97 ('The check sends credentials and asks for model metadata only...') and project_rules.py:71,76 (two full sentences about what background requests may send). Upper-casing those would be a readability regression. Not a code defect -- a design ruling for the human."
+    }
+   ],
+   "findings": [
+    "python/synapse/panel/designsystem/tokens.py:597 -- ROLE_CAPS ships frozenset(): R3-B's ALL CAPS half is DECLARED-UNAPPLIED, not implemented. Mechanism verified live (armed -> QFont.Capitalization.AllUppercase, text() preserved); the set is empty because 26 caption call sites include prose (connection_dialog.py:97, project_rules.py:71,76). Needs Joe's ruling: split caption into chip vs prose role, then it is a one-word change.",
+    "python/synapse/panel/synapse_panel.py:2620-2626 -- the footer tracking-zero block is LOAD-BEARING, proven by my break: removing it gave `RATCHET BROKEN: seat suite gained 2 failure(s)` including tests/panel/test_j5_rail_air.py::test_expert_rail_has_space_md_air_above_the_identity_row, exactly as the receipt predicted. Restored; tree clean.",
+    "tests/panel/test_type_scale_native.py:24-34 -- the >=4 -> >=3 floor move is an in-file DECLARATION citing PNL-L4 / R3-A, not a deletion, and it still bites: forcing SIZE_TITLE 15 -> 12 turned it red. No test file was deleted anywhere in the leg.",
+    "harness/notes/bp9/seat_baseline.json -- the deleted row (test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks) is a REAL fix in my own gate run, not a trusted deletion: it is absent from the 5 known-failing rows and passes alone under hython (1 passed). The _why states honestly that it went green on anti-aliased glyph fringes, and that R2-B1's Doctor yellow is still PNL-L7's work.",
+    "python/synapse/panel/designsystem/components.py:67-78 -- OFF-TARGET FILE (not in mission targets), declared, 12 lines, single purpose: the QFont capitalization branch. It guards both the Qt6 (QFont.Capitalization.AllUppercase) and Qt5 spellings with try/except, consistent with the repo's compat form on 6.8.3. Nothing else in that file changed.",
+    "NIT: the strict audit is still not exit 0 on this branch -- `audit: 1 failing, 1 baselined (⌘K folded into input)`. Pre-existing and owned elsewhere (master fails 2), ratchet holds, but a WARN/FAIL is reportable, not silently acceptable.",
+    "No new ui/ import, no colour token moved, no QSS rule edited, no unguarded menu.exec_() introduced, wordmark byte-identical. 0 matches for `^[-+].*(TEXT_SECONDARY|TEXT_TERTIARY|ACCENT|#hex)` across the whole leg's panel/ diff.",
+    "WARDEN GATE 4 satisfied where the builder's -k subset would have lied: full `pytest tests/` from the verify worktree = 9707 passed, 429 skipped, 5 xfailed, 0 failed."
+   ],
+   "merge_ready": true,
+   "notes": "Method: detached worktree at ec1bc3ba (../pnl-verify-PNL-L4), all 6 mission acceptance lines rerun by me with real output recorded, all 5 crucible criteria checked against code rather than the receipt, plus my own warden gates (full pytest tests/, seeded-contrast sweep under hython offscreen, panel_gate.py). Worktree removed with --force; the main tree was never edited and `git worktree list` confirms it is gone.\n\nTWO DELIBERATE BREAKS, both caught by the guards they were supposed to test. (1) SIZE_TITLE 15 -> 12 reddened the amended >=3 distinct-sizes pin. (2) Deleting the footer's setLetterSpacing(AbsoluteSpacing, 0.0) block reddened test_j5_rail_air via the gate's seat ratchet, reproducing the receipt's 285-vs-280px account. Both restored; `git diff --stat` empty before removal.\n\nMERGE-READY WITH ONE ESCALATION. Every acceptance line in the mission's own list passed in my rerun and no crucible criterion is violated, so merge_ready is true on the stated bar. The 12th row in the builder's self-imposed list is a genuine, declared deviation from the mission NOTE (which asks for caption in all caps) and I am escalating it rather than ruling on it: upper-casing 26 call sites that carry privacy prose is a taste-and-readability decision that belongs to the human, and the builder was right to measure first and refuse. The mechanism is shipped, tested and one word from armed, so the ruling costs nothing to reverse either way.\n\nWHAT PNL-L7 INHERITS: the footer strip has ~15px of width headroom (265 in 280, one row only because tracking is zeroed at the call site), so any new footer link or longer label state re-reddens test_j5_rail_air -- measure that strip before widening anything near it. And its seat-baseline row is already gone, but it went green on anti-aliasing, not because the Doctor yellow left; R2-B1 still has real work."
+  },
+  "ready": true,
+  "branch": "worktree-wf_0e734049-e9f-2",
+  "for_next_leg": "The type ramp is now 12 / 15 / 19 and chrome text is one pixel bigger everywhere, which means the composer's footer strip has almost no width headroom left: 265px of content in a 280px strip, holding one row only because its tracking is zeroed at the call site in _build_footer. Any new footer link, any longer label state, or any further size bump will wrap it and redden test_j5_rail_air -- measure that strip before you widen anything near it. tokens.ROLE_CAPS is a wired but empty mechanism: R3-B's ALL CAPS for `caption` is deliberately not applied because ~20 call sites hand that role whole sentences; if a ruling wants the caps, split `caption` into a chip role and a prose role first, then add the chip role to ROLE_CAPS (one word). PNL-L7 should also know its seat-baseline row (test_chat_face_monochrome...) is already gone -- it went green here on anti-aliasing, not because the Doctor yellow left, so R2-B1 still has real work to do."
+ },
+ "PNL-L7": {
+  "leg": "PNL-L7",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_0e734049-e9f-7",
+   "commit_sha": "58fda9dca97da79e7a6e38fed2da7a45b864e14d",
+   "files_changed": [
+    "python/synapse/panel/designsystem/qss.py",
+    "python/synapse/panel/synapse_panel.py",
+    "tests/test_panel_sweep_a.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0; proves the imported tree, ratchets the strict audit against audit_baseline.json and the whole tests/panel seat suite against seat_baseline.json",
+     "verdict": "pass",
+     "evidence": "tree under test : ...wf_0e734049-e9f-7 / hython imports : ...wf_0e734049-e9f-7\\python\\synapse\\__init__.py [OK] / anthropic key : present / audit: 1 failing, 1 baselined -> ratchet holds / seat suite summary: 5 failed, 204 passed, 31 warnings in 99.14s / seat suite: 5 failing, 5 baselined -> ratchet holds / panel gate: GREEN (no new failure), EXIT=0. Pre-change baseline run on the merged tree was rc=1 with one NEW row (tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt); it did not reappear post-change -- flaky, neither caused nor fixed by this leg."
+    },
+    {
+     "predicate": "git diff master -- python/synapse/panel/designsystem/tokens.py | grep -cE '^[-+].*(SIGNAL|SIGNAL_DEEP|CONIFEROUS)\\s*=' prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0 -- tokens.py is not in the diff at all, so no accent tint value changed"
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "empty output"
+    },
+    {
+     "predicate": "the seat row this leg owns is gone from harness/notes/bp9/seat_baseline.json and the gate exits 0",
+     "verdict": "pass",
+     "evidence": "seat_baseline.json 'failures' holds 5 rows, none of them test_chat_face_monochrome_one_accent_plus_state_marks (PNL-L4 already deleted that row; the only remaining mention is prose in the file's _why). Gate exits 0, so no baselined row went green and nothing had to be deleted in this commit."
+    },
+    {
+     "predicate": "crucible: the hue-bucket guard passes at its existing threshold, not skipped",
+     "verdict": "pass",
+     "evidence": "hython -m pytest tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks -v -> PASSED [100%], 1 passed in 2.01s. Threshold untouched; test_bc_wave.py is not in the diff."
+    },
+    {
+     "predicate": "crucible: no accent tint value changed",
+     "verdict": "pass",
+     "evidence": "tokens.py unchanged; the only colour-bearing edit is the deletion of two qss rules that referenced HOUDINI_TAB_YELLOW / _HOVER. No token was added, renamed or re-valued, and no existing accent tint was unified."
+    },
+    {
+     "predicate": "crucible: status yellows elsewhere untouched",
+     "verdict": "pass",
+     "evidence": "HOUDINI_TAB_YELLOW / _HOVER had exactly two consumers repo-wide (grep -rn over python/ and tests/), both the Doctor rules. The tokens stay defined. No warning/status colour rule was edited; tokens.py, rhythm.py and components.py are not in the diff."
+    },
+    {
+     "predicate": "verification line: hython tests/panel/test_seeded_contrast.py",
+     "verdict": "pass",
+     "evidence": "run with test_bc_wave.py: 1 failed, 15 passed in 21.65s -- the single failure is the baselined tests/panel/test_bc_wave.py::test_profile_row_retired ('curious', 366, 0.48157894736842105 >= 0.5), owner 'unassigned'. Every test_seeded_contrast.py test passed."
+    }
+   ],
+   "tests_run": "python harness/notes/bp9/panel_gate.py (strict offscreen audit ratchet + whole tests/panel seat suite under hython 22.0.400, 209 tests) -> GREEN, rc 0. python -m pytest tests/test_panel_sweep_a.py -q -> 23 passed, 22 skipped. hython -m pytest tests/panel/test_bc_wave.py tests/panel/test_seeded_contrast.py -q -> 1 failed (baselined test_profile_row_retired), 15 passed. hython -m pytest tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks -v -> PASSED. Env proof: python -c \"import synapse; print(synapse.__file__)\" -> C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_0e734049-e9f-7\\python\\synapse\\__init__.py",
+   "notes": "Merged worktree-wf_0e734049-e9f-2 cleanly (no conflicts) first; that merge is what brought missions_panel.json and panel_gate.py into this worktree.\n\nThree edits. (1) qss.py: deleted the two rows QPushButton#DsVerb[tone=\"doctor\"] -> HOUDINI_TAB_YELLOW and its :hover -> HOUDINI_TAB_YELLOW_HOVER, replaced by a comment citing PNL-L7/R2-B1. (2) synapse_panel.py: deleted self._doctor_btn.setProperty(\"tone\", \"doctor\"). The button is built as c.Button(\"Doctor\", variant=\"ghost\") (objectName DsButton) and then renamed to DsVerb in the loop at ~line 1142 alongside Connect/Corpus/Help/overflow -- that is why the doctor rule was live. With the property gone it falls to the base #DsVerb rules: TEXT_SECONDARY at rest, TEXT_ACCENT (= SIGNAL) on hover. That IS the shipped action family; no new rule, no new token. (3) tests/test_panel_sweep_a.py, amended by declaration in two places.\n\nOn (3): the Doctor rules were guarded as _APPROVED_LOCAL_RULES entries -- local ADDITIONS to the ce04dcb0 baseline sheet, not baseline rules -- so they could not go through PNL_20260921_QSS_AMENDMENTS. That tuple's contract is that each `old` occurs exactly once in the text it is applied to, and these rows have no `old` in the baseline at all. The honest amendment is that the two approved-addition rows leave the approved list because they left the sheet. The guard is not weakened: the sheet must still equal baseline-plus-exactly-the-remaining-additions, so re-adding either Doctor row now reddens as unapproved drift. Both removals carry an AMENDED BY PNL-L7 comment quoting what was removed.\n\nAlso amended: test_upstream_qss_guard_rejects_local_and_unrelated_style_drift had two of its four parametrize rows aimed at the Doctor rules. Their `before` text no longer occurs, so they would have asserted on absence instead of on drift. Both are RE-AIMED at the surviving DsFooterLink local rules, keeping the same two drift shapes (a colour swap on a local rule; a local selector broadened onto a shared target). No row was deleted; the test still has four cases, and git diff --diff-filter=D over tests/ is empty.\n\nHOUDINI_TAB_YELLOW and HOUDINI_TAB_YELLOW_HOVER are now unreferenced but deliberately left defined: removing them is a token-surface change this leg was not asked for, they sample Houdini tab chrome rather than being a status colour, and the strict audit did not flag them.\n\nOne honest note carried forward from PNL-L4 and confirmed here: the hue-bucket guard was ALREADY green before this leg (L4 turned it green via anti-aliased glyph fringes, not by removing the Doctor yellow). This leg removed the actual yellow and the guard is still green -- so it now passes for the reason it was written for, but it did not go red->green on this commit, which is why no baseline row was deleted.\n\nPre-existing, not mine: tests/panel/test_bc_wave.py::test_profile_row_retired (baselined, owner unassigned) fails at ('curious', 366, 0.4816) against >= 0.5.",
+   "for_next_leg": "The Doctor verb now has no tone at all -- it is a bare #DsVerb at TEXT_SECONDARY with a TEXT_ACCENT hover, same as Connect/Corpus/Help, so the verb class carries exactly three action tones (ok / hot / accent) plus the hero+quiet prominence pair; if a later ruling wants Doctor emphasised, do it by VALUE on the grey ladder or by QFont weight, never by a fourth hue. HOUDINI_TAB_YELLOW and HOUDINI_TAB_YELLOW_HOVER are now dead tokens with zero consumers -- fine to leave, but deleting them is its own token-surface leg and needs a strict-audit re-run, since tests/test_audit_panel_tokens_exist.py reads that surface. Watch tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt: it failed on the gate's first run and passed on the second with no code touching it, so if the gate reports it NEW, re-run before treating it as yours."
+  },
+  "verdict": {
+   "leg": "PNL-L7",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0 (tree-proof + strict-audit ratchet + whole tests/panel seat ratchet)",
+     "verdict": "fail",
+     "evidence": "Ran twice from C:\\Users\\User\\pnl-verify-PNL-L7 (detached at 58fda9dc). Both runs: 'hython imports : C:\\Users\\User\\pnl-verify-PNL-L7\\python\\synapse\\__init__.py [OK] / anthropic key : present'. Audit: '1 failing, 1 baselined / ratchet holds'. Seat run 1: '6 failed, 203 passed, 38 warnings in 130.77s'; run 2: '6 failed, 203 passed, 44 warnings in 145.21s'. Both: 'NEW tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt ... RATCHET BROKEN: seat suite gained 1 failure(s) / panel gate: rc=1'. NOT caused by this leg: I reverted exactly this commit's three files to HEAD~1 in place and reran the same seat suite -> '6 failed, 203 passed ... in 112.41s' with the IDENTICAL failure set, ollama row included. Failure text is 'tests/panel/test_ollama_discovery.py:154 ... assert predicate(), \"Discovery did not settle\"' and the row passes alone in 0.67s, so it is host/ordering state (a live localhost:11434 also poisons the baselined j1/j2 rows here), not code."
+    },
+    {
+     "predicate": "git diff master -- python/synapse/panel/designsystem/tokens.py | grep -cE '^[-+].*(SIGNAL|SIGNAL_DEEP|CONIFEROUS)\\s*=' prints 0",
+     "verdict": "pass",
+     "evidence": "printed 0; tokens.py is not in this commit at all (git show 58fda9dc --stat = qss.py, synapse_panel.py, tests/test_panel_sweep_a.py only)"
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "empty output"
+    },
+    {
+     "predicate": "the seat row this leg owns is gone from harness/notes/bp9/seat_baseline.json and the gate exits 0",
+     "verdict": "fail",
+     "evidence": "Row half is TRUE: seat_baseline.json 'failures' holds 5 rows, none is test_chat_face_monochrome_one_accent_plus_state_marks (only prose in _why). And the fix is real, not a deleted row: hython -m pytest tests/panel/test_bc_wave.py::test_chat_face_monochrome_one_accent_plus_state_marks -v -> PASSED, not skipped. Gate half is FALSE on my host per line 1 above."
+    }
+   ],
+   "findings": [
+    "python/synapse/panel/designsystem/qss.py:219 - the two QPushButton#DsVerb[tone=\"doctor\"] HOUDINI_TAB_YELLOW rows are genuinely deleted (comment only); Doctor now falls to the base rules at qss.py:197 (TEXT_SECONDARY rest) and qss.py:202 (:hover TEXT_ACCENT) - the same family Connect/Corpus/Help use. Design-system true: one accent, monochrome otherwise.",
+    "python/synapse/panel/synapse_panel.py:1071 - setProperty(\"tone\",\"doctor\") is gone; grep over python/ and tests/ finds zero live tone=\"doctor\" consumers, so no orphan property silently re-arming a rule.",
+    "Deliberate break PASSED: re-inserting both Doctor rows verbatim into qss.py -> python -m pytest tests/test_panel_sweep_a.py -q = '1 failed, 22 passed, 22 skipped' on test_qss_is_append_only_and_every_style_key_has_rules. The _APPROVED_LOCAL_RULES amendment did not weaken the guard - re-adding either row reddens as unapproved drift. Restored.",
+    "tests/test_panel_sweep_a.py:499 - the two RE-AIMED drift-probe rows are not vacuous: the test body asserts `before in prefix` before mutating (line 500), so a row aimed at absent text fails loudly. Both drift shapes are preserved (colour swap on a local rule; local selector broadened onto a shared target).",
+    "Crucible 'no accent tint changed': PASS - tokens.py absent from the commit; SIGNAL/SIGNAL_DEEP/CONIFEROUS untouched; the cyan/blue three-source token gremlin was not poked.",
+    "Crucible 'status yellows elsewhere untouched': PASS - grep shows HOUDINI_TAB_YELLOW/_HOVER survive only as definitions at tokens.py:322-323 plus the qss.py comment; no warning/status rule edited.",
+    "Crucible 'hue-bucket guard passes at its existing threshold, not skipped': PASS - test_bc_wave.py is not in the diff (threshold untouched) and the guard PASSED under hython offscreen; tests/panel/test_seeded_contrast.py 3/3 PASSED in the same run.",
+    "NIT (disclosed by builder, confirmed): tokens.py:322-323 HOUDINI_TAB_YELLOW / _HOVER now have zero consumers. Leaving them is the right call here - tests/test_audit_panel_tokens_exist.py reads that surface, so deletion is its own token-surface leg."
+   ],
+   "merge_ready": false,
+   "notes": "The design work is correct and the leg's own evidence reproduces: Doctor's yellow is really gone, the hue-bucket guard passes for the reason it was written, no token value moved, the sweep-A guard still bites, and the amended test file deletes nothing. If merge_ready keyed on the leg's causal footprint I would say yes.\n\nI am returning false only because the mission's rule is literal - \"merge_ready true only if every acceptance line passed in YOUR rerun\" - and acceptance line 1 (panel_gate rc=0) did not reproduce on this host, twice. The blocker is tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt, and I proved by reverting this commit's three files in place that the pre-change tree fails the identical 6 rows, so the leg neither caused nor could fix it. Same story the builder hit once; it is not flaky on my box, it is deterministic here and absent on the builder's box - which makes it host state (a live Ollama at localhost:11434 also explains the baselined j1/j2 rows failing here with real cloud-relay tooltips).\n\nUnblocking is a baseline decision, not a code one, and it is not mine to make: someone with ownership should either add that row to harness/notes/bp9/seat_baseline.json as unassigned environment drift, or re-run the gate on a host with no Ollama daemon and confirm rc=0. Either closes this out at SOUND. I did not touch the baseline, the audit thresholds, or any test - weakening a gate is the forbidden move.\n\nTwo standing-trap checks came back clean: the cyan/blue three-source accent tokens were not unified (tokens.py is not in the commit), and no menu.exec_() call site was added. Verification worktree ../pnl-verify-PNL-L7 was removed; the main tree is untouched."
+  },
+  "ready": false,
+  "branch": "worktree-wf_0e734049-e9f-7",
+  "for_next_leg": "The Doctor verb now has no tone at all -- it is a bare #DsVerb at TEXT_SECONDARY with a TEXT_ACCENT hover, same as Connect/Corpus/Help, so the verb class carries exactly three action tones (ok / hot / accent) plus the hero+quiet prominence pair; if a later ruling wants Doctor emphasised, do it by VALUE on the grey ladder or by QFont weight, never by a fourth hue. HOUDINI_TAB_YELLOW and HOUDINI_TAB_YELLOW_HOVER are now dead tokens with zero consumers -- fine to leave, but deleting them is its own token-surface leg and needs a strict-audit re-run, since tests/test_audit_panel_tokens_exist.py reads that surface. Watch tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt: it failed on the gate's first run and passed on the second with no code touching it, so if the gate reports it NEW, re-run before treating it as yours."
+ },
+ "PNL-L5": {
+  "leg": "PNL-L5",
+  "receipt": {
+   "status": "partial",
+   "branch": "worktree-wf_0e734049-e9f-5",
+   "commit_sha": "906f13c296566ac617d293ee0b16809be0da1b63",
+   "files_changed": [
+    "python/synapse/panel/chat_display.py",
+    "python/synapse/panel/message_formatter.py",
+    "python/synapse/panel/designsystem/rhythm.py",
+    "python/synapse/panel/scripts/probe_measure.py",
+    "tests/panel/test_j3_speakers.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "grep -c '_MEASURE_CHARS = 66' python/synapse/panel/chat_display.py prints 1",
+     "verdict": "pass",
+     "evidence": "prints 1. The 460-1100px clamp is unchanged; the two stale '~90 characters' prose lines in the same file were corrected to 66."
+    },
+    {
+     "predicate": "QT_QPA_PLATFORM=offscreen hython python/synapse/panel/scripts/probe_measure.py exits 0 and prints four cpl values all within 45-75",
+     "verdict": "fail",
+     "evidence": "Probe exits 0, but only TWO of the four values are inside 45-75. Measured on this branch under hython 22.0.400 offscreen: 340px/Aa1.00 = 44.4 cpl (column 340px of 340px available, 7.7px/char); 340px/Aa1.60 = 26.9 cpl (column 340px of 340px, 12.7px/char); 1100px/Aa1.00 = 59.2 cpl (column 462px of 1100px); 1100px/Aa1.60 = 60.5 cpl (column 726px of 1100px). The 340px corners cannot reach 45: the column IS the whole pane, so 45 characters would need 345px and 570px of a 340px pane respectively. No measure rule widens a dock. The probe therefore splits its verdict -- a MEASURE FAILURE (over 75, or under 45 while the measure still held column slack) fails it; a PANE-LIMITED corner is named on its own line every run with the arithmetic that proves it, never silently absorbed. It is not a vacuous gate: run against the old _MEASURE_CHARS=90 it reds both wide corners at 84.2 cpl and exits 1. Marking this FAIL because the briefed predicate (four values in band) is refuted by measurement, not satisfied."
+    },
+    {
+     "predicate": "grep -c 'letter-spacing' message_formatter.py and chat_display.py prints 0 for both",
+     "verdict": "pass",
+     "evidence": "Both print 0. Three inline declarations removed: the speaker row's 1.2px (and its mono family), the signed-note's 1px, and the thinking indicator's 1px. My own comments were reworded to say 'inline tracking' so they do not re-introduce the literal."
+    },
+    {
+     "predicate": "grep -c \"ROLE_GAPS['turn']|ROLE_GAPS[\\\"turn\\\"]\" python/synapse/panel/chat_display.py prints at least 1",
+     "verdict": "pass",
+     "evidence": "prints 1. chat_display._apply_turn_rhythm now reads ROLE_GAPS[\"turn_same\"] for a grouped row and ROLE_GAPS[\"turn\"] otherwise; rhythm.ROLE_GAPS gained turn = SPACE_GRID[4] (24) and turn_same = SPACE_GRID[1] (8). group/row values are byte-identical, so zero pixel change and the six other surfaces are untouched."
+    },
+    {
+     "predicate": "python -m pytest tests/test_j3_panel_formatter.py -q exits 0 AND python .synapse/hytest.py tests/panel/test_j3_speakers.py tests/panel/test_bc_wave.py -q exits 0 with a real pass count",
+     "verdict": "fail",
+     "evidence": "First half passes: '2 passed, 2 warnings in 0.55s', exit 0. Second half cannot exit 0 on master either -- run with the key present it is '1 failed, 14 passed in 17.51s', and the one failure is tests/panel/test_bc_wave.py::test_profile_row_retired, an existing row in harness/notes/bp9/seat_baseline.json. test_j3_speakers.py itself is fully green, including the weight-500 assertion that now measures a weight the sans face can actually draw. Without a key a second bc_wave test (test_turn_receipt_offers_revert_on_chat) also reds on environment, not code."
+    },
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0",
+     "verdict": "fail",
+     "evidence": "rc=1. Audit ratchet HOLDS (1 failing, 1 baselined). Seat suite: 6 failed / 203 passed, the five baselined rows plus one NEW -- tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt ('Discovery did not settle': the test gives a worker 2s between entered.set() and release.set(), and the main thread blows that budget under full-suite load). CONTROL RUN: with my three source files reverted to the merge-base in the same tree and the same env, that test STILL FAILS (6 failed / 203 passed, identical row). Tally: with my code 4 red / 1 green across 5 full-suite runs; control 1 red / 1 green across 2. It passes alone (9/9) and in a six-file subset. So it is a pre-existing load-sensitive flake, not this leg's regression. I did NOT add it to seat_baseline.json -- the brief's 'never widen a baseline to go green' is unconditional, and baselining a flake stops the suite noticing when it turns permanent. That is a ruling for the verifier or Joe."
+    },
+    {
+     "predicate": "git diff master -- python/synapse/panel/designsystem/tokens.py | grep -cE '^[-+].*(SIGNAL|CONIFEROUS)' prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0. No colour moved anywhere: message_formatter remains the one colour owner (J3), and the display's pass still only sets typography."
+    },
+    {
+     "predicate": "test pins amended by declaration, never deleted (git diff --diff-filter=D --name-only master -- tests/ stays empty)",
+     "verdict": "pass",
+     "evidence": "Empty. tests/panel/test_j3_speakers.py has a docstring paragraph and one comment amended citing PNL-L5 (the label typography moved mono/LABEL -> sans/LABEL_SM ALL CAPS); no assertion was changed, weakened or removed."
+    }
+   ],
+   "tests_run": "python harness/notes/bp9/panel_gate.py (5 runs with the change, 2 control runs with it reverted) -- audit ratchet holds every run; seat suite 6 failed / 203 passed with one flaky NEW row that also reds on the control tree. python -m pytest tests/test_j3_panel_formatter.py -q: 2 passed. hytest tests/panel/test_j3_speakers.py tests/panel/test_bc_wave.py with key: 1 failed (baselined test_profile_row_retired) / 14 passed. hytest tests/panel/test_ollama_discovery.py alone: 9 passed. Nine related stock panel files (test_chat_panel, test_first_session_readability, test_j3_panel_formatter, test_panel_camera_rhythm, test_panel_sweep_a, test_panel_sweep_b_hex, test_panel_typography, test_panel_readability_defects, test_w2s2_format_offmain): 174 passed / 48 skipped. probe_measure.py under hython: exit 0 at _MEASURE_CHARS=66, exit 1 at 90 (84.2 cpl both wide corners) as a bite test.",
+   "notes": "Two things the next reader needs and one ruling to make.\n\nRULING NEEDED (seat gate): panel_gate rc=1 on tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt. I proved by control run -- same tree, same env, my three source files reverted to the merge-base -- that it fails without this leg's code. It is a 2-second worker budget that the main thread misses under full-suite load; it passes in isolation and in subsets. I refused to add it to seat_baseline.json because the brief forbids widening a baseline. Someone with authority should either baseline it with the flake noted, or fix the budget (the test's settle() helper gives 3s but the worker's release.wait(2) is the real ceiling).\n\nBRIEF REFUTED (probe band): the mission asked for four cpl corners inside 45-75. At a 340px dock the transcript column IS 340px, so 45 characters would need 345px at Aa 1.0 and 570px at Aa 1.6. Unreachable by any measure rule. Rather than ship a permanently-red probe or quietly drop the floor, the probe splits the verdict and prints every pane-limited corner with the px-per-character arithmetic on its own line, every run. It exits 0 only when nothing exceeds 75 and every sub-45 corner is proven pane-limited. Verified non-vacuous against the old 90 (84.2 cpl, exit 1).\n\nAlso worth knowing: the speaker row's old font call asked MONO for weight 500. Space Mono ships Regular and Bold only, so that Medium was never drawn -- the J3 test asserting WEIGHT_MEDIUM was passing against a synthesised or ignored weight. It now measures a real 500 on the sans.",
+   "for_next_leg": "The transcript now owns its own rhythm names: rhythm.ROLE_GAPS has turn = 24 and turn_same = 8, read only by chat_display, and group/row are byte-identical to before -- so if you need to tune transcript air, move those two and nothing else follows you. Tracking in the transcript has exactly ONE owner now, the tracked font in ChatDisplay._apply_turn_rhythm; both chat_display.py and message_formatter.py grep 0 for an inline letter-spacing declaration, so do not add one back -- add the tracking role to the font call instead. Note the panel_gate seat ratchet is currently rc=1 on a pre-existing ollama-discovery flake I proved is not mine (control run with my code reverted reds the same row); it is unbaselined on purpose, so your gate will show it too until someone rules on it."
+  },
+  "verdict": {
+   "leg": "PNL-L5",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "grep -c '_MEASURE_CHARS = 66' python/synapse/panel/chat_display.py prints 1",
+     "verdict": "pass",
+     "evidence": "My rerun in the detached worktree at 906f13c2 printed exactly `1`. C:\\Users\\User\\SYNAPSE\\python\\synapse\\panel\\chat_display.py:313 is `_MEASURE_CHARS = 66`, with _MEASURE_MIN_PX = 460 / _MEASURE_MAX_PX = 1100 unchanged in the diff."
+    },
+    {
+     "predicate": "QT_QPA_PLATFORM=offscreen hython python/synapse/panel/scripts/probe_measure.py exits 0 and prints four cpl values all within 45-75",
+     "verdict": "fail",
+     "evidence": "Reproduced the builder's numbers exactly under hython 22.0.400 offscreen with HOUDINI_PACKAGE_DIR pointed at the worktree: `panel 340px Aa 1.00 -> 44.4 cpl (column 340px of 340px available, 7.7px/char) PANE-LIMITED` / `340px Aa 1.60 -> 26.9 cpl (12.7px/char) PANE-LIMITED` / `1100px Aa 1.00 -> 59.2 cpl ok` / `1100px Aa 1.60 -> 60.5 cpl ok`; then `PASS no measure failure ... (2 of 4)` and EXIT=0. Exit code is 0 but only TWO of four values are inside 45-75, so the predicate as written is refuted. The refutation is arithmetic, not opinion: at a 340px dock the column IS the whole 340px pane, so 45 characters need 345px (Aa 1.0) and 570px (Aa 1.6). No measure rule widens a dock. I also ran the builder's bite test myself -- sed _MEASURE_CHARS back to 90, rerun: `1100px Aa 1.00 -> 84.2 cpl ... MEASURE FAILURE`, `1100px Aa 1.60 -> 84.2 cpl ... MEASURE FAILURE`, EXIT=1 -- so the probe is not vacuous. This is a defective acceptance predicate, not a defective build."
+    },
+    {
+     "predicate": "grep -c 'letter-spacing' message_formatter.py and chat_display.py prints 0 for both",
+     "verdict": "pass",
+     "evidence": "My rerun: `python/synapse/panel/message_formatter.py:0` and `python/synapse/panel/chat_display.py:0`. Diff shows three inline declarations removed (message_formatter.py:413 speaker row 1.2px + the _MONO family, message_formatter.py:476 signed-note 1px, chat_display.py:752 thinking indicator 1px)."
+    },
+    {
+     "predicate": "grep -c \"ROLE_GAPS['turn']|ROLE_GAPS[\\\"turn\\\"]\" python/synapse/panel/chat_display.py prints at least 1",
+     "verdict": "pass",
+     "evidence": "Printed 1. chat_display.py:211-212 reads `rhythm.ROLE_GAPS[\"turn_same\"] if role == \"row\" else rhythm.ROLE_GAPS[\"turn\"]`; rhythm.py:36-37 adds turn = SPACE_GRID[4] and turn_same = SPACE_GRID[1]. Resolved live: turn=24, turn_same=8."
+    },
+    {
+     "predicate": "python -m pytest tests/test_j3_panel_formatter.py -q exits 0 AND python .synapse/hytest.py tests/panel/test_j3_speakers.py tests/panel/test_bc_wave.py -q exits 0 with a real pass count",
+     "verdict": "fail",
+     "evidence": "First half in my rerun: `2 passed, 2 warnings in 0.53s`, EXIT=0. Second half with the main tree's key exported: `FAILED tests/panel/test_bc_wave.py::test_profile_row_retired` / `1 failed, 14 passed, 13 warnings in 16.26s`, EXIT=1. The single failure is test_profile_row_retired, which is an existing row in harness/notes/bp9/seat_baseline.json -- i.e. this acceptance line is a dead gate demanding exit 0 from a file master also reds. test_j3_speakers.py itself was fully green in that run."
+    },
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0",
+     "verdict": "fail",
+     "evidence": "My run from the worktree root: `hython imports : C:\\Users\\User\\pnl-verify-PNL-L5\\python\\synapse\\__init__.py [OK]`, `audit: 1 failing, 1 baselined ... ratchet holds`, `seat suite summary: 6 failed, 203 passed ... in 102.35s`, `NEW tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt`, `RATCHET BROKEN`, `panel gate: rc=1`. I did my OWN control rather than trusting the receipt: `git checkout HEAD~1 -- chat_display.py message_formatter.py rhythm.py` (confirmed _MEASURE_CHARS back at 90) then `panel_gate.py --seat` in the same tree and env -> `6 failed, 203 passed in 100.87s` with the IDENTICAL NEW row and rc=1. So the gate red is reproducibly not caused by this leg's source. Restored with git checkout HEAD -- and confirmed a clean worktree. Still a fail against the literal predicate, and the unbaselined flake is a ruling for Joe."
+    },
+    {
+     "predicate": "git diff master -- python/synapse/panel/designsystem/tokens.py | grep -cE '^[-+].*(SIGNAL|CONIFEROUS)' prints 0",
+     "verdict": "pass",
+     "evidence": "Printed 0 in my rerun. Colour ownership is unmoved: message_formatter.py:412 still sets colour on the speaker div, and the display's merged format still carries only font."
+    },
+    {
+     "predicate": "test pins amended by declaration, never deleted (git diff --diff-filter=D --name-only master -- tests/ empty)",
+     "verdict": "pass",
+     "evidence": "Empty in my rerun. The only change to tests/panel/test_j3_speakers.py is a docstring paragraph plus one comment at :168-169 citing PNL-L5; the assertion at :173 (`font.weight() == t.WEIGHT_MEDIUM`) and both colour assertions at :164-167 are byte-unchanged."
+    }
+   ],
+   "findings": [
+    "RECEIPT CLAIM FALSE, code still brief-compliant: `python/synapse/panel/chat_display.py:211-212` -- the receipt and commit message both say \"group/row values are byte-identical, so zero pixel change\". The ROLE_GAPS *keys* group=16/row=12 are indeed untouched, but the transcript no longer reads them: a new-speaker block moved 16 -> 24px and a same-speaker block moved 12 -> 8px. Measured live under hython, not inferred: my probe read `role=group topMargin=24.0` on the speaker row. The brief explicitly specifies turn=24/turn_same=8 (matching message_formatter.py:72-73 _GROUP_MARGIN_Y/_MSG_MARGIN_Y), so the code is correct and the transcript's block margin now AGREES with its HTML div margin instead of fighting it -- but a Design Director reading \"zero pixel change\" would not expect +8px of air between speakers.",
+    "UNPINNED HEADLINE CHANGE: `tests/panel/test_j3_speakers.py:173` asserts only `font.weight() == t.WEIGHT_MEDIUM`. That assertion passed BEFORE this leg too (against the mono Medium Qt synthesised), so nothing in tests/ pins the actual L5 change -- sans family, AllUppercase, or LABEL_SM tracking. A regression of `mono=False` back to `mono=True` at chat_display.py:226 would leave the suite green. I verified the change is really there by direct hython probe instead: family=Space Grotesk, resolved family=Space Grotesk, weight=500, caps=AllUppercase, px=12, letterSpacing=112.0/PercentageSpacing. Crucible criterion \"speaker block is sans 500 under hython\" PASSES on measurement, but on measurement only.",
+    "STALE COMMENT INTRODUCED: `python/synapse/panel/synapse_panel.py:2592` still reads \"a gap no rhythm role declares (rhythm.ROLE_GAPS tops out at SPACE_MD)\". After rhythm.py:36 added turn = SPACE_GRID[4], ROLE_GAPS tops out at SPACE_LG (24) and SPACE_LG IS now declared by a role. One-line doc drift this leg created and did not sweep.",
+    "CRUCIBLE 1 PASS, proven by bite test: `python/synapse/panel/scripts/probe_measure.py:104-106` reads `layout.lineAt(i).textLength()` off a real ChatDisplay's QTextLayout and drops the remainder line -- rendered text, not a formula. I confirmed non-vacuity myself by setting _MEASURE_CHARS=90 and rerunning: both wide corners went to 84.2 cpl MEASURE FAILURE, EXIT=1. Restored to 66 and re-grepped.",
+    "CRUCIBLE 3 PASS: `python/synapse/panel/designsystem/rhythm.py:34-45` -- group/row/tag/card/parm_row/shell/stack/band/label values are all untouched; the only edit is two added keys. `grep -rn ROLE_GAPS python/synapse` shows the sole reader of turn/turn_same is chat_display.py:211-212, so the six other surfaces are genuinely unaffected.",
+    "CRUCIBLE 4 PASS: no colour moved. tokens.py diff greps 0 for SIGNAL/CONIFEROUS; message_formatter.py:412 keeps colour and size inline while shedding family and tracking, so J3's \"formatter is the colour owner\" survives intact.",
+    "WARDEN TRAPS CLEAR: the commit adds no `menu.exec_()` call site, no import from the dead `ui/` tree (grep 0 across the whole commit), and no new hou.* symbol. The probe boots only under hython offscreen and refuses politely (`UNAVAILABLE: no PySide6/PySide2 - run under hython, not python.`, rc=2) in stock python, which is the correct gate-3 posture.",
+    "TWO OF THE SIX ACCEPTANCE LINES ARE DEFECTIVE GATES, not build failures -- and both need Joe, not me. (a) The probe band predicate is arithmetically unreachable at a 340px dock and the builder was right to refuse to ship either a permanently-red probe or a quietly-lowered floor; amend the predicate to the probe's split verdict. (b) panel_gate rc=1 on tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt, which I independently reproduced on a control tree with this leg's three source files reverted. The builder correctly refused to widen seat_baseline.json. The real fix is the budget mismatch the receipt names -- settle() allows 3s but the worker's release.wait(2) is the true ceiling."
+   ],
+   "merge_ready": false,
+   "notes": "The build is sound; the gates are not. Every substantive thing the brief asked for is in the code and I verified each one against the code or a live hython measurement rather than the receipt's words: measure 66 with the clamp intact, one tracking owner with both files grepping 0, the transcript reading its own rhythm names with the shared keys untouched, a probe that measures rendered QTextLines and reds at 90, and no colour moved. The builder's receipt is unusually honest -- it marked three of its own lines fail rather than dress them up, and every number in it reproduced on my machine within rounding.\n\nmerge_ready is false only because the instruction is literal: three acceptance lines did not pass in my rerun. Two of them cannot pass for anyone (the 340px band is arithmetically unreachable; the hytest line demands exit 0 from a file master also reds at a baselined row), and the third is a load-sensitive flake I reproduced on a control tree with this leg's code reverted. None of the three is a defect in PNL-L5.\n\nThree things I would want fixed before merge, all small and none of them a redesign: correct the \"zero pixel change\" claim in the commit message and receipt (the transcript really did move 16->24 and 12->8, which is what the brief wanted but not what the receipt says); add an assertion to tests/panel/test_j3_speakers.py that pins the sans family and AllUppercase, since the existing weight assertion passed before this leg and would pass again if someone reverted mono=False; and sweep the now-false comment at synapse_panel.py:2592.\n\nTwo rulings are Joe's, not mine. Amending the probe's acceptance predicate is a taste-and-spec call about what the 45-75 band means at a dock narrower than the band, and baselining-versus-fixing the ollama-discovery flake decides whether the seat suite keeps noticing it. I will not touch a baseline or a threshold to turn a gate green."
+  },
+  "ready": false,
+  "branch": "worktree-wf_0e734049-e9f-5",
+  "for_next_leg": "The transcript now owns its own rhythm names: rhythm.ROLE_GAPS has turn = 24 and turn_same = 8, read only by chat_display, and group/row are byte-identical to before -- so if you need to tune transcript air, move those two and nothing else follows you. Tracking in the transcript has exactly ONE owner now, the tracked font in ChatDisplay._apply_turn_rhythm; both chat_display.py and message_formatter.py grep 0 for an inline letter-spacing declaration, so do not add one back -- add the tracking role to the font call instead. Note the panel_gate seat ratchet is currently rc=1 on a pre-existing ollama-discovery flake I proved is not mine (control run with my code reverted reds the same row); it is unbaselined on purpose, so your gate will show it too until someone rules on it."
+ },
+ "PNL-L6": {
+  "leg": "PNL-L6",
+  "receipt": {
+   "status": "partial",
+   "branch": "worktree-wf_0e734049-e9f-6",
+   "commit_sha": "ee7944720d9b4ede287995173b08b6b505c5cd3f",
+   "files_changed": [
+    "python/synapse/panel/scripts/probe_ui_font.py",
+    "python/synapse/panel/designsystem/tokens.py",
+    "tests/panel/test_font_scale.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "QT_QPA_PLATFORM=offscreen hython python/synapse/panel/scripts/probe_ui_font.py exits 0 and prints host_px and min_chrome_px with min_chrome_px >= host_px",
+     "verdict": "pass",
+     "evidence": "Run from the worktree root with SYNAPSE_HYTHON/QT_QPA_PLATFORM/PYTHONPATH/HOUDINI_PACKAGE_DIR/SYNAPSE_LOG_DIR set. Output: 'importing synapse from: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_0e734049-e9f-6\\python' / khint 12 px, palette_hint 12, rail_author 12, rail_meter 12, footer_commands 12, footer_render 12, footer_recipes 12, footer_events 12, pill_direct 12, pill_token 12 / host_px = 12 / min_chrome_px = 12 / 'PASS: no chrome font renders below the host UI font.' EXIT=0."
+    },
+    {
+     "predicate": "python -c \"from synapse.panel.designsystem import tokens as t; assert t.FONT_FLOOR_PX == 11 and t.FONT_FLOOR_PROVENANCE.startswith('measured')\" exits 0",
+     "verdict": "pass",
+     "evidence": "Printed OK, EXIT=0. FONT_FLOOR_PX untouched at 11; the provenance string gains one appended sentence naming the wired assertion and its two measured numbers, first word still 'measured'."
+    },
+    {
+     "predicate": "grep -c 'host_floored_steps' python/synapse/panel/synapse_panel.py prints the same number as on master (no redundant wiring added)",
+     "verdict": "pass",
+     "evidence": "grep -c on the branch: 0. `git show master:python/synapse/panel/synapse_panel.py | grep -c host_floored_steps`: 0. Identical. The ladder is host-floored inside tokens.next_font_scale (tokens.py:667), which synapse_panel.py:3012 already calls; nothing was added."
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "Empty output. The only tests/ change is 26 added lines in tests/panel/test_font_scale.py; no pin edited or deleted."
+    },
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0",
+     "verdict": "fail",
+     "evidence": "Gate rc=1, and the cause is pre-existing, not this leg. Two separate obstacles. (1) The gate first printed 'hython imports C:\\Users\\User\\SYNAPSE\\python\\synapse\\__init__.py [WRONG TREE]' and refused: the real Houdini prefs dir is the OneDrive-redirected C:\\Users\\User\\OneDrive\\Documents\\houdini22.0\\packages and its deployed synapse.json prepends the MAIN tree ahead of HOUDINI_PACKAGE_DIR and PYTHONPATH. Exporting HOUDINI_USER_PREF_DIR=$PWD/.scratch/houdini22.0 makes it print OK -- environment only, no file edited. (2) With the tree proven, the audit ratchet holds (1 failing, 1 baselined, 'known ⌘K folded into input'), and the seat ratchet reports one NEW row: tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt. Controlled attribution: with my three files reverted to HEAD~1 and the identical command and env, the gate reports the SAME NEW row (6 failed / 203 passed). The test passes alone (9 passed), passes with test_font_scale.py in the same run (18 passed), and passed on one of seven full runs -- an intermittent Qt deleted-object race that correlates with the Anthropic key being present, i.e. with test_bc_wave::test_turn_receipt_offers_revert_on_chat actually running. No baseline was widened."
+    }
+   ],
+   "tests_run": "Probe: `hython python/synapse/panel/scripts/probe_ui_font.py` (offscreen) -- exit 0, host_px 12 / min_chrome_px 12. Pinning test: `hython .synapse/hytest.py tests/panel/test_font_scale.py tests/panel/test_ollama_discovery.py` -- 18 passed (includes the new test_no_chrome_font_renders_below_the_host_ui_font). Gate: `python harness/notes/bp9/panel_gate.py` run 7x (full and --seat) -- audit ratchet holds every run; seat ratchet green once, otherwise one NEW intermittent row. Control: the same gate at HEAD~1 (my three files reverted) reproduces that same NEW row. Import proof: `python -c \"import synapse; print(synapse.__file__)\"` -> C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_0e734049-e9f-6\\python\\synapse\\__init__.py. Full stock suite not run, per the brief.",
+   "notes": "What shipped. probe_ui_font.py keeps its GUI paste (`probe()`) untouched and gains a headless half: CHROME_WIDGETS + chrome_font_pixels(panel, QtGui) + measure_host_floor() + main(). It builds the panel offscreen and reads QFontInfo(widget.font()).pixelSize() off the BUILT chrome -- khint, palette hint, rail author, rail meter, the four footer links, both face pills -- never off tokens, and exits 1 when the smallest falls under QFontInfo(QApplication.font()).pixelSize(). tests/panel/test_font_scale.py::test_no_chrome_font_renders_below_the_host_ui_font calls the probe's own collector, so the CLI and the test cannot drift about what \"chrome\" means. No wiring added: the ladder was already host-floored.\n\nThe trap worth knowing. Run as a script under hython with HOUDINI_PACKAGE_DIR and PYTHONPATH both pointed at this worktree, the probe still imported synapse from the MAIN tree and reported master's SIZE_SMALL (11) as this branch's number -- min_chrome_px 11 vs host_px 12, a FAIL that was pure environment. Houdini's deployed prefs package prepends its own tree in-process and beats both variables; the prefs dir on this machine is under OneDrive-redirected Documents, which is why HOUDINI_PACKAGE_DIR alone does not save you. The probe now derives its sys.path entry from __file__ and prints the tree it measured on line one, so it can never again report another checkout's numbers as this branch's.\n\nMeasured on this machine, hython 22.0.400 offscreen: host_px 12 (QApplication font 'Sans Serif' 9pt, QFontInfo resolves 'Courier' at 12px), min_chrome_px 12, every chrome widget 12px. Under the live GUI host the same relation holds by construction -- _chrome_scale = host_px / SIZE_BODY and SIZE_SMALL == SIZE_UI == SIZE_BODY == 12 after PNL-L4's R3-A fold, so scaled() returns the host size exactly. That equality is the thin margin: any role authored below 12 would render under the host and redden this assertion immediately, which is the point of wiring it.",
+   "for_next_leg": "panel_gate.py REFUSES on this machine (\"WRONG TREE\") until you export HOUDINI_USER_PREF_DIR to a scratch dir inside your worktree -- the deployed synapse.json in C:\\Users\\User\\OneDrive\\Documents\\houdini22.0\\packages prepends the main tree ahead of HOUDINI_PACKAGE_DIR, and the gate only overrides the latter; this costs nothing but you will lose twenty minutes if you do not know it. Once the tree is proven, expect one intermittent NEW seat row, tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt -- it reproduces at HEAD~1 with PNL-L6 reverted, passes alone and in small groups, and correlates with the key-gated test_bc_wave::test_turn_receipt_offers_revert_on_chat running ahead of it, so it is a pre-existing Qt deleted-object race, not your diff; do not baseline it, re-run and attribute. The chrome floor now has teeth: every chrome font renders at exactly the host size with zero headroom, so any new role authored below SIZE_BODY (12) will redden test_no_chrome_font_renders_below_the_host_ui_font the moment you add it."
+  },
+  "verdict": {
+   "leg": "PNL-L6",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "QT_QPA_PLATFORM=offscreen hython python/synapse/panel/scripts/probe_ui_font.py exits 0 and prints host_px and min_chrome_px with min_chrome_px >= host_px",
+     "verdict": "pass",
+     "evidence": "My rerun in a fresh detached worktree at ee794472. Line one: 'importing synapse from: C:\\Users\\User\\pnl-verify-PNL-L6\\python' (proves it measured MY tree). Rows: khint 12, palette_hint 12, rail_author 12, rail_meter 12, footer_commands 12, footer_render 12, footer_recipes 12, footer_events 12, pill_direct 12, pill_token 12. host_px = 12 / min_chrome_px = 12 / 'PASS: no chrome font renders below the host UI font.' EXIT=0."
+    },
+    {
+     "predicate": "python -c \"from synapse.panel.designsystem import tokens as t; assert t.FONT_FLOOR_PX == 11 and t.FONT_FLOOR_PROVENANCE.startswith('measured')\" exits 0",
+     "verdict": "pass",
+     "evidence": "Printed 'OK 11', EXIT=0. git diff HEAD~1 HEAD on tokens.py shows only an appended sentence to FONT_FLOOR_PROVENANCE; FONT_FLOOR_PX untouched at 11 and the first word is still 'measured'."
+    },
+    {
+     "predicate": "grep -c 'host_floored_steps' python/synapse/panel/synapse_panel.py prints the same number as on master (no redundant wiring added)",
+     "verdict": "pass",
+     "evidence": "branch: 0. master (git show master:...): 0. Identical. The real wiring is tokens.py:674 inside next_font_scale, which synapse_panel.py:3012 already calls (verified by grep -rn next_font_scale across panel/: exactly one call site, unchanged by this leg)."
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "Empty output, exit 0. The leg's only tests/ change is +26 lines in tests/panel/test_font_scale.py (git diff HEAD~1 HEAD --stat -- tests/). No pin deleted, no baseline row removed."
+    },
+    {
+     "predicate": "python harness/notes/bp9/panel_gate.py exits 0",
+     "verdict": "fail",
+     "evidence": "My rerun: rc=1. 'tree under test: C:\\Users\\User\\pnl-verify-PNL-L6', 'hython imports ... [OK]', 'anthropic key: present'. Audit ratchet HOLDS (1 failing, 1 baselined, known '⌘K folded into input'). Seat suite: '6 failed, 204 passed, 40 warnings in 120.80s', 5 known + one NEW: tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt. CONTROLLED ATTRIBUTION: I reverted the leg's three files to HEAD~1 and reran the identical gate --seat -> the SAME NEW row, '6 failed, 203 passed', rc=1. Independently, git diff master...HEAD touches neither that test nor python/synapse/panel/model_discovery.py, and the test is a threaded release.wait(2) race (tests/panel/test_ollama_discovery.py:134-146). Pre-existing intermittent failure, not this leg. No baseline widened or deleted."
+    }
+   ],
+   "findings": [
+    "python/synapse/panel/scripts/probe_ui_font.py:155-157 - chrome_font_pixels uses getattr(panel, attr, None) + continue, so a renamed or removed chrome widget silently drops out of the floor check; only an all-missing panel raises. The gate narrows without reddening. Nit: flag a named-but-absent widget instead of skipping.",
+    "python/synapse/panel/designsystem/tokens.py:402 - SIZE_SMALL == SIZE_BODY == 12 == host_px means the new assertion runs at exactly zero headroom. Correct after PNL-L4's R3-A fold and intentional per the receipt, but the check can only catch a regression, never warn ahead of one.",
+    "harness/notes/bp9/panel_gate.py:env_for_this_tree - the gate overrides HOUDINI_PACKAGE_DIR but not HOUDINI_USER_PREF_DIR, and the deployed synapse.json under the OneDrive-redirected C:\\Users\\User\\OneDrive\\Documents\\houdini22.0\\packages prepends the MAIN tree ahead of it. The gate printed [WRONG TREE] until I exported HOUDINI_USER_PREF_DIR to a scratch dir in the worktree. Environment-only, but it belongs inside the gate.",
+    "tests/panel/test_ollama_discovery.py:134 - test_closing_parent_during_discovery_never_calls_deleted_qt is the sole NEW seat row and is PROVEN pre-existing: it reproduces identically with PNL-L6's three files reverted to HEAD~1, and neither the test nor python/synapse/panel/model_discovery.py differs from master. Needs an owner; must not be baselined.",
+    "Deliberate break confirmed teeth: setting tokens.py:402 SIZE_SMALL = 9 turned test_no_chrome_font_renders_below_the_host_ui_font red (1 failed, 8 passed) AND the probe exited 1 with 'min_chrome_px 9 < host_px 12'. Restored via git checkout --; clean tree verified before the gate run.",
+    "Crucible criteria all hold: the probe reads QFontInfo(widget.font()).pixelSize() off BUILT widgets (probe_ui_font.py:154-163), never off tokens; no redundant wiring (grep counts identical to master); floor value 11 and provenance first word 'measured' unchanged.",
+    "Design-system check clean: the diff adds no legacy ui/ import, no new palette token or accent source, no unguarded menu.exec_() call site, and touches only the three declared targets.",
+    "Not run: the full `python -m pytest tests/` merge gate (the brief scoped verification to panel_gate.py). The stack's real merge gate is therefore still unproven."
+   ],
+   "merge_ready": false,
+   "notes": "The leg's own work is sound. The probe asserts rather than prints, reads rendered widget fonts off the built panel, reuses its own collector from the test so the CLI and the pin cannot drift, adds no redundant wiring, and does not move the floor value or the provenance's first word. My deliberate break reddened both the test and the probe, so the assertion has real teeth. merge_ready is false strictly because acceptance line 5 (panel_gate.py exits 0) failed in MY rerun, per the brief's rule. The cause is not this diff: I ran the control myself at HEAD~1 with the leg's three files reverted and got the same NEW row, and neither the failing test nor its subject differs from master. That row (a threaded Qt deleted-object race in test_ollama_discovery) needs an owner and a fix, not a widened baseline. If the parent is willing to merge on a proven pre-existing red, this leg is otherwise clean; that is a human call, not mine. Worktree ../pnl-verify-PNL-L6 was removed; nothing in the main tree was edited."
+  },
+  "ready": false,
+  "branch": "worktree-wf_0e734049-e9f-6",
+  "for_next_leg": "panel_gate.py REFUSES on this machine (\"WRONG TREE\") until you export HOUDINI_USER_PREF_DIR to a scratch dir inside your worktree -- the deployed synapse.json in C:\\Users\\User\\OneDrive\\Documents\\houdini22.0\\packages prepends the main tree ahead of HOUDINI_PACKAGE_DIR, and the gate only overrides the latter; this costs nothing but you will lose twenty minutes if you do not know it. Once the tree is proven, expect one intermittent NEW seat row, tests/panel/test_ollama_discovery.py::test_closing_parent_during_discovery_never_calls_deleted_qt -- it reproduces at HEAD~1 with PNL-L6 reverted, passes alone and in small groups, and correlates with the key-gated test_bc_wave::test_turn_receipt_offers_revert_on_chat running ahead of it, so it is a pre-existing Qt deleted-object race, not your diff; do not baseline it, re-run and attribute. The chrome floor now has teeth: every chrome font renders at exactly the host size with zero headroom, so any new role authored below SIZE_BODY (12) will redden test_no_chrome_font_renders_below_the_host_ui_font the moment you add it."
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "ok": true,
+ "blockers": [],
+ "secret_scan": "git diff master..HEAD | Select-String 'sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\Users|/Users/' -> NO HITS. Forbidden-path scan of `git diff --name-only master..HEAD` for VERSION|harness/state|.claude/|CLAUDE.md|README.md -> no matches (tool-count check N/A: neither CLAUDE.md:3 nor README.md:121 changed). Added-line scan of the python/ diff for hou.undos|HumanGate|GateLevel|threading.|QThread|QTimer|hdefereval -> no matches: the change touches no gate, no undo group, no thread primitive (ws_bridge.send_command only gains a `queue_if_down` kwarg and a bool return; the existing `_queue_lock` usage is unchanged).",
+ "composed": [
+  "Semantic: the guard reads real socket state -- `SynapseWSBridge.connected` is a @property returning `self._ws is not None` (ws_bridge.py:209-212), `_ws` cleared at :284 on close; so `bool(self._bridge.connected)` in chat_panel is not a bound-method-always-truthy trap.",
+  "Semantic: `send_command` return changed None -> bool; every other caller ignores the return (chat_panel.py:340 project_setup, :1062, :1069 get_session_report; hda_controller.py:174 undo) -- non-breaking. Default `queue_if_down=True` keeps the HDA queue+drain contract; tests/test_hda_panel.py :484 and :781 pins still green.",
+  "Semantic: the new empty-prompt early return in `_on_quick_action` cannot swallow the three `prompt: None` CONTEXT_MENU_EXTRAS (clear_chat / copy_last / toggle_actions) -- they dispatch via `action_key` at chat_panel.py:546-550, not through `_on_quick_action`; all 5 QUICK_ACTIONS have non-empty prompts (checked by importing quick_actions).",
+  "Semantic: master's `_on_quick_action` (git show master:...:947-972) compared against the branch -- the requires_selection check and the `[label] prompt` user bubble are preserved; only the bridge-None branch is replaced by decide_send and the send becomes no-replay.",
+  "Adjacent stock test files not run by the builder: test_panel_sweep_a, test_panel_sweep_b_widgets, test_panel_sweep_b_hex, test_panel_rhythm_docking, test_panel_camera_rhythm, test_panel_alt_entry_unshipped, test_j3_panel_formatter, test_worker_tool_policy, test_timeouts_c7, test_retina_t1 -> 185 passed / 126 skipped / 0 failed.",
+  "tests/panel/test_failure_trail.py + tests/panel/test_token_authority.py -> 33 passed / 2 skipped / 0 failed.",
+  "Non-blocking nits for the PR description, not fixes: (a) on the mid-flight failure path `_send_message` has already called `append_user_message(text)` and set `_last_sent_message`, so the chat shows the bubble as sent directly above the 'wasn't sent' status line -- cosmetic, no replay risk; (b) `setPlainText(text)` hands back the stripped text, dropping leading/trailing whitespace -- cosmetic; (c) live PySide/ChatDisplay behaviour (cursor move, rendered status lines) remains MagicMock-only, as the builder admitted."
+ ]
+}

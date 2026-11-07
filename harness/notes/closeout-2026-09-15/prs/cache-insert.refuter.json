@@ -1,0 +1,17 @@
+{
+ "ok": false,
+ "blockers": [
+  "PATH LEAK in a committed receipt (public repo): harness/notes/cache_h22_insert_assay_22.0.400.json item 5 detail contains the local user path `C:/Users/User/Synapse/.claude/worktrees/cache-ins/cache/src_box/src_box.0001.bgeo.sc` (diff line 658; matched by the `/Users/` pattern of the mandated scan). The producer is tests/assay_h22_cache_insert.py lines ~1521-1525 of the diff (`resolved_file = cache_node.parm(\"file\").eval()` expands $HIP to the absolute worktree path and writes it into the receipt). Same path also proves the receipt was generated in the pre-rebase `cache-ins` worktree, i.e. it does not certify the rebased code (builder admitted the assay was not re-run)."
+ ],
+ "secret_scan": "git diff master..HEAD | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\Users|/Users/\" -> 5 hits. 4 are false positives: the substring 'sk-' inside 'disk-write' / 'disk-writing' at diff lines 732, 1677, 1767, 1817 (comments/docstrings). 1 is REAL: diff line 658, harness/notes/cache_h22_insert_assay_22.0.400.json item 5 detail = \"resolved file='C:/Users/User/Synapse/.claude/worktrees/cache-ins/cache/src_box/src_box.0001.bgeo.sc'\" -- a local user home path committed to a public-origin repo. No keys, tokens or private-key blocks found. The receipt's 'command' field embeds 'C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe' (install path, not a user path; not flagged).",
+ "composed": [
+  "tests/test_rbac.py (75 tests) -- adjacent to the rbac.py _ARTIST_COMMANDS drift; green",
+  "tests/test_mcp_protocol.py (93) -- adjacent to the _tool_registry.py TOOL_DEFS addition; green",
+  "tests/test_live_integrity_envelope.py (40) -- the live mutation envelope insert_cache now takes (absent from _READ_ONLY_COMMANDS); green",
+  "tests/test_panel_preflight.py + tests/test_panel_preflight_h7_guard.py (22) -- bridge_adapter._TOOL_TO_OPERATION consumers; green",
+  "tests/test_phase0b_consent_posture.py (2), tests/test_parity_promotions.py (4), tests/test_f6_hygiene.py (6), tests/test_studio_integration.py (9); green",
+  "tests/test_cto_mcp_contract.py -- module skipped (1 skipped), so it proves nothing here",
+  "NOT run (LAW): full pytest tests/, hython seat suite",
+  "NOT run (sandbox refused the combined command, call budget exhausted): the live hython assay tests/assay_h22_cache_insert.py on 22.0.400 against the rebased code; recompute of the receipt's blake2b; sed of shared/bridge.py:764-770 to confirm the ':767' citation. Treat all three as UNVERIFIED."
+ ]
+}

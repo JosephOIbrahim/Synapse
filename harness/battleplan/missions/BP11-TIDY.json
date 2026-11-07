@@ -1,0 +1,35 @@
+{
+  "id": "BP11-TIDY",
+  "band": "TRUST",
+  "class": "tidy",
+  "tier": "mechanical",
+  "readonly": true,
+  "deps": [
+    "BP11-CRUX"
+  ],
+  "name": "TIDY: BP11 worktree, receipt and Jev ledger census, plus a stale-worktree census (list only)",
+  "note": "START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-TIDY.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 12 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Tier: mechanical (Haiku 4.5). List, never delete: removing a worktree or a branch is Joe's word (ruling R-6). Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+  "targets": [
+    "T1) harness/battleplan/notes/BP11-TIDY_census.md: BP11 branches, worktrees, receipts and Jev ledgers; every .claude/worktrees entry with its branch, merged-into-master yes/no and size; the size and tracked status of harness/solaris_v3/runs; every count with its producing command."
+  ],
+  "touches": [
+    "harness/battleplan/notes/BP11-TIDY_census.md"
+  ],
+  "acceptance": [
+    {
+      "predicate": "the census exists and every count in it carries its producing command",
+      "evidence": "check"
+    },
+    {
+      "predicate": "`git worktree list` and `git branch` counts are identical before and after the leg",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible flips no contract feature and edits no product file"
+  ],
+  "source": {
+    "doc": "harness/battleplan/notes/BP11_CTO_PLAN.md",
+    "anchor": "sec. 6 R-6; sec. 2 row C9"
+  }
+}

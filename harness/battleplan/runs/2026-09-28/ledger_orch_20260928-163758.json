@@ -1,0 +1,93 @@
+{
+  "run": "orch_20260928-163758",
+  "date": "2026-09-28",
+  "cap": {
+    "turns": 2,
+    "tokens": 15895340
+  },
+  "status": "open",
+  "reason": null,
+  "enforced_unit": "turns",
+  "token_meter": "UNKNOWN",
+  "totals": {
+    "turns": 2,
+    "tokens_in": "UNKNOWN",
+    "tokens_out": "UNKNOWN",
+    "usage": "UNKNOWN",
+    "rails_total": "UNKNOWN",
+    "cost_weighted": "UNKNOWN",
+    "cost_basis": "UNKNOWN",
+    "max_ctx": "UNKNOWN",
+    "cost_weights": {
+      "input": 1.0,
+      "cache_create": 1.25,
+      "cache_read": 0.1,
+      "output": 5.0
+    },
+    "enforced_on": "cost_weighted"
+  },
+  "remaining": {
+    "turns": 0,
+    "tokens": "UNKNOWN",
+    "cost_weighted": "UNKNOWN",
+    "enforced_on": "cost_weighted"
+  },
+  "legs": [
+    {
+      "leg": "BP11-IDFIX",
+      "model": "claude-opus-4-8",
+      "tokens_in": 18740950,
+      "tokens_out": 236988,
+      "wall_ms": 1025391,
+      "usage": {
+        "input_tokens": 200,
+        "cache_creation_input_tokens": 769830,
+        "cache_read_input_tokens": 17970920,
+        "output_tokens": 236988
+      },
+      "cost_weighted": 3944520,
+      "cost_basis": "weighted",
+      "max_ctx": 230144,
+      "cap": {
+        "turns": 2,
+        "tokens": 15895340
+      },
+      "remaining": {
+        "turns": 0,
+        "tokens": "UNKNOWN",
+        "cost_weighted": "UNKNOWN",
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-idfix\\2a4396cd-8d0c-4ea2-b4a2-0caca04f5b81.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP11-CRUX2",
+      "model": "claude-fable-5-1",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": "UNKNOWN",
+      "usage": "UNKNOWN",
+      "cost_weighted": "UNKNOWN",
+      "cost_basis": "UNKNOWN",
+      "max_ctx": "UNKNOWN",
+      "cap": {
+        "turns": 2,
+        "tokens": 15895340
+      },
+      "remaining": {
+        "turns": 0,
+        "tokens": "UNKNOWN",
+        "cost_weighted": "UNKNOWN",
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}

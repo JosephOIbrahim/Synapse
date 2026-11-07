@@ -1,0 +1,42 @@
+15:33:14 train start: [83, 84, 85, 86, 87, 88, 89, 90, 91, 92]
+15:33:15 #83 rebase/demo-repairs: Rebase fix/demo-repairs-20260909 onto master (v5.70.1): network layout | UNSTABLE/MERGEABLE
+15:33:16   #83 CI green (4 jobs); advisory checks: {'CodeRabbit': 'PENDING'}
+15:33:16   #83 reviews: none
+15:33:21   #83 MERGED -> master ef690e50
+15:33:22 #84 rebase/cache-insert: feat(cache): synapse_insert_cache - undoable boundary insertion via Re | UNKNOWN/UNKNOWN
+15:33:23   #84 CI green (4 jobs); advisory checks: {'CodeRabbit': 'SUCCESS'}
+15:33:24   #84 reviews: none
+15:33:24   #84 became CONFLICTING after CI (master moved) -- rebasing again
+15:33:28   #84 rebase conflict on ['python/synapse/mcp/_tool_registry.py', 'python/synapse/server/rbac.py']: non-count conflicts: ['python/synapse/mcp/_tool_registry.py', 'python/synapse/server/rbac.py']
+15:33:29   #84 SKIPPED THIS PASS: STOP: #84 needs a human rebase (non-count conflicts: ['python/synapse/mcp/_tool_registry.py', 'python/synapse/server/rbac.py'])
+15:33:30 #85 rebase/cto-render: feat(farm): durable TOPs render jobs, artist render workspace and TRIA | UNKNOWN/UNKNOWN
+15:33:30   #85 SKIPPED THIS PASS: STOP: #85 CI red: [('test (ubuntu-latest, 3.11)', 'CANCELLED'), ('test (ubuntu-latest, 3.14)', 'FAILURE'), ('test (macos-latest, 3.11)', 'CANCELLED'), ('test (macos-latest, 3.14)', 'CANCELLED')]
+15:33:31 #86 salvage/bp2-nits: salvage(bp2-nits): repair the FU-1/FU-2 test-pin citations; scope the  | UNKNOWN/UNKNOWN
+15:42:45   #86 CI green (4 jobs); advisory checks: {'CodeRabbit': 'SUCCESS'}
+15:42:45   #86 reviews: none
+15:42:51   #86 MERGED -> master b046846a
+15:42:51 #87 salvage/rope-gate-a: docs: backfill BLOCKS into CHANGELOG + README, carry wrong-base halt d | UNKNOWN/UNKNOWN
+15:47:58   #87 CI green (4 jobs); advisory checks: {'CodeRabbit': 'SUCCESS'}
+15:47:59   #87 reviews: none
+15:48:03   #87 MERGED -> master 5ad12f04
+15:48:04 #88 salvage/scene-model: salvage(scene-model): unique audit session ids + render_farm_status re | UNKNOWN/UNKNOWN
+15:48:04   #88 CI green (4 jobs); advisory checks: {'CodeRabbit': 'SUCCESS'}
+15:48:05   #88 reviews: none
+15:48:09   #88 MERGED -> master 8bdd3f70
+15:48:10 #89 park/panel-goalposts: backlog: park the H-MATRIX contract from wip/panel-goalposts (never me | UNKNOWN/UNKNOWN
+15:48:10   #89 CI green (4 jobs); advisory checks: {'CodeRabbit': 'SUCCESS'}
+15:48:11   #89 reviews: none
+15:48:15   #89 MERGED -> master ada16990
+15:48:16 #90 feat/undo-receipt: feat(trust): the Undo Receipt -- tell the artist what one Ctrl+Z rever | UNKNOWN/UNKNOWN
+15:48:16   #90 CI green (4 jobs); advisory checks: {'CodeRabbit': 'SUCCESS'}
+15:48:17   #90 reviews: none
+15:48:21   #90 MERGED -> master a2af501b
+15:48:22 #91 fix/bridge-down-send-guard: fix(panel): refuse chat sends while the bridge is down (FR-1) | UNKNOWN/UNKNOWN
+15:48:23   #91 CI green (4 jobs); advisory checks: {'CodeRabbit': 'SUCCESS'}
+15:48:23   #91 reviews: none
+15:48:28   #91 MERGED -> master a752ca5b
+15:48:28 #92 feat/ruling-ingester: fix(decisions): survive a board title the console codec cannot encode  | UNKNOWN/UNKNOWN
+15:48:29   #92 CI green (4 jobs); advisory checks: {'CodeRabbit': 'SUCCESS'}
+15:48:29   #92 reviews: none
+15:48:34   #92 MERGED -> master 2bff0cc2
+15:48:34 train done; skipped: [84, 85]

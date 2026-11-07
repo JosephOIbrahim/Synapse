@@ -1,0 +1,196 @@
+[
+  {
+    "id": "BP11-CRUX",
+    "name": "CRUX: adversarial re-verification of the five BP11 builder legs, one JEV-SCREEN line per leg",
+    "state": "ready",
+    "receipt": "BP11-CRUX.json",
+    "branch": "bp11/crux",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-crux",
+    "prompt": "harness/battleplan/prompts/BP11-CRUX.md",
+    "deps": [
+      "BP11-FIXFWD",
+      "BP11-FIXFWD2",
+      "BP11-IDCORE",
+      "BP11-IDSURF",
+      "BP11-SALIENCE",
+      "BP11-HARDEN"
+    ],
+    "readonly": true,
+    "touches": [
+      "harness/battleplan/notes/BP11-CRUX_verdicts.md",
+      "harness/battleplan/notes/BP11-CRUX_mutations.json"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/IDENTIFY_BLUEPRINT.md :: sec. 3 Rules (the crucible re-checks each one). START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-CRUX.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 30 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Read-only on product files. Re-run every row in a fresh `git clone --shared` of each leg branch; bp11/harden carries the whole Identify chain. Every Identify rule in IDENTIFY_BLUEPRINT.md sec. 3 gets at least one mutation of your own. gui_probe rows stay UNKNOWN: the seat closes them by computer use after the wave. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "referee"
+  },
+  {
+    "id": "BP11-FIXFWD",
+    "name": "BP10 fix-forward: ADR-0001 refusals 4 -> 8, NOTICE.md hashes from git blobs (LF), plus a verifier",
+    "state": "ready",
+    "receipt": "BP11-FIXFWD.json",
+    "branch": "bp11/fixfwd",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-fixfwd",
+    "prompt": "harness/battleplan/prompts/BP11-FIXFWD.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "docs/decisions/",
+      "python/synapse/_vendor/fxhoudinimcp/NOTICE.md",
+      "scripts/verify_vendor_notice.py",
+      "tests/test_vendor_notice.py"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/JEV_HARVEST_BLUEPRINT.md :: sec. 'Risks and refusals'; bp10/crux BP10-CRUX_verdicts.md 'Fix list'. START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-FIXFWD.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 15 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Tier: mechanical (Haiku 4.5) - this leg edits to a written fix list; it designs nothing. The fix list is in the unmerged branch: read it with `git show bp10/crux:harness/battleplan/notes/BP10-CRUX_verdicts.md` (section 'BP10-SCAFFOLD', 'Fix list'). Already closed on master, do NOT touch: the questions.json mojibake (0 occurrences on 2026-09-28) and the README overclaim (gone after 312ed2cf). Upstream pin: https://github.com/healkeiser/fxhoudinimcp @ 29b6695b6726b90537eab3f02411e05d7c6760a5; shallow-clone it to a temp dir outside the repo. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "mechanical"
+  },
+  {
+    "id": "BP11-FIXFWD2",
+    "name": "FIXFWD repair: NOTICE.md hashes from git blob bytes (LF), and a verifier that hashes blobs, never a Windows checkout",
+    "state": "ready",
+    "receipt": "BP11-FIXFWD2.json",
+    "branch": "bp11/fixfwd2",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-fixfwd2",
+    "prompt": "harness/battleplan/prompts/BP11-FIXFWD2.md",
+    "deps": [
+      "BP11-FIXFWD"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/_vendor/fxhoudinimcp/NOTICE.md",
+      "scripts/verify_vendor_notice.py",
+      "tests/test_vendor_notice.py"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/BP11_CTO_PLAN.md :: sec. 1 BP10 fix-forward; seat check .token-saver/bp11/check_notice_hashes.py. START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-FIXFWD2.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 12 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Added mid-wave by the seat on Joe's standing pre-approval (2026-09-28 11:22). Your worktree is cut from bp11/fixfwd. The seat's check C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\check_notice_hashes.py (run 11:20) found 0 of 31 guide hashes, and the LICENSE hash, in NOTICE.md equal to their committed blobs: every value is a CRLF checkout hash, because core.autocrlf=true converts LF to CRLF on every Windows checkout, a fresh clone included. Hash raw blob bytes only: `git cat-file blob HEAD:<path>` read through Python hashlib over sys.stdin.buffer (or subprocess stdout bytes). For upstream, hash `git cat-file blob 29b6695b:<path>` inside the clone. Never hash a file read from the working tree. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP11-HARDEN",
+    "name": "Production hardening: Windows CI leg + broad-except ratchet (no new silent swallows)",
+    "state": "ready",
+    "receipt": "BP11-HARDEN.json",
+    "branch": "bp11/harden",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-harden",
+    "prompt": "harness/battleplan/prompts/BP11-HARDEN.md",
+    "deps": [
+      "BP11-SALIENCE"
+    ],
+    "readonly": false,
+    "touches": [
+      ".github/workflows/ci.yml",
+      "scripts/except_ratchet.py",
+      "tests/test_except_ratchet.py",
+      "tests/fixtures/except_ratchet_baseline.json",
+      "docs/HARDENING_RATCHETS.md"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/BP11_CTO_PLAN.md :: sec. 3 recommendations 4 and 5; sec. 2 rows C1 and C5. START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-HARDEN.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 20 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Tier: mechanical (Haiku 4.5), pinned on Joe's word 2026-09-28 over JEV-ROUTE's reasoning @ 0.84 (the dissent stays in harness/jev/ledger/bp11.route.jsonl). This leg implements a design the seat has already written; it designs nothing. Your worktree is cut from the SALIENCE leg's branch, so the whole Identify chain is present and the ratchet baseline includes it. scripts/except_ratchet.py: walk python/synapse/**/*.py (skip _vendor/ and __pycache__/) and ast.parse each file. A handler is BROAD when its type is None, the name Exception or BaseException, or a tuple containing either. A broad handler is SILENT when ast.walk over its body finds no ast.Raise and no ast.Call whose function name (Name.id or Attribute.attr, lowercased) contains log, warn, error, exception, record, report, notify, telemetry or print. Count SILENT per file, keyed by the posix path from the repo root. `--write-baseline` writes tests/fixtures/except_ratchet_baseline.json as {\"_rule\": <this rule>, \"files\": {path: count}} for counts above 0, keys sorted. The default mode exits 1 and lists every file whose count exceeds its baseline (absent = 0), and prints broad_total and silent_total. tests/test_except_ratchet.py runs the repo check plus a positive control (a synthetic `except Exception: pass` counts 1) and a negative control (`except Exception as e: log.warning(e)` counts 0), the controls pattern of tests/panel/test_token_authority.py. ci.yml: add windows-latest to the test matrix, set fail-fast: false, and give any bash-syntax step `shell: bash`. Lowering a baseline is always allowed; raising one needs Joe's word. Windows CI green on GitHub cannot be seen from here (push is Joe's word): that row is UNKNOWN, never a pass. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "mechanical"
+  },
+  {
+    "id": "BP11-IDCORE",
+    "name": "Identify core: python/synapse/identify (facts, library, compose, apply) - zero-token bubbles from exact sources, one undo group, artist text never lost, never on disk",
+    "state": "ready",
+    "receipt": "BP11-IDCORE.json",
+    "branch": "bp11/idcore",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-idcore",
+    "prompt": "harness/battleplan/prompts/BP11-IDCORE.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/identify/",
+      "python/synapse/cognitive/tools/sidefx_library.py",
+      "tests/test_identify_compose.py",
+      "tests/test_identify_library.py",
+      "tests/test_identify_apply.py",
+      "scripts/probe_identify.py"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/IDENTIFY_BLUEPRINT.md :: sec. 2 The bubble; sec. 3 Rules; sec. 4 Where it lives. START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-IDCORE.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 30 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). IDENTIFY_BLUEPRINT.md sections 1-4 are the contract; section 3's nine rules are what CRUX re-verifies. M0 probe scripts (read-only reference, port what you need into scripts/probe_identify.py): C:\\Users\\User\\Downloads\\synapse_identify_probe.py, _probe2.py, _probe3.py, _probe4.py. Reuse, don't fork: selection facts come from synapse.server.introspection.inspect_selection with the call pattern in panel/selection_inspection.py:68-80 (run_on_main, timeout=3.0, record_stall=False, record_wait=False, a label). The library reader is python/synapse/cognitive/tools/sidefx_library.py: query-only, never build or download. If it lacks an exact help-path lookup, add ONE read-only function there and test it; a query_library search result is never a node's summary. The Selection Inspector stays read-only: add nothing to it in this leg. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "reasoning",
+    "team": {
+      "max_subagents": 0,
+      "subagent_tier": "mechanical"
+    }
+  },
+  {
+    "id": "BP11-IDSURF",
+    "name": "Identify surface: panel button + /identify (panel-answered) + read-only Inspector column, tokens only",
+    "state": "ready",
+    "receipt": "BP11-IDSURF.json",
+    "branch": "bp11/idsurf",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-idsurf",
+    "prompt": "harness/battleplan/prompts/BP11-IDSURF.md",
+    "deps": [
+      "BP11-IDCORE"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/panel/synapse_panel.py",
+      "python/synapse/panel/tool_palette.py",
+      "python/synapse/panel/command_palette.py",
+      "python/synapse/panel/selection_inspector.py",
+      "python/synapse/panel/designsystem/",
+      "tests/panel/test_identify_button.py",
+      "tests/test_panel_finesse.py",
+      "tests/test_first_session_panel.py"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/IDENTIFY_BLUEPRINT.md :: sec. 3 rules 1, 5, 8, 9; sec. 4 panel line; sec. 7 G1-G3, G5. START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-IDSURF.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 25 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Your worktree is cut from the IDCORE leg's branch, so python/synapse/identify/ is already present; do not re-open its design. Registry rule: '/identify' goes into PANEL_ANSWERED_COMMANDS in panel/command_palette.py (the panel answers it, the model never sees it) and is surfaced through tool_palette._load_entries (panel/tool_palette.py:141), the single row source. Widgets come from panel/designsystem/components with tokens; a new token goes only into designsystem/tokens.py. Threading: facts and compose run on a daemon (the selection_inspection._launch pattern), apply runs through run_on_main in one short hold. The Selection Inspector's docstring contract (read-only, owns no Houdini objects) must stay true. Existing tests that pin the exact PANEL_ANSWERED_COMMANDS set may be updated, nothing else. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "reasoning",
+    "team": {
+      "max_subagents": 0,
+      "subagent_tier": "mechanical"
+    }
+  },
+  {
+    "id": "BP11-SALIENCE",
+    "name": "Identify salience lane (Jev, shadow): one Noul per filtered changed parm via adapter.judge off-main, a measured cook-diff answer key, a shadow grader, plus the LOP 'writes' line via lastModifiedPrims()",
+    "state": "ready",
+    "receipt": "BP11-SALIENCE.json",
+    "branch": "bp11/salience",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-salience",
+    "prompt": "harness/battleplan/prompts/BP11-SALIENCE.md",
+    "deps": [
+      "BP11-IDSURF"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/identify/salience.py",
+      "python/synapse/identify/salience_questions.json",
+      "scripts/build_identify_salience_key.py",
+      "tests/fixtures/identify_salience_key_v1.json",
+      "harness/jev/jev_salience.py",
+      "harness/jev/questions.json",
+      "harness/jev/tests/test_jev_salience.py",
+      "tests/test_identify_salience.py",
+      "harness/jev/ledger/",
+      "python/synapse/identify/facts.py",
+      "tests/test_identify_facts_lop.py",
+      "scripts/probe_identify.py"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/IDENTIFY_BLUEPRINT.md :: sec. 5 Jev salience (shadow). START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-SALIENCE.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 25 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Your worktree is cut from the IDSURF leg's branch. IDENTIFY_BLUEPRINT.md sec. 5 is the contract. Follow the product pattern of python/synapse/jev/selection_suggestions.py (opt_in, receipt, should_abort, the same artist preference the Selection Inspector reads). adapter.judge refuses the main thread by design: call it from a worker after the bubble is on the canvas. In V1 the answer changes nothing on screen. One question text in one file: the product owns it, the harness grader reads it (harness may read product data; product never imports harness/jev, pinned by tests/test_jev_product_boundary.py). TypeSafe access comes from synapse.jev.credentials; if no key is available the grader prints UNKNOWN - never ask for a key, never print one. ADDED 11:45 by the seat on Joe's standing pre-approval (target T5, blueprint M2): IDCORE left the LOP 'writes <prim> (+N)' line UNKNOWN because it found no API. The seat probed hython 22.0.400 (C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\probe_lop_writes.py): hou.LopNode.lastModifiedPrims() exists - 'Returns the paths of the USD primitives modified by this node's last cook' - and returned sphere 'ball' -> ['/ball'], merge -> ['/ball', '/box'], xform on '/ball /box' -> ['/ball', '/box']. Wire facts._lop_writes to it for LOP nodes only (read in the same short main-thread read as the other facts; never cook a node to get it - a node that has not cooked yields no writes line), sort the paths, and let compose render 'writes <first> (+N-1)'. Any exception -> None (the line is omitted, never guessed). Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP11-TIDY",
+    "name": "TIDY: BP11 worktree, receipt and Jev ledger census, plus a stale-worktree census (list only)",
+    "state": "ready",
+    "receipt": "BP11-TIDY.json",
+    "branch": "bp11/tidy",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-tidy",
+    "prompt": "harness/battleplan/prompts/BP11-TIDY.md",
+    "deps": [
+      "BP11-CRUX"
+    ],
+    "readonly": true,
+    "touches": [
+      "harness/battleplan/notes/BP11-TIDY_census.md"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/BP11_CTO_PLAN.md :: sec. 6 R-6; sec. 2 row C9. START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-TIDY.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 12 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Tier: mechanical (Haiku 4.5). List, never delete: removing a worktree or a branch is Joe's word (ruling R-6). Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "mechanical"
+  }
+]

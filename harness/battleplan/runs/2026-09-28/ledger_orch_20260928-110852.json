@@ -1,0 +1,303 @@
+{
+  "run": "orch_20260928-110852",
+  "date": "2026-09-28",
+  "cap": {
+    "turns": 9,
+    "tokens": 60000000
+  },
+  "status": "open",
+  "reason": null,
+  "enforced_unit": "turns",
+  "token_meter": "UNKNOWN",
+  "totals": {
+    "turns": 9,
+    "tokens_in": "UNKNOWN",
+    "tokens_out": "UNKNOWN",
+    "usage": "UNKNOWN",
+    "rails_total": "UNKNOWN",
+    "cost_weighted": "UNKNOWN",
+    "cost_basis": "UNKNOWN",
+    "max_ctx": "UNKNOWN",
+    "cost_weights": {
+      "input": 1.0,
+      "cache_create": 1.25,
+      "cache_read": 0.1,
+      "output": 5.0
+    },
+    "enforced_on": "cost_weighted"
+  },
+  "remaining": {
+    "turns": 0,
+    "tokens": "UNKNOWN",
+    "cost_weighted": "UNKNOWN",
+    "enforced_on": "cost_weighted"
+  },
+  "legs": [
+    {
+      "leg": "BP11-FIXFWD",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": 13683157,
+      "tokens_out": 44998,
+      "wall_ms": 371240,
+      "usage": {
+        "input_tokens": 887,
+        "cache_creation_input_tokens": 328033,
+        "cache_read_input_tokens": 13354237,
+        "output_tokens": 44998
+      },
+      "cost_weighted": 1971342,
+      "cost_basis": "weighted",
+      "max_ctx": 145065,
+      "cap": {
+        "turns": 9,
+        "tokens": 60000000
+      },
+      "remaining": {
+        "turns": 7,
+        "tokens": "UNKNOWN",
+        "cost_weighted": "UNKNOWN",
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-fixfwd\\9eb3a956-3421-4294-89cc-72f2470bf584.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP11-IDCORE",
+      "model": "claude-opus-4-8",
+      "tokens_in": 31697550,
+      "tokens_out": 336122,
+      "wall_ms": 1740723,
+      "usage": {
+        "input_tokens": 288,
+        "cache_creation_input_tokens": 905927,
+        "cache_read_input_tokens": 30791335,
+        "output_tokens": 336122
+      },
+      "cost_weighted": 5892440,
+      "cost_basis": "weighted",
+      "max_ctx": 293124,
+      "cap": {
+        "turns": 9,
+        "tokens": 60000000
+      },
+      "remaining": {
+        "turns": 6,
+        "tokens": 2355613,
+        "cost_weighted": 49579595,
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-idcore\\38fffa61-e08e-468a-b9d4-652aa215e0a9.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP11-FIXFWD2",
+      "model": "claude-opus-4-8",
+      "tokens_in": 11741256,
+      "tokens_out": 141304,
+      "wall_ms": 848530,
+      "usage": {
+        "input_tokens": 146,
+        "cache_creation_input_tokens": 587692,
+        "cache_read_input_tokens": 11153418,
+        "output_tokens": 141304
+      },
+      "cost_weighted": 2556623,
+      "cost_basis": "weighted",
+      "max_ctx": 193685,
+      "cap": {
+        "turns": 9,
+        "tokens": 60000000
+      },
+      "remaining": {
+        "turns": 6,
+        "tokens": "UNKNOWN",
+        "cost_weighted": "UNKNOWN",
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-fixfwd2\\9c6f6584-00d9-4857-a2b7-dd54cf61fa30.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP11-IDSURF",
+      "model": "claude-opus-4-8",
+      "tokens_in": 50224199,
+      "tokens_out": 303535,
+      "wall_ms": 2385549,
+      "usage": {
+        "input_tokens": 432,
+        "cache_creation_input_tokens": 706972,
+        "cache_read_input_tokens": 49516795,
+        "output_tokens": 303535
+      },
+      "cost_weighted": 7353502,
+      "cost_basis": "weighted",
+      "max_ctx": 314081,
+      "cap": {
+        "turns": 9,
+        "tokens": 60000000
+      },
+      "remaining": {
+        "turns": 5,
+        "tokens": -48172121,
+        "cost_weighted": 42226093,
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-idsurf\\e59a50dd-d601-4f1b-8f7f-e60b60bbca03.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP11-SALIENCE",
+      "model": "claude-opus-4-8",
+      "tokens_in": 33625187,
+      "tokens_out": 411139,
+      "wall_ms": 2321357,
+      "usage": {
+        "input_tokens": 280,
+        "cache_creation_input_tokens": 951258,
+        "cache_read_input_tokens": 32673649,
+        "output_tokens": 411139
+      },
+      "cost_weighted": 6512412,
+      "cost_basis": "weighted",
+      "max_ctx": 329334,
+      "cap": {
+        "turns": 9,
+        "tokens": 60000000
+      },
+      "remaining": {
+        "turns": 3,
+        "tokens": "UNKNOWN",
+        "cost_weighted": "UNKNOWN",
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-salience\\7007cc45-abb4-4bdd-bcf0-313d13cffa41.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP11-HARDEN",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": 18563604,
+      "tokens_out": 76186,
+      "wall_ms": 1039109,
+      "usage": {
+        "input_tokens": 1228,
+        "cache_creation_input_tokens": 361187,
+        "cache_read_input_tokens": 18201189,
+        "output_tokens": 76186
+      },
+      "cost_weighted": 2653761,
+      "cost_basis": "weighted",
+      "max_ctx": 139334,
+      "cap": {
+        "turns": 9,
+        "tokens": 60000000
+      },
+      "remaining": {
+        "turns": 2,
+        "tokens": "UNKNOWN",
+        "cost_weighted": "UNKNOWN",
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-harden\\fe1f90a8-d20d-45de-b9ac-988e0b7b5c19.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP11-CRUX",
+      "model": "claude-fable-5-1",
+      "tokens_in": 26618531,
+      "tokens_out": 947652,
+      "wall_ms": 2575740,
+      "usage": {
+        "input_tokens": 3270,
+        "cache_creation_input_tokens": 2180385,
+        "cache_read_input_tokens": 24434876,
+        "output_tokens": 947652
+      },
+      "cost_weighted": 9910499,
+      "cost_basis": "weighted",
+      "max_ctx": 394742,
+      "cap": {
+        "turns": 9,
+        "tokens": 60000000
+      },
+      "remaining": {
+        "turns": 2,
+        "tokens": -128414420,
+        "cost_weighted": 23149421,
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-crux\\1d6a1f4f-8ae4-47bb-b86f-8aa28fa546c5.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP11-HARDFIX",
+      "model": "claude-opus-4-8",
+      "tokens_in": 25373040,
+      "tokens_out": 619838,
+      "wall_ms": 2748720,
+      "usage": {
+        "input_tokens": 214,
+        "cache_creation_input_tokens": 1406430,
+        "cache_read_input_tokens": 23966396,
+        "output_tokens": 619838
+      },
+      "cost_weighted": 7254081,
+      "cost_basis": "weighted",
+      "max_ctx": 319337,
+      "cap": {
+        "turns": 9,
+        "tokens": 60000000
+      },
+      "remaining": {
+        "turns": 1,
+        "tokens": -154407298,
+        "cost_weighted": 15895340,
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp11-hardfix\\85cb9041-189c-4afa-951e-4f27fa3f67c4.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP11-CRUX2",
+      "model": "claude-fable-5-1",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": "UNKNOWN",
+      "usage": "UNKNOWN",
+      "cost_weighted": "UNKNOWN",
+      "cost_basis": "UNKNOWN",
+      "max_ctx": "UNKNOWN",
+      "cap": {
+        "turns": 9,
+        "tokens": 60000000
+      },
+      "remaining": {
+        "turns": 0,
+        "tokens": "UNKNOWN",
+        "cost_weighted": "UNKNOWN",
+        "enforced_on": "cost_weighted"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}

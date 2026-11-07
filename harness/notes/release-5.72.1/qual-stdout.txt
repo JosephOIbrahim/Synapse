@@ -1,0 +1,19 @@
+Missing required dependency blocks compiled setup: PASS
+Failure explains the missing dependency in readable text: PASS
+Windows write-denied destination is rejected: PASS
+Fresh installation through compiled Setup: PASS
+Windows uninstall registration and shortcuts exist: PASS
+Repeat installation: PASS
+Upgrade switches active payload: PASS
+One registration points at installed files: PASS
+Bundled maintenance runtime verifies installation: PASS
+No user-data changes during upgrade: PASS
+Windows uninstaller preserves changed registration: PASS
+Windows uninstaller preserves changed maintenance file: PASS
+Generated Windows uninstaller: PASS
+Uninstall preserves projects, memory, credentials and custom files: PASS
+Uninstall removes unchanged payload and maintenance files: PASS
+Windows uninstall registration and shortcuts removed: PASS
+Reinstall after uninstall with retained data: PASS
+Runtime uninstall can finish before Windows cleanup: PASS
+Windows cleanup resumes after runtime uninstall completed: PASS

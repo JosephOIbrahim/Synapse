@@ -1,0 +1,51 @@
+{
+  "id": "BP11-IDFIX2",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "auto",
+  "readonly": false,
+  "deps": [
+    "BP11-IDFIX",
+    "BP11-CRUX2"
+  ],
+  "name": "Identify summaries from real help pages: skip markup paragraphs after the title (the corpus shape)",
+  "note": "START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-IDFIX2.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 10 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Added by the seat on Joe's word (2026-09-28 17:16). Your worktree is cut from bp11/idfix. IDFIX's _strip_help_header only strips a BOM and '#key: value' lines at the very START of the text, but the real corpus body for PolyExtrude is 'PolyExtrude\\n\\n\\ufeff#type: node\\n\\nExtrudes polygonal faces and edges.\\n\\n:include /shelf/polyextrude#includeme:' (help_summary(['nodes/sop/polyextrude']) with SYNAPSE_SIDEFX_CORPUS_ROOT = G:/HOUDINI22/_CORPUS; your packet has it). summary_paragraph drops the title, then returns the directive paragraph, so the bubble still reads '#type: node'. IDFIX's test passed on a synthetic text that starts with the BOM. Fix in library.py only: before choosing the head, drop every paragraph that is help markup alone (after stripping U+FEFF, each non-empty line is a '#key: value' directive or a ':name ...:' include), wherever it sits. Then sweep the real corpus: for every node help page the library indexes, count summaries that still start with markup ('#', ':', U+FEFF, '@', '=', '{') before and after your change, and report both counts and the first ten offenders. Fix any other markup class the sweep finds only when the same paragraph rule covers it; otherwise list it in for_ruling. Keep HARDFIX's rules: additive logging only, no root-level logging calls. Shell rule (seat, 13:05): keep `#` comments out of every quoted shell argument, including `python -c` and `bash -c`; Claude Code stops for a manual prompt on them and no one is at the keyboard. For any script longer than three lines, Write it to `.scratch/<name>.py` in your worktree (gitignored and allowed) and run that file with python. Never commit anything under `.scratch/`. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+  "targets": [
+    "T1) library.py: markup-only paragraphs (U+FEFF, '#key: value' directives, ':name ...:' includes) are skipped wherever they sit, so the first prose paragraph after the title wins or the honest unknown does.",
+    "T2) tests/test_identify_library.py: a test on the exact real corpus shape above returns 'Extrudes polygonal faces and edges.', and a corpus-gated test (skipped with a reason when the corpus root is absent) asserts no indexed SOP/LOP summary starts with markup.",
+    "T3) The receipt reports the sweep: pages scanned, markup-leading summaries before and after, first ten offenders."
+  ],
+  "touches": [
+    "python/synapse/identify/library.py",
+    "tests/test_identify_library.py"
+  ],
+  "acceptance": [
+    {
+      "predicate": "pytest passes on the leg tip for tests/test_identify_*.py, tests/panel/test_identify_button.py and tests/test_except_ratchet.py; counts in the receipt",
+      "evidence": "test"
+    },
+    {
+      "predicate": "summarize('operator:Sop/polyextrude::2.0') against the real corpus returns ('Extrudes polygonal faces and edges.', 'library')",
+      "evidence": "check"
+    },
+    {
+      "predicate": "the corpus sweep reports markup-leading summaries before and after, with 0 after for the classes the rule covers",
+      "evidence": "check"
+    },
+    {
+      "predicate": "scripts/except_ratchet.py exits 0; grep finds no root-level logging call in python/synapse/identify/",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file",
+    "the crucible removes the markup-paragraph skip and proves the real-shape test bites"
+  ],
+  "source": {
+    "doc": "harness/battleplan/notes/IDENTIFY_BLUEPRINT.md",
+    "anchor": "sec. 2 exact sources; seat finding 17:10 (.token-saver/bp11/seat_findings.md)"
+  }
+}

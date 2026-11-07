@@ -1,0 +1,51 @@
+{
+  "id": "BP11-FIXFWD2",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "auto",
+  "readonly": false,
+  "deps": [
+    "BP11-FIXFWD"
+  ],
+  "name": "FIXFWD repair: NOTICE.md hashes from git blob bytes (LF), and a verifier that hashes blobs, never a Windows checkout",
+  "note": "START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-FIXFWD2.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 12 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Added mid-wave by the seat on Joe's standing pre-approval (2026-09-28 11:22). Your worktree is cut from bp11/fixfwd. The seat's check C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\check_notice_hashes.py (run 11:20) found 0 of 31 guide hashes, and the LICENSE hash, in NOTICE.md equal to their committed blobs: every value is a CRLF checkout hash, because core.autocrlf=true converts LF to CRLF on every Windows checkout, a fresh clone included. Hash raw blob bytes only: `git cat-file blob HEAD:<path>` read through Python hashlib over sys.stdin.buffer (or subprocess stdout bytes). For upstream, hash `git cat-file blob 29b6695b:<path>` inside the clone. Never hash a file read from the working tree. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+  "targets": [
+    "T1) python/synapse/_vendor/fxhoudinimcp/NOTICE.md: all 31 guide hashes and the LICENSE hash replaced by sha256 of the committed git blobs (LF bytes); the provenance sentence says so; the LICENSE size is the blob size.",
+    "T2) scripts/verify_vendor_notice.py hashes `git cat-file blob HEAD:<path>` bytes, never working-tree files; tests/test_vendor_notice.py gains a test in which a table of CRLF hashes FAILS the verifier.",
+    "T3) The receipt corrects BP11-FIXFWD's rows 2 and 3, whose evidence hashed CRLF checkout bytes."
+  ],
+  "touches": [
+    "python/synapse/_vendor/fxhoudinimcp/NOTICE.md",
+    "scripts/verify_vendor_notice.py",
+    "tests/test_vendor_notice.py"
+  ],
+  "acceptance": [
+    {
+      "predicate": "for all 31 guides and LICENSE, the NOTICE.md value equals sha256 of `git cat-file blob HEAD:<path>` (count line 32/32 in the receipt)",
+      "evidence": "check"
+    },
+    {
+      "predicate": "NOTICE.md gives anim.md as 57fae325b428776d32fd368d4bb7d514e1a21ddf1798d275c7faad0ae0f2ba93 and LICENSE as 79a2891ba34d73cb07da165714464f3bb6a6c6a254ea7ad1bac2cf3f7aae5918 (blob values from the seat's check)",
+      "evidence": "check"
+    },
+    {
+      "predicate": "tests/test_vendor_notice.py passes, including the new test in which a CRLF-hashed table fails the verifier",
+      "evidence": "test"
+    },
+    {
+      "predicate": "the verifier hashes through git cat-file only; grep shows no read_bytes or open() on a guide path in scripts/verify_vendor_notice.py",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file",
+    "the crucible hashes git blobs itself for five random guides and LICENSE, and flips one NOTICE value to a CRLF hash to prove the new verifier test bites"
+  ],
+  "source": {
+    "doc": "harness/battleplan/notes/BP11_CTO_PLAN.md",
+    "anchor": "sec. 1 BP10 fix-forward; seat check .token-saver/bp11/check_notice_hashes.py"
+  }
+}

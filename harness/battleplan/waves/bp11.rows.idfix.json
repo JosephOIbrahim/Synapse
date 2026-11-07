@@ -1,0 +1,49 @@
+[
+  {
+    "id": "BP11-IDFIX",
+    "name": "Identify gate fixes: save callbacks installed on show, BOM-safe summaries, capped and memoized lookups",
+    "state": "ready",
+    "receipt": "BP11-IDFIX.json",
+    "branch": "bp11/idfix",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-idfix",
+    "prompt": "harness/battleplan/prompts/BP11-IDFIX.md",
+    "deps": [
+      "BP11-HARDFIX"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/identify/apply.py",
+      "python/synapse/identify/library.py",
+      "python/synapse/panel/synapse_panel.py",
+      "tests/test_identify_idfix.py",
+      "tests/test_identify_apply.py",
+      "tests/test_identify_library.py",
+      "tests/panel/test_identify_button.py",
+      "tests/fixtures/except_ratchet_baseline.json"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/IDENTIFY_BLUEPRINT.md :: sec. 7 G2/G5/G6; seat gate run 16:26-16:35 (.token-saver/bp11/seat_findings.md). START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-IDFIX.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 14 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Added by the seat after the GUI gates on merged master 9e7feb34 (Houdini 22.0.400, 16:26-16:35; the evidence is in your packet). Your worktree is cut from bp11/hardfix. G6 FAILED, bubbles reach disk: install_save_callbacks() is called only by scripts/probe_identify.py and a test, never by the product path, so a GUI save kept 60 sentinels in the .hip (hython count 60, raw bytes 60). G2 showed polyextrude's summary as '#type: node': its help text starts with a UTF-8 BOM, so the '#type:' header line was not skipped. G5 responsiveness holds (max main-thread gap 92.6 ms against an idle 93.5 ms), but the 200-node run took about 40 s end to end: library.summarize costs about 211 ms per node, uncached, and the panel worker composes all 200 though show() keeps 60. Fix exactly these three: (1) show(), and so toggle and /identify, installs the BeforeSave/AfterSave callbacks idempotently before its first write, in apply.py; (2) the summary path strips a leading U+FEFF and skips '#key: value' header lines, so the first prose sentence wins or the honest unknown does; (3) the panel worker caps paths to apply.CAP before reading facts and composing while the flash still reports the full selection count, and summarize memoizes per (help_url, hda_help) for the life of the process. Keep HARDFIX's additive-logging rule: no root-level logging calls, and no deleted statement in python/synapse/identify/ that a fix does not need. F4 (a standalone sentinel line inside artist text) is out of scope and stays a known issue. Live GUI re-runs of G2, G5 and G6 are the seat's: mark them UNKNOWN. Shell rule (seat, 13:05): keep `#` comments out of every quoted shell argument, including `python -c` and `bash -c`; Claude Code stops for a manual prompt on them and no one is at the keyboard. For any script longer than three lines, Write it to `.scratch/<name>.py` in your worktree (gitignored and allowed) and run that file with python. Never commit anything under `.scratch/`. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP11-CRUX2",
+    "name": "CRUX2: adversarial re-verification of BP11-HARDFIX and BP11-IDFIX, and closure of every CRUX finding",
+    "state": "ready",
+    "receipt": "BP11-CRUX2.json",
+    "branch": "bp11/crux2",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp11-crux2",
+    "prompt": "harness/battleplan/prompts/BP11-CRUX2.md",
+    "deps": [
+      "BP11-HARDFIX",
+      "BP11-IDFIX"
+    ],
+    "readonly": true,
+    "touches": [
+      "harness/battleplan/notes/BP11-CRUX2_verdicts.md",
+      "harness/battleplan/notes/BP11-CRUX2_mutations.json"
+    ],
+    "note": "BATTLEPLAN harness/battleplan/notes/IDENTIFY_BLUEPRINT.md :: sec. 3 Rules; seat findings 13:14-13:25. START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-CRUX2.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 20 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Read-only on product files. Added mid-wave by the seat on Joe's standing pre-approval. Re-run every HARDFIX and IDFIX row in a fresh `git clone --shared` of bp11/idfix, which carries the whole Identify chain plus HARDEN, HARDFIX and IDFIX. For IDFIX, remove the install call from show(), drop the BOM strip, and remove the cap and the memo, one at a time, and show a test bites on each. Read CRUX's verdicts first (`git show bp11/crux:harness/battleplan/notes/BP11-CRUX_verdicts.md`) and give each finding a closure line: closed by HARDFIX (anchor), for_ruling in HARDFIX's receipt, or open. Your packet holds the six seat defects and a mutation seed for each; re-apply each in your clone and record bite, survived or crash. Rate bp11/idfix as the merge candidate: SOUND, SOUND-WITH-NITS or BROKEN. gui_probe rows stay UNKNOWN: the seat closes them by computer use after the wave. Check the Windows xfail markers: each is conditioned to Windows (and to Python < 3.13 for the clock ones), carries a reason, and no assertion or test body changed; remove one marker in your clone and show the test fails on your Windows python. Shell rule (seat, 13:05): keep `#` comments out of every quoted shell argument, including `python -c` and `bash -c`; Claude Code stops for a manual prompt on them and no one is at the keyboard. For any script longer than three lines, Write it to `.scratch/<name>.py` in your worktree (gitignored and allowed) and run that file with python. Never commit anything under `.scratch/`. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+    "tier": "referee"
+  }
+]

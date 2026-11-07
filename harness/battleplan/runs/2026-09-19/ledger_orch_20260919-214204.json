@@ -1,0 +1,25 @@
+{
+  "run": "orch_20260919-214204",
+  "date": "2026-09-19",
+  "cap": {
+    "turns": 3,
+    "tokens": 40000000
+  },
+  "status": "open",
+  "reason": null,
+  "enforced_unit": "turns",
+  "token_meter": "measured",
+  "totals": {
+    "turns": 0,
+    "tokens_in": 0,
+    "tokens_out": 0
+  },
+  "remaining": {
+    "turns": 3,
+    "tokens": 40000000
+  },
+  "legs": [],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}

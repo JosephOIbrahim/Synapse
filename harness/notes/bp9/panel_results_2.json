@@ -1,0 +1,271 @@
+{
+ "PNL-L1": {
+  "leg": "PNL-L1",
+  "ready": true,
+  "branch": "worktree-wf_70a5bbfa-0dd-1",
+  "for_next_leg": "L1 landed the four zero-pixel truth fixes and was verified SOUND-WITH-NITS with the full stock suite green at 9701 passed / 0 failed. This branch now also carries PNL-L0: audit_panel.py read t.SIZE_MICRO, a token CRIT.md deleted, so the strict audit had been crashing on its FIRST table and every check below it, including the A3 seeded-contrast sweep, had not run since 2026-09-15. That dead reference is gone, tests/test_audit_panel_tokens_exist.py pins that the audit only names tokens that exist and prints every distinct size on the ramp, and the acceptance line 'audit --strict exits 0' is replaced everywhere by harness/notes/bp9/audit_ratchet.py. The unblinded audit reports exactly 2 genuine failures, now the committed baseline in harness/notes/bp9/audit_baseline.json: 'no bundled font in QSS' (owned by PNL-L2) and the composer-telling row (owned by PNL-L3A). Two traps that cost real time: pin PYTHONPATH=$PWD/python in every shell or an editable .pth silently runs your checks against the main tree's unmodified files; and the ratchet reconfigures stdout to utf-8 because a cp1252 console dies on a glyph in one check name. Markdown headings now carry weight inline (h1 15/700, h2 12/700, h3 12/500) and message_formatter._scale floors at FONT_FLOOR_PX=11, so anything snapshotting formatter HTML should expect those strings.",
+  "seeded": true
+ },
+ "PNL-L2": {
+  "leg": "PNL-L2",
+  "receipt": {
+   "status": "partial",
+   "branch": "worktree-wf_27091aaa-db8-1",
+   "commit_sha": "7b25368af72155935868e12baea050acac666a45",
+   "files_changed": [
+    "python/synapse/panel/designsystem/qss.py",
+    "tests/test_panel_sweep_a.py",
+    "harness/notes/bp9/audit_baseline.json"
+   ],
+   "acceptance": [
+    {
+     "predicate": "grep -cE '\\{t\\.SIZE_[A-Z_]+\\}px' python/synapse/panel/designsystem/qss.py prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0. Also 0 for '\\{t\\.GLYPH_[A-Z_]+\\}px' - the three glyph sizes were scaled too, same defect class."
+    },
+    {
+     "predicate": "grep -c 'letter-spacing' python/synapse/panel/designsystem/qss.py prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0 (five inert declarations deleted; Qt QSS has no letter-spacing property)."
+    },
+    {
+     "predicate": "grep -c 'WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM' python/synapse/panel/designsystem/qss.py prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0; the five sites now name t.WEIGHT_BOLD (tokens.py:505 = 700)."
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_sweep_a.py tests/test_panel_typography.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "'29 passed, 22 skipped, 2 warnings in 4.76s', exit 0. The 22 skips are the stock-CPython Qt probes (no PySide6), unchanged from HEAD. PYTHONPATH proof: python -c 'import synapse; print(synapse.__file__)' -> C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_27091aaa-db8-1\\python\\synapse\\__init__.py"
+    },
+    {
+     "predicate": "python .synapse/hytest.py tests/panel/test_bc_wave.py -q exits 0 with a real pass count",
+     "verdict": "fail",
+     "evidence": "'3 failed, 10 passed, 14 warnings in 15.84s'. PRE-EXISTING and not mine: with HEAD's qss.py restored in the same worktree and the same env, the run is byte-identical - same 3 names, same 10 passes, same 15.84s (test_chat_face_monochrome_one_accent_plus_state_marks: profile 'curious' shows hues {0,2,13,14}, 4<=3 fails; test_profile_row_retired: chat share 0.483 < 0.5 at 340x760; test_turn_receipt_offers_revert_on_chat). All three are shipped-chrome composition/hue checks; SWEEP_A styles unshipped widgets and none of the three touch my files."
+    },
+    {
+     "predicate": "python harness/notes/bp9/audit_ratchet.py exits 0",
+     "verdict": "pass",
+     "evidence": "'audit ran to completion; 1 FAIL reported, 1 in the baseline / known  K folded into input / ratchet holds: no new failure.' EXIT=0. Before deleting my row it printed 'FIXED  no bundled font in QSS <- delete this row' and EXIT=2, so the row was proved green before it was removed."
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "empty output; the only tests/ change is +151 lines added to tests/test_panel_sweep_a.py."
+    },
+    {
+     "predicate": "the row this leg owns is gone from audit_baseline.json and the ratchet exits 0",
+     "verdict": "pass",
+     "evidence": "'no bundled font in QSS' deleted in commit 7b25368a; ratchet re-run after the deletion exits 0 with only PNL-L3A's row left."
+    }
+   ],
+   "tests_run": "python -m pytest tests/test_panel_sweep_a.py tests/test_panel_typography.py -q -p no:cacheprovider (29 passed, 22 skipped, exit 0); python .synapse/hytest.py tests/panel/test_bc_wave.py -q (3 failed, 10 passed - identical at HEAD, pre-existing); python harness/notes/bp9/audit_ratchet.py (exit 0, 1 FAIL / 1 baselined); a mutation probe (.scratch/negative.py) that undoes one scaled size, restores one letter-spacing, and re-names the bundled family in the comment - each reddens two of the new pins, then the file is restored byte-identical. No full stock suite run.",
+   "notes": "WHAT MOVED. stylesheet() now passes the scale to every _sweep_a_builders entry (builder(scale)), and each of the six builders binds its own floored s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale)). Threaded, never captured. Inside the block: ~25 sizes now ride s(), five arithmetic 700s became t.WEIGHT_BOLD, five letter-spacing declarations are gone, and the three {t.GLYPH_*}px sizes ride s() too (same defect - status dots and chevrons would otherwise have stayed frozen at 18/14 px while the rules around them grew). Nothing moves at scale 1.0; at 2.25 the chat_hda rules go 12px -> 27px, measured.\n\nTHE AUDIT ROW, WITH EVIDENCE. qss.stylesheet(1.0).lower().find(\"space mono\") == 10006, inside the /* */ comment at qss.py:208 - comments ship inside the generated stylesheet string. get_chat_display_stylesheet(1.0) was clean of both bundled families, and the sheet carries no font-family rule at all (test_qss_is_append_only_... already forbids one in the block). So the cause was that comment and only that comment. It now says \"the bundled mono face\" instead of naming it and keeps its whole point. Row deleted in the same commit.\n\nTHE TRAP THAT NEARLY MADE THIS A FALSE GREEN - worse than the .pth one L1 warned about. PYTHONPATH does NOT win under hython. The global HOUDINI_PACKAGE_DIR=C:\\Users\\User\\SYNAPSE\\packages makes Houdini PREPEND the MAIN tree to PYTHONPATH in-process, so hython imported synapse from C:\\Users\\User\\SYNAPSE\\python regardless of what I exported. My first ratchet run \"confirmed\" my row still failing and my first bc_wave run \"confirmed\" 2 pre-existing failures - both were reading the main tree, not my work. Fixed by exporting HOUDINI_PACKAGE_DIR=$PWD/packages (the worktree ships its own packages/synapse.json, which derives SYNAPSE_ROOT from $HOUDINI_PACKAGE_PATH/..). Verified by printing synapse.__file__ from inside hython before and after. audit_ratchet.py does not set this, so from any worktree it audits the main tree by default - a gate that can print green for code the branch does not contain. I did not touch it: it is PNL-L0's file and outside my targets.\n\nDECLARATION MECHANISM. PNL_20260921_QSS_AMENDMENTS, 35 (old, new) pairs, its own tuple - not appended to the 2026-09-15 CRIT or D3B lists, and deliberately NOT in _DECLARED_QSS_AMENDMENTS, because that list is applied to ce04dcb0 and `git show ce04dcb0:...qss.py | grep -c SWEEP_A` is 0, so these deltas have no `old` to match there. They are pinned against qss.py itself through the same _amend helper and round-trip in both directions, so a stale pair or an undeclared edit reddens rather than passing.",
+   "for_next_leg": "SWEEP_A is now one scale: its builders take a `scale` argument and bind their own floored `s()`, so anything you add below the SWEEP_A marker must write `{s(t.SIZE_*)}px` and declare its delta as an (old, new) pair in a NEW tuple in tests/test_panel_sweep_a.py - PNL_20260921_QSS_AMENDMENTS shows the shape and is pinned in both directions, so appending to it will redden unless the file really changed. Watch the hython trap: PYTHONPATH alone is NOT enough, because the global HOUDINI_PACKAGE_DIR points at the main tree and Houdini prepends it, so export HOUDINI_PACKAGE_DIR=\"$PWD/packages\" in every hython shell and prove it by printing synapse.__file__ - audit_ratchet.py does not set it and will happily audit the main tree from your worktree. I left three pre-existing bc_wave reds untouched (chat-face hue count and chat height share at 340x760 under the 'curious' profile, plus test_turn_receipt_offers_revert_on_chat): byte-identical at HEAD, all shipped-chrome composition, and the audit baseline still carries PNL-L3A's composer-telling row."
+  },
+  "verdict": {
+   "leg": "PNL-L2",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "grep -cE '\\{t\\.SIZE_[A-Z_]+\\}px' python/synapse/panel/designsystem/qss.py prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0 in my worktree at 7b25368a. Also 0 for '\\{t\\.GLYPH_[A-Z_]+\\}px' (the three glyph sizes were scaled too)."
+    },
+    {
+     "predicate": "grep -c 'letter-spacing' python/synapse/panel/designsystem/qss.py prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0."
+    },
+    {
+     "predicate": "grep -c 'WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM' python/synapse/panel/designsystem/qss.py prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0. Numerically neutral: probed t.WEIGHT_BOLD == 700 == WEIGHT_SEMIBOLD+WEIGHT_MEDIUM-WEIGHT_REGULAR, and the generated sheet's weight set is identical old vs new ({400,500,600,700})."
+    },
+    {
+     "predicate": "python -m pytest tests/test_panel_sweep_a.py tests/test_panel_typography.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "'29 passed, 22 skipped, 2 warnings in 5.03s', EXIT=0. Import proof printed first: C:\\Users\\User\\pnl-verify-PNL-L2\\python\\synapse\\__init__.py (my worktree, not the main tree)."
+    },
+    {
+     "predicate": "python .synapse/hytest.py tests/panel/test_bc_wave.py -q exits 0 with a real pass count (not all skipped)",
+     "verdict": "fail",
+     "evidence": "'3 failed, 10 passed, 14 warnings in 15.92s', EXIT=1 under hython 22.0.400 offscreen with HOUDINI_PACKAGE_DIR=$PWD/packages. PRE-EXISTING, proved by me not by the receipt: I checked out the PARENT commit's qss.py (git checkout e2ae38d4 -- .../qss.py) into the same worktree, same env, and got the same three names and the same 10 passes (test_chat_face_monochrome_one_accent_plus_state_marks, test_profile_row_retired, test_turn_receipt_offers_revert_on_chat), then restored. The leg does not cause it, but the line as written does not pass."
+    },
+    {
+     "predicate": "python harness/notes/bp9/audit_ratchet.py exits 0",
+     "verdict": "pass",
+     "evidence": "'audit ran to completion; 1 FAIL reported, 1 in the baseline / known  K folded into input / ratchet holds: no new failure.' EXIT=0. Independent: hython audit_panel.py --strict prints 'no bundled font in QSS: clean  [ ok ]' and 'G3 RESULT: 1 FAIL . 0 WARN', the one FAIL being PNL-L3A's baselined row."
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "empty output; tests/ change on this commit is +151 added lines in tests/test_panel_sweep_a.py, no test file deleted or weakened."
+    },
+    {
+     "predicate": "the row this leg owns is gone from audit_baseline.json and the ratchet exits 0",
+     "verdict": "pass",
+     "evidence": "audit_baseline.json now carries only the PNL-L3A row. Verified the fix is REAL, not baseline-deleted-while-red: I re-introduced the family name in the comment (sed) and the ratchet went 'NEW  no bundled font in QSS / RATCHET BROKEN', exit 1, plus two sweep_a pins red; restored byte-identical."
+    }
+   ],
+   "findings": [
+    "python/synapse/panel/designsystem/qss.py:557 - scale is genuinely THREADED, not captured: builder(scale) for builder in _sweep_a_builders, and all six builders (qss.py:612,699,716,769,813,832) take scale=t.FONT_SCALE_DEFAULT and bind their own floored s at :613,:700,:717,:770,:814,:833. No module-level s leaks in. Crucible criterion met.",
+    "Zero rendered change at 1.0, measured not asserted: I re-executed the PARENT qss.py from a temp module and diffed stylesheet(1.0) against the new one - identical after removing the five inert letter-spacing declarations and the one comment rename. font-size set {11,12,14,15,18} and font-weight set {400,500,600,700} are unchanged. At 2.25 the block moves with the chrome (smallest size in the sheet is 25px; 'font-size: 27px' present, absent at 1.0).",
+    "The owned audit row is fixed at the cause, not masked: qss.py:208 comment no longer names the bundled face; qss.stylesheet(1.0).lower().find('space mono') == -1 and 'space grotesk' == -1; the sheet's single 'font-family' occurrence is a comment reading 'No font-family: inherit Houdini's app-level UI font (native)' - no family rule exists, consistent with the native-typography law (families ride QFont).",
+    "tests/test_panel_sweep_a.py:96 PNL_20260921_QSS_AMENDMENTS is its own tuple, not appended to the 2026-09-15 CRIT/D3B lists, and :178 round-trips it through _amend in BOTH directions (every new exactly once reverting, every old exactly once re-applying) plus asserts no old survives. Mutation-proved live: unscaling one t.SIZE_UI reddened test_pnl_l2_..._delta_is_exactly_declared AND test_sweep_a_block_carries_no_unscaled_size_...; re-naming the family reddened the delta test AND test_generated_sheet_names_no_bundled_font_family.",
+    "tests/test_panel_sweep_a.py:198 states the invariant independently of the delta (regex for {t.(SIZE|GLYPH)_*}px, no letter-spacing, no arithmetic 700, every builder signature carries scale), so a future undeclared edit cannot pass by matching pairs alone.",
+    "FULL merge gate run by me, which the builder skipped: python -m pytest tests/ -q -p no:cacheprovider = '9707 passed, 429 skipped, 5 xfailed, 625 warnings in 467.30s', exit 0. No stub-leak regression from the signature change.",
+    "NIT (not this leg's file, real gate hole): harness/notes/bp9/audit_ratchet.py does not export HOUDINI_PACKAGE_DIR, and the global one points at C:\\Users\\User\\SYNAPSE\\packages, so Houdini prepends the MAIN tree in-process and the ratchet audits master's code from any worktree - a gate that can print green for code the branch does not contain. I reproduced the correct behaviour only by exporting HOUDINI_PACKAGE_DIR=$PWD/packages. Owned by PNL-L0; should be fixed there before the ratchet is trusted as a merge gate.",
+    "NIT (prose, no gate): qss.py:208 now reads 'would request a DemiBold the bundled mono face does not ship' - grammatical but rough. Also note the strict audit scans comments, so qss.py documentation can no longer name the bundled faces at all; that constraint is undocumented in the audit's own message and will bite the next author."
+   ],
+   "merge_ready": false,
+   "notes": "The leg's own work is clean and I could not break it: threading is real, the delta is pinned in both directions, both deliberate mutations went red and restored byte-identical, the audit row is fixed at the cause (re-introducing the cause reddens the ratchet), and the FULL stock suite is green at 9707 passed / 0 failed - a gate the builder did not run.\n\nmerge_ready is false on the literal rule only: acceptance line 5 (hython tests/panel/test_bc_wave.py exits 0) did NOT pass in my rerun - 3 failed / 10 passed. I verified myself, by restoring the parent commit's qss.py in the same worktree and the same env, that all three reds are byte-identical pre-existing shipped-chrome failures (chat-face hue count and 340x760 chat height share under the 'curious' profile, plus test_turn_receipt_offers_revert_on_chat) and that PNL-L2 causes none of them. That also means the crucible criterion '340x760 renders clean in every profile' is violated at this commit by inherited chrome, not by this delta.\n\nSo this is a human call, not a builder defect: either the bc_wave reds get owned and cleared by whichever leg owns that chrome (they are composition/hue decisions - taste calls, escalating rather than touching them), or the acceptance line for PNL-L2 is knowingly accepted as inherited-red by the human. I did not weaken any test, threshold, or baseline to close the gap. Worktree ../pnl-verify-PNL-L2 removed."
+  },
+  "ready": false,
+  "branch": "worktree-wf_27091aaa-db8-1",
+  "for_next_leg": "SWEEP_A is now one scale: its builders take a `scale` argument and bind their own floored `s()`, so anything you add below the SWEEP_A marker must write `{s(t.SIZE_*)}px` and declare its delta as an (old, new) pair in a NEW tuple in tests/test_panel_sweep_a.py - PNL_20260921_QSS_AMENDMENTS shows the shape and is pinned in both directions, so appending to it will redden unless the file really changed. Watch the hython trap: PYTHONPATH alone is NOT enough, because the global HOUDINI_PACKAGE_DIR points at the main tree and Houdini prepends it, so export HOUDINI_PACKAGE_DIR=\"$PWD/packages\" in every hython shell and prove it by printing synapse.__file__ - audit_ratchet.py does not set it and will happily audit the main tree from your worktree. I left three pre-existing bc_wave reds untouched (chat-face hue count and chat height share at 340x760 under the 'curious' profile, plus test_turn_receipt_offers_revert_on_chat): byte-identical at HEAD, all shipped-chrome composition, and the audit baseline still carries PNL-L3A's composer-telling row."
+ },
+ "PNL-L3A": {
+  "leg": "PNL-L3A",
+  "receipt": {
+   "status": "done",
+   "branch": "worktree-wf_27091aaa-db8-2",
+   "commit_sha": "68fb512be6063ad5a0a58e1bd3881d57321a3253",
+   "files_changed": [
+    "audit_panel.py",
+    "harness/notes/bp9/audit_baseline.json",
+    "python/synapse/panel/command_palette.py",
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/tool_palette.py",
+    "tests/panel/test_bc_wave.py",
+    "tests/test_palette_ranking.py"
+   ],
+   "acceptance": [
+    {
+     "predicate": "grep -c '\"Palette' python/synapse/panel/synapse_panel.py prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0. The overflow action is now menu.addAction(\"Commands   %s\" % key_txt if key_txt else \"Commands\", self._open_palette); _palette_hint kept as its reader."
+    },
+    {
+     "predicate": "grep -c 'Search %d' python/synapse/panel/tool_palette.py prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0. Placeholder is now self._search.setPlaceholderText(\"Search commands\u2026\")."
+    },
+    {
+     "predicate": "python -m pytest tests/test_palette_ranking.py tests/test_panel_finesse.py tests/test_first_session_panel.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "30 passed, 2 warnings in 1.60s (6 new ranking tests + 7 finesse + 17 first-session). Widened run with tests/test_farm_integration.py + tests/test_audit_panel_tokens_exist.py + tests/test_panel_sweep_b_widgets.py: 85 passed, 6 skipped."
+    },
+    {
+     "predicate": "python .synapse/hytest.py tests/panel/test_bc_wave.py -q exits 0 with a real pass count",
+     "verdict": "fail",
+     "evidence": "2 failed, 11 passed, 14 warnings in 16.04s. The SAME two fail identically at the upstream tip e2ae38d4 (2 failed / 11 passed) and at master 845da18e: test_profile_row_retired (curious chat share 0.4829 < 0.5) and test_chat_face_monochrome_one_accent_plus_state_marks. Pre-existing chrome/colour reds, not this leg's surface and not this leg's territory. The pin this leg amended (overflow 'Palette' -> 'Commands', line ~209) is inside test_rail_one_state_sentence_never_elides, which passes."
+    },
+    {
+     "predicate": "python harness/notes/bp9/audit_ratchet.py exits 0",
+     "verdict": "pass",
+     "evidence": "'audit ran to completion; 1 FAIL reported, 1 in the baseline / known  no bundled font in QSS / ratchet holds: no new failure.' EXIT=0."
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "empty output; the bc-wave pin was amended by declaration with an R2-misc citation comment, never deleted."
+    },
+    {
+     "predicate": "the row this leg owns is gone from harness/notes/bp9/audit_baseline.json and the ratchet exits 0",
+     "verdict": "pass",
+     "evidence": "audit_baseline.json now holds only the PNL-L2 font row. Unblinded audit prints '\u2318K folded into input: placeholder='Ask SYNAPSE \u00b7 / commands'  [ ok ]' and 'G3 RESULT: 1 FAIL' (the font row). Genuinely fixed, then the row deleted \u2014 verified by rerunning audit_panel.py --strict myself before editing the baseline."
+    }
+   ],
+   "tests_run": "python -c \"import synapse; print(synapse.__file__)\" -> C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wf_27091aaa-db8-2\\python\\synapse\\__init__.py (worktree, not the main tree).\npython -m pytest tests/test_palette_ranking.py tests/test_panel_finesse.py tests/test_first_session_panel.py -q -p no:cacheprovider -> 30 passed.\npython -m pytest (above + test_farm_integration + test_audit_panel_tokens_exist + test_panel_sweep_b_widgets) -> 85 passed, 6 skipped.\npython -m pytest tests/ -q -k \"palette or command or composer or placeholder\" -> 229 passed, 20 skipped.\npython .synapse/hytest.py tests/panel/test_bc_wave.py -q -> 2 failed, 11 passed (identical at e2ae38d4 and at master).\nhython audit_panel.py --strict -> 1 FAIL (PNL-L2 font row), the \u2318K row [ ok ].\npython harness/notes/bp9/audit_ratchet.py -> exit 0.\nhython probe (.scratch/probe_render_pick.py): ToolPalette search \"/render\" now returns /render as the FIRST row with send \"/render\" intact (27 rows).",
+   "notes": "Merged worktree-wf_70a5bbfa-0dd-1 cleanly (fast-forward, no conflicts).\n\n(1) ONE NAME. Overflow action \"Palette   {key}\" -> \"Commands   {key}\". _palette_hint untouched \u2014 it is still the action's reader and still takes its text from the bound QShortcut. tests/panel/test_bc_wave.py:209 amended by declaration with an R2-misc citation; three stale comments in that file that claimed the '/' telling rides the Commands tooltip were corrected in the same pass (the assertions themselves \u2014 a sum of '/' counts across placeholder + khint + tooltip \u2014 are site-agnostic and unchanged).\n\n(2) ONE REGISTRY. Added command_palette.PANEL_ANSWERED_COMMANDS (frozenset of the five literals), a panel_answered field on PaletteEntry set at the one build path (build_palette_entries), and carried through tool_palette._load_entries via getattr(e, \"panel_answered\", False) so the AST-extraction test helper in tests/test_panel_finesse.py (which stubs command_palette with a SimpleNamespace) still works. _SLASH_COMMANDS stays as data with a comment saying so; L3b decides row by row. CommandPaletteWidget is untouched \u2014 no hidden widget deleted.\n\n(3) RANKED SEARCH. New pure module-level command_palette.rank_row(query, title, desc, send) -> float (best of the three fields, built on the existing fuzzy_match: substring 1.0 / subsequence ratio / all-words 0.8, +0.2 prefix, +0.1 word boundary) and rank_rows(query, rows) (drops 0.0, sorts by (-score, arrival index) so ties keep today's order, returns a copy, empty query returns rows untouched). ToolPalette._refilter applies it AFTER the DO x WHERE chip filter, with the old substring filter kept as an ImportError fallback. One behaviour change I made deliberately: _populate takes grouped= and the context group heads are suppressed while a query is active \u2014 the heads describe the browsing sort (context, verb, title) and under a ranked list they would alternate row by row and say nothing.\n\nHONEST LIMIT ON THE RANKING. fuzzy_match caps a substring hit at 1.0, so for the live query \"/re\" the row \"/render\" TIES at 1.0 with every \"/recipes build ...\" row, and the tie resolves to today's grouped order (a recipes row first). That is exactly what the mission specified (\"ties keep today's order\"), so I did not add a tightness tiebreak. The new test therefore uses explicit synthetic rows: the recipes row's send is the generated \"Build this network recipe \u2014 ...\" prompt (what _load_entries actually builds for a non-command category), which carries no \"/\" at all, so the render row genuinely outranks it; a third case pins that an \"/apex recipes\" row matching only as a SUBSEQUENCE survives at 0 < score < 1 and ranks second \u2014 something the old substring filter would have thrown away entirely. The live \"/render\" query is now measurably better: /render is the first row where it used to be alphabetical.\n\n(4) THE OWNED AUDIT ROW, and the trap under it. The audit's check wants \"/\" IN inp.placeholderText(). The placeholder now reads \"Ask SYNAPSE \u00b7 / commands\" and the Commands tooltip drops its \"/\" (-> \"Browse commands \u00b7 Ctrl+K\"), so the composer still tells \"/\" exactly once (BC-4 unchanged). I measured candidates under hython offscreen at 340x760 first: the chosen copy advances 168px against a 182/184/185px viewport in curious/expert/ml, so test_composer_telling_reads_whole_at_340 stays green with headroom (the old failing copy was 245px).\n\nTRAP WORTH PASSING ON, and the one file I touched outside my targets: audit_panel.py only did `if PYDIR not in sys.path: sys.path.insert(0, PYDIR)`. The deployed Houdini package PREPENDS the main checkout's python/ ahead of $PYTHONPATH, so running the audit from a worktree WITH the house-rule PYTHONPATH set made PYDIR already present-but-last \u2014 the insert was skipped and the audit graded the MAIN tree's unmodified panel. It reported my row as still FAILING after it was fixed. Changed to remove-then-insert-at-front. This is the L1 PYTHONPATH trap with a second head: exporting PYTHONPATH is necessary but not sufficient, because the audit's own membership check was what swallowed it.\n\nNOT DONE / OUT OF SCOPE: the two pre-existing bc_wave reds (chat share 0.4829 in the curious profile; the monochrome/accent check). Both fail identically on master, both are chrome/colour surfaces owned by other legs, and fixing them would mean editing panel layout another leg owns.",
+   "for_next_leg": "The Commands surface now has one name (footer button, placeholder, overflow action all say \"Commands\") and one row source: tool_palette._load_entries, fed by command_palette.build_palette_entries, with the five panel-answered literals declared once in command_palette.PANEL_ANSWERED_COMMANDS and marked on each row as panel_answered \u2014 use that flag rather than re-listing the strings. Search is now ranked through the pure command_palette.rank_row / rank_rows, and group heads are suppressed while a query is active; be aware the scoring caps a substring hit at 1.0, so \"/re\" still ties \"/render\" with the \"/recipes build ...\" rows and the tie falls back to the grouped order \u2014 if L3b wants exact-ish matches to win, a tightness tiebreak in rank_rows is the one line to add (and it would need a ruling, since the spec said ties keep today's order). Two things left for you: tests/panel/test_bc_wave.py is 11 passed / 2 failed under hython with test_profile_row_retired (curious chat share 0.4829 < 0.5) and test_chat_face_monochrome_one_accent_plus_state_marks red at master and untouched by me; and audit_panel.py now forces its own python/ to the FRONT of sys.path, because merely being on sys.path let the deployed Houdini package's main-tree prepend win and the audit graded unmodified files \u2014 if an audit verdict ever disagrees with what you just changed, check that first."
+  },
+  "verdict": {
+   "leg": "PNL-L3A",
+   "verdict": "SOUND-WITH-NITS",
+   "acceptance_rerun": [
+    {
+     "predicate": "grep -c '\"Palette' python/synapse/panel/synapse_panel.py prints 0",
+     "verdict": "pass",
+     "evidence": "My rerun in worktree at 68fb512b: prints 0 (grep exit 1). Overflow action at synapse_panel.py:2782 now reads menu.addAction(\"Commands   %s\" % key_txt ...); _palette_hint kept as its reader (:2779)."
+    },
+    {
+     "predicate": "grep -c 'Search %d' python/synapse/panel/tool_palette.py prints 0",
+     "verdict": "pass",
+     "evidence": "prints 0. tool_palette.py:250 setPlaceholderText(\"Search commands\u2026\")."
+    },
+    {
+     "predicate": "python -m pytest tests/test_palette_ranking.py tests/test_panel_finesse.py tests/test_first_session_panel.py -q -p no:cacheprovider exits 0",
+     "verdict": "pass",
+     "evidence": "My rerun: 30 passed, 2 warnings in 2.10s, EXIT=0. Widened myself: pytest tests/ -k 'palette or command or composer or placeholder' -> 229 passed, 20 skipped, EXIT=0."
+    },
+    {
+     "predicate": "python .synapse/hytest.py tests/panel/test_bc_wave.py -q exits 0 with a real pass count",
+     "verdict": "fail",
+     "evidence": "My rerun at 68fb512b: 2 failed, 11 passed, EXIT=1 (test_chat_face_monochrome_one_accent_plus_state_marks, test_profile_row_retired). I verified the builder's pre-existing claim independently by adding a second detached worktree at master 845da18e and running the same line there: identical 2 failed, 11 passed, EXIT=1, same two test names. Leg-external red, not introduced here."
+    },
+    {
+     "predicate": "python harness/notes/bp9/audit_ratchet.py exits 0",
+     "verdict": "pass",
+     "evidence": "My rerun: 'audit ran to completion; 1 FAIL reported, 1 in the baseline / known no bundled font in QSS / ratchet holds: no new failure.' EXIT=0."
+    },
+    {
+     "predicate": "git diff --diff-filter=D --name-only master -- tests/ prints nothing",
+     "verdict": "pass",
+     "evidence": "Empty output in my rerun. tests/panel/test_bc_wave.py amended (+30/-?) not deleted; no test file removed."
+    },
+    {
+     "predicate": "the row this leg owns is gone from audit_baseline.json and the fix is real (audit rerun, not a trusted deletion)",
+     "verdict": "pass",
+     "evidence": "baseline now holds only the PNL-L2 font row. I ran hython audit_panel.py --strict myself: '\u2318K folded into input: placeholder=\\'Ask SYNAPSE \u00b7 / commands\\'  [ ok ]' and 'G3 RESULT: 1 FAIL' (font). Deliberate break: reverted the placeholder to \"Ask SYNAPSE\u2026\" -> ratchet printed 'NEW \u2318K folded into input / RATCHET BROKEN', exit 1; restored, tree clean. Gate is real and grades this worktree, not the main tree."
+    }
+   ],
+   "findings": [
+    "python/synapse/panel/command_palette.py:381 rank_rows is pure (no Qt/state) and is genuinely gated: I broke the sort key to arrival-index-only and tests/test_palette_ranking.py::test_a_weaker_match_survives_but_ranks_below went red (1 failed / 5 passed); restored.",
+    "tests/test_palette_ranking.py:60 NIT - the mission's named case test (test_render_row_ranks_first...) still PASSES under my broken sort, because the recipes row scores 0.0 and is filtered out, leaving one row. It pins filtering, not ranking; only the third test actually pins order.",
+    "python/synapse/panel/tool_palette.py:449 NIT - the wiring of rank_rows into ToolPalette._refilter is untested. tests/test_panel_sweep_b_widgets.py:352 only exercises no-match and empty-query. No test pins that a live typed query lifts /render, nor the new _populate(grouped=not q) head suppression, nor the ImportError substring fallback at :456 (a silent regression to the old behaviour if the import ever breaks).",
+    "python/synapse/panel/command_palette.py:107 ONE REGISTRY holds: _SLASH_COMMANDS is referenced only at its definition and at build_palette_entries:198 (repo-wide grep); tool_palette._load_entries:164 is the single row-build path.",
+    "python/synapse/panel/command_palette.py:471 no hidden widget deleted - class CommandPaletteWidget still present (and its stub at :695); fuzzy_match:304 is shared, not duplicated.",
+    "python/synapse/panel/command_palette.py:81 NIT - panel_answered is set at one build path and carried at tool_palette.py:174, but has zero production consumers today (grep: only tests read it), and rows from branches (a)/(c)/(d) of _load_entries omit the key entirely, so any future consumer must use .get(). Dormant field, documented as L3b's handle.",
+    "python/synapse/panel/synapse_panel.py:3171-3193 the five intercepts survive verbatim and match PANEL_ANSWERED_COMMANDS; the /render send pins passed inside my 229-test sweep.",
+    "BEHAVIOUR WIDENING, not a break: _refilter now keeps subsequence matches that the old substring filter dropped (rank_rows keeps any score>0), so a live query returns a strictly larger row set, ordered. Intended by the brief, but it is a visible change to what the palette shows, unpinned by any widget test."
+   ],
+   "merge_ready": false,
+   "notes": "Strict reading of the merge rule: acceptance line 4 did not pass in my own rerun (hytest bc_wave exits 1), so merge_ready is false by the letter. Substantively the leg is clean: I reproduced that same 2-failed/11-passed at master 845da18e in an independent worktree, so the red is pre-existing chrome/colour (test_profile_row_retired, test_chat_face_monochrome...) and is untouched by this diff. If the SCOUTMASTER waives that acceptance line as leg-external (it should - the ledger evidence is mine, not the builder's), this merges: every other line passed, both my deliberate breaks went red and restored cleanly, and all five crucible criteria check out against the code. Remaining items are BOUNDED WEAKNESSES to log, not showstoppers: the named-case ranking test would pass without ranking, and the ToolPalette integration of rank_rows + group-head suppression has no widget-level pin. Both are one test each for L3b. Also worth carrying forward: the builder's audit_panel.py sys.path fix (remove-then-insert-at-front) is load-bearing - I confirmed the audit now grades the worktree by breaking the placeholder and watching the ratchet catch it."
+  },
+  "ready": false,
+  "branch": "worktree-wf_27091aaa-db8-2",
+  "for_next_leg": "The Commands surface now has one name (footer button, placeholder, overflow action all say \"Commands\") and one row source: tool_palette._load_entries, fed by command_palette.build_palette_entries, with the five panel-answered literals declared once in command_palette.PANEL_ANSWERED_COMMANDS and marked on each row as panel_answered \u2014 use that flag rather than re-listing the strings. Search is now ranked through the pure command_palette.rank_row / rank_rows, and group heads are suppressed while a query is active; be aware the scoring caps a substring hit at 1.0, so \"/re\" still ties \"/render\" with the \"/recipes build ...\" rows and the tie falls back to the grouped order \u2014 if L3b wants exact-ish matches to win, a tightness tiebreak in rank_rows is the one line to add (and it would need a ruling, since the spec said ties keep today's order). Two things left for you: tests/panel/test_bc_wave.py is 11 passed / 2 failed under hython with test_profile_row_retired (curious chat share 0.4829 < 0.5) and test_chat_face_monochrome_one_accent_plus_state_marks red at master and untouched by me; and audit_panel.py now forces its own python/ to the FRONT of sys.path, because merely being on sys.path let the deployed Houdini package's main-tree prepend win and the audit graded unmodified files \u2014 if an audit verdict ever disagrees with what you just changed, check that first."
+ },
+ "PNL-L3B": {
+  "leg": "PNL-L3B",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "ready": false
+ },
+ "PNL-L4": {
+  "leg": "PNL-L4",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "ready": false
+ },
+ "PNL-L5": {
+  "leg": "PNL-L5",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "ready": false
+ },
+ "PNL-L6": {
+  "leg": "PNL-L6",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "ready": false
+ },
+ "PNL-L7": {
+  "leg": "PNL-L7",
+  "skipped": true,
+  "reason": "upstream not merge-ready",
+  "ready": false
+ }
+}

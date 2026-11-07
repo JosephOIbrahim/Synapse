@@ -1,0 +1,1 @@
+fix(panel): refuse chat sends while the bridge is down (FR-1)

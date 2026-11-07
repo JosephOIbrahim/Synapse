@@ -1,0 +1,48 @@
+{
+  "id": "BP11-CRUX2",
+  "band": "TRUST",
+  "class": "crucible",
+  "tier": "referee",
+  "readonly": true,
+  "deps": [
+    "BP11-HARDFIX",
+    "BP11-IDFIX"
+  ],
+  "name": "CRUX2: adversarial re-verification of BP11-HARDFIX and BP11-IDFIX, and closure of every CRUX finding",
+  "note": "START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-CRUX2.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 20 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Read-only on product files. Added mid-wave by the seat on Joe's standing pre-approval. Re-run every HARDFIX and IDFIX row in a fresh `git clone --shared` of bp11/idfix, which carries the whole Identify chain plus HARDEN, HARDFIX and IDFIX. For IDFIX, remove the install call from show(), drop the BOM strip, and remove the cap and the memo, one at a time, and show a test bites on each. Read CRUX's verdicts first (`git show bp11/crux:harness/battleplan/notes/BP11-CRUX_verdicts.md`) and give each finding a closure line: closed by HARDFIX (anchor), for_ruling in HARDFIX's receipt, or open. Your packet holds the six seat defects and a mutation seed for each; re-apply each in your clone and record bite, survived or crash. Rate bp11/idfix as the merge candidate: SOUND, SOUND-WITH-NITS or BROKEN. gui_probe rows stay UNKNOWN: the seat closes them by computer use after the wave. Check the Windows xfail markers: each is conditioned to Windows (and to Python < 3.13 for the clock ones), carries a reason, and no assertion or test body changed; remove one marker in your clone and show the test fails on your Windows python. Shell rule (seat, 13:05): keep `#` comments out of every quoted shell argument, including `python -c` and `bash -c`; Claude Code stops for a manual prompt on them and no one is at the keyboard. For any script longer than three lines, Write it to `.scratch/<name>.py` in your worktree (gitignored and allowed) and run that file with python. Never commit anything under `.scratch/`. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+  "targets": [
+    "T1) harness/battleplan/notes/BP11-CRUX2_verdicts.md: the verdict on bp11/hardfix with every row anchored, and a closure table for every CRUX finding.",
+    "T2) harness/battleplan/notes/BP11-CRUX2_mutations.json: the six seed mutations plus at least two of the crucible's own, each with its target row and outcome."
+  ],
+  "touches": [
+    "harness/battleplan/notes/BP11-CRUX2_verdicts.md",
+    "harness/battleplan/notes/BP11-CRUX2_mutations.json"
+  ],
+  "acceptance": [
+    {
+      "predicate": "every HARDFIX and IDFIX acceptance row has a CRUX2 verdict with a crucible anchor",
+      "evidence": "check"
+    },
+    {
+      "predicate": "the six seed mutations and at least two crucible-authored ones are recorded, each labelled bite, survived or crash",
+      "evidence": "check"
+    },
+    {
+      "predicate": "every CRUX finding has a closure line",
+      "evidence": "check"
+    },
+    {
+      "predicate": "gui_probe rows are UNKNOWN in the verdicts, never pass",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible flips no contract feature and edits no product file",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "any hash of a committed file is taken over git blob bytes (`git cat-file blob`), never a Windows checkout"
+  ],
+  "source": {
+    "doc": "harness/battleplan/notes/IDENTIFY_BLUEPRINT.md",
+    "anchor": "sec. 3 Rules; seat findings 13:14-13:25"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "run": "orch_20260920-131709",
+  "date": "2026-09-20",
+  "cap": {
+    "turns": 6,
+    "tokens": 70000000
+  },
+  "status": "blocked",
+  "reason": "budget",
+  "enforced_unit": "tokens",
+  "token_meter": "measured",
+  "totals": {
+    "turns": 3,
+    "tokens_in": 78178289,
+    "tokens_out": 1639912
+  },
+  "remaining": {
+    "turns": 3,
+    "tokens": -9818201
+  },
+  "legs": [
+    {
+      "leg": "BP8-TIMEOUTS",
+      "model": "claude-opus-4-8",
+      "tokens_in": 21886920,
+      "tokens_out": 304600,
+      "wall_ms": 1356309,
+      "cap": {
+        "turns": 6,
+        "tokens": 70000000
+      },
+      "remaining": {
+        "turns": 4,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp8-timeouts\\db3b6eca-f501-4d08-b717-fd5a63fa8f8a.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP8-WATCHDOG",
+      "model": "claude-opus-4-8",
+      "tokens_in": 26387523,
+      "tokens_out": 315424,
+      "wall_ms": 1576685,
+      "cap": {
+        "turns": 6,
+        "tokens": 70000000
+      },
+      "remaining": {
+        "turns": 3,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp8-watchdog\\275cc300-b70d-4ca3-a78d-1af36fe96ab8.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP8-CRUX",
+      "model": "claude-fable-5-1",
+      "tokens_in": 29903846,
+      "tokens_out": 1019888,
+      "wall_ms": 2088228,
+      "cap": {
+        "turns": 6,
+        "tokens": 70000000
+      },
+      "remaining": {
+        "turns": 3,
+        "tokens": -9818201
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp8-crux\\35b25b46-34f2-46fa-8512-63350dc0cd77.jsonl",
+      "settled": true,
+      "note": "HALT: measured spend 79818201 tokens crossed the ceiling 70000000 at settle - the dispatch already ran; nothing further dispatches"
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}

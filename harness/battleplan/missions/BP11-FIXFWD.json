@@ -1,0 +1,50 @@
+{
+  "id": "BP11-FIXFWD",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "mechanical",
+  "readonly": false,
+  "deps": [],
+  "name": "BP10 fix-forward: ADR-0001 refusals 4 -> 8, NOTICE.md hashes from git blobs (LF), plus a verifier",
+  "note": "START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-FIXFWD.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 15 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). Tier: mechanical (Haiku 4.5) - this leg edits to a written fix list; it designs nothing. The fix list is in the unmerged branch: read it with `git show bp10/crux:harness/battleplan/notes/BP10-CRUX_verdicts.md` (section 'BP10-SCAFFOLD', 'Fix list'). Already closed on master, do NOT touch: the questions.json mojibake (0 occurrences on 2026-09-28) and the README overclaim (gone after 312ed2cf). Upstream pin: https://github.com/healkeiser/fxhoudinimcp @ 29b6695b6726b90537eab3f02411e05d7c6760a5; shallow-clone it to a temp dir outside the repo. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+  "targets": [
+    "T1) docs/decisions/ADR-0001*.md: the Refused Sites section lists all eight refusals from harness/battleplan/notes/JEV_HARVEST_BLUEPRINT.md 'Risks and refusals' (the four present plus: probe passed, which model runs anything, instant tier, run_on_main closure), wording copied from the blueprint.",
+    "T2) python/synapse/_vendor/fxhoudinimcp/NOTICE.md: the 31 guide hashes and the LICENSE hash regenerated as sha256 of the committed git blobs (LF bytes), with one sentence saying so; LICENSE size corrected to the blob size.",
+    "T3) scripts/verify_vendor_notice.py recomputes every blob hash and compares it with NOTICE.md, exit 1 on any mismatch; tests/test_vendor_notice.py runs it."
+  ],
+  "touches": [
+    "docs/decisions/",
+    "python/synapse/_vendor/fxhoudinimcp/NOTICE.md",
+    "scripts/verify_vendor_notice.py",
+    "tests/test_vendor_notice.py"
+  ],
+  "acceptance": [
+    {
+      "predicate": "ADR-0001 Refused Sites lists 8 refusals and names each of the blueprint's 8 refusal subjects",
+      "evidence": "check"
+    },
+    {
+      "predicate": "scripts/verify_vendor_notice.py exits 0 on the leg tip and exits 1 after one hex digit of one NOTICE.md hash is flipped (mutation shown in the receipt)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "NOTICE.md's anim.md hash equals sha256 of anim.md at upstream 29b6695b from a fresh clone",
+      "evidence": "check"
+    },
+    {
+      "predicate": "harness/jev/questions.json is byte-identical to master on the leg tip",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file",
+    "the crucible hashes git BLOBS, never a checkout: raw bytes of `git cat-file blob <rev>:<path>` for three random guides and LICENSE, on bp11/fixfwd and on upstream 29b6695b, compared with NOTICE.md (Windows core.autocrlf=true turns every checkout into CRLF; the seat's check .token-saver/bp11/check_notice_hashes.py found 0/31 blob matches on bp11/fixfwd at 11:20)"
+  ],
+  "source": {
+    "doc": "harness/battleplan/notes/JEV_HARVEST_BLUEPRINT.md",
+    "anchor": "sec. 'Risks and refusals'; bp10/crux BP10-CRUX_verdicts.md 'Fix list'"
+  }
+}

@@ -1,0 +1,18 @@
+19:04:58 cut v5.73.0: ['bump', 'notes', 'build', 'qual', 'suites', 'compose', 'commit', 'tag', 'push', 'publish', 'verify']
+19:04:58 == bump
+19:04:58   canonical=5.73.0  verdict=PASS
+19:04:58   README + installation.md surfaces -> 5.73.0
+19:04:58 == notes
+19:04:59   notes drafted with placeholders; tool count 137
+19:04:59 == build
+19:05:23   built; payload e4a93e666f07 id 5.73.0-fc61b564f71e209e
+19:05:23 == qual
+19:05:23   qualification 0/1 PASS, exit 1
+19:06:19 cut v5.73.0: ['qual', 'suites', 'compose', 'commit', 'tag', 'push', 'publish', 'verify']
+19:06:19 == qual
+19:08:07   qualification 19/19 PASS, exit 0
+19:08:07 == suites
+19:14:47   stock: 1 failed, 9584 passed, 433 skipped, 625 warnings in 391.51s (0:06:31)
+19:16:08   seat:  7 failed, 200 passed, 47 warnings in 76.26s (0:01:16)
+19:16:18   inst:  37 passed, 1 warning in 6.38s
+CUT2 EXIT=1

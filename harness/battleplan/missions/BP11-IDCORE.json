@@ -1,0 +1,69 @@
+{
+  "id": "BP11-IDCORE",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "auto",
+  "team": "auto",
+  "readonly": false,
+  "deps": [],
+  "name": "Identify core: python/synapse/identify (facts, library, compose, apply) - zero-token bubbles from exact sources, one undo group, artist text never lost, never on disk",
+  "note": "START FROM YOUR CONTEXT PACKET C:\\Users\\User\\SYNAPSE\\.token-saver\\bp11\\BP11-IDCORE.packet.md - the exact code windows the seat already located for your targets (token-saver). Search beyond it only for what it lacks, and list what it lacked in the receipt under packet_gaps; that feedback tunes the next wave's packets. Self-cap: 30 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files. The source docs are untracked on master, so read them by absolute path under C:\\Users\\User\\SYNAPSE\\harness\\battleplan\\notes (IDENTIFY_BLUEPRINT.md, BP11_CTO_PLAN.md): ONCE in full at the start, then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Write text files as UTF-8 through Python (pathlib.write_text(..., encoding='utf-8')), never through PowerShell default encodings (the BP10 SCAFFOLD mojibake came from a cp1252 round trip). IDENTIFY_BLUEPRINT.md sections 1-4 are the contract; section 3's nine rules are what CRUX re-verifies. M0 probe scripts (read-only reference, port what you need into scripts/probe_identify.py): C:\\Users\\User\\Downloads\\synapse_identify_probe.py, _probe2.py, _probe3.py, _probe4.py. Reuse, don't fork: selection facts come from synapse.server.introspection.inspect_selection with the call pattern in panel/selection_inspection.py:68-80 (run_on_main, timeout=3.0, record_stall=False, record_wait=False, a label). The library reader is python/synapse/cognitive/tools/sidefx_library.py: query-only, never build or download. If it lacks an exact help-path lookup, add ONE read-only function there and test it; a query_library search result is never a node's summary. The Selection Inspector stays read-only: add nothing to it in this leg. Tool-output discipline (token-saver): run pytest -q --tb=line -p no:cacheprovider on the files you touch plus the named pins, never the whole suite unless a row demands it; pipe long output through Select-Object -Last 40 or Select-String; never print a whole log, diff or JSON you can grep. Receipt evidence cells stay one or two lines each.",
+  "targets": [
+    "T1) python/synapse/identify/compose.py: a pure function (no hou, no Qt) from facts to bubble lines per blueprint sec. 2 - What / Here / State, at most 3 lines, a width constant, the parm filter (folders, folder sets, separators, labels, hidden parms, ramp\\d+(pos|value|interp) internals), labels not names, 3 significant digits, the (expr) marker, '...' truncation, and '- not in library' for unknown types.",
+    "T2) python/synapse/identify/library.py: exact lookup from node type to summary by the help path derived from defaultHelpUrl() including versioned types (operator:Sop/polybevel?version=3.0); HDA embedded help first sentence; returns (text, source) or (None, 'unknown'); never searches.",
+    "T3) python/synapse/identify/facts.py: per-node facts from inspect_selection(include_parameters=True, node_paths=...) plus the extras it lacks, read in one short main-thread read: help url, parm labels, default and expression flags, errors, warnings, bypass, and LOP last-modified prims if the 22.0.400 API has them (probe it; UNKNOWN otherwise).",
+    "T4) python/synapse/identify/apply.py: the only writer - ASCII sentinel block '~ identify ~' appended below any artist comment and stripped from the sentinel down; a per-session registry of the prior DisplayComment flag keyed by node sessionId; one hou.undos.group('SYNAPSE Identify') per show and per clear; BeforeSave strip and AfterSave re-apply with undo disabled; a 60-bubble cap with the flash line 'Identify: N of M nodes'; idempotent toggle; orphan blocks (no registry entry) removed on clear.",
+    "T5) tests/test_identify_compose.py, tests/test_identify_library.py, tests/test_identify_apply.py (fake hou objects), and scripts/probe_identify.py (hython: build the M0 seven-node chain in a temp .hip, show, save, reopen, assert zero sentinels, print hou.applicationVersionString())."
+  ],
+  "touches": [
+    "python/synapse/identify/",
+    "python/synapse/cognitive/tools/sidefx_library.py",
+    "tests/test_identify_compose.py",
+    "tests/test_identify_library.py",
+    "tests/test_identify_apply.py",
+    "scripts/probe_identify.py"
+  ],
+  "acceptance": [
+    {
+      "predicate": "pytest tests/test_identify_compose.py tests/test_identify_library.py tests/test_identify_apply.py passes on system Python without hou",
+      "evidence": "test"
+    },
+    {
+      "predicate": "compose() on the M0 PolyBevel facts (offset 0.07 plus five changed ramp internals) yields exactly one Here entry, shown by its label, and no ramp internal",
+      "evidence": "test"
+    },
+    {
+      "predicate": "an artist comment is byte-identical after show then clear, after show + BeforeSave strip + AfterSave re-apply + clear, and when the artist comment quotes the sentinel inside prose",
+      "evidence": "test"
+    },
+    {
+      "predicate": "library returns 'unknown' for a type with no exact help-path row, and swapping the exact lookup for query_library search makes a test fail (mutation shown in the receipt)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "hython scripts/probe_identify.py on 22.0.400 prints the version, shows 7 bubbles on the M0 chain, and the saved .hip reopened has zero sentinel lines and one undo group per show",
+      "evidence": "check"
+    },
+    {
+      "predicate": "the main-thread apply for 60 nodes is timed in hython and the ms figure is in the receipt against the 100 ms starting target (a miss is a finding, never hidden)",
+      "evidence": "check"
+    },
+    {
+      "predicate": "nothing under python/synapse/identify imports harness/ or opens a network connection, and only apply.py calls setComment, setGenericFlag or hou.undos (grep count lines in the receipt)",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file",
+    "the crucible writes its own artist comment that quotes the sentinel in prose and proves show + clear leaves it byte-identical",
+    "the crucible disables the BeforeSave strip and proves the save row bites",
+    "the crucible re-runs scripts/probe_identify.py in hython itself"
+  ],
+  "source": {
+    "doc": "harness/battleplan/notes/IDENTIFY_BLUEPRINT.md",
+    "anchor": "sec. 2 The bubble; sec. 3 Rules; sec. 4 Where it lives"
+  }
+}

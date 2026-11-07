@@ -1,0 +1,66 @@
+{
+  "id": "BP10-BENCH",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "auto",
+  "team": "auto",
+  "readonly": false,
+  "deps": [
+    "BP10-GUIDES"
+  ],
+  "name": "M3: outside-in benchmark harness (SYNAPSE vs fxhoudinimcp, isolated hython per arm) + JEV-BENCH verifier + prompt leak check; plumbing proven on 1 prompt, G5 held for Joe",
+  "note": "Self-cap: 30 turns (progress every 5). Permission fence: scoped `git add` + `git commit` only; push/merge/checkout/reset denied; use `cd <path> && git status --short`, never `git -C`. Commit code BEFORE the receipt; the receipt is your final write. Budget discipline: run /token-saver first and keep to it - Select-String / grep for symbols, read 40-line windows around cited lines, never whole files; the two source docs are your brief, read them ONCE in full at the start and then only grep them. Houdini GUI is NOT available to you: anything that needs a live panel is UNKNOWN, never a pass. hython IS available at `C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe` (22.0.400) for headless gates. Minimal diff: touch only the files in `touches`. House rule: no number enters a document without a producer path beside it. Every UNKNOWN stays UNKNOWN - never a pass, never a 0. Read HARVEST_SPEC.md sec. 'Target 3' first: the fairness rules are the contract and are written down BEFORE the first run. Isolation is the whole design: each arm gets its own hython, own port (pin both explicitly: SYNAPSE 9999, fxhoudinimcp 8100), own scene copy. fxhoudinimcp installs via `pip install fxhoudinimcp` into a SEPARATE venv + its Houdini package file pointed at a scratch packages dir - never into SYNAPSE's env, never vendored. The full G5 run (24 prompts x 2 arms x 3 runs) is SPEND and is Joe's word: this leg runs exactly ONE prompt per arm on the empty scene to prove the plumbing and STOPS. Jev invariants (JEV_BLUEPRINT.md sec. 4 + adapter.py): questions are DATA in harness/jev/questions.json; code owns every decision; fail closed (no key / timeout -> the pre-Jev output, ledgered as fallback, no fabricated probability); every call ledgered under harness/jev/ledger/bp10.<guard>.jsonl; nothing under python/synapse/ imports harness/jev (pinned by tests/test_jev_product_boundary.py). A Jev answer never promotes a chunk, never names a model, never grants consent.",
+  "targets": [
+    "T1) harness/outside_in/: run.py (--scene empty|demo|large, --runs N, --confirm-spend required for large), arms/synapse.py (panel WS path ws://localhost:9999/synapse), arms/fxhoudinimcp.py (its MCP server over stdio against its hwebserver on 8100), prompts.jsonl (24 prompts, 4 per domain: SOP, Pyro, Vellum, Solaris/LOP, Copernicus, VEX; each with a `check` block), verify.py (third hython opens the saved scene and runs the check block; never reads either arm's own success report).",
+    "T2) Token accounting from the provider response (input/output), tool calls, wall-clock, pass/fail, UNKNOWN count, SYNAPSE ledger row count; same pinned Claude model string on both arms; median and range over runs, never the best.",
+    "T3) harness/jev/jev_bench.py per JEV_HARVEST_BLUEPRINT sec. Site 3: on not-pass only, failure_kind Choice + named_a_limitation Noul over the last 1,500 chars + last 3 tool names; policy: refused_unsupported >= 0.70 -> UNKNOWN, else FAIL with kind; confidence < 0.60 -> FAIL/cannot_tell (never UNKNOWN); no key -> FAIL/unjudged (distinct from UNKNOWN). --leak-check: hints_a_tool_or_arm Noul over all 24 prompts; any >= 0.50 is rewritten before the run and the leak ledger committed.",
+    "T4) harness/notes/outside_in/LEDGER.md with the producer command beside every table; bench_key.json empty template for hand labels.",
+    "T5) Plumbing proof: run.py --scene empty --runs 1 --limit 1 (one prompt per arm) completes and writes two ledger rows with real token counts."
+  ],
+  "touches": [
+    "harness/outside_in/",
+    "harness/jev/jev_bench.py",
+    "harness/jev/jev_grade.py",
+    "harness/notes/outside_in/",
+    "harness/jev/tests/"
+  ],
+  "acceptance": [
+    {
+      "predicate": "prompts.jsonl has 24 rows, 4 per domain, each with a non-empty check block",
+      "evidence": "check"
+    },
+    {
+      "predicate": "--leak-check ran over all 24 prompts; leak ledger committed; no prompt >= 0.50 remains (or a fallback row explains no key)",
+      "evidence": "check"
+    },
+    {
+      "predicate": "one prompt per arm on the empty scene produced two LEDGER rows with provider token counts and a verify.py verdict",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "verify.py runs in a hython that is neither arm's process and reads no arm success text (code inspection + a planted false success claim is not credited)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "run.py refuses --scene large without --confirm-spend and prints an estimate from the recorded per-turn median",
+      "evidence": "test"
+    },
+    {
+      "predicate": "G5 full run NOT executed by this leg (ledger has <= 2 benchmark rows)",
+      "evidence": "check"
+    }
+  ],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file",
+    "the crucible plants 'Task complete.' in an arm's final text on a failing scene and shows verify.py still FAILs and jev_bench classifies claimed_success (or unjudged without a key)",
+    "the crucible confirms the two arms never share a port, a process or a scene file"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "harness/battleplan/notes/HARVEST_SPEC.md",
+    "anchor": "sec. 'Target 3: outside-in benchmark'; sec. 'Gates' G5; JEV_HARVEST_BLUEPRINT sec. 'Site 3'"
+  }
+}

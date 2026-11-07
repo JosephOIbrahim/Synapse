@@ -1,0 +1,663 @@
+[
+ {
+  "key": "demo-repairs",
+  "branch": "rebase/demo-repairs",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "a3ad7796307c81361f01004cf075104f1ff74926",
+  "pr_title": "Rebase fix/demo-repairs-20260909 onto master (v5.70.1): network layout tool + scoped memory ownership, tool count 128 -> 129",
+  "ruling_needed": "houdini_layout_network maps to set_parameter (INFORM) at bridge_adapter.py:83 while it repositions/recolors/re-boxes the selected network and destroys caller-named `replace_boxes` (fully-selected only) -- KEEP or RAISE? (map is per-tool; a payload-conditional tier would be new code)",
+  "diff_stat": "32 files changed, 2771 insertions(+), 242 deletions(-)  (git diff --stat master..HEAD; CLAUDE.md 1 line, README.md 1 line, both the tool count only)",
+  "tests": [
+   {
+    "cmd": "PYTHONPATH=python python -m pytest tests/test_network_layout.py tests/test_demo_memory_scope.py tests/test_demo_memory_recall.py tests/test_memory_lifecycle.py tests/test_memory_owner_dispatch.py tests/test_moneta_search_serialization.py tests/test_session_journal_main_thread.py tests/test_phase0c_doc1_toolcount.py -q -p no:cacheprovider",
+    "summary": "131 passed, 2 warnings in 6.76s (toolcount file: 28 passed)"
+   },
+   {
+    "cmd": "PYTHONPATH=python python -m pytest tests/test_store_degraded_load.py tests/test_memory_handle_law.py tests/test_loop_integration.py tests/test_rsi_stage0_panel.py -q -p no:cacheprovider",
+    "summary": "55 passed, 6 skipped, 2 warnings in 2.09s (the four existing test files the branch modifies)"
+   },
+   {
+    "cmd": "PYTHONPATH=python python -c \"import synapse.mcp._tool_registry as m; print(m.__file__); from synapse.mcp._tool_registry import TOOL_DEFS; print(len(TOOL_DEFS))\"",
+    "summary": "C:\\...\\wf_4ef50c87-4e2-1\\python\\synapse\\mcp\\_tool_registry.py ; 129"
+   },
+   {
+    "cmd": "git status --short  (after rebase --continue)",
+    "summary": "empty -- tree clean"
+   }
+  ],
+  "refuter": {
+   "ok": true,
+   "blockers": [],
+   "secret_scan": "git diff master..HEAD | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\Users|/Users/\" -> no hits (exit 1); repeated on added lines only (^\\+) -> no hits. Clean for a public repo.",
+   "composed": [
+    "tests/test_mcp_protocol.py",
+    "tests/test_panel_reload_memory_owner.py",
+    "tests/test_scene_memory.py (write_decision signature changed on this branch)",
+    "tests/test_g1a_scene_memory_address.py",
+    "tests/test_cto_mcp_contract.py (registry contract; TOOL_DEFS grew to 129)",
+    "tests/test_history_bridge.py",
+    "tests/test_w2s1_doctor_offmain.py",
+    "-> 199 passed, 12 skipped",
+    "SENSITIVE-SURFACE AUDIT (all present in the original tip 72de0881, none introduced by the rebase): rbac.py adds 'layout_network' to _ARTIST_COMMANDS (RBAC gate list); handlers.py _do_log now hops run_on_main('memory:automatic_action') for the memory log and wraps it in try/except; handlers_memory.py adds _memory_on_main; session_journal.py hops run_on_main for hou.hipFile.path; handlers_network_layout.py runs apply_layout under run_on_main(timeout=_SLOW_TIMEOUT) inside `native.undos.group(...)` and refuses when undos are disabled. run_on_main has a same-thread short-circuit at python/synapse/server/main_thread.py:484 (`threading.current_thread().ident == _MAIN_THREAD_ID`), so the new from-main calls cannot self-deadlock. No VERSION, harness/state, .claude, or settings files touched.",
+    "NOT CHECKED (say so): memory/store.py rewrite body, host/memory_lifecycle.py (+394), server/network_layout.py planner, scripts/probe_network_layout.py -- only grepped for hou./undo/thread/file-write lines, not read line-by-line; hython seat suite and `hython scripts/probe_network_layout.py` not run (live H22 undo/artist-box contract unproven here, as the builder admitted); full `pytest tests/` not run per LAW; CI not run; PLAN.md/verdicts.json not opened (call budget) so whether the plan pre-authorized this branch's gate/thread/undo content is taken from the closeout ruling, not re-derived here. Tool-call budget: 14 Bash calls issued (4 refused by the worktree guard for shell substitutions, 10 executed) plus this report."
+   ]
+  },
+  "repaired": false
+ },
+ {
+  "key": "cache-insert",
+  "branch": "rebase/cache-insert",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "d5ad587fd5fca1c68fae99a00d9aa7a48d21ca1d",
+  "pr_title": "feat(cache): synapse_insert_cache - undoable boundary insertion via Review gate, decision-ID bound, live undo assay (repair round: receipt hygiene, failure-path assay, rebased)",
+  "ruling_needed": "Keep or strip the Houdini install path (`C:\\Program Files\\...\\hython.exe`, from sys.executable, same convention as the sibling contract-assay receipt) in the receipt's `command` field - it is not a user path and passes the mandated /Users/ scan.",
+  "diff_stat": " CLAUDE.md                                          |   2 +-\n README.md                                          |   2 +-\n harness/notes/cache_h22_insert_assay_22.0.400.json |  63 +++\n mcp_tools_scene.py                                 |   2 +\n python/synapse/mcp/_tool_registry.py               |  24 +\n python/synapse/panel/bridge_adapter.py             |   5 +\n python/synapse/server/handlers.py                  |   6 +\n python/synapse/server/handlers_cache.py            | 510 +++++++++++++++++++-\n python/synapse/server/rbac.py                      |   3 +\n tests/assay_h22_cache_insert.py                    | 431 +++++++++++++++++\n tests/test_cache_insert_gates.py                   | 533 +++++++++++++++++++++\n 11 files changed, 1567 insertions(+), 14 deletions(-)",
+  "tests": [
+   {
+    "cmd": "python -m pytest tests/test_cache_insert_gates.py tests/test_cache_assess_tool.py tests/test_phase0c_doc1_toolcount.py tests/test_activity_labels.py -q -p no:cacheprovider",
+    "summary": "89 passed, 2 warnings in 1.09s"
+   },
+   {
+    "cmd": "python -c \"import sys; sys.path.insert(0,'python'); import synapse.mcp._tool_registry as reg; print(reg.__file__); print(len(reg.TOOL_DEFS))\"",
+    "summary": "<worktree>/python/synapse/mcp/_tool_registry.py ; 129 (CLAUDE.md:3 and README.md:128 both say 129; pinned by test_phase0c_doc1_toolcount.py above)"
+   },
+   {
+    "cmd": "python -m pytest tests/test_rbac.py tests/test_cto_mcp_contract.py tests/test_parity_promotions.py tests/test_mcp_protocol.py tests/test_f6_hygiene.py tests/test_panel_preflight.py tests/test_panel_preflight_h7_guard.py tests/test_live_integrity_envelope.py tests/test_studio_integration.py tests/test_phase0b_consent_posture.py -q -p no:cacheprovider",
+    "summary": "251 passed, 1 skipped, 2 warnings in 3.32s"
+   },
+   {
+    "cmd": "\"C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe\" tests/assay_h22_cache_insert.py --out harness/notes/cache_h22_insert_assay_22.0.400.json  (run from the rebased worktree at 255d61fb, i.e. HEAD before the receipt-amend)",
+    "summary": "CACHE_H22_INSERT_ASSAY build=22.0.400 status=pass; items 1-8 all [pass] (7-8 = the new FAILURE PATH items); exit 0"
+   },
+   {
+    "cmd": "grep -nEi '/Users/|\\\\Users\\\\|worktrees' harness/notes/cache_h22_insert_assay_22.0.400.json ; git show HEAD:harness/notes/cache_h22_insert_assay_22.0.400.json | grep -cE '/Users/'",
+    "summary": "NO_LEAK on the working file; 0 matches in the committed blob"
+   },
+   {
+    "cmd": "python sha256 compare of tests/assay_h22_cache_insert.py + python/synapse/server/handlers_cache.py vs receipt.certifies",
+    "summary": "script_sha_matches True ; handlers_sha_matches True (0d48d8c3... / dd5cb417...)"
+   },
+   {
+    "cmd": "git diff master..HEAD > full.diff ; grep '^+' full.diff | grep -Ei '/Users/|\\\\Users\\\\|worktrees/'",
+    "summary": "1732-line diff read end to end via Read (two pages); NO_USER_PATH_IN_ADDED_LINES"
+   },
+   {
+    "cmd": "git range-diff 206947a6~1..206947a6 HEAD~1..HEAD | head -40",
+    "summary": "1: 206947a6 ! 1: d5ad587f -- same subject; message gains the repair-round body; CLAUDE.md count context 124->125 became 128->129 (rebase context). Only the first 40 lines were viewed."
+   },
+   {
+    "cmd": "git log master..HEAD --oneline ; git merge-base master HEAD ; git status --short",
+    "summary": "exactly one commit d5ad587f; merge-base = 841f742e (current master tip); working tree clean"
+   }
+  ],
+  "refuter": {
+   "ok": false,
+   "blockers": [
+    "PATH LEAK in a committed receipt (public repo): harness/notes/cache_h22_insert_assay_22.0.400.json item 5 detail contains the local user path `C:/Users/User/Synapse/.claude/worktrees/cache-ins/cache/src_box/src_box.0001.bgeo.sc` (diff line 658; matched by the `/Users/` pattern of the mandated scan). The producer is tests/assay_h22_cache_insert.py lines ~1521-1525 of the diff (`resolved_file = cache_node.parm(\"file\").eval()` expands $HIP to the absolute worktree path and writes it into the receipt). Same path also proves the receipt was generated in the pre-rebase `cache-ins` worktree, i.e. it does not certify the rebased code (builder admitted the assay was not re-run)."
+   ],
+   "secret_scan": "git diff master..HEAD | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\Users|/Users/\" -> 5 hits. 4 are false positives: the substring 'sk-' inside 'disk-write' / 'disk-writing' at diff lines 732, 1677, 1767, 1817 (comments/docstrings). 1 is REAL: diff line 658, harness/notes/cache_h22_insert_assay_22.0.400.json item 5 detail = \"resolved file='C:/Users/User/Synapse/.claude/worktrees/cache-ins/cache/src_box/src_box.0001.bgeo.sc'\" -- a local user home path committed to a public-origin repo. No keys, tokens or private-key blocks found. The receipt's 'command' field embeds 'C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe' (install path, not a user path; not flagged).",
+   "composed": [
+    "tests/test_rbac.py (75 tests) -- adjacent to the rbac.py _ARTIST_COMMANDS drift; green",
+    "tests/test_mcp_protocol.py (93) -- adjacent to the _tool_registry.py TOOL_DEFS addition; green",
+    "tests/test_live_integrity_envelope.py (40) -- the live mutation envelope insert_cache now takes (absent from _READ_ONLY_COMMANDS); green",
+    "tests/test_panel_preflight.py + tests/test_panel_preflight_h7_guard.py (22) -- bridge_adapter._TOOL_TO_OPERATION consumers; green",
+    "tests/test_phase0b_consent_posture.py (2), tests/test_parity_promotions.py (4), tests/test_f6_hygiene.py (6), tests/test_studio_integration.py (9); green",
+    "tests/test_cto_mcp_contract.py -- module skipped (1 skipped), so it proves nothing here",
+    "NOT run (LAW): full pytest tests/, hython seat suite",
+    "NOT run (sandbox refused the combined command, call budget exhausted): the live hython assay tests/assay_h22_cache_insert.py on 22.0.400 against the rebased code; recompute of the receipt's blake2b; sed of shared/bridge.py:764-770 to confirm the ':767' citation. Treat all three as UNVERIFIED."
+   ]
+  },
+  "repaired": true
+ },
+ {
+  "key": "m2-pgdrm",
+  "branch": "rebase/m2-pgdrm",
+  "status": "PARTIAL",
+  "ok_to_open_pr": false,
+  "head_sha": "63c06d2e69502b77b8d14ef02c4d675340237401",
+  "pr_title": "loop(pgdrm): M2 PG-DRM kernel rebased on master + one-shot-iterable REFUSAL (GATED on PLAN Stop 4 decision #1)",
+  "ruling_needed": "PLAN Stop 4 decision #1 (PLAN.md:465) \u2014 MERGE or HOLD the zero-producer/zero-consumer kernel; no ruling is recorded anywhere in the tree, so the PR must not be opened yet. On MERGE, a human also moves the ref (`git branch -f rebase/m2-pgdrm 63c06d2e` after removing worktree wf_4ef50c87-4e2-3, or push `63c06d2e:refs/heads/rebase/m2-pgdrm`) \u2014 this worktree could not touch the branch because it is checked out in 4e2-3.",
+  "diff_stat": " python/synapse/loop/pgdrm.py | 409 +++++++++++++++++++++++++\n tests/test_pgdrm_kernel.py   | 693 +++++++++++++++++++++++++++++++++++++++++++\n 2 files changed, 1102 insertions(+)",
+  "tests": [
+   {
+    "cmd": "python -m pytest tests/test_pgdrm_kernel.py -q -p no:cacheprovider   (worktree root; Python 3.14.2, pytest 8.4.2; MONETA_SRC and PXR_PLUGINPATH_NAME confirmed unset via env grep)",
+    "summary": "86 passed, 2 warnings in 0.47s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_loop_contracts.py -q -p no:cacheprovider   (refuter's composed-regression file; :183-184 pins MemoryPort().query_and_filter UNAVAILABLE naming PG-DRM)",
+    "summary": "20 passed, 2 warnings in 0.37s"
+   },
+   {
+    "cmd": "git ls-remote --heads origin rebase/m2-pgdrm",
+    "summary": "empty output, exit 0 \u2014 branch is NOT on origin, so the amend was permissible (no force-push decision needed)"
+   },
+   {
+    "cmd": "git commit --amend --no-edit -F msg.txt -q && git rev-parse HEAD   (detached at 52b4b86f; msg.txt written by the Write tool, deleted after)",
+    "summary": "63c06d2e69502b77b8d14ef02c4d675340237401; subject = fix(pgdrm): REFUSE one-shot iterables; cover the str/Iterable guards the crucible left untested"
+   },
+   {
+    "cmd": "git rev-parse 'HEAD^{tree}' ; git rev-parse '52b4b86f^{tree}'",
+    "summary": "1cc896a3e45b0dce6d7c41ecbb8fe7d8c31e2c59 for both \u2014 message-only amend, content byte-identical"
+   },
+   {
+    "cmd": "git merge-tree --write-tree master 52b4b86fe0ed0d705642fee5f3e6d4bf96f374e8 ; git merge-tree --write-tree master HEAD",
+    "summary": "212ab4a383d74229f1b2921792428beba5f8ba73 both times, exit 0 \u2014 clean merge, no conflict block"
+   },
+   {
+    "cmd": "git diff --stat master...HEAD ; git log master..HEAD --oneline",
+    "summary": "2 files changed, 1102 insertions(+); two commits (63c06d2e, dabf9a68); master = 329bd5b3"
+   },
+   {
+    "cmd": "git diff --name-only master...HEAD | grep -nE '^(VERSION|harness/state/|\\.claude/|CLAUDE\\.md|README\\.md|python/synapse/core/gates|python/synapse/server/)'",
+    "summary": "no match, grep exit 1 \u2014 no forbidden path touched; only python/synapse/loop/pgdrm.py and tests/test_pgdrm_kernel.py"
+   },
+   {
+    "cmd": "grep -rniE 'decision #1|\u00a72\\.3|2\\.3 question|ruling.*(MERGE|HOLD)|(MERGE|HOLD).*ruling|pgdrm.*(HOLD|MERGE)|(HOLD|MERGE).*pgdrm' harness/notes/closeout-2026-09-15/ harness/notes/first-principles-2026-09-15/ ; ls both dirs",
+    "summary": "only the QUESTION exists \u2014 PLAN.md:133 ('Do not start this stop until the \u00a72.3 question is answered'), PLAN.md:465 (decision #1 MERGE / HOLD), closeout-deck.html:384/589 ('gated on a ruling'). No answer, no RULINGS file (dirs hold PLAN.md, artist_findings.json, closeout-deck.html, verdicts.json / AUDIT.md, verdicts.json)"
+   },
+   {
+    "cmd": "git show 52b4b86f | grep -nE '^\\+.*(_reiterable|TypeError|X23|X25|one.shot|generator)' ; git show 52b4b86f | grep -nE '^-[^-]' ; git show dabf9a68:python/synapse/loop/pgdrm.py | sed -n '201p;231p;263p'",
+    "summary": "the repair commit introduces _reiterable (pgdrm.py:234-245, called at :255 via _token_set and :387 on records), MemoryRecord.__post_init__ freeze (:184), and tests for X17/X18/X19/X23/X25 + the MemoryRecord guard; single removed line = `for r in records` genexp. e4730869 lines 201/231/263 = the _token_set str guard raise, the decay overflow branch `raw = 0.0 if (lam > 0.0 and age > 0.0) else 1.0`, and the evaluate MemoryRecord guard raise \u2014 every claim in the new message is backed"
+   },
+   {
+    "cmd": "git status --short   (after rm msg.txt, on rebase/m2-pgdrm-reworded)",
+    "summary": "empty \u2014 working tree clean"
+   }
+  ],
+  "refuter": {
+   "ok": false,
+   "blockers": [
+    "PLAN Stop 4 (harness/notes/closeout-2026-09-15/PLAN.md:129-133, decision #1 at :465) says 'Do not start this stop until the \u00a72.3 question is answered' \u2014 MERGE / HOLD on a kernel with zero producers and zero consumers. I found no record that the ruling was answered; the builder's READY status does not cite one. This is a human gate, not a code defect.",
+    "Commit 52b4b86f's message ('commit the M2 kernel repair that sat uncommitted in the worktree') does not meet PLAN Stop 4's stated requirement (PLAN.md:143 'The commit message must say REFUSED'; verdicts.json action step 3 'msg names defect 1 (one-shot iterables refused) + defect 2 (lines 201/231/263 covered)'). It names neither defect and omits the API-contract change (generators to evaluate()/filter_records()/MemoryRecord(tokens=) now raise TypeError). The builder admits this in its own unverified list. Origin is PUBLIC; the next reader inherits this message."
+   ],
+   "secret_scan": "`git diff master...HEAD | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\\\\\Users|/Users/\"` \u2192 exactly one hit, line 166: `+        The exact task-scope tokens this record was deposited under. Empty` \u2014 the `sk-` pattern matching inside the word \"ta**sk-**scope\" in a docstring. False positive; no key, token, or user path in the diff. (The `C:\\Users\\User\\synapse-m2-pgdrm-wt` paths in harness/memory/runs/2026-08-22/m2fix_mutate_harness.py are already on master and not part of this diff.)",
+   "composed": [
+    "tests/test_loop_contracts.py \u2014 20 passed. It pins the same `ports.MemoryPort().query_and_filter([...],[...]).status == 'UNAVAILABLE'` assertion (lines 183-184) that test_pgdrm_kernel.py:98-99 makes, so the branch adds no environment exposure master does not already carry; whether a provisioned seat (MONETA_SRC + PXR_PLUGINPATH_NAME) flips both red is UNVERIFIED here (not measured, same as the builder).",
+    "Read python/synapse/loop/pgdrm.py in full (409 lines) and tests/test_pgdrm_kernel.py in full (693 lines): pure module (imports only __future__/math/dataclasses/typing, pinned by AST test), no hou/ports import, verdict vocabulary ALLOW/DROP only, precedence contamination > distance > decay, inf/NaN guarded, bool rejected as number, one-shot iterators refused at all three entry points. No behavioral defect found beyond the frozen-dataclass-with-dict nit.",
+    "python/synapse/loop/__init__.py: no `__all__`/enumeration, so adding pgdrm.py changes nothing at import time; `grep -rn pgdrm python/ tests/ harness/` \u2014 the only importer is tests/test_pgdrm_kernel.py; two harness mutation scripts reference the file by a hardcoded foreign worktree path only.",
+    "NOT checked: the +326/-1 repair commit line-by-line against the original uncommitted worktree diff (the mem/m2-pgdrm worktree lives outside my tree and the patch-id comparison command was refused by the worktree guard); the 28-mutation harness on the rebased tree (hardcodes C:\\Users\\User\\synapse-m2-pgdrm-wt); Python 3.13 / hython 22.0.400 behavior; full suite / fresh floor (forbidden for this pass)."
+   ]
+  },
+  "repaired": true
+ },
+ {
+  "key": "cto-render",
+  "branch": "rebase/cto-render",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "d024641ea4ff5b009fd06dd99d7dfb8abd8ef1e2",
+  "pr_title": "feat(farm): durable TOPs render jobs, artist render workspace and TRIAGE FARM research docs (rebase/cto-render)",
+  "ruling_needed": "Accept `_MCPLocalClient.available` (tool_executor.py:210-216) as a documented-but-unpinned third behaviour, or require a pin test / master's `return port is not None` before merge.",
+  "diff_stat": "47 files changed, 6492 insertions(+), 41 deletions(-)  (git diff --stat master..HEAD after rebase; the 702 master-side deletions the refuter saw are gone). Repair commit alone: docs/tops/TRIAGE_FARM_BLUEPRINT.md 12 (+6/-6), TRIAGE_FARM_COFFEE_TALK.md 6 (+3/-3), TRIAGE_FARM_MIGRATION.md 20 (+10/-10), tests/test_loop_mcp_observation.py 19 (+17/-2); 4 files, 36 insertions(+), 21 deletions(-)",
+  "tests": [
+   {
+    "cmd": "python -m pytest tests/test_loop_mcp_observation.py -q -p no:cacheprovider -x --tb=short -k test_disabled_loop_dispatches_without_substrate  (on a16e34ca, before any fix)",
+    "summary": "1 failed -- NameError: name 'is_farm_control' is not defined (reproduces the refuter's blocker; source is python/synapse/mcp/server.py:45 module-level import read at :653/:698, not tool_executor.py)"
+   },
+   {
+    "cmd": "python -m pytest tests/test_loop_mcp_observation.py tests/test_loop_hweb_dispatch.py tests/test_offmain_fallback.py -q -p no:cacheprovider  (after seeding is_farm_control only)",
+    "summary": "6 failed, 21 passed -- next stripped name: SynapseServiceError (handlers.py:43, caught at :586)"
+   },
+   {
+    "cmd": "same three files, after seeding SynapseServiceError",
+    "summary": "6 failed, 21 passed -- next stripped name: FARM_CONTROL_COMMANDS (handlers.py:52, read at :523/:609)"
+   },
+   {
+    "cmd": "same three files, after seeding FARM_CONTROL_COMMANDS/FARM_READ_COMMANDS + AST free-name audit of handle() and _handle_tools_call()",
+    "summary": "27 passed, 2 warnings in 1.40s; audit: handle() free names not seeded = []; _handle_tools_call unseeded = SSE_*/stall_state/probe_main_thread/_dispatch_doctor_off_main (all behind _STALL_DETECT_AVAILABLE=False / SSE branches, unreached on master's 14-pass baseline too)"
+   },
+   {
+    "cmd": "python -c \"import sys; sys.path.insert(0,'python'); from synapse.mcp._tool_registry import TOOL_DEFS; print(len(TOOL_DEFS))\"  (worktree root)",
+    "summary": "135"
+   },
+   {
+    "cmd": "python -m pytest tests/test_phase0c_doc1_toolcount.py tests/test_farm_integration.py -q -p no:cacheprovider",
+    "summary": "69 passed, 2 warnings in 0.81s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_farm_backend.py tests/test_farm_core.py tests/test_farm_recovery.py tests/test_farm_usd_settings.py tests/test_panel_sweep_b_widgets.py tests/test_render_workspace.py tests/test_loop_hweb_dispatch.py tests/test_loop_mcp_observation.py tests/test_offmain_fallback.py -q --no-header -p no:cacheprovider -rfE  (branch-touched pytest files; substitute for the builder's unrecorded 23-file batches)",
+    "summary": "231 passed, 6 skipped, 2 warnings in 10.00s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_activity_labels.py tests/test_rbac.py tests/test_mcp_protocol.py tests/test_panel_sweep_b_widgets.py tests/test_panel_sweep_b_hex.py tests/test_websocket_cancel_reachable.py tests/test_solaris_tool_registration.py tests/test_loop_mcp_observation.py tests/test_panel_consent_no_freeze.py tests/test_worker_policy_demo.py tests/test_f6_hygiene.py tests/test_m1_truth_contract.py tests/test_compose_offmain_wp3.py tests/test_undob_live_undo_grouping.py tests/test_m2_display_policy.py tests/test_pipeline_efficiency.py tests/test_parity_promotions.py tests/test_sessions.py -q --no-header -p no:cacheprovider -rfE  (refuter's composed batch)",
+    "summary": "549 passed, 6 skipped, 2 warnings in 6.61s"
+   },
+   {
+    "cmd": "python -m pytest <33 files matching grep -lE 'tool_executor|hwebserver_adapter|bridge_adapter|_execute_single' tests/test_*.py> -q --no-header -p no:cacheprovider -rfE  (the refuter's exec-rig sweep: test_cache_assess_tool, test_compose_offmain_wp3, test_cto_mcp_contract, test_f3_emergency_net, test_f6_hygiene, test_farm_integration, test_history_bridge, test_hwebserver_integration, test_live_integrity_envelope, test_loop_hweb_dispatch, test_loop_mcp_observation, test_m3_logs_doctor, test_mcp_protocol, test_offmain_fallback, test_panel_consent_no_freeze, test_panel_preflight, test_panel_preflight_h7_guard, test_panel_reload_memory_owner, test_panel_worker_ownership, test_parity_promotions, test_phase0c_sec0_hwebserver_os, test_r306_reduced_mode_surfacing, test_r_track, test_result_telemetry, test_retry_breaker, test_s_track, test_set_usd_primvar, test_sleep_pass_gate, test_start_hwebserver_durable_ref, test_timeouts_c7, test_v2_instantiate_gate, test_v5_features, test_worker_tool_policy)",
+    "summary": "810 passed, 7 skipped, 2 warnings in 14.32s -- no other rig has the same hole"
+   },
+   {
+    "cmd": "python -m pytest tests/test_loop_mcp_observation.py tests/test_loop_hweb_dispatch.py tests/test_offmain_fallback.py tests/test_farm_integration.py tests/test_phase0c_doc1_toolcount.py -q --no-header -p no:cacheprovider  (on d024641e, after rebase onto master)",
+    "summary": "96 passed, 2 warnings in 2.29s"
+   },
+   {
+    "cmd": "git checkout -q --detach master; python -m pytest tests/test_loop_mcp_observation.py -q --no-header -p no:cacheprovider  (baseline on master's tip at run time = 5ec9c6cd; see note on master moving)",
+    "summary": "14 passed, 2 warnings in 0.88s"
+   },
+   {
+    "cmd": "git rebase master",
+    "summary": "Rebasing (1/10)..(10/10) Successfully rebased and updated refs/heads/rebase/cto-render -- zero conflicts"
+   },
+   {
+    "cmd": "git merge-tree --write-tree --name-only master HEAD  (pre-rebase, on a16e34ca vs 841f742e)",
+    "summary": "6a818189abc54849f97bfb44b578e89eb8d047a9 -- clean tree, no conflicted paths listed"
+   },
+   {
+    "cmd": "git diff master..HEAD | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\\\\\Users|/Users/\"  (post-commit, post-rebase)",
+    "summary": "no output -- zero hits, including zero master-side '-' lines now that the branch sits on current master"
+   },
+   {
+    "cmd": "python: residual scan of docs/tops/*.md for markdown links whose target starts with a drive letter or /Users/",
+    "summary": "residual local-drive link targets: none; 9 + 3 + 2 targeted edits applied with exactly-one-hit assertions, plus 17 G:/ links regex-converted to inline code in TRIAGE_FARM_MIGRATION.md (19 total with the two on line 11)"
+   },
+   {
+    "cmd": "git diff --name-only master..HEAD | grep -nE '^VERSION$|^harness/state/|^\\.claude/|settings'",
+    "summary": "one hit: tests/test_farm_usd_settings.py -- the regex matching 'usd_settings' in a test filename, not a settings/config file; VERSION, harness/state/, .claude/ untouched"
+   },
+   {
+    "cmd": "git diff master..HEAD -- 'python/*' | grep -nE '^\\+.*(hou\\.undos|HumanGate|GateLevel|threading\\.Thread|run_on_main|executeInMainThread|subprocess\\.Popen)'",
+    "summary": "4 hits, all pre-existing farm feature content (not this repair round): subprocess.Popen at diff lines 141 and 699 (farm backend/native driver spawning owned Houdini processes), run_on_main import + call at 3500/3523 (farm_inspect marshalled to main, timeout=5.0)"
+   },
+   {
+    "cmd": "git diff --stat master...b07eaa40 -- python/synapse/panel/tool_executor.py python/synapse/server/hwebserver_adapter.py ; git diff --stat b07eaa40...master -- (same)",
+    "summary": "original tip vs merge-base: tool_executor.py +44/-8ish (51 ins / 8 del over both files); master since merge-base: tool_executor.py 122 lines, hwebserver_adapter.py 21 lines (102 ins / 41 del). Stat-level only; line-level three-way review not done this round"
+   }
+  ],
+  "refuter": {
+   "ok": false,
+   "blockers": [
+    "COMPOSED REGRESSION (branch-induced): tests/test_loop_mcp_observation.py -> 9 failed, 5 passed on a16e34ca (`NameError: name 'is_farm_control' is not defined`, e.g. test_disabled_loop_dispatches_without_substrate, test_second_mcp_action_gets_its_own_observation, test_import_failure_after_operation_entry_never_replays); the SAME file on master 841f742e -> 14 passed. The branch did not touch this test. Cause: the rig at tests/test_loop_mcp_observation.py:92 stubs sys.modules['synapse.panel.bridge_adapter'] with SimpleNamespace(execute_through_bridge=..., is_read_only=...) only; python/synapse/panel/tool_executor.py:630-633 now does `from synapse.panel.bridge_adapter import (execute_through_bridge, is_read_only, execute_farm_control, is_farm_control,)` and then calls is_farm_control unconditionally, so every non-farm dispatch under that rig breaks. Same bug-class the builder fixed in tests/test_loop_hweb_dispatch.py (a16e34ca) -- the neighbouring rig was not audited.",
+    "PUBLIC-REPO PATH LEAK (task scan rule: any hit blocks): `git diff master..HEAD | grep -nE \"...|/Users/\"` hits 10 ADDED lines carrying `C:/Users/User/OneDrive/Documents/ChatGPT/SYNAPSE_Refactor/...` and `C:/Users/User/OneDrive/Documents/houdini22.0/python_panels/tops_farm.pypanel` link targets: docs/tops/TRIAGE_FARM_BLUEPRINT.md:33,76,86,126,208,210; docs/tops/TRIAGE_FARM_COFFEE_TALK.md:13,15,45; docs/tops/TRIAGE_FARM_MIGRATION.md:9. Also local-drive links `G:/KARMA_TRIAGE_FARM/...` at TRIAGE_FARM_MIGRATION.md:11,23 and ARTIST_RENDER_IMPLEMENTATION.md:54. (The one `C:\\Users` backslash hit, diff line 1255, is a master-side `-` line from harness/notes/release-5.70.1 -- not branch content.)"
+   ],
+   "secret_scan": "`git diff master..HEAD | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\Users|/Users/\"` -> exit 0 (HITS). No credential patterns (sk-/AKIA/ghp_/xox/PRIVATE KEY: none). 10 ADDED lines match `/Users/`: absolute `C:/Users/User/OneDrive/Documents/ChatGPT/SYNAPSE_Refactor/...` and `C:/Users/User/OneDrive/Documents/houdini22.0/python_panels/tops_farm.pypanel` link targets in docs/tops/TRIAGE_FARM_BLUEPRINT.md (33,76,86,126,208,210), TRIAGE_FARM_COFFEE_TALK.md (13,15,45), TRIAGE_FARM_MIGRATION.md (9); plus `G:/KARMA_TRIAGE_FARM` local-drive links (MIGRATION.md:11,23; ARTIST_RENDER_IMPLEMENTATION.md:54). The single backslash `C:\\Users` hit (diff line 1255) is a master-side `-` line (harness/notes/release-5.70.1, deleted only because master moved past the base) -- not branch content. BLOCKS per the task rule (public origin).",
+   "composed": [
+    "tests/test_loop_mcp_observation.py (FAILS 9/14 on branch, 14/14 on master -- the refuting file)",
+    "tests/test_activity_labels.py (pass; PLAN Stop-5 blocker 3 'no synapse_farm_* labels' does not trip this test)",
+    "tests/test_rbac.py (pass; rbac.py +2)",
+    "tests/test_mcp_protocol.py (pass; registry/server touched)",
+    "tests/test_panel_sweep_b_widgets.py (pass; branch MODIFIED this test but never ran it)",
+    "tests/test_panel_sweep_b_hex.py (pass; qss.py +28)",
+    "tests/test_websocket_cancel_reachable.py (pass; websocket.py +26)",
+    "tests/test_solaris_tool_registration.py (pass)",
+    "tests/test_panel_consent_no_freeze.py (pass)",
+    "tests/test_worker_policy_demo.py (pass)",
+    "tests/test_f6_hygiene.py (pass)",
+    "tests/test_m1_truth_contract.py (pass)",
+    "tests/test_compose_offmain_wp3.py (pass)",
+    "tests/test_undob_live_undo_grouping.py (pass)",
+    "tests/test_m2_display_policy.py (pass)",
+    "tests/test_pipeline_efficiency.py (pass)",
+    "tests/test_parity_promotions.py (pass)",
+    "tests/test_sessions.py (pass)",
+    "NOT CHECKED: hython 22.0.400 import probe (not re-run), Qt/panel offscreen behaviour, full `pytest tests/` and the hython seat suite (shared-log law), tests/native_render_workspace.py (uncollected by design), the remaining ~45 candidate files from the module-reference grep (tests/test_tops.py, test_cops.py, test_studio_integration.py, test_port_wave_scene1.py, test_r306_reduced_mode_surfacing.py, test_blocks_seam.py, ...), and the full text of the 6 new docs/tops files beyond the path scan."
+   ]
+  },
+  "repaired": true
+ },
+ {
+  "key": "bp2-nits",
+  "branch": "salvage/bp2-nits",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "84354f855d39c14788cda0af79685a65d42f2baf",
+  "pr_title": "salvage(bp2-nits): repair the FU-1/FU-2 test-pin citations; scope the METER dry-run proof",
+  "ruling_needed": "Advance salvage/bp2-nits to 84354f85 (strict 2-commit fast-forward; `git branch -f salvage/bp2-nits salvage/bp2-nits-repair` once worktree wf_4ef50c87-4e2-5 releases it) or merge salvage/bp2-nits-repair in its place -- git refused to move the ref from this worktree.",
+  "diff_stat": "repair commits only (salvage/bp2-nits..HEAD): docs/MONETA_FOLLOWUPS.md | 12 +++++++-----  harness/battleplan/runs/2026-09-01/prove_bp2_meter_dryrun.ps1 | 5 +++++  (2 files, 12 insertions, 5 deletions)\nwhole branch (merge-base d8ebb74a..HEAD, 7 commits): docs/BATTLEPLAN.md | 8 ++++----  docs/MONETA_FOLLOWUPS.md | 20 ++++++++++++++++----  harness/battleplan/runs/2026-09-01/prove_bp2_meter_dryrun.ps1 | 9 +++++++--  (3 files, 27 insertions, 10 deletions)",
+  "tests": [
+   {
+    "cmd": "python -m pytest \"tests/test_moneta_crucible.py::test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone\" tests/test_phase0c_doc1_toolcount.py -q -p no:cacheprovider",
+    "summary": "29 passed, 2 warnings in 0.96s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_bp2_meter_tier.py tests/test_moneta_crucible.py tests/test_memory_recall_honesty.py tests/test_memory_models.py -q -p no:cacheprovider",
+    "summary": "49 passed, 2 warnings in 4.01s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_sleep_pass_gate.py -q -p no:cacheprovider",
+    "summary": "7 passed, 2 warnings in 0.57s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_sleep_pass_gate.py tests/test_memory_models.py tests/test_moneta_crucible.py -q -p no:cacheprovider",
+    "summary": "43 passed, 2 warnings in 3.75s (the refuter's required re-run, after the doc edits)"
+   },
+   {
+    "cmd": "pwsh: [System.Management.Automation.Language.Parser]::ParseFile(prove_bp2_meter_dryrun.ps1)",
+    "summary": "parse errors: 0 (comment-only edit; script not executed)"
+   },
+   {
+    "cmd": "grep -cE MonetaBackedStore tests/test_memory_models.py ; grep -nE '^def test_' tests/test_memory_models.py tests/test_sleep_pass_gate.py ; grep -nE 'count\\(\\) *== *len' tests/test_moneta_crucible.py",
+    "summary": "0 MonetaBackedStore hits; sleep-pass pins at L35/L43/L53 confirmed; test_defaulted_created_at_participates_in_id at test_memory_models.py:22; the assert `s.count() == len(s.all()) == 2` is at test_moneta_crucible.py:257 (L244 is the def line)"
+   },
+   {
+    "cmd": "git diff salvage/bp2-nits..HEAD | grep '^+' | grep -Ei 'C:\\\\Users|C:/Users|api[_-]?key|secret|token'",
+    "summary": "no hits (rc=1) -- repair commits add no absolute paths or secrets"
+   }
+  ],
+  "refuter": {
+   "ok": false,
+   "blockers": [
+    "docs/MONETA_FOLLOWUPS.md FU-2 test pins cite the wrong file. Branch lines 87-90 say gate rejection blocks prune is 'verified in tests/test_memory_models.py MonetaBackedStore tests' and the status table row (line 149) says 'test_memory_models.py (gate rejection blocks prune)'. Evidence: `grep -cE MonetaBackedStore tests/test_memory_models.py` -> 0; `grep -nE 'count\\(\\)|sleep_pass|prune|reject' tests/test_memory_models.py` -> no lines; the only tests in that file are test_defaulted_created_at_participates_in_id / test_explicit_created_at_participates_in_id / test_same_content_same_second_still_collides / test_explicit_id_is_never_regenerated / test_legacy_mem_id_round_trips_and_format_unchanged. The real pins live in tests/test_sleep_pass_gate.py (added by the same commit 3c4f07f9): ::test_sleep_pass_constant_is_approve (L35, OPERATION_GATES['sleep_pass']=='approve'), ::test_tool_maps_to_sleep_pass_operation (L43, bridge_adapter map), ::test_rejecting_gate_blocks_the_prune (L53). A 'mark DONE with test pins' commit whose pin points at a file containing none of the pins is exactly the evidence-path class this salvage exists to fix.",
+    "docs/MONETA_FOLLOWUPS.md FU-1 status paragraph (branch lines 52-54) claims a 'MonetaBackedStore count()==len(all()) assertion in tests/test_memory_models.py'. That assertion is at tests/test_moneta_crucible.py:244 (BP2-STORE.json:16: 's.count()==len(s.all())==2'); tests/test_memory_models.py has no count(), no .all(, no MonetaBackedStore (same greps as above). The primary test name in the sentence and in the table row 148 is correct; only the parenthetical location is false. The builder's 95bb1819 'fix the two citations' corrected the FU-1 test NAME and .json->.jsonl but left both of these file citations wrong."
+   ],
+   "secret_scan": "git diff master..salvage/bp2-nits | grep -nE \\\"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\\\\\Users|/Users/\\\" -> NO HITS. Forbidden-scope check (`git diff --name-only master..salvage/bp2-nits | grep -E '^(VERSION|harness/state/|\\\\.claude/|CLAUDE\\\\.md|README\\\\.md)'`) -> none touched, so the tool-count literal rule does not apply (CLAUDE.md:3 / README.md:121 unchanged; tests/test_phase0c_doc1_toolcount.py still run and green as part of the 29). Note: `git diff --stat master..salvage/bp2-nits` shows a 585-line 'deletion' of harness/design_review/2026-09-14/RULINGS-OPEN.md -- that is master moving (329bd5b3) after the branch point, not a branch deletion; `git diff --stat master~1..salvage/bp2-nits` is exactly the builder's 3 files, +20/-10.",
+   "composed": [
+    "tests/test_bp2_meter_tier.py (references docs/BATTLEPLAN.md sec.6 anchor) -- green",
+    "tests/test_moneta_crucible.py full file (docstring at :247 cites MONETA_FOLLOWUPS FU-1) -- green",
+    "tests/test_memory_recall_honesty.py (BATTLEPLAN \u00a75 goalpost) -- green",
+    "tests/test_memory_models.py (the file the doc cites as FU-1/FU-2 pin; proves it holds only the 5 id-generation tests, none of the cited assertions) -- green",
+    "tests/test_sleep_pass_gate.py (the real FU-2 pin) -- 7 passed",
+    "Cited SHAs verified in master: 3c4f07f9 (FU-1+FU-2 PR #16; touches models.py __post_init__ ordering created_at-before-id, handlers_memory _handle_sleep_pass, shared/constants.py 'sleep_pass': 'approve' at L100, bridge_adapter map at L147), 7fc09482 is the first parent of 1c2b78fd (BP2-METER, which added orchestrate.ps1 +110 and the prove script), 882eec6b is in master and touches orchestrate.ps1 after the pin",
+    "All four BATTLEPLAN evidence paths exist in the tree: memory_latency_hython_provisioned.jsonl (3035 B), profile_diff.json (10964 B), ledger_bp2-meter-settle.json (1344 B), harness/notes/receipts/BP2-STORE.json (7726 B); tests/test_moneta_crucible.py:244 is the cited def",
+    "NOT checked: prove_bp2_meter_dryrun.ps1 was not executed (would spawn orchestrate.ps1 dry runs; builder also did not run it); whether execute_through_bridge actually fires the APPROVE gate on the live /synapse path for sleep_pass was not traced beyond the handler docstring + test_sleep_pass_gate.py; full pytest suite and hython seat suite not run (by law)."
+   ]
+  },
+  "repaired": true
+ },
+ {
+  "key": "rope-gate-a",
+  "branch": "salvage/rope-gate-a",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "7a81a7f10d2de91b6e286f51b2f19221f50da8c3",
+  "pr_title": "docs: backfill BLOCKS into CHANGELOG + README, carry wrong-base halt doctrine into base.md (salvage of rope/gate-a)",
+  "ruling_needed": "none",
+  "diff_stat": "CHANGELOG.md | 20 +  README.md | 1 +  harness/prompts/base.md | 10 +  -- 3 files changed, 31 insertions(+)  (identical output from `git show --stat HEAD` and `git diff --stat master..HEAD`)",
+  "tests": [
+   {
+    "cmd": "python -m pytest tests/test_phase0c_doc1_toolcount.py -q",
+    "summary": "28 passed, 2 warnings in 0.67s (run at fc6f0966, post-rebase; tree identical to 7a81a7f1, which differs only by commit message)"
+   },
+   {
+    "cmd": "python -m pytest tests/test_blocks_reconciler.py tests/test_phase0c_doc1_version_conformance.py tests/test_reach_public_agreement.py -q",
+    "summary": "95 passed, 2 warnings in 0.68s (same tree as above)"
+   },
+   {
+    "cmd": "python -c \"from synapse.mcp._tool_registry import TOOL_DEFS; print(len(TOOL_DEFS))\"",
+    "summary": "128 -- matches CLAUDE.md:3 ('128 MCP tools registered') and README.md:129 ('**128 tools, two paths.**'; the line moved from 121 to 129 because master's README grew since the number was cited, not because of this branch)"
+   },
+   {
+    "cmd": "git merge-tree --write-tree master HEAD",
+    "summary": "dc01f6a0b02344b316525a3b8edcc2c1acad1c89, rc=0 (clean)"
+   },
+   {
+    "cmd": "git merge-tree --write-tree master 99da35bd",
+    "summary": "cbac546b2ea25c9f2e5c569336d8f04fa67f308e, rc=0 -- the refuted commit still merges clean today only because the RULINGS-OPEN.md blob matches master; superseded by 7a81a7f1"
+   },
+   {
+    "cmd": "git show --stat HEAD",
+    "summary": "7a81a7f1 parent=841f742e -- CHANGELOG.md +20, README.md +1, harness/prompts/base.md +10; 3 files changed, 31 insertions(+)"
+   },
+   {
+    "cmd": "git log master..HEAD --oneline",
+    "summary": "exactly one commit: 7a81a7f1"
+   },
+   {
+    "cmd": "git grep -nE '\\bBLOCKS\\b|apply_fixture' 329bd5b3 -- CHANGELOG.md",
+    "summary": "rc=1, no hits -- the CHANGELOG entry's gap-check command is pinned to the v5.70.1 tree (329bd5b3), so it stays true after merge; the same grep on HEAD -- CHANGELOG.md returns 6 hits (the new entry)"
+   },
+   {
+    "cmd": "git status --short (after rm msg.txt)",
+    "summary": "empty -- worktree clean, message file removed, nothing untracked"
+   }
+  ],
+  "refuter": {
+   "ok": false,
+   "blockers": [
+    "The commit is not what the builder reported. `git show --stat 99da35bd` (parent-relative) = 4 files / 616 insertions: it also ADDS `harness/design_review/2026-09-14/RULINGS-OPEN.md` (+585 lines), blob 6b01912f, byte-identical to the file master's 329bd5b3 added. The builder's `git diff --stat master..HEAD` (3 files) hides it only because the blobs match, and its own report said the file is 'not on this branch' -- refuted. Consequences: (a) the commit carries a file outside its named scope (CHANGELOG/README/base.md); (b) a GitHub PR diff (master...branch) will show +585 lines the branch did not author; (c) `git merge-tree --write-tree master 99da35bd` is clean today (tree 2349e2d6, rc=0) ONLY because the content is identical -- any edit to RULINGS-OPEN.md on master before merge turns this into an add/add conflict. Everything else on the branch held up (see fixes[] for the one-step remedy)."
+   ],
+   "secret_scan": "`git diff master..99da35bd | grep -nE \\\"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\\\\\Users|/Users/\\\"` -> no hits (grep rc=1). Note this scan covers the master..branch diff; the duplicated RULINGS-OPEN.md is identical to what master already publishes, so it adds nothing new to the public surface.",
+   "composed": [
+    "tests/test_blocks_reconciler.py -- the test the CHANGELOG entry cites as pinning the outside_names source property and test_stray_inside_the_box_is_ejected_not_deleted (exists at :417); green",
+    "tests/test_phase0c_doc1_version_conformance.py -- README/CLAUDE.md version literals after the README line shift; green",
+    "tests/test_reach_public_agreement.py -- README public-surface agreement; green",
+    "CHANGELOG factual claims re-probed live and all held: 87927076 is on master dated 2026-08-06, `git tag --contains 87927076 -l 'v*' | sort -V | head -1` = v5.43.0; mcp_server.py:811-812 define _BLOCKS_APPLY/REMOVE_TOOL_NAME; four `_Dispatcher(` singletons at :632/:750/:852/:1000 each is_testing=True; python/synapse/blocks/ has exactly __init__/canonical/fixtures/plan/runtime/transport; canonical.py:75 CANONICALIZER_VERSION='c3'; solaris.basic.json canonicalizer c3 with superseded_baselines[] carrying c2; solaris.spine.json canonicalizer 'recipes-graph-v1+c3'; runtime.py exposes result['ejected'] (:346); h22_symbol_table.json houdini_version '22.0.400'; harness/notes/receipts/M5b.json status green and contains the quoted verdict phrases; harness/legs.json M5b state 'ready' (M5 also 'ready'); harness/blocks/invariants_m5.py and cognitive/tools/apply_fixture.py exist",
+    "Plan conformance: nothing taken that PLAN.md said not to -- no mermaid hunks, no port of the old README hunks, no 'Not on master yet' line, no m5b.md/legs.json edits; base.md placement for Salvage 3 is consistent with PLAN.md's own unverified note (M5b.json green => legs.json 'ready' is stale => doctrine goes to base.md, and the entry records the stale row); base.md's 'Item 1 below' correctly precedes '=== THE WORK === 1. Per-leg base'",
+    "Scope: no gate, thread, undo group, VERSION, harness/state, or .claude edits in the diff; the only out-of-scope content is the duplicated RULINGS-OPEN.md named in blockers",
+    "NOT checked: whether plan.py:161 `outside = snapshot.get('outside_names')` sits outside build_plan (the entry's 'never inside build_plan' claim rests on the test, which is green, not on my reading); the builder's own unverified list (M6 phrase routing, R-M5-4 load-time check, SD-2, AUTORESEARCH literal successors, spine.json provenance, panel-worker permission for synapse_apply_fixture) was left as stated -- none of it is asserted as fact in the diff"
+   ]
+  },
+  "repaired": true
+ },
+ {
+  "key": "scene-model",
+  "branch": "salvage/scene-model",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "f022f89405038fcb6ddcdcd14a03144bdf6858e1",
+  "pr_title": "salvage(scene-model): unique audit session ids + render_farm_status read-only",
+  "ruling_needed": "none",
+  "diff_stat": "git show --stat HEAD: python/synapse/core/audit.py | 19 +-  python/synapse/server/handlers.py | 8 +  tests/test_audit_session_id_unique.py | 61 +  => 3 files changed, 87 insertions(+), 1 deletion(-). (git diff --stat master..HEAD additionally shows harness/design_review/2026-09-14/RULINGS-OPEN.md | 585 ---- because master advanced d8ebb74a -> 329bd5b3 with that file during the session; merge-base master HEAD = d8ebb74a; git log master..HEAD --oneline = the one commit above.)",
+  "tests": [
+   {
+    "cmd": "python -m pytest tests/test_audit_session_id_unique.py -q -p no:cacheprovider   (branch created, test written, audit.py still at master content)",
+    "summary": "1 failed, 2 passed, 1 skipped in 16.85s -- FAILED test_distinct_session_ids_when_object_identity_recycles (the skip was a GC-path variant, since removed: the allocator never recycled the address in 200 attempts on CPython 3.14/Windows)"
+   },
+   {
+    "cmd": "python -m pytest tests/test_audit_session_id_unique.py -q -p no:cacheprovider   (after the audit.py fix; final 3-test file)",
+    "summary": "3 passed, 2 warnings in 0.29s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_core.py tests/test_v5_features.py tests/test_resilience_fixes.py -k \"hash_chain or export_session or audit\" -q -p no:cacheprovider",
+    "summary": "17 passed, 172 deselected, 2 warnings in 1.63s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_live_integrity_envelope.py tests/test_handler_mutation_lock.py tests/test_render_farm_handler.py -q -p no:cacheprovider   (the tests that read _READ_ONLY_COMMANDS / exercise _handle_render_farm_status)",
+    "summary": "50 passed, 2 warnings in 3.00s"
+   },
+   {
+    "cmd": "python - (probe: construct AuditLog, weakref, del, gc.collect(); rebuild 20x and compare id())",
+    "summary": "plain: alive after del? False; address reused in 20 tries: 0; after log(): alive after del? False -- object is freed but CPython 3.14/Windows does not hand the address back, so the GC-path test would only ever skip and was dropped in favour of the deterministic id() pin"
+   }
+  ],
+  "refuter": {
+   "ok": true,
+   "blockers": [],
+   "secret_scan": "The exact `git diff master..salvage/scene-model | grep -nE ...` pipe was NOT run as written: the worktree-isolation harness refused my first combined git invocation as 'too complex', and the call budget did not allow a second attempt. Equivalent scan run instead over the branch's added content: `sed -n 231,245p python/synapse/server/handlers.py | grep -nE \\\"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\\\\\Users|/Users/\\\"` -> exit=1 (no hits) on the added handlers hunk; `grep -nE <same pattern> python/synapse/core/audit.py tests/test_audit_session_id_unique.py` -> exit=1 (no hits) full-file on the other two branch files. I also read the entire python+tests diff (`git diff master..salvage/scene-model -- python tests`, 3 files, all hunks) by eye: no keys, tokens, or absolute user paths. The only other file in the symmetric diff (RULINGS-OPEN.md) is master-side content, not something the branch adds. Forbidden-scope check: `git show --stat --format= f022f894 | grep -nE \\\"VERSION|harness/state|\\\\.claude/|CLAUDE\\\\.md|README\\\\.md\\\"` -> exit=1 (none touched), so the tool-count literal rule does not apply.",
+   "composed": [
+    "tests/test_floor_hook.py (14 passed) -- python/synapse/core/floor_gate.py:292-306 imports _READ_ONLY_COMMANDS: a read-only classification means the FloorGate records ZERO provenance for render_farm_status. Consequence accepted, not a defect: the handler (handlers_render.py:1602-1618) reads RenderFarm.get_status() (three attribute reads, render_farm.py:673-679) and render_session.summary() (under its own lock, render_session.py:103-113); no hou, no scene author, no undo entry.",
+    "tests/test_write_plane_health.py (26 passed) + tests/test_m3_logs_doctor.py (24 passed) -- doctor.py:24 documents why 'doctor' is deliberately NOT read-only; render_farm_status is a different, genuinely side-effect-free surface, and both suites stay green.",
+    "tests/test_h3b_render_stop.py (20 passed) + tests/test_render_bounded.py (15 passed) -- the H3b siblings (render_stop / render_processes / emergency_halt) whose read-only rationale the branch extends.",
+    "tests/test_v5_features.py in full (122 passed; the builder ran it only under -k) -- includes test_audit_log_called_on_mutating_commands; handlers.py:517 `_mutating = cmd_type not in _READ_ONLY_COMMANDS` now also skips the async audit _submit_logs for render_farm_status, which is the same treatment render_farm_cancel/render_processes already get.",
+    "tests/test_sessions.py (34 passed) + tests/test_phase0b_consent_posture.py (2 passed) -- session and consent surfaces adjacent to the audit session-id seed change.",
+    "Classification consistency (read, not executed): python/synapse/server/integrity_envelope.py:86 ALREADY lists render_farm_status as read-only for the live envelope, tests/test_live_integrity_envelope.py:327 already expects it there, websocket.py:739-742 already special-cases it to keep answering, mcp/_tool_registry.py:1289 registers it as a passthrough read -- the handlers.py frozenset was the one surface out of step; the branch aligns it. No gate, thread-marshalling, undo group, VERSION or harness/state surface is touched.",
+    "PLAN.md:395-401 salvage constraints honoured: the audit hunk was re-typed (not cherry-picked; single commit f022f894 off d8ebb74a), it carries the plan's time_ns seed plus a process-wide itertools.count (a strict strengthening -- PLAN.md 'Not checked' asked whether the hunk was only the seed fix; here it is the seed fix only, no current_session_id() accessor added), the handlers.py comment does NOT cite read_ledger.INFRA_READ_COMMANDS (PLAN.md:401's required drop) -- verified by reading the diff, and the AUDIT.md:47 replacement gate (test_core/test_v5_features/test_resilience_fixes -k ...) plus the demanded failing-then-passing uniqueness test are both present.",
+    "NOT checked: hython 3.13 behaviour (stock Python 3.14.2 only, same as the builder; the change uses time.time_ns and itertools.count, both available since 3.7); the full `pytest tests/` and hython seat suite (forbidden by law); the builder's pre-fix 'fails on master seed' claim was not re-executed (I did not revert audit.py), though the test's monkeypatch of `id` inside the audit module makes the master seed provably collide by construction; itertools.count().__next__ atomicity under the GIL is relied on, not tested under free-threaded builds."
+   ]
+  },
+  "repaired": false
+ },
+ {
+  "key": "panel-goalposts",
+  "branch": "park/panel-goalposts",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "87d8d5c469159815819c3de5cab523513697424f",
+  "pr_title": "backlog: park the H-MATRIX contract from wip/panel-goalposts (never merge the test)",
+  "ruling_needed": "none",
+  "diff_stat": " harness/notes/backlog/H-MATRIX-contract.md | 109 +++++++++++++++++++++++++++++\n 1 file changed, 109 insertions(+)",
+  "tests": [],
+  "refuter": {
+   "ok": true,
+   "blockers": [],
+   "secret_scan": "git diff master..park/panel-goalposts | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\\\\\Users|/Users/\" -> NO HITS. The added file contains only repo-relative paths, SHAs, and a PowerShell block of human-run git steps (tag/push/branch -D) copied from PLAN.md:425-428; nothing executed.",
+   "composed": [
+    "tests/test_hytest_build_pin.py -- pins exactly the hytest.py behaviour the note describes (rule-3 stamp preference, _candidates() plain-string shape); builder did not run it; PASS (part of 66 passed)",
+    "tests/test_solaris_v3_acceptance_runner.py -- the _candidates() consumer contract (hython_candidates); PASS",
+    "tests/test_phase0c_doc1_toolcount.py -- run although CLAUDE.md/README.md are untouched by this branch; PASS (tool-count literal check N/A: neither file in the diff)",
+    "tests/test_corpus_encoding_conformance.py -- PASS, but it rglobs rag/ only (line 154), so it did NOT exercise the new markdown; no test in tests/ scans harness/notes/backlog/ (grep -rln 'harness/notes|backlog' tests/ hits only path-specific tests)",
+    "NOT CHECKED: tests/panel/test_hython_matrix.py was not run (fails by design on master, and the note is explicit about that); no hython spawned; wip test lines 170-182 (the unresolvable-target hard-error assertion the note's section 3 attributes to the tests) were not read -- that clause is at least stated in the test's own docstring at :113-116; harness/cto/BACKLOG.json schema not inspected"
+   ]
+  },
+  "repaired": false
+ },
+ {
+  "key": "undo-receipt",
+  "branch": "feat/undo-receipt",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "18f39adf57e07f28d6351ca986e042ffa66e7db9",
+  "pr_title": "feat(trust): the Undo Receipt -- tell the artist what one Ctrl+Z reverses (TRUST-2 + TRUST-5)",
+  "ruling_needed": "none",
+  "diff_stat": "CLAUDE.md | 2 +-\npython/synapse/core/tool_results.py | 24 ++++\npython/synapse/panel/activity.py | 38 +++++-\npython/synapse/panel/claude_worker.py | 7 +-\npython/synapse/panel/face_work.py | 2 +-\npython/synapse/server/handler_helpers.py | 67 ++++++++++\npython/synapse/server/handlers.py | 11 +-\npython/synapse/server/handlers_node.py | 8 +-\npython/synapse/server/handlers_render.py | 3 +-\ntests/test_activity_labels.py | 27 +++-\ntests/test_node_undo_grouping.py | 12 +-\ntests/test_undo_receipt.py | 219 +++++++++++++++++++++++++++++++\ntests/test_undob_live_undo_grouping.py | 5 +\n13 files changed, 407 insertions(+), 18 deletions(-)",
+  "tests": [
+   {
+    "cmd": "python -m pytest tests/test_undo_receipt.py tests/test_activity_labels.py tests/test_node_undo_grouping.py tests/test_undob_live_undo_grouping.py tests/test_offmain_fallback.py tests/test_panel_faces.py tests/test_retry_breaker.py tests/test_worker_tool_policy.py tests/test_panel_stop_honest.py tests/test_panel_worker_ownership.py tests/panel/test_bc_wave.py tests/test_panel_sweep_a.py -q -p no:cacheprovider",
+    "summary": "136 passed, 82 skipped, 2 warnings in 9.59s (skips are the PySide/Qt-gated panel tests; the 4 named files are all in the passed set)"
+   },
+   {
+    "cmd": "python -m pytest tests/test_undo_receipt.py tests/test_activity_labels.py tests/test_node_undo_grouping.py tests/test_undob_live_undo_grouping.py -q -p no:cacheprovider  (first run, before the AST fix to my own purity test)",
+    "summary": "1 failed, 62 passed -- the one red was test_helper_is_pure_no_hou_no_group tripping on its own docstring mention of hou.undos.group; rewritten on the AST, then green in the run above"
+   },
+   {
+    "cmd": "python -c \"... from synapse.server.handler_helpers import undo_receipt; from synapse.panel.activity import tool_status, with_undo_receipt ...\" (no hou resident) + python -m py_compile on the 5 edited modules",
+    "summary": "undo_receipt('synapse_set_parm') -> {'undo': {'label': 'synapse_set_parm', 'artist': 'One Ctrl+Z reverses: set parameter', 'rolls_back_on_failure': False, 'on_failure': '...'}}; tool_status line = 'Finished: Set a parameter \u2014 One Ctrl+Z reverses: set parameter'; 'hou' in sys.modules == False; COMPILE-OK"
+   },
+   {
+    "cmd": "python _apply_claude_md.py (byte check inside the edit script)",
+    "summary": "CLAUDE.md bytes 40026 -> 40020 delta -6 (the 40k limit bites this file; edit is byte-neutral)"
+   }
+  ],
+  "refuter": {
+   "ok": true,
+   "blockers": [],
+   "secret_scan": "git diff master...HEAD | grep -nE \"sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\Users|/Users/\" -> NO HITS (scanned the saved full diff, 35.2KB, all 13 files)",
+   "composed": [
+    "tests/test_live_integrity_envelope.py (PASS) -- the live IntegrityBlock envelope wraps the same handler result dicts that now carry the extra 'undo' key; nothing there asserts an exact key set",
+    "tests/test_tool_result_contract.py (PASS) -- python/synapse/core/tool_results.py gained UNDO_RECEIPT_PREFIX + undo_receipt_line; the existing unpack_tool_result contract is untouched",
+    "tests/test_phase0b_consent_posture.py + tests/test_router_internals.py + tests/test_phase0c_doc1_version_conformance.py + 6 other CLAUDE.md readers (PASS) -- the SS Identity paragraph edit trips no doc-conformance pin",
+    "tests/test_rbac.py, tests/test_v5_features.py, tests/test_recipe_transaction*.py, tests/test_integration_pipeline.py, tests/test_studio_integration.py, tests/test_render_parm_restore.py (PASS) -- other drivers of set_parm/create/delete/connect/set_keyframe; no exact-shape assertion on those five results breaks",
+    "tests/test_first_session_panel.py, tests/test_panel_preflight.py, tests/test_chat_panel.py, tests/test_panel_typography.py, tests/test_h3b_panel_cancel.py (PASS or PySide-skip) -- panel consumers of the tool_status(name, phase, detail) signature; face_work.set_tool_status is the only caller that changed and it only forwards detail",
+    "Diff audit (git diff master...HEAD, all 13 files read): no hou.undos.group opened/moved/relabelled (test_set_parm_group_literal_survives_the_wiring pins 3 group literals == 3 receipts; AST purity pin on the helper); create_node's result.update sits after the group block, not inside it; no gate, HumanGate, run_on_main, or thread change (claude_worker.py only changes the string passed to an existing emit); VERSION, harness/state/**, .claude/** untouched",
+    "Panel consumer trace: _on_tool_status stores the done-detail in _turn_tools for _populate_review and forwards it to face_work; no json.loads(detail) anywhere in panel/*.py, so the new 'One Ctrl+Z reverses: X \u00b7 summary' detail cannot break a parser; the running-phase detail (extract_node_path input) is unchanged",
+    "UNVERIFIED (matches the builder's admission): whether the receipt actually surfaces on the panel's MCP-FIRST path -- depends on mcp_server.send_command returning the handler dict itself so 'undo' stays top-level; strong proxy that it does: _track_integrity reads '_integrity' at the same top level and that path is live. Worst case is a silent non-display (undo_receipt_line returns '' for any other shape), never a crash. One live panel look at a set_parm status line settles it",
+    "UNVERIFIED: no hython probe by me either; the CLAUDE.md TRUST-5 sentence ('build_graph + Solaris compose handlers performUndo() one step on failure') is code-read -- I confirmed performUndo call sites at handlers_solaris_compose.py:89,127 and the closeout artist_findings.json TRUST-5 row cites handlers_solaris_graph.py:829-841. Note it replaces a VERIFIED-RUNTIME (L2 2026-07-25) tag; no test pins the old text (grep over tests/ found none)",
+    "NOTE for the human, non-blocking: the PLAN.md sketch said the helper 'both opens the group and records it' with a steps field; the builder built a record-only helper (no steps). That is the safer reading of the refuter rule ('touches an undo group -> block') and is what the tests pin; just know it deviates from the sketch",
+    "NOT run: full pytest tests/, the hython seat suite, any live Qt session (per LAWS -- parent runs them serially); no merge-tree conflict dry-run against master (the one master-side commit touches only harness/notes/release-5.70.1/*, disjoint from this branch's files)"
+   ]
+  },
+  "repaired": false
+ },
+ {
+  "key": "bridge-down-guard",
+  "branch": "fix/bridge-down-send-guard",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "81a36a51fc7ba31c65be80065d2ff85c3cea21eb",
+  "pr_title": "fix(panel): refuse chat sends while the bridge is down (FR-1)",
+  "ruling_needed": "refuse-and-keep-text or hold-with-visible-release -- which UX? (built: refuse-and-keep-text; hold-with-visible-release named in send_guard.py, not built)",
+  "diff_stat": " python/synapse/panel/chat_panel.py | 101 +++++++++++++++++++++-------\n python/synapse/panel/send_guard.py | 124 ++++++++++++++++++++++++++++++++++\n python/synapse/panel/ws_bridge.py  |  21 +++++-\n tests/test_chat_panel.py           | 132 +++++++++++++++++++++++++++++++++++++\n tests/test_hda_panel.py            |  42 ++++++++++++\n tests/test_send_guard.py           |  99 ++++++++++++++++++++++++++++\n 6 files changed, 495 insertions(+), 24 deletions(-)",
+  "tests": [
+   {
+    "cmd": "python -m pytest tests/test_chat_panel.py tests/test_hda_panel.py -q -p no:cacheprovider  (BASELINE, before any change, on master's tree)",
+    "summary": "110 passed, 18 skipped, 2 warnings in 1.13s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_send_guard.py tests/test_chat_panel.py tests/test_hda_panel.py -q -p no:cacheprovider  (after the _send_message + ws_bridge change)",
+    "summary": "135 passed, 18 skipped, 2 warnings in 1.07s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_send_guard.py tests/test_chat_panel.py tests/test_hda_panel.py -q -p no:cacheprovider  (final, after the _on_quick_action guard; working tree == HEAD 81a36a51)",
+    "summary": "137 passed, 18 skipped, 2 warnings in 0.78s"
+   },
+   {
+    "cmd": "python -m pytest tests/test_context_poll_offmain.py tests/test_panel_faces.py tests/test_passthrough_hygiene.py tests/test_w2_s5_context_offmain.py tests/test_port_wave_scene1.py -q -p no:cacheprovider  (other stock-pytest files that touch send_command / ws_bridge)",
+    "summary": "58 passed, 41 skipped, 2 warnings in 3.21s"
+   },
+   {
+    "cmd": "git grep -n \"drain\\|replay\\|_send_queue\\|send_queue\" tests/  (search for tests pinning the queue/replay behaviour, done BEFORE changing anything)",
+    "summary": "Two deliberate pins found in tests/test_hda_panel.py (test_send_method_queues_when_disconnected :484, test_bridge_send_command_still_works :781) -- both pin the BRIDGE-level queue for send()/send_command() default path. Kept intact and still green. No test pinned the panel-side send guard or the drain-queue replay of chat."
+   }
+  ],
+  "refuter": {
+   "ok": true,
+   "blockers": [],
+   "secret_scan": "git diff master..HEAD | Select-String 'sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\Users|/Users/' -> NO HITS. Forbidden-path scan of `git diff --name-only master..HEAD` for VERSION|harness/state|.claude/|CLAUDE.md|README.md -> no matches (tool-count check N/A: neither CLAUDE.md:3 nor README.md:121 changed). Added-line scan of the python/ diff for hou.undos|HumanGate|GateLevel|threading.|QThread|QTimer|hdefereval -> no matches: the change touches no gate, no undo group, no thread primitive (ws_bridge.send_command only gains a `queue_if_down` kwarg and a bool return; the existing `_queue_lock` usage is unchanged).",
+   "composed": [
+    "Semantic: the guard reads real socket state -- `SynapseWSBridge.connected` is a @property returning `self._ws is not None` (ws_bridge.py:209-212), `_ws` cleared at :284 on close; so `bool(self._bridge.connected)` in chat_panel is not a bound-method-always-truthy trap.",
+    "Semantic: `send_command` return changed None -> bool; every other caller ignores the return (chat_panel.py:340 project_setup, :1062, :1069 get_session_report; hda_controller.py:174 undo) -- non-breaking. Default `queue_if_down=True` keeps the HDA queue+drain contract; tests/test_hda_panel.py :484 and :781 pins still green.",
+    "Semantic: the new empty-prompt early return in `_on_quick_action` cannot swallow the three `prompt: None` CONTEXT_MENU_EXTRAS (clear_chat / copy_last / toggle_actions) -- they dispatch via `action_key` at chat_panel.py:546-550, not through `_on_quick_action`; all 5 QUICK_ACTIONS have non-empty prompts (checked by importing quick_actions).",
+    "Semantic: master's `_on_quick_action` (git show master:...:947-972) compared against the branch -- the requires_selection check and the `[label] prompt` user bubble are preserved; only the bridge-None branch is replaced by decide_send and the send becomes no-replay.",
+    "Adjacent stock test files not run by the builder: test_panel_sweep_a, test_panel_sweep_b_widgets, test_panel_sweep_b_hex, test_panel_rhythm_docking, test_panel_camera_rhythm, test_panel_alt_entry_unshipped, test_j3_panel_formatter, test_worker_tool_policy, test_timeouts_c7, test_retina_t1 -> 185 passed / 126 skipped / 0 failed.",
+    "tests/panel/test_failure_trail.py + tests/panel/test_token_authority.py -> 33 passed / 2 skipped / 0 failed.",
+    "Non-blocking nits for the PR description, not fixes: (a) on the mid-flight failure path `_send_message` has already called `append_user_message(text)` and set `_last_sent_message`, so the chat shows the bubble as sent directly above the 'wasn't sent' status line -- cosmetic, no replay risk; (b) `setPlainText(text)` hands back the stripped text, dropping leading/trailing whitespace -- cosmetic; (c) live PySide/ChatDisplay behaviour (cursor move, rendered status lines) remains MagicMock-only, as the builder admitted."
+   ]
+  },
+  "repaired": false
+ },
+ {
+  "key": "ruling-ingester",
+  "branch": "feat/ruling-ingester",
+  "status": "READY",
+  "ok_to_open_pr": true,
+  "head_sha": "0125ad4caa6bea79bf13294768979503fb72658f",
+  "pr_title": "fix(decisions): survive a board title the console codec cannot encode (repair of feat/ruling-ingester)",
+  "ruling_needed": "none",
+  "diff_stat": "git diff --stat 329bd5b3..HEAD (merge-base; the honest branch diff): harness/decisions.py | +~154/-13, scripts/ingest_rulings.py | 238 +, tests/test_decisions.py | 42 +, tests/test_ingest_rulings.py | 246 + => 4 files changed, 667 insertions(+), 13 deletions(-). Repair commit alone (git show --stat 0125ad4c): harness/decisions.py | 20 +, scripts/ingest_rulings.py | 1 +, tests/test_decisions.py | 42 + => 3 files changed, 63 insertions(+). NOTE: `git diff --stat master..HEAD` also lists harness/notes/release-5.70.1/* as deletions (182 lines) - those are files master added at 841f742e after the merge-base; the branch does not delete them.",
+  "tests": [
+   {
+    "cmd": "PYTHONIOENCODING=cp1252 PYTHONUTF8=0 python harness/decisions.py --keys  (BEFORE fix, piped)",
+    "summary": "rc=1; UnicodeEncodeError: 'charmap' codec can't encode character '\u2190' in position 47 - reproduced the refuter's blocker on this tree"
+   },
+   {
+    "cmd": "PYTHONIOENCODING=cp1252 PYTHONUTF8=0 python harness/decisions.py  (BEFORE fix, piped)",
+    "summary": "rc=1; UnicodeEncodeError at position 52407 - reproduced"
+   },
+   {
+    "cmd": "python -m pytest tests/test_ingest_rulings.py tests/test_decisions.py tests/test_decisions_resolve.py -q -p no:cacheprovider",
+    "summary": "28 passed, 2 warnings in 1.48s (builder's 26 + the 2 new regression tests)"
+   },
+   {
+    "cmd": "python -m pytest tests/test_statusline.py -q -p no:cacheprovider  (composed regression: statusline.py imports decisions and calls collect(with_ages=False))",
+    "summary": "13 passed, 2 warnings in 1.51s"
+   },
+   {
+    "cmd": "sed-disable the single `tolerant_stdio()` call in main(), then python -m pytest tests/test_decisions.py -q -p no:cacheprovider -k cp1252; then sed-restore",
+    "summary": "2 failed with the reconfigure removed (UnicodeEncodeError position 47 and position 52407 - the exact two crashes); restored line verified by grep at decisions.py:476, then 28 + 13 passed again"
+   },
+   {
+    "cmd": "python harness/decisions.py --count; echo rc",
+    "summary": "649, rc=6 (aging gate, unchanged)"
+   },
+   {
+    "cmd": "PYTHONIOENCODING=cp1252 PYTHONUTF8=0 python harness/decisions.py --keys  (AFTER fix, piped stdout cp1252)",
+    "summary": "rc=0, stderr 0 bytes; awk '$2==\"design\"' = 17 rows; trailer `-- 649 open`; D3 prints as `1c0716af74d4  design    D3       Two visible \u2190 REVERT controls at once`, D4 `46a61abfe02b ... UNDO SENT is authored and hidden in the same beat`. Control PYTHONUTF8=1: rc=0, 17 design rows, same keys, D3 shows the real arrow. (grep -c ' design ' = 19: the 17 plus 2 ruling rows whose text contains the word - hence the awk filter.)"
+   },
+   {
+    "cmd": "PYTHONIOENCODING=cp1252 PYTHONUTF8=0 python harness/decisions.py  (default render AFTER fix, piped)",
+    "summary": "rc=6 (aging gate, not a crash), stdout 63013 bytes, stderr 0 bytes; line 509 carries D3 as \u2190"
+   },
+   {
+    "cmd": "PYTHONIOENCODING=cp1252 PYTHONUTF8=0 python -c: decisions.collect(with_ages=False); cp1252-encodability per item and of render(); decisions.tolerant_stdio()",
+    "summary": "649 items, 17 design; non-cp1252 text = [('design','D3','Two visible \u2190 REVERT controls at once')] only; render(items).encode('cp1252') -> False; sink went from `cp1252 strict` to `cp1252 backslashreplace`"
+   },
+   {
+    "cmd": "python -c: ingest_rulings.ingest(<real harness/design_review/2026-09-14/RULINGS-OPEN.md>, 'A1 ratify\\nB2 keep the accent, retarget the pin\\nC2a ship\\n', who='joe', dry_run=True)",
+    "summary": "rc=0; DRY RUN - nothing written; would record A1 7be55c1b8ee2 ratify, B2 4ad8d521f435 keep the accent, retarget the pin, C2a 94d513f2b0ad ship; 3 ruling(s) by joe against the roster @ sha256 b47d781375f5"
+   },
+   {
+    "cmd": "python -c: ingest_rulings.ingest(<real roster>, 'A1 ratify\\nZ9 ship\\nA1 ratify\\nC4\\n', dry_run=True) and again dry_run=False; sha256 of harness/state/resolved.json before/after",
+    "summary": "both rc=2 REFUSED - nothing written (C4 carries no word; Z9 not on the roster; A1 already ruled on line 1); resolved.json sha 22b0c6e4cdf1 before and after, unchanged: True"
+   },
+   {
+    "cmd": "python -m py_compile harness/decisions.py scripts/ingest_rulings.py tests/test_decisions.py",
+    "summary": "compiled (Python 3.14.2)"
+   }
+  ],
+  "refuter": {
+   "ok": false,
+   "blockers": [
+    "REGRESSION on the owner's platform: `python harness/decisions.py` (default render, and therefore `--write`) and `python harness/decisions.py --keys` crash with `UnicodeEncodeError: 'charmap' codec can't encode character '\u2190'` on a stock Windows console/pipe (sys.stdout.encoding=cp1252, PYTHONUTF8 unset, PYTHONIOENCODING unset). Cause: the new design source puts roster D3's title 'Two visible \u2190 REVERT controls at once' on the board; it is the ONLY board item whose text is not cp1252-encodable (probe: 649 items, 17 design, non-cp1252 text = [('design','D3',...)]; decisions.render(items).encode('cp1252') -> False), so before this branch the render path could not hit this. Measured: default CLI rc=1 (error at position 52407); `--keys` prints 15 design rows (A1..D2) then rc=1, D3/D4 never print; with PYTHONUTF8=1 rc=0 and 17 design rows A1 7be55c1b8ee2 .. D4 46a61abfe02b. The builder's cited evidence line `python harness/decisions.py --keys | grep ' design '` therefore does not run to completion as written here; its '17' also counts 2 ruling rows (M2-CRUX, W2-S3) whose text merely contains the word 'design'. `--count` (649, rc=6) and statusline's collect() are unaffected because they print no item text; the --write path IS affected because print(render()) precedes write_markdown()."
+   ],
+   "secret_scan": "git diff master...HEAD | grep -nE 'sk-|AKIA|ghp_|xox[bp]-|BEGIN [A-Z ]*PRIVATE KEY|C:\\\\\\\\Users|/Users/' -> no hits (rc=1) on the branch's own 3-file diff. The two-dot form (master..HEAD) shows ONE hit at diff line 317, a `-` line `scratch package hpath=C:/Users/User/AppData/Local/Programs/SYNAPSE/...` -- that is master-side content from 841f742e (harness/notes/release-5.70.1/reinstall.txt, already public on master) which the branch merely lacks, not anything the branch adds. Scope scan: no VERSION, harness/state/**, .claude/**, CLAUDE.md or README.md in the diff (tool-count literal check therefore not applicable; not run). No gate, thread, undo group or Houdini surface touched; the change is harness/decisions.py (new `design` kind from harness/design_review/<date>/RULINGS-OPEN.md, resolve() gains optional word/evidence + a resolved_at_utc stamp on every entry, write_markdown() factored out) plus a new stdlib-only script and its tests.",
+   "composed": [
+    "tests/test_statusline.py -- 13 passed (harness/statusline.py consumes decisions.collect() for the 'N decisions' segment; the new kind and +17 items do not break it)",
+    "harness/clear/verify.py P2.1 path: shells `decisions.py --count` -> 649 rc=6, same shape as before the branch (+17); exit 6 pre-existing per overdue receipts, not measured on pristine master",
+    "harness/decisions.py CLI print path on a cp1252 console -- FAILS (see blocker); master's own CLI on the same console is INFERRED clean (no non-design item has non-cp1252 text) but was not executed, the hook refused `git show master:harness/decisions.py`",
+    "Not checked: whether harness/design_review/2026-09-05/ carries a RULINGS-OPEN.md (dir exists; the board shows exactly 17 design items all from 2026-09-14, so inferred no); CI matrix (ubuntu/macOS, 3.11/3.14); the argparse/_read_reply CLI entry beyond `--help` (the hook refused file and stdin invocations, so ingest() was called directly); no non-dry-run ingest against real state was performed except the refused-by-validation case, which wrote nothing"
+   ]
+  },
+  "repaired": true
+ }
+]
