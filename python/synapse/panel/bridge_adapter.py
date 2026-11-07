@@ -434,12 +434,18 @@ def execute_through_bridge(
     # Wrap handler.handle so the bridge can pass kwargs without
     # breaking the handler signature. kwargs carry bridge metadata
     # (node_path for blast radius inference), not handler params.
+    # The handler's own response, kept here because the bridge's failure arm
+    # (_fail_with_integrity) returns a fresh ExecutionResult and drops it.
+    handler_response: list = []
+
     def _dispatch(*_args, **_kwargs):
         # Suppress the live-path envelope for this NESTED handle() call: the
         # bridge's _finalize records this op, so a live block on top would
         # double-count in the shared process trail.
         with _bridge_routed_cm():
-            return handler.handle(command)
+            response = handler.handle(command)
+        handler_response.append(response)
+        return response
 
     op_kwargs = {"node_path": node_path} if node_path else {}
     # R4: disk-writing tools carry touches_disk so the gate elevates to APPROVE.
@@ -488,11 +494,23 @@ def execute_through_bridge(
     try:
         from synapse.core.protocol import SynapseResponse
         integrity_dict = result.integrity.to_dict() if result.integrity else {}
+        data = {"_integrity": integrity_dict}
+        # A handler that refused or failed may carry a structured write
+        # receipt (handlers._failure_receipt_data). The bridge's failure arm
+        # drops the handler's response, so the receipt is carried from the
+        # response the handler actually returned. Only a real dict receipt is
+        # carried, and only when the handler ran: a failure the bridge raised
+        # before dispatch has no handler response and gets no receipt.
+        if handler_response:
+            handler_data = getattr(handler_response[-1], "data", None)
+            receipt = handler_data.get("receipt") if isinstance(handler_data, dict) else None
+            if isinstance(receipt, dict):
+                data["receipt"] = receipt
         return SynapseResponse(
             id=command.id,
             success=False,
             error="Bridge: {}".format(result.error or "Unknown error"),
-            data={"_integrity": integrity_dict},
+            data=data,
         )
     except ImportError:
         # Can't construct SynapseResponse -- re-raise as RuntimeError
