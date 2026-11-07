@@ -108,6 +108,22 @@ def failure_receipt(value):
     return direct if isinstance(direct, dict) else None
 
 
+def failure_detail(value, message=None):
+    """The text a refused tool result carries, with its receipt beside it.
+
+    A consumer that only owns a message channel — a Qt ``failed(str)`` signal,
+    a tool_result ``content`` string — still owes the caller the machine
+    readable receipt, or the write's evidence dies at the last hop. Returns
+    *message* unchanged when there is no receipt: never an empty stand-in, and
+    never an envelope that pretends to carry one.
+    """
+    text = str(value) if message is None else message
+    receipt = failure_receipt(value)
+    if receipt is None:
+        return text
+    return json.dumps({"error": text, "receipt": receipt}, default=str)
+
+
 def _receipt_from_outcome(outcome):
     if not isinstance(outcome, dict):
         return None

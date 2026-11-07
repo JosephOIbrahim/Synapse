@@ -17,6 +17,8 @@ equal reference wrapper) and raise the same ``_OPERATION_FAILED`` class the
 module catches.
 """
 import asyncio
+import importlib
+import json
 import sys
 import types
 from contextlib import contextmanager
@@ -795,3 +797,159 @@ def test_handler_mode_refusal_carries_a_receipt(monkeypatch):
     assert response.data["receipt"]["error"]["code"] == "parm.mode_invalid"
     assert response.data["receipt"]["write"] == "not_attempted"
     assert parm.writes == []
+
+
+# ---------------------------------------------------------------------------
+# 16. The consumer keeps the receipt (round 2.5, blocker 4 / R3b)
+# ---------------------------------------------------------------------------
+
+def test_failure_detail_adds_a_receipt_only_when_there_is_one():
+    """The shared consumer helper: no receipt, no invented JSON."""
+    from synapse.core.tool_results import failure_detail
+
+    plain = RuntimeError("cannot inspect")
+    assert failure_detail(plain) == "cannot inspect"
+
+    carried = RuntimeError("cannot inspect")
+    carried.receipt = _RECEIPT
+    payload = json.loads(failure_detail(carried))
+    assert payload["error"] == "cannot inspect"
+    assert payload["receipt"] == _RECEIPT
+
+    # A payload-shaped failure (the fallback dispatch) works the same way.
+    payload = json.loads(failure_detail({"receipt": _RECEIPT}, "refused"))
+    assert payload == {"error": "refused", "receipt": _RECEIPT}
+    # No receipt, no envelope: the message stays the message.
+    assert failure_detail({"error": "refused"}, "refused") == "refused"
+
+
+def test_panel_agent_route_keeps_the_receipt_on_a_refused_write(monkeypatch):
+    """Probe: claude_worker stringified the exception and dropped exc.receipt."""
+    import synapse.panel.claude_worker as cw
+
+    refused = RuntimeError("The precondition on /obj/geo1/tx did not hold")
+    refused.receipt = _RECEIPT
+    monkeypatch.setattr(cw, "try_mcp_tool_call",
+                        lambda name, args: (_ for _ in ()).throw(refused))
+
+    worker = cw.ClaudeWorker(messages=[], enforce_worker_policy=False)
+    worker.tool_status = MagicMock()
+    result = worker._execute_tool_block({
+        "id": "tu_16", "name": "houdini_set_parm",
+        "input": {"node": "/obj/geo1", "parm": "tx", "value": 1.0}})
+
+    assert result["is_error"] is True
+    payload = json.loads(result["content"])
+    assert payload["error"] == str(refused)
+    assert failure_receipt(payload) == _RECEIPT
+
+
+def test_direct_tool_failure_carries_the_receipt(monkeypatch):
+    from synapse.panel import direct_tool
+    from synapse.panel import tool_executor
+
+    refused = RuntimeError("the write was refused")
+    refused.receipt = _RECEIPT
+    monkeypatch.setattr(tool_executor, "try_mcp_tool_call",
+                        lambda name, args: (_ for _ in ()).throw(refused))
+
+    call = direct_tool.DirectToolCall("houdini_set_parm", {"node": "/obj/geo1"})
+    emitted = []
+    call.failed = SimpleNamespace(emit=emitted.append)
+    call.run()
+
+    assert len(emitted) == 1
+    payload = json.loads(emitted[0])
+    assert payload["error"] == str(refused)
+    assert payload["receipt"] == _RECEIPT
+
+
+def test_render_workspace_failure_carries_the_receipt():
+    from qt_stub_window import qt_stub_window
+
+    with qt_stub_window():
+        sys.modules.pop("synapse.panel.render_workspace", None)
+        import synapse.panel.render_workspace as rw
+
+        refused = RuntimeError("the farm refused the job")
+        refused.receipt = _RECEIPT
+
+        def _transport(name, args):
+            raise refused
+
+        call = rw.FarmToolCall("synapse_farm_job", {}, transport=_transport)
+        emitted = []
+        call.failed = SimpleNamespace(emit=emitted.append)
+        call.run()
+
+    assert len(emitted) == 1
+    payload = json.loads(emitted[0])
+    assert payload["error"] == "the farm refused the job"
+    assert payload["receipt"] == _RECEIPT
+
+
+# ---------------------------------------------------------------------------
+# 17. The fallback dispatch keeps the receipt (round 2.5, blocker 5)
+# ---------------------------------------------------------------------------
+
+class _FailingHandler:
+    """A handler whose tool failed but whose payload carries the receipt."""
+
+    def __init__(self, data=None, error="the write was refused"):
+        self._data = data
+        self._error = error
+        self.calls = 0
+
+    def handle(self, command):
+        self.calls += 1
+        return SimpleNamespace(success=False, data=self._data, error=self._error)
+
+
+def _bridge_down_worker(monkeypatch, handler):
+    """Wire the worker's off-main fallback so the fake handler is reached."""
+    import synapse.panel.bridge_adapter as ba
+    import synapse.panel.claude_worker as cw
+
+    te = importlib.import_module("synapse.panel.tool_executor")
+    monkeypatch.setattr(te, "get_tool_dispatch",
+                        lambda name: ("set_parm", lambda inp: dict(inp)))
+    monkeypatch.setattr(ba, "is_read_only", lambda name: True)
+    # MCP unavailable -> the Qt/daemon-thread fallback dispatches the tool.
+    monkeypatch.setattr(cw, "try_mcp_tool_call", lambda name, inp: None)
+
+    worker = cw.ClaudeWorker(messages=[], enforce_worker_policy=False)
+    worker.tool_status = MagicMock()
+    executor = worker._get_offmain_executor()
+    monkeypatch.setattr(executor, "_get_handler", lambda: handler)
+    return worker, executor, te
+
+
+def test_fallback_dispatch_keeps_the_receipt_on_the_request(monkeypatch):
+    handler = _FailingHandler(data={"receipt": _RECEIPT})
+    worker, executor, te = _bridge_down_worker(monkeypatch, handler)
+
+    request = te.ToolRequest(
+        tool_use_id="tu_17", tool_name="houdini_set_parm",
+        tool_input={"node": "/obj/geo1", "parm": "tx", "value": 1.0})
+    executor._dispatch(request)
+
+    assert request.error == "the write was refused"
+    assert failure_receipt(request.failure) == _RECEIPT
+
+
+def test_bridge_down_fallback_tool_result_carries_the_receipt(monkeypatch):
+    """Probe: the failure branch returned only request.error."""
+    handler = _FailingHandler(data={"receipt": _RECEIPT})
+    worker, executor, te = _bridge_down_worker(monkeypatch, handler)
+
+    result = worker._execute_tool_block({
+        "id": "tu_18", "name": "houdini_set_parm",
+        "input": {"node": "/obj/geo1", "parm": "tx", "value": 1.0}})
+
+    assert handler.calls == 1
+    assert result["is_error"] is True
+    payload = json.loads(result["content"])
+    assert payload["error"] == "the write was refused"
+    assert failure_receipt(payload) == _RECEIPT
+
+

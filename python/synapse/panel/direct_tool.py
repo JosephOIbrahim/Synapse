@@ -165,7 +165,11 @@ class DirectToolCall(QThread):
         except Exception as exc:
             logger.warning("direct tool %s failed", self._tool_name,
                            exc_info=True)
-            self.failed.emit(str(exc))
+            # A refused write's receipt rides on the exception; the message
+            # channel carries it as JSON beside the error rather than dropping
+            # it at the last hop.
+            from synapse.core.tool_results import failure_detail
+            self.failed.emit(failure_detail(exc))
             return
         if result is None:
             # try_mcp_tool_call returns None when MCP is unreachable. Saying

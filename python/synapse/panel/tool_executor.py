@@ -144,6 +144,9 @@ class ToolRequest:
         tool_input:  Tool arguments dict from the API.
         result:      Set by executor on success (response.data).
         error:       Set by executor on failure (error message string).
+        failure:     Set by executor on failure: the handler's payload (which
+                     can carry the machine-readable write receipt) or the
+                     raising exception. ``error`` alone loses that evidence.
         done:        Threading event -- set by executor when processing is complete.
     """
     tool_use_id: str
@@ -151,6 +154,7 @@ class ToolRequest:
     tool_input: dict
     result: Any = field(default=None, repr=False)
     error: Optional[str] = None
+    failure: Any = field(default=None, repr=False)
     done: threading.Event = field(default_factory=threading.Event, repr=False)
 
 
@@ -784,12 +788,19 @@ class ToolExecutor(QtCore.QObject):
                 request.result = response.data
             else:
                 request.error = response.error or "Tool execution failed"
+                # A failed response's payload is where a handler puts the
+                # machine-readable receipt (the parm-write record). Discarding
+                # it here left the fallback with a sentence and no evidence.
+                request.failure = response.data
 
         except Exception as exc:
             logger.exception(
                 "Unhandled exception executing tool %r", request.tool_name
             )
             request.error = f"Exception: {exc}"
+            # The exception itself may carry a receipt (failure_receipt reads
+            # ``.receipt`` and ``.outcome``); keep it for the consumer.
+            request.failure = exc
 
     # ------------------------------------------------------------------
     # Off-main entrypoint (the bridge-DOWN fallback the worker now uses)
