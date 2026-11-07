@@ -94,3 +94,10 @@ times". A later node should either reject the attempt with a precise stop reason
 (`farm_returned_unplanned_frames`) or filter the row and record the count. Not a
 regression: before W3 the same input retried frame 99 three times and also
 failed.
+
+**W6 — one overbroad word in the W4 claim (doc only, severity 1).** The commit
+says a non-integer `step` returns None, but a float step of 2.5 int-coerces to 2
+and yields the odd frames - which is exactly what the shipped farm does at its
+own int() coercion. The behaviour is right and matches the consumer; only the
+word "non-integer" is too broad. Do not reopen a reviewed head for a word: the
+next node or the merge message states it as "a step the farm cannot act on".
