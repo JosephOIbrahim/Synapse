@@ -24,13 +24,19 @@ def _named_check(event, name):
 
 
 def _write_product(tmp_path, name="beauty.0001.exr", *, done=True, fingerprint=None,
-                   width=960, height=540):
+                   width=960, height=540, nonce=None):
     product = tmp_path / name
     exr_synth.write_bytes(
         product, exr_synth.multipart_exr_bytes(width=width, height=height, fingerprint=fingerprint)
     )
     if done:
-        exr_synth.write_done(product)
+        if nonce is None:
+            exr_synth.write_done(product)
+        else:
+            # G32/H3-9: a current sentinel names the render it belongs to.
+            (tmp_path / (name + ".done")).write_text(
+                json.dumps({"status": "rendered", "render_nonce": nonce}),
+                encoding="utf-8")
     return str(product)
 
 
@@ -42,8 +48,9 @@ def _manifest(products, **extra):
 
 def test_happy_path_all_present_passes(tmp_path):
     fp = "rm1abc123abc123ab"
-    product = _write_product(tmp_path, fingerprint=fp)
-    manifest = _manifest([product], resolution=[960, 540], aovs=["primid"], fingerprint=fp)
+    product = _write_product(tmp_path, fingerprint=fp, nonce="render-1")
+    manifest = _manifest([product], resolution=[960, 540], aovs=["primid"], fingerprint=fp,
+                         render_nonce="render-1")
     event = check_manifest_against_disk(manifest, now=NOW)
 
     assert event["ch"] == "perception"
@@ -233,9 +240,10 @@ def test_emit_verdict_appends_jsonl(tmp_path):
 
 
 def test_verify_and_emit_returns_event_and_persists(tmp_path):
-    product = _write_product(tmp_path, fingerprint="rm1x")
+    product = _write_product(tmp_path, fingerprint="rm1x", nonce="render-1")
     jsonl = tmp_path / "sidecar" / "verdicts.jsonl"
-    manifest = _manifest([product], resolution=[960, 540], aovs=["primid"], fingerprint="rm1x")
+    manifest = _manifest([product], resolution=[960, 540], aovs=["primid"], fingerprint="rm1x",
+                         render_nonce="render-1")
     event = verify_and_emit(manifest, now=NOW, jsonl_path=jsonl)
     assert event["verdict"] == "pass"
     assert jsonl.exists()

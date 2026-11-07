@@ -107,6 +107,11 @@ def compute_receipt(
         return None
     if not isinstance(manifest, dict):
         return None
+    # G32/H3-9: the manifest must be the one this render wrote. A stale file at
+    # the same path from another attempt is not this render's receipt.
+    expected_nonce = retina.get("render_nonce")
+    if expected_nonce and manifest.get("render_nonce") != expected_nonce:
+        return None
     check = _load_t0()
     if check is None:
         return None

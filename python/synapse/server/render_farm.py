@@ -215,14 +215,24 @@ class RenderFarmOrchestrator:
                 })
                 result.render_time = round_float(time.time() - t0)
                 result.image_path = render_resp.get("image_path", "")
+                result.output_file = render_resp.get("output_file", "")
+                result.flipbook_fallback = bool(render_resp.get("flipbook_fallback"))
             except Exception as e:
                 result.render_time = round_float(time.time() - t0)
                 result.error = str(e)
                 result.success = False
                 return result
 
-            if not result.image_path:
-                result.error = "Render produced no output image"
+            # H3-2: the preview is not the product. A GL flipbook grab, or a
+            # result with no product file, is a failed frame — validating the
+            # JPEG proved nothing about the frame's pixels.
+            if result.flipbook_fallback:
+                result.error = ("The renderer wrote no product; image_path is a GL "
+                                "flipbook preview, not a frame")
+                result.success = False
+                return result
+            if not result.output_file:
+                result.error = "Render produced no product file (output_file empty)"
                 result.success = False
                 return result
 
@@ -230,7 +240,8 @@ class RenderFarmOrchestrator:
             t1 = time.time()
             try:
                 val_resp = self._cb.validate_frame({
-                    "image_path": result.image_path,
+                    "image_path": result.output_file,
+                    "output_file": result.output_file,
                 })
                 result.validate_time = round_float(time.time() - t1)
             except Exception as e:
@@ -371,13 +382,20 @@ class RenderFarmOrchestrator:
             })
             result.render_time = round_float(time.time() - t0)
             result.image_path = render_resp.get("image_path", "")
+            result.output_file = render_resp.get("output_file", "")
+            result.flipbook_fallback = bool(render_resp.get("flipbook_fallback"))
         except Exception as e:
             result.render_time = round_float(time.time() - t0)
             result.error = str(e)
             return result
 
-        if not result.image_path:
-            result.error = "Render produced no output image"
+        # H3-2: a preview is not the product.
+        if result.flipbook_fallback:
+            result.error = ("The renderer wrote no product; image_path is a GL "
+                            "flipbook preview, not a frame")
+            return result
+        if not result.output_file:
+            result.error = "Render produced no product file (output_file empty)"
             return result
 
         # Mark success provisionally — validation may revise this
@@ -394,13 +412,14 @@ class RenderFarmOrchestrator:
         populated. If validation fails, sets success=False and records
         the failed checks in issues.
         """
-        if not frame_result.image_path:
+        if not frame_result.output_file:
             return frame_result
 
         t1 = time.time()
         try:
             val_resp = self._cb.validate_frame({
-                "image_path": frame_result.image_path,
+                "image_path": frame_result.output_file,
+                "output_file": frame_result.output_file,
             })
             frame_result.validate_time = round_float(time.time() - t1)
         except Exception as e:
@@ -575,7 +594,7 @@ class RenderFarmOrchestrator:
             # Render this frame on the main thread (GPU-blocking)
             render_result = self._render_frame_only(rop=rop, frame=frame)
 
-            if render_result.success and render_result.image_path:
+            if render_result.success and render_result.output_file:
                 # Submit validation to CPU pool (overlaps with next render)
                 pending_validation = self._cpu_pool.submit(
                     self._validate_frame_only, render_result,

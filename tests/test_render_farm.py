@@ -56,6 +56,10 @@ def _make_callbacks(
     """Create RenderCallbacks with mock handlers."""
     if render_resp is None:
         render_resp = {"image_path": "/tmp/frame.exr", "rop": "/stage/karma1"}
+    if isinstance(render_resp, dict) and "output_file" not in render_resp:
+        # G32/H3-2: a successful render names the product it wrote. These
+        # fakes model a handler that wrote the product at image_path.
+        render_resp = {**render_resp, "output_file": render_resp.get("image_path", "")}
     if validate_resp is None:
         validate_resp = {"valid": True, "checks": {}}
     if settings_resp is None:
@@ -112,7 +116,7 @@ class TestRenderFrameValidated:
         farm = RenderFarmOrchestrator(callbacks=cb, report_dir=str(tmp_path))
         result = farm.render_frame_validated("/stage/karma1", 1001)
         assert result.success is False
-        assert "no output" in result.error.lower()
+        assert "output_file" in result.error or "no output" in result.error.lower()
 
     def test_validation_error_is_not_failure(self, tmp_path):
         cb = _make_callbacks()

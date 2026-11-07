@@ -44,6 +44,10 @@ import time
 
 MANIFEST_ENV_VAR = "SYNAPSE_RETINA_MANIFEST"
 FALLBACK_ENV_VAR = "SYNAPSE_RETINA_DONE_FALLBACK"
+# Which render this hook belongs to. The host sets it before launching husk, so
+# the renderer process inherits it; a later attempt rewriting its manifest
+# cannot change the nonce this hook stamps (H3-9).
+NONCE_ENV_VAR = "SYNAPSE_RETINA_NONCE"
 
 
 def _log(msg: str) -> None:
@@ -102,11 +106,15 @@ def run(manifest_env: str = MANIFEST_ENV_VAR) -> int:
 
     written = 0
     fingerprint = manifest.get("fingerprint")
+    # Which render this sentinel belongs to: T0 compares it with the manifest
+    # so a .done left by a previous attempt cannot pass for this frame (H3-9).
+    render_nonce = os.environ.get(NONCE_ENV_VAR) or manifest.get("render_nonce")
     for product in products:
         payload = {
             "status": "rendered",
             "product": product,
             "fingerprint": fingerprint,
+            "render_nonce": render_nonce,
             "written_at": now,
             "written_by": "retina_sentinel_postframe",
         }
