@@ -10,18 +10,20 @@
     "predicate": "test -f harness/next-release/gpu_feasibility.json"
   },
   "generated_utc": "2026-11-07T02:24:22Z",
-  "updated_utc": "2026-11-07T12:54:23Z",
+  "updated_utc": "2026-11-07T13:06:56Z",
   "round_two_base_commit": "1e17e2ea",
   "base_commit": "3024f76bd3381005a2f1de2849ba995fbcac10f9",
   "branch": "nr/gpu-feasibility",
   "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/nr-gpu-feas",
   "probe_scope": {
-    "mode": "read-only feasibility probe",
+    "mode": "read-only inspection plus a B1 compile/run probe",
     "performed": [
       "machine and toolchain probes: nvidia-smi, nvcc, cmake, py -0p, python, MSVC/vswhere, cl version banner, Windows SDK, CUDA arch lists, cuDNN search, disk, cpu/ram",
       "installed-cv2 inspection: version, resolved path, installed distributions, cuda device count, presence of the cudaarithm masked meanStdDev overload",
       "independent source-pin verification with git ls-remote (refs only, no clone)",
-      "read of blueprint sections 8.1, 8.2, 10 and 11, and of RULING-2026-11-06"
+      "read of blueprint sections 8.1, 8.2, 10 and 11, and of RULING-2026-11-06",
+      "round two (2026-11-07): B1 compile/run probe — sourced vcvars64, compiled .scratch/gpu_probe/vectorAdd.cu with nvcc 13.3 -arch=sm_89 (exit 0), and ran vectorAdd.exe on the RTX 4090 (exit 0, 0 mismatches); see round_two_probe",
+      "round two (2026-11-07): wrote the probe source, batch file and binary to .scratch/gpu_probe/ (gitignored at every depth)"
     ],
     "not_performed": [
       "no git clone of opencv or opencv_contrib",
