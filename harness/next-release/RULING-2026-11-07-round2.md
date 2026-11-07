@@ -83,3 +83,14 @@ successful render — a false receipt on the success path, worse than the one th
 node fixed. NR-SPARSE-RENDER merges before NR-PLAN-TRUTH as its declared
 dependency; plan-truth's predicate passes without it, so the order is enforced
 here, not by the predicate.
+
+**W5 — a farm row outside the requested set still poisons the run (bounded, not a
+false pass).** After W3, a frame-99 row returned for a "render frames 1-3"
+request no longer becomes a retry target, but it stays in the driver's
+accumulator, the evaluator keeps flagging it as unplanned, and the run exhausts
+its iteration cap (`success=false`, `stop_reason=max_iterations`). Honest, but
+imprecise: the farm broke its contract and the report says "tried too many
+times". A later node should either reject the attempt with a precise stop reason
+(`farm_returned_unplanned_frames`) or filter the row and record the count. Not a
+regression: before W3 the same input retried frame 99 three times and also
+failed.
