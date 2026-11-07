@@ -1246,7 +1246,8 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
         from .main_thread import run_on_main
         from .parm_authored import (
-            WRITE_MODES, author_parm_write, write_refusal,
+            WRITE_MODES, ParmWriteRefused, author_parm_write, validate_expect,
+            write_refusal,
         )
 
         # How a write meets an animated or referenced parm. Refusing is the
@@ -1265,7 +1266,8 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                          "node": node_path, "parm": parm_name,
                          "expected_session": getattr(self, "_session_id", None)},
                 mode=mode, values=[value], frame=payload.get("frame"),
-                queued=bool(payload.get("queued")))
+                queued=bool(payload.get("queued")),
+                expect=payload.get("expect"))
 
         # Preflight the optional precondition before the main-thread hop, so an
         # unknown or malformed one refuses with zero setters and zero Houdini
@@ -1291,12 +1293,16 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 "'frame' must be a number. Nothing was written.",
                 code="parm.precondition_invalid", request=request_context,
                 mode=mode, values=[value], frame=None, queued=queued)
-        if expect is not None and not isinstance(expect, dict):
+        # The precondition is validated before the hop, not merely counted. A
+        # misspelled key ("value_typo") used to pass a truthiness test while
+        # checking nothing, so the write landed unguarded and reported applied.
+        try:
+            validate_expect(expect)
+        except ParmWriteRefused as exc:
             raise write_refusal(
-                "'expect' must be a mapping of the state the write requires. "
-                "Nothing was written.", code="parm.precondition_invalid",
-                request=request_context, mode=mode, values=[value],
-                frame=frame, queued=queued)
+                str(exc), code=exc.code, request=request_context, mode=mode,
+                values=[value], frame=frame, queued=queued, expect=expect
+            ) from None
         if queued and not expect:
             # A declared frame alone is not proof the scene is the one the
             # write was planned against: the playhead can be set to any frame

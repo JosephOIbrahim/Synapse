@@ -263,7 +263,20 @@ TOOL_DEFS: list[tuple] = [
              "type": "object",
              "description": "The authored state a queued write requires: "
                             "{\"value\": ...} and/or {\"raw_authored\": ...}. "
-                            "A different state refuses the write.",
+                            "A different state refuses the write; a key this "
+                            "server does not evaluate refuses it too.",
+             "properties": {
+                 "value": {
+                     "description": "The value the parameter must still hold "
+                                    "(compared after eval()).",
+                 },
+                 "raw_authored": {
+                     "description": "The string the parameter must still hold "
+                                    "as written (unexpandedString()).",
+                 },
+             },
+             "additionalProperties": False,
+             "minProperties": 1,
          },
          "request_id": {
              "type": "string",

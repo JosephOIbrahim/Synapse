@@ -800,6 +800,101 @@ def test_handler_mode_refusal_carries_a_receipt(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# 13. The precondition is evaluated, not merely present (round 2.5, blocker 1)
+# ---------------------------------------------------------------------------
+
+def test_queued_expect_with_an_unknown_key_refuses_before_the_hop(monkeypatch):
+    """Probe: expect={"value_typo": 0.0} wrote 1.0 and reported applied.
+
+    The handler tested truthiness only, so a misspelled key was a precondition
+    nobody checked. It must refuse with zero setters instead.
+    """
+    from synapse.server import handlers
+
+    parm = _Parm(1.0)
+    _install_fake_hou(monkeypatch, parm)
+
+    with pytest.raises(ParmWriteRefused) as caught:
+        handlers.SynapseHandler._handle_set_parm(
+            None, {"node": "/obj/geo1", "parm": "tx", "value": 1.0,
+                   "queued": True, "expect": {"value_typo": 0.0}})
+
+    assert caught.value.receipt["error"]["code"] == "parm.precondition_invalid"
+    assert caught.value.receipt["write"] == "not_attempted"
+    assert parm.writes == []
+
+
+def test_author_write_refuses_an_expect_that_names_no_state():
+    """The module refuses the same shapes with no handler in the way."""
+    parm = _Parm(0.0)
+
+    with pytest.raises(ParmWriteRefused) as unknown:
+        author_parm_write([parm], [1.0], queued=True,
+                          expect={"value_typo": 0.0})
+    assert unknown.value.receipt["error"]["code"] == "parm.precondition_invalid"
+    assert unknown.value.receipt["write"] == "not_attempted"
+    assert parm.writes == []
+
+    # At least one of {"value", "raw_authored"} is required.
+    with pytest.raises(ParmWriteRefused) as empty:
+        author_parm_write([parm], [1.0], queued=True, expect={})
+    assert empty.value.receipt["error"]["code"] == "parm.precondition_invalid"
+    assert parm.writes == []
+
+
+def test_queued_expect_that_holds_proceeds_and_is_recorded(monkeypatch):
+    from synapse.server import handlers
+
+    parm = _Parm(0.0)
+    _install_fake_hou(monkeypatch, parm)
+
+    out = handlers.SynapseHandler._handle_set_parm(
+        None, {"node": "/obj/geo1", "parm": "tx", "value": 1.0,
+               "queued": True, "expect": {"value": 0.0},
+               "request_id": "req-13"})
+
+    assert out["receipt"]["write"] == "applied"
+    assert out["receipt"]["readback"]["state"] == "match"
+    # The expectation that was actually checked rides in the receipt.
+    assert out["receipt"]["request"]["expect"] == {"value": 0.0}
+    assert parm.writes == [1.0]
+
+
+def test_queued_expect_that_is_stale_refuses_on_main(monkeypatch):
+    from synapse.server import handlers
+
+    parm = _Parm(3.0)  # the scene moved since the write was planned
+    _install_fake_hou(monkeypatch, parm)
+
+    with pytest.raises(ParmWriteRefused) as caught:
+        handlers.SynapseHandler._handle_set_parm(
+            None, {"node": "/obj/geo1", "parm": "tx", "value": 1.0,
+                   "queued": True, "expect": {"value": 0.0}})
+
+    assert caught.value.receipt["error"]["code"] == "parm.precondition_failed"
+    assert caught.value.receipt["write"] == "not_attempted"
+    assert caught.value.receipt["request"]["expect"] == {"value": 0.0}
+    assert parm.writes == []
+
+
+def test_queued_raw_authored_expect_is_honoured():
+    parm = _StringParm()
+    held = parm.unexpandedString()
+
+    out = author_parm_write([parm], [AUTHORED], queued=True,
+                            expect={"raw_authored": held})
+    assert out["receipt"]["write"] == "applied"
+    assert out["receipt"]["request"]["expect"] == {"raw_authored": held}
+
+    stuck = _StringParm()
+    with pytest.raises(ParmWriteRefused) as caught:
+        author_parm_write([stuck], [AUTHORED], queued=True,
+                          expect={"raw_authored": "$HIP/other.exr"})
+    assert caught.value.receipt["error"]["code"] == "parm.precondition_failed"
+    assert stuck.writes == []
+
+
+# ---------------------------------------------------------------------------
 # 16. The consumer keeps the receipt (round 2.5, blocker 4 / R3b)
 # ---------------------------------------------------------------------------
 

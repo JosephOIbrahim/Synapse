@@ -488,7 +488,7 @@ def _values(items):
 
 
 def _request_fields(request, mode, values, frame, queued,
-                    targets=None) -> Dict[str, Any]:
+                    targets=None, expect=None) -> Dict[str, Any]:
     """The receipt's request block: what was asked, and in which context.
 
     ``expected_session`` is the session the write was authorized under;
@@ -496,7 +496,8 @@ def _request_fields(request, mode, values, frame, queued,
     ``observed_frame`` is the frame Houdini was on at that moment (never the
     declared one — ``frame`` above is the declaration). ``observed_target`` is
     the parameter the write actually reached, which differs from the requested
-    name under ``mode='write_source'``. A context the route could not read is
+    name under ``mode='write_source'``. ``expect`` is the precondition the
+    write was actually checked against. A context the route could not read is
     ``None``, never a stand-in.
     """
     request = request if isinstance(request, dict) else {}
@@ -512,6 +513,7 @@ def _request_fields(request, mode, values, frame, queued,
         "observed_session": request.get("observed_session"),
         "observed_frame": request.get("observed_frame"),
         "observed_target": None,
+        "expect": expect,
     }
     if targets:
         fields["observed_target"] = _values(
@@ -559,7 +561,8 @@ def _attach_receipt(exc, receipt) -> None:
 
 
 def write_refusal(message, code="parm.refused", request=None, mode="refuse",
-                  values=(), frame=None, queued=False) -> ParmWriteRefused:
+                  values=(), frame=None, queued=False,
+                  expect=None) -> ParmWriteRefused:
     """A ``ParmWriteRefused`` that already carries its structured receipt.
 
     A route that refuses before it has a parm to hand (a queued write with no
@@ -569,7 +572,8 @@ def write_refusal(message, code="parm.refused", request=None, mode="refuse",
     values = list(values) if values else [None]
     refused = ParmWriteRefused(message, code=code)
     refused.receipt = _receipt(
-        request=_request_fields(request, mode, values, frame, queued),
+        request=_request_fields(request, mode, values, frame, queued,
+                                expect=expect),
         write="not_attempted",
         targets=[],
         readback=_not_attempted_readback(values),
@@ -681,14 +685,41 @@ def _readback_key(targets, values, frame) -> Dict[str, Any]:
     }
 
 
-def _check_expect(targets, expect) -> None:
-    """Revalidate a queued write's precondition on the main thread, pre-write."""
+#: The only authored states a queued write's precondition may name. A
+#: misspelled key used to satisfy the handler's truthiness test while checking
+#: nothing, so the write landed unguarded and reported ``applied``.
+_EXPECT_KEYS = ("value", "raw_authored")
+
+
+def validate_expect(expect) -> None:
+    """Refuse a precondition that names no state this module can evaluate.
+
+    Called before the main-thread hop (so a typo costs zero setters) and again
+    inside ``_check_expect`` (so a direct caller gets the same answer). At
+    least one entry must be present, and every entry must be one of
+    ``value`` / ``raw_authored`` — anything else is a precondition nobody will
+    check, which is worse than none because it reads as protection.
+    """
     if expect is None:
         return
     if not isinstance(expect, dict):
         raise ParmWriteRefused(
             "A queued write's precondition must be a mapping. Nothing was "
             "written.", code="parm.precondition_invalid")
+    unknown = sorted(str(key) for key in expect if key not in _EXPECT_KEYS)
+    if unknown or not expect:
+        named = ", ".join(repr(key) for key in unknown) if unknown else "no state"
+        raise ParmWriteRefused(
+            f"A queued write's precondition names {named}; the states this "
+            f"module evaluates are {' and '.join(repr(k) for k in _EXPECT_KEYS)}. "
+            "Nothing was written.", code="parm.precondition_invalid")
+
+
+def _check_expect(targets, expect) -> None:
+    """Revalidate a queued write's precondition on the main thread, pre-write."""
+    validate_expect(expect)
+    if expect is None:
+        return
     for target, _ in targets:
         if "value" in expect:
             try:
@@ -735,7 +766,7 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
             f"Unknown mode {mode!r}. Use one of: {', '.join(WRITE_MODES)}. "
             "Nothing was written.",
             code="parm.mode_invalid", request=request, mode=mode,
-            values=values, frame=frame, queued=queued)
+            values=values, frame=frame, queued=queued, expect=expect)
 
     parms = list(parms)
     values = list(values)
@@ -746,7 +777,7 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
             f"{len(values)} value(s) for {len(parms)} parameter(s). Nothing "
             "was written.",
             code="parm.arity_mismatch", request=request, mode=mode,
-            values=values, frame=frame, queued=queued)
+            values=values, frame=frame, queued=queued, expect=expect)
 
     # A declared frame is the frame. Only an immediate legacy call with none
     # reads the playhead, and the frame it used is reported.
@@ -757,7 +788,7 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
                 "Cannot add a key: Houdini is not available and no frame was "
                 "declared. Nothing was written.",
                 code="parm.frame_unknown", request=request, mode=mode,
-                values=values, frame=None, queued=queued)
+                values=values, frame=None, queued=queued, expect=expect)
         declared_frame = hou.frame()
 
     # Planning refuses before any snapshot or setter. Attach the receipt the
@@ -768,7 +799,8 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         if not isinstance(exc.receipt, dict):
             _attach_receipt(exc, _receipt(
                 request=_request_fields(request, mode, values,
-                                        declared_frame, queued, targets=[]),
+                                        declared_frame, queued, targets=[],
+                                        expect=expect),
                 write="not_attempted",
                 targets=[],
                 readback=_not_attempted_readback(values),
@@ -789,7 +821,8 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         if not isinstance(exc.receipt, dict):
             _attach_receipt(exc, _receipt(
                 request=_request_fields(request, mode, values,
-                                        declared_frame, queued, targets=targets),
+                                        declared_frame, queued, targets=targets,
+                                        expect=expect),
                 write="not_attempted",
                 targets=_target_mapping(parms, targets),
                 readback=_not_attempted_readback(values),
@@ -825,7 +858,8 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         recovery = _restore_all(target_parms, snapshots)
         _attach_receipt(exc, _receipt(
             request=_request_fields(request, mode, values,
-                                    declared_frame, queued, targets=targets),
+                                    declared_frame, queued, targets=targets,
+                                    expect=expect),
             write="partial" if applied else "unknown",
             targets=_target_mapping(parms, targets),
             readback=_not_attempted_readback(values),
@@ -844,7 +878,8 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
         # unverified. Do not auto-restore an ambiguous result.
         _attach_receipt(exc, _receipt(
             request=_request_fields(request, mode, values,
-                                    declared_frame, queued, targets=targets),
+                                    declared_frame, queued, targets=targets,
+                                    expect=expect),
             write="applied",
             targets=_target_mapping(parms, targets),
             readback={
@@ -863,7 +898,7 @@ def author_parm_write(parms, values, mode: str = "refuse", parm_tuple=None,
 
     receipt = _receipt(
         request=_request_fields(request, mode, values, declared_frame, queued,
-                                targets=targets),
+                                targets=targets, expect=expect),
         write="applied",
         targets=_target_mapping(parms, targets),
         readback=readback,
