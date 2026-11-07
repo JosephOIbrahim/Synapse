@@ -101,3 +101,12 @@ and yields the odd frames - which is exactly what the shipped farm does at its
 own int() coercion. The behaviour is right and matches the consumer; only the
 word "non-integer" is too broad. Do not reopen a reviewed head for a word: the
 next node or the merge message states it as "a step the farm cannot act on".
+
+**W7 — the GPU predicate certifies the probe, not the build.** The behavioural
+test proves the B1 receipt (compile and run evidence, verdict state), and it
+cannot pass while the verdict says "feasible" or the unknowns are empty. It does
+not prove that an OpenCV build exists: `closure.real_closure_state` remains
+UNMET and B2-B6 stay open. A scheduler that keys only on the predicate's exit
+code could advance NR-GPU-QUALIFICATION before any build. The node's gate is
+`joe`, and any workflow consuming the graph must read the receipt's verdict and
+closure, not only rc.
