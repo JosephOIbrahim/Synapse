@@ -1,8 +1,8 @@
 # ADR-0002: An Optional OpenCV 5.1 CUDA Backend for Selected RETINA T1 Operations
 
 **Date:** 2026-11-07  
-**Status:** PROPOSED - not ratified. Ratification is Joe's alone; this file changes no governing document.  
-**Authors:** Claude (integration author, this session). Proposed to Joe Ibrahim, product and ratification authority and the named G0 owner. Naming Joe G0 owner approves nothing in this file.  
+**Status:** PROPOSED - not ratified. On 2026-11-07 the owner ruled four G0 conflicts (R1-R4, "Owner rulings" below). The P6/T1 amendment itself remains unratified. Ratification is Joe's alone; this file changes no governing document.  
+**Authors:** Claude (integration author, this session). Proposed to Joe Ibrahim, product and ratification authority and the named G0 owner. Joe named himself G0 owner and ruled R1-R4 on 2026-11-07. He ratified nothing and authorized no act.  
 **Input under reconciliation:** "SYNAPSE: OpenCV 5.1 GPU Integration Blueprint", dated 7 November 2026, sha256 `bbaeed26669b945c2811399b9bbae0a1a183dbd18b6bb57d121f7391d271bf43`. It is cited by section here and is not reproduced.  
 **Companion record:** `docs/reviews/opencv51-gpu-g0-receipt-2026-11-07.md` (the G0 receipt).  
 **Baseline:** branch `vision/opencv51-g0` at `ef43d37aaedb677bebc548a5fc921d4bea4565fd`. `retina/` is byte-identical to tag `v5.98.0` (`6a5f68dd`) and to `origin/master` (`e3846b22`).
@@ -18,7 +18,7 @@ Every factual sentence carries one of these:
 - **UNKNOWN** - nobody has measured it.
 - **REFUTED** - a claim the code contradicts.
 
-Bracketed citations such as `[01-trace §3]` name a G0 reconciliation report and its section. Those reports are local working papers, not committed. They are identified by file name and sha256 in the receipt's evidence table, and each one cites the repo `path:line` reproduced here. "Orchestrator record" means facts established by the workflow orchestrator outside the reports.
+Bracketed citations such as `[01-trace §3]` name a G0 reconciliation report and its section. Those reports are local working papers, not committed. They are identified by file name and sha256 in the receipt's evidence table, and each one cites the repo `path:line` reproduced here. "Orchestrator record" means facts established by the workflow orchestrator outside the reports, including the owner's relayed instruction of 2026-11-07.
 
 ---
 
@@ -42,7 +42,7 @@ The governing RETINA design allocates the work three ways. All quotations are VE
 
 **This amendment has been asked for before and never written up.** The next-release source blueprint asks for "a small P6 design amendment" (`docs/intake/src/synapse_next_release_blueprint.md:242`) and says a CPU/GPU OpenCV comparison "is not an independent COP/OpenCV oracle comparison" (`:234`). The intake, both rulings, `graph.json` and the next-release README never carried that ask forward [03-governance §2.3, §6.1]. This ADR is the first write-up.
 
-**Which job the backend serves.** In this repo's rulings, "vision" names the VLM route (R180-R182, `harness/notes/CTO_RULINGS_01.md:5464-5649`). R182 keeps the measured half, "by how much", in OpenCV in the worker, and calls it "a different job" (`:5640-5645`). `harness/SYNAPSE_RETINA_VERIFY.md:89` says cv2 "earns its place on the delta MASK". So the CUDA backend proposed here is **measurement on arrays the worker has already ingested**. It is not semantic vision, not inference and not capture [03-governance §3.2].
+**Which job the backend serves.** In this repo's rulings, "vision" names the VLM route (R180-R182, `harness/notes/CTO_RULINGS_01.md:5464-5649`). R182 says the measured half, "by how much", still wants "OpenCV in the sidecar", and calls it "a different job" (`:5640-5645`). `harness/SYNAPSE_RETINA_VERIFY.md:89` says cv2 "earns its place on the delta MASK". So the CUDA backend proposed here is **measurement on arrays the worker has already ingested**. It is not semantic vision, not inference and not capture [03-governance §3.2].
 
 ### 2. What G0 found that changes the input blueprint's premise
 
@@ -50,17 +50,17 @@ The input blueprint calls RETINA an "existing out-of-process perception subsyste
 
 1. **T1 has no production caller.** VERIFIED. Outside `tests/` and `harness/`, the only importer of the `retina` package is `python/synapse/panel/render_receipt.py:42,50`, and it imports `retina.t0` only. `installer/build_payload.py:22-23` lists the files for packaging and calls nothing [01-trace §3; 02-ops F8; 05-claims §4.1].
 2. **Nothing launches a worker.** VERIFIED. `retina/` has no entrypoint, no `__main__` and no subprocess launcher. The two files the graph assigns to the worker, `retina/worker_entrypoint.py` and `python/synapse/host/retina_worker.py`, do not exist [01-trace §3; 06-critic §1.8]. `retina/.venv` is absent from this worktree [01-trace §3].
-3. **No production code writes a verdict sidecar.** VERIFIED. `emit_verdict` (`retina/events.py:86-100`) is reached only through `retina/t0.py:409-419`, which only `tests/test_retina_t0.py:247` calls. The panel path documents that it never writes (`python/synapse/panel/claude_worker.py:1100-1102`; `render_receipt.py:10-13`). No path convention, schema version or reader for a sidecar exists [01-trace §8-9; 05-claims 1.17].
+3. **No production code writes a verdict sidecar.** VERIFIED. No production code calls `emit_verdict` (`retina/events.py:86-100`). Its only T0 wrapper, `verify_and_emit` (`retina/t0.py:409-419`), is called only by `tests/test_retina_t0.py:247`, and tests also call `emit_verdict` directly (`tests/test_retina_t0.py:233-234`; `tests/test_retina_t1_schema.py:129-130`); `retina/t1.py:52,90` re-exports it (VERIFIED: `grep -rn emit_verdict`). The panel path documents that it never writes (`python/synapse/panel/claude_worker.py:1100-1102`; `render_receipt.py:10-13`). No path convention, schema version or reader for a sidecar exists [01-trace §8-9; 05-claims 1.17].
 4. **The tier that runs, T0, runs inside Houdini.** VERIFIED. `ClaudeWorker._emit_render_receipt` (`claude_worker.py:1093-1111`) calls `render_receipt.compute_receipt`, whose `_load_t0` inserts the repo root into `sys.path` inside Houdini's interpreter (`render_receipt.py:35-53`). T0 runs on the panel's worker thread. This contradicts `retina/__init__.py:9-15`, which describes the tree as running in its own venv outside every host surface [01-trace §3].
 5. **The zero-cv2 host lint is lexical, not transitive.** VERIFIED. `tests/test_retina_boundary.py` scans host surfaces with a regex (`:38-57`) and keeps `retina/` out of scope on purpose (`:104-117`). If `retina/__init__.py`, `t0.py`, `events.py` or `exr_header.py` ever reached a backend module, CUDA libraries would load into Houdini and the test would stay green. That consequence is INFERENCE [01-trace §11; 05-claims 1.16].
 6. **No test pins zero `hou` in the worker.** VERIFIED. `retina/` imports no `hou` today, but nothing fails if one is added [01-trace §11; 05-claims 1.15].
 7. **The host installer ships T1.** VERIFIED: `installer/build_payload.py:22-23` lists `retina/t1.py` and `retina/ingest.py` in the host payload. A backend module appended to that list would ship with the host while the lint stays green. That is INFERENCE [06-critic §4.5].
-8. **The scoped-delta target source is refuted, and the check has a positive-change gap.** R100 ruled that no usable per-object integer ID mask exists on Karma 22.0.368 (`CTO_RULINGS_01.md:2799-2817`). R182 replaced object identity with the vision route and kept "by how much" in OpenCV (`:5580-5649`). Separately, stated abstractly: the scoped-delta check confirms that change stayed inside the claimed target and that the outside held still, but **no check requires that anything changed inside the target**. An unchanged before/after pair, or a target absent from the frame, rolls up to `pass`. Static reading: VERIFIED (`retina/t1.py:480-541`). Executed on CPU with cv2 4.12.0: report 05 reproduced both cases as `pass`. That run is artifact-read here, not re-executed [02-ops §4, F5; 05-claims §6; 06-critic §1.14].
+8. **The scoped-delta check's target input has no supported source on Karma 22.0.368 (R100), and the check has a positive-change gap.** R100 ruled the target-source route unavailable on that build (`CTO_RULINGS_01.md:2799-2817`). R182 replaced object identity with the vision route and kept "by how much" in OpenCV (`:5580-5649`). Separately, stated abstractly: the scoped-delta check confirms that change stayed inside the claimed target and that the outside held still, but **no check requires that anything changed inside the target**. An unchanged before/after pair, or a target absent from the frame, rolls up to `pass`. Static reading: VERIFIED (`retina/t1.py:480-541`). Executed on CPU with cv2 4.12.0: report 05 reproduced both cases as `pass`. That run is artifact-read here, not re-executed [02-ops §4, F5; 05-claims §6; 06-critic §1.14].
 
 **What this means for where a backend can go.** INFERENCE (design), grounded in the VERIFIED facts above [01-trace §12; 06-critic §5.2]:
 
 - There is **no hot path** to insert a dispatcher into. The input blueprint's instruction to choose a chain "after profiling actual call sites" (its §4) cannot be followed, because there are no production call sites [02-ops B2].
-- The narrowest existing seam is **beneath the four cv2-using primitives** in `retina/t1.py`: `ssim` (`:218`), `change_mask` (`:253`), `id_matte` (`:277`) and `ssim_outside` (`:321`). Their callers, `assess_frame` (`:433`) and `assess_scoped_delta` (`:480`), stay the call boundary. `events.py`, `build_t1_event` (`:416`) and the tri-state roll-up stay untouched. The backend is chosen by explicit argument or policy, never by an import-time global.
+- The narrowest existing seam is **beneath the four cv2-using primitives** in `retina/t1.py`: `ssim` (`:218`), `change_mask` (`:253`), and the two scoped-delta primitives (`:277`, `:321`). Their callers (`:433`, `:480`) stay the call boundary. `events.py`, `build_t1_event` (`:416`) and the tri-state roll-up stay untouched. The backend is chosen by explicit argument or policy, never by an import-time global. Under R2 only `change_mask` is in the first chain.
 - **Placement constraint:** no backend module may be reachable from `retina/__init__.py`, `retina/t0.py`, `retina/events.py` or `retina/exr_header.py`, because those load inside Houdini. No backend module may join the host payload list.
 - **Until a worker exists, the only honest consumer of a backend is an offline shadow-parity harness.** A backend with no production invoker would repeat the pattern this repo retired in R20 (CLAUDE.md §2.3: a mechanism with no producer and no consumer).
 - **Production use needs work this ADR does not do:** a worker entry and host launcher (owned by `NR-WORKER-SUPERVISED`), and a sidecar path, schema and reader (closest owner: `NR-RECOVERY-RECEIPTS`, which owns `retina/publication.py`; that fit is INFERENCE).
@@ -74,7 +74,7 @@ The input blueprint does not cite it [05-claims §4.2]. All rows VERIFIED unless
 - **Operating rules:** tandem, not replacement; "JEV decides the order"; every node lands in a worktree with failing-first tests, one commit, adversarial review and an owner-only merge; "The GPU track starts as a probe" (`:31-43`).
 - **The graph:** `harness/next-release/graph.json` holds `NR-GPU-FEASIBILITY` (gate joe), `NR-GPU-QUALIFICATION`, `NR-IMAGE-CONTRACT` (owns `retina/events.py`, `ingest.py`, `t1.py`, `qc_profiles.toml`), `NR-WORKER-SUPERVISED`, `NR-RECOVERY-RECEIPTS`, `NR-PACKAGE-PAIR` and `NR-LICENSE-GATE` (`graph.json:72-180`).
 - **Ordering:** the last recorded JEV graph decision (`harness/harness2/runs/next-release/graph_decision.json`, generated 2026-11-07T01:58Z) lands `NR-PLAN-TRUTH` and `NR-WRITE-RECEIPT` and parks every GPU and RETINA node. Its reason is "fallback: Jev chose NR-PLAN-TRUTH @ 0.44, below the confidence gate 0.6" [03-governance §6.1].
-- **Round two:** R6 says "The GPU lane closes B1, not the build", and B2, the worker Python ABI, "is the owner's decision and stays open" (`RULING-2026-11-07-round2.md:49-53`). W7 says the GPU predicate "certifies the probe, not the build" and the node's gate is `joe` (`:105-112`).
+- **Round two:** R6 says "The GPU lane closes B1, not the build", and B2, the worker Python ABI, "is the owner's decision and stays open" (`RULING-2026-11-07-round2.md:49-53`). W7 says the GPU predicate "certifies the probe, not the build" and the node's gate is `joe` (`:105-112`). B2 is now ruled by R4 (orchestrator record).
 
 #### What NR-GPU-FEASIBILITY proved, and what it did not
 
@@ -91,7 +91,37 @@ Merged as `d9a325bc` on 2026-11-07 with the subject "merge: NR-GPU-FEASIBILITY, 
 | What it did **not** prove (its own list) | No CMake configure of OpenCV; no OpenCV module (`cudaarithm` included) compiled; no Python binding for either candidate interpreter; no masked `cv2.cuda.meanStdDev`; no OpenCV CUDA chain executed | `:51-58`, `:495-501` |
 | Closure | `real_closure_state`: "UNMET: no build, no device count, no executed masked meanStdDev". B2 to B6, B9 and B10 remain open | `:431`, `:333-404` |
 
-**The settled sentence:** one trivial CUDA kernel, unrelated to OpenCV, compiled and ran on this machine according to a prior lane's committed receipt. No OpenCV source has been fetched, configured or built under either candidate recipe, and **no OpenCV CUDA operator has executed anywhere in this program.** The separate prep project under `E:/OpenCV5.1_Prep` ran a compile-only probe with `gpu_execution:false` (prep record, `E:/OpenCV5.1_Prep/01_Inspections/raw/preparation-20261106T194127Z/compile_conforming_result.json`) [04-prep §4].
+**The settled sentence:** one trivial CUDA kernel, unrelated to OpenCV, compiled and ran on this machine according to a prior lane's committed receipt. No OpenCV source has been configured or built under either candidate recipe; pinned 5.1.0 source archives are staged, unbuilt, under the E: prep project (receipt §6). **No OpenCV CUDA operator has executed anywhere in this program.** The separate prep project under `E:/OpenCV5.1_Prep` ran a compile-only probe with `gpu_execution:false` (prep record, `E:/OpenCV5.1_Prep/01_Inspections/raw/preparation-20261106T194127Z/compile_conforming_result.json`) [04-prep §4].
+
+---
+
+## Owner rulings (2026-11-07)
+
+**Source:** orchestrator record of the owner's relayed instruction, 2026-11-07. After reading the G0 reconcile, Joe wrote, verbatim:
+
+> "Rule on the G0 conflicts: fold the OpenCV blueprint into the harness/next-release graph, no second board. Use the change-mask chain, build root E:\OpenCV5.1_Prep, worker CPython 3.12.10 with the isolated cp312 OIIO wheel. Record it in ADR-0002 and the G0 receipt on vision/opencv51-g0, don't push."
+
+That rules exactly four G0 conflicts and nothing else.
+
+| # | Conflict | Ruling | State | Supersedes |
+|---|---|---|---|---|
+| **R1** | Board | The OpenCV 5.1 blueprint folds into the `harness/next-release` graph. **There is no second board.** Its stages run as the existing NR nodes, plus only new nodes or node changes that Joe merges into `graph.json` | **RULED 2026-11-07** | Former decision 1, option (b), a separate G0-G6 track |
+| **R2** | First GPU chain | The change-mask body in `retina/t1.py` (`absdiff`, threshold, morphological open, close; `:266-273`), not the masked `meanStdDev` chain | **RULED 2026-11-07** | Former decision 2, option (b) |
+| **R3** | Build root | `E:/OpenCV5.1_Prep`, the prep project, not `C:/ocv` | **RULED 2026-11-07** | `C:/ocv`, the NR lane's planned root (`gpu_feasibility.json:259`) |
+| **R4** | Worker runtime | CPython 3.12.10 with the isolated cp312 OpenImageIO wheel, not a hython-seeded venv and not the cp314 wheel | **RULED 2026-11-07** | Former decisions 3 and 4: a provisioned CPython 3.13, a hython-seeded venv, the cp314 OIIO wheel |
+
+**What the rulings are not.** They do not ratify the P6/T1 amendment, so this ADR stays PROPOSED. They authorize no act: no clone, configure, build, install, pip or venv creation, and no GPU work (AGENTS.md Law 7; input blueprint §2 invariant 8). They leave every other decision open ("Decisions still open" below). Joe named himself G0 owner; that approves nothing beyond these four rulings.
+
+**R3 as worded.** Joe named the root `E:\OpenCV5.1_Prep`. The staged E: recipe's own build directory is `E:/OpenCV5.1_Prep/02_OpenCV_Setup/build/cuda133-sm89-py312` and its install prefix is `E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312` (`E:/OpenCV5.1_Prep/02_OpenCV_Setup/preparation/Current_Configure.json:9`, `:18`, `:117`; VERIFIED by reading that file). The prep project stays read-only until a per-act authorization; G0 executed nothing there.
+
+### Consequences of R1-R4 (stated, not done)
+
+1. **The module list covers the change-mask chain.** VERIFIED: `Current_Configure.json:26` sets `BUILD_LIST=core,flann,geometry,imgproc,imgcodecs,cudev,cudaarithm,cudaimgproc,cudafilters,cudawarping,python3`. It contains `cudaarithm` (`absdiff`, threshold) and `cudafilters` (morphology). `cudafilters` declares `opencv_imgproc` and `opencv_cudaarithm` as its dependencies (pinned contrib `modules/cudafilters/CMakeLists.txt:9`). That `cudaimgproc` and `cudawarping` are not needed by the chain is INFERENCE from those dependencies. `geometry` and `flann` are required dependencies per the prep's scope notes (`Current_Configure.json:137`). Whether configure actually generates `python3` plus these modules is UNKNOWN (B4, B5). By contrast the NR recipe's `BUILD_LIST=core,cudaarithm,python3` (`gpu_feasibility.json:300`) has no `cudafilters`, so its artifact would lack the morphology operators: INFERENCE from the module list; its `fallback_2` (`:304`) would build the default module set instead [06-critic §2.1].
+2. **`NR-GPU-QUALIFICATION` and `NR-GPU-FEASIBILITY` need a graph change that Joe merges.** Both are written around the masked `meanStdDev` chain and `C:/ocv`. VERIFIED: QUALIFICATION's `why` names "the 11x11 census" and "equality at the FP32 threshold" (`graph.json:95`); its predicate is `test -f harness/next-release/gpu_qualification.json` (`:96`), which cannot fail on a missing build. FEASIBILITY's committed receipt proposes a real closure built on `cv2.cuda.meanStdDev(src, mask)` over the 11x11 fixture (`gpu_feasibility.json:430`), with root `C:/ocv` (`:259`) and the `/m:32` recipe (`:282-283`). Under R1 and R2 those texts must change, or the change-mask chain must be recorded as an additional chain beside them (decision 14).
+3. **The shipped RETINA venv recipe conflicts with R4.** VERIFIED: `retina/requirements.txt:36-37` says a hython-seeded venv inherits Houdini's OIIO, and `:38-40` names a cp314 OIIO wheel. `retina/setup_venv.py:10-16`, `:42-45` and `retina/setup_venv.ps1:7-10` document a hython seed as an option; the default seed is the invoking interpreter. These three files are in no node's `owner_files` (receipt §5), so they must be changed later by whichever node is given them (decision 12). The recipe also installs `opencv-python-headless` (`requirements.txt:28`), which must never share a venv with the custom `cv2` [04-prep F-a].
+4. **The custom `cv2` binding is built for CPython 3.12.10 without the limited API.** VERIFIED: `Current_Configure.json:27`, `:30` and `:31` point `PYTHON3_EXECUTABLE`, `PYTHON3_PACKAGES_PATH` and the NumPy include path at the prep venv `env/py312-cuda133`, and the argument list (`:5-113`) sets no `PYTHON3_LIMITED_API` (VERIFIED by grep). That the binding is therefore cp312-only is INFERENCE from CMake semantics [04-prep §1]. It compiles against that venv's NumPy 2.4.4 headers (`:31`); OIIO 3.1.15.0 requires `numpy>=2,<3` [04-prep §1]. ABI consistency of the whole stack is INFERENCE until an import succeeds.
+5. **No existing artifact is the qualification artifact.** The only thing `NR-GPU-FEASIBILITY` compiled is `vectorAdd.exe`, a non-OpenCV kernel, in a gitignored scratch directory inside its own worktree, not under `C:/ocv` (VERIFIED: `gpu_feasibility.json:137`, `:461-463`). Its planned `C:/ocv` build never ran, and R3 supersedes that root. The qualification artifact must come from a future build under `E:/OpenCV5.1_Prep`.
+6. **The E: recipe, as staged, does not yet produce an isolated, importable worker artifact.** It has no install step (`Current_Configure.json:115-122`), and it would install `cv2` into the prep venv (`:30`). The required deltas are listed in receipt §13 ("Still needed") and need per-act approval.
 
 ---
 
@@ -113,8 +143,8 @@ This is the text Joe would ratify. It is **not applied anywhere** by this file.
 | Preserved | Anchor |
 |---|---|
 | ONNX Runtime for all inference; T2 unchanged | `docs/SYNAPSE_RETINA_BLUEPRINT.md:73`, `:94` |
-| OIIO EXR ingest; `$OCIO` read, never set; ID and data planes never colour-transformed | `retina/ingest.py:81-103`, `:121-154`, `:179-197` |
-| The event envelope `{ch, v, tier, claim, checks, verdict, proof, at}`; tri-state checks; roll-up fail > inconclusive > pass; caller-supplied time | `retina/events.py:43-60`, `:74-83`; `retina/__init__.py:30-31` |
+| OIIO EXR ingest; `$OCIO` read, never set; ID and data planes never colour-transformed. **EXR ingest is never replaced by `cv2.imread`**, whatever PNG fixtures show (input blueprint §2 invariant 4) | `retina/ingest.py:81-103`, `:121-154`, `:179-197` |
+| The envelope `{ch, v, tier, claim, checks, verdict, proof, at}`; tri-state checks; roll-up fail > inconclusive > pass; caller-supplied time | `retina/events.py:43-60`, `:74-83`; `retina/__init__.py:30-31` |
 | Sidecar JSONL as the persistence form; no USD writes | `retina/events.py:86-100` |
 | Zero `cv2` in the host, made **transitive** rather than only lexical | `tests/test_retina_boundary.py:67-101` today |
 | Zero `hou` in the worker, made **pinned** | none today (Context §2 item 6) |
@@ -127,7 +157,7 @@ No new envelope field is added before a consumer-compatibility test and a contra
 
 The names `probe_capabilities`, `analyze`, `cancel` and `close` are **PROPOSED**. None exists under `retina/` (VERIFIED: grep at `ef43d37a`). `analyze` and `gpu_required` do appear elsewhere in the repo with unrelated meanings (`shared/conductor_advisor.py:107`; the cache-policy tests).
 
-- `probe_capabilities()` reports artifact identity, `cv2.__file__`, the selected device, driver and runtime, the exact operators available, and the last probe result. It runs only when the mode is not `off`.
+- `probe_capabilities()` reports artifact identity, `cv2.__file__`, the selected device, driver and runtime, the exact operators available, the full paths of the loaded CUDA and OpenCV modules, and the last probe result. It runs only when the mode is not `off`.
 - `analyze(request)` takes already validated arrays and an immutable request naming an **allowlisted operation** and constrained parameters. It returns measurements, per-operation execution provenance and structured failures. It never accepts Python, command strings, module names or executable paths. It validates dimensions, dtype, channels, bounds and total allocation before it touches a device.
 - `cancel(job_id)` and `close()` release only resources the job owns. Neither may terminate Houdini or a renderer.
 
@@ -153,23 +183,25 @@ The names `probe_capabilities`, `analyze`, `cancel` and `close` are **PROPOSED**
 4. The map is versioned and frozen before evaluation. A coverage claim is always narrower than the mixed pipeline.
 5. A check's verdict depends only on its inputs and profile, never on the backend. The backend is provenance.
 
+**Parity input boundary (R2 chain).** The change-mask parity contract starts at two float32 `(H, W)` planes, after luma. The parity corpus stores those planes, not EXRs pushed through `_luma` (`retina/t1.py:112-118`, `:263-264`). That keeps parity independent of how `NR-IMAGE-CONTRACT` later derives Y (its `why`, `graph.json:112`). INFERENCE (design). Sequencing the seam against the Y change is decision 15.
+
 ---
 
 ## Sites (proposed)
 
 | # | Site | Owner today | State |
 |---|---|---|---|
-| 1 | Backend selection beneath the four cv2-using primitives in `retina/t1.py` (`:218`, `:253`, `:277`, `:321`), with exactly one backend, `cpu_reference`, byte-identical to today | `NR-IMAGE-CONTRACT` (`graph.json:101-115`) | Addressed to that node, not taken |
-| 2 | A worker-only CUDA module, off the host payload list and unreachable from the in-host modules | **Unowned**; a new file needs an owner | After a qualified artifact exists |
-| 3 | The offline shadow-parity harness: the same chain on `cpu_reference` and CUDA over an approved corpus | `NR-GPU-QUALIFICATION` (`harness/next-release/gpu/`) | After a build exists |
+| 1 | Backend selection beneath the four cv2-using primitives in `retina/t1.py` (`:218`, `:253`, `:277`, `:321`), with exactly one backend, `cpu_reference`, byte-identical to today | `NR-IMAGE-CONTRACT` (`graph.json:101-115`) | Addressed to that node, not taken. The scope widening is decision 12 |
+| 2 | A worker-only CUDA module, off the host payload list and unreachable from the in-host modules | **Unowned**; its graph home is decision 12 | After a qualified artifact exists |
+| 3 | The offline shadow-parity harness: the R2 chain on `cpu_reference` and CUDA over an approved corpus | `NR-GPU-QUALIFICATION` (`harness/next-release/gpu/`), after the graph change in Consequence 2 | After a build exists |
 | 4 | The worker entry and host launcher | `NR-WORKER-SUPERVISED` | Planned files absent |
 
 ## Refused Sites
 
-1. **The Houdini host process.** No cv2, CUDA or backend module runs or is reachable there, including through the `retina.t0` path.
+1. **The Houdini host process.** No cv2, CUDA or backend module runs or is reachable there, including through the `retina.t0` path. No global `PATH` change, no CUDA or Qt DLL copied into Houdini, and no replacement of the host's NumPy or Python (input blueprint §2 invariant 3).
 2. **T2 and all inference.** ONNX Runtime stays. OpenCV DNN, cuDNN and TensorRT stay out.
 3. **SSIM.** It stays on the CPU reference in float64. The pinned contrib source has no float64 row in the CUDA separable filter (`cudafilters/src/filtering.cpp:398`, `:409`, asserted at `:452`) [02-ops F4; 04-prep §3]. A float32 port is a new numerical design that needs separate approval (input blueprint §6).
-4. **The ID matte.** Its source was refuted (R100). No GPU work goes into it [06-critic §2.6].
+4. **The scoped-delta primitives.** Their target input has no supported source (R100). No GPU work goes into them [06-critic §2.6].
 5. **Verdict authority, consent and scene writes.** None.
 6. **The independent oracle.** A CPU-vs-CUDA OpenCV comparison never substitutes for the COP-vs-OpenCV cross-check (M4).
 7. **Thresholds and profiles.** Values are never loosened to absorb backend error (input blueprint §4; `harness/next-release/README.md:97`).
@@ -178,66 +210,67 @@ The names `probe_capabilities`, `analyze`, `cancel` and `close` are **PROPOSED**
 
 ## Invariants Inherited
 
+- **Input blueprint §2 invariants 1-8, inherited in full.** Summarized: (1) protect demo v1: no production integration, live GUI action, capture, render change, or sustained GPU or build load without separately approved scope and a resource window; (2) the governing texts (`CLAUDE.md`, `AGENTS.md`, the RETINA blueprint, reconciliation records, truth catalogs) are preserved, amendments are recorded separately, and ratification is never self-set; (3) the host/worker boundary as in Refused Site 1, plus zero `hou` in the worker; (4) OIIO EXR ingest, protected OCIO, linear metric planes and raw ID treatment, never `cv2.imread` for EXR; (5) T0 before T1, tri-state checks and the roll-up order, with missing capability or skipped work never satisfying a check; (6) the inference contract unchanged; (7) no automatic scene edits and no mutation authority on a verdict; (8) installs, live GUI work, merges, pushes, tags, release edits and ratification each need a human approval for that act.
 - AGENTS.md Laws 1-7, especially Law 1 (honest seam), Law 4 (unmeasured renders UNKNOWN) and Law 7 (per-act human gates).
 - RETINA P4 and P5 (`docs/SYNAPSE_RETINA_BLUEPRINT.md:44-45`).
-- The next-release stop rules (`harness/next-release/README.md:99-108`) and R4: a node's closure predicate is behavioural and able to fail (`RULING-2026-11-07-round2.md:36-42`).
+- The next-release stop rules (`harness/next-release/README.md:99-108`) and round-two R4: a node's closure predicate is behavioural and able to fail (`RULING-2026-11-07-round2.md:36-42`).
 - Exclusive file ownership per node (CLAUDE.md Agent Roster).
 
 ---
 
 ## Reconciliation with the ruled program
 
-**This ADR does not create a parallel board.** If ratified, the input blueprint's stages run as existing `harness/next-release` nodes. JEV and Joe keep the order (`RULING-2026-11-06.md:36-38`).
+**Ruled (R1): there is no parallel board.** The input blueprint's stages run as existing `harness/next-release` nodes, plus only new nodes or node changes Joe merges into `graph.json`. JEV and Joe keep the order (`RULING-2026-11-06.md:36-38`). R1 does not depend on this ADR being ratified.
 
 | Input blueprint stage | NR node or nodes | `owner_files` collision |
 |---|---|---|
 | G0 reconcile | the 2026-11-06 intake plus this ADR and receipt | None. These two files are new and unowned |
-| G1 qualify artifact | `NR-GPU-FEASIBILITY` (merged, `feasible-unproven`), then `NR-GPU-QUALIFICATION` | Both own `harness/next-release/gpu/`. G1 runs **as** these nodes |
-| G2 add seam (GPU off) | `NR-IMAGE-CONTRACT` for the `retina/t1.py` seam; `NR-WORKER-SUPERVISED` for any launcher | Same `retina/` files. **This widens `NR-IMAGE-CONTRACT`'s declared scope** (named RGB, derived Y, invalid-sample policy; `graph.json:102`, `:111`) to include a backend seam. That is a ruling, not a mapping |
-| G3 shadow parity | `NR-GPU-QUALIFICATION` ("an independent CPU reference", `graph.json:87`) | Same intent, same files |
+| G1 qualify artifact | `NR-GPU-FEASIBILITY` (merged, `feasible-unproven`), then `NR-GPU-QUALIFICATION` | Both own `harness/next-release/gpu/`. **No node owns the E: build itself today:** FEASIBILITY is merged with real closure UNMET, and its predicate certifies the probe, not the build (W7). Reopening it or adding a build node is decision 13. Both nodes' texts name the meanStdDev chain and `C:/ocv` (Consequence 2) |
+| G2 add seam (GPU off) | `NR-IMAGE-CONTRACT` for the `retina/t1.py` seam; `NR-WORKER-SUPERVISED` for any launcher | Same `retina/` files. This would widen `NR-IMAGE-CONTRACT`'s declared scope (named RGB, derived Y, invalid-sample policy; title `graph.json:102`, why `:112`) to include a backend seam. That is decision 12, not a mapping |
+| G3 shadow parity | `NR-GPU-QUALIFICATION` ("an independent CPU reference", `graph.json:87`) | Same intent, same files; chain per R2 |
 | G4 Joe canary | **No node** | New node needed after demo v1 |
 | G5 optional beta | `NR-PACKAGE-PAIR` and `NR-LICENSE-GATE` | Both own `installer/build_payload.py`. That double ownership already exists in the graph [06-critic §4.4] |
-| G6 consolidate | `NR-FOLLOW-ON` (parked) | Loose fit |
+| G6 consolidate | `NR-FOLLOW-ON` (parked) | Loose fit. `NR-FOLLOW-ON` owns all of `harness/next-release/` (VERIFIED: its `owner_files` in `graph.json`), which overlaps `harness/next-release/gpu/`, owned by FEASIBILITY and QUALIFICATION |
 
-### Decisions that need Joe's ruling
+### Decisions 1-4: RULED
 
-Each item lists the options and the evidence. None is settled here.
+Decisions 1 (board), 2 (first chain and build root), 3 (worker interpreter, B2) and 4 (OIIO source) are ruled by R1-R4 above. The ruling supersedes the options the draft listed for these four; the draft's case for them is not kept. The parts of former decision 2 the ruling did not settle (recipe deltas and build parallelism) move to decision 16. The open part of former decision 4, V0-R3 "who creates the worker venv", moves to decision 17.
 
-1. **Governance: fold in or run separately.**
-   - (a) This blueprint runs as the existing NR nodes. Recommended.
-   - (b) A separate G0-G6 track.
-   - Evidence: the mapping above. The input blueprint's own rule, "do not build a second vision architecture" (its Executive decision). [03-governance §0, §7; 05-claims §8.1]
-2. **The first GPU chain and the build recipe and root, as one coupled ruling.** The chain decides the module set, and the module set decides the recipe.
-   - (a) **Change-mask body:** difference, then threshold, then open, then close (`retina/t1.py:266-273`). Its dtypes appear in the CUDA source tables (`absdiff_mat.cu:151`, `threshold.cu:352`, morphology 8UC1 at `filtering.cpp:648`). Its output is binary, so parity is exact byte equality. It ports cv2 calls T1 already makes [02-ops §7, F10]. It needs `cudafilters`. The NR recipe builds `BUILD_LIST=core,cudaarithm,python3` (`gpu_feasibility.json:282`, `:300`), so that artifact **would not contain the morphology operators**. That is INFERENCE from the module list [06-critic §2.1]. The E: recipe builds `cudafilters` (`E:/OpenCV5.1_Prep/02_OpenCV_Setup/preparation/Current_Configure.json`, BUILD_LIST at `:26`) [04-prep §2].
-   - (b) **Masked `cv2.cuda.meanStdDev`:** "split + addWeighted -> masked meanStdDev -> compare/mask/countNonZero" (`gpu_feasibility.json:56`). It replaces numpy reductions in T1 (the firefly census at `retina/t1.py:199-207`), not an existing cv2 call. Choosing it adds a new GPU operation rather than porting one [02-ops §2 row 5]. Its Python binding is unverified (B6, `gpu_feasibility.json:365-371`).
-   - **Build root and recipe:** `C:/ocv`, with the NR recipe and `/m:32` parallelism (`gpu_feasibility.json:259`, `:283`, `:302`), or `E:/OpenCV5.1_Prep/02_OpenCV_Setup`, with the E: recipe, `--parallel 1` and threads pinned to 1 (`Current_Configure.json:115-127`) [04-prep §2; 06-critic §2.4]. Parallelism decides how safe a build window is while demo v1 or OVOID runs.
-   - **An honest caveat for (a):** at the small verification sizes RETINA names (`docs/SYNAPSE_RETINA_BLUEPRINT.md:105`), a light chain may lose to CPU once transfers are counted. UNKNOWN until measured [02-ops §7].
-3. **The worker interpreter ABI (B2).**
-   - (a) CPython 3.12.10.
-   - (b) CPython 3.13. Only a Microsoft Store alias exists on the box; a provisioned interpreter would be needed (`gpu_feasibility.json:266`).
-   - Constraints: the staged E: configure bakes 3.12.10 with `PYTHON3_LIMITED_API` unset, so the binding would be cp312-only. That is INFERENCE [04-prep §1]. The NR lane's 3.12.10 and the E: venv share **one base interpreter**. The real divergence is venv location and build root [06-critic §2.3]. The RETINA venv recipe seeds from the PATH `python`, which was 3.14.2 at inspection [04-prep §1].
-   - Owner: Joe, per R6 (`RULING-2026-11-07-round2.md:51-53`).
-4. **The OIIO source.**
-   - (a) An isolated wheel. `OpenImageIO==3.1.15.0` publishes a `cp312` win_amd64 wheel on PyPI (VERIFIED by report 04's fetch; installability next to a custom `cv2` is UNKNOWN) [04-prep §1].
-   - (b) The repo's documented hython-seeded venv, which inherits Houdini's OIIO (`retina/setup_venv.py:10-16`; `retina/requirements.txt:34-37`).
-   - The input blueprint forbids (b) (its §4), and so does the NR lane (`gpu_feasibility.json:271`). The shipped recipe recommends it. Also open: V0-R3, "who creates the worker venv" [01-trace §3; 05-claims 3.7].
+### Decisions still open
+
+Each item lists the options and the evidence. None is settled here. Numbers 5-11 keep the draft's numbering.
+
 5. **Graph order.**
    - (a) Leave JEV's park in place, where every GPU and RETINA node is parked.
    - (b) Re-run the JEV graph guard now that `NR-GPU-FEASIBILITY` has merged.
    - (c) Amend the graph to decouple a CPU-only worker and sidecar from `NR-GPU-QUALIFICATION`. Today `NR-WORKER-SUPERVISED` depends on both `NR-IMAGE-CONTRACT` and `NR-GPU-QUALIFICATION` (`graph.json:125-128`).
-   - Evidence: `graph_decision.json`; `RULING-2026-11-06.md:36-38` [06-critic §5.4].
+   - (d) An explicit owner exception to the park for G1.
+   - Evidence: `graph_decision.json`; `RULING-2026-11-06.md:36-38` (a seat does not overrule JEV by preference) [06-critic §5.4].
 6. **CPU-reference defects a parity test would inherit.**
    - **The missing shape guard.** V0 F2 recorded a crash on shape mismatch. Neither orchestrator guards shape before the cv2 calls (`retina/t1.py:238`, `:266`, `:352`); only `containment` does (`:304-308`). The input blueprint's corpus requires resolution changes with identical tri-state outcomes (its §6). Options: (a) fix forward so mismatched shapes yield inconclusive; (b) exclude the case from parity by decision. The static reading is VERIFIED. That it still crashes at runtime is INFERENCE, since it was not re-run [02-ops F12, B3; 01-trace §6].
-   - **The scoped-delta positive-change gap** (abstract form in Context §2 item 8). Options: (a) a semantic contract decision that adds a positive "the claimed change happened" term, which `harness/SYNAPSE_RETINA_VERIFY.md:38` already names as `miss`; (b) keep the current semantics and stop citing the check as proof that a change occurred. Either way it is **not** CUDA parity work (input blueprint §6) [05-claims §6; 06-critic §1b].
+   - **The scoped-delta positive-change semantic** (abstract form in Context §2 item 8). Options: (a) a semantic contract decision that adds a positive "the claimed change happened" requirement; (b) keep the current semantics and stop citing the check as proof that a change occurred. Either way it is **not** CUDA parity work (input blueprint §6) [05-claims §6; 06-critic §1b].
    - **Related:** V0 F9, frame-health false positives on scene-linear renders, holds statically (`retina/t1.py:143-188` against `retina/qc_profiles.toml:38-41`) [01-trace §6].
 7. **SSIM stays on CPU in float64.** Confirm, or commission a float32 numerical design as separate work. Evidence is in Refused Sites item 3. Report 05 adds that SSIM inputs reach the float64 path already reduced to float32 luma, so float64 protects the variance subtraction, not input precision. That is INFERENCE for the design question [05-claims 3.2].
 8. **The identity of `cpu_reference`.**
    - (a) The stock `opencv-python-headless==5.0.0.93` wheel in its own venv. Report 04 calls this the safest option.
    - (b) The custom 5.1 build's CPU path, compiled with `WITH_IPP=OFF` and `WITH_TBB=OFF` (`Current_Configure.json:65-70`).
    - Whether T1 metrics differ between the two is UNKNOWN. The cv2 4.12.0 found in the default interpreter's user site must not be the oracle [04-prep F-c; 05-claims §4.3].
-9. **The third OpenCV surface.** The unmerged branches `feat/opencv-render-qc` and `pd/loop2-opencv-fire` add `retina/firefly_scan.py` and `python/synapse/cv/`. Options: supersede, absorb or coexist [03-governance §6.2].
-10. **The RETINA.M3 queue entry.** It is `ratified: true`, but its title describes the ID-matte route that R100 refuted (`harness/state/flywheel_queue.json:471-473`). Options: amend or leave it [03-governance §4].
-11. **Named owners** for the input blueprint's §7 roles: integration, build and package, an independent correctness reviewer, and release and support. Joe assigns these; none is proposed here [06-critic §4.3].
+9. **The other OpenCV branches.** The unmerged branches `feat/opencv-render-qc` and `pd/loop2-opencv-fire` add `retina/firefly_scan.py` and `python/synapse/cv/`. Options: supersede, absorb or coexist [03-governance §6.2].
+10. **The RETINA.M3 queue entry.** It is `ratified: true`, but its title describes the target-source route that R100 refuted (`harness/state/flywheel_queue.json:471-473`). Options: amend or leave it [03-governance §4].
+11. **Named owners** for the input blueprint's §7 roles: integration, build and package, an independent correctness reviewer who is not the build author, and release and support. Joe assigns these; none is proposed here [06-critic §4.3].
+12. **Graph home and owner for G0-proposed files (Joe alone).** No node owns the proposed guard tests (`tests/test_retina_worker_boundary.py`, `tests/test_retina_scoped_delta_gap.py`), a worker-only CUDA module, or the RETINA venv recipe files (`retina/setup_venv.py`, `retina/setup_venv.ps1`, `retina/requirements.txt`) (VERIFIED: `graph.json` owner_files).
+    - (a) A new NR node owning the slice-1 test files, the worker-only CUDA module and the GPU worker venv recipe, with a behavioural predicate per round-two R4, ordered by JEV.
+    - (b) Widen `NR-IMAGE-CONTRACT`'s title and `owner_files` (and, for the tests, `NR-WORKER-SUPERVISED`, which already owns `tests/test_retina_worker_contract.py`).
+    - Sub-item: **the `NR-IMAGE-CONTRACT` scope widening** to include a backend seam (Reconciliation, G2 row).
+    - Sub-item: **the `installer/build_payload.py` allowlist coupling.** A payload-exclusion test reads a file owned by `NR-PACKAGE-PAIR` and `NR-LICENSE-GATE`, both gate `joe`; any intended payload change by them must update the allowlist in the same commit.
+13. **The node that owns the build (Joe).** (a) Reopen `NR-GPU-FEASIBILITY` as a round-three build lock; or (b) add a build node owning the E: build receipt. Either way its predicate reads the receipt's verdict and closure, not only an exit code (W7, `RULING-2026-11-07-round2.md:105-112`), and can fail. Receipt §13 gives a candidate predicate.
+14. **The change-mask chain against the NR closure (Joe).** R2 makes the change-mask chain the first GPU chain. (i) Amend `NR-GPU-FEASIBILITY`'s proposed closure (`gpu_feasibility.json:430`), `NR-GPU-QUALIFICATION`'s `why` (`graph.json:95`) and the intake's "useful chain" (`docs/intake/src/synapse_next_release_blueprint.md:211-213`) to the change-mask chain; or (ii) record change-mask as an additional chain and keep the masked `meanStdDev` census as a later NR closure item. Either way, name a closure predicate for the change-mask chain. Both are graph or receipt edits Joe merges.
+15. **Seam sequencing against the Y change (Joe).** `NR-IMAGE-CONTRACT` must replace today's unweighted luma with Y from the declared transform (`graph.json:112`), while the proposed seam keeps `cpu_reference` byte-identical to today, and round-one rule 3 allows one atomic commit per node (`RULING-2026-11-06.md:39-41`). Options: the seam lands before the Y change, after it, or as a separate node. The parity input boundary above keeps the R2 parity contract independent of the choice: INFERENCE (design). Colour space (D2) is still open (`RULING-2026-11-06.md:26`).
+16. **Recipe deltas, parallelism and the build window (Joe; per-act).** Under R3 the E: recipe is the starting point. Open: `--target install` or a `cmake --install` step; where `cv2` lands (decision 17); an optional `BUILD_LIST` trim; `--parallel 1` (`Current_Configure.json:115-127`) or more; and a resource window while demo v1 or OVOID runs. Receipt §12-§13 give a proposed time-box.
+17. **The worker venv: location and creator (Joe; V0-R3).** (a) Declare the prep venv `env/py312-cuda133` the worker, so the build writes into it (`Current_Configure.json:30`); or (b) create a fresh 3.12.10 worker venv and re-point `PYTHON3_EXECUTABLE`, `PYTHON3_PACKAGES_PATH` and the NumPy include path (`:27`, `:30`, `:31`), which is a configure-argument change. The isolated cp312 OIIO wheel (R4) lands in the same venv. Installability next to a custom `cv2` is UNKNOWN [04-prep §1].
+18. **CUDA DLL resolution (Joe; environment).** The installed `cv2` loader finds CUDA DLLs through the machine-global `CUDA_PATH` and prepends them to the worker's `PATH` (receipt §6). Options: (a) the worker launcher pins `CUDA_PATH` explicitly; (b) inherit the machine value and record it per job. `NR-WORKER-SUPERVISED` already requires binaries outside Houdini's DLL search path (`graph.json:129`).
+
+Also still open and not numbered here: ratification of this ADR; Windows 26H2 experimental scope; per-act authorization of each clone, configure, build and install; what "demo v1" means. Receipt §13 lists them.
 
 ---
 
@@ -249,10 +282,12 @@ If ratified:
 2. CPU-only RETINA stays the default for every user. `off` loads nothing new.
 3. Nothing changes at runtime until two things exist: a worker that invokes T1, and a qualified artifact. Until then the only consumer is an offline parity harness.
 4. Two new guard tests become preconditions for any backend code under `retina/`: a transitive-reachability test for the in-host modules, and a zero-`hou`-in-worker test.
-5. The worker gains a second dependency profile: a custom CUDA `cv2` that must never share a venv with the stock wheel. The RETINA venv recipe installs `opencv-python-headless` (`retina/requirements.txt:28`), so a GPU worker needs its own recipe. That is INFERENCE [04-prep F-a].
+5. The worker gains a second dependency profile: a custom CUDA `cv2` built for CPython 3.12.10 (R4) that must never share a venv with the stock wheel. The RETINA venv recipe installs `opencv-python-headless` (`retina/requirements.txt:28`), so a GPU worker needs its own recipe. That is INFERENCE [04-prep F-a].
 6. A downstream V2-verdict reader would render an unavailable GPU operation as `fail` (Decision, honest failure).
 7. GPU coverage claims stay narrower than the pipeline: decode, luma, SSIM and the numpy reductions stay on CPU unless a later decision moves one.
-8. Performance is UNKNOWN. The input blueprint's 1.5x target may fail on a light chain. Its own rule then applies: narrow the supported workload, never revert to CPU silently [02-ops §7].
+8. Performance is UNKNOWN. At RETINA's small verification sizes (`docs/SYNAPSE_RETINA_BLUEPRINT.md:105`), the light R2 chain may lose to CPU once transfers are counted, and the input blueprint's 1.5x target may fail. Its own rule then applies: narrow the supported workload, never revert to CPU silently [02-ops §7].
+
+The consequences of R1-R4 hold whether or not this ADR is ratified ("Owner rulings" above).
 
 If declined: see Alternative A1.
 
@@ -260,27 +295,28 @@ If declined: see Alternative A1.
 
 | # | Alternative | Assessment |
 |---|---|---|
-| A1 | **Stay CPU-only.** T1 remains "ms, CPU, headless" | The cheapest and safest choice, and it changes no allocation. Not preferred: the owner's 2026-11-06 direction sets the GPU vision goal and D1 fixes a `gpu_required` row (`RULING-2026-11-06.md:7-8`, `:18`). It stays the fallback if the decisions above stall, and it keeps every guard test in this ADR useful on its own |
+| A1 | **Stay CPU-only.** T1 remains "ms, CPU, headless" | The cheapest and safest choice, and it changes no allocation. Not preferred: the owner's 2026-11-06 direction sets the GPU vision goal and D1 fixes a `gpu_required` row (`RULING-2026-11-06.md:7-8`, `:18`). It stays the fallback if the open decisions stall, and it keeps every guard test in this ADR useful on its own |
 | A2 | **Copernicus-only GPU.** Every GPU pixel measurement is authored as COP networks, as P6 says | Keeps the allocation intact. Not preferred as the **only** route, for three reasons. COP execution means Houdini's process and a licence seat (the HAPI analysis at `docs/reviews/retina-reconciliation-2026-07-16.md:71-79`). The COP QC net and the M4 oracle have never run, because cycles C.3, C.4 and C.10 are `candidate` [03-governance §4]. And the measurement must happen in the hou-free worker where the arrays already are (R182). This ADR keeps Copernicus's role rather than replacing it |
-| A3 | **A separate vision board.** Run the input blueprint's G0-G6 as its own track | Not preferred. The input blueprint itself forbids a second vision architecture, and the NR graph already owns the same files (`retina/t1.py`, `harness/next-release/gpu/`, `installer/build_payload.py`). Two boards on one set of `owner_files` is the silent-corruptor case (AGENTS.md Law 6; `harness/next-release/README.md:107-108`) |
-| A4 | **Port every T1 metric** | Not preferred. The input blueprint says not to (its §4). SSIM cannot run on CUDA in float64 at source level. The ID matte's source is refuted. Most per-frame work is numpy, not cv2 [02-ops §2, §7] |
+| A3 | **A separate vision board** | **Ruled out by R1** (2026-11-07) |
+| A4 | **Port every T1 metric** | Not preferred. The input blueprint says not to (its §4). SSIM cannot run on CUDA in float64 at source level. The scoped-delta target input has no supported source. Most per-frame work is numpy, not cv2 [02-ops §2, §7] |
 | A5 | **Put CUDA OpenCV in the host** | Refused. It violates P5 (`docs/SYNAPSE_RETINA_BLUEPRINT.md:45`) and input blueprint invariant 3 |
 
 ## Rollback
 
 - **This file:** revert its commit. No runtime, test or governing surface depends on it.
-- **After ratification, before any code:** record a superseding ADR. Per the rulebook's status vocabulary, the old text is kept for citation and its replacement is named (`rulebook/RULEBOOK.md:49`) [03-governance §5.1].
-- **After code lands:** set the mode to `off` or `cpu`. That is a policy change, never a disguised success. Restore the previous known-good worker package and restart only the worker. Keep evidence and logs, and never delete frames, baselines or scenes. In `gpu_required` mode, rollback may leave GPU vision visibly unavailable while SYNAPSE stays usable (input blueprint §7).
+- **After ratification, before any code:** record a superseding ADR that keeps the old text for citation and names its replacement, by analogy with the rulebook's `superseded` status (`rulebook/RULEBOOK.md:49`, which governs RB- rules, not ADRs) [03-governance §5.1]. ADR-0001 uses "Accepted" (`docs/decisions/ADR-0001-jev-in-harvest.md:4`); this repo has no precedent for "Proposed".
+- **G1 environment, when authorized:** build only into fresh build, install and venv directories; never install into `env/py312-cuda133` unless Joe rules it is the worker (decision 17). Take a hash manifest of any venv before writing to it. Rollback is deleting the new directories and re-verifying the manifest. INFERENCE (proposed procedure).
+- **After code lands:** set the mode to `off` or `cpu`. That is a policy change, never a disguised success. Keep evidence and logs, and never delete frames, baselines or scenes. On the D1 `gpu_required` row this leaves GPU vision visibly unavailable while SYNAPSE stays usable (input blueprint §7); it is not a rollback of that row. **Worker-package rollback is unavailable** until `NR-WORKER-SUPERVISED` and `NR-PACKAGE-PAIR` exist (receipt §2).
 
 ## What this ADR does not authorize
 
-- No build, configure, clone or install of OpenCV, CUDA, OIIO or anything else, and no pip install or venv creation.
+- No build, configure, clone or install of OpenCV, CUDA, OIIO or anything else, and no pip install or venv creation. R3 and R4 name the root and the runtime; they authorize no act.
 - No GPU work of any kind: no probe, device query, kernel, benchmark or soak.
 - No pairing of a worker artifact with SYNAPSE, and no installer or payload change.
 - No scene writes, live Houdini GUI actions, renders, capture or production-scene contact.
 - No release-surface edits: `VERSION`, release notes or tags.
 - No merge, push or tag.
-- No edit to `docs/SYNAPSE_RETINA_BLUEPRINT.md`, the reconciliation record, the perception truth catalog, `harness/state/flywheel_queue.json`, `graph.json` or any `ratified` field.
+- No edit to `CLAUDE.md`, `AGENTS.md`, `docs/SYNAPSE_RETINA_BLUEPRINT.md`, the reconciliation record, the perception truth catalog, `harness/state/flywheel_queue.json`, `graph.json` or any `ratified` field.
 - No graph re-order. JEV and Joe keep the order.
 
 ## Proposed flywheel cycle (not appended)
@@ -291,12 +327,13 @@ If ratified, one cycle would be **appended** after the existing entries as `stat
 
 | Deliverable | File | Node | State at `ef43d37a` |
 |---|---|---|---|
-| This proposal | `docs/decisions/ADR-0002-retina-t1-optional-cuda-backend.md` | none (G0) | Proposed |
-| G0 receipt | `docs/reviews/opencv51-gpu-g0-receipt-2026-11-07.md` | none (G0) | Draft |
-| Transitive host-boundary, zero-`hou` and payload-exclusion tests | new test file(s) under `tests/` | unowned (receipt §11) | Not written |
+| This proposal | `docs/decisions/ADR-0002-retina-t1-optional-cuda-backend.md` | none (G0) | Proposed; R1-R4 ruled |
+| G0 receipt | `docs/reviews/opencv51-gpu-g0-receipt-2026-11-07.md` | none (G0) | Revised after review |
+| Transitive host-boundary, zero-`hou` and payload-exclusion tests | new test file(s) under `tests/` | none yet (decision 12) | Not written |
 | `cpu_reference` seam | `retina/t1.py` | `NR-IMAGE-CONTRACT` | Not written |
-| Build lock and artifact receipt | `harness/next-release/gpu_feasibility.json` and its successor | `NR-GPU-FEASIBILITY` | `feasible-unproven`; real closure UNMET |
+| Build lock and artifact receipt | `harness/next-release/gpu_feasibility.json` or a successor | `NR-GPU-FEASIBILITY` or a new build node (decision 13) | `feasible-unproven`; real closure UNMET |
 | Parity receipt | `harness/next-release/gpu_qualification.json` | `NR-GPU-QUALIFICATION` | Absent |
+| GPU worker venv recipe | not yet named | none yet (decision 12) | Absent |
 | Worker entry and launcher | `retina/worker_entrypoint.py`, `python/synapse/host/retina_worker.py` | `NR-WORKER-SUPERVISED` | Absent |
 | Sidecar publication | `retina/publication.py` | `NR-RECOVERY-RECEIPTS` | Absent |
 | Worker artifact pair, notices | `installer/...` | `NR-PACKAGE-PAIR`, `NR-LICENSE-GATE` | Absent |
