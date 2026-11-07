@@ -1504,16 +1504,23 @@ TOOL_DEFS: list[tuple] = [
 
     # -- Legacy in-session Render Farm (kept for compatibility) --
     ("synapse_render_sequence", "render_sequence", _identity,
-     "Render a frame range with per-frame validation, automatic issue diagnosis, "
-     "and self-improving fixes. Learns from each render to start smarter next time.",
+     "Render frames with per-frame validation, automatic issue diagnosis, "
+     "and self-improving fixes. Pass either start_frame + end_frame or an "
+     "explicit frames list; a named list renders exactly those frames.",
      {"type": "object", "properties": {
          "rop": {"type": "string", "description": "ROP node path (auto-discovers if omitted)"},
-         "start_frame": {"type": "integer", "description": "First frame to render"},
-         "end_frame": {"type": "integer", "description": "Last frame to render (inclusive)"},
-         "step": {"type": "integer", "description": "Frame step (default: 1)"},
+         "start_frame": {"type": "integer", "description": "First frame to render (with end_frame)"},
+         "end_frame": {"type": "integer", "description": "Last frame to render, inclusive (with start_frame)"},
+         "step": {"type": "integer", "description": "Frame step (default: 1; ignored when frames is given)"},
+         "frames": {"type": "array", "items": {"type": "integer"},
+                    "description": "Explicit frame list. When present it is authoritative: exactly these frames render (deduped and sorted); start_frame/end_frame/step are ignored"},
          "auto_fix": {"type": "boolean", "description": "Auto-diagnose and fix issues (default: true)"},
          "max_retries": {"type": "integer", "description": "Max retries per frame (default: 3)"},
-     }, "required": ["start_frame", "end_frame"]},
+     }, "required": [],
+      "anyOf": [
+          {"required": ["frames"]},
+          {"required": ["start_frame", "end_frame"]},
+      ]},
      False, True, False),
 
     ("synapse_render_farm_status", "render_farm_status", _passthrough,

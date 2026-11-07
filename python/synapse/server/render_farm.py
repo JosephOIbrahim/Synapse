@@ -22,7 +22,7 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor, Future
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 from ..core.determinism import round_float
 from ..memory.models import MemoryType, MemoryQuery
@@ -43,6 +43,26 @@ from .render_notify import (
 )
 
 logger = logging.getLogger("synapse.render_farm")
+
+
+def _normalize_explicit_frames(frames: Sequence[int]) -> List[int]:
+    """Dedupe, sort and int-coerce an explicit frame list.
+
+    Raises ValueError on an empty list or a non-integer entry. An explicit
+    list is a promise about exactly which frames render, so it must never
+    fall back to a contiguous range.
+    """
+    if isinstance(frames, (str, bytes)):
+        raise ValueError("frames must be a list of integers, not a string")
+    try:
+        ordered = sorted({int(frame) for frame in frames})
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"frames must contain integers: {exc}") from exc
+    if not ordered:
+        raise ValueError(
+            "frames is empty; omit it to render a contiguous range instead"
+        )
+    return ordered
 
 
 # =========================================================================
@@ -448,24 +468,38 @@ class RenderFarmOrchestrator:
     def render_sequence(
         self,
         rop: str,
-        frame_range: Tuple[int, int],
+        frame_range: Optional[Tuple[int, int]] = None,
         step: int = 1,
+        frames: Optional[Sequence[int]] = None,
     ) -> BatchReport:
-        """Render a frame range with per-frame validation and auto-fix.
+        """Render frames with per-frame validation and auto-fix.
 
         Args:
             rop: ROP node path (auto-discovers if empty).
-            frame_range: (start_frame, end_frame) inclusive.
-            step: Frame step (default: 1).
+            frame_range: (start_frame, end_frame) inclusive. Required unless
+                ``frames`` names an explicit list.
+            step: Frame step (default: 1). Ignored when ``frames`` is given.
+            frames: Explicit frame list. When present it is authoritative:
+                entries are int-coerced, deduped and sorted, and exactly those
+                frames render. An empty list is refused.
 
         Returns:
             BatchReport with per-frame results and summary.
         """
+        if frames is not None:
+            frames = _normalize_explicit_frames(frames)
+            start_frame, end_frame = frames[0], frames[-1]
+        else:
+            if frame_range is None:
+                raise ValueError(
+                    "frame_range is required when frames is not given"
+                )
+            start_frame, end_frame = frame_range
+            frames = list(range(start_frame, end_frame + 1, step))
+        total = len(frames)
+
         self._running = True
         self._cancelled = False
-        start_frame, end_frame = frame_range
-        frames = list(range(start_frame, end_frame + 1, step))
-        total = len(frames)
 
         report = BatchReport(
             start_frame=start_frame,
