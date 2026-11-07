@@ -115,21 +115,9 @@ def _rendered_frames(callbacks):
     return [c.args[0]["frame"] for c in callbacks.render_frame.call_args_list]
 
 
-def _schema_accepts_frames_only(schema, payload):
-    """Minimal check: a frames-only payload must satisfy the top-level schema.
-
-    Deliberately not jsonschema -- that dependency is not declared by the
-    project, and the assertion we care about is only 'a named list is enough
-    on its own'.
-    """
-    if not set(schema.get("required", [])) <= set(payload):
-        return False
-    branches = schema.get("anyOf")
-    if not branches:
-        return True
-    return any(
-        set(branch.get("required", [])) <= set(payload) for branch in branches
-    )
+def _rendered_frames_of(handler):
+    """Frames the handler's render callback was actually asked to render."""
+    return [c.args[0]["frame"] for c in handler._handle_render.call_args_list]
 
 
 # ---------------------------------------------------------------------------
@@ -154,18 +142,46 @@ class TestRegistrySchema:
         assert props["frames"]["type"] == "array"
         assert props["frames"]["items"] == {"type": "integer"}
 
-    def test_frames_only_request_is_schema_valid(self):
+    def test_schema_declares_frames_or_range_alternative(self):
+        """Assert the alternative directly -- never infer it.
+
+        A helper that returns True when ``anyOf`` is absent would stay green
+        if the constraint were deleted, so the constraint itself is asserted:
+        one branch must require ``frames`` and that branch must not also
+        require start_frame/end_frame.
+        """
         schema = self._entry()[4]
-        assert _schema_accepts_frames_only(schema, {"frames": [1, 3]}), (
-            "a request naming only an explicit frame list must validate -- "
-            "start_frame/end_frame cannot be unconditionally required"
+        assert "anyOf" in schema, (
+            "synapse_render_sequence must declare that either an explicit "
+            "frames list or the start/end pair is enough"
+        )
+        frames_branches = [
+            branch for branch in schema["anyOf"]
+            if "frames" in branch.get("required", [])
+        ]
+        assert frames_branches, (
+            "at least one anyOf branch must require 'frames'"
+        )
+        assert any(
+            set(branch.get("required", [])) <= {"frames"}
+            for branch in frames_branches
+        ), (
+            "the frames branch must not also require start_frame/end_frame -- "
+            "a named list is authoritative on its own"
         )
 
     def test_payload_builder_keeps_frames(self):
         entry = self._entry()
         builder = entry[2]
-        assert builder({"frames": [1, 3]}) == {"frames": [1, 3]}, (
-            "the render_sequence payload builder must not strip 'frames'"
+        payload = builder({"frames": [1, 3]})
+        assert "frames" in payload, (
+            "the render_sequence payload builder must carry 'frames' into the "
+            "handler payload"
+        )
+        assert payload["frames"] == [1, 3]
+        assert "start_frame" not in payload and "end_frame" not in payload, (
+            "the builder must not invent a contiguous range for a sparse "
+            "request"
         )
 
 
@@ -205,6 +221,46 @@ class TestHandlerForwardsFrames:
             "the contiguous path must not gain a frames kwarg for a request "
             "that never named one"
         )
+
+
+# ---------------------------------------------------------------------------
+# Seam 2b -- handler and farm composed for real
+# ---------------------------------------------------------------------------
+
+class TestHandlerFarmComposition:
+    @patch("synapse.server.render_farm.notify_batch_complete")
+    def test_handler_drives_a_real_farm_over_the_named_frames(self, mock_notify):
+        """Neither the handler nor the farm is mocked -- only the render call.
+
+        The forwarding test above patches RenderFarmOrchestrator.render_sequence,
+        so it can only prove a kwarg was passed. This test builds the real
+        orchestrator from the handler's own callbacks, so the whole composition
+        is exercised: callback wiring, normalization, render order, and report
+        accounting.
+        """
+        mock_notify.return_value = {}
+        handler = _make_handler()
+
+        def _render(payload):
+            path = "/tmp/frame.%04d.exr" % payload["frame"]
+            return {"image_path": path, "output_file": path, "rop": payload["node"]}
+
+        handler._handle_render = MagicMock(side_effect=_render)
+
+        # Keep the handler's memory injection from reaching a real store.
+        with patch.dict(sys.modules, {"synapse.memory.store": None}):
+            report = handler._handle_render_sequence({
+                "frames": [7, 3, 3], "rop": "/stage/karma1",
+            })
+
+        assert _rendered_frames_of(handler) == [3, 7], (
+            "the composed path must render exactly the named frames, deduped "
+            "and sorted"
+        )
+        assert report["total_frames"] == 2
+        assert report["successful_frames"] == 2
+        assert sorted(fr["frame"] for fr in report["frame_results"]) == [3, 7]
+        assert mock_notify.call_count == 1
 
 
 # ---------------------------------------------------------------------------
@@ -273,3 +329,33 @@ class TestEmptyFramesRefused:
         assert farm.get_status()["running"] is False, (
             "a refused request must not leave the farm marked as running"
         )
+
+
+# ---------------------------------------------------------------------------
+# Seam 5 -- every non-integer entry is the documented ValueError
+# ---------------------------------------------------------------------------
+
+class TestNonIntegerFramesRefused:
+    @pytest.mark.parametrize("bad", [
+        float("inf"),        # int(inf) raises OverflowError, not ValueError
+        float("-inf"),
+        float("nan"),        # int(nan) raises ValueError already
+        True,                # int(True) == 1 -- silently becomes a real frame
+        False,
+    ])
+    def test_non_integer_entry_raises_value_error(self, bad):
+        with pytest.raises(ValueError):
+            farm_mod._normalize_explicit_frames([bad])
+
+    def test_bad_entry_leaves_the_farm_idle(self, tmp_path):
+        """The refusal must land before the farm marks itself running."""
+        callbacks = _make_callbacks()
+        farm = RenderFarmOrchestrator(callbacks=callbacks, report_dir=str(tmp_path))
+
+        with pytest.raises(ValueError):
+            farm.render_sequence(
+                "/stage/karma1", (1, 3), frames=[float("inf")],
+            )
+
+        callbacks.render_frame.assert_not_called()
+        assert farm.get_status()["running"] is False
