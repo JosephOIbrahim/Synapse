@@ -1127,3 +1127,62 @@ def test_bridge_down_fallback_tool_result_carries_the_receipt(monkeypatch):
     assert failure_receipt(payload) == _RECEIPT
 
 
+# ---------------------------------------------------------------------------
+# 18. The autonomy receipt reads what executed (round 2.5, R2b)
+# ---------------------------------------------------------------------------
+
+def _check(name, passed, severity="hard_fail"):
+    return SimpleNamespace(name=name, passed=passed,
+                           severity=SimpleNamespace(value=severity))
+
+
+def _capture_verification(monkeypatch):
+    from synapse.memory import agent_state
+
+    written = {}
+    monkeypatch.setattr(agent_state, "update_task_status",
+                        lambda usd, task, status: written.setdefault("status", status))
+    monkeypatch.setattr(
+        agent_state, "write_verification",
+        lambda usd, task, before, after, checks, result: written.update(
+            before_state=before, after_state=after, checks=checks,
+            result=result))
+    return written
+
+
+def test_record_autonomy_task_reads_the_executed_checks(monkeypatch):
+    """The declared checks never ran; the executed copy is the evidence."""
+    from synapse.server import handlers
+
+    written = _capture_verification(monkeypatch)
+    declared = SimpleNamespace(validation_checks=[_check("camera", False),
+                                                  _check("output", False)])
+    executed = SimpleNamespace(validation_checks=[_check("camera", True)])
+    report = SimpleNamespace(success=True, plan=declared, executed=executed,
+                             evaluation=None)
+
+    handlers.SynapseHandler._record_autonomy_task(
+        "/tmp/agent.usd", "task-18", report)
+
+    assert written["before_state"] == "checks=1 hard_fail=0"
+    assert written["checks"] == ["camera:pass"]
+    assert written["result"] == "pass"
+    assert written["status"] == "completed"
+
+
+def test_record_autonomy_task_falls_back_to_plan(monkeypatch):
+    """A report shape that predates ``executed`` still records its checks."""
+    from synapse.server import handlers
+
+    written = _capture_verification(monkeypatch)
+    declared = SimpleNamespace(validation_checks=[_check("camera", False),
+                                                  _check("output", False)])
+    report = SimpleNamespace(success=False, plan=declared, evaluation=None)
+
+    handlers.SynapseHandler._record_autonomy_task(
+        "/tmp/agent.usd", "task-18b", report)
+
+    assert written["before_state"] == "checks=2 hard_fail=2"
+    assert written["checks"] == ["camera:fail", "output:fail"]
+    assert written["result"] == "fail"
+    assert written["status"] == "failed"
