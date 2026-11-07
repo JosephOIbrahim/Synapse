@@ -72,3 +72,14 @@ consumer that turns it into a tool result. Those three files join the node.
 before dispatch must not present the planner's declared `passed=False` checks as
 if they had run. `executed.validation_checks` is empty on gate_rejected and
 unsupported_plan_shape, and the reader reports the absence honestly.
+
+**R2c — merge order is part of the contract.** `report.plan` now means the
+artist's declared request and `report.executed` the last attempt's state. The
+installed `_record_autonomy_task` reads `report.plan` until NR-WRITE-RECEIPT
+lands its repoint, so **NR-WRITE-RECEIPT merges before NR-PLAN-TRUTH**, or both
+land in one window with the repoint installed before anything is pushed.
+Merging plan-truth alone writes `checks=8 hard_fail=3` to `agent.usd` for every
+successful render — a false receipt on the success path, worse than the one the
+node fixed. NR-SPARSE-RENDER merges before NR-PLAN-TRUTH as its declared
+dependency; plan-truth's predicate passes without it, so the order is enforced
+here, not by the predicate.
