@@ -78,7 +78,7 @@
       ],
       "depends_on": [],
       "why": "Nothing in the repo establishes a working OpenCV 5.1 CUDA build on Windows. The official wheels are CPU-only. This node answers the only question that can stop the release: does the named chain execute, with which exact commits, toolchain, module flags and CUDA runtime, and what does it cost. It is a probe plus a build lock, not a product change.",
-      "predicate": "test -f harness/next-release/gpu_feasibility.json",
+      "predicate": "python -m pytest harness/next-release/gpu/test_probe_contract.py -q",
       "gate": "joe",
       "effort": "L"
     },
