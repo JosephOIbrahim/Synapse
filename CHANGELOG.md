@@ -2,6 +2,42 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.98.0 - A write reads itself back; a render proves its frame
+
+**Product code changes.** Two artist-facing behaviours now read the effect back
+instead of reporting that a call returned. The full note, with every limit, is
+[docs/releases/v5.98.0.md](docs/releases/v5.98.0.md).
+
+- **Parameter writes.** `houdini_set_parm` returns `observed` (from
+  `parm.eval()` after the write) and a `mismatch` flag. An animated or
+  channel-referenced parameter is refused unless `mode` says how to meet it
+  (`replace`, `key_at_frame`, `write_source`), and the write does not follow a
+  channel reference. A refused write restores values, keys, Cycle
+  extrapolation and authored strings. A queued write must carry `expect`; a
+  different state refuses it, and an expectation the server cannot check
+  refuses it too (`parm.precondition_invalid`). The receipt reaches the caller
+  through the handler, both MCP transports and the panel.
+- **Render proof.** A product counts only if its identity changed across
+  `node.render()`. The farm refuses a flipbook preview or an absent product
+  and validates the EXR; the progressive ladder requires every pass and
+  refuses an empty chain; RETINA grades by a per-render nonce, and an unwired
+  check is inconclusive.
+- **Sequence verdict.** A missing output, a farm-failed frame or a plan
+  mismatch fails a sequence whatever the mean score says. A cancel stops with
+  `success=False`; frames completed before a retry survive it.
+- **Explicit frame lists.** `synapse_render_sequence` accepts `frames`, which
+  is authoritative end to end. A step of 0, a negative or non-numeric step and
+  an empty list are refused.
+- **Plan truth.** `report.plan` is the declared request and `report.executed`
+  the last attempt; pre-dispatch stops report no executed checks.
+- **Harness.** The next-release lane's graph and rulings, and a GPU
+  feasibility probe whose receipt records the build itself as UNMET. No GPU
+  image path ships.
+
+**Not changed:** anthropic 2.x is still unsupported - the migration v5.97.7
+deferred to v5.98 has not started, and the pin stays `anthropic>=1.0.0,<2`.
+Setup remains unsigned.
+
 ## v5.97.7 - Audit the Gaussian-splat blueprint and correct the catalogue finding
 
 **No product code changes.** The shipped product diff from v5.97.6 is the

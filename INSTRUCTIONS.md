@@ -1,4 +1,4 @@
-# Start using SYNAPSE 5.97.7
+# Start using SYNAPSE 5.98.0
 
 [README](README.md) · [Versions and tags](TAGS.md) · [Full installation guide](docs/getting-started/installation.md)
 
@@ -8,10 +8,10 @@ Save your scene and close Houdini before installing. The native qualification ta
 
 | I want… | Use… |
 |---|---|
-| The packaged installation | [Windows Setup 5.97.7](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.7/SYNAPSE-5.97.7-Setup.exe), then the [wizard steps](docs/getting-started/installation.md#windows-installer). |
-| A source installation | The [5.97.7 source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.7/SYNAPSE-5.97.7-source.zip), then [both source scripts](docs/getting-started/installation.md#source-installation). Source scripts do not provision the optional native artifact. |
+| The packaged installation | [Windows Setup 5.98.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/SYNAPSE-5.98.0-Setup.exe), then the [wizard steps](docs/getting-started/installation.md#windows-installer). |
+| A source installation | The [5.98.0 source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/SYNAPSE-5.98.0-source.zip), then [both source scripts](docs/getting-started/installation.md#source-installation). Source scripts do not provision the optional native artifact. |
 
-🔎 Setup is **unsigned**: the inspected local signing setup has no configured publisher identity. Check [SHA256SUMS.txt](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.7/SHA256SUMS.txt). Do not bypass a security warning. The [verification record](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.7/installer-verification.json) states exactly which final-installer checks ran.
+🔎 Setup is **unsigned**: the inspected local signing setup has no configured publisher identity. Check [SHA256SUMS.txt](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/SHA256SUMS.txt). Do not bypass a security warning. The [verification record](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/installer-verification.json) states exactly which final-installer checks ran.
 
 ## 2. 🔌 Connect and check
 
@@ -38,6 +38,6 @@ In a scratch scene, send `make a box`. Inspect the nodes, change a parameter and
 
 Fresh installations receive ON only on the exact supported host after the same execution checks. Without an explicit ON choice, missing native artifacts or unsupported fresh hosts keep native mode OFF and report the reason. An explicit inherited ON choice requires qualification and refuses installation if unavailable. These checks use disposable data/keys and do not qualify every artist store, scene or future configuration.
 
-[Installer flow](docs/architecture/overview.md#published-5977-installation) · [Release tests and limits](docs/releases/v5.97.7.md) · [Current status](docs/status.md).
+[Installer flow](docs/architecture/overview.md#published-5980-installation) · [Release tests and limits](docs/releases/v5.98.0.md) · [Current status](docs/status.md).
 
-The previous [5.97.6 release](docs/releases/v5.97.6.md) remains unchanged.
+The previous [5.97.7 release](docs/releases/v5.97.7.md) remains unchanged.

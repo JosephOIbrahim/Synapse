@@ -2,13 +2,13 @@
 
 [Back to README](../README.md) · [Architecture](architecture/overview.md) · [Latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 
-Publication links and wording reviewed on **2026-10-22** for **v5.97.7**. The feature evidence below retains each release's original scope; this is not a new runtime qualification. [Exact tags and commits](../TAGS.md) identify the published code. A documentation update does not qualify a new installer or a live scene.
+Publication links and wording reviewed on **2026-11-07** for **v5.98.0**. The feature evidence below retains each release's original scope; this is not a new runtime qualification. [Exact tags and commits](../TAGS.md) identify the published code. A documentation update does not qualify a new installer or a live scene.
 
 ## At a glance
 
-- **Source and Windows Setup:** [v5.97.7](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.97.7).
+- **Source and Windows Setup:** [v5.98.0](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.98.0).
 - **Public Setup:** unsigned, pinned Moneta 1.3.0 plus a pinned native artifact. Fresh supported-host ON requires actual checks; explicit OFF and existing default-OFF remain OFF.
-- **Houdini 22.0.400 / Python 3.13:** the shipped product code differs from v5.97.6 only by the version string and two documentation lines in the installer's own README, so its runtime evidence carries forward unchanged; this release's own checks are recorded in the [5.97.7 notes](releases/v5.97.7.md#tests). The product's **dependency set does change**: the Anthropic SDK is now capped below 2.0, because the model-access guard checks the 1.x auth header, and 2.x remains unsupported. The interactive wizard, registry/shortcuts and clean-machine installation remain untested. The panel suite is not green: **9 of its 581 tests fail on this host**, all nine of them also fail on the published master commit, which fails a tenth that did not reproduce here.
+- **Houdini 22.0.400 / Python 3.13:** the shipped product code **changes** from v5.97.7: parameter writes are read back and refuse what they cannot land, renders prove they produced the frame, and a named frame list renders exactly those frames. This release's own checks are recorded in the [5.98.0 notes](releases/v5.98.0.md#tests). The Anthropic SDK stays capped below 2.0, and 2.x remains unsupported. Live Houdini render and cancellation probes for the sequence verdict are still owed. The interactive wizard, registry/shortcuts and clean-machine installation remain untested.{{STATUS_SUITES}}
 - **Installed version:** separate from the published source. An open Houdini session keeps its loaded modules until reload or restart.
 
 [Install](getting-started/installation.md) · [Solaris evidence](#solaris-wiring-validation) · [Artist control](#artist-control) · [Stop and Undo](#undo-stop-and-rendering) · [Memory limits](#memory-and-suggestions)
@@ -23,9 +23,11 @@ Publication links and wording reviewed on **2026-10-22** for **v5.97.7**. The fe
 | World Labs | Artist-triggered import of an existing API-accessible world or supported local Gaussian PLY. | [Import flow and limits](architecture/overview.md#world-labs-import). |
 | SideFX help | Resumable installed-help/Markdown ingestion, published SQLite search generations and bounded local Scout retrieval. | [Build and connect](studio/SIDEFX_LIBRARY.md). |
 
-**Installation:** use the [5.97.7 instructions](../INSTRUCTIONS.md#existing-native-on-or-off-setups) for preserved choices and execution-gated native activation. The 5.97.6 tag/assets remain unchanged. Installed and published identities are separate; final artifact evidence is in the [5.97.7 notes](releases/v5.97.7.md).
+**Installation:** use the [5.98.0 instructions](../INSTRUCTIONS.md#existing-native-on-or-off-setups) for preserved choices and execution-gated native activation. The 5.97.7 tag/assets remain unchanged. Installed and published identities are separate; final artifact evidence is in the [5.98.0 notes](releases/v5.98.0.md).
 
 ### Validation by release
+
+- [v5.98.0](releases/v5.98.0.md) records the parameter-write readback and receipt, the render proof, the sequence verdict, explicit frame lists and plan truth, with their test files, the suite counts on this host, and the final-installer evidence bound to the versioned Setup. anthropic 2.x remains unsupported.
 
 - [v5.97.7](releases/v5.97.7.md) records the World Labs Gaussian-splat blueprint audit, the node-catalogue correction, the two harness boards, the stock-suite and installer-control counts, and the final-installer evidence bound to the versioned Setup. The shipped product code differs from v5.97.6 only by the version string and two documentation lines in the installer's own README. The dependency set does change: the Anthropic SDK is now capped below 2.0, and 2.x remains unsupported.
 

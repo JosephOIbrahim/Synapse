@@ -4,96 +4,77 @@
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.97.7 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.97.7 is Latest</sub></p>
+<p align="center"><sub>v5.98.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.98.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[▶️ Instructions](INSTRUCTIONS.md)** · [🏷️ Versions and tags](TAGS.md) · [What's new](docs/releases/v5.97.7.md) · [Help](#when-you-get-stuck)
+**[▶️ Instructions](INSTRUCTIONS.md)** · [🏷️ Versions and tags](TAGS.md) · [What's new](docs/releases/v5.98.0.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
-**5.97.7 changes no product code.** The panel, the Setup behaviour, Moneta 1.3.0 and the native-artifact policy are unchanged from [5.97.6](docs/releases/v5.97.6.md). One thing does change: the Anthropic SDK is now capped below 2.0, because the model-access guard needs the 1.x auth header. What this release adds is evidence. [What changed in 5.97.7](#what-changed-in-5977) walks through it.
+**5.98.0 changes what SYNAPSE does when it writes a parameter or renders frames.** A write is read back and refuses what it cannot land; a render proves it produced this frame; a named frame list renders exactly those frames. Moneta 1.3.0, the Setup behaviour and the native-artifact policy are unchanged from [5.97.7](docs/releases/v5.97.7.md). anthropic 2.x is **still unsupported**. [What changed in 5.98.0](#what-changed-in-5980) walks through it.
 
-### Get 5.97.7
+### Get 5.98.0
 
-- 📦 **Download:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.7/SYNAPSE-5.97.7-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.7/SYNAPSE-5.97.7-source.zip).
-- 🔎 **Check the download:** Setup is **unsigned**. Compare its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.97.7/SHA256SUMS.txt).
+- 📦 **Download:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/SYNAPSE-5.98.0-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/SYNAPSE-5.98.0-source.zip).
+- 🔎 **Check the download:** Setup is **unsigned**. Compare its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/SHA256SUMS.txt).
 - 🦀 **Rust when verified:** Setup includes a pinned native artifact. Fresh supported setups enable it after actual execution checks. Explicit OFF stays OFF. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
-- ✅ **What was checked:** native execution, encrypted-mirror reopen and migration/restoration controls. Read the [final artifact evidence and limits](docs/releases/v5.97.7.md#tests). The interactive wizard and the clean-machine checks are separate, and remain unqualified.
+- ✅ **What was checked:** native execution, encrypted-mirror reopen and migration/restoration controls. Read the [final artifact evidence and limits](docs/releases/v5.98.0.md#tests). The interactive wizard and the clean-machine checks are separate, and remain unqualified.
 
-Setup includes the panel as of v5.97.7, including Spatial, the Render footer row and the scene-reading Scatter recipe.
+Setup includes the panel as of v5.98.0, including Spatial, the Render footer row and the scene-reading Scatter recipe.
 
 ### Install in four steps
 
-1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.97.7, or run the v5.97.7 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
+1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.98.0, or run the v5.98.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
 2. Restart Houdini. Open **New Pane Tab → Synapse**.
 3. Open **Connect models**. Choose a provider and model; add its key if needed.
 4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
 
 💡 Using Ollama? Start its service first. **Connect** starts the separate Houdini bridge; **Doctor** checks the setup without a model.
 
-**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately and restart Houdini to load the update. The 5.97.6 tag and assets remain unchanged.
+**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately and restart Houdini to load the update. The 5.97.7 tag and assets remain unchanged.
 
-**Jump to:** [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-5977) · [Troubleshooting](#when-you-get-stuck)
+**Jump to:** [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-5980) · [Troubleshooting](#when-you-get-stuck)
 
-## What changed in 5.97.7
+## What changed in 5.98.0
 
-Five things landed. Four of them change nothing about what SYNAPSE does. The fifth changes what it installs.
+Two things an artist feels changed: writing a parameter, and rendering frames. Both now read the effect back instead of reporting that a call returned. One thing promised for this release did not land, and it comes first.
 
-### The Anthropic SDK is now capped below 2.0
+### anthropic 2.x is still unsupported
 
-The model-access guard checks the API key in the `x-api-key` header and refuses any request that carries an `Authorization` header. That is the **1.x** convention. **anthropic 2.x changed it** — the key becomes `Authorization: Bearer <key>`, and no `x-api-key` header is sent at all — so under 2.x the guard refuses **every** model call. That is not a test failing. It is the product refusing to talk to the model.
+v5.97.7 deferred teaching the model-access guard the anthropic 2.x auth convention "to v5.98". **That work has not started.** The pin stays `anthropic>=1.0.0,<2`, and under 2.x the guard still refuses every model call.
 
-anthropic 2.3.0 landed on 2026-10-23 and turned **five of the six CI jobs** red. The sixth stayed green because it still resolved the vendored SDK. The pin is `anthropic>=1.0.0,<2`, and it was measured across six SDK versions: 0.75.0 fails, 0.96.0 through 1.17.0 pass, 2.3.0 fails.
+Producers: [the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md) · [the release note](docs/releases/v5.98.0.md#limits)
 
-Teaching the guard the 2.x convention is deferred to v5.98. It is a security-control change, and it needs its own tests plus live panel verification against the new wire protocol.
+### A parameter write reads itself back
 
-Producers: [the release note](docs/releases/v5.97.7.md) · [the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md)
+`houdini_set_parm` now returns **`observed`** — what the parameter holds after the write — beside the value you asked for, and a **`mismatch`** flag when it did not take.
 
-### An external blueprint was audited, and its script does not run
+An animated or channel-referenced parameter is **refused by default**, so no stray key is added and no other node is written by accident. `mode` says how to meet it: `replace`, `key_at_frame` or `write_source`. A refused write puts back everything it touched.
 
-A World Labs Gaussian-splat blueprint supplied to the project was executed call by call against Houdini 22.0.400. The findings came from the raised exception, not from documentation.
+A queued write must say what state it expects. If the parameter no longer matches, or the expectation cannot be checked, nothing is written. The receipt now reaches you through every installed route: the handler, both MCP transports and the panel.
 
-The script dies on **line 27** — the third node creation it makes, and the first that raises. **Six** of its calls raise, across **six** source lines; the record holds them as eight rows, because the one `setParms` at line 41 is written down once and again per key. **Ten** of its parameter writes name parameters that do not exist. **Eight** of the claims in its own "Corrected Error Audit" section are not implemented by its own code; six of them are measured by counting the terms the claim would need.
+Producers: [the release note](docs/releases/v5.98.0.md#a-parameter-write-reads-itself-back) · [`parm_authored.py`](python/synapse/server/parm_authored.py) · [the receipt tests](tests/test_parm_write_receipt.py)
 
-A corrected script ships as a probe and verifies **11 of 11** live on the pinned build. The eight unproven claims stay open, each with the probe that would settle it. No World Labs asset was available, so nothing was closed by argument.
+### A render proves it produced this frame
 
-Producers: [the audit](docs/intake/worldlabs-gaussian-pipeline-audit.md) · [the corrected script](harness/probes/worldlabs_pipeline_corrected.py) · [the receipt](harness/probes/worldlabs_pipeline_verification.json)
+A file that exists is no longer proof. The render snapshots the product before it runs and requires it to change. The farm refuses a flipbook preview or a missing product. RETINA stamps a per-render nonce, and a check it cannot wire is *inconclusive*, never a pass.
 
-### The catalogue was cleared — the finding that accused it was wrong
+A **sequence** now fails on a lost or failed frame, whatever the mean score says. A cancel stops with `success=False`, and frames finished before a retry survive it.
 
-The audit's own strongest claim was wrong, and the audit is corrected in place. The shipped node catalogue matches the live build: 17/17, 42/42, 131/131, 123/123, 194/194 and 73/73, with a Jaccard match of 1.000 on each.
+Producers: [the release note](docs/releases/v5.98.0.md#a-render-proves-it-produced-this-frame) · [the proof tests](tests/test_render_proof.py) · [the evaluator tests](tests/test_autonomy_evaluator.py)
 
-A standing probe now reads the live build and compares the catalogue against it. It exits non-zero on divergence, and it also fails when the catalogue does not name an audited type at all — a target it could not compare is not a target it cleared. It exits zero today.
+### Name the frames, get those frames
 
-Two hazards remain, and both are rules for whoever *reads* the catalogue:
+`synapse_render_sequence` takes an explicit **`frames`** list. Ask for 1, 5 and 9, and exactly 1, 5 and 9 render — before this release a sparse request reached the farm as an invented contiguous range. A frame set the farm cannot act on is refused, not coerced.
 
-- **Alias resolution.** `createNode("gltf")` returns a `gltf::2.0` node, and `createNode("distantlight")` returns a `distantlight::2.0` node. Parameter names read from the unversioned entry are absent on the node you actually get. Read the catalogue entry for the type `createNode()` returned.
-- **`#` in parameter names.** Names like `animid#` are Houdini's spare parameter slots — present in the node's interface, exposing no value to set. **7,155 of 152,918** catalogue parameter names (4.7%) carry one, across eleven category files.
+The report now keeps what you asked for (`plan`) apart from what ran (`executed`). A run that stopped before dispatch reports no checks as if they had run.
 
-Producers: [the standing probe](harness/probes/catalog_types_check.py) · [its receipt](harness/probes/catalog_types_check_receipt.json)
+Producers: [the release note](docs/releases/v5.98.0.md#name-the-frames-get-those-frames) · [the sparse-render tests](tests/test_sparse_render_contract.py) · [the plan-truth tests](tests/test_render_plan_truth.py)
 
-### Two harness boards land
-
-`harness/attest/` is a refinement loop that attacks its own seed defects. Its blueprint is DRAFT and unratified. Its own gate block reads `blueprint_ratification: OPEN_AWAITING_JOE`, `contract_ratification: NOT_REACHED`, and `merges_pushes_tags_version: ALWAYS_HALT` — so nothing on that board merges, pushes, tags or touches `VERSION` without your word, per act. Its first wave completed: **17** seats dispatched, **17** returned, **11** seats of headroom left.
-
-`harness/harness2/` now carries a compose guard, a graph guard and a threshold calibration. It has no spec and no gate, so it fails closed: with no Jev answer the decision is "adopt nothing".
-
-Producers: [the wave record](harness/attest/WAVE-RECORD.md), written by `harness/attest/record_final_wave.py`, which names the journal's SHA-256 · [the attest board](harness/attest/) · [harness2](harness/harness2/)
-
-### Four test suites are now collected, and one test was fixed
-
-`harness/harness2/tests` (47 tests), `harness/attest/tests` (20), `harness/notes/release-v5.97.7/tests` (36) and `harness/probes/tests` (5) were collected by nothing before this release, so every assertion in them had been decorative. All four are in CI now. `harness/jev/tests` (97) was already wired, and `installer/tests` (84) is a changed-area control the release measured.
-
-Each of those suites now pins a defect it was written for. The compose guard refused to adopt a candidate whose probe was never answered, and adopted two secondaries that claimed the same file. The attest recorder printed `state: IN_FLIGHT` beside `seats_outstanding: 0` when two seats shared a label, and dropped the second seat's payload. The catalogue probe skipped a target the catalogue did not name and still printed `AGREEMENT`.
-
-`tests/test_detached_launch.py` polled for a detached child's marker file and read it the instant it appeared. Windows refuses a read while the writer still holds the handle, so the gate is now "readable **and** complete". Both content assertions are unchanged, and no assertion was weakened.
-
-Producers: [`pyproject.toml`](pyproject.toml) `testpaths` · [the CI workflow](.github/workflows/ci.yml) · [the fixed test](tests/test_detached_launch.py) · [the release's evidence](docs/releases/v5.97.7.md#tests)
-
-**What this release does not change.** The audit is of an external blueprint, not of SYNAPSE's own World Labs import path, which is unchanged and unqualified here. The corrected pipeline script is a probe: it verifies the eleven corrections on the live build, and it has not rendered a World Labs export, because no export was available. The attest board's verdicts carry no authority over the product — its blueprint is DRAFT. Setup remains unsigned. The SDK ceiling is a containment, not a resolution: **2.x remains unsupported.**
+**What this release does not change.** No GPU image path ships: the next-release lane's GPU node certifies a compile-and-run probe, not a build. Live Houdini render and cancellation probes for the sequence verdict are still owed; its tests are hermetic. Setup remains unsigned. The full list is in [Limits](docs/releases/v5.98.0.md#limits).
 
 ## Your first build
 
@@ -270,7 +251,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.97.7.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.98.0.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -304,13 +285,13 @@ Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution brid
 
 CI runs the suite in six pytest invocations: `tests/`, `harness/jev/tests`, `harness/harness2/tests`, `harness/attest/tests`, `harness/notes/release-v5.97.7/tests` and `harness/probes/tests`, plus one targeted re-check of the Moneta-backed memory tests. The first four are also in `testpaths` in [`pyproject.toml`](pyproject.toml), so a bare `pytest` run collects them. See [the workflow](.github/workflows/ci.yml).
 
-**CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so the **186** tests under `tests/` that need one are deselected there and never execute — 12,519 of the 12,705 collected in that directory run. Those tests are measured by hand on a maintainer's machine, not by CI.
+**CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so the **186** tests under `tests/` that need one are deselected there and never execute — 12,641 of the 12,827 collected in that directory run. Those tests are measured by hand on a maintainer's machine, not by CI.
 
-CI runs stock Python 3.11 and 3.14 on Linux, macOS and Windows. On the release host the stock suite is **12,240 passed, 0 failed** ([the release's evidence](docs/releases/v5.97.7.md#tests)).
+CI runs stock Python 3.11 and 3.14 on Linux, macOS and Windows. On the release host the stock suite is **{{README_STOCK}}** ([the release's evidence](docs/releases/v5.98.0.md#tests)).
 
-**The suites that need Houdini are not green on the release host.** The panel suite gives 9 failures on the release tree and 10 on master; the full suite under that interpreter gives 125 to 126 on the release tree and 124 to 131 on master. **Those counts move between runs** — the same unchanged tree gives different numbers on different days, because the host stalls under load and the panel-timing tests answer to that. The measured numbers, the commit each was measured on, and the load the box was under are in [the release's evidence](docs/releases/v5.97.7.md#tests).
+**The suites that need Houdini are not green on the release host.** {{README_SEAT}} **Those counts move between runs** — the same unchanged tree gives different numbers on different days, because the host stalls under load and the panel-timing tests answer to that. The measured numbers, the commit each was measured on, and the load the box was under are in [the release's evidence](docs/releases/v5.98.0.md#tests).
 
-The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.97.7.md) before relying on it.
+The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.98.0.md) before relying on it.
 
 ### How SYNAPSE remembers
 
@@ -322,7 +303,7 @@ Explicit memory writes, decisions and error rows are recorded. Automatic session
 
 Moneta's USD mirror is an inspection view, not the storage owner. Missing services and unknown outcomes remain visible. A memory store that cannot be read is reported as a failure, not as an empty answer.
 
-**Native policy depends on the installation route.** The [source package](packages/synapse.json) retains OFF. Windows Setup 5.97.7 can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks. Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host/artifact/execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
+**Native policy depends on the installation route.** The [source package](packages/synapse.json) retains OFF. Windows Setup 5.98.0 can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks. Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host/artifact/execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
 
 **A native panic is caught in four places.** If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside `synapse_sleep_pass` returns `ran=False`. Since 5.97.4, a panic that reaches the command dispatcher gets a failed reply under its request id, and with `SYNAPSE_AUTO_MEMORY=1` a panic in an automatic session row is logged and that row is skipped. The connection handlers themselves still catch `Exception` only.
 
