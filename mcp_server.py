@@ -222,12 +222,19 @@ def _say(code: str, message: str) -> str:
     return message if outcome is None else _outcome_line(outcome)
 
 
-def _tagged(exc_type: type, outcome, message: str) -> BaseException:
+def _tagged(exc_type: type, outcome, message: str, receipt: dict | None = None) -> BaseException:
     """An *exc_type* whose text is the outcome line and whose ``.outcome`` is the object.
 
     *outcome* is a code, or the object a failed WebSocket response carried. The raised class
     stays a builtin (tests/test_passthrough_hygiene.py reads it from the first argument), and a
     failed call's result carries the object in ``_meta`` (Level 1, R-6).
+
+    *receipt* is a handler failure payload that is not part of the outcome (a parm-write
+    receipt, say). It rides on the exception so ``_exc_outcome``/``_failure`` can put it in
+    ``_meta`` instead of losing it with ``response["data"]``. It is set here rather than on a
+    local before ``raise`` so the raise expression stays a builtin-named call: the hygiene
+    pin in ``tests/test_passthrough_hygiene.py`` reads the class from the first argument, and
+    a bare ``raise exc`` would leave it unable to tell what is raised.
     """
     if isinstance(outcome, str):
         outcome = _outcome_dict(outcome, message)
@@ -237,6 +244,8 @@ def _tagged(exc_type: type, outcome, message: str) -> BaseException:
         outcome = None
     exc = exc_type(message if outcome is None else _outcome_line(outcome))
     exc.outcome = outcome
+    if isinstance(receipt, dict):
+        exc.receipt = receipt
     return exc
 
 
@@ -624,14 +633,16 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
         if isinstance(data, dict) and "retry_after" in data:
             error_msg += f" (retry after {data['retry_after']}s)"
         outcome = data.get("outcome") if isinstance(data, dict) else None
-        exc = _tagged(RuntimeError, outcome if isinstance(outcome, dict) else "tool.failed", error_msg)
         # The handler's failure payload (a parm-write receipt, say) is not part
         # of the outcome. Keep it on the exception so _exc_outcome/_failure can
-        # put it in _meta instead of losing it with response["data"].
-        receipt = data.get("receipt") if isinstance(data, dict) else None
-        if isinstance(receipt, dict):
-            exc.receipt = receipt
-        raise exc
+        # put it in _meta instead of losing it with response["data"]. It is
+        # attached inside _tagged so this raise stays a builtin-named call.
+        raise _tagged(
+            RuntimeError,
+            outcome if isinstance(outcome, dict) else "tool.failed",
+            error_msg,
+            receipt=data.get("receipt") if isinstance(data, dict) else None,
+        )
 
     return response.get("data", {})
 
