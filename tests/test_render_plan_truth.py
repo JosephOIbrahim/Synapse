@@ -9,6 +9,7 @@ Run without Houdini:
     python -m pytest tests/test_render_plan_truth.py -v
 """
 
+import asyncio
 import sys
 import os
 from unittest.mock import AsyncMock, MagicMock
@@ -103,7 +104,13 @@ def _stub_evaluator():
     return _StubEvaluator()
 
 
-def _make_driver(handler, planner=None, evaluator=None, max_iterations=3):
+def _make_driver(
+    handler,
+    planner=None,
+    evaluator=None,
+    max_iterations=3,
+    max_wall_clock_seconds=None,
+):
     from synapse.autonomy.validator import PreFlightValidator
 
     return AutonomousDriver(
@@ -112,6 +119,7 @@ def _make_driver(handler, planner=None, evaluator=None, max_iterations=3):
         evaluator=evaluator or _stub_evaluator(),
         handler_interface=handler,
         max_iterations=max_iterations,
+        max_wall_clock_seconds=max_wall_clock_seconds,
     )
 
 
@@ -381,6 +389,48 @@ async def test_executed_state_reports_a_skipped_step_after_cancel():
     assert report.stop_reason == "cancelled"
     statuses = [step.status for step in report.executed.steps]
     assert statuses == [StepStatus.COMPLETED, StepStatus.SKIPPED]
+
+
+@pytest.mark.asyncio
+async def test_wall_clock_stop_after_a_dispatch_reports_that_attempt():
+    """A stop between attempts reports the attempt that ran, not a fresh copy.
+
+    Fails today: a replan rebinds ``plan`` to a new, unrun execution copy, so
+    the wall-clock break at the top of the next iteration reports pending
+    steps and no checks -- while one render was dispatched and failed. The
+    report then contradicts itself: nothing ran, says the executed state.
+    """
+
+    class _SlowFailingHandler:
+        def __init__(self):
+            self.calls = []
+
+        async def call(self, name, params):
+            if name == "get_stage_info":
+                return {"cameras": ["/c"], "renderable_prims": 1}
+            if name != "render_sequence":
+                return {}
+            self.calls.append(dict(params))
+            await asyncio.sleep(0.8)
+            raise RuntimeError("farm went away")
+
+    handler = _SlowFailingHandler()
+    driver = _make_driver(handler, max_wall_clock_seconds=0.5)
+
+    report = await driver.execute("render frames 1-3")
+
+    assert len(handler.calls) == 1, "exactly one render must have been dispatched"
+    assert report.iterations == 1
+    assert report.stop_reason == "wall_clock_exceeded"
+    assert report.success is False
+
+    # The dispatched attempt ran its pre-flight checks and its step failed.
+    assert report.executed.validation_checks, (
+        "the attempt that ran was validated; the report must not fall back to "
+        "the unrun copy a replan left behind"
+    )
+    assert [step.status for step in report.executed.steps] == [StepStatus.FAILED]
+    assert report.executed.steps[0].error == "farm went away"
 
 
 @pytest.mark.asyncio

@@ -165,14 +165,21 @@ class RenderReport:
     """Final report from an autonomous render execution.
 
     ``plan`` is the artist's request exactly as the planner declared it and is
-    never rewritten by execution. ``executed`` is the execution copy: the
-    validation results and each step's status/result from the attempt. An
-    attempt that stopped before dispatch (gate rejected, unsupported shape)
-    carries an **empty** ``validation_checks`` list -- the planner's declared
-    checks are a to-do list and are never presented as results -- and every
-    step is still ``PENDING``. An empty list therefore means "no check ran",
-    never "every check passed". Ask ``plan`` what was requested; ask
-    ``executed`` what happened.
+    never rewritten by execution. ``executed`` is the execution copy of the
+    **last attempt** -- the most recent copy the driver validated or
+    dispatched -- carrying that attempt's validation results and each step's
+    status/result. It is not an attempt history: after a two-attempt success
+    only the retry's step and checks are here, and the first attempt's result
+    is gone.
+
+    A run that stopped before any attempt did anything (gate rejected,
+    unsupported shape, or a cancel or wall-clock stop before the first
+    validate) carries an **empty** ``validation_checks`` list and leaves
+    every step ``PENDING``. The planner's declared checks are a to-do list
+    and are never presented as results, so an empty list means "no check
+    ran", never "every check passed". A stop that lands between attempts
+    keeps the attempt that ran. Ask ``plan`` what was requested; ask
+    ``executed`` what last happened.
     """
     plan: RenderPlan
     executed: Optional[RenderPlan] = None

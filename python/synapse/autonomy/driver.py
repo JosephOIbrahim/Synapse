@@ -181,6 +181,14 @@ class AutonomousDriver:
         original_plan = self._planner.plan(intent)
         plan = self._execution_copy(original_plan)
 
+        # The execution copy the report describes. It is reassigned below,
+        # immediately before dispatch, and never rebound by a replan: a
+        # replan leaves a fresh, unrun copy in ``plan``, and a cancel or
+        # wall-clock stop at the top of the next iteration would otherwise
+        # report that unrun copy as the attempt -- saying nothing ran while a
+        # render was dispatched and failed.
+        last_executed = plan
+
         # A plan with more than one render step has no single product set.
         # Refuse it before dispatch rather than silently grading the first
         # render and ignoring the rest.
@@ -329,6 +337,10 @@ class AutonomousDriver:
                     logger.warning("Prediction failed (non-blocking): %s", exc)
 
             # Step 4: Execute render steps
+            # From here this copy is the attempt that ran. If a later
+            # iteration rebinds ``plan`` to a fresh replan copy and stops
+            # before dispatching it, ``last_executed`` keeps this attempt.
+            last_executed = plan
             execution_ok = await self._execute_steps(plan)
             # A cancel during execution must not be reported as a pass: the
             # steps that never ran leave no frames, and a partial sequence is
@@ -452,12 +464,14 @@ class AutonomousDriver:
         # Step 7: Compile report
         # The report carries the artist's plan. A retry plan is an execution
         # detail: a consumer recomputing the product set from report.plan
-        # must not see the last retry's subset. What actually ran -- the
-        # validation results and each step's status/result -- rides on
-        # ``executed`` instead, so neither half is discarded.
+        # must not see the last retry's subset. What actually ran -- the last
+        # dispatched attempt's validation results and each step's
+        # status/result -- rides on ``executed`` instead, so neither half is
+        # discarded. A stop that lands between attempts (cancel, wall clock)
+        # reports the attempt that ran, not the fresh copy the replan left.
         report = RenderReport(
             plan=original_plan,
-            executed=plan,
+            executed=last_executed,
             evaluation=evaluation,
             prediction=prediction if self._predictor is not None else None,
             verification=verification if self._predictor is not None else None,
