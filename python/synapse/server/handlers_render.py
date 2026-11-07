@@ -2475,6 +2475,21 @@ class RenderHandlerMixin:
                     "preset_overrides": preset_parm_overrides(_pname),
                 })
 
+        if not pass_configs:
+            # An empty stage chain asks for nothing, so it cannot be a success
+            # (G32/H3-2: success requires a product this run produced).
+            return {
+                "passes": [],
+                "final_image": None,
+                "last_product": None,
+                "completed_passes": 0,
+                "total_passes": 0,
+                "success": False,
+                "error": ("No render passes were requested — 'stages' resolved "
+                          "to an empty chain"),
+                "show_config": {"default_used": _defaults_used},
+            }
+
         passes = []
         final_image = None
 
@@ -2589,7 +2604,9 @@ class RenderHandlerMixin:
         # product as the run's result (H3-2). Success requires every requested
         # pass to have passed.
         all_passed = (
-            len(passes) == len(pass_configs)
+            bool(pass_configs)
+            and final_image is not None
+            and len(passes) == len(pass_configs)
             and all(p.get("status") == "passed" for p in passes)
         )
         result = {

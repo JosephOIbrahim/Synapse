@@ -392,3 +392,23 @@ def test_a_final_pass_validation_failure_fails_the_run(monkeypatch):
     assert out["success"] is False
     assert out["final_image"] is None
     assert out["passes"][-1]["status"] == "failed"
+
+
+def test_an_empty_stage_chain_is_not_a_success(monkeypatch):
+    """Zero requested passes produced nothing, so it cannot report success."""
+    seen = []
+    handler = _progressive_handler(monkeypatch, {"output_file": "/tmp/x.exr"}, seen)
+    out = handler._handle_render_progressively({"stages": []})
+    assert out["success"] is False
+    assert out["final_image"] is None
+    assert "no render passes" in out["error"].lower()
+    assert seen == []
+
+
+def test_an_empty_stage_chain_overrides_a_preset_too(monkeypatch):
+    seen = []
+    handler = _progressive_handler(monkeypatch, {"output_file": "/tmp/x.exr"}, seen)
+    out = handler._handle_render_progressively({"stages": [], "preset": "layout"})
+    assert out["success"] is False
+    assert out["final_image"] is None
+    assert seen == []
