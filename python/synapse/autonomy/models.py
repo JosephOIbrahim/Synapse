@@ -166,9 +166,13 @@ class RenderReport:
 
     ``plan`` is the artist's request exactly as the planner declared it and is
     never rewritten by execution. ``executed`` is the execution copy: the
-    validation results and each step's status/result from the attempt (all
-    pending when the attempt stopped before dispatch). Ask ``plan`` what was
-    requested; ask ``executed`` what happened.
+    validation results and each step's status/result from the attempt. An
+    attempt that stopped before dispatch (gate rejected, unsupported shape)
+    carries an **empty** ``validation_checks`` list -- the planner's declared
+    checks are a to-do list and are never presented as results -- and every
+    step is still ``PENDING``. An empty list therefore means "no check ran",
+    never "every check passed". Ask ``plan`` what was requested; ask
+    ``executed`` what happened.
     """
     plan: RenderPlan
     executed: Optional[RenderPlan] = None

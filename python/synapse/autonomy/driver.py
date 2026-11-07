@@ -7,6 +7,7 @@ automatic re-planning on evaluation failure (up to max_iterations).
 """
 
 import asyncio
+import copy
 import json
 import logging
 import threading
@@ -542,14 +543,29 @@ class AutonomousDriver:
     def _execution_copy(plan: RenderPlan) -> RenderPlan:
         """A mutable copy to execute against.
 
-        Execution writes step status/result and replaces the plan's
-        validation checks. Doing that on the artist's plan would make the
-        "original" handed to replan a rewritten plan by iteration 2.
+        Execution writes step status/result and fills in the plan's validation
+        checks. Doing that on the artist's plan would make the "original"
+        handed to replan a rewritten plan by iteration 2. Copying the step
+        objects is not enough on its own: ``replace(step)`` leaves ``params``
+        pointing at the plan's own dict, so a handler that writes into the
+        params it was handed would rewrite the artist's request. The params
+        are deep-copied for exactly that reason.
+
+        The copy starts with no validation checks. The planner's declared
+        checks are a to-do list, not results. Every path that runs validation
+        replaces the empty list with the validator's verdicts; every path that
+        stops before dispatch (gate rejected, unsupported shape, or a cancel
+        or wall-clock stop before the first validate) reports the absence
+        honestly instead of presenting declared ``passed=False`` checks as
+        hard failures that never happened (ruling R4b).
         """
         return replace(
             plan,
-            steps=[replace(step) for step in plan.steps],
-            validation_checks=list(plan.validation_checks),
+            steps=[
+                replace(step, params=copy.deepcopy(step.params))
+                for step in plan.steps
+            ],
+            validation_checks=[],
         )
 
     def _render_step(self, plan: RenderPlan):

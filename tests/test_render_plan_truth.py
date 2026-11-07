@@ -230,6 +230,13 @@ async def test_two_render_steps_refused_before_dispatch():
     assert report.iterations == 0
     assert report.success is False
     assert report.stop_reason == "unsupported_plan_shape"
+    # R4b: nothing was dispatched, so the executed state carries no check
+    # results -- the planner's declarations are not evidence of a run.
+    assert report.executed is not None
+    assert report.executed is not report.plan
+    assert report.executed.validation_checks == []
+    assert all(step.status == StepStatus.PENDING for step in report.executed.steps)
+    assert len(report.plan.validation_checks) == 8
 
 
 @pytest.mark.asyncio
@@ -420,6 +427,138 @@ async def test_original_plan_is_unchanged_after_two_attempts():
     assert report.iterations == 2, "the first attempt must fail and the second pass"
     assert report.plan is planner.captured
     assert _SnapshottingPlanner._snapshot(planner.captured) == planner.snapshot
+
+
+@pytest.mark.asyncio
+async def test_handler_params_mutation_cannot_reach_the_artists_plan():
+    """The execution copy must own its step params, not share the plan's dicts.
+
+    Fails today: ``_execution_copy`` rebuilds each RenderStep with
+    ``replace(step)``, which copies the dataclass and leaves ``params``
+    pointing at the plan's own dict. A handler that writes into the params it
+    was handed therefore rewrites the artist's plan.
+    """
+
+    class _ParamMutatingHandler:
+        """Writes into the dict it is given, then renders normally."""
+
+        def __init__(self):
+            self.seen = []
+
+        async def call(self, name, params):
+            if name == "get_stage_info":
+                return {"cameras": ["/c"], "renderable_prims": 1}
+            if name != "render_sequence":
+                return {}
+
+            self.seen.append(dict(params))
+            frames = sorted({int(f) for f in (params.get("frames") or [])})
+            # A handler is entitled to mutate the dict it was handed. The
+            # artist's plan must not be downstream of that dict.
+            params["x"] = "mutated"
+            params["start_frame"] = 999
+            if isinstance(params.get("frames"), list):
+                params["frames"].append(99)
+
+            return {
+                "total_frames": len(frames),
+                "successful_frames": len(frames),
+                "failed_frames": 0,
+                "frame_results": [
+                    {"frame": f, "image_path": f"/tmp/f{f}.exr", "error": ""}
+                    for f in frames
+                ],
+            }
+
+    handler = _ParamMutatingHandler()
+    driver = _make_driver(handler)
+
+    report = await driver.execute("re-render frames 1, 3")
+
+    assert handler.seen, "the render step must have been dispatched"
+    # The mutation really happened, and it landed on the copy ...
+    assert report.executed.steps[0].params["x"] == "mutated"
+    # ... never on the artist's plan.
+    assert report.plan.steps[0].params == {
+        "start_frame": 1,
+        "end_frame": 3,
+        "frames": [1, 3],
+    }
+
+
+@pytest.mark.asyncio
+async def test_gate_rejected_reports_no_executed_checks():
+    """A declined plan ran nothing; the report must not claim checks ran.
+
+    Fails today: the pre-dispatch return hands back ``_execution_copy``, which
+    carries the planner's 8 declared checks with ``passed=False``. The
+    receipt reader counts them as hard failures even though no check ran.
+
+    'render frames 1-200' is a >100-frame range, which the planner raises to
+    CONFIRM; with no approval callback the driver auto-rejects.
+    """
+    handler = _ScriptedRenderHandler()
+    driver = _make_driver(handler)
+
+    report = await driver.execute("render frames 1-200")
+
+    assert report.stop_reason == "gate_rejected"
+    assert report.success is False
+    assert handler.calls == [], "a rejected plan must not dispatch a render"
+
+    # The artist's plan keeps the planner's declarations, untouched.
+    assert len(report.plan.validation_checks) == 8
+    assert all(c.passed is False for c in report.plan.validation_checks)
+
+    # R4b: no check ran, so there is nothing to report as run.
+    assert report.executed is not None
+    assert report.executed is not report.plan
+    assert report.executed.validation_checks == []
+    assert all(step.status == StepStatus.PENDING for step in report.executed.steps)
+
+
+@pytest.mark.asyncio
+async def test_validation_failed_reports_the_validator_check_not_the_declaration():
+    """A validation stop reports the check that actually failed.
+
+    This path is the negative control for R4b: it is the one return that
+    stops before dispatch *and* really ran the checks, so its executed state
+    must carry the validator's verdicts. The planner declares ``passed=False``
+    on all 8 checks, so ``renderable_prims`` passing is what proves the
+    executed list is the validator's, not the declaration.
+
+    It passes on the parent commit: the pre-dispatch fix must leave it alone.
+    """
+
+    class _NoCameraHandler(_ScriptedRenderHandler):
+        async def call(self, name, params):
+            if name == "get_stage_info":
+                return {"cameras": [], "renderable_prims": 1}
+            return await super().call(name, params)
+
+    handler = _NoCameraHandler()
+    driver = _make_driver(handler)
+
+    report = await driver.execute("render frames 1-2")
+
+    assert report.stop_reason == "validation_failed"
+    assert report.iterations == 1
+    assert report.success is False
+    assert handler.calls == [], "a failed pre-flight must not dispatch a render"
+
+    # The artist's plan still shows the planner's unrun declarations.
+    assert len(report.plan.validation_checks) == 8
+    assert all(c.passed is False for c in report.plan.validation_checks)
+
+    # The executed state carries the validator's results.
+    executed = {c.name: c for c in report.executed.validation_checks}
+    assert len(executed) == 8
+    assert executed["camera"].passed is False
+    assert executed["camera"].message, "an executed check carries the run's message"
+    assert executed["renderable_prims"].passed is True, (
+        "the executed check is the validator's verdict, not the planner's "
+        "declaration (which is passed=False for every check)"
+    )
 
 
 def test_failed_retry_does_not_replace_known_good():
