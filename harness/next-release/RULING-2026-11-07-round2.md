@@ -1,0 +1,53 @@
+# Ruling — round two for the wave-1 branches (2026-11-07)
+
+Wave 1 landed three branches and three attack verdicts. Two of the three were
+**needs-work**, and both attacks named the same class of problem: the fix was
+right inside its node and wrong at the seam the node did not own. This ruling
+sets the scope for round two before any code is written, because two of the
+corrections change ownership and a node's `owner_files` is a contract.
+
+## R1 — The sparse-render seam is its own node
+
+`NR-SPARSE-RENDER` is added (owner HANDS:
+`server/handlers_render.py`, `server/render_farm.py`, `mcp/_tool_registry.py`).
+The driver now grades the artist's sparse set, but the shipped handler reads only
+`start_frame`/`end_frame`/`step`, the farm builds a contiguous range, and the MCP
+schema exposes no `frames` — so a sparse request still renders the invented
+frame. Stretching `NR-PLAN-TRUTH` across that seam would give a CONDUCTOR node a
+HANDS file. A dependent node with its own predicate is the honest structure.
+
+## R2 — `NR-PLAN-TRUTH` owns `models.py`
+
+Keeping the artist's plan immutable was correct, but the executed validation
+results and step status now live on a discarded copy, and `_record_autonomy_task`
+reads the empty original. The report must carry the attempt's derived state.
+`python/synapse/autonomy/models.py` joins the node; the out-of-surface comment
+edit is no longer out of surface.
+
+## R3 — `NR-WRITE-RECEIPT` owns every installed route
+
+The contract says "survives every installed route". The attack proved it survives
+one. The in-Houdini `/mcp` rewrap, `mcp_server.py`, and the panel executor each
+drop `structuredContent`, and the registry filter drops `frame`, `queued`,
+`expect` and `request_id` before the handler sees them. Those four files join the
+node: `mcp/_tool_registry.py`, `mcp/server.py`, `mcp_server.py`,
+`panel/tool_executor.py`.
+
+## R4 — A predicate that cannot fail is retired
+
+The attack demonstrated that `grep -q 'OUTPUT_MISSING'` still exits 0 with
+`retry_targets` replaced by `return {}`. Both wave-1 predicates are greps and both
+have the same weakness. From this ruling, a next-release node's closure predicate
+is **behavioural**: a hermetic test file that can fail. A comment, a symbol name
+or a dead branch must not satisfy it.
+
+## R5 — Round two lands on the existing branches
+
+One atomic commit per blocker cluster, failing-first tests, no merge, no push.
+Each follow-up carries the head SHA, and the adversarial verdict names that SHA.
+
+## R6 — The GPU lane closes B1, not the build
+
+Round two adds one real probe: does nvcc 13.3 accept MSVC 19.44 (B1). It does not
+clone sources or start a build. B2 (worker Python ABI) is the owner's decision and
+stays open; the receipt records the two candidate runtimes rather than choosing.

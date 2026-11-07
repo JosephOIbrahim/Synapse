@@ -1,6 +1,6 @@
 {
   "_comment": "The next-release lane as a graph the JEV graph guard judges. The strategic decision - which node lands FIRST - is made by JEV from the evidence, not asserted by the seat. Run: python harness/harness2/compositor.py --mode graph --input harness/next-release/graph.json --wave next-release",
-  "_evidence": "docs/intake/next-release-intake-2026-11-06.md (adjudicated 2026-11-06) and docs/intake/src/synapse_next_release_blueprint.md (SHA-256 167ca678f620e6a0)",
+  "_evidence": "docs/intake/next-release-intake-2026-11-06.md (adjudicated 2026-11-06) and docs/intake/src/synapse_next_release_blueprint.md (SHA-256 167ca678f620e6a0) Revised 2026-11-07: RULING-2026-11-07-round2.md (R1-R4) adds NR-SPARSE-RENDER, two owner-file extensions and behavioural predicates.",
   "objective": "Deliver one trustworthy loop: prove which render products this attempt produced, report authored writes truthfully through every installed route, and qualify one useful OpenCV 5.1 CUDA vision chain on the RTX 4090 behind a supervised worker, with durable evidence. Land the evidence and the contract fixes first, then the GPU feasibility, then the integrated slice; qualify the final artifact pair last.",
   "standards": [
     "Law 1: every check must be able to fail. A check that cannot fail is deleted rather than kept green.",
@@ -15,16 +15,34 @@
   ],
   "nodes": [
     {
+      "id": "NR-SPARSE-RENDER",
+      "title": "Make the live render path honour an explicit frame list",
+      "owner_files": [
+        "python/synapse/server/handlers_render.py",
+        "python/synapse/server/render_farm.py",
+        "python/synapse/mcp/_tool_registry.py",
+        "tests/test_sparse_render_contract.py"
+      ],
+      "depends_on": [],
+      "why": "NR-PLAN-TRUTH grades the artist's sparse set in the driver, but the shipped handler reads only start_frame/end_frame/step, render_farm builds a contiguous range, and the MCP schema exposes no frames, so a sparse request still renders the invented frame. The seam crosses an ownership boundary (HANDS render handlers vs CONDUCTOR autonomy), so it is its own node rather than an extension.",
+      "predicate": "python -m pytest tests/test_sparse_render_contract.py -q",
+      "gate": "crux",
+      "effort": "M"
+    },
+    {
       "id": "NR-PLAN-TRUTH",
       "title": "Make the original render plan immutable and reconcile sparse, missing and unsupported shapes",
       "owner_files": [
         "python/synapse/autonomy/planner.py",
         "python/synapse/autonomy/driver.py",
-        "tests/test_render_plan_truth.py"
+        "tests/test_render_plan_truth.py",
+        "python/synapse/autonomy/models.py"
       ],
-      "depends_on": [],
-      "why": "G101 and G32 prove per-attempt product truth; neither keeps the original plan immutable nor computes retry targets from it. Sparse [1,3] with a retry [3], a missing terminal product with no evaluation row, and a multi-render-step plan that is silently truncated to the first step are all still reachable. The blueprint's adversarial cases in section 12.2 are the fixtures.",
-      "predicate": "grep -q 'OUTPUT_MISSING' python/synapse/autonomy/planner.py",
+      "depends_on": [
+        "NR-SPARSE-RENDER"
+      ],
+      "why": "G101 and G32 prove per-attempt product truth; neither keeps the original plan immutable nor computes retry targets from it. Sparse [1,3] with a retry [3], a missing terminal product with no evaluation row, and a multi-render-step plan that is silently truncated to the first step are all still reachable. The blueprint's adversarial cases in section 12.2 are the fixtures. Round-two ruling R2: models.py joins the node because the report must carry executed state; the predicate is behavioural (R4) after the attack proved the grep could not fail.",
+      "predicate": "python -m pytest tests/test_render_plan_truth.py -q",
       "gate": "crux",
       "effort": "M"
     },
@@ -36,11 +54,15 @@
         "python/synapse/server/handlers.py",
         "python/synapse/core/tool_results.py",
         "python/synapse/mcp/tools.py",
-        "tests/test_parm_write_receipt.py"
+        "tests/test_parm_write_receipt.py",
+        "python/synapse/mcp/_tool_registry.py",
+        "python/synapse/mcp/server.py",
+        "mcp_server.py",
+        "python/synapse/panel/tool_executor.py"
       ],
       "depends_on": [],
-      "why": "G25 returns observed, mismatch and a refusal, but a lost transport loses the detail, an uninspectable parm can read as no animation, and queued mutations carry no precondition. The blueprint's section 6 receipt (request, write, readback, recovery, error) and the raw-authored comparison domain are the contract; the legacy observed value stays evaluated.",
-      "predicate": "grep -q 'raw_authored' python/synapse/server/parm_authored.py",
+      "why": "G25 returns observed, mismatch and a refusal, but a lost transport loses the detail, an uninspectable parm can read as no animation, and queued mutations carry no precondition. The blueprint's section 6 receipt (request, write, readback, recovery, error) and the raw-authored comparison domain are the contract; the legacy observed value stays evaluated. Round-two ruling R3: the contract is every installed route, so the rewrap, stdio server and panel executor join the node; the predicate is behavioural (R4).",
+      "predicate": "python -m pytest tests/test_parm_write_receipt.py -q",
       "gate": "crux",
       "effort": "M"
     },
@@ -171,22 +193,93 @@
     }
   ],
   "edges": [
-    {"from": "NR-GPU-FEASIBILITY", "to": "NR-GPU-QUALIFICATION", "type": "dep", "why": "there is nothing to qualify until a build and a chain exist"},
-    {"from": "NR-GPU-FEASIBILITY", "to": "NR-IMAGE-CONTRACT", "type": "evidence", "why": "the contract must name operations the qualified build actually dispatches"},
-    {"from": "NR-IMAGE-CONTRACT", "to": "NR-WORKER-SUPERVISED", "type": "dep", "why": "the worker implements a contract; it does not invent one"},
-    {"from": "NR-GPU-QUALIFICATION", "to": "NR-WORKER-SUPERVISED", "type": "dep", "why": "a worker that cannot prove its backend has nothing to ship"},
-    {"from": "NR-WORKER-SUPERVISED", "to": "NR-RECOVERY-RECEIPTS", "type": "dep", "why": "publication rules are meaningful only once a worker writes results"},
-    {"from": "NR-RECOVERY-RECEIPTS", "to": "NR-PACKAGE-PAIR", "type": "dep", "why": "the pair is qualified against committed receipts, not against ad-hoc files"},
-    {"from": "NR-PLAN-TRUTH", "to": "NR-IMAGE-CONTRACT", "type": "seam", "why": "the product key and attempt identity the envelope carries come from the plan"},
-    {"from": "NR-WRITE-RECEIPT", "to": "NR-WORKER-SUPERVISED", "type": "seam", "why": "vision proposals may only mutate through the authored-write receipt path"},
-    {"from": "NR-LICENSE-GATE", "to": "NR-PACKAGE-PAIR", "type": "invariant", "why": "no artifact pair ships without its notices and EULA compliance"},
-    {"from": "NR-PACKAGE-PAIR", "to": "NR-FOLLOW-ON", "type": "dep", "why": "follow-ons start after the release, not beside it"}
+    {
+      "from": "NR-GPU-FEASIBILITY",
+      "to": "NR-GPU-QUALIFICATION",
+      "type": "dep",
+      "why": "there is nothing to qualify until a build and a chain exist"
+    },
+    {
+      "from": "NR-GPU-FEASIBILITY",
+      "to": "NR-IMAGE-CONTRACT",
+      "type": "evidence",
+      "why": "the contract must name operations the qualified build actually dispatches"
+    },
+    {
+      "from": "NR-IMAGE-CONTRACT",
+      "to": "NR-WORKER-SUPERVISED",
+      "type": "dep",
+      "why": "the worker implements a contract; it does not invent one"
+    },
+    {
+      "from": "NR-GPU-QUALIFICATION",
+      "to": "NR-WORKER-SUPERVISED",
+      "type": "dep",
+      "why": "a worker that cannot prove its backend has nothing to ship"
+    },
+    {
+      "from": "NR-WORKER-SUPERVISED",
+      "to": "NR-RECOVERY-RECEIPTS",
+      "type": "dep",
+      "why": "publication rules are meaningful only once a worker writes results"
+    },
+    {
+      "from": "NR-RECOVERY-RECEIPTS",
+      "to": "NR-PACKAGE-PAIR",
+      "type": "dep",
+      "why": "the pair is qualified against committed receipts, not against ad-hoc files"
+    },
+    {
+      "from": "NR-PLAN-TRUTH",
+      "to": "NR-IMAGE-CONTRACT",
+      "type": "seam",
+      "why": "the product key and attempt identity the envelope carries come from the plan"
+    },
+    {
+      "from": "NR-WRITE-RECEIPT",
+      "to": "NR-WORKER-SUPERVISED",
+      "type": "seam",
+      "why": "vision proposals may only mutate through the authored-write receipt path"
+    },
+    {
+      "from": "NR-LICENSE-GATE",
+      "to": "NR-PACKAGE-PAIR",
+      "type": "invariant",
+      "why": "no artifact pair ships without its notices and EULA compliance"
+    },
+    {
+      "from": "NR-PACKAGE-PAIR",
+      "to": "NR-FOLLOW-ON",
+      "type": "dep",
+      "why": "follow-ons start after the release, not beside it"
+    },
+    {
+      "from": "NR-SPARSE-RENDER",
+      "to": "NR-PLAN-TRUTH",
+      "type": "dep",
+      "why": "the plan's sparse set is only meaningful once the live path renders exactly those frames"
+    }
   ],
   "seams": [
-    {"seam": "the render plan is the only source of what was asked for", "blast_radius": "every retry, every coverage denominator, every 'missing' claim"},
-    {"seam": "the evidence envelope crosses the process boundary", "blast_radius": "T0/T1 verdicts, the worker result, the panel readout"},
-    {"seam": "the worker owns native binaries outside Houdini's search path", "blast_radius": "the DCC's image I/O, every render, the panel's import graph"},
-    {"seam": "the installer allowlist decides what ships", "blast_radius": "the worker exists in development and is absent in the release"},
-    {"seam": "the GPU profile is persisted state", "blast_radius": "a silent CPU fallback can satisfy nothing while reporting success"}
+    {
+      "seam": "the render plan is the only source of what was asked for",
+      "blast_radius": "every retry, every coverage denominator, every 'missing' claim"
+    },
+    {
+      "seam": "the evidence envelope crosses the process boundary",
+      "blast_radius": "T0/T1 verdicts, the worker result, the panel readout"
+    },
+    {
+      "seam": "the worker owns native binaries outside Houdini's search path",
+      "blast_radius": "the DCC's image I/O, every render, the panel's import graph"
+    },
+    {
+      "seam": "the installer allowlist decides what ships",
+      "blast_radius": "the worker exists in development and is absent in the release"
+    },
+    {
+      "seam": "the GPU profile is persisted state",
+      "blast_radius": "a silent CPU fallback can satisfy nothing while reporting success"
+    }
   ]
 }
