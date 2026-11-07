@@ -16,6 +16,7 @@ the farm's is a callback response, and T0 reads bytes.
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -199,3 +200,109 @@ def test_an_unwired_sentinel_is_inconclusive_not_a_failure(tmp_path):
     checks = _checks(_run(_manifest(tmp_path, done_wired=False, done_file=False)))
     assert checks["done_sentinels"]["pass"] is None
     assert "never wired" in checks["done_sentinels"]["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Review round 2 — the paths that could still certify the wrong thing
+# ---------------------------------------------------------------------------
+
+def test_an_unreadable_baseline_proves_nothing(monkeypatch):
+    """A permission error before the render is not evidence of absence."""
+    from synapse.server import handlers_render as hr
+
+    def _denied(self):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(Path, "stat", _denied)
+
+    assert hr._product_identity("C:/nowhere/f.exr") is None
+    assert hr._product_changed(None, (True, 4096, 99)) is False
+
+
+def test_the_sentinel_stamps_the_inherited_nonce(monkeypatch, tmp_path):
+    """A later attempt's manifest cannot change the nonce an earlier hook stamps."""
+    from synapse.host import retina_sentinel_postframe as sentinel
+
+    product = tmp_path / "f.exr"
+    product.write_bytes(b"pixels")
+    manifest = tmp_path / "m.json"
+    manifest.write_text(json.dumps({
+        "products": [str(product)], "render_nonce": "attempt-B", "fingerprint": "fp",
+    }), encoding="utf-8")
+
+    monkeypatch.setenv(sentinel.MANIFEST_ENV_VAR, str(manifest))
+    monkeypatch.setenv(sentinel.NONCE_ENV_VAR, "attempt-A")
+
+    assert sentinel.run() == 1
+    body = json.loads((tmp_path / "f.exr.done").read_text(encoding="utf-8"))
+    assert body["render_nonce"] == "attempt-A"
+
+    checks = _checks(_run({**_manifest(tmp_path), "render_nonce": "attempt-B"}))
+    assert checks["done_sentinels"]["pass"] is False  # B is looking at A's product
+
+
+def _stub_header():
+    return SimpleNamespace(parts=[], all_channel_names=lambda: [],
+                           string_attr=lambda key: None)
+
+
+def test_an_unwired_receipt_is_inconclusive_not_a_failure(tmp_path):
+    """A hook that never ran cannot fail the artifact for its missing receipt."""
+    product = tmp_path / "f.exr"
+    product.write_bytes(b"pixels")
+    manifest = {
+        "output_file": str(product),
+        "render_nonce": "n1",
+        "done_wired": False,   # the space-in-path case: hook never wired
+        "receipt_wired": False,
+        "fingerprint": "fp-declared",
+    }
+    event = check_manifest_against_disk(
+        manifest, now="2026-11-06T00:00:00Z",
+        exr_reader=lambda path: _stub_header())
+    checks = _checks(event)
+    assert checks["fingerprint_receipt"]["pass"] is None
+    assert event["verdict"] != "fail"
+
+
+class _Cfg:
+    def lookup(self, key):
+        return {
+            "resolution.render": ((1920, 1080), "default"),
+            "resolution.preview": ((1280, 720), "default"),
+        }[key]
+
+
+def _progressive_handler(monkeypatch, render_result, seen):
+    from synapse.server import handlers as handlers_mod
+    from synapse.server import handlers_render as hr
+
+    monkeypatch.setattr(hr, "HOU_AVAILABLE", True)
+    monkeypatch.setattr(hr, "get_show_config", lambda *a, **k: _Cfg())
+    monkeypatch.setattr(hr, "resolve_show_dirs", lambda *a, **k: {})
+
+    handler = handlers_mod.SynapseHandler()
+    handler._handle_render_settings = lambda payload: {}
+    handler._handle_render = lambda payload: render_result
+    handler._handle_validate_frame = lambda payload: (
+        seen.append(payload) or {"valid": True})
+    return handler
+
+
+def test_a_progressive_pass_rejects_a_flipbook(monkeypatch):
+    seen = []
+    handler = _progressive_handler(monkeypatch, {
+        "image_path": "x_glpreview.0001.jpg", "flipbook_fallback": True}, seen)
+    out = handler._handle_render_progressively({"rop_path": "/stage/karma1"})
+    assert out["passes"][0]["status"] == "failed"
+    assert seen == []
+
+
+def test_a_progressive_pass_validates_the_product(monkeypatch):
+    seen = []
+    handler = _progressive_handler(monkeypatch, {
+        "image_path": "/tmp/f.preview.jpg", "output_file": "/tmp/f.exr"}, seen)
+    out = handler._handle_render_progressively({"rop_path": "/stage/karma1"})
+    assert out["passes"][0]["status"] == "passed"
+    assert seen and seen[0]["image_path"] == "/tmp/f.exr"
+    assert out["final_image"] == "/tmp/f.exr"

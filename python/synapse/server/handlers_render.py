@@ -207,14 +207,18 @@ def _parm_raw(parm):
 def _product_identity(path: str):
     """What the product is on disk right now: ``(exists, size, mtime_ns)``.
 
-    A render is proved by this changing. Existence alone is not proof: a husk
-    that fails without raising leaves yesterday's frame at the path, and the
-    old poll counted any non-empty file as fresh (H3-1).
+    ``None`` means the path could not be inspected at all (a permission or
+    filesystem error, not absence). A render is proved by this changing;
+    existence alone is not proof: a husk that fails without raising leaves
+    yesterday's frame at the path (H3-1), and an unreadable baseline proves
+    nothing about freshness either.
     """
     try:
         stat = Path(path).stat()
-    except OSError:
+    except FileNotFoundError:
         return (False, 0, 0)
+    except OSError:
+        return None
     try:
         size = int(stat.st_size)
     except (AttributeError, TypeError, ValueError):
@@ -229,7 +233,13 @@ def _product_identity(path: str):
 
 
 def _product_changed(before, after) -> bool:
-    """Did the render write something new at the product path?"""
+    """Did the render write something new at the product path?
+
+    An unreadable baseline (``None``) cannot prove freshness, so it never
+    counts as proof.
+    """
+    if before is None or after is None:
+        return False
     return bool(after[0] and after[1] > 0 and after != before)
 
 
@@ -1153,7 +1163,12 @@ class RenderHandlerMixin:
 
         if not render_ok:
             existing = _product_identity(out_path)
-            if identity_before[0] and existing == identity_before:
+            if identity_before is None:
+                problem = (
+                    f"the product at {out_path} could not be inspected before the "
+                    "render, so its freshness cannot be proved"
+                )
+            elif identity_before[0] and existing == identity_before:
                 problem = (
                     f"the file at {out_path} is unchanged since before the render "
                     f"({identity_before[1]} bytes), so this is the previous frame, "
@@ -2512,27 +2527,34 @@ class RenderHandlerMixin:
 
             try:
                 render_result = self._handle_render(render_payload)
-                image_path = render_result.get("image_path") or render_result.get("output_file")
+                # H3-2: every progressive pass follows the farm's product
+                # contract. The preview may illustrate the report; only the
+                # product is validated, and a flipbook grab is a failed pass.
+                product_path = render_result.get("output_file") or ""
+                image_path = render_result.get("image_path") or product_path
+                pass_result["preview_path"] = image_path
 
-                if not image_path:
+                if render_result.get("flipbook_fallback") or not product_path:
                     pass_result["status"] = "failed"
                     pass_result["validation"] = {
                         "valid": False,
-                        "summary": "Render produced no output image",
+                        "summary": ("Render produced no product file; image_path "
+                                    "is a preview or a GL flipbook grab"),
                     }
                     passes.append(pass_result)
                     break
 
-                # Validate the rendered frame
+                # Validate the product, not the preview.
                 try:
                     validation = self._handle_validate_frame({
-                        "image_path": image_path,
+                        "image_path": product_path,
+                        "output_file": product_path,
                     })
                     pass_result["validation"] = validation
 
                     if validation.get("valid", False):
                         pass_result["status"] = "passed"
-                        final_image = image_path
+                        final_image = product_path
                     else:
                         pass_result["status"] = "failed"
                         passes.append(pass_result)

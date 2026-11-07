@@ -240,6 +240,7 @@ def check_manifest_against_disk(
     _aovs = manifest.get("aovs")
     declared_aovs = [str(a) for a in _aovs] if isinstance(_aovs, (list, tuple)) else []
     declared_fp = manifest.get("fingerprint")
+    receipt_wired = manifest.get("receipt_wired")
 
     res_results: List[str] = []
     res_pass: CheckVerdict = None if not declared_res else True
@@ -298,8 +299,16 @@ def check_manifest_against_disk(
         if declared_fp:
             got_fp = header.string_attr("synapse_retina_fingerprint")
             if got_fp is None:
-                fp_pass = False  # declared a fingerprint but the artifact lacks it
-                fp_detail_bits.append(f"{Path(product).name}: no receipt stamped")
+                if receipt_wired is False:
+                    # The hook that stamps the receipt was never wired, so its
+                    # absence proves nothing about the artifact (H3-9).
+                    fp_detail_bits.append(
+                        f"{Path(product).name}: no receipt (receipt hook not wired)")
+                    if fp_pass is not False:
+                        fp_pass = None
+                else:
+                    fp_pass = False  # declared a fingerprint but the artifact lacks it
+                    fp_detail_bits.append(f"{Path(product).name}: no receipt stamped")
             elif got_fp != str(declared_fp):
                 fp_pass = False
                 fp_detail_bits.append(
@@ -359,6 +368,7 @@ def check_manifest_against_disk(
                 "fingerprint_receipt",
                 fp_pass,
                 "; ".join(fp_detail_bits) or "no readable product to check receipt",
+                receipt_wired=receipt_wired,
             )
         )
     else:

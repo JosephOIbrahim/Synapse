@@ -786,7 +786,8 @@ class TestSafeRender:
         h._handle_get_stage_info = MagicMock(return_value={
             "cameras": ["/cameras/cam1"],
         })
-        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_render = MagicMock(return_value={
+            "image_path": "/tmp/render.exr", "output_file": "/tmp/render.exr"})
         result = h._handle_safe_render({})
         assert result["passed"] is True
         assert "render" in result
@@ -797,7 +798,8 @@ class TestSafeRender:
         h = self._make_handler()
         h._handle_get_stage_info = MagicMock(return_value={"cameras": ["/cameras/cam1"]})
         h._handle_render_settings = MagicMock(return_value={})
-        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_render = MagicMock(return_value={
+            "image_path": "/tmp/render.exr", "output_file": "/tmp/render.exr"})
         result = h._handle_safe_render({
             "rop_path": "/out/karma",
             "width": 1920,
@@ -811,7 +813,8 @@ class TestSafeRender:
         h = self._make_handler()
         h._handle_get_stage_info = MagicMock(return_value={"cameras": ["/cameras/cam1"]})
         h._handle_render_settings = MagicMock(return_value={})
-        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_render = MagicMock(return_value={
+            "image_path": "/tmp/render.exr", "output_file": "/tmp/render.exr"})
         result = h._handle_safe_render({
             "rop_path": "/out/karma",
             "soho_foreground": 1,
@@ -827,7 +830,8 @@ class TestSafeRender:
             "cameras": ["/cameras/cam1"],
             "unassigned_material_prims": ["/geo/sphere"],
         })
-        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_render = MagicMock(return_value={
+            "image_path": "/tmp/render.exr", "output_file": "/tmp/render.exr"})
         result = h._handle_safe_render({})
         assert result["passed"] is True
         mat_check = [c for c in result["checks"] if c["name"] == "materials"]
@@ -864,7 +868,8 @@ class TestRenderProgressively:
         """All 3 passes complete when render + validation succeed."""
         h = self._make_handler()
         h._handle_render_settings = MagicMock(return_value={})
-        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_render = MagicMock(return_value={
+            "image_path": "/tmp/render.exr", "output_file": "/tmp/render.exr"})
         h._handle_validate_frame = MagicMock(return_value={"valid": True, "summary": "OK"})
 
         result = h._handle_render_progressively({})
@@ -879,7 +884,8 @@ class TestRenderProgressively:
         """Pipeline stops after first validation failure."""
         h = self._make_handler()
         h._handle_render_settings = MagicMock(return_value={})
-        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_render = MagicMock(return_value={
+            "image_path": "/tmp/render.exr", "output_file": "/tmp/render.exr"})
         # Test pass fails validation
         h._handle_validate_frame = MagicMock(return_value={
             "valid": False, "summary": "Black frame detected",
@@ -917,7 +923,8 @@ class TestRenderProgressively:
         """If validate_frame throws (e.g., no OIIO), treat as passed with warning."""
         h = self._make_handler()
         h._handle_render_settings = MagicMock(return_value={})
-        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_render = MagicMock(return_value={
+            "image_path": "/tmp/render.exr", "output_file": "/tmp/render.exr"})
         h._handle_validate_frame = MagicMock(side_effect=ImportError("No OIIO"))
 
         result = h._handle_render_progressively({})
@@ -930,7 +937,8 @@ class TestRenderProgressively:
         """Custom production resolution and samples are passed through."""
         h = self._make_handler()
         h._handle_render_settings = MagicMock(return_value={})
-        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_render = MagicMock(return_value={
+            "image_path": "/tmp/render.exr", "output_file": "/tmp/render.exr"})
         h._handle_validate_frame = MagicMock(return_value={"valid": True})
 
         result = h._handle_render_progressively({
