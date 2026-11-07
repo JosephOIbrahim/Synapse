@@ -10,6 +10,8 @@
     "predicate": "test -f harness/next-release/gpu_feasibility.json"
   },
   "generated_utc": "2026-11-07T02:24:22Z",
+  "updated_utc": "2026-11-07T12:54:23Z",
+  "round_two_base_commit": "1e17e2ea",
   "base_commit": "3024f76bd3381005a2f1de2849ba995fbcac10f9",
   "branch": "nr/gpu-feasibility",
   "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/nr-gpu-feas",
@@ -24,15 +26,15 @@
     "not_performed": [
       "no git clone of opencv or opencv_contrib",
       "no cmake configure",
-      "no compiler invocation on any .cu or .cpp source file (cl.exe was queried for its version banner only, with no input)",
-      "no compile, no build, no install, no pip install, no venv creation",
-      "no file write outside this receipt"
+      "round one only: no compiler invocation on any .cu or .cpp source file (SUPERSEDED in round two — see round_two_probe)",
+      "round one only: no build, no install, no pip install, no venv creation",
+      "round one only: no file write outside this receipt (round two wrote .scratch/gpu_probe/, which is gitignored)"
     ],
     "network_touched": "github.com via git ls-remote (read-only, refs only, no clone)"
   },
   "verdict": {
     "state": "feasible-unproven",
-    "one_line": "Every input the route needs is present (CUDA 13.3 with sm_89, MSVC 19.44, CMake 4.2.1, 48 cores, 1.13 TiB free), but nothing was built, so no CUDA chain is proven. The first unknown is whether nvcc 13.3 accepts the MSVC 19.44 host compiler.",
+    "one_line": "B1 is closed: nvcc 13.3 compiles with MSVC 19.44 and the resulting sm_89 binary runs on the RTX 4090. Every other input the route needs is present (CUDA 13.3, CMake 4.2.1, 48 cores, 1.13 TiB free), but no OpenCV source build exists, so no CUDA chain is proven.",
     "proven_by_observation": [
       "the target GPU is an RTX 4090 (sm_89) and nvcc 13.3 lists compute_89 and sm_89",
       "CUDA toolkit 13.3 (V13.3.73) is installed and is first on PATH; CUDA_PATH points at v13.3",
@@ -41,10 +43,10 @@
       "the machine has 48 logical processors, 127.5 GiB RAM, and 1131.1 GiB free on C:",
       "the installed OpenCV is a CPU-only wheel: cv2.cuda.getCudaEnabledDeviceCount() is 0 and cv2.cuda.meanStdDev does not exist on it",
       "the pinned upstream tag 5.1.0 in both repositories peels to the blueprint's exact commits (verified by git ls-remote)",
-      "there are no OpenCV sources, no build cache and no worker venv on this box"
+      "there are no OpenCV sources, no build cache and no worker venv on this box",
+      "nvcc 13.3 (V13.3.73) accepts MSVC 19.44.35222 / toolset 14.44.35207 as its host compiler: vectorAdd.cu compiled with -arch=sm_89 (exit 0) and the binary ran on the RTX 4090 (exit 0, 0 mismatches) — see round_two_probe"
     ],
     "not_proven": [
-      "that nvcc 13.3 accepts _MSC_VER 1944 as its host compiler",
       "that CMake 4.2.1 configures OpenCV 5.1 plus its vendored dependencies",
       "that BUILD_LIST=core,cudaarithm,python3 generates the python3 bindings and the CUDA arithmetic module",
       "that a Python binding for the chosen interpreter builds at all",
@@ -86,7 +88,9 @@
       "cl_version": "19.44.35222",
       "cl_target": "x64",
       "windows_sdk": "10.0.26100.0",
-      "cl_on_path": false
+      "cl_on_path": false,
+      "cl_available_via": "VC/Auxiliary/Build/vcvars64.bat (exit 0; emits a non-fatal 'vswhere.exe' not-recognized line)",
+      "nvcc_accepts_cl_pairing": true
     },
     "cmake": {
       "version": "4.2.1",
@@ -213,6 +217,18 @@
     {
       "cmd": "git ls-remote https://github.com/opencv/opencv_contrib.git 'refs/tags/5.1.0*'",
       "output_trimmed": "583c6a62d816f0cb696a61ee718c389022848bd0\trefs/tags/5.1.0\nb67a855188a3d683813731010f6d39ac614733a4\trefs/tags/5.1.0^{}"
+    },
+    {
+      "cmd": "call vcvars64.bat ; where cl.exe ; cl.exe",
+      "output_trimmed": "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe\nMicrosoft (R) C/C++ Optimizing Compiler Version 19.44.35222 for x64\n(all exit 0; vcvars emitted a non-fatal 'vswhere.exe' not-recognized line)"
+    },
+    {
+      "cmd": "nvcc.exe -arch=sm_89 -o vectorAdd.exe vectorAdd.cu",
+      "output_trimmed": "vectorAdd.cu\ntmpxft_00001b3c_00000000-7_vectorAdd.cudafe1.cpp\nexit 0"
+    },
+    {
+      "cmd": "./vectorAdd.exe",
+      "output_trimmed": "device=0 name=NVIDIA GeForce RTX 4090 cc=8.9\nn=1024 expected=3.0 mismatches=0 first=3.0\nexit 0"
     }
   ],
   "sources_pinned": {
@@ -244,10 +260,13 @@
       "state": "undecided",
       "owner": "WP1 output, per RULING-2026-11-06 D1 caveat (ABI is recorded from the probe, never guessed)",
       "candidates": [
-        {"python": "3.14.2", "numpy": "2.2.6", "note": "host default; first on PATH"},
-        {"python": "3.12.10", "numpy": "not probed", "note": "older, longer-settled ABI"}
+        {"id": "cpython-3.12", "python": "3.12.10", "selector": "-V:3.12", "executable": "C:/Users/User/AppData/Local/Programs/Python/Python312/python.exe", "numpy": "not probed", "status": "candidate, NOT chosen", "note": "real CPython install; longer-settled ABI"},
+        {"id": "cpython-3.13", "python": "3.13", "selector": "-V:3.13", "executable": "C:/Users/User/AppData/Local/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/python.exe", "numpy": "not probed", "status": "candidate, NOT chosen", "note": "the only 3.13 on this box is the Microsoft Store alias, which is not itself a build substrate; a python.org or uv CPython 3.13 must be provisioned before configure if 3.13 is picked"}
       ],
-      "forbidden": "hython 3.13 (blueprint:61) and the Microsoft Store 3.13 alias",
+      "recorded_not_in_candidate_set": [
+        {"python": "3.14.2", "executable": "C:/Python314/python.exe", "numpy": "2.2.6", "note": "host default recorded in round one; not part of the round-two candidate set"}
+      ],
+      "forbidden": "hython 3.13 (blueprint:61); the Microsoft Store 3.13 alias is not a build substrate (a provisioned CPython 3.13 is)",
       "consequence": "the Python binding is interpreter-ABI-specific; the venv must exist before configure and PYTHON3_EXECUTABLE must be pinned to it, or the generated module will not import",
       "recommendation": "decide before any build work; the choice is a product decision, not something this probe can settle"
     },
@@ -305,16 +324,16 @@
       "id": "B1",
       "severity": "critical-unknown",
       "statement": "MSVC 19.44.35222 / toolset 14.44 (VS 17.14) against CUDA 13.3 is unverified. nvcc's host_config.h may reject _MSC_VER 1944.",
-      "evidence": "cl reports 19.44.35222 for x64; toolset dir is 14.44.35207; nvcc is V13.3.73. No compilation was performed, so the pairing is untested.",
-      "resolution": "first action of the build wave: source vcvars64 and compile a trivial .cu with nvcc. If rejected, pin an older toolset or a CUDA release that accepts 19.44.",
-      "status": "open"
+      "evidence": "round one: cl reports 19.44.35222 for x64; toolset dir is 14.44.35207; nvcc is V13.3.73. ROUND TWO (2026-11-07): sourced vcvars64, compiled .scratch/gpu_probe/vectorAdd.cu with nvcc 13.3 -arch=sm_89 — exit 0, vectorAdd.exe produced (172544 bytes); the exe ran on the RTX 4090 (cc 8.9) with exit 0 and 0 mismatches. nvcc does NOT reject _MSC_VER 1944.",
+      "resolution": "resolved by observation on 2026-11-07; no toolset pin and no CUDA downgrade is needed for B1. Evidence: round_two_probe.",
+      "status": "resolved"
     },
     {
       "id": "B2",
       "severity": "blocking-decision",
       "statement": "The worker Python ABI is not chosen. The binding is ABI-specific and retina/.venv does not exist.",
-      "evidence": "py -0p shows 3.14.2 (default), 3.12.10, a Store 3.13 alias and a uv 3.11.15; retina/.venv is absent; RULING D1 caveat makes the ABI a WP1 output; blueprint:61 forbids hython.",
-      "resolution": "owner/WP1 picks the interpreter; then create the venv and pin PYTHON3_EXECUTABLE before configure.",
+      "evidence": "ROUND TWO candidate set recorded, NOT chosen: CPython 3.12 (3.12.10, real install) and CPython 3.13 (only a Microsoft Store alias exists on this box; a provisioned 3.13 would be required). 3.14.2 was recorded in round one but is not a round-two candidate. retina/.venv is absent; RULING D1 caveat makes the ABI a WP1 output; blueprint:61 forbids hython. See build_route.interpreter_abi.",
+      "resolution": "owner/WP1 picks between CPython 3.12 and CPython 3.13; then create the venv and pin PYTHON3_EXECUTABLE before configure.",
       "status": "open"
     },
     {
@@ -391,10 +410,10 @@
     }
   ],
   "unknowns": [
-    "whether nvcc 13.3 accepts _MSC_VER 1944",
+    "whether nvcc 13.3 accepts _MSC_VER 1944 — RESOLVED 2026-11-07: it does (compiled and ran an sm_89 kernel; see round_two_probe)",
     "whether CMake 4.2.1 configures OpenCV 5.1 plus vendored dependencies",
     "whether BUILD_LIST yields both python3 and cudaarithm",
-    "which interpreter ABI the release worker will use",
+    "which interpreter ABI the release worker will use — candidate set recorded as CPython 3.12 / CPython 3.13, not chosen",
     "whether the Python binding builds for that interpreter at all",
     "whether the masked Python cv2.cuda.meanStdDev overload exists and matches the blueprint's contract",
     "whether the useful chain executes on the GPU (device count 1, real dispatch, synchronized result)",
@@ -412,7 +431,7 @@
     "scheduling": "what runs next is JEV's call (RULING operating rule 2); this receipt does not reorder the graph"
   },
   "next_actions_ordered": [
-    "1. Compile a trivial .cu with nvcc 13.3 from a vcvars64 shell to settle B1 (minutes).",
+    "1. [DONE 2026-11-07 — B1 resolved] Compile a trivial .cu with nvcc 13.3 from a vcvars64 shell; compiled and ran on the 4090 (round_two_probe).",
     "2. Decide the worker interpreter ABI (B2); this is an owner/WP1 decision.",
     "3. Shallow-clone both repositories at tag 5.1.0 and assert both HEADs equal the pinned SHAs.",
     "4. Create the isolated venv, pin numpy, and record its version in the build receipt.",
@@ -421,6 +440,64 @@
     "7. Run the import and masked meanStdDev probes; only then may a CUDA-success claim be written.",
     "8. Record digests, driver range, toolset, flags and OIIO/numpy identity for the WP1 build lock."
   ],
+  "round_two_probe": {
+    "performed_utc": "2026-11-07T12:54:23Z",
+    "scope": "B1 only: does nvcc 13.3 accept the installed MSVC 19.44 as its host compiler, and does the resulting binary run on the RTX 4090?",
+    "shell": "cmd.exe via .scratch/gpu_probe/probe.bat, driven from Git Bash",
+    "environment": {
+      "vcvars_command": "call \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"",
+      "vcvars_exit_code": 0,
+      "vcvars_stderr_line": "'vswhere.exe' is not recognized as an internal or external command, operable program or batch file.",
+      "vcvars_note": "the vswhere line is non-fatal; vcvarsall still printed 'Environment initialized for: x64' and resolved cl.exe",
+      "cl_resolved": "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe",
+      "cl_banner": "Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35222 for x64",
+      "cl_exit_code": 0,
+      "nvcc_resolved": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3/bin/nvcc.exe",
+      "nvcc_version": "Cuda compilation tools, release 13.3, V13.3.73"
+    },
+    "source": {
+      "path": ".scratch/gpu_probe/vectorAdd.cu",
+      "tracked": false,
+      "why_not_tracked": ".scratch/ is gitignored at every depth; the full source is embedded below and hashed, so the probe is reproducible from this receipt",
+      "sha256": "65ea0871f003c4da93395b29182ba957a64d0c2ddf83e819232ec8260bd06180",
+      "bytes": 2300,
+      "content": "// Trivial CUDA kernel used only to test whether nvcc 13.3 accepts the\n// installed MSVC 19.44 (toolset 14.44) host compiler. Not a product artifact.\n#include <cstdio>\n#include <cuda_runtime.h>\n\n__global__ void vectorAdd(const float* a, const float* b, float* c, int n) {\n    int i = blockIdx.x * blockDim.x + threadIdx.x;\n    if (i < n) c[i] = a[i] + b[i];\n}\n\nint main() {\n    const int n = 1024;\n    const size_t bytes = n * sizeof(float);\n\n    float* h_a = (float*)malloc(bytes);\n    float* h_b = (float*)malloc(bytes);\n    float* h_c = (float*)malloc(bytes);\n    if (!h_a || !h_b || !h_c) { printf(\"host alloc failed\\n\"); return 2; }\n    for (int i = 0; i < n; ++i) { h_a[i] = 1.0f; h_b[i] = 2.0f; h_c[i] = 0.0f; }\n\n    int device = 0;\n    cudaError_t err = cudaGetDevice(&device);\n    if (err != cudaSuccess) { printf(\"cudaGetDevice failed: %s\\n\", cudaGetErrorString(err)); return 3; }\n    cudaDeviceProp prop;\n    err = cudaGetDeviceProperties(&prop, device);\n    if (err != cudaSuccess) { printf(\"cudaGetDeviceProperties failed: %s\\n\", cudaGetErrorString(err)); return 3; }\n    printf(\"device=%d name=%s cc=%d.%d\\n\", device, prop.name, prop.major, prop.minor);\n\n    float *d_a, *d_b, *d_c;\n    err = cudaMalloc(&d_a, bytes); if (err != cudaSuccess) { printf(\"cudaMalloc d_a: %s\\n\", cudaGetErrorString(err)); return 4; }\n    err = cudaMalloc(&d_b, bytes); if (err != cudaSuccess) { printf(\"cudaMalloc d_b: %s\\n\", cudaGetErrorString(err)); return 4; }\n    err = cudaMalloc(&d_c, bytes); if (err != cudaSuccess) { printf(\"cudaMalloc d_c: %s\\n\", cudaGetErrorString(err)); return 4; }\n\n    cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);\n    cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);\n\n    const int threads = 256;\n    const int blocks = (n + threads - 1) / threads;\n    vectorAdd<<<blocks, threads>>>(d_a, d_b, d_c, n);\n\n    err = cudaDeviceSynchronize();\n    if (err != cudaSuccess) { printf(\"kernel failed: %s\\n\", cudaGetErrorString(err)); return 5; }\n\n    cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);\n    int bad = 0;\n    for (int i = 0; i < n; ++i) if (h_c[i] != 3.0f) ++bad;\n    printf(\"n=%d expected=3.0 mismatches=%d first=%.1f\\n\", n, bad, h_c[0]);\n\n    cudaFree(d_a); cudaFree(d_b); cudaFree(d_c);\n    free(h_a); free(h_b); free(h_c);\n    return bad == 0 ? 0 : 1;\n}\n"
+    },
+    "commands": [
+      {
+        "cmd": "nvcc.exe -arch=sm_89 -o vectorAdd.exe vectorAdd.cu",
+        "cwd": "C:/Users/User/SYNAPSE/.claude/worktrees/nr-gpu-feas/.scratch/gpu_probe",
+        "stdout": "vectorAdd.cu\ntmpxft_00001b3c_00000000-7_vectorAdd.cudafe1.cpp",
+        "stderr": "",
+        "exit_code": 0,
+        "artifact": "vectorAdd.exe, 172544 bytes, sha256 0bd455031e584b744526d38bbbcd82ab5694d9bc3aec22486a87852e634314ad"
+      },
+      {
+        "cmd": "vectorAdd.exe   (bare name, inside probe.bat)",
+        "cwd": "C:/Users/User/SYNAPSE/.claude/worktrees/nr-gpu-feas/.scratch/gpu_probe",
+        "stdout": "'vectorAdd.exe' is not recognized as an internal or external command,\noperable program or batch file.",
+        "stderr": "",
+        "exit_code": 9009,
+        "note": "shell lookup failure on the bare name, not a program failure; the file existed and ran on the next invocation"
+      },
+      {
+        "cmd": "./vectorAdd.exe   (explicit path, same binary)",
+        "cwd": "C:/Users/User/SYNAPSE/.claude/worktrees/nr-gpu-feas/.scratch/gpu_probe",
+        "stdout": "device=0 name=NVIDIA GeForce RTX 4090 cc=8.9\nn=1024 expected=3.0 mismatches=0 first=3.0",
+        "stderr": "",
+        "exit_code": 0
+      }
+    ],
+    "verdict": "nvcc 13.3 ACCEPTS MSVC 19.44.35222 (toolset 14.44.35207) as its host compiler. It compiled a sm_89 kernel with exit 0 and the binary executed on the RTX 4090 with exit 0 and 0 mismatches.",
+    "closes": "B1",
+    "does_not_prove": [
+      "that CMake 4.2.1 configures OpenCV 5.1 plus vendored dependencies (B4)",
+      "that OpenCV's cudaarithm module compiles with this toolchain — only that a trivial .cu does",
+      "that OpenCV's Python binding builds for either B2 candidate interpreter",
+      "that the masked cv2.cuda.meanStdDev overload exists or matches the blueprint contract (B6)",
+      "that the named useful chain executes on the GPU"
+    ]
+  },
   "references": [
     {"file": "harness/next-release/graph.json", "lines": "47-59", "what": "node definition, owner_files, predicate, gate joe, effort L"},
     {"file": "harness/next-release/README.md", "lines": "15-24, 91-97", "what": "do not start rules, D1/D6 requirement, result-file-is-not-success"},
