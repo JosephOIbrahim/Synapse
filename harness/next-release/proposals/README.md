@@ -87,7 +87,7 @@ That count was produced by `python harness/next-release/proposals/validate_amend
 
 **Known limit — pre-existing collisions.** `graph.json` has five owner-file collisions among pre-amendment nodes (K1, K2, K3, K4a, K4b, listed in `_known_existing_collisions` in the amendment). The validator prints them as `INFO` and requires them to match the declared list. It cannot fix them: that is Joe's call.
 
-**Known limit — receipts.** A predicate that reads a receipt cannot tell a real receipt from a fabricated one. It proves shape and internal consistency. Provenance comes from the crux reviewer and Joe's review.
+**Known limit — receipts.** A predicate that reads a receipt cannot tell a real receipt from a fabricated one. It proves shape and internal consistency. Provenance comes from the crux reviewer and Joe's per-act review.
 
 ---
 
@@ -177,7 +177,7 @@ The full text is in `_owner_decisions` in the amendment. **Ruled 2026-11-08** (`
 **From the ruling**
 
 - **OD-11** — ratify ADR-0002. **Ruled 2026-11-08:** Accepted.
-- **OD-12** — demo v1, build window, parallelism, Windows 26H2, build and install authorization. **Open.** The 2026-11-08 build ran under Joe's goal-level go, which rules no numbered decision.
+- **OD-12** — demo v1, build window, parallelism, Windows 26H2, per-act build and install authorization. **Open.** The 2026-11-08 build ran under Joe's goal-level go, which rules no numbered decision.
 - **OD-10** — the `cpu_reference` identity. **Ruled 2026-11-08:** the stock `opencv-python-headless` 5.0.0.93 wheel in its own venv. **OD-14** — the scoped-delta positive-change semantic. **Open.**
 - **OD-22** — ADR-0002 decision 14. **Ruled 2026-11-08:** option (ii), the change-mask chain beside the census. **OD-23** — `NR-GPU-QUALIFICATION`'s gate. **Ruled 2026-11-08:** `joe`.
 - **OD-15** — build/package owner and an independent correctness reviewer. **Open.**

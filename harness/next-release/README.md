@@ -62,11 +62,16 @@ single first landing is designated. Verbatim from the receipt:
 - `reason`: `fallback: Jev chose NR-SPARSE-RENDER @ 0.43, below the confidence gate 0.6`
 
 That is the order. Against the 2026-11-06 receipt: `NR-GPU-FEASIBILITY` park -> land_now; `NR-PLAN-TRUTH` land_now -> park; `NR-VG-RETINA-GUARDS` absent -> land_now; `NR-WRITE-RECEIPT` land_now -> park.
-`NR-VG-GPU-CANARY` is in `needs_joe`, not `park`; it does not land either way,
-which keeps Joe's default that it stays parked behind the worker. Producer:
+`NR-VG-GPU-CANARY` is in `needs_joe`, not `park`; it does not land either way.
+Joe's default for the canary is his answer 2 in ADR-0002, verbatim: "the canary
+node stays parked behind the worker". No graph field encodes that default; the
+node's why states it in words. Producer:
 `python harness/harness2/compositor.py --mode graph --input
 harness/next-release/graph.json --wave next-release`, CPython 3.14.2, run from
-the repo root.
+the repo root. After this receipt was generated, the revise that answered the
+referee restored the word "per-act" in `NR-VG-GPU-BUILD-LOCK`'s why, so the
+committed `graph.json` no longer hashes to `67d59ee2…ce61e`; the guard was not
+re-run on the revised graph.
 
 ## 3. Fan-out, wave by wave
 

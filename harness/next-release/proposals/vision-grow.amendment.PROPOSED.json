@@ -33,8 +33,8 @@
       {
         "node": "NR-VG-GPU-BUILD-LOCK",
         "replace": "Waits on OD-02 (this node or a reopened FEASIBILITY), OD-12 (per-act build authorization, window, parallelism) and OD-16 (worker venv).",
-        "with": "OD-02 was settled on 2026-11-08 by Joe's merge of this node: it owns the build (ADR-0002 decision 13, option b). Still waits on OD-12 (build authorization, window, parallelism) and OD-16 (worker venv).",
-        "basis": "OD-02, settled by this merge. 'per-act' leaves OD-12's gloss because the 2026-11-08 configure, build and install ran under the owner's goal-level go (ADR-0002, 'Ratification and owner rulings (2026-11-08)'), which rules no numbered decision; OD-12 and OD-16 stay open."
+        "with": "OD-02 was settled on 2026-11-08 by Joe's merge of this node: it owns the build (ADR-0002 decision 13, option b). Still waits on OD-12 (per-act build authorization, window, parallelism) and OD-16 (worker venv).",
+        "basis": "OD-02, settled by this merge; OD-12 and OD-16 stay open."
       },
       {
         "node": "NR-VG-RETINA-GUARDS",
@@ -486,7 +486,7 @@
     "NR-VG-GPU-BUILD-LOCK": "NR-VG-GPU-BUILD-LOCK RED: no committed build-lock receipt harness/vision/gpu_build_lock/build_lock_receipt.json",
     "NR-VG-RETINA-GUARDS": "NR-VG-RETINA-GUARDS RED: guard tests tests/test_retina_worker_boundary.py are not committed",
     "NR-VG-GPU-WORKER-ENV": "NR-VG-GPU-WORKER-ENV RED: no committed R4 worker-runtime contract harness/vision/gpu_worker_env/worker_env_contract.json",
-    "NR-VG-RETINA-CUDA-BACKEND": "NR-VG-RETINA-CUDA-BACKEND RED: ADR-0002 is not ratified (its Status line does not begin Accepted)",
+    "NR-VG-RETINA-CUDA-BACKEND": "NR-VG-RETINA-CUDA-BACKEND: no committed backend receipt harness/vision/retina_cuda_backend/backend_receipt.json",
     "NR-VG-GPU-CANARY": "NR-VG-GPU-CANARY RED: no committed canary receipt harness/vision/gpu_canary/canary_receipt.json",
     "NR-VG-NCA-SANDBOX": "NR-VG-NCA-SANDBOX RED: no committed sandbox receipt harness/vision/nca_sandbox/nca_sandbox_receipt.json",
     "NR-VG-GROW-CONTROLS": "NR-VG-GROW-CONTROLS RED: no committed control-package contract harness/vision/grow_controls/control_package_contract.json",

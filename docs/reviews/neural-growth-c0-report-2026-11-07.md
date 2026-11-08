@@ -1,6 +1,6 @@
 # Neural Growth — C0 Report — 2026-11-07
 
-**Status:** C0 only. Read-only reconciliation plus a PROPOSED graph amendment. **Not ratified. Authorizes no act.** On 2026-11-08 Joe merged the amendment's OpenCV lane into `graph.json` (ADR-0002, "Ratification and owner rulings (2026-11-08)", answer 2); the Grow lane is not in `graph.json`.
+**Status:** C0 only. Read-only reconciliation plus a PROPOSED graph amendment. **This report ratifies nothing and authorizes no act.** On 2026-11-08 Joe merged the amendment's OpenCV lane into `graph.json` (ADR-0002, "Ratification and owner rulings (2026-11-08)", answer 2); the Grow lane is not in `graph.json`.
 
 | Field | Value |
 |---|---|
