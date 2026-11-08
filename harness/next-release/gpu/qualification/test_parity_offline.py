@@ -192,6 +192,28 @@ def test_relation_check_rejects_a_broken_fixture(fid):
     assert fx.check_relations(fid, b2, a2, t, r), f"{fid}: the relation check accepted a mutated fixture"
 
 
+def test_a_contiguous_copy_is_not_the_strided_fixture():
+    b, a, t, r = fx.build("non_contiguous_odd_stride")
+    assert not (b.flags.c_contiguous or a.flags.c_contiguous)
+    assert fx.construction_digest(b, a, t, r) != fx.construction_digest(
+        np.ascontiguousarray(b), np.ascontiguousarray(a), t, r)
+
+
+def test_construction_digest_separates_planes_that_differ_only_in_strides():
+    """A contiguous copy also flips the contiguity flags and drops the base, so the test above
+    cannot show that strides are hashed. Two views of one row-constant base share shape, dtype,
+    flags, base and every byte, and differ only in their strides."""
+    (vh, vw), (_, sc) = fx.VIEW, fx.VIEW_STEP
+    base = np.repeat(np.arange(vh, dtype=np.float32)[:, None], vw * sc, axis=1)
+    dense, odd = base[:, :vw], base[:, ::sc]
+    assert dense.shape == odd.shape == (vh, vw) and dense.strides != odd.strides
+    for v in (dense, odd):
+        assert v.base is base and v.dtype == np.float32
+        assert not (v.flags.c_contiguous or v.flags.f_contiguous)
+    assert np.array_equal(dense, odd)
+    assert fx.construction_digest(dense, dense, 0.02, 1) != fx.construction_digest(odd, odd, 0.02, 1)
+
+
 def test_fixture_planes_pass_through_t1_luma_unchanged():
     """The parity input boundary: t1._luma returns every fixture plane unchanged. Runs in a child
     process with cv2 blocked, so this test never imports cv2."""
@@ -325,6 +347,8 @@ def test_profile_and_assemble_satisfy_the_draft_predicate(fake_repo, tmp_path, m
     assert set(r["cpu_reference"]) == {"identity"}
     assert set(r["fixtures"]) == set(fx.FIXTURE_IDS)
     assert all(set(v) == {"gpu_mask_sha256", "cpu_mask_sha256"} for v in r["fixtures"].values())
+    assert all(r["fixtures"][fid]["cpu_mask_sha256"] == cpu_doc["fixtures"][fid]["mask_sha256"]
+               for fid in fx.FIXTURE_IDS)
     p = json.loads(profile.read_text(encoding="utf-8"))
     assert p["cpu_reference_ruling"] == {"by": "Joe", "date": "2000-01-01",
                                          "identity": parity.reference_identity(cpu_doc)}
@@ -343,7 +367,12 @@ def test_a_gpu_mismatch_is_recorded_with_coordinates_and_rejected(fake_repo, tmp
         assert rec["identical"] is False and (fd["row"], fd["col"], fd["differing_px"]) == (2, 3, 1)
     rc_p, rc_a, profile, receipt = _profile_and_assemble(fake_repo, cpu_p, gpu_p, cpu_doc)
     assert (rc_p, rc_a) == (0, 1)
-    fd = json.loads(receipt.read_text(encoding="utf-8"))["fixtures"]["empty_change_set"]["first_difference"]
+    got = json.loads(receipt.read_text(encoding="utf-8"))["fixtures"]
+    for fid in fx.FIXTURE_IDS:  # the digests differ here, so each side must come from its own file
+        assert got[fid]["cpu_mask_sha256"] == cpu_doc["fixtures"][fid]["mask_sha256"]
+        assert got[fid]["gpu_mask_sha256"] == gpu_doc["fixtures"][fid]["gpu_mask_sha256"]
+        assert got[fid]["gpu_mask_sha256"] != got[fid]["cpu_mask_sha256"]
+    fd = got["empty_change_set"]["first_difference"]
     assert (fd["row"], fd["col"], fd["differing_px"]) == (2, 3, 1)
     _index(fake_repo)
     res = _run_predicate(fake_repo, monkeypatch)
@@ -358,6 +387,48 @@ def test_unavailable_cuda_is_inconclusive_and_cannot_be_assembled(fake_repo, tmp
     assert all("CudaUnavailable" in rec["gpu_error"] for rec in gpu_doc["fixtures"].values())
     rc_p, rc_a, _, receipt = _profile_and_assemble(fake_repo, cpu_p, gpu_p, cpu_doc)
     assert (rc_p, rc_a) == (0, 2) and not receipt.exists()
+
+
+def test_cuda_status_unavailable_is_refused_even_with_masks(fake_repo, tmp_path, capsys):
+    """cuda_status says no CUDA, yet every fixture carries a GPU mask and no error: the gpu-mode
+    file is refused on cuda_status alone, not on the not-computed branch."""
+    reason = "no CUDA device (fake status beside fake masks)"
+
+    class StatusSaysNoCuda(FakeBackend):
+        def cuda_status(self):
+            return False, reason
+
+    cpu_p, gpu_p, cpu_doc, gpu_doc, gpu_rc = _measure(tmp_path, StatusSaysNoCuda())
+    assert gpu_rc == 3 and gpu_doc["cuda_status"] == {"available": False, "reason": reason}
+    assert all("gpu_mask_sha256" in rec and not any(k.endswith("error") for k in rec)
+               for rec in gpu_doc["fixtures"].values())
+    capsys.readouterr()
+    rc_p, rc_a, _, receipt = _profile_and_assemble(fake_repo, cpu_p, gpu_p, cpu_doc)
+    assert (rc_p, rc_a) == (0, 2) and not receipt.exists()
+    refused = [ln for ln in capsys.readouterr().err.splitlines() if ln.startswith("REFUSED:")]
+    assert refused == [f"REFUSED: gpu-mode file: CUDA unavailable: {reason}"]
+
+
+def test_a_dispatch_off_cuda_is_written_but_not_qualified(fake_repo, tmp_path, capsys):
+    """morphology_close never reports cuda while every mask matches: the receipt is written,
+    names that op as not cuda, and assemble exits 1."""
+    class CloseNotOnCuda(FakeBackend):
+        def last_dispatch(self):
+            d = super().last_dispatch()
+            d.pop("morphology_close", None)
+            return d
+
+    cpu_p, gpu_p, cpu_doc, gpu_doc, gpu_rc = _measure(tmp_path, CloseNotOnCuda())
+    assert gpu_rc == 0 and all(rec["identical"] for rec in gpu_doc["fixtures"].values())
+    capsys.readouterr()
+    rc_p, rc_a, _, receipt = _profile_and_assemble(fake_repo, cpu_p, gpu_p, cpu_doc)
+    assert (rc_p, rc_a) == (0, 1) and receipt.exists()
+    dispatch = json.loads(receipt.read_text(encoding="utf-8"))["backend_witness"]["dispatch"]
+    assert dispatch.pop("morphology_close").startswith("not cuda in:")
+    assert dispatch == {op: "cuda" for op in DRAFT["R2_OPS"] if op != "morphology_close"}
+    unqualified = [ln for ln in capsys.readouterr().err.splitlines() if ln.startswith("NOT QUALIFIED:")]
+    assert len(unqualified) == 1
+    assert unqualified[0].startswith("NOT QUALIFIED: dispatch morphology_close: not cuda in:")
 
 
 def test_profile_takes_the_ruling_from_arguments_and_only_a_measured_identity(tmp_path):
