@@ -2,6 +2,47 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.99.0 - OpenCV 5.1 runs RETINA's change mask on the GPU, off by default
+
+**No file Setup installs changes, apart from version strings.** The repository
+gains a worker-only OpenCV 5.1 CUDA path for one RETINA measurement, with masks
+byte-identical to the CPU on eight fixtures on one workstation. Nothing calls
+it in production yet. The full note, with every limit, is
+[docs/releases/v5.99.0.md](docs/releases/v5.99.0.md).
+
+- **CUDA backend (NR-VG-RETINA-CUDA-BACKEND).** `retina/backend_cuda.py` runs
+  absdiff, a strict threshold and morphological open and close on CUDA, with
+  the CPU path's semantics by construction. An unavailable device or a failing
+  `cv2` call gives an inconclusive check with the reason, never a pass, and the
+  module has no CPU fallback. Nothing imports it, and it is not in the Setup
+  payload.
+- **Guards (NR-VG-RETINA-GUARDS).** `tests/test_retina_worker_boundary.py`: the
+  in-host RETINA modules cannot reach a backend, the worker tree imports no
+  `hou`, and the host payload ships no new RETINA module.
+- **Build lock (NR-VG-GPU-BUILD-LOCK).** A receipt pins the local OpenCV 5.1.0
+  and contrib CUDA build: source commits, module list, toolchain (CMake 4.2.1,
+  MSVC toolset 14.44, CUDA 13.3, `sm_89`), native-file digests and the measured
+  windows. The build is not shipped.
+- **Worker recipe (NR-VG-GPU-WORKER-ENV).** `retina/setup_venv.py` and
+  `retina/setup_venv.ps1` refuse a hython seed and any seed that is not
+  CPython 3.12 (exit 2, nothing created), and refuse an existing non-3.12
+  `retina/.venv` unless re-run with `--recreate`; the PowerShell script checks
+  every exit code. `retina/requirements.txt` documents only the R4 runtime.
+- **Qualification (NR-GPU-QUALIFICATION).** On all eight fixtures the GPU mask
+  bytes equal the frozen CPU reference (the stock `opencv-python-headless`
+  5.0.0.93 wheel), with all four operations dispatched on CUDA.
+- **Graph and order.** The OpenCV lane joins `harness/next-release/graph.json`
+  (five nodes, 18 edges, four field changes on two existing nodes). JEV's
+  re-rank fell back (0.43, below its 0.6 gate) and parked four of these nodes;
+  the owner's explicit exception ships them in this release. The canary stays
+  parked.
+- **Records.** ADR-0002 Accepted, RETINA blueprint amendment A1, the G0
+  receipt, and the Neural Growth C0 report, whose Grow lane stays PROPOSED.
+
+**Not changed:** anthropic 2.x is still unsupported, and the pin stays
+`anthropic>=1.0.0,<2`. Setup remains unsigned. Nothing launches a RETINA worker
+yet.
+
 ## v5.98.0 - A write reads itself back; a render proves its frame
 
 **Product code changes.** Two artist-facing behaviours now read the effect back

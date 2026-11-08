@@ -2,13 +2,13 @@
 
 [Back to README](../README.md) · [Architecture](architecture/overview.md) · [Latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 
-Publication links and wording reviewed on **2026-11-07** for **v5.98.0**. The feature evidence below retains each release's original scope; this is not a new runtime qualification. [Exact tags and commits](../TAGS.md) identify the published code. A documentation update does not qualify a new installer or a live scene.
+Publication links and wording reviewed on **2026-11-08** for **v5.99.0**. The feature evidence below retains each release's original scope; this is not a new runtime qualification. [Exact tags and commits](../TAGS.md) identify the published code. A documentation update does not qualify a new installer or a live scene.
 
 ## At a glance
 
-- **Source and Windows Setup:** [v5.98.0](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.98.0).
+- **Source and Windows Setup:** [v5.99.0](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.99.0).
 - **Public Setup:** unsigned, pinned Moneta 1.3.0 plus a pinned native artifact. Fresh supported-host ON requires actual checks; explicit OFF and existing default-OFF remain OFF.
-- **Houdini 22.0.400 / Python 3.13:** the shipped product code **changes** from v5.97.7: parameter writes are read back and refuse what they cannot land, renders prove they produced the frame, and a named frame list renders exactly those frames. This release's own checks are recorded in the [5.98.0 notes](releases/v5.98.0.md#tests). The Anthropic SDK stays capped below 2.0, and 2.x remains unsupported. Live Houdini render and cancellation probes for the sequence verdict are still owed. The interactive wizard, registry/shortcuts and clean-machine installation remain untested. On the release host the stock suite passes (12,366 passed, 0 failed) and the Houdini seat suite does not (115 and 118 failed in two runs, against 116 and 114 for v5.97.7).
+- **Houdini 22.0.400 / Python 3.13:** no file Setup installs changes from v5.98.0 apart from version strings, so its runtime evidence carries forward. The repository adds a worker-only OpenCV 5.1 CUDA path for RETINA's change-mask chain: off by default, called by nothing in production, with its GPU build local to one workstation and not in Setup. This release's own checks are recorded in the [5.99.0 notes](releases/v5.99.0.md#tests). The Anthropic SDK stays capped below 2.0, and 2.x remains unsupported. Live Houdini render and cancellation probes for the sequence verdict are still owed. The interactive wizard, registry/shortcuts and clean-machine installation remain untested.{{STATUS_SUITES}}
 - **Installed version:** separate from the published source. An open Houdini session keeps its loaded modules until reload or restart.
 
 [Install](getting-started/installation.md) · [Solaris evidence](#solaris-wiring-validation) · [Artist control](#artist-control) · [Stop and Undo](#undo-stop-and-rendering) · [Memory limits](#memory-and-suggestions)
@@ -23,9 +23,11 @@ Publication links and wording reviewed on **2026-11-07** for **v5.98.0**. The fe
 | World Labs | Artist-triggered import of an existing API-accessible world or supported local Gaussian PLY. | [Import flow and limits](architecture/overview.md#world-labs-import). |
 | SideFX help | Resumable installed-help/Markdown ingestion, published SQLite search generations and bounded local Scout retrieval. | [Build and connect](studio/SIDEFX_LIBRARY.md). |
 
-**Installation:** use the [5.98.0 instructions](../INSTRUCTIONS.md#existing-native-on-or-off-setups) for preserved choices and execution-gated native activation. The 5.97.7 tag/assets remain unchanged. Installed and published identities are separate; final artifact evidence is in the [5.98.0 notes](releases/v5.98.0.md).
+**Installation:** use the [5.99.0 instructions](../INSTRUCTIONS.md#existing-native-on-or-off-setups) for preserved choices and execution-gated native activation. The 5.98.0 tag/assets remain unchanged. Installed and published identities are separate; final artifact evidence is in the [5.99.0 notes](releases/v5.99.0.md).
 
 ### Validation by release
+
+- [v5.99.0](releases/v5.99.0.md) records the worker-only CUDA backend for RETINA's change-mask chain, the three host-boundary guards, the build-lock receipt, the R4 worker recipe and the GPU qualification (eight fixtures, byte-identical to the stock CPU reference), with the suite counts on this host. No file Setup installs changes apart from version strings. anthropic 2.x remains unsupported.
 
 - [v5.98.0](releases/v5.98.0.md) records the parameter-write readback and receipt, the render proof, the sequence verdict, explicit frame lists and plan truth, with their test files, the suite counts on this host, and the final-installer evidence bound to the versioned Setup. anthropic 2.x remains unsupported.
 

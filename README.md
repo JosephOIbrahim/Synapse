@@ -10,71 +10,85 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[▶️ Instructions](INSTRUCTIONS.md)** · [🏷️ Versions and tags](TAGS.md) · [What's new](docs/releases/v5.98.0.md) · [Help](#when-you-get-stuck)
+**[▶️ Instructions](INSTRUCTIONS.md)** · [🏷️ Versions and tags](TAGS.md) · [What's new](docs/releases/v5.99.0.md) · [Help](#when-you-get-stuck)
 
 ## Start here
 
-**5.98.0 changes what SYNAPSE does when it writes a parameter or renders frames.** A write is read back and refuses what it cannot land; a render proves it produced this frame; a named frame list renders exactly those frames. Moneta 1.3.0, the Setup behaviour and the native-artifact policy are unchanged from [5.97.7](docs/releases/v5.97.7.md). anthropic 2.x is **still unsupported**. [What changed in 5.98.0](#what-changed-in-5980) walks through it.
+**5.99.0 adds an optional GPU path for one RETINA measurement. No file Setup installs changes, apart from version strings.** OpenCV 5.1 can run RETINA's change-mask chain on CUDA, locally, and its masks are byte-identical to the CPU's on eight test fixtures. It is off by default, and nothing calls it in production yet.
 
-### Get 5.98.0
+Moneta 1.3.0, the panel, the Setup behaviour and the native-artifact policy are unchanged from [5.98.0](docs/releases/v5.98.0.md). anthropic 2.x is **still unsupported**. [What changed in 5.99.0](#what-changed-in-5990) walks through it.
 
-- 📦 **Download:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/SYNAPSE-5.98.0-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/SYNAPSE-5.98.0-source.zip).
-- 🔎 **Check the download:** Setup is **unsigned**. Compare its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.98.0/SHA256SUMS.txt).
+### Get 5.99.0
+
+- 📦 **Download:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.99.0/SYNAPSE-5.99.0-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.99.0/SYNAPSE-5.99.0-source.zip).
+- 🔎 **Check the download:** Setup is **unsigned**. Compare its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.99.0/SHA256SUMS.txt).
 - 🦀 **Rust when verified:** Setup includes a pinned native artifact. Fresh supported setups enable it after actual execution checks. Explicit OFF stays OFF. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
-- ✅ **What was checked:** native execution, encrypted-mirror reopen and migration/restoration controls. Read the [final artifact evidence and limits](docs/releases/v5.98.0.md#tests). The interactive wizard and the clean-machine checks are separate, and remain unqualified.
+- ✅ **What was checked:** native execution, encrypted-mirror reopen and migration/restoration controls. Read the [final artifact evidence and limits](docs/releases/v5.99.0.md#tests). The interactive wizard and the clean-machine checks are separate, and remain unqualified.
 
-Setup includes the panel as of v5.98.0, including Spatial, the Render footer row and the scene-reading Scatter recipe.
+Setup includes the panel as of v5.99.0, including Spatial, the Render footer row and the scene-reading Scatter recipe.
 
 ### Install in four steps
 
-1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.98.0, or run the v5.98.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
+1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.99.0, or run the v5.99.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
 2. Restart Houdini. Open **New Pane Tab → Synapse**.
 3. Open **Connect models**. Choose a provider and model; add its key if needed.
 4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
 
 💡 Using Ollama? Start its service first. **Connect** starts the separate Houdini bridge; **Doctor** checks the setup without a model.
 
-**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately and restart Houdini to load the update. The 5.97.7 tag and assets remain unchanged.
+**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately and restart Houdini to load the update. The 5.98.0 tag and assets remain unchanged.
 
-**Jump to:** [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-5980) · [Troubleshooting](#when-you-get-stuck)
+**Jump to:** [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-5990) · [Troubleshooting](#when-you-get-stuck)
 
-## What changed in 5.98.0
+## What changed in 5.99.0
 
-Two things an artist feels changed: writing a parameter, and rendering frames. Both now read the effect back instead of reporting that a call returned. One thing promised for this release did not land, and it comes first.
+OpenCV 5.1 can now run one RETINA measurement on the GPU: the change mask. It runs locally, it is **off by default**, and nothing SYNAPSE runs in production calls it yet.
+
+One promise from earlier releases still has not landed, and it comes first.
 
 ### anthropic 2.x is still unsupported
 
-v5.97.7 deferred teaching the model-access guard the anthropic 2.x auth convention "to v5.98". **That work has not started.** The pin stays `anthropic>=1.0.0,<2`, and under 2.x the guard still refuses every model call.
+The model-access guard still speaks only the 1.x auth convention. The pin stays `anthropic>=1.0.0,<2`, and under 2.x the guard still refuses every model call.
 
-Producers: [the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md) · [the release note](docs/releases/v5.98.0.md#limits)
+Producers: [the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md) · [the release note](docs/releases/v5.99.0.md#limits)
 
-### A parameter write reads itself back
+### The GPU gives the same mask as the CPU
 
-`houdini_set_parm` now returns **`observed`** — what the parameter holds after the write — beside the value you asked for, and a **`mismatch`** flag when it did not take.
+RETINA's change mask is four steps: absdiff, threshold, morphological open, morphological close. [`retina/backend_cuda.py`](retina/backend_cuda.py) runs all four on CUDA.
 
-An animated or channel-referenced parameter is **refused by default**, so no stray key is added and no other node is written by accident. `mode` says how to meet it: `replace` or `key_at_frame` for keys, `write_source` for a reference. A refused write writes nothing, and a write that fails part-way puts back what it snapshotted.
+On **8 of 8** qualification fixtures, the GPU mask bytes equal the CPU reference's. The reference is the stock `opencv-python-headless` 5.0.0.93 wheel, the owner's choice. The fixtures are constructed edge cases, not rendered frames.
 
-A queued write must say what state it expects. If the parameter no longer matches, or the expectation cannot be checked, nothing is written. A refused or failed write's receipt reaches you on every installed route: the handler, both MCP transports and the panel, including when the execution bridge reports the refusal.
+No usable GPU means an **inconclusive** check, with the reason. Never a pass.
 
-Producers: [the release note](docs/releases/v5.98.0.md#a-parameter-write-reads-itself-back) · [`parm_authored.py`](python/synapse/server/parm_authored.py) · [the receipt tests](tests/test_parm_write_receipt.py)
+Producers: [the qualification receipt](harness/next-release/gpu_qualification.json) · [the backend tests](tests/test_retina_backend_cuda.py) · [the release note](docs/releases/v5.99.0.md)
 
-### A render proves it produced this frame
+### It stays out of Houdini
 
-A file that exists is no longer proof. The render snapshots the product before it runs and requires it to change; the one exception is a flagged GL flipbook on a usdrender ROP. The farm refuses a flipbook preview or a missing product. RETINA stamps a per-render nonce, and a check it cannot wire is *inconclusive*, never a pass.
+Three guard tests pin the boundary. The modules Houdini loads cannot reach a GPU backend. The worker code imports no `hou`. The Setup payload ships no new RETINA module.
 
-A **sequence** now fails on a lost or failed frame, whatever the mean score says. A cancel stops with `success=False`, and frames finished before a retry survive it.
+Producer: [the guards](tests/test_retina_worker_boundary.py)
 
-Producers: [the release note](docs/releases/v5.98.0.md#a-render-proves-it-produced-this-frame) · [the proof tests](tests/test_render_proof.py) · [the evaluator tests](tests/test_autonomy_evaluator.py)
+### The GPU build lives on one workstation
 
-### Name the frames, get those frames
+OpenCV 5.1.0 plus contrib, built from pinned sources with CUDA 13.3 for `sm_89`, into its own CPython 3.12.10 worker venv. **Setup does not ship it.** Another machine needs its own build and its own qualification.
 
-`synapse_render_sequence` takes an explicit **`frames`** list. Ask for 1, 5 and 9, and 1, 5 and 9 render — before this release a sparse request reached the farm as an invented contiguous range. An empty list is refused.
+Producer: [the build-lock receipt](harness/vision/gpu_build_lock/build_lock_receipt.json)
 
-The report now keeps what you asked for (`plan`) apart from what ran (`executed`). A run that stopped before its first validation reports no executed checks.
+### Creating the RETINA venv now needs CPython 3.12
 
-Producers: [the release note](docs/releases/v5.98.0.md#name-the-frames-get-those-frames) · [the sparse-render tests](tests/test_sparse_render_contract.py) · [the plan-truth tests](tests/test_render_plan_truth.py)
+`retina/setup_venv.py` and `retina/setup_venv.ps1` refuse a hython seed and any interpreter that is not CPython 3.12. They exit 2 and create nothing.
 
-**What this release does not change.** No GPU image path ships: the next-release lane's GPU node certifies a compile-and-run probe, not a build. Live Houdini render and cancellation probes for the sequence verdict are still owed; its tests are hermetic. Setup remains unsigned. The full list is in [Limits](docs/releases/v5.98.0.md#limits).
+An existing `retina/.venv` that is not 3.12 is refused too. Re-run with `--recreate` (`-Recreate` in PowerShell).
+
+Producer: [the recipe](retina/requirements.txt)
+
+### The order was the owner's call
+
+JEV re-ranked the work graph and fell below its confidence gate: **0.43** against **0.6**. Its fallback parked four of the five OpenCV-lane nodes. The owner granted an explicit exception, so all five ship in this release. The canary stays parked.
+
+Producers: [JEV's receipt](harness/harness2/runs/next-release/graph_decision.json) · [ADR-0002](docs/decisions/ADR-0002-retina-t1-optional-cuda-backend.md)
+
+**What this release does not change.** No worker launches yet, so no render check uses the GPU. The GPU tests skip in CI. Setup remains unsigned. The full list is in [Limits](docs/releases/v5.99.0.md#limits).
 
 ## Your first build
 
@@ -251,7 +265,7 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.98.0.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.99.0.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -285,13 +299,13 @@ Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution brid
 
 CI runs the suite in six pytest invocations: `tests/`, `harness/jev/tests`, `harness/harness2/tests`, `harness/attest/tests`, `harness/notes/release-v5.97.7/tests` and `harness/probes/tests`, plus one targeted re-check of the Moneta-backed memory tests. The first four are also in `testpaths` in [`pyproject.toml`](pyproject.toml), so a bare `pytest` run collects them. See [the workflow](.github/workflows/ci.yml).
 
-**CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so the **186** tests under `tests/` that need one are deselected there and never execute — 12,647 of the 12,833 collected in that directory run. Those tests are measured by hand on a maintainer's machine, not by CI.
+**CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so the **{{README_CI_DESELECTED}}** tests under `tests/` that need one are deselected there and never execute — {{README_CI_RUN}} of the {{README_CI_COLLECTED}} collected in that directory run. Those tests are measured by hand on a maintainer's machine, not by CI.
 
-CI runs stock Python 3.11 and 3.14 on Linux, macOS and Windows. On the release host the stock suite is **12,366 passed, 474 skipped, 11 xfailed, 0 failed** ([the release's evidence](docs/releases/v5.98.0.md#tests)).
+CI runs stock Python 3.11 and 3.14 on Linux, macOS and Windows. On the release host the stock suite is **{{README_STOCK}}** ([the release's evidence](docs/releases/v5.99.0.md#tests)).
 
-**The suites that need Houdini are not green on the release host.** Under hython 22.0.400 the release tree gives **115 and 118 failed** in two runs, and the v5.97.7 tree gives **116 and 114** on the same host; the one failure only the release tree has is a new test that cannot import the stdio server under Houdini's interpreter. The seat runs do not exercise Moneta. **Those counts move between runs** — the same unchanged tree gives different numbers on different days, because the host stalls under load and the panel-timing tests answer to that. The measured numbers, the commit each was measured on, and the load the box was under are in [the release's evidence](docs/releases/v5.98.0.md#tests).
+**The suites that need Houdini are not green on the release host.** {{README_SEAT}} **Those counts move between runs** — the same unchanged tree gives different numbers on different days, because the host stalls under load and the panel-timing tests answer to that. The measured numbers, the commit each was measured on, and the load the box was under are in [the release's evidence](docs/releases/v5.99.0.md#tests).
 
-The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.98.0.md) before relying on it.
+The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.99.0.md) before relying on it.
 
 ### How SYNAPSE remembers
 
@@ -303,7 +317,7 @@ Explicit memory writes, decisions and error rows are recorded. Automatic session
 
 Moneta's USD mirror is an inspection view, not the storage owner. Missing services and unknown outcomes remain visible. A memory store that cannot be read is reported as a failure, not as an empty answer.
 
-**Native policy depends on the installation route.** The [source package](packages/synapse.json) retains OFF. Windows Setup 5.98.0 can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks. Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host/artifact/execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
+**Native policy depends on the installation route.** The [source package](packages/synapse.json) retains OFF. Windows Setup 5.99.0 can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks. Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host/artifact/execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
 
 **A native panic is caught in four places.** If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside `synapse_sleep_pass` returns `ran=False`. Since 5.97.4, a panic that reaches the command dispatcher gets a failed reply under its request id, and with `SYNAPSE_AUTO_MEMORY=1` a panic in an automatic session row is logged and that row is skipped. The connection handlers themselves still catch `Exception` only.
 
