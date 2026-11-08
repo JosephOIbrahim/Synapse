@@ -176,6 +176,50 @@ def test_unavailable_device_error_mid_chain_is_inconclusive(failing, monkeypatch
     assert mask is None and check["pass"] is None
 
 
+@needs_numpy
+def test_non_cv2_error_mid_chain_propagates_unchanged(monkeypatch):
+    """The edge of "unavailable". Only ``cv2.error`` part-way through the chain means
+    the device could not run it. Any other exception there is a bug, and it must
+    propagate unchanged: never a ``CudaUnavailable``, never an inconclusive check.
+
+    The stand-in build has a ``cv2.error`` of its own, and ``TypeError`` is not one.
+    The test has no ``test_unavailable_`` prefix on purpose: it does not prove
+    "unavailable -> inconclusive", so ``make_receipt.py`` must not list it."""
+    import numpy as np
+
+    class Error(Exception):
+        pass
+
+    class GpuMat:
+        def upload(self, arr):
+            self.array = arr
+
+    sentinel = "simulated non-cv2 failure inside the chain"
+    calls = []
+
+    def absdiff(a, b):
+        calls.append("absdiff")
+        raise TypeError(sentinel)
+
+    cuda = types.SimpleNamespace(
+        getCudaEnabledDeviceCount=lambda: 1,
+        GpuMat=GpuMat,
+        absdiff=absdiff,
+        threshold=None,
+        copyMakeBorder=None,
+        createMorphologyFilter=None,
+    )
+    monkeypatch.setitem(sys.modules, "cv2", _cv2_double(cuda=cuda, error=Error))
+    plane = np.zeros((4, 5), np.float32)
+    with pytest.raises(TypeError, match=sentinel):
+        bc.change_mask_cuda(plane, plane, diff_threshold=0.02)
+    assert calls == ["absdiff"]  # raised inside the chain at absdiff, not before it
+    assert bc.last_dispatch() == {}
+    with pytest.raises(TypeError, match=sentinel):  # not turned into (None, inconclusive)
+        bc.change_mask_check(plane, plane, diff_threshold=0.02)
+    assert calls == ["absdiff", "absdiff"]
+
+
 def test_unavailable_import_without_cv2_or_numpy_works(monkeypatch):
     # Shim both native packages away, re-import only the backend, restore everything after.
     monkeypatch.setitem(sys.modules, "cv2", None)
