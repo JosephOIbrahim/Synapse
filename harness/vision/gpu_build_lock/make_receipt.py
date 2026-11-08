@@ -77,9 +77,21 @@ AUTHORIZATION = {
     "kind": "goal-level go",
     "covers": ["configure", "build", "install"],
     "scope": (
-        "One goal-level go that covers this window's configure, build and install acts. "
-        "Recorded as that single goal-level authorization, not as separate per-act grants."
+        "One goal-level go that covers the first configure, build and install of 2026-11-08. "
+        "Recorded as that goal-level authorization, not as separate per-act grants."
     ),
+    "per_act": [
+        {
+            "by": "Joe",
+            "date": "2026-11-08",
+            "words": (
+                "Empty the E:\\OpenCV5.1_Prep build folder and do a clean from-source CMake rebuild "
+                "of OpenCV 5.1, then rerun gpu_smoke.py and show me the result."
+            ),
+            "covers": ["empty the build folder", "configure", "build", "install", "gpu smoke"],
+            "scope": "The clean rebuild this receipt records; the build folder was emptied first.",
+        },
+    ],
 }
 
 EVIDENCE_REQUIRED = (
@@ -266,11 +278,17 @@ def find_leaks(text: str, host_markers: tuple = ()) -> list:
     path parts, supplied at run time so no host folder name is committed here).
     Empty means the text is safe to commit."""
     root = RULED_ROOT.lower()
+    # JSON writes a Windows backslash as two characters (the owner's quoted words carry
+    # "E:\OpenCV5.1_Prep"), so compare drive paths with forward slashes. The ruled root
+    # may be followed by a separator, a quote, space or punctuation, never by a name
+    # character, so a sibling such as E:/OpenCV5.1_Prep_old is still refused.
+    norm = text.replace("\\\\", "/").replace("\\", "/")
     bad = []
-    for m in _DRIVE.finditer(text):
-        head = text[m.start(): m.start() + len(root) + 1].lower()
-        if not (head.startswith(root) and head[len(root):] in ("", "/", '"')):
-            bad.append(text[m.start(): m.start() + 72])
+    for m in _DRIVE.finditer(norm):
+        head = norm[m.start(): m.start() + len(root) + 1].lower()
+        nxt = head[len(root):]
+        if not (head.startswith(root) and (nxt == "" or not (nxt.isalnum() or nxt in "_-"))):
+            bad.append(norm[m.start(): m.start() + 72])
     bad.extend(text[max(0, m.start() - 24): m.end() + 24] for m in _HOST_MARKERS.finditer(text))
     low = text.lower()
     for marker in host_markers:
@@ -617,8 +635,11 @@ def build_receipt(evidence_dir: Path) -> dict:
             "CUDA_PATH names plus bin/x64; they sit outside the ruled root and are not digested here.",
             "The configure end time is derived from the run stamp plus the measured seconds (1 s "
             "resolution); build and install times are the build script's own UTC timestamps.",
-            "The smoke run recorded an empty loaded-module list; the loaded-module witness belongs to "
-            "the CUDA backend's witness().",
+            ("The smoke run recorded an empty loaded-module list; the loaded-module witness belongs to "
+             "the CUDA backend's witness()." if not (smoke.get("loaded_modules") or [])
+             else f"The smoke run listed {len(smoke.get('loaded_modules') or [])} loaded native modules; their "
+                  "paths are not recorded here (most sit outside the ruled root). The qualification "
+                  "receipt's backend witness lists them."),
             "The CUDA_PATH environment value at build time is not in the evidence set; the toolkit the "
             "build used is recorded from CMakeCache (cuda_dll_resolution.toolkit_at_build).",
             "Preparation_Manifest.json in the ruled root is digested, not advanced: its state block still "

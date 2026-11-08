@@ -41,7 +41,7 @@
       "imgproc",
       "python3"
     ],
-    "log": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/logs/g1-configure-20261108T132252Z.log",
+    "log": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/logs/g1-configure-20261108T150553Z.log",
     "log_line": 229,
     "requested_build_list": [
       "core",
@@ -96,67 +96,67 @@
   "native_files": [
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_core510.dll",
-      "sha256": "ef2dcf6c8a302e70dfdd3df158d90e42942abc0dd005a86f9e3274514ba4cb6a",
+      "sha256": "98bbca0018e2fb264551a7939f27551c1c72ac0edffb11d26ac788bdc8d2e22e",
       "bytes": 13613568,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_cudaarithm510.dll",
-      "sha256": "e828e3b8bb91aa3da9e7250878ca6869d841fa1f19917a5ad699ace10b19f674",
+      "sha256": "5882a3938a7b748172f6d5eef96a8fa59079c880dce8edadcce61e164a645451",
       "bytes": 37293568,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_cudafilters510.dll",
-      "sha256": "6333b231eeef900a1d9c82deb98018e892d8db5d9f270cca124d823e32db2729",
+      "sha256": "7b4299c7d9ebea6c46103da37e4b881a002878c30f9aac07e1c28449724930c3",
       "bytes": 72974336,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_cudaimgproc510.dll",
-      "sha256": "9bfb29e0cd8c69796061d3d9f93a2ba864c0fb5c8c6b4eede9bb122a2c125643",
+      "sha256": "c57a7141ec2fc9867baceac7798b400292a56e206d7bfd4ed37bb2fc0a4a282f",
       "bytes": 8226304,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_cudawarping510.dll",
-      "sha256": "042ed3a9da21c444c5bfcf066fda2f054b45fa6405de6cd4ffc89665158cb029",
+      "sha256": "11b40d7a3f36f4d4909aa957d359a6fb8d4c5a8f7b71aa8d8f5a9810e173920b",
       "bytes": 19300864,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_cudev510.dll",
-      "sha256": "55859517d3babc29ebf6e3588c38637f699febd18ac3bf703d0900a06e4cc7a5",
+      "sha256": "1edb2c3edbe470266a320bf02f7360c82dd349f71efd100f7373c24d8f25f930",
       "bytes": 13824,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_flann510.dll",
-      "sha256": "c134e65d821278c51aac8cfd192029d18e880547033462c374bd37b9447f715b",
+      "sha256": "65e015a99c2640106ca28229f3d4c97eed267007fe62cc1a72fa8d3a72ffd976",
       "bytes": 707072,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_geometry510.dll",
-      "sha256": "3253b69f9634ab5e81c541d3c27ba1652d262d53228e872069ef90654ca33e89",
+      "sha256": "e157d88603691cb4d94a4bf23845d5ae1aa5f6da997b994d6326a8c18676fd31",
       "bytes": 3241472,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_imgcodecs510.dll",
-      "sha256": "2104687bc2a62a1f234333885fd64d2caf9c51159442d3244ef87bbbf261c0d3",
+      "sha256": "0ce32fdc4e133ce2f3b75781d35bfc3dfaa8bfc4b56fe53798f929bb2a0ebd1c",
       "bytes": 1020928,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/install/cuda133-sm89-py312/x64/vc17/bin/opencv_imgproc510.dll",
-      "sha256": "0d5d6767b9b23c3ff2aa76466167fc14fae30f5daa9922c8392334310b491a1e",
+      "sha256": "39112f5b038a668afb22720b77df0f13f8623ec06bf298fb5fbb7df055769714",
       "bytes": 9179648,
       "in_install_manifest": true
     },
     {
       "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/worker/py312-cuda133-worker/Lib/site-packages/cv2/python-3.12/cv2.cp312-win_amd64.pyd",
-      "sha256": "9cf28b6cc45b0f2bb989cda30b9631a139f6c89cc4c37bd072d4e9af86d2997a",
+      "sha256": "182a36456929f2a8a4a7724477a14f316f0fce760300c067eef8656166edcc39",
       "bytes": 2847744,
       "in_install_manifest": true
     }
@@ -176,7 +176,7 @@
   ],
   "cmake_cache": {
     "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/build/cuda133-sm89-py312/CMakeCache.txt",
-    "sha256": "025c2a42e9806e7e84a423d0d43b4be8780095d993c4d98a16a5a4d05255402c",
+    "sha256": "8d670c1ec9af1b7f949005ca2891d7bcd425aade6bbcdb847e767fbbfefcf71b",
     "OPENCV_ENABLE_NONFREE": "OFF",
     "PYTHON3_LIMITED_API": "OFF",
     "PYTHON3_VERSION_STRING": "3.12.10",
@@ -237,7 +237,7 @@
     "staged_sha256": "102bf6f86c0b23f54c13f4f8fefb6e963bb9f11a38fd54a79e17edeca56256f6",
     "staged_status": "PREPARED_NOT_EXECUTED",
     "candidate": "cuda133u1-sm89-msvc1444-cmake421-py312",
-    "configure_args_evidence": "g1-configure-args-20261108T132252Z.json",
+    "configure_args_evidence": "g1-configure-args-20261108T150553Z.json",
     "configure_deltas": [
       {
         "key": "PYTHON3_EXECUTABLE",
@@ -272,39 +272,39 @@
   "build_windows": [
     {
       "name": "configure",
-      "started": "2026-11-08T13:22:52Z",
-      "ended": "2026-11-08T13:23:41Z",
-      "seconds": 49,
+      "started": "2026-11-08T15:05:53Z",
+      "ended": "2026-11-08T15:06:41Z",
+      "seconds": 48,
       "measured": true,
       "timing": "started = the run stamp (1 s resolution); seconds measured by a clock around the cmake call; ended = stamp + measured seconds",
       "exit_code": 0,
-      "log": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/logs/g1-configure-20261108T132252Z.log",
-      "log_sha256": "0d8ab8b8c7e4309601ccdf07151a1672e46816e7ec0c2fa6be3fcee1ec9d0fae"
+      "log": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/logs/g1-configure-20261108T150553Z.log",
+      "log_sha256": "6bfee3d1190776d935e39657264e02f80cc40b40d5f8706d5abd01c6554db893"
     },
     {
       "name": "build",
       "command": "cmake --build <build> --config Release --parallel 8",
-      "started": "2026-11-08T13:24:43.0870369Z",
-      "ended": "2026-11-08T13:29:17.3552851Z",
-      "seconds": 274,
+      "started": "2026-11-08T15:06:47.0909491Z",
+      "ended": "2026-11-08T15:11:01.8791445Z",
+      "seconds": 255,
       "measured": true,
       "timing": "started and ended are the build script's own UTC timestamps",
       "exit_code": 0,
       "warnings": 436,
-      "log": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/logs/g1-build-20261108T132443Z.log",
-      "log_sha256": "edccca6b1a6fcf89142ea774c4bf2adf316fa3f1abc54c003c07eaa951900b1e"
+      "log": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/logs/g1-build-20261108T150647Z.log",
+      "log_sha256": "50a82e47c1b972a62656bce72f43d25b43e8723919784d48860b942172ed0fe7"
     },
     {
       "name": "install",
       "command": "cmake --install <build> --config Release",
-      "started": "2026-11-08T13:29:17.3582731Z",
-      "ended": "2026-11-08T13:29:17.9584494Z",
-      "seconds": 0.6,
+      "started": "2026-11-08T15:11:01.8821207Z",
+      "ended": "2026-11-08T15:11:02.3882220Z",
+      "seconds": 0.506,
       "measured": true,
       "timing": "started and ended are the build script's own UTC timestamps; seconds = ended - started",
       "exit_code": 0,
-      "log": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/logs/g1-install-20261108T132443Z.log",
-      "log_sha256": "32c79192c41e867d8a6a4ade02d77e399b65c7b6d1394c063f1982679f567a15"
+      "log": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/logs/g1-install-20261108T150647Z.log",
+      "log_sha256": "0685714616df008dc47472f8b95c038087770148565bd1f8c0345ea3149ebaee"
     }
   ],
   "authorization": {
@@ -317,7 +317,22 @@
       "build",
       "install"
     ],
-    "scope": "One goal-level go that covers this window's configure, build and install acts. Recorded as that single goal-level authorization, not as separate per-act grants."
+    "scope": "One goal-level go that covers the first configure, build and install of 2026-11-08. Recorded as that goal-level authorization, not as separate per-act grants.",
+    "per_act": [
+      {
+        "by": "Joe",
+        "date": "2026-11-08",
+        "words": "Empty the E:\\OpenCV5.1_Prep build folder and do a clean from-source CMake rebuild of OpenCV 5.1, then rerun gpu_smoke.py and show me the result.",
+        "covers": [
+          "empty the build folder",
+          "configure",
+          "build",
+          "install",
+          "gpu smoke"
+        ],
+        "scope": "The clean rebuild this receipt records; the build folder was emptied first."
+      }
+    ]
   },
   "smoke": {
     "evidence": "gpu-smoke-result.json",
@@ -347,7 +362,7 @@
       "NVIDIA CUDA:                   YES (ver 13.3.73, CUFFT CUBLAS)",
       "NVIDIA GPU arch:             89"
     ],
-    "loaded_modules_count": 0
+    "loaded_modules_count": 23
   },
   "worker_wheels": [
     {
@@ -365,22 +380,22 @@
     "run_records": [
       {
         "name": "g1-configure-summary.json",
-        "sha256": "d433facf3a39705369a9d556c6b6ebcfda5488f84d4878ee57b3e74d11a5f6f4"
+        "sha256": "1325d4d7636234872e8a2302b385ff1aa790e7deb63bb80ac7c2f811c4995796"
       },
       {
         "name": "g1-build-summary.json",
-        "sha256": "a641ea5fc48ea3f1b6dc2cff5a80b748f28607553e48f9849e6dc121ca484c06"
+        "sha256": "82dfe660b2fbe814eabda8c1945af53ce6703023045ef8a175f58eece0126de0"
       },
       {
         "name": "gpu-smoke-result.json",
-        "sha256": "243785b33704f361d68e3734504ec1fe515e86c3ef95fef05ba823addd31440f"
+        "sha256": "adfedc7ca13aac23fed3e39e8061ada9be095c1c8b7b6c1066eafb50c1d70e49"
       },
       {
         "name": "worker-wheels.sha256.txt",
         "sha256": "e5843cfdb78bf770bb132f6c854b62e2ad4f3092f9d97dc051122c14857abd90"
       },
       {
-        "name": "g1-configure-args-20261108T132252Z.json",
+        "name": "g1-configure-args-20261108T150553Z.json",
         "sha256": "ed3140c87299f7ec41d22ecd7950e2fcc28d451e652ed4ebd35c9265ed9a05cf"
       },
       {
@@ -397,7 +412,7 @@
       },
       {
         "name": "gpu_smoke.py",
-        "sha256": "07568f7d6c539545991e8c9d0ed4bbfebcc9bd40a06b29b910d8891b54e34346"
+        "sha256": "e745515b0a40aadb21abd7434a312cc6558574902bd123b85f92045f6ddc1464"
       }
     ],
     "build_root_files": [
@@ -412,7 +427,7 @@
     "The base interpreter's sha256 is the orchestrator's 2026-11-08 measurement; this generator does not recompute it.",
     "The CUDA runtime DLLs (cudart, npp, cublas, cufft) load at import time from the folder CUDA_PATH names plus bin/x64; they sit outside the ruled root and are not digested here.",
     "The configure end time is derived from the run stamp plus the measured seconds (1 s resolution); build and install times are the build script's own UTC timestamps.",
-    "The smoke run recorded an empty loaded-module list; the loaded-module witness belongs to the CUDA backend's witness().",
+    "The smoke run listed 23 loaded native modules; their paths are not recorded here (most sit outside the ruled root). The qualification receipt's backend witness lists them.",
     "The CUDA_PATH environment value at build time is not in the evidence set; the toolkit the build used is recorded from CMakeCache (cuda_dll_resolution.toolkit_at_build).",
     "Preparation_Manifest.json in the ruled root is digested, not advanced: its state block still reads build_window_confirmed=False, dependencies_verified=True, gpu_validated=False, opencv_build_validated=False, toolchain_probe=passed. This receipt is the record of the build; the prep project's own flags are its owner's."
   ]
