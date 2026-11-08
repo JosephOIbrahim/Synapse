@@ -93,18 +93,18 @@ That count was produced by `python harness/next-release/proposals/validate_amend
 
 ## Merged predicates, 2026-11-08
 
-From the `INFO` lines of the validator run above:
+From the `INFO` lines of the validator run above, re-run at `ecc024a6` (the release line, after the build-lock, worker-env, backend and qualification receipts were committed) under the same conditions, with the same summary, 76 of 76:
 
 | Node | Result | Why |
 |---|---|---|
 | `NR-VG-RETINA-GUARDS` | **green** | 3 passed |
-| `NR-VG-GPU-BUILD-LOCK` | red | no committed build-lock receipt (it is on the build-lock branch, not merged here) |
-| `NR-VG-GPU-WORKER-ENV` | red | no committed R4 worker-runtime contract |
-| `NR-VG-RETINA-CUDA-BACKEND` | red | no committed backend receipt. ADR-0002 is ratified, so its ratification test passes now |
-| `NR-VG-GPU-CANARY` | red | no committed canary receipt; parked behind the worker by Joe's default |
-| `NR-GPU-QUALIFICATION` (changed node) | red | no committed qualification receipt |
+| `NR-VG-GPU-BUILD-LOCK` | **green** | 9 passed |
+| `NR-VG-GPU-WORKER-ENV` | **green** | 5 passed |
+| `NR-VG-RETINA-CUDA-BACKEND` | **green** | 3 passed |
+| `NR-VG-GPU-CANARY` | red | no committed canary receipt (`harness/vision/gpu_canary/canary_receipt.json`); parked behind the worker by Joe's default |
+| `NR-GPU-QUALIFICATION` (changed node) | **green** | 5 passed |
 
-**`NR-VG-GPU-WORKER-ENV` and the shipped recipe.** Once the contract is committed, the predicate checks the three recipe files against the reviewed text the contract pins by sha256. Its one token check, no `cp314` pin on a non-comment requirement line, matches nothing today: `cp314` appears in `retina/requirements.txt` only in a comment.
+**`NR-VG-GPU-WORKER-ENV` and the shipped recipe.** The contract is committed, so the predicate checks the three recipe files against the reviewed text the contract pins by sha256. Its one token check, no `cp314` pin on a non-comment requirement line, matches nothing today: `cp314` appears in `retina/requirements.txt` only in a comment.
 
 Ratification checks read a Status line beginning `**Status:** Accepted`, letter case ignored: the form ADR-0001 uses. ADR-0002's Status line reads that way since 2026-11-08.
 

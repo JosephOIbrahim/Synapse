@@ -3,7 +3,7 @@
   "node": "NR-VG-RETINA-CUDA-BACKEND",
   "producer": "harness/vision/retina_cuda_backend/make_receipt.py",
   "module": "retina/backend_cuda.py",
-  "module_sha256": "7b8e3ff43042ed73fed89538d4e7783ca326ae3ac5f7a5ea96a6aaa5b0fe787b",
+  "module_sha256": "afba76c2f4fdfc4e456085943cac43f27eec46a744068b60abb1fe87ee139932",
   "tests_file": "tests/test_retina_backend_cuda.py",
   "tests_sha256": "c0db93876746fd922b1f870028db472c1e61e0be8cd4e7d5c923e11761253687",
   "operations": [
