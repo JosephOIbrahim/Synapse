@@ -257,12 +257,14 @@ def _loader_folders(text: str, what: str) -> list:
 
 
 _DRIVE = re.compile(r"(?<![A-Za-z])[A-Za-z]:[\\/]")
-_HOST_MARKERS = re.compile(r"[\\/]users?[\\/]|appdata|synapse-build", re.I)
+_HOST_MARKERS = re.compile(r"[\\/]users?[\\/]|appdata", re.I)
 
 
-def find_leaks(text: str) -> list:
+def find_leaks(text: str, host_markers: tuple = ()) -> list:
     """Snippets of every drive path in ``text`` outside the ruled root, plus any
-    user-profile or host-scratch marker. Empty means the text is safe to commit."""
+    user-profile marker and any of ``host_markers`` (the evidence folder's own
+    path parts, supplied at run time so no host folder name is committed here).
+    Empty means the text is safe to commit."""
     root = RULED_ROOT.lower()
     bad = []
     for m in _DRIVE.finditer(text):
@@ -270,6 +272,11 @@ def find_leaks(text: str) -> list:
         if not (head.startswith(root) and head[len(root):] in ("", "/", '"')):
             bad.append(text[m.start(): m.start() + 72])
     bad.extend(text[max(0, m.start() - 24): m.end() + 24] for m in _HOST_MARKERS.finditer(text))
+    low = text.lower()
+    for marker in host_markers:
+        at = low.find(marker.lower())
+        if marker and at >= 0:
+            bad.append(text[max(0, at - 24): at + len(marker) + 24])
     return bad
 
 
@@ -540,7 +547,9 @@ def build_receipt(evidence_dir: Path) -> dict:
             "loader_calls_add_dll_directory": "os.add_dll_directory" in init_text,
             "binaries_paths": binaries_paths,
             "python_extensions_paths": extension_paths,
-            "cuda_path_at_build": "the CUDA v13.3 toolkit (orchestrator record)",
+            "toolkit_at_build": toolkit_folder.group(1) if toolkit_folder else None,
+            "toolkit_at_build_basis": "CMakeCache CMAKE_CUDA_COMPILER",
+            "cuda_path_env_at_build": "not captured in the evidence set",
             "consequence": "the CUDA runtime DLLs the binding loads come from the folder CUDA_PATH names "
                            "at import time, plus bin/x64; a CUDA_PATH naming another toolkit changes "
                            "which runtime loads",
@@ -610,6 +619,11 @@ def build_receipt(evidence_dir: Path) -> dict:
             "resolution); build and install times are the build script's own UTC timestamps.",
             "The smoke run recorded an empty loaded-module list; the loaded-module witness belongs to "
             "the CUDA backend's witness().",
+            "The CUDA_PATH environment value at build time is not in the evidence set; the toolkit the "
+            "build used is recorded from CMakeCache (cuda_dll_resolution.toolkit_at_build).",
+            "Preparation_Manifest.json in the ruled root is digested, not advanced: its state block still "
+            "reads " + ", ".join(f"{k}={v}" for k, v in sorted((_json(prep_manifest).get("state") or {}).items()))
+            + ". This receipt is the record of the build; the prep project's own flags are its owner's.",
         ],
     }
 
@@ -625,7 +639,8 @@ def main(argv: list | None = None) -> int:
         print(f"make_receipt: no receipt written: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
     text = json.dumps(receipt, indent=2, ensure_ascii=True) + "\n"
-    leaks = find_leaks(text)
+    ev_parts = tuple(p for p in Path(args.evidence_dir).resolve().parts[1:] if len(p) > 3)
+    leaks = find_leaks(text, ev_parts)
     if leaks:
         print(f"make_receipt: refusing to write; these would record a path outside {RULED_ROOT}:",
               file=sys.stderr)

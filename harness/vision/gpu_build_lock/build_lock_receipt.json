@@ -227,7 +227,9 @@
         "path": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/worker/py312-cuda133-worker/Lib/site-packages/cv2/python-3.12"
       }
     ],
-    "cuda_path_at_build": "the CUDA v13.3 toolkit (orchestrator record)",
+    "toolkit_at_build": "v13.3",
+    "toolkit_at_build_basis": "CMakeCache CMAKE_CUDA_COMPILER",
+    "cuda_path_env_at_build": "not captured in the evidence set",
     "consequence": "the CUDA runtime DLLs the binding loads come from the folder CUDA_PATH names at import time, plus bin/x64; a CUDA_PATH naming another toolkit changes which runtime loads"
   },
   "recipe": {
@@ -410,6 +412,8 @@
     "The base interpreter's sha256 is the orchestrator's 2026-11-08 measurement; this generator does not recompute it.",
     "The CUDA runtime DLLs (cudart, npp, cublas, cufft) load at import time from the folder CUDA_PATH names plus bin/x64; they sit outside the ruled root and are not digested here.",
     "The configure end time is derived from the run stamp plus the measured seconds (1 s resolution); build and install times are the build script's own UTC timestamps.",
-    "The smoke run recorded an empty loaded-module list; the loaded-module witness belongs to the CUDA backend's witness()."
+    "The smoke run recorded an empty loaded-module list; the loaded-module witness belongs to the CUDA backend's witness().",
+    "The CUDA_PATH environment value at build time is not in the evidence set; the toolkit the build used is recorded from CMakeCache (cuda_dll_resolution.toolkit_at_build).",
+    "Preparation_Manifest.json in the ruled root is digested, not advanced: its state block still reads build_window_confirmed=False, dependencies_verified=True, gpu_validated=False, opencv_build_validated=False, toolchain_probe=passed. This receipt is the record of the build; the prep project's own flags are its owner's."
   ]
 }
