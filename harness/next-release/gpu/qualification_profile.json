@@ -1,0 +1,124 @@
+{
+  "chain": "R2: retina/t1.py change_mask - absdiff, strict threshold, morphological open, close",
+  "cpu_reference_ruling": {
+    "by": "Joe",
+    "date": "2026-11-08",
+    "identity": "cv2 5.0.0 (opencv-python-headless 5.0.0.93) on CPython 3.12.10 with numpy 2.4.4"
+  },
+  "criterion": "identical mask bytes (G0-PROPOSED): sha256 of the C-contiguous uint8 mask, shape and dtype beside it",
+  "expected_from_cpu_file_sha256": "e64014ce8e492b62611c64fc6a3b5fa63aef89979c3dc973d591b0cba7f8651d",
+  "fixtures": {
+    "diff_at_threshold": {
+      "construction_sha256": "f22e5bf8691275c9cce39b1dbdb3cf88f8d8d95375a5a98d9d499d9fa70e9f93",
+      "diff_threshold": 0.02,
+      "expected_mask_dtype": "uint8",
+      "expected_mask_sha256": "3526667a44fcd46ff543218e3871e98f6075dd8249b1450df1ac745f9a920056",
+      "expected_mask_shape": [
+        64,
+        96
+      ],
+      "morph_radius": 1,
+      "relation": "solid 6x6 patches whose float32 |diff| is exactly float32(diff_threshold), reached as 0 to t, t to 0 and t to 2t; one 8x8 patch with |diff| 0.5; every other pixel has |diff| 0",
+      "status": "G0-PROPOSED"
+    },
+    "diff_one_ulp_above": {
+      "construction_sha256": "8b1a75c158ce69185bca58a51a8f252b616b74cdc4d273a3072d2f053001576c",
+      "diff_threshold": 0.02,
+      "expected_mask_dtype": "uint8",
+      "expected_mask_sha256": "b6ad0898426c6ca423a2e1ce34f2b0b41b4c855bdf605d8721b13dd7f216bf3c",
+      "expected_mask_shape": [
+        64,
+        96
+      ],
+      "morph_radius": 1,
+      "relation": "as diff_at_threshold, with |diff| one float32 ulp above float32(diff_threshold) (numpy.nextafter toward +inf)",
+      "status": "G0-PROPOSED"
+    },
+    "diff_one_ulp_below": {
+      "construction_sha256": "f898260afbbfbcfff6ab38567dc0ce58f89afafca54326364322be32c236b555",
+      "diff_threshold": 0.02,
+      "expected_mask_dtype": "uint8",
+      "expected_mask_sha256": "3526667a44fcd46ff543218e3871e98f6075dd8249b1450df1ac745f9a920056",
+      "expected_mask_shape": [
+        64,
+        96
+      ],
+      "morph_radius": 1,
+      "relation": "as diff_at_threshold, with |diff| one float32 ulp below float32(diff_threshold) (numpy.nextafter toward -inf)",
+      "status": "G0-PROPOSED"
+    },
+    "edges_and_corners": {
+      "construction_sha256": "bbe46ee8788a42391779fe6659137feef78d62c9e890951738a726f5c788ec7d",
+      "diff_threshold": 0.02,
+      "expected_mask_dtype": "uint8",
+      "expected_mask_sha256": "bf1c7876532f00f582748834ced745b5eadb8091540d43ec4d1b88df02a6f2d4",
+      "expected_mask_shape": [
+        64,
+        96
+      ],
+      "morph_radius": 1,
+      "relation": "changed patches (|diff| exactly 0.5) on all four corners and all four edges: corner squares of side 2, 3, 4 and 5, edge strips 2 and 3 px thick and edge patches 6 px thick; every other pixel has |diff| 0",
+      "status": "G0-PROPOSED"
+    },
+    "empty_change_set": {
+      "construction_sha256": "871fe7846c2c9265eba246027e57cf18b149a834053470f04ac6c6122516efef",
+      "diff_threshold": 0.02,
+      "expected_mask_dtype": "uint8",
+      "expected_mask_sha256": "fd9243e1ba57263ed469c3bdbd7ade6ec5254e7ed924a9f5737fa44749933cc0",
+      "expected_mask_shape": [
+        64,
+        96
+      ],
+      "morph_radius": 1,
+      "relation": "no pixel has |diff| above float32(diff_threshold): half the frame identical, half a checkerboard of plus or minus the largest power of two at most a quarter of the threshold",
+      "status": "G0-PROPOSED"
+    },
+    "nan_in_luma_plane": {
+      "construction_sha256": "021d85a56ee312f9487b5f771fde839be6ae7c3aa39a19536af8e67f234bc2c5",
+      "diff_threshold": 0.02,
+      "expected_mask_dtype": "uint8",
+      "expected_mask_sha256": "612130287d9ccf0acdab566f799373eb0a990caec20d710fc6822ac558f4e0bc",
+      "expected_mask_shape": [
+        64,
+        96
+      ],
+      "morph_radius": 1,
+      "relation": "solid NaN patches in before only, after only and both, one touching a changed 8x8 patch; NumPy's strict > leaves every NaN pixel unflagged",
+      "status": "INFERENCE"
+    },
+    "non_contiguous_odd_stride": {
+      "construction_sha256": "f0cdd4f4e8fd4289230eba9fec7e2adb07dc90af12a6d410ecc47c3bdbf254ef",
+      "diff_threshold": 0.02,
+      "expected_mask_dtype": "uint8",
+      "expected_mask_sha256": "6a1f1a401c7d73e55f5f27d215d3961b072a91599b738b066b92d1f0903bf0d1",
+      "expected_mask_shape": [
+        37,
+        41
+      ],
+      "morph_radius": 1,
+      "relation": "both planes are non-contiguous 37x41 views with odd element strides (every 3rd row, every 5th column); every base pixel outside the view differs by 0.5, so a stride error shows",
+      "status": "G0-PROPOSED"
+    },
+    "size_not_multiple_of_16_or_32": {
+      "construction_sha256": "91c63aa679fc8ebe92e5ad4ffa6d4d13504f5240a409f7dc15c976574707aa7a",
+      "diff_threshold": 0.02,
+      "expected_mask_dtype": "uint8",
+      "expected_mask_sha256": "821c822ec2535206f0f511c400ef3372cbcb1ed661207e01b655fd20d828ee9e",
+      "expected_mask_shape": [
+        257,
+        263
+      ],
+      "morph_radius": 1,
+      "relation": "a 257x263 frame, neither side a multiple of 16 or 32; changed patches straddle rows and columns 16 and 32 and reach the last row and column, past the last full 32 tile",
+      "status": "G0-PROPOSED"
+    }
+  },
+  "kind": "nr-gpu-qualification/profile",
+  "operations": [
+    "absdiff",
+    "threshold",
+    "morphology_open",
+    "morphology_close"
+  ],
+  "schema": 1
+}
