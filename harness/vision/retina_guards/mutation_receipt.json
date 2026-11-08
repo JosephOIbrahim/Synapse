@@ -1,0 +1,158 @@
+{
+  "schema": "nr-vg-retina-guards/mutation-receipt/1",
+  "node": "NR-VG-RETINA-GUARDS",
+  "spec": "docs/reviews/opencv51-gpu-g0-receipt-2026-11-07.md, section 11, Slice 1",
+  "guard_file": "tests/test_retina_worker_boundary.py",
+  "guard_sha256": "da1781c7d59bfea9eca000f3af87d58d2e869e7a5a9d6bea6e584001a2e00515",
+  "guard_tests": [
+    "test_in_host_retina_modules_cannot_reach_a_backend",
+    "test_retina_worker_tree_imports_no_hou",
+    "test_host_payload_ships_no_new_retina_module"
+  ],
+  "exported_commit": "7494404bbf60ff21f507cb5ad122e2e137e46552",
+  "interpreter": {
+    "implementation": "CPython",
+    "version": "3.14.2",
+    "sys_version": "3.14.2 (tags/v3.14.2:df79316, Dec  5 2025, 17:18:21) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "pytest_version": "8.4.2",
+  "platform": "Windows-11",
+  "commands": {
+    "runner": "<python> harness/vision/retina_guards/run_mutations.py --scratch <scratch>  (cwd <repo>)",
+    "export": "git -C <repo> archive --format=tar HEAD  (extracted into <export>; <repo>/tests/test_retina_worker_boundary.py copied over <export>/tests/test_retina_worker_boundary.py)",
+    "guards": "<python> -m pytest tests/test_retina_worker_boundary.py -q -p no:cacheprovider --junitxml=<scratch>/junit-<label>.xml  (cwd <export>)"
+  },
+  "guard_environment": {
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "<export>/python;<export>",
+    "TEMP": "<scratch>/tmp",
+    "TMP": "<scratch>/tmp",
+    "SYNAPSE_LOG_DIR": "<scratch>/tmp",
+    "GIT_*": "removed"
+  },
+  "placeholders": {
+    "<python>": "the interpreter named under interpreter (the runner's own)",
+    "<repo>": "the repository root, from git rev-parse --show-toplevel",
+    "<scratch>": "the --scratch folder, outside the repository",
+    "<export>": "<scratch>/export, a fresh git archive of exported_commit",
+    "<label>": "unmutated, each mutation id, then final"
+  },
+  "unmutated_rc": 0,
+  "unmutated_outcomes": {
+    "test_in_host_retina_modules_cannot_reach_a_backend": "passed",
+    "test_retina_worker_tree_imports_no_hou": "passed",
+    "test_host_payload_ships_no_new_retina_module": "passed"
+  },
+  "unmutated_summary": "3 passed, 1 warning",
+  "mutations": [
+    {
+      "id": "t0_imports_t1",
+      "file": "retina/t0.py",
+      "change": "append a module-level `from . import t1`",
+      "inserted": [
+        "from . import t1  # mutation t0_imports_t1"
+      ],
+      "mutated_file_parses": true,
+      "mutation_landed": true,
+      "guard_rc": 1,
+      "red_test": "test_in_host_retina_modules_cannot_reach_a_backend",
+      "red_tests": [
+        "test_in_host_retina_modules_cannot_reach_a_backend"
+      ],
+      "expected_red_test": "test_in_host_retina_modules_cannot_reach_a_backend",
+      "only_expected_guard_red": true,
+      "outcomes": {
+        "test_in_host_retina_modules_cannot_reach_a_backend": "failed",
+        "test_retina_worker_tree_imports_no_hou": "passed",
+        "test_host_payload_ships_no_new_retina_module": "passed"
+      },
+      "summary": "1 failed, 2 passed, 1 warning",
+      "failure": "AssertionError: in-host RETINA import closure breached: retina/t0.py:420 reaches retina.t1, outside the in-host set",
+      "restored_byte_identical": true
+    },
+    {
+      "id": "t0_import_module_t1",
+      "file": "retina/t0.py",
+      "change": "append a module-level `importlib.import_module(\"retina.t1\")` (with `import importlib`)",
+      "inserted": [
+        "import importlib",
+        "importlib.import_module(\"retina.t1\")  # mutation t0_import_module_t1"
+      ],
+      "mutated_file_parses": true,
+      "mutation_landed": true,
+      "guard_rc": 1,
+      "red_test": "test_in_host_retina_modules_cannot_reach_a_backend",
+      "red_tests": [
+        "test_in_host_retina_modules_cannot_reach_a_backend"
+      ],
+      "expected_red_test": "test_in_host_retina_modules_cannot_reach_a_backend",
+      "only_expected_guard_red": true,
+      "outcomes": {
+        "test_in_host_retina_modules_cannot_reach_a_backend": "failed",
+        "test_retina_worker_tree_imports_no_hou": "passed",
+        "test_host_payload_ships_no_new_retina_module": "passed"
+      },
+      "summary": "1 failed, 2 passed, 1 warning",
+      "failure": "AssertionError: in-host RETINA import closure breached: retina/t0.py:421 dynamic import or exec surface .import_module",
+      "restored_byte_identical": true
+    },
+    {
+      "id": "t1_imports_hou",
+      "file": "retina/t1.py",
+      "change": "insert `import hou` as the first statement of function `_require`, after its docstring",
+      "inserted": [
+        "import hou  # mutation t1_imports_hou"
+      ],
+      "mutated_file_parses": true,
+      "mutation_landed": true,
+      "guard_rc": 1,
+      "red_test": "test_retina_worker_tree_imports_no_hou",
+      "red_tests": [
+        "test_retina_worker_tree_imports_no_hou"
+      ],
+      "expected_red_test": "test_retina_worker_tree_imports_no_hou",
+      "only_expected_guard_red": true,
+      "outcomes": {
+        "test_in_host_retina_modules_cannot_reach_a_backend": "passed",
+        "test_retina_worker_tree_imports_no_hou": "failed",
+        "test_host_payload_ships_no_new_retina_module": "passed"
+      },
+      "summary": "1 failed, 2 passed, 1 warning",
+      "failure": "AssertionError: retina/ imports hou: retina/t1.py:104 import hou",
+      "restored_byte_identical": true
+    },
+    {
+      "id": "payload_adds_backend",
+      "file": "installer/build_payload.py",
+      "change": "append \"retina/backend_cuda.py\" to the RUNTIME_FILES literal, after \"retina/qc_profiles.toml\"",
+      "inserted": [
+        "\"retina/backend_cuda.py\","
+      ],
+      "mutated_file_parses": true,
+      "mutation_landed": true,
+      "guard_rc": 1,
+      "red_test": "test_host_payload_ships_no_new_retina_module",
+      "red_tests": [
+        "test_host_payload_ships_no_new_retina_module"
+      ],
+      "expected_red_test": "test_host_payload_ships_no_new_retina_module",
+      "only_expected_guard_red": true,
+      "outcomes": {
+        "test_in_host_retina_modules_cannot_reach_a_backend": "passed",
+        "test_retina_worker_tree_imports_no_hou": "passed",
+        "test_host_payload_ships_no_new_retina_module": "failed"
+      },
+      "summary": "1 failed, 2 passed, 1 warning",
+      "failure": "AssertionError: host payload retina/ allowlist breached: RUNTIME_FILES retina/ entries changed: added ['retina/backend_cuda.py'], removed []",
+      "restored_byte_identical": true
+    }
+  ],
+  "final_unmutated_rc": 0,
+  "final_unmutated_outcomes": {
+    "test_in_host_retina_modules_cannot_reach_a_backend": "passed",
+    "test_retina_worker_tree_imports_no_hou": "passed",
+    "test_host_payload_ships_no_new_retina_module": "passed"
+  },
+  "all_expectations_met": true
+}
