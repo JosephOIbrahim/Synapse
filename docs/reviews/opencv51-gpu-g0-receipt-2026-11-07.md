@@ -207,7 +207,7 @@ The E: column is the ruled build root (R3). R4 rules the interpreter and OIIO wh
 | 7 | `:269` | `change_mask` (R2) | `getStructuringElement(MORPH_ELLIPSE)` | host kernel | Host-side; passed to `cv2.cuda.createMorphologyFilter` | — |
 | 8 | `:272` | `change_mask` (R2) | `morphologyEx(MORPH_OPEN)` | uint8 {0,1} C1 `(H, W)` | `cv2.cuda.createMorphologyFilter(MORPH_OPEN, CV_8UC1, k)` (cudafilters) | 8UC1 allowed (`filtering.cpp:648`). **Border semantics differ:** CUDA pads `BORDER_DEFAULT` (`:695`), and the CPU call passes no border. Equivalence on symmetric kernels is INFERENCE (U5) [02-ops F11] |
 | 9 | `:273` | `change_mask` (R2) | `morphologyEx(MORPH_CLOSE)` | uint8 C1 | same, `MORPH_CLOSE` | same |
-| 10-13 | `:287`, `:290`, `:348`, `:351` | the scoped-delta primitives (`:277-351`) | structuring elements and morphology | uint8 C1 | not proposed | Internals described abstractly per the hygiene rule. **Not in the ruled first chain**; their target input has no supported source (R100) [06-critic §2.6]. Depth notes on request |
+| 10-13 | `:287`, `:290`, `:348`, `:351` | the scoped-delta primitives (`:277-351`) | cv2 calls inside those primitives | uint8 C1 | not proposed | Internals described abstractly per the hygiene rule. **Not in the ruled first chain**; their target input has no supported source (R100) [06-critic §2.6]. Depth notes on request |
 
 **Numpy work a CUDA chain could replace, though no cv2 call exists today** [02-ops §2]:
 
@@ -505,7 +505,7 @@ The three re-verify lenses closed every round-one blocker but refuted revision `
 
 | Id | Lens | Disposition | Where |
 |---|---|---|---|
-| T5 | truth | fixed | ADR-0002 "Consequences of R1-R4" item 2 and the Reconciliation G1 row; receipt §0 item 5. `C:/ocv` and the masked `meanStdDev` closure are attributed to `NR-GPU-FEASIBILITY`'s committed receipt; `graph.json:95` names only that chain's fixtures (the link is INFERENCE) |
+| T5 | truth | fixed | ADR-0002 "Consequences of R1-R4" item 2 and the Reconciliation G1 row; receipt §0 item 5. `C:/ocv` and the masked `meanStdDev` closure are attributed to `NR-GPU-FEASIBILITY`'s committed receipt; `graph.json:95` names fixtures of that chain, not the chain or the root (the link is INFERENCE) |
 | G5r | governance | fixed | receipt §9 mutation-evidence bullet names the scoped-delta exterior primitive abstractly; ADR-0002 decision 6 likewise. The G5 row above now says "partly fixed" |
 | G6, F1 | governance, feasibility | fixed | receipt §6 lead sentence and §12 build-duration bullet; ADR-0002 decision 16. R3 rules the root only: the staged recipe as starting point is INFERENCE, parallelism is open (decision 16), and whether the prep venv is the worker is open (decision 17) |
 | G7 | governance | fixed | receipt §13 "Ruled 2026-11-07" quotes Joe's words verbatim, byte-identical to ADR-0002 "Owner rulings (2026-11-07)"; the header row points to both |
