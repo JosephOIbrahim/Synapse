@@ -114,7 +114,7 @@ Different native Houdini/Python builds need their own qualification.
 
 ## Optional native artifact
 
-The public 5.99.0 build adds the reviewed `moneta-native-0.1.0-win64-clean.zip`.
+The public 5.99.0 build includes the reviewed `moneta-native-0.1.0-win64-clean.zip`.
 Its SHA-256 is `f0c67e0642305ce9db5f71d355712b6af9eb7d5db05e0d72c65d44403e47bb1e`,
 independently bound in [native_artifact.json](native_artifact.json). Pass both
 `--native-bundle <archive>` and `--native-sha256 <digest>` to the build command.
