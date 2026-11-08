@@ -1,4 +1,4 @@
-"""Closure predicate for NR-VG-RETINA-CUDA-BACKEND (PROPOSED amendment; not in graph.json).
+"""Closure predicate for NR-VG-RETINA-CUDA-BACKEND (merged into graph.json on 2026-11-08).
 
 Flips green only when ADR-0002's Status line begins "**Status:** Accepted" in any letter
 case (Joe's ratification; ADR-0001 records its ratification as "Accepted"), AND
@@ -11,7 +11,7 @@ morphology_close), pins the committed qualification receipt
 harness/next-release/gpu_qualification.json by sha256, and names the tests proving that
 an unavailable GPU operation yields an inconclusive check with a reason.
 
-Red today: ADR-0002 is PROPOSED, not ratified (marker below).
+Red when written (C0, 2026-11-07): ADR-0002 is PROPOSED, not ratified (marker below).
 
 Reads committed files only (text, AST, sha256). It never imports the backend or cv2,
 touches a GPU, launches Houdini or uses the network.

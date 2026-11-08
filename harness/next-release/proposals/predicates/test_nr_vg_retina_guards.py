@@ -1,4 +1,4 @@
-"""Closure predicate for NR-VG-RETINA-GUARDS (PROPOSED amendment; not in graph.json).
+"""Closure predicate for NR-VG-RETINA-GUARDS (merged into graph.json on 2026-11-08).
 
 Flips green only when tests/test_retina_worker_boundary.py is committed with the
 three guard tests named in the G0 receipt section 11
@@ -10,7 +10,7 @@ named mutations (t1 imported from t0; importlib.import_module of retina.t1 in t0
 hou imported inside a function in t1; a backend module appended to the host payload)
 as turning a named guard red.
 
-Red today: the guard file is not committed (marker below).
+Red when written (C0, 2026-11-07): the guard file is not committed (marker below).
 
 Reads committed files only (AST parse, sha256). It never runs the guards, imports
 retina, touches a GPU, launches Houdini or uses the network.

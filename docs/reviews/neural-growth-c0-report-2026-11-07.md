@@ -1,6 +1,6 @@
 # Neural Growth — C0 Report — 2026-11-07
 
-**Status:** C0 only. Read-only reconciliation plus a PROPOSED graph amendment. **Not ratified. Authorizes no act.** Nothing here is in `graph.json`.
+**Status:** C0 only. Read-only reconciliation plus a PROPOSED graph amendment. **This report ratifies nothing and authorizes no act.** On 2026-11-08 Joe merged the amendment's OpenCV lane into `graph.json` (ADR-0002, "Ratification and owner rulings (2026-11-08)", answer 2); the Grow lane is not in `graph.json`.
 
 | Field | Value |
 |---|---|
@@ -307,19 +307,19 @@ The blueprint's minimum test suite (§10), mapped to the node that owns each:
 **The ruling's consequences, stated:**
 
 - **Module list (R2, R3).** `E:/OpenCV5.1_Prep/02_OpenCV_Setup/preparation/Current_Configure.json:26` sets `BUILD_LIST=core,flann,geometry,imgproc,imgcodecs,cudev,cudaarithm,cudaimgproc,cudafilters,cudawarping,python3`. It **contains both `cudaarithm` and `cudafilters`**, so the requested list covers the change-mask chain. VERIFIED by read (file sha256 `102bf6f8…56f6`). Whether configure **generates** them is UNKNOWN; the build-lock predicate requires the generated list.
-- **`NR-GPU-QUALIFICATION`** names the 11x11 census in its `why` (`graph.json:95`) and its predicate is `test -f` (`graph.json:96`). The masked `meanStdDev` closure and the `C:/ocv` root are in `NR-GPU-FEASIBILITY`'s receipt (`harness/next-release/gpu_feasibility.json:430`, `:259`). Changes 1-3 rewrite the qualification node; Joe merges them.
+- **`NR-GPU-QUALIFICATION`** named the 11x11 census in its `why` (`graph.json:95` at C0) and its predicate was `test -f` (`graph.json:96` at C0). The masked `meanStdDev` closure and the `C:/ocv` root are in `NR-GPU-FEASIBILITY`'s receipt (`harness/next-release/gpu_feasibility.json:430`, `:259`). Changes 1-3 rewrite the qualification node; Joe merged them on 2026-11-08, with OD-23's gate change to `joe`.
 - **The RETINA venv recipe** (`retina/setup_venv.py`, `retina/setup_venv.ps1`, `retina/requirements.txt`) documents a hython seed and names a cp314 OIIO wheel. It conflicts with R4. `NR-VG-GPU-WORKER-ENV` would own and change it. Its predicate is red today only because the worker-runtime contract is not committed; it enforces the R4 recipe conflict later, through the contract's reviewed sha256 pins of the three recipe files (`harness/next-release/proposals/predicates/test_nr_vg_gpu_worker_env.py:91-101`). Its one mechanical check, no `cp314` pin on a non-comment requirement line (`:102-105`), skips comments, so it matches nothing in today's `retina/requirements.txt`, where `cp314` appears only in a comment (`:39`). VERIFIED by read.
 - **The custom `cv2` binding** is configured to be built for CPython 3.12.10 without the limited API; no binding exists yet, and that it is cp312-only is INFERENCE from CMake semantics (ADR-0002 section "Consequences of R1-R4", item 4). The build-lock predicate requires `abi_tag cp312` and `limited_api false`.
 - **The `NR-GPU-FEASIBILITY` artifact is not the qualification artifact.** It compiled one trivial non-OpenCV kernel, `vectorAdd`, in a scratch folder and ran it on the RTX 4090 (exit 0, 0 mismatches; `harness/next-release/gpu_feasibility.json:25`, `:39`). That earlier node's GPU run is recorded in its receipt; G0 and C0 observed no GPU execution. Nothing was compiled under `C:/ocv` (ADR-0002 section "Consequences of R1-R4", item 5). The qualification artifact must come from the E: build.
 
-**Validator — exact command and result.** Run from the worktree root with a local CPython 3.14.2:
+**Validator — exact command and result.** Merge-aware run of 2026-11-08, after Joe merged the OpenCV lane into `graph.json`, from the worktree root with a local CPython 3.14.2:
 
 ```text
 python harness/next-release/proposals/validate_amendment.py
-SUMMARY: 57 checks, 57 passed, 0 failed - amendment structurally valid; every new predicate red for its declared reason
+SUMMARY: 76 checks, 76 passed, 0 failed - merge-aware: merged OpenCV lane matches the amendment and its rulings; every unmerged predicate red for its declared reason
 ```
 
-Exit 0. Interpreter CPython 3.14.2, pytest 8.4.2. The first scaffold commit recorded 41 of 41; the count rose with the review checks listed in the review record below. Each predicate ran with plugin autoload off, bytecode writing off, the cache provider off and `TEMP`/`TMP`/`SYNAPSE_LOG_DIR` in a temporary folder.
+Exit 0. Interpreter CPython 3.14.2, pytest 8.4.2. The first scaffold commit recorded 41 of 41 and the C0 review rounds 57 of 57 (review record below); the merge-aware validator reports the five merged predicates as `INFO` instead of requiring them red, and keeps every check for the unmerged Grow nodes (`harness/next-release/proposals/README.md`). Each predicate ran with plugin autoload off, bytecode writing off, the cache provider off and `TEMP`/`TMP`/`SYNAPSE_LOG_DIR` in a temporary folder.
 
 **Not collected by CI.** VERIFIED: `pyproject.toml:132` testpaths are `tests`, `harness/jev/tests`, `harness/harness2/tests`, `harness/attest/tests`; every `pytest` line in `.github/workflows/ci.yml` (`:113-144`, `:186`) names other paths. The validator re-checks both on every run. The repo-walking lints read at authoring scan other roots: `tests/test_marshal_lint.py:73-76` and `tests/test_jev_product_boundary.py:13` walk `python/synapse` and `shared`; `tests/test_hou_reimport_guard.py:417` walks `tests/`; the phantom lint walks `python/synapse` (`tests/rulebook/test_rulebook_meta.py:255`). None reaches `harness/next-release/` (VERIFIED by read). Other repo-walking tests were listed by grep but not each opened: INFERENCE that none reaches it.
 
@@ -407,6 +407,8 @@ Two independent review lenses (graph; truth and scope) refuted the first scaffol
 SUMMARY: 57 checks, 57 passed, 0 failed - amendment structurally valid; every new predicate red for its declared reason
 ```
 
+Superseded on 2026-11-08 by the merge-aware run recorded in section 13 (`SUMMARY: 76 checks, 76 passed, 0 failed`), after Joe merged the OpenCV lane into `graph.json`. This block records the round as it ran.
+
 No GPU execution was observed and no performance was measured in this revision either.
 
 ## Re-verify and fix round (2026-11-08)
@@ -425,3 +427,5 @@ The other re-verify nits were outside this round and stay open. No predicate, va
 ```text
 SUMMARY: 57 checks, 57 passed, 0 failed - amendment structurally valid; every new predicate red for its declared reason
 ```
+
+Superseded on 2026-11-08 by the merge-aware run recorded in section 13 (`SUMMARY: 76 checks, 76 passed, 0 failed`), after Joe merged the OpenCV lane into `graph.json`. This block records the round as it ran.

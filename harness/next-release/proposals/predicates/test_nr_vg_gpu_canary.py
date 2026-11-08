@@ -1,4 +1,4 @@
-"""Closure predicate for NR-VG-GPU-CANARY (PROPOSED amendment; not in graph.json).
+"""Closure predicate for NR-VG-GPU-CANARY (merged into graph.json on 2026-11-08).
 
 Flips green only when harness/vision/gpu_canary/canary_receipt.json is committed and
 records: a reference to Joe's definition of demo v1 with demo v1 complete; Joe's
@@ -8,7 +8,7 @@ morphology_open, morphology_close) dispatched on cuda with the loaded modules li
 render, cancel and contention probe results; and a disable-and-rollback demonstration
 with before and after evidence.
 
-Red today: the receipt is not committed (marker below).
+Red when written (C0, 2026-11-07): the receipt is not committed (marker below).
 
 Reads committed files only. It never runs the worker, a render or a GPU call,
 launches Houdini or uses the network.

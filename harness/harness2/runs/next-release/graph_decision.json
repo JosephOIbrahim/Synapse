@@ -1,87 +1,130 @@
 {
  "first_landing": null,
  "land_now": [
-  "NR-PLAN-TRUTH",
-  "NR-WRITE-RECEIPT"
+  "NR-GPU-FEASIBILITY",
+  "NR-VG-RETINA-GUARDS"
  ],
  "park": [
-  "NR-GPU-FEASIBILITY",
+  "NR-SPARSE-RENDER",
+  "NR-PLAN-TRUTH",
+  "NR-WRITE-RECEIPT",
   "NR-GPU-QUALIFICATION",
   "NR-IMAGE-CONTRACT",
   "NR-WORKER-SUPERVISED",
   "NR-RECOVERY-RECEIPTS",
-  "NR-PACKAGE-PAIR",
   "NR-LICENSE-GATE",
-  "NR-FOLLOW-ON"
+  "NR-FOLLOW-ON",
+  "NR-VG-GPU-BUILD-LOCK",
+  "NR-VG-GPU-WORKER-ENV",
+  "NR-VG-RETINA-CUDA-BACKEND"
  ],
- "needs_joe": [],
- "reason": "fallback: Jev chose NR-PLAN-TRUTH @ 0.44, below the confidence gate 0.6",
+ "needs_joe": [
+  "NR-PACKAGE-PAIR",
+  "NR-VG-GPU-CANARY"
+ ],
+ "reason": "fallback: Jev chose NR-SPARSE-RENDER @ 0.43, below the confidence gate 0.6",
  "per_node": {
+  "NR-SPARSE-RENDER": {
+   "lands": 0.15,
+   "value": 2.47,
+   "joe_decides": 0.12
+  },
   "NR-PLAN-TRUTH": {
-   "lands": 0.89,
-   "value": 2.88,
-   "joe_decides": 0.15
+   "lands": 0.27,
+   "value": 2.95,
+   "joe_decides": 0.13
   },
   "NR-WRITE-RECEIPT": {
-   "lands": 0.89,
-   "value": 2.71,
-   "joe_decides": 0.18
+   "lands": 0.34,
+   "value": 2.8,
+   "joe_decides": 0.19
   },
   "NR-GPU-FEASIBILITY": {
-   "lands": 0.28,
-   "value": 2.85,
-   "joe_decides": 0.17
+   "lands": 0.78,
+   "value": 2.92,
+   "joe_decides": 0.14
   },
   "NR-GPU-QUALIFICATION": {
-   "lands": 0.08,
-   "value": 2.88,
-   "joe_decides": 0.17
+   "lands": 0.13,
+   "value": 2.92,
+   "joe_decides": 0.4
   },
   "NR-IMAGE-CONTRACT": {
-   "lands": 0.14,
+   "lands": 0.18,
    "value": 2.59,
-   "joe_decides": 0.24
+   "joe_decides": 0.22
   },
   "NR-WORKER-SUPERVISED": {
    "lands": 0.09,
-   "value": 2.6,
-   "joe_decides": 0.28
+   "value": 2.69,
+   "joe_decides": 0.26
   },
   "NR-RECOVERY-RECEIPTS": {
-   "lands": 0.15,
-   "value": 2.79,
-   "joe_decides": 0.17
+   "lands": 0.3,
+   "value": 2.81,
+   "joe_decides": 0.16
   },
   "NR-PACKAGE-PAIR": {
-   "lands": 0.08,
-   "value": 2.72,
-   "joe_decides": 0.43
+   "lands": 0.1,
+   "value": 2.78,
+   "joe_decides": 0.5
   },
   "NR-LICENSE-GATE": {
    "lands": 0.11,
-   "value": 2.55,
-   "joe_decides": 0.13
+   "value": 2.6,
+   "joe_decides": 0.18
   },
   "NR-FOLLOW-ON": {
-   "lands": 0.08,
-   "value": 0.41,
+   "lands": 0.09,
+   "value": 0.33,
+   "joe_decides": 0.3
+  },
+  "NR-VG-GPU-BUILD-LOCK": {
+   "lands": 0.36,
+   "value": 2.89,
    "joe_decides": 0.29
+  },
+  "NR-VG-RETINA-GUARDS": {
+   "lands": 0.84,
+   "value": 2.77,
+   "joe_decides": 0.16
+  },
+  "NR-VG-GPU-WORKER-ENV": {
+   "lands": 0.2,
+   "value": 2.61,
+   "joe_decides": 0.14
+  },
+  "NR-VG-RETINA-CUDA-BACKEND": {
+   "lands": 0.11,
+   "value": 2.61,
+   "joe_decides": 0.23
+  },
+  "NR-VG-GPU-CANARY": {
+   "lands": 0.07,
+   "value": 1.8,
+   "joe_decides": 0.83
   }
  },
  "jev": {
-  "choice": "NR-PLAN-TRUTH",
-  "confidence": 0.44,
+  "choice": "NR-SPARSE-RENDER",
+  "confidence": 0.43,
   "probabilities": {
-   "NR-PLAN-TRUTH": 0.5,
-   "NR-WRITE-RECEIPT": 0.05,
-   "NR-GPU-FEASIBILITY": 0.33,
+   "NR-SPARSE-RENDER": 0.47,
+   "NR-PLAN-TRUTH": 0.0,
+   "NR-WRITE-RECEIPT": 0.14,
+   "NR-GPU-FEASIBILITY": 0.2,
    "NR-GPU-QUALIFICATION": 0.0,
    "NR-IMAGE-CONTRACT": 0.0,
    "NR-WORKER-SUPERVISED": 0.0,
    "NR-RECOVERY-RECEIPTS": 0.0,
    "NR-PACKAGE-PAIR": 0.0,
-   "NR-LICENSE-GATE": 0.12,
-   "NR-FOLLOW-ON": 0.0
+   "NR-LICENSE-GATE": 0.05,
+   "NR-FOLLOW-ON": 0.0,
+   "NR-VG-GPU-BUILD-LOCK": 0.0,
+   "NR-VG-RETINA-GUARDS": 0.14,
+   "NR-VG-GPU-WORKER-ENV": 0.0,
+   "NR-VG-RETINA-CUDA-BACKEND": 0.0,
+   "NR-VG-GPU-CANARY": 0.0
   }
  },
  "wave": "next-release",
@@ -89,9 +132,9 @@
  "state_scrubbed": true,
  "provenance": {
   "input": "harness\\next-release\\graph.json",
-  "input_sha256": "0c4e52dae81df1aa0783a0b813caf56390a123ecd56aa9989e358176d29539e3",
+  "input_sha256": "67d59ee25da5b8a9697e1a7d8cf1d4e65307e26e5cbf58f77ed228bf616ce61e",
   "mode": "graph",
   "wave": "next-release",
-  "generated_utc": "2026-11-07T01:58:14+00:00"
+  "generated_utc": "2026-11-08T14:51:29+00:00"
  }
 }

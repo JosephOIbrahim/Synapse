@@ -1,4 +1,4 @@
-"""Closure predicate for NR-VG-GPU-WORKER-ENV (PROPOSED amendment; not in graph.json).
+"""Closure predicate for NR-VG-GPU-WORKER-ENV (merged into graph.json on 2026-11-08).
 
 Flips green only when harness/vision/gpu_worker_env/worker_env_contract.json is
 committed and names CPython 3.12.10, an OpenImageIO cp312 win_amd64 wheel, a NumPy 2.x
@@ -9,7 +9,7 @@ retina/setup_venv.py, retina/setup_venv.ps1) match, by sha256, the text an R4 re
 signed off in the contract (no longer documenting a hython seed or a cp314 OIIO
 wheel); and no non-comment requirement line pins a cp314 wheel.
 
-Red today: the contract is not committed (marker below), and every test reaches that
+Red when written (C0, 2026-11-07): the contract is not committed (marker below), and every test reaches that
 marker first. Separately, the shipped recipe still documents a hython seed and names a
 cp314 wheel, which R4 rules out (ADR-0002 "Consequences of R1-R4", item 3).
 

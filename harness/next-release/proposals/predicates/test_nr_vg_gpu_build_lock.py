@@ -1,4 +1,4 @@
-"""Closure predicate for NR-VG-GPU-BUILD-LOCK (PROPOSED amendment; not in graph.json).
+"""Closure predicate for NR-VG-GPU-BUILD-LOCK (merged into graph.json on 2026-11-08).
 
 Flips green only when harness/vision/gpu_build_lock/build_lock_receipt.json is
 committed and records: verdict "built"; a build root under E:/OpenCV5.1_Prep (R3);
@@ -9,7 +9,7 @@ the limited API off (R4); the install step and a cv2 that landed inside the decl
 worker venv; sha256 digests of the native files; OPENCV_ENABLE_NONFREE=OFF; measured
 build windows; and Joe's per-act authorization.
 
-Red today: the receipt is not committed (marker below).
+Red when written (C0, 2026-11-07): the receipt is not committed (marker below).
 
 Reads committed files only. It never configures, builds, installs, imports cv2,
 touches a GPU, launches Houdini, trains or uses the network - even if a build exists.
