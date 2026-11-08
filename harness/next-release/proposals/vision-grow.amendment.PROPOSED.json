@@ -1,0 +1,470 @@
+{
+  "_status": "PROPOSED - not ratified; adoption is Joe's merge into graph.json followed by the JEV ranking in the lane README, section 2",
+  "_comment": "A proposed amendment to harness/next-release/graph.json. It adds NR-VG- nodes and edges in graph.json's own schema and lists, in _proposed_changes_to_existing, the edits to existing nodes that follow from the owner ruling of 2026-11-07 (R1-R4). Each entry's text states only what R1-R4 rules; anything G0 proposed beyond the ruling is labelled G0-proposed or INFERENCE, and owner choices the ruling left open are listed in _owner_decisions. Nothing here is in graph.json until Joe merges it. Check it offline with: python harness/next-release/proposals/validate_amendment.py",
+  "_sources": [
+    {
+      "title": "ADR-0002: An Optional OpenCV 5.1 CUDA Backend for Selected RETINA T1 Operations (PROPOSED)",
+      "path": "docs/decisions/ADR-0002-retina-t1-optional-cuda-backend.md",
+      "sha256_at_1400a43e": "bde47e5abf5c89194a54ca7cbfcb5f0f6011e8db95f7f0034ed1722d1c7ad70b"
+    },
+    {
+      "title": "OpenCV 5.1 CUDA Lane - G0 Receipt - 2026-11-07",
+      "path": "docs/reviews/opencv51-gpu-g0-receipt-2026-11-07.md",
+      "sha256_at_1400a43e": "e78c890d8e07c00873878cdd872040203e7751c829b4dca7eaf3cbeb6216cb34"
+    },
+    {
+      "title": "Neural Growth C0 report - 2026-11-07",
+      "path": "docs/reviews/neural-growth-c0-report-2026-11-07.md",
+      "sha256_at_1400a43e": "n/a - lands in the same commit as this amendment"
+    },
+    {
+      "title": "SYNAPSE: OpenCV 5.1 GPU Integration Blueprint",
+      "date": "2026-11-07",
+      "sha256": "bbaeed26669b945c2811399b9bbae0a1a183dbd18b6bb57d121f7391d271bf43",
+      "note": "input; cited by section, not reproduced; stages G0-G6 in its section 5"
+    },
+    {
+      "title": "SYNAPSE Neural Growth Creative Loop Blueprint",
+      "date": "2026-11-07",
+      "sha256": "070904d4e06b202dbeeb86bccfd6041ae99ee455e13a82bcd34ce49412dd9647",
+      "note": "input; cited by section, not reproduced; stages C0-C6 in its section 10"
+    }
+  ],
+  "_base_graph": {
+    "path": "harness/next-release/graph.json",
+    "sha256": "3e848b1f5eb5f052bfc696311369a895dd9cd9c2bb03a9ca5b009cd0a1e67315"
+  },
+  "_owner_ruling_2026_11_07": {
+    "R1": "Board: the OpenCV 5.1 blueprint folds into the harness/next-release graph; no second board. Its stages run as the existing NR nodes plus only new nodes or node changes that Joe merges into graph.json.",
+    "R2": "First GPU chain: the change-mask body in retina/t1.py (absdiff, threshold, morphological open, close), not the masked meanStdDev chain.",
+    "R3": "Build root: E:/OpenCV5.1_Prep (the prep project), not C:/ocv.",
+    "R4": "Worker runtime: CPython 3.12.10 with the isolated cp312 OpenImageIO wheel, not a hython-seeded venv and not the cp314 wheel.",
+    "scope_note": "R1 covers the OpenCV blueprint only. The Neural Growth (C-lane) nodes below are a proposal that needs its own owner ruling before they can enter graph.json (OD-01)."
+  },
+  "nodes": [
+    {
+      "id": "NR-VG-GPU-BUILD-LOCK",
+      "title": "Build the OpenCV 5.1 CUDA artifact under the ruled E: root and lock its identity",
+      "owner_files": [
+        "harness/vision/gpu_build_lock/"
+      ],
+      "depends_on": [
+        "NR-GPU-FEASIBILITY"
+      ],
+      "why": "No graph node owns the build (G0 receipt section 13 item 2; ADR-0002 decision 13). NR-GPU-FEASIBILITY closed B1 with a trivial non-OpenCV kernel and its predicate pins feasible-unproven, so it would go red exactly when a build succeeds (inverse gate). Under R3 the build runs under E:/OpenCV5.1_Prep, whose staged BUILD_LIST names cudaarithm and cudafilters for the R2 change-mask chain, and under R4 the binding targets CPython 3.12.10 without the limited API. The staged recipe has no install step. The receipt must record the generated (not requested) module list, both pinned source SHAs, the install step, where cv2 landed, native-file digests, OPENCV_ENABLE_NONFREE=OFF and measured durations. Waits on OD-02 (this node or a reopened FEASIBILITY), OD-12 (per-act build authorization, window, parallelism) and OD-16 (worker venv).",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_gpu_build_lock.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "L"
+    },
+    {
+      "id": "NR-VG-RETINA-GUARDS",
+      "title": "Pin the host/worker boundary: transitive zero-cv2 in-host closure, zero hou in the worker, fixed host payload",
+      "owner_files": [
+        "tests/test_retina_worker_boundary.py",
+        "harness/vision/retina_guards/"
+      ],
+      "depends_on": [],
+      "why": "The zero-cv2 host lint is lexical, not transitive, no test pins zero hou in the worker, and the host installer already ships retina/t1.py, so a backend module could load CUDA into Houdini with every test green (ADR-0002 Context section 2 items 5-7). These are G0 slice 1 (G0 receipt section 11): three hermetic tests, each proven able to fail by a named mutation. If ADR-0002 is ratified they become a precondition for any backend code under retina/ (ADR-0002 section 'Consequences', item 4). Waits on OD-09 (graph home) and OD-05 (the build_payload.py allowlist coupling).",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_retina_guards.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "S"
+    },
+    {
+      "id": "NR-VG-GPU-WORKER-ENV",
+      "title": "Make the RETINA worker runtime recipe conform to R4: CPython 3.12.10, isolated cp312 OIIO, the locked custom cv2",
+      "owner_files": [
+        "retina/requirements.txt",
+        "retina/setup_venv.py",
+        "retina/setup_venv.ps1",
+        "harness/vision/gpu_worker_env/"
+      ],
+      "depends_on": [
+        "NR-VG-GPU-BUILD-LOCK"
+      ],
+      "why": "The shipped recipe documents a hython-seeded venv and names a cp314 OpenImageIO wheel, which R4 rules out, and it installs opencv-python-headless, which must never share a venv with the custom cv2 (ADR-0002 section 'Consequences of R1-R4', item 3). The three recipe files are in no node's owner_files, so they cannot change until a node owns them (G0 receipt section 5). The contract names CPython 3.12.10, the cp312 win_amd64 OIIO wheel, NumPy inside >=2,<3 and compatible with the build headers, and the build-lock receipt by digest. Waits on OD-09 (graph home) and OD-16 (worker venv location and creator; CUDA DLL resolution).",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_gpu_worker_env.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "S"
+    },
+    {
+      "id": "NR-VG-RETINA-CUDA-BACKEND",
+      "title": "Add the worker-only CUDA backend for the R2 change-mask chain behind the tri-state contract",
+      "owner_files": [
+        "retina/backend_cuda.py",
+        "tests/test_retina_backend_cuda.py",
+        "harness/vision/retina_cuda_backend/"
+      ],
+      "depends_on": [
+        "NR-GPU-QUALIFICATION",
+        "NR-IMAGE-CONTRACT",
+        "NR-VG-RETINA-GUARDS",
+        "NR-VG-GPU-WORKER-ENV"
+      ],
+      "why": "ADR-0002 Site 2 is a worker-only CUDA module, off the host payload list and unreachable from the in-host modules, and it is unowned. Under R2 it covers absdiff, the strict threshold, morphological open and close only. A gpu_required operation that cannot run on CUDA must yield an inconclusive check with a reason, never a silent CPU pass, and T1Unavailable must be mapped rather than raised. No backend code may land under retina/ before ADR-0002 is ratified (G0 receipt section 13 item 22). Waits on OD-11 (ratification), OD-09 (graph home) and OD-10 (cpu_reference identity).",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_retina_cuda_backend.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "M"
+    },
+    {
+      "id": "NR-VG-GPU-CANARY",
+      "title": "Run the GPU-required profile as Joe's canary on approved non-production scenes, with disable and rollback shown",
+      "owner_files": [
+        "harness/vision/gpu_canary/"
+      ],
+      "depends_on": [
+        "NR-WORKER-SUPERVISED",
+        "NR-RECOVERY-RECEIPTS",
+        "NR-VG-RETINA-CUDA-BACKEND"
+      ],
+      "why": "The OpenCV blueprint's G4 has no node (ADR-0002 Reconciliation, G4 row). It comes after demo v1 and needs a specific approval, a re-grounded runtime, render, cancel and contention probes, and an immediate disable and rollback shown with before and after evidence. Worker-package rollback is unavailable until NR-WORKER-SUPERVISED and NR-PACKAGE-PAIR exist. Waits on OD-12 (what demo v1 means; resource window) and OD-21 (canary before or after packaging).",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_gpu_canary.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "M"
+    },
+    {
+      "id": "NR-VG-NCA-SANDBOX",
+      "title": "Prove native H22 neural cellular automata growth in one manually controlled, disposable sandbox",
+      "owner_files": [
+        "harness/vision/nca_sandbox/"
+      ],
+      "depends_on": [],
+      "why": "Neural Growth C1. The Core, Decode and training node types exist on 22.0.400 and 22.0.466 by a fenced parameter probe that created and cooked nothing, so cook, model load and provider choice are UNKNOWN. SYNAPSE has no in-process sandbox; the only isolation precedent is a separate session with a cleared, never-saved scene. The receipt must show matched Core/Decode model hashes, a declared decode colour transform, fixed-seed replay within a tolerance frozen beforehand, an extended rollout, stop and restart results, the executing provider and a sandbox-only scene path. It does not certify the OpenCV lane and carries no edge from the GPU nodes (Neural Growth blueprint section 10). Waits on OD-01 (C-lane adoption) and OD-18 (Houdini launch, build choice, resource window).",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_nca_sandbox.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "M"
+    },
+    {
+      "id": "NR-VG-GROW-CONTROLS",
+      "title": "Turn reference evidence into a versioned control package with explicit units, domains and coordinates",
+      "owner_files": [
+        "retina/control_package.py",
+        "tests/test_retina_control_package.py",
+        "harness/vision/grow_controls/"
+      ],
+      "depends_on": [
+        "NR-IMAGE-CONTRACT",
+        "NR-VG-NCA-SANDBOX"
+      ],
+      "why": "Neural Growth C2. RETINA today measures and emits verdicts; producing control fields that steer synthesis is a new allocation, so it needs a ratified amendment for reference-driven control generation, separate from ADR-0002's CUDA backend. The contract names who produced each field and how, how confident it is, its shape and value domain, what each channel means, its coordinate frame and a digest per field; it maps rotation to turns and respects the documented 0.2-1 scale clamp, and rejects malformed input. Its native mapping is pinned to the committed NCA sandbox receipt, so NR-VG-NCA-SANDBOX is a dep, not optional evidence. A CPU-reference first slice needs no GPU edge; the GPU path reads NR-GPU-QUALIFICATION. Waits on OD-01, OD-19 (the amendment; CPU-first or GPU path) and OD-10.",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_grow_controls.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "M"
+    },
+    {
+      "id": "NR-VG-GROW-JOB",
+      "title": "Expose Grow as one bounded, cancellable sandbox preview job with stale-output rejection and no scene writes",
+      "owner_files": [
+        "python/synapse/server/handlers_grow.py",
+        "python/synapse/panel/grow_panel.py",
+        "tests/test_grow_job_contract.py",
+        "harness/vision/grow_job/"
+      ],
+      "depends_on": [
+        "NR-VG-NCA-SANDBOX",
+        "NR-VG-GROW-CONTROLS",
+        "NR-RECOVERY-RECEIPTS"
+      ],
+      "why": "Neural Growth C3. The four existing COP growth tools build nodes inside the open scene and the autonomous worker may call them with no prompt, and the worker is denied a preview render by policy, so a Grow job cannot reuse that path without breaking the no-production-write criterion. It needs a separate-process sandbox, atomic publication (products, manifest, completion marker last), stale-marker rejection, resource admission and a real Stop. Registering it needs python/synapse/mcp/_tool_registry.py and the panel executor files, which NR-SPARSE-RENDER and NR-WRITE-RECEIPT own; this node takes none of them (OD-06). Waits on OD-01, OD-06 and OD-18.",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_grow_job.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "L"
+    },
+    {
+      "id": "NR-VG-GROW-COMPARE",
+      "title": "Close the creative loop: comparison and refinement in a creative sidecar kept separate from verdicts",
+      "owner_files": [
+        "retina/creative_sidecar.py",
+        "tests/test_creative_sidecar.py",
+        "harness/vision/grow_compare/"
+      ],
+      "depends_on": [
+        "NR-VG-GROW-JOB"
+      ],
+      "why": "Neural Growth C4. Creative ranking must live in a separate versioned sidecar linked to the perception verdicts; it never extends the envelope {ch, v, tier, claim, checks, verdict, proof, at} or the tri-state roll-up, a style score never overrides a failed protection or provenance check, and an empty mandatory-check list never satisfies a creative job. Joe's review against reference-only and guided baselines is the acceptance. Waits on OD-01.",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_grow_compare.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "M"
+    },
+    {
+      "id": "NR-VG-GROW-PROMOTION",
+      "title": "Qualify Keep as a reviewed promotion proposal: exact target, explicit approval, recovery rehearsed",
+      "owner_files": [
+        "python/synapse/autonomy/promotion.py",
+        "tests/test_grow_promotion.py",
+        "harness/vision/grow_promotion/"
+      ],
+      "depends_on": [
+        "NR-VG-GROW-COMPARE"
+      ],
+      "why": "Neural Growth C5. Keep stores a candidate in the sandbox and prepares a proposal; applying it to a working scene is a separate, explicitly authorized act. Undo grouping is not rollback, so the proposal carries an exact-target diff, the original state, the approval scope and a rehearsed recovery, and it mutates only through the authored-write receipt path. autonomy/planner.py, driver.py and models.py stay with NR-PLAN-TRUTH. Waits on OD-01 and per-act approval of every scene change.",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_grow_promotion.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "M"
+    }
+  ],
+  "edges": [
+    {"from": "NR-GPU-FEASIBILITY", "to": "NR-VG-GPU-BUILD-LOCK", "type": "dep", "why": "B1 (nvcc 13.3 accepts MSVC 19.44) is the build's input; the build does not re-litigate it"},
+    {"from": "NR-LICENSE-GATE", "to": "NR-VG-GPU-BUILD-LOCK", "type": "invariant", "why": "OPENCV_ENABLE_NONFREE=OFF belongs in the build lock"},
+    {"from": "NR-VG-GPU-BUILD-LOCK", "to": "NR-GPU-QUALIFICATION", "type": "dep", "why": "R3: the qualification artifact is the one built under E:/OpenCV5.1_Prep; nothing else qualifies"},
+    {"from": "NR-VG-GPU-BUILD-LOCK", "to": "NR-VG-GPU-WORKER-ENV", "type": "dep", "why": "the worker recipe names the locked artifact by digest"},
+    {"from": "NR-VG-GPU-BUILD-LOCK", "to": "NR-PACKAGE-PAIR", "type": "evidence", "why": "the worker lock must cite the build-lock artifact identity, not re-derive it"},
+    {"from": "NR-VG-GPU-WORKER-ENV", "to": "NR-WORKER-SUPERVISED", "type": "evidence", "why": "R4: the supervised worker runs the recipe this node makes conform"},
+    {"from": "NR-VG-RETINA-GUARDS", "to": "NR-IMAGE-CONTRACT", "type": "invariant", "why": "the retina/t1.py seam must keep the in-host closure free of any backend"},
+    {"from": "NR-VG-RETINA-GUARDS", "to": "NR-WORKER-SUPERVISED", "type": "invariant", "why": "zero hou in the worker and zero cv2 in the host hold across the process boundary"},
+    {"from": "NR-VG-RETINA-GUARDS", "to": "NR-VG-RETINA-CUDA-BACKEND", "type": "dep", "why": "the guards are a precondition for any backend code under retina/ (ADR-0002 section 'Consequences', item 4)"},
+    {"from": "NR-GPU-QUALIFICATION", "to": "NR-VG-RETINA-CUDA-BACKEND", "type": "dep", "why": "a backend may only dispatch operations the qualified artifact proved"},
+    {"from": "NR-IMAGE-CONTRACT", "to": "NR-VG-RETINA-CUDA-BACKEND", "type": "dep", "why": "the backend plugs into the cpu_reference seam that node owns in retina/t1.py"},
+    {"from": "NR-VG-GPU-WORKER-ENV", "to": "NR-VG-RETINA-CUDA-BACKEND", "type": "dep", "why": "the backend runs only in the R4 worker runtime"},
+    {"from": "NR-VG-RETINA-CUDA-BACKEND", "to": "NR-WORKER-SUPERVISED", "type": "seam", "why": "the worker loads the backend only when the mode is gpu_required; off and cpu load nothing new"},
+    {"from": "NR-WORKER-SUPERVISED", "to": "NR-VG-GPU-CANARY", "type": "dep", "why": "a canary needs a launched, supervised worker"},
+    {"from": "NR-RECOVERY-RECEIPTS", "to": "NR-VG-GPU-CANARY", "type": "dep", "why": "canary results are committed terminal receipts, not result files"},
+    {"from": "NR-VG-RETINA-CUDA-BACKEND", "to": "NR-VG-GPU-CANARY", "type": "dep", "why": "the canary exercises the backend in gpu_required mode"},
+    {"from": "NR-WRITE-RECEIPT", "to": "NR-VG-GPU-CANARY", "type": "seam", "why": "a canary verdict gains no mutation authority; any proposal mutates only through the authored-write receipt path"},
+    {"from": "NR-VG-GPU-CANARY", "to": "NR-PACKAGE-PAIR", "type": "evidence", "why": "if Joe orders canary before packaging (OD-21), the pair qualification cites the canary receipt"},
+    {"from": "NR-VG-NCA-SANDBOX", "to": "NR-VG-GROW-CONTROLS", "type": "dep", "why": "controls map only to native semantics the sandbox actually exercised; the predicate pins the sandbox receipt by sha256, so this is a hard dependency"},
+    {"from": "NR-IMAGE-CONTRACT", "to": "NR-VG-GROW-CONTROLS", "type": "dep", "why": "reference ingest and colour interpretation follow the frozen image contract"},
+    {"from": "NR-GPU-QUALIFICATION", "to": "NR-VG-GROW-CONTROLS", "type": "evidence", "why": "the GPU path of the control adapter uses only qualified operations; a CPU-first slice does not need it (OD-19)"},
+    {"from": "NR-VG-RETINA-GUARDS", "to": "NR-VG-GROW-CONTROLS", "type": "invariant", "why": "the control producer lives in the worker tree and never reaches the in-host modules"},
+    {"from": "NR-VG-NCA-SANDBOX", "to": "NR-VG-GROW-JOB", "type": "dep", "why": "Grow exposes a native growth recipe that has already replayed in a sandbox"},
+    {"from": "NR-VG-GROW-CONTROLS", "to": "NR-VG-GROW-JOB", "type": "dep", "why": "the job consumes control packages; it does not invent them"},
+    {"from": "NR-RECOVERY-RECEIPTS", "to": "NR-VG-GROW-JOB", "type": "dep", "why": "completion markers, stale-output rejection and late-reply rules come from the publication contract"},
+    {"from": "NR-WRITE-RECEIPT", "to": "NR-VG-GROW-JOB", "type": "seam", "why": "the job writes no production scene; anything that does goes through the authored-write receipt path"},
+    {"from": "NR-PLAN-TRUTH", "to": "NR-VG-GROW-JOB", "type": "seam", "why": "a sandbox preview render is planned and graded like any other render plan"},
+    {"from": "NR-VG-GROW-JOB", "to": "NR-VG-GROW-COMPARE", "type": "dep", "why": "comparison needs published candidates"},
+    {"from": "NR-RECOVERY-RECEIPTS", "to": "NR-VG-GROW-COMPARE", "type": "invariant", "why": "the creative sidecar follows the same atomic-publication rule"},
+    {"from": "NR-IMAGE-CONTRACT", "to": "NR-VG-GROW-COMPARE", "type": "invariant", "why": "envelope meaning is unchanged; ranking never extends the event schema"},
+    {"from": "NR-VG-GROW-COMPARE", "to": "NR-VG-GROW-PROMOTION", "type": "dep", "why": "only a compared, kept candidate can be proposed"},
+    {"from": "NR-WRITE-RECEIPT", "to": "NR-VG-GROW-PROMOTION", "type": "seam", "why": "promotion mutates only through the authored-write receipt path"},
+    {"from": "NR-VG-GROW-PROMOTION", "to": "NR-PACKAGE-PAIR", "type": "evidence", "why": "C6 distribution, if Joe ever approves it, packages only promoted, licence-reviewed models (OD-08)"}
+  ],
+  "_proposed_changes_to_existing": [
+    {
+      "node": "NR-GPU-QUALIFICATION",
+      "field": "why",
+      "current": "Source support, a built module, an executed call and a release-qualified operation are four different states. The blueprint's hand-computable fixtures (neutral RGB ramps, the 11x11 census, signed HDR, NaN/Inf counts, equality at the FP32 threshold) and the backend witness are what turn the second state into the fourth.",
+      "proposed": "Source support, a built module, an executed call and a release-qualified operation are four different states. Owner ruling 2026-11-07: the first GPU chain to qualify is the change-mask body in retina/t1.py - absdiff, threshold, morphological open and close (R2) - on the artifact built under E:/OpenCV5.1_Prep (R3), not C:/ocv. Not ruled, and left to Joe: whether the masked meanStdDev census and its hand-computable fixtures (neutral RGB ramps, the 11x11 census, signed HDR, NaN/Inf counts, equality at the FP32 threshold) are replaced by this chain or kept as an additional chain (ADR-0002 decision 14, OD-22); the cpu_reference identity (OD-10); and this node's gate (OD-23). G0-proposed, not ruled (G0 receipt slice 2; report 02-ops section 7): the change-mask fixtures (changes at frame edges and corners; |diff| at and one float32 ulp either side of diff_threshold; non-contiguous and odd-stride arrays; sizes not multiples of 16 or 32; an empty change set) and identical mask bytes as the parity criterion. INFERENCE: a NaN in a luma plane is a CPU-versus-CUDA threshold-parity hazard, so the draft predicate also asks for a NaN fixture. The backend witness and a per-operation dispatch record still turn the second state into the fourth.",
+      "ruling": ["R2", "R3"]
+    },
+    {
+      "node": "NR-GPU-QUALIFICATION",
+      "field": "predicate",
+      "current": "test -f harness/next-release/gpu_qualification.json",
+      "proposed": "python -m pytest harness/next-release/gpu/test_qualification_contract.py -q -p no:cacheprovider",
+      "ruling": ["R2", "R3"],
+      "note": "The current predicate is an existence gate that an empty file satisfies. The replacement test does not exist in the repo; its full draft is carried below in proposed_file and must be written to proposed_file.path in the same commit as Joe's merge of this change, or the predicate is red for the wrong reason (file not found). validate_amendment.py writes the draft to a temporary folder and runs it: it is red today for its declared marker (no committed qualification receipt). Its cpu_reference assertion waits on OD-10 and its location inside the K1-shared harness/next-release/gpu/ waits on OD-04. Because those are owner decisions and the node's gate is crux, OD-23 asks Joe to move the gate to joe or strike the Joe-ruled assertion.",
+      "proposed_file": {
+        "path": "harness/next-release/gpu/test_qualification_contract.py",
+        "status": "DRAFT - not in the repo; written only by the merge that adopts this change",
+        "source_lines": [
+          "\"\"\"Closure predicate for NR-GPU-QUALIFICATION (DRAFT carried inside the PROPOSED amendment).",
+          "",
+          "Proposed to replace `test -f harness/next-release/gpu_qualification.json`. It lands only",
+          "in the commit where Joe merges the predicate change, at the path that change names.",
+          "",
+          "Flips green only when harness/next-release/gpu_qualification.json is committed and:",
+          "- pins the committed build-lock receipt harness/vision/gpu_build_lock/build_lock_receipt.json",
+          "  by sha256, so the qualified artifact is the one built under E:/OpenCV5.1_Prep (R3);",
+          "- records each R2 change-mask operation (absdiff, threshold, morphology_open,",
+          "  morphology_close) dispatched on cuda, with a backend witness naming the loaded",
+          "  modules and cv2.__file__ (R2);",
+          "- pins a committed, frozen profile harness/next-release/gpu/qualification_profile.json by",
+          "  sha256, and for every fixture the profile lists records a GPU mask digest equal to the",
+          "  profile's expected digest and to the cpu_reference digest. The fixture set and the",
+          "  identical-mask-bytes criterion are G0-PROPOSED (G0 receipt, slice 2; report 02-ops",
+          "  section 7), not ruled; the NaN-in-luma fixture is INFERENCE (a threshold-parity hazard);",
+          "- records a cpu_reference identity equal to the one the profile records as ruled by Joe",
+          "  (OD-10, open), never the user-site cv2 4.12.0.",
+          "",
+          "Red today: the qualification receipt is not committed (marker below). Whether the",
+          "masked meanStdDev census is replaced or kept beside this chain is ADR-0002 decision 14",
+          "(OD-22, open); this draft qualifies the change-mask chain only.",
+          "",
+          "Reads committed files only (JSON, sha256). It never imports cv2, touches a GPU,",
+          "builds, installs, launches Houdini or uses the network.",
+          "\"\"\"",
+          "from __future__ import annotations",
+          "",
+          "import hashlib",
+          "import json",
+          "import re",
+          "import subprocess",
+          "from pathlib import Path",
+          "",
+          "",
+          "def _repo_root() -> Path:",
+          "    \"\"\"Find the repository root from the working directory, never from this file's",
+          "    location, so the predicate keeps working wherever it is moved (review G1).\"\"\"",
+          "    here = Path.cwd().resolve()",
+          "    for p in (here, *here.parents):",
+          "        if (p / \".git\").exists() and (p / \"harness\" / \"next-release\" / \"graph.json\").is_file():",
+          "            return p",
+          "    r = subprocess.run([\"git\", \"rev-parse\", \"--show-toplevel\"], capture_output=True, text=True, timeout=60)",
+          "    if r.returncode == 0 and r.stdout.strip():",
+          "        return Path(r.stdout.strip()).resolve()",
+          "    raise AssertionError(\"repository root not found: run this predicate from inside the SYNAPSE checkout\")",
+          "",
+          "",
+          "ROOT = _repo_root()",
+          "MARKER = (\"NR-GPU-QUALIFICATION RED: no committed qualification receipt \"",
+          "          \"harness/next-release/gpu_qualification.json\")",
+          "RECEIPT = \"harness/next-release/gpu_qualification.json\"",
+          "PROFILE = \"harness/next-release/gpu/qualification_profile.json\"",
+          "BUILD_LOCK = \"harness/vision/gpu_build_lock/build_lock_receipt.json\"",
+          "R2_OPS = (\"absdiff\", \"threshold\", \"morphology_open\", \"morphology_close\")",
+          "# G0-proposed fixtures (G0 receipt slice 2; 02-ops section 7). Not ruled.",
+          "G0_PROPOSED_FIXTURES = {",
+          "    \"edges_and_corners\", \"diff_at_threshold\", \"diff_one_ulp_below\", \"diff_one_ulp_above\",",
+          "    \"non_contiguous_odd_stride\", \"size_not_multiple_of_16_or_32\", \"empty_change_set\",",
+          "}",
+          "# INFERENCE: a NaN in a luma plane is a CPU-versus-CUDA threshold-parity hazard.",
+          "INFERENCE_FIXTURES = {\"nan_in_luma_plane\"}",
+          "HEX64 = re.compile(r\"^[0-9a-f]{64}$\")",
+          "",
+          "",
+          "def _committed(rel: str) -> bool:",
+          "    if not (ROOT / rel).is_file():",
+          "        return False",
+          "    r = subprocess.run([\"git\", \"-C\", str(ROOT), \"ls-files\", \"--error-unmatch\", \"--\", rel],",
+          "                       capture_output=True, text=True, timeout=60)",
+          "    return r.returncode == 0",
+          "",
+          "",
+          "def _sha(rel: str) -> str:",
+          "    return hashlib.sha256((ROOT / rel).read_bytes()).hexdigest()",
+          "",
+          "",
+          "def _receipt() -> dict:",
+          "    if not _committed(RECEIPT):",
+          "        raise AssertionError(MARKER)",
+          "    return json.loads((ROOT / RECEIPT).read_text(encoding=\"utf-8\"))",
+          "",
+          "",
+          "def _profile(r: dict) -> dict:",
+          "    assert _committed(PROFILE), f\"frozen qualification profile {PROFILE} is not committed\"",
+          "    assert r.get(\"profile_sha256\") == _sha(PROFILE), \"receipt does not pin the frozen profile\"",
+          "    return json.loads((ROOT / PROFILE).read_text(encoding=\"utf-8\"))",
+          "",
+          "",
+          "def test_qualification_receipt_is_committed():",
+          "    r = _receipt()",
+          "    assert isinstance(r, dict) and r, \"the committed receipt is empty\"",
+          "",
+          "",
+          "def test_artifact_is_the_locked_e_build():",
+          "    r = _receipt()",
+          "    assert _committed(BUILD_LOCK), f\"build-lock receipt {BUILD_LOCK} is not committed\"",
+          "    assert r.get(\"build_lock_sha256\") == _sha(BUILD_LOCK), \"R3: receipt does not pin the committed build-lock receipt\"",
+          "",
+          "",
+          "def test_r2_operations_dispatched_on_cuda_with_witness():",
+          "    w = _receipt().get(\"backend_witness\", {})",
+          "    for op in R2_OPS:",
+          "        assert w.get(\"dispatch\", {}).get(op) == \"cuda\", f\"R2: {op} did not dispatch on cuda\"",
+          "    assert w.get(\"loaded_modules\") and w.get(\"cv2_file\"), \"backend witness lists no loaded modules or cv2.__file__\"",
+          "",
+          "",
+          "def test_fixture_masks_match_the_frozen_profile():",
+          "    r = _receipt()",
+          "    p = _profile(r)",
+          "    expected = p.get(\"fixtures\", {})",
+          "    missing = (G0_PROPOSED_FIXTURES | INFERENCE_FIXTURES) - set(expected)",
+          "    assert not missing, f\"profile lacks fixtures: {sorted(missing)}\"",
+          "    got = r.get(\"fixtures\", {})",
+          "    for fid, exp in expected.items():",
+          "        want = str(exp.get(\"expected_mask_sha256\", \"\"))",
+          "        assert HEX64.match(want), f\"profile fixture {fid} has no expected mask digest\"",
+          "        rec = got.get(fid, {})",
+          "        assert rec.get(\"gpu_mask_sha256\") == want, f\"fixture {fid}: GPU mask differs from the frozen expectation\"",
+          "        assert rec.get(\"cpu_mask_sha256\") == want, f\"fixture {fid}: cpu_reference mask differs from the frozen expectation\"",
+          "",
+          "",
+          "def test_cpu_reference_identity_is_ruled():",
+          "    r = _receipt()",
+          "    ruling = _profile(r).get(\"cpu_reference_ruling\", {})",
+          "    assert ruling.get(\"by\") == \"Joe\" and ruling.get(\"date\") and ruling.get(\"identity\"), \\",
+          "        \"cpu_reference identity not ruled (OD-10)\"",
+          "    ident = str(r.get(\"cpu_reference\", {}).get(\"identity\", \"\"))",
+          "    assert ident == ruling[\"identity\"], \"receipt cpu_reference differs from the ruled identity\"",
+          "    assert \"4.12.0\" not in ident, \"the user-site cv2 4.12.0 is never the oracle\""
+        ]
+      }
+    },
+    {
+      "node": "NR-GPU-QUALIFICATION",
+      "field": "depends_on",
+      "current": ["NR-GPU-FEASIBILITY"],
+      "proposed": ["NR-GPU-FEASIBILITY", "NR-VG-GPU-BUILD-LOCK"],
+      "ruling": "R3",
+      "note": "The only thing NR-GPU-FEASIBILITY compiled is a non-OpenCV kernel; the qualification artifact must come from the E: build."
+    },
+    {
+      "node": "NR-WORKER-SUPERVISED",
+      "field": "why",
+      "current": "RETINA has modules and a designed process boundary, not a deployed executable path. The worker must own its cv2/OIIO/CUDA binaries outside Houdini's DLL search path, take allowlisted operations and read-only roots, and run off the main thread. This is also the first place the evidence envelope crosses a process boundary.",
+      "proposed": "RETINA has modules and a designed process boundary, not a deployed executable path. The worker must own its cv2/OIIO/CUDA binaries outside Houdini's DLL search path, take allowlisted operations and read-only roots, and run off the main thread. This is also the first place the evidence envelope crosses a process boundary. Owner ruling 2026-11-07 (R4): the worker runtime is CPython 3.12.10 with the isolated cp312 OpenImageIO wheel, not a hython-seeded venv and not the cp314 wheel.",
+      "ruling": "R4",
+      "note": "Text limited to what R4 states. Two related points are not ruled and stay out of the why: that the custom cv2 binding is cp312-only without the limited API (INFERENCE from CMake semantics, ADR-0002 section 'Consequences of R1-R4', item 4) and that it must never share a venv with the stock wheel (INFERENCE, ADR-0002 section 'Consequences', item 5). Whether this node may close on the old hython-seeded recipe is OD-13."
+    }
+  ],
+  "_red_markers": {
+    "NR-GPU-QUALIFICATION": "NR-GPU-QUALIFICATION RED: no committed qualification receipt harness/next-release/gpu_qualification.json",
+    "NR-VG-GPU-BUILD-LOCK": "NR-VG-GPU-BUILD-LOCK RED: no committed build-lock receipt harness/vision/gpu_build_lock/build_lock_receipt.json",
+    "NR-VG-RETINA-GUARDS": "NR-VG-RETINA-GUARDS RED: guard tests tests/test_retina_worker_boundary.py are not committed",
+    "NR-VG-GPU-WORKER-ENV": "NR-VG-GPU-WORKER-ENV RED: no committed R4 worker-runtime contract harness/vision/gpu_worker_env/worker_env_contract.json",
+    "NR-VG-RETINA-CUDA-BACKEND": "NR-VG-RETINA-CUDA-BACKEND RED: ADR-0002 is not ratified (its Status line does not begin Accepted)",
+    "NR-VG-GPU-CANARY": "NR-VG-GPU-CANARY RED: no committed canary receipt harness/vision/gpu_canary/canary_receipt.json",
+    "NR-VG-NCA-SANDBOX": "NR-VG-NCA-SANDBOX RED: no committed sandbox receipt harness/vision/nca_sandbox/nca_sandbox_receipt.json",
+    "NR-VG-GROW-CONTROLS": "NR-VG-GROW-CONTROLS RED: no committed control-package contract harness/vision/grow_controls/control_package_contract.json",
+    "NR-VG-GROW-JOB": "NR-VG-GROW-JOB RED: no committed Grow job contract harness/vision/grow_job/grow_job_contract.json",
+    "NR-VG-GROW-COMPARE": "NR-VG-GROW-COMPARE RED: no committed creative-sidecar contract harness/vision/grow_compare/creative_sidecar_contract.json",
+    "NR-VG-GROW-PROMOTION": "NR-VG-GROW-PROMOTION RED: no committed promotion contract harness/vision/grow_promotion/promotion_contract.json"
+  },
+  "_coverage": {
+    "G0": {"nodes": [], "note": "reconcile: ADR-0002 and the G0 receipt (docs only); owner ruled R1-R4"},
+    "G1": {"nodes": ["NR-VG-GPU-BUILD-LOCK", "NR-GPU-QUALIFICATION"], "note": "build half new; qualification half is an existing node, changed per R2/R3"},
+    "G2": {"nodes": ["NR-IMAGE-CONTRACT", "NR-VG-RETINA-GUARDS", "NR-VG-GPU-WORKER-ENV", "NR-VG-RETINA-CUDA-BACKEND", "NR-WORKER-SUPERVISED"], "note": "the retina/t1.py seam stays with NR-IMAGE-CONTRACT (widening is OD-07); guards, recipe and worker-only module are new"},
+    "G3": {"nodes": ["NR-GPU-QUALIFICATION"], "note": "shadow parity on the R2 chain is the existing node's 'independent CPU reference'"},
+    "G4": {"nodes": ["NR-VG-GPU-CANARY"], "note": "new; after demo v1"},
+    "G5": {"nodes": ["NR-PACKAGE-PAIR", "NR-LICENSE-GATE"], "note": "existing; both own installer/build_payload.py (K2)"},
+    "G6": {"nodes": ["NR-FOLLOW-ON"], "note": "loose fit, parked (OD-20)"},
+    "C0": {"nodes": [], "note": "docs/reviews/neural-growth-c0-report-2026-11-07.md"},
+    "C1": {"nodes": ["NR-VG-NCA-SANDBOX"], "note": "new; no edge from the GPU nodes"},
+    "C2": {"nodes": ["NR-VG-GROW-CONTROLS"], "note": "new; GPU path reads NR-GPU-QUALIFICATION"},
+    "C3": {"nodes": ["NR-VG-GROW-JOB"], "note": "new; registration files stay with their owners (OD-06)"},
+    "C4": {"nodes": ["NR-VG-GROW-COMPARE"], "note": "new"},
+    "C5": {"nodes": ["NR-VG-GROW-PROMOTION"], "note": "new"},
+    "C6": {"nodes": ["NR-PACKAGE-PAIR", "NR-LICENSE-GATE"], "note": "existing; model and reference licensing is outside NR-LICENSE-GATE's stated scope (OD-08)"}
+  },
+  "_known_existing_collisions": [
+    {"id": "K1", "nodes": ["NR-GPU-FEASIBILITY", "NR-GPU-QUALIFICATION"], "what": "both own harness/next-release/gpu/", "decision": "OD-04"},
+    {"id": "K2", "nodes": ["NR-LICENSE-GATE", "NR-PACKAGE-PAIR"], "what": "both own installer/build_payload.py", "decision": "OD-05"},
+    {"id": "K3", "nodes": ["NR-SPARSE-RENDER", "NR-WRITE-RECEIPT"], "what": "both own python/synapse/mcp/_tool_registry.py", "decision": "OD-06"},
+    {"id": "K4a", "nodes": ["NR-FOLLOW-ON", "NR-GPU-FEASIBILITY"], "what": "NR-FOLLOW-ON owns all of harness/next-release/", "decision": "OD-03"},
+    {"id": "K4b", "nodes": ["NR-FOLLOW-ON", "NR-GPU-QUALIFICATION"], "what": "NR-FOLLOW-ON owns all of harness/next-release/", "decision": "OD-03"}
+  ],
+  "_owner_decisions": [
+    {"id": "OD-01", "question": "Adopt the Neural Growth C-lane into the next-release graph at all, and widen the graph objective to include a creative loop. R1 rules the OpenCV blueprint only; the G0 receipt lists the Neural Growth blueprint as not reconciled.", "nodes": ["NR-VG-NCA-SANDBOX", "NR-VG-GROW-CONTROLS", "NR-VG-GROW-JOB", "NR-VG-GROW-COMPARE", "NR-VG-GROW-PROMOTION"]},
+    {"id": "OD-02", "question": "Who owns the build: this new NR-VG-GPU-BUILD-LOCK node, or NR-GPU-FEASIBILITY reopened as a round-three build lock with a replaced predicate (its current test pins feasible-unproven). ADR-0002 decision 13.", "nodes": ["NR-VG-GPU-BUILD-LOCK"]},
+    {"id": "OD-03", "question": "K4: NR-FOLLOW-ON owns all of harness/next-release/, including graph.json, both rulings, the README and this proposals/ folder with its predicate files. Narrow it (for example to harness/next-release/follow_on/ and follow_on_done.json) or leave the predicates unowned. New receipts are placed under harness/vision/ so that no new node collides with it.", "nodes": ["NR-VG-GPU-BUILD-LOCK", "NR-VG-RETINA-GUARDS", "NR-VG-GPU-WORKER-ENV", "NR-VG-RETINA-CUDA-BACKEND", "NR-VG-GPU-CANARY", "NR-VG-NCA-SANDBOX", "NR-VG-GROW-CONTROLS", "NR-VG-GROW-JOB", "NR-VG-GROW-COMPARE", "NR-VG-GROW-PROMOTION"]},
+    {"id": "OD-04", "question": "K1: NR-GPU-FEASIBILITY and NR-GPU-QUALIFICATION both own harness/next-release/gpu/, where the proposed qualification test would live.", "nodes": ["NR-GPU-QUALIFICATION"]},
+    {"id": "OD-05", "question": "K2 and the payload coupling: installer/build_payload.py is owned twice, and the proposed payload-exclusion guard reads it, so any intended payload change must update the guard's allowlist in the same commit.", "nodes": ["NR-VG-RETINA-GUARDS"]},
+    {"id": "OD-06", "question": "K3/K6: registering a Grow tool needs python/synapse/mcp/_tool_registry.py (NR-SPARSE-RENDER and NR-WRITE-RECEIPT) and the panel executor files (NR-WRITE-RECEIPT); adding a registry tool also moves the tool-count pins in CLAUDE.md and the README. Which node makes those edits.", "nodes": ["NR-VG-GROW-JOB"]},
+    {"id": "OD-07", "question": "K5: widen NR-IMAGE-CONTRACT to own the retina/t1.py backend seam, or sequence the seam as its own node, and order it against the Y change (ADR-0002 decisions 12b and 15).", "nodes": ["NR-VG-RETINA-CUDA-BACKEND"]},
+    {"id": "OD-08", "question": "K7: model and reference permitted-use tracking is outside NR-LICENSE-GATE's stated scope (OpenCV, CUDA, Qt). Widen it or add a node before any C6 distribution.", "nodes": ["NR-VG-GROW-PROMOTION"]},
+    {"id": "OD-09", "question": "Graph home for the G0-proposed files: the slice-1 guard tests, the RETINA venv recipe files and the worker-only CUDA module (ADR-0002 decision 12). This amendment proposes new nodes; widening existing nodes is the alternative.", "nodes": ["NR-VG-RETINA-GUARDS", "NR-VG-GPU-WORKER-ENV", "NR-VG-RETINA-CUDA-BACKEND"]},
+    {"id": "OD-10", "question": "The cpu_reference identity: the stock opencv-python-headless 5.0.0.93 wheel in its own venv, or the custom build's CPU path; never the user-site cv2 4.12.0 (ADR-0002 decision 8).", "nodes": ["NR-GPU-QUALIFICATION", "NR-VG-RETINA-CUDA-BACKEND", "NR-VG-GROW-CONTROLS"]},
+    {"id": "OD-11", "question": "Ratify or decline ADR-0002's P6/T1 amendment. It stays PROPOSED; no backend code lands under retina/ before it is ratified. The predicates read ratification from the Status line: it must begin '**Status:** Accepted' (letter case ignored), the form ADR-0001 uses (docs/decisions/ADR-0001-jev-in-harvest.md:4).", "nodes": ["NR-VG-RETINA-CUDA-BACKEND"]},
+    {"id": "OD-12", "question": "What demo v1 means; the build window and build parallelism; Windows 26H2 experimental scope; per-act authorization of each configure, build and install.", "nodes": ["NR-VG-GPU-BUILD-LOCK", "NR-VG-GPU-CANARY"]},
+    {"id": "OD-13", "question": "Unparking the GPU and RETINA nodes: a JEV re-run on the current graph (the committed decision ranks an older graph) or an owner exception; and what satisfies depends_on (merged, predicate rc=0, or real closure). Also: may NR-WORKER-SUPERVISED close on the shipped hython-seeded recipe, given that NR-VG-GPU-WORKER-ENV reaches it only by an evidence edge? A dep edge would make a CPU-only worker wait on the GPU build; that trade is Joe's.", "nodes": ["NR-VG-GPU-BUILD-LOCK", "NR-VG-RETINA-CUDA-BACKEND", "NR-VG-GPU-CANARY"]},
+    {"id": "OD-14", "question": "The scoped-delta positive-change semantic: add a positive 'the claimed change happened' requirement, or stop citing the check as proof that a change occurred (ADR-0002 decision 6). Not CUDA parity work.", "nodes": []},
+    {"id": "OD-15", "question": "Named owners: a build and package owner and an independent correctness reviewer who is not the build author (ADR-0002 decision 11).", "nodes": ["NR-VG-GPU-BUILD-LOCK", "NR-VG-RETINA-CUDA-BACKEND"]},
+    {"id": "OD-16", "question": "Worker venv location and creator (ADR-0002 decision 17) and CUDA DLL resolution (decision 18).", "nodes": ["NR-VG-GPU-BUILD-LOCK", "NR-VG-GPU-WORKER-ENV"]},
+    {"id": "OD-17", "question": "Disposition of the unmerged OpenCV branches feat/opencv-render-qc and pd/loop2-opencv-fire (ADR-0002 decision 9).", "nodes": []},
+    {"id": "OD-18", "question": "C1 sandbox: authorization to launch a separate Houdini session, which build (22.0.400 is the target; the prep snapshots observed 22.0.466 in use), how it stays off the live seat's bridge, and the resource window.", "nodes": ["NR-VG-NCA-SANDBOX", "NR-VG-GROW-JOB"]},
+    {"id": "OD-19", "question": "The amendment for reference-driven control generation (RETINA producing fields that steer synthesis), and whether C2 starts CPU-only or waits on the GPU path. Its ratification is read from its Status line, which must begin '**Status:** Accepted' (letter case ignored), as ADR-0001's does.", "nodes": ["NR-VG-GROW-CONTROLS"]},
+    {"id": "OD-20", "question": "Home for G6 consolidation: NR-FOLLOW-ON (parked, loose fit) or a later node.", "nodes": []},
+    {"id": "OD-21", "question": "Canary before packaging, or packaging before canary.", "nodes": ["NR-VG-GPU-CANARY"]},
+    {"id": "OD-22", "question": "ADR-0002 decision 14: (i) replace the masked meanStdDev census in NR-GPU-FEASIBILITY's proposed closure (gpu_feasibility.json:430), NR-GPU-QUALIFICATION's why and the intake's useful chain with the change-mask chain, or (ii) record the change-mask chain as an additional chain and keep the census as a later closure item. R2 picks the first chain; it does not choose between (i) and (ii).", "nodes": ["NR-GPU-QUALIFICATION"]},
+    {"id": "OD-23", "question": "NR-GPU-QUALIFICATION's gate is crux, but its proposed closure waits on owner decisions (OD-04, OD-10, OD-22). Move the gate from crux to joe, or strike the Joe-ruled cpu_reference assertion from the draft predicate. Listed as an owner decision, not applied.", "nodes": ["NR-GPU-QUALIFICATION"], "proposed_gate": {"node": "NR-GPU-QUALIFICATION", "from": "crux", "to": "joe"}}
+  ]
+}
