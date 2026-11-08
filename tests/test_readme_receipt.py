@@ -74,7 +74,7 @@ def test_a_release_pointer_at_a_missing_page_is_caught():
 
 
 def test_a_version_the_page_never_names_is_caught():
-    assert any("never names v5.99.0" in f for f in _failures(README, "5.99.0"))
+    assert any("never names v9.99.0" in f for f in _failures(README, "9.99.0"))
 
 
 def test_older_release_tags_are_history_not_failures():
