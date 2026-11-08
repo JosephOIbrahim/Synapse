@@ -1,0 +1,74 @@
+{
+  "backend_witness": {
+    "cv2_file": "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\worker\\py312-cuda133-worker\\Lib\\site-packages\\cv2\\__init__.py",
+    "dispatch": {
+      "absdiff": "cuda",
+      "morphology_close": "cuda",
+      "morphology_open": "cuda",
+      "threshold": "cuda"
+    },
+    "loaded_modules": [
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\worker\\py312-cuda133-worker\\Lib\\site-packages\\cv2\\python-3.12\\cv2.cp312-win_amd64.pyd",
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\install\\cuda133-sm89-py312\\x64\\vc17\\bin\\opencv_imgcodecs510.dll",
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\install\\cuda133-sm89-py312\\x64\\vc17\\bin\\opencv_cudaimgproc510.dll",
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\install\\cuda133-sm89-py312\\x64\\vc17\\bin\\opencv_cudawarping510.dll",
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\install\\cuda133-sm89-py312\\x64\\vc17\\bin\\opencv_cudafilters510.dll",
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\install\\cuda133-sm89-py312\\x64\\vc17\\bin\\opencv_imgproc510.dll",
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\install\\cuda133-sm89-py312\\x64\\vc17\\bin\\opencv_cudaarithm510.dll",
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\install\\cuda133-sm89-py312\\x64\\vc17\\bin\\opencv_geometry510.dll",
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\install\\cuda133-sm89-py312\\x64\\vc17\\bin\\opencv_flann510.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\nppial64_13.dll",
+      "E:\\OpenCV5.1_Prep\\02_OpenCV_Setup\\install\\cuda133-sm89-py312\\x64\\vc17\\bin\\opencv_core510.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\nppist64_13.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\nppicc64_13.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\nppidei64_13.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\nppig64_13.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\nppim64_13.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\nppif64_13.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\nppitc64_13.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\nppc64_13.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\cublas64_13.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\cufft64_12.dll",
+      "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\cublasLt64_13.dll"
+    ]
+  },
+  "build_lock_sha256": "2cb32051c76742b734a13b42a2feaac5bb9b647daf077dbd6ace466a712f472a",
+  "cpu_reference": {
+    "identity": "cv2 5.0.0 (opencv-python-headless 5.0.0.93) on CPython 3.12.10 with numpy 2.4.4"
+  },
+  "fixtures": {
+    "diff_at_threshold": {
+      "cpu_mask_sha256": "3526667a44fcd46ff543218e3871e98f6075dd8249b1450df1ac745f9a920056",
+      "gpu_mask_sha256": "3526667a44fcd46ff543218e3871e98f6075dd8249b1450df1ac745f9a920056"
+    },
+    "diff_one_ulp_above": {
+      "cpu_mask_sha256": "b6ad0898426c6ca423a2e1ce34f2b0b41b4c855bdf605d8721b13dd7f216bf3c",
+      "gpu_mask_sha256": "b6ad0898426c6ca423a2e1ce34f2b0b41b4c855bdf605d8721b13dd7f216bf3c"
+    },
+    "diff_one_ulp_below": {
+      "cpu_mask_sha256": "3526667a44fcd46ff543218e3871e98f6075dd8249b1450df1ac745f9a920056",
+      "gpu_mask_sha256": "3526667a44fcd46ff543218e3871e98f6075dd8249b1450df1ac745f9a920056"
+    },
+    "edges_and_corners": {
+      "cpu_mask_sha256": "bf1c7876532f00f582748834ced745b5eadb8091540d43ec4d1b88df02a6f2d4",
+      "gpu_mask_sha256": "bf1c7876532f00f582748834ced745b5eadb8091540d43ec4d1b88df02a6f2d4"
+    },
+    "empty_change_set": {
+      "cpu_mask_sha256": "fd9243e1ba57263ed469c3bdbd7ade6ec5254e7ed924a9f5737fa44749933cc0",
+      "gpu_mask_sha256": "fd9243e1ba57263ed469c3bdbd7ade6ec5254e7ed924a9f5737fa44749933cc0"
+    },
+    "nan_in_luma_plane": {
+      "cpu_mask_sha256": "612130287d9ccf0acdab566f799373eb0a990caec20d710fc6822ac558f4e0bc",
+      "gpu_mask_sha256": "612130287d9ccf0acdab566f799373eb0a990caec20d710fc6822ac558f4e0bc"
+    },
+    "non_contiguous_odd_stride": {
+      "cpu_mask_sha256": "6a1f1a401c7d73e55f5f27d215d3961b072a91599b738b066b92d1f0903bf0d1",
+      "gpu_mask_sha256": "6a1f1a401c7d73e55f5f27d215d3961b072a91599b738b066b92d1f0903bf0d1"
+    },
+    "size_not_multiple_of_16_or_32": {
+      "cpu_mask_sha256": "821c822ec2535206f0f511c400ef3372cbcb1ed661207e01b655fd20d828ee9e",
+      "gpu_mask_sha256": "821c822ec2535206f0f511c400ef3372cbcb1ed661207e01b655fd20d828ee9e"
+    }
+  },
+  "profile_sha256": "26dc267c1c9c591207b2dce8387aecd2fb0057783d69d075c4e6de9c89a9ab42"
+}
