@@ -1,6 +1,6 @@
 """RETINA T1: a worker-only OpenCV CUDA backend for the R2 change-mask chain.
 
-ADR-0002 (PROPOSED, not ratified), Site 2. Owner ruling R2 (2026-11-07) names the
+ADR-0002 (Accepted 2026-11-08), Site 2. Owner ruling R2 (2026-11-07) names the
 first GPU chain: the body of :func:`retina.t1.change_mask`, and nothing else::
 
     absdiff -> strict threshold -> morphological open -> morphological close
@@ -372,8 +372,8 @@ def _loaded_native_modules(prefixes: Optional[Sequence[str]] = None) -> List[str
 def witness() -> Dict[str, Any]:
     """What this process would compute with: ``cv2_file``, ``cv2_version``,
     ``cuda_device_count``, ``device`` (index, compute capability, total memory),
-    ``cuda_build_info`` (the NVIDIA CUDA and GPU arch lines of
-    ``cv2.getBuildInformation()``) and ``loaded_modules`` (absolute paths of the
+    ``cuda_build_info`` (the NVIDIA CUDA, NVIDIA GPU arch and NVIDIA PTX archs lines
+    of ``cv2.getBuildInformation()``) and ``loaded_modules`` (absolute paths of the
     loaded cv2, opencv_*, cudart*, npp*, cublas* and cufft* modules; ``[]`` off
     Windows).
 

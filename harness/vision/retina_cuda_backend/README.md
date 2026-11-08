@@ -14,7 +14,7 @@ That chain is the body of `retina.t1.change_mask`. The backend returns the same 
 
 - **Off by default. Nothing calls it.** No production code imports the module. T1 itself has no production caller, and no worker launches T1 yet (ADR-0002, Context section 2). Until a worker exists, the only consumer is an offline parity harness.
 
-- **Not ratified.** ADR-0002 is PROPOSED. The node's closure predicate stays red until the owner ratifies it. Merging is the owner's call.
+- **Ratified.** ADR-0002 is Accepted (ratified 2026-11-08, "Ratification and owner rulings (2026-11-08)"). The node's closure predicate (`harness/next-release/proposals/predicates/test_nr_vg_retina_cuda_backend.py`) passes 3 of 3 against the committed receipt.
 
 - **The GPU tests run only on a CUDA device.** In CI and on CPU-only interpreters they skip. They run in the CUDA worker venv under the ruled build root `E:/OpenCV5.1_Prep` (ruling R3).
 
@@ -86,8 +86,6 @@ A key is `None` when it cannot be read. When the device index or its `DeviceInfo
 
 `index` and the `NVIDIA PTX archs` line are part of the contract.
 
-**Known gap.** The `witness()` docstring in `retina/backend_cuda.py` names only the first two build-line prefixes. The code keeps all three. This section is the complete list.
-
 ---
 
 ## How parity is built in
@@ -133,7 +131,7 @@ The receipt records:
 
 The script refuses to run until that qualification file exists. `--check` compares the receipt with the tree instead of writing it.
 
-The receipt is not committed with the code. The orchestrator runs the script after the qualification receipt is committed.
+The receipt is committed (`backend_receipt.json`, written after the qualification receipt landed). Re-run `make_receipt.py` whenever `retina/backend_cuda.py`, the tests file or the qualification receipt changes; `--check` exits 1 on drift.
 
 ---
 
