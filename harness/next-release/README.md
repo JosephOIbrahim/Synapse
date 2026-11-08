@@ -51,15 +51,20 @@ the guard chose today, not a change to the design.
 
 **Second decision, recorded 2026-11-08**, after Joe merged the OpenCV lane
 (receipt `harness/harness2/runs/next-release/graph_decision.json`, generated
-2026-11-08T14:51:29+00:00 from `graph.json` sha256 `67d59ee2…ce61e`; one row
-appended to `harness/jev/ledger/next-release.graph.jsonl`). **JEV fell back again:** its pick sits below the confidence gate, so no
+2026-11-08T15:27:44+00:00 from the merged `graph.json`, sha256 `b5c03f70…b9be1`;
+one row appended to `harness/jev/ledger/next-release.graph.jsonl` per run). **JEV fell back again:** its pick sits below the confidence gate, so no
 single first landing is designated. Verbatim from the receipt:
 
 - `first_landing`: `null`
 - `land_now`: `["NR-GPU-FEASIBILITY", "NR-VG-RETINA-GUARDS"]`
-- `park`: `["NR-SPARSE-RENDER", "NR-PLAN-TRUTH", "NR-WRITE-RECEIPT", "NR-GPU-QUALIFICATION", "NR-IMAGE-CONTRACT", "NR-WORKER-SUPERVISED", "NR-RECOVERY-RECEIPTS", "NR-LICENSE-GATE", "NR-FOLLOW-ON", "NR-VG-GPU-BUILD-LOCK", "NR-VG-GPU-WORKER-ENV", "NR-VG-RETINA-CUDA-BACKEND"]`
-- `needs_joe`: `["NR-PACKAGE-PAIR", "NR-VG-GPU-CANARY"]`
+- `park`: `["NR-SPARSE-RENDER", "NR-PLAN-TRUTH", "NR-WRITE-RECEIPT", "NR-GPU-QUALIFICATION", "NR-IMAGE-CONTRACT", "NR-WORKER-SUPERVISED", "NR-RECOVERY-RECEIPTS", "NR-PACKAGE-PAIR", "NR-LICENSE-GATE", "NR-FOLLOW-ON", "NR-VG-GPU-BUILD-LOCK", "NR-VG-GPU-WORKER-ENV", "NR-VG-RETINA-CUDA-BACKEND"]`
+- `needs_joe`: `["NR-VG-GPU-CANARY"]`
 - `reason`: `fallback: Jev chose NR-SPARSE-RENDER @ 0.43, below the confidence gate 0.6`
+
+An earlier run at 2026-11-08T14:51:29+00:00 ranked the graph before the merge's
+review revision (`graph.json` sha256 `67d59ee2…ce61e`) and gave the same
+`land_now` and reason, with `NR-PACKAGE-PAIR` in `needs_joe` instead of `park`.
+JEV is a judgment, not a constant; the receipt above pins the graph as merged.
 
 That is the order. Against the 2026-11-06 receipt: `NR-GPU-FEASIBILITY` park -> land_now; `NR-PLAN-TRUTH` land_now -> park; `NR-VG-RETINA-GUARDS` absent -> land_now; `NR-WRITE-RECEIPT` land_now -> park.
 `NR-VG-GPU-CANARY` is in `needs_joe`, not `park`; it does not land either way.
@@ -68,10 +73,9 @@ node stays parked behind the worker". No graph field encodes that default; the
 node's why states it in words. Producer:
 `python harness/harness2/compositor.py --mode graph --input
 harness/next-release/graph.json --wave next-release`, CPython 3.14.2, run from
-the repo root. After this receipt was generated, the revise that answered the
-referee restored the word "per-act" in `NR-VG-GPU-BUILD-LOCK`'s why, so the
-committed `graph.json` no longer hashes to `67d59ee2…ce61e`; the guard was not
-re-run on the revised graph.
+the repo root. The guard was re-run after the merge's review revision restored
+the word "per-act" in `NR-VG-GPU-BUILD-LOCK`'s why, so the receipt's
+`input_sha256` equals the committed `graph.json`.
 
 ## 3. Fan-out, wave by wave
 

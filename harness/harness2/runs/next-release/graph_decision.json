@@ -12,6 +12,7 @@
   "NR-IMAGE-CONTRACT",
   "NR-WORKER-SUPERVISED",
   "NR-RECOVERY-RECEIPTS",
+  "NR-PACKAGE-PAIR",
   "NR-LICENSE-GATE",
   "NR-FOLLOW-ON",
   "NR-VG-GPU-BUILD-LOCK",
@@ -19,90 +20,89 @@
   "NR-VG-RETINA-CUDA-BACKEND"
  ],
  "needs_joe": [
-  "NR-PACKAGE-PAIR",
   "NR-VG-GPU-CANARY"
  ],
  "reason": "fallback: Jev chose NR-SPARSE-RENDER @ 0.43, below the confidence gate 0.6",
  "per_node": {
   "NR-SPARSE-RENDER": {
-   "lands": 0.15,
-   "value": 2.47,
+   "lands": 0.14,
+   "value": 2.51,
    "joe_decides": 0.12
   },
   "NR-PLAN-TRUTH": {
-   "lands": 0.27,
-   "value": 2.95,
-   "joe_decides": 0.13
-  },
-  "NR-WRITE-RECEIPT": {
-   "lands": 0.34,
-   "value": 2.8,
-   "joe_decides": 0.19
-  },
-  "NR-GPU-FEASIBILITY": {
-   "lands": 0.78,
-   "value": 2.92,
+   "lands": 0.3,
+   "value": 2.91,
    "joe_decides": 0.14
   },
-  "NR-GPU-QUALIFICATION": {
-   "lands": 0.13,
-   "value": 2.92,
-   "joe_decides": 0.4
-  },
-  "NR-IMAGE-CONTRACT": {
-   "lands": 0.18,
-   "value": 2.59,
-   "joe_decides": 0.22
-  },
-  "NR-WORKER-SUPERVISED": {
-   "lands": 0.09,
-   "value": 2.69,
-   "joe_decides": 0.26
-  },
-  "NR-RECOVERY-RECEIPTS": {
-   "lands": 0.3,
-   "value": 2.81,
-   "joe_decides": 0.16
-  },
-  "NR-PACKAGE-PAIR": {
-   "lands": 0.1,
-   "value": 2.78,
-   "joe_decides": 0.5
-  },
-  "NR-LICENSE-GATE": {
-   "lands": 0.11,
-   "value": 2.6,
+  "NR-WRITE-RECEIPT": {
+   "lands": 0.25,
+   "value": 2.83,
    "joe_decides": 0.18
   },
-  "NR-FOLLOW-ON": {
-   "lands": 0.09,
-   "value": 0.33,
-   "joe_decides": 0.3
+  "NR-GPU-FEASIBILITY": {
+   "lands": 0.77,
+   "value": 2.88,
+   "joe_decides": 0.13
   },
-  "NR-VG-GPU-BUILD-LOCK": {
-   "lands": 0.36,
-   "value": 2.89,
+  "NR-GPU-QUALIFICATION": {
+   "lands": 0.14,
+   "value": 2.91,
+   "joe_decides": 0.38
+  },
+  "NR-IMAGE-CONTRACT": {
+   "lands": 0.25,
+   "value": 2.59,
+   "joe_decides": 0.21
+  },
+  "NR-WORKER-SUPERVISED": {
+   "lands": 0.1,
+   "value": 2.68,
+   "joe_decides": 0.23
+  },
+  "NR-RECOVERY-RECEIPTS": {
+   "lands": 0.32,
+   "value": 2.78,
+   "joe_decides": 0.18
+  },
+  "NR-PACKAGE-PAIR": {
+   "lands": 0.09,
+   "value": 2.77,
+   "joe_decides": 0.44
+  },
+  "NR-LICENSE-GATE": {
+   "lands": 0.12,
+   "value": 2.64,
+   "joe_decides": 0.19
+  },
+  "NR-FOLLOW-ON": {
+   "lands": 0.08,
+   "value": 0.26,
    "joe_decides": 0.29
   },
+  "NR-VG-GPU-BUILD-LOCK": {
+   "lands": 0.39,
+   "value": 2.87,
+   "joe_decides": 0.27
+  },
   "NR-VG-RETINA-GUARDS": {
-   "lands": 0.84,
-   "value": 2.77,
+   "lands": 0.83,
+   "value": 2.76,
    "joe_decides": 0.16
   },
   "NR-VG-GPU-WORKER-ENV": {
-   "lands": 0.2,
-   "value": 2.61,
-   "joe_decides": 0.14
+   "lands": 0.23,
+   "value": 2.65,
+   "joe_decides": 0.15
   },
   "NR-VG-RETINA-CUDA-BACKEND": {
-   "lands": 0.11,
-   "value": 2.61,
-   "joe_decides": 0.23
+   "lands": 0.12,
+   "value": 2.63,
+   "joe_decides": 0.24
   },
   "NR-VG-GPU-CANARY": {
-   "lands": 0.07,
-   "value": 1.8,
-   "joe_decides": 0.83
+   "lands": 0.09,
+   "value": 1.82,
+   "joe_decides": 0.81
   }
  },
  "jev": {
@@ -111,17 +111,17 @@
   "probabilities": {
    "NR-SPARSE-RENDER": 0.47,
    "NR-PLAN-TRUTH": 0.0,
-   "NR-WRITE-RECEIPT": 0.14,
-   "NR-GPU-FEASIBILITY": 0.2,
+   "NR-WRITE-RECEIPT": 0.13,
+   "NR-GPU-FEASIBILITY": 0.25,
    "NR-GPU-QUALIFICATION": 0.0,
    "NR-IMAGE-CONTRACT": 0.0,
    "NR-WORKER-SUPERVISED": 0.0,
    "NR-RECOVERY-RECEIPTS": 0.0,
    "NR-PACKAGE-PAIR": 0.0,
-   "NR-LICENSE-GATE": 0.05,
+   "NR-LICENSE-GATE": 0.04,
    "NR-FOLLOW-ON": 0.0,
    "NR-VG-GPU-BUILD-LOCK": 0.0,
-   "NR-VG-RETINA-GUARDS": 0.14,
+   "NR-VG-RETINA-GUARDS": 0.11,
    "NR-VG-GPU-WORKER-ENV": 0.0,
    "NR-VG-RETINA-CUDA-BACKEND": 0.0,
    "NR-VG-GPU-CANARY": 0.0
@@ -132,9 +132,9 @@
  "state_scrubbed": true,
  "provenance": {
   "input": "harness\\next-release\\graph.json",
-  "input_sha256": "67d59ee25da5b8a9697e1a7d8cf1d4e65307e26e5cbf58f77ed228bf616ce61e",
+  "input_sha256": "b5c03f70b6a7a4a7b60ba25cf94ac0f13a03fc309bfeb0da0105a3a11b1b9be1",
   "mode": "graph",
   "wave": "next-release",
-  "generated_utc": "2026-11-08T14:51:29+00:00"
+  "generated_utc": "2026-11-08T15:27:44+00:00"
  }
 }
