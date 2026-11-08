@@ -1,11 +1,11 @@
 # OpenCV 5.1 CUDA Lane — G0 Receipt — 2026-11-07
 
-**Status:** G0, revised once after adversarial review. Read-only reconciliation. **Not ratified.** It records four owner rulings and authorizes no act.
+**Status:** G0, revised after adversarial review, then corrected once more after re-verify on the owner's go (2026-11-08). Read-only reconciliation. **Not ratified.** It records four owner rulings and authorizes no act.
 
 | Field | Value |
 |---|---|
 | **G0 owner** | Joe Ibrahim. He named himself G0 owner on 2026-11-07 and ruled four G0 conflicts (R1-R4); he ratified nothing and authorized nothing (orchestrator record). Joe remains product and ratification authority |
-| **Owner ruling** | 2026-11-07: fold into the `harness/next-release` graph with no second board (R1); the change-mask chain first (R2); build root `E:/OpenCV5.1_Prep` (R3); worker CPython 3.12.10 with the isolated cp312 OIIO wheel (R4). Verbatim text in ADR-0002, "Owner rulings (2026-11-07)" |
+| **Owner ruling** | 2026-11-07: fold into the `harness/next-release` graph with no second board (R1); the change-mask chain first (R2); build root `E:/OpenCV5.1_Prep` (R3); worker CPython 3.12.10 with the isolated cp312 OIIO wheel (R4). Joe's words are quoted verbatim in §13 and in ADR-0002, "Owner rulings (2026-11-07)" |
 | **Author** | Claude, integration author for this session. The independent reviewers are this workflow's attack agents |
 | **Date** | 2026-11-07 |
 | **Worktree branch and SHA** | `vision/opencv51-g0` at `ef43d37aaedb677bebc548a5fc921d4bea4565fd` (reports' baseline) |
@@ -44,7 +44,7 @@ The six G0 reports are local working papers. They are not committed, and they ar
 2. **A ruled program for this goal already exists**, and the input blueprint does not cite it. It is the `harness/next-release` graph, with D6 and D1 closed. **Joe ruled on 2026-11-07 that the blueprint folds into that graph, with no second board (R1).**
 3. **No OpenCV CUDA operator has executed anywhere in this program.** The only GPU execution on record is a trivial, non-OpenCV CUDA kernel in the `NR-GPU-FEASIBILITY` receipt. G0 did not re-observe it (§6, ADR-0002 Context §3).
 4. **The P6/T1 amendment needs Joe's ratification before any GPU backend code lands under `retina/`.** That it does not gate an out-of-tree build is INFERENCE from input blueprint §5 and §9; Joe decides it (§13).
-5. **G1 cannot start on day one as things stand.** No graph node owns the build, JEV's last decision parks every GPU node, the NR node texts still name the meanStdDev chain and `C:/ocv`, and the staged E: recipe has no install step (§13 "Still needed"). INFERENCE from the VERIFIED facts cited there.
+5. **G1 cannot start on day one as things stand.** No graph node owns the build; JEV's last decision parks every GPU node; `NR-GPU-FEASIBILITY`'s committed receipt is still written around root `C:/ocv` and a masked `meanStdDev` closure (`gpu_feasibility.json:259`, `:430`), and `NR-GPU-QUALIFICATION`'s `why` names that chain's fixtures, the 11x11 census and FP32-threshold equality (`graph.json:95`; the link is INFERENCE), while no `graph.json` node text names `C:/ocv`; and the staged E: recipe has no install step (§13 "Still needed"). INFERENCE from the VERIFIED facts cited there.
 
 ---
 
@@ -162,7 +162,7 @@ Source: [06-critic §4.4], checked against `graph.json`. Under the CLAUDE.md ros
 
 Cell labels: **V** = VERIFIED, **V(p)** = VERIFIED as a prep record quoted but not re-measured, **V(r)** = VERIFIED as receipt content not re-observed, **I** = INFERENCE, **U** = UNKNOWN, **RULED** = owner ruling 2026-11-07 (orchestrator record).
 
-The E: column is now the ruled build root (R3) and runtime (R4). The NR-lane column is kept as history; its root and chain are superseded.
+The E: column is the ruled build root (R3). R4 rules the interpreter and OIIO wheel, but whether the prep venv is the worker stays open (decision 17). The NR-lane column is kept as history; its root and chain are superseded.
 
 | Dimension | Houdini host | RETINA worker | `E:/OpenCV5.1_Prep` (ruled root, R3) | NR lane (`gpu_feasibility.json`; root superseded) |
 |---|---|---|---|---|
@@ -269,7 +269,7 @@ Measured by report 05 on `ef43d37a`. **This author did not re-execute it.**
 - **Skip reasons:** 3 × "OpenImageIO + numpy not installed (RETINA worker venv only)", at `tests/test_retina_ingest.py:67`, `:86`, `:107`. **The OIIO EXR pixel-ingest lane ran 0 of its 3 tests. That is not a pass for that lane.**
 - **Off-pin cv2 note:** the 22 T1 tests ran because `find_spec("cv2")` found **cv2 4.12.0** in the default interpreter's user site (`tests/test_retina_t1.py:22-28`). 4.12.0 is below both the pin (5.0.0.93) and the sanctioned floor (`>=4.13,<5`). **This green is evidence for cv2 4.12.0 on CPU only.** It says nothing about the pinned wheel or any CUDA build [05-claims §4.3].
 - **Fence disclosure:** in report 05's run, pytest autoloaded third-party plugins that imported `torch`, which imported `pynvml`. Whether that import made any driver call is **UNKNOWN**. Future fenced runs set `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` [05-claims §0].
-- **Mutation evidence:** V0 recorded that the identical-input SSIM test passes with `GaussianBlur` stubbed to zeros, and that `ssim_outside` can be replaced by an unconditional green (F15). Not re-run; INFERENCE that it still holds [02-ops §3].
+- **Mutation evidence:** V0 recorded that the identical-input SSIM test passes with `GaussianBlur` stubbed to zeros, and that the scoped-delta exterior primitive can be replaced by an unconditional green (V0 F15). Not re-run; INFERENCE that it still holds [02-ops §3].
 
 ---
 
@@ -344,7 +344,7 @@ A **configure-only window** under the E: recipe is the smallest step that can fa
 - **Slice 1:** one commit, one new test file with three test functions, plus an optional second file with one strict-xfail test. No product file touched.
 - **Slice 2:** one commit inside `NR-IMAGE-CONTRACT`, touching `retina/t1.py` and one test file. Under R2 the seam covers `change_mask` first.
 - **The input blueprint's own staffing figures** (its §5): G1 3-5 days plus bounded build time, G2 3-5 days, G3 5-7 days. These are its estimates, not measurements, and G0 does not adopt them.
-- **Build duration and artifact size:** UNKNOWN (B9). The ruled E: recipe runs at `--parallel 1` with thread counts pinned to 1 (`Current_Configure.json:115-127`), so the duration could be long; no conversion from core count is made.
+- **Build duration and artifact size:** UNKNOWN (B9). The staged E: recipe (under the R3 root) runs at `--parallel 1` with thread counts pinned to 1 (`Current_Configure.json:115-127`), so the duration could be long; no conversion from core count is made. Parallelism is open (decision 16).
 - **Every GPU speed, latency, VRAM or transfer figure:** UNKNOWN.
 
 **Proposed time-box protocol for G1 (limits are Joe's to set).** INFERENCE (proposed procedure).
@@ -361,7 +361,9 @@ G1 means building and qualifying the 5.1 CUDA artifact under the E: root, throug
 
 ### Ruled 2026-11-07
 
-Source: orchestrator record of the owner's relayed instruction. Verbatim text in ADR-0002, "Owner rulings (2026-11-07)".
+Source: orchestrator record of the owner's relayed instruction, 2026-11-07. Joe's words, verbatim (the same text ADR-0002 quotes under "Owner rulings (2026-11-07)"):
+
+> "Rule on the G0 conflicts: fold the OpenCV blueprint into the harness/next-release graph, no second board. Use the change-mask chain, build root E:\OpenCV5.1_Prep, worker CPython 3.12.10 with the isolated cp312 OIIO wheel. Record it in ADR-0002 and the G0 receipt on vision/opencv51-g0, don't push."
 
 - **R1 · Board:** the OpenCV 5.1 blueprint folds into the `harness/next-release` graph. No second board. Its stages run as the existing NR nodes, plus only new nodes or node changes Joe merges into `graph.json`.
 - **R2 · First GPU chain:** the change-mask body in `retina/t1.py` (`absdiff`, threshold, morphological open, close), not the masked `meanStdDev` chain.
@@ -480,7 +482,7 @@ Three independent attack agents reviewed draft commit `b4b6cb8a`. Every blocker 
 | G2 | governance | fixed | ADR-0002 decision 12 (graph home, `NR-IMAGE-CONTRACT` widening, allowlist coupling; no INTEGRATOR); receipt §5, §11 (slice 1 not dispatchable, not the next increment) |
 | G3 | governance | fixed | ADR-0002 decisions 5(d) and 13, Reconciliation G1 row; receipt §13 "Still needed" items 1-2 |
 | G4 | governance | fixed | ADR-0002 "Invariants Inherited" (§2 invariants 1-8), Refused Site 1, OIIO preserve row (`cv2.imread`), no-edit list (`CLAUDE.md`, `AGENTS.md`) |
-| G5 | governance | fixed | receipt §7 rows 10-13 and the containment bullet; ADR-0002 seam bullet |
+| G5 | governance | partly fixed at `1400a43e`; the §9 residual (G5r) was fixed on 2026-11-08 | receipt §7 rows 10-13 and the scoped-delta bullet; ADR-0002 seam bullet |
 | F1 | feasibility | fixed | ADR-0002 "Owner rulings", Consequence 4, decisions 16-17; receipt §13, §14 |
 | F2 | feasibility | fixed | ADR-0002 Consequence 2, decision 14; receipt §13 item 3 |
 | F3 | feasibility | fixed | ADR-0002 decisions 5 and 13; receipt §13 items 1-2 (candidate failable predicate) |
@@ -492,3 +494,16 @@ Three independent attack agents reviewed draft commit `b4b6cb8a`. Every blocker 
 | F9 | feasibility | fixed | receipt §11 (graph home per decision 12, per-file acceptance with cv2 provenance, `importlib`/`__import__` check) |
 
 **Nits folded in:** graph.json cites for `NR-IMAGE-CONTRACT` scope (`:102`, `:112`); `AGENTS.md:77` extension tagged INFERENCE beside invariant 8; three more non-behavioural predicates; three files in `1edb9450..6a5f68dd`; "JEV state" split from repo state; `PYTHONPATH` in the §9 command; "documents", not "recommends", for the hython seed; R182's "OpenCV in the sidecar"; `WITH_*`/`BUILD_*` cites for §8; `fallback_2`; §0 item 4 tagged INFERENCE; status-block labels attributed to the template; the autoload-off re-run cited in §9; rulebook vocabulary scope and ADR-0001 "Accepted"; the `NR-FOLLOW-ON` overlap; bus posting (Law 5); relayed-instruction scope in §13; driver 621.14 / UMD 13.5 as INFERENCE; the B4 CMake note; the prep's own readiness items; the five parity fixtures; the NumPy-header row; the GPU worker venv recipe's owner; the D1-row rollback wording.
+
+## Re-verify and fix round (2026-11-08)
+
+The three re-verify lenses closed every round-one blocker but refuted revision `1400a43e` on four residuals. On 2026-11-08 Joe authorized one narrow fix round in the reviewers' own wording across both lanes (orchestrator record). The four G0 items are below; the two C0 items are in the C0 report's review record. This round changed only these sentences and the bookkeeping they made untrue.
+
+| Id | Lens | Disposition | Where |
+|---|---|---|---|
+| T5 | truth | fixed | ADR-0002 "Consequences of R1-R4" item 2 and the Reconciliation G1 row; receipt §0 item 5. `C:/ocv` and the masked `meanStdDev` closure are attributed to `NR-GPU-FEASIBILITY`'s committed receipt; `graph.json:95` names only that chain's fixtures (the link is INFERENCE) |
+| G5r | governance | fixed | receipt §9 mutation-evidence bullet names the scoped-delta exterior primitive abstractly; ADR-0002 decision 6 likewise. The G5 row above now says "partly fixed" |
+| G6, F1 | governance, feasibility | fixed | receipt §6 lead sentence and §12 build-duration bullet; ADR-0002 decision 16. R3 rules the root only: the staged recipe as starting point is INFERENCE, parallelism is open (decision 16), and whether the prep venv is the worker is open (decision 17) |
+| G7 | governance | fixed | receipt §13 "Ruled 2026-11-07" quotes Joe's words verbatim, byte-identical to ADR-0002 "Owner rulings (2026-11-07)"; the header row points to both |
+
+Re-verify nits that restate these blockers are closed with them. Every other re-verify nit was outside this round and stays open.

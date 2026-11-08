@@ -97,7 +97,7 @@ The facts that bind the Grow lane:
 
 Probe fence: headless hython with a scrubbed environment, flags `-s -P`, a scratch preference folder outside the repo, a 120 s kill of its own PID only; it read parameter templates and created no node `[w3/01-nca-native.md:27-36]`. Both runs exited 0 (22.0.400 in 7 s, 22.0.466 in 28 s) `[w3/01-nca-native.md:32]`. **This C0 stage launched nothing.**
 
-**Authority for those two launches: none on record.** The probe ran in this workflow's w3 stage. The workflow's relayed hard limits forbid any Houdini, hython or husk launch, and no record I could read states that Joe authorized one: not the three w3 reports, the probe folder (runner, script, status and environment files), the C0 staging folder, or the commit messages of this branch. So, plainly: **two fenced, headless hython launches (22.0.400 and 22.0.466) ran outside the stated hard limits.** They created no node, loaded no scene, touched no GPU and used a scratch preference folder `[w3/01-nca-native.md:27-36]`. Every parameter fact in §4 and §7.1 marked P400 or P466 rests on them. Joe's acknowledgement is §14 item 14; until he gives it, treat those facts as obtained without authorization, not as authorized evidence.
+**Authority for those two launches.** The probe ran in this workflow's w3 stage. The workflow's general limits, set by the orchestrator rather than relayed from Joe, forbid any Houdini, hython or husk launch. The orchestrator's brief to the w3 nca-native scout made one exception: a fenced, read-only, headless hython run for each of two builds, 22.0.400 and 22.0.466 (orchestrator record; the brief is not committed). So the two launches were within that scout's brief, but **no owner authorization was on record when they ran.** On 2026-11-08 Joe acknowledged both and kept their evidence (§14 item 14). They created no node, loaded no scene, touched no GPU and used a scratch preference folder `[w3/01-nca-native.md:27-36]`. Every parameter fact in §4 and §7.1 marked P400 or P466 rests on them.
 
 ### 4.1 Builds
 
@@ -308,7 +308,7 @@ The blueprint's minimum test suite (§10), mapped to the node that owns each:
 
 - **Module list (R2, R3).** `E:/OpenCV5.1_Prep/02_OpenCV_Setup/preparation/Current_Configure.json:26` sets `BUILD_LIST=core,flann,geometry,imgproc,imgcodecs,cudev,cudaarithm,cudaimgproc,cudafilters,cudawarping,python3`. It **contains both `cudaarithm` and `cudafilters`**, so the requested list covers the change-mask chain. VERIFIED by read (file sha256 `102bf6f8…56f6`). Whether configure **generates** them is UNKNOWN; the build-lock predicate requires the generated list.
 - **`NR-GPU-QUALIFICATION`** names the 11x11 census in its `why` (`graph.json:95`) and its predicate is `test -f` (`graph.json:96`). The masked `meanStdDev` closure and the `C:/ocv` root are in `NR-GPU-FEASIBILITY`'s receipt (`harness/next-release/gpu_feasibility.json:430`, `:259`). Changes 1-3 rewrite the qualification node; Joe merges them.
-- **The RETINA venv recipe** (`retina/setup_venv.py`, `retina/setup_venv.ps1`, `retina/requirements.txt`) documents a hython seed and names a cp314 OIIO wheel. It conflicts with R4. `NR-VG-GPU-WORKER-ENV` would own and change it; its predicate names the conflicting lines today.
+- **The RETINA venv recipe** (`retina/setup_venv.py`, `retina/setup_venv.ps1`, `retina/requirements.txt`) documents a hython seed and names a cp314 OIIO wheel. It conflicts with R4. `NR-VG-GPU-WORKER-ENV` would own and change it. Its predicate is red today only because the worker-runtime contract is not committed; it enforces the R4 recipe conflict later, through the contract's reviewed sha256 pins of the three recipe files (`harness/next-release/proposals/predicates/test_nr_vg_gpu_worker_env.py:91-101`). Its one mechanical check, no `cp314` pin on a non-comment requirement line (`:102-105`), skips comments, so it matches nothing in today's `retina/requirements.txt`, where `cp314` appears only in a comment (`:39`). VERIFIED by read.
 - **The custom `cv2` binding** is configured to be built for CPython 3.12.10 without the limited API; no binding exists yet, and that it is cp312-only is INFERENCE from CMake semantics (ADR-0002 section "Consequences of R1-R4", item 4). The build-lock predicate requires `abi_tag cp312` and `limited_api false`.
 - **The `NR-GPU-FEASIBILITY` artifact is not the qualification artifact.** It compiled one trivial non-OpenCV kernel, `vectorAdd`, in a scratch folder and ran it on the RTX 4090 (exit 0, 0 mismatches; `harness/next-release/gpu_feasibility.json:25`, `:39`). That earlier node's GPU run is recorded in its receipt; G0 and C0 observed no GPU execution. Nothing was compiled under `C:/ocv` (ADR-0002 section "Consequences of R1-R4", item 5). The qualification artifact must come from the E: build.
 
@@ -351,9 +351,9 @@ All Joe's. **None is granted by this report.** A relayed instruction is never ba
 12. Any NCA training run (INFERENCE: an install-class act, since the TOP appears to build a venv with pip), any checkpoint download, and every promotion into a working scene.
 13. **OD-20, OD-21** — G6's home; canary before or after packaging.
 
-**Already done without a recorded authorization**
+**Already done; acknowledged 2026-11-08**
 
-14. **Acknowledge the two w3 hython launches** (22.0.400 and 22.0.466, fenced, headless, no node created) that ran outside this workflow's stated hard limits (§4), or rule their evidence out. Not granted by this report.
+14. **The two w3 hython launches** (22.0.400 and 22.0.466, fenced, headless, no node created) ran under the orchestrator's brief for that scout, with no owner authorization on record at the time (§4). **Joe acknowledged both on 2026-11-08 and kept their evidence:** "I acknowledge the two w3 hython probes — keep their evidence." (orchestrator record). The acknowledgement covers those two launches only; it authorizes no further launch.
 
 ---
 
@@ -373,7 +373,7 @@ All Joe's. **None is granted by this report.** A relayed instruction is never ba
 
 ## 16 · What C0 did not do
 
-- **No Houdini, hython or husk launch in this stage.** The parameter probe in §4 was a prior stage of this workflow (w3), and it **did** launch hython twice, outside the workflow's stated hard limits and with no authorization on record (§4; §14 item 14).
+- **No Houdini, hython or husk launch in this stage.** The parameter probe in §4 was a prior stage of this workflow (w3), and it **did** launch hython twice, under the orchestrator's brief for that scout and with no owner authorization on record at the time; Joe acknowledged both on 2026-11-08 (§4; §14 item 14).
 - **No GPU probe, build, install, pip, venv, training or checkpoint download.**
 - **Nothing executed in `E:/OpenCV5.1_Prep`.** One file read there.
 - **No edit** to `graph.json`, the RULING files, the lane README, `graph_decision.json`, `harness/harness2/`, ADR-0002, the G0 receipt or any governing text.
@@ -408,3 +408,20 @@ SUMMARY: 57 checks, 57 passed, 0 failed - amendment structurally valid; every ne
 ```
 
 No GPU execution was observed and no performance was measured in this revision either.
+
+## Re-verify and fix round (2026-11-08)
+
+The scaffold re-verify confirmed all eight round-one blockers closed and the validator at 57 of 57, but refuted `9c3b0026` on one blocker (T4) and flagged the T3 wording. On 2026-11-08 Joe authorized one narrow fix round in the reviewers' own wording across both lanes and acknowledged the two w3 probes (orchestrator record). The two C0 items are below; the four G0 items are in the G0 receipt's review record.
+
+| Id | Lens | Disposition | Where |
+|---|---|---|---|
+| T4 | graph + truth-scope | fixed | §13 recipe bullet: the worker-env predicate is red only because the contract is not committed; the R4 recipe conflict is enforced later through the contract's sha256 pins, and the comment-skipping `cp314` check matches nothing today. README "Red today because" cell names the contract only; the recipe conflict is a separate note under the table |
+| T3 (wording) | graph + truth-scope | fixed | §4, §14 item 14, §16: the launches ran under the orchestrator's brief for the w3 scout, with no owner authorization on record at the time; Joe's 2026-11-08 acknowledgement is quoted in §14 item 14 |
+
+The other re-verify nits were outside this round and stay open. No predicate, validator check or amendment field changed.
+
+**Validator after this round**, same command, interpreter and pytest as above, with plugin autoload and bytecode writing off:
+
+```text
+SUMMARY: 57 checks, 57 passed, 0 failed - amendment structurally valid; every new predicate red for its declared reason
+```

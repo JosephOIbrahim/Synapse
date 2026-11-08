@@ -84,7 +84,7 @@ All ten are `gate: joe`. All ten predicates are red today. `NR-VG-GROW-CONTROLS`
 |---|---|---|
 | `NR-VG-GPU-BUILD-LOCK` | G1 build | no committed build-lock receipt |
 | `NR-VG-RETINA-GUARDS` | G2 guards | guard tests not committed |
-| `NR-VG-GPU-WORKER-ENV` | G2 recipe | no R4 worker-runtime contract; the shipped recipe still conflicts with R4 |
+| `NR-VG-GPU-WORKER-ENV` | G2 recipe | no committed R4 worker-runtime contract |
 | `NR-VG-RETINA-CUDA-BACKEND` | G2 backend | ADR-0002 is PROPOSED, not ratified |
 | `NR-VG-GPU-CANARY` | G4 | no canary receipt |
 | `NR-VG-NCA-SANDBOX` | C1 | no sandbox receipt |
@@ -92,6 +92,8 @@ All ten are `gate: joe`. All ten predicates are red today. `NR-VG-GROW-CONTROLS`
 | `NR-VG-GROW-JOB` | C3 | no Grow job contract |
 | `NR-VG-GROW-COMPARE` | C4 | no creative-sidecar contract |
 | `NR-VG-GROW-PROMOTION` | C5 | no promotion contract |
+
+**`NR-VG-GPU-WORKER-ENV` and the shipped recipe.** The shipped RETINA venv recipe still conflicts with R4, but that is not why this predicate is red today. Once the contract is committed, the predicate checks the three recipe files against the reviewed text the contract pins by sha256. Its one token check, no `cp314` pin on a non-comment requirement line, matches nothing today: `cp314` appears in `retina/requirements.txt` only in a comment.
 
 Ratification checks read a Status line beginning `**Status:** Accepted`, letter case ignored: the form ADR-0001 uses.
 
