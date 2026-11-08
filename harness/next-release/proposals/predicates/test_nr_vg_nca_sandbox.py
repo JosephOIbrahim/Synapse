@@ -25,7 +25,21 @@ import re
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
+
+def _repo_root() -> Path:
+    """Find the repository root from the working directory, never from this file's
+    location, so the predicate keeps working wherever it is moved (review G1)."""
+    here = Path.cwd().resolve()
+    for p in (here, *here.parents):
+        if (p / ".git").exists() and (p / "harness" / "next-release" / "graph.json").is_file():
+            return p
+    r = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=60)
+    if r.returncode == 0 and r.stdout.strip():
+        return Path(r.stdout.strip()).resolve()
+    raise AssertionError("repository root not found: run this predicate from inside the SYNAPSE checkout")
+
+
+ROOT = _repo_root()
 MARKER = ("NR-VG-NCA-SANDBOX RED: no committed sandbox receipt "
           "harness/vision/nca_sandbox/nca_sandbox_receipt.json")
 RECEIPT = "harness/vision/nca_sandbox/nca_sandbox_receipt.json"
@@ -55,7 +69,8 @@ def _profile(r: dict) -> dict:
 
 
 def test_sandbox_receipt_is_committed():
-    assert isinstance(_receipt(), dict)
+    r = _receipt()
+    assert isinstance(r, dict) and r, "the committed receipt is empty"
 
 
 def test_build_nodes_and_model_pair():

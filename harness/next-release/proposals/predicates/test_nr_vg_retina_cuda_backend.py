@@ -1,6 +1,7 @@
 """Closure predicate for NR-VG-RETINA-CUDA-BACKEND (PROPOSED amendment; not in graph.json).
 
-Flips green only when ADR-0002's Status line reads ACCEPTED (Joe's ratification), AND
+Flips green only when ADR-0002's Status line begins "**Status:** Accepted" in any letter
+case (Joe's ratification; ADR-0001 records its ratification as "Accepted"), AND
 retina/backend_cuda.py is committed but is never imported (statically, or through
 importlib.import_module / __import__) by the in-host modules retina/__init__.py,
 retina/t0.py, retina/events.py, retina/exr_header.py, and is absent from
@@ -23,8 +24,22 @@ import json
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
-MARKER = "NR-VG-RETINA-CUDA-BACKEND RED: ADR-0002 is not ratified (its Status line is not ACCEPTED)"
+
+def _repo_root() -> Path:
+    """Find the repository root from the working directory, never from this file's
+    location, so the predicate keeps working wherever it is moved (review G1)."""
+    here = Path.cwd().resolve()
+    for p in (here, *here.parents):
+        if (p / ".git").exists() and (p / "harness" / "next-release" / "graph.json").is_file():
+            return p
+    r = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=60)
+    if r.returncode == 0 and r.stdout.strip():
+        return Path(r.stdout.strip()).resolve()
+    raise AssertionError("repository root not found: run this predicate from inside the SYNAPSE checkout")
+
+
+ROOT = _repo_root()
+MARKER = "NR-VG-RETINA-CUDA-BACKEND RED: ADR-0002 is not ratified (its Status line does not begin Accepted)"
 ADR = "docs/decisions/ADR-0002-retina-t1-optional-cuda-backend.md"
 MODULE = "retina/backend_cuda.py"
 RECEIPT = "harness/vision/retina_cuda_backend/backend_receipt.json"
@@ -48,7 +63,8 @@ def _require_ratified() -> None:
             if line.startswith("**Status:**"):
                 status = line
                 break
-    if not status.startswith("**Status:** ACCEPTED"):
+    # Case-insensitive: the repo's only precedent, ADR-0001, reads "**Status:** Accepted" (review G5).
+    if not status.lower().startswith("**status:** accepted"):
         raise AssertionError(MARKER)
 
 
@@ -70,7 +86,11 @@ def test_backend_unreachable_from_the_in_host_modules():
             elif isinstance(node, ast.Call):
                 f = node.func
                 fname = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
-                assert fname not in ("import_module", "__import__"), f"{rel} imports dynamically"
+                if fname in ("import_module", "__import__") and node.args:
+                    arg = node.args[0]
+                    # A constant target is checked by name; a computed target could be anything.
+                    assert isinstance(arg, ast.Constant) and isinstance(arg.value, str),                         f"{rel} imports a computed module name dynamically"
+                    assert "backend_cuda" not in arg.value, f"{rel} imports the backend dynamically"
     payload = (ROOT / "installer/build_payload.py").read_text(encoding="utf-8")
     assert "backend_cuda" not in payload, "the backend is on the host payload list"
 

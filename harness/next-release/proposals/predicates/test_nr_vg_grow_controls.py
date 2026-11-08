@@ -6,9 +6,11 @@ requires (producer, operation, backend, confidence, dimensions, dtype, ranges,
 channel_semantics, coordinates, field_hashes); declares the coordinate contract
 (origin, uv_domain, tile, wrap, channel_order, scalar_range, resampling); maps rotation
 in turns, the scale clamp as [0.2, 1.0] and both update-mask types; pins the committed
-NCA sandbox receipt by sha256; cites an amendment for reference-driven control
-generation whose Status line reads ACCEPTED; lists malformed-input rejection cases;
-and retina/control_package.py and tests/test_retina_control_package.py are committed.
+NCA sandbox receipt by sha256 (NR-VG-NCA-SANDBOX is a dep of this node, so the graph
+and this predicate agree; review G3); cites an amendment for reference-driven control
+generation whose Status line begins "**Status:** Accepted" (any letter case); lists
+malformed-input rejection cases; and retina/control_package.py and
+tests/test_retina_control_package.py are committed.
 
 Red today: the contract is not committed (marker below).
 
@@ -22,7 +24,21 @@ import json
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
+
+def _repo_root() -> Path:
+    """Find the repository root from the working directory, never from this file's
+    location, so the predicate keeps working wherever it is moved (review G1)."""
+    here = Path.cwd().resolve()
+    for p in (here, *here.parents):
+        if (p / ".git").exists() and (p / "harness" / "next-release" / "graph.json").is_file():
+            return p
+    r = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=60)
+    if r.returncode == 0 and r.stdout.strip():
+        return Path(r.stdout.strip()).resolve()
+    raise AssertionError("repository root not found: run this predicate from inside the SYNAPSE checkout")
+
+
+ROOT = _repo_root()
 MARKER = ("NR-VG-GROW-CONTROLS RED: no committed control-package contract "
           "harness/vision/grow_controls/control_package_contract.json")
 CONTRACT = "harness/vision/grow_controls/control_package_contract.json"
@@ -47,7 +63,8 @@ def _contract() -> dict:
 
 
 def test_contract_is_committed():
-    assert isinstance(_contract(), dict)
+    c = _contract()
+    assert isinstance(c, dict) and c, "the committed contract is empty"
 
 
 def test_required_fields_and_coordinates():
@@ -71,7 +88,8 @@ def test_control_generation_amendment_is_ratified():
     ref = _contract().get("amendment_ref")
     assert ref and _committed(ref), "no committed amendment for reference-driven control generation"
     status = next((ln for ln in (ROOT / ref).read_text(encoding="utf-8").splitlines() if ln.startswith("**Status:**")), "")
-    assert status.startswith("**Status:** ACCEPTED"), "the control-generation amendment is not ratified"
+    # Case-insensitive, matching ADR-0001's "**Status:** Accepted" precedent (review G5).
+    assert status.lower().startswith("**status:** accepted"), "the control-generation amendment is not ratified"
 
 
 def test_rejection_cases_and_files():

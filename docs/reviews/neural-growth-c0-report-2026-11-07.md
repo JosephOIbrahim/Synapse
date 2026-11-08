@@ -44,7 +44,7 @@ The reports are local working papers, not committed. They are cited by file name
 2. **Nothing about NCA execution is known.** No node was created or cooked, no model loaded, no provider exercised (§4).
 3. **There is no in-process sandbox.** Every SYNAPSE mechanism that builds COP or LOP nodes does so in the artist's open scene (VERIFIED, `[w3/02-grow-surface.md:55]`). The blueprint's isolated sandbox needs a separate session.
 4. **The Grow lane is outside the owner's ruling.** R1 folds the OpenCV blueprint into the graph; it says nothing about this blueprint (VERIFIED, `[w3/03-graph-map.md:64]`; G0 receipt header "Not reconciled here"). The C-nodes are proposals that need OD-01.
-5. **The amendment validates:** 41 checks pass, and all ten new predicates are red for their declared reason (§13).
+5. **The amendment validates:** 57 of 57 checks pass; all ten new predicates and the draft qualification predicate are red for their declared reason, also when copied to another folder depth (§13).
 
 ---
 
@@ -96,6 +96,8 @@ The facts that bind the Grow lane:
 ## 4 · Houdini builds, native NCA and providers
 
 Probe fence: headless hython with a scrubbed environment, flags `-s -P`, a scratch preference folder outside the repo, a 120 s kill of its own PID only; it read parameter templates and created no node `[w3/01-nca-native.md:27-36]`. Both runs exited 0 (22.0.400 in 7 s, 22.0.466 in 28 s) `[w3/01-nca-native.md:32]`. **This C0 stage launched nothing.**
+
+**Authority for those two launches: none on record.** The probe ran in this workflow's w3 stage. The workflow's relayed hard limits forbid any Houdini, hython or husk launch, and no record I could read states that Joe authorized one: not the three w3 reports, the probe folder (runner, script, status and environment files), the C0 staging folder, or the commit messages of this branch. So, plainly: **two fenced, headless hython launches (22.0.400 and 22.0.466) ran outside the stated hard limits.** They created no node, loaded no scene, touched no GPU and used a scratch preference folder `[w3/01-nca-native.md:27-36]`. Every parameter fact in §4 and §7.1 marked P400 or P466 rests on them. Joe's acknowledgement is §14 item 14; until he gives it, treat those facts as obtained without authorization, not as authorized evidence.
 
 ### 4.1 Builds
 
@@ -182,13 +184,15 @@ Its receipt is what `NR-VG-NCA-SANDBOX`'s predicate reads.
 
 **Observed** = the parameter exists (probe). **Documented** = SideFX help says what it does. **Unverified** = nobody has cooked it.
 
+The probe observed parameter templates and the Core input count (6, `rag/catalog/h22.0.400/Cop.json:52950`). The Core **input names** used below (`updatemask`, `rotation`, `scale`) are DOCUMENTED (installed help), not observed.
+
 | Panel control | Native parameter or input | Observed | Documented | Unverified |
 |---|---|---|---|---|
 | **Reference** | For a *new* pattern family: training TOP `targetimage` | Parm exists (P400:238) | Training learns from a target texture | Training never run. **For this first job the reference drives nothing native**; the shipped model is fixed. Mapping: UNKNOWN |
 | **Direction** | None | — | — | No native parameter. An orchestration recipe only: UNKNOWN |
-| **Region** | Core `updatemask` input + `updatemasktype` | `updatemasktype` 0/1 (P400:115); 6 inputs on Core (catalogue) | Amplitude-weighted vs probabilistic | Whether freezing updates protects final pixels: UNKNOWN (blueprint §4 says do not assume it) |
-| **Scale** | Core `scale` (2 floats, default 1,1) and `scale` input; `sizerefscale` for growth resolution | P400:118, :123 | Final scale clamped to 0.2–1 | Direction of effect: UNKNOWN |
-| **Flow** | Core `rotation` and `rotation` input; `adjacencydir` | P400:117, :121 | Rotation in turns | Units of the per-cell rotation input: UNKNOWN `[w3/01-nca-native.md:139]` |
+| **Region** | Core `updatemask` input (name DOCUMENTED) + `updatemasktype` | `updatemasktype` 0/1 (P400:115); 6 inputs on Core (catalogue) | Amplitude-weighted vs probabilistic | Whether freezing updates protects final pixels: UNKNOWN (blueprint §4 says do not assume it) |
+| **Scale** | Core `scale` (2 floats, default 1,1) and `scale` input (name DOCUMENTED); `sizerefscale` for growth resolution | P400:118, :123 | Final scale clamped to 0.2–1 | Direction of effect: UNKNOWN |
+| **Flow** | Core `rotation` and `rotation` input (name DOCUMENTED); `adjacencydir` | P400:117, :121 | Rotation in turns | Units of the per-cell rotation input: UNKNOWN `[w3/01-nca-native.md:139]` |
 | **Variation** | Core `seed` (float, soft 0–10); `modeliterations` (1–250) | P400:111-112 | `ncaiteration` feeds the seed per iteration | Fixed-seed replay: UNKNOWN |
 | **Grow** | A cook of the Core → Decode network | Node types exist | | Cook behaviour, time, VRAM: UNKNOWN |
 | **Stop** | None | — | — | No native stop; interrupting a cook or ending the sandbox process. SYNAPSE has no cancel for it: UNKNOWN |
@@ -270,7 +274,7 @@ The blueprint's minimum test suite (§10), mapped to the node that owns each:
 |---|---|---|
 | GPU | RTX 4090, 24,564 MiB, driver 621.14 (prep record; G0 receipt §6) | Every NCA VRAM figure; contention with Karma XPU or an OpenCV worker |
 | Policy | One GPU-heavy job at a time, inside an approved window; production and demo first (blueprint §9) | The window itself (OD-12, OD-18) |
-| Training | The TOP builds a Python venv with pip (P400:327; `[w3/01-nca-native.md:110]`) — an install-class act | Venv contents, network need, time for 3,000 steps |
+| Training | The TOP has a `venvpath` parameter (P400:327). That it builds a Python venv with pip, which would make training an install-class act, is DOCUMENTED and INFERENCE, not observed `[w3/01-nca-native.md:146]` | Venv contents, network need, time for 3,000 steps |
 | Disk | Fresh job folders outside the repo | Sizes |
 | People | Joe for every per-act gate | A build/package owner and an independent reviewer (OD-15) |
 
@@ -293,29 +297,29 @@ The blueprint's minimum test suite (§10), mapped to the node that owns each:
 
 **Shape.**
 
-- **10 new nodes**, all `gate: joe`. OpenCV lane: `NR-VG-GPU-BUILD-LOCK` (G1 build), `NR-VG-RETINA-GUARDS`, `NR-VG-GPU-WORKER-ENV`, `NR-VG-RETINA-CUDA-BACKEND` (G2), `NR-VG-GPU-CANARY` (G4). Grow lane: `NR-VG-NCA-SANDBOX` (C1), `NR-VG-GROW-CONTROLS` (C2), `NR-VG-GROW-JOB` (C3), `NR-VG-GROW-COMPARE` (C4), `NR-VG-GROW-PROMOTION` (C5).
-- **33 new edges**, types `dep`, `evidence`, `seam`, `invariant` only.
+- **10 new nodes**, all `gate: joe`, plus one **draft predicate** for the changed `NR-GPU-QUALIFICATION`, carried in full inside its change entry (`proposed_file`) and written to the repo only by the merge that adopts it. OpenCV lane: `NR-VG-GPU-BUILD-LOCK` (G1 build), `NR-VG-RETINA-GUARDS`, `NR-VG-GPU-WORKER-ENV`, `NR-VG-RETINA-CUDA-BACKEND` (G2), `NR-VG-GPU-CANARY` (G4). Grow lane: `NR-VG-NCA-SANDBOX` (C1), `NR-VG-GROW-CONTROLS` (C2), `NR-VG-GROW-JOB` (C3), `NR-VG-GROW-COMPARE` (C4), `NR-VG-GROW-PROMOTION` (C5).
+- **33 new edges**, types `dep`, `evidence`, `seam`, `invariant` only. `NR-VG-NCA-SANDBOX → NR-VG-GROW-CONTROLS` is a `dep`, because the controls predicate pins the sandbox receipt.
 - **Existing nodes keep their work:** G1 qualification and G3 → `NR-GPU-QUALIFICATION`; the `t1.py` seam → `NR-IMAGE-CONTRACT`; G5 and C6 → `NR-PACKAGE-PAIR` + `NR-LICENSE-GATE`; G6 → `NR-FOLLOW-ON`.
-- **4 proposed changes to existing nodes**, each tied to the ruling: `NR-GPU-QUALIFICATION` `why`, `predicate` (R2, R3) and `depends_on` (R3); `NR-WORKER-SUPERVISED` `why` (R4).
+- **4 proposed changes to existing nodes**, each tied to the ruling: `NR-GPU-QUALIFICATION` `why`, `predicate` (R2, R3) and `depends_on` (R3); `NR-WORKER-SUPERVISED` `why` (R4). Their texts state only what R1-R4 rules. The change-mask fixtures and the identical-mask-bytes criterion are labelled G0-proposed (G0 receipt slice 2; 02-ops §7), the NaN fixture INFERENCE, and the choices the ruling left open are owner decisions: replace or add beside the census (OD-22, ADR-0002 decision 14), the `cpu_reference` identity (OD-10), the test's location (OD-04) and the node's gate, crux or joe (OD-23).
 - **New owner files live under `harness/vision/`**, because `NR-FOLLOW-ON` owns all of `harness/next-release/` (OD-03).
 - **No new node takes a file another node owns.** The registry and panel files Grow needs stay with their owners (OD-06).
 
 **The ruling's consequences, stated:**
 
 - **Module list (R2, R3).** `E:/OpenCV5.1_Prep/02_OpenCV_Setup/preparation/Current_Configure.json:26` sets `BUILD_LIST=core,flann,geometry,imgproc,imgcodecs,cudev,cudaarithm,cudaimgproc,cudafilters,cudawarping,python3`. It **contains both `cudaarithm` and `cudafilters`**, so the requested list covers the change-mask chain. VERIFIED by read (file sha256 `102bf6f8…56f6`). Whether configure **generates** them is UNKNOWN; the build-lock predicate requires the generated list.
-- **`NR-GPU-QUALIFICATION`** is written around the meanStdDev census and its predicate is `test -f` (`graph.json:95-96`). Changes 1-3 rewrite it; Joe merges them.
+- **`NR-GPU-QUALIFICATION`** names the 11x11 census in its `why` (`graph.json:95`) and its predicate is `test -f` (`graph.json:96`). The masked `meanStdDev` closure and the `C:/ocv` root are in `NR-GPU-FEASIBILITY`'s receipt (`harness/next-release/gpu_feasibility.json:430`, `:259`). Changes 1-3 rewrite the qualification node; Joe merges them.
 - **The RETINA venv recipe** (`retina/setup_venv.py`, `retina/setup_venv.ps1`, `retina/requirements.txt`) documents a hython seed and names a cp314 OIIO wheel. It conflicts with R4. `NR-VG-GPU-WORKER-ENV` would own and change it; its predicate names the conflicting lines today.
-- **The custom `cv2` binding** is built for CPython 3.12.10 without the limited API (ADR-0002 Consequence 4). The build-lock predicate requires `abi_tag cp312` and `limited_api false`.
-- **The `NR-GPU-FEASIBILITY` artifact is not the qualification artifact.** It compiled one trivial non-OpenCV kernel in a scratch folder; nothing was compiled under `C:/ocv` (ADR-0002 Consequence 5). The qualification artifact must come from the E: build.
+- **The custom `cv2` binding** is configured to be built for CPython 3.12.10 without the limited API; no binding exists yet, and that it is cp312-only is INFERENCE from CMake semantics (ADR-0002 section "Consequences of R1-R4", item 4). The build-lock predicate requires `abi_tag cp312` and `limited_api false`.
+- **The `NR-GPU-FEASIBILITY` artifact is not the qualification artifact.** It compiled one trivial non-OpenCV kernel, `vectorAdd`, in a scratch folder and ran it on the RTX 4090 (exit 0, 0 mismatches; `harness/next-release/gpu_feasibility.json:25`, `:39`). That earlier node's GPU run is recorded in its receipt; G0 and C0 observed no GPU execution. Nothing was compiled under `C:/ocv` (ADR-0002 section "Consequences of R1-R4", item 5). The qualification artifact must come from the E: build.
 
-**Validator — exact command and result.** Run from the worktree root:
+**Validator — exact command and result.** Run from the worktree root with a local CPython 3.14.2:
 
 ```text
-C:/Python314/python.exe harness/next-release/proposals/validate_amendment.py
-SUMMARY: 41 checks, 41 passed, 0 failed - amendment structurally valid; every new predicate red for its declared reason
+python harness/next-release/proposals/validate_amendment.py
+SUMMARY: 57 checks, 57 passed, 0 failed - amendment structurally valid; every new predicate red for its declared reason
 ```
 
-Exit 0. Interpreter CPython 3.14.2, pytest 8.4.2. Each predicate ran with plugin autoload off, bytecode writing off, the cache provider off and `TEMP`/`TMP`/`SYNAPSE_LOG_DIR` in a temporary folder.
+Exit 0. Interpreter CPython 3.14.2, pytest 8.4.2. The first scaffold commit recorded 41 of 41; the count rose with the review checks listed in the review record below. Each predicate ran with plugin autoload off, bytecode writing off, the cache provider off and `TEMP`/`TMP`/`SYNAPSE_LOG_DIR` in a temporary folder.
 
 **Not collected by CI.** VERIFIED: `pyproject.toml:132` testpaths are `tests`, `harness/jev/tests`, `harness/harness2/tests`, `harness/attest/tests`; every `pytest` line in `.github/workflows/ci.yml` (`:113-144`, `:186`) names other paths. The validator re-checks both on every run. The repo-walking lints read at authoring scan other roots: `tests/test_marshal_lint.py:73-76` and `tests/test_jev_product_boundary.py:13` walk `python/synapse` and `shared`; `tests/test_hou_reimport_guard.py:417` walks `tests/`; the phantom lint walks `python/synapse` (`tests/rulebook/test_rulebook_meta.py:255`). None reaches `harness/next-release/` (VERIFIED by read). Other repo-walking tests were listed by grep but not each opened: INFERENCE that none reaches it.
 
@@ -336,7 +340,7 @@ All Joe's. **None is granted by this report.** A relayed instruction is never ba
 
 5. **OD-11** — ratify or decline ADR-0002.
 6. **OD-02** — the build node. **OD-12** — demo v1, the build window, parallelism, Windows 26H2, per-act authorization of every configure, build and install.
-7. **OD-10** `cpu_reference` identity · **OD-14** scoped-delta positive-change semantic · **OD-15** named owners · **OD-16** worker venv and CUDA DLL policy · **OD-17** the other OpenCV branches.
+7. **OD-22** — replace the `meanStdDev` census with the change-mask chain, or add it beside the census (ADR-0002 decision 14) · **OD-23** — `NR-GPU-QUALIFICATION`'s gate, crux or joe · **OD-10** `cpu_reference` identity · **OD-14** scoped-delta positive-change semantic · **OD-15** named owners · **OD-16** worker venv and CUDA DLL policy · **OD-17** the other OpenCV branches.
 8. **OD-04, OD-05, OD-07, OD-09** — the K1, K2 and K5 collisions and the graph home for the G0-proposed files.
 
 **Grow lane**
@@ -344,8 +348,12 @@ All Joe's. **None is granted by this report.** A relayed instruction is never ba
 9. **OD-18** — per-act authorization to launch a separate Houdini session for C1, which build, how it stays off the live bridge, and the resource window.
 10. **OD-19** — the control-generation amendment; CPU-first or GPU path for C2.
 11. **OD-06** — who edits the registry and panel files for Grow. **OD-08** — model and reference licensing before any C6.
-12. Any NCA training run (an install-class act: the TOP builds a venv with pip), any checkpoint download, and every promotion into a working scene.
+12. Any NCA training run (INFERENCE: an install-class act, since the TOP appears to build a venv with pip), any checkpoint download, and every promotion into a working scene.
 13. **OD-20, OD-21** — G6's home; canary before or after packaging.
+
+**Already done without a recorded authorization**
+
+14. **Acknowledge the two w3 hython launches** (22.0.400 and 22.0.466, fenced, headless, no node created) that ran outside this workflow's stated hard limits (§4), or rule their evidence out. Not granted by this report.
 
 ---
 
@@ -365,7 +373,7 @@ All Joe's. **None is granted by this report.** A relayed instruction is never ba
 
 ## 16 · What C0 did not do
 
-- **No Houdini, hython or husk launch.** The parameter probe in §4 was a prior stage of this workflow.
+- **No Houdini, hython or husk launch in this stage.** The parameter probe in §4 was a prior stage of this workflow (w3), and it **did** launch hython twice, outside the workflow's stated hard limits and with no authorization on record (§4; §14 item 14).
 - **No GPU probe, build, install, pip, venv, training or checkpoint download.**
 - **Nothing executed in `E:/OpenCV5.1_Prep`.** One file read there.
 - **No edit** to `graph.json`, the RULING files, the lane README, `graph_decision.json`, `harness/harness2/`, ADR-0002, the G0 receipt or any governing text.
@@ -373,3 +381,30 @@ All Joe's. **None is granted by this report.** A relayed instruction is never ba
 - **No document marked ratified.**
 
 The only commands run against the repo were reads, `git status`/`log`, and the validator, whose predicates read committed files only.
+
+---
+
+## Review record (C0 scaffold)
+
+Two independent review lenses (graph; truth and scope) refuted the first scaffold commit `280ccf79` on eight blockers. Every blocker was checked against the code, the ADR and the w3 records before it was acted on; the reviewers' evidence held in every case, so none is rebutted. The one constraint that shaped a fix: this revision may create no new file, so G2's draft predicate rides inside the amendment instead of as a new file in `predicates/`.
+
+| Id | Lens | Disposition | Where |
+|---|---|---|---|
+| G1 | graph | fixed | All ten predicates find `ROOT` by walking up from the working directory to the folder holding `.git` and `harness/next-release/graph.json` (fallback `git rev-parse --show-toplevel`), never by `parents[4]`. The validator rejects any `parents[` in a predicate, copies each predicate to a temporary folder at another depth, loads it and requires its `ROOT` to equal this repository, then requires it red for its marker. A negative control (the `280ccf79` build-lock predicate copied five folders deep) resolved `ROOT` to the wrong folder, so the check discriminates. Temp-folder runs pin pytest's rootdir to the copy's own folder: an unpinned run once returned rc 2 while pytest scanned the system temp folder. README "How adoption works" step 2 states the move rule |
+| G2 | graph | fixed | The full draft of `harness/next-release/gpu/test_qualification_contract.py` is carried in `_proposed_changes_to_existing[1].proposed_file` (no new repo file, by this revision's constraint). It implements the P2 design in `[w3/03-graph-map.md:142]`. `_red_markers` gains `NR-GPU-QUALIFICATION`; the validator checks the draft is carried at the exact path the predicate names, writes it to its temporary folder only, and requires rc 1 with that marker |
+| G3 | graph | fixed | `NR-VG-NCA-SANDBOX → NR-VG-GROW-CONTROLS` is now `dep` and `NR-VG-GROW-CONTROLS.depends_on` includes `NR-VG-NCA-SANDBOX`. New validator check: every owned `.json` a predicate reads belongs to the node or a `depends_on` ancestor (17 reads across 11 predicates) |
+| G4 | graph | fixed | OD-04 and OD-10 now list `NR-GPU-QUALIFICATION`; OD-22 is ADR-0002 decision 14 (replace the census or add beside it); OD-23 proposes the gate change crux → joe as an owner decision, not applied. The proposed `why` no longer pre-selects option (i). The fixture list and identical-mask-bytes criterion are tagged G0-proposed (G0 receipt slice 2; 02-ops §7). The validator's owner-decision gate check now covers existing nodes |
+| G5 | graph | fixed | Both ratification checks match `**Status:** Accepted` case-insensitively, the ADR-0001 form; the marker for `NR-VG-RETINA-CUDA-BACKEND` says so; OD-11 and OD-19 state the required Status string |
+| T1 | truth-scope | fixed | Every ADR-0002 consequence cite names its list: "Consequences of R1-R4", item N, or "Consequences", item N (§13 here; `NR-VG-RETINA-GUARDS.why`, `NR-VG-GPU-WORKER-ENV.why`, the guards edge and change 4's note in the amendment). New validator check fails on a bare cite in the amendment, README or this report |
+| T2 | truth-scope | fixed | "Only what R1-R4 requires" is gone from the README and the amendment's `_comment`. Change 1's `why` keeps R2/R3 as ruled and labels the fixtures and the parity criterion G0-proposed, the NaN fixture INFERENCE. Change 4's `why` states R4 only; the cp312-only binding and the no-shared-venv point move to a note tagged INFERENCE |
+| T3 | truth-scope | fixed | No authorization for the two w3 hython launches is on record. §4 and §16 now say plainly that they ran outside this workflow's stated hard limits; §14 item 14 asks for Joe's acknowledgement. The commit message says no Houdini launch in this stage and that the parameter evidence came from the prior w3 probe |
+
+**Nits also addressed:** the worker-env recipe test reaches its declared marker first and pins reviewed recipe text by sha256 instead of a token search; every `*_is_committed` test rejects an empty receipt; the backend import check flags only computed or backend-naming dynamic imports; the build-root check compares path components; OD-13 asks whether `NR-WORKER-SUPERVISED` may close on the old recipe; §13 cites `gpu_feasibility.json:430`, `:259` and records the `vectorAdd` run (`:25`, `:39`); §7.1 marks Core input names DOCUMENTED; §11 marks the pip reading INFERENCE; the README names the five collision pairs and drops the machine-local interpreter path; the 12-token field list in `NR-VG-GROW-CONTROLS.why` is paraphrased. **Not addressed:** moving the predicates out of `harness/next-release/` (that is OD-03), and the ignored `__pycache__` from the earlier w3 predicate run, which is outside this commit's file list.
+
+**Validator after this revision**, run from the worktree root with a local CPython 3.14.2 and pytest 8.4.2:
+
+```text
+SUMMARY: 57 checks, 57 passed, 0 failed - amendment structurally valid; every new predicate red for its declared reason
+```
+
+No GPU execution was observed and no performance was measured in this revision either.

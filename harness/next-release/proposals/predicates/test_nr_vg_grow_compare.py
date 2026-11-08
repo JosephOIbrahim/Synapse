@@ -20,7 +20,21 @@ import json
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
+
+def _repo_root() -> Path:
+    """Find the repository root from the working directory, never from this file's
+    location, so the predicate keeps working wherever it is moved (review G1)."""
+    here = Path.cwd().resolve()
+    for p in (here, *here.parents):
+        if (p / ".git").exists() and (p / "harness" / "next-release" / "graph.json").is_file():
+            return p
+    r = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=60)
+    if r.returncode == 0 and r.stdout.strip():
+        return Path(r.stdout.strip()).resolve()
+    raise AssertionError("repository root not found: run this predicate from inside the SYNAPSE checkout")
+
+
+ROOT = _repo_root()
 MARKER = ("NR-VG-GROW-COMPARE RED: no committed creative-sidecar contract "
           "harness/vision/grow_compare/creative_sidecar_contract.json")
 CONTRACT = "harness/vision/grow_compare/creative_sidecar_contract.json"
@@ -42,7 +56,8 @@ def _contract() -> dict:
 
 
 def test_contract_is_committed():
-    assert isinstance(_contract(), dict)
+    c = _contract()
+    assert isinstance(c, dict) and c, "the committed contract is empty"
 
 
 def test_sidecar_is_separate_and_envelope_unchanged():

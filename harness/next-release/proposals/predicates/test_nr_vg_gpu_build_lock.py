@@ -21,7 +21,21 @@ import re
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
+
+def _repo_root() -> Path:
+    """Find the repository root from the working directory, never from this file's
+    location, so the predicate keeps working wherever it is moved (review G1)."""
+    here = Path.cwd().resolve()
+    for p in (here, *here.parents):
+        if (p / ".git").exists() and (p / "harness" / "next-release" / "graph.json").is_file():
+            return p
+    r = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=60)
+    if r.returncode == 0 and r.stdout.strip():
+        return Path(r.stdout.strip()).resolve()
+    raise AssertionError("repository root not found: run this predicate from inside the SYNAPSE checkout")
+
+
+ROOT = _repo_root()
 MARKER = ("NR-VG-GPU-BUILD-LOCK RED: no committed build-lock receipt "
           "harness/vision/gpu_build_lock/build_lock_receipt.json")
 RECEIPT = "harness/vision/gpu_build_lock/build_lock_receipt.json"
@@ -49,13 +63,17 @@ def _norm(p: str) -> str:
 
 
 def test_build_lock_receipt_is_committed():
-    assert isinstance(_receipt(), dict)
+    r = _receipt()
+    assert isinstance(r, dict) and r, "the committed receipt is empty"
 
 
 def test_built_under_the_ruled_root():
     r = _receipt()
     assert r.get("verdict", {}).get("state") == "built", "verdict.state is not 'built'"
-    assert _norm(r.get("build_root", "")).startswith("e:/opencv5.1_prep"), "R3: build_root is not under E:/OpenCV5.1_Prep"
+    root = _norm(r.get("build_root", ""))
+    # Compare path components, so a sibling such as E:/OpenCV5.1_Prep_old does not pass.
+    assert root == "e:/opencv5.1_prep" or root.startswith("e:/opencv5.1_prep/"), \
+        "R3: build_root is not under E:/OpenCV5.1_Prep"
 
 
 def test_sources_are_the_pinned_commits():

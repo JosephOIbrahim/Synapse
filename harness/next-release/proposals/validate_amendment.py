@@ -8,6 +8,19 @@ amendment's structure against the graph, then runs each new node's closure predi
 and requires it to be red for its declared reason. One line per check, then a final
 SUMMARY line. Exit 0 only if every check passes.
 
+Checks added after the graph and truth review of the C0 scaffold:
+- G1: no predicate finds the repo root by folder depth; each predicate is also copied
+  to a temporary folder at a different depth, must resolve ROOT to this repository
+  when run from the repo root, and must still be red for its declared reason.
+- G2: a changed existing node whose new predicate file is not in the repo must carry
+  the file's full draft (proposed_file) at the path its predicate names; the draft is
+  written to the temporary folder only and must be red for its declared reason.
+- G3: every .json path a predicate reads that some node owns belongs to the node itself
+  or to a node it reaches through depends_on.
+- G4: every node, new or existing, that an owner decision names is gate joe or has an
+  owner decision proposing joe (proposed_gate); OD node ids resolve.
+- T1: no bare "ADR-0002 Consequence N" cite in the amendment, README or C0 report.
+
 Standard library only. No network, no JEV, no GPU, no Houdini. It never edits
 graph.json or the amendment and never writes outside its own temporary folder:
 predicates run with PYTHONDONTWRITEBYTECODE=1, -p no:cacheprovider and TEMP, TMP,
@@ -21,6 +34,7 @@ NEW node fails. Overlap is prefix-aware: an entry ending in "/" owns everything 
 """
 from __future__ import annotations
 
+import ast
 import json
 import os
 import re
@@ -154,15 +168,24 @@ def main() -> int:
     # --- gates ---------------------------------------------------------------------------
     bad_gate = [k for k, v in merged.items() if v.get("gate") not in GATES]
     record(not bad_gate, "gates", "every node's gate is crux or joe" + (f"; bad {bad_gate}" if bad_gate else ""))
-    waits = set()
-    for od in amend.get("_owner_decisions", []):
-        waits.update(x for x in od.get("nodes", []) if x in new)
-    not_joe = sorted(x for x in waits if new[x]["gate"] != "joe")
-    record(not not_joe, "owner-decision gates", f"{len(waits)} new nodes wait on an owner decision; all gate joe"
-           + (f"; not joe {not_joe}" if not_joe else ""))
-    od_ids = {od.get("id") for od in amend.get("_owner_decisions", [])}
-    undeclared = sorted({m for n in new.values() for m in re.findall(r"OD-\d\d", n["why"])} - od_ids)
-    record(not undeclared, "owner-decision refs", "every OD id cited in a new node's why is declared"
+    ods = amend.get("_owner_decisions", [])
+    od_unresolved = [(od.get("id"), x) for od in ods for x in od.get("nodes", []) if x not in merged]
+    record(not od_unresolved, "owner-decision nodes resolve", "every node an OD names exists in the merged view"
+           + (f"; unresolved {od_unresolved}" if od_unresolved else ""))
+    # Every node, new or existing, that waits on an owner decision is gate joe, or an OD
+    # proposes moving its gate to joe (listed for Joe, never applied here).
+    waits = {x for od in ods for x in od.get("nodes", []) if x in merged}
+    gate_ods = {od["proposed_gate"]["node"]: od["id"] for od in ods
+                if isinstance(od.get("proposed_gate"), dict) and od["proposed_gate"].get("to") == "joe"}
+    not_joe = sorted(x for x in waits if merged[x]["gate"] != "joe" and x not in gate_ods)
+    pending = sorted(f"{x} ({gate_ods[x]})" for x in waits if merged[x]["gate"] != "joe" and x in gate_ods)
+    record(not not_joe, "owner-decision gates",
+           f"{len(waits)} nodes (new and existing) wait on an owner decision; each is gate joe or has an OD proposing joe"
+           + (f"; gate change proposed for {pending}" if pending else "") + (f"; not joe {not_joe}" if not_joe else ""))
+    od_ids = {od.get("id") for od in ods}
+    cited_text = [n["why"] for n in new.values()] + [json.dumps(ch) for ch in amend.get("_proposed_changes_to_existing", [])]
+    undeclared = sorted({m for s in cited_text for m in re.findall(r"OD-\d\d", s)} - od_ids)
+    record(not undeclared, "owner-decision refs", "every OD id cited in a new node's why or a proposed change is declared"
            + (f"; undeclared {undeclared}" if undeclared else ""))
 
     # --- edges -----------------------------------------------------------------------
@@ -237,13 +260,127 @@ def main() -> int:
     # --- predicates not collected by pytest testpaths or CI ----------------------------
     record(*collection_check())
 
-    # --- red markers and predicate runs ----------------------------------------------
+    # --- ADR-0002 consequence cites name their list (review T1) -----------------------
+    record(*consequence_cite_check())
+
+    # --- predicate sources: the new predicates plus the draft for a changed node -------
     markers = amend.get("_red_markers", {})
+    sources: dict[str, tuple[str, str]] = {}   # node id -> (predicate target, source text)
+    for nid, n in new.items():
+        target = predicate_target(n["predicate"])
+        if target and target.startswith(PREDICATE_DIR) and (ROOT / target).is_file():
+            sources[nid] = (target, (ROOT / target).read_text(encoding="utf-8"))
+    drafts = draft_sources(amend, sources)
+
+    depth = [nid for nid, (_, src) in sources.items() if "parents[" in src]
+    record(not depth, "root not found by folder depth",
+           f"{len(sources)} predicates find the repo root from the working directory, none by parents[N]"
+           + (f"; depth-based {depth}" if depth else ""))
+    record(*receipt_reach_check(sources, merged))
+
+    # --- red markers and predicate runs ----------------------------------------------
     with tempfile.TemporaryDirectory(prefix="vg-validate-") as tmp:
         env = predicate_env(Path(tmp))
         for nid, n in new.items():
             run_predicate(nid, n["predicate"], markers.get(nid), env)
+        # The same predicates, copied outside the repo at a different folder depth and run
+        # from the repo root: a predicate that located the root by depth would go red for
+        # a false reason here (review G1).
+        for nid, (target, src) in sources.items():
+            if nid in drafts:
+                continue
+            copy = Path(tmp) / "relocated" / "a" / "b" / "c" / "d" / "e" / Path(target).name
+            copy.parent.mkdir(parents=True, exist_ok=True)
+            copy.write_text(src, encoding="utf-8")
+            run_file(f"relocated predicate {nid}", nid, copy, Path(tmp) / "relocated", markers.get(nid), env)
+        # Drafts for changed existing nodes, materialised in the temp folder only (review G2).
+        for nid, (path, src) in drafts.items():
+            copy = Path(tmp) / "draft" / path
+            copy.parent.mkdir(parents=True, exist_ok=True)
+            copy.write_text(src, encoding="utf-8")
+            run_file(f"draft predicate {nid}", nid, copy, Path(tmp) / "draft", markers.get(nid), env)
     return finish()
+
+
+def predicate_target(predicate: str) -> str | None:
+    toks = shlex.split(predicate, posix=True)
+    if toks[:3] != ["python", "-m", "pytest"] or len(toks) < 4:
+        return None
+    return toks[3]
+
+
+def draft_sources(amend: dict, sources: dict) -> dict[str, tuple[str, str]]:
+    """Each changed existing node whose new predicate file is not in the repo must carry
+    that file's full draft in its change entry, at exactly the path the predicate names."""
+    drafts: dict[str, tuple[str, str]] = {}
+    for ch in amend.get("_proposed_changes_to_existing", []):
+        if ch.get("field") != "predicate":
+            continue
+        nid = ch.get("node")
+        target = predicate_target(str(ch.get("proposed", "")))
+        pf = ch.get("proposed_file") or {}
+        lines = pf.get("source_lines")
+        exists = bool(target) and (ROOT / target).is_file()
+        carried = bool(target) and pf.get("path") == target and isinstance(lines, list) and bool(lines)
+        src = "\n".join(lines) + "\n" if carried else ""
+        named = (src.lstrip().startswith('"""') and nid in src.split('"""')[1]) if carried else exists
+        ok = (exists or carried) and named
+        record(ok, f"draft predicate file {nid}",
+               f"proposed predicate {target} is in the repo or carried in full as proposed_file at that path"
+               + ("" if exists or carried else "; MISSING - a merge of this change alone would leave the node red for rc 4")
+               + ("" if named else "; draft docstring does not name its node"))
+        if carried and named:
+            drafts[nid] = (target, src)
+            sources[nid] = (target, src)
+    return drafts
+
+
+def receipt_reach_check(sources: dict, merged: dict) -> tuple[bool, str, str]:
+    """Every .json path a predicate reads (a string constant under some node's owner_files)
+    must belong to the node itself or to a node it reaches through depends_on, so that a
+    depends_on scheduler never dispatches a node whose closure needs an unscheduled receipt
+    (review G3)."""
+    def ancestors(nid: str) -> set[str]:
+        seen: set[str] = set()
+        todo = list(merged.get(nid, {}).get("depends_on", []))
+        while todo:
+            d = todo.pop()
+            if d not in seen and d in merged:
+                seen.add(d)
+                todo += merged[d].get("depends_on", [])
+        return seen
+    bad, n_reads = [], 0
+    for nid, (_, src) in sources.items():
+        consts = {c.value for c in ast.walk(ast.parse(src))
+                  if isinstance(c, ast.Constant) and isinstance(c.value, str) and c.value.endswith(".json")
+                  and "/" in c.value and " " not in c.value}
+        reach = ancestors(nid) | {nid}
+        for path in sorted(consts):
+            owners = {k for k, v in merged.items() for f in v.get("owner_files", []) if overlaps(f, path)}
+            if not owners:
+                continue
+            n_reads += 1
+            if not owners & reach:
+                bad.append(f"{nid} reads {path} owned by {sorted(owners)}")
+    return (not bad, "receipt reads reachable through depends_on",
+            f"{n_reads} owned .json reads across {len(sources)} predicates; each has an owner that is the node or a depends_on ancestor"
+            + (f"; {bad}" if bad else ""))
+
+
+def consequence_cite_check() -> tuple[bool, str, str]:
+    """ADR-0002 has two numbered consequence lists; a bare 'Consequence N' is ambiguous."""
+    files = [AMENDMENT, HERE / "README.md", ROOT / "docs" / "reviews" / "neural-growth-c0-report-2026-11-07.md"]
+    hits = []
+    for f in files:
+        if not f.is_file():
+            hits.append(f"{f.name}: missing")
+            continue
+        for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if re.search(r"ADR-0002 Consequences? \d", line):
+                hits.append(f"{f.name}:{n}")
+    return (not hits, "ADR-0002 consequence cites qualified",
+            "every cite names the list ('Consequences of R1-R4' or 'Consequences') and an item"
+            + (f"; bare cites at {hits}" if hits else ""))
 
 
 def collection_check() -> tuple[bool, str, str]:
@@ -306,6 +443,46 @@ def run_predicate(nid: str, predicate: str, marker: str | None, env: dict[str, s
     cmd = [sys.executable] + toks[1:]
     if "no:cacheprovider" not in toks:
         cmd += ["-p", "no:cacheprovider"]
+    _run(name, cmd, marker, env)
+
+
+def run_file(name: str, nid: str, path: Path, base: Path, marker: str | None, env: dict[str, str]) -> None:
+    """Run one predicate file that lives in the temp folder, from the repo root.
+
+    A red run alone cannot tell a correct root from a wrong one (a wrong root makes every
+    receipt look uncommitted, which raises the same marker), so the copy's module-level
+    ROOT is loaded first and must equal this repository's root."""
+    if not marker:
+        record(False, name, f"no red marker declared in _red_markers for {nid}")
+        return
+    probe = ("import importlib.util, sys\n"
+             "spec = importlib.util.spec_from_file_location('vg_predicate_probe', sys.argv[1])\n"
+             "mod = importlib.util.module_from_spec(spec)\n"
+             "spec.loader.exec_module(mod)\n"
+             "print('ROOT=' + str(mod.ROOT))\n")
+    try:
+        cp = subprocess.run([sys.executable, "-c", probe, str(path)], cwd=str(ROOT), env=env,
+                            capture_output=True, text=True, timeout=TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        record(False, name, f"root probe timed out after {TIMEOUT_S} s")
+        return
+    got = next((ln[5:] for ln in cp.stdout.splitlines() if ln.startswith("ROOT=")), "")
+    if not got or Path(got).resolve() != ROOT:
+        record(False, name, f"the copy resolves ROOT to {got or '<nothing>'} (rc {cp.returncode}), not {ROOT}; "
+                            "it would be red for a false reason")
+        return
+    # Pin pytest's rootdir to the temp copy's own folder. Without it pytest takes the
+    # system temp folder as rootdir and scans it, which is slow and fails at random when
+    # another process's temp file vanishes mid-scan (observed: rc 2 on one run).
+    ini = base / "pytest.ini"
+    if not ini.is_file():
+        ini.write_text("[pytest]\n", encoding="utf-8")
+    _run(name + " (ROOT resolved to the repo root)",
+         [sys.executable, "-m", "pytest", str(path), "-q", "-p", "no:cacheprovider",
+          "-c", str(ini), "--rootdir", str(base)], marker, env)
+
+
+def _run(name: str, cmd: list[str], marker: str, env: dict[str, str]) -> None:
     try:
         cp = subprocess.run(cmd, cwd=str(ROOT), env=env, capture_output=True, text=True, timeout=TIMEOUT_S)
     except subprocess.TimeoutExpired:
