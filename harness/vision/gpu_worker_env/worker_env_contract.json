@@ -1,0 +1,35 @@
+{
+  "schema": "synapse.vision.gpu_worker_env.contract/1",
+  "node": "NR-VG-GPU-WORKER-ENV",
+  "ruling": "R4 (owner, 2026-11-07): worker runtime CPython 3.12.10 with the isolated cp312 OpenImageIO wheel, not a hython-seeded venv and not the cp314 wheel",
+  "python": "3.12.10",
+  "python_implementation": "cpython",
+  "python_base_interpreter_sha256": "4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a",
+  "numpy": "2.4.4",
+  "numpy_wheel": "numpy-2.4.4-cp312-cp312-win_amd64.whl",
+  "numpy_wheel_sha256": "b5f0362dc928a6ecd9db58868fca5e48485205e3855957bdedea308f8672ea4a",
+  "oiio": "3.1.15.0",
+  "oiio_wheel": "openimageio-3.1.15.0-cp312-cp312-win_amd64.whl",
+  "oiio_wheel_sha256": "ef6ee4f6c0480cf9ec657e3fc83fd6779aac7462a0d14d3ed35e2d23610e8c04",
+  "cv2": "the locked custom OpenCV 5.1 CUDA build only, placed by its cmake --install; the worker venv holds no opencv-python* package",
+  "worker_venv": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/worker/py312-cuda133-worker",
+  "worker_venv_source": "orchestrator record 2026-11-08: a fresh CPython 3.12.10 venv (ADR-0002 decision 17, option b); the decision is the owner's",
+  "build_lock_receipt": "harness/vision/gpu_build_lock/build_lock_receipt.json",
+  "build_lock_receipt_sha256": "2cb32051c76742b734a13b42a2feaac5bb9b647daf077dbd6ace466a712f472a",
+  "gpu_requirements": "harness/vision/gpu_worker_env/requirements-gpu.txt",
+  "gpu_requirements_sha256": "94dabb386973caf77c50ea2778191d61ac4bf7c7559c54f780b9e0d53be2bb11",
+  "recipe_review_sha256": {
+    "retina/requirements.txt": "e846b594c7b70bbccbb1e196f5051ad6332d84eb77b273b19d3479393f369529",
+    "retina/setup_venv.py": "ccc51948a3bc4e7cce38c7965a943e04522d746c1ef0bc3c5cd0e6c5e9df4900",
+    "retina/setup_venv.ps1": "72bae6cb1a83c724897d029a2854f58f42c1b482437d2615f4529d7b605fbcf1"
+  },
+  "cuda_dll_policy": {
+    "loader": "The installed cv2 loader config adds os.path.join(CUDA_PATH, 'bin/x64') for CUDA >= 13, falling back to the toolkit root recorded at configure when CUDA_PATH is unset; at import, cv2/__init__.py passes each path to os.add_dll_directory and prepends it to PATH, which child processes inherit (G0 receipt section 6, row DLL resolution).",
+    "cuda_path_at_build": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3",
+    "cuda_path_source": "argument --cuda-path-at-build to make_contract.py",
+    "dll_dir_at_build": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3/bin/x64",
+    "launcher_rule": "A worker launcher must set CUDA_PATH to cuda_path_at_build before cv2 is imported and must not inherit the machine value: the CUDA runtime DLLs are named by major version only (cudart64_13.dll), so another 13.x toolkit that moves CUDA_PATH would swap the runtime under the locked artifact.",
+    "decision": "ADR-0002 decision 18 option (a), as the NR-VG-GPU-WORKER-ENV brief specifies; the decision itself is the owner's"
+  },
+  "generated_by": "harness/vision/gpu_worker_env/make_contract.py"
+}
