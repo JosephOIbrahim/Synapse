@@ -1,0 +1,24 @@
+# RETINA GPU worker profile: the pip-installed packages of the R4 worker
+# runtime, hash-pinned. Owner ruling R4 (2026-11-07; ADR-0002): CPython 3.12.10
+# with the isolated cp312 win_amd64 OpenImageIO wheel. This profile is separate
+# from the CPU profile (retina/requirements.txt); the two are never installed
+# into the same venv.
+#
+# NO OpenCV LINE, ON PURPOSE. The GPU worker's cv2 is the custom OpenCV 5.1 CUDA
+# build, placed in the worker venv by that build's cmake --install and locked by
+# harness/vision/gpu_build_lock/build_lock_receipt.json. Any opencv-python*
+# package installed here would be a second package under the same import name,
+# cv2, beside the locked one.
+#
+# The cv2 binding was compiled against NumPy 2.4.4 headers, and OpenImageIO
+# 3.1.15.0 requires numpy>=2,<3. Both pins are the cp312 win_amd64 wheels:
+#   numpy-2.4.4-cp312-cp312-win_amd64.whl
+#   openimageio-3.1.15.0-cp312-cp312-win_amd64.whl
+# The GPU worker venv named in worker_env_contract.json was filled on 2026-11-08
+# with pip install --no-index from exactly these two hash-checked wheels. A
+# --hash on any line puts pip in hash-checking mode for the whole file, so a
+# wheel for another platform or interpreter cannot match and pip refuses it.
+numpy==2.4.4 \
+    --hash=sha256:b5f0362dc928a6ecd9db58868fca5e48485205e3855957bdedea308f8672ea4a
+OpenImageIO==3.1.15.0 \
+    --hash=sha256:ef6ee4f6c0480cf9ec657e3fc83fd6779aac7462a0d14d3ed35e2d23610e8c04
