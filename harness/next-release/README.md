@@ -49,6 +49,25 @@ decisions is what unparks the second track.
 The lane is designed for two parallel tracks; the receipt is evidence of what
 the guard chose today, not a change to the design.
 
+**Second decision, recorded 2026-11-08**, after Joe merged the OpenCV lane
+(receipt `harness/harness2/runs/next-release/graph_decision.json`, generated
+2026-11-08T14:51:29+00:00 from `graph.json` sha256 `67d59ee2…ce61e`; one row
+appended to `harness/jev/ledger/next-release.graph.jsonl`). **JEV fell back again:** its pick sits below the confidence gate, so no
+single first landing is designated. Verbatim from the receipt:
+
+- `first_landing`: `null`
+- `land_now`: `["NR-GPU-FEASIBILITY", "NR-VG-RETINA-GUARDS"]`
+- `park`: `["NR-SPARSE-RENDER", "NR-PLAN-TRUTH", "NR-WRITE-RECEIPT", "NR-GPU-QUALIFICATION", "NR-IMAGE-CONTRACT", "NR-WORKER-SUPERVISED", "NR-RECOVERY-RECEIPTS", "NR-LICENSE-GATE", "NR-FOLLOW-ON", "NR-VG-GPU-BUILD-LOCK", "NR-VG-GPU-WORKER-ENV", "NR-VG-RETINA-CUDA-BACKEND"]`
+- `needs_joe`: `["NR-PACKAGE-PAIR", "NR-VG-GPU-CANARY"]`
+- `reason`: `fallback: Jev chose NR-SPARSE-RENDER @ 0.43, below the confidence gate 0.6`
+
+That is the order. Against the 2026-11-06 receipt: `NR-GPU-FEASIBILITY` park -> land_now; `NR-PLAN-TRUTH` land_now -> park; `NR-VG-RETINA-GUARDS` absent -> land_now; `NR-WRITE-RECEIPT` land_now -> park.
+`NR-VG-GPU-CANARY` is in `needs_joe`, not `park`; it does not land either way,
+which keeps Joe's default that it stays parked behind the worker. Producer:
+`python harness/harness2/compositor.py --mode graph --input
+harness/next-release/graph.json --wave next-release`, CPython 3.14.2, run from
+the repo root.
+
 ## 3. Fan-out, wave by wave
 
 Each node is a work package for one team, in its own worktree:

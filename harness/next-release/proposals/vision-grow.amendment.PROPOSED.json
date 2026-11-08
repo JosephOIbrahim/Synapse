@@ -1,5 +1,80 @@
 {
-  "_status": "PROPOSED - not ratified; adoption is Joe's merge into graph.json followed by the JEV ranking in the lane README, section 2",
+  "_status": "OpenCV lane MERGED into harness/next-release/graph.json on 2026-11-08 by Joe's choice (ADR-0002, 'Ratification and owner rulings (2026-11-08)', answer 2): \"Merge with defaults (Recommended)\": \"Merge the OpenCV lane with these defaults for its open choices: the change-mask chain is added beside the meanStdDev census (OD-22); predicates stay under harness/next-release/proposals/ (OD-03); NR-GPU-QUALIFICATION's gate becomes joe (OD-23); the canary node stays parked behind the worker.\" Grow lane: still PROPOSED - not ratified (OD-01 unruled); its adoption is Joe's merge into graph.json followed by the JEV ranking in the lane README, section 2. The merged entries below stay as history; _merge_record names what merged and the ruled why edits.",
+  "_merge_record": {
+    "date": "2026-11-08",
+    "by": "Joe",
+    "source": "docs/decisions/ADR-0002-retina-t1-optional-cuda-backend.md, section 'Ratification and owner rulings (2026-11-08)': answer 2 (quoted in _status) merges the lane; answer 1 rules OD-11 and answer 3 rules OD-10",
+    "merged_nodes": [
+      "NR-VG-GPU-BUILD-LOCK",
+      "NR-VG-RETINA-GUARDS",
+      "NR-VG-GPU-WORKER-ENV",
+      "NR-VG-RETINA-CUDA-BACKEND",
+      "NR-VG-GPU-CANARY"
+    ],
+    "merged_edges": 18,
+    "merged_changes": [
+      "NR-GPU-QUALIFICATION.why",
+      "NR-GPU-QUALIFICATION.predicate",
+      "NR-GPU-QUALIFICATION.depends_on",
+      "NR-WORKER-SUPERVISED.why"
+    ],
+    "applied_gate": "OD-23's proposed_gate: NR-GPU-QUALIFICATION crux -> joe",
+    "ruled": {
+      "OD-02": "Settled by this merge: NR-VG-GPU-BUILD-LOCK owns the build (ADR-0002 decision 13, option b; answer 2).",
+      "OD-03": "The node predicates stay under harness/next-release/proposals/predicates/ (answer 2).",
+      "OD-09": "Settled by this merge: the new nodes own the guard tests, the worker-only CUDA module and the GPU worker recipe (ADR-0002 decision 12, option a; answer 2).",
+      "OD-10": "cpu_reference is the stock opencv-python-headless==5.0.0.93 wheel in its own venv (ADR-0002 decision 8; answer 3).",
+      "OD-11": "ADR-0002 is ratified; its Status line begins '**Status:** Accepted' (answer 1).",
+      "OD-22": "ADR-0002 decision 14, option (ii): the change-mask chain is recorded beside the masked meanStdDev census, which stays a later NR closure item (answer 2).",
+      "OD-23": "NR-GPU-QUALIFICATION's gate becomes joe (answer 2)."
+    },
+    "still_open": "Every other owner decision below, among them OD-01 (the Grow lane), OD-04, OD-05, OD-12, OD-13, OD-16 and OD-21.",
+    "ruled_why_edits": [
+      {
+        "node": "NR-VG-GPU-BUILD-LOCK",
+        "replace": "Waits on OD-02 (this node or a reopened FEASIBILITY), OD-12 (per-act build authorization, window, parallelism) and OD-16 (worker venv).",
+        "with": "OD-02 was settled on 2026-11-08 by Joe's merge of this node: it owns the build (ADR-0002 decision 13, option b). Still waits on OD-12 (build authorization, window, parallelism) and OD-16 (worker venv).",
+        "basis": "OD-02, settled by this merge. 'per-act' leaves OD-12's gloss because the 2026-11-08 configure, build and install ran under the owner's goal-level go (ADR-0002, 'Ratification and owner rulings (2026-11-08)'), which rules no numbered decision; OD-12 and OD-16 stay open."
+      },
+      {
+        "node": "NR-VG-RETINA-GUARDS",
+        "replace": "If ADR-0002 is ratified they become a precondition for any backend code under retina/",
+        "with": "ADR-0002 was ratified on 2026-11-08 (OD-11), so they are a precondition for any backend code under retina/",
+        "basis": "OD-11, ruled 2026-11-08 (answer 1)."
+      },
+      {
+        "node": "NR-VG-RETINA-GUARDS",
+        "replace": "Waits on OD-09 (graph home) and OD-05 (the build_payload.py allowlist coupling).",
+        "with": "OD-09 was settled on 2026-11-08 by Joe's merge of this node: it owns the guard tests (ADR-0002 decision 12, option a). Still waits on OD-05 (the build_payload.py allowlist coupling).",
+        "basis": "OD-09, settled by this merge; OD-05 stays open."
+      },
+      {
+        "node": "NR-VG-GPU-WORKER-ENV",
+        "replace": "Waits on OD-09 (graph home) and OD-16 (worker venv location and creator; CUDA DLL resolution).",
+        "with": "OD-09 was settled on 2026-11-08 by Joe's merge of this node: it owns the three recipe files (ADR-0002 decision 12, option a). Still waits on OD-16 (worker venv location and creator; CUDA DLL resolution).",
+        "basis": "OD-09, settled by this merge; OD-16 stays open."
+      },
+      {
+        "node": "NR-VG-RETINA-CUDA-BACKEND",
+        "replace": "Waits on OD-11 (ratification), OD-09 (graph home) and OD-10 (cpu_reference identity).",
+        "with": "Ruled 2026-11-08: Joe ratified ADR-0002 (OD-11); his merge of this node settled its graph home (OD-09; ADR-0002 decision 12, option a); the cpu_reference is the stock opencv-python-headless 5.0.0.93 wheel in its own venv (OD-10).",
+        "basis": "OD-11 (answer 1), OD-09 (settled by this merge), OD-10 (answer 3)."
+      },
+      {
+        "node": "NR-VG-GPU-CANARY",
+        "replace": "Waits on OD-12 (what demo v1 means; resource window) and OD-21 (canary before or after packaging).",
+        "with": "Waits on OD-12 (what demo v1 means; resource window) and OD-21 (canary before or after packaging). Joe's merge of 2026-11-08 keeps it parked behind the worker.",
+        "basis": "Answer 2 default, verbatim: 'the canary node stays parked behind the worker'; OD-12 and OD-21 stay open."
+      },
+      {
+        "node": "NR-GPU-QUALIFICATION",
+        "replace": "Not ruled, and left to Joe: whether the masked meanStdDev census and its hand-computable fixtures (neutral RGB ramps, the 11x11 census, signed HDR, NaN/Inf counts, equality at the FP32 threshold) are replaced by this chain or kept as an additional chain (ADR-0002 decision 14, OD-22); the cpu_reference identity (OD-10); and this node's gate (OD-23).",
+        "with": "Owner rulings 2026-11-08: the change-mask chain is qualified beside the masked meanStdDev census, which stays a later closure item with its hand-computable fixtures (neutral RGB ramps, the 11x11 census, signed HDR, NaN/Inf counts, equality at the FP32 threshold) - ADR-0002 decision 14 option (ii) (OD-22); the cpu_reference is the stock opencv-python-headless 5.0.0.93 wheel in its own venv (OD-10); and this node's gate is joe (OD-23).",
+        "basis": "OD-22 and OD-23 (answer 2), OD-10 (answer 3)."
+      }
+    ],
+    "not_merged": "The Grow lane: the five OD-01 nodes and the 15 edges that touch them stay PROPOSED."
+  },
   "_comment": "A proposed amendment to harness/next-release/graph.json. It adds NR-VG- nodes and edges in graph.json's own schema and lists, in _proposed_changes_to_existing, the edits to existing nodes that follow from the owner ruling of 2026-11-07 (R1-R4). Each entry's text states only what R1-R4 rules; anything G0 proposed beyond the ruling is labelled G0-proposed or INFERENCE, and owner choices the ruling left open are listed in _owner_decisions. Nothing here is in graph.json until Joe merges it. Check it offline with: python harness/next-release/proposals/validate_amendment.py",
   "_sources": [
     {
