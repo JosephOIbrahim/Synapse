@@ -55,6 +55,41 @@ Three things make the chain unavailable:
 
 ---
 
+## What `witness()` reports
+
+`witness()` says what this process would compute with. It never raises.
+
+A field it cannot read is `None`. The two list fields are then empty.
+
+| Field | What it holds |
+|---|---|
+| `cv2_file` | `cv2.__file__` of the cv2 that imported |
+| `cv2_version` | `cv2.__version__` |
+| `cuda_device_count` | What `cv2.cuda.getCudaEnabledDeviceCount()` returned, when that is an int |
+| `device` | A dict with three keys. Read only when the device count is above 0 |
+| `cuda_build_info` | The lines of `cv2.getBuildInformation()` that start with one of three prefixes, each stripped of surrounding whitespace |
+| `loaded_modules` | Absolute paths of the loaded native modules whose lower-case file name starts with `cv2`, `opencv_`, `cudart`, `npp`, `cublas` or `cufft`. Windows only: `[]` elsewhere, and `[]` when the enumeration fails |
+
+**`device` has three keys.**
+
+- `index`: the current device, from `cv2.cuda.getDevice()`.
+- `compute_capability`: `"major.minor"`, from `DeviceInfo(index)`.
+- `total_memory`: what `DeviceInfo(index).totalMemory()` returned.
+
+A key is `None` when it cannot be read. When the device index or its `DeviceInfo` cannot be read, all three are `None`.
+
+**`cuda_build_info` keeps three kinds of line.** The prefixes are `_BUILD_LINE_PREFIXES` in the module.
+
+- `NVIDIA CUDA`: whether the build has CUDA, and the toolkit it was built with.
+- `NVIDIA GPU arch`: the architectures compiled to native device code.
+- `NVIDIA PTX archs`: the architectures embedded as PTX, which a driver can compile for a GPU the native code does not cover.
+
+`index` and the `NVIDIA PTX archs` line are part of the contract.
+
+**Known gap.** The `witness()` docstring in `retina/backend_cuda.py` names only the first two build-line prefixes. The code keeps all three. This section is the complete list.
+
+---
+
 ## How parity is built in
 
 1. **Luma on the host.** The backend calls `retina.t1._luma`, the same code the CPU path runs.
