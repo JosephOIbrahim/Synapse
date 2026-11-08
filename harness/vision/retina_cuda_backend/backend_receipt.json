@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "node": "NR-VG-RETINA-CUDA-BACKEND",
+  "producer": "harness/vision/retina_cuda_backend/make_receipt.py",
+  "module": "retina/backend_cuda.py",
+  "module_sha256": "7b8e3ff43042ed73fed89538d4e7783ca326ae3ac5f7a5ea96a6aaa5b0fe787b",
+  "tests_file": "tests/test_retina_backend_cuda.py",
+  "tests_sha256": "c0db93876746fd922b1f870028db472c1e61e0be8cd4e7d5c923e11761253687",
+  "operations": [
+    "absdiff",
+    "threshold",
+    "morphology_open",
+    "morphology_close"
+  ],
+  "unavailable_is_inconclusive_tests": [
+    "tests/test_retina_backend_cuda.py::test_unavailable_cuda_status_is_false_with_a_reason",
+    "tests/test_retina_backend_cuda.py::test_unavailable_change_mask_cuda_raises_and_never_falls_back",
+    "tests/test_retina_backend_cuda.py::test_unavailable_change_mask_check_is_inconclusive_with_the_reason",
+    "tests/test_retina_backend_cuda.py::test_unavailable_missing_cuda_function_is_inconclusive_with_the_reason",
+    "tests/test_retina_backend_cuda.py::test_unavailable_device_error_mid_chain_is_inconclusive",
+    "tests/test_retina_backend_cuda.py::test_unavailable_import_without_cv2_or_numpy_works"
+  ],
+  "qualification_receipt": "harness/next-release/gpu_qualification.json",
+  "qualification_receipt_sha256": "7eda0a6b4fc4faaddbb8ce707dd8b1abe5f970929b19b10f323cc5929744cde2"
+}
