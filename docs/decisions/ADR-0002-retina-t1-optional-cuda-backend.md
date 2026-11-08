@@ -1,8 +1,8 @@
 # ADR-0002: An Optional OpenCV 5.1 CUDA Backend for Selected RETINA T1 Operations
 
 **Date:** 2026-11-07  
-**Status:** PROPOSED - not ratified. On 2026-11-07 the owner ruled four G0 conflicts (R1-R4, "Owner rulings" below). The P6/T1 amendment itself remains unratified. Ratification is Joe's alone; this file changes no governing document.  
-**Authors:** Claude (integration author, this session). Proposed to Joe Ibrahim, product and ratification authority and the named G0 owner. Joe named himself G0 owner and ruled R1-R4 on 2026-11-07. He ratified nothing and authorized no act.  
+**Status:** Accepted - ratified by Joe Ibrahim on 2026-11-08 for the narrow decision recorded under "Ratification and owner rulings (2026-11-08)". He ruled four G0 conflicts (R1-R4) on 2026-11-07. Decisions not ruled there stay open.  
+**Authors:** Claude (integration author, this session). Proposed to Joe Ibrahim, product and ratification authority and the named G0 owner. Joe named himself G0 owner and ruled R1-R4 on 2026-11-07, and ratified this record on 2026-11-08.  
 **Input under reconciliation:** "SYNAPSE: OpenCV 5.1 GPU Integration Blueprint", dated 7 November 2026, sha256 `bbaeed26669b945c2811399b9bbae0a1a183dbd18b6bb57d121f7391d271bf43`. It is cited by section here and is not reproduced.  
 **Companion record:** `docs/reviews/opencv51-gpu-g0-receipt-2026-11-07.md` (the G0 receipt).  
 **Baseline:** branch `vision/opencv51-g0` at `ef43d37aaedb677bebc548a5fc921d4bea4565fd`. `retina/` is byte-identical to tag `v5.98.0` (`6a5f68dd`) and to `origin/master` (`e3846b22`).
@@ -125,7 +125,33 @@ That rules exactly four G0 conflicts and nothing else.
 
 ---
 
-## Decision (proposed)
+## Ratification and owner rulings (2026-11-08)
+
+**Source:** orchestrator record of the owner's answers in this session, 2026-11-08. The orchestrator asked three questions and Joe chose one option for each. The questions, his choices and the option text he chose, verbatim:
+
+1. "OpenCV 5.1 CUDA is built and the first GPU run of the change-mask chain matched the CPU exactly. To land the CUDA backend inside retina/, ADR-0002 must move from PROPOSED to Accepted, and only you can ratify it. Do you ratify ADR-0002?" Joe chose "Ratify now (Recommended)": "I record your words and flip the Status to Accepted. The decision is narrow: an optional CUDA path for the change-mask chain, worker-only, off by default, CPU stays the reference. The qualification receipt still has to pass before anything ships."
+2. "Your R1 ruling folds the OpenCV lane into harness/next-release/graph.json, but merging the nodes is your act. Should I merge the OpenCV-lane half of the proposed amendment (5 new nodes, 4 changes to existing nodes; the Grow lane stays out)?" Joe chose "Merge with defaults (Recommended)": "Merge the OpenCV lane with these defaults for its open choices: the change-mask chain is added beside the meanStdDev census (OD-22); predicates stay under harness/next-release/proposals/ (OD-03); NR-GPU-QUALIFICATION's gate becomes joe (OD-23); the canary node stays parked behind the worker."
+3. "Qualification compares every GPU mask against a frozen CPU reference (decision OD-10, yours). Which CPU build should be the reference?" Joe chose "Stock 5.0.0.93 wheel (Recommended)": "opencv-python-headless 5.0.0.93 in its own small venv. It's an independent binary from PyPI, so the GPU result is checked against code we didn't build. Costs one more small install under E:."
+
+Earlier the same day Joe set the goal, verbatim: "ultrathink scaffold running work with subagent teams that are focused on the /goal of getting Open CV 5.1 GPU version up and working on synapse locally and commit, git push, git release using CTO Best Practices." That is a goal-level go. The configure, build and install acts of 2026-11-08 ran under it; it rules no numbered decision.
+
+| Item | Settled as | Basis |
+|---|---|---|
+| Ratification | This record is Accepted, for the narrow decision quoted in answer 1 | Answer 1 |
+| Decision 14 (OD-22) | Option (ii): the change-mask chain is recorded beside the masked `meanStdDev` census, which stays a later NR closure item | Answer 2 |
+| OD-03 | The node predicates stay under `harness/next-release/proposals/predicates/` | Answer 2 |
+| OD-23 | `NR-GPU-QUALIFICATION`'s gate becomes `joe` | Answer 2 |
+| Decisions 12 and 13 | Settled by merging the nodes as proposed: the new nodes own the guard tests, the worker-only CUDA module and the GPU worker recipe (decision 12, option a), and `NR-VG-GPU-BUILD-LOCK` owns the build (decision 13, option b) | Answer 2 |
+| Decision 8 (OD-10) | `cpu_reference` is the stock `opencv-python-headless==5.0.0.93` wheel in its own venv | Answer 3 |
+| Decisions 16 and 17 | Executed under the goal-level go, not ruled: an install step was added, the build ran at `--parallel 8`, and a fresh CPython 3.12.10 worker venv took the `cv2` install (option b); the prep venv was not written. The build-lock receipt records the details | Goal-level go |
+
+Still open: decision 5 (graph order; JEV re-ranks after the merge), decisions 6, 7, 9, 10, 11, 15 and 18, Windows 26H2 vendor support (the build ran on 26H2 under the go; support stays UNKNOWN), and what "demo v1" means.
+
+**Consequence 1 recorded:** the RETINA blueprint gains an amendment record at its end. Its text above that record is unchanged.
+
+---
+
+## Decision
 
 **RETINA T1 may gain an optional OpenCV 5.1 CUDA execution backend for a small, named set of classical measurement operations. It runs only inside the out-of-process worker, behind RETINA's existing tri-state contract. The CPU path stays the reference. Copernicus keeps its production image-processing role and its place in the independent COP-vs-OpenCV oracle. The backend grants no verdict any mutation authority.**
 
@@ -276,7 +302,7 @@ Also still open and not numbered here: ratification of this ADR; Windows 26H2 ex
 
 ## Consequences
 
-If ratified:
+Ratified on 2026-11-08, so these now apply:
 
 1. P6 and the T1 row gain an amendment record. The RETINA blueprint text stays verbatim.
 2. CPU-only RETINA stays the default for every user. `off` loads nothing new.
@@ -310,6 +336,8 @@ If declined: see Alternative A1.
 
 ## What this ADR does not authorize
 
+The 2026-11-08 configure, build, install and GPU runs were authorized by the owner's goal-level go ("Ratification and owner rulings (2026-11-08)"), not by this record. This record still authorizes no act by itself:
+
 - No build, configure, clone or install of OpenCV, CUDA, OIIO or anything else, and no pip install or venv creation. R3 and R4 name the root and the runtime; they authorize no act.
 - No GPU work of any kind: no probe, device query, kernel, benchmark or soak.
 - No pairing of a worker artifact with SYNAPSE, and no installer or payload change.
@@ -327,7 +355,7 @@ If ratified, one cycle would be **appended** after the existing entries as `stat
 
 | Deliverable | File | Node | State at `ef43d37a` |
 |---|---|---|---|
-| This proposal | `docs/decisions/ADR-0002-retina-t1-optional-cuda-backend.md` | none (G0) | Proposed; R1-R4 ruled |
+| This decision record | `docs/decisions/ADR-0002-retina-t1-optional-cuda-backend.md` | none (G0) | Accepted 2026-11-08; R1-R4 ruled 2026-11-07 |
 | G0 receipt | `docs/reviews/opencv51-gpu-g0-receipt-2026-11-07.md` | none (G0) | Revised after review |
 | Transitive host-boundary, zero-`hou` and payload-exclusion tests | new test file(s) under `tests/` | none yet (decision 12) | Not written |
 | `cpu_reference` seam | `retina/t1.py` | `NR-IMAGE-CONTRACT` | Not written |

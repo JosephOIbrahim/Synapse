@@ -372,6 +372,10 @@ Source: orchestrator record of the owner's relayed instruction, 2026-11-07. Joe'
 
 None of these ratifies ADR-0002 or authorizes an act.
 
+### Ruled 2026-11-08
+
+Joe ratified ADR-0002, chose to merge the OpenCV lane of the graph amendment with its stated defaults (OD-22, OD-03, OD-23), and chose the stock `opencv-python-headless==5.0.0.93` wheel in its own venv as `cpu_reference` (OD-10). He also gave a goal-level go for the 2026-11-08 configure, build and install. His words and the items they settle are quoted in ADR-0002, "Ratification and owner rulings (2026-11-08)". Items 1-22 below are left as written at G0; that section says which are now settled.
+
 ### Still needed
 
 **Graph and ownership**

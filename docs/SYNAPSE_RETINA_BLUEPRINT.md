@@ -212,3 +212,13 @@ Discipline is the shipped port-wave pattern end-to-end: **gatewarden admits → 
 ---
 
 *ARCHITECT writes the design and never the code. FORGE implements against this contract. CRUCIBLE attacks what it didn't build. The human merges.*
+
+---
+
+## Amendment record
+
+The text above this section is unchanged. Amendments are recorded here, newest last.
+
+| # | Date | Amends | Record |
+|---|---|---|---|
+| A1 | 2026-11-08 | P6 (`:46`) and the T1 row (`:93`) | `docs/decisions/ADR-0002-retina-t1-optional-cuda-backend.md`, Accepted by Joe on 2026-11-08. T1 may use an optional OpenCV CUDA backend for the change-mask chain only (absdiff, threshold, morphological open and close), inside the out-of-process worker, off by default, behind the tri-state contract. The CPU path stays the reference. Copernicus keeps its production image-processing role and its place in the COP-versus-OpenCV oracle. P5 is unchanged: no backend module may be reachable from the in-host modules or ship in the host payload |
