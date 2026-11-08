@@ -77,6 +77,8 @@ the repo root. The guard was re-run after the merge's review revision restored
 the word "per-act" in `NR-VG-GPU-BUILD-LOCK`'s why, so the receipt's
 `input_sha256` equals the committed `graph.json`.
 
+**Owner exception, recorded 2026-11-08.** Joe granted an explicit exception to this park for the OpenCV lane: the build lock, worker environment, CUDA backend and qualification nodes land with the guards in v5.99.0, and the canary stays parked. His choice and the question it answered are quoted in ADR-0002, "Ratification and owner rulings (2026-11-08)", decision 5. The exception covers this release only; JEV still orders the graph.
+
 ## 3. Fan-out, wave by wave
 
 Each node is a work package for one team, in its own worktree:
