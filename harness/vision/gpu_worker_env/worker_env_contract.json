@@ -15,7 +15,7 @@
   "worker_venv": "E:/OpenCV5.1_Prep/02_OpenCV_Setup/worker/py312-cuda133-worker",
   "worker_venv_source": "orchestrator record 2026-11-08: a fresh CPython 3.12.10 venv (ADR-0002 decision 17, option b); the decision is the owner's",
   "build_lock_receipt": "harness/vision/gpu_build_lock/build_lock_receipt.json",
-  "build_lock_receipt_sha256": "2cb32051c76742b734a13b42a2feaac5bb9b647daf077dbd6ace466a712f472a",
+  "build_lock_receipt_sha256": "70c43ffe8ba34434c8c4ae83f8b4c462312af49033269432f9b55850009064fe",
   "gpu_requirements": "harness/vision/gpu_worker_env/requirements-gpu.txt",
   "gpu_requirements_sha256": "94dabb386973caf77c50ea2778191d61ac4bf7c7559c54f780b9e0d53be2bb11",
   "recipe_review_sha256": {
