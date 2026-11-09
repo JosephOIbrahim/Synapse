@@ -658,6 +658,8 @@ _SHA256_HEX = re.compile(r"[0-9a-f]{64}")
 #: ``native_policy.OFF`` is the same OFF set. Unset and unknown values mean
 #: auto to Moneta. SYNAPSE's own kill switch
 #: (``moneta_runtime._apply_native_kill_switch``) arms only on exactly "0".
+#: Only an absent variable classifies as ``unset`` (the doctor's
+#: ``not_requested`` verdict); a set empty string is ``auto``, as to Moneta.
 _NATIVE_ENV_AUTO = frozenset({"", "1", "true", "on", "yes", "auto"})
 _NATIVE_ENV_OFF = frozenset({"0", "false", "off", "no"})
 
@@ -982,11 +984,20 @@ def _check_moneta_native(package_file: Optional[str] = None) -> Dict[str, Any]:
     ``hash_mismatch``       fail      the loaded extension's sha256 (or the one
                                       Moneta took at load) is outside the pin
                                       set, or the two disagree. Whatever
-                                      ``MONETA_NATIVE`` says: the binary loaded.
-    ``python_fallback``     fail      ``MONETA_NATIVE`` leaves native on and
-                                      Moneta runs Python: module blocked, wheel
-                                      absent/broken/incompatible, a seam not
-                                      native or demoted, decay fallbacks.
+                                      ``MONETA_NATIVE`` says, unset included:
+                                      the binary loaded.
+    ``not_requested``       skipped   ``MONETA_NATIVE`` is unset and Moneta runs
+                                      Python (any ``python_fallback`` evidence,
+                                      reported in the detail). Unset is
+                                      Moneta's auto, not a request from SYNAPSE
+                                      (owner ruling, 2026-11-09).
+    ``python_fallback``     fail      ``MONETA_NATIVE`` is set and leaves native
+                                      on (any value but 0/false/off/no; the
+                                      empty string is auto to Moneta, so it
+                                      counts) and Moneta runs Python: module
+                                      blocked, wheel absent/broken/incompatible,
+                                      a seam not native or demoted, decay
+                                      fallbacks.
     ``off_by_choice``       skipped   ``MONETA_NATIVE`` is 0/false/off/no.
     ``ok``                  ok        loaded, and its sha256 IS a pinned one.
                                       The hash comparison is the only way here.
@@ -1080,6 +1091,14 @@ def _moneta_native_verdict(name: str, package_file: Optional[str]) -> Dict[str, 
                   + ("" if env_on else f", although {env_note} turns native off "
                      "(the module loaded before or despite the switch)")
                   + "." + (" Also: " + "; ".join(fallback) + "." if fallback else ""))
+    elif fallback and env_class == "unset":
+        # Unset is Moneta's auto, not a request from SYNAPSE: the same evidence
+        # is reported, not failed (owner ruling, 2026-11-09). A hash mismatch
+        # above still fails whatever MONETA_NATIVE says.
+        verdict, status = "not_requested", "skipped"
+        detail = ("MONETA_NATIVE is not set (Moneta's auto), so SYNAPSE did not ask "
+                  "for native and Moneta running Python is reported, not failed: "
+                  + "; ".join(fallback) + f". moneta_native {loaded_note}.")
     elif fallback:
         verdict, status = "python_fallback", "fail"
         detail = (f"{env_note} leaves native on, but Moneta fell back to Python: "

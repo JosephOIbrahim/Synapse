@@ -9,10 +9,12 @@ The ``moneta_native`` check reports ``MONETA_NATIVE``, whether the module is
 loaded and from which file, that file's sha256 against the reviewed pin in
 ``native_artifact.json``, and Moneta's native counters and fallbacks when
 Moneta exposes them. ``ok`` is reachable only through a hash comparison that
-matched. A hash outside the pin set fails. ``MONETA_NATIVE`` on with Moneta on
-its Python oracle fails. Native off by choice, or not loaded yet, is
-``skipped`` and the result says which. With no readable pin the verdict is
-``unknown``, never ``ok``.
+matched. A hash outside the pin set fails. ``MONETA_NATIVE`` set to a value
+that leaves native on, with Moneta on its Python oracle, fails; with
+``MONETA_NATIVE`` unset the same reading is ``skipped`` (``not_requested``),
+because SYNAPSE did not ask for native. Native off by choice, or not loaded
+yet, is ``skipped`` and the result says which. With no readable pin the
+verdict is ``unknown``, never ``ok``.
 
 No real native module is loaded by these tests. The module is a
 ``types.ModuleType`` planted in ``sys.modules`` whose extension file is junk
@@ -29,6 +31,7 @@ import importlib
 import importlib.machinery
 import importlib.util
 import json
+import os
 import sys
 import types
 from pathlib import Path
@@ -627,6 +630,120 @@ def test_a_live_store_on_native_seams_stays_ok(tmp_path, monkeypatch):
 
     assert check["status"] == "ok", check
     assert check["result"]["live_store"]["vector_backend"] == "native"
+
+
+# ---------------------------------------------------------------------------
+# MONETA_NATIVE unset: SYNAPSE did not ask for native, so Python is not a fail
+# (owner ruling, 2026-11-09: "MONETA_NATIVE unset should read as skipped, not
+# FAIL"). Unset is Moneta's auto. A loaded binary with an unpinned hash still
+# fails, whatever MONETA_NATIVE says, as it does for "0".
+# ---------------------------------------------------------------------------
+
+def _unset(monkeypatch):
+    """MONETA_NATIVE absent from the environment. The autouse fixture already
+    deletes it; each test below states its own premise anyway."""
+    monkeypatch.delenv("MONETA_NATIVE", raising=False)
+    assert os.environ.get("MONETA_NATIVE") is None
+
+
+@pytest.mark.parametrize("state", ["absent", "broken", "incompatible"])
+def test_unset_and_moneta_probed_a_missing_wheel_is_skipped_not_failed(
+        monkeypatch, state):
+    _unset(monkeypatch)
+    _fake_loader(monkeypatch, state=state, reason="ModuleNotFoundError: no wheel")
+
+    check = doctor._check_moneta_native()
+
+    assert check["status"] == "skipped", check
+    res = check["result"]
+    assert res["verdict"] == "not_requested"
+    assert res["env_class"] == "unset" and res["env_MONETA_NATIVE"] is None
+    assert res["fallback_evidence"], "why Moneta runs Python is still reported"
+    assert state in check["detail"]
+    assert "not set" in check["detail"]
+
+
+def test_unset_but_blocked_is_skipped_not_failed(monkeypatch):
+    _unset(monkeypatch)
+    monkeypatch.setitem(sys.modules, _NAME, None)
+
+    check = doctor._check_moneta_native()
+
+    assert check["status"] == "skipped", check
+    assert check["result"]["verdict"] == "not_requested"
+    assert check["result"]["module_state"] == "blocked"
+    assert "blocked" in check["detail"]
+
+
+@pytest.mark.parametrize("counters", [
+    {"scan": {"native_calls": 3, "fallbacks": {}},
+     "decay": {"native_calls": 1, "fallbacks": {"error:PanicException": 1}}},
+    {"scan": {"native_calls": 3, "fallbacks": {"demoted:query_nonfinite": 1}},
+     "decay": {"native_calls": 1, "fallbacks": {}}},
+])
+def test_unset_with_decay_fallbacks_or_demotions_is_skipped_not_failed(
+        tmp_path, monkeypatch, counters):
+    _unset(monkeypatch)
+    ext, sha = _plant_native(monkeypatch, tmp_path, b"pinned, fell back, never requested")
+    package_file = _dev_tree(tmp_path, _policy(sha))
+    _fake_loader(monkeypatch, path=str(ext), sha256=sha, counters=counters)
+
+    check = doctor._check_moneta_native(package_file=package_file)
+
+    assert check["status"] == "skipped", check
+    assert check["result"]["verdict"] == "not_requested"
+    assert check["result"]["pin_match"] == "bundled_pin"
+
+
+def test_a_doctor_run_without_the_wheel_and_moneta_native_unset_counts_no_fail(
+        tmp_path, monkeypatch, probe):
+    """The clean-seat and CI shape: Moneta's loader present, its wheel absent,
+    MONETA_NATIVE unset. harness/verify/checks.py::check_doctor is green only
+    when the run's summary counts no fail, so this check must land in skipped."""
+    _unset(monkeypatch)
+    _fake_loader(monkeypatch, state="absent", reason="ModuleNotFoundError: no wheel")
+    _no_sockets(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+
+    report = doctor.run_doctor({}, home=tmp_path)
+
+    by_name = {c["name"]: c for c in report["checks"]}
+    assert by_name["moneta_native"]["status"] == "skipped", by_name["moneta_native"]
+    assert by_name["moneta_native"]["result"]["verdict"] == "not_requested"
+    failing = sorted(c["name"] for c in report["checks"] if c["status"] == "fail")
+    assert "moneta_native" not in failing
+    assert report["summary"]["fail"] == len(failing)
+    assert probe.attempts == []
+
+
+def test_unset_does_not_excuse_an_unpinned_binary(tmp_path, monkeypatch):
+    """Scope of the ruling: unset stops counting as a request for native. A
+    binary SYNAPSE did not pin, once loaded, fails whatever MONETA_NATIVE says
+    (as for "0": test_off_by_choice_does_not_excuse_an_unpinned_binary)."""
+    _unset(monkeypatch)
+    _plant_native(monkeypatch, tmp_path, b"unpinned, loaded, native never requested")
+    package_file = _dev_tree(tmp_path, _policy("e" * 64))
+
+    check = doctor._check_moneta_native(package_file=package_file)
+
+    assert check["status"] == "fail", check
+    assert check["result"]["verdict"] == "hash_mismatch"
+
+
+@pytest.mark.parametrize("value", ["1", "auto", "require", "maybe", ""])
+def test_a_set_value_that_leaves_native_on_still_fails_on_a_python_fallback(
+        monkeypatch, value):
+    """Only an absent variable is unset. Any value but 0/false/off/no leaves
+    native on, the empty string included (Moneta reads it as auto), so a
+    Python fallback under it is still a fail."""
+    monkeypatch.setenv("MONETA_NATIVE", value)
+    _fake_loader(monkeypatch, state="absent", reason="ModuleNotFoundError: no wheel")
+
+    check = doctor._check_moneta_native()
+
+    assert check["status"] == "fail", check
+    assert check["result"]["verdict"] == "python_fallback"
+    assert check["result"]["env_class"] != "unset"
 
 
 def test_the_check_never_raises_and_always_has_a_detail(monkeypatch):
