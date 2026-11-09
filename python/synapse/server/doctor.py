@@ -5,7 +5,8 @@ NOT the artist-facing Scene Doctor (panel/scene_doctor.py — scene
 diagnostics). This one answers "is this SEAT healthy": version stamp, log
 file, telemetry freshness, memory encryption-key fingerprint, symbol-table
 build stamp, SideFX help-library readiness, bridge endpoint, hou
-availability — plus an optional diagnostic zip bundle.
+availability, where loaded third-party code comes from (runtime provenance)
+— plus an optional diagnostic zip bundle.
 
 Truth contract: a check reports ok/fail ONLY if its probe actually
 executed; anything not probed is "skipped" with the reason. The bundle
@@ -35,6 +36,7 @@ a key.
 import json
 import logging
 import os
+import sys
 import time
 import zipfile
 from datetime import datetime, timezone
@@ -854,6 +856,192 @@ def _check_main_thread() -> Dict[str, Any]:
         return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
 
 
+# -- Runtime provenance (seat self-containment) --------------------------------
+
+#: Process entry points, not imports: a script's own file is not a loaded package.
+_PROVENANCE_ENTRY_MODULES = frozenset({"__main__", "__mp_main__"})
+#: Foreign packages the one-line detail names before "and N more" (all are in result).
+_PROVENANCE_DETAIL_LIMIT = 8
+
+
+def _canonical_path(path) -> Optional[str]:
+    """One spelling per folder: ``normcase(realpath(path))``. realpath expands Windows 8.3
+    short names (Houdini's own sys.path mixes ``C:/PROGRA~1/...`` with long forms) and
+    resolves links, so two names for one folder compare equal."""
+    try:
+        return os.path.normcase(os.path.realpath(os.fspath(path)))
+    except (OSError, TypeError, ValueError):
+        return None
+
+
+def _path_within(path: str, root: str) -> bool:
+    if path == root:
+        return True
+    return path.startswith(root if root.endswith(os.sep) else root + os.sep)
+
+
+def _in_runtime_payload(path: str, runtime: str) -> bool:
+    """Inside the runtime root and not under one of its dot-folders. The payload never
+    ships a dot-folder (installer/build_payload.py), so ``<root>/.hython_deps`` on a
+    repo-direct seat is outside like any other folder."""
+    if not _path_within(path, runtime):
+        return False
+    return not path[len(runtime):].lstrip(os.sep).split(os.sep, 1)[0].startswith(".")
+
+
+def _module_file(module) -> Optional[str]:
+    """``__file__`` read straight from a module's namespace. ``type()`` and
+    ``object.__getattribute__`` run no Python code, so a lazily loaded module
+    (importlib.util.LazyLoader) is not executed by being looked at, and an entry
+    that is not a module is never touched."""
+    if module is None or not issubclass(type(module), type(sys)):
+        return None
+    file = object.__getattribute__(module, "__dict__").get("__file__")
+    return file if isinstance(file, str) and file else None
+
+
+def _check_runtime_provenance(modules=None, runtime_root=None, houdini_root=None,
+                              sys_path=None, interpreter_roots=None) -> Dict[str, Any]:
+    """Name the third-party code this process runs from outside its own runtime.
+
+    Evidence: on 2026-11-09 the installed 5.99.0 seat loaded orjson's compiled module
+    from a development checkout's ``.hython_deps`` folder, which a ``.pth`` file in
+    Houdini's own site-packages had put on every Houdini Python's search path. orjson
+    is an optional import the payload does not ship, so the seat ran code a clean
+    install of the same version does not have, and nothing reported it.
+
+    Reads ``sys.modules`` (a one-call copy, since other threads import) and ``sys.path``
+    and never imports anything. A module is foreign when its file lies outside the
+    running SYNAPSE runtime root (the ``<root>/python/synapse`` layout of the running
+    package; a dot-folder under it is never payload), outside Houdini's install folder
+    ($HFS) and outside Houdini's Python (``sys.prefix`` and friends). Standard-library
+    names and file-less entries (built-ins, namespace portions) are not third-party;
+    first-party code loaded from another tree IS reported.
+
+    ``fail`` (the panel shows NEEDS ATTENTION) when any foreign module is loaded, with
+    each package and the folder it came from; ``ok`` when none is; ``skipped`` outside
+    Houdini or when the runtime root cannot be determined. Search-path folders outside
+    both roots are listed either way. No ``hou`` call, so nothing to marshal (W2-S1).
+    All arguments default to the live process and are injectable for tests.
+    """
+    name = "runtime_provenance"
+    try:
+        stdlib = getattr(sys, "stdlib_module_names", None)
+        if stdlib is None:
+            return {"name": name, "status": "skipped",
+                    "detail": ("this Python has no sys.stdlib_module_names (3.10+), so the "
+                               "standard library cannot be told from third-party code "
+                               "without importing")}
+        snapshot = list(dict(sys.modules if modules is None else modules).items())
+        if runtime_root is None:
+            package = dict(snapshot).get("synapse")
+            runtime_root = _running_package_repo_root(_module_file(package))
+        if runtime_root is None:
+            return {"name": name, "status": "skipped",
+                    "detail": ("the running synapse package is not in a "
+                               "<root>/python/synapse layout, so the runtime root is unknown")}
+        if houdini_root is None:
+            houdini_root = os.environ.get("HFS", "").strip() or None
+        if houdini_root is None:
+            return {"name": name, "status": "skipped",
+                    "detail": ("not inside Houdini ($HFS is not set), so Houdini's install "
+                               "folder is unknown")}
+        if not os.path.isdir(houdini_root):
+            return {"name": name, "status": "skipped",
+                    "detail": f"$HFS ({houdini_root}) is not a folder"}
+        if interpreter_roots is None:
+            interpreter_roots = sorted({sys.prefix, sys.base_prefix, sys.exec_prefix})
+        if sys_path is None:
+            sys_path = list(sys.path)
+
+        runtime = _canonical_path(runtime_root)
+        others = [c for c in (_canonical_path(r) for r in [houdini_root, *interpreter_roots]) if c]
+        if runtime is None:
+            return {"name": name, "status": "skipped",
+                    "detail": f"runtime root {runtime_root} could not be resolved"}
+
+        def trusted(canonical: str) -> bool:
+            return (_in_runtime_payload(canonical, runtime)
+                    or any(_path_within(canonical, root) for root in others))
+
+        outside_entries, seen = [], set()
+        for entry in sys_path:
+            canonical = _canonical_path(entry) if isinstance(entry, str) and entry else None
+            if canonical and canonical not in seen and not trusted(canonical):
+                seen.add(canonical)
+                outside_entries.append((entry, canonical))
+
+        folders: Dict[str, Optional[str]] = {}
+        checked = unlocated = 0
+        foreign: Dict[str, Dict[str, Any]] = {}
+        for module_name, module in snapshot:
+            if not isinstance(module_name, str) or module_name in _PROVENANCE_ENTRY_MODULES:
+                continue
+            top = module_name.partition(".")[0]
+            if top in stdlib or top in sys.builtin_module_names:
+                continue
+            try:
+                file = _module_file(module)
+            except Exception as exc:  # noqa: BLE001 -- an unreadable entry is counted, never fatal
+                logger.debug("runtime_provenance: sys.modules[%r] unreadable: %s",
+                             module_name, exc)
+                unlocated += 1
+                continue
+            if file is None:
+                continue
+            folder = os.path.dirname(file)
+            if folder not in folders:
+                folders[folder] = _canonical_path(folder)
+            where = folders[folder]
+            if where is None:
+                unlocated += 1
+                continue
+            checked += 1
+            if trusted(where):
+                continue
+            row = foreign.setdefault(top, {"name": top, "modules": 0})
+            row["modules"] += 1
+            rank = (module_name != top, module_name)  # the package's own file first
+            if "_rank" not in row or rank < row["_rank"]:
+                row.update(_rank=rank, file=file, _where=where)
+
+        rows = []
+        for row in sorted(foreign.values(), key=lambda r: r["name"].lower()):
+            containing = [(len(c), entry) for entry, c in outside_entries
+                          if _path_within(row["_where"], c)]
+            origin = max(containing)[1] if containing else os.path.dirname(row["file"])
+            rows.append({"name": row["name"], "modules": row["modules"],
+                         "file": row["file"], "origin": origin})
+        search_outside = [entry for entry, canonical in outside_entries
+                          if os.path.exists(canonical)]
+        result = {"runtime_root": str(runtime_root), "houdini_root": str(houdini_root),
+                  "interpreter_roots": [str(r) for r in interpreter_roots],
+                  "checked": checked, "unlocated": unlocated, "foreign": rows,
+                  "search_path_outside": search_outside}
+        if rows:
+            named = "; ".join(f"{r['name']} from {r['origin']}"
+                              for r in rows[:_PROVENANCE_DETAIL_LIMIT])
+            more = (f"; and {len(rows) - _PROVENANCE_DETAIL_LIMIT} more"
+                    if len(rows) > _PROVENANCE_DETAIL_LIMIT else "")
+            return {"name": name, "status": "fail", "result": result,
+                    "detail": (f"{len(rows)} non-standard-library package(s) loaded from "
+                               f"outside this SYNAPSE runtime ({runtime_root}) and Houdini's install "
+                               f"({houdini_root}): {named}{more}. The payload does not carry "
+                               "these copies, so this seat can behave differently from a "
+                               "clean install of the same version.")}
+        note = ""
+        if search_outside:
+            note = (f"; {len(search_outside)} search-path folder(s) outside both could "
+                    "still supply later imports: " + ", ".join(search_outside))
+        return {"name": name, "status": "ok", "result": result,
+                "detail": (f"all {checked} non-standard-library modules loaded here come from "
+                           f"this SYNAPSE runtime ({runtime_root}) or Houdini's own install "
+                           f"({houdini_root}){note}")}
+    except Exception as e:  # noqa: BLE001 -- the doctor's truth contract: not probed
+        logger.warning("runtime_provenance probe raised: %s", e)
+        return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
+
+
 def _check_houdini(handler) -> Dict[str, Any]:
     name = "houdini"
     if handler is None:
@@ -1072,6 +1260,7 @@ def run_doctor(payload: Dict, handler=None, home: Optional[Path] = None) -> Dict
         _check_mcp_coexistence(base),
         _check_main_thread(),
         _check_houdini(handler),
+        _check_runtime_provenance(),
     ]
     summary = {"ok": 0, "fail": 0, "skipped": 0}
     for check in checks:
