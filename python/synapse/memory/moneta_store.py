@@ -29,7 +29,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from .models import Memory, MemoryQuery, MemorySearchResult, MemoryTier, MemoryType
 
@@ -81,6 +81,84 @@ class PruneAudit:
     @property
     def pruned(self) -> int:
         return len(self.pruned_entity_ids)
+
+
+# -- Process-lifetime sleep-pass counter (read by the doctor) -----------------
+#
+# ``run_sleep_pass`` is reached from the APPROVE-gated ``synapse_sleep_pass``
+# handler and from the opt-in every-100th-add trigger (``_maybe_auto_
+# consolidate``). Both go through :meth:`MonetaBackedStore.run_sleep_pass`, so
+# that method is the one place that counts. Module state, not an instance
+# attribute: ``reset_synapse_memory()`` builds a new store, and a count that
+# reset with it would say "never ran" about a pass that already pruned rows.
+# The lock is a leaf (nothing else is taken while it is held), so recording
+# from inside a store's own lock cannot deadlock.
+
+_SLEEP_PASS_LOCK = threading.Lock()
+
+
+def _fresh_sleep_pass_stats() -> Dict[str, Any]:
+    return {"count": 0, "completed": 0, "failed": 0,
+            "last_at": None, "last_monotonic": None, "last_result": None}
+
+
+_SLEEP_PASS_STATS: Dict[str, Any] = _fresh_sleep_pass_stats()
+
+
+def _record_sleep_pass(outcome: str, audit: Optional[PruneAudit],
+                       error: Optional[BaseException] = None) -> None:
+    """Count one pass that returned (``completed``) or raised (``failed``).
+
+    ``audit`` is the pass's prune record, or None when a failed pass could not
+    be diffed. Never raises: it runs inside ``run_sleep_pass``'s failure arm
+    just before the ORIGINAL exception is re-raised, and a second failure here
+    must not replace it.
+    """
+    try:
+        summary = {
+            "outcome": outcome,
+            "pruned": audit.pruned if audit is not None else None,
+            "staged": audit.staged if audit is not None else None,
+            "attention_updated": audit.attention_updated if audit is not None else None,
+            "count_before": audit.count_before if audit is not None else None,
+            "count_after": audit.count_after if audit is not None else None,
+            "error": None if error is None else f"{type(error).__name__}: {error}",
+        }
+        stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        with _SLEEP_PASS_LOCK:
+            _SLEEP_PASS_STATS["count"] += 1
+            _SLEEP_PASS_STATS[outcome] += 1
+            _SLEEP_PASS_STATS["last_at"] = stamp
+            _SLEEP_PASS_STATS["last_monotonic"] = time.monotonic()
+            _SLEEP_PASS_STATS["last_result"] = summary
+    except Exception as exc:  # noqa: BLE001 -- counting must never mask the pass's own outcome
+        logger.warning("sleep-pass counter could not record a %s pass (%s: %s)",
+                       outcome, type(exc).__name__, exc)
+
+
+def sleep_pass_stats() -> Dict[str, Any]:
+    """Every sleep pass this process ran, through any store. A copy.
+
+    ``count`` = ``completed`` + ``failed``. ``last_at`` is UTC ISO-8601 and
+    ``last_monotonic`` the matching ``time.monotonic()``; ``last_result``
+    carries ``outcome``, ``pruned``, ``staged``, ``attention_updated``,
+    ``count_before``, ``count_after`` and ``error``. A pass that raised is
+    counted ``failed`` with what it had already pruned, because Moneta prunes
+    before it stages. A pass stopped by ``KeyboardInterrupt`` or
+    ``SystemExit`` is not counted: the process is being stopped.
+    """
+    with _SLEEP_PASS_LOCK:
+        stats = dict(_SLEEP_PASS_STATS)
+        if stats["last_result"] is not None:
+            stats["last_result"] = dict(stats["last_result"])
+    return stats
+
+
+def _reset_sleep_pass_stats_for_tests() -> None:
+    """Zero the counter. Tests only: production never forgets a pass."""
+    with _SLEEP_PASS_LOCK:
+        _SLEEP_PASS_STATS.clear()
+        _SLEEP_PASS_STATS.update(_fresh_sleep_pass_stats())
 
 
 def score_memories(
@@ -1308,6 +1386,10 @@ class MonetaBackedStore:
         prunes before it stages and snapshots, so rows can already be gone when
         it fails. The same diff is logged, marked FAILED, and the original
         exception is re-raised unchanged -- see :meth:`_log_failed_pass_audit`.
+
+        Every pass that returns or raises is counted in the process-lifetime
+        :func:`sleep_pass_stats` (the doctor's ``moneta_consolidation`` reads
+        it); an operator interrupt is not.
         """
         with self._lock:
             ecs = self._handle.ecs
@@ -1327,7 +1409,9 @@ class MonetaBackedStore:
             except (KeyboardInterrupt, SystemExit):
                 raise  # an operator interrupt is never held up by an audit
             except BaseException as exc:  # noqa: BLE001 -- pyo3's PanicException is a BaseException
-                self._log_failed_pass_audit(ecs, before_payload, before_mem, count_before, exc)
+                failed = self._log_failed_pass_audit(
+                    ecs, before_payload, before_mem, count_before, exc)
+                _record_sleep_pass("failed", failed, exc)
                 raise
 
             survivors = {str(row.entity_id) for row in ecs.iter_rows()}
@@ -1336,6 +1420,7 @@ class MonetaBackedStore:
         audit = self._diff_prune_audit(
             before_payload, before_mem, survivors, count_before, count_after, result,
         )
+        _record_sleep_pass("completed", audit)
         if audit.pruned:
             logger.warning(
                 "moneta.prune lossless-audit pruned=%d staged=%d before=%d after=%d ids=%s",
@@ -1379,7 +1464,7 @@ class MonetaBackedStore:
         )
 
     def _log_failed_pass_audit(self, ecs, before_payload, before_mem, count_before,
-                               exc: BaseException) -> None:
+                               exc: BaseException) -> Optional[PruneAudit]:
         """PRUNE-AUDIT-ON-FAILURE: the lossless record of a pass that RAISED.
 
         Moneta's ``run_pass`` removes the prune set (``ecs.remove`` +
@@ -1396,9 +1481,13 @@ class MonetaBackedStore:
         caller re-raises the ORIGINAL exception, and a second failure here (an
         ECS the failed pass left unreadable, which a native panic can do) must
         not replace it. KeyboardInterrupt and SystemExit are let through.
+
+        Returns the audit, or None when the survivors could not be diffed, so
+        the sleep-pass counter can say what a failed pass had already pruned.
         """
         import json
         failure = type(exc).__name__
+        audit: Optional[PruneAudit] = None
         try:
             survivors = {str(row.entity_id) for row in ecs.iter_rows()}
             count_after = ecs.n
@@ -1422,6 +1511,7 @@ class MonetaBackedStore:
                 failure, type(audit_exc).__name__, audit_exc, count_before,
                 [mem.id for mem in before_mem.values() if mem is not None],
             )
+        return audit
 
     def close(self) -> None:
         # Idempotent: registered with atexit AND callable explicitly, so a

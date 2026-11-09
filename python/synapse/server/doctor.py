@@ -3,9 +3,10 @@ SYNAPSE install/ops doctor (M3-C) — the ``doctor`` command / synapse_doctor to
 
 NOT the artist-facing Scene Doctor (panel/scene_doctor.py — scene
 diagnostics). This one answers "is this SEAT healthy": version stamp, log
-file, telemetry freshness, memory encryption-key fingerprint, symbol-table
-build stamp, SideFX help-library readiness, bridge endpoint, hou
-availability — plus an optional diagnostic zip bundle.
+file, telemetry freshness, memory encryption-key fingerprint, Moneta's native
+(Rust) module and its pinned hash, symbol-table build stamp, SideFX
+help-library readiness, bridge endpoint, hou availability — plus an optional
+diagnostic zip bundle.
 
 Truth contract: a check reports ok/fail ONLY if its probe actually
 executed; anything not probed is "skipped" with the reason. The bundle
@@ -32,14 +33,19 @@ new key when none exists (crypto.py). A diagnostics run must never mint
 a key.
 """
 
+import hashlib
+import importlib.machinery
 import json
 import logging
 import os
+import re
+import sys
 import time
+import types
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("synapse.doctor")
 
@@ -500,14 +506,18 @@ def _check_moneta_consolidation() -> Dict[str, Any]:
 
     Best-effort — skips when the store is not Moneta-backed or unreachable.
     Reports total entity count, protected entity count (via
-    ``ecs.count_protected()`` when available), and whether
-    ``run_sleep_pass`` has ever been called (no counter exists today, so
-    this reports ``"not_tracked"`` unless a future version adds one).
+    ``ecs.count_protected()`` when available), and the process-lifetime
+    sleep-pass counter ``moneta_store.sleep_pass_stats()``: how many passes
+    ran in this process (completed / failed), when the last one ended, and
+    what it pruned. ``run_sleep_pass`` maintains it for every caller (the
+    ``synapse_sleep_pass`` handler and the opt-in every-100th-add trigger).
+    ``sleep_pass_called`` is ``count > 0``; until the counter existed it was
+    the string ``"not_tracked"``.
     """
     name = "moneta_consolidation"
     try:
         from ..memory import store as _store_mod
-        from ..memory.moneta_store import MonetaBackedStore
+        from ..memory.moneta_store import MonetaBackedStore, sleep_pass_stats
 
         sm = _store_mod.get_synapse_memory()
         store = sm.store
@@ -523,18 +533,27 @@ def _check_moneta_consolidation() -> Dict[str, Any]:
             # count_protected not available on this moneta version
             pass
 
-        # No counter for run_sleep_pass calls exists today; report
-        # not_tracked so a future version that adds one can flip this.
+        passes = sleep_pass_stats()
         result = {
             "total_entities": total,
             "protected_entities": protected,
-            "sleep_pass_called": "not_tracked",
+            "sleep_pass_called": passes["count"] > 0,
+            "sleep_passes": passes,
         }
+        if passes["count"]:
+            last = passes["last_result"] or {}
+            pass_note = (f"{passes['count']} sleep pass(es) in this process "
+                         f"({passes['completed']} completed, {passes['failed']} "
+                         f"failed); the last ended {passes['last_at']}: "
+                         f"{last.get('outcome')}, pruned {last.get('pruned')}"
+                         + (f", {last['error']}" if last.get("error") else ""))
+        else:
+            pass_note = "no sleep pass has run in this process"
         return {"name": name, "status": "ok", "result": result,
                 "detail": (f"{total} entities"
                            + (f", {protected} protected" if protected is not None
                               else "")
-                           + "; sleep-pass counter not tracked")}
+                           + f"; {pass_note}")}
     except Exception as e:
         return {"name": name, "status": "skipped",
                 "detail": f"probe failed: {e}"}
@@ -620,6 +639,528 @@ def _check_use_real_usd() -> Dict[str, Any]:
     except Exception as e:
         return {"name": name, "status": "skipped",
                 "detail": f"probe failed: {e}"}
+
+
+# -- Moneta native (Rust) module: which binary, and is it the pinned one -------
+
+#: Moneta's Rust extension. The shipped wheel is a maturin package: the
+#: package ``__file__`` is its ``__init__.py`` and the compiled module is the
+#: ``moneta_native.moneta_native`` submodule (the ``.pyd``).
+_NATIVE_MODULE = "moneta_native"
+#: The file the reviewed policy pins, as named in its ``manifest.files``.
+_NATIVE_PYD_MEMBER = "moneta_native/moneta_native.pyd"
+_NATIVE_POLICY_NAME = "native_artifact.json"
+_NATIVE_POLICY_SCHEMA = "synapse-native-policy-1"
+_SHA256_HEX = re.compile(r"[0-9a-f]{64}")
+
+#: ``MONETA_NATIVE`` classes, normalized (stripped, lower-cased) as Moneta
+#: 1.3.0's ``moneta._native.classify_env`` does; the installer's
+#: ``native_policy.OFF`` is the same OFF set. Unset and unknown values mean
+#: auto to Moneta. SYNAPSE's own kill switch
+#: (``moneta_runtime._apply_native_kill_switch``) arms only on exactly "0".
+_NATIVE_ENV_AUTO = frozenset({"", "1", "true", "on", "yes", "auto"})
+_NATIVE_ENV_OFF = frozenset({"0", "false", "off", "no"})
+
+#: Moneta's own probe states for a wheel it could not use: it then runs its
+#: pure-Python oracle.
+_NATIVE_PROBE_FALLBACK_STATES = ("absent", "broken", "incompatible")
+_NATIVE_WHEEL_FIELDS = ("state", "reason", "version", "api", "path", "sha256",
+                        "record_match")
+_NATIVE_SEAM_FIELDS = ("requested", "active", "reason", "demoted", "native_calls")
+
+#: The package root the memory modules live under (``synapse``), so the check
+#: can PEEK ``sys.modules`` for them without importing anything.
+_PACKAGE_ROOT = __name__.rsplit(".", 2)[0]
+
+
+def _classify_moneta_native_env(raw: Optional[str]) -> str:
+    """``unset`` / ``auto`` / ``off`` / ``require`` / ``unknown``. Pure."""
+    if raw is None:
+        return "unset"
+    value = raw.strip().lower()
+    if value in _NATIVE_ENV_AUTO:
+        return "auto"
+    if value in _NATIVE_ENV_OFF:
+        return "off"
+    if value == "require":
+        return "require"
+    return "unknown"
+
+
+def _native_pin_candidates(package_file: Optional[str]) -> List[Path]:
+    """Where the reviewed native policy sits, relative to the running package.
+
+    One file in two layouts, the same pair ``installer/synapse_setup/
+    native_policy.py::policy()`` reads (its own folder, else its parent):
+
+    * a checkout or repo-direct install: ``<root>/installer/native_artifact.json``;
+    * an installed seat, whose package is ``<app>/versions/<id>/python/synapse``:
+      ``<app>/maintenance/synapse_setup/native_artifact.json``, where
+      ``installer/build_windows.py`` copies the policy verbatim.
+
+    The runtime payload itself carries no copy (``installer/`` is not a
+    runtime tree). Empty when the package is not in the ``python/synapse``
+    layout, which the check then reports as UNKNOWN.
+    """
+    root = _running_package_repo_root(package_file)
+    if root is None:
+        return []
+    candidates = [root / "installer" / _NATIVE_POLICY_NAME]
+    if root.parent.name.lower() == "versions":
+        candidates.append(root.parent.parent / "maintenance" / "synapse_setup"
+                          / _NATIVE_POLICY_NAME)
+    return candidates
+
+
+def _native_pins_from_policy(data: Any) -> Tuple[Optional[str], Dict[str, str], Optional[str]]:
+    """``(bundled_pin, {approved_sha256: label}, problem)`` from a parsed policy.
+
+    The bundled pin is ``manifest.pyd_sha256`` (the build the payload ships).
+    ``external_artifacts`` rows are the existing wheels the installer also
+    accepts (``native_policy._external``), so their ``.pyd`` hashes are
+    approved too, labelled as such. A policy whose two statements of the pin
+    disagree pins nothing.
+    """
+    if not isinstance(data, dict) or data.get("schema") != _NATIVE_POLICY_SCHEMA:
+        return None, {}, f"schema is not {_NATIVE_POLICY_SCHEMA!r}"
+    manifest = data.get("manifest") if isinstance(data.get("manifest"), dict) else {}
+    pinned = manifest.get("pyd_sha256")
+    if not isinstance(pinned, str) or not _SHA256_HEX.fullmatch(pinned):
+        return None, {}, "manifest.pyd_sha256 is not a lowercase sha256 hex digest"
+    files = manifest.get("files")
+    member = files.get(_NATIVE_PYD_MEMBER) if isinstance(files, dict) else None
+    if member is not None and member != pinned:
+        return None, {}, (f"manifest.pyd_sha256 and manifest.files"
+                          f"[{_NATIVE_PYD_MEMBER!r}] disagree")
+    approved = {pinned: "bundled_pin"}
+    rows = data.get("external_artifacts")
+    for row in rows if isinstance(rows, list) else []:
+        row_files = row.get("files") if isinstance(row, dict) else None
+        digest = row_files.get(_NATIVE_PYD_MEMBER) if isinstance(row_files, dict) else None
+        if isinstance(digest, str) and _SHA256_HEX.fullmatch(digest):
+            approved.setdefault(digest, "approved_external_artifact")
+    return pinned, approved, None
+
+
+def _resolve_native_pin(package_file: Optional[str]) -> Dict[str, Any]:
+    """The pinned sha256 for ``moneta_native.pyd``, from the reviewed policy.
+
+    The first candidate that exists decides; a later one is never consulted
+    behind a bad first one. A missing, unreadable or unusable policy sets
+    ``error`` and pins nothing, which the check reports as UNKNOWN, never as
+    a pass.
+    """
+    pin: Dict[str, Any] = {"source": None, "tried": [], "pinned_sha256": None,
+                           "approved": {}, "error": None}
+    for path in _native_pin_candidates(package_file):
+        pin["tried"].append(str(path))
+        if not path.is_file():
+            continue
+        pin["source"] = str(path)
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            pin["error"] = f"{path} is unreadable: {type(exc).__name__}: {exc}"
+            return pin
+        pinned, approved, problem = _native_pins_from_policy(data)
+        if problem is not None:
+            pin["error"] = f"{path} is not a usable pin: {problem}"
+            return pin
+        pin["pinned_sha256"], pin["approved"] = pinned, approved
+        return pin
+    if pin["tried"]:
+        pin["error"] = "no pinned-hash source found (tried " + ", ".join(pin["tried"]) + ")"
+    else:
+        pin["error"] = ("no pinned-hash source found: the running synapse package "
+                        f"({package_file}) is not in a python/synapse layout")
+    return pin
+
+
+def _native_extension_file() -> Optional[str]:
+    """The compiled extension behind the loaded ``moneta_native``, or None.
+
+    Candidates in the order Moneta 1.3.0's ``_native._extension_path`` uses:
+    the ``moneta_native.moneta_native`` submodule, the package attribute of
+    that name, then the module itself (a flat single-file build). Only a
+    ``__file__`` ending in an extension-module suffix counts, so the package
+    ``__init__.py`` is never hashed as the binary. Reads ``sys.modules`` and
+    module namespace dicts only; imports nothing.
+    """
+    suffixes = tuple(os.path.normcase(s) for s in importlib.machinery.EXTENSION_SUFFIXES)
+    package = sys.modules.get(_NATIVE_MODULE)
+    namespace = getattr(package, "__dict__", None)
+    candidates = (
+        sys.modules.get(f"{_NATIVE_MODULE}.{_NATIVE_MODULE}"),
+        namespace.get(_NATIVE_MODULE) if isinstance(namespace, dict) else None,
+        package,
+    )
+    for candidate in candidates:
+        if not isinstance(candidate, types.ModuleType):
+            continue
+        path = vars(candidate).get("__file__")
+        if isinstance(path, str) and os.path.normcase(path).endswith(suffixes):
+            return path
+    return None
+
+
+def _sha256_file(path: str) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as fp:
+        for chunk in iter(lambda: fp.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _json_scalar(value: Any) -> Any:
+    return value if value is None or isinstance(value, (str, int, float, bool)) else str(value)
+
+
+def _int_map(raw: Any) -> Dict[str, int]:
+    if not isinstance(raw, dict):
+        return {}
+    return {str(key): count for key, count in raw.items() if type(count) is int}
+
+
+def _moneta_native_loader_reading() -> Tuple[Optional[Dict[str, Any]],
+                                             Optional[Dict[str, Any]], Optional[str]]:
+    """``(probe, counters, note)`` from Moneta's own native loader.
+
+    Moneta 1.3.0's ``moneta._native`` keeps the cached probe record
+    (``current_wheel()``: state, path, the sha256 Moneta took of the extension
+    when it loaded it) and the process-wide seam counters (``counters()``,
+    the ``native_calls`` and ``fallbacks`` the installer's qualification
+    reads as ``native_calls_delta`` / ``native_fallbacks``). Only those two
+    are called: ``wheel_info()``, ``native_available()`` and ``select()`` run
+    the import probe, and a diagnostics read must not be the load it reports.
+    The loader is peeked in ``sys.modules``, never imported.
+    """
+    loader = sys.modules.get("moneta._native")
+    if not isinstance(loader, types.ModuleType):
+        return None, None, ("Moneta's native loader (moneta._native) is not in this "
+                            "process: Moneta is not imported yet, or it predates "
+                            "1.3.0 and exposes no native counters")
+    namespace = vars(loader)
+    probe = counters = None
+    notes = []
+    current_wheel = namespace.get("current_wheel")
+    if callable(current_wheel):
+        wheel = current_wheel()
+        probe = {field: _json_scalar(getattr(wheel, field, None))
+                 for field in _NATIVE_WHEEL_FIELDS}
+    else:
+        notes.append("moneta._native has no current_wheel()")
+    read_counters = namespace.get("counters")
+    if callable(read_counters):
+        raw = read_counters()
+        counters = {
+            str(seam): {"native_calls": (entry.get("native_calls")
+                                         if type(entry.get("native_calls")) is int else None),
+                        "fallbacks": _int_map(entry.get("fallbacks"))}
+            for seam, entry in (raw.items() if isinstance(raw, dict) else ())
+            if isinstance(entry, dict)
+        }
+    else:
+        notes.append("moneta._native has no counters()")
+    return probe, counters, "; ".join(notes) or None
+
+
+def _live_store_native_reading() -> Optional[Dict[str, Any]]:
+    """The native picture of the store this process is ALREADY serving.
+
+    Peeks ``store._global_synapse`` the way ``backend_health`` does and never
+    constructs one (``get_synapse_memory()`` would, and a new Moneta handle
+    loads the native module). ``vector_backend`` / ``native_decay`` come from
+    ``native_status(store)``, which reads every Moneta generation; a Moneta
+    1.3.0 handle adds its ``native_status`` seams (requested / active /
+    reason / demoted / native_calls / fallbacks). None when no store is live.
+    """
+    from ..memory import store as _store_mod
+    from ..memory.native_status import _HANDLE_PATHS, native_status
+
+    held = _store_mod._global_synapse
+    store = getattr(held, "store", None) if held is not None else None
+    if store is None:
+        return None
+    reading = native_status(handle=store)
+    live: Dict[str, Any] = {
+        "store": type(store).__name__,
+        "handle_via": reading.get("handle_via"),
+        "vector_backend": reading.get("vector_backend"),
+        "native_decay": reading.get("native_decay"),
+        "error": reading.get("error"),
+        "seams": None,
+    }
+    # The same one-hop paths native_status walked, to reach the handle object.
+    handle = None
+    for label, path in _HANDLE_PATHS:
+        if label == live["handle_via"]:
+            handle = store
+            for attr in path:
+                handle = getattr(handle, attr, None)
+            break
+    status = getattr(handle, "native_status", None) if handle is not None else None
+    seams = {}
+    for seam in ("scan", "decay"):
+        record = getattr(status, seam, None) if status is not None else None
+        if record is None:
+            continue
+        seams[seam] = {field: _json_scalar(getattr(record, field, None))
+                       for field in _NATIVE_SEAM_FIELDS}
+        seams[seam]["fallbacks"] = _int_map(getattr(record, "fallbacks", None))
+    live["seams"] = seams or None
+    return live
+
+
+def _native_fallback_evidence(state: Optional[str], probe: Optional[Dict[str, Any]],
+                              counters: Optional[Dict[str, Any]],
+                              live: Optional[Dict[str, Any]]) -> Tuple[List[str], Dict[str, int]]:
+    """``(evidence, per_query)``: why Moneta is on its Python oracle, if it is.
+
+    Moneta's own definition (``_native.require_satisfied``): both seams active
+    native, neither demoted, no decay fallbacks. A scan's per-query oracle
+    answer (``query_nonfinite`` / ``cosine_overflow``) is permitted even under
+    require, so it is returned separately as ``per_query`` and reported, not
+    failed. Only meaningful when ``MONETA_NATIVE`` leaves native on.
+    """
+    evidence: List[str] = []
+    if state == "blocked":
+        evidence.append("sys.modules['moneta_native'] is None (blocked in this "
+                        "process), so Moneta cannot import it and runs Python")
+    if probe and probe.get("state") in _NATIVE_PROBE_FALLBACK_STATES:
+        evidence.append(f"Moneta's native probe found the module {probe['state']} "
+                        f"({probe.get('reason')})")
+    if live is not None:
+        seams = live.get("seams")
+        if seams:
+            for seam, record in sorted(seams.items()):
+                if record.get("requested") == "off":
+                    continue  # this handle was built with native off by choice
+                if record.get("active") != "native" or record.get("demoted"):
+                    evidence.append(
+                        f"the live {live.get('store')}'s {seam} seam runs "
+                        f"{record.get('active')} (demoted={record.get('demoted')}, "
+                        f"reason={record.get('reason')})")
+                if seam == "decay" and record.get("fallbacks"):
+                    evidence.append(f"the live {live.get('store')}'s decay seam fell "
+                                    f"back to Python: {record['fallbacks']}")
+        else:
+            if live.get("vector_backend") == "python":
+                evidence.append(f"the live {live.get('store')} runs the Python vector scan")
+            if live.get("native_decay") is False:
+                evidence.append(f"the live {live.get('store')} runs Python decay")
+    per_query: Dict[str, int] = {}
+    if counters:
+        decay_fallbacks = (counters.get("decay") or {}).get("fallbacks") or {}
+        if decay_fallbacks:
+            evidence.append(f"Moneta counted decay fallbacks to Python: {decay_fallbacks}")
+        scan_fallbacks = (counters.get("scan") or {}).get("fallbacks") or {}
+        demoted = {k: v for k, v in scan_fallbacks.items() if k.startswith("demoted:")}
+        if demoted:
+            evidence.append(f"Moneta demoted the vector scan to Python: {demoted}")
+        per_query = {k: v for k, v in scan_fallbacks.items() if not k.startswith("demoted:")}
+    return evidence, per_query
+
+
+def _check_moneta_native(package_file: Optional[str] = None) -> Dict[str, Any]:
+    """Moneta's native (Rust) module: is it loaded, from where, and pinned?
+
+    Reports ``MONETA_NATIVE`` (raw and classified), the module's state
+    (``not_loaded`` / ``blocked`` / ``loaded``), the compiled extension file
+    and its sha256 against the reviewed pin in ``native_artifact.json``
+    (:func:`_native_pin_candidates`), Moneta's own load-time hash and native
+    counters when Moneta 1.3.0's loader is in the process, and the live
+    store's seams. Read-only: it imports neither ``moneta`` nor
+    ``moneta_native``, constructs no store and touches no ``hou``; the only
+    file it opens besides the policy is the extension, to hash it.
+
+    *package_file* is the running ``synapse/__init__.py`` the pin is resolved
+    from (default: the imported package). Verdicts, first match wins:
+
+    ======================  ========  =========================================
+    verdict                 status    when
+    ======================  ========  =========================================
+    ``hash_mismatch``       fail      the loaded extension's sha256 (or the one
+                                      Moneta took at load) is outside the pin
+                                      set, or the two disagree. Whatever
+                                      ``MONETA_NATIVE`` says: the binary loaded.
+    ``python_fallback``     fail      ``MONETA_NATIVE`` leaves native on and
+                                      Moneta runs Python: module blocked, wheel
+                                      absent/broken/incompatible, a seam not
+                                      native or demoted, decay fallbacks.
+    ``off_by_choice``       skipped   ``MONETA_NATIVE`` is 0/false/off/no.
+    ``ok``                  ok        loaded, and its sha256 IS a pinned one.
+                                      The hash comparison is the only way here.
+    ``unknown``             skipped   loaded, but no usable pin, or no
+                                      extension file could be hashed.
+    ``not_loaded_yet``      skipped   native on, nothing loaded, and no
+                                      evidence Moneta fell back.
+    ======================  ========  =========================================
+    """
+    name = "moneta_native"
+    try:
+        return _moneta_native_verdict(name, package_file)
+    except Exception as exc:  # noqa: BLE001 -- a diagnostics read degrades, never raises
+        logger.warning("moneta_native doctor probe raised (%s: %s)",
+                       type(exc).__name__, exc)
+        return {"name": name, "status": "skipped",
+                "detail": f"probe failed: {type(exc).__name__}: {exc}"}
+
+
+def _moneta_native_verdict(name: str, package_file: Optional[str]) -> Dict[str, Any]:
+    from ..memory.native_status import native_status
+
+    raw = os.environ.get("MONETA_NATIVE")
+    env_class = _classify_moneta_native_env(raw)
+    env_on = env_class != "off"
+    module = native_status()
+    state = module.get("state")
+    runtime = sys.modules.get(f"{_PACKAGE_ROOT}.memory.moneta_runtime")
+    if package_file is None:
+        import synapse
+        package_file = getattr(synapse, "__file__", None)
+    pin = _resolve_native_pin(package_file)
+
+    try:
+        probe, counters, loader_note = _moneta_native_loader_reading()
+    except Exception as exc:  # noqa: BLE001 -- Moneta's code; the hash verdict stands without it
+        logger.warning("moneta_native doctor: moneta._native could not be read (%s: %s)",
+                       type(exc).__name__, exc)
+        probe = counters = None
+        loader_note = f"moneta._native could not be read: {type(exc).__name__}: {exc}"
+    try:
+        live = _live_store_native_reading()
+    except Exception as exc:  # noqa: BLE001 -- same: report it, keep the hash verdict
+        logger.warning("moneta_native doctor: the live store could not be read (%s: %s)",
+                       type(exc).__name__, exc)
+        live = {"error": f"{type(exc).__name__}: {exc}"}
+
+    ext = sha = hash_problem = None
+    if state == "loaded":
+        ext = _native_extension_file()
+        if ext is None:
+            hash_problem = ("moneta_native is loaded but no compiled extension file "
+                            f"is visible on it (package file {module.get('file')}), "
+                            "so nothing was hashed")
+        else:
+            try:
+                sha = _sha256_file(ext)
+            except OSError as exc:
+                hash_problem = f"{ext} could not be read: {type(exc).__name__}: {exc}"
+
+    approved: Dict[str, str] = pin["approved"]
+    pin_match = approved.get(sha) if sha is not None else None
+    where = pin["source"]
+    mismatches: List[str] = []
+    if sha is not None and approved and pin_match is None:
+        mismatches.append(f"sha256 {sha} is neither the pinned "
+                          f"{pin['pinned_sha256']} nor an approved external build "
+                          f"in {where}")
+    probe_sha = probe.get("sha256") if probe else None
+    if isinstance(probe_sha, str) and probe_sha:
+        if sha is not None and probe_sha != sha:
+            mismatches.append(f"Moneta hashed the extension it loaded "
+                              f"({probe.get('path')}) as {probe_sha}; {ext} now "
+                              f"hashes {sha}")
+        elif sha is None and approved and probe_sha not in approved:
+            mismatches.append(f"Moneta hashed the extension it loaded "
+                              f"({probe.get('path')}) as {probe_sha}, which is not "
+                              f"pinned in {where}")
+
+    fallback, per_query = (_native_fallback_evidence(state, probe, counters, live)
+                           if env_on else ([], {}))
+
+    env_note = f"MONETA_NATIVE={raw!r} ({env_class})"
+    loaded_note = (f"loaded from {ext}, sha256 {sha}" if sha is not None
+                   else f"loaded ({hash_problem})" if state == "loaded"
+                   else state.replace("_", " ") if isinstance(state, str) else str(state))
+    if mismatches:
+        verdict, status = "hash_mismatch", "fail"
+        detail = (f"moneta_native {loaded_note}: HASH MISMATCH. " + "; ".join(mismatches)
+                  + ". A native binary SYNAPSE did not pin is in this process"
+                  + ("" if env_on else f", although {env_note} turns native off "
+                     "(the module loaded before or despite the switch)")
+                  + "." + (" Also: " + "; ".join(fallback) + "." if fallback else ""))
+    elif fallback:
+        verdict, status = "python_fallback", "fail"
+        detail = (f"{env_note} leaves native on, but Moneta fell back to Python: "
+                  + "; ".join(fallback) + f". moneta_native {loaded_note}.")
+    elif not env_on:
+        verdict, status = "off_by_choice", "skipped"
+        if state == "loaded":
+            match_note = (f"the {pin_match.replace('_', ' ')}" if pin_match
+                          else "pin not verified")
+            switch = ("SYNAPSE's kill switch found it already loaded"
+                      if raw == "0" else
+                      f"SYNAPSE's kill switch arms only on exactly '0', not {raw!r}")
+            situation = (f"yet moneta_native IS {loaded_note} ({match_note}): "
+                         f"{switch}, and a loaded module cannot be unloaded")
+        elif state == "blocked":
+            situation = "moneta_native is blocked in this process (SYNAPSE's kill switch)"
+        else:
+            situation = "moneta_native is not loaded"
+        detail = f"native is off by choice, {env_note}; {situation}."
+    elif state == "loaded" and sha is not None and pin_match is not None:
+        verdict, status = "ok", "ok"
+        label = ("the bundled pin" if pin_match == "bundled_pin"
+                 else "an approved external build (not the bundled pin "
+                      f"{pin['pinned_sha256']})")
+        detail = f"moneta_native {loaded_note} matches {label} in {where}"
+        if counters:
+            calls = {seam: entry.get("native_calls") for seam, entry in sorted(counters.items())}
+            detail += f"; Moneta native calls {calls}"
+        if per_query:
+            detail += (f"; per-query Python oracle answers {per_query} (permitted "
+                       "by Moneta, not a fallback)")
+        detail += f"; {env_note}."
+    elif state == "loaded":
+        verdict, status = "unknown", "skipped"
+        reason = hash_problem or pin["error"]
+        detail = (f"UNKNOWN: moneta_native {loaded_note}, but its hash cannot be "
+                  f"verified: {reason}. Not a pass.")
+    elif probe and probe.get("state") == "loaded":
+        verdict, status = "unknown", "skipped"
+        detail = (f"UNKNOWN: Moneta's probe says it loaded {probe.get('path')}, but "
+                  "sys.modules holds no moneta_native to hash. Not a pass.")
+    elif state != "not_loaded":
+        verdict, status = "unknown", "skipped"
+        detail = (f"UNKNOWN: the moneta_native module state could not be read "
+                  f"({module.get('error')}). Not a pass.")
+    else:
+        verdict, status = "not_loaded_yet", "skipped"
+        why = (loader_note if probe is None
+               else "Moneta has not probed it in this process yet"
+               if probe.get("state") == "not_probed"
+               else f"Moneta's probe state is {probe.get('state')!r}")
+        detail = (f"{env_note} leaves native on, but moneta_native is not loaded "
+                  f"yet: {why}. Nothing to hash.")
+
+    result = {
+        "verdict": verdict,
+        "env_MONETA_NATIVE": raw,
+        "env_class": env_class,
+        "kill_switch": getattr(runtime, "_NATIVE_KILL_SWITCH", None),
+        "module_state": state,
+        "module_error": module.get("error"),
+        "package_file": module.get("file"),
+        "version": module.get("version"),
+        "file": ext,
+        "sha256": sha,
+        "hash_problem": hash_problem,
+        "pin_source": where,
+        "pin_sources_tried": pin["tried"],
+        "pin_error": pin["error"],
+        "pinned_sha256": pin["pinned_sha256"],
+        "approved_sha256": sorted(approved),
+        "pin_match": pin_match,
+        "mismatches": mismatches,
+        "fallback_evidence": fallback,
+        "per_query_oracle_answers": per_query,
+        "moneta_probe": probe,
+        "counters": counters,
+        "loader_note": loader_note,
+        "live_store": live,
+    }
+    return {"name": name, "status": status, "detail": detail, "result": result}
 
 
 def _check_symbol_table() -> Dict[str, Any]:
@@ -1066,6 +1607,10 @@ def run_doctor(payload: Dict, handler=None, home: Optional[Path] = None) -> Dict
         _check_moneta_consolidation(),
         _check_vector_recall(),
         _check_use_real_usd(),
+        # After the memory checks on purpose: the consolidation check builds
+        # the process store if none exists yet, and with a Moneta store that
+        # is what loads the native module. This check itself only peeks.
+        _check_moneta_native(),
         _check_symbol_table(),
         _check_sidefx_library(),
         _check_bridge_endpoint(base),
