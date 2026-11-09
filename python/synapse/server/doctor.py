@@ -970,7 +970,11 @@ def _native_fallback_evidence(state: Optional[str], probe: Optional[Dict[str, An
     native, neither demoted, no decay fallbacks. A scan's per-query oracle
     answer (``query_nonfinite`` / ``cosine_overflow``) is permitted even under
     require, so it is returned separately as ``per_query`` and reported, not
-    failed. Only meaningful when ``MONETA_NATIVE`` leaves native on.
+    failed. Collected only when ``MONETA_NATIVE`` is not off. The caller turns
+    the evidence into ``python_fallback`` (fail) when the variable is set to a
+    value that leaves native on, and into ``not_requested`` (skipped) when it
+    is unset; a ``hash_mismatch`` outranks both and lists the evidence in its
+    own detail, after "Also:".
     """
     evidence: List[str] = []
     if state == "blocked":
