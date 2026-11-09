@@ -1051,8 +1051,10 @@ def _check_moneta_native(package_file: Optional[str] = None) -> Dict[str, Any]:
                                       The hash comparison is the only way here.
     ``unknown``             skipped   loaded, but no usable pin, or no
                                       extension file could be hashed.
-    ``not_loaded_yet``      skipped   native on, nothing loaded, and no
-                                      evidence Moneta fell back.
+    ``not_loaded_yet``      skipped   ``MONETA_NATIVE`` not off (set to leave
+                                      native on, or unset), nothing loaded, and
+                                      no evidence Moneta fell back. The detail
+                                      says which: unset is not a request.
     ======================  ========  =========================================
     """
     name = "moneta_native"
@@ -1198,8 +1200,12 @@ def _moneta_native_verdict(name: str, package_file: Optional[str]) -> Dict[str, 
                else "Moneta has not probed it in this process yet"
                if probe.get("state") == "not_probed"
                else f"Moneta's probe state is {probe.get('state')!r}")
-        detail = (f"{env_note} leaves native on, but moneta_native is not loaded "
-                  f"yet: {why}. Nothing to hash.")
+        # Unset is not a request for native (see not_requested), so its detail
+        # must not say MONETA_NATIVE left native on.
+        premise = ("MONETA_NATIVE is not set (Moneta's auto), so SYNAPSE did not ask "
+                   "for native, and" if env_class == "unset"
+                   else f"{env_note} leaves native on, but")
+        detail = f"{premise} moneta_native is not loaded yet: {why}. Nothing to hash."
 
     result = {
         "verdict": verdict,
