@@ -608,7 +608,8 @@ This section defines what to watch in production, what the key metrics are, and 
 | **USD authoring active** | `doctor` → `use_real_usd.use_real_usd` | `true` (Phase 4+) | — | `false` (Phase 4+) | When USD substrate is enabled, it must be writing. |
 | **Schema registered** | `doctor` → `moneta_substrate.schema_registered` | `true` (Phase 4+) | — | `false` (Phase 4+) | Schema must be registered for typed USD prims. |
 | **Degraded quarantine count** | `doctor` → `memory_key_fingerprint.degraded_quarantine_count` | 0 | ≥1 | ≥5 | Quarantined files indicate key-mismatch events. Each one is a manual-recovery incident. |
-| **Sleep pass counter** | `doctor` → `moneta_consolidation.sleep_pass_called` | `"not_tracked"` (pre-counter) | — | — | Once a counter is added, track that consolidation is actually running. |
+| **Sleep pass counter** | `doctor` → `moneta_consolidation.sleep_passes` (`count`, `completed`, `failed`, `last_at`, `last_result`) | as expected for the seat | `failed` ≥1 | — | Process-lifetime, kept by `MonetaBackedStore.run_sleep_pass` for every caller. `sleep_pass_called` is `count > 0` (it read `"not_tracked"` before the counter existed). A failed pass's `last_result.pruned` says what it had already removed. |
+| **Native module pinned** | `doctor` → `moneta_native.verdict` | `ok` (loaded, sha256 is a pin in `native_artifact.json`) | `off_by_choice`, `not_requested`, `not_loaded_yet`, `unknown` (skipped) | `hash_mismatch`, `python_fallback` (fail) | Also reports the loaded `.pyd` path and sha256 and Moneta 1.3.0's native counters (`native_calls`, `fallbacks`). `unknown` means no pin could be read: never a pass. `python_fallback` needs `MONETA_NATIVE` set to a value that leaves native on; with it unset, the same evidence reads `not_requested`. `hash_mismatch` fails whatever `MONETA_NATIVE` says. |
 
 ### 10.3 Alert Thresholds
 
