@@ -746,6 +746,33 @@ def test_a_set_value_that_leaves_native_on_still_fails_on_a_python_fallback(
     assert check["result"]["env_class"] != "unset"
 
 
+def test_unset_and_not_loaded_yet_does_not_say_native_was_left_on(monkeypatch):
+    """Unset is not a request for native, so the not_loaded_yet detail must not
+    say MONETA_NATIVE "leaves native on" (Fable re-verify nit, 2026-11-09)."""
+    _unset(monkeypatch)
+
+    check = doctor._check_moneta_native()
+
+    assert check["status"] == "skipped", check
+    res = check["result"]
+    assert res["verdict"] == "not_loaded_yet"
+    assert res["env_class"] == "unset"
+    assert "leaves native on" not in check["detail"]
+    assert "not set" in check["detail"]
+    assert "not loaded yet" in check["detail"]
+
+
+@pytest.mark.parametrize("value", ["1", "auto", "require", "maybe", ""])
+def test_a_set_value_not_loaded_yet_still_says_it_leaves_native_on(monkeypatch, value):
+    monkeypatch.setenv("MONETA_NATIVE", value)
+
+    check = doctor._check_moneta_native()
+
+    assert check["status"] == "skipped", check
+    assert check["result"]["verdict"] == "not_loaded_yet"
+    assert "leaves native on" in check["detail"]
+
+
 def test_the_check_never_raises_and_always_has_a_detail(monkeypatch):
     """A broken reading degrades to skipped with a reason; run_doctor's
     summary only knows ok / fail / skipped."""
