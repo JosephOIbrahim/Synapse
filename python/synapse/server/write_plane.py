@@ -156,18 +156,21 @@ def _resolve_via_doctor() -> Path:
 def resolve_memory_target_dir() -> Path:
     """The directory the scene-memory store writes into.
 
-    The existing store dir when there is one, else the ``.synapse`` path that
-    would be created next to the scene. Read-only: no migration copy, no
-    ``mkdir`` — the resolution reuses ``doctor._resolve_store_dir`` /
+    The live store's folder when a store is serving (for an unsaved scene,
+    this launch's ``$HOUDINI_TEMP_DIR/untitled/sessions/<id>/.synapse``, never
+    the shared ``untitled`` root), else the existing store dir where the store
+    would bind, else the ``.synapse`` path that would be created there.
+    Read-only: no migration copy, no ``mkdir``, no store construction, no new
+    session — the resolution reuses ``doctor._resolve_store_dir`` /
     ``_resolve_store_base_dir`` rather than re-deriving the address, because a
     second copy of that logic is how the C-0 unsaved-scene bug survived (the
     doctor's old inline mirror inspected the wrong directory for every unsaved
     scene).
 
-    THREAD CONTRACT (G1b crucible): the doctor resolvers read
-    ``hou.hipFile.path()``. On the main thread (hwebserver transport) that is
-    a direct call. Off the main thread with a LIVE ``hou`` (websockets
-    transport handler thread) it is marshalled via ``run_on_main`` with a
+    THREAD CONTRACT (G1b crucible): when no store is live, the doctor
+    resolvers read ``hou.hipFile.path()``. On the main thread (hwebserver
+    transport) that is a direct call. Off the main thread with a LIVE ``hou``
+    (websockets transport handler thread) it is marshalled via ``run_on_main`` with a
     short timeout — the same discipline every other hou-reading handler
     follows. Headless (no ``hou`` in the process) there is nothing to marshal;
     the resolvers' own no-hou fallback runs wherever we are. Failures

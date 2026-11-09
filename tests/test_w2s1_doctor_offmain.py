@@ -191,6 +191,7 @@ def test_negative_control_marshal_disabled_touches_off_main(monkeypatch):
 
 def test_doctor_resolve_store_base_dir_off_main_marshals(monkeypatch):
     """The doctor's own resolver mirror (its FIRST off-main hou, check #4)."""
+    import importlib
     from synapse.server import doctor as doctor_mod
 
     main_ident = threading.main_thread().ident
@@ -198,8 +199,18 @@ def test_doctor_resolve_store_base_dir_off_main_marshals(monkeypatch):
     fake = _recording_hou(
         touches, "C:/Program Files/Side Effects/Houdini/bin/untitled.hip", "C:/tmp"
     )
-    # doctor.py does a LOCAL `import hou`, so inject via sys.modules.
+    # doctor.py does a LOCAL `import hou`, so inject via sys.modules. The
+    # session lookup expands $HOUDINI_TEMP_DIR through store.hou, the same
+    # module in Houdini, so record that read too.
     monkeypatch.setitem(sys.modules, "hou", fake)
+    monkeypatch.setattr(store_mod, "HOU_AVAILABLE", True)
+    monkeypatch.setattr(store_mod, "hou", fake, raising=False)
+    # The hou path is the one under test: a store already live in this
+    # process (left by another test) answers without any hou read, and so
+    # would a session another test left bound.
+    monkeypatch.setattr(store_mod, "_global_synapse", None)
+    monkeypatch.setattr(importlib.import_module("synapse.host.memory_lifecycle"),
+                        "_unsaved_base", None)
     pump = _MainThreadPump()
     fake_hde = types.ModuleType("hdefereval")
     fake_hde.executeDeferred = pump.executeDeferred
@@ -214,6 +225,7 @@ def test_doctor_resolve_store_base_dir_off_main_marshals(monkeypatch):
     assert touches, "doctor resolver read no hou"
     off_main = [(n, i) for (n, i) in touches if i != main_ident]
     assert not off_main, f"doctor hou touched off-main (F1 crash class): {off_main}"
+    assert {n for (n, _i) in touches} == {"path", "isNewFile", "expandString"}
 
 
 def test_doctor_symbol_table_version_read_off_main_marshals(monkeypatch):

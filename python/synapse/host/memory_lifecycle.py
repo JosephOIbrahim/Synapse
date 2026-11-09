@@ -39,6 +39,28 @@ def _key(path):
     return os.path.normcase(str(Path(path).resolve()))
 
 
+def unsaved_sessions_dir():
+    """``$HOUDINI_TEMP_DIR/untitled/sessions``: where each launch session of an unsaved scene is made."""
+    from synapse.memory import store as module
+    return Path(module._safe_unsaved_base()) / "sessions"
+
+
+def existing_unsaved_base():
+    """This launch's session folder if one has been created, else None. Never creates one.
+
+    The read-only twin of ``ensure_unsaved_base``, for observers (the doctor and the write-plane
+    probe) that report on the EXISTING session and must not mint one to get an answer. A base
+    left over from another temp root is not this launch's session: it reads as None here, the
+    case ``ensure_unsaved_base`` replaces, and it is left as found.
+    """
+    base = _unsaved_base
+    if base is None:
+        return None
+    from synapse.memory import store as module
+    base = Path(base)
+    return base if base.is_relative_to(Path(module._safe_unsaved_base())) else None
+
+
 def ensure_unsaved_base():
     """The launch session's folder for an unsaved scene, created lazily (BP12 items 1 and 18).
 
@@ -47,10 +69,10 @@ def ensure_unsaved_base():
     (tests) is replaced rather than reused.
     """
     global _unsaved_base
-    from synapse.memory import store as module
-    root = Path(module._safe_unsaved_base())
-    if _unsaved_base is None or not Path(_unsaved_base).is_relative_to(root):
-        _unsaved_base = root / "sessions" / uuid.uuid4().hex
+    existing = existing_unsaved_base()
+    if existing is not None:
+        return existing
+    _unsaved_base = unsaved_sessions_dir() / uuid.uuid4().hex
     return Path(_unsaved_base)
 
 
@@ -132,7 +154,7 @@ def _handle_event(event):
         cause = "save"
     elif event == events.AfterClear and not _loading:
         # New File must not inherit an old session from the shared untitled root.
-        _unsaved_base = module._safe_unsaved_base() / "sessions" / uuid.uuid4().hex
+        _unsaved_base = unsaved_sessions_dir() / uuid.uuid4().hex
         cause = "clear"
     if cause is not None:
         try:

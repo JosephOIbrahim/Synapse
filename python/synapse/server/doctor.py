@@ -221,14 +221,53 @@ def _check_telemetry(home: Path) -> Dict[str, Any]:
 
 # -- memory key fingerprint (check design owned by M3-D; implemented here) ----
 
+def _live_store_dir() -> Optional[Path]:
+    """The folder of the memory store this process is ALREADY serving from,
+    or None when no store is live.
+
+    An observer, never an authority: it reads ``store._global_synapse`` the
+    way ``store.memory_handle_census()`` and ``write_plane._live_store()`` do,
+    and never calls ``get_synapse_memory()``, which would construct a store
+    (mkdir ``.synapse``, open a Moneta handle) and, for an unsaved scene, mint
+    a launch session. A plain attribute read: no hou, nothing to marshal.
+    """
+    try:
+        from ..memory import store as _store_mod
+    except ImportError:
+        return None
+    held = getattr(_store_mod, "_global_synapse", None)
+    storage = getattr(held, "storage_dir", None) if held is not None else None
+    return Path(storage) if storage else None
+
+
 def _resolve_store_base_dir() -> Path:
-    """The directory a scene-memory store lives IN, resolved exactly as the
-    live store resolves it (<hip_dir> via hou.hipFile.path(), no-hou fallback
-    = cwd), READ-ONLY: no migration copies, no mkdir.
+    """The directory a scene-memory store lives IN, or would be created in.
+    READ-ONLY: no migration copies, no mkdir, no store construction, and never
+    a new launch session. In order:
+
+    1. The live store's own folder (``_live_store_dir``): where the store this
+       process serves from actually lives, whatever bound it (an unsaved
+       scene's launch session, a saved scene's folder, a $JOB project).
+    2. No store is live yet: the address the store would bind, read on the
+       main thread. A saved scene: its HIP directory. An unsaved scene: this
+       launch's EXISTING session folder,
+       ``$HOUDINI_TEMP_DIR/untitled/sessions/<id>``, asked of the lifecycle
+       (``memory_lifecycle.existing_unsaved_base``), never minted. With no
+       session yet, the ``sessions`` folder the session will be created in:
+       no store lives there, so ``_resolve_store_dir`` finds none, and it is
+       the folder the store's first mkdir has to write into, so the
+       write-plane probe tests the right directory. Never the shared
+       ``untitled`` root itself: since BP12 item 1 (2026-09-29) no store binds
+       there, and the old shared store left in it is not this launch's.
+    3. No hou: the cwd fallback.
 
     Split out of ``_resolve_store_dir`` so ``server.write_plane`` can ask where
     a store WOULD be created without a second copy of this logic — a second
-    copy is precisely how the C-0 unsaved-scene bug survived (see below)."""
+    copy is precisely how the C-0 unsaved-scene bug survived (see below), and
+    how this resolver kept answering the shared root after BP12 item 1."""
+    live = _live_store_dir()
+    if live is not None:
+        return live.parent
     project: Optional[Path] = None
     try:
         import hou
@@ -240,15 +279,20 @@ def _resolve_store_base_dir() -> Path:
         from ..memory.store import hip_is_unsaved
 
         # W2-S1: marshal the hou reads to the main thread in ONE hop (hip path
-        # + unsaved verdict + unsaved temp base). This is the FIRST hou.* the
-        # off-main run_doctor dispatch reaches (check #4, before the store
-        # construct), so leaving it bare would crash the worker natively before
-        # any store-side marshalling could help. On-main callers pass through.
+        # + unsaved verdict + the lifecycle's session lookup, which expands
+        # $HOUDINI_TEMP_DIR). This is the FIRST hou.* the off-main run_doctor
+        # dispatch reaches (check #4, before the store construct), so leaving
+        # it bare would crash the worker natively before any store-side
+        # marshalling could help. On-main callers pass through.
         def _resolve_on_main():
             hip = hou.hipFile.path()
             if not hip_is_unsaved(hip, hou):
                 return Path(hip)
-            return Path(hou.text.expandString("$HOUDINI_TEMP_DIR")) / "untitled"
+            from ..host.memory_lifecycle import (
+                existing_unsaved_base, unsaved_sessions_dir,
+            )
+            session = existing_unsaved_base()
+            return session if session is not None else unsaved_sessions_dir()
         project = _read_on_main(_resolve_on_main)
     except Exception:
         project = None
@@ -258,8 +302,9 @@ def _resolve_store_base_dir() -> Path:
 
 
 def _resolve_store_dir() -> Optional[Path]:
-    """Resolve the scene-memory storage dir exactly as the live store does
-    (<hip_dir>/.synapse via hou.hipFile.path(), no-hou fallback = cwd), but
+    """The scene-memory storage dir that exists in ``_resolve_store_base_dir()``,
+    found in the store's own .synapse/.nexus/.engram order: the live store's
+    folder when one is serving, else the store dir where the store would bind.
     READ-ONLY: no migration copies, no mkdir. None when no store dir exists."""
     base_dir = _resolve_store_base_dir()
     for store_name in (".synapse", ".nexus", ".engram"):
@@ -434,10 +479,12 @@ def _check_moneta_substrate() -> Dict[str, Any]:
                                "being served by jsonl, not the selected "
                                "backend.")}
         from ..memory import moneta_runtime as mr
-        # Hint the store's Moneta dir so a real stage IS found once
-        # from_storage_dir starts passing use_real_usd=True. Today it does not,
-        # so this resolves to nothing and schema_in_use reports UNKNOWN with
-        # that wiring named in its reason.
+        # Hint the store's own Moneta dir: from_storage_dir materializes the
+        # cortex at <store_dir>/.moneta/cortex_root.usda (W3-STORE) and has
+        # built its handle with use_real_usd=True since 2026-08-05.
+        # _resolve_store_dir is the live store's folder, for an unsaved scene
+        # this launch's session folder. With no store dir there is no hint,
+        # and schema_in_use reports UNKNOWN, not False.
         store_dir = _resolve_store_dir()
         hint = str(store_dir / ".moneta") if store_dir is not None else None
         prov = mr.moneta_provenance(usd_root=hint)
