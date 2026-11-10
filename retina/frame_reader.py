@@ -140,7 +140,10 @@ def pixels_to_rgb(spec: Any, pixels: Any, *, subimage: int = 0) -> Tuple[Any, Di
 
     ``pixels`` is the part's data window, any shape that reshapes to
     ``(spec.height, spec.width, spec.nchannels)`` (OIIO returns HxWxC, or HxW
-    for one channel). ``info``: ``reader`` (:data:`READER_ID`), ``subimage``,
+    for one channel). ``info``: ``reader`` (:data:`READER_ID`, always: this
+    function names itself as the reader even when the caller supplied
+    ``pixels`` read by something else, so such a caller should overwrite
+    ``info["reader"]`` before passing it on), ``subimage``,
     ``origin`` (:func:`origin_from_spec`), ``window``
     (:func:`window_from_spec`), ``channels`` (the names used, R, G, B order)
     and ``dropped`` (the rest). Raises :class:`ValueError` for an integer

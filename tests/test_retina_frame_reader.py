@@ -174,6 +174,18 @@ def test_pixels_to_rgb_reduces_rgba_to_rgb(np):
     json.dumps(info)
 
 
+def test_pixels_to_rgb_selects_channels_by_name_not_position(np):
+    """Distinct per-channel values stored A, B, G, R come out R, G, B (referee F2)."""
+    from retina.frame_reader import pixels_to_rgb
+
+    raw = np.zeros((6, 8, 4), dtype=np.float32)
+    raw[..., 0], raw[..., 1], raw[..., 2], raw[..., 3] = 0.9, 0.3, 0.2, 0.1  # A B G R
+    rgb, info = pixels_to_rgb(fake_spec(channelnames=("A", "B", "G", "R")), raw)
+    assert rgb[3, 4].tolist() == pytest.approx([0.1, 0.2, 0.3])
+    assert info["channels"] == ["R", "G", "B"]
+    assert info["dropped"] == ["A"]
+
+
 def test_pixels_to_rgb_accepts_flat_buffer(np):
     from retina.frame_reader import pixels_to_rgb
 
@@ -478,7 +490,184 @@ def test_check_shape_and_name():
 
 def test_check_extras_cannot_overwrite_the_verdict():
     # A stray key in the result must not reach name/pass/detail.
-    c = firefly_check(_result(count=2, worst={"x": 1, "y": 1}, name="x", detail="y"))
+    # "pass" is among the stray keys: a result saying pass=True with count=2
+    # must still be a finding (referee F6).
+    c = firefly_check(_result(count=2, worst={"x": 1, "y": 1}, name="x", detail="y",
+                              **{"pass": True}))
     assert c["name"] == "firefly_scan"
     assert c["pass"] is False
     assert c["detail"] != "y"
+
+
+def test_check_stray_pass_key_cannot_turn_a_clean_frame_red():
+    c = firefly_check(_result(**{"pass": False}))
+    assert c["pass"] is True
+
+
+# Each half of the inconclusive guard on its own (referee F5).
+
+
+def test_check_inconclusive_flag_wins_over_a_zero_count():
+    c = firefly_check(_result(inconclusive=True, count=0, note="noise not estimated"))
+    assert c["pass"] is None
+    assert "noise not estimated" in c["detail"]
+
+
+def test_check_missing_count_is_none_even_when_not_flagged():
+    c = firefly_check(_result(inconclusive=False, count=None))
+    assert c["pass"] is None
+    assert c["detail"].startswith("inconclusive")
+
+
+# --------------------------------------------------------------------------
+# Non-finite pixels (referee F1)
+# --------------------------------------------------------------------------
+
+
+def test_check_all_nonfinite_frame_is_none_and_says_why():
+    c = firefly_check(_result(nonfinite_pixels=64 * 48))
+    assert c["pass"] is None
+    assert "non-finite" in c["detail"]
+    assert c["nonfinite_pixels"] == 64 * 48
+
+
+def test_check_some_nonfinite_pixels_ride_as_an_extra_and_in_the_detail():
+    c = firefly_check(_result(nonfinite_pixels=3))
+    # The count-based verdict is kept (no new threshold); the record says
+    # the pixels were zeroed before the scan.
+    assert c["pass"] is True
+    assert c["nonfinite_pixels"] == 3
+    assert "3 non-finite" in c["detail"]
+    assert "zeroed" in c["detail"]
+
+
+def test_check_some_nonfinite_pixels_named_on_a_finding_too():
+    c = firefly_check(_result(count=1, worst={"x": 1, "y": 1}, nonfinite_pixels=1))
+    assert c["pass"] is False
+    assert c["nonfinite_pixels"] == 1
+    assert "1 non-finite pixel " in c["detail"]
+
+
+def test_check_finite_frame_carries_zero_nonfinite_and_no_note():
+    c = firefly_check(_result())
+    assert c["nonfinite_pixels"] == 0
+    assert "non-finite" not in c["detail"]
+
+
+def test_check_without_nonfinite_key_still_works():
+    r = _result()
+    del r["nonfinite_pixels"]
+    c = firefly_check(r)
+    assert c["pass"] is True
+    assert c["nonfinite_pixels"] is None
+
+
+# Referee round 2 on 17e450b5.
+
+
+def test_check_one_finite_pixel_left_is_not_all_nonfinite():
+    # width*height - 1 non-finite: one real pixel remains, so the
+    # count-based verdict stands and the zeroed note is carried. Kills the
+    # "width only", "height only" and ">= total - 1" comparisons.
+    c = firefly_check(_result(width=64, height=48, count=0, nonfinite_pixels=64 * 48 - 1))
+    assert c["pass"] is True
+    assert "zeroed" in c["detail"]
+    assert c["nonfinite_pixels"] == 64 * 48 - 1
+
+
+def test_check_all_nonfinite_detail_has_no_zeroed_note():
+    c = firefly_check(_result(nonfinite_pixels=64 * 48))
+    assert c["pass"] is None
+    assert "zeroed" not in c["detail"]
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "abc",                # int() raises ValueError
+        object(),             # int() raises TypeError
+        float("inf"),         # int() raises OverflowError
+        float("nan"),
+        -3,
+        True,
+        False,
+        2.5,
+    ],
+    ids=["str", "object", "inf", "nan", "negative", "bool_true", "bool_false",
+         "non_integer_float"],
+)
+def test_check_bad_nonfinite_value_reads_none(bad):
+    clean = firefly_check(_result())
+    c = firefly_check(_result(nonfinite_pixels=bad))
+    assert c["nonfinite_pixels"] is None
+    # Nothing raw reaches the detail: it reads exactly as a clean frame's.
+    assert c["detail"] == clean["detail"]
+    assert c["pass"] is True
+
+
+@pytest.mark.parametrize(
+    "dims",
+    [
+        {"width": "MISSING"},
+        {"height": "MISSING"},
+        {"width": None},
+        {"height": None},
+        {"width": 0},
+        {"height": 0},
+        {"width": -64, "height": -48},
+        {"width": True},
+        {"height": 2.5},
+        {"width": "64"},
+    ],
+    ids=["width_missing", "height_missing", "width_none", "height_none", "width_zero",
+         "height_zero", "both_negative", "width_bool", "height_float", "width_str"],
+)
+@pytest.mark.parametrize("count", [0, 1])
+def test_check_nonfinite_without_a_usable_size_is_inconclusive(dims, count):
+    r = _result(nonfinite_pixels=5, count=count, worst={"x": 1, "y": 1} if count else None)
+    for k, v in dims.items():
+        if v == "MISSING":
+            del r[k]
+        else:
+            r[k] = v
+    c = firefly_check(r)
+    assert c["pass"] is None  # fail closed: never True, and no count verdict
+    assert c["detail"].startswith("inconclusive")
+    assert "frame size" in c["detail"]
+    assert c["nonfinite_pixels"] == 5
+
+
+@pytest.mark.parametrize("nonfinite", [0, None, "MISSING"])
+@pytest.mark.parametrize("key", ["width", "height"])
+def test_check_missing_size_without_nonfinite_keeps_the_count_verdict(nonfinite, key):
+    for count, want in ((0, True), (1, False)):
+        r = _result(count=count, worst={"x": 1, "y": 1} if count else None)
+        if nonfinite == "MISSING":
+            del r["nonfinite_pixels"]
+        else:
+            r["nonfinite_pixels"] = nonfinite
+        del r[key]
+        c = firefly_check(r)
+        assert c["pass"] is want
+        assert "frame size" not in c["detail"]
+
+
+def test_all_nan_frame_through_fireflies_is_not_a_pass(np, cv2):
+    from retina.firefly_scan import fireflies
+
+    r = fireflies(np.full((48, 64, 3), np.nan, dtype=np.float32))
+    c = firefly_check(r)
+    assert c["pass"] is None
+    assert "non-finite" in c["detail"]
+    assert c["nonfinite_pixels"] == 48 * 64
+
+
+def test_one_inf_pixel_through_fireflies_is_named(np, cv2):
+    from retina.firefly_scan import fireflies
+
+    rng = np.random.default_rng(1)
+    img = (0.18 + rng.normal(0, 0.01, (48, 64, 1))).repeat(3, axis=2).astype(np.float32)
+    img[10, 10, 0] = np.inf
+    c = firefly_check(fireflies(img))
+    assert c["nonfinite_pixels"] == 1
+    assert "1 non-finite pixel " in c["detail"]
