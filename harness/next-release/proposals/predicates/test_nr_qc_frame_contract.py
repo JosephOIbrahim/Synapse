@@ -10,8 +10,9 @@ what it measured:
   RGB, and fireflies found in it carry frame positions;
 * ``fireflies()`` results name ``luminance_basis`` and ``reader``;
 * ``retina.firefly_scan.firefly_check`` turns a result into a ``make_check`` record
-  whose ``pass`` is None for an inconclusive result, True for a clean frame and False
-  for a finding.
+  whose ``pass`` is None for an inconclusive result, True for a clean frame, and True
+  for a frame with firefly candidates, named in the detail (owner ruling
+  QC-FIREFLY-RULES, 2026-11-10; was False for a finding).
 
 Red when written (b856fafb): ``retina/frame_reader.py`` and ``firefly_check`` do not
 exist, so every test below fails with ModuleNotFoundError / ImportError.
@@ -96,7 +97,8 @@ def test_check_is_tri_state():
     worst = {"x": 7, "y": 5, "frame_x": 107, "frame_y": 55}
     found = check(dict(common, inconclusive=False, note=None, count=1, sigma=0.01,
                        worst=worst, origin=[100, 50]))
-    assert found["pass"] is False
+    assert found["pass"] is True
+    assert "1 firefly candidate" in found["detail"]
     assert found["frame_position"] == [107, 55]
     assert found["luminance_basis"] == "rec709_weights"
     assert "reader" in found
