@@ -1531,8 +1531,15 @@ def _check_runtime_provenance(modules=None, runtime_root=None, houdini_root=None
     running SYNAPSE runtime root (the ``<root>/python/synapse`` layout of the running
     package; a dot-folder under it is never payload), outside Houdini's install folder
     ($HFS) and outside Houdini's Python (``sys.prefix`` and friends). Standard-library
-    names and file-less entries (built-ins, namespace portions) are not third-party;
-    first-party code loaded from another tree IS reported.
+    names and file-less entries (built-ins, namespace portions) are not third-party. A
+    module whose ``__file__`` is not an absolute path counts as file-less too, wherever
+    the working folder is: PySide6's shiboken support modules report names such as
+    ``shibokensupport/feature.py`` and one ``hou`` module reports ``hou.session``, and
+    resolving those against the working folder made them foreign whenever that folder
+    lay outside all three. Only the form of the name decides: an absolute path is
+    checked even when no file exists there, as for a module imported from a zip archive
+    on an absolute ``sys.path`` entry.
+    First-party code loaded from another tree IS reported.
 
     ``fail`` (the panel shows NEEDS ATTENTION) when any foreign module is loaded, with
     each package and the folder it came from; ``ok`` when none is; ``skipped`` outside
@@ -1603,8 +1610,8 @@ def _check_runtime_provenance(modules=None, runtime_root=None, houdini_root=None
                              module_name, exc)
                 unlocated += 1
                 continue
-            if file is None:
-                continue
+            if file is None or not os.path.isabs(file):
+                continue  # no file, or a name that is not an absolute path: counted as none
             folder = os.path.dirname(file)
             if folder not in folders:
                 folders[folder] = _canonical_path(folder)
