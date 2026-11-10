@@ -12,7 +12,8 @@ outside Houdini's install folder ($HFS) and Houdini's Python. The Doctor's wire 
 ok / fail / skipped; the panel's Doctor dialog shows ``fail`` as NEEDS ATTENTION.
 
 These tests drive the check with fake modules whose ``__file__`` sits under fake roots in
-tmp_path. Every name that is new in this change is imported inside its test, so on the old code
+tmp_path; the relative-name tests use the relative ``__file__`` strings a headless Houdini
+reported. Every name that is new in this change is imported inside its test, so on the old code
 the tests fail instead of the file failing to collect.
 """
 from __future__ import annotations
@@ -194,6 +195,91 @@ def test_standard_library_and_fileless_entries_are_not_third_party(seat):
 
     assert check["status"] == "ok", check["detail"]
     assert check["result"]["foreign"] == []
+
+
+#: The ``__file__`` values a Doctor run inside headless Houdini 22.0.400 reported on 2026-11-09
+#: (the leg D probe of a seat build of 9cba9a6a). None is an absolute path: PySide6's shiboken
+#: support modules report names such as ``shibokensupport/feature.py``, and one ``hou`` module
+#: reports ``hou.session``. The check resolved these names against the working folder, so it
+#: named PySide6, shibokensupport, __feature__, signature_bootstrap and hou as foreign. The probe
+#: records each package's name and one file, so the module names under PySide6 and hou are
+#: inferred from those files.
+_RELATIVE_FILES = {
+    "shibokensupport": "shibokensupport/__init__.py",
+    "__feature__": "shibokensupport/feature.py",
+    "PySide6.support.__feature__": "shibokensupport/feature.py",
+    "signature_bootstrap": "signature_bootstrap.py",
+    "hou.session": "hou.session",
+}
+#: The rule is the form of the name, not these packages: one relative name the probe did not see.
+_ALL_RELATIVE_FILES = {**_RELATIVE_FILES, "made_up_embedded": "made_up_embedded/__init__.py"}
+
+
+def _with_relative_files(seat):
+    """The seat's modules, PySide6's own package under $HFS, and every relative name above."""
+    modules = _modules(seat.inside, seat.houdini)
+    pyside = _touch(seat.hfs / "python313" / "lib" / "site-packages" / "PySide6" / "__init__.py")
+    modules["PySide6"] = _module("PySide6", pyside)
+    modules.update({name: _module(name, file) for name, file in _ALL_RELATIVE_FILES.items()})
+    return modules
+
+
+@pytest.mark.parametrize("cwd", ["outside_both_roots", "outside_with_those_files_present",
+                                 "inside_the_runtime_root"])
+def test_a_module_whose_file_is_not_absolute_counts_as_having_no_file(seat, monkeypatch, cwd):
+    """A relative ``__file__`` counts as no file, like a built-in: not checked, not unlocated,
+    never foreign, wherever the working folder is and whatever lies there. Outside both roots
+    the old check read fail; inside the runtime root it read ok but counted the relative names
+    as checked runtime files."""
+    folder = seat.runtime if cwd == "inside_the_runtime_root" else seat.checkout
+    folder.mkdir(parents=True, exist_ok=True)
+    if cwd == "outside_with_those_files_present":
+        for file in _ALL_RELATIVE_FILES.values():
+            _touch(folder / file)
+    monkeypatch.chdir(folder)
+
+    check = _run(seat, _with_relative_files(seat))
+
+    assert check["status"] == "ok", check["detail"]
+    assert check["result"]["foreign"] == []
+    # Only modules whose file has an absolute path count: the seat's, Houdini's and PySide6's own.
+    assert check["result"]["checked"] == len(seat.inside) + len(seat.houdini) + 1
+    assert check["result"]["unlocated"] == 0
+
+
+def test_sidefx_labs_beside_houdini_stays_flagged(seat, monkeypatch):
+    """Owner ruling (2026-11-10): "Keep SideFX Labs flagged." On the probed machine Labs sits
+    beside $HFS, not inside it, and its files have absolute paths, so the relative-name rule
+    leaves it foreign. Here the old check named seven packages, the probe's six and one made-up
+    relative name; now it names only labutils."""
+    seat.checkout.mkdir(parents=True, exist_ok=True)
+    monkeypatch.chdir(seat.checkout)
+    labs = seat.tmp / "sidefx_packages" / "SideFXLabs22.0" / "scripts" / "python"
+    modules = _with_relative_files(seat)
+    modules["labutils"] = _module("labutils", _touch(labs / "labutils.py"))
+
+    check = _run(seat, modules, sys_path=[seat.runtime / "python", labs])
+
+    assert check["status"] == "fail", check["detail"]  # the panel shows fail as NEEDS ATTENTION
+    assert _foreign_names(check) == ["labutils"]
+    assert Path(check["result"]["foreign"][0]["origin"]) == labs
+    assert "labutils" in check["detail"] and "shibokensupport" not in check["detail"]
+
+
+def test_an_absolute_file_with_nothing_on_disk_is_still_checked(seat):
+    """Only the form of the name decides. An absolute ``__file__`` with no file behind it (a
+    module imported from a zip archive on an absolute ``sys.path`` entry, or a file deleted
+    after import) is still placed by its folder, and flagged when that folder is outside."""
+    ghost = seat.checkout / ".hython_deps" / "deps.zip" / "orjson" / "__init__.py"  # never created
+    modules = _modules(seat.inside, seat.houdini)
+    modules["orjson"] = _module("orjson", ghost)
+
+    check = _run(seat, modules)
+
+    assert not ghost.exists()
+    assert check["status"] == "fail", check["detail"]
+    assert _foreign_names(check) == ["orjson"]
+    assert check["result"]["checked"] == len(seat.inside) + len(seat.houdini) + 1
 
 
 def test_reading_a_lazy_module_never_executes_it(seat):
