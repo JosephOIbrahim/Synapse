@@ -43,6 +43,6 @@ features:
   # the real fix (a verb rail that collapses to icons below ~360px) is queued for the next design wave.
   # The wordmark never elides (ff678887): the brand is the last thing that gives way.
   - description: "Every docking region minimumSizeHint().width() <= 400px wide at airy, <= 380px wide at standard, <= 380px wide at tight, with bundled fonts loaded (interim PD bound; contract floor is PANEL_MIN_WIDTH 280)"
-    verify: "\"C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe\" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider"
+    verify: "python .synapse/hytest.py tests/test_panel_rhythm_docking.py"
     passing: false
 stop_when: "all features passing OR sessions exhausted OR budget reached"
