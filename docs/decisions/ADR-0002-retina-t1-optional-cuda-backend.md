@@ -151,6 +151,18 @@ Still open: decisions 6, 7, 9, 10, 11, 15 and 18, Windows 26H2 vendor support (t
 
 **Consequence 1 recorded:** the RETINA blueprint gains an amendment record at its end. Its text above that record is unchanged.
 
+## Owner ruling (2026-11-10): decision 9
+
+**Source:** Joe's words in session, 2026-11-10, verbatim: "Two OpenCV branches are unmerged. (Please merge these)." Then, after the merged tree passed the full stock suite: "Go on slice 1: fast-forward local master to 3c40d7aa the same way (ff-only on 0 failed), record my decision 9 ruling in ADR-0002, show me the result, and don't push."
+
+| Item | Settled as | Basis |
+|---|---|---|
+| Decision 9 (OD-17), the other OpenCV branches | Merged. `pd/loop2-opencv-fire` (`5ebc436f`), which already contains `feat/opencv-render-qc`, was merged `--no-ff` onto master `202902ad` as `3c40d7aa`. It adds `retina/firefly_scan.py`, `python/synapse/cv/`, four test files and `docs/plans/OPENCV_RENDER_QC.md`, and changes no existing file. Of the listed options this is closest to "absorb": both branches enter master unchanged. That mapping is the orchestrator's reading, not Joe's words. | Joe's ruling, quoted above |
+
+Evidence: the full stock suite on `3c40d7aa` gave 12,587 passed, 500 skipped, 11 xfailed, 0 failed. Against master `202902ad` (12,511 / 481 / 11 / 0), the differences are the four new test files, plus five skips caused by the tree's location on disk.
+
+What this does not settle: nothing calls the detector and no tool is registered for it. `retina/firefly_scan.py` is not in the host payload. Its Rec.709 luminance is outside `NR-IMAGE-CONTRACT`'s owner files. Amendment item OD-17 in `harness/next-release/proposals/` still reads open until that file is updated. The Render QC Blueprint (10 Nov 2026, sha256 `0ffa19c2…f214`) is an input under reconcile, and nothing in it is ruled by this record.
+
 ---
 
 ## Decision
@@ -283,7 +295,7 @@ Each item lists the options and the evidence. None is settled here. Numbers 5-11
    - (a) The stock `opencv-python-headless==5.0.0.93` wheel in its own venv. Report 04 calls this the safest option.
    - (b) The custom 5.1 build's CPU path, compiled with `WITH_IPP=OFF` and `WITH_TBB=OFF` (`Current_Configure.json:65-70`).
    - Whether T1 metrics differ between the two is UNKNOWN. The cv2 4.12.0 found in the default interpreter's user site must not be the oracle [04-prep F-c; 05-claims §4.3].
-9. **The other OpenCV branches.** The unmerged branches `feat/opencv-render-qc` and `pd/loop2-opencv-fire` add `retina/firefly_scan.py` and `python/synapse/cv/`. Options: supersede, absorb or coexist [03-governance §6.2].
+9. **The other OpenCV branches.** The unmerged branches `feat/opencv-render-qc` and `pd/loop2-opencv-fire` add `retina/firefly_scan.py` and `python/synapse/cv/`. Options: supersede, absorb or coexist [03-governance §6.2]. **Ruled 2026-11-10: merged** (see "Owner ruling (2026-11-10): decision 9").
 10. **The RETINA.M3 queue entry.** It is `ratified: true`, but its title describes the target-source route that R100 refuted (`harness/state/flywheel_queue.json:471-473`). Options: amend or leave it [03-governance §4].
 11. **Named owners** for the input blueprint's §7 roles: integration, build and package, an independent correctness reviewer who is not the build author, and release and support. Joe assigns these; none is proposed here [06-critic §4.3].
 12. **Graph home and owner for G0-proposed files (Joe alone).** No node owns the proposed guard tests (`tests/test_retina_worker_boundary.py`, `tests/test_retina_scoped_delta_gap.py`), a worker-only CUDA module, or the RETINA venv recipe files (`retina/setup_venv.py`, `retina/setup_venv.ps1`, `retina/requirements.txt`) (VERIFIED: `graph.json` owner_files).
