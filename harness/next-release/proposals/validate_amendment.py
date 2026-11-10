@@ -301,6 +301,8 @@ def main(argv: list[str] | None = None) -> int:
             want, err = ch.get("proposed"), ""
             if field == "why":
                 want, err = apply_edits(str(want), by_node.get(str(nid), []))
+                if want is not None:
+                    want = want + later_why_appends(str(nid))
             ok = base and want is not None and gnodes[nid].get(field) == want
             record(ok, f"merged change {i} {key}",
                    f"{gname} carries the proposed value"
@@ -354,7 +356,8 @@ def main(argv: list[str] | None = None) -> int:
            f"{len(m_edges)} amendment edges have both endpoints in {gname} (merge record: {mr.get('merged_edges')}); "
            "each is there verbatim" + (f"; missing or altered {missing}" if missing else ""))
     stray_e = [f"{e['from']}->{e['to']}" for e in gedges
-               if (str(e["from"]).startswith("NR-VG-") or str(e["to"]).startswith("NR-VG-")) and ekey(e) not in am_keys]
+               if (str(e["from"]).startswith("NR-VG-") or str(e["to"]).startswith("NR-VG-")) and ekey(e) not in am_keys
+               and ekey(e) not in later_edge_keys()]
     record(not stray_e, "no NR-VG- edge outside the amendment",
            f"every {gname} edge that touches an NR-VG- node is an amendment edge" + (f"; stray {stray_e}" if stray_e else ""))
     bad = []
@@ -477,7 +480,68 @@ def main(argv: list[str] | None = None) -> int:
             copy.parent.mkdir(parents=True, exist_ok=True)
             copy.write_text(src, encoding="utf-8")
             run_file(f"draft predicate {nid}", nid, copy, Path(tmp) / "draft", markers.get(nid), env, None)
+    later_amendment_checks(graph, gname)
     return finish()
+
+
+def later_amendments() -> list[tuple[str, dict]]:
+    """Other amendment files in this folder that carry a _merge_record (merged after 2026-11-08).
+
+    Added 2026-11-10 with the Render QC amendment. A later merge may append to a node's why
+    and may add edges that touch an NR-VG- node; the vision-grow checks accept exactly what a
+    later merge record names and nothing else, and later_amendment_checks() proves each such
+    merge verbatim against graph.json.
+    """
+    out = []
+    for p in sorted(HERE.glob("*.amendment.PROPOSED.json")):
+        if p.name == AMENDMENT.name:
+            continue
+        try:
+            doc = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(doc.get("_merge_record"), dict):
+            out.append((p.name, doc))
+    return out
+
+
+def later_why_appends(nid: str) -> str:
+    """Concatenated why appends that later merged amendments record for one node, in file order."""
+    return "".join(ch["append"] for _, doc in later_amendments() for ch in doc.get("changes", [])
+                   if ch.get("node") == nid and ch.get("field") == "why" and isinstance(ch.get("append"), str))
+
+
+def later_edge_keys() -> set[str]:
+    return {ekey(e) for _, doc in later_amendments() for e in doc.get("edges", [])}
+
+
+def later_amendment_checks(graph: dict, gname: str) -> None:
+    """Each later merged amendment is in graph.json exactly as its _merge_record says."""
+    gnodes = {n["id"]: n for n in graph["nodes"]}
+    gkeys = {ekey(e) for e in graph["edges"]}
+    gtriples = {(e["from"], e["to"], e["type"]) for e in graph["edges"]}
+    for name, doc in later_amendments():
+        mr = doc["_merge_record"]
+        bad = [n["id"] for n in doc.get("nodes", []) if gnodes.get(n["id"]) != n]
+        record(not bad and sorted(mr.get("nodes_added", [])) == sorted(n["id"] for n in doc.get("nodes", [])),
+               f"later merge {name}: nodes", f"{len(doc.get('nodes', []))} nodes verbatim in {gname}"
+               + (f"; missing or altered {bad}" if bad else ""))
+        miss = [f"{e['from']}->{e['to']}" for e in doc.get("edges", []) if ekey(e) not in gkeys]
+        record(not miss and mr.get("edges_added") == len(doc.get("edges", [])),
+               f"later merge {name}: edges", f"{len(doc.get('edges', []))} edges verbatim"
+               + (f"; missing or altered {miss}" if miss else ""))
+        left = [r for r in mr.get("edges_removed", []) if (r["from"], r["to"], r["type"]) in gtriples]
+        record(not left, f"later merge {name}: removed edges", "every removed edge is absent"
+               + (f"; still present {left}" if left else ""))
+        for ch in doc.get("changes", []):
+            nid, field = ch.get("node"), ch.get("field")
+            g = gnodes.get(nid, {})
+            if "proposed" in ch:
+                ok = g.get(field) == ch["proposed"]
+            else:
+                ok = isinstance(ch.get("append"), str) and str(g.get(field, "")).endswith(ch["append"])
+            record(ok, f"later merge {name}: change {nid}.{field}",
+                   f"applied as recorded (ruling {ch.get('ruling')})")
 
 
 def predicate_target(predicate: str) -> str | None:

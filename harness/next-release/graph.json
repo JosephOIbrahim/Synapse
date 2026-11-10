@@ -124,10 +124,10 @@
         "tests/test_retina_worker_contract.py"
       ],
       "depends_on": [
-        "NR-IMAGE-CONTRACT",
+        "NR-QC-FRAME-CONTRACT",
         "NR-GPU-QUALIFICATION"
       ],
-      "why": "RETINA has modules and a designed process boundary, not a deployed executable path. The worker must own its cv2/OIIO/CUDA binaries outside Houdini's DLL search path, take allowlisted operations and read-only roots, and run off the main thread. This is also the first place the evidence envelope crosses a process boundary. Owner ruling 2026-11-07 (R4): the worker runtime is CPython 3.12.10 with the isolated cp312 OpenImageIO wheel, not a hython-seeded venv and not the cp314 wheel.",
+      "why": "RETINA has modules and a designed process boundary, not a deployed executable path. The worker must own its cv2/OIIO/CUDA binaries outside Houdini's DLL search path, take allowlisted operations and read-only roots, and run off the main thread. This is also the first place the evidence envelope crosses a process boundary. Owner ruling 2026-11-07 (R4): the worker runtime is CPython 3.12.10 with the isolated cp312 OpenImageIO wheel, not a hython-seeded venv and not the cp314 wheel. Owner rulings 2026-11-10 (Render QC Blueprint): a CPU-only worker in the R4 CPU environment closes this node (QC-Q2); its first and only allowlisted operation is the firefly scan (QC-Q7); the mask is written beside the frame (QC-Q4).",
       "predicate": "test -f retina/worker_entrypoint.py",
       "gate": "crux",
       "effort": "L"
@@ -273,6 +273,84 @@
       "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_vg_gpu_canary.py -q -p no:cacheprovider",
       "gate": "joe",
       "effort": "M"
+    },
+    {
+      "id": "NR-QC-FIREFLY-LAND",
+      "title": "Land the positional firefly detector and the cv2-free frame reader on master",
+      "owner_files": [
+        "python/synapse/cv/",
+        "tests/test_cv_analysis.py",
+        "tests/test_cv_reader.py",
+        "tests/test_retina_fireflies.py",
+        "tests/test_retina_fireflies_local_noise.py",
+        "docs/plans/OPENCV_RENDER_QC.md"
+      ],
+      "depends_on": [],
+      "why": "Owner ruling 2026-11-10, ADR-0002 decision 9: 'Two OpenCV branches are unmerged. (Please merge these).' Landed as 3c40d7aa (full stock suite 12,587 passed / 500 skipped / 11 xfailed / 0 failed) and recorded in 880d2cfc. retina/firefly_scan.py passes to NR-QC-FRAME-CONTRACT, which changes it next. The plan document's Status is stale and still proposes cv2 in hython (against R4); its owner corrects that.",
+      "predicate": "python -m pytest tests/test_retina_fireflies.py tests/test_retina_fireflies_local_noise.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "S"
+    },
+    {
+      "id": "NR-QC-FRAME-CONTRACT",
+      "title": "Give the firefly scan a worker-side reader that reports frame positions and names its luminance basis",
+      "owner_files": [
+        "retina/frame_reader.py",
+        "retina/firefly_scan.py",
+        "tests/test_retina_frame_reader.py"
+      ],
+      "depends_on": [
+        "NR-QC-FIREFLY-LAND"
+      ],
+      "why": "Slice 0: retina/ingest.py read_beauty returns no data-window origin and keeps every channel, while fireflies() refuses anything but 3 channels; the cv-side reader lives in python/synapse/cv/, which the worker does not carry. Owner ruling QC-Q1: a new reader file inside retina/, the luminance basis and reader named as check extras (make_check(**extra)), no edit to any NR-IMAGE-CONTRACT file. Done when a fixture whose data window does not start at the frame corner reports frame positions, and a 4-channel part is reduced to RGB or refused with a reason.",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_qc_frame_contract.py -q -p no:cacheprovider",
+      "gate": "crux",
+      "effort": "M"
+    },
+    {
+      "id": "NR-QC-TIMING",
+      "title": "Time the read, the firefly scan and the mask write on real rendered frames, CPU first",
+      "owner_files": [
+        "harness/vision/qc_timing/"
+      ],
+      "depends_on": [
+        "NR-QC-FRAME-CONTRACT"
+      ],
+      "why": "v5.99.0 measured no speed, memory or latency figure (docs/releases/v5.99.0.md Limits). No budget (QC-Q3) and no GPU decision for this operation is defensible before a receipt with its producer command (Law 2). Frames are Joe's to name (QC-Q5). Reports read, scan and mask write separately, in the R4 CPU environment.",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_qc_timing.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "S"
+    },
+    {
+      "id": "NR-QC-PANEL-ROW",
+      "title": "Show one render-QC finding in the Review face, built from the event with no model in the loop",
+      "owner_files": [
+        "python/synapse/panel/qc_row.py",
+        "python/synapse/panel/face_review.py",
+        "python/synapse/panel/render_receipt.py",
+        "tests/test_panel_qc_row.py"
+      ],
+      "depends_on": [
+        "NR-RECOVERY-RECEIPTS"
+      ],
+      "why": "A finding the artist cannot see is not a feature. Slice 0: FaceReview.set_receipt clears its box on every call and draws only check names, so a second event would replace T0's rows and no number could be drawn; verdict.py is two-state and unused by the Review face. The row states 'candidates', the count, the worst pixel in frame coordinates, its sigma and the mask path beside the frame (QC-Q4); inconclusive reads as inconclusive with the detector's note; a count of None never renders as 0. The signal from claude_worker.py is QC-OPEN-2.",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_qc_panel_row.py -q -p no:cacheprovider",
+      "gate": "crux",
+      "effort": "M"
+    },
+    {
+      "id": "NR-QC-LIVE-CHECK",
+      "title": "One real Karma frame through the development seat in a GUI session, with the receipt committed",
+      "owner_files": [
+        "harness/vision/qc_live/"
+      ],
+      "depends_on": [
+        "NR-QC-PANEL-ROW"
+      ],
+      "why": "Every result so far is on constructed fixtures. One approved real frame (QC-Q5) on a scratch scene, Houdini preferences isolated, is the difference between built and seen. It runs on the development seat: no worker package exists until NR-PACKAGE-PAIR, which this amendment does not touch. It is the hand-off point to NR-VG-GPU-CANARY.",
+      "predicate": "python -m pytest harness/next-release/proposals/predicates/test_nr_qc_live_check.py -q -p no:cacheprovider",
+      "gate": "joe",
+      "effort": "S"
     }
   ],
   "edges": [
@@ -287,12 +365,6 @@
       "to": "NR-IMAGE-CONTRACT",
       "type": "evidence",
       "why": "the contract must name operations the qualified build actually dispatches"
-    },
-    {
-      "from": "NR-IMAGE-CONTRACT",
-      "to": "NR-WORKER-SUPERVISED",
-      "type": "dep",
-      "why": "the worker implements a contract; it does not invent one"
     },
     {
       "from": "NR-GPU-QUALIFICATION",
@@ -449,6 +521,48 @@
       "to": "NR-PACKAGE-PAIR",
       "type": "evidence",
       "why": "if Joe orders canary before packaging (OD-21), the pair qualification cites the canary receipt"
+    },
+    {
+      "from": "NR-QC-FIREFLY-LAND",
+      "to": "NR-QC-FRAME-CONTRACT",
+      "type": "dep",
+      "why": "the contract changes a detector that must first be on master"
+    },
+    {
+      "from": "NR-QC-FRAME-CONTRACT",
+      "to": "NR-QC-TIMING",
+      "type": "dep",
+      "why": "time the reader the worker will actually use"
+    },
+    {
+      "from": "NR-QC-FRAME-CONTRACT",
+      "to": "NR-WORKER-SUPERVISED",
+      "type": "dep",
+      "why": "the worker's first operation is the firefly scan, and it needs frame positions"
+    },
+    {
+      "from": "NR-RECOVERY-RECEIPTS",
+      "to": "NR-QC-PANEL-ROW",
+      "type": "dep",
+      "why": "the row is fed by a terminal receipt, never by a bare result file"
+    },
+    {
+      "from": "NR-QC-PANEL-ROW",
+      "to": "NR-QC-LIVE-CHECK",
+      "type": "dep",
+      "why": "the live check is judged by what the row shows"
+    },
+    {
+      "from": "NR-QC-LIVE-CHECK",
+      "to": "NR-VG-GPU-CANARY",
+      "type": "evidence",
+      "why": "the canary compares against a CPU result an artist has seen on a real frame"
+    },
+    {
+      "from": "NR-IMAGE-CONTRACT",
+      "to": "NR-WORKER-SUPERVISED",
+      "type": "evidence",
+      "why": "replaces the removed dep edge (QC-Q2): the worker records the basis it used, and NR-IMAGE-CONTRACT later fixes the basis; it no longer blocks the worker"
     }
   ],
   "seams": [

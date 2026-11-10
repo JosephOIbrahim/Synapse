@@ -1,5 +1,5 @@
 {
-  "_status": "PROPOSED. Not merged into graph.json. Merging is Joe's act. Source: 'SYNAPSE Render QC Blueprint', rev 1.0, 10 Nov 2026, sha256 0ffa19c23986eea4dd01e57cf75b1b8d87ce3b8c6fc23f90f871283e4800f214 (cited, not committed), section 8, revised by the slice 0 reconcile and Joe's answers of 2026-11-10 (_owner_decisions).",
+  "_status": "MERGED into graph.json 2026-11-10 on Joe's word: \"Merge the Render QC amendment b856fafb into harness/next-release/graph.json the same way: fresh worktree at master 880d2cfc, merge-aware check, full stock suite, ff-only on 0 failed. Don't push.\" Source: 'SYNAPSE Render QC Blueprint', rev 1.0, 10 Nov 2026, sha256 0ffa19c23986eea4dd01e57cf75b1b8d87ce3b8c6fc23f90f871283e4800f214 (cited, not committed), section 8, revised by the slice 0 reconcile and Joe's answers of 2026-11-10 (_owner_decisions).",
   "_board": "One graph (owner ruling R1, 2026-11-07): these nodes join harness/next-release/graph.json; no second board.",
   "_predicates": "Each predicate is a behavioural pytest file under harness/next-release/proposals/predicates/ (OD-03, round-two R4). The four test_nr_qc_*.py files are NOT written yet: each node's builder writes its predicate first, red before the work and green after (Law 1). NR-QC-FIREFLY-LAND is the exception: its predicate is an existing test file, green on master 880d2cfc. Predicate files are not in any QC node's owner_files: NR-FOLLOW-ON owns harness/next-release/, the same arrangement as the vision-grow predicates.",
   "_validator": "validate_amendment.py reads only vision-grow.amendment.PROPOSED.json and requires NR-VG- ids, so it does not check this file. A read-only dry run (ids, deps, cycles, prefix-aware ownership against graph.json and the unmerged vision-grow nodes) is recorded in _dry_run.",
@@ -228,5 +228,28 @@
       "ruling": "QC-Q2, QC-Q4, QC-Q7"
     }
   ],
-  "_dry_run": "Read-only dry run at authoring (graph.json @ 880d2cfc + unmerged vision-grow nodes): node keys match graph.json's schema; every depends_on and edge endpoint resolves; no dependency cycle with NR-WORKER-SUPERVISED's proposed depends_on; every owner_files entry is free (prefix-aware), and no two QC nodes overlap."
+  "_dry_run": "Read-only dry run at authoring (graph.json @ 880d2cfc + unmerged vision-grow nodes): node keys match graph.json's schema; every depends_on and edge endpoint resolves; no dependency cycle with NR-WORKER-SUPERVISED's proposed depends_on; every owner_files entry is free (prefix-aware), and no two QC nodes overlap.",
+  "_merge_record": {
+    "date": "2026-11-10",
+    "nodes_added": [
+      "NR-QC-FIREFLY-LAND",
+      "NR-QC-FRAME-CONTRACT",
+      "NR-QC-TIMING",
+      "NR-QC-PANEL-ROW",
+      "NR-QC-LIVE-CHECK"
+    ],
+    "edges_added": 7,
+    "edges_removed": [
+      {
+        "from": "NR-IMAGE-CONTRACT",
+        "to": "NR-WORKER-SUPERVISED",
+        "type": "dep"
+      }
+    ],
+    "changes_applied": [
+      "NR-WORKER-SUPERVISED.depends_on",
+      "NR-WORKER-SUPERVISED.why"
+    ],
+    "rule": "graph.json carries every amendment node verbatim, every amendment edge verbatim, both changes, and no other difference from its pre-merge state."
+  }
 }
