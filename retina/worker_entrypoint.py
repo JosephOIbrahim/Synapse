@@ -84,6 +84,10 @@ class Refusal(Exception):
 
 def result_path_for(request_path: str) -> str:
     """``<dir>/<name>.json`` -> ``<dir>/<name>.result.json`` (beside the request)."""
+    # PLAN_GAP: PLAN.md item 1 says the result JSON goes beside the frame; the
+    # builder brief says beside the request. Implemented as: beside the request
+    # (the host's per-call temp directory), so the read-only root only ever gains
+    # the mask.
     base = request_path[: -len(".json")] if request_path.lower().endswith(".json") else request_path
     return base + ".result.json"
 
@@ -91,6 +95,9 @@ def result_path_for(request_path: str) -> str:
 def mask_path_for(product: str, subimage: int) -> str:
     """The firefly mask beside the frame: ``beauty.0001.exr`` -> ``beauty.0001.fireflies.png``
     (``beauty.0001.sub2.fireflies.png`` for subimage 2)."""
+    # PLAN_GAP: QC-Q4 rules the mask goes beside the frame, not its name.
+    # Implemented as: the frame's stem + ".fireflies.png" (".subN" before it for a
+    # non-zero subimage), written for clean frames too (an all-zero mask).
     directory, name = os.path.split(product)
     stem = os.path.splitext(name)[0]
     if subimage:

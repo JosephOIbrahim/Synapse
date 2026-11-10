@@ -448,6 +448,36 @@ def test_a_missing_or_garbled_result_reads_inconclusive(stand_in, frame, tmp_pat
     _assert_inconclusive_check(result)
 
 
+def test_a_deeply_nested_result_reads_inconclusive_not_an_exception(stand_in, frame, tmp_path,
+                                                                     monkeypatch):
+    """Under the size cap but deep enough that json.load raises RecursionError."""
+    root, product = frame
+    rw = _adapter()
+    deep = (
+        "import sys\n"
+        "p = sys.argv[1]\n"
+        "open(p[:-len('.json')] + '.result.json', 'w').write('[' * 200000)\n"
+    )
+    monkeypatch.setattr(rw, "_worker_argv",
+                        lambda python, request: [sys.executable, "-c", deep, request])
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    assert result["status"] == "inconclusive", result
+    assert result["code"] == "bad_result", result
+
+
+def test_an_unusable_work_dir_reads_inconclusive_not_an_exception(stand_in, frame, tmp_path,
+                                                                  monkeypatch):
+    root, product = frame
+    rw = _adapter()
+    monkeypatch.setattr(rw, "_worker_argv", lambda *a: pytest.fail("launched without a request"))
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)],
+                       work_dir=str(tmp_path / "does" / "not" / "exist"))
+    assert result["status"] == "inconclusive", result
+    assert result["code"] == "request_failed", result
+    assert result["pass"] is None and result["reason"]
+    _assert_inconclusive_check(result)
+
+
 def test_a_result_larger_than_the_cap_is_refused(stand_in, frame, tmp_path, monkeypatch):
     root, product = frame
     rw = _adapter()

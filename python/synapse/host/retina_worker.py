@@ -20,10 +20,11 @@ Invariants:
   inconclusive ``not_configured``. Nothing is discovered.
 * **D4** Default timeout :data:`DEFAULT_TIMEOUT_S` (60 s), a safety bound, not a
   QC time budget.
-* **I-7** A worker that cannot start, times out, floods its pipes, exits non-zero,
-  or leaves a missing, oversized or garbled result gives an inconclusive result
-  that says why. Only :class:`MainThreadRefused` and a bad ``timeout`` argument
-  raise.
+* **I-7** A request that cannot be written, a worker that cannot start, times
+  out, floods its pipes, exits non-zero, or leaves a missing, oversized or garbled
+  result gives an inconclusive result that says why. What raises is caller error:
+  :class:`MainThreadRefused`, :class:`ValueError` for a bad ``timeout``, and the
+  ``TypeError`` of arguments that are not paths (``roots=None``, say).
 
 The worker runs as ``<python> -E -s -B -m retina.worker_entrypoint <request>`` with
 the repository root (found from this file) as its working directory. ``-E``
@@ -274,8 +275,9 @@ def run_worker(op: str, product: str, *, roots: Sequence[str], subimage: int = 0
     (default: the system temp directory); it is removed afterwards. The mask, when
     the policy is ``beside_frame``, is written beside the frame and kept.
 
-    Raises :class:`MainThreadRefused` on the main thread and :class:`ValueError`
-    for a ``timeout`` that is not a positive finite number.
+    Raises :class:`MainThreadRefused` on the main thread, :class:`ValueError`
+    for a ``timeout`` that is not a positive finite number, and ``TypeError`` for
+    a ``product`` or ``roots`` that is not a path / an iterable of paths.
     """
     if threading.current_thread() is threading.main_thread():
         raise MainThreadRefused(
@@ -295,6 +297,9 @@ def run_worker(op: str, product: str, *, roots: Sequence[str], subimage: int = 0
 
     python = os.environ.get(ENV_VAR, "")
     worker["python"] = python or None
+    # PLAN_GAP: D3 says "explicit path, no discovery" but not whether a relative
+    # path counts. Implemented as: absolute path to an existing file only; a bare
+    # "python" or a relative path would resolve against PATH/cwd, i.e. discovery.
     if not python or not os.path.isabs(python) or not os.path.isfile(python):
         return done(_inconclusive(
             request_id, op, "not_configured",
@@ -316,12 +321,22 @@ def run_worker(op: str, product: str, *, roots: Sequence[str], subimage: int = 0
         "mask": mask,
         "now": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
-    call_dir = tempfile.mkdtemp(prefix="retina-worker-", dir=work_dir)
+    try:
+        call_dir = tempfile.mkdtemp(prefix="retina-worker-", dir=work_dir)
+    except OSError as exc:
+        return done(_inconclusive(request_id, op, "request_failed",
+                                  f"could not create the request directory in {work_dir!r}: "
+                                  f"{type(exc).__name__}: {exc}", worker))
     try:
         request_path = os.path.join(call_dir, f"request-{request_id}.json")
         result_path = _result_path_for(request_path)
-        with open(request_path, "w", encoding="utf-8") as fh:
-            json.dump(request, fh)
+        try:
+            with open(request_path, "w", encoding="utf-8") as fh:
+                json.dump(request, fh)
+        except OSError as exc:
+            return done(_inconclusive(request_id, op, "request_failed",
+                                      f"could not write the request: {type(exc).__name__}: {exc}",
+                                      worker))
 
         run = _launch(_worker_argv(python, request_path), _REPO_ROOT, float(timeout))
         worker["returncode"] = run["returncode"]
@@ -329,6 +344,9 @@ def run_worker(op: str, product: str, *, roots: Sequence[str], subimage: int = 0
         if run["failure"] is not None:
             code, why = run["failure"]
             return done(_inconclusive(request_id, op, code, why, worker))
+        # PLAN_GAP: the plan does not say what a non-zero exit with a valid result
+        # means. Implemented as: inconclusive. The worker exits 0 whenever it
+        # wrote a result, so anything else is a crash after (or while) writing.
         if run["returncode"] != 0:
             tail = worker["stderr_tail"].strip().splitlines()[-1:] or [""]
             return done(_inconclusive(
@@ -344,7 +362,8 @@ def run_worker(op: str, product: str, *, roots: Sequence[str], subimage: int = 0
         try:
             with open(result_path, "r", encoding="utf-8") as fh:
                 raw = json.load(fh)
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, RecursionError) as exc:
+            # RecursionError: a deeply nested document under the size cap.
             return done(_inconclusive(request_id, op, "bad_result",
                                       f"result is not readable JSON: {type(exc).__name__}: {exc}", worker))
         why = _validate_result(raw, request_id, op, product_abs)
