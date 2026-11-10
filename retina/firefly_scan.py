@@ -5,7 +5,8 @@ never be imported host-side (blueprint P5, ``tests/test_retina_boundary.py``).
 It is the localised companion to :func:`retina.t1.firefly_count`, which is a
 whole-frame ``mean + k*std`` census with no positions. This one reports where.
 It imports nothing from ``synapse`` (the worker venv does not carry it) and
-only :class:`retina.t1.T1Unavailable` from the rest of ``retina``.
+only :class:`retina.t1.T1Unavailable` and :func:`retina.events.make_check`
+(for :func:`firefly_check`) from the rest of ``retina``.
 
 Method, all on Rec.709 luminance:
 
@@ -119,10 +120,16 @@ Known limits of the noise model (reviews of 65b02294, F2, d4c7ab11 and
 from __future__ import annotations
 
 import os
+from typing import Any, Dict, List, Optional
 
+from .events import make_check
 from .t1 import T1Unavailable
 
 REC709_WEIGHTS = (0.2126, 0.7152, 0.0722)
+#: What ``_luminance`` computes, named in every result: the weighted sum of the
+#: input's R, G, B with :data:`REC709_WEIGHTS`. The weights are applied to
+#: whatever the caller passed; nothing here checks that the input is Rec.709.
+LUMINANCE_BASIS = "rec709_weights"
 
 
 class FirefliesUnavailable(T1Unavailable):
@@ -214,6 +221,7 @@ def fireflies(
     max_listed=50,
     mask_path=None,
     origin=None,
+    reader=None,
 ):
     """Firefly report for ``img`` (float HxWx3 linear RGB).
 
@@ -237,6 +245,12 @@ def fireflies(
     ``origin`` of ``synapse.cv.read_frame``'s window): every listing entry
     and ``worst`` then also carry ``frame_x``/``frame_y`` = ``x + ox`` /
     ``y + oy``, and the result carries ``origin``.
+
+    Every result names what it measured: ``luminance_basis`` is
+    :data:`LUMINANCE_BASIS` (``"rec709_weights"``), and ``reader`` is the
+    ``reader`` argument, a short identifier of whatever read the pixels
+    (``retina.frame_reader.READER_ID`` for its ``read_frame``), or ``None``
+    when the caller passed an array and named no reader.
 
     When the noise cannot be estimated (lit pixels exist but are too few, see
     the module docstring) ``inconclusive`` is True, ``note`` says why, and
@@ -280,6 +294,8 @@ def fireflies(
         "threshold_sigma": float(threshold_sigma),
         "max_blob_area": int(max_blob_area),
         "origin": None if origin is None else [ox, oy],
+        "luminance_basis": LUMINANCE_BASIS,
+        "reader": None if reader is None else str(reader),
     }
     # Live pixels carry noise. Flat: the pixel and its 8 neighbours are one
     # exact value (3x3, not 5x5: see the module docstring, step 2). Smooth:
@@ -553,3 +569,85 @@ def _inconclusive(base, noise, note):
         }
     )
     return result
+
+
+def _xy(entry: Optional[Dict[str, Any]], kx: str, ky: str) -> Optional[List[int]]:
+    if not entry or entry.get(kx) is None or entry.get(ky) is None:
+        return None
+    return [int(entry[kx]), int(entry[ky])]
+
+
+def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict[str, Any]:
+    """A :func:`fireflies` result as one check record (:func:`retina.events.make_check`).
+
+    Verdict, tri-state as the event layer requires:
+
+    * ``None`` when the result is inconclusive (the noise could not be
+      estimated, so there is no count): the honest "could not run", never a
+      pass and never a count of 0.
+    * ``True`` when the scan ran and found no firefly (``count == 0``).
+    * ``False`` when it found one or more (``count > 0``): a finding. Under
+      ``events.roll_up`` (fail > inconclusive > pass) one firefly fails the
+      frame.
+
+    Why count > 0 fails rather than passing structurally as
+    :func:`retina.t1.firefly_count` does: that census counts pixels past a
+    frame-wide ``mean + k*std`` and, by its own docstring, passes
+    structurally because no ratified firefly policy gives its count a
+    pass/fail line. This scan's count is already past the caller's ``threshold_sigma``
+    against local noise and the blob-size and isolation filters; zero is the
+    only line that needs no new number, and a positional finding that rolled
+    up green would hide from ``roll_up``. A tolerance above zero is a policy
+    decision for ``qc_profiles.toml``'s owner, not this function. The T1
+    census keeps its own name (``firefly_count``); this check is named
+    ``firefly_scan`` so both can sit in one event (owner ruling QC-Q6).
+
+    Extras (explicit, never the whole result splatted, so no result key can
+    overwrite ``name``/``pass``/``detail``): ``count``, ``pixel_count``,
+    ``worst`` (the result's dict, or None), ``frame_position`` (``[frame_x,
+    frame_y]`` of ``worst``; None without an ``origin`` or a firefly, since
+    array positions are frame positions only when the caller said so),
+    ``array_position`` (``[x, y]`` of ``worst`` in the array, or None),
+    ``origin``, ``threshold_sigma``, ``sigma``, ``mask_path``,
+    ``luminance_basis`` and ``reader`` (the owner's ruling QC-Q1: the basis
+    and the reader ride as check extras).
+    """
+    worst = result.get("worst")
+    count = result.get("count")
+    inconclusive = bool(result.get("inconclusive")) or count is None
+    if inconclusive:
+        passed = None
+        detail = f"inconclusive: {result.get('note') or 'no firefly count'}"
+    elif count == 0:
+        passed = True
+        detail = f"no fireflies above {result.get('threshold_sigma')} local sigma"
+    else:
+        passed = False
+        in_frame = _xy(worst, "frame_x", "frame_y")
+        in_array = _xy(worst, "x", "y")
+        if in_frame:
+            at = f"frame ({in_frame[0]}, {in_frame[1]})"
+        elif in_array:
+            at = f"array ({in_array[0]}, {in_array[1]})"
+        else:
+            at = "an unreported position"
+        detail = (
+            f"{count} firefl{'y' if count == 1 else 'ies'} above "
+            f"{result.get('threshold_sigma')} local sigma; worst at {at}"
+        )
+    return make_check(
+        name,
+        passed,
+        detail,
+        count=count,
+        pixel_count=result.get("pixel_count"),
+        worst=worst,
+        frame_position=_xy(worst, "frame_x", "frame_y"),
+        array_position=_xy(worst, "x", "y"),
+        origin=result.get("origin"),
+        threshold_sigma=result.get("threshold_sigma"),
+        sigma=result.get("sigma"),
+        mask_path=result.get("mask_path"),
+        luminance_basis=result.get("luminance_basis"),
+        reader=result.get("reader"),
+    )
