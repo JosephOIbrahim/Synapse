@@ -721,3 +721,105 @@ def test_one_inf_pixel_through_fireflies_is_named(np, cv2):
     c = firefly_check(fireflies(img))
     assert c["nonfinite_pixels"] == 1
     assert "1 non-finite pixel " in c["detail"]
+
+
+# --------------------------------------------------------------------------
+# firefly_check: the count must be a whole number >= 0 (owner's order,
+# 2026-11-10: "validate count with _whole(count, minimum=0) so an unreadable
+# count reads inconclusive with a reason")
+# --------------------------------------------------------------------------
+
+_GARBAGE_COUNTS = pytest.mark.parametrize(
+    "bad",
+    [-1, True, False, "3", "0", 2.5, float("nan"), float("inf"), [], {}],
+    ids=["negative", "bool_true", "bool_false", "str_three", "str_zero",
+         "non_integer_float", "nan", "inf", "list", "dict"],
+)
+
+
+def _assert_unreadable_count(c, bad):
+    assert c["pass"] is None
+    assert c["detail"].startswith("inconclusive")
+    assert "count" in c["detail"]
+    assert "frame size" not in c["detail"]
+    # Nothing raw reaches the detail or the count extra.
+    assert str(bad) not in c["detail"]
+    assert repr(bad) not in c["detail"]
+    assert c["count"] is None
+
+
+@_GARBAGE_COUNTS
+def test_check_unreadable_count_is_inconclusive(bad):
+    c = firefly_check(_result(count=bad, worst={"x": 1, "y": 1}))
+    _assert_unreadable_count(c, bad)
+    assert c["nonfinite_pixels"] == 0
+    assert "firefly candidate" not in c["detail"]
+
+
+@_GARBAGE_COUNTS
+@_BAD_DIMS
+def test_check_unreadable_count_with_nonfinite_and_no_size_is_inconclusive(bad, dims):
+    # "0" or -1 (or False, which == 0) must not slip past the no-size
+    # fail-closed rule, and the reason is the count, not the frame size.
+    r = _without_size(_result(nonfinite_pixels=5, count=bad), dims)
+    c = firefly_check(r)
+    _assert_unreadable_count(c, bad)
+    assert c["nonfinite_pixels"] == 5
+    assert "5 non-finite pixels (NaN or Inf) zeroed before the scan" in c["detail"]
+
+
+@_GARBAGE_COUNTS
+def test_check_unreadable_count_with_nonfinite_and_a_size_is_inconclusive(bad):
+    c = firefly_check(_result(nonfinite_pixels=5, count=bad))
+    _assert_unreadable_count(c, bad)
+    assert "5 non-finite pixels (NaN or Inf) zeroed before the scan" in c["detail"]
+
+
+def test_check_none_count_is_inconclusive():
+    c = firefly_check(_result(count=None))
+    assert c["pass"] is None
+    assert c["detail"] == "inconclusive: no firefly count"
+    assert c["count"] is None
+
+
+@pytest.mark.parametrize(
+    "good, want",
+    [(0, 0), (0.0, 0), (1, 1), (1.0, 1), (3, 3), (3.0, 3)],
+    ids=["int0", "float0", "int1", "float1", "int3", "float3"],
+)
+def test_check_readable_count_keeps_its_verdict(good, want):
+    c = firefly_check(_result(count=good, worst={"x": 1, "y": 1} if want else None))
+    assert c["pass"] is True
+    assert c["count"] == want
+    assert type(c["count"]) is int
+    if want == 0:
+        assert c["detail"].startswith("no fireflies")
+    elif want == 1:
+        assert c["detail"].startswith("1 firefly candidate above")
+    else:
+        assert c["detail"].startswith(f"{want} firefly candidates above")
+    assert ".0" not in c["detail"].split(" above ")[0]
+
+
+def test_check_numpy_counts_read_as_plain_ints(np):
+    for good, want in ((np.int64(3), 3), (np.float64(3.0), 3), (np.int64(0), 0)):
+        c = firefly_check(_result(count=good, worst={"x": 1, "y": 1} if want else None))
+        assert c["pass"] is True
+        assert c["count"] == want
+        assert type(c["count"]) is int
+        if want:
+            assert c["detail"].startswith("3 firefly candidates above")
+        else:
+            assert c["detail"].startswith("no fireflies")
+
+
+@_BAD_DIMS
+def test_check_flagged_inconclusive_with_nonfinite_and_no_size_keeps_the_zeroed_note(dims):
+    # The flagged-inconclusive branch does not name the non-finite pixels, so
+    # the zeroed note must still ride along.
+    r = _without_size(_result(nonfinite_pixels=5, count=0, inconclusive=True,
+                              note="noise not estimated"), dims)
+    c = firefly_check(r)
+    assert c["pass"] is None
+    assert c["detail"].startswith("inconclusive: noise not estimated")
+    assert "5 non-finite pixels (NaN or Inf) zeroed before the scan" in c["detail"]

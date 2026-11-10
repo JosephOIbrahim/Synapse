@@ -629,6 +629,12 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
       given, whatever the count. The raw value never reaches the detail.
       None or a missing key means the result does not say; the count rule
       below then decides.
+    * ``None`` when ``count`` is present but unreadable (not None, and not a
+      whole number ``>= 0``: a negative, a bool, a string, NaN/Inf, a
+      non-integer float, a list, a dict, anything else). The detail gives the
+      reason; the raw value never reaches the detail, and the ``count`` extra
+      reads None. Integer-valued floats and numpy integers are whole numbers
+      and read as the plain int.
     * ``None`` when ``nonfinite_pixels`` is above 0, ``count`` is 0, and
       ``width`` or ``height`` is missing or not a positive integer: whether
       any finite pixel was scanned cannot be told, so a count of 0 may
@@ -653,7 +659,8 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     QC-Q6).
 
     Extras (explicit, never the whole result splatted, so no result key can
-    overwrite ``name``/``pass``/``detail``): ``count``, ``pixel_count``,
+    overwrite ``name``/``pass``/``detail``): ``count`` (the validated plain
+    int, or None when missing or unreadable), ``pixel_count``,
     ``worst`` (the result's dict, or None), ``frame_position`` (``[frame_x,
     frame_y]`` of ``worst``; None without an ``origin`` or a firefly, since
     array positions are frame positions only when the caller said so),
@@ -673,7 +680,12 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     frame is never a bare "no fireflies".
     """
     worst = result.get("worst")
-    count = result.get("count")
+    raw_count = result.get("count")
+    # Owner's order (2026-11-10): validate the count with _whole(minimum=0),
+    # so an unreadable count reads inconclusive with a reason. Only the
+    # validated int is used below; the raw value never reaches the record.
+    count = _whole(raw_count, minimum=0)
+    count_unreadable = raw_count is not None and count is None
     raw_nonfinite = result.get("nonfinite_pixels")
     nonfinite = _whole(raw_nonfinite, minimum=0)
     # None (or no key) means the result does not say; anything else that is
@@ -683,7 +695,7 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     height = _whole(result.get("height"), minimum=1)
     total = None if width is None or height is None else width * height
     all_nonfinite = bool(nonfinite) and total is not None and nonfinite >= total
-    inconclusive = bool(result.get("inconclusive")) or count is None
+    inconclusive = bool(result.get("inconclusive")) or raw_count is None
     # PLAN_GAP: QC-FIREFLY-RULES says a missing size never downgrades a
     # *finding* (count >= 1) to inconclusive; it does not rule on count 0
     # with non-finite pixels and no usable size.
@@ -691,7 +703,10 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     # finite pixel was scanned (a zeroed pixel cannot be a firefly); a count
     # of 0 may describe the black frame fireflies() made by zeroing them all.
     size_unknown = bool(nonfinite) and total is None and count == 0
+    # True once the chosen branch's detail already names the non-finite pixels.
+    pixels_named = False
     if all_nonfinite:
+        pixels_named = True
         passed = None
         detail = (
             f"inconclusive: all {nonfinite} pixels are non-finite (NaN or Inf); "
@@ -708,12 +723,20 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
         passed = None
         detail = f"inconclusive: {result.get('note') or 'no firefly count'}"
     elif size_unknown:
+        pixels_named = True
         passed = None
         detail = (
             f"inconclusive: {nonfinite} non-finite pixel"
             f"{'' if nonfinite == 1 else 's'} (NaN or Inf), no firefly candidate "
             f"and no usable frame size (width/height missing or not a positive "
             f"integer), so whether any finite pixel was scanned cannot be told"
+        )
+    elif count_unreadable:
+        # The raw value never reaches the detail.
+        passed = None
+        detail = (
+            "inconclusive: count is present but not a non-negative whole number, "
+            "so how many fireflies the scan found cannot be told"
         )
     elif count == 0:
         passed = True
@@ -733,7 +756,7 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
             f"{count} firefly candidate{'' if count == 1 else 's'} above "
             f"{result.get('threshold_sigma')} local sigma; worst at {at}"
         )
-    if nonfinite and not all_nonfinite and not size_unknown:
+    if nonfinite and not pixels_named:
         # The all-non-finite and no-size branches already name the pixels.
         detail += (
             f"; {nonfinite} non-finite pixel{'' if nonfinite == 1 else 's'} "
