@@ -8,6 +8,11 @@ It imports nothing from ``synapse`` (the worker venv does not carry it) and
 only :class:`retina.t1.T1Unavailable` and :func:`retina.events.make_check`
 (for :func:`firefly_check`) from the rest of ``retina``.
 
+:func:`firefly_check` turns a result into one tri-state check record: no
+firefly and firefly candidates both pass True (candidates are named in the
+detail, with the evidence in the extras; owner ruling QC-FIREFLY-RULES), and
+only a result that cannot be judged reads None.
+
 Method, all on Rec.709 luminance:
 
 1. ``residual = L - median5x5(L)`` (``cv2.medianBlur``, border replicated).
@@ -617,26 +622,35 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
       ``width * height``): :func:`fireflies` zeroed them all, so its count of
       0 describes a black frame it made, not the render. The detail then
       carries no "zeroed" note.
-    * ``None`` when ``nonfinite_pixels`` is above 0 but ``width`` or
-      ``height`` is missing or not a positive integer: whether any finite
-      pixel was scanned cannot be told, so the check fails closed. With
-      ``nonfinite_pixels`` 0 or None a missing size changes nothing.
+    * ``None`` when ``nonfinite_pixels`` is present but unreadable (not
+      None, and not a whole number ``>= 0``: ``int()`` fails, NaN, Inf, a
+      negative, a bool, a non-integer float or a string). How many pixels
+      were zeroed before the scan cannot be told, so no count verdict is
+      given, whatever the count. The raw value never reaches the detail.
+      None or a missing key means the result does not say; the count rule
+      below then decides.
+    * ``None`` when ``nonfinite_pixels`` is above 0, ``count`` is 0, and
+      ``width`` or ``height`` is missing or not a positive integer: whether
+      any finite pixel was scanned cannot be told, so a count of 0 may
+      describe the black frame :func:`fireflies` made. This case was not
+      ruled on; it fails closed (see the PLAN_GAP note in the body).
     * ``True`` when the scan ran and found no firefly (``count == 0``).
-    * ``False`` when it found one or more (``count > 0``): a finding. Under
-      ``events.roll_up`` (fail > inconclusive > pass) one firefly fails the
-      frame.
+    * ``True`` when it found one or more (``count >= 1``), with the
+      detail saying "N firefly candidate(s)" and where the worst one is.
+      A missing or unusable frame size changes nothing here: the record
+      reads exactly as it would with a size (a count of 1 or more proves a
+      finite pixel was scanned, since a zeroed pixel cannot be a firefly).
 
-    Why count > 0 fails rather than passing structurally as
-    :func:`retina.t1.firefly_count` does: that census counts pixels past a
-    frame-wide ``mean + k*std`` and, by its own docstring, passes
-    structurally because no ratified firefly policy gives its count a
-    pass/fail line. This scan's count is already past the caller's ``threshold_sigma``
-    against local noise and the blob-size and isolation filters; zero is the
-    only line that needs no new number, and a positional finding that rolled
-    up green would hide from ``roll_up``. A tolerance above zero is a policy
-    decision for ``qc_profiles.toml``'s owner, not this function. The T1
-    census keeps its own name (``firefly_count``); this check is named
-    ``firefly_scan`` so both can sit in one event (owner ruling QC-Q6).
+    Why a count >= 1 passes (owner ruling QC-FIREFLY-RULES, 2026-11-10):
+    one firefly reports as a candidate and does not fail the frame. The
+    evidence rides in the extras (count, worst pixel, frame position,
+    sigma, mask path) for a reviewer to judge. This supersedes the interim
+    count > 0 -> False rule (8be8bc92) and the no-size downgrade
+    (e65a8992). A tolerance that fails a frame is a policy decision for
+    ``qc_profiles.toml``'s owner, not this function. The T1 census
+    (:func:`retina.t1.firefly_count`) keeps its own name; this check is
+    named ``firefly_scan`` so both can sit in one event (owner ruling
+    QC-Q6).
 
     Extras (explicit, never the whole result splatted, so no result key can
     overwrite ``name``/``pass``/``detail``): ``count``, ``pixel_count``,
@@ -649,7 +663,8 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     and the reader ride as check extras), and ``nonfinite_pixels`` (None
     when the result does not say, or says something that is not a whole
     number >= 0: a string, NaN/Inf, a negative, a bool or a non-integer
-    float reads None and never reaches the detail raw).
+    float reads None, makes the verdict None, and never reaches the detail
+    raw).
 
     Some but not all pixels non-finite: the count-based verdict above stands
     (no tolerance for non-finite pixels is invented here; that would be a new
@@ -659,38 +674,53 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     """
     worst = result.get("worst")
     count = result.get("count")
-    nonfinite = _whole(result.get("nonfinite_pixels"), minimum=0)
+    raw_nonfinite = result.get("nonfinite_pixels")
+    nonfinite = _whole(raw_nonfinite, minimum=0)
+    # None (or no key) means the result does not say; anything else that is
+    # not a whole number >= 0 is a value that was given and cannot be read.
+    nonfinite_unreadable = raw_nonfinite is not None and nonfinite is None
     width = _whole(result.get("width"), minimum=1)
     height = _whole(result.get("height"), minimum=1)
     total = None if width is None or height is None else width * height
-    size_unknown = bool(nonfinite) and total is None
     all_nonfinite = bool(nonfinite) and total is not None and nonfinite >= total
     inconclusive = bool(result.get("inconclusive")) or count is None
+    # PLAN_GAP: QC-FIREFLY-RULES says a missing size never downgrades a
+    # *finding* (count >= 1) to inconclusive; it does not rule on count 0
+    # with non-finite pixels and no usable size.
+    # Implemented as: still inconclusive (fail closed). A count >= 1 proves a
+    # finite pixel was scanned (a zeroed pixel cannot be a firefly); a count
+    # of 0 may describe the black frame fireflies() made by zeroing them all.
+    size_unknown = bool(nonfinite) and total is None and count == 0
     if all_nonfinite:
         passed = None
         detail = (
             f"inconclusive: all {nonfinite} pixels are non-finite (NaN or Inf); "
             f"there is no image to scan"
         )
-    elif size_unknown:
-        # Fail closed: without a frame size there is no telling whether any
-        # finite pixel survived, so a count of 0 may describe a black frame
-        # fireflies() made, not the render.
+    elif nonfinite_unreadable:
+        # The raw value never reaches the detail.
         passed = None
         detail = (
-            f"inconclusive: {nonfinite} non-finite pixel"
-            f"{'' if nonfinite == 1 else 's'} (NaN or Inf) and no usable frame size "
-            f"(width/height missing or not a positive integer), so whether any "
-            f"finite pixel was scanned cannot be told"
+            "inconclusive: nonfinite_pixels is present but not a whole number "
+            ">= 0, so how many pixels were zeroed before the scan cannot be told"
         )
     elif inconclusive:
         passed = None
         detail = f"inconclusive: {result.get('note') or 'no firefly count'}"
+    elif size_unknown:
+        passed = None
+        detail = (
+            f"inconclusive: {nonfinite} non-finite pixel"
+            f"{'' if nonfinite == 1 else 's'} (NaN or Inf), no firefly candidate "
+            f"and no usable frame size (width/height missing or not a positive "
+            f"integer), so whether any finite pixel was scanned cannot be told"
+        )
     elif count == 0:
         passed = True
         detail = f"no fireflies above {result.get('threshold_sigma')} local sigma"
     else:
-        passed = False
+        # Owner ruling QC-FIREFLY-RULES: candidates, not a failure.
+        passed = True
         in_frame = _xy(worst, "frame_x", "frame_y")
         in_array = _xy(worst, "x", "y")
         if in_frame:
@@ -700,7 +730,7 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
         else:
             at = "an unreported position"
         detail = (
-            f"{count} firefl{'y' if count == 1 else 'ies'} above "
+            f"{count} firefly candidate{'' if count == 1 else 's'} above "
             f"{result.get('threshold_sigma')} local sigma; worst at {at}"
         )
     if nonfinite and not all_nonfinite and not size_unknown:
