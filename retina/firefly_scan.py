@@ -119,6 +119,8 @@ Known limits of the noise model (reviews of 65b02294, F2, d4c7ab11 and
 
 from __future__ import annotations
 
+import math
+import numbers
 import os
 from typing import Any, Dict, List, Optional
 
@@ -577,6 +579,32 @@ def _xy(entry: Optional[Dict[str, Any]], kx: str, ky: str) -> Optional[List[int]
     return [int(entry[kx]), int(entry[ky])]
 
 
+def _whole(value: Any, *, minimum: int) -> Optional[int]:
+    """``value`` as a plain int when it is a whole number ``>= minimum``, else None.
+
+    Accepts ints (numpy integers included) and finite integer-valued floats.
+    Refuses bools, NaN/Inf, non-integer floats, strings and anything else:
+    a bad value reads None rather than being coerced or passed through raw.
+    """
+    # PLAN_GAP: the owner listed int()-raises, NaN, negative, bool and
+    # non-integer float as bad; strings such as "3" and integer-valued floats
+    # such as 3.0 were not ruled on.
+    # Implemented as: integer-valued finite floats are accepted, strings are
+    # refused (fireflies() always produces plain ints).
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, numbers.Integral):
+        out = int(value)
+    elif isinstance(value, numbers.Real):
+        f = float(value)
+        if not math.isfinite(f) or not f.is_integer():
+            return None
+        out = int(f)
+    else:
+        return None
+    return out if out >= minimum else None
+
+
 def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict[str, Any]:
     """A :func:`fireflies` result as one check record (:func:`retina.events.make_check`).
 
@@ -587,7 +615,12 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
       pass and never a count of 0.
     * ``None`` when every pixel was non-finite (``nonfinite_pixels`` equals
       ``width * height``): :func:`fireflies` zeroed them all, so its count of
-      0 describes a black frame it made, not the render.
+      0 describes a black frame it made, not the render. The detail then
+      carries no "zeroed" note.
+    * ``None`` when ``nonfinite_pixels`` is above 0 but ``width`` or
+      ``height`` is missing or not a positive integer: whether any finite
+      pixel was scanned cannot be told, so the check fails closed. With
+      ``nonfinite_pixels`` 0 or None a missing size changes nothing.
     * ``True`` when the scan ran and found no firefly (``count == 0``).
     * ``False`` when it found one or more (``count > 0``): a finding. Under
       ``events.roll_up`` (fail > inconclusive > pass) one firefly fails the
@@ -614,7 +647,9 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     ``origin``, ``threshold_sigma``, ``sigma``, ``mask_path``,
     ``luminance_basis`` and ``reader`` (the owner's ruling QC-Q1: the basis
     and the reader ride as check extras), and ``nonfinite_pixels`` (None
-    when the result does not say).
+    when the result does not say, or says something that is not a whole
+    number >= 0: a string, NaN/Inf, a negative, a bool or a non-integer
+    float reads None and never reaches the detail raw).
 
     Some but not all pixels non-finite: the count-based verdict above stands
     (no tolerance for non-finite pixels is invented here; that would be a new
@@ -624,12 +659,11 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     """
     worst = result.get("worst")
     count = result.get("count")
-    nonfinite = result.get("nonfinite_pixels")
-    try:
-        nonfinite = None if nonfinite is None else int(nonfinite)
-        total = int(result.get("width")) * int(result.get("height"))
-    except (TypeError, ValueError):
-        total = None
+    nonfinite = _whole(result.get("nonfinite_pixels"), minimum=0)
+    width = _whole(result.get("width"), minimum=1)
+    height = _whole(result.get("height"), minimum=1)
+    total = None if width is None or height is None else width * height
+    size_unknown = bool(nonfinite) and total is None
     all_nonfinite = bool(nonfinite) and total is not None and nonfinite >= total
     inconclusive = bool(result.get("inconclusive")) or count is None
     if all_nonfinite:
@@ -637,6 +671,17 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
         detail = (
             f"inconclusive: all {nonfinite} pixels are non-finite (NaN or Inf); "
             f"there is no image to scan"
+        )
+    elif size_unknown:
+        # Fail closed: without a frame size there is no telling whether any
+        # finite pixel survived, so a count of 0 may describe a black frame
+        # fireflies() made, not the render.
+        passed = None
+        detail = (
+            f"inconclusive: {nonfinite} non-finite pixel"
+            f"{'' if nonfinite == 1 else 's'} (NaN or Inf) and no usable frame size "
+            f"(width/height missing or not a positive integer), so whether any "
+            f"finite pixel was scanned cannot be told"
         )
     elif inconclusive:
         passed = None
@@ -658,7 +703,8 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
             f"{count} firefl{'y' if count == 1 else 'ies'} above "
             f"{result.get('threshold_sigma')} local sigma; worst at {at}"
         )
-    if nonfinite and not all_nonfinite:
+    if nonfinite and not all_nonfinite and not size_unknown:
+        # The all-non-finite and no-size branches already name the pixels.
         detail += (
             f"; {nonfinite} non-finite pixel{'' if nonfinite == 1 else 's'} "
             f"(NaN or Inf) zeroed before the scan"
