@@ -83,6 +83,26 @@
       "ruling": "Firefly rulings: one firefly reports as a candidate and does not fail the frame; a count ≥1 with no frame size stays fail, not inconclusive; an unreadable nonfinite value reads inconclusive.",
       "clarified": "Two follow-up answers the same day (orchestrator's questions, Joe's choices): the no-frame-size case is 'Same as count rule (Recommended)' - no frame size never downgrades a finding to inconclusive, and it reads exactly like a frame with a size; a frame with candidates is 'Pass, with candidates (Recommended)' - pass True, the detail says 'N firefly candidates', the extras carry count, worst pixel and mask.",
       "applied": "retina/firefly_scan.py firefly_check: count 0 -> True; count >= 1 -> True with candidates named in the detail (not False); a missing or unusable frame size no longer makes a count >= 1 inconclusive; a present but unreadable nonfinite_pixels value -> pass None with a reason. Inconclusive detector results and all-non-finite frames stay None. Supersedes the builder's interim count > 0 -> False rule (8be8bc92) and the no-size downgrade (e65a8992)."
+    },
+    {
+      "id": "QC-CODEX-LIMITS",
+      "status": "ruled 2026-11-10",
+      "ruling": "Decision 2: A — accept both open Codex gates as recorded limits; record my words in the amendment and the release Limits.",
+      "context": "The orchestrator's option A read: accept both open Codex reviews (NR-QC-FRAME-CONTRACT and NR-WORKER-SUPERVISED; Codex usage limit until 2026-11-14 08:44) as recorded limits and run the v5.100.0 release card; run Codex on 14 Nov anyway and fix forward. Fable adversarial referees ran on every merged branch.",
+      "applied": "Both crux gates stay open and are listed as limits in docs/releases/v5.100.0.md. They do not block v5.100.0."
+    },
+    {
+      "id": "REL-LEGC-PRECONDITION",
+      "status": "ruled 2026-11-10",
+      "ruling": "Decision 3: record leg C as a known machine precondition.",
+      "context": "Leg C's check production_uninstall_registration_absent_before has failed on this machine since the 2026-11-09 live install created the HKCU uninstall registration; leg C refused correctly (18/19 on the 9cba9a6a and 202902ad seat builds).",
+      "applied": "For the v5.100.0 Setup qualification, that single check failing is recorded as a known machine precondition, not a release red. Any other leg C failure is a red."
+    },
+    {
+      "id": "REL-VERSION",
+      "status": "ruled 2026-11-10",
+      "ruling": "Version is v5.100.0.",
+      "applied": "The release is v5.100.0; VERSION is edited only in the release commit, on Joe's word."
     }
   ],
   "nodes": [
