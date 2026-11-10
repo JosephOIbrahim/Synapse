@@ -16,7 +16,7 @@
 
 **5.100.0 makes Doctor say more about a seat, and say it about the right folder.** It checks Moneta's native module against its pinned hash, counts sleep passes, names code loaded from outside the runtime, and reads the store an unsaved scene actually uses.
 
-Render QC groundwork lands too. **No artist sees a finding yet**: nothing calls the new worker. Moneta 1.3.0, the panel code, the Setup behaviour and the native-artifact policy are unchanged from [5.99.0](docs/releases/v5.99.0.md). anthropic 2.x is **still unsupported**. [What changed in 5.100.0](#what-changed-in-51000) walks through it.
+Render QC groundwork lands too. **No artist sees a finding from the new detector yet**: nothing calls the new worker. Moneta 1.3.0, the panel code, the Setup behaviour and the native-artifact policy are unchanged from [5.99.0](docs/releases/v5.99.0.md). anthropic 2.x is **still unsupported**. [What changed in 5.100.0](#what-changed-in-51000) walks through it.
 
 ### Get 5.100.0
 
@@ -54,7 +54,7 @@ Producers: [the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md) ·
 
 ### Doctor reads the store your unsaved scene uses
 
-Each launch of an unsaved scene keeps its memory in its own session folder. Doctor used to look in the shared `untitled` folder above them, where no store lives.
+Each launch of an unsaved scene keeps its memory in its own session folder. Doctor used to look in the shared `untitled` folder above them, where no store binds.
 
 It now reads the live store's own folder. It stays read-only: it builds no store and starts no session.
 
@@ -64,7 +64,7 @@ Producer: [the store-folder tests](tests/test_doctor_store_follows_session.py)
 
 A new `moneta_native` check hashes the loaded Rust module and compares it with the pinned hash. **A hash that does not match fails**, whatever `MONETA_NATIVE` says.
 
-With `MONETA_NATIVE` unset, a Python fallback now reads **skipped**, not FAIL. Unset is Moneta's own auto mode, not a request.
+With `MONETA_NATIVE` unset, a Python fallback reads **skipped** (no released version showed FAIL). Unset is Moneta's own auto mode, not a request.
 
 Producer: [the native-module tests](tests/test_doctor_moneta_native.py)
 
@@ -78,7 +78,7 @@ Producer: [the counter tests](tests/test_sleep_pass_counter.py)
 
 ### Doctor names code from outside the runtime
 
-A new `runtime_provenance` check lists any loaded module that came from outside SYNAPSE's runtime, Houdini's install and Houdini's Python. **If it finds one, Doctor shows NEEDS ATTENTION**, with the folder it came from.
+A new `runtime_provenance` check names each top-level package with a loaded module that came from outside SYNAPSE's runtime, Houdini's install and Houdini's Python. **If it finds one, Doctor shows NEEDS ATTENTION**, with the folder it came from.
 
 Why: on 2026-11-09 an installed seat loaded a compiled module from a development folder, and nothing said so.
 
@@ -94,7 +94,7 @@ Producer: [the provenance tests](tests/test_doctor_runtime_provenance.py)
 
 Producers: [the worker tests](tests/test_retina_worker_contract.py) · [the release note](docs/releases/v5.100.0.md#render-qc-groundwork-development-seat)
 
-**What this release does not change.** No artist sees a Render QC finding. Two Codex reviews did not run, and the owner accepted them as recorded limits. Setup remains unsigned. The full list is in [Limits](docs/releases/v5.100.0.md#limits).
+**What this release does not change.** No artist sees a finding from the new Render QC detector. Two Codex reviews did not run, and the owner accepted them as recorded limits. Setup remains unsigned. The full list is in [Limits](docs/releases/v5.100.0.md#limits).
 
 ## Your first build
 

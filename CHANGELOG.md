@@ -6,7 +6,7 @@ The full version-by-version history and per-tool capability detail. The [README]
 
 **Product code changes.** Doctor checks more of a seat and reads the memory
 store an unsaved scene actually uses. Render QC's first pieces land with the
-owner's firefly rulings, and no artist sees a finding yet: nothing calls the
+owner's firefly rulings, and no artist sees a finding from the new detector yet: nothing calls the
 worker. The full note, with every limit, is
 [docs/releases/v5.100.0.md](docs/releases/v5.100.0.md).
 
@@ -17,7 +17,7 @@ worker. The full note, with every limit, is
 - **`moneta_native`.** A new check hashes Moneta's loaded native module against
   the pin in `native_artifact.json`. `hash_mismatch` fails whatever
   `MONETA_NATIVE` says; an unset `MONETA_NATIVE` with a Python fallback reads
-  skipped (`not_requested`), not FAIL.
+  skipped (`not_requested`).
 - **Sleep passes.** `moneta_store.sleep_pass_stats()` counts every pass in the
   process, completed or failed. Doctor's `moneta_consolidation` carries it, and
   `sleep_pass_called` is now a boolean, not the string `"not_tracked"`.
