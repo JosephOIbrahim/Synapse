@@ -837,8 +837,11 @@ def test_real_worker_finds_a_planted_firefly_at_its_frame_position(tmp_path):
     rw = _adapter()
     result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
     assert result["status"] == "ok", result
-    assert result["pass"] is False, result
+    # Owner ruling 2026-11-10 (QC-FIREFLY-RULES): a firefly is reported as a candidate and does
+    # not fail the frame.
+    assert result["pass"] is True, result
     check = result["check"]
+    assert "1 firefly candidate" in check["detail"], check
     assert check["count"] == 1, check
     assert check["frame_position"] == [30, 22], check
     assert check["array_position"] == [20, 15], check
@@ -848,7 +851,7 @@ def test_real_worker_finds_a_planted_firefly_at_its_frame_position(tmp_path):
     assert mask.is_file()
     assert mask.parent == product.parent
     assert mask.name == "beauty.0001.fireflies.png"
-    assert result["event"]["verdict"] == "fail"
+    assert result["event"]["verdict"] == "pass"
     assert result["event"]["proof"] == str(mask)
 
 
