@@ -20,6 +20,9 @@ garbled result) come from a stand-in command swapped in through the adapter's
 
 The end-to-end tests at the bottom need the real worker interpreter and are skipped
 unless ``SYNAPSE_RETINA_WORKER_PYTHON`` names an existing file.
+
+The adapter launches only a ``*.exe`` worker (owner DECISION 2026-11-10). Off Windows
+the stand-in is a ``python.exe`` symlink to ``sys.executable`` (:func:`_exe_stand_in`).
 """
 from __future__ import annotations
 
@@ -69,11 +72,28 @@ def _off_main(fn, *args, **kwargs):
     return box["value"]
 
 
+def _exe_stand_in(tmp_path):
+    """An absolute path to the stock interpreter ending in ``.exe``.
+
+    The adapter launches only a ``*.exe`` worker (owner DECISION 2026-11-10). On
+    Windows ``sys.executable`` already is one; elsewhere a ``python.exe`` symlink to
+    it stands in, so the same tests run on every CI leg.
+    """
+    if sys.executable.lower().endswith(".exe"):
+        return sys.executable
+    link = tmp_path / "stand-in-bin" / "python.exe"
+    link.parent.mkdir(exist_ok=True)
+    if not link.exists():
+        os.symlink(sys.executable, link)
+    return str(link)
+
+
 @pytest.fixture
-def stand_in(monkeypatch):
+def stand_in(monkeypatch, tmp_path):
     """The stock interpreter as the configured worker."""
-    monkeypatch.setenv(ENV, sys.executable)
-    return sys.executable
+    python = _exe_stand_in(tmp_path)
+    monkeypatch.setenv(ENV, python)
+    return python
 
 
 @pytest.fixture
@@ -389,6 +409,12 @@ elif mode == "none_without_reason":
     bad["pass"] = None
     bad["check"] = dict(check, **{"pass": None, "detail": "inconclusive: x"})
     bad["event"] = dict(event, checks=[bad["check"]], verdict="inconclusive")
+elif mode == "no_code":
+    del bad["code"]
+elif mode == "no_reason":
+    del bad["reason"]
+elif mode == "no_mask_path":
+    del bad["mask_path"]
 elif mode == "mask_elsewhere":
     bad["mask_path"] = os.path.join(os.path.dirname(out), "elsewhere", "m.png")
 elif mode == "exit3":
@@ -432,6 +458,9 @@ def test_a_well_formed_result_is_accepted(stand_in, frame, tmp_path, monkeypatch
     ("refused_but_passed", "bad_result"),
     ("none_without_reason", "bad_result"),
     ("mask_elsewhere", "bad_result"),
+    ("no_code", "bad_result"),
+    ("no_reason", "bad_result"),
+    ("no_mask_path", "bad_result"),
     ("exit3", "worker_exit"),
 ])
 def test_a_missing_or_garbled_result_reads_inconclusive(stand_in, frame, tmp_path, monkeypatch,
@@ -490,6 +519,204 @@ def test_a_result_larger_than_the_cap_is_refused(stand_in, frame, tmp_path, monk
                         lambda python, request: [sys.executable, "-c", big, request])
     result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
     assert result["code"] == "bad_result", result
+
+
+@pytest.mark.parametrize("key", ["code", "reason", "mask_path"])
+def test_an_ok_result_missing_a_key_says_which(stand_in, frame, tmp_path, monkeypatch, key):
+    """An otherwise valid ok result without ``code``, ``reason`` or ``mask_path`` is
+    inconclusive with a reason naming the key, never a KeyError out of run_worker."""
+    root, product = frame
+    rw = _adapter()
+    _with_writer(rw, monkeypatch, f"no_{key}")
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    assert (result["status"], result["code"], result["pass"]) == ("inconclusive", "bad_result", None), result
+    assert key in result["reason"], result
+
+
+# ---------------------------------------------------------------------------
+# Only an absolute path to an existing *.exe is launched (owner DECISION)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", ["worker.bat", "worker.cmd", "worker.BAT", "python", "python.com",
+                                  "python.ps1", "python.exe.txt"])
+def test_a_worker_that_is_not_an_exe_reads_not_configured(frame, tmp_path, monkeypatch, name):
+    """A ``.bat``/``.cmd`` would run through ``cmd.exe``; only ``*.exe`` is launched."""
+    root, product = frame
+    fake = tmp_path / "bin" / name
+    fake.parent.mkdir()
+    fake.write_text("@echo off\n", encoding="utf-8")
+    monkeypatch.setenv(ENV, str(fake))
+    rw = _adapter()
+    monkeypatch.setattr(rw, "_worker_argv", lambda *a: pytest.fail("launched a non-.exe worker"))
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    assert (result["status"], result["code"], result["pass"]) == ("inconclusive", "not_configured", None), result
+    assert ".exe" in result["reason"], result
+    _assert_inconclusive_check(result)
+
+
+def test_a_directory_named_like_an_exe_reads_not_configured(frame, tmp_path, monkeypatch):
+    root, product = frame
+    fake = tmp_path / "python.exe"
+    fake.mkdir()
+    monkeypatch.setenv(ENV, str(fake))
+    rw = _adapter()
+    monkeypatch.setattr(rw, "_worker_argv", lambda *a: pytest.fail("launched a directory"))
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    assert result["code"] == "not_configured", result
+
+
+def test_an_exe_worker_in_any_case_is_launched(frame, tmp_path, monkeypatch):
+    """Positive control for the suffix rule: ``PYTHON.EXE`` is configured."""
+    root, product = frame
+    fake = tmp_path / "bin" / "PYTHON.EXE"
+    fake.parent.mkdir()
+    fake.write_bytes(b"placeholder; the argv seam runs the stand-in writer")
+    monkeypatch.setenv(ENV, str(fake))
+    rw = _adapter()
+    _with_writer(rw, monkeypatch, "good")
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    assert result["status"] == "ok", result
+
+
+# ---------------------------------------------------------------------------
+# The mask is never written through a link or outside the frame's folder
+# ---------------------------------------------------------------------------
+
+
+def _symlink_or_skip(target, link):
+    try:
+        os.symlink(target, link)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"cannot create a symlink here: {exc}")
+
+
+def _entrypoint():
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    import retina.worker_entrypoint as we
+
+    return we
+
+
+def _assert_unsafe_mask_refusal(result):
+    assert (result["status"], result["code"], result["pass"]) == ("refused", "unsafe_mask_path", None), result
+    assert result["reason"] and "mask" in result["reason"], result
+    assert result["mask_path"] is None
+    _assert_inconclusive_check(result)
+
+
+def test_worker_refuses_a_mask_symlink_pointing_outside_the_frame_folder(stand_in, frame, tmp_path):
+    root, product = frame
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    victim = outside / "precious.png"
+    victim.write_bytes(b"do not overwrite")
+    mask = root / "beauty.0001.fireflies.png"
+    _symlink_or_skip(victim, mask)
+    rw = _adapter()
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    _assert_unsafe_mask_refusal(result)
+    assert victim.read_bytes() == b"do not overwrite"
+    assert mask.is_symlink()
+
+
+def test_worker_refuses_a_dangling_mask_symlink(stand_in, frame, tmp_path):
+    """``os.path.exists`` is False for a dangling link; the write would create the
+    target outside the folder. The check uses ``lexists``."""
+    root, product = frame
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    target = outside / "planted.png"
+    mask = root / "beauty.0001.fireflies.png"
+    _symlink_or_skip(target, mask)
+    rw = _adapter()
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    _assert_unsafe_mask_refusal(result)
+    assert not target.exists()
+
+
+def test_worker_refuses_a_mask_symlink_even_inside_the_frame_folder(stand_in, frame, tmp_path):
+    """A link is refused for being a link, not only for where it points."""
+    root, product = frame
+    sibling = root / "other.png"
+    sibling.write_bytes(b"sibling")
+    mask = root / "beauty.0001.fireflies.png"
+    _symlink_or_skip(sibling, mask)
+    rw = _adapter()
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    _assert_unsafe_mask_refusal(result)
+    assert sibling.read_bytes() == b"sibling"
+
+
+def test_worker_refuses_a_hardlinked_mask(stand_in, frame, tmp_path):
+    """A hard link is not a symlink and its realpath stays in the folder, but a
+    write through it still lands in the outside file."""
+    root, product = frame
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    victim = outside / "precious.png"
+    victim.write_bytes(b"do not overwrite")
+    mask = root / "beauty.0001.fireflies.png"
+    try:
+        os.link(victim, mask)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"cannot create a hard link here: {exc}")
+    rw = _adapter()
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    _assert_unsafe_mask_refusal(result)
+    assert victim.read_bytes() == b"do not overwrite"
+
+
+def test_a_plain_existing_mask_is_not_refused(stand_in, frame, tmp_path):
+    """Positive control: a regular mask file left by an earlier run is not a link;
+    the stand-in run goes on to the frame read (an honest error on stock Python)."""
+    root, product = frame
+    (root / "beauty.0001.fireflies.png").write_bytes(b"earlier mask")
+    rw = _adapter()
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    assert result["status"] == "error", result
+    assert result["code"] != "unsafe_mask_path", result
+
+
+def test_mask_realpath_must_stay_in_the_frame_folder(tmp_path, monkeypatch):
+    """Defence in depth: with link detection blind (a reparse kind it does not know),
+    the realpath containment check still refuses a mask resolving elsewhere."""
+    we = _entrypoint()
+    folder = tmp_path / "renders"
+    folder.mkdir()
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    victim = outside / "precious.png"
+    victim.write_bytes(b"x")
+    mask = folder / "beauty.0001.fireflies.png"
+    _symlink_or_skip(victim, mask)
+    monkeypatch.setattr(we, "_is_link", lambda path: False)
+    with pytest.raises(we.Refusal) as info:
+        we._check_mask_path(str(mask), os.path.realpath(folder))
+    assert info.value.code == "unsafe_mask_path"
+
+
+def test_a_fresh_mask_path_in_the_frame_folder_passes_the_check(tmp_path):
+    we = _entrypoint()
+    folder = tmp_path / "renders"
+    folder.mkdir()
+    we._check_mask_path(str(folder / "beauty.0001.fireflies.png"), os.path.realpath(folder))
+
+
+# ---------------------------------------------------------------------------
+# Deployment doc row for the worker interpreter
+# ---------------------------------------------------------------------------
+
+
+def test_deployment_doc_documents_the_worker_interpreter():
+    text = (ROOT / "docs" / "studio" / "DEPLOYMENT.md").read_text(encoding="utf-8")
+    rows = [line for line in text.splitlines() if line.startswith(f"| `{ENV}`")]
+    assert len(rows) == 1, rows
+    row = rows[0]
+    for needle in ("absolute path", "never discovered", "worker not configured", ".exe",
+                   "retina_worker.py"):
+        assert needle in row, (needle, row)
 
 
 # ---------------------------------------------------------------------------
@@ -652,3 +879,22 @@ def test_real_worker_refuses_outside_roots_before_reading(tmp_path):
     result = _off_main(rw.run_fireflies, str(product), roots=[str(inside)], work_dir=str(tmp_path))
     assert result["code"] == "outside_roots", result
     assert not (outside / "beauty.fireflies.png").exists()
+
+
+@real_worker
+def test_real_worker_never_writes_through_a_mask_link(tmp_path):
+    """The overwrite the referee showed: a planted ``<stem>.fireflies.png`` symlink to
+    a file outside every root. The real worker must refuse, not write through it."""
+    root = tmp_path / "renders"
+    root.mkdir()
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    victim = outside / "precious.png"
+    victim.write_bytes(b"do not overwrite")
+    product = root / "beauty.0001.exr"
+    _write_exr(product, "firefly")
+    _symlink_or_skip(victim, root / "beauty.0001.fireflies.png")
+    rw = _adapter()
+    result = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(tmp_path))
+    _assert_unsafe_mask_refusal(result)
+    assert victim.read_bytes() == b"do not overwrite"

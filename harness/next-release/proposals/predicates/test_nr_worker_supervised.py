@@ -13,7 +13,9 @@ adapter:
 * a result that does not answer this request is inconclusive, never accepted (I-7).
 
 Red when written (on 28e41797): neither file exists, so every test fails with
-ModuleNotFoundError when it imports the adapter.
+ModuleNotFoundError when it imports the adapter. The last three tests (fix round,
+red on 436210b6): an ok result missing ``code`` raised KeyError, a ``.bat`` worker was
+launched, and the worker wrote its mask through a planted symlink.
 
 Stock Python only, no environment variable needed: the stock interpreter stands in
 for the worker (it has no OpenImageIO, so a scan ends in an honest error result),
@@ -22,6 +24,7 @@ and faults come from stand-in commands swapped in through the adapter's
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import threading
@@ -78,9 +81,21 @@ def _off_main(fn, *args, **kwargs):
     return box["value"]
 
 
+def _exe_stand_in(tmp_path: Path) -> str:
+    """The stock interpreter under a ``*.exe`` name: only a ``.exe`` worker is launched
+    (owner DECISION 2026-11-10). Off Windows a ``python.exe`` symlink stands in."""
+    if sys.executable.lower().endswith(".exe"):
+        return sys.executable
+    link = tmp_path / "stand-in-bin" / "python.exe"
+    link.parent.mkdir(exist_ok=True)
+    if not link.exists():
+        os.symlink(sys.executable, link)
+    return str(link)
+
+
 @pytest.fixture
 def setup(tmp_path, monkeypatch):
-    monkeypatch.setenv(ENV, sys.executable)
+    monkeypatch.setenv(ENV, _exe_stand_in(tmp_path))
     root = tmp_path / "renders"
     root.mkdir()
     product = root / "beauty.0001.exr"
@@ -165,3 +180,48 @@ def test_unset_worker_reads_not_configured(setup, monkeypatch):
     rw = _adapter()
     r = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(work))
     assert (r["status"], r["code"], r["pass"]) == ("inconclusive", "not_configured", None), r
+
+
+def test_an_ok_result_missing_code_is_inconclusive(setup, monkeypatch):
+    root, product, work = setup
+    writer = (
+        "import json, sys\np = sys.argv[1]\nreq = json.load(open(p))\n"
+        "c = {'name': 'firefly_scan', 'pass': True, 'detail': 'ok'}\n"
+        "json.dump({'protocol': req['protocol'], 'request_id': req['request_id'], 'op': req['op'],"
+        " 'status': 'ok', 'pass': True, 'reason': None, 'check': c,"
+        " 'event': {'ch': 'perception', 'v': 1, 'tier': 1, 'claim': 'x', 'checks': [c],"
+        " 'verdict': 'pass', 'proof': None, 'at': None}, 'mask_path': None},"
+        " open(p[:-5] + '.result.json', 'w'))\n"
+    )
+    rw = _adapter()
+    monkeypatch.setattr(rw, "_worker_argv", lambda python, request: [sys.executable, "-c", writer, request])
+    r = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(work))
+    assert (r["status"], r["code"], r["pass"]) == ("inconclusive", "bad_result", None), r
+    assert "code" in r["reason"], r
+
+
+def test_a_bat_worker_reads_not_configured(setup, monkeypatch):
+    root, product, work = setup
+    bat = work / "worker.bat"
+    bat.write_text("@echo off\n")
+    monkeypatch.setenv(ENV, str(bat))
+    rw = _adapter()
+    monkeypatch.setattr(rw, "_worker_argv", lambda *a: pytest.fail("launched a .bat worker"))
+    r = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(work))
+    assert (r["status"], r["code"], r["pass"]) == ("inconclusive", "not_configured", None), r
+
+
+def test_a_mask_symlink_is_refused_not_written_through(setup):
+    root, product, work = setup
+    outside = work / "elsewhere"
+    outside.mkdir()
+    victim = outside / "precious.png"
+    victim.write_bytes(b"keep")
+    try:
+        os.symlink(victim, root / "beauty.0001.fireflies.png")
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"cannot create a symlink here: {exc}")
+    rw = _adapter()
+    r = _off_main(rw.run_fireflies, str(product), roots=[str(root)], work_dir=str(work))
+    assert (r["status"], r["code"], r["pass"]) == ("refused", "unsafe_mask_path", None), r
+    assert victim.read_bytes() == b"keep"
