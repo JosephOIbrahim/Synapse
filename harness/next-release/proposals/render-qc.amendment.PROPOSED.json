@@ -76,6 +76,13 @@
       "status": "open",
       "ruling": null,
       "applied": "NR-WORKER-SUPERVISED's predicate stays 'test -f' in this amendment; a behavioural replacement (round-two R4) is its builder's first commit, and is listed here so the weakness is not lost."
+    },
+    {
+      "id": "QC-FIREFLY-RULES",
+      "status": "ruled 2026-11-10",
+      "ruling": "Firefly rulings: one firefly reports as a candidate and does not fail the frame; a count ≥1 with no frame size stays fail, not inconclusive; an unreadable nonfinite value reads inconclusive.",
+      "clarified": "Two follow-up answers the same day (orchestrator's questions, Joe's choices): the no-frame-size case is 'Same as count rule (Recommended)' - no frame size never downgrades a finding to inconclusive, and it reads exactly like a frame with a size; a frame with candidates is 'Pass, with candidates (Recommended)' - pass True, the detail says 'N firefly candidates', the extras carry count, worst pixel and mask.",
+      "applied": "retina/firefly_scan.py firefly_check: count 0 -> True; count >= 1 -> True with candidates named in the detail (not False); a missing or unusable frame size no longer makes a count >= 1 inconclusive; a present but unreadable nonfinite_pixels value -> pass None with a reason. Inconclusive detector results and all-non-finite frames stay None. Supersedes the builder's interim count > 0 -> False rule (8be8bc92) and the no-size downgrade (e65a8992)."
     }
   ],
   "nodes": [
