@@ -32,7 +32,10 @@ Rules:
   of the declared read-only roots (I-6), else ``refused`` / ``outside_roots``. The
   check runs before any pixel is read.
 * The mask path is never taken from the request: the only policies are
-  ``beside_frame`` (owner ruling QC-Q4, :func:`mask_path_for`) and ``none``.
+  ``beside_frame`` (owner ruling QC-Q4, :func:`mask_path_for`) and ``none``. A
+  mask path that already exists as a link, junction, reparse point or multiply
+  hard-linked file, or whose realpath leaves the frame's folder, is ``refused`` /
+  ``unsafe_mask_path`` before the frame is read (:func:`_check_mask_path`).
 * ``pass`` is the check's verdict; ``reason`` is set exactly when ``pass`` is None.
 * Any exception becomes an ``error`` result with ``pass`` None and the reason; a
   request that cannot be parsed still gets a result, because the result path comes
@@ -103,6 +106,58 @@ def mask_path_for(product: str, subimage: int) -> str:
     if subimage:
         stem = f"{stem}.sub{int(subimage)}"
     return os.path.join(directory, f"{stem}.fireflies.png")
+
+
+#: ``stat.FILE_ATTRIBUTE_REPARSE_POINT`` (Windows); spelled out so the check does
+#: not depend on the constant existing on every platform's ``stat`` module.
+_FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+
+
+def _is_link(path: str) -> bool:
+    """True when ``path`` itself (not its target) is a symlink, a junction or any
+    other Windows reparse point. ``lstat`` never follows the final component."""
+    if os.path.islink(path):
+        return True
+    isjunction = getattr(os.path, "isjunction", None)
+    if isjunction is not None and isjunction(path):
+        return True
+    try:
+        st = os.lstat(path)
+    except OSError:
+        return False
+    return bool(getattr(st, "st_file_attributes", 0) & _FILE_ATTRIBUTE_REPARSE_POINT)
+
+
+def _check_mask_path(mask_path: str, frame_dir: str) -> None:
+    """Refuse a mask path the write could follow out of the frame's folder.
+
+    ``frame_dir`` is the folder of the product's realpath. Refused (``unsafe_mask_path``)
+    when the mask path already exists as a link of any kind (``lexists``, so a
+    dangling link counts), as a file with more than one hard link (a write through
+    it lands in the other name too), or when its realpath is not directly inside
+    ``frame_dir``. Called before the frame is read, so nothing is written.
+
+    Residual: a link planted between this check and the write is not caught.
+    """
+    if os.path.lexists(mask_path):
+        if _is_link(mask_path):
+            raise Refusal("unsafe_mask_path",
+                          f"mask path {mask_path!r} is a link or reparse point; the worker "
+                          f"never writes through one")
+        try:
+            links = os.lstat(mask_path).st_nlink
+        except OSError as exc:
+            raise Refusal("unsafe_mask_path",
+                          f"mask path {mask_path!r} cannot be inspected: {type(exc).__name__}: {exc}") from None
+        if links > 1:
+            raise Refusal("unsafe_mask_path",
+                          f"mask path {mask_path!r} has {links} hard links; a write would reach "
+                          f"the other names too")
+    real_dir = os.path.normcase(os.path.dirname(os.path.realpath(mask_path)))
+    if real_dir != os.path.normcase(frame_dir):
+        raise Refusal("unsafe_mask_path",
+                      f"mask path {mask_path!r} resolves to {os.path.realpath(mask_path)!r}, "
+                      f"outside the frame's folder {frame_dir!r}")
 
 
 def _norm(path: str) -> str:
@@ -182,12 +237,19 @@ def _validate(req: Dict[str, Any]) -> Tuple[str, int, str, Optional[str]]:
 
 
 def _run_fireflies(product: str, subimage: int, mask: str) -> Tuple[Dict[str, Any], Optional[str]]:
-    """frame_reader -> fireflies -> firefly_check; return ``(check, mask_path)``."""
+    """frame_reader -> fireflies -> firefly_check; return ``(check, mask_path)``.
+
+    The mask path is checked (:func:`_check_mask_path`) before the frame is read or
+    any module that writes is imported, so an unsafe one is refused with no write.
+    """
+    mask_path = mask_path_for(product, subimage) if mask == "beside_frame" else None
+    if mask_path is not None:
+        _check_mask_path(mask_path, os.path.dirname(product))
+
     from retina.firefly_scan import firefly_check, fireflies
     from retina.frame_reader import read_frame
 
     rgb, info = read_frame(product, subimage=subimage)
-    mask_path = mask_path_for(product, subimage) if mask == "beside_frame" else None
     result = fireflies(rgb, origin=info["origin"], reader=info["reader"], mask_path=mask_path)
     return firefly_check(result), result.get("mask_path")
 

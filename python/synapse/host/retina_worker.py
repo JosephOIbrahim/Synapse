@@ -15,14 +15,16 @@ Invariants:
   launched. Raising, not returning inconclusive, because the call is a caller bug
   that would block the UI for up to the timeout; it must fail loudly in
   development, not read as "the scan could not run".
-* **D3** The interpreter is ``SYNAPSE_RETINA_WORKER_PYTHON``, an explicit path to an
-  existing file. Unset, or not an existing file (a bare ``python`` included):
-  inconclusive ``not_configured``. Nothing is discovered.
+* **D3** The interpreter is ``SYNAPSE_RETINA_WORKER_PYTHON``, an explicit absolute
+  path to an existing ``*.exe`` file (owner DECISION 2026-11-10: a ``.bat``/``.cmd``
+  or any other suffix is not launched). Unset, relative, not an ``.exe``, or not an
+  existing file (a bare ``python`` included): inconclusive ``not_configured``.
+  Nothing is discovered.
 * **D4** Default timeout :data:`DEFAULT_TIMEOUT_S` (60 s), a safety bound, not a
   QC time budget.
 * **I-7** A request that cannot be written, a worker that cannot start, times
   out, floods its pipes, exits non-zero, or leaves a missing, oversized or garbled
-  result gives an inconclusive result that says why. What raises is caller error:
+  result (a missing key included) gives an inconclusive result that says why. What raises is caller error:
   :class:`MainThreadRefused`, :class:`ValueError` for a bad ``timeout``, and the
   ``TypeError`` of arguments that are not paths (``roots=None``, say).
 
@@ -83,6 +85,9 @@ _RESULT_LIMIT = 4 * 1024 * 1024
 _STDERR_TAIL = 2000
 
 _WORKER_STATUSES = ("ok", "refused", "error")
+#: The keys copied from a worker result into the returned dict.
+_RESULT_KEYS = ("protocol", "request_id", "op", "status", "code", "pass", "reason",
+                "check", "event", "mask_path")
 _VERDICTS = {True: "pass", False: "fail", None: "inconclusive"}
 
 # python/synapse/host/retina_worker.py -> the repository root.
@@ -142,6 +147,11 @@ def _validate_result(raw: Any, request_id: str, op: str, product: str) -> Option
         return f"result answers request {raw.get('request_id')!r}, not {request_id!r}"
     if raw.get("op") != op:
         return f"result is for op {raw.get('op')!r}, not {op!r}"
+    # Every key the caller's result copies must be present: a missing one would
+    # otherwise raise KeyError out of run_worker instead of reading inconclusive.
+    missing = [key for key in _RESULT_KEYS if key not in raw]
+    if missing:
+        return f"result lacks {', '.join(missing)}"
     status = raw.get("status")
     if status not in _WORKER_STATUSES:
         return f"result status {status!r} is not one of {list(_WORKER_STATUSES)}"
@@ -300,11 +310,15 @@ def run_worker(op: str, product: str, *, roots: Sequence[str], subimage: int = 0
     # PLAN_GAP: D3 says "explicit path, no discovery" but not whether a relative
     # path counts. Implemented as: absolute path to an existing file only; a bare
     # "python" or a relative path would resolve against PATH/cwd, i.e. discovery.
-    if not python or not os.path.isabs(python) or not os.path.isfile(python):
+    # Owner DECISION 2026-11-10: the file must also be a *.exe (any case). A
+    # .bat/.cmd would run through cmd.exe and re-parse the command line; every
+    # other suffix (none included) is not launched either, on every platform.
+    if (not python or not os.path.isabs(python) or not python.lower().endswith(".exe")
+            or not os.path.isfile(python)):
         return done(_inconclusive(
             request_id, op, "not_configured",
-            f"worker not configured: {ENV_VAR} must name an existing interpreter by absolute "
-            f"path (got {python!r}); no interpreter is discovered", worker))
+            f"worker not configured: {ENV_VAR} must name an existing interpreter *.exe by "
+            f"absolute path (got {python!r}); no interpreter is discovered", worker))
     entry = os.path.join(_REPO_ROOT, *WORKER_MODULE.split(".")) + ".py"
     if not os.path.isfile(entry):
         return done(_inconclusive(request_id, op, "entrypoint_missing",
@@ -369,9 +383,7 @@ def run_worker(op: str, product: str, *, roots: Sequence[str], subimage: int = 0
         why = _validate_result(raw, request_id, op, product_abs)
         if why is not None:
             return done(_inconclusive(request_id, op, "bad_result", why, worker))
-        result = {key: raw[key] for key in
-                  ("protocol", "request_id", "op", "status", "code", "pass", "reason",
-                   "check", "event", "mask_path")}
+        result = {key: raw[key] for key in _RESULT_KEYS}
         result["worker"] = worker
         return done(result)
     finally:
