@@ -585,6 +585,9 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     * ``None`` when the result is inconclusive (the noise could not be
       estimated, so there is no count): the honest "could not run", never a
       pass and never a count of 0.
+    * ``None`` when every pixel was non-finite (``nonfinite_pixels`` equals
+      ``width * height``): :func:`fireflies` zeroed them all, so its count of
+      0 describes a black frame it made, not the render.
     * ``True`` when the scan ran and found no firefly (``count == 0``).
     * ``False`` when it found one or more (``count > 0``): a finding. Under
       ``events.roll_up`` (fail > inconclusive > pass) one firefly fails the
@@ -610,12 +613,32 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
     ``array_position`` (``[x, y]`` of ``worst`` in the array, or None),
     ``origin``, ``threshold_sigma``, ``sigma``, ``mask_path``,
     ``luminance_basis`` and ``reader`` (the owner's ruling QC-Q1: the basis
-    and the reader ride as check extras).
+    and the reader ride as check extras), and ``nonfinite_pixels`` (None
+    when the result does not say).
+
+    Some but not all pixels non-finite: the count-based verdict above stands
+    (no tolerance for non-finite pixels is invented here; that would be a new
+    number for ``qc_profiles.toml``'s owner), and the detail says how many
+    non-finite pixels were zeroed before the scan, so a ``True`` on such a
+    frame is never a bare "no fireflies".
     """
     worst = result.get("worst")
     count = result.get("count")
+    nonfinite = result.get("nonfinite_pixels")
+    try:
+        nonfinite = None if nonfinite is None else int(nonfinite)
+        total = int(result.get("width")) * int(result.get("height"))
+    except (TypeError, ValueError):
+        total = None
+    all_nonfinite = bool(nonfinite) and total is not None and nonfinite >= total
     inconclusive = bool(result.get("inconclusive")) or count is None
-    if inconclusive:
+    if all_nonfinite:
+        passed = None
+        detail = (
+            f"inconclusive: all {nonfinite} pixels are non-finite (NaN or Inf); "
+            f"there is no image to scan"
+        )
+    elif inconclusive:
         passed = None
         detail = f"inconclusive: {result.get('note') or 'no firefly count'}"
     elif count == 0:
@@ -635,6 +658,11 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
             f"{count} firefl{'y' if count == 1 else 'ies'} above "
             f"{result.get('threshold_sigma')} local sigma; worst at {at}"
         )
+    if nonfinite and not all_nonfinite:
+        detail += (
+            f"; {nonfinite} non-finite pixel{'' if nonfinite == 1 else 's'} "
+            f"(NaN or Inf) zeroed before the scan"
+        )
     return make_check(
         name,
         passed,
@@ -650,4 +678,5 @@ def firefly_check(result: Dict[str, Any], *, name: str = "firefly_scan") -> Dict
         mask_path=result.get("mask_path"),
         luminance_basis=result.get("luminance_basis"),
         reader=result.get("reader"),
+        nonfinite_pixels=nonfinite,
     )
