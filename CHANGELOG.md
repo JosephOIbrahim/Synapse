@@ -2,6 +2,47 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.100.0 - Doctor reads the right store and names foreign code; Render QC groundwork
+
+**Product code changes.** Doctor checks more of a seat and reads the memory
+store an unsaved scene actually uses. Render QC's first pieces land with the
+owner's firefly rulings, and no artist sees a finding yet: nothing calls the
+worker. The full note, with every limit, is
+[docs/releases/v5.100.0.md](docs/releases/v5.100.0.md).
+
+- **Store folder.** Doctor and the write-plane probe read the live store's
+  folder (for an unsaved scene, this launch's
+  `$HOUDINI_TEMP_DIR/untitled/sessions/<id>`), never the shared `untitled`
+  root. Read-only: no store built, no session minted.
+- **`moneta_native`.** A new check hashes Moneta's loaded native module against
+  the pin in `native_artifact.json`. `hash_mismatch` fails whatever
+  `MONETA_NATIVE` says; an unset `MONETA_NATIVE` with a Python fallback reads
+  skipped (`not_requested`), not FAIL.
+- **Sleep passes.** `moneta_store.sleep_pass_stats()` counts every pass in the
+  process, completed or failed. Doctor's `moneta_consolidation` carries it, and
+  `sleep_pass_called` is now a boolean, not the string `"not_tracked"`.
+- **`runtime_provenance`.** A new check fails when the process has loaded a
+  module from outside the SYNAPSE runtime, `$HFS` and Houdini's Python, and
+  names it. A relative `__file__` counts as no file.
+- **Render QC groundwork.** A positional firefly detector
+  (`retina/firefly_scan.py`), a host frame reader with no `cv2`
+  (`python/synapse/cv/`), a worker-side frame reader
+  (`retina/frame_reader.py`), a supervised CPU worker
+  (`retina/worker_entrypoint.py`) and its host adapter
+  (`python/synapse/host/retina_worker.py`: `SYNAPSE_RETINA_WORKER_PYTHON`, an
+  absolute `*.exe`, no discovery, 60 s timeout). A firefly is a candidate, not
+  a fail (QC-FIREFLY-RULES). The three `retina/` files are not in Setup; the
+  adapter and `synapse.cv` ship with no caller.
+- **Graph and records.** The Render QC amendment is merged into
+  `harness/next-release/graph.json` (five nodes); ADR-0002 decision 9 is ruled.
+- **Developer side.** The docking-minimums width check runs under hython via
+  `.synapse/hytest.py`. Not shipped.
+
+**Not changed:** anthropic 2.x is still unsupported, and the pin stays
+`anthropic>=1.0.0,<2`. Setup remains unsigned. The Codex crux reviews for
+`NR-QC-FRAME-CONTRACT` and `NR-WORKER-SUPERVISED` did not run; the owner
+accepted both as recorded limits.
+
 ## v5.99.0 - OpenCV 5.1 runs RETINA's change mask on the GPU, off by default
 
 **No file Setup installs changes, apart from version strings.** The repository
