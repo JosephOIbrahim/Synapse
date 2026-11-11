@@ -38,6 +38,11 @@ ROLES = {
 SEQUENCES = {"char-2": 24, "char-3": 61, "char-4": 9, "char-13": 24}
 SCRIPTS = ["harness/vision/qc_timing/stage.py", "harness/vision/qc_timing/run_timing.py",
            "harness/vision/qc_timing/make_receipt.py"]
+RULINGS = {
+    "F4": "F4: (a) — void the pass and redo it once, a second exception stops the run, predicate red on any kept pass with an exception on a voting frame.",
+    "F11": "F11: keep r2 3.9's blocked names as they are.",
+    "F11_limit": "hindie.exe and hbatch.exe are not blocked.",
+}
 COMMANDS = {
     "stage": "<R4_PYTHON> -B harness/vision/qc_timing/stage.py --rule <RULE_R2> --stage-root <STAGE_ROOT> "
              "--manifest <STAGE_MANIFEST> --summary <STAGE_SUMMARY>",
@@ -52,6 +57,7 @@ PASS_FIELDS = ("index", "seq", "void", "void_reason", "R", "wall", "W", "S", "S_
                "threads", "before", "after", "check_failed_report_only", "monotonic_ns")
 _DRIVE = re.compile(r"(?<![A-Za-z])[A-Za-z]:[\\/]")
 _PROFILE = re.compile(r"[\\/]users?[\\/]|appdata", re.I)
+_UNC = re.compile(r"(?<![:A-Za-z0-9])//[^/\s\"']+/[^/\s\"']")
 _BUILTIN_MARKERS = ("synapse-build", "onedrive", "myth_and_logic")
 
 
@@ -60,6 +66,7 @@ def find_leaks(text: str, host_markers: Sequence[str] = ()) -> List[str]:
     run-time host marker in ``text``. Empty means safe to commit."""
     norm = text.replace("\\\\", "/").replace("\\", "/")
     bad = [norm[m.start(): m.start() + 72] for m in _DRIVE.finditer(norm)]
+    bad.extend(norm[m.start(): m.start() + 72] for m in _UNC.finditer(norm))
     bad.extend(text[max(0, m.start() - 24): m.end() + 24] for m in _PROFILE.finditer(text))
     low = text.lower()
     for marker in tuple(_BUILTIN_MARKERS) + tuple(host_markers):
@@ -96,6 +103,7 @@ def compose(run: Dict[str, Any], raw: List[Dict[str, Any]], staging: Optional[Di
     render = {}
     if staging:
         render = {(f["id"], f["frame"]): f.get("render_time_s") for f in staging["files"]}
+    dry_reaches = {r["id"]: (r.get("inconclusive") is False and not r.get("exception")) for r in dry}
     frames, dframes = [], []
     for (fid, fr), recs in sorted(timed.items(), key=lambda kv: (list(ROLES).index(kv[0][0]) if kv[0][0] in ROLES else 99, kv[0][1])):
         good = [r for r in recs if not r.get("void")]
@@ -116,6 +124,9 @@ def compose(run: Dict[str, Any], raw: List[Dict[str, Any]], staging: Optional[Di
             f["count"] = good[0].get("count")
             f["mask_pixels"] = good[0].get("mask_pixels")
             f["check_disagrees"] = any(p.get("check_disagrees") for p in good)
+            # r2 3.8: the dry pass says whether each deciding still reaches a result.
+            if fid in decide.TIER and fid in dry_reaches:
+                reaches = dry_reaches[fid]
             dframes.append({"id": fid, "frame": fr, "reaches": reaches, **f["derived"]})
         frames.append(f)
     by = {(f["id"], f["frame"]): f for f in frames}
@@ -153,6 +164,8 @@ def compose(run: Dict[str, Any], raw: List[Dict[str, Any]], staging: Optional[Di
             seqs[sid] = {"slowest_frame": slow, "slowest_T": ts[slow], "frames_per_s": len(ts) / sum(ts.values())}
     statements["sequences"] = seqs
 
+    untimed = [{"id": r["id"], "frame": str(r["frame"]), "seq": r["seq"], "exception": _exc(r.get("exception"))}
+               for r in sorted((r for r in raw if r["kind"] == "untimed"), key=lambda r: r["seq"])]
     drec = [{"id": r["id"], "seq": r["seq"], "inconclusive": r.get("inconclusive"), "n_labels": r.get("n_labels"),
              "count": r.get("count"), "mask_pixels": r.get("mask_pixels"), "threads": r.get("threads"),
              "exception": _exc(r.get("exception"))} for r in dry]
@@ -167,8 +180,11 @@ def compose(run: Dict[str, Any], raw: List[Dict[str, Any]], staging: Optional[Di
         "product": env["product"],
         "environment": {k: env[k] for k in ("python", "numpy", "cv2", "openimageio", "logical_cores", "threads",
                                             "pythonpath", "cpu_model", "scratch_drive_model") if k in env},
-        "harness": harness,
-        "staging": ({"distinct_files": staging["distinct_files"], "files": staging["files"]} if staging else None),
+        "harness": {**harness, "ran": run.get("harness_files")},
+        "staging": ({"distinct_files": staging["distinct_files"], "problems": staging.get("problems"),
+                     "skipped": staging.get("skipped"), "files": staging["files"]} if staging else None),
+        "untimed": untimed,
+        "rulings": RULINGS,
         "dry_pass": {"exception": next((d["exception"] for d in drec if d["exception"]), None), "records": drec},
         "frames": frames,
         "decision": decision,
@@ -220,7 +236,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if a.staging_summary:
         with open(a.staging_summary, encoding="utf-8") as fh:
             staging = json.load(fh)
-    receipt = compose(run, raw, staging, harness_binding(a.repo, a.harness_commit))
+    harness = harness_binding(a.repo, a.harness_commit)
+    ran = run.get("harness_files") or {}
+    if not ran or any(harness["files"].get(k) != v for k, v in ran.items()):
+        print("REFUSED: the harness files that ran differ from the blobs at the harness commit", file=sys.stderr)
+        return 2
+    receipt = compose(run, raw, staging, harness)
     text = json.dumps(receipt, indent=1, sort_keys=True) + "\n"
     leaks = find_leaks(text, a.host_marker)
     if leaks:

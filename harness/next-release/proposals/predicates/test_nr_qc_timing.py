@@ -17,6 +17,7 @@ imports the harness as a package or times anything. Nothing here sits behind a s
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import importlib.util
 import json
@@ -24,6 +25,7 @@ import math
 import random
 import re
 import subprocess
+import types
 from pathlib import Path
 
 
@@ -170,6 +172,24 @@ def _fr(fid, T, RW, Floor, share, reaches=True):
 # =======================================================================================
 # The receipt checks (pure functions over a dict; each returns a list of problems)
 # =======================================================================================
+VOTING_IDS = TIER + ("char-9", "char-2")
+RAN_FILES = ("harness/vision/qc_timing/run_timing.py", "harness/vision/qc_timing/decide.py")
+_UNC = re.compile(r"(?<![:A-Za-z0-9])//[^/\s\"']+/[^/\s\"']")
+REQUIRED_CALLS = {"292": 1, "313": 2, "314": 1}          # every scan that reaches the box filters
+CONCLUSIVE_CALLS = {"352": 1, "458": 1}                  # only when the scan completes
+
+
+def _d(x, k):
+    """x[k] when it is a dict, else {}: a null field fails its check, never a traceback."""
+    v = x.get(k) if isinstance(x, dict) else None
+    return v if isinstance(v, dict) else {}
+
+
+def _l(x, k):
+    v = x.get(k) if isinstance(x, dict) else None
+    return [i for i in v if isinstance(i, dict)] if isinstance(v, list) else []
+
+
 def _close(a, b):
     try:
         return math.isclose(float(a), float(b), rel_tol=1e-9, abs_tol=1e-12)
@@ -193,9 +213,13 @@ def _walk_strings(x):
             yield from _walk_strings(v)
 
 
+def _frame_key(f):
+    return (f.get("id"), f.get("frame"))
+
+
 def check_identity(r):
     p = []
-    rule = r.get("rule", {})
+    rule = _d(r, "rule")
     if rule.get("sha256") != RULE_SHA:
         p.append("rule sha256 is not r2's")
     if rule.get("packet_sha256") != PACKET_SHA:
@@ -206,12 +230,17 @@ def check_identity(r):
         p.append("threshold is not 0.5")
     if r.get("mode") != "timed":
         p.append(f"mode is {r.get('mode')!r}, not 'timed'")
+    rul = _d(r, "rulings")
+    if "(a)" not in str(rul.get("F4", "")) or "second exception stops the run" not in str(rul.get("F4", "")):
+        p.append("Joe's F4 ruling is not recorded in the receipt")
+    if "blocked names as they are" not in str(rul.get("F11", "")):
+        p.append("Joe's F11 ruling is not recorded in the receipt")
     return p
 
 
 def check_product(r):
     p = []
-    prod = r.get("product", {})
+    prod = _d(r, "product")
     if prod.get("tree_commit") != TREE_COMMIT:
         p.append("product tree commit differs")
     if prod.get("blobs") != BLOBS:
@@ -221,24 +250,24 @@ def check_product(r):
 
 def check_environment(r):
     p = []
-    env = r.get("environment", {})
+    env = _d(r, "environment")
     for k, v in ENV.items():
         if env.get(k) != v:
             p.append(f"environment {k} is {env.get(k)!r}, expected {v!r}")
     cores = env.get("logical_cores")
     if not (isinstance(cores, int) and cores > 0):
         p.append("logical core count missing")
-    pp = env.get("pythonpath", {})
+    pp = _d(env, "pythonpath")
     if pp.get("entries") != 1 or pp.get("resolves_to") != "release tree":
         p.append("PYTHONPATH is not a single entry recorded as the release tree")
-    th = env.get("threads", {})
+    th = _d(env, "threads")
     if set(th) != {"oiio", "exr", "cv2"} or not all(isinstance(v, int) and v > 0 for v in th.values()):
         p.append("environment thread counts missing")
-    for f in r.get("frames", []):
-        for ps in f.get("passes", []):
+    for f in _l(r, "frames"):
+        for ps in _l(f, "passes"):
             if not ps.get("void") and ps.get("threads") != th:
                 p.append(f"{f.get('id')} {f.get('frame')} pass {ps.get('index')}: thread counts differ from the run's")
-    for d in r.get("dry_pass", {}).get("records", []):
+    for d in _l(_d(r, "dry_pass"), "records"):
         if d.get("threads") != th:
             p.append(f"dry pass {d.get('id')}: thread counts differ")
     return p
@@ -248,16 +277,20 @@ def check_harness_binding(r, git_show=None, is_ancestor=None):
     """The harness commit and file hashes. ``git_show(commit, path) -> bytes`` and
     ``is_ancestor(commit) -> bool`` are injected so the self-test can run without git."""
     p = []
-    h = r.get("harness", {})
+    h = _d(r, "harness")
     commit = h.get("commit", "")
     if not HEX40.match(str(commit)):
         return ["harness commit is not 40 hex"]
     if is_ancestor is not None and not is_ancestor(commit):
         p.append("harness commit is not an ancestor of HEAD")
-    files = h.get("files", {})
+    files = _d(h, "files")
     for s in HARNESS_SCRIPTS:
         if s not in files:
             p.append(f"harness file {s} not recorded")
+    ran = _d(h, "ran")           # F5: the bytes that ran, as run_timing.py hashed them at run start
+    for s in RAN_FILES:
+        if not HEX64.match(str(ran.get(s, ""))) or ran.get(s) != files.get(s):
+            p.append(f"{s}: the bytes that ran differ from the file at the harness commit")
     for path, digest in files.items():
         if git_show is None:
             continue
@@ -273,13 +306,16 @@ def check_harness_binding(r, git_show=None, is_ancestor=None):
 
 def check_staging(r):
     p = []
-    st = r.get("staging", {})
-    files = st.get("files", [])
+    st = _d(r, "staging")
+    files = _l(st, "files")
     keys = [(f.get("id"), f.get("frame")) for f in files]
     if len(set(keys)) != len(keys):
         p.append("staging lists a file twice")
     if st.get("distinct_files") != 124 or len(set(keys)) != 124:
         p.append(f"staging has {len(set(keys))} distinct files, need 124")
+    for k in ("problems", "skipped"):
+        if st.get(k) != 0 or isinstance(st.get(k), bool):
+            p.append(f"staging {k} is {st.get(k)!r}, need 0")
     want = {(i, fr) for i, frs in STAGE_FRAMES.items() for fr in frs}
     if set(keys) != want:
         p.append(f"staged frames differ from 3.1: missing {len(want - set(keys))}, extra {len(set(keys) - want)}")
@@ -298,12 +334,17 @@ def check_staging(r):
     return p
 
 
+def _dry_reaches(x):
+    return x.get("inconclusive") is False and not x.get("exception")
+
+
 def check_dry_pass(r):
     p = []
-    d = r.get("dry_pass", {})
-    recs = d.get("records", [])
-    if sorted(x.get("id") for x in recs) != sorted(TIER):
+    d = _d(r, "dry_pass")
+    recs = _l(d, "records")
+    if sorted(str(x.get("id")) for x in recs) != sorted(TIER):
         p.append("dry pass is not on exactly the three deciding stills")
+    by = {_frame_key(f): f for f in _l(r, "frames")}
     for x in recs:
         if not isinstance(x.get("inconclusive"), bool):
             p.append(f"dry pass {x.get('id')}: inconclusive flag missing")
@@ -311,85 +352,132 @@ def check_dry_pass(r):
             p.append(f"dry pass {x.get('id')}: n_labels or hit count missing on a conclusive frame")
         if "seq" not in x:
             p.append(f"dry pass {x.get('id')}: no sequence number")
+        f = by.get((x.get("id"), SINGLE))
+        if f is not None and _dry_reaches(x) != frame_reaches(f):     # F2: r2 3.8
+            p.append(f"dry pass {x.get('id')}: its result differs from the frame's timed passes")
     if d.get("exception") is not None:
         p.append("dry pass recorded an exception")
-    seqs = [ps.get("seq") for f in r.get("frames", []) for ps in f.get("passes", [])]
+    seqs = [ps.get("seq") for f in _l(r, "frames") for ps in _l(f, "passes")]
     dseq = [x.get("seq") for x in recs]
     if not seqs or not all(isinstance(s, int) for s in seqs + dseq) or max(dseq, default=0) >= min(seqs):
         p.append("dry pass does not precede the first timed pass")
     return p
 
 
-def _frame_key(f):
-    return (f.get("id"), f.get("frame"))
+def check_warmup(r):
+    """F3: every frame outside the deciding tier has an untimed record before its first
+    timed pass; for the three deciding stills the dry record plays that role."""
+    p = []
+    untimed = {(u.get("id"), u.get("frame")): u for u in _l(r, "untimed")}
+    dry = {x.get("id"): x for x in _l(_d(r, "dry_pass"), "records")}
+    for f in _l(r, "frames"):
+        k = _frame_key(f)
+        first = min((ps.get("seq") for ps in _l(f, "passes") if isinstance(ps.get("seq"), int)), default=None)
+        rec = dry.get(k[0]) if k[0] in TIER else untimed.get(k)
+        if first is None or rec is None or not isinstance(rec.get("seq"), int) or rec["seq"] >= first:
+            p.append(f"{k}: no untimed warm-up record before its first timed pass")
+    return p
 
 
 def check_passes(r):
     p = []
-    frames = r.get("frames", [])
+    frames = _l(r, "frames")
     if {_frame_key(f) for f in frames} != {(i, fr) for i, frs in STAGE_FRAMES.items() for fr in frs}:
         p.append("timed frames differ from the staged set")
     for f in frames:
         k = _frame_key(f)
-        good = [ps for ps in f.get("passes", []) if not ps.get("void")]
+        good = [ps for ps in _l(f, "passes") if not ps.get("void")]
         if len(good) < 3:
             p.append(f"{k}: fewer than 3 non-void timed passes")
-        for ps in f.get("passes", []):
+        for ps in _l(f, "passes"):
+            tag = f"{k} pass {ps.get('index')}"
             if ps.get("void"):
                 if not ps.get("void_reason"):
-                    p.append(f"{k} pass {ps.get('index')}: void without a reason")
+                    p.append(f"{tag}: void without a reason")
+                # F8: a void pass shows its cause in its own record, not only in a reason string
+                shows = any(_d(_d(ps, w), "scan").get("blocked") or _d(_d(ps, w), "scan").get("error")
+                            for w in ("before", "after")) or bool(ps.get("exception"))
+                if not shows:
+                    p.append(f"{tag}: void pass shows no blocked process, scan error or exception")
                 continue
-            b, a = ps.get("before", {}), ps.get("after", {})
+            if ps.get("exception") and k[0] in VOTING_IDS:   # F4 (Joe's ruling (a))
+                p.append(f"{tag}: a kept pass carries an exception on a voting frame")
+            b, a = _d(ps, "before"), _d(ps, "after")
             if not (_num(b.get("cpu_sample_s")) and b["cpu_sample_s"] >= 5.0 and _num(b.get("cpu_load"))):
-                p.append(f"{k} pass {ps.get('index')}: before-check lacks a 5 s CPU sample with its load")
+                p.append(f"{tag}: before-check lacks a 5 s CPU sample with its load")
             for name, chk in (("before", b), ("after", a)):
-                scan = chk.get("scan", {})
-                if not isinstance(scan.get("blocked"), list) or scan.get("blocked") or not scan.get("scanned"):
-                    p.append(f"{k} pass {ps.get('index')}: {name} process scan missing or shows a blocked process")
+                scan = _d(chk, "scan")
+                if not isinstance(scan.get("blocked"), list) or scan.get("blocked") or scan.get("error") or not scan.get("scanned"):
+                    p.append(f"{tag}: {name} process scan missing, failed or shows a blocked process")
     return p
 
 
 def check_split(r):
     p = []
-    for f in r.get("frames", []):
+    for f in _l(r, "frames"):
         k = _frame_key(f)
-        for ps in f.get("passes", []):
+        for ps in _l(f, "passes"):
             if ps.get("void"):
                 continue
             tag = f"{k} pass {ps.get('index')}"
             if not all(_num(ps.get(x)) for x in RAW_FIELDS):
                 p.append(f"{tag}: raw timing fields missing")
                 continue
-            lines = ps.get("lines", {})
+            lines = _d(ps, "lines")
             extra = set(lines) - ALLOWED_LINES
             if extra:
                 p.append(f"{tag}: observed lines outside the rule's set: {sorted(extra)}")
-            other = ps.get("other_lines", [])
-            if not isinstance(other, list):
+            other = _l(ps, "other_lines")
+            if not isinstance(ps.get("other_lines"), list):
                 p.append(f"{tag}: other_lines is not a list")
-                other = []
+            if any(o.get("file") != "firefly_scan.py" for o in other):
+                p.append(f"{tag}: cv2 calls from a file other than firefly_scan.py")
             if not _close(ps["S"], ps["wall"] - ps["W"]):
                 p.append(f"{tag}: S is not wall - W")
-            w_inner = lines.get("458", {}).get("inner_s", 0.0)
-            if not _close(ps["W"], w_inner):
+            if not _close(ps["W"], _d(lines, "458").get("inner_s", 0.0)):
                 p.append(f"{tag}: W is not the line-458 inner time")
-            dense = sum(lines.get(x, {}).get("inner_s", 0.0) for x in DENSE_LINES)
+            dense = sum(_d(lines, x).get("inner_s", 0.0) for x in DENSE_LINES)
             if not _close(ps["S_dense"], dense):
                 p.append(f"{tag}: S_dense is not the sum of the dense lines' inner times")
             if not _close(ps["S_rest"], ps["S"] - ps["S_dense"]):
                 p.append(f"{tag}: S_rest is not S - S_dense")
-            by_line = sum(v.get("calls", 0) for v in lines.values()) + sum(o.get("calls", 0) for o in other)
-            types = ps.get("types", {})
-            if not isinstance(types, dict) or set(types) - set(TYPES):
+            types = _d(ps, "types")
+            by_line = sum(v.get("calls", 0) for v in lines.values() if isinstance(v, dict)) + sum(o.get("calls", 0) for o in other)
+            if not isinstance(ps.get("types"), dict) or set(types) - set(TYPES):
                 p.append(f"{tag}: per-type call counts missing or unknown type")
-            elif sum(v.get("calls", 0) for v in types.values()) != by_line:
+            elif sum(v.get("calls", 0) for v in types.values() if isinstance(v, dict)) != by_line:
                 p.append(f"{tag}: per-type and per-line call counts differ")
+            if ps.get("exception"):
+                continue          # an exception pass has no complete call record (and is void in a kept run)
+            # F1: a scan that ran must show the calls that ran, line by line
+            want = dict(REQUIRED_CALLS)
+            need_types = {"medianBlur", "dilate", "erode"}
+            conclusive = ps.get("inconclusive") is False
+            if conclusive:
+                want.update(CONCLUSIVE_CALLS)
+                need_types |= {"connectedComponentsWithStats", "imwrite"}
+            for ln, n in want.items():
+                if _d(lines, ln).get("calls") != n:
+                    p.append(f"{tag}: line {ln} shows {_d(lines, ln).get('calls')!r} calls, need {n}")
+            for t in need_types:
+                if not _d(types, t).get("calls"):
+                    p.append(f"{tag}: no {t} call recorded")
+            if conclusive:                                              # F10
+                if not (isinstance(ps.get("n_labels"), int) and not isinstance(ps.get("n_labels"), bool)):
+                    p.append(f"{tag}: n_labels missing on a conclusive pass")
+                if not (isinstance(ps.get("mask_pixels"), int) and not isinstance(ps.get("mask_pixels"), bool)):
+                    p.append(f"{tag}: mask_pixels missing on a conclusive pass")
     return p
 
 
 def frame_medians(f):
-    good = [ps for ps in f.get("passes", []) if not ps.get("void")]
+    good = [ps for ps in _l(f, "passes") if not ps.get("void")]
     return {q: ref_median([ps[q] for ps in good]) for q in MEDIAN_FIELDS}
+
+
+def frame_spread(f):
+    good = [ps for ps in _l(f, "passes") if not ps.get("void")]
+    return {q: {"min": min(ps[q] for ps in good), "max": max(ps[q] for ps in good)} for q in MEDIAN_FIELDS}
 
 
 def frame_values(m):
@@ -399,16 +487,28 @@ def frame_values(m):
 
 
 def frame_reaches(f):
-    good = [ps for ps in f.get("passes", []) if not ps.get("void")]
+    good = [ps for ps in _l(f, "passes") if not ps.get("void")]
     return bool(good) and all(ps.get("inconclusive") is False and not ps.get("exception") for ps in good)
+
+
+def render_fractions(r):
+    """Per id, the median of T / header renderTime over its frames (context only)."""
+    rt = {(f.get("id"), f.get("frame")): f.get("render_time_s") for f in _l(_d(r, "staging"), "files")}
+    per = {}
+    for f in _l(r, "frames"):
+        v, t = _d(f, "derived").get("T"), rt.get(_frame_key(f))
+        if _num(v) and _num(t) and t:
+            per.setdefault(f["id"], []).append(v / t)
+    return {i: ref_median(v) for i, v in per.items()}
 
 
 def check_medians_and_decision(r):
     p = []
     ref_frames = []
-    for f in r.get("frames", []):
+    dry = {x.get("id"): _dry_reaches(x) for x in _l(_d(r, "dry_pass"), "records")}
+    for f in _l(r, "frames"):
         k = _frame_key(f)
-        good = [ps for ps in f.get("passes", []) if not ps.get("void")]
+        good = [ps for ps in _l(f, "passes") if not ps.get("void")]
         if not good or not all(all(_num(ps.get(x)) for x in RAW_FIELDS) for ps in good):
             p.append(f"{k}: no usable passes")
             continue
@@ -417,11 +517,16 @@ def check_medians_and_decision(r):
             p.append(f"{k}: passes disagree on the inconclusive flag")
         m = frame_medians(f)
         for q in MEDIAN_FIELDS:
-            if not _close(f.get("medians", {}).get(q), m[q]):
+            if not _close(_d(f, "medians").get(q), m[q]):
                 p.append(f"{k}: median {q} is not the median of its non-void passes")
+        sp = frame_spread(f)
+        for q in MEDIAN_FIELDS:
+            for end in ("min", "max"):
+                if not _close(_d(_d(f, "spread"), q).get(end), sp[q][end]):
+                    p.append(f"{k}: spread {q} {end} differs from the passes")
         v = frame_values(m)
         for q, val in v.items():
-            if not _close(f.get("derived", {}).get(q), val):
+            if not _close(_d(f, "derived").get(q), val):
                 p.append(f"{k}: derived {q} differs from the recomputation")
         if f.get("reaches_result") is not frame_reaches(f):
             p.append(f"{k}: reaches_result differs from the passes")
@@ -429,27 +534,30 @@ def check_medians_and_decision(r):
             p.append(f"{k}: role differs from 3.1")
         if f.get("id") in ("char-12", "char-13") and f.get("non_voting") is not True:
             p.append(f"{k}: stand-in not marked non-voting")
-        if f.get("id") in ROLES and f.get("id") not in TIER + ("char-9", "char-2"):
-            ref_frames.append(None)
+        if f.get("id") not in VOTING_IDS:
             continue
-        ref_frames.append({"id": f["id"], "reaches": frame_reaches(f), **v})
-    ref = ref_decide([x for x in ref_frames if x])
-    dec = r.get("decision", {})
-    if dec.get("row") != ref["row"]:
+        # r2 3.8: the dry pass says whether each deciding still reaches a result
+        reaches = dry.get(f["id"], False) if f["id"] in TIER else frame_reaches(f)
+        ref_frames.append({"id": f["id"], "reaches": reaches, **v})
+    ref = ref_decide(ref_frames)
+    dec = _d(r, "decision")
+    if dec.get("row") != ref["row"] or ref["row"] != sum(1 for x in dry.values() if x):
         p.append(f"who-decides row {dec.get('row')} differs from the recomputed {ref['row']}")
-    if sorted(dec.get("voting", [])) != ref["voting"]:
+    if sorted(dec.get("voting", []) if isinstance(dec.get("voting"), list) else []) != ref["voting"]:
         p.append("voting units differ from the recomputation")
+    units = _d(dec, "units")
     for name, u in ref["units"].items():
-        got = dec.get("units", {}).get(name)
+        got = _d(units, name)
         if not got:
             p.append(f"unit {name} missing")
             continue
         for q in ("T", "RW", "Floor", "share"):
-            if not _close(got.get(q), u[q]):
-                p.append(f"unit {name}: {q} differs from the recomputation")
+            for suffix in ("", "_min", "_max"):             # F10: the unit value and its spread
+                if not _close(got.get(q + suffix), u[q + suffix]):
+                    p.append(f"unit {name}: {q + suffix} differs from the recomputation")
         if got.get("branch") != u["branch"]:
             p.append(f"unit {name}: branch {got.get('branch')} differs from the recomputed {u['branch']}")
-    if set(dec.get("units", {})) != set(ref["units"]):
+    if set(units) != set(ref["units"]):
         p.append("unit set differs from the recomputation")
     if dec.get("verdict") != ref["verdict"]:
         p.append(f"verdict {dec.get('verdict')!r} differs from the recomputed {ref['verdict']!r}")
@@ -458,9 +566,9 @@ def check_medians_and_decision(r):
 
 def check_statements(r):
     p = []
-    s = r.get("statements", {})
-    by = {_frame_key(f): f for f in r.get("frames", [])}
-    pairs = s.get("char3_vs_char4", {}).get("pairs", [])
+    s = _d(r, "statements")
+    by = {_frame_key(f): f for f in _l(r, "frames")}
+    pairs = _l(_d(s, "char3_vs_char4"), "pairs")
     want_frames = [f"{n:04d}" for n in range(1, 10)]
     if [x.get("frame") for x in pairs] != want_frames:
         p.append("char-3 against char-4 is not on frames 0001-0009")
@@ -474,21 +582,24 @@ def check_statements(r):
             ok = False
         if not ok:
             p.append(f"char-3 against char-4, frame {x.get('frame')}: values differ from the frames")
-    c10 = s.get("char10_vs_char3", {})
+    c10 = _d(s, "char10_vs_char3")
     try:
         t3 = ref_median([by[("char-3", fr)]["derived"]["T"] for fr in STAGE_FRAMES["char-3"]])
         if not (_close(c10["T_char10"], by[("char-10", SINGLE)]["derived"]["T"]) and _close(c10["T_char3_median"], t3)):
             p.append("char-10 against char-3: T values differ from the frames")
     except (KeyError, TypeError):
         p.append("char-10 against char-3 statement missing or malformed")
-    rt = s.get("render_time", {})
-    if rt.get("context_only") is not True or "per_id" not in rt:
-        p.append("T over header render time missing or not marked context only")
-    if sorted(s.get("part0_read", [])) != ["char-2", "char-3", "char-4", "char-9"]:
+    rt = _d(s, "render_time")
+    got, want = _d(rt, "per_id"), render_fractions(r)
+    if rt.get("context_only") is not True:
+        p.append("T over header render time is not marked context only")
+    if set(got) != set(want) or any(not _close(got[i], want[i]) for i in want if i in got):
+        p.append("render_time.per_id differs from T over the staged header render times")
+    if sorted(s.get("part0_read", []) if isinstance(s.get("part0_read"), list) else []) != ["char-2", "char-3", "char-4", "char-9"]:
         p.append("part-0 read statement missing or wrong")
-    if sorted(s.get("non_voting", [])) != ["char-12", "char-13"]:
+    if sorted(s.get("non_voting", []) if isinstance(s.get("non_voting"), list) else []) != ["char-12", "char-13"]:
         p.append("char-12 and char-13 not marked non-voting")
-    seqs = s.get("sequences", {})
+    seqs = _d(s, "sequences")
     for sid in ("char-2", "char-3", "char-4", "char-13"):
         fr = STAGE_FRAMES[sid]
         try:
@@ -505,11 +616,11 @@ def check_statements(r):
 
 def check_producer(r, committed=None):
     p = []
-    pr = r.get("producer", {})
-    cmds = pr.get("commands", {})
+    pr = _d(r, "producer")
+    cmds = _d(pr, "commands")
     if set(cmds) != {"stage", "run", "make_receipt"}:
         p.append("producer command templates missing")
-    scripts = pr.get("scripts", [])
+    scripts = pr.get("scripts", []) if isinstance(pr.get("scripts"), list) else []
     if sorted(scripts) != sorted(HARNESS_SCRIPTS[1:]):
         p.append("producer scripts are not the three repo-relative harness scripts")
     for name, c in cmds.items():
@@ -527,9 +638,11 @@ def check_producer(r, committed=None):
 def check_no_leak(r):
     bad = []
     for s in _walk_strings(r):
-        norm = s.replace("\\\\", "/").replace("\\", "/")
+        norm = s.replace("\\", "/")       # parsed strings: one real backslash is one separator
         if _DRIVE.search(norm):
             bad.append(f"drive path in {s[:40]!r}")
+        if _UNC.search(norm):                                  # F12: both slash forms
+            bad.append(f"UNC path in {s[:40]!r}")
         if _PROFILE.search(s):
             bad.append(f"user-profile marker in {s[:40]!r}")
         low = s.lower()
@@ -540,7 +653,7 @@ def check_no_leak(r):
 
 
 PURE_CHECKS = (check_identity, check_product, check_environment, check_staging, check_dry_pass,
-               check_passes, check_split, check_medians_and_decision, check_statements,
+               check_warmup, check_passes, check_split, check_medians_and_decision, check_statements,
                check_producer, check_no_leak)
 
 
@@ -554,12 +667,75 @@ def check_all_pure(r):
 # =======================================================================================
 # A synthetic receipt, built in memory, for the self-test
 # =======================================================================================
+def _synthetic_pass(rng, sc, i, seq, th, inconclusive=False):
+    ncalls = {"292": 1, "313": 2, "314": 1}
+    if not inconclusive:
+        ncalls.update({"352": 1, "542": 3, "549": 6})
+    lines = {x: {"calls": n, "inner_s": sc * 0.1 * (1 + rng.random() * 0.05)} for x, n in ncalls.items()}
+    W = 0.0
+    if not inconclusive:
+        lines["373"] = {"calls": 3, "inner_s": sc * 0.001}
+        W = sc * 0.05 * (1 + rng.random() * 0.05)
+        lines["458"] = {"calls": 1, "inner_s": W}
+    dense = sum(lines[x]["inner_s"] for x in DENSE_LINES if x in lines)
+    S = dense + sc * 0.3
+    types = {"medianBlur": {"calls": 1, "inner_s": 0.0}, "dilate": {"calls": 2 if inconclusive else 5, "inner_s": 0.0},
+             "erode": {"calls": 1, "inner_s": 0.0}}
+    if not inconclusive:
+        types.update({"connectedComponentsWithStats": {"calls": 1, "inner_s": 0.0},
+                      "boxFilter": {"calls": 9, "inner_s": 0.0}, "imwrite": {"calls": 1, "inner_s": 0.0}})
+    return {
+        "index": i, "seq": seq, "void": False, "R": sc * 0.2 * (1 + rng.random() * 0.05), "wall": S + W, "W": W,
+        "S": S, "S_dense": dense, "S_rest": S - dense, "lines": lines, "other_lines": [], "types": types,
+        "inconclusive": inconclusive, "exception": None, "n_labels": None if inconclusive else 5,
+        "count": None if inconclusive else 2, "mask_pixels": None if inconclusive else 2, "threads": dict(th),
+        "before": {"cpu_sample_s": 5.0, "cpu_load": 0.02, "scan": {"scanned": 200, "blocked": []}},
+        "after": {"scan": {"scanned": 200, "blocked": []}},
+    }
+
+
+def _seal(r):
+    """Recompute every derived field of ``r`` from its raw passes, dry pass and staging."""
+    frames = r["frames"]
+    for f in frames:
+        good = [p for p in f["passes"] if not p.get("void")]
+        f["medians"] = frame_medians(f)
+        f["spread"] = frame_spread(f)
+        f["derived"] = frame_values(f["medians"])
+        f["reaches_result"] = frame_reaches(f)
+        f["count"] = good[0].get("count")
+    by = {_frame_key(f): f for f in frames}
+    dry = {x["id"]: _dry_reaches(x) for x in r["dry_pass"]["records"]}
+    dec = ref_decide([{"id": f["id"], "reaches": dry[f["id"]] if f["id"] in TIER else f["reaches_result"], **f["derived"]}
+                      for f in frames if f["id"] in VOTING_IDS])
+    r["decision"] = {"row": dec["row"], "voting": dec["voting"], "units": dec["units"], "verdict": dec["verdict"]}
+    seqs = {}
+    for sid in ("char-2", "char-3", "char-4", "char-13"):
+        ts = {x: by[(sid, x)]["derived"]["T"] for x in STAGE_FRAMES[sid]}
+        slow = max(ts, key=ts.get)
+        seqs[sid] = {"slowest_frame": slow, "slowest_T": ts[slow], "frames_per_s": len(ts) / sum(ts.values())}
+    r["statements"] = {
+        "char3_vs_char4": {"pairs": [
+            {"frame": x, "S_char3": by[("char-3", x)]["medians"]["S"], "S_char4": by[("char-4", x)]["medians"]["S"],
+             "W_char3": by[("char-3", x)]["medians"]["W"], "W_char4": by[("char-4", x)]["medians"]["W"],
+             "count_char3": by[("char-3", x)]["count"], "count_char4": by[("char-4", x)]["count"]}
+            for x in STAGE_FRAMES["char-4"]]},
+        "char10_vs_char3": {"T_char10": by[("char-10", SINGLE)]["derived"]["T"],
+                            "T_char3_median": ref_median([by[("char-3", x)]["derived"]["T"] for x in STAGE_FRAMES["char-3"]])},
+        "render_time": {"context_only": True, "per_id": render_fractions(r)},
+        "part0_read": ["char-9", "char-2", "char-3", "char-4"],
+        "non_voting": ["char-12", "char-13"],
+        "sequences": seqs,
+    }
+    return r
+
+
 def make_synthetic(variant="clean"):
     rng = random.Random(7)
     th = {"oiio": 48, "exr": 48, "cv2": 48}
     scale = {"char-8": 3.0, "sib-v016": 3.1, "sib-v017": 2.9, "char-9": 1.5, "char-2": 0.8,
              "char-3": 0.4, "char-4": 0.4, "char-10": 0.05, "char-13": 1.2, "char-12": 1.4}
-    frames, files, seq = [], [], 100
+    frames, files, untimed, seq = [], [], [], 100
     for fid, frs in STAGE_FRAMES.items():
         for fr in frs:
             digest = FIRST_FILE.get((fid, fr)) or hashlib.sha256(f"{fid}/{fr}".encode()).hexdigest()
@@ -572,96 +748,75 @@ def make_synthetic(variant="clean"):
             if fid == "char-2":
                 fl["checksums_sha256"] = digest
             files.append(fl)
-            sc = scale[fid]
+            if fid not in TIER:
+                seq += 1
+                untimed.append({"id": fid, "frame": fr, "seq": seq, "exception": None})
+            incl = variant == "inconclusive" and (fid, fr) == ("sib-v017", SINGLE)
             for i in range(3):
                 seq += 1
-                R = sc * 0.2 * (1 + rng.random() * 0.05)
-                W = sc * 0.05 * (1 + rng.random() * 0.05)
-                ncalls = {"292": 1, "313": 2, "314": 1, "352": 1, "542": 3, "549": 6}
-                dense_lines = {x: {"calls": ncalls[x], "inner_s": sc * 0.1 * (1 + rng.random() * 0.05)}
-                               for x in DENSE_LINES}
-                lines = dict(dense_lines)
-                lines["373"] = {"calls": 3, "inner_s": sc * 0.001}
-                lines["458"] = {"calls": 1, "inner_s": W}
-                dense = sum(v["inner_s"] for v in dense_lines.values())
-                S = dense + sc * 0.3
-                wall = S + W
-                f["passes"].append({
-                    "index": i, "seq": seq, "void": False, "R": R, "wall": wall, "W": W, "S": S,
-                    "S_dense": dense, "S_rest": S - dense, "lines": lines, "other_lines": [],
-                    "types": {"medianBlur": {"calls": 1, "inner_s": 0.0}, "dilate": {"calls": 5, "inner_s": 0.0},
-                              "erode": {"calls": 1, "inner_s": 0.0},
-                              "connectedComponentsWithStats": {"calls": 1, "inner_s": 0.0},
-                              "boxFilter": {"calls": 9, "inner_s": 0.0}, "imwrite": {"calls": 1, "inner_s": 0.0}},
-                    "inconclusive": False, "exception": None, "n_labels": 5, "count": 2, "threads": dict(th),
-                    "before": {"cpu_sample_s": 5.0, "cpu_load": 0.02, "scan": {"scanned": 200, "blocked": []}},
-                    "after": {"scan": {"scanned": 200, "blocked": []}},
-                })
+                f["passes"].append(_synthetic_pass(rng, scale[fid], i, seq, th, incl))
             if variant == "void" and (fid, fr) == ("char-8", SINGLE):
-                f["passes"].append({"index": 3, "seq": seq + 1000, "void": True, "void_reason": "scan blocked",
+                f["passes"].append({"index": 3, "seq": seq + 1000, "void": True, "void_reason": "scan shows ['husk.exe']",
+                                    "before": {"cpu_sample_s": 5.0, "cpu_load": 0.5,
+                                               "scan": {"scanned": 200, "blocked": [{"pid": 7, "name": "husk.exe"}]}},
                                     "R": 9.0, "wall": 99.0, "W": 9.0, "S": 90.0, "S_dense": 0.0, "S_rest": 90.0})
-            f["medians"] = frame_medians(f)
-            f["derived"] = frame_values(f["medians"])
-            f["reaches_result"] = True
-            f["count"] = 2
             frames.append(f)
-    by = {_frame_key(f): f for f in frames}
-    dec = ref_decide([{"id": f["id"], "reaches": True, **f["derived"]} for f in frames
-                      if f["id"] in TIER + ("char-9", "char-2")])
-    units = {n: {q: u[q] for q in ("T", "RW", "Floor", "share", "branch")} for n, u in dec["units"].items()}
-    seqs = {}
-    for sid in ("char-2", "char-3", "char-4", "char-13"):
-        ts = {x: by[(sid, x)]["derived"]["T"] for x in STAGE_FRAMES[sid]}
-        slow = max(ts, key=ts.get)
-        seqs[sid] = {"slowest_frame": slow, "slowest_T": ts[slow], "frames_per_s": len(ts) / sum(ts.values())}
-    t3 = ref_median([by[("char-3", x)]["derived"]["T"] for x in STAGE_FRAMES["char-3"]])
-    return {
+    r = {
         "mode": "timed",
         "rule": {"revision": 2, "sha256": RULE_SHA, "packet_sha256": PACKET_SHA, "B": 2.0, "threshold": 0.5},
+        "rulings": {"F4": "F4: (a) - void the pass and redo it once, a second exception stops the run, predicate red "
+                          "on any kept pass with an exception on a voting frame.",
+                    "F11": "F11: keep r2 3.9's blocked names as they are."},
         "product": {"tree_commit": TREE_COMMIT, "blobs": dict(BLOBS)},
         "environment": {**ENV, "logical_cores": 48, "threads": th,
                         "pythonpath": {"entries": 1, "resolves_to": "release tree"}},
-        "harness": {"commit": "a" * 40, "files": {s: "b" * 64 for s in HARNESS_SCRIPTS}},
-        "staging": {"distinct_files": 124, "files": files},
+        "harness": {"commit": "a" * 40, "files": {s: "b" * 64 for s in HARNESS_SCRIPTS},
+                    "ran": {s: "b" * 64 for s in RAN_FILES}},
+        "staging": {"distinct_files": 124, "problems": 0, "skipped": 0, "files": files},
+        "untimed": untimed,
         "dry_pass": {"exception": None, "records": [
-            {"id": i, "seq": 1 + n, "inconclusive": False, "n_labels": 5, "count": 2, "threads": th}
-            for n, i in enumerate(TIER)]},
+            {"id": i, "seq": 1 + n, "inconclusive": variant == "inconclusive" and i == "sib-v017",
+             "n_labels": None if (variant == "inconclusive" and i == "sib-v017") else 5,
+             "count": None if (variant == "inconclusive" and i == "sib-v017") else 2,
+             "exception": None, "threads": dict(th)} for n, i in enumerate(TIER)]},
         "frames": frames,
-        "decision": {"row": dec["row"], "voting": dec["voting"], "units": units, "verdict": dec["verdict"]},
-        "statements": {
-            "char3_vs_char4": {"pairs": [
-                {"frame": x, "S_char3": by[("char-3", x)]["medians"]["S"], "S_char4": by[("char-4", x)]["medians"]["S"],
-                 "W_char3": by[("char-3", x)]["medians"]["W"], "W_char4": by[("char-4", x)]["medians"]["W"],
-                 "count_char3": 2, "count_char4": 2} for x in STAGE_FRAMES["char-4"]]},
-            "char10_vs_char3": {"T_char10": by[("char-10", SINGLE)]["derived"]["T"], "T_char3_median": t3},
-            "render_time": {"context_only": True, "per_id": {}},
-            "part0_read": ["char-9", "char-2", "char-3", "char-4"],
-            "non_voting": ["char-12", "char-13"],
-            "sequences": seqs,
-        },
         "producer": {"commands": {
             "stage": "<R4_PYTHON> -B harness/vision/qc_timing/stage.py --rule <RULE_R2>",
             "run": "<R4_PYTHON> -B harness/vision/qc_timing/run_timing.py --manifest <STAGE_MANIFEST> --out <RUN_DIR>",
             "make_receipt": "<R4_PYTHON> -B harness/vision/qc_timing/make_receipt.py --run <RUN_DIR>"},
             "scripts": HARNESS_SCRIPTS[1:]},
     }
+    return _seal(r)
 
 
 # =======================================================================================
-# Receipt access (red marker while uncommitted)
+# Receipt access: "committed" means the bytes at HEAD (F13)
 # =======================================================================================
+def _head_bytes(rel: str):
+    r = subprocess.run(["git", "-C", str(ROOT), "show", f"HEAD:{rel}"], capture_output=True, timeout=60)
+    return r.stdout if r.returncode == 0 else None
+
+
 def _committed(rel: str) -> bool:
-    if not (ROOT / rel).is_file():
-        return False
-    r = subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", "--", rel],
-                       capture_output=True, text=True, timeout=60)
-    return r.returncode == 0
+    return _head_bytes(rel) is not None
+
+
+def _head_checked(rel: str):
+    """The bytes at HEAD; AssertionError when the working copy differs from them."""
+    head = _head_bytes(rel)
+    if head is None:
+        return None
+    wc = ROOT / rel
+    if wc.is_file() and wc.read_bytes().replace(b"\r\n", b"\n") != head.replace(b"\r\n", b"\n"):
+        raise AssertionError(f"{rel}: the working copy differs from HEAD; commit it first")
+    return head
 
 
 def _receipt() -> dict:
-    if not _committed(RECEIPT):
+    head = _head_checked(RECEIPT)
+    if head is None:
         raise AssertionError(MARKER)
-    return json.loads((ROOT / RECEIPT).read_text(encoding="utf-8"))
+    return json.loads(head.decode("utf-8"))
 
 
 def _git_show(commit, path):
@@ -678,11 +833,11 @@ def _is_ancestor(commit):
 
 
 def _load_decide():
-    if not _committed(DECIDE):
+    head = _head_checked(DECIDE)
+    if head is None:
         raise AssertionError(f"{DECIDE} is not committed")
-    spec = importlib.util.spec_from_file_location("qc_timing_decide", ROOT / DECIDE)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    mod = types.ModuleType("qc_timing_decide")
+    exec(compile(head.decode("utf-8"), DECIDE, "exec"), mod.__dict__)
     return mod
 
 
@@ -815,22 +970,31 @@ def test_harness_decide_matches_reference_on_seeded_grid():
 # 3. The recomputation self-test: the checks accept a good receipt and can fail
 # =======================================================================================
 def test_selftest_clean_synthetic_receipt_passes_every_pure_check():
-    r = make_synthetic()
-    assert check_all_pure(r) == []
-    assert check_harness_binding(r) == []       # no git: shape only
-    assert check_all_pure(make_synthetic("void")) == []
+    for variant in ("clean", "void", "inconclusive"):     # a completed-then-inconclusive scan is accepted too
+        assert check_all_pure(make_synthetic(variant)) == [], variant
+    assert check_harness_binding(make_synthetic()) == []       # no git: shape and the bytes that ran
 
 
-def _fails(mutate, variant="clean"):
+def _fails(mutate, variant="clean", seal=False):
     r = make_synthetic(variant)
     mutate(r)
-    return check_all_pure(r)
+    if seal:
+        _seal(r)
+    return check_all_pure(r) + check_harness_binding(r)
+
+
+def _frame(r, fid, fr=SINGLE):
+    return [f for f in r["frames"] if f["id"] == fid and f["frame"] == fr][0]
+
+
+def _has(errs, text):
+    return any(text in x for x in errs)
 
 
 def test_selftest_rejects_a_changed_pass_median():
     def m(r):
         r["frames"][0]["medians"]["R"] *= 1.5
-    assert any("median R" in x for x in _fails(m))
+    assert _has(_fails(m), "median R")
 
 
 def test_selftest_rejects_a_void_pass_counted():
@@ -838,26 +1002,26 @@ def test_selftest_rejects_a_void_pass_counted():
         v = [p for p in r["frames"][0]["passes"] if p.get("void")][0]
         v["void"] = False          # the void pass now counts, medians were built without it
     errs = _fails(m, "void")
-    assert any("median" in x or "before-check" in x for x in errs)
+    assert _has(errs, "median") or _has(errs, "before-check")
 
 
 def test_selftest_rejects_a_changed_branch():
     def m(r):
         u = r["decision"]["units"]["tier"]
         u["branch"] = 1 if u["branch"] != 1 else 2
-    assert any("branch" in x for x in _fails(m))
+    assert _has(_fails(m), "branch")
 
 
 def test_selftest_rejects_a_changed_verdict():
     def m(r):
         r["decision"]["verdict"] = "branch 9"
-    assert any("verdict" in x for x in _fails(m))
+    assert _has(_fails(m), "verdict")
 
 
 def test_selftest_rejects_a_changed_who_decides_row():
     def m(r):
         r["decision"]["row"] = 1
-    assert any("row" in x for x in _fails(m))
+    assert _has(_fails(m), "row")
 
 
 def test_selftest_rejects_identity_split_leak_and_staging_edits():
@@ -877,6 +1041,146 @@ def test_selftest_rejects_identity_split_leak_and_staging_edits():
     }
     for name, mut in cases.items():
         assert _fails(mut), f"edit {name!r} was not caught"
+
+
+def test_selftest_f1_dead_instrument_and_unwrapped_calls_are_caught():
+    def dead(r):                       # S01: no cv2 calls recorded anywhere, resealed to be self-consistent
+        for f in r["frames"]:
+            for p in f["passes"]:
+                p.update(lines={}, types={}, other_lines=[], S_dense=0.0, W=0.0, S=p["wall"], S_rest=p["wall"])
+    assert _has(_fails(dead, seal=True), "line 292")
+
+    def erode_unwrapped(r):            # S02 / r2: erode never wrapped
+        for f in r["frames"]:
+            for p in f["passes"]:
+                p["lines"]["313"]["calls"] = 1
+                p["types"].pop("erode")
+    errs = _fails(erode_unwrapped, seal=True)
+    assert _has(errs, "line 313") and _has(errs, "no erode call")
+
+    def imwrite_unwrapped(r):          # r3: imwrite never wrapped, so W is 0 and line 458 absent
+        for f in r["frames"]:
+            for p in f["passes"]:
+                p["lines"].pop("458")
+                p["types"].pop("imwrite")
+                p.update(W=0.0, S=p["wall"], S_rest=p["wall"] - p["S_dense"])
+    errs = _fails(imwrite_unwrapped, seal=True)
+    assert _has(errs, "line 458") and _has(errs, "no imwrite call")
+
+    def other_file(r):
+        r["frames"][3]["passes"][0]["other_lines"] = [{"file": "elsewhere.py", "line": 9, "type": "boxFilter",
+                                                         "calls": 1, "inner_s": 0.0}]
+        r["frames"][3]["passes"][0]["types"]["boxFilter"]["calls"] += 1
+    assert _has(_fails(other_file), "other than firefly_scan.py")
+
+
+def test_selftest_f2_the_dry_pass_decides_the_row():
+    def all_inconclusive(r):           # S03: dry says nothing reached a result; the row stays 2
+        for d in r["dry_pass"]["records"]:
+            d.update(inconclusive=True, n_labels=None, count=None)
+    errs = _fails(all_inconclusive)
+    assert _has(errs, "dry pass") and _has(errs, "row")
+
+    def sib_differs(r):                # S04: dry says conclusive, timed says sib-v017 is not
+        for p in _frame(r, "sib-v017")["passes"]:
+            p.update(inconclusive=True, n_labels=None, count=None, mask_pixels=None)
+    errs = _fails(sib_differs, seal=True)
+    assert _has(errs, "its result differs from the frame's timed passes")
+
+
+def test_selftest_f3_untimed_warm_up_records_are_required():
+    def drop(r):
+        r["untimed"] = [u for u in r["untimed"] if not (u["id"] == "char-3" and u["frame"] == "0020")]
+    assert _has(_fails(drop), "warm-up")
+
+    def late(r):
+        u = [u for u in r["untimed"] if u["id"] == "char-10"][0]
+        u["seq"] = 10 ** 7
+    assert _has(_fails(late), "warm-up")
+
+
+def test_selftest_f4_a_kept_pass_with_an_exception_on_a_voting_frame_is_red():
+    def deterministic(r):              # S08
+        for p in _frame(r, "char-9")["passes"]:
+            p.update(exception="read: OSError", inconclusive=True, count=None, n_labels=None)
+
+    def transient(r):                  # X02: one kept pass, one frame of char-2
+        _frame(r, "char-2", "0345")["passes"][1].update(exception="scan: MemoryError", inconclusive=True, count=None)
+    assert _has(_fails(deterministic, seal=True), "kept pass carries an exception")
+    assert _has(_fails(transient, seal=True), "kept pass carries an exception")
+    # the same exception on a void pass that shows it is fine
+    def voided(r):
+        f = _frame(r, "char-9")
+        v = copy.deepcopy(f["passes"][0])
+        v.update(index=3, void=True, void_reason="scan raised MemoryError", exception="scan: MemoryError")
+        f["passes"].append(v)
+    assert _fails(voided, seal=True) == []
+
+
+def test_selftest_f5_the_bytes_that_ran_must_equal_the_commit():
+    assert _has(_fails(lambda r: r["harness"]["ran"].__setitem__(RAN_FILES[0], "c" * 64)), "bytes that ran")
+    assert _has(_fails(lambda r: r["harness"].pop("ran")), "bytes that ran")
+
+
+def test_selftest_f6_staging_problems_and_skips_must_be_zero():
+    assert _has(_fails(lambda r: r["staging"].update(problems=7, skipped=2)), "staging problems")
+    assert _has(_fails(lambda r: r["staging"].pop("skipped")), "staging skipped")
+
+
+def test_selftest_f8_a_void_pass_must_show_its_cause():
+    def invented(r):                   # S05
+        f = _frame(r, "char-9")
+        v = copy.deepcopy(f["passes"][0])
+        v.update(index=3, void=True, void_reason="looked slow", R=9.0)
+        f["passes"].append(v)
+    assert _has(_fails(invented), "shows no blocked process")
+
+    def scan_error(r):
+        f = _frame(r, "char-9")
+        v = copy.deepcopy(f["passes"][0])
+        v.update(index=3, void=True, void_reason="before process scan failed")
+        v["before"]["scan"] = {"scanned": 0, "blocked": [], "error": "process scan failed"}
+        f["passes"].append(v)
+    assert _fails(scan_error) == []
+
+
+def test_selftest_f10_spread_render_time_and_pass_counts_are_checked():
+    assert _has(_fails(lambda r: r["decision"]["units"]["tier"].update(T_min=0.0, T_max=99.0)), "T_min")      # S06
+    assert _has(_fails(lambda r: r["statements"]["render_time"].update(per_id={"char-8": 123.0})), "render_time")  # S07
+    assert _has(_fails(lambda r: _frame(r, "char-8")["spread"]["R"].update(max=99.0)), "spread R max")      # S10
+
+    def no_counts(r):                  # S11
+        for p in _frame(r, "char-8")["passes"]:
+            p.pop("n_labels")
+            p.pop("mask_pixels")
+    errs = _fails(no_counts)
+    assert _has(errs, "n_labels") and _has(errs, "mask_pixels")
+
+
+def test_selftest_f12_unc_paths_are_leaks_in_both_slash_forms():
+    for form in ("\\\\fileserver\\share\\x.exr", "//fileserver/share/x.exr"):
+        assert _fails(lambda r, form=form: r["environment"].__setitem__("cpu_model", form)), form
+    assert not check_no_leak({"a": "https://example.org/a/b", "b": "a//b/c", "c": "<R4_PYTHON>"})
+
+
+def test_selftest_f15_null_fields_fail_with_a_reason_not_a_traceback():
+    for key in list(make_synthetic()):
+        r = make_synthetic()
+        r[key] = None
+        assert check_all_pure(r) + check_harness_binding(r), f"null {key!r} passed"
+    r = make_synthetic()
+    r["frames"][0]["medians"] = None
+    r["frames"][0]["passes"][0]["lines"] = None
+    r["frames"][1]["spread"] = None
+    r["decision"]["units"] = None
+    r["statements"]["char3_vs_char4"] = None
+    r["staging"]["files"][0] = None
+    assert check_all_pure(r)
+
+
+def test_selftest_committed_means_the_bytes_at_head():
+    assert _committed("harness/next-release/graph.json")
+    assert not _committed("harness/vision/qc_timing/no_such_file_anywhere.json")
 
 
 # =======================================================================================
@@ -909,6 +1213,10 @@ def test_receipt_staging():
 
 def test_receipt_dry_pass():
     _group(check_dry_pass)
+
+
+def test_receipt_warm_up_records():
+    _group(check_warmup)
 
 
 def test_receipt_passes_and_quiet_checks():

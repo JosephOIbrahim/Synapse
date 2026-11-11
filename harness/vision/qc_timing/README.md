@@ -59,7 +59,8 @@ Exit codes:
 - `0` done
 - `2` the machine never went quiet
 - `3` the dry pass raised
-- `4` a startup assert failed, before any pass
+- `4` a startup assert failed, or the manifest has problems, skips or is not 124 files, before any pass
+- `5` a second exception on one frame
 
 `--resume` continues from `raw.jsonl`.
 
@@ -105,4 +106,19 @@ The numbers live in the receipt, not here.
 
 **The wrappers add overhead.** It is recorded per pass and lands in S_rest, which leans against a GPU push.
 
-**An exception after the dry pass** is recorded on its pass and the run continues. That frame then does not reach a result.
+**Blocked names are fixed by the rule.** `hindie.exe` and `hbatch.exe` are not blocked (Joe's F11 ruling below).
+
+---
+
+## Rulings from Joe (2026-11-11, verbatim)
+
+> F4: (a) — void the pass and redo it once, a second exception stops the run, predicate red on any kept pass with an exception on a voting frame.
+
+> F11: keep r2 3.9's blocked names as they are.
+
+What that means in the harness:
+
+- An exception in a timed pass voids that pass. The void reason names the exception type, never a path.
+- The pass is redone once. A second exception on the same frame stops the run (exit 5) and keeps what was recorded.
+- The predicate is red on any kept pass with an exception on a voting frame.
+- Both rulings are also written into the receipt under `rulings`.

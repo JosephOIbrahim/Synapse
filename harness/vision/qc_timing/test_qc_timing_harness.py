@@ -278,6 +278,9 @@ def test_compose_medians_exclude_void_and_verdict_follows_decide():
 def test_compose_inconclusive_frame_is_excluded_from_the_votes():
     raw = [x for x in _canned_raw() if not (x["id"] == "sib-v017" and x["kind"] == "timed")]
     raw += [_rec("sib-v017", "single", k, 900 + k, 0.5, 0.1, 0.1, 0.0, incl=True) for k in range(3)]
+    for x in raw:                                   # r2 3.8: the dry pass says so too
+        if x["kind"] == "dry" and x["id"] == "sib-v017":
+            x.update(inconclusive=True, n_labels=None, count=None)
     r = make_receipt.compose(_run(), raw, None, {"commit": "a" * 40, "files": {}})
     f = next(f for f in r["frames"] if f["id"] == "sib-v017")
     assert f["reaches_result"] is False and f["inconclusive"] is True and f["n_labels"] is None
@@ -292,3 +295,312 @@ def test_compose_is_deterministic_and_keeps_no_paths_from_exceptions():
     ta, tb = json.dumps(a, sort_keys=True), json.dumps(b, sort_keys=True)
     assert ta == tb and make_receipt.find_leaks(ta) == []
     assert "scan: OSError" in ta and "secret" not in ta
+
+
+# ======================================================================================
+# Fix pass: the run loop driven with a fake reader and scanner (no cv2, no OIIO, no frames)
+# ======================================================================================
+class _RGB:
+    shape = (4, 4, 3)
+
+
+class _FakeReader:
+    def read_frame(self, path, subimage=0):
+        if "badread" in path:
+            raise OSError("cannot read " + path)
+        return _RGB(), {"origin": [0, 0], "reader": "fake"}
+
+
+class _FakeScan:
+    def __init__(self, fail_at=()):
+        self.n, self.fail_at = 0, set(fail_at)
+
+    def fireflies(self, rgb, origin=None, reader=None, mask_path=None):
+        self.n += 1
+        if self.n in self.fail_at:
+            raise MemoryError("transient " + str(mask_path))
+        return {"inconclusive": False, "count": 1, "pixel_count": 1, "nonfinite_pixels": 0}
+
+    def firefly_check(self, result):
+        return {"pass": True}
+
+
+class _FakeOIIO:
+    def get_int_attribute(self, k):
+        return 48
+
+
+class _FakeCV:
+    def getNumThreads(self):
+        return 48
+
+
+_OK = {"scanned": 500, "blocked": []}
+_BLK = {"scanned": 500, "blocked": [{"pid": 7, "name": "husk.exe"}]}
+
+
+def _ent(*ids, bad=()):
+    return [{"id": i, "frame": "single", "path": ("badread" if i in bad else "p_" + i)} for i in ids]
+
+
+TIER3 = ["char-8", "sib-v016", "sib-v017"]
+
+
+def _drive(tmp_path, monkeypatch, entries, scans=None, fail_at=(), resume=False, pre=None, scan_raises=None,
+           jump_clock=False, passes=3):
+    """Run ``Run.go`` with fakes. Returns (run, exit code, raw records)."""
+    import argparse
+    monkeypatch.setattr(run_timing.time, "sleep", lambda s: None)
+    monkeypatch.setattr(run_timing, "cpu_sample", lambda s: {"cpu_sample_s": 5.0, "cpu_load": 0.01})
+    if jump_clock:
+        ticks = {"n": 0}
+
+        def mono():
+            ticks["n"] += 1
+            return ticks["n"] * 3600.0
+        monkeypatch.setattr(run_timing.time, "monotonic", mono)
+    queue = list(scans or [])
+
+    def scan(own_pid=None):
+        if scan_raises is not None:
+            raise scan_raises
+        return queue.pop(0) if queue else dict(_OK)
+    monkeypatch.setattr(run_timing, "process_scan", scan)
+    out = str(tmp_path / "run")
+    os.makedirs(out, exist_ok=True)
+    if pre:
+        with open(os.path.join(out, "raw.jsonl"), "w", encoding="utf-8") as fh:
+            for r in pre:
+                fh.write(json.dumps(r) + "\n")
+    a = argparse.Namespace(out=out, passes=passes, cpu_sample_s=5.0, max_wait_min=1.0, resume=resume, smoke=False)
+    run = run_timing.Run(a, {"threads": {"oiio": 48, "exr": 48, "cv2": 48}}, run_timing.Instrument(_FakeCV()),
+                         _FakeReader(), _FakeScan(fail_at), _FakeOIIO(), _FakeCV())
+    code = run.go([dict(e) for e in entries])
+    p = os.path.join(out, "raw.jsonl")
+    raw = [json.loads(x) for x in open(p, encoding="utf-8")] if os.path.exists(p) else []
+    return run, code, raw
+
+
+def _of(raw, fid):
+    return [x for x in raw if x["id"] == fid]
+
+
+def test_run_order_dry_then_untimed_then_three_timed_passes(tmp_path, monkeypatch):          # r4
+    _, code, raw = _drive(tmp_path, monkeypatch, _ent(*TIER3, "char-9"))
+    assert code == 0
+    assert [x["kind"] for x in raw[:3]] == ["dry"] * 3
+    assert [x["kind"] for x in _of(raw, "char-8")] == ["dry", "timed", "timed", "timed"]     # the dry pass is the warm-up
+    assert [x["kind"] for x in _of(raw, "char-9")] == ["untimed", "timed", "timed", "timed"]  # r4: the warm-up pass exists
+    assert [x["seq"] for x in raw] == sorted({x["seq"] for x in raw})
+
+
+def test_dry_pass_exception_stops_the_run_before_any_timed_pass(tmp_path, monkeypatch):      # h6
+    ents = [_ent("char-8")[0], _ent("sib-v016", bad=("sib-v016",))[0], _ent("sib-v017")[0]]
+    _, code, raw = _drive(tmp_path, monkeypatch, ents)
+    assert code == run_timing.EXIT_DRY_EXCEPTION == 3
+    assert [x["kind"] for x in raw] == ["dry", "dry"] and not any(x["kind"] == "timed" for x in raw)
+
+
+def test_failed_after_check_voids_the_pass_and_it_is_redone(tmp_path, monkeypatch):          # h7
+    _, code, raw = _drive(tmp_path, monkeypatch, _ent("char-8"), scans=[_OK, _BLK, _OK])
+    t = [x for x in raw if x["kind"] == "timed"]
+    voids = [x for x in t if x["void"]]
+    assert code == 0 and len(voids) == 1 and "after scan shows" in voids[0]["void_reason"]
+    assert voids[0]["after"]["scan"]["blocked"][0]["name"] == "husk.exe"
+    assert sum(1 for x in t if not x["void"]) == 3
+
+
+def test_failed_before_check_voids_and_waits(tmp_path, monkeypatch):
+    _, code, raw = _drive(tmp_path, monkeypatch, _ent("char-8"), scans=[_BLK, _OK])
+    t = [x for x in raw if x["kind"] == "timed"]
+    assert code == 0 and t[0]["void"] and "before scan shows" in t[0]["void_reason"] and "R" not in t[0]
+    assert sum(1 for x in t if not x["void"]) == 3
+
+
+def test_resume_never_counts_void_or_exception_passes(tmp_path, monkeypatch):               # h8
+    ok = {"kind": "timed", "id": "char-9", "frame": "single", "void": False, "seq": 9}
+    pre = ([{"kind": "timed", "id": "char-8", "frame": "single", "void": True, "seq": s} for s in (1, 2, 3)]
+           + [dict(ok, exception="scan: MemoryError", seq=4), dict(ok, seq=5)])
+    run, _, _ = _drive(tmp_path, monkeypatch, [], resume=True, pre=pre)
+    counts, dry = run.done_counts()
+    assert counts == {("char-9", "single"): 1} and dry == set()
+    assert run.seq == 5
+
+
+def test_one_exception_voids_the_pass_and_redoes_it_once(tmp_path, monkeypatch):            # F4
+    _, code, raw = _drive(tmp_path, monkeypatch, _ent("char-8"), fail_at={4})      # calls 1 to 3 are the dry passes
+    t = [x for x in raw if x["kind"] == "timed"]
+    voids = [x for x in t if x["void"]]
+    assert code == 0 and len(voids) == 1 and voids[0]["void_reason"] == "scan raised MemoryError"
+    assert "/" not in voids[0]["void_reason"] and voids[0]["exception"].startswith("scan: MemoryError")
+    assert sum(1 for x in t if not x["void"]) == 3 and not any(x.get("exception") for x in t if not x["void"])
+
+
+def test_a_second_exception_on_the_same_frame_stops_the_run(tmp_path, monkeypatch):         # F4
+    _, code, raw = _drive(tmp_path, monkeypatch, _ent(*TIER3, "char-9"), fail_at={4, 5})
+    assert code == run_timing.EXIT_EXCEPTION_TWICE == 5 and code not in (2, 3, 4)
+    t = [x for x in raw if x["kind"] == "timed"]
+    assert len(t) == 2 and all(x["void"] for x in t) and not _of(raw, "char-9")       # what was recorded is kept
+
+
+def test_a_read_exception_is_also_voided_not_kept(tmp_path, monkeypatch):                    # F4, read side
+    _, code, raw = _drive(tmp_path, monkeypatch, _ent("char-8", "char-9", bad=("char-9",)))
+    t = _of(raw, "char-9")
+    assert code == 5 and [x["kind"] for x in t] == ["untimed", "timed", "timed"] and all(x["void"] for x in t[1:])
+    assert t[1]["void_reason"] == "read raised OSError"
+
+
+def test_process_scan_survives_a_timeout_and_undecodable_output(monkeypatch):               # F7
+    import subprocess as sp
+
+    def timeout(*a, **k):
+        raise sp.TimeoutExpired("powershell", 120)
+    monkeypatch.setattr(run_timing.subprocess, "run", timeout)
+    assert run_timing.process_scan()["error"] == "process scan raised TimeoutExpired"
+
+    class Out:
+        returncode, stdout = 0, b"\xff\xfe\x00not json \x81"
+    monkeypatch.setattr(run_timing.subprocess, "run", lambda *a, **k: Out())
+    got = run_timing.process_scan()
+    assert got["blocked"] == [] and got["error"].startswith("process scan raised")
+
+
+def test_a_raising_scan_voids_the_pass_and_the_wait_gives_up(tmp_path, monkeypatch):         # F7
+    import subprocess as sp
+    _, code, raw = _drive(tmp_path, monkeypatch, _ent("char-8"), scan_raises=sp.TimeoutExpired("powershell", 120),
+                          jump_clock=True)
+    t = [x for x in raw if x["kind"] == "timed"]
+    assert code == run_timing.EXIT_NOT_QUIET == 2
+    assert len(t) == 1 and t[0]["void"] and "process scan raised TimeoutExpired" in t[0]["void_reason"]
+    assert t[0]["before"]["scan"]["error"]
+    sub = tmp_path / "b"
+    sub.mkdir()
+    _, code, raw = _drive(sub, monkeypatch, _ent("char-8"), scan_raises=UnicodeDecodeError("utf-8", b"x", 0, 1, "bad"),
+                          jump_clock=True)
+    assert code == 2
+
+
+def test_resume_after_a_partial_dry_pass_redoes_it_for_the_missing_ids(tmp_path, monkeypatch):    # F9
+    pre = [{"kind": "dry", "id": "char-8", "frame": "single", "seq": 1, "exception": None}]
+    _, code, raw = _drive(tmp_path, monkeypatch, _ent(*TIER3), resume=True, pre=pre)
+    dry = [x["id"] for x in raw if x["kind"] == "dry"]
+    assert code == 0 and sorted(dry) == sorted(TIER3) and dry.count("char-8") == 1
+    assert [x["kind"] for x in _of(raw, "char-8")][:3] == ["dry", "untimed", "timed"]           # warm-up after a restart
+    assert [x["kind"] for x in _of(raw, "sib-v016")][:2] == ["dry", "timed"]
+
+
+def test_a_dry_pass_that_raised_does_not_count_on_resume(tmp_path, monkeypatch):
+    pre = [{"kind": "dry", "id": "char-8", "frame": "single", "seq": 1, "exception": "scan: OSError"}]
+    run, _, _ = _drive(tmp_path, monkeypatch, [], resume=True, pre=pre)
+    assert run.done_counts()[1] == set()
+
+
+def test_manifest_with_problems_skips_or_wrong_count_is_refused(tmp_path):                  # F6
+    import argparse
+    man = tmp_path / "m.json"
+    ok_files = [{"id": "char-8", "frame": "single", "staged_path": "x"}] * 124
+    for body in ({"files": ok_files, "problems": ["bad"], "skipped": []}, {"files": ok_files, "problems": [], "skipped": [{}]},
+                 {"files": ok_files[:123], "problems": [], "skipped": []}):
+        man.write_text(json.dumps(body), encoding="utf-8")
+        with pytest.raises(run_timing.StartupError):
+            run_timing.load_entries(argparse.Namespace(smoke=False, manifest=str(man)))
+    man.write_text(json.dumps({"files": ok_files, "problems": [], "skipped": []}), encoding="utf-8")
+    assert len(run_timing.load_entries(argparse.Namespace(smoke=False, manifest=str(man)))) == 124
+
+
+def test_file_sha256_folds_crlf_to_the_bytes_git_holds(tmp_path):                            # F5
+    import hashlib
+    a, b = tmp_path / "a.py", tmp_path / "b.py"
+    a.write_bytes(b"x = 1\r\ny = 2\r\n")
+    b.write_bytes(b"x = 1\ny = 2\n")
+    assert run_timing.file_sha256(str(a)) == run_timing.file_sha256(str(b)) == hashlib.sha256(b"x = 1\ny = 2\n").hexdigest()
+
+
+# ----------------------------------------------------------- make_receipt, fix pass
+def test_compose_takes_the_deciding_stills_result_from_the_dry_pass(monkeypatch):           # F2
+    raw = _canned_raw()
+    for x in raw:
+        if x["kind"] == "dry" and x["id"] == "sib-v017":
+            x.update(inconclusive=True, n_labels=None, count=None)
+    r = make_receipt.compose(_run(), raw, None, {"commit": "a" * 40, "files": {}})
+    assert r["decision"]["row"] == 2 and r["decision"]["units"]["tier"]["n_frames"] == 2
+    f = next(f for f in r["frames"] if f["id"] == "sib-v017")
+    assert f["reaches_result"] is True          # the timed passes disagree with the dry pass: the predicate goes red
+
+
+def test_compose_carries_untimed_records_staging_counts_rulings_and_the_bytes_that_ran():    # F3, F6, F5, F4
+    raw = _canned_raw()
+    raw.append(dict(_rec("char-9", "single", None, 5000, 0.1, 0.1, 0.1, 0.0, kind="untimed"), exception="scan: OSError: C:/x"))
+    run = _run()
+    run["harness_files"] = {"harness/vision/qc_timing/run_timing.py": "a" * 64}
+    staging = {"distinct_files": 124, "problems": 0, "skipped": 0, "files": []}
+    r = make_receipt.compose(run, raw, staging, {"commit": "a" * 40, "files": {}})
+    assert r["untimed"] == [{"id": "char-9", "frame": "single", "seq": 5000, "exception": "scan: OSError"}]
+    assert r["staging"]["problems"] == 0 and r["staging"]["skipped"] == 0
+    assert r["harness"]["ran"] == {"harness/vision/qc_timing/run_timing.py": "a" * 64}
+    assert "second exception stops the run" in r["rulings"]["F4"] and "blocked names as they are" in r["rulings"]["F11"]
+    assert "hindie.exe" in r["rulings"]["F11_limit"]
+
+
+def test_make_receipt_refuses_when_the_bytes_that_ran_differ_from_the_commit(tmp_path, monkeypatch, capsys):  # F5
+    run = _run()
+    run["harness_files"] = {"harness/vision/qc_timing/run_timing.py": "a" * 64}
+    (tmp_path / "run.json").write_text(json.dumps(run), encoding="utf-8")
+    (tmp_path / "raw.jsonl").write_text("".join(json.dumps(x) + "\n" for x in _canned_raw()), encoding="utf-8")
+    monkeypatch.setattr(make_receipt, "harness_binding",
+                        lambda root, commit: {"commit": "b" * 40, "files": {"harness/vision/qc_timing/run_timing.py": "c" * 64}})
+    code = make_receipt.main(["--run", str(tmp_path), "--out", str(tmp_path / "r.json")])
+    assert code == 2 and "differ from the blobs" in capsys.readouterr().err and not (tmp_path / "r.json").exists()
+    monkeypatch.setattr(make_receipt, "harness_binding",
+                        lambda root, commit: {"commit": "b" * 40, "files": {"harness/vision/qc_timing/run_timing.py": "a" * 64}})
+    assert make_receipt.main(["--run", str(tmp_path), "--out", str(tmp_path / "r.json")]) == 0
+
+
+def test_find_leaks_catches_unc_paths_in_both_slash_forms():                                  # F12
+    assert make_receipt.find_leaks(json.dumps({"p": "\\\\fileserver\\share\\a.exr"}))
+    assert make_receipt.find_leaks('"//fileserver/share/a.exr"')
+    assert make_receipt.find_leaks('"https://example.org/a/b"') == []
+
+
+# ------------------------------------------- the wrappers on a real fireflies() call (R4 venv only)
+def test_wrappers_give_the_per_line_counts_the_predicate_requires_on_a_real_scan(tmp_path):   # r2, r3
+    if sys.version_info[:2] != (3, 12):
+        # Stock Python's editable install maps retina to the live checkout: never import it there.
+        pytest.skip("runs under the R4 venv (CPython 3.12) with PYTHONPATH on the release tree")
+    try:
+        import cv2
+        import numpy as np
+        ok = isinstance(cv2.__version__, str) and isinstance(np.__version__, str) and hasattr(cv2, "boxFilter")
+    except ImportError:
+        ok = False
+    if not ok:
+        pytest.skip("cv2 is not installed (stock Python): runs under the R4 venv")
+    try:
+        import retina.firefly_scan as fs          # only reached when cv2 is real, i.e. under the R4 venv
+    except ImportError:
+        pytest.skip("retina is not on PYTHONPATH")
+    rng = np.random.default_rng(1)
+    xx = np.tile(np.linspace(0.2, 0.7, 320, dtype=np.float32), (240, 1))
+    img = np.clip(np.stack([xx, xx * 0.9, xx * 0.8], axis=2) + rng.normal(0, 0.02, (240, 320, 3)).astype(np.float32), 0.01, None)
+    for y, x in ((40, 40), (100, 200), (180, 90)):
+        img[y, x, :] = 8.0
+    inst = run_timing.Instrument(cv2)
+    inst.install()
+    try:
+        inst.begin()
+        res = fs.fireflies(img.astype(np.float32), mask_path=str(tmp_path / "m.png"))
+        s = inst.end()
+        tiny = np.zeros((240, 320, 3), dtype=np.float32)
+        tiny[110:116, 150:156, :] = 0.5
+        inst.begin()
+        res2 = fs.fireflies(tiny, mask_path=str(tmp_path / "m2.png"))
+        s2 = inst.end()
+    finally:
+        inst.restore()
+    assert res["inconclusive"] is False and res["count"] >= 1
+    L = {k: v["calls"] for k, v in s["lines"].items()}
+    assert (L["292"], L["313"], L["314"], L["352"], L["458"]) == (1, 2, 1, 1, 1)
+    assert L["373"] >= 1 and L["542"] >= 1 and L["549"] >= 1 and s["other_lines"] == []
+    assert s["types"]["erode"]["calls"] == 1 and s["types"]["imwrite"]["calls"] == 1      # r2, r3: both are wrapped
+    assert s["W"] > 0 and s["lines"]["458"]["inner_s"] == s["W"]
+    assert res2["inconclusive"] is True and sorted(s2["lines"]) == ["292", "313", "314"] and s2["W"] == 0.0

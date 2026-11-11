@@ -2,7 +2,9 @@
 
 Run under the R4 venv with ``-B`` and PYTHONPATH set to the release tree only.
 Exit codes: 0 done, 2 not quiet (what was recorded is kept), 3 an exception in
-the dry pass, 4 a startup assert failed (before any pass).
+the dry pass, 4 a startup assert failed or the manifest is not clean (before any
+pass), 5 a second exception on one frame (Joe's F4 ruling: the first voids the
+pass and it is redone once; everything recorded so far is kept).
 
 Nothing here imports ``retina``, ``cv2`` or ``OpenImageIO`` at module level, so the
 pure helpers (process-scan parsing, call summaries, the CPU sample arithmetic)
@@ -39,7 +41,7 @@ WRAPPED = ("medianBlur", "dilate", "erode", "connectedComponentsWithStats", "box
 ORDER = ("char-8", "sib-v016", "sib-v017", "char-9", "char-2",
          "char-10", "char-3", "char-4", "char-13", "char-12")
 TIER = ORDER[:3]
-EXIT_OK, EXIT_NOT_QUIET, EXIT_DRY_EXCEPTION, EXIT_STARTUP = 0, 2, 3, 4
+EXIT_OK, EXIT_NOT_QUIET, EXIT_DRY_EXCEPTION, EXIT_STARTUP, EXIT_EXCEPTION_TWICE = 0, 2, 3, 4, 5
 
 
 class StartupError(Exception):
@@ -51,6 +53,10 @@ class NotQuiet(Exception):
 
 
 class DryPassException(Exception):
+    pass
+
+
+class ExceptionTwice(Exception):
     pass
 
 
@@ -160,11 +166,29 @@ _CIM = ("Get-CimInstance Win32_Process | Select-Object ProcessId,Name,CommandLin
 
 
 def process_scan(own_pid: Optional[int] = None) -> Dict[str, Any]:
-    r = subprocess.run(["powershell", "-NoProfile", "-Command", _CIM],
-                       capture_output=True, text=True, timeout=120)
-    if r.returncode != 0:
-        return {"scanned": 0, "blocked": [], "error": "process scan failed"}
-    return parse_process_list(r.stdout, os.getpid() if own_pid is None else own_pid)
+    """Scan for blockers. Any failure (timeout, bad output, no powershell) returns
+    the error dict, which voids the pass and waits for a clean scan."""
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", _CIM],
+                           capture_output=True, timeout=120)
+        if r.returncode != 0:
+            return {"scanned": 0, "blocked": [], "error": "process scan failed"}
+        text = r.stdout.decode("utf-8", errors="replace")
+        return parse_process_list(text, os.getpid() if own_pid is None else own_pid)
+    except (subprocess.TimeoutExpired, OSError, ValueError, TypeError, AttributeError) as exc:
+        return {"scanned": 0, "blocked": [], "error": f"process scan raised {type(exc).__name__}"}
+
+
+def exception_type(text: str) -> str:
+    """'scan: MemoryError: ...' -> 'scan raised MemoryError' (never a path)."""
+    parts = [x.strip() for x in str(text).split(":")]
+    return f"{parts[0]} raised {parts[1]}" if len(parts) > 1 else "pass raised an exception"
+
+
+def file_sha256(path: str) -> str:
+    """sha256 of a file with CRLF folded to LF, so it equals git's blob bytes."""
+    with open(path, "rb") as fh:
+        return hashlib.sha256(fh.read().replace(b"\r\n", b"\n")).hexdigest()
 
 
 def _ps(cmd: str) -> str:
@@ -347,6 +371,7 @@ class Run:
         self.raw_path = os.path.join(self.out, "raw.jsonl")
         self.log_path = os.path.join(self.out, "run.log")
         self.smoke = bool(args.smoke)
+        self.exc_count: Dict[Tuple[str, str], int] = {}
 
     # records
     def emit(self, rec: Dict[str, Any]) -> None:
@@ -386,7 +411,7 @@ class Run:
                 continue
             scan = c.get("scan", {})
             if scan.get("error"):
-                return f"{name} process scan failed"
+                return f"{name} {scan['error']}"
             if scan.get("blocked"):
                 return f"{name} scan shows {[b['name'] for b in scan['blocked']]}"
         return None
@@ -394,16 +419,23 @@ class Run:
     def wait_quiet(self) -> None:
         deadline = time.monotonic() + self.a.max_wait_min * 60
         while True:
-            scan = process_scan()
+            scan = self.scan()
             if not scan.get("error") and not scan["blocked"]:
                 return
             if time.monotonic() >= deadline:
                 raise NotQuiet("not quiet")
             time.sleep(30)
 
+    def scan(self) -> Dict[str, Any]:
+        try:
+            return process_scan()
+        except (subprocess.TimeoutExpired, UnicodeError, OSError, ValueError) as exc:
+            return {"scanned": 0, "blocked": [], "error": f"process scan raised {type(exc).__name__}"}
+
     def timed(self, e: Dict[str, Any], index: int) -> None:
+        key = (e["id"], str(e["frame"]))
         while True:
-            before = {**cpu_sample(self.a.cpu_sample_s), "scan": process_scan()}
+            before = {**cpu_sample(self.a.cpu_sample_s), "scan": self.scan()}
             why = self.checks_pass(before, None)
             if why and not self.smoke:
                 self.emit({"kind": "timed", "id": e["id"], "frame": e["frame"], "index": index,
@@ -411,10 +443,19 @@ class Run:
                 self.wait_quiet()
                 continue
             rec = run_one(e["path"], self.mask(e, f"p{index}"), self.inst, self.fr, self.fs)
-            after = {"scan": process_scan()}
+            after = {"scan": self.scan()}
             why = why or self.checks_pass({}, after)
             rec.update({"kind": "timed", "id": e["id"], "frame": e["frame"], "index": index,
                         "before": before, "after": after, "threads": self.check_threads()})
+            if rec.get("exception"):
+                # Joe's F4 ruling (a): the pass is void and redone once; a second
+                # exception on the same frame stops the run.
+                rec.update({"void": True, "void_reason": exception_type(rec["exception"])})
+                self.emit(rec)
+                self.exc_count[key] = self.exc_count.get(key, 0) + 1
+                if self.exc_count[key] >= 2:
+                    raise ExceptionTwice(f"{key[0]} {key[1]}")
+                continue
             if why and not self.smoke:
                 rec.update({"void": True, "void_reason": why})
                 self.emit(rec)
@@ -426,41 +467,50 @@ class Run:
             self.emit(rec)
             return
 
-    def done_counts(self) -> Tuple[Dict[Tuple[str, str], int], bool]:
+    def done_counts(self) -> Tuple[Dict[Tuple[str, str], int], set]:
+        """Non-void, exception-free timed passes per frame, and the ids whose dry
+        pass is on record (a dry pass that raised does not count)."""
         counts: Dict[Tuple[str, str], int] = {}
-        dry = False
+        dry: set = set()
         if os.path.isfile(self.raw_path):
             with open(self.raw_path, encoding="utf-8") as fh:
                 for line in fh:
                     r = json.loads(line)
                     self.seq = max(self.seq, int(r.get("seq", 0)))
-                    if r["kind"] == "dry":
-                        dry = True
-                    if r["kind"] == "timed" and not r.get("void"):
+                    if r["kind"] == "dry" and not r.get("exception"):
+                        dry.add(r["id"])
+                    if r["kind"] == "timed" and not r.get("void") and not r.get("exception"):
                         k = (r["id"], str(r["frame"]))
                         counts[k] = counts.get(k, 0) + 1
         return counts, dry
 
     def go(self, entries: List[Dict[str, Any]]) -> int:
+        try:
+            return self._go(entries)
+        except NotQuiet:
+            return EXIT_NOT_QUIET
+        except ExceptionTwice:
+            return EXIT_EXCEPTION_TWICE
+
+    def _go(self, entries: List[Dict[str, Any]]) -> int:
         entries = order_entries(entries)
-        counts, dry_done = self.done_counts() if self.a.resume else ({}, False)
+        counts, dry_ids = self.done_counts() if self.a.resume else ({}, set())
         tier = [e for e in entries if e["id"] in TIER]
-        dry_here = False
-        if not dry_done:
-            for e in tier:
-                if self.untimed(e, "dry")["exception"]:
-                    return EXIT_DRY_EXCEPTION
-            dry_here = True
+        dry_here: set = set()
+        for e in tier:
+            if e["id"] in dry_ids:
+                continue          # a resume redoes the dry pass only for the ids it lacks
+            if self.untimed(e, "dry")["exception"]:
+                return EXIT_DRY_EXCEPTION
+            dry_here.add(e["id"])
         for e in entries:
             have = counts.get((e["id"], str(e["frame"])), 0)
             if have >= self.a.passes:
                 continue
             # The dry pass is the tier's untimed warm-up (3.8); every other frame
             # (and every frame after --resume) gets one untimed pass first.
-            if not (dry_here and e["id"] in TIER):
+            if e["id"] not in dry_here:
                 self.untimed(e, "untimed")
-            # PLAN_GAP: an exception in an untimed or timed pass (after the dry pass) is
-            # recorded on the pass and the run continues; the frame then does not reach a result.
             for k in range(have, self.a.passes):
                 self.timed(e, k)
         return EXIT_OK
@@ -474,6 +524,8 @@ def load_entries(args: argparse.Namespace) -> List[Dict[str, Any]]:
                 for i, p in enumerate(args.smoke_frames)]
     with open(args.manifest, encoding="utf-8") as fh:
         man = json.load(fh)
+    if man.get("problems") or man.get("skipped") or len(man.get("files", [])) != 124:
+        raise StartupError("the manifest is not clean: problems, skipped files, or not 124 files")
     return [{"id": f["id"], "frame": f["frame"], "path": f["staged_path"]} for f in man["files"]]
 
 
@@ -500,23 +552,36 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except StartupError as exc:
         print(f"STARTUP ASSERT FAILED: {exc}", file=sys.stderr)
         return EXIT_STARTUP
+    try:
+        entries = load_entries(args)
+    except StartupError as exc:
+        print(f"MANIFEST REFUSED: {exc}", file=sys.stderr)
+        return EXIT_STARTUP
     import cv2
     import OpenImageIO as oiio
     import retina.firefly_scan as fs
     import retina.frame_reader as fr
     os.makedirs(args.out, exist_ok=True)
     env.update(machine_info(args.out))
+    # F5: the bytes that ran. make_receipt.py refuses unless these equal the blobs
+    # at the recorded harness commit.
+    qdir = "harness/vision/qc_timing/"
+    ran = {qdir + "run_timing.py": file_sha256(os.path.abspath(__file__)),
+           qdir + "decide.py": file_sha256(os.path.join(os.path.dirname(os.path.abspath(__file__)), "decide.py"))}
     with open(os.path.join(args.out, "run.json"), "w", encoding="utf-8") as fh:
         json.dump({"mode": "smoke" if args.smoke else "timed", "command_line": [sys.executable] + sys.argv,
-                   "passes": args.passes, "cpu_sample_s": args.cpu_sample_s, "environment": env}, fh, indent=1)
+                   "passes": args.passes, "cpu_sample_s": args.cpu_sample_s, "environment": env,
+                   "harness_files": ran}, fh, indent=1)
     inst = Instrument(cv2)
     inst.install()
     run = Run(args, env, inst, fr, fs, oiio, cv2)
     try:
-        return run.go(load_entries(args))
-    except NotQuiet:
-        print("NOT QUIET: giving up; what was recorded is kept", file=sys.stderr)
-        return EXIT_NOT_QUIET
+        code = run.go(entries)
+        if code == EXIT_NOT_QUIET:
+            print("NOT QUIET: giving up; what was recorded is kept", file=sys.stderr)
+        elif code == EXIT_EXCEPTION_TWICE:
+            print("A SECOND EXCEPTION on one frame: stopped; what was recorded is kept", file=sys.stderr)
+        return code
     except StartupError as exc:
         print(f"ASSERT FAILED: {exc}", file=sys.stderr)
         return EXIT_STARTUP
