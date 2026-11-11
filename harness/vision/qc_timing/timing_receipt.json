@@ -106,7 +106,6 @@
   ]
  },
  "environment": {
-  "cpu_model": "AMD Ryzen Threadripper PRO 7965WX 24-Cores",
   "cv2": "5.0.0",
   "logical_cores": 48,
   "numpy": "2.4.4",
@@ -116,7 +115,6 @@
    "entries": 1,
    "resolves_to": "release tree"
   },
-  "scratch_drive_model": "Samsung SSD 990 PRO 4TB",
   "threads": {
    "cv2": 48,
    "exr": 48,
@@ -48284,14 +48282,14 @@
   }
  ],
  "harness": {
-  "commit": "f68eafd0303fadae780d4eb55b704060533e7e91",
+  "commit": "f91d5d285626b4ef3eddb2f7c692b5f947391248",
   "files": {
    "harness/vision/qc_timing/README.md": "c09db31ef43f0b690dec602d390c75ff6c73825179ec76a0fb8fb12f382f38fc",
    "harness/vision/qc_timing/decide.py": "9b860ad9649fb0c4d375dee725b199ccec0a650b198638d34e21fa078d93132f",
-   "harness/vision/qc_timing/make_receipt.py": "cfa74d1a70715ae7996b1cc5aa2b55c820599f13043bb42b6ad6f0e72d5205e4",
+   "harness/vision/qc_timing/make_receipt.py": "3cf8df8a280fe1eefcb33bff8e722230e04d0748ce27a5fcfb75081b71b5bb99",
    "harness/vision/qc_timing/run_timing.py": "15f9aa85fc15e9dca88ca084933c9b51063aaa952fd238a5a0eb89e34fd59c3c",
    "harness/vision/qc_timing/stage.py": "6072b5d2083068c99b67880ec64bd4116b8af18d16679cd2f4d927950fecf004",
-   "harness/vision/qc_timing/test_qc_timing_harness.py": "3d0e2856c3e9624c7024549800b8e1bafb5ec17ef89228116f86c6e3dba04fda"
+   "harness/vision/qc_timing/test_qc_timing_harness.py": "fa412d3532a2da0f7f5b0f0b0793a1567ccf519329da2fdac920e46116e7d928"
   },
   "ran": {
    "harness/vision/qc_timing/decide.py": "9b860ad9649fb0c4d375dee725b199ccec0a650b198638d34e21fa078d93132f",
