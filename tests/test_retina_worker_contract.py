@@ -88,9 +88,24 @@ def _exe_stand_in(tmp_path):
     return str(link)
 
 
+#: Houdini's own executables. Launched as ``<exe> -E -s -B -m ...`` (the adapter's
+#: worker argv), ``-E`` drops the PYTHONHOME they need to find their stdlib, so a
+#: stand-in under hython cannot start. The product launches only the explicit R4
+#: worker named by the env var, never ``sys.executable``.
+_HOUDINI_EXES = ("hython", "houdini", "hindie", "happrentice", "houdinicore", "houdinifx")
+
+
+def _running_under_houdini():
+    return os.path.basename(sys.executable).lower().startswith(_HOUDINI_EXES)
+
+
 @pytest.fixture
 def stand_in(monkeypatch, tmp_path):
     """The stock interpreter as the configured worker."""
+    if _running_under_houdini():
+        pytest.skip("stand-in worker is sys.executable; under hython the adapter's -E launch "
+                    "drops PYTHONHOME and the stand-in cannot start (the product launches only "
+                    "the explicit R4 worker)")
     python = _exe_stand_in(tmp_path)
     monkeypatch.setenv(ENV, python)
     return python
