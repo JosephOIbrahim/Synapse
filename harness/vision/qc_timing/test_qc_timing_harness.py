@@ -562,6 +562,50 @@ def test_find_leaks_catches_unc_paths_in_both_slash_forms():                    
     assert make_receipt.find_leaks('"https://example.org/a/b"') == []
 
 
+# ----------------------------------------------- the frame names stay out (decision 2a)
+def _staging_names():
+    return [{"id": "char-2", "frame": "0336", "name": "OVOID_char2_0336_v016.exr", "bytes": 10,
+             "source_sha256": "a" * 64, "copy_sha256": "a" * 64, "source_attributes": {"aov": "beauty"},
+             "render_time_s": 2.5},
+            {"id": "char-3", "frame": "0001", "name": "OVOID_char3_0001_v016.exr", "bytes": 11,
+             "source_sha256": "b" * 64, "copy_sha256": "b" * 64, "source_attributes": {},
+             "checksums_sha256": "b" * 64, "render_time_s": 3.0}]
+
+
+def test_compose_drops_the_staged_file_name_and_keeps_every_other_key():                       # decision 2a
+    files = _staging_names()
+    staging = {"distinct_files": 2, "problems": 0, "skipped": 0, "files": files}
+    r = make_receipt.compose(_run(), _canned_raw(), staging, {"commit": "a" * 40, "files": {}})
+    got = r["staging"]["files"]
+    assert [f["id"] for f in got] == ["char-2", "char-3"]
+    for entry, src in zip(got, files):
+        assert "name" not in entry
+        assert entry == {k: v for k, v in src.items() if k != "name"}
+    text = json.dumps(r)
+    assert "OVOID" not in text
+    assert make_receipt.find_leaks(text, [f["name"] for f in files]) == []
+
+
+def test_make_receipt_refuses_when_a_staged_file_name_reaches_the_text(tmp_path, monkeypatch, capsys):  # decision 2a
+    run = _run()
+    run["harness_files"] = {"harness/vision/qc_timing/run_timing.py": "a" * 64}
+    (tmp_path / "run.json").write_text(json.dumps(run), encoding="utf-8")
+    (tmp_path / "raw.jsonl").write_text("".join(json.dumps(x) + "\n" for x in _canned_raw()), encoding="utf-8")
+    staging = {"distinct_files": 2, "problems": 0, "skipped": 0, "files": _staging_names()}
+    (tmp_path / "summary.json").write_text(json.dumps(staging), encoding="utf-8")
+    monkeypatch.setattr(make_receipt, "harness_binding",
+                        lambda root, commit: {"commit": "b" * 40,
+                                              "files": {"harness/vision/qc_timing/run_timing.py": "a" * 64}})
+    argv = ["--run", str(tmp_path), "--staging-summary", str(tmp_path / "summary.json")]
+    assert make_receipt.main(argv + ["--out", str(tmp_path / "r.json")]) == 0     # the real path writes, name-free
+    assert "OVOID" not in (tmp_path / "r.json").read_text(encoding="utf-8")
+    monkeypatch.setattr(make_receipt, "compose", lambda *a, **k: {"staged": "OVOID_char2_0336_v016.exr"})
+    assert make_receipt.main(argv + ["--out", str(tmp_path / "leaky.json")]) == 2  # a name survives: refused
+    err = capsys.readouterr().err
+    assert "would carry host details" in err and "OVOID_char2_0336_v016.exr" in err
+    assert not (tmp_path / "leaky.json").exists()
+
+
 # ------------------------------------------- the wrappers on a real fireflies() call (R4 venv only)
 def test_wrappers_give_the_per_line_counts_the_predicate_requires_on_a_real_scan(tmp_path):   # r2, r3
     if sys.version_info[:2] != (3, 12):

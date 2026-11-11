@@ -7,8 +7,8 @@ receipt are the numbers the predicate recomputes.
 
 No generation timestamp: the same inputs give the same bytes. A leak guard refuses
 to write (exit 2) when any drive path, user-profile marker, build-folder or cloud
-marker, or a run-time host marker (``--host-marker``) would land in the receipt.
-Wall-clock stamps from the raw log stay in the raw log.
+marker, a run-time host marker (``--host-marker``) or any staged frame name would
+land in the receipt. Wall-clock stamps from the raw log stay in the raw log.
 """
 from __future__ import annotations
 
@@ -182,7 +182,10 @@ def compose(run: Dict[str, Any], raw: List[Dict[str, Any]], staging: Optional[Di
                                             "pythonpath", "cpu_model", "scratch_drive_model") if k in env},
         "harness": {**harness, "ran": run.get("harness_files")},
         "staging": ({"distinct_files": staging["distinct_files"], "problems": staging.get("problems"),
-                     "skipped": staging.get("skipped"), "files": staging["files"]} if staging else None),
+                     "skipped": staging.get("skipped"),
+                     # the frame name (project and shot) stays out: every other key is copied unchanged
+                     "files": [{k: v for k, v in f.items() if k != "name"} for f in staging["files"]]}
+                    if staging else None),
         "untimed": untimed,
         "rulings": RULINGS,
         "dry_pass": {"exception": next((d["exception"] for d in drec if d["exception"]), None), "records": drec},
@@ -243,7 +246,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 2
     receipt = compose(run, raw, staging, harness)
     text = json.dumps(receipt, indent=1, sort_keys=True) + "\n"
-    leaks = find_leaks(text, a.host_marker)
+    # the staged frame names are project and shot names on a public repo: each one is a leak marker
+    markers = list(a.host_marker)
+    if staging:
+        markers.extend(str(f["name"]) for f in staging.get("files") or [] if f.get("name"))
+    leaks = find_leaks(text, markers)
     if leaks:
         print("REFUSED: the receipt would carry host details:", file=sys.stderr)
         for x in leaks[:10]:
