@@ -178,8 +178,10 @@ def compose(run: Dict[str, Any], raw: List[Dict[str, Any]], staging: Optional[Di
                    "S_rest": "S minus S_dense; a call from any other line is listed in other_lines and lands here",
                    "R": "read_frame(path, subimage=0)", "median_of": "non-void timed passes after one untimed pass"},
         "product": env["product"],
+        # the workstation's exact model strings stay out: they identify one machine and
+        # support no claim in the receipt (Joe, 2026-11-11, decision 2b)
         "environment": {k: env[k] for k in ("python", "numpy", "cv2", "openimageio", "logical_cores", "threads",
-                                            "pythonpath", "cpu_model", "scratch_drive_model") if k in env},
+                                            "pythonpath") if k in env},
         "harness": {**harness, "ran": run.get("harness_files")},
         "staging": ({"distinct_files": staging["distinct_files"], "problems": staging.get("problems"),
                      "skipped": staging.get("skipped"),

@@ -606,6 +606,21 @@ def test_make_receipt_refuses_when_a_staged_file_name_reaches_the_text(tmp_path,
     assert not (tmp_path / "leaky.json").exists()
 
 
+def test_compose_keeps_the_workstation_model_strings_out_of_the_receipt():                    # decision 2b
+    run = _run()
+    run["environment"]["cpu_model"] = "AMD Ryzen Threadripper PRO 7965WX 24-Cores"
+    run["environment"]["scratch_drive_model"] = "Samsung SSD 990 PRO 4TB"
+    r = make_receipt.compose(run, _canned_raw(), None, {"commit": "a" * 40, "files": {}})
+    assert "cpu_model" not in r["environment"]
+    assert "scratch_drive_model" not in r["environment"]
+    for k in ("python", "numpy", "cv2", "openimageio",   # every other recorded key is copied unchanged
+              "logical_cores", "threads", "pythonpath"):
+        assert r["environment"].get(k) == run["environment"][k]
+    text = json.dumps(r)
+    assert "Threadripper" not in text
+    assert "990 PRO" not in text
+
+
 # ------------------------------------------- the wrappers on a real fireflies() call (R4 venv only)
 def test_wrappers_give_the_per_line_counts_the_predicate_requires_on_a_real_scan(tmp_path):   # r2, r3
     if sys.version_info[:2] != (3, 12):
