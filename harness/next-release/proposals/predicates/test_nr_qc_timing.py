@@ -376,6 +376,8 @@ def check_warmup(r):
         rec = dry.get(k[0]) if k[0] in TIER else untimed.get(k)
         if first is None or rec is None or not isinstance(rec.get("seq"), int) or rec["seq"] >= first:
             p.append(f"{k}: no untimed warm-up record before its first timed pass")
+        elif rec.get("exception"):
+            p.append(f"{k}: its warm-up record carries an exception, so r2 3.3's untimed pass did not complete")
     return p
 
 
@@ -1097,6 +1099,14 @@ def test_selftest_f3_untimed_warm_up_records_are_required():
         u = [u for u in r["untimed"] if u["id"] == "char-10"][0]
         u["seq"] = 10 ** 7
     assert _has(_fails(late), "warm-up")
+
+    def raised(r):                     # N1: the untimed pass raised once, the frame still kept three passes
+        [u for u in r["untimed"] if u["id"] == "char-3" and u["frame"] == "0020"][0]["exception"] = "scan: MemoryError"
+    assert _has(_fails(raised), "its warm-up record carries an exception")
+
+    def dry_raised(r):                 # the same for a deciding still's dry record
+        r["dry_pass"]["records"][1]["exception"] = "scan: MemoryError"
+    assert _has(_fails(dry_raised), "its warm-up record carries an exception")
 
 
 def test_selftest_f4_a_kept_pass_with_an_exception_on_a_voting_frame_is_red():
