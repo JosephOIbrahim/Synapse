@@ -96,11 +96,14 @@ real merge still needs Joe's word.
 
 ---
 
-## 3. Release notes — draft
+## 3. Release notes — draft, since authored
 
-> Written to be spliced into `docs/releases/v5.101.0.md`. Every figure carries
-> its producer. Placeholders in «angle brackets» are filled at release time
-> from the verification record, not written now.
+> **This section has been carried out.** The notes now live at
+> `docs/releases/v5.101.0.md` on this branch, with the CHANGELOG entry above
+> v5.100.0. What follows is the draft they were written from, kept as the
+> record of what was decided before the authoring pass. Every figure carries
+> its producer. The «angle brackets» were filled from the verification record
+> when the notes were authored.
 
 ### Header
 
@@ -346,6 +349,11 @@ as the guard defines it — commit subjects, diff stat and newly added files for
   unfilled placeholder, and `«Test counts and suite numbers here at release
   time.»` scored supported 0.33 against not_a_claim 0.31 — effectively
   undecided, and a placeholder that must not survive into the final notes.
+  **That is history, not a live figure.** Both placeholders were filled before
+  the runs in §5.5 and §5.6: the worker-entrypoint figure became `+230/−5`,
+  because `235` was the changed-line count from `--stat` while `230` is the
+  additions count from `--numstat`, and the test-count placeholder became the
+  measured `175 passed, 8 skipped`.
 - The other 3 are genuine: `python/synapse/host/retina_receipts.py`, 828 lines,
   new and in the payload (supported 0.84); the two test files; and the
   limits lead-in, which is not a claim.
@@ -458,4 +466,9 @@ claims are read from, because the notes are a draft outside the repo.
 - Receipts lane worktree: `<build-root>/render-qc/wt-receipts` (`qc/recovery-receipts`, `58f23d33`)
 - Release tree: `<build-root>/rel-51000/wt-release` (`release/v5.100.0`)
 - Jev environment: `<build-root>/jev-venv`
+
+All four paths above were checked on 2026-11-11: `wt-timing` is `qc/timing` at
+`195365a1`, `wt-receipts` is `qc/recovery-receipts` at `58f23d33`,
+`wt-release` is `release/v5.100.0` at `7f8c5ec3`, and the Jev virtualenv exists
+with its interpreter present.
 - **Never write in the Houdini live checkout** — the primary SYNAPSE working copy.
