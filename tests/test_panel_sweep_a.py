@@ -14,7 +14,8 @@ import re
 import subprocess
 import sys
 
-import pytest
+if __name__ != "__main__":
+    import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,40 +52,41 @@ def _structure(source):
     return result
 
 
-@pytest.mark.parametrize("filename", FILES)
-def test_no_new_structure_and_every_residual_is_reasoned(filename):
-    from test_panel_rhythm_owner import _scan
+if __name__ != "__main__":
+    @pytest.mark.parametrize("filename", FILES)
+    def test_no_new_structure_and_every_residual_is_reasoned(filename):
+        from test_panel_rhythm_owner import _scan
 
-    path = "python/synapse/panel/" + filename
-    source = (PANEL / filename).read_text(encoding="utf-8")
-    if filename == "gate_widget.py":
-        # bc-wave BC-6a (RULING_DIRECTION_BC.md item 2; REVIEW.md F4): the
-        # proposal card was REBUILT in the panel's own vocabulary (a DsCard
-        # `band`, tag badges, DsVerb verbs), so SWEEP_A's structural freeze
-        # of this file ends there. What the sweep receipt still proves: the
-        # card carries no inline styling (no sweep_a_style, no level hues)
-        # and every spacing residual is reasoned (below).
-        card = source[source.index("class _ProposalCard"):source.index("class GateWidget")]
-        assert "sweep_a_style" not in card and "setStyleSheet" not in card
-        assert "_LEVEL_COLORS" not in source
-    elif filename == "face_work.py":
-        # Approved first-session activity copy changes the existing row's text,
-        # while preserving constructors, placement, and signal wiring.
-        # CRIT.md 2026-09-15 #17 (P8 · Work face resting phrases) retires the
-        # cookline's resting phrase. Recorded the way the merged type-ramp
-        # branch recorded this same crit on master's append-only sheet guard
-        # (CRIT_20260915_QSS_AMENDMENTS, which lands in this file on merge) -
-        # an EXACT delta applied to the BASELINE, asserted to occur exactly once
-        # there - so the structural freeze keeps full strength: face_work must
-        # still equal baseline-plus-exactly-this-delta, and a stale amendment
-        # reddens instead of silently no-opping.
-        assert _structure(source.replace("tool_label(name)", "name")) == _structure(
-            _amend(_base(path), CRIT_20260915_FACE_WORK_AMENDMENTS))
-    else:
-        assert _structure(source) == _structure(_base(path))
-    for key, line, exempt in _scan(source, path):
-        assert key[1] == "spacing" and exempt, (filename, line, key)
-    assert 'setProperty("rhythm_role",' in source
+        path = "python/synapse/panel/" + filename
+        source = (PANEL / filename).read_text(encoding="utf-8")
+        if filename == "gate_widget.py":
+            # bc-wave BC-6a (RULING_DIRECTION_BC.md item 2; REVIEW.md F4): the
+            # proposal card was REBUILT in the panel's own vocabulary (a DsCard
+            # `band`, tag badges, DsVerb verbs), so SWEEP_A's structural freeze
+            # of this file ends there. What the sweep receipt still proves: the
+            # card carries no inline styling (no sweep_a_style, no level hues)
+            # and every spacing residual is reasoned (below).
+            card = source[source.index("class _ProposalCard"):source.index("class GateWidget")]
+            assert "sweep_a_style" not in card and "setStyleSheet" not in card
+            assert "_LEVEL_COLORS" not in source
+        elif filename == "face_work.py":
+            # Approved first-session activity copy changes the existing row's text,
+            # while preserving constructors, placement, and signal wiring.
+            # CRIT.md 2026-09-15 #17 (P8 · Work face resting phrases) retires the
+            # cookline's resting phrase. Recorded the way the merged type-ramp
+            # branch recorded this same crit on master's append-only sheet guard
+            # (CRIT_20260915_QSS_AMENDMENTS, which lands in this file on merge) -
+            # an EXACT delta applied to the BASELINE, asserted to occur exactly once
+            # there - so the structural freeze keeps full strength: face_work must
+            # still equal baseline-plus-exactly-this-delta, and a stale amendment
+            # reddens instead of silently no-opping.
+            assert _structure(source.replace("tool_label(name)", "name")) == _structure(
+                _amend(_base(path), CRIT_20260915_FACE_WORK_AMENDMENTS))
+        else:
+            assert _structure(source) == _structure(_base(path))
+        for key, line, exempt in _scan(source, path):
+            assert key[1] == "spacing" and exempt, (filename, line, key)
+        assert 'setProperty("rhythm_role",' in source
 
 
 def _scopes(source):
@@ -107,33 +109,34 @@ def _scopes(source):
     return scopes
 
 
-@pytest.mark.parametrize("filename", FILES)
-def test_every_former_widget_layout_owner_has_a_role_in_its_own_scope(filename):
-    old = _scopes(_base("python/synapse/panel/" + filename))
-    new = _scopes((PANEL / filename).read_text(encoding="utf-8"))
-    for scope, function in old.items():
-        calls = [n for n in ast.walk(function) if isinstance(n, ast.Call)]
-        changed_layouts = {ast.unparse(n.func.value) for n in calls
-                           if isinstance(n.func, ast.Attribute) and n.func.attr in
-                           ("setSpacing", "setContentsMargins", "setHorizontalSpacing",
-                            "setVerticalSpacing")}
-        for assignment in ast.walk(function):
-            if not isinstance(assignment, ast.Assign):
-                continue
-            call = assignment.value
-            if not (isinstance(call, ast.Call) and call.args and
-                    ast.unparse(call.func).startswith("QtWidgets.Q") and
-                    ast.unparse(call.func).endswith("Layout") and
-                    ast.unparse(assignment.targets[0]) in changed_layouts):
-                continue
-            owner = ast.unparse(call.args[0])
-            assert scope in new
-            role_owners = {ast.unparse(n.func.value) for n in ast.walk(new[scope])
-                           if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
-                           and n.func.attr == "setProperty" and n.args
-                           and isinstance(n.args[0], ast.Constant)
-                           and n.args[0].value == "rhythm_role"}
-            assert owner in role_owners, (filename, scope, owner)
+if __name__ != "__main__":
+    @pytest.mark.parametrize("filename", FILES)
+    def test_every_former_widget_layout_owner_has_a_role_in_its_own_scope(filename):
+        old = _scopes(_base("python/synapse/panel/" + filename))
+        new = _scopes((PANEL / filename).read_text(encoding="utf-8"))
+        for scope, function in old.items():
+            calls = [n for n in ast.walk(function) if isinstance(n, ast.Call)]
+            changed_layouts = {ast.unparse(n.func.value) for n in calls
+                               if isinstance(n.func, ast.Attribute) and n.func.attr in
+                               ("setSpacing", "setContentsMargins", "setHorizontalSpacing",
+                                "setVerticalSpacing")}
+            for assignment in ast.walk(function):
+                if not isinstance(assignment, ast.Assign):
+                    continue
+                call = assignment.value
+                if not (isinstance(call, ast.Call) and call.args and
+                        ast.unparse(call.func).startswith("QtWidgets.Q") and
+                        ast.unparse(call.func).endswith("Layout") and
+                        ast.unparse(assignment.targets[0]) in changed_layouts):
+                    continue
+                owner = ast.unparse(call.args[0])
+                assert scope in new
+                role_owners = {ast.unparse(n.func.value) for n in ast.walk(new[scope])
+                               if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                               and n.func.attr == "setProperty" and n.args
+                               and isinstance(n.args[0], ast.Constant)
+                               and n.args[0].value == "rhythm_role"}
+                assert owner in role_owners, (filename, scope, owner)
 
 
 
@@ -507,24 +510,25 @@ def _assert_upstream_qss_unchanged(prefix, original):
     assert _outside_ruled_regions(prefix) == _outside_ruled_regions(original)
 
 
-def test_a_stale_qss_amendment_reddens_instead_of_passing():
-    """The declared-delta mechanism is only honest if a delta that no longer
-    matches the baseline FAILS. Proves it in both directions: an `old` that is
-    absent, and an `old` that is present more than once."""
-    original = _base("python/synapse/panel/designsystem/qss.py")
-    saved = globals()["_DECLARED_QSS_AMENDMENTS"]
-    try:
-        globals()["_DECLARED_QSS_AMENDMENTS"] = (
-            ("bogus", (("a rule the baseline never contained", "x"),)),)
-        with pytest.raises(AssertionError, match="stale bogus amendment"):
-            _amend(original)
-        globals()["_DECLARED_QSS_AMENDMENTS"] = (("bogus", (("}}", "x"),)),)
-        with pytest.raises(AssertionError, match="stale bogus amendment"):
-            _amend(original)
-    finally:
-        globals()["_DECLARED_QSS_AMENDMENTS"] = saved
-    # and the real list still applies cleanly
-    _amend(original)
+if __name__ != "__main__":
+    def test_a_stale_qss_amendment_reddens_instead_of_passing():
+        """The declared-delta mechanism is only honest if a delta that no longer
+        matches the baseline FAILS. Proves it in both directions: an `old` that is
+        absent, and an `old` that is present more than once."""
+        original = _base("python/synapse/panel/designsystem/qss.py")
+        saved = globals()["_DECLARED_QSS_AMENDMENTS"]
+        try:
+            globals()["_DECLARED_QSS_AMENDMENTS"] = (
+                ("bogus", (("a rule the baseline never contained", "x"),)),)
+            with pytest.raises(AssertionError, match="stale bogus amendment"):
+                _amend(original)
+            globals()["_DECLARED_QSS_AMENDMENTS"] = (("bogus", (("}}", "x"),)),)
+            with pytest.raises(AssertionError, match="stale bogus amendment"):
+                _amend(original)
+        finally:
+            globals()["_DECLARED_QSS_AMENDMENTS"] = saved
+        # and the real list still applies cleanly
+        _amend(original)
 
 
 def test_qss_is_append_only_and_every_style_key_has_rules():
@@ -561,47 +565,49 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
 # drift. Both are RE-AIMED, not dropped: same two drift shapes (a colour swap
 # on a local rule, and a local selector broadened onto a shared target), now
 # aimed at the surviving DsFooterLink local rules.
-@pytest.mark.parametrize("before,after", [
-    ("QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}",
-     "QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.WARM}; }}"),
-    ("    min-height: 0px;\n    color: {t.TEXT_SECONDARY};",
-     "    min-height: {t.SPACE_SM}px;\n    color: {t.TEXT_SECONDARY};"),
-    ("QPushButton#DsFooterLink:disabled", "QPushButton#DsVerb:disabled"),
-    ("color: {t.MUSHROOM};", "color: {t.TEXT_PRIMARY};"),
-    # The approved editorial deltas remain frozen too: restoring a retired
-    # color, broadening the composer selector, or dropping its geometry fails.
-    ('QTextBrowser#DsChatTranscript {{ background: {t.PANEL}; }}',
-     'QTextBrowser#DsChatTranscript {{ background: {t.GROUND}; }}'),
-    ('QTextEdit#DsInput[softEditorial="true"] {{', 'QTextEdit#DsInput {{'),
-    ('    border-bottom-left-radius: 20px; border-bottom-right-radius: 6px;',
-     '    border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;'),
-    ('QPushButton#DsSend:hover   {{ background: {t.WARM_HOVER}; }}',
-     'QPushButton#DsSend:hover   {{ background: {t.SIGNAL}; }}'),
-    ('    border: 3px solid {t.BORDER};', '    border: 1px solid {t.BORDER};'),
-    ('QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CONTROL_OUTLINE}; }}',
-     'QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CHAT_ASSISTANT}; }}'),
-    ('QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.CONTROL_OUTLINE}; }}',
-     'QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}'),
-    ('QPushButton#DsFooterLink:focus {{ background: {t.HOVER_BG}; border: 1px solid {t.CONTROL_OUTLINE}; color: {t.TEXT_PRIMARY}; }}',
-     'QPushButton#DsFooterLink:focus {{ background: {t.HOVER_BG}; border: 1px solid {t.SIGNAL}; color: {t.TEXT_PRIMARY}; }}'),
-    ('QPushButton#DsSend:focus {{ border-color: {t.TEXT_PRIMARY}; }}',
-     'QPushButton#DsSend:focus {{ border-color: {t.WARM}; }}'),
-])
-def test_upstream_qss_guard_rejects_local_and_unrelated_style_drift(before, after):
-    source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
-    prefix = source[:source.index("# --- SWEEP_A (chat_panel.py)")]
-    assert before in prefix
-    with pytest.raises(AssertionError):
-        _assert_upstream_qss_unchanged(prefix.replace(before, after, 1),
-                                       _base("python/synapse/panel/designsystem/qss.py"))
+if __name__ != "__main__":
+    @pytest.mark.parametrize("before,after", [
+        ("QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.TEXT_PRIMARY}; }}",
+         "QPushButton#DsFooterLink:hover {{ background: {t.HOVER_BG}; color: {t.WARM}; }}"),
+        ("    min-height: 0px;\n    color: {t.TEXT_SECONDARY};",
+         "    min-height: {t.SPACE_SM}px;\n    color: {t.TEXT_SECONDARY};"),
+        ("QPushButton#DsFooterLink:disabled", "QPushButton#DsVerb:disabled"),
+        ("color: {t.MUSHROOM};", "color: {t.TEXT_PRIMARY};"),
+        # The approved editorial deltas remain frozen too: restoring a retired
+        # color, broadening the composer selector, or dropping its geometry fails.
+        ('QTextBrowser#DsChatTranscript {{ background: {t.PANEL}; }}',
+         'QTextBrowser#DsChatTranscript {{ background: {t.GROUND}; }}'),
+        ('QTextEdit#DsInput[softEditorial="true"] {{', 'QTextEdit#DsInput {{'),
+        ('    border-bottom-left-radius: 20px; border-bottom-right-radius: 6px;',
+         '    border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;'),
+        ('QPushButton#DsSend:hover   {{ background: {t.WARM_HOVER}; }}',
+         'QPushButton#DsSend:hover   {{ background: {t.SIGNAL}; }}'),
+        ('    border: 3px solid {t.BORDER};', '    border: 1px solid {t.BORDER};'),
+        ('QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CONTROL_OUTLINE}; }}',
+         'QTextEdit#DsInput[softEditorial="true"]:focus {{ border-color: {t.CHAT_ASSISTANT}; }}'),
+        ('QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.CONTROL_OUTLINE}; }}',
+         'QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}'),
+        ('QPushButton#DsFooterLink:focus {{ background: {t.HOVER_BG}; border: 1px solid {t.CONTROL_OUTLINE}; color: {t.TEXT_PRIMARY}; }}',
+         'QPushButton#DsFooterLink:focus {{ background: {t.HOVER_BG}; border: 1px solid {t.SIGNAL}; color: {t.TEXT_PRIMARY}; }}'),
+        ('QPushButton#DsSend:focus {{ border-color: {t.TEXT_PRIMARY}; }}',
+         'QPushButton#DsSend:focus {{ border-color: {t.WARM}; }}'),
+    ])
+    def test_upstream_qss_guard_rejects_local_and_unrelated_style_drift(before, after):
+        source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
+        prefix = source[:source.index("# --- SWEEP_A (chat_panel.py)")]
+        assert before in prefix
+        with pytest.raises(AssertionError):
+            _assert_upstream_qss_unchanged(prefix.replace(before, after, 1),
+                                           _base("python/synapse/panel/designsystem/qss.py"))
 
 
-def test_upstream_qss_guard_rejects_duplicate_local_rules():
-    source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
-    prefix = source[:source.index("# --- SWEEP_A (chat_panel.py)")]
-    with pytest.raises(AssertionError, match="duplicated"):
-        _assert_upstream_qss_unchanged(prefix + _APPROVED_LOCAL_RULES[0],
-                                       _base("python/synapse/panel/designsystem/qss.py"))
+if __name__ != "__main__":
+    def test_upstream_qss_guard_rejects_duplicate_local_rules():
+        source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
+        prefix = source[:source.index("# --- SWEEP_A (chat_panel.py)")]
+        with pytest.raises(AssertionError, match="duplicated"):
+            _assert_upstream_qss_unchanged(prefix + _APPROVED_LOCAL_RULES[0],
+                                           _base("python/synapse/panel/designsystem/qss.py"))
 
 
 def test_scoped_rules_keep_pseudo_states_on_the_target():
@@ -615,47 +621,51 @@ def test_scoped_rules_keep_pseudo_states_on_the_target():
     assert 'QPushButton:hover {' not in sheet
 
 
-@pytest.mark.parametrize("suffix", ("20", "30", "CC"))
-def test_legacy_argb_conversion_preserves_all_four_channels(suffix):
-    from synapse.panel.designsystem import qss, tokens
+if __name__ != "__main__":
+    @pytest.mark.parametrize("suffix", ("20", "30", "CC"))
+    def test_legacy_argb_conversion_preserves_all_four_channels(suffix):
+        from synapse.panel.designsystem import qss, tokens
 
-    for color in (tokens.SIGNAL, tokens.GROW, tokens.ERROR):
-        # Independent packed-word oracle: Qt's eight-digit order is ARGB.
-        packed = int(color.lstrip("#") + suffix, 16)
-        expected = ((packed >> 16) & 255, (packed >> 8) & 255,
-                    packed & 255, (packed >> 24) & 255)
-        output = qss._sweep_a_legacy_argb(color, suffix)
-        channels = tuple(map(int, re.fullmatch(
-            r"rgba\((\d+), (\d+), (\d+), (\d+)\)", output).groups()))
-        assert channels == expected
-
-
-def _run(factory, density, case="rhythm"):
-    env = dict(os.environ, QT_QPA_PLATFORM="offscreen", SYNAPSE_REDUCED_MOTION="1",
-               PYTHONDONTWRITEBYTECODE="1")
-    result = subprocess.run(
-        [sys.executable, "-I", str(Path(__file__).resolve()), factory, density, case],
-        cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
-    if result.returncode == 77:
-        pytest.skip(result.stdout.strip())
-    assert result.returncode == 0, result.stdout + result.stderr
-    payloads = [line[8:] for line in result.stdout.splitlines() if line.startswith("SWEEP_A=")]
-    assert len(payloads) == 1, result.stdout + result.stderr
-    return json.loads(payloads[0])
+        for color in (tokens.SIGNAL, tokens.GROW, tokens.ERROR):
+            # Independent packed-word oracle: Qt's eight-digit order is ARGB.
+            packed = int(color.lstrip("#") + suffix, 16)
+            expected = ((packed >> 16) & 255, (packed >> 8) & 255,
+                        packed & 255, (packed >> 24) & 255)
+            output = qss._sweep_a_legacy_argb(color, suffix)
+            channels = tuple(map(int, re.fullmatch(
+                r"rgba\((\d+), (\d+), (\d+), (\d+)\)", output).groups()))
+            assert channels == expected
 
 
-@pytest.mark.parametrize("density", ("airy", "standard", "tight"))
-@pytest.mark.parametrize("factory", FACTORIES)
-def test_production_layout_roles_density_sequence_and_removal(factory, density):
-    result = _run(factory, density)
-    assert result["layouts"] > 0
-    assert result["role_removed_unchanged"] and result["sequence_restored"]
+if __name__ != "__main__":
+    def _run(factory, density, case="rhythm"):
+        env = dict(os.environ, QT_QPA_PLATFORM="offscreen", SYNAPSE_REDUCED_MOTION="1",
+                   PYTHONDONTWRITEBYTECODE="1")
+        result = subprocess.run(
+            [sys.executable, "-I", str(Path(__file__).resolve()), factory, density, case],
+            cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
+        if result.returncode == 77:
+            pytest.skip(result.stdout.strip())
+        assert result.returncode == 0, result.stdout + result.stderr
+        payloads = [line[8:] for line in result.stdout.splitlines() if line.startswith("SWEEP_A=")]
+        assert len(payloads) == 1, result.stdout + result.stderr
+        return json.loads(payloads[0])
 
 
-@pytest.mark.parametrize("factory", ("gate_widget.GateWidget", "gate_widget._ProposalCard",
-                                     "context_bar.ContextChips", "face_work.FaceWork"))
-def test_dynamic_states_still_select_paint_and_keep_controls(factory):
-    assert _run(factory, "airy", "states")["states_verified"]
+if __name__ != "__main__":
+    @pytest.mark.parametrize("density", ("airy", "standard", "tight"))
+    @pytest.mark.parametrize("factory", FACTORIES)
+    def test_production_layout_roles_density_sequence_and_removal(factory, density):
+        result = _run(factory, density)
+        assert result["layouts"] > 0
+        assert result["role_removed_unchanged"] and result["sequence_restored"]
+
+
+if __name__ != "__main__":
+    @pytest.mark.parametrize("factory", ("gate_widget.GateWidget", "gate_widget._ProposalCard",
+                                         "context_bar.ContextChips", "face_work.FaceWork"))
+    def test_dynamic_states_still_select_paint_and_keep_controls(factory):
+        assert _run(factory, "airy", "states")["states_verified"]
 
 
 def _qt():

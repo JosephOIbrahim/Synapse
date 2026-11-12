@@ -15,7 +15,8 @@ from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
 
-import pytest
+if __name__ != "__main__":
+    import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 PANEL = ROOT / "python/synapse/panel"
@@ -135,41 +136,44 @@ def test_the_only_pypanel_builds_the_shipped_panel():
         _assert_shipped_loader(file.read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize("addition", [
-    "from synapse.panel.chat_panel import SynapseChatPanel",
-    "from synapse.panel import quick_actions",
-    "def hidden():\n    import synapse.panel.chat_panel as alternate",
-    "import importlib\nimportlib.import_module('synapse.panel.chat_panel')",
-    "from importlib import import_module as load\nload('synapse.panel.chat_panel')",
-    "__import__('synapse.panel.quick_actions')",
-    "import builtins\nbuiltins.__import__('synapse.panel.chat_panel')",
-    "def hidden():\n    import builtins\n    builtins.__import__('synapse.panel.chat_panel')",
-    "from builtins import __import__ as load\nload('synapse.panel.chat_panel')",
-    "import importlib\nimportlib.import_module(selected_panel)",
-])
-def test_loader_guard_rejects_alternate_imports_even_inside_functions(addition):
-    original = (PYPANELS / "synapse_panel.pypanel").read_text(encoding="utf-8")
-    mutated = original.replace("]]></script>", addition + "\n]]></script>", 1)
-    with pytest.raises(AssertionError):
-        _assert_shipped_loader(mutated)
+if __name__ != "__main__":
+    @pytest.mark.parametrize("addition", [
+        "from synapse.panel.chat_panel import SynapseChatPanel",
+        "from synapse.panel import quick_actions",
+        "def hidden():\n    import synapse.panel.chat_panel as alternate",
+        "import importlib\nimportlib.import_module('synapse.panel.chat_panel')",
+        "from importlib import import_module as load\nload('synapse.panel.chat_panel')",
+        "__import__('synapse.panel.quick_actions')",
+        "import builtins\nbuiltins.__import__('synapse.panel.chat_panel')",
+        "def hidden():\n    import builtins\n    builtins.__import__('synapse.panel.chat_panel')",
+        "from builtins import __import__ as load\nload('synapse.panel.chat_panel')",
+        "import importlib\nimportlib.import_module(selected_panel)",
+    ])
+    def test_loader_guard_rejects_alternate_imports_even_inside_functions(addition):
+        original = (PYPANELS / "synapse_panel.pypanel").read_text(encoding="utf-8")
+        mutated = original.replace("]]></script>", addition + "\n]]></script>", 1)
+        with pytest.raises(AssertionError):
+            _assert_shipped_loader(mutated)
 
 
-def test_loader_guard_ignores_retained_owner_names_but_requires_the_builder_call():
-    original = (PYPANELS / "synapse_panel.pypanel").read_text(encoding="utf-8")
-    _assert_shipped_loader(original)  # connections is a retained owner, not a builder
-    with pytest.raises(AssertionError, match="shipped builder"):
-        _assert_shipped_loader(original.replace("return _build()", "return None", 1))
+if __name__ != "__main__":
+    def test_loader_guard_ignores_retained_owner_names_but_requires_the_builder_call():
+        original = (PYPANELS / "synapse_panel.pypanel").read_text(encoding="utf-8")
+        _assert_shipped_loader(original)  # connections is a retained owner, not a builder
+        with pytest.raises(AssertionError, match="shipped builder"):
+            _assert_shipped_loader(original.replace("return _build()", "return None", 1))
 
 
-@pytest.mark.parametrize("replacement", [
-    "return None\n        return _build()",
-    "def unused():\n            return _build()\n        return None",
-    "_build = lambda: None\n        return _build()",
-])
-def test_loader_guard_rejects_a_dead_or_replaced_builder_call(replacement):
-    original = (PYPANELS / "synapse_panel.pypanel").read_text(encoding="utf-8")
-    with pytest.raises(AssertionError, match="shipped builder"):
-        _assert_shipped_loader(original.replace("return _build()", replacement, 1))
+if __name__ != "__main__":
+    @pytest.mark.parametrize("replacement", [
+        "return None\n        return _build()",
+        "def unused():\n            return _build()\n        return None",
+        "_build = lambda: None\n        return _build()",
+    ])
+    def test_loader_guard_rejects_a_dead_or_replaced_builder_call(replacement):
+        original = (PYPANELS / "synapse_panel.pypanel").read_text(encoding="utf-8")
+        with pytest.raises(AssertionError, match="shipped builder"):
+            _assert_shipped_loader(original.replace("return _build()", replacement, 1))
 
 
 def test_shipped_panel_never_reaches_the_alternate_entry():

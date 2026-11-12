@@ -13,7 +13,8 @@ import re
 import subprocess
 import sys
 
-import pytest
+if __name__ != "__main__":
+    import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,7 +61,8 @@ def _regions_under_measure():
     return _ALWAYS_MEASURED + returned
 
 
-ALTERNATE_REGIONS = _regions_under_measure()
+if __name__ != "__main__":
+    ALTERNATE_REGIONS = _regions_under_measure()
 
 
 def _bounds(density="standard"):
@@ -90,65 +92,72 @@ def test_docking_bounds_read_the_contract_not_panel_height_token():
         assert 0 < child_height < height and tokens.PANEL_MIN_WIDTH <= width
 
 
-def _run(case, density="standard", detail=""):
-    env = dict(os.environ, QT_QPA_PLATFORM="offscreen", SYNAPSE_REDUCED_MOTION="1",
-               PYTHONDONTWRITEBYTECODE="1")
-    # TEMP/TMP are set by the command in REPORT. Refuse a GUI platform even if
-    # the outer suite's environment changes after collection.
-    # -I drops hython's stdlib bootstrap ('No module named encodings'); the
-    # isolation flag is for a plain CPython runner only (RULING-2A).
-    isolate = [] if "hython" in Path(sys.executable).name.lower() else ["-I"]
-    result = subprocess.run(
-        [sys.executable, *isolate, str(Path(__file__).resolve()), case, density, detail],
-        cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
-    if result.returncode == 77:
-        pytest.skip(result.stdout.strip() or "PySide unavailable; real Qt probe NOT_RUN")
-    if result.returncode == 78:
-        # A width measured with no font is not a measurement (RULING-2A):
-        # this is a failure of the runner, never a skip.
-        pytest.fail(result.stdout.strip() or "NOT_RUN: empty font database")
-    assert result.returncode == 0, result.stdout + result.stderr
-    lines = [line for line in result.stdout.splitlines() if line.startswith("PD_QT=")]
-    assert len(lines) == 1, result.stdout + result.stderr
-    return json.loads(lines[0].removeprefix("PD_QT="))
+if __name__ != "__main__":
+    def _run(case, density="standard", detail=""):
+        env = dict(os.environ, QT_QPA_PLATFORM="offscreen", SYNAPSE_REDUCED_MOTION="1",
+                   PYTHONDONTWRITEBYTECODE="1")
+        # TEMP/TMP are set by the command in REPORT. Refuse a GUI platform even if
+        # the outer suite's environment changes after collection.
+        # -I drops hython's stdlib bootstrap ('No module named encodings'); the
+        # isolation flag is for a plain CPython runner only (RULING-2A).
+        isolate = [] if "hython" in Path(sys.executable).name.lower() else ["-I"]
+        result = subprocess.run(
+            [sys.executable, *isolate, str(Path(__file__).resolve()), case, density, detail],
+            cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
+        if result.returncode == 77:
+            pytest.skip(result.stdout.strip() or "PySide unavailable; real Qt probe NOT_RUN")
+        if result.returncode == 78:
+            # A width measured with no font is not a measurement (RULING-2A):
+            # this is a failure of the runner, never a skip.
+            pytest.fail(result.stdout.strip() or "NOT_RUN: empty font database")
+        assert result.returncode == 0, result.stdout + result.stderr
+        lines = [line for line in result.stdout.splitlines() if line.startswith("PD_QT=")]
+        assert len(lines) == 1, result.stdout + result.stderr
+        return json.loads(lines[0].removeprefix("PD_QT="))
 
 
-@pytest.fixture(scope="module")
-def real_qt():
-    return _run("available")
+if __name__ != "__main__":
+    @pytest.fixture(scope="module")
+    def real_qt():
+        return _run("available")
 
 
-@pytest.mark.parametrize("role", tuple(EXPECTED))
-@pytest.mark.parametrize("density", DENSITIES)
-def test_real_layout_spacing_role_density_and_removal(real_qt, role, density):
-    measured = _run("spacing", density, role)
-    assert measured["spacing"] == EXPECTED[role][DENSITIES.index(density)]
-    assert measured["removed_role_preserved"] and measured["idempotent"]
+if __name__ != "__main__":
+    @pytest.mark.parametrize("role", tuple(EXPECTED))
+    @pytest.mark.parametrize("density", DENSITIES)
+    def test_real_layout_spacing_role_density_and_removal(real_qt, role, density):
+        measured = _run("spacing", density, role)
+        assert measured["spacing"] == EXPECTED[role][DENSITIES.index(density)]
+        assert measured["removed_role_preserved"] and measured["idempotent"]
 
 
-@pytest.mark.parametrize("pattern", ("label", "row", "tag", "card", "parm_row"))
-@pytest.mark.parametrize("density", DENSITIES)
-def test_component_pattern_at_docking_width(real_qt, pattern, density):
-    assert _run("pattern", density, pattern)["within_bounds"]
+if __name__ != "__main__":
+    @pytest.mark.parametrize("pattern", ("label", "row", "tag", "card", "parm_row"))
+    @pytest.mark.parametrize("density", DENSITIES)
+    def test_component_pattern_at_docking_width(real_qt, pattern, density):
+        assert _run("pattern", density, pattern)["within_bounds"]
 
 
-@pytest.mark.parametrize("density", DENSITIES)
-def test_every_composed_region_and_face_at_docking_bound(real_qt, density):
-    measured = _run("panel", density)
-    assert measured["regions"] == ["rail", "context_ribbon", "faces"]
-    assert measured["camera_regions"] == ["header_ribbon", "chat_transcript", "token_face"]
-    assert measured["states"] == ["direct", "work", "done", "token", "hda"]
+if __name__ != "__main__":
+    @pytest.mark.parametrize("density", DENSITIES)
+    def test_every_composed_region_and_face_at_docking_bound(real_qt, density):
+        measured = _run("panel", density)
+        assert measured["regions"] == ["rail", "context_ribbon", "faces"]
+        assert measured["camera_regions"] == ["header_ribbon", "chat_transcript", "token_face"]
+        assert measured["states"] == ["direct", "work", "done", "token", "hda"]
 
 
-@pytest.mark.parametrize("region", ALTERNATE_REGIONS)
-@pytest.mark.parametrize("density", DENSITIES)
-def test_alternate_census_widget_regions(real_qt, region, density):
-    assert _run("alternate", density, region)["within_bounds"]
+if __name__ != "__main__":
+    @pytest.mark.parametrize("region", ALTERNATE_REGIONS)
+    @pytest.mark.parametrize("density", DENSITIES)
+    def test_alternate_census_widget_regions(real_qt, region, density):
+        assert _run("alternate", density, region)["within_bounds"]
 
 
-@pytest.mark.parametrize("density", DENSITIES)
-def test_recall_region_when_camera_has_built_it(real_qt, density):
-    assert _run("recall", density)["within_bounds"]
+if __name__ != "__main__":
+    @pytest.mark.parametrize("density", DENSITIES)
+    def test_recall_region_when_camera_has_built_it(real_qt, density):
+        assert _run("recall", density)["within_bounds"]
 
 
 def _qt():
