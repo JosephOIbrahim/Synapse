@@ -36,6 +36,27 @@ def _claims(notes: str) -> list[str]:
     return out[:20]
 
 
+def classify_claim(choice, confidence, probabilities, policy) -> str:
+    """The one release verdict. Code owns the thresholds; the model supplies a distribution.
+
+    THE MODEL'S ARGMAX IS NOT THE VERDICT. A claim the model labelled `unsupported`
+    but placed only 0.35 probability on is a PARTIAL, not an UNSUPPORTED: the
+    distribution says it is not confident enough to condemn the claim. Reading the
+    label as the verdict turned four partials into four false defects on 2026-11-11,
+    which is why this lives in one function that every caller reaches.
+
+    Returns UNSUPPORTED, SUPPORTED or PARTIAL. A caller with no answer at all is
+    REFEREE, and that decision belongs to the caller because it is about a missing
+    answer rather than about this one.
+    """
+    p = probabilities or {}
+    if p.get("unsupported", 0) >= policy["unsupported_min"]:
+        return "UNSUPPORTED"
+    if choice == "supported" and (confidence or 0) >= policy["supported_min"]:
+        return "SUPPORTED"
+    return "PARTIAL"
+
+
 def notes(tag: str, prev: str) -> int:
     path = REPO / "docs" / "releases" / f"{tag}.md"
     text = path.read_text(encoding="utf-8")
@@ -56,13 +77,9 @@ def notes(tag: str, prev: str) -> int:
     bad = 0
     for i, c in enumerate(claims):
         r = (a or {}).get("choices", {}).get(f"c{i}")
-        if r is None:
-            v = "REFEREE"
-        else:
-            p = r["probabilities"]
-            v = ("UNSUPPORTED" if p.get("unsupported", 0) >= pol["unsupported_min"]
-                 else "SUPPORTED" if r["choice"] == "supported" and (r.get("confidence") or 0) >= pol["supported_min"]
-                 else "PARTIAL")
+        v = ("REFEREE" if r is None
+             else classify_claim(r.get("choice"), r.get("confidence"),
+                                 r.get("probabilities"), pol))
         bad += v in ("UNSUPPORTED", "REFEREE")
         print(f"{v:11} {c[:96]}")
     print(f"-- {len(claims)} claims, {bad} need a human read; ledger harness/jev/ledger/{tag}.release.notes.jsonl")
