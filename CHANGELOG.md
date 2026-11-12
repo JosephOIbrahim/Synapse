@@ -2,36 +2,6 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
-## v5.101.0 - Render QC timing measured, and it does not clear budget; durable receipts behind a gate
-
-**Product code changes.** The Render QC timing harness lands under `harness/`
-and changes nothing an installed seat runs. Durable worker receipts add one
-product module, `python/synapse/host/retina_receipts.py`, which ships dormant:
-nothing calls it, and its node has not passed its crux review. The full note,
-with every limit, is [docs/releases/v5.101.0.md](docs/releases/v5.101.0.md).
-
-- **The timing verdict is branch 4.** On the deciding tier the floor is
-  **5.732 s** against a **2.0 s** budget, 2.9× over, while read plus write is
-  **0.300 s**. The dense analysis is 12% of the work, so a cheaper scan cannot
-  reach the budget. Three units vote and all three land in branch 4.
-- **The 2.0 s budget is an input, not an output.** It is `B_SECONDS` in
-  `harness/vision/qc_timing/decide.py` and part of frozen rule revision 2.
-  Whether 2.0 s is the right number is QC-Q3, still open.
-- **The receipt is reproducible and clean.** 541 records, 0 exceptions, 0
-  inconclusive, 45 passes voided for foreign processes only. A referee that did
-  not build it recomputed all 1,240 per-frame numbers and 81 boundary cases. No
-  frame name and no workstation model string survives in the file.
-- **The receipts lane is provisional.** It adds `retina_receipts.py` (+828/−0,
-  ships), changes `retina/worker_entrypoint.py` (+230/−5, does not ship), and
-  adds 1,084 and 429 test lines. 175 tests pass and 8 skip with one quoted
-  reason: no worker interpreter is configured. The Codex crux is held until
-  2026-11-14.
-- **The merge regresses nothing.** Two full runs in one interpreter give
-  identical FAILED sets (60 each) and identical ERROR sets (92 each); the +103
-  collected reconciles to 21 new worker-contract tests and 82 new receipts
-  tests. CI on the release master is 12,611 to 12,620 passed per platform, zero
-  failed, six of six jobs.
-
 ## v5.100.0 - Doctor reads the right store and names foreign code; Render QC groundwork
 
 **Product code changes.** Doctor checks more of a seat and reads the memory
