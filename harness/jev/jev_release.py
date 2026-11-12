@@ -36,6 +36,54 @@ def _claims(notes: str) -> list[str]:
     return out[:20]
 
 
+# A path-like token: something with a directory separator and a short extension.
+# Bare filenames are deliberately NOT matched -- a claim saying "decide.py" is
+# naming a thing, not asserting a location, and demanding it exist at the repo root
+# would manufacture false defects in the other direction.
+_PATH_TOKEN = re.compile(r"(?<![A-Za-z0-9_./-])([A-Za-z0-9_][A-Za-z0-9_./-]*/"
+                         r"[A-Za-z0-9_.-]+\.[A-Za-z0-9]{1,6})\b")
+
+
+def claim_paths(claim: str) -> list:
+    """Repo-relative paths a claim names. Templates and absolutes are not asserted."""
+    out = []
+    for m in _PATH_TOKEN.finditer(str(claim)):
+        tok = m.group(1).strip(".,;:()")
+        if "<" in tok or ">" in tok or tok.startswith(("/", "\\")):
+            continue
+        if re.match(r"^[A-Za-z]:", tok):
+            continue
+        out.append(tok)
+    return out
+
+
+def missing_paths(claim: str, root=None) -> list:
+    """Every path the claim names that does not exist under ``root``.
+
+    The release guard judges claims against a diff stat and commit subjects. Neither
+    can see whether a path a claim names is in the tree being judged: a note claiming
+    a module ships scored 0.84 supported and 0.79 confidence while that module was
+    absent from master. A stronger threshold would not have caught it -- the model was
+    answering the question it was asked. This is the question it was not asked.
+    """
+    base = Path(root) if root is not None else REPO
+    return [tok for tok in claim_paths(claim) if not (base / tok).exists()]
+
+
+def final_verdict(claim, choice, confidence, probabilities, policy, root=None):
+    """The claim's verdict, with existence outranking the model.
+
+    Returns (verdict, missing). A claim naming a path that is not in the tree is
+    UNSUPPORTED whatever the model scored: the evidence contradicts it, and that is
+    a fact rather than a judgment.
+    """
+    verdict = classify_claim(choice, confidence, probabilities, policy)
+    missing = missing_paths(claim, root)
+    if missing:
+        return "UNSUPPORTED", missing
+    return verdict, []
+
+
 def classify_claim(choice, confidence, probabilities, policy) -> str:
     """The one release verdict. Code owns the thresholds; the model supplies a distribution.
 
@@ -77,11 +125,14 @@ def notes(tag: str, prev: str) -> int:
     bad = 0
     for i, c in enumerate(claims):
         r = (a or {}).get("choices", {}).get(f"c{i}")
-        v = ("REFEREE" if r is None
-             else classify_claim(r.get("choice"), r.get("confidence"),
-                                 r.get("probabilities"), pol))
+        if r is None:
+            v, _missing = "REFEREE", []
+        else:
+            v, _missing = final_verdict(c, r.get("choice"), r.get("confidence"),
+                                        r.get("probabilities"), pol)
         bad += v in ("UNSUPPORTED", "REFEREE")
-        print(f"{v:11} {c[:96]}")
+        note = f"  [missing: {', '.join(_missing)}]" if _missing else ""
+        print(f"{v:11} {c[:96]}{note}")
     print(f"-- {len(claims)} claims, {bad} need a human read; ledger harness/jev/ledger/{tag}.release.notes.jsonl")
     return 1 if bad else 0
 

@@ -53,5 +53,50 @@ def test_notes_has_no_second_copy_of_the_rule():
     """The point of the extraction: one implementation, reached by the caller."""
     import inspect
     body = inspect.getsource(jr.notes)
-    assert "classify_claim(" in body, "notes() does not call the shared verdict"
+    # notes() must reach the shared verdict, directly or through final_verdict
+    # (which adds the existence gate and delegates the judgement to classify_claim).
+    assert ("final_verdict(" in body) or ("classify_claim(" in body), (
+        "notes() does not call the shared verdict")
     assert "unsupported_min" not in body, "notes() still carries its own threshold logic"
+
+
+# ---- H-CLAIM-PATH: existence outranks the model -------------------------
+# The guard judged a claim against a diff stat and commit subjects, neither of which
+# can see whether a named path is in the tree. A note claiming a module shipped
+# scored 0.84 supported while the module was absent from master.
+
+_MISSING = "python/synapse/host/retina_receipts.py"
+_PRESENT = "harness/jev/jev_release.py"
+
+
+def test_a_claim_naming_an_absent_path_is_unsupported_even_when_the_model_says_supported():
+    claim = f"One new product module ships, dormant, at {_MISSING}."
+    verdict, missing = jr.final_verdict(claim, "supported", 0.85,
+                                        {"supported": 0.85}, POL,
+                                        root=Path(__file__).resolve().parents[3])
+    assert verdict == "UNSUPPORTED", verdict
+    assert missing == [_MISSING], missing
+
+
+def test_a_claim_naming_a_present_path_keeps_the_model_verdict():
+    claim = f"The guard lives at {_PRESENT}."
+    verdict, missing = jr.final_verdict(claim, "supported", 0.85,
+                                        {"supported": 0.85}, POL,
+                                        root=Path(__file__).resolve().parents[3])
+    assert verdict == "SUPPORTED", verdict
+    assert missing == []
+
+
+def test_a_claim_naming_no_path_is_left_to_the_model():
+    verdict, missing = jr.final_verdict("The scan is 12% of the work.", "supported", 0.80,
+                                        {"supported": 0.80}, POL,
+                                        root=Path(__file__).resolve().parents[3])
+    assert verdict == "SUPPORTED"
+    assert missing == []
+
+
+def test_bare_filenames_are_not_treated_as_asserted_locations():
+    """Naming `decide.py` asserts a thing, not a location; demanding it exist at the
+    repo root would manufacture false defects in the opposite direction."""
+    assert jr.claim_paths("see decide.py for the rule") == []
+    assert jr.claim_paths("see harness/vision/qc_timing/decide.py") == ["harness/vision/qc_timing/decide.py"]
