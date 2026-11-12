@@ -178,6 +178,17 @@ class _BlockTransitiveDependency:
 
 sys.meta_path.insert(0, _BlockTransitiveDependency())
 
+# Does the hook actually fire? find_spec goes through the meta path, so it answers
+# the question WITHOUT importing httpx -- importing it here would cache the module
+# and defeat the very hook under test. On a machine where httpx is already loaded,
+# or where this anthropic version does not import httpx eagerly, the hook cannot
+# produce the failure and the test would otherwise assert about the wrong exception.
+try:
+    importlib.util.find_spec("httpx")
+    hook_fires = False
+except ModuleNotFoundError:
+    hook_fires = True
+
 import synapse
 synapse._VENDOR_ABI_RISK = True
 
@@ -186,6 +197,8 @@ from synapse.host.daemon import SynapseDaemon
 _spec_anthropic = importlib.util.find_spec("anthropic")
 premise = {
     "synapse_file": getattr(synapse, "__file__", None),
+    "hook_fires": hook_fires,
+    "httpx_in_sys_modules": "httpx" in sys.modules,
     "anthropic_already_imported": "anthropic" in sys.modules,
     "find_spec_anthropic": _spec_anthropic is not None,
     "find_spec_anthropic_origin": getattr(_spec_anthropic, "origin", None),
@@ -224,7 +237,12 @@ def _run_real_failed_import() -> dict:
         encoding="utf-8",
         errors="replace",
         timeout=60,
-        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1",
+             # A dummy key so that if the import does NOT fail, the child reaches
+             # make_anthropic_client with a key instead of raising ModelAccessDenied,
+             # which would name the wrong cause. The test asserts on `raised`, so a
+             # fall-through still fails -- but legibly.
+             "ANTHROPIC_API_KEY": "test-key-not-used"},
     )
     assert result.returncode == 0, (
         f"child interpreter failed (exit {result.returncode})\n"
@@ -257,6 +275,15 @@ def test_real_failed_import_finds_the_installed_anthropic():
             "pyproject.toml declares pydantic as a base dependency and "
             "anthropic in the dev extra, and this test needs real "
             "distributions for find_spec to resolve"
+        )
+
+    if not premise.get("hook_fires"):
+        pytest.skip(
+            "the httpx import hook cannot fire in this interpreter "
+            f"(httpx already in sys.modules: {premise.get('httpx_in_sys_modules')}). "
+            "This anthropic version does not import httpx at module scope, so no "
+            "real failed import can be produced here and the diagnostic would be "
+            "asserted against the wrong exception."
         )
 
     assert premise["anthropic_already_imported"] is False, (
