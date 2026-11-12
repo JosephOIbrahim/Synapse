@@ -486,16 +486,43 @@ class SynapseDaemon:
                     f"{sys.version_info.minor}."
                     f"{sys.version_info.micro}"
                 )
+                import importlib.util as _ilu
+
+                # Probe by PRESENCE, not by import. On the failure this
+                # branch exists for, both SDKs were installed and anthropic's
+                # own import died on a missing transitive dependency
+                # (opentelemetry has no `trace`). Importing to check would
+                # report "absent" for a package that is present and broken,
+                # which is how the previous wording came to assert something
+                # false. find_spec answers the question the message needs.
+                _installed = [
+                    _n for _n in ("anthropic", "pydantic")
+                    if _ilu.find_spec(_n) is not None
+                ]
+                if len(_installed) == 2:
+                    _state = (
+                        "Both 'anthropic' and 'pydantic' are installed; the "
+                        "import failed on a dependency of theirs, not on "
+                        "their absence."
+                    )
+                elif _installed:
+                    _absent = [n for n in ("anthropic", "pydantic")
+                               if n not in _installed]
+                    _state = (
+                        f"{_installed[0]!r} is installed; "
+                        f"{_absent[0]!r} is not."
+                    )
+                else:
+                    _state = "Neither 'anthropic' nor 'pydantic' is installed."
                 raise RuntimeError(
-                    "SYNAPSE brain stack failed to import (anthropic/pydantic) "
-                    f"on Python {_py}: the vendored wheels under "
-                    "python/synapse/_vendor are cp311-win_amd64 and are "
-                    "INACTIVE on this interpreter, and no real "
-                    "pydantic/anthropic is installed in its place. Remediate by "
-                    "re-vendoring the SDK stack for this Python (see "
-                    "python/synapse/_vendor/README.md) or by running the brain "
-                    "as an out-of-process cp311 sidecar (see "
-                    "harness/notes/gate-0.1-sidecar-vs-abi3.md)."
+                    f"SYNAPSE brain stack failed to import on Python {_py}: "
+                    "the vendored wheels under python/synapse/_vendor are "
+                    "cp311-win_amd64 and are INACTIVE on this interpreter. "
+                    f"The import raised {type(exc).__name__}: {exc}. "
+                    f"{_state} Remediate by re-vendoring the SDK stack for "
+                    "this Python (see python/synapse/_vendor/README.md) or by "
+                    "running the brain as an out-of-process cp311 sidecar "
+                    "(see harness/notes/gate-0.1-sidecar-vs-abi3.md)."
                 ) from exc
             raise DaemonBootError(
                 "anthropic SDK is not installed in this Python. "
