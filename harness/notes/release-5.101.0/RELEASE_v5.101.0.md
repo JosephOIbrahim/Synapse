@@ -98,12 +98,15 @@ real merge still needs Joe's word.
 
 ## 3. Release notes — draft, since authored
 
-> **This section has been carried out.** The notes now live at
-> `docs/releases/v5.101.0.md` on this branch, with the CHANGELOG entry above
-> v5.100.0. What follows is the draft they were written from, kept as the
-> record of what was decided before the authoring pass. Every figure carries
-> its producer. The «angle brackets» were filled from the verification record
-> when the notes were authored.
+> **This section has been carried out.** The notes are authored on the branch
+> `scratch/v5.101.0-card`, at `docs/releases/v5.101.0.md`, with a CHANGELOG
+> entry above v5.100.0, and they land with the release commit. They are
+> deliberately not on master yet: they assert a product module that is not in
+> this tree, and will not be until the receipts lane merges. What follows is
+> the draft they were written from, kept as the record of what was decided
+> before the authoring pass. Every figure carries its producer. The «angle
+> brackets» were filled from the verification record when the notes were
+> authored.
 
 ### Header
 
