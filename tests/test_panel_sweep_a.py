@@ -641,8 +641,11 @@ if __name__ != "__main__":
     def _run(factory, density, case="rhythm"):
         env = dict(os.environ, QT_QPA_PLATFORM="offscreen", SYNAPSE_REDUCED_MOTION="1",
                    PYTHONDONTWRITEBYTECODE="1")
+        # -I drops hython's stdlib bootstrap ('No module named encodings'); the
+        # isolation flag is for a plain CPython runner only (RULING-2A).
+        isolate = [] if "hython" in Path(sys.executable).name.lower() else ["-I"]
         result = subprocess.run(
-            [sys.executable, "-I", str(Path(__file__).resolve()), factory, density, case],
+            [sys.executable, *isolate, str(Path(__file__).resolve()), factory, density, case],
             cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
         if result.returncode == 77:
             pytest.skip(result.stdout.strip())

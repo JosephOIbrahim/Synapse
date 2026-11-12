@@ -131,9 +131,10 @@ analysis — is **5.732 s** against a **2.0 s** budget on the deciding tier,
 cannot reach the budget.
 
 **Durable worker receipts land behind a gate.** A request record and one
-terminal receipt per request, written through an exclusive temp and
-`os.replace`, with the reply's mask bound to the worker that wrote it. Nothing
-calls them yet.
+terminal receipt per request: the request record is published from an exclusive
+temp with `os.replace`; the terminal with `os.link`, which fails when the name
+already exists where `os.replace` would overwrite, so the first terminal wins.
+The reply's mask is bound to the worker that wrote it. Nothing calls them yet.
 
 ### The timing measurement
 
@@ -432,7 +433,7 @@ carry, which caps at 20 (`_claims` in `jev_release.py` returns `out[:20]`).
 
 | # | P(partial) | Claim |
 |---|---|---|
-| 1 | 0.80 | Header — durable worker receipts land behind a gate; exclusive temp plus `os.replace` |
+| 1 | 0.80 | Header — durable worker receipts land behind a gate; exclusive temp, request via `os.replace`, terminal via `os.link` (scored on the earlier wording; corrected after) |
 | 0 | 0.79 | Header — timing measurement lands and does not clear its budget |
 | 3 | 0.78 | Deciding tier: T 6.474 s, R+W 0.300 s, Floor 5.732 s, share 0.120 |
 | 4 | 0.74 | The run: 541 records, 417/121/3, 0 exceptions, 45 foreign-process voids |
