@@ -288,3 +288,44 @@ def test_head_sha_is_empty_not_a_traceback_when_git_cannot_answer(mod, tmp_path)
     plain = tmp_path / "not-a-repo"
     plain.mkdir()
     assert mod._head_sha(str(plain)) == ""
+
+
+# ---- the entrypoint's result handling -------------------------------------
+# _finish_tag drives the real _create_tag against the fixture's throwaway
+# repository. No test invokes the script against SYNAPSE or creates a real tag.
+
+def test_failed_tag_creation_refuses_without_post_tag_conformance(
+        mod, repo, monkeypatch, capsys):
+    r, base, tip = repo
+    conformance = []
+    monkeypatch.setattr(mod, "run_conformance",
+                        lambda label: conformance.append(label) or True)
+
+    # HEAD is tip, so asking to tag base makes the real _create_tag refuse.
+    rc = mod._finish_tag(r, "v9.9.9", base)
+
+    out = capsys.readouterr().out
+    assert rc != 0
+    assert conformance == [], "post-tag conformance ran although no tag was created"
+    assert "REFUSE" in out
+    assert "created      OK" not in out
+    assert _git(r, "tag", "--list").stdout.strip() == ""
+
+
+def test_successful_tag_creation_runs_post_tag_conformance_once(
+        mod, repo, monkeypatch, capsys):
+    r, _base, tip = repo
+    conformance = []
+    monkeypatch.setattr(mod, "run_conformance",
+                        lambda label: conformance.append(label) or True)
+
+    rc = mod._finish_tag(r, "v9.9.9", tip)
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert conformance == ["post"]
+    assert "created      OK" in out
+    assert "UNKNOWN/FAILED" not in out
+    created = _git(r, "rev-parse", "v9.9.9^{commit}")
+    assert created.returncode == 0, created.stderr
+    assert created.stdout.strip() == tip
