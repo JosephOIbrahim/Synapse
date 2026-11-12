@@ -352,6 +352,26 @@ def _tag_target_refusal(root, gate_sha):
     return _head_sha(root) != gate_sha
 
 
+def _finish_tag(root, tag, gate_sha):
+    """Create the checked tag, then re-verify it; every failure refuses.
+
+    _create_tag returns False on refusal/failure and True on success. Keeping
+    this separate from preflight lets tests drive the real git wiring in
+    disposable repositories without running any release gate against SYNAPSE.
+    """
+    if not _create_tag(root, tag, gate_sha):
+        print('tag          REFUSED/FAILED -- no tag was created (nothing pushed)')
+        return 1
+
+    print(f'tag          {tag} created      OK')
+    if not run_conformance('post'):
+        print(f'gate         POST-TAG FAIL -- inspect before pushing {tag}')
+        return 1
+
+    print(f'next act     git push origin {tag}   (operator, per-act)')
+    return 0
+
+
 if __name__ == '__main__':
     check_only = '--check-only' in sys.argv
 
@@ -377,19 +397,4 @@ if __name__ == '__main__':
         print('tag          REFUSED -- HEAD moved while the gate was running, so '
               'the tag would not name the commit that was checked. Re-run the gate.')
         sys.exit(1)
-    if not _create_tag(ROOT, tag, gate_sha):
-        p = None
-    else:
-        p = True
-        print('tag          UNKNOWN/FAILED     REFUSE (nothing pushed)')
-        if p is not None:
-            sys.stdout.write(p.stderr)
-        sys.exit(1)
-    print(f'tag          {tag} created      OK')
-
-    if not run_conformance('post'):
-        print(f'gate         POST-TAG FAIL -- inspect before pushing {tag}')
-        sys.exit(1)
-
-    print(f'next act     git push origin {tag}   (operator, per-act)')
-    sys.exit(0)
+    sys.exit(_finish_tag(ROOT, tag, gate_sha))
