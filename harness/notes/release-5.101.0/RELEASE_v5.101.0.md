@@ -12,8 +12,10 @@
 +=============================================================================+
 ```
 
-Nothing in this card has been executed. `VERSION` is still `5.100.0`, no tag
-exists beyond `v5.100.0`, and `origin/master` is `db8b43a6`.
+Nothing in this card has been executed. `VERSION` is still `5.100.0` and no
+tag exists beyond `v5.100.0`. `origin/master` is `e6516be6` as of 2026-11-12;
+this line is the one live claim in the card, so treat it as stale the moment
+master moves and re-read it before acting.
 
 ---
 
@@ -28,8 +30,13 @@ Two lanes, one of which is already on master and one of which is not.
 
 The payload boundary, measured: `RUNTIME_TREES` in `installer/build_payload.py`
 includes `python/synapse/`, so the new host module ships. `retina/` appears
-nowhere in that file, so `retina/worker_entrypoint.py` does not ship. The
-timing lane adds nothing outside `harness/`, which is not a payload tree.
+in that file, but only as eight named modules in `RUNTIME_FILES` —
+`__init__`, `events`, `exr_header`, `t0`, `t1`, `ingest`, `qc_profiles.py` and
+`qc_profiles.toml` (`installer/build_payload.py:22-23`) — and
+`retina/worker_entrypoint.py` is not among them, so it does not ship. **The
+early draft of this card said `retina/` appeared nowhere in that file, which
+was false**; the conclusion survived the correction, the sentence did not.
+The timing lane adds nothing outside `harness/`, which is not a payload tree.
 
 ---
 
@@ -37,7 +44,11 @@ timing lane adds nothing outside `harness/`, which is not a payload tree.
 
 ### 2.1 Already on master — `git log --oneline v5.100.0..master`
 
-Ten commits, eight of them the branch:
+**Snapshot, taken at `db8b43a6`.** The list below is the timing lane as it
+stood then; it is kept as the record of that landing and is not maintained.
+The range has since grown: at `e6516be6` it is **21 commits and 6 merges**
+(`git rev-list --count v5.100.0..master` and `--merges`). At the time of the
+snapshot it was ten commits, eight of them the branch:
 
 ```
 db8b43a6  merge: qc/timing into master (trial 2, after the model-string strip)
@@ -52,12 +63,13 @@ f68eafd0  fix(qc-timing): keep frame names out of the timing receipt
 74690f91  test(qc-timing): NR-QC-TIMING closure predicate, red until the receipt is committed
 ```
 
-**Two merge commits are in this range.** `19a2fb74` and `db8b43a6` both merge
-the same branch, because the trial tree was built, the model-string strip was
-then applied, and the trial tree was merged again. The tree content is exactly
-what was tested and what CI passed on; the shape is two nested merges. If the
-v5.101.0 history should read as one merge, that has to be decided **before**
-the tag, not after.
+**Two of those commits were merges of the same branch.** `19a2fb74` and
+`db8b43a6` both merge it, because the trial tree was built, the model-string
+strip was then applied, and the trial tree was merged again. The tree content
+is exactly what was tested and what CI passed on; the shape is two nested
+merges. The range has since gained four more merges for other work, so a
+"rebuild it as one merge" decision now covers six, not two, and the cost of
+rebuilding has risen with them. Decide before the tag, never after.
 
 ### 2.2 Not yet on master — `git log --oneline origin/master..HEAD` in `wt-receipts`
 
@@ -203,7 +215,8 @@ site-packages where pytest lives, the child dies with
 
 **These local numbers are not the release's suite numbers.** They are the
 evidence that the receipts merge regresses nothing. The release's suite numbers
-are CI's, on `db8b43a6`, where every dependency is present:
+are CI's, on `db8b43a6` — which was the head when this was measured, and is
+not the head now — where every dependency is present:
 
 | CI job | passed | skipped | deselected | xfailed | failed |
 |---|---|---|---|---|---|
@@ -228,7 +241,8 @@ Every one of these is currently true and each was verified today:
    45 voided passes from foreign processes.
 4. **The receipts crux has not run** (`NR-RECOVERY-RECEIPTS`), and the
    never-launched rule node is not drafted.
-5. **Two merge commits** sit in the master range (see §2.1).
+5. **The master range carries six merges**, two of them for the same branch
+   (see §2.1). It carried two when that section was written.
 6. **`anthropic` 2.x remains unsupported** — the pin stays `anthropic>=1.0.0,<2`.
 7. **Setup remains unsigned.**
 
@@ -241,7 +255,11 @@ one propagator; every other surface derives from it or is checked against it.
 
 ### 4.1 Surfaces, verified on master today
 
-`git grep -l "5\.100\.0" master -- ':!docs/releases'` returns:
+`git grep -l "5\.100\.0" master -- ':!docs/releases'` returns **11 paths**:
+the rows below, `CHANGELOG.md`, `TAGS.md`, and this card itself, which quotes
+the version as history and is not a surface. Two of the ten real surfaces were
+missing from the first version of this table — `CHANGELOG.md` and `TAGS.md` —
+and are added below.
 
 | Surface | Kind | Changes on release? |
 |---|---|---|
@@ -251,6 +269,8 @@ one propagator; every other surface derives from it or is checked against it.
 | `pyproject.toml` | package version | **Yes** — via `--write` |
 | `docs/help/index.html` | help page | **Yes** — via `--write` |
 | `docs/getting-started/installation.md` | install doc | **Yes** — via `--write` |
+| `CHANGELOG.md` | changelog head | **Yes** — hand-authored entry, not `--write` |
+| `TAGS.md` | current-release line and tag table | **Yes** — hand-authored, nothing tests it |
 | `CLAUDE.md` | project target line | **Yes**, but project instructions — check by hand, do not bulk-write |
 | `harness/next-release/proposals/render-qc.amendment.PROPOSED.json` | amendment record | **Check** — likely `REL-VERSION`, not a version string |
 
