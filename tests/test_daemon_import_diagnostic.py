@@ -277,15 +277,6 @@ def test_real_failed_import_finds_the_installed_anthropic():
             "distributions for find_spec to resolve"
         )
 
-    if not premise.get("hook_fires"):
-        pytest.skip(
-            "the httpx import hook cannot fire in this interpreter "
-            f"(httpx already in sys.modules: {premise.get('httpx_in_sys_modules')}). "
-            "This anthropic version does not import httpx at module scope, so no "
-            "real failed import can be produced here and the diagnostic would be "
-            "asserted against the wrong exception."
-        )
-
     assert premise["anthropic_already_imported"] is False, (
         "the daemon import chain preloaded anthropic, so this test cannot "
         "exercise a real failed import from a clean interpreter"
@@ -295,8 +286,30 @@ def test_real_failed_import_finds_the_installed_anthropic():
         f"child imported {synapse_path}, not the tree under {_PROJECT_PYTHON}"
     )
 
-    assert outcome["raised"] == "RuntimeError", (
-        f"expected the risk-flag diagnostic, got {outcome['raised']!r}: "
+    # The observed exception IS the premise. If the import did not fail, no real
+    # failed import exists to diagnose and the environment cannot exercise this
+    # path -- skip and say so, rather than assert a diagnostic against an
+    # exception it did not cause.
+    #
+    #   RuntimeError    the risk-flag diagnostic fired: assert its contents
+    #   NO-EXCEPTION    a client was built: the import succeeded
+    #   ModelAccessDenied
+    #                   the key check downstream of a SUCCESSFUL import fired:
+    #                   also proof the import did not fail
+    #   anything else   unexpected -- a real defect in the diagnostic, so fail
+    raised = outcome["raised"]
+    if raised in ("NO-EXCEPTION", "ModelAccessDenied"):
+        pytest.skip(
+            f"breaking httpx did not break 'import anthropic' here (child raised "
+            f"{raised}), so no real failed import can be produced in this "
+            "interpreter and the diagnostic would be asserted against an "
+            "exception it did not cause. The hook can block httpx "
+            f"(hook_fires={premise.get('hook_fires')}), but this anthropic "
+            "version does not import it at module scope."
+        )
+
+    assert raised == "RuntimeError", (
+        f"expected the risk-flag diagnostic, got {raised!r}: "
         f"{outcome['message']}"
     )
     message = outcome["message"]
