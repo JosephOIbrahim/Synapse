@@ -650,3 +650,46 @@ def test_a_decision_carries_the_provenance_of_the_file_it_came_from(monkeypatch,
     d2 = C.compose([_cand("A", ["a.py"])], "wave-2", {"harness": "h"}, ["s"], source=src)
     assert d2["provenance"]["mode"] == "compose"
     assert d2["provenance"]["input_sha256"] == hashlib.sha256(b'{"nodes": []}').hexdigest()
+
+
+# ---- the --out flag ------------------------------------------------------
+# compositor.py computed `out = Path(a.out)` and never wrote it: with --out given,
+# the decision went to stdout and the script printed "wrote <path>" for a file
+# that did not exist. These pin the wiring, not a helper, because the wiring is
+# where it broke.
+
+def test_out_flag_writes_the_decision_file(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(C, "compose", lambda *a, **k: {"stub": "decision", "wave": "t"})
+    inp = tmp_path / "in.json"
+    inp.write_text(json.dumps({"candidates": [{"id": "x"}]}), encoding="utf-8")
+    out = tmp_path / "deep" / "decision.json"
+    rc = C._main(["--wave", "t", "--mode", "compose", "--input", str(inp),
+                  "--out", str(out)])
+    assert rc == 0
+    assert out.exists(), "the --out flag printed 'wrote' but created no file"
+    assert json.loads(out.read_text(encoding="utf-8"))["stub"] == "decision"
+    assert "wrote" in capsys.readouterr().out
+
+
+def test_the_wrote_line_never_names_a_file_that_is_absent(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(C, "compose", lambda *a, **k: {"stub": 1})
+    inp = tmp_path / "in.json"
+    inp.write_text(json.dumps({"candidates": [{"id": "x"}]}), encoding="utf-8")
+    out = tmp_path / "d.json"
+    C._main(["--wave", "t", "--mode", "compose", "--input", str(inp), "--out", str(out)])
+    printed = capsys.readouterr().out
+    reported = [ln.split("wrote", 1)[1].strip() for ln in printed.splitlines() if "wrote" in ln]
+    assert reported, printed
+    for r in reported:
+        assert Path(r).exists(), f"reported a file that does not exist: {r}"
+
+
+def test_graph_mode_out_also_writes(tmp_path, monkeypatch):
+    monkeypatch.setattr(C, "graph_decision", lambda *a, **k: {"stub": "graph"})
+    inp = tmp_path / "n.json"
+    inp.write_text(json.dumps({"nodes": [{"id": "n1"}]}), encoding="utf-8")
+    out = tmp_path / "g.json"
+    assert C._main(["--wave", "t", "--mode", "graph", "--input", str(inp),
+                    "--out", str(out)]) == 0
+    assert out.exists(), "graph mode ignored --out"
+    assert json.loads(out.read_text(encoding="utf-8"))["stub"] == "graph"

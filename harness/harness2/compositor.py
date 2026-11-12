@@ -576,6 +576,16 @@ def provenance(input_path: Path, mode: str, wave: str) -> dict:
     }
 
 
+def write_decision_file(decision: dict, path) -> Path:
+    """Write the decision to an explicit path. Returns that path, so the caller
+    reports a file it has actually created."""
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(decision, indent=1, ensure_ascii=False) + "\n",
+                 encoding="utf-8", newline="")
+    return p
+
+
 def write_decision(decision: dict, wave: str, name: str = "decision") -> Path:
     RUNS.mkdir(parents=True, exist_ok=True)
     d = RUNS / wave
@@ -618,7 +628,13 @@ def _main(argv: list[str]) -> int:
             source=source,
         )
         name = "graph_decision"
-    out = Path(a.out) if a.out else write_decision(decision, a.wave, name)
+    if a.out:
+        # --out used to be computed and never written: the decision went to stdout
+        # and the line below printed "wrote <path>" for a file that did not exist.
+        # Write first, then report, so the message cannot outrun the fact.
+        out = write_decision_file(decision, a.out)
+    else:
+        out = write_decision(decision, a.wave, name)
     print(json.dumps(decision, indent=1, ensure_ascii=False))
     print("wrote", out)
     return 0
