@@ -81,3 +81,79 @@ def test_missing_leg_rejected_by_parser():
         checks.parse_tuple_baseline(json.dumps({
             "gate": {"passed": 1, "failed": 0, "skipped": 0,
                      "interpreter": "x", "producer": "y"}}))
+
+
+# ------------------------------------------- the ratchet's interpreter identity
+#
+# check_suite_baseline ran the suite under whatever sys.executable launched it and
+# compared the counts against a gate leg recorded on a DIFFERENT interpreter, with
+# no identity term anywhere: ok = failed_now <= failed_base and passed_now >= passed_base.
+# On 2026-11-12 this machine's PATH resolved to 3.12.10 while the gate leg records
+# "system python 3.14.2 (C:/Python314/python.exe)", so every sprint's ratchet verdict
+# was a comparison across two interpreters wearing the baseline's label.
+#
+# These pin the refusal. They inject the RUNNING identity so the assertions do not
+# depend on which interpreter happens to execute this file.
+
+_GATE = "system python 3.14.2 (C:/Python314/python.exe) - vendor tree INACTIVE"
+
+
+def test_ratchet_refuses_a_run_on_a_different_interpreter():
+    """The synthetic pair: gate 3.14.2, run 3.12.10. Must refuse, naming both."""
+    problems = checks._identity_mismatch(_GATE, running={
+        "version": (3, 12, 10),
+        "executable": r"C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe",
+        "implementation": "cpython",
+    })
+    assert problems, "a 3.14.2 baseline must not be ratcheted from a 3.12.10 run"
+    joined = " ".join(problems)
+    assert "3.14.2" in joined, joined
+    assert "3.12.10" in joined, joined
+
+
+def test_ratchet_proceeds_on_the_interpreted_it_was_measured_on():
+    """Positive control: same version, same executable, same implementation."""
+    problems = checks._identity_mismatch(_GATE, running={
+        "version": (3, 14, 2),
+        "executable": "C:/Python314/python.exe",
+        "implementation": "cpython",
+    })
+    assert problems == [], f"a matching identity must not be refused: {problems}"
+
+
+def test_same_version_different_executable_still_refuses():
+    """Two builds of 3.14.2 are still two interpreters."""
+    problems = checks._identity_mismatch(_GATE, running={
+        "version": (3, 14, 2),
+        "executable": r"C:\Python314-other\python.exe",
+        "implementation": "cpython",
+    })
+    assert problems, "same version but a different executable must refuse"
+    assert any("executable" in p for p in problems), problems
+
+
+def test_unparseable_gate_identity_fails_closed():
+    """No parseable version means the guard cannot tell which fruit it holds."""
+    problems = checks._identity_mismatch("system python - unknown build", running={
+        "version": (3, 14, 2),
+        "executable": "C:/Python314/python.exe",
+        "implementation": "cpython",
+    })
+    assert problems, "an unparseable gate identity must refuse rather than pass"
+    assert any("no parseable version" in p for p in problems), problems
+
+
+def test_the_live_baseline_gate_identity_parses_to_a_version_and_a_path():
+    """The shipped baseline must stay parseable, or the guard refuses everything."""
+    legs = checks.parse_tuple_baseline(_LIVE.read_text(encoding="utf-8"))
+    ident = checks._gate_identity(legs["gate"]["interpreter"])
+    assert ident["version"] is not None, legs["gate"]["interpreter"]
+    assert ident["executable"] is not None, legs["gate"]["interpreter"]
+
+
+def test_the_running_identity_is_read_from_this_process():
+    ident = checks._running_identity()
+    import sys as _sys
+    assert ident["version"] == tuple(_sys.version_info[:3])
+    assert ident["executable"] == _sys.executable
+    assert ident["implementation"] == _sys.implementation.name
