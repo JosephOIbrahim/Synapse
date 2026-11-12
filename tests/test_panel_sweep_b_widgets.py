@@ -13,7 +13,8 @@ import re
 import subprocess
 import sys
 
-import pytest
+if __name__ != "__main__":
+    import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 PANEL = ROOT / "python/synapse/panel"
@@ -32,31 +33,33 @@ def _base(path):
         ["git", "show", "ce04dcb0:" + path], cwd=ROOT, text=True, encoding="utf-8")
 
 
-@pytest.mark.parametrize("name", MODULES)
-def test_migrated_widget_has_zero_imperative_rhythm_owners(name):
-    source = (PANEL / (name + ".py")).read_text(encoding="utf-8")
-    forbidden = {"setStyleSheet", "setSpacing", "setContentsMargins",
-                 "setHorizontalSpacing", "setVerticalSpacing"}
-    assert not [node.lineno for node in ast.walk(ast.parse(source))
-                if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-                and node.func.attr in forbidden]
+if __name__ != "__main__":
+    @pytest.mark.parametrize("name", MODULES)
+    def test_migrated_widget_has_zero_imperative_rhythm_owners(name):
+        source = (PANEL / (name + ".py")).read_text(encoding="utf-8")
+        forbidden = {"setStyleSheet", "setSpacing", "setContentsMargins",
+                     "setHorizontalSpacing", "setVerticalSpacing"}
+        assert not [node.lineno for node in ast.walk(ast.parse(source))
+                    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                    and node.func.attr in forbidden]
 
 
-@pytest.mark.parametrize("region,role", OWNER_ROLES.items())
-def test_each_real_constructor_declares_its_layout_role(region, role):
-    module, name = region.split(".")
-    tree = ast.parse((PANEL / (module + ".py")).read_text(encoding="utf-8"))
-    constructors = [node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)
-                    and node.name == name and node.bases]
-    # CommandPalette's unavailable fallback has no QWidget base and is excluded.
-    assert len(constructors) == 1
-    assert any(isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-               and ast.unparse(node.func) == "self.setProperty"
-               and [ast.literal_eval(arg) for arg in node.args] == ["rhythm_role", role]
-               for node in ast.walk(constructors[0])
-               if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-               and ast.unparse(node.func) == "self.setProperty"
-               and all(isinstance(arg, ast.Constant) for arg in node.args))
+if __name__ != "__main__":
+    @pytest.mark.parametrize("region,role", OWNER_ROLES.items())
+    def test_each_real_constructor_declares_its_layout_role(region, role):
+        module, name = region.split(".")
+        tree = ast.parse((PANEL / (module + ".py")).read_text(encoding="utf-8"))
+        constructors = [node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)
+                        and node.name == name and node.bases]
+        # CommandPalette's unavailable fallback has no QWidget base and is excluded.
+        assert len(constructors) == 1
+        assert any(isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                   and ast.unparse(node.func) == "self.setProperty"
+                   and [ast.literal_eval(arg) for arg in node.args] == ["rhythm_role", role]
+                   for node in ast.walk(constructors[0])
+                   if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                   and ast.unparse(node.func) == "self.setProperty"
+                   and all(isinstance(arg, ast.Constant) for arg in node.args))
 
 
 
@@ -151,19 +154,20 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     _assert_qss_extension_contract((PANEL / "designsystem/qss.py").read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize("before,after", [
-    ("# --- END PROVIDER_MODEL_PICKER", "# removed picker fence"),
-    ("def submenu_stylesheet(", "def unrelated_stylesheet("),
-    ("    return sheet\n", "    return sheet\n\ndef unchecked_extension():\n    return ''\n"),
-    ("color: {t.TEXT_PRIMARY}; spacing:", "color: #123456; spacing:"),
-    ("color: {t.TEXT_PRIMARY}; spacing:", "font-family: sans; color: {t.TEXT_PRIMARY}; spacing:"),
-    ("color: {t.TEXT_PRIMARY}; spacing:", "color: {t.UNDECLARED_SUBMENU_INK}; spacing:"),
-])
-def test_qss_extension_guard_rejects_fence_scope_and_token_drift(before, after):
-    source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
-    assert source.count(before) == 1
-    with pytest.raises(AssertionError):
-        _assert_qss_extension_contract(source.replace(before, after))
+if __name__ != "__main__":
+    @pytest.mark.parametrize("before,after", [
+        ("# --- END PROVIDER_MODEL_PICKER", "# removed picker fence"),
+        ("def submenu_stylesheet(", "def unrelated_stylesheet("),
+        ("    return sheet\n", "    return sheet\n\ndef unchecked_extension():\n    return ''\n"),
+        ("color: {t.TEXT_PRIMARY}; spacing:", "color: #123456; spacing:"),
+        ("color: {t.TEXT_PRIMARY}; spacing:", "font-family: sans; color: {t.TEXT_PRIMARY}; spacing:"),
+        ("color: {t.TEXT_PRIMARY}; spacing:", "color: {t.UNDECLARED_SUBMENU_INK}; spacing:"),
+    ])
+    def test_qss_extension_guard_rejects_fence_scope_and_token_drift(before, after):
+        source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
+        assert source.count(before) == 1
+        with pytest.raises(AssertionError):
+            _assert_qss_extension_contract(source.replace(before, after))
 
 
 def test_no_widget_constructors_added():
@@ -187,27 +191,29 @@ def test_no_widget_constructors_added():
         assert not (constructors((ROOT / path).read_text(encoding="utf-8")) - constructors(_base(path)))
 
 
-def _run(region):
-    env = dict(os.environ, QT_QPA_PLATFORM="offscreen", SYNAPSE_REDUCED_MOTION="1",
-               PYTHONDONTWRITEBYTECODE="1")
-    process = subprocess.run(
-        [sys.executable, "-I", str(Path(__file__).resolve()), region],
-        cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
-    if process.returncode == 77:
-        pytest.skip(process.stdout.strip())
-    if process.returncode == 78:
-        pytest.fail(process.stdout.strip() or "NOT_RUN: empty font database")
-    assert process.returncode == 0, process.stdout + process.stderr
-    lines = [line for line in process.stdout.splitlines() if line.startswith("SWEEP_B_QT=")]
-    assert len(lines) == 1, process.stdout
-    return json.loads(lines[0].split("=", 1)[1])
+if __name__ != "__main__":
+    def _run(region):
+        env = dict(os.environ, QT_QPA_PLATFORM="offscreen", SYNAPSE_REDUCED_MOTION="1",
+                   PYTHONDONTWRITEBYTECODE="1")
+        process = subprocess.run(
+            [sys.executable, "-I", str(Path(__file__).resolve()), region],
+            cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
+        if process.returncode == 77:
+            pytest.skip(process.stdout.strip())
+        if process.returncode == 78:
+            pytest.fail(process.stdout.strip() or "NOT_RUN: empty font database")
+        assert process.returncode == 0, process.stdout + process.stderr
+        lines = [line for line in process.stdout.splitlines() if line.startswith("SWEEP_B_QT=")]
+        assert len(lines) == 1, process.stdout
+        return json.loads(lines[0].split("=", 1)[1])
 
 
-@pytest.mark.parametrize("region", REGIONS)
-def test_real_spacing_docking_and_second_action_sequence(region):
-    measured = _run(region)
-    assert measured["densities"] == ["airy", "tight", "standard", "airy"]
-    assert measured["states_checked"] and measured["role_removal_preserves_spacing"]
+if __name__ != "__main__":
+    @pytest.mark.parametrize("region", REGIONS)
+    def test_real_spacing_docking_and_second_action_sequence(region):
+        measured = _run(region)
+        assert measured["densities"] == ["airy", "tight", "standard", "airy"]
+        assert measured["states_checked"] and measured["role_removal_preserves_spacing"]
 
 
 def _qt():
