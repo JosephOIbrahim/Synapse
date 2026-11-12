@@ -2570,6 +2570,83 @@ def parse_tuple_baseline(raw):
     return legs
 
 
+def _gate_identity(gate_interpreter):
+    """Parse what an interpreter identity the gate leg's prose field actually carries.
+
+    The field is free text today, e.g.
+      "system python 3.14.2 (C:/Python314/python.exe) - vendor tree INACTIVE ..."
+    so each dimension is parsed independently and reported as None when the
+    string does not carry it. A dimension that cannot be parsed is NOT silently
+    treated as matching — see _identity_mismatch, which refuses on it. Promoting
+    this field to a structured object is the durable fix and is tracked
+    separately; this parser is what makes the guard correct until then.
+    """
+    import re
+    text = str(gate_interpreter or "")
+    ver = re.search(r"\b(\d+)\.(\d+)\.(\d+)\b", text)
+    exe = re.search(r"\(([^)]+)\)", text)
+    impl = None
+    for name in ("cpython", "pypy", "jython", "ironpython"):
+        if name in text.lower():
+            impl = name
+            break
+    return {
+        "version": tuple(int(x) for x in ver.groups()) if ver else None,
+        "executable": exe.group(1).strip() if exe else None,
+        "implementation": impl,
+    }
+
+
+def _running_identity():
+    """The identity of the interpreter this process is actually running on."""
+    return {
+        "version": tuple(sys.version_info[:3]),
+        "executable": sys.executable,
+        "implementation": sys.implementation.name,
+    }
+
+
+def _identity_mismatch(gate_interpreter, running=None):
+    """Every way the RUNNING interpreter differs from the one the baseline names.
+
+    Returns a list of human-readable problems; empty means the counts belong to
+    this interpreter and may be compared.
+
+    Fail closed on an unparseable dimension: a ratchet whose whole purpose is
+    not to compare apples to oranges must not proceed when it cannot tell which
+    fruit it is holding.
+
+    ``running`` is injectable so a test can pin a synthetic pair -- 3.12.10
+    against a 3.14.2 gate -- without depending on which interpreter happens to
+    be executing the test.
+    """
+    ident = _gate_identity(gate_interpreter)
+    if running is None:
+        running = _running_identity()
+    run_ver = tuple(running["version"])
+    run_exe = running["executable"]
+    run_impl = str(running["implementation"]).lower()
+    problems = []
+
+    if ident["version"] is None:
+        problems.append("the gate leg names no parseable version in its interpreter field")
+    elif ident["version"] != run_ver:
+        problems.append("version %d.%d.%d recorded vs %d.%d.%d running" % (ident["version"] + run_ver))
+
+    if ident["executable"] is None:
+        problems.append("the gate leg names no executable path in parentheses")
+    else:
+        want = os.path.normcase(os.path.realpath(ident["executable"]))
+        have = os.path.normcase(os.path.realpath(run_exe))
+        if want != have:
+            problems.append(f"executable {ident['executable']} recorded vs {run_exe} running")
+
+    if ident["implementation"] and ident["implementation"] != run_impl:
+        problems.append(f"implementation {ident['implementation']} recorded vs {run_impl} running")
+
+    return problems
+
+
 def check_suite_baseline(ctx):
     import re
     mb_rc, mb_out, _ = sh(["git", "merge-base", "master", "HEAD"], cwd=ctx["wt"])
@@ -2584,6 +2661,17 @@ def check_suite_baseline(ctx):
         return {"ok": False, "detail": f"BASELINE SHAPE: {str(e)[:460]}"}
     gate_leg, ship_leg = legs["gate"], legs["shipping"]
     passed_base, failed_base = gate_leg["passed"], gate_leg["failed"]
+    # Identity before counts. A ratchet that compares this run's numbers against a
+    # baseline measured on another interpreter is not a ratchet, it is a coin toss
+    # wearing a verdict. Refuse here, before spending twelve minutes on the suite.
+    _mismatch = _identity_mismatch(gate_leg["interpreter"])
+    if _mismatch:
+        return {"ok": False, "detail": (
+            "INTERPRETER MISMATCH — refusing to ratchet counts against a baseline measured on a "
+            "different interpreter: " + "; ".join(_mismatch)
+            + f". Running: {sys.implementation.name} {sys.version.split()[0]} at {sys.executable}. "
+            "Re-measure on the interpreter the gate leg names, or promote "
+            "harness/verify/suite_baseline.json to the interpreter you intend to use.")[:500]}
     rc, out, err = sh([sys.executable, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider"],
                       cwd=ctx["wt"], env=_wt_env(ctx), timeout=1800)
     blob = out + "\n" + err
@@ -2605,7 +2693,8 @@ def check_suite_baseline(ctx):
     # is a cost decision, escalated, not decided here.
     ship_note = (f"; shipping leg RECORDED-NOT-RERUN ({ship_leg['interpreter']}: "
                  f"{ship_leg['passed']}p/{ship_leg['failed']}f/{ship_leg['skipped']}s)")
-    detail = (f"[gate {gate_leg['interpreter']}] passed {passed_now} (base {passed_base}), "
+    detail = (f"[gate {gate_leg['interpreter']}; ran {sys.implementation.name} "
+              f"{sys.version.split()[0]} at {sys.executable}] passed {passed_now} (base {passed_base}), "
               f"failed {failed_now} (base {failed_base}); "
               f"ratchet {'holds' if ok else 'BROKEN'}{ship_note}")
     if not ok and failed_now > failed_base:
